@@ -5,6 +5,7 @@ import { Employee, MonthlySummary, Schedule } from "../types";
 import { ScheduleCell } from "./ScheduleCell";
 import { SummaryRow } from "./SummaryRow";
 import { StoreMap } from "./StoreMap";
+import { DayTimelineModal } from "./DayTimelineModal";
 import {
   Calendar,
   UserPlus,
@@ -92,6 +93,7 @@ export const SchedulePage: React.FC = () => {
   const [empWorkplace, setEmpWorkplace] = useState<string>("매장");
   const [editingEmpId, setEditingEmpId] = useState<number | null>(null);
   const [tempDescription, setTempDescription] = useState("");
+  const [timelineDate, setTimelineDate] = useState<string | null>(null);
 
   const openCreateEmployeeModal = () => {
     setSelectedEmpForEdit(null);
@@ -692,6 +694,28 @@ export const SchedulePage: React.FC = () => {
   };
 
   const currentSummaryList = getCalculatedSummary();
+
+  const getPositionSummary = () => {
+    const monthStr = String(currentMonth).padStart(2, "0");
+    const totalDays = new Date(currentYear, currentMonth, 0).getDate();
+    const posMap = new Map<string, number[]>();
+    for (const emp of filteredEmployees) {
+      if (!posMap.has(emp.position)) posMap.set(emp.position, Array(totalDays).fill(0));
+    }
+    for (let day = 1; day <= totalDays; day++) {
+      const dateStr = `${currentYear}-${monthStr}-${String(day).padStart(2, "0")}`;
+      for (const emp of filteredEmployees) {
+        const sched = emp.schedules.find(s => s.date === dateStr);
+        if (sched && !["휴무", "월차", "지정휴무", "결근"].includes(sched.type) && sched.type.trim() !== "") {
+          const arr = posMap.get(emp.position);
+          if (arr) arr[day - 1]++;
+        }
+      }
+    }
+    return Array.from(posMap.entries()).map(([position, counts]) => ({ position, counts }));
+  };
+
+  const positionSummaryList = getPositionSummary();
 
   const getAttendanceSummary = () => {
     let totalLates = 0;
@@ -1421,11 +1445,12 @@ export const SchedulePage: React.FC = () => {
                         입사일
                       </th>
                       {daysList.map((day) => {
-                        const { colorClass } = getDayDetails(day);
+                        const { colorClass, fullDate } = getDayDetails(day);
                         return (
                           <th
                             key={`day-num-${day}`}
-                            className={`p-1.5 text-center text-[11px] font-semibold border-r border-b border-[#e2e8f0] min-w-[55px] ${colorClass}`}
+                            onClick={() => setTimelineDate(fullDate)}
+                            className={`p-1.5 text-center text-[11px] font-semibold border-r border-b border-[#e2e8f0] min-w-[55px] cursor-pointer hover:brightness-90 ${colorClass}`}
                           >
                             {day}
                           </th>
@@ -1590,6 +1615,19 @@ export const SchedulePage: React.FC = () => {
                     <SummaryRow summaries={currentSummaryList} label="오픈" />
                     <SummaryRow summaries={currentSummaryList} label="미들" />
                     <SummaryRow summaries={currentSummaryList} label="마감" />
+                    {positionSummaryList.map(({ position, counts }) => (
+                      <tr key={`pos-${position}`} className="border-t border-[#e2e8f0]">
+                        <td colSpan={4}
+                          className="px-3 py-1 sticky left-0 z-20 text-center text-[10px] font-bold border-r border-[#e2e8f0] bg-slate-100 text-slate-500 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                          {position}
+                        </td>
+                        {daysList.map((day) => (
+                          <td key={day} className="p-1 text-center text-[10px] border-r border-[#e2e8f0] bg-slate-50 text-slate-500 min-w-[55px]">
+                            {counts[day - 1] > 0 ? counts[day - 1] : ""}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
                     <SummaryRow summaries={currentSummaryList} label="근무인원" />
                   </tbody>
                 </table>
@@ -2347,6 +2385,17 @@ export const SchedulePage: React.FC = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {timelineDate && (
+        <DayTimelineModal
+          date={timelineDate}
+          employees={employees}
+          openShiftHour={openShiftHour}
+          middleShiftHour={middleShiftHour}
+          closeShiftHour={closeShiftHour}
+          onClose={() => setTimelineDate(null)}
+        />
       )}
     </div>
   );
