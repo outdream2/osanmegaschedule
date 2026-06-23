@@ -327,7 +327,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                                 className="absolute inset-0 mx-2 cursor-grab active:cursor-grabbing flex items-center px-1"
                                 onMouseDown={e => startDrag(e, "emp", "body", range.start, range.end, emp.id)}
                               >
-                                <span className="text-[10px] text-white font-semibold truncate whitespace-nowrap">
+                                <span className="text-[10px] text-white/40 font-medium truncate whitespace-nowrap">
                                   {minToStr(range.start)}-{minToStr(range.end)}
                                 </span>
                               </div>

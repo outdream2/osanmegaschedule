@@ -53,7 +53,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label }) => {
         return (
           <td
             key={sum.day}
-            className={`p-1.5 text-center text-xs border-r border-[#e2e8f0] min-w-[55px] ${valBg}`}
+            className={`p-1.5 text-center text-xs border-r border-[#e2e8f0] min-w-[36px] ${valBg}`}
           >
             <span className={textStyle}>{val}</span>
           </td>

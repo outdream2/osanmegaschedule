@@ -6,6 +6,8 @@ import { ScheduleCell } from "./ScheduleCell";
 import { SummaryRow } from "./SummaryRow";
 import { StoreMap } from "./StoreMap";
 import { DayTimelineModal } from "./DayTimelineModal";
+import { SettingsModal } from "./SettingsModal";
+import { useSettings } from "../hooks/useSettings";
 import {
   Calendar,
   UserPlus,
@@ -34,9 +36,17 @@ import {
   GripVertical,
 } from "lucide-react";
 
-const PRESET_POSITIONS = ["부점장", "사원", "사원(주간)", "사원(오픈)", "사원(마감)", "사원(주말)", "일용직", "약사", "캐셔"];
-
 export const SchedulePage: React.FC = () => {
+  // Settings hook (positions, workplaces, scheduleTypes, shift hours)
+  const {
+    positions: PRESET_POSITIONS,
+    workplaces: settingsWorkplaces,
+    scheduleTypes: settingsScheduleTypes,
+    openShiftHour: settingsOpenShiftHour,
+    middleShiftHour: settingsMiddleShiftHour,
+    closeShiftHour: settingsCloseShiftHour,
+    update: updateSettings,
+  } = useSettings();
   // Navigation states
   const [currentYear, setCurrentYear] = useState<number>(2026);
   const [currentMonth, setCurrentMonth] = useState<number>(5); // default May 2026 matching seed
@@ -50,6 +60,19 @@ export const SchedulePage: React.FC = () => {
   // Drag and Drop row states
   const [draggedRowId, setDraggedRowId] = useState<number | null>(null);
   const [dragOverRowId, setDragOverRowId] = useState<number | null>(null);
+
+  // Collapsible column states (persisted to localStorage)
+  const [colCollapsed, setColCollapsed] = useState<{ position: boolean; description: boolean; hireDate: boolean }>(() => {
+    try { return JSON.parse(localStorage.getItem("col_collapsed") || "{}"); }
+    catch { return { position: false, description: false, hireDate: false }; }
+  });
+  const toggleCol = (col: keyof typeof colCollapsed) => {
+    setColCollapsed(prev => {
+      const next = { ...prev, [col]: !prev[col] };
+      localStorage.setItem("col_collapsed", JSON.stringify(next));
+      return next;
+    });
+  };
 
   // Administrative / Auth states
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
@@ -132,23 +155,13 @@ export const SchedulePage: React.FC = () => {
   const [sortBy, setSortBy] = useState<"none" | "position" | "hireDate" | "name">("none");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
-  // Global shift hours state with LocalStorage persistence
-  const [isShiftSettingsOpen, setIsShiftSettingsOpen] = useState(false);
-  const [openShiftHour, setOpenShiftHour] = useState<string>(() => localStorage.getItem("shift_hours_open") || "09:30-18:30");
-  const [middleShiftHour, setMiddleShiftHour] = useState<string>(() => localStorage.getItem("shift_hours_middle") || "11:00-20:00");
-  const [closeShiftHour, setCloseShiftHour] = useState<string>(() => localStorage.getItem("shift_hours_close") || "13:00-22:00");
+  // Settings modal state
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  useEffect(() => {
-    localStorage.setItem("shift_hours_open", openShiftHour);
-  }, [openShiftHour]);
-
-  useEffect(() => {
-    localStorage.setItem("shift_hours_middle", middleShiftHour);
-  }, [middleShiftHour]);
-
-  useEffect(() => {
-    localStorage.setItem("shift_hours_close", closeShiftHour);
-  }, [closeShiftHour]);
+  // Shift hours derived from settings (kept as local aliases for compatibility)
+  const openShiftHour = settingsOpenShiftHour;
+  const middleShiftHour = settingsMiddleShiftHour;
+  const closeShiftHour = settingsCloseShiftHour;
 
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -845,14 +858,10 @@ export const SchedulePage: React.FC = () => {
           )}
 
           <button
-            onClick={() => setIsShiftSettingsOpen(!isShiftSettingsOpen)}
-            className={`px-3 py-1.5 text-xs font-bold border rounded-lg transition duration-150 flex items-center gap-1 cursor-pointer ${
-              isShiftSettingsOpen
-                ? "bg-slate-800 border-slate-800 text-white shadow-sm"
-                : "border-[#cbd5e1] bg-white hover:bg-slate-50 text-slate-700 shadow-3xs"
-            }`}
+            onClick={() => setIsSettingsOpen(true)}
+            className="px-3 py-1.5 text-xs font-bold border border-[#cbd5e1] bg-white hover:bg-slate-50 text-slate-700 shadow-3xs rounded-lg transition duration-150 flex items-center gap-1 cursor-pointer"
           >
-            ⚙️ 근무 시간대 설정
+            ⚙️ 환경 설정
           </button>
 
           <button
@@ -1182,105 +1191,20 @@ export const SchedulePage: React.FC = () => {
         </div>
       )}
 
-      {/* Collapsible Shift Hours Settings Panel */}
-      {isShiftSettingsOpen && (
-        <div className="bg-white border-b border-[#cbd5e1] px-6 py-4 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="max-w-4xl mx-auto bg-slate-50 border border-[#cbd5e1] rounded-2xl p-4 shadow-3xs">
-            <div className="flex items-center justify-between border-b border-[#cbd5e1] pb-2 mb-3">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-black text-slate-800 flex items-center gap-1.5">
-                  <span>⚙️ 글로벌 근무 시간(오픈/미들/마감) 일괄 설정</span>
-                  <span className="text-[10px] text-blue-600 bg-blue-50 border border-blue-100 px-1.5 py-0.5 rounded font-black">실시간 자동 동기화</span>
-                </span>
-              </div>
-              <button
-                onClick={() => setIsShiftSettingsOpen(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold text-xs cursor-pointer transition"
-              >
-                ✕ 닫기
-              </button>
-            </div>
-            
-            <p className="text-[11px] text-slate-500 font-semibold mb-3 leading-relaxed">
-              💡 오픈, 미들, 마감의 글로벌 기준 근무 시간을 원하는 시간 범위(예: 09:30-18:30)로 기입해 주세요. 
-              수정 완료 시 <strong>스케줄 시트의 빠른 채우기 Preset, 일괄 입력 도구, 그리고 실시간 맵배치도의 시간대별 입사자 수 집계</strong>에 실시간으로 일관 적용됩니다.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Open Shift */}
-              <div className="bg-white p-3 rounded-xl border border-[#cbd5e1] shadow-3xs">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-amber-500"></span>
-                  <label className="text-[11px] font-bold text-slate-700">오픈 근무시간 ☀️</label>
-                </div>
-                <input
-                  type="text"
-                  value={openShiftHour}
-                  onChange={(e) => setOpenShiftHour(e.target.value)}
-                  placeholder="예: 09:30-18:30"
-                  className="w-full text-xs rounded-lg border border-slate-200 focus:border-blue-500 p-2 font-mono bg-slate-50/50 focus:bg-white focus:outline-none"
-                />
-              </div>
-
-              {/* Middle Shift */}
-              <div className="bg-white p-3 rounded-xl border border-[#cbd5e1] shadow-3xs">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-sky-450 bg-sky-450 bg-sky-400 border border-sky-500"></span>
-                  <label className="text-[11px] font-bold text-slate-700">미들 근무시간 ⛅</label>
-                </div>
-                <input
-                  type="text"
-                  value={middleShiftHour}
-                  onChange={(e) => setMiddleShiftHour(e.target.value)}
-                  placeholder="예: 11:00-20:00"
-                  className="w-full text-xs rounded-lg border border-slate-200 focus:border-blue-500 p-2 font-mono bg-slate-50/50 focus:bg-white focus:outline-none"
-                />
-              </div>
-
-              {/* Close Shift */}
-              <div className="bg-white p-3 rounded-xl border border-[#cbd5e1] shadow-3xs">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border border-emerald-500"></span>
-                  <label className="text-[11px] font-bold text-slate-700">마감 근무시간 🌙</label>
-                </div>
-                <input
-                  type="text"
-                  value={closeShiftHour}
-                  onChange={(e) => setCloseShiftHour(e.target.value)}
-                  placeholder="예: 13:00-22:00"
-                  className="w-full text-xs rounded-lg border border-slate-200 focus:border-blue-500 p-2 font-mono bg-slate-50/50 focus:bg-white focus:outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="mt-4 flex justify-end gap-2 border-t border-slate-200 pt-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setOpenShiftHour("09:30-18:30");
-                  setMiddleShiftHour("11:00-20:00");
-                  setCloseShiftHour("13:00-22:00");
-                  setNotification({ message: "기준 근무 시간대가 원본 기본값으로 초기화되었습니다.", type: "success" });
-                  setTimeout(() => setNotification(null), 3000);
-                }}
-                className="px-3 py-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition cursor-pointer"
-              >
-                기본값 복원 (Reset)
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsShiftSettingsOpen(false);
-                  setNotification({ message: "수정하신 가변 근무 시간대가 글로벌 시스템에 적용되었습니다.", type: "success" });
-                  setTimeout(() => setNotification(null), 3000);
-                }}
-                className="px-4 py-1.5 text-xs font-black text-white bg-[#2563eb] hover:bg-blue-700 rounded-lg shadow-sm transition cursor-pointer"
-              >
-                저장 및 시간대 동기화 ✔️
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Settings Modal */}
+      {isSettingsOpen && (
+        <SettingsModal
+          settings={{
+            positions: PRESET_POSITIONS,
+            workplaces: settingsWorkplaces,
+            scheduleTypes: settingsScheduleTypes,
+            openShiftHour,
+            middleShiftHour,
+            closeShiftHour,
+          }}
+          onUpdate={updateSettings}
+          onClose={() => setIsSettingsOpen(false)}
+        />
       )}
 
       {/* 2. Grid Container Block */}
@@ -1604,6 +1528,7 @@ export const SchedulePage: React.FC = () => {
                                  openShiftHour={openShiftHour}
                                  middleShiftHour={middleShiftHour}
                                  closeShiftHour={closeShiftHour}
+                                 scheduleTypes={settingsScheduleTypes.map((v) => ({ value: v, label: v }))}
                               />
                             </td>
                           );

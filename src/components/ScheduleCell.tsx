@@ -20,6 +20,8 @@ interface ScheduleCellProps {
   openShiftHour?: string;
   middleShiftHour?: string;
   closeShiftHour?: string;
+  /** Optional override for schedule type list (from settings). Falls back to SCHEDULE_TYPES. */
+  scheduleTypes?: { value: string; label: string }[];
 }
 
 export const ScheduleCell: React.FC<ScheduleCellProps> = ({
@@ -31,7 +33,9 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
   openShiftHour = "09:30-18:30",
   middleShiftHour = "11:00-20:00",
   closeShiftHour = "13:00-22:00",
+  scheduleTypes: scheduleTypesProp,
 }) => {
+  const activeScheduleTypes = scheduleTypesProp ?? SCHEDULE_TYPES;
   const [isOpen, setIsOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
@@ -110,7 +114,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
   return (
     <div
-      className="relative border-r border-b border-[#e2e8f0] h-12 min-w-[55px] flex flex-col justify-between p-0.5 select-none text-center"
+      className="relative border-r border-b border-[#e2e8f0] h-12 min-w-[36px] flex flex-col justify-between p-0.5 select-none text-center"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -244,7 +248,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 빠른 근무 설정
               </label>
               <div className="flex flex-wrap gap-1.5">
-                {SCHEDULE_TYPES.map((t) => {
+                {activeScheduleTypes.map((t) => {
                   const sColor = SCHEDULE_COLORS[t.value] || DEFAULT_COLOR;
                   return (
                     <button
@@ -275,7 +279,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white cursor-pointer focus:outline-none"
               >
                 <option value="">-- 없음 --</option>
-                {SCHEDULE_TYPES.map((t) => (
+                {activeScheduleTypes.map((t) => (
                   <option key={t.value} value={t.value}>
                     {t.label}
                   </option>

@@ -1,15 +1,17 @@
 // src/constants.ts
 
-export const SCHEDULE_TYPES = [
-  { value: "오픈", label: "오픈" },
-  { value: "미들", label: "미들" },
-  { value: "마감", label: "마감" },
-  { value: "휴무", label: "휴무" },
-  { value: "월차", label: "월차" },
-  { value: "지정휴무", label: "지정휴무" },
-  { value: "오전반차", label: "오전반차" },
-  { value: "오후반차", label: "오후반차" },
+export const DEFAULT_SCHEDULE_TYPES: string[] = [
+  "오픈",
+  "미들",
+  "마감",
+  "휴무",
+  "월차",
+  "지정휴무",
+  "오전반차",
+  "오후반차",
 ];
+
+export const SCHEDULE_TYPES = DEFAULT_SCHEDULE_TYPES.map((v) => ({ value: v, label: v }));
 
 export const SCHEDULE_COLORS: Record<string, { bg: string; text: string; border: string; label: string }> = {
   오픈: {
