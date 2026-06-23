@@ -1381,11 +1381,12 @@ export const SchedulePage: React.FC = () => {
                 </div>
               ) : (() => {
                 // Dynamic sticky left positions based on which columns are collapsed
+                const NAME_W = 100;
                 const stickyPos = {
                   name: 0,
-                  position: 145,
-                  description: 145 + (colCollapsed.position ? 20 : 80),
-                  hireDate: 145 + (colCollapsed.position ? 20 : 80) + (colCollapsed.description ? 20 : 130),
+                  position: NAME_W,
+                  description: NAME_W + (colCollapsed.position ? 20 : 80),
+                  hireDate: NAME_W + (colCollapsed.position ? 20 : 80) + (colCollapsed.description ? 20 : 130),
                 };
                 return (
                 <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
@@ -1393,7 +1394,7 @@ export const SchedulePage: React.FC = () => {
                   <thead className="sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
                     {/* Header Row 1: Day of Month Numbers */}
                     <tr className="bg-slate-800 text-slate-200 select-none">
-                      <th className="w-[145px] text-center text-[11px] font-semibold border-r border-slate-700 border-b border-b-slate-700 sticky left-0 bg-slate-800 z-40 py-2.5 tracking-wide">
+                      <th className="w-[100px] text-center text-[11px] font-semibold border-r border-slate-700 border-b border-b-slate-700 sticky left-0 bg-slate-800 z-40 py-2.5 tracking-wide">
                         직원 성명
                       </th>
 

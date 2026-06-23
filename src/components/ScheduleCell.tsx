@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Schedule } from "../types";
 import { SCHEDULE_COLORS, SCHEDULE_TYPES, DEFAULT_COLOR } from "../constants";
-import { Clock, MessageSquare, Save, X, ToggleLeft } from "lucide-react";
+import { Clock, MessageSquare, Save, X, ToggleLeft, Settings2 } from "lucide-react";
 
 interface ScheduleCellProps {
   schedule?: Schedule;
@@ -78,6 +78,29 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
   const displayActualHours = schedule?.actualHours || "";
   const colorConfig = displayType ? (SCHEDULE_COLORS[displayType] || DEFAULT_COLOR) : null;
 
+  const CYCLE = ["오픈", "미들", "마감", "휴무"];
+
+  const handleQuickCycle = async () => {
+    if (!isAdmin) return;
+    const cur = schedule?.type || "";
+    const idx = CYCLE.indexOf(cur);
+    const nextType = CYCLE[(idx + 1) % CYCLE.length];
+    let nextWh = "";
+    if (nextType === "오픈") nextWh = openShiftHour;
+    else if (nextType === "미들") nextWh = middleShiftHour;
+    else if (nextType === "마감") nextWh = closeShiftHour;
+    try {
+      await onUpdate({
+        employeeId, date: dateStr,
+        type: nextType, workingHours: nextWh,
+        actualHours: schedule?.actualHours || "",
+        memo: schedule?.memo || "",
+      });
+    } catch (err) {
+      console.error("Failed to cycle schedule:", err);
+    }
+  };
+
   // Handle preset clicks for fast logging
   const applyPreset = (presetType: string) => {
     setType(presetType);
@@ -126,12 +149,18 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
         } ${
           colorConfig ? `${colorConfig.bg} ${colorConfig.text}` : "bg-white text-slate-400"
         }`}
-        onClick={() => {
-          if (isAdmin) {
-            setIsOpen(true);
-          }
-        }}
+        onClick={handleQuickCycle}
       >
+        {/* Detail edit button — top-right corner on hover */}
+        {isAdmin && isHovered && (
+          <button
+            onClick={e => { e.stopPropagation(); setIsOpen(true); }}
+            className="absolute top-0.5 right-0.5 z-10 p-0.5 rounded bg-black/10 hover:bg-black/25 transition-colors"
+            title="상세 편집"
+          >
+            <Settings2 size={8} />
+          </button>
+        )}
         {/* Row 1: Type (오픈, 마감, 휴무 등) */}
         <div className="text-[11px] font-bold leading-tight truncate">
           {displayType || "-"}
