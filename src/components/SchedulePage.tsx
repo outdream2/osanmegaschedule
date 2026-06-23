@@ -537,6 +537,29 @@ export const SchedulePage: React.FC = () => {
     }
   };
 
+  // Parse "HH:MM-HH:MM" working hours string to decimal hours
+  const parseWorkingHours = (wh: string): number => {
+    if (!wh) return 0;
+    const m = wh.match(/(\d{1,2}):(\d{2})\s*[-~]\s*(\d{1,2}):(\d{2})/);
+    if (!m) return 0;
+    const start = parseInt(m[1]) * 60 + parseInt(m[2]);
+    const end = parseInt(m[3]) * 60 + parseInt(m[4]);
+    return Math.max(0, (end - start) / 60);
+  };
+
+  const OFF_TYPES_SET = new Set(["휴무", "월차", "지정휴무", "결근"]);
+
+  const getEmpMonthStats = (emp: Employee) => {
+    const monthStr = String(currentMonth).padStart(2, "0");
+    const monthSchedules = emp.schedules.filter(s => s.date.startsWith(`${currentYear}-${monthStr}-`));
+    const workDays = monthSchedules.filter(s => s.type && !OFF_TYPES_SET.has(s.type)).length;
+    const totalHours = monthSchedules.reduce((sum, s) => {
+      if (!s.type || OFF_TYPES_SET.has(s.type)) return sum;
+      return sum + parseWorkingHours(s.workingHours || "");
+    }, 0);
+    return { workDays, totalHours };
+  };
+
   // Help calculate weekday name mapping
   const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
   const getDayDetails = (dayNum: number) => {
@@ -1311,7 +1334,7 @@ export const SchedulePage: React.FC = () => {
                 </div>
               ) : (() => {
                 return (
-                  <table className="text-left border-collapse table-fixed w-max sm:w-full sm:min-w-[780px] md:min-w-[900px]">
+                  <table className="text-left border-collapse table-fixed min-w-max w-full">
                     {/* Table Headers */}
                     <thead className="sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
                       {/* Header Row 1: Day of Month Numbers */}
@@ -1344,6 +1367,10 @@ export const SchedulePage: React.FC = () => {
                             </th>
                           );
                         })}
+                        {/* Total column header */}
+                        <th className="p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-b border-slate-700 bg-slate-900 text-indigo-300 whitespace-nowrap border-l-2 border-l-slate-600">
+                          합계
+                        </th>
                       </tr>
 
                       {/* Header Row 2: Day of Week Characters */}
@@ -1368,6 +1395,10 @@ export const SchedulePage: React.FC = () => {
                             </th>
                           );
                         })}
+                        {/* Total column sub-header */}
+                        <th className="p-0.5 text-center text-[8px] sm:text-[9px] border-b border-slate-600 bg-slate-800 text-indigo-400 border-l-2 border-l-slate-600">
+                          일·시간
+                        </th>
                       </tr>
                     </thead>
 
@@ -1469,13 +1500,36 @@ export const SchedulePage: React.FC = () => {
                               </td>
                             );
                           })}
+
+                          {/* Total column: work days + hours */}
+                          {(() => {
+                            const { workDays, totalHours } = getEmpMonthStats(emp);
+                            const h = Math.floor(totalHours);
+                            const m = Math.round((totalHours - h) * 60);
+                            const hoursLabel = h > 0 ? (m > 0 ? `${h}h${m}m` : `${h}h`) : "";
+                            return (
+                              <td className="border-l-2 border-slate-200 bg-indigo-50/50 text-center align-middle p-1">
+                                <div className="text-[11px] sm:text-xs font-black text-indigo-700 leading-tight">{workDays}일</div>
+                                {hoursLabel && <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium leading-tight">{hoursLabel}</div>}
+                              </td>
+                            );
+                          })()}
                         </tr>
                       ))}
 
                       {/* Real-time calculated Bottom Summary Rows */}
-                      <SummaryRow summaries={currentSummaryList} label="약사" />
-                      <SummaryRow summaries={currentSummaryList} label="사원" />
-                      <SummaryRow summaries={currentSummaryList} label="근무인원" />
+                      <SummaryRow
+                        summaries={currentSummaryList} label="약사"
+                        totalCell={<span>{currentSummaryList.reduce((a, s) => a + s.pharmacistCount, 0)}인일</span>}
+                      />
+                      <SummaryRow
+                        summaries={currentSummaryList} label="사원"
+                        totalCell={<span>{currentSummaryList.reduce((a, s) => a + s.staffCount, 0)}인일</span>}
+                      />
+                      <SummaryRow
+                        summaries={currentSummaryList} label="근무인원"
+                        totalCell={<span>{currentSummaryList.reduce((a, s) => a + s.totalCount, 0)}인일</span>}
+                      />
                     </tbody>
                   </table>
                 );

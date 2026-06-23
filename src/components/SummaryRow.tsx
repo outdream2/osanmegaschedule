@@ -5,9 +5,10 @@ import { MonthlySummary } from "../types";
 interface SummaryRowProps {
   summaries: MonthlySummary[];
   label: "약사" | "사원" | "근무인원";
+  totalCell?: React.ReactNode;
 }
 
-export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label }) => {
+export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, totalCell }) => {
   const isPharmacist = label === "약사";
   const isStaff = label === "사원";
   const isTotal = label === "근무인원";
@@ -30,11 +31,16 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label }) => {
     ? "bg-sky-50/30 text-slate-300"
     : "bg-indigo-50/30 text-slate-300";
 
+  const totalCls = isPharmacist
+    ? "bg-violet-100 text-violet-800"
+    : isStaff
+    ? "bg-sky-100 text-sky-800"
+    : "bg-indigo-100 text-indigo-800";
+
   return (
     <tr className={isTotal ? "border-t-2 border-indigo-200" : "border-t border-slate-100"}>
       <td
-        colSpan={4}
-        className={`px-4 py-2 sticky left-0 z-20 text-center text-[11px] font-bold tracking-wide shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] ${labelCls}`}
+        className={`px-2 py-2 sticky left-0 z-20 text-center text-[11px] font-bold tracking-wide shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] ${labelCls}`}
       >
         {label}
       </td>
@@ -52,6 +58,12 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label }) => {
           </td>
         );
       })}
+
+      {totalCell !== undefined && (
+        <td className={`p-1.5 text-center text-[10px] font-black border-l-2 border-slate-200 ${totalCls}`}>
+          {totalCell}
+        </td>
+      )}
     </tr>
   );
 };
