@@ -780,10 +780,11 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
             {onBack && (
               <button
                 onClick={onBack}
-                className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition cursor-pointer mr-1"
-                title="홈으로"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition cursor-pointer mr-1 text-xs font-semibold shrink-0"
+                title="메인으로 돌아가기"
               >
-                <ChevronLeft size={14} />
+                <ChevronLeft size={13} />
+                <span className="hidden sm:inline">메인</span>
               </button>
             )}
             <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
