@@ -187,45 +187,45 @@ export const DayTimelineModal: React.FC<Props> = ({
     document.addEventListener("mouseup", onUp);
   };
 
-  const BreakBand = ({ kind }: { kind: "lunch" | "rest" }) => {
+  const BreakRow = ({ kind }: { kind: "lunch" | "rest" }) => {
     const r = kind === "lunch" ? lunch : rest;
-    const label = kind === "lunch" ? "점심" : "휴게";
-    const bg = kind === "lunch"
-      ? "bg-yellow-100/80 border-yellow-400/50"
-      : "bg-violet-100/80 border-violet-400/50";
+    const label = kind === "lunch" ? "점심시간" : "휴게시간";
+    const rowBg = kind === "lunch" ? "bg-yellow-50" : "bg-violet-50";
+    const barBg = kind === "lunch" ? "bg-yellow-300" : "bg-violet-300";
     const handleBg = kind === "lunch"
-      ? "bg-yellow-400/70 hover:bg-yellow-500/80"
-      : "bg-violet-400/70 hover:bg-violet-500/80";
-    const textCls = kind === "lunch" ? "text-yellow-700" : "text-violet-700";
+      ? "bg-yellow-500/50 hover:bg-yellow-600/60"
+      : "bg-violet-500/50 hover:bg-violet-600/60";
+    const textCls = kind === "lunch" ? "text-yellow-800" : "text-violet-800";
+    const borderCls = kind === "lunch" ? "border-yellow-200" : "border-violet-200";
     const w = widthPct(r.start, r.end);
-    if (w <= 0) return null;
     return (
-      <div
-        className={`absolute top-0 bottom-0 border-x z-10 ${bg}`}
-        style={{ left: `${pct(r.start)}%`, width: `${w}%`, pointerEvents: "none" }}
-      >
-        {/* left resize handle */}
-        <div
-          className={`absolute left-0 top-0 bottom-0 w-2 rounded-l cursor-ew-resize ${handleBg}`}
-          style={{ pointerEvents: "auto" }}
-          onMouseDown={e => startDrag(e, kind, "start", r.start, r.end)}
-        />
-        {/* body (move) */}
-        <div
-          className="absolute inset-0 mx-2 flex items-start justify-center cursor-grab active:cursor-grabbing"
-          style={{ pointerEvents: "auto" }}
-          onMouseDown={e => startDrag(e, kind, "body", r.start, r.end)}
-        >
-          <span className={`text-[8px] font-bold whitespace-nowrap select-none pt-0.5 ${textCls}`}>
-            {label} {minToStr(r.start)}~{minToStr(r.end)}
-          </span>
-        </div>
-        {/* right resize handle */}
-        <div
-          className={`absolute right-0 top-0 bottom-0 w-2 rounded-r cursor-ew-resize ${handleBg}`}
-          style={{ pointerEvents: "auto" }}
-          onMouseDown={e => startDrag(e, kind, "end", r.start, r.end)}
-        />
+      <div className={`relative h-9 mb-1 rounded-lg border ${rowBg} ${borderCls}`}>
+        {w > 0 && (
+          <div
+            className={`absolute top-1/2 -translate-y-1/2 h-6 rounded-md ${barBg}`}
+            style={{ left: `${pct(r.start)}%`, width: `${w}%` }}
+          >
+            {/* left resize */}
+            <div
+              className={`absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-l-md ${handleBg}`}
+              onMouseDown={e => startDrag(e, kind, "start", r.start, r.end)}
+            />
+            {/* body move */}
+            <div
+              className="absolute inset-0 mx-2 cursor-grab active:cursor-grabbing flex items-center justify-center"
+              onMouseDown={e => startDrag(e, kind, "body", r.start, r.end)}
+            >
+              <span className={`text-[10px] font-bold whitespace-nowrap select-none ${textCls}`}>
+                {minToStr(r.start)}~{minToStr(r.end)}
+              </span>
+            </div>
+            {/* right resize */}
+            <div
+              className={`absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-r-md ${handleBg}`}
+              onMouseDown={e => startDrag(e, kind, "end", r.start, r.end)}
+            />
+          </div>
+        )}
       </div>
     );
   };
@@ -274,6 +274,16 @@ export const DayTimelineModal: React.FC<Props> = ({
               {/* Name column */}
               <div className="flex-shrink-0 w-[96px]">
                 <div className="h-8" />
+                {/* Break time labels */}
+                <div className="h-9 mb-1 flex items-center">
+                  <span className="text-[10px] font-bold text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-1.5 py-0.5 leading-none">점심시간</span>
+                </div>
+                <div className="h-9 mb-1 flex items-center">
+                  <span className="text-[10px] font-bold text-violet-700 bg-violet-50 border border-violet-200 rounded px-1.5 py-0.5 leading-none">휴게시간</span>
+                </div>
+                {/* Divider */}
+                <div className="h-px bg-slate-200 mb-1.5" />
+                {/* Employee names */}
                 {workers.map(({ emp, schedule }) => (
                   <div key={emp.id} className="h-9 mb-1.5 flex flex-col justify-center">
                     <span className="text-xs font-bold text-slate-800 leading-tight truncate">{emp.name}</span>
@@ -308,8 +318,11 @@ export const DayTimelineModal: React.FC<Props> = ({
                         }} />
                     ))}
 
-                    <BreakBand kind="lunch" />
-                    <BreakBand kind="rest" />
+                    {/* Break rows at top */}
+                    <BreakRow kind="lunch" />
+                    <BreakRow kind="rest" />
+                    {/* Divider */}
+                    <div className="h-px bg-slate-200 mb-1.5" />
 
                     {/* Employee rows */}
                     {workers.map(({ emp, schedule }) => {
@@ -368,14 +381,6 @@ export const DayTimelineModal: React.FC<Props> = ({
               <span className="text-[11px] text-slate-500 font-medium">{type}</span>
             </div>
           ))}
-          <div className="flex items-center gap-1.5 ml-1 pl-3 border-l border-slate-200">
-            <span className="w-2.5 h-2.5 rounded bg-yellow-200 border border-yellow-400 inline-block" />
-            <span className="text-[11px] text-slate-500 font-medium">점심</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded bg-violet-200 border border-violet-400 inline-block" />
-            <span className="text-[11px] text-slate-500 font-medium">휴게</span>
-          </div>
         </div>
       </div>
     </div>
