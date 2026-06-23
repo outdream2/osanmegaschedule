@@ -904,13 +904,15 @@ export const StoreMap: React.FC<StoreMapProps> = ({
               className="min-w-[850px] p-6 bg-[linear-gradient(to_right,#e5e7eb_1px,transparent_1px),linear-gradient(to_bottom,#e5e7eb_1px,transparent_1px)] bg-[size:20px_20px] bg-[#f8fafc] border border-slate-350 rounded-xl shadow-inner flex flex-col gap-4"
             >
 
-              {/* ========================================== */}
-              {/* SECTION 1: TOP ROW (Shelving aisles + Expiring counter + Cart area) - Horizontal long wing */}
-              {/* ========================================== */}
-              <div className="grid grid-cols-12 gap-4">
+              {/* ========================================================================== */}
+              {/* SECTION 1: TOP HORIZONTAL BAND (Shelving aisles spanning across most of width  */}
+              {/* + tiny corner block at far right for elevator/stairs)                          */}
+              {/* Mirrors map.png: a long horizontal shelving wing with a small corner annex.    */}
+              {/* ========================================================================== */}
+              <div className="grid grid-cols-16 gap-3">
 
-                {/* 1A. 매장 메인 진열대 및 통로 & 유통기한 임박존 (Top Long horizontal zone) */}
-                <div className="col-span-12 xl:col-span-9 bg-white border-4 border-blue-600 rounded-2xl p-4 flex flex-col shadow-md relative min-h-[190px]">
+                {/* 1A. 매장 메인 진열대 가로라인 (Long horizontal shelf wing — spans 14/16 cols) */}
+                <div className="col-span-16 xl:col-span-14 bg-white border-4 border-blue-600 rounded-2xl p-3.5 flex flex-col shadow-md relative min-h-[170px]">
 
                   {/* Floating ㄱ-자 Section Badge */}
                   <div className="absolute -top-3 left-4 bg-blue-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20 flex items-center gap-1">
@@ -919,7 +921,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                   </div>
 
                   {/* Header Row */}
-                  <div className="flex items-center justify-between border-b border-slate-200 pb-2 mb-2.5">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-2">
                     <div className="flex items-center gap-1.5">
                       <span className="text-blue-500 text-xs">🏬</span>
                       <span className="text-xs font-black text-slate-900">매장 진열대 및 통로정리구역 (Aisles & Shelves)</span>
@@ -930,13 +932,13 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                       onDragOver={(e) => handleDragOver(e, "slot_expiring")}
                       onDragLeave={handleDragLeave}
                       onDrop={(e) => handleDrop(e, "slot_expiring")}
-                      className={`p-2 rounded-xl transition border border-dashed flex items-center gap-1.5 mx-2 cursor-pointer ${
+                      className={`p-1.5 rounded-xl transition border border-dashed flex items-center gap-1.5 mx-2 cursor-pointer ${
                         dragOverZone === "slot_expiring"
                           ? "bg-orange-100 border-orange-500 scale-[1.01] z-20"
                           : "bg-orange-50/40 border-orange-200"
                       }`}
                     >
-                      <span className="text-amber-600 text-xs text-xs-plus font-bold">⚠️ 임박존</span>
+                      <span className="text-amber-600 text-[11px] font-bold">⚠️ 임박존</span>
                       <div className="flex items-center gap-1">
                         {expiringStaff.length > 0 ? (
                           renderPlacedStaffTags(expiringStaff)
@@ -947,23 +949,22 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                     </div>
                   </div>
 
-                  {/* Blueprint Graphic: 13 Double-Aisle shelving units side by side, perfectly matching image layout */}
-                  <div className="grid grid-cols-13 gap-1.5 py-2.5 bg-slate-50 p-2 rounded-xl border border-slate-200 mb-2">
-                    {Array.from({ length: 13 }).map((_, index) => (
+                  {/* Blueprint Graphic: long row of vertical shelf units (matches map.png top band) */}
+                  <div className="grid grid-cols-[repeat(20,minmax(0,1fr))] gap-1 py-2 bg-slate-50 p-2 rounded-xl border border-slate-200 mb-2">
+                    {Array.from({ length: 20 }).map((_, index) => (
                       <div
                         key={`shelf-${index}`}
-                        className="h-10 bg-white border border-slate-300 rounded flex flex-col items-center justify-between py-1 shadow-3xs"
+                        className="h-12 bg-white border border-slate-300 rounded-sm flex flex-col items-center justify-between py-1 shadow-3xs"
                       >
-                        <span className="text-[7px] font-black text-slate-400 leading-none">진열</span>
-                        {/* Little graphic lines */}
-                        <div className="w-4/5 h-[1px] bg-slate-200"></div>
-                        <div className="w-4/5 h-[1px] bg-slate-200"></div>
-                        <span className="text-[7px] font-bold text-slate-500 leading-none">{index + 1}</span>
+                        <span className="text-[6px] font-black text-slate-400 leading-none">진열</span>
+                        <div className="w-3/4 h-[1px] bg-slate-200"></div>
+                        <div className="w-3/4 h-[1px] bg-slate-200"></div>
+                        <span className="text-[6px] font-bold text-slate-500 leading-none">{index + 1}</span>
                       </div>
                     ))}
                   </div>
 
-                  {/* Drop zone for aisles staff */}
+                  {/* Drop zone for aisles staff (the wide aisle/walkway underneath the shelves) */}
                   <div
                     onDragOver={(e) => handleDragOver(e, "slot_aisles")}
                     onDragLeave={handleDragLeave}
@@ -982,76 +983,54 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                     {mainAisleStaff.length > 0 ? (
                       renderPlacedStaffTags(mainAisleStaff)
                     ) : (
-                      <span className="text-[9px] text-slate-400 italic text-center py-2">여기에 드래그하여 중앙 진열대 담당을 지정하세요.</span>
+                      <span className="text-[9px] text-slate-400 italic text-center py-1">여기에 드래그하여 중앙 진열대 담당을 지정하세요.</span>
                     )}
                   </div>
 
                 </div>
 
-                {/* 1B. 카트존, 계단실 및 엘리베이터 (Top Right corner) */}
-                <div className="col-span-12 xl:col-span-3 bg-white border-4 border-blue-600 rounded-2xl p-4 flex flex-col justify-between shadow-md relative min-h-[190px]">
+                {/* 1B. 우상단 코너: 엘리베이터 / 계단실 (Tiny corner block — spans 2/16 cols) */}
+                <div className="col-span-16 xl:col-span-2 bg-white border-4 border-blue-600 rounded-2xl p-2 flex flex-col justify-between shadow-md relative min-h-[170px]">
 
-                  {/* Floating ㄱ-자 Corner Badge */}
-                  <div className="absolute -top-3 left-4 bg-blue-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20 flex items-center gap-1">
-                    <span>📍 [ㄱ자 매장실내] 우측 연결 코너</span>
+                  {/* Floating Corner Badge */}
+                  <div className="absolute -top-3 left-2 bg-blue-600 text-white text-[8px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20 flex items-center gap-1">
+                    <span>📍 코너</span>
                   </div>
 
-                  <div className="border-b border-indigo-100 pb-1.5 flex items-center justify-between">
-                    <span className="text-[10px] font-extrabold text-indigo-950 flex items-center gap-1">
-                      <span>🏷️ 매장안내MAP / 카트존</span>
+                  <div className="border-b border-indigo-100 pb-1 flex flex-col items-center justify-center">
+                    <span className="text-[9px] font-extrabold text-indigo-950 flex items-center gap-1">
+                      🛗 엘베
                     </span>
-                    <span className="text-[8px] text-slate-400 font-bold border rounded px-1">2층 연결통로</span>
+                    <span className="text-[7px] text-slate-400 font-bold mt-0.5">2층 연결</span>
                   </div>
 
-                  {/* Cart slots graphic representation */}
-                  <div className="grid grid-cols-2 gap-1.5 my-3">
-                    <div className="bg-slate-50 p-2 border rounded-xl flex items-center justify-center gap-1 shadow-3xs text-[11px] font-bold text-slate-500">
-                      <span>🛒 카트</span>
+                  {/* Compact vertical stack: EV / Stairs icons */}
+                  <div className="grid grid-cols-1 gap-1 my-1 flex-1">
+                    <div className="bg-slate-50 px-1 py-1 border rounded flex items-center justify-center shadow-3xs text-[10px] font-bold text-slate-500">
+                      🛗
                     </div>
-                    <div className="bg-slate-50 p-2 border rounded-xl flex items-center justify-center gap-1 shadow-3xs text-[11px] font-bold text-slate-500">
-                      <span>🛒 카트</span>
-                    </div>
-                    <div className="bg-slate-50 p-2 border rounded-xl flex items-center justify-center gap-1 shadow-3xs text-[11px] font-bold text-slate-500">
-                      <span>🛗 EV</span>
-                    </div>
-                    <div className="bg-slate-50 p-2 border rounded-xl flex items-center justify-center gap-1 shadow-3xs text-[11px] font-bold text-slate-500">
-                      <span>↗️ 계단</span>
+                    <div className="bg-slate-50 px-1 py-1 border rounded flex items-center justify-center shadow-3xs text-[10px] font-bold text-slate-500">
+                      ↗️
                     </div>
                   </div>
 
-                  {/* Drop zone for carts */}
-                  <div
-                    onDragOver={(e) => handleDragOver(e, "slot_cart")}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, "slot_cart")}
-                    className={`p-2 border-2 border-dashed rounded-xl flex flex-col justify-center transition ${
-                      dragOverZone === "slot_cart"
-                        ? "bg-indigo-100 border-indigo-500 scale-102"
-                        : "bg-slate-50/55 border-slate-200"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between mb-0.5">
-                      <span className="text-[8px] text-slate-500 font-extrabold">🛒 반입카트 안내 정렬 전담</span>
-                    </div>
-
-                    {cartStaff.length > 0 ? (
-                      renderPlacedStaffTags(cartStaff)
-                    ) : (
-                      <span className="text-[8px] text-slate-400 italic text-center py-1">인원 없음</span>
-                    )}
-                  </div>
+                  {/* No drop zone here — tiny corner is just an annotation */}
+                  <div className="text-[7px] text-slate-400 font-extrabold text-center border-t border-slate-100 pt-1">엘베/계단</div>
 
                 </div>
 
               </div>
 
-              {/* ========================================== */}
-              {/* SECTION 2: MIDDLE AREA - Left Simulation Console (Inner space of ㄱ) vs Right Vertical Wing (ㄱ-자 세로 바) */}
-              {/* ========================================== */}
-              <div className="grid grid-cols-12 gap-4 items-stretch">
+              {/* ========================================================================== */}
+              {/* SECTION 2: BODY — Open floor on left + Vertical Wing on right                 */}
+              {/* Matches map.png: a large open simulation/floor area occupies the bottom-left   */}
+              {/* "ㄱ-자" interior, while the right vertical wing stacks: 메인카운터(blue) ▼      */}
+              {/* 약국(orange) ▼ 카트(bottom). Right wing is narrower (4/16) like in the map.    */}
+              {/* ========================================================================== */}
+              <div className="grid grid-cols-16 gap-3 items-stretch">
 
-                {/* Left Side: Integrated high-tech Blueprint Simulation Console occupying the L-shape inner corner */}
-                <div className="col-span-12 xl:col-span-4 bg-white/95 border border-slate-300 rounded-2xl p-4 flex flex-col justify-start shadow-sm relative overflow-hidden gap-3">
+                {/* Left Side: Open floor / Simulation console (the empty ㄱ inner corner) */}
+                <div className="col-span-16 xl:col-span-12 bg-white/95 border border-slate-300 rounded-2xl p-4 flex flex-col justify-start shadow-sm relative overflow-hidden gap-3">
                   
                   {/* Real-time map guidance banner */}
                   <div className="p-3 bg-blue-50/65 border border-blue-150 rounded-xl">
@@ -1165,380 +1144,295 @@ export const StoreMap: React.FC<StoreMapProps> = ({
 
                 </div>
 
-                {/* Right Side: The Vertical Wing of the ㄱ-자 (L-shape) Layout */}
-                <div className="col-span-12 xl:col-span-8 bg-slate-50 border-4 border-blue-600 rounded-2xl p-4 flex flex-col gap-3 shadow-md relative">
-                  
+                {/* Right Side: The Vertical Wing of the ㄱ-자 — stacked colored zones matching map.png */}
+                <div className="col-span-16 xl:col-span-4 bg-slate-50 border-4 border-blue-600 rounded-2xl p-3 flex flex-col gap-2.5 shadow-md relative">
+
                   {/* Floating ㄱ-자 Section Badge */}
-                  <div className="absolute -top-3 left-4 bg-blue-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20 flex items-center gap-1">
-                    <span>🚪 [ㄱ자 매장실내] 우측 수직 프로모션 윙</span>
+                  <div className="absolute -top-3 left-3 bg-blue-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20 flex items-center gap-1">
+                    <span>🚪 우측 수직 윙</span>
                   </div>
 
                   {/* Wing Title Badge */}
-                  <div className="flex items-center justify-between border-b pb-2 mb-1 mt-1">
-                    <span className="text-xs font-black text-slate-800 flex items-center gap-1.5">
-                      <span>🚪 매장 우측 핵심 서포트 윙 (Vertical Wing)</span>
+                  <div className="flex items-center justify-between border-b pb-1.5 mb-0.5 mt-1">
+                    <span className="text-[11px] font-black text-slate-800 flex items-center gap-1">
+                      🚪 우측 카운터 라인
                     </span>
-                    <span className="text-[9px] bg-slate-200 text-slate-600 rounded px-1.5 py-0.5 font-bold">카운터 & 프로모션</span>
+                    <span className="text-[8px] bg-slate-200 text-slate-600 rounded px-1 py-0.5 font-bold">수직 윙</span>
                   </div>
 
-                  <div className="grid grid-cols-12 gap-3 flex-1 items-stretch">
+                  {/* 2-1. 영양제 냉장고 (Yellow Box — small horizontal block at top of wing) */}
+                  <div
+                    onDragOver={(e) => handleDragOver(e, "slot_drink")}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, "slot_drink")}
+                    className={`bg-[#fef08a]/20 border-2 border-yellow-400 rounded-lg p-2 flex flex-row items-center gap-2 transition min-h-[44px] ${
+                      dragOverZone === "slot_drink" ? "ring-2 ring-yellow-500 bg-yellow-100" : ""
+                    }`}
+                  >
+                    <span className="text-[10px] font-black text-amber-950 flex items-center gap-1 shrink-0">🧊 냉장고</span>
+                    <div className="flex-1 flex items-center justify-end gap-1">
+                      {drinkStaff.length > 0 ? (
+                        renderPlacedStaffTags(drinkStaff)
+                      ) : (
+                        <span className="text-[8px] text-amber-700 font-semibold italic">-4°C</span>
+                      )}
+                    </div>
+                  </div>
 
-                    {/* Sub-column A (Left of Vertical Wing): Refrigerators, Best set and Promo Event zones */}
-                    <div className="col-span-6 flex flex-col gap-3 justify-between">
-
-                      {/* 2A-1. 영양제 냉장고 (Yellow Box) */}
-                      <div
-                        onDragOver={(e) => handleDragOver(e, "slot_drink")}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, "slot_drink")}
-                        className={`bg-[#fef08a]/20 border-2 border-yellow-400 rounded-xl p-3 flex flex-col justify-between transition min-h-[90px] relative ${
-                          dragOverZone === "slot_drink" ? "ring-2 ring-yellow-500 bg-yellow-100" : ""
-                        }`}
+                  {/* 2-2. 메인 POS 카운터 (Blue) — the dominant tall blue zone in the middle of the wing in map.png */}
+                  <div
+                    onDragOver={(e) => handleDragOver(e, "slot_counter")}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, "slot_counter")}
+                    className={`bg-blue-50/70 border-2 border-blue-500 rounded-lg p-2 flex flex-row transition flex-[2] min-h-[180px] relative ${
+                      dragOverZone === "slot_counter" ? "bg-blue-100 border-blue-600 z-20 scale-[1.01] shadow-xs" : ""
+                    }`}
+                  >
+                    {/* Vertical title label (rotated) — matches the blue strip text in map.png */}
+                    <div className="flex items-center justify-center shrink-0 w-5 mr-2 border-r border-blue-300/60">
+                      <span
+                        className="text-[10px] font-black text-blue-900 whitespace-nowrap"
+                        style={{ writingMode: "vertical-rl" }}
                       >
-                        <div className="flex items-center justify-between border-b border-yellow-200/50 pb-1">
-                          <span className="text-[10px] font-black text-amber-950 flex items-center gap-1">
-                            🧊 냉장고
-                          </span>
-                          <span className="text-[8px] text-[#eab308] bg-yellow-50 px-1 rounded font-bold">음료/약제</span>
+                        💳 메인 카운터 (Checkout)
+                      </span>
+                    </div>
+                    {/* Content */}
+                    <div className="flex-1 flex flex-col justify-between">
+                      {/* Stool seats */}
+                      <div className="py-1 flex flex-col items-center gap-1">
+                        <span className="text-[7px] text-slate-500 font-bold">고객 체어 8석</span>
+                        <div className="flex flex-wrap justify-center gap-1">
+                          {Array.from({ length: 8 }).map((_, seatI) => (
+                            <div key={`stool-ui-${seatI}`} className="w-2.5 h-2.5 rounded-full border border-slate-300 bg-white shadow-3xs" title={`seats-${seatI}`}></div>
+                          ))}
                         </div>
-
-                        <div className="flex-1 py-1 flex items-center justify-center">
-                          {drinkStaff.length > 0 ? (
-                            renderPlacedStaffTags(drinkStaff)
-                          ) : (
-                            <span className="text-[8px] text-amber-700 font-semibold italic text-center">온도 보존 중</span>
-                          )}
-                        </div>
-                        <p className="text-[7px] text-[#854d0e] font-bold text-right leading-none">온도: -4°C 청결유지</p>
                       </div>
-
-                      {/* 2A-2 + 2A-3. 연령별 질환별 베스트 세트존 & 프로모션 이벤트존 — 나란히 배치, 90° 왼쪽 회전 레이블 */}
-                      <div className="flex gap-2 flex-1">
-
-                        {/* 연령별 질환별 베스트 세트존 — 90° left rotation label */}
-                        <div
-                          onDragOver={(e) => handleDragOver(e, "slot_best_set")}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, "slot_best_set")}
-                          className={`flex-1 bg-blue-50/50 border-2 border-blue-400 rounded-xl p-2 flex flex-row min-h-[200px] relative transition ${
-                            dragOverZone === "slot_best_set" ? "bg-blue-100 border-blue-500 scale-[1.01] z-20 shadow-xs" : ""
-                          }`}
-                        >
-                          {/* Rotated label on left side */}
-                          <div className="flex items-center justify-center shrink-0 w-5 mr-1.5 border-r border-blue-200">
-                            <span
-                              className="text-[9px] font-black text-blue-950 whitespace-nowrap"
-                              style={{ writingMode: "vertical-rl" }}
-                            >
-                              🧬 연령별 질환별 베스트 세트존
-                            </span>
-                          </div>
-                          {/* Content */}
-                          <div className="flex-1 flex flex-col justify-between">
-                            <div className="flex-1 py-1 flex flex-col justify-center">
-                              {bestSetStaff.length > 0 ? (
-                                renderPlacedStaffTags(bestSetStaff)
-                              ) : (
-                                <span className="text-[8px] text-blue-700 italic block text-center leading-none">진열 상담원 공석</span>
-                              )}
-                            </div>
-                            <div className="text-[7px] text-blue-600 font-extrabold text-right">상담 테이블 매핑</div>
-                          </div>
-                        </div>
-
-                        {/* 프로모션 이벤트 존 — 90° left rotation label, placed next to best-set */}
-                        <div className="flex-1 bg-white border border-slate-300 rounded-xl p-2 flex flex-row min-h-[200px] shadow-3xs">
-                          {/* Rotated label on left side */}
-                          <div className="flex items-center justify-center shrink-0 w-5 mr-1.5 border-r border-slate-200">
-                            <span
-                              className="text-[9px] font-black text-slate-800 whitespace-nowrap"
-                              style={{ writingMode: "vertical-rl" }}
-                            >
-                              🎈 프로모션 이벤트 존
-                            </span>
-                          </div>
-                          {/* Three event zones stacked inside */}
-                          <div className="flex-1 flex flex-col gap-1.5">
-                            <div
-                              onDragOver={(e) => handleDragOver(e, "slot_event1")}
-                              onDragLeave={handleDragLeave}
-                              onDrop={(e) => handleDrop(e, "slot_event1")}
-                              className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[50px] transition relative ${
-                                dragOverZone === "slot_event1" ? "bg-red-50 border-red-500 scale-102 z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
-                              }`}
-                            >
-                              <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 1</span>
-                              <span className="text-[8px] font-extrabold text-slate-700">이벤트존 1 🏠</span>
-                              {renderPlacedStaffTags(event1Staff)}
-                              {event1Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
-                            </div>
-
-                            <div
-                              onDragOver={(e) => handleDragOver(e, "slot_event2")}
-                              onDragLeave={handleDragLeave}
-                              onDrop={(e) => handleDrop(e, "slot_event2")}
-                              className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[50px] transition relative ${
-                                dragOverZone === "slot_event2" ? "bg-red-50 border-red-500 scale-102 z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
-                              }`}
-                            >
-                              <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 2</span>
-                              <span className="text-[8px] font-extrabold text-slate-700">이벤트존 2 🏠</span>
-                              {renderPlacedStaffTags(event2Staff)}
-                              {event2Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
-                            </div>
-
-                            <div
-                              onDragOver={(e) => handleDragOver(e, "slot_event3")}
-                              onDragLeave={handleDragLeave}
-                              onDrop={(e) => handleDrop(e, "slot_event3")}
-                              className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[50px] transition relative ${
-                                dragOverZone === "slot_event3" ? "bg-red-50 border-red-500 scale-102 z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
-                              }`}
-                            >
-                              <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 3</span>
-                              <span className="text-[8px] font-extrabold text-slate-700">이벤트존 3 🏠</span>
-                              {renderPlacedStaffTags(event3Staff)}
-                              {event3Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
-                            </div>
-                          </div>
-                        </div>
-
+                      <div className="flex-1 flex flex-col justify-center">
+                        {renderPlacedStaffTags(cashiers)}
+                        {cashiers.length === 0 && (
+                          <span className="text-[8px] text-slate-400 italic block text-center py-1">셀프 결제 단말 가동</span>
+                        )}
                       </div>
+                      <div className="text-[7px] text-blue-700 font-extrabold text-right border-t border-blue-200/50 pt-0.5">POS 결제 라인</div>
+                    </div>
+                  </div>
 
+                  {/* 2-3. 정면 약국 진열 (Orange) — the bright orange block below the blue counter in map.png */}
+                  <div
+                    onDragOver={(e) => handleDragOver(e, "slot_pharmacy")}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, "slot_pharmacy")}
+                    className={`bg-orange-50 border-2 border-orange-400 rounded-lg p-2 flex flex-col justify-between transition min-h-[100px] relative ${
+                      dragOverZone === "slot_pharmacy" ? "bg-orange-100 border-orange-500 z-20 scale-[1.01] shadow-xs" : ""
+                    }`}
+                  >
+                    <div className="flex items-center gap-1 border-b border-orange-300 pb-1">
+                      <span className="text-orange-600 text-xs">💊</span>
+                      <span className="text-[10px] font-black text-orange-950 leading-tight">정면 약국 진열</span>
                     </div>
 
-                    {/* Sub-column B (Right of Vertical Wing): Elevator, Bulk consultation desk, Cashier, Rx Pharmacy */}
-                    <div className="col-span-6 flex flex-col gap-3 justify-between">
-
-                      {/* 2B-1. 대량구매상담존 + EV */}
-                      <div
-                        onDragOver={(e) => handleDragOver(e, "slot_bulk")}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, "slot_bulk")}
-                        className={`bg-emerald-50 border-2 border-emerald-400 rounded-xl p-3 flex flex-col justify-between transition min-h-[90px] relative ${
-                          dragOverZone === "slot_bulk" ? "bg-emerald-100 border-emerald-500 scale-102 z-20 shadow-xs" : ""
-                        }`}
-                      >
-                        <div className="flex flex-row gap-2 h-full">
-                          {/* 왼쪽 90° 회전 레이블 */}
-                          <div className="flex items-center justify-center shrink-0 border-r border-emerald-200 pr-1.5">
-                            <span
-                              className="text-[9px] font-black text-emerald-950 whitespace-nowrap"
-                              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
-                            >👥 대량구매상담존</span>
-                          </div>
-                          <div className="flex-1 flex flex-col justify-between">
-                            <div className="flex items-center justify-between border-b border-emerald-200 pb-1">
-                              <span className="text-[9px] font-bold text-slate-500">🛗 EV</span>
-                            </div>
-                            <div className="flex-1 py-1">
-                              {bulkConsultStaff.length > 0 ? (
-                                renderPlacedStaffTags(bulkConsultStaff)
-                              ) : (
-                                <span className="text-[8px] text-emerald-700 font-bold italic text-center block py-1">대량 문의 대기</span>
-                              )}
-                            </div>
-                            <div className="text-[7px] text-emerald-700 text-right font-semibold">VIP 전담 안내대</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 2B-2. 메인 POS 카운터 (Checkout) — 90° right rotation label */}
-                      <div
-                        onDragOver={(e) => handleDragOver(e, "slot_counter")}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, "slot_counter")}
-                        className={`bg-white border-2 border-slate-400 rounded-xl p-2 flex flex-row justify-between transition min-h-[140px] relative ${
-                          dragOverZone === "slot_counter" ? "bg-blue-50 border-blue-500 z-20 scale-102 shadow-xs" : ""
-                        }`}
-                      >
-                        {/* Rotated label on left side — 오른쪽 90° (위→아래) */}
-                        <div className="flex items-center justify-center shrink-0 w-5 mr-2 border-r border-slate-200">
-                          <span
-                            className="text-[10px] font-black text-slate-900 whitespace-nowrap"
-                            style={{ writingMode: "vertical-rl" }}
-                          >
-                            💳 메인 카운터 (Checkout)
-                          </span>
-                        </div>
-
-                        {/* Content on right */}
-                        <div className="flex-1 flex flex-col justify-between">
-                          {/* Stool circles — 왼쪽 90° 회전 */}
-                          <div className="py-1">
-                            <span
-                              className="text-[7px] text-slate-400 font-bold mb-1 whitespace-nowrap"
-                              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", display: "block" }}
-                            >고객 소통형 체어 8석</span>
-                            <div className="flex flex-wrap justify-center gap-1 mb-1">
-                              {Array.from({ length: 8 }).map((_, seatI) => (
-                                <div key={`stool-ui-${seatI}`} className="w-2.5 h-2.5 rounded-full border border-slate-300 bg-slate-100 shadow-3xs" title={`seats-${seatI}`}></div>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="flex-1 flex flex-col justify-center">
-                            {renderPlacedStaffTags(cashiers)}
-                            {cashiers.length === 0 && (
-                              <span className="text-[8px] text-slate-400 italic block text-center py-1">셀프 결제 단말 가동</span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* 2B-3. 정면 약국 전용 라인 (Highlight orange box on bottom right of wing) */}
-                      <div
-                        onDragOver={(e) => handleDragOver(e, "slot_pharmacy")}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, "slot_pharmacy")}
-                        className={`bg-orange-50 border-2 border-orange-400 rounded-xl p-3 flex flex-col justify-between transition min-h-[120px] relative ${
-                          dragOverZone === "slot_pharmacy" ? "bg-orange-100 border-orange-500 z-20 scale-102 shadow-xs" : ""
-                        }`}
-                      >
-                        <div className="flex items-center gap-1 border-b border-orange-300 pb-1">
-                          <span className="text-orange-600 text-xs">💊</span>
-                          <span className="text-[10px] font-black text-orange-950 leading-tight">정면 약국 진열</span>
-                        </div>
-
-                        <div className="flex-1 py-1 flex flex-col justify-center">
-                          {renderPlacedStaffTags(pharmacists)}
-                          {pharmacists.length === 0 && (
-                            <span className="text-[8px] text-orange-700 italic block text-center leading-tight font-extrabold bg-white border border-dashed border-orange-200 rounded py-1">약사 부재 (대기 필요)</span>
-                          )}
-                        </div>
-
-                        <div className="flex items-center justify-between text-[7px] text-orange-850 font-extrabold pt-1">
-                          <span>전문약사 처방대</span>
-                          <span className="bg-orange-100 text-orange-800 px-1 rounded">처방전 수납</span>
-                        </div>
-                      </div>
-
+                    <div className="flex-1 py-1 flex flex-col justify-center">
+                      {renderPlacedStaffTags(pharmacists)}
+                      {pharmacists.length === 0 && (
+                        <span className="text-[8px] text-orange-700 italic block text-center leading-tight font-extrabold bg-white border border-dashed border-orange-200 rounded py-1">약사 부재 (대기 필요)</span>
+                      )}
                     </div>
 
+                    <div className="flex items-center justify-between text-[7px] text-orange-800 font-extrabold pt-0.5">
+                      <span>전문약사 처방대</span>
+                      <span className="bg-orange-100 text-orange-800 px-1 rounded">처방전</span>
+                    </div>
+                  </div>
+
+                  {/* 2-4. 대량구매상담존 (Green) — small block below pharmacy */}
+                  <div
+                    onDragOver={(e) => handleDragOver(e, "slot_bulk")}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, "slot_bulk")}
+                    className={`bg-emerald-50 border-2 border-emerald-400 rounded-lg p-2 flex flex-col justify-between transition min-h-[70px] ${
+                      dragOverZone === "slot_bulk" ? "bg-emerald-100 border-emerald-500 scale-[1.01] z-20 shadow-xs" : ""
+                    }`}
+                  >
+                    <div className="flex items-center justify-between border-b border-emerald-200 pb-0.5">
+                      <span className="text-[9px] font-black text-emerald-950">👥 대량구매상담</span>
+                      <span className="text-[7px] font-bold text-emerald-700">VIP</span>
+                    </div>
+                    <div className="flex-1 py-1">
+                      {bulkConsultStaff.length > 0 ? (
+                        renderPlacedStaffTags(bulkConsultStaff)
+                      ) : (
+                        <span className="text-[8px] text-emerald-700 font-bold italic text-center block">대량 문의 대기</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 2-5. 카트존 (Bottom of wing — small block at bottom-right matching map.png) */}
+                  <div
+                    onDragOver={(e) => handleDragOver(e, "slot_cart")}
+                    onDragLeave={handleDragLeave}
+                    onDrop={(e) => handleDrop(e, "slot_cart")}
+                    className={`bg-white border-2 border-indigo-400 rounded-lg p-2 flex flex-col justify-between transition min-h-[60px] ${
+                      dragOverZone === "slot_cart" ? "bg-indigo-100 border-indigo-500 scale-[1.01] z-20 shadow-xs" : ""
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-[9px] font-black text-indigo-950">🛒 카트존</span>
+                      <span className="text-[7px] text-slate-500 font-bold">반입정렬</span>
+                    </div>
+                    <div className="flex-1 py-0.5 flex items-center justify-center">
+                      {cartStaff.length > 0 ? (
+                        renderPlacedStaffTags(cartStaff)
+                      ) : (
+                        <span className="text-[8px] text-slate-400 italic">인원 없음</span>
+                      )}
+                    </div>
                   </div>
 
                 </div>
 
               </div>
 
-              {/* ========================================== */}
-              {/* SECTION 3: BOTTOM CORNER ANNEX (Breakroom, lockers, warehouse storage) */}
-              {/* Aligned below the right-side vertical wing on wide screens to maintain the perfect L-shape spacing */}
-              {/* ========================================== */}
-              <div className="grid grid-cols-12 gap-4">
-                
-                {/* Visual Empty Space to preserve "ㄱ-자" Layout on wide screen monitors (columns 1 to 4 are empty whitespace) */}
-                <div className="hidden xl:col-span-4 xl:block">
-                  <div className="h-full flex items-center justify-center p-4 border-2 border-dashed border-slate-300 rounded-2xl bg-slate-100/30 text-[10px] font-semibold text-slate-400 text-center leading-relaxed">
-                    📐 ㄱ자 외부 공실구역<br />(건물 내벽 인접 외곽 코너)
+              {/* ========================================================================== */}
+              {/* SECTION 3: BOTTOM ROW (Open floor zones — promo events, best-set, warehouse, */}
+              {/* breakroom, lockers). Spans the full inner floor below the body in map.png.   */}
+              {/* ========================================================================== */}
+              <div className="grid grid-cols-12 gap-3">
+
+                {/* 3A. 연령별 질환별 베스트 세트존 (Blue accent — front display island on the floor) */}
+                <div
+                  onDragOver={(e) => handleDragOver(e, "slot_best_set")}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, "slot_best_set")}
+                  className={`col-span-12 md:col-span-3 bg-blue-50/50 border-2 border-blue-400 rounded-xl p-2.5 flex flex-col justify-between min-h-[120px] relative transition ${
+                    dragOverZone === "slot_best_set" ? "bg-blue-100 border-blue-500 scale-[1.01] z-20 shadow-xs" : ""
+                  }`}
+                >
+                  <div className="flex items-center justify-between border-b border-blue-200/70 pb-1">
+                    <span className="text-[10px] font-black text-blue-950 flex items-center gap-1">🧬 베스트 세트존</span>
+                    <span className="text-[7px] text-blue-600 bg-white px-1 rounded font-extrabold">연령/질환별</span>
+                  </div>
+                  <div className="flex-1 py-1 flex flex-col justify-center">
+                    {bestSetStaff.length > 0 ? (
+                      renderPlacedStaffTags(bestSetStaff)
+                    ) : (
+                      <span className="text-[8px] text-blue-700 italic block text-center">진열 상담원 공석</span>
+                    )}
+                  </div>
+                  <div className="text-[7px] text-blue-600 font-extrabold text-right">상담 테이블 매핑</div>
+                </div>
+
+                {/* 3B. 프로모션 이벤트 존 (3 stacked event sub-zones) */}
+                <div className="col-span-12 md:col-span-3 bg-white border border-slate-300 rounded-xl p-2 flex flex-col gap-1.5 shadow-3xs">
+                  <span className="text-[10px] font-black text-slate-800 flex items-center gap-1 border-b border-slate-200 pb-1">
+                    🎈 프로모션 이벤트 존
+                  </span>
+                  <div className="flex-1 flex flex-col gap-1">
+                    <div
+                      onDragOver={(e) => handleDragOver(e, "slot_event1")}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, "slot_event1")}
+                      className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[34px] transition relative ${
+                        dragOverZone === "slot_event1" ? "bg-red-50 border-red-500 scale-[1.01] z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
+                      }`}
+                    >
+                      <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 1</span>
+                      <span className="text-[8px] font-extrabold text-slate-700">이벤트존 1 🏠</span>
+                      {renderPlacedStaffTags(event1Staff)}
+                      {event1Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
+                    </div>
+
+                    <div
+                      onDragOver={(e) => handleDragOver(e, "slot_event2")}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, "slot_event2")}
+                      className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[34px] transition relative ${
+                        dragOverZone === "slot_event2" ? "bg-red-50 border-red-500 scale-[1.01] z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
+                      }`}
+                    >
+                      <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 2</span>
+                      <span className="text-[8px] font-extrabold text-slate-700">이벤트존 2 🏠</span>
+                      {renderPlacedStaffTags(event2Staff)}
+                      {event2Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
+                    </div>
+
+                    <div
+                      onDragOver={(e) => handleDragOver(e, "slot_event3")}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, "slot_event3")}
+                      className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[34px] transition relative ${
+                        dragOverZone === "slot_event3" ? "bg-red-50 border-red-500 scale-[1.01] z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
+                      }`}
+                    >
+                      <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 3</span>
+                      <span className="text-[8px] font-extrabold text-slate-700">이벤트존 3 🏠</span>
+                      {renderPlacedStaffTags(event3Staff)}
+                      {event3Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
+                    </div>
                   </div>
                 </div>
 
-                {/* Right side Annex occupying columns 5 to 12 directly under the vertical wing and counter */}
-                <div className="col-span-12 xl:col-span-8 grid grid-cols-12 gap-3 bg-white p-3.5 rounded-2xl border-4 border-blue-600 shadow-md relative z-10">
-                  
-                  {/* Floating ㄱ-자 Section Badge */}
-                  <div className="absolute -top-3 left-4 bg-blue-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20 flex items-center gap-1">
-                    <span>🛠️ [ㄱ자 매장실내] 하단 창고 및 휴게 부속지</span>
+                {/* 3C. 창고 및 물류고 배후지 */}
+                <div
+                  onDragOver={(e) => handleDragOver(e, "slot_warehouse")}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, "slot_warehouse")}
+                  className={`col-span-12 md:col-span-2 bg-indigo-50/50 border border-indigo-200 rounded-xl p-2.5 flex flex-col justify-between transition min-h-[120px] ${
+                    dragOverZone === "slot_warehouse" ? "bg-indigo-100 border-indigo-500 scale-102" : ""
+                  }`}
+                >
+                  <div className="flex items-center gap-1 border-b border-indigo-100 pb-1 mb-1">
+                    <span className="text-indigo-600 text-xs">📦</span>
+                    <span className="text-[9px] font-black text-slate-950">창고/물류</span>
                   </div>
-
-                  {/* Annex tag indicator */}
-                  <div className="col-span-12 flex items-center justify-between border-b pb-1.5 mb-1.5 mt-1 text-[10px] font-black text-slate-800">
-                    <span className="flex items-center gap-1">🛠️ 매장 최하단 현장 지원 부속 구역 (Maintenance Annex)</span>
-                    <span className="text-[9px] text-[#2563eb] bg-blue-50 border border-blue-100/50 px-1.5 rounded font-black">수도/창고/휴게 시설</span>
+                  <div className="flex-1 py-1 flex items-center justify-center">
+                    {warehouseStaff.length > 0 ? (
+                      renderPlacedStaffTags(warehouseStaff)
+                    ) : (
+                      <span className="text-[8px] text-slate-400 italic text-center block">하역 인원 없음</span>
+                    )}
                   </div>
+                  <div className="text-[7px] text-indigo-600 font-extrabold text-right">하역대</div>
+                </div>
 
-                  {/* 3A. 창고 및 물류고 배후지 */}
-                  <div
-                    onDragOver={(e) => handleDragOver(e, "slot_warehouse")}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, "slot_warehouse")}
-                    className={`col-span-12 md:col-span-4 bg-indigo-50/50 border border-indigo-200 rounded-xl p-3 flex flex-col justify-between transition min-h-[100px] ${
-                      dragOverZone === "slot_warehouse" ? "bg-indigo-100 border-indigo-500 scale-102" : ""
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 border-b border-indigo-100 pb-1 mb-1">
-                      <span className="text-indigo-600 text-xs">📦</span>
-                      <span className="text-[10px] font-black text-slate-950">창고 및 물류 배후지</span>
-                    </div>
-
-                    <div className="flex-1 py-1 flex items-center justify-center">
-                      {warehouseStaff.length > 0 ? (
-                        renderPlacedStaffTags(warehouseStaff)
-                      ) : (
-                        <span className="text-[8px] text-slate-400 italic text-center block">하역 정리 인원 없음</span>
-                      )}
-                    </div>
-                    <div className="text-[7px] text-indigo-600 font-extrabold text-right">화물 적재 하역대</div>
+                {/* 3D. 휴게실 */}
+                <div
+                  onDragOver={(e) => handleDragOver(e, "slot_breakroom")}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, "slot_breakroom")}
+                  className={`col-span-12 md:col-span-2 bg-emerald-50/30 border border-emerald-200 rounded-xl p-2.5 flex flex-col justify-between transition min-h-[120px] ${
+                    dragOverZone === "slot_breakroom" ? "bg-emerald-100/60 border-emerald-400" : ""
+                  }`}
+                >
+                  <span className="text-[9px] font-black text-emerald-950 block border-b border-emerald-100 pb-0.5">☕ 휴게실</span>
+                  <p className="text-[7px] text-slate-400 leading-tight">교대 휴식</p>
+                  <div className="flex-1 py-0.5 flex flex-col justify-center">
+                    {breakroomStaff.length > 0 ? (
+                      renderPlacedStaffTags(breakroomStaff)
+                    ) : (
+                      <span className="text-[8px] text-slate-400 italic text-center block">대기 직원 없음</span>
+                    )}
                   </div>
+                </div>
 
-                  {/* 3B. 드링크 코너 */}
-                  <div
-                    onDragOver={(e) => handleDragOver(e, "slot_drink")}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, "slot_drink")}
-                    className={`col-span-12 md:col-span-3 bg-slate-50 border border-slate-200 rounded-xl p-2.5 flex flex-col justify-between transition min-h-[100px] ${
-                      dragOverZone === "slot_drink" ? "bg-slate-200 border-slate-400" : ""
-                    }`}
-                  >
-                    <span className="text-[9px] font-black text-slate-900 leading-tight">🥤 완제 음료 매대</span>
-                    <div className="flex justify-center gap-1 text-[11px] my-1">
-                      <span>🥫</span>
-                      <span>🧉</span>
-                      <span>🥤</span>
-                    </div>
-
-                    <div className="flex-1 py-0.5 flex flex-col justify-center">
-                      {drinkStaff.length > 0 ? (
-                        renderPlacedStaffTags(drinkStaff)
-                      ) : (
-                        <span className="text-[8px] text-slate-400 text-center">진열대 적재 완료</span>
-                      )}
-                    </div>
+                {/* 3E. 사물함 & 수도시설 */}
+                <div
+                  onDragOver={(e) => handleDragOver(e, "slot_lockers")}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, "slot_lockers")}
+                  className={`col-span-12 md:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-2 flex flex-col justify-between text-center transition min-h-[120px] ${
+                    dragOverZone === "slot_lockers" ? "bg-slate-200 border-slate-400" : ""
+                  }`}
+                >
+                  <span className="text-[8px] font-extrabold text-slate-600 border-b pb-0.5">🗄️ 사물함 | 🚰 수도</span>
+                  <span className="text-sm">🚰 🛗</span>
+                  <div className="py-0.5">
+                    {lockerStaff.length > 0 ? (
+                      renderPlacedStaffTags(lockerStaff)
+                    ) : (
+                      <span className="text-[8px] text-slate-400">청위 유지</span>
+                    )}
                   </div>
-
-                  {/* 3C. 휴게실 (싱크대 정수기 냉장고) */}
-                  <div
-                    onDragOver={(e) => handleDragOver(e, "slot_breakroom")}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, "slot_breakroom")}
-                    className={`col-span-12 md:col-span-3 bg-emerald-50/10 border border-emerald-100 rounded-xl p-2.5 flex flex-col justify-between transition min-h-[100px] ${
-                      dragOverZone === "slot_breakroom" ? "bg-emerald-100/50 border-emerald-300" : ""
-                    }`}
-                  >
-                    <span className="text-[9px] font-black text-emerald-950 block">☕ 휴게실 (싱크대, 냉장고)</span>
-                    <p className="text-[7px] text-slate-400 leading-tight">식사 대기 및 교대 휴식</p>
-
-                    <div className="flex-1 py-0.5 flex flex-col justify-center">
-                      {breakroomStaff.length > 0 ? (
-                        renderPlacedStaffTags(breakroomStaff)
-                      ) : (
-                        <span className="text-[8px] text-slate-405 italic text-center block">대기 중인 직원 없음</span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 3D. 사물함 & 수도시설 */}
-                  <div
-                    onDragOver={(e) => handleDragOver(e, "slot_lockers")}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, "slot_lockers")}
-                    className={`col-span-12 md:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-2 flex flex-col justify-between text-center transition min-h-[100px] ${
-                      dragOverZone === "slot_lockers" ? "bg-slate-200 border-slate-400" : ""
-                    }`}
-                  >
-                    <span className="text-[8px] font-extrabold text-slate-600 border-b pb-0.5">🗄️ 사물함 | 🚰 수도</span>
-                    <span className="text-sm">🚰 🛗</span>
-
-                    <div className="py-0.5">
-                      {lockerStaff.length > 0 ? (
-                        renderPlacedStaffTags(lockerStaff)
-                      ) : (
-                        <span className="text-[8px] text-slate-400 lg:leading-normal">청위 유지</span>
-                      )}
-                    </div>
-                  </div>
-
                 </div>
 
               </div>
