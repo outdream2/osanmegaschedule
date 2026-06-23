@@ -1,5 +1,5 @@
 // src/components/SchedulePage.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Employee, MonthlySummary, Schedule } from "../types";
 import { ScheduleCell } from "./ScheduleCell";
@@ -62,28 +62,14 @@ export const SchedulePage: React.FC = () => {
   const [draggedRowId, setDraggedRowId] = useState<number | null>(null);
   const [dragOverRowId, setDragOverRowId] = useState<number | null>(null);
 
-  // Collapsible column states (persisted to localStorage)
-  const [nameColWidth, setNameColWidth] = useState<number>(() => {
-    const v = parseInt(localStorage.getItem("name_col_width") || "100");
-    return isNaN(v) ? 100 : Math.max(60, Math.min(240, v));
+  // Name column: auto-fit to content, measured via ref
+  const nameThRef = useRef<HTMLTableCellElement>(null);
+  const [nameColWidth, setNameColWidth] = useState<number>(80);
+  useEffect(() => {
+    if (nameThRef.current) {
+      setNameColWidth(nameThRef.current.getBoundingClientRect().width);
+    }
   });
-
-  const startNameResize = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const startX = e.clientX;
-    const startW = nameColWidth;
-    const onMove = (me: MouseEvent) => {
-      const next = Math.max(60, Math.min(240, startW + me.clientX - startX));
-      setNameColWidth(next);
-    };
-    const onUp = () => {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-      setNameColWidth(w => { localStorage.setItem("name_col_width", String(w)); return w; });
-    };
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-  };
 
   const [colCollapsed, setColCollapsed] = useState<{ position: boolean; description: boolean; hireDate: boolean }>(() => {
     try { return JSON.parse(localStorage.getItem("col_collapsed") || "{}"); }
@@ -1419,18 +1405,10 @@ export const SchedulePage: React.FC = () => {
                     {/* Header Row 1: Day of Month Numbers */}
                     <tr className="bg-slate-800 text-slate-200 select-none">
                       <th
-                        className="text-center text-[11px] font-semibold border-r border-slate-700 border-b border-b-slate-700 sticky left-0 bg-slate-800 z-40 py-2.5 tracking-wide relative select-none"
-                        style={{ width: NAME_W, minWidth: NAME_W }}
+                        ref={nameThRef}
+                        className="text-center text-[11px] font-semibold border-r border-slate-700 border-b border-b-slate-700 sticky left-0 bg-slate-800 z-40 py-2.5 tracking-wide whitespace-nowrap px-3"
                       >
                         직원 성명
-                        {/* Resize handle */}
-                        <div
-                          onMouseDown={startNameResize}
-                          className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-indigo-400/40 group flex items-center justify-center"
-                          title="드래그로 너비 조정"
-                        >
-                          <div className="w-px h-4 bg-slate-500 group-hover:bg-indigo-400" />
-                        </div>
                       </th>
 
                       {/* 직급 column header — collapsible */}
@@ -1596,7 +1574,7 @@ export const SchedulePage: React.FC = () => {
                       >
 
                         {/* Column 1: Sticky Employee Name */}
-                        <td className="p-2 text-center text-xs font-medium border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50/80 h-11 shadow-[1px_0_0_0_#e2e8f0]">
+                        <td className="p-2 text-center text-xs font-medium border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50/80 h-11 shadow-[1px_0_0_0_#e2e8f0] whitespace-nowrap">
                           <div className="flex items-center gap-1.5 px-0.5">
                             {isAdmin && (
                               <div
