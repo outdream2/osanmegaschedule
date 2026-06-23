@@ -10,7 +10,7 @@ const SNAP = 15;
 
 const SKIP_TYPES = new Set(["휴무", "월차", "지정휴무"]);
 
-const TYPE_COLORS: Record<string, string> = {
+const TYPE_COLORS_BG: Record<string, string> = {
   "오픈":    "bg-emerald-500",
   "미들":    "bg-blue-500",
   "마감":    "bg-rose-500",
@@ -64,6 +64,9 @@ function clamp(v: number, lo: number, hi: number): number {
 }
 
 interface Range { start: number; end: number }
+interface EmpBreak { lunch: Range; rest: Range }
+
+type DragKind = "work" | "lunch" | "rest";
 
 interface Props {
   date: string;
@@ -77,13 +80,14 @@ interface Props {
 export const DayTimelineModal: React.FC<Props> = ({
   date, employees, openShiftHour, middleShiftHour, closeShiftHour, onClose,
 }) => {
-  const [lunch, setLunch] = useState<Range>(() => {
+  // Global default break times
+  const [globalLunch, setGlobalLunch] = useState<Range>(() => {
     try {
       const s = JSON.parse(localStorage.getItem("tl_lunch") || "");
       return { start: toMin(s.start), end: toMin(s.end) };
     } catch { return { start: 12 * 60, end: 13 * 60 }; }
   });
-  const [rest, setRest] = useState<Range>(() => {
+  const [globalRest, setGlobalRest] = useState<Range>(() => {
     try {
       const s = JSON.parse(localStorage.getItem("tl_rest") || "");
       return { start: toMin(s.start), end: toMin(s.end) };
@@ -108,10 +112,34 @@ export const DayTimelineModal: React.FC<Props> = ({
     })
     .filter(Boolean) as { emp: Employee; schedule: NonNullable<ReturnType<Employee["schedules"]["find"]>>; wh: string }[];
 
-  const [workerRanges, setWorkerRanges] = useState<Record<number, Range | null>>(() => {
-    const result: Record<number, Range | null> = {};
-    workers.forEach(w => { result[w.emp.id] = parseRange(w.wh); });
-    return result;
+  // Per-employee working hour ranges
+  const [workRanges, setWorkRanges] = useState<Record<number, Range | null>>(() => {
+    const r: Record<number, Range | null> = {};
+    workers.forEach(w => { r[w.emp.id] = parseRange(w.wh); });
+    return r;
+  });
+
+  // Per-employee break times — initialized from global defaults, overrideable per person
+  const [empBreaks, setEmpBreaks] = useState<Record<number, EmpBreak>>(() => {
+    const stored = (() => {
+      try { return JSON.parse(localStorage.getItem(`tl_emp_breaks_${date}`) || "{}"); }
+      catch { return {}; }
+    })();
+    const r: Record<number, EmpBreak> = {};
+    workers.forEach(w => {
+      if (stored[w.emp.id]) {
+        r[w.emp.id] = {
+          lunch: { start: stored[w.emp.id].lunch.start, end: stored[w.emp.id].lunch.end },
+          rest:  { start: stored[w.emp.id].rest.start,  end: stored[w.emp.id].rest.end  },
+        };
+      } else {
+        r[w.emp.id] = {
+          lunch: { ...globalLunch },
+          rest:  { ...globalRest  },
+        };
+      }
+    });
+    return r;
   });
 
   const gridRef = useRef<HTMLDivElement>(null);
@@ -122,9 +150,14 @@ export const DayTimelineModal: React.FC<Props> = ({
     return clamp(DISPLAY_START + ((clientX - rect.left) / rect.width) * TOTAL, DISPLAY_START, DISPLAY_END);
   };
 
+  const saveEmpBreaks = (next: Record<number, EmpBreak>) => {
+    localStorage.setItem(`tl_emp_breaks_${date}`, JSON.stringify(next));
+    setEmpBreaks(next);
+  };
+
   const startDrag = (
     e: React.MouseEvent,
-    kind: "lunch" | "rest" | "emp",
+    kind: DragKind,
     part: "start" | "end" | "body",
     initStart: number,
     initEnd: number,
@@ -140,7 +173,6 @@ export const DayTimelineModal: React.FC<Props> = ({
 
     const onMove = (me: MouseEvent) => {
       const mouse = snapTo(getMinFromX(me.clientX));
-
       if (part === "start") {
         curStart = clamp(mouse, DISPLAY_START, initEnd - SNAP);
         curEnd = initEnd;
@@ -153,10 +185,26 @@ export const DayTimelineModal: React.FC<Props> = ({
         curEnd = curStart + duration;
       }
 
-      if (kind === "lunch") setLunch({ start: curStart, end: curEnd });
-      else if (kind === "rest") setRest({ start: curStart, end: curEnd });
-      else if (kind === "emp" && empId !== undefined) {
-        setWorkerRanges(prev => ({ ...prev, [empId]: { start: curStart, end: curEnd } }));
+      if (kind === "work" && empId !== undefined) {
+        setWorkRanges(prev => ({ ...prev, [empId]: { start: curStart, end: curEnd } }));
+      } else if (kind === "lunch") {
+        if (empId !== undefined) {
+          setEmpBreaks(prev => ({
+            ...prev,
+            [empId]: { ...prev[empId], lunch: { start: curStart, end: curEnd } },
+          }));
+        } else {
+          setGlobalLunch({ start: curStart, end: curEnd });
+        }
+      } else if (kind === "rest") {
+        if (empId !== undefined) {
+          setEmpBreaks(prev => ({
+            ...prev,
+            [empId]: { ...prev[empId], rest: { start: curStart, end: curEnd } },
+          }));
+        } else {
+          setGlobalRest({ start: curStart, end: curEnd });
+        }
       }
     };
 
@@ -165,11 +213,7 @@ export const DayTimelineModal: React.FC<Props> = ({
       document.removeEventListener("mouseup", onUp);
       document.body.style.cursor = "";
 
-      if (kind === "lunch") {
-        localStorage.setItem("tl_lunch", JSON.stringify({ start: minToStr(curStart), end: minToStr(curEnd) }));
-      } else if (kind === "rest") {
-        localStorage.setItem("tl_rest", JSON.stringify({ start: minToStr(curStart), end: minToStr(curEnd) }));
-      } else if (kind === "emp" && empId !== undefined) {
+      if (kind === "work" && empId !== undefined) {
         try {
           await axios.put("/api/schedules", {
             employeeId: empId,
@@ -177,7 +221,27 @@ export const DayTimelineModal: React.FC<Props> = ({
             workingHours: `${minToStr(curStart)}-${minToStr(curEnd)}`,
           });
         } catch (err) {
-          console.error("Failed to save schedule", err);
+          console.error("Failed to save working hours", err);
+        }
+      } else if (kind === "lunch") {
+        if (empId !== undefined) {
+          setEmpBreaks(prev => {
+            const next = { ...prev, [empId]: { ...prev[empId], lunch: { start: curStart, end: curEnd } } };
+            localStorage.setItem(`tl_emp_breaks_${date}`, JSON.stringify(next));
+            return next;
+          });
+        } else {
+          localStorage.setItem("tl_lunch", JSON.stringify({ start: minToStr(curStart), end: minToStr(curEnd) }));
+        }
+      } else if (kind === "rest") {
+        if (empId !== undefined) {
+          setEmpBreaks(prev => {
+            const next = { ...prev, [empId]: { ...prev[empId], rest: { start: curStart, end: curEnd } } };
+            localStorage.setItem(`tl_emp_breaks_${date}`, JSON.stringify(next));
+            return next;
+          });
+        } else {
+          localStorage.setItem("tl_rest", JSON.stringify({ start: minToStr(curStart), end: minToStr(curEnd) }));
         }
       }
     };
@@ -187,41 +251,99 @@ export const DayTimelineModal: React.FC<Props> = ({
     document.addEventListener("mouseup", onUp);
   };
 
-  const BreakRow = ({ kind }: { kind: "lunch" | "rest" }) => {
-    const r = kind === "lunch" ? lunch : rest;
-    const label = kind === "lunch" ? "점심시간" : "휴게시간";
-    const rowBg = kind === "lunch" ? "bg-yellow-50" : "bg-violet-50";
+  // Apply global defaults to all employees
+  const applyGlobalToAll = () => {
+    const next: Record<number, EmpBreak> = {};
+    workers.forEach(w => {
+      next[w.emp.id] = { lunch: { ...globalLunch }, rest: { ...globalRest } };
+    });
+    saveEmpBreaks(next);
+  };
+
+  // Draggable bar sub-component
+  const DragBar = ({
+    kind, part_start, part_end, range, empId, colorCls, label, position,
+  }: {
+    kind: DragKind;
+    part_start?: never;
+    part_end?: never;
+    range: Range;
+    empId?: number;
+    colorCls: string;
+    label?: string;
+    position: "top" | "bottom" | "full";
+  }) => {
+    const w = widthPct(range.start, range.end);
+    if (w <= 0) return null;
+    const posStyle = position === "top"
+      ? { top: "4px", height: "22px" }
+      : position === "bottom"
+      ? { bottom: "4px", height: "22px" }
+      : { top: "50%", transform: "translateY(-50%)", height: "24px" };
+    return (
+      <div
+        className={`absolute rounded-md ${colorCls}`}
+        style={{ left: `${pct(range.start)}%`, width: `${w}%`, position: "absolute", ...posStyle }}
+      >
+        {/* left resize */}
+        <div
+          className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/25 rounded-l-md"
+          onMouseDown={e => startDrag(e, kind, "start", range.start, range.end, empId)}
+        />
+        {/* body */}
+        <div
+          className="absolute inset-0 mx-2 cursor-grab active:cursor-grabbing flex items-center justify-center"
+          onMouseDown={e => startDrag(e, kind, "body", range.start, range.end, empId)}
+        >
+          {label && (
+            <span className="text-[9px] font-bold whitespace-nowrap select-none truncate px-1">
+              {label} {minToStr(range.start)}~{minToStr(range.end)}
+            </span>
+          )}
+          {!label && (
+            <span className="text-[9px] font-semibold whitespace-nowrap select-none text-white/60 truncate">
+              {minToStr(range.start)}~{minToStr(range.end)}
+            </span>
+          )}
+        </div>
+        {/* right resize */}
+        <div
+          className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/25 rounded-r-md"
+          onMouseDown={e => startDrag(e, kind, "end", range.start, range.end, empId)}
+        />
+      </div>
+    );
+  };
+
+  // Global break row (top section)
+  const GlobalBreakRow = ({ kind }: { kind: "lunch" | "rest" }) => {
+    const r = kind === "lunch" ? globalLunch : globalRest;
+    const label = kind === "lunch" ? "기본 점심" : "기본 휴게";
+    const rowBg = kind === "lunch" ? "bg-yellow-50 border-yellow-200" : "bg-violet-50 border-violet-200";
     const barBg = kind === "lunch" ? "bg-yellow-300" : "bg-violet-300";
-    const handleBg = kind === "lunch"
-      ? "bg-yellow-500/50 hover:bg-yellow-600/60"
-      : "bg-violet-500/50 hover:bg-violet-600/60";
     const textCls = kind === "lunch" ? "text-yellow-800" : "text-violet-800";
-    const borderCls = kind === "lunch" ? "border-yellow-200" : "border-violet-200";
     const w = widthPct(r.start, r.end);
     return (
-      <div className={`relative h-9 mb-1 rounded-lg border ${rowBg} ${borderCls}`}>
+      <div className={`relative h-8 mb-1 rounded-lg border ${rowBg}`}>
         {w > 0 && (
           <div
-            className={`absolute top-1/2 -translate-y-1/2 h-6 rounded-md ${barBg}`}
+            className={`absolute top-1/2 -translate-y-1/2 h-5 rounded-md ${barBg}`}
             style={{ left: `${pct(r.start)}%`, width: `${w}%` }}
           >
-            {/* left resize */}
             <div
-              className={`absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-l-md ${handleBg}`}
+              className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/25 rounded-l-md"
               onMouseDown={e => startDrag(e, kind, "start", r.start, r.end)}
             />
-            {/* body move */}
             <div
-              className="absolute inset-0 mx-2 cursor-grab active:cursor-grabbing flex items-center justify-center"
+              className={`absolute inset-0 mx-2 cursor-grab active:cursor-grabbing flex items-center justify-center`}
               onMouseDown={e => startDrag(e, kind, "body", r.start, r.end)}
             >
-              <span className={`text-[10px] font-bold whitespace-nowrap select-none ${textCls}`}>
-                {minToStr(r.start)}~{minToStr(r.end)}
+              <span className={`text-[9px] font-bold whitespace-nowrap select-none ${textCls}`}>
+                {label} {minToStr(r.start)}~{minToStr(r.end)}
               </span>
             </div>
-            {/* right resize */}
             <div
-              className={`absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize rounded-r-md ${handleBg}`}
+              className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/25 rounded-r-md"
               onMouseDown={e => startDrag(e, kind, "end", r.start, r.end)}
             />
           </div>
@@ -240,26 +362,27 @@ export const DayTimelineModal: React.FC<Props> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 bg-slate-900 text-white flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div>
-              <span className="text-base font-bold tracking-tight">{title}</span>
-              <span className="ml-2 bg-slate-700 text-slate-300 text-[11px] px-2.5 py-0.5 rounded-full font-semibold">
-                근무 {workers.length}명
-              </span>
-            </div>
+            <span className="text-base font-bold tracking-tight">{title}</span>
+            <span className="bg-slate-700 text-slate-300 text-[11px] px-2.5 py-0.5 rounded-full font-semibold">
+              근무 {workers.length}명
+            </span>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-slate-700 transition-colors text-slate-400 hover:text-white"
-          >
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-700 transition-colors text-slate-400 hover:text-white">
             <X size={17} />
           </button>
         </div>
 
         {/* Hint */}
-        <div className="px-5 py-1.5 bg-slate-50 border-b border-slate-200 flex-shrink-0">
+        <div className="px-5 py-1.5 bg-slate-50 border-b border-slate-200 flex-shrink-0 flex items-center justify-between gap-3 flex-wrap">
           <span className="text-[10px] text-slate-400 font-medium">
-            막대 양 끝 드래그 → 시간 조정 &nbsp;|&nbsp; 가운데 드래그 → 이동 &nbsp;(15분 단위)
+            양 끝 드래그 → 시간 조정 &nbsp;|&nbsp; 가운데 드래그 → 이동 &nbsp;(15분 단위)
           </span>
+          <button
+            onClick={applyGlobalToAll}
+            className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded px-2 py-0.5 transition cursor-pointer whitespace-nowrap"
+          >
+            기본값 전체적용
+          </button>
         </div>
 
         {/* Timeline */}
@@ -272,22 +395,25 @@ export const DayTimelineModal: React.FC<Props> = ({
           ) : (
             <div className="flex gap-3 min-w-0">
               {/* Name column */}
-              <div className="flex-shrink-0 w-[96px]">
-                <div className="h-8" />
-                {/* Break time labels */}
-                <div className="h-9 mb-1 flex items-center">
-                  <span className="text-[10px] font-bold text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-1.5 py-0.5 leading-none">점심시간</span>
+              <div className="flex-shrink-0 w-[100px]">
+                <div className="h-8" /> {/* time axis */}
+                {/* Global break labels */}
+                <div className="h-8 mb-1 flex items-center">
+                  <span className="text-[9px] font-bold text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-1.5 py-0.5">기본 점심</span>
                 </div>
-                <div className="h-9 mb-1 flex items-center">
-                  <span className="text-[10px] font-bold text-violet-700 bg-violet-50 border border-violet-200 rounded px-1.5 py-0.5 leading-none">휴게시간</span>
+                <div className="h-8 mb-1 flex items-center">
+                  <span className="text-[9px] font-bold text-violet-700 bg-violet-50 border border-violet-200 rounded px-1.5 py-0.5">기본 휴게</span>
                 </div>
-                {/* Divider */}
-                <div className="h-px bg-slate-200 mb-1.5" />
-                {/* Employee names */}
+                <div className="h-px bg-slate-200 mb-2" />
+                {/* Employee labels */}
                 {workers.map(({ emp, schedule }) => (
-                  <div key={emp.id} className="h-9 mb-1.5 flex flex-col justify-center">
+                  <div key={emp.id} className="h-16 mb-1.5 flex flex-col justify-center gap-0.5">
                     <span className="text-xs font-bold text-slate-800 leading-tight truncate">{emp.name}</span>
-                    <span className="text-[10px] text-slate-400 leading-tight mt-0.5">{schedule.type}</span>
+                    <span className="text-[9px] text-slate-400 leading-tight">{schedule.type}</span>
+                    <div className="flex gap-1">
+                      <span className="text-[8px] text-yellow-600 leading-tight">점심</span>
+                      <span className="text-[8px] text-violet-600 leading-tight">휴게</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -318,47 +444,96 @@ export const DayTimelineModal: React.FC<Props> = ({
                         }} />
                     ))}
 
-                    {/* Break rows at top */}
-                    <BreakRow kind="lunch" />
-                    <BreakRow kind="rest" />
-                    {/* Divider */}
-                    <div className="h-px bg-slate-200 mb-1.5" />
+                    {/* Global break rows */}
+                    <GlobalBreakRow kind="lunch" />
+                    <GlobalBreakRow kind="rest" />
+                    <div className="h-px bg-slate-200 mb-2" />
 
-                    {/* Employee rows */}
+                    {/* Employee rows — each shows work bar (faint) + lunch + rest on top */}
                     {workers.map(({ emp, schedule }) => {
-                      const color = TYPE_COLORS[schedule.type] ?? "bg-slate-400";
-                      const range = workerRanges[emp.id];
+                      const colorCls = TYPE_COLORS_BG[schedule.type] ?? "bg-slate-400";
+                      const workRange = workRanges[emp.id];
+                      const breaks = empBreaks[emp.id] ?? { lunch: globalLunch, rest: globalRest };
+
                       return (
-                        <div key={emp.id} className="relative h-9 mb-1.5 bg-slate-50 rounded-lg border border-slate-100">
-                          {range ? (
+                        <div key={emp.id} className="relative h-16 mb-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                          {/* Layer 1: working hours bar — faint background */}
+                          {workRange && (
                             <div
-                              className={`absolute top-1/2 -translate-y-1/2 h-6 rounded-md z-20 shadow-sm ${color}`}
-                              style={{
-                                left: `${pct(range.start)}%`,
-                                width: `${Math.max(widthPct(range.start, range.end), 0.5)}%`,
-                              }}
+                              className={`absolute top-1 bottom-1 rounded-md ${colorCls}/20`}
+                              style={{ left: `${pct(workRange.start)}%`, width: `${Math.max(widthPct(workRange.start, workRange.end), 0.5)}%` }}
                             >
-                              {/* left resize */}
+                              {/* left resize handle */}
                               <div
-                                className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/25 rounded-l-md"
-                                onMouseDown={e => startDrag(e, "emp", "start", range.start, range.end, emp.id)}
+                                className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-black/10 rounded-l-md"
+                                onMouseDown={e => startDrag(e, "work", "start", workRange.start, workRange.end, emp.id)}
                               />
-                              {/* body move */}
+                              {/* body */}
                               <div
-                                className="absolute inset-0 mx-2 cursor-grab active:cursor-grabbing flex items-center px-1"
-                                onMouseDown={e => startDrag(e, "emp", "body", range.start, range.end, emp.id)}
+                                className="absolute inset-0 mx-2 cursor-grab active:cursor-grabbing flex items-center justify-center"
+                                onMouseDown={e => startDrag(e, "work", "body", workRange.start, workRange.end, emp.id)}
                               >
-                                <span className="text-[10px] text-white/40 font-medium truncate whitespace-nowrap drop-shadow-sm">
-                                  {minToStr(range.start)}-{minToStr(range.end)}
+                                <span className={`text-[9px] font-medium select-none truncate text-slate-400`}>
+                                  {minToStr(workRange.start)}~{minToStr(workRange.end)}
                                 </span>
                               </div>
-                              {/* right resize */}
+                              {/* right resize handle */}
                               <div
-                                className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/25 rounded-r-md"
-                                onMouseDown={e => startDrag(e, "emp", "end", range.start, range.end, emp.id)}
+                                className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-black/10 rounded-r-md"
+                                onMouseDown={e => startDrag(e, "work", "end", workRange.start, workRange.end, emp.id)}
                               />
                             </div>
-                          ) : (
+                          )}
+
+                          {/* Layer 2: lunch break — upper portion */}
+                          {(() => {
+                            const r = breaks.lunch;
+                            const w = widthPct(r.start, r.end);
+                            if (w <= 0) return null;
+                            return (
+                              <div
+                                className="absolute bg-yellow-300/90 rounded"
+                                style={{ top: "5px", height: "20px", left: `${pct(r.start)}%`, width: `${w}%` }}
+                              >
+                                <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-yellow-500/40 rounded-l"
+                                  onMouseDown={e => startDrag(e, "lunch", "start", r.start, r.end, emp.id)} />
+                                <div className="absolute inset-0 mx-1.5 cursor-grab active:cursor-grabbing flex items-center justify-center"
+                                  onMouseDown={e => startDrag(e, "lunch", "body", r.start, r.end, emp.id)}>
+                                  <span className="text-[8px] font-bold text-yellow-900 whitespace-nowrap select-none truncate">
+                                    {minToStr(r.start)}~{minToStr(r.end)}
+                                  </span>
+                                </div>
+                                <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-yellow-500/40 rounded-r"
+                                  onMouseDown={e => startDrag(e, "lunch", "end", r.start, r.end, emp.id)} />
+                              </div>
+                            );
+                          })()}
+
+                          {/* Layer 3: rest break — lower portion */}
+                          {(() => {
+                            const r = breaks.rest;
+                            const w = widthPct(r.start, r.end);
+                            if (w <= 0) return null;
+                            return (
+                              <div
+                                className="absolute bg-violet-300/90 rounded"
+                                style={{ bottom: "5px", height: "20px", left: `${pct(r.start)}%`, width: `${w}%` }}
+                              >
+                                <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-violet-500/40 rounded-l"
+                                  onMouseDown={e => startDrag(e, "rest", "start", r.start, r.end, emp.id)} />
+                                <div className="absolute inset-0 mx-1.5 cursor-grab active:cursor-grabbing flex items-center justify-center"
+                                  onMouseDown={e => startDrag(e, "rest", "body", r.start, r.end, emp.id)}>
+                                  <span className="text-[8px] font-bold text-violet-900 whitespace-nowrap select-none truncate">
+                                    {minToStr(r.start)}~{minToStr(r.end)}
+                                  </span>
+                                </div>
+                                <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-violet-500/40 rounded-r"
+                                  onMouseDown={e => startDrag(e, "rest", "end", r.start, r.end, emp.id)} />
+                              </div>
+                            );
+                          })()}
+
+                          {!workRange && (
                             <div className="flex items-center justify-center h-full">
                               <span className="text-[10px] text-slate-300 font-medium">시간 미정</span>
                             </div>
@@ -374,13 +549,22 @@ export const DayTimelineModal: React.FC<Props> = ({
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-3 px-5 py-2.5 bg-slate-50 border-t border-slate-200 flex-shrink-0 flex-wrap">
-          {Object.entries(TYPE_COLORS).map(([type, color]) => (
+        <div className="flex items-center gap-3 px-5 py-2 bg-slate-50 border-t border-slate-200 flex-shrink-0 flex-wrap">
+          {Object.entries(TYPE_COLORS_BG).map(([type, color]) => (
             <div key={type} className="flex items-center gap-1.5">
-              <span className={`w-2.5 h-2.5 rounded ${color} inline-block shadow-sm`} />
-              <span className="text-[11px] text-slate-500 font-medium">{type}</span>
+              <span className={`w-2.5 h-2.5 rounded ${color} inline-block opacity-40`} />
+              <span className="text-[10px] text-slate-500">{type}</span>
             </div>
           ))}
+          <span className="text-slate-200">|</span>
+          <div className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded bg-yellow-300 inline-block" />
+            <span className="text-[10px] text-slate-500">점심</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="w-2.5 h-2.5 rounded bg-violet-300 inline-block" />
+            <span className="text-[10px] text-slate-500">휴게</span>
+          </div>
         </div>
       </div>
     </div>
