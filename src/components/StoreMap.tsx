@@ -1030,7 +1030,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
               <div className="grid grid-cols-16 gap-3 items-stretch">
 
                 {/* Left Side: Open floor / Simulation console (the empty ㄱ inner corner) */}
-                <div className="col-span-16 xl:col-span-12 bg-white/95 border border-slate-300 rounded-2xl p-4 flex flex-col justify-start shadow-sm relative overflow-hidden gap-3">
+                <div className="col-span-16 xl:col-span-6 bg-white/95 border border-slate-300 rounded-2xl p-4 flex flex-col justify-start shadow-sm relative overflow-hidden gap-3">
                   
                   {/* Real-time map guidance banner */}
                   <div className="p-3 bg-blue-50/65 border border-blue-150 rounded-xl">
@@ -1140,6 +1140,97 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                         </div>
                       )}
                     </div>
+                  </div>
+
+                </div>
+
+                {/* Middle: 베스트세트존 + 이벤트존 side by side (matching map.png) */}
+                <div className="col-span-16 xl:col-span-6 bg-white border-2 border-violet-400 rounded-2xl p-3 flex flex-col gap-2 shadow-md relative">
+
+                  {/* Floating Badge */}
+                  <div className="absolute -top-3 left-3 bg-violet-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20 flex items-center gap-1">
+                    <span>🧬 프로모션 구역</span>
+                  </div>
+
+                  <div className="flex items-center justify-between border-b pb-1.5 mt-1">
+                    <span className="text-[11px] font-black text-slate-800 flex items-center gap-1">🧬 베스트·이벤트 라인</span>
+                    <span className="text-[8px] bg-violet-100 text-violet-700 rounded px-1 py-0.5 font-bold">중앙 섹션</span>
+                  </div>
+
+                  {/* 베스트세트존 + 이벤트존 side by side */}
+                  <div className="flex flex-row gap-2 flex-1">
+
+                    {/* 베스트 세트존 */}
+                    <div
+                      onDragOver={(e) => handleDragOver(e, "slot_best_set")}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, "slot_best_set")}
+                      className={`flex-1 bg-blue-50/50 border-2 border-blue-400 rounded-lg p-2 flex flex-col justify-between min-h-[120px] relative transition ${
+                        dragOverZone === "slot_best_set" ? "bg-blue-100 border-blue-500 scale-[1.01] z-20 shadow-xs" : ""
+                      }`}
+                    >
+                      <div className="flex flex-col gap-0.5 border-b border-blue-200/70 pb-1 mb-1">
+                        <span className="text-[10px] font-black text-blue-950 flex items-center gap-1">🧬 베스트 세트존</span>
+                        <span className="text-[7px] text-blue-600 font-extrabold">연령/질환별</span>
+                      </div>
+                      <div className="flex-1 py-1 flex flex-col justify-center">
+                        {bestSetStaff.length > 0 ? (
+                          renderPlacedStaffTags(bestSetStaff)
+                        ) : (
+                          <span className="text-[8px] text-blue-700 italic block text-center">진열 상담원 공석</span>
+                        )}
+                      </div>
+                      <div className="text-[7px] text-blue-600 font-extrabold text-right">상담 테이블</div>
+                    </div>
+
+                    {/* 이벤트존 (3 stacked sub-zones) */}
+                    <div className="flex-1 bg-white border border-slate-200 rounded-lg p-2 flex flex-col gap-1.5">
+                      <span className="text-[10px] font-black text-slate-800 flex items-center gap-1 border-b border-slate-200 pb-1">
+                        🎈 이벤트 존
+                      </span>
+                      <div className="flex-1 flex flex-col gap-1">
+                        <div
+                          onDragOver={(e) => handleDragOver(e, "slot_event1")}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDrop(e, "slot_event1")}
+                          className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[30px] transition relative ${
+                            dragOverZone === "slot_event1" ? "bg-red-50 border-red-500 scale-[1.01] z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
+                          }`}
+                        >
+                          <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Z1</span>
+                          <span className="text-[8px] font-extrabold text-slate-700">이벤트존 1</span>
+                          {renderPlacedStaffTags(event1Staff)}
+                          {event1Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">대기</span>}
+                        </div>
+                        <div
+                          onDragOver={(e) => handleDragOver(e, "slot_event2")}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDrop(e, "slot_event2")}
+                          className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[30px] transition relative ${
+                            dragOverZone === "slot_event2" ? "bg-red-50 border-red-500 scale-[1.01] z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
+                          }`}
+                        >
+                          <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Z2</span>
+                          <span className="text-[8px] font-extrabold text-slate-700">이벤트존 2</span>
+                          {renderPlacedStaffTags(event2Staff)}
+                          {event2Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">대기</span>}
+                        </div>
+                        <div
+                          onDragOver={(e) => handleDragOver(e, "slot_event3")}
+                          onDragLeave={handleDragLeave}
+                          onDrop={(e) => handleDrop(e, "slot_event3")}
+                          className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[30px] transition relative ${
+                            dragOverZone === "slot_event3" ? "bg-red-50 border-red-500 scale-[1.01] z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
+                          }`}
+                        >
+                          <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Z3</span>
+                          <span className="text-[8px] font-extrabold text-slate-700">이벤트존 3</span>
+                          {renderPlacedStaffTags(event3Staff)}
+                          {event3Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">대기</span>}
+                        </div>
+                      </div>
+                    </div>
+
                   </div>
 
                 </div>
@@ -1294,90 +1385,16 @@ export const StoreMap: React.FC<StoreMapProps> = ({
               </div>
 
               {/* ========================================================================== */}
-              {/* SECTION 3: BOTTOM ROW (Open floor zones — promo events, best-set, warehouse, */}
-              {/* breakroom, lockers). Spans the full inner floor below the body in map.png.   */}
+              {/* SECTION 3: BOTTOM ROW (warehouse, breakroom, lockers)                      */}
               {/* ========================================================================== */}
               <div className="grid grid-cols-12 gap-3">
 
-                {/* 3A. 연령별 질환별 베스트 세트존 (Blue accent — front display island on the floor) */}
-                <div
-                  onDragOver={(e) => handleDragOver(e, "slot_best_set")}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, "slot_best_set")}
-                  className={`col-span-12 md:col-span-3 bg-blue-50/50 border-2 border-blue-400 rounded-xl p-2.5 flex flex-col justify-between min-h-[120px] relative transition ${
-                    dragOverZone === "slot_best_set" ? "bg-blue-100 border-blue-500 scale-[1.01] z-20 shadow-xs" : ""
-                  }`}
-                >
-                  <div className="flex items-center justify-between border-b border-blue-200/70 pb-1">
-                    <span className="text-[10px] font-black text-blue-950 flex items-center gap-1">🧬 베스트 세트존</span>
-                    <span className="text-[7px] text-blue-600 bg-white px-1 rounded font-extrabold">연령/질환별</span>
-                  </div>
-                  <div className="flex-1 py-1 flex flex-col justify-center">
-                    {bestSetStaff.length > 0 ? (
-                      renderPlacedStaffTags(bestSetStaff)
-                    ) : (
-                      <span className="text-[8px] text-blue-700 italic block text-center">진열 상담원 공석</span>
-                    )}
-                  </div>
-                  <div className="text-[7px] text-blue-600 font-extrabold text-right">상담 테이블 매핑</div>
-                </div>
-
-                {/* 3B. 프로모션 이벤트 존 (3 stacked event sub-zones) */}
-                <div className="col-span-12 md:col-span-3 bg-white border border-slate-300 rounded-xl p-2 flex flex-col gap-1.5 shadow-3xs">
-                  <span className="text-[10px] font-black text-slate-800 flex items-center gap-1 border-b border-slate-200 pb-1">
-                    🎈 프로모션 이벤트 존
-                  </span>
-                  <div className="flex-1 flex flex-col gap-1">
-                    <div
-                      onDragOver={(e) => handleDragOver(e, "slot_event1")}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, "slot_event1")}
-                      className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[34px] transition relative ${
-                        dragOverZone === "slot_event1" ? "bg-red-50 border-red-500 scale-[1.01] z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
-                      }`}
-                    >
-                      <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 1</span>
-                      <span className="text-[8px] font-extrabold text-slate-700">이벤트존 1 🏠</span>
-                      {renderPlacedStaffTags(event1Staff)}
-                      {event1Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
-                    </div>
-
-                    <div
-                      onDragOver={(e) => handleDragOver(e, "slot_event2")}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, "slot_event2")}
-                      className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[34px] transition relative ${
-                        dragOverZone === "slot_event2" ? "bg-red-50 border-red-500 scale-[1.01] z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
-                      }`}
-                    >
-                      <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 2</span>
-                      <span className="text-[8px] font-extrabold text-slate-700">이벤트존 2 🏠</span>
-                      {renderPlacedStaffTags(event2Staff)}
-                      {event2Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
-                    </div>
-
-                    <div
-                      onDragOver={(e) => handleDragOver(e, "slot_event3")}
-                      onDragLeave={handleDragLeave}
-                      onDrop={(e) => handleDrop(e, "slot_event3")}
-                      className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[34px] transition relative ${
-                        dragOverZone === "slot_event3" ? "bg-red-50 border-red-500 scale-[1.01] z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
-                      }`}
-                    >
-                      <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 3</span>
-                      <span className="text-[8px] font-extrabold text-slate-700">이벤트존 3 🏠</span>
-                      {renderPlacedStaffTags(event3Staff)}
-                      {event3Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3C. 창고 및 물류고 배후지 */}
+                {/* 3A. 창고 및 물류고 배후지 */}
                 <div
                   onDragOver={(e) => handleDragOver(e, "slot_warehouse")}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, "slot_warehouse")}
-                  className={`col-span-12 md:col-span-2 bg-indigo-50/50 border border-indigo-200 rounded-xl p-2.5 flex flex-col justify-between transition min-h-[120px] ${
+                  className={`col-span-12 md:col-span-4 bg-indigo-50/50 border border-indigo-200 rounded-xl p-2.5 flex flex-col justify-between transition min-h-[100px] ${
                     dragOverZone === "slot_warehouse" ? "bg-indigo-100 border-indigo-500 scale-102" : ""
                   }`}
                 >
@@ -1395,12 +1412,12 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                   <div className="text-[7px] text-indigo-600 font-extrabold text-right">하역대</div>
                 </div>
 
-                {/* 3D. 휴게실 */}
+                {/* 3B. 휴게실 */}
                 <div
                   onDragOver={(e) => handleDragOver(e, "slot_breakroom")}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, "slot_breakroom")}
-                  className={`col-span-12 md:col-span-2 bg-emerald-50/30 border border-emerald-200 rounded-xl p-2.5 flex flex-col justify-between transition min-h-[120px] ${
+                  className={`col-span-12 md:col-span-4 bg-emerald-50/30 border border-emerald-200 rounded-xl p-2.5 flex flex-col justify-between transition min-h-[100px] ${
                     dragOverZone === "slot_breakroom" ? "bg-emerald-100/60 border-emerald-400" : ""
                   }`}
                 >
@@ -1415,12 +1432,12 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                   </div>
                 </div>
 
-                {/* 3E. 사물함 & 수도시설 */}
+                {/* 3C. 사물함 & 수도시설 */}
                 <div
                   onDragOver={(e) => handleDragOver(e, "slot_lockers")}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, "slot_lockers")}
-                  className={`col-span-12 md:col-span-2 bg-slate-50 border border-slate-200 rounded-xl p-2 flex flex-col justify-between text-center transition min-h-[120px] ${
+                  className={`col-span-12 md:col-span-4 bg-slate-50 border border-slate-200 rounded-xl p-2 flex flex-col justify-between text-center transition min-h-[100px] ${
                     dragOverZone === "slot_lockers" ? "bg-slate-200 border-slate-400" : ""
                   }`}
                 >

@@ -797,30 +797,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
           </div>
 
 
-          {/* Tab Switcher for Sheet vs Map View */}
-          <div className="flex items-center gap-0.5 ml-2 sm:ml-3 p-1 bg-slate-800 rounded-lg border border-slate-700">
-            <button
-              onClick={() => setViewMode("sheet")}
-              className={`px-2 sm:px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-all flex items-center gap-1.5 ${viewMode === "sheet"
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "text-slate-400 hover:text-slate-200"
-                }`}
-            >
-              <FileSpreadsheet size={12} />
-              <span className="hidden sm:inline">스케줄 시트</span>
-            </button>
-            <button
-              onClick={() => setViewMode("map")}
-              className={`px-2 sm:px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-all flex items-center gap-1.5 ${viewMode === "map"
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "text-slate-400 hover:text-slate-200"
-                }`}
-            >
-              <Building2 size={12} />
-              <span className="hidden sm:inline">매장 맵배치도</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            </button>
-          </div>
         </div>
 
         <div className="flex items-center gap-2">
@@ -900,7 +876,34 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
         </div>
       </header>
 
-      {/* 1.5 Sub-Header Control Bar for Workplace Tabs, Employee Sorting & Search */}
+      {/* 1.5 View Mode Tab Switcher Bar */}
+      <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 flex items-center shrink-0">
+        <div className="flex items-center gap-0.5 p-0.5 bg-slate-100 rounded-lg border border-slate-200">
+          <button
+            onClick={() => setViewMode("sheet")}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1.5 ${viewMode === "sheet"
+              ? "bg-white text-indigo-600 shadow-sm"
+              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+              }`}
+          >
+            <FileSpreadsheet size={12} />
+            <span>스케줄 시트</span>
+          </button>
+          <button
+            onClick={() => setViewMode("map")}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1.5 ${viewMode === "map"
+              ? "bg-white text-indigo-600 shadow-sm"
+              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+              }`}
+          >
+            <Building2 size={12} />
+            <span>매장 맵배치도</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          </button>
+        </div>
+      </div>
+
+      {/* 1.6 Sub-Header Control Bar for Workplace Tabs, Employee Sorting & Search */}
       {viewMode === "sheet" && (
         <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2 sm:gap-3 shrink-0 shadow-sm">
           {/* Filter Tabs: workplace + position */}
