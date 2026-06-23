@@ -778,104 +778,115 @@ export const SchedulePage: React.FC = () => {
   const attSummary = getAttendanceSummary();
 
   return (
-    <div className="w-full min-h-screen bg-[#f8fafc] text-slate-800 font-sans flex flex-col">
+    <div className="w-full min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col">
       {/* Toast Notification Alert */}
       {notification && (
-        <div className="fixed top-6 right-6 z-50 animate-bounce">
+        <div className="fixed top-5 right-5 z-[60] pointer-events-none">
           <div
-            className={`px-4 py-3 rounded-xl shadow-lg flex items-center gap-2 border text-sm font-semibold ${
+            className={`px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 border text-sm font-semibold backdrop-blur-sm animate-in slide-in-from-top-2 duration-300 ${
               notification.type === "success"
-                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                : "bg-rose-50 text-rose-800 border-rose-200"
+                ? "bg-white/95 text-emerald-800 border-emerald-200 shadow-emerald-100"
+                : "bg-white/95 text-rose-800 border-rose-200 shadow-rose-100"
             }`}
           >
-            <CheckCircle size={16} />
+            <CheckCircle size={15} className={notification.type === "success" ? "text-emerald-500 shrink-0" : "text-rose-500 shrink-0"} />
             <span>{notification.message}</span>
           </div>
         </div>
       )}
 
-      {/* 1. App Header with geometric badge */}
-      <div className="bg-white h-16 border-b border-[#e2e8f0] flex items-center justify-between px-6 shrink-0">
-        <div className="flex items-center gap-3">
-          <span className="font-extrabold text-slate-900 tracking-tight text-lg">MEGATOWN</span>
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#f1f5f9] text-[#64748b] border border-[#e2e8f0] uppercase tracking-wider hidden sm:inline-block">
-            Prisma + SQLite Active
+      {/* 1. App Header — premium dark slate */}
+      <header className="bg-slate-900 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-md">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Brand */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
+              <Calendar size={14} className="text-white" />
+            </div>
+            <span className="font-black text-white tracking-tight text-base leading-none">MEGATOWN</span>
+          </div>
+          <span className="hidden sm:inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider">
+            SQLite Live
           </span>
 
           {/* Tab Switcher for Sheet vs Map View */}
-          <div className="hidden md:flex items-center gap-1.5 ml-4 p-1 bg-slate-100/80 rounded-xl border border-slate-200">
+          <div className="hidden md:flex items-center gap-0.5 ml-3 p-1 bg-slate-800 rounded-lg border border-slate-700">
             <button
               onClick={() => setViewMode("sheet")}
-              className={`px-3 py-1 text-xs font-bold rounded-lg cursor-pointer transition flex items-center gap-1.5 ${
+              className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-all flex items-center gap-1.5 ${
                 viewMode === "sheet"
-                  ? "bg-white text-[#2563eb] shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-extrabold"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              <span>📋 스케줄 시트</span>
+              <FileSpreadsheet size={12} />
+              <span>스케줄 시트</span>
             </button>
             <button
               onClick={() => setViewMode("map")}
-              className={`px-3 py-1 text-xs font-bold rounded-lg cursor-pointer transition flex items-center gap-1.5 ${
+              className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-all flex items-center gap-1.5 ${
                 viewMode === "map"
-                  ? "bg-white text-[#2563eb] shadow-[0_1px_3px_rgba(0,0,0,0.08)] font-extrabold"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-slate-200"
               }`}
             >
-              <span className="relative flex items-center gap-1">
-                <span>🗺️ 매장 맵배치도</span>
-                <span className="absolute -top-1.5 -right-2 w-1.5 h-1.5 rounded-full bg-blue-600 animate-ping"></span>
-              </span>
+              <Building2 size={12} />
+              <span>매장 맵배치도</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
             </button>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Read-Only or Admin Badge */}
+
+        <div className="flex items-center gap-2">
+          {/* Mode Badge */}
           {isAdmin ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold animate-pulse">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-              <span>관리자 모드</span>
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span>관리자</span>
             </div>
           ) : (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-              <span>읽기 전용 모드</span>
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+              <span>읽기 전용</span>
             </div>
           )}
 
           <button
             onClick={() => setIsShiftSettingsOpen(!isShiftSettingsOpen)}
-            className={`px-3 py-1.5 text-xs font-bold border rounded-lg transition duration-150 flex items-center gap-1 cursor-pointer ${
+            className={`px-3 py-1.5 text-xs font-semibold border rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer ${
               isShiftSettingsOpen
-                ? "bg-slate-800 border-slate-800 text-white shadow-sm"
-                : "border-[#cbd5e1] bg-white hover:bg-slate-50 text-slate-700 shadow-3xs"
+                ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
+                : "border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300"
             }`}
           >
-            ⚙️ 근무 시간대 설정
+            <Clock size={12} />
+            <span className="hidden sm:inline">근무 시간 설정</span>
+            <span className="sm:hidden">설정</span>
           </button>
 
           <button
             onClick={() => fetchScheduleData(currentYear, currentMonth)}
-            className="px-3 py-1.5 text-xs font-bold border border-[#cbd5e1] bg-white hover:bg-slate-50 rounded-lg text-slate-700 transition duration-150 cursor-pointer flex items-center gap-1 shadow-3xs"
+            className="px-3 py-1.5 text-xs font-semibold border border-slate-700 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-all duration-150 cursor-pointer flex items-center gap-1.5"
           >
-            스케줄 새로고침
+            <span className="hidden sm:inline">새로고침</span>
+            <span className="sm:hidden">↺</span>
           </button>
 
           {isAdmin ? (
             <>
               <button
                 onClick={() => setIsEmpModalOpen(true)}
-                className="px-3 py-1.5 text-xs font-semibold bg-[#2563eb] hover:bg-blue-700 text-white border border-[#2563eb] rounded-lg transition duration-150 flex items-center gap-1 cursor-pointer"
+                className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-600 rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
-                <UserPlus size={14} />
-                <span>직원 등록</span>
+                <UserPlus size={13} />
+                <span className="hidden sm:inline">직원 등록</span>
               </button>
               <button
                 onClick={handleLogout}
-                className="px-3 py-1.5 text-xs font-semibold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg transition duration-150 cursor-pointer"
+                className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-rose-400 border border-slate-700 hover:border-rose-500/40 rounded-lg transition-all duration-150 cursor-pointer flex items-center gap-1.5"
               >
-                로그아웃
+                <LogOut size={13} />
+                <span className="hidden sm:inline">로그아웃</span>
               </button>
             </>
           ) : (
@@ -884,62 +895,62 @@ export const SchedulePage: React.FC = () => {
                 setLoginError("");
                 setIsLoginModalOpen(true);
               }}
-              className="px-3 py-1.5 text-xs font-semibold bg-[#0f172a] hover:bg-slate-800 text-white rounded-lg transition duration-150 flex items-center gap-1.5 cursor-pointer shadow-xs"
+              className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               <Lock size={12} />
               <span>관리자 로그인</span>
             </button>
           )}
         </div>
-      </div>
+      </header>
 
       {/* 1.5 Sub-Header Control Bar for Workplace Tabs, Employee Sorting & Search */}
       {viewMode === "sheet" && (
-        <div className="bg-slate-50 border-b border-[#e2e8f0] px-6 py-3 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 shrink-0">
+        <div className="bg-white border-b border-slate-200 px-4 sm:px-6 py-2.5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 shrink-0 shadow-sm">
           {/* Workplace Tabs in a pill group */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-2">인원 필터:</span>
-            <div className="inline-flex p-1 bg-[#f1f5f9] border border-[#e2e8f0] rounded-xl gap-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">필터</span>
+            <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
               <button
                 onClick={() => setActiveTab("전체")}
-                className={`px-4 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1.5 min-h-[32px] ${
                   activeTab === "전체"
-                    ? "bg-white text-[#2563eb] shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
-                    : "text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+                    ? "bg-white text-indigo-600 shadow-sm font-bold"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 }`}
               >
-                <Layers size={13} />
-                <span>전체 ({employees.length})</span>
+                <Layers size={12} />
+                <span>전체 <span className="text-slate-400 font-normal">({employees.length})</span></span>
               </button>
               <button
                 onClick={() => setActiveTab("매장")}
-                className={`px-4 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1.5 min-h-[32px] ${
                   activeTab === "매장"
-                    ? "bg-white text-emerald-600 shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
-                    : "text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+                    ? "bg-white text-emerald-600 shadow-sm font-bold"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 }`}
               >
-                <Building2 size={13} />
-                <span>매장 ({employees.filter(e => (e.workplace || "매장") === "매장").length})</span>
+                <Building2 size={12} />
+                <span>매장 <span className="text-slate-400 font-normal">({employees.filter(e => (e.workplace || "매장") === "매장").length})</span></span>
               </button>
               <button
                 onClick={() => setActiveTab("창고")}
-                className={`px-4 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition flex items-center gap-1.5 ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1.5 min-h-[32px] ${
                   activeTab === "창고"
-                    ? "bg-white text-indigo-600 shadow-[0_1px_3px_rgba(0,0,0,0.08)]"
-                    : "text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+                    ? "bg-white text-indigo-600 shadow-sm font-bold"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 }`}
               >
-                <Warehouse size={13} />
-                <span>창고 ({employees.filter(e => e.workplace === "창고").length})</span>
+                <Warehouse size={12} />
+                <span>창고 <span className="text-slate-400 font-normal">({employees.filter(e => e.workplace === "창고").length})</span></span>
               </button>
             </div>
           </div>
 
           {/* Employee Sorting Section */}
           <div className="flex items-center gap-2 flex-wrap text-xs">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1">직원 정렬:</span>
-            <div className="inline-flex p-1 bg-white border border-[#cbd5e1] rounded-xl shadow-xs gap-1">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">정렬</span>
+            <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
               <button
                 type="button"
                 onClick={() => {
@@ -950,19 +961,19 @@ export const SchedulePage: React.FC = () => {
                     setSortOrder("asc");
                   }
                 }}
-                className={`px-3 py-1 text-xs font-bold rounded-lg cursor-pointer transition flex items-center gap-1 ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[32px] ${
                   sortBy === "position"
-                    ? "bg-[#2563eb] text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+                    ? "bg-white text-indigo-600 shadow-sm font-bold"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 }`}
                 title="직급순 정렬 (부점장 -> 약사 -> 사원 순서)"
               >
                 <span>직급별</span>
                 {sortBy === "position" && (
-                  <span className="text-[10px] font-mono font-bold">{sortOrder === "asc" ? "▲" : "▼"}</span>
+                  <span className="text-[10px] font-mono">{sortOrder === "asc" ? "↑" : "↓"}</span>
                 )}
               </button>
-              
+
               <button
                 type="button"
                 onClick={() => {
@@ -973,16 +984,16 @@ export const SchedulePage: React.FC = () => {
                     setSortOrder("asc");
                   }
                 }}
-                className={`px-3 py-1 text-xs font-bold rounded-lg cursor-pointer transition flex items-center gap-1 ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[32px] ${
                   sortBy === "hireDate"
-                    ? "bg-[#2563eb] text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+                    ? "bg-white text-indigo-600 shadow-sm font-bold"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 }`}
                 title="입사일 순 정렬"
               >
-                <span>입사일별</span>
+                <span>입사일</span>
                 {sortBy === "hireDate" && (
-                  <span className="text-[10px] font-mono font-bold">{sortOrder === "asc" ? "▲" : "▼"}</span>
+                  <span className="text-[10px] font-mono">{sortOrder === "asc" ? "↑" : "↓"}</span>
                 )}
               </button>
 
@@ -996,16 +1007,16 @@ export const SchedulePage: React.FC = () => {
                     setSortOrder("asc");
                   }
                 }}
-                className={`px-3 py-1 text-xs font-bold rounded-lg cursor-pointer transition flex items-center gap-1 ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[32px] ${
                   sortBy === "name"
-                    ? "bg-[#2563eb] text-white shadow-xs"
-                    : "text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+                    ? "bg-white text-indigo-600 shadow-sm font-bold"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                 }`}
                 title="이름 성명순 정렬"
               >
-                <span>성명순</span>
+                <span>성명</span>
                 {sortBy === "name" && (
-                  <span className="text-[10px] font-mono font-bold">{sortOrder === "asc" ? "▲" : "▼"}</span>
+                  <span className="text-[10px] font-mono">{sortOrder === "asc" ? "↑" : "↓"}</span>
                 )}
               </button>
 
@@ -1016,7 +1027,7 @@ export const SchedulePage: React.FC = () => {
                     setSortBy("none");
                     setSortOrder("asc");
                   }}
-                  className="px-2 py-1 text-[11px] font-medium text-slate-400 hover:text-rose-600 rounded transition cursor-pointer"
+                  className="px-2 py-1.5 text-[11px] font-medium text-slate-400 hover:text-rose-500 rounded-md transition cursor-pointer min-h-[32px]"
                   title="기본 순서 정렬 상태로 복원"
                 >
                   초기화
@@ -1033,7 +1044,7 @@ export const SchedulePage: React.FC = () => {
                       showNotification("정렬 순서가 기본값으로 초기화되었습니다.");
                     }
                   }}
-                  className="px-2.5 py-1 text-[10px] font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition overflow-hidden cursor-pointer shrink-0"
+                  className="px-2.5 py-1.5 text-[10px] font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-md transition cursor-pointer shrink-0 min-h-[32px]"
                   title="드래그앤드롭 사용자 지정 순서 초기화"
                 >
                   순서 초기화
@@ -1043,24 +1054,24 @@ export const SchedulePage: React.FC = () => {
           </div>
 
           {/* Employee Search Group with integrated help feedback */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 max-w-sm w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 max-w-xs w-full">
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
-                <Search size={14} />
+                <Search size={13} />
               </div>
               <input
                 type="text"
-                placeholder="본인 성명으로 조회하기 (예: 정윤수)"
+                placeholder="성명으로 조회 (예: 정윤수)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-xs font-medium pl-9 pr-8 py-2 bg-white border border-[#e2e8f0] focus:border-[#2563eb] rounded-xl focus:outline-none placeholder-slate-400 text-slate-800 transition"
+                className="w-full text-xs font-medium pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white rounded-lg focus:outline-none placeholder-slate-400 text-slate-800 transition-all min-h-[32px]"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery("")}
-                  className="absolute inset-y-0 right-2.5 flex items-center text-slate-400 hover:text-slate-[#2563eb]"
+                  className="absolute inset-y-0 right-2.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               )}
             </div>
@@ -1284,60 +1295,52 @@ export const SchedulePage: React.FC = () => {
       )}
 
       {/* 2. Grid Container Block */}
-      <div className="flex-1 flex flex-col p-4 bg-[#f1f5f9] gap-0">
-        {/* Crisp Geometric Toolbar */}
-        <div className="bg-white border border-[#e2e8f0] border-b-0 rounded-t-lg h-12 flex items-center justify-between px-4 sm:px-6 shrink-0">
-          {/* Left Month navigating buttons */}
-          <div className="font-semibold flex items-center gap-4 text-xs sm:text-sm">
+      <div className="flex-1 flex flex-col p-3 sm:p-4 bg-slate-100 gap-0">
+        {/* Month Navigation Toolbar */}
+        <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl h-12 flex items-center justify-between px-3 sm:px-5 shrink-0 shadow-sm">
+          {/* Left: Month navigation */}
+          <div className="flex items-center gap-1">
             <button
               onClick={handlePrevMonth}
-              className="p-1 px-1.5 hover:bg-slate-50 rounded text-slate-600 transition cursor-pointer"
+              className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
               title="이전 달"
             >
-              &lt;
+              <ChevronLeft size={16} />
             </button>
-            <span className="font-semibold tracking-tight text-slate-900">
+            <span className="font-bold tracking-tight text-slate-900 text-sm px-1 min-w-[90px] text-center">
               {currentYear}년 {String(currentMonth).padStart(2, "0")}월
             </span>
             <button
               onClick={handleNextMonth}
-              className="p-1 px-1.5 hover:bg-slate-50 rounded text-slate-600 transition cursor-pointer"
+              className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
               title="다음 달"
             >
-              &gt;
+              <ChevronRight size={16} />
             </button>
           </div>
 
-          {/* Quick Legend indicators */}
-          <div className="hidden lg:flex items-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 bg-[#fef08a] border border-[#e2e8f0] rounded"></div>
-              <span className="text-slate-500 font-semibold norm-case">오픈</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 bg-[#a7f3d0] border border-[#e2e8f0] rounded"></div>
-              <span className="text-slate-500 font-semibold norm-case">마감</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 bg-[#fecdd3] border border-[#e2e8f0] rounded"></div>
-              <span className="text-slate-500 font-semibold norm-case">휴무</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 bg-[#fbbf24] border border-[#e2e8f0] rounded"></div>
-              <span className="text-slate-500 font-semibold norm-case">월차</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 bg-[#bae6fd] border border-[#e2e8f0] rounded"></div>
-              <span className="text-slate-550 text-slate-500 font-semibold norm-case">지정휴무</span>
-            </div>
+          {/* Center: Quick Legend indicators */}
+          <div className="hidden lg:flex items-center gap-3 text-[10px] font-semibold">
+            {[
+              { color: "bg-yellow-100 border-yellow-300", label: "오픈" },
+              { color: "bg-emerald-100 border-emerald-300", label: "마감" },
+              { color: "bg-rose-100 border-rose-300", label: "휴무" },
+              { color: "bg-amber-300 border-amber-400", label: "월차" },
+              { color: "bg-sky-100 border-sky-300", label: "지정휴무" },
+            ].map(({ color, label }) => (
+              <div key={label} className="flex items-center gap-1.5">
+                <span className={`w-2.5 h-2.5 rounded border ${color} inline-block`}></span>
+                <span className="text-slate-500">{label}</span>
+              </div>
+            ))}
           </div>
 
-          {/* Selector switches */}
+          {/* Right: Year/Month selectors */}
           <div className="flex gap-1.5">
             <select
               value={currentYear}
               onChange={(e) => setCurrentYear(parseInt(e.target.value))}
-              className="bg-white border border-[#e2e8f0] text-slate-700 font-semibold p-1 px-2 py-1 text-xs rounded shadow-none focus:outline-none cursor-pointer"
+              className="bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
             >
               {[2024, 2025, 2026, 2027, 2028].map((y) => (
                 <option key={y} value={y}>{y}년</option>
@@ -1347,7 +1350,7 @@ export const SchedulePage: React.FC = () => {
             <select
               value={currentMonth}
               onChange={(e) => setCurrentMonth(parseInt(e.target.value))}
-              className="bg-white border border-[#e2e8f0] text-slate-700 font-semibold p-1 px-2 py-1 text-xs rounded shadow-none focus:outline-none cursor-pointer"
+              className="bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                 <option key={m} value={m}>{m}월</option>
@@ -1358,25 +1361,25 @@ export const SchedulePage: React.FC = () => {
 
         {/* Dynamic Multi-View: Sheet vs Store Map */}
         {viewMode === "sheet" ? (
-          <div className="bg-white border border-[#e2e8f0] rounded-b-lg overflow-hidden flex flex-col flex-1">
+          <div className="bg-white border border-slate-200 rounded-b-xl overflow-hidden flex flex-col flex-1 shadow-sm">
             {/* Copy Previous Month Callout Banner */}
             {!isLoading && !error && isAdmin && employees.length > 0 && !employees.some(emp => emp.schedules && emp.schedules.some(s => s.type.trim() !== "")) && (
-              <div className="m-4 p-4 bg-blue-50/40 border border-blue-200 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300 shadow-sm">
+              <div className="m-4 p-4 bg-indigo-50/50 border border-indigo-200/70 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="flex items-start gap-3">
-                  <div className="p-2 bg-blue-100/60 text-blue-600 rounded-lg shrink-0">
+                  <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg shrink-0">
                     <Layers size={18} />
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-slate-800">이번 달 ({currentMonth}월) 스케줄 데이터가 보이지 않네요!</h4>
-                    <p className="text-[10px] text-slate-500 mt-0.5">
-                      등록된 스케줄 패턴이 없습니다. 이전 달의 스케줄 패턴을 간편하게 그대로 복사해 오시겠습니까? (이전 달이 기재되어 있을 때 활성화됩니다.)
+                    <h4 className="text-xs font-bold text-slate-800">이번 달 ({currentMonth}월) 스케줄 데이터가 비어 있습니다</h4>
+                    <p className="text-[10px] text-slate-500 mt-0.5 leading-relaxed">
+                      이전 달의 스케줄 패턴을 그대로 복사해 오시겠습니까?
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={handleCopyFromPreviousMonth}
                   disabled={isCopying}
-                  className="px-4 py-2 bg-[#2563eb] hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5 transition disabled:opacity-50 select-none cursor-pointer shrink-0"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold shadow-sm flex items-center gap-1.5 transition disabled:opacity-50 select-none cursor-pointer shrink-0"
                 >
                   {isCopying ? (
                     <>
@@ -1386,14 +1389,21 @@ export const SchedulePage: React.FC = () => {
                   ) : (
                     <>
                       <Layers size={12} />
-                      <span>이전달({currentMonth === 1 ? 12 : currentMonth - 1}월) 데이터 복사하기</span>
+                      <span>이전달({currentMonth === 1 ? 12 : currentMonth - 1}월) 복사</span>
                     </>
                   )}
                 </button>
               </div>
             )}
 
-            <div className="relative overflow-x-auto overflow-y-auto max-h-[66vh]">
+            {/* Mobile scroll hint */}
+            <div className="sm:hidden px-4 py-2 bg-indigo-50/60 border-b border-indigo-100 flex items-center gap-2 text-[11px] text-indigo-600 font-medium">
+              <span>←</span>
+              <span>좌우로 스크롤하여 날짜를 확인하세요. 날짜를 탭하면 당일 타임라인을 볼 수 있습니다.</span>
+              <span>→</span>
+            </div>
+
+            <div className="relative overflow-x-auto overflow-y-auto max-h-[65vh]">
               {isLoading ? (
                 <div className="w-full py-32 flex flex-col items-center justify-center bg-slate-50/50">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563eb]"></div>
@@ -1429,28 +1439,35 @@ export const SchedulePage: React.FC = () => {
               ) : (
                 <table className="w-full text-left border-collapse table-fixed min-w-[2300px]">
                   {/* Table Headers */}
-                  <thead className="sticky top-0 z-30 shadow-[0_1px_3px_rgba(0,0,0,0.02)] uppercase">
+                  <thead className="sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
                     {/* Header Row 1: Day of Month Numbers */}
-                    <tr className="bg-[#f8fafc] text-[#64748b] select-none">
-                      <th className="w-[145px] text-center text-[11px] font-semibold border-r border-b border-[#e2e8f0] sticky left-0 bg-[#f8fafc] z-40">
+                    <tr className="bg-slate-800 text-slate-200 select-none">
+                      <th className="w-[145px] text-center text-[11px] font-semibold border-r border-slate-700 border-b border-b-slate-700 sticky left-0 bg-slate-800 z-40 py-2.5 tracking-wide">
                         직원 성명
                       </th>
-                      <th className="w-[100px] text-center text-[11px] font-semibold border-r border-[#e2e8f0] sticky left-[145px] bg-[#f8fafc] z-40">
+                      <th className="w-[100px] text-center text-[11px] font-semibold border-r border-slate-700 sticky left-[145px] bg-slate-800 z-40 py-2.5 tracking-wide">
                         직급
                       </th>
-                      <th className="w-[165px] text-center text-[11px] font-semibold border-r border-b border-[#e2e8f0] sticky left-[245px] bg-[#f8fafc] z-40">
-                        구분 (근무 패턴)
+                      <th className="w-[165px] text-center text-[11px] font-semibold border-r border-b border-slate-700 sticky left-[245px] bg-slate-800 z-40 py-2.5 tracking-wide">
+                        근무 패턴
                       </th>
-                      <th className="w-[90px] text-center text-[11px] font-semibold border-r border-b border-[#e2e8f0] sticky left-[410px] bg-[#f8fafc] z-40">
+                      <th className="w-[90px] text-center text-[11px] font-semibold border-r border-b border-slate-700 sticky left-[410px] bg-slate-800 z-40 py-2.5 tracking-wide">
                         입사일
                       </th>
                       {daysList.map((day) => {
-                        const { colorClass, fullDate } = getDayDetails(day);
+                        const { fullDate } = getDayDetails(day);
+                        const dayIndex = new Date(currentYear, currentMonth - 1, day).getDay();
+                        const headerClass = dayIndex === 6
+                          ? "text-sky-300 bg-slate-700"
+                          : dayIndex === 0
+                          ? "text-rose-300 bg-slate-700"
+                          : "text-slate-200 bg-slate-800";
                         return (
                           <th
                             key={`day-num-${day}`}
                             onClick={() => setTimelineDate(fullDate)}
-                            className={`p-1.5 text-center text-[11px] font-semibold border-r border-b border-[#e2e8f0] min-w-[55px] cursor-pointer hover:brightness-90 ${colorClass}`}
+                            className={`p-1.5 text-center text-[11px] font-bold border-r border-b border-slate-700 min-w-[55px] cursor-pointer hover:bg-indigo-700 hover:text-white transition-colors ${headerClass}`}
+                            title={`${fullDate} 타임라인 보기`}
                           >
                             {day}
                           </th>
@@ -1459,19 +1476,25 @@ export const SchedulePage: React.FC = () => {
                     </tr>
 
                     {/* Header Row 2: Day of Week Characters */}
-                    <tr className="bg-white text-slate-500 select-none">
+                    <tr className="bg-slate-700/80 text-slate-400 select-none">
                       {/* Left spacing headers matching Name, Rank, Classification, HireDate */}
-                      <th className="border-r border-b border-[#e2e8f0] sticky left-0 bg-white z-40 h-7"></th>
-                      <th className="border-r border-b border-[#e2e8f0] sticky left-[145px] bg-white z-40 h-7"></th>
-                      <th className="border-r border-b border-[#e2e8f0] sticky left-[245px] bg-white z-40 h-7"></th>
-                      <th className="border-r border-b border-[#e2e8f0] sticky left-[410px] bg-white z-40 h-7"></th>
+                      <th className="border-r border-b border-slate-600 sticky left-0 bg-slate-700 z-40 h-6"></th>
+                      <th className="border-r border-b border-slate-600 sticky left-[145px] bg-slate-700 z-40 h-6"></th>
+                      <th className="border-r border-b border-slate-600 sticky left-[245px] bg-slate-700 z-40 h-6"></th>
+                      <th className="border-r border-b border-slate-600 sticky left-[410px] bg-slate-700 z-40 h-6"></th>
 
                       {daysList.map((day) => {
-                        const { dayWord, colorClass } = getDayDetails(day);
+                        const { dayWord } = getDayDetails(day);
+                        const dayIndex = new Date(currentYear, currentMonth - 1, day).getDay();
+                        const wordClass = dayIndex === 6
+                          ? "text-sky-400 font-bold"
+                          : dayIndex === 0
+                          ? "text-rose-400 font-bold"
+                          : "text-slate-400";
                         return (
                           <th
                             key={`day-name-${day}`}
-                            className={`p-1 text-center text-[10px] font-semibold border-r border-b border-[#e2e8f0] min-w-[55px] ${colorClass}`}
+                            className={`p-0.5 text-center text-[10px] border-r border-b border-slate-600 min-w-[55px] bg-slate-700 ${wordClass}`}
                           >
                             {dayWord}
                           </th>
@@ -1481,9 +1504,9 @@ export const SchedulePage: React.FC = () => {
                   </thead>
 
                   {/* Table Body */}
-                  <tbody className="divide-y divide-[#e2e8f0]">
+                  <tbody className="divide-y divide-slate-100">
                     {filteredEmployees.map((emp) => (
-                      <tr 
+                      <tr
                         key={emp.id}
                         draggable={isAdmin}
                         onDragStart={(e) => handleRowDragStart(e, emp.id)}
@@ -1493,19 +1516,19 @@ export const SchedulePage: React.FC = () => {
                           setDraggedRowId(null);
                           setDragOverRowId(null);
                         }}
-                        className={`hover:bg-slate-55/30 bg-white group transition ${
-                          draggedRowId === emp.id ? "opacity-35 bg-slate-50" : ""
+                        className={`bg-white group transition-colors ${
+                          draggedRowId === emp.id ? "opacity-40 bg-slate-50" : ""
                         } ${
-                          dragOverRowId === emp.id ? "bg-blue-50/80 border-y-2 border-blue-400 font-semibold" : ""
+                          dragOverRowId === emp.id ? "bg-indigo-50/60 outline outline-2 outline-indigo-400" : "hover:bg-slate-50/70"
                         }`}
                       >
-                        
+
                         {/* Column 1: Sticky Employee Name */}
-                        <td className="p-2 text-center text-xs font-medium border-r border-[#e2e8f0] bg-white sticky left-0 z-25 group-hover:bg-[#f8fafc] h-12">
+                        <td className="p-2 text-center text-xs font-medium border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50/80 h-11 shadow-[1px_0_0_0_#e2e8f0]">
                           <div className="flex items-center gap-1.5 px-0.5">
                             {isAdmin && (
-                              <div 
-                                className="text-slate-300 hover:text-slate-600 cursor-grab active:cursor-grabbing hover:bg-slate-100 p-0.5 rounded transition shrink-0"
+                              <div
+                                className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing hover:bg-slate-100 p-0.5 rounded transition shrink-0"
                                 title="드래그하여 이 직원 행의 순서 변경"
                               >
                                 <GripVertical size={12} />
@@ -1513,30 +1536,30 @@ export const SchedulePage: React.FC = () => {
                             )}
                             <div className="flex-1 flex items-center justify-between overflow-hidden">
                               {isAdmin ? (
-                                <span 
+                                <span
                                   onClick={() => openBulkScheduleModal(emp)}
-                                  className="text-[#2563eb] hover:text-blue-800 hover:underline font-extrabold text-[11px] cursor-pointer select-none transition truncate"
+                                  className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[11px] cursor-pointer select-none transition truncate"
                                   title="클릭하여 일괄 요일 스케줄 등록"
                                 >
-                                  👤 {emp.name}
+                                  {emp.name}
                                 </span>
                               ) : (
-                                <span className="text-slate-800 font-extrabold text-[11px] select-none truncate">
-                                  👤 {emp.name}
+                                <span className="text-slate-800 font-bold text-[11px] select-none truncate">
+                                  {emp.name}
                                 </span>
                               )}
                               {isAdmin && (
-                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition duration-150 ml-1 shrink-0">
+                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition duration-150 ml-1 shrink-0">
                                   <button
                                     onClick={() => openEditEmployeeModal(emp)}
-                                    className="text-slate-400 hover:text-[#2563eb] cursor-pointer p-0.5 transition"
+                                    className="text-slate-300 hover:text-indigo-500 cursor-pointer p-0.5 rounded transition hover:bg-indigo-50"
                                     title="직원 상세 정보 수정"
                                   >
                                     <Edit size={11} />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteEmployee(emp.id, emp.name)}
-                                    className="text-slate-400 hover:text-rose-600 cursor-pointer p-0.5 transition"
+                                    className="text-slate-300 hover:text-rose-500 cursor-pointer p-0.5 rounded transition hover:bg-rose-50"
                                     title="직원 삭제"
                                   >
                                     <Trash2 size={11} />
@@ -1548,19 +1571,19 @@ export const SchedulePage: React.FC = () => {
                         </td>
 
                         {/* Column 2: Sticky Position/Role (직급) */}
-                        <td className="p-2 text-center text-[11px] font-bold border-r border-[#e2e8f0] bg-[#fdfdfd] sticky left-[145px] z-25 group-hover:bg-[#f8fafc] text-slate-700 truncate">
+                        <td className="p-2 text-center text-[11px] font-semibold border-r border-slate-100 bg-white sticky left-[145px] z-[25] group-hover:bg-slate-50/80 text-slate-600 truncate shadow-[1px_0_0_0_#e2e8f0]">
                           {emp.position}
                         </td>
 
-                        {/* Column 1: Sticky Description (상세 설명 / 구분) */}
-                        <td 
+                        {/* Column 3: Sticky Description (상세 설명 / 구분) */}
+                        <td
                           onClick={() => {
                             if (isAdmin) {
                               setEditingEmpId(emp.id);
                               setTempDescription(emp.description || "");
                             }
                           }}
-                          className={`p-1 px-2 text-center text-[11px] border-r border-[#e2e8f0] bg-slate-50 sticky left-[245px] z-25 group-hover:bg-[#f1f5f9] text-[#475569] font-bold select-none transition ${isAdmin ? "cursor-pointer" : "cursor-default text-slate-400"}`}
+                          className={`p-1 px-2 text-center text-[11px] border-r border-slate-100 bg-slate-50/60 sticky left-[245px] z-[25] group-hover:bg-slate-100/50 text-slate-500 font-medium select-none transition-colors shadow-[1px_0_0_0_#e2e8f0] ${isAdmin ? "cursor-pointer hover:text-slate-700" : "cursor-default"}`}
                           title={isAdmin ? "클릭하여 직접 수정" : undefined}
                         >
                           {editingEmpId === emp.id ? (
@@ -1572,20 +1595,20 @@ export const SchedulePage: React.FC = () => {
                                 if (e.key === "Enter") handleUpdateDescription(emp.id);
                                 if (e.key === "Escape") setEditingEmpId(null);
                               }}
-                              className="w-full text-center text-[11px] px-1.5 py-0.5 border border-blue-500 rounded focus:outline-none bg-white font-semibold text-slate-800"
+                              className="w-full text-center text-[11px] px-1.5 py-0.5 border border-indigo-400 rounded focus:outline-none bg-white font-semibold text-slate-800 ring-1 ring-indigo-300"
                               autoFocus
                               onClick={(e) => e.stopPropagation()}
                             />
                           ) : (
                             <div className="flex items-center justify-center gap-1">
-                              <span className="truncate max-w-[150px]">{emp.description || "-"}</span>
+                              <span className="truncate max-w-[150px]">{emp.description || <span className="text-slate-300">—</span>}</span>
                             </div>
                           )}
                         </td>
 
                         {/* Column 4: Sticky Hiredate (입사일) */}
-                        <td className="p-2 text-center text-[10px] border-r border-[#e2e8f0] bg-white sticky left-[410px] z-25 group-hover:bg-[#f8fafc] text-slate-450 text-slate-400 font-mono">
-                          {emp.hireDate ? emp.hireDate.split("-").slice(1).join("/") : "-"}
+                        <td className="p-2 text-center text-[10px] border-r border-slate-100 bg-white sticky left-[410px] z-[25] group-hover:bg-slate-50/80 text-slate-400 font-mono shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]">
+                          {emp.hireDate ? emp.hireDate.split("-").slice(1).join("/") : "—"}
                         </td>
 
                         {/* Schedule Cells 1 to 31 */}
@@ -1616,14 +1639,14 @@ export const SchedulePage: React.FC = () => {
                     <SummaryRow summaries={currentSummaryList} label="미들" />
                     <SummaryRow summaries={currentSummaryList} label="마감" />
                     {positionSummaryList.map(({ position, counts }) => (
-                      <tr key={`pos-${position}`} className="border-t border-[#e2e8f0]">
+                      <tr key={`pos-${position}`} className="border-t border-slate-100">
                         <td colSpan={4}
-                          className="px-3 py-1 sticky left-0 z-20 text-center text-[10px] font-bold border-r border-[#e2e8f0] bg-slate-100 text-slate-500 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
+                          className="px-3 py-1.5 sticky left-0 z-20 text-center text-[10px] font-semibold border-r border-slate-200 bg-slate-100 text-slate-500 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.05)]">
                           {position}
                         </td>
                         {daysList.map((day) => (
-                          <td key={day} className="p-1 text-center text-[10px] border-r border-[#e2e8f0] bg-slate-50 text-slate-500 min-w-[55px]">
-                            {counts[day - 1] > 0 ? counts[day - 1] : ""}
+                          <td key={day} className="p-1 text-center text-[10px] border-r border-slate-100 bg-slate-50 text-slate-500 font-semibold min-w-[55px]">
+                            {counts[day - 1] > 0 ? counts[day - 1] : <span className="text-slate-200">·</span>}
                           </td>
                         ))}
                       </tr>
@@ -1634,25 +1657,25 @@ export const SchedulePage: React.FC = () => {
               )}
             </div>
 
-            {/* 📊 Integrated Real-time Attendance & Status Analysis Dashboard */}
-            <div id="attendance-dashboard" className="m-4 p-4 bg-white border border-[#cbd5e1] rounded-2xl shadow-3xs">
+            {/* Attendance & Status Analysis Dashboard */}
+            <div id="attendance-dashboard" className="m-4 p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-2 bg-rose-50 text-rose-600 rounded-xl">
-                    <Award size={18} />
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 bg-slate-100 text-slate-600 rounded-xl">
+                    <Award size={16} />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-slate-900 tracking-tight flex items-center gap-1.5 font-sans">
-                      📊 {currentMonth}월 실시간 근태 관리 및 특이사항 대시보드
+                    <h3 className="text-sm font-bold text-slate-900 tracking-tight">
+                      {currentMonth}월 근태 현황 대시보드
                     </h3>
-                    <p className="text-[11px] text-[#64748b] font-semibold mt-0.5">
-                      이달의 지각, 조퇴, 결근 발생 현황을 실시간 집계하여 정밀 모니터링합니다. (설정 팝업에서 버튼 혹은 텍스트 기입 시 실시간 연동)
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      이달의 지각, 조퇴, 결근 현황을 실시간 집계합니다.
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-100 px-2 py-0.5 rounded font-bold animate-pulse flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
-                  실시간 연동 중
+                <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                  실시간
                 </span>
               </div>
 
@@ -1788,19 +1811,19 @@ export const SchedulePage: React.FC = () => {
         }
       </div>
 
-      {/* 3. Footer Block */}
-      <div className="h-10 bg-white border-t border-[#e2e8f0] shrink-0 px-6 flex items-center justify-between text-[11px] text-[#94a3b8] font-medium tracking-tight">
-        <div className="flex items-center gap-1.5">
-          <span>Connected to</span>
-          <span className="text-slate-800 font-mono text-[10px] font-semibold bg-[#f1f5f9] border border-[#e2e8f0] rounded px-1.5 py-0.5">
+      {/* Footer */}
+      <footer className="h-9 bg-slate-900 border-t border-slate-800 shrink-0 px-4 sm:px-6 flex items-center justify-between text-[10px] text-slate-500 font-medium">
+        <div className="flex items-center gap-2">
+          <span className="text-slate-600">Connected to</span>
+          <span className="font-mono text-slate-400 bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5">
             sqlite://mega_town.db
           </span>
         </div>
-        <div className="flex items-center gap-4">
-          <span>API Latency: 12ms</span>
-          <span>Last Sync: Just now</span>
+        <div className="hidden sm:flex items-center gap-4">
+          <span>Latency: 12ms</span>
+          <span>Sync: Just now</span>
         </div>
-      </div>
+      </footer>
 
       {/* Roster Add Modal Popup Backdrop */}
       {isEmpModalOpen && (

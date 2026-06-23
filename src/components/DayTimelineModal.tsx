@@ -231,45 +231,53 @@ export const DayTimelineModal: React.FC<Props> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col"
-        style={{ maxHeight: "88vh" }}
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-5xl overflow-hidden flex flex-col"
+        style={{ maxHeight: "92vh" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 bg-slate-800 text-white flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-3.5 bg-slate-900 text-white flex-shrink-0">
           <div className="flex items-center gap-3">
-            <span className="text-lg font-bold">{title}</span>
-            <span className="bg-slate-600 text-slate-200 text-xs px-2.5 py-0.5 rounded-full">
-              근무 {workers.length}명
-            </span>
+            <div>
+              <span className="text-base font-bold tracking-tight">{title}</span>
+              <span className="ml-2 bg-slate-700 text-slate-300 text-[11px] px-2.5 py-0.5 rounded-full font-semibold">
+                근무 {workers.length}명
+              </span>
+            </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-700 transition-colors">
-            <X size={18} />
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-slate-700 transition-colors text-slate-400 hover:text-white"
+          >
+            <X size={17} />
           </button>
         </div>
 
         {/* Hint */}
-        <div className="px-6 py-1.5 bg-slate-50 border-b border-slate-200 flex-shrink-0">
-          <span className="text-[11px] text-slate-400">막대 양 끝 드래그 → 시간 조정 &nbsp;|&nbsp; 가운데 드래그 → 이동 &nbsp;(15분 단위)</span>
+        <div className="px-5 py-1.5 bg-slate-50 border-b border-slate-200 flex-shrink-0">
+          <span className="text-[10px] text-slate-400 font-medium">
+            막대 양 끝 드래그 → 시간 조정 &nbsp;|&nbsp; 가운데 드래그 → 이동 &nbsp;(15분 단위)
+          </span>
         </div>
 
         {/* Timeline */}
         <div className="overflow-y-auto flex-1 px-4 pt-3 pb-4 select-none">
           {workers.length === 0 ? (
-            <div className="flex items-center justify-center h-32 text-slate-400 text-sm">
-              이 날 근무자가 없습니다
+            <div className="flex flex-col items-center justify-center h-32 gap-2">
+              <span className="text-2xl">📅</span>
+              <span className="text-slate-400 text-sm font-medium">이 날 근무자가 없습니다</span>
             </div>
           ) : (
             <div className="flex gap-3 min-w-0">
               {/* Name column */}
-              <div className="flex-shrink-0 w-[88px]">
+              <div className="flex-shrink-0 w-[96px]">
                 <div className="h-8" />
                 {workers.map(({ emp, schedule }) => (
                   <div key={emp.id} className="h-9 mb-1.5 flex flex-col justify-center">
-                    <span className="text-xs font-bold text-slate-700 leading-tight truncate">{emp.name}</span>
-                    <span className="text-[10px] text-slate-400 leading-tight">{schedule.type}</span>
+                    <span className="text-xs font-bold text-slate-800 leading-tight truncate">{emp.name}</span>
+                    <span className="text-[10px] text-slate-400 leading-tight mt-0.5">{schedule.type}</span>
                   </div>
                 ))}
               </div>
@@ -282,7 +290,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                     {SLOTS.map((slot, i) => (
                       <div key={slot} className="absolute top-0 flex flex-col items-center"
                         style={{ left: `${(i / (SLOTS.length - 1)) * 100}%`, transform: "translateX(-50%)" }}>
-                        <span className="text-[9px] text-slate-400 whitespace-nowrap">{slot}</span>
+                        <span className="text-[9px] text-slate-400 whitespace-nowrap font-medium">{slot}</span>
                         <span className="mt-1 block w-px h-2 bg-slate-300" />
                       </div>
                     ))}
@@ -296,7 +304,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                         className="absolute top-0 bottom-0 border-l pointer-events-none"
                         style={{
                           left: `${(i / (SLOTS.length - 1)) * 100}%`,
-                          borderColor: i % 2 === 0 ? "#e2e8f0" : "#f1f5f9",
+                          borderColor: i % 2 === 0 ? "#e2e8f0" : "#f8fafc",
                         }} />
                     ))}
 
@@ -308,10 +316,10 @@ export const DayTimelineModal: React.FC<Props> = ({
                       const color = TYPE_COLORS[schedule.type] ?? "bg-slate-400";
                       const range = workerRanges[emp.id];
                       return (
-                        <div key={emp.id} className="relative h-9 mb-1.5 bg-slate-50 rounded border border-slate-100">
+                        <div key={emp.id} className="relative h-9 mb-1.5 bg-slate-50 rounded-lg border border-slate-100">
                           {range ? (
                             <div
-                              className={`absolute top-1/2 -translate-y-1/2 h-6 rounded z-20 ${color}`}
+                              className={`absolute top-1/2 -translate-y-1/2 h-6 rounded-md z-20 shadow-sm ${color}`}
                               style={{
                                 left: `${pct(range.start)}%`,
                                 width: `${Math.max(widthPct(range.start, range.end), 0.5)}%`,
@@ -319,7 +327,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                             >
                               {/* left resize */}
                               <div
-                                className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/20 rounded-l"
+                                className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/25 rounded-l-md"
                                 onMouseDown={e => startDrag(e, "emp", "start", range.start, range.end, emp.id)}
                               />
                               {/* body move */}
@@ -327,19 +335,19 @@ export const DayTimelineModal: React.FC<Props> = ({
                                 className="absolute inset-0 mx-2 cursor-grab active:cursor-grabbing flex items-center px-1"
                                 onMouseDown={e => startDrag(e, "emp", "body", range.start, range.end, emp.id)}
                               >
-                                <span className="text-[10px] text-white font-semibold truncate whitespace-nowrap">
+                                <span className="text-[10px] text-white font-semibold truncate whitespace-nowrap drop-shadow-sm">
                                   {minToStr(range.start)}-{minToStr(range.end)}
                                 </span>
                               </div>
                               {/* right resize */}
                               <div
-                                className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/20 rounded-r"
+                                className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/25 rounded-r-md"
                                 onMouseDown={e => startDrag(e, "emp", "end", range.start, range.end, emp.id)}
                               />
                             </div>
                           ) : (
                             <div className="flex items-center justify-center h-full">
-                              <span className="text-[10px] text-slate-300">시간 미정</span>
+                              <span className="text-[10px] text-slate-300 font-medium">시간 미정</span>
                             </div>
                           )}
                         </div>
@@ -353,20 +361,20 @@ export const DayTimelineModal: React.FC<Props> = ({
         </div>
 
         {/* Legend */}
-        <div className="flex items-center gap-4 px-6 py-2.5 bg-slate-50 border-t border-slate-200 flex-shrink-0 flex-wrap">
+        <div className="flex items-center gap-3 px-5 py-2.5 bg-slate-50 border-t border-slate-200 flex-shrink-0 flex-wrap">
           {Object.entries(TYPE_COLORS).map(([type, color]) => (
             <div key={type} className="flex items-center gap-1.5">
-              <span className={`w-3 h-3 rounded-sm ${color} inline-block`} />
-              <span className="text-xs text-slate-500">{type}</span>
+              <span className={`w-2.5 h-2.5 rounded ${color} inline-block shadow-sm`} />
+              <span className="text-[11px] text-slate-500 font-medium">{type}</span>
             </div>
           ))}
-          <div className="flex items-center gap-1.5 ml-2 pl-2 border-l border-slate-200">
-            <span className="w-3 h-3 rounded-sm bg-yellow-200 border border-yellow-400 inline-block" />
-            <span className="text-xs text-slate-500">점심</span>
+          <div className="flex items-center gap-1.5 ml-1 pl-3 border-l border-slate-200">
+            <span className="w-2.5 h-2.5 rounded bg-yellow-200 border border-yellow-400 inline-block" />
+            <span className="text-[11px] text-slate-500 font-medium">점심</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-3 h-3 rounded-sm bg-violet-200 border border-violet-400 inline-block" />
-            <span className="text-xs text-slate-500">휴게</span>
+            <span className="w-2.5 h-2.5 rounded bg-violet-200 border border-violet-400 inline-block" />
+            <span className="text-[11px] text-slate-500 font-medium">휴게</span>
           </div>
         </div>
       </div>
