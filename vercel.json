@@ -2,11 +2,6 @@
   "buildCommand": "npm run build:frontend",
   "outputDirectory": "dist",
   "rewrites": [
-    { "source": "/api/schedules/copy", "destination": "/api/schedules/copy" },
-    { "source": "/api/schedules", "destination": "/api/schedules" },
-    { "source": "/api/employees/:id", "destination": "/api/employees/[id]" },
-    { "source": "/api/employees", "destination": "/api/employees/index" },
-    { "source": "/api/seed", "destination": "/api/seed" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ]
 }
