@@ -101,6 +101,30 @@ export class ScheduleService {
     return { count: rows.length };
   }
 
+  async batchUpdateSchedules(items: Array<{
+    employeeId: number;
+    date: string;
+    type: string;
+    workingHours: string;
+    actualHours: string;
+    memo?: string;
+  }>) {
+    if (items.length === 0) return { count: 0 };
+    const rows = items.map(item => ({
+      employeeId: item.employeeId,
+      date: item.date,
+      type: item.type,
+      workingHours: item.workingHours,
+      actualHours: item.actualHours,
+      memo: item.memo ?? "",
+    }));
+    const { error } = await supabase
+      .from("schedules")
+      .upsert(rows, { onConflict: "employeeId,date" });
+    if (error) throw new Error(error.message);
+    return { count: rows.length };
+  }
+
   async createEmployee(data: { name: string; position: string; hireDate: string; description: string; workplace?: string }) {
     const { data: result, error } = await supabase
       .from("employees")

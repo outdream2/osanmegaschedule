@@ -171,19 +171,16 @@ export const SchedulePage: React.FC = () => {
   const applyShiftHoursToAll = async (open: string, middle: string, close: string) => {
     const typeMap: Record<string, string> = { "오픈": open, "미들": middle, "마감": close };
     const monthStr = String(currentMonth).padStart(2, "0");
-    const updates: Promise<void>[] = [];
+    const items: Array<{ employeeId: number; date: string; type: string; workingHours: string; actualHours: string; memo: string }> = [];
     for (const emp of employees) {
       for (const sc of emp.schedules) {
         if (!sc.date.startsWith(`${currentYear}-${monthStr}`)) continue;
         const wh = typeMap[sc.type];
         if (!wh) continue;
-        updates.push(
-          axios.put("/api/schedules", { employeeId: emp.id, date: sc.date, workingHours: wh })
-            .then(() => {}).catch(() => {})
-        );
+        items.push({ employeeId: emp.id, date: sc.date, type: sc.type, workingHours: wh, actualHours: sc.actualHours || "", memo: sc.memo || "" });
       }
     }
-    await Promise.all(updates);
+    if (items.length > 0) await axios.post("/api/schedules/batch", { items });
     await fetchScheduleData(currentYear, currentMonth);
     showNotification("기본 근무시간이 현재 월 전체에 적용되었습니다.", "success");
   };
@@ -318,19 +315,15 @@ export const SchedulePage: React.FC = () => {
 
     setIsBulkSaving(true);
     try {
-      // Execute all schedule upserts concurrently for maximum speed and zero lag
-      await Promise.all(
-        bulkSelectedDates.map((date) =>
-          axios.put("/api/schedules", {
-            employeeId: bulkEmployee.id,
-            date,
-            type: bulkType,
-            workingHours: bulkWorkingHours,
-            actualHours: bulkActualHours,
-            memo: bulkMemo,
-          })
-        )
-      );
+      const items = bulkSelectedDates.map((date) => ({
+        employeeId: bulkEmployee.id,
+        date,
+        type: bulkType,
+        workingHours: bulkWorkingHours,
+        actualHours: bulkActualHours,
+        memo: bulkMemo,
+      }));
+      await axios.post("/api/schedules/batch", { items });
 
       showNotification(`${bulkEmployee.name}님의 ${bulkSelectedDates.length}일 일괄 스케줄이 반영되었습니다.`);
       setIsBulkModalOpen(false);
@@ -596,6 +589,7 @@ export const SchedulePage: React.FC = () => {
         position: emp.position,
         hireDate: emp.hireDate,
         description: tempDescription,
+        workplace: emp.workplace,
       });
 
       setEmployees((prev) =>
@@ -1584,10 +1578,10 @@ export const SchedulePage: React.FC = () => {
                                 <GripVertical size={12} />
                               </div>
                             )}
-                            <div className="flex-1 flex items-center justify-between overflow-hidden">
+                            <div className="flex-1 flex items-center justify-between">
                               <span
                                 onClick={() => setCalendarEmployee(emp)}
-                                className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[11px] cursor-pointer select-none transition truncate"
+                                className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[11px] cursor-pointer select-none transition whitespace-nowrap"
                                 title="클릭하여 개인 스케줄 달력 보기"
                               >
                                 {emp.name}
@@ -2506,6 +2500,7 @@ export const SchedulePage: React.FC = () => {
           closeShiftHour={closeShiftHour}
           onClose={() => setTimelineDate(null)}
           onEditEmployee={isAdmin ? openEditEmployeeModal : undefined}
+          onScheduleUpdate={() => fetchScheduleData(currentYear, currentMonth)}
         />
       )}
 

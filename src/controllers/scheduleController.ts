@@ -55,6 +55,25 @@ export class ScheduleController {
   }
 
   /**
+   * POST /api/schedules/batch
+   * Body: items (array of schedule objects)
+   */
+  async batchUpdateSchedules(req: Request, res: Response): Promise<void> {
+    try {
+      const { items } = req.body;
+      if (!Array.isArray(items) || items.length === 0) {
+        res.status(400).json({ error: "items must be a non-empty array" });
+        return;
+      }
+      const result = await scheduleService.batchUpdateSchedules(items);
+      res.json(result);
+    } catch (error: any) {
+      console.error("Error in batchUpdateSchedules controller:", error);
+      res.status(500).json({ error: error.message || "Internal server error" });
+    }
+  }
+
+  /**
    * POST /api/schedules/copy
    * Body: targetYear (number), targetMonth (number)
    */

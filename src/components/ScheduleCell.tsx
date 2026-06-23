@@ -166,12 +166,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
           {displayType || "-"}
         </div>
 
-        {/* Row 2: Working Hours (근무시간) */}
-        {displayWorkingHours && (
-          <div className="text-[9px] opacity-80 leading-none truncate tracking-tighter mt-0.5">
-            {displayWorkingHours}
-          </div>
-        )}
+        {/* Row 2: Working Hours — hidden in cell, visible in timeline modal */}
 
         {/* Row 3: Actual Notes (실근무/특이사항) */}
         {displayActualHours && (

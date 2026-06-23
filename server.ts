@@ -13,6 +13,7 @@ async function startServer() {
   // API router endpoints
   app.get("/api/schedules", (req, res) => scheduleController.getSchedules(req, res));
   app.put("/api/schedules", (req, res) => scheduleController.updateSchedule(req, res));
+  app.post("/api/schedules/batch", (req, res) => scheduleController.batchUpdateSchedules(req, res));
   app.post("/api/schedules/copy", (req, res) => scheduleController.copySchedules(req, res));
   app.post("/api/employees", (req, res) => scheduleController.createEmployee(req, res));
   app.put("/api/employees/:id", (req, res) => scheduleController.updateEmployee(req, res));

@@ -76,10 +76,11 @@ interface Props {
   closeShiftHour: string;
   onClose: () => void;
   onEditEmployee?: (emp: Employee) => void;
+  onScheduleUpdate?: () => void;
 }
 
 export const DayTimelineModal: React.FC<Props> = ({
-  date, employees, openShiftHour, middleShiftHour, closeShiftHour, onClose, onEditEmployee,
+  date, employees, openShiftHour, middleShiftHour, closeShiftHour, onClose, onEditEmployee, onScheduleUpdate,
 }) => {
   const [activeTab, setActiveTab] = useState<"사원" | "약사">("사원");
 
@@ -101,6 +102,8 @@ export const DayTimelineModal: React.FC<Props> = ({
   const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
   const title = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${dayNames[d.getDay()]})`;
 
+  const TYPE_ORDER: Record<string, number> = { "오픈": 0, "오전반차": 1, "미들": 2, "오후반차": 3, "마감": 4 };
+
   const workers = employees
     .map(emp => {
       const s = emp.schedules.find(sc => sc.date === date);
@@ -113,7 +116,12 @@ export const DayTimelineModal: React.FC<Props> = ({
       }
       return { emp, schedule: s, wh };
     })
-    .filter(Boolean) as { emp: Employee; schedule: NonNullable<ReturnType<Employee["schedules"]["find"]>>; wh: string }[];
+    .filter(Boolean)
+    .sort((a, b) => {
+      const aOrder = TYPE_ORDER[a!.schedule.type] ?? 99;
+      const bOrder = TYPE_ORDER[b!.schedule.type] ?? 99;
+      return aOrder - bOrder;
+    }) as { emp: Employee; schedule: NonNullable<ReturnType<Employee["schedules"]["find"]>>; wh: string }[];
 
   const pharmacistWorkers = workers.filter(w => w.emp.position === "약사");
   const staffWorkers      = workers.filter(w => w.emp.position !== "약사");
@@ -221,12 +229,17 @@ export const DayTimelineModal: React.FC<Props> = ({
       document.body.style.cursor = "";
 
       if (kind === "work" && empId !== undefined) {
+        const worker = workers.find(w => w.emp.id === empId);
         try {
           await axios.put("/api/schedules", {
             employeeId: empId,
             date,
+            type: worker?.schedule.type ?? "",
             workingHours: `${minToStr(curStart)}-${minToStr(curEnd)}`,
+            actualHours: worker?.schedule.actualHours ?? "",
+            memo: worker?.schedule.memo ?? "",
           });
+          onScheduleUpdate?.();
         } catch (err) {
           console.error("Failed to save working hours", err);
         }
