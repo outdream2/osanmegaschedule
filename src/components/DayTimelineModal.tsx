@@ -80,6 +80,8 @@ interface Props {
 export const DayTimelineModal: React.FC<Props> = ({
   date, employees, openShiftHour, middleShiftHour, closeShiftHour, onClose,
 }) => {
+  const [activeTab, setActiveTab] = useState<"사원" | "약사">("사원");
+
   // Global default break times
   const [globalLunch, setGlobalLunch] = useState<Range>(() => {
     try {
@@ -111,6 +113,10 @@ export const DayTimelineModal: React.FC<Props> = ({
       return { emp, schedule: s, wh };
     })
     .filter(Boolean) as { emp: Employee; schedule: NonNullable<ReturnType<Employee["schedules"]["find"]>>; wh: string }[];
+
+  const pharmacistWorkers = workers.filter(w => w.emp.position === "약사");
+  const staffWorkers      = workers.filter(w => w.emp.position !== "약사");
+  const tabWorkers        = activeTab === "약사" ? pharmacistWorkers : staffWorkers;
 
   // Per-employee working hour ranges
   const [workRanges, setWorkRanges] = useState<Record<number, Range | null>>(() => {
@@ -364,12 +370,35 @@ export const DayTimelineModal: React.FC<Props> = ({
           <div className="flex items-center gap-3">
             <span className="text-base font-bold tracking-tight">{title}</span>
             <span className="bg-slate-700 text-slate-300 text-[11px] px-2.5 py-0.5 rounded-full font-semibold">
-              근무 {workers.length}명
+              근무 {workers.length}명 (사원 {staffWorkers.length} / 약사 {pharmacistWorkers.length})
             </span>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-700 transition-colors text-slate-400 hover:text-white">
             <X size={17} />
           </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex items-center gap-1 px-5 pt-2 pb-0 bg-white border-b border-slate-200 flex-shrink-0">
+          {(["사원", "약사"] as const).map(tab => {
+            const count = tab === "약사" ? pharmacistWorkers.length : staffWorkers.length;
+            return (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-1.5 text-xs font-bold rounded-t-lg border border-b-0 transition-colors cursor-pointer ${
+                  activeTab === tab
+                    ? "bg-white border-slate-200 text-slate-800 -mb-px z-10"
+                    : "bg-slate-50 border-transparent text-slate-400 hover:text-slate-600"
+                }`}
+              >
+                {tab}
+                <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${
+                  activeTab === tab ? "bg-indigo-100 text-indigo-700" : "bg-slate-200 text-slate-500"
+                }`}>{count}</span>
+              </button>
+            );
+          })}
         </div>
 
         {/* Hint */}
@@ -387,7 +416,7 @@ export const DayTimelineModal: React.FC<Props> = ({
 
         {/* Timeline */}
         <div className="overflow-y-auto flex-1 px-4 pt-3 pb-4 select-none">
-          {workers.length === 0 ? (
+          {tabWorkers.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 gap-2">
               <span className="text-2xl">📅</span>
               <span className="text-slate-400 text-sm font-medium">이 날 근무자가 없습니다</span>
@@ -406,7 +435,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                 </div>
                 <div className="h-px bg-slate-200 mb-2" />
                 {/* Employee labels */}
-                {workers.map(({ emp, schedule }) => (
+                {tabWorkers.map(({ emp, schedule }) => (
                   <div key={emp.id} className="h-16 mb-1.5 flex flex-col justify-center gap-0.5">
                     <span className="text-xs font-bold text-slate-800 leading-tight truncate">{emp.name}</span>
                     <span className="text-[9px] text-slate-400 leading-tight">{schedule.type}</span>
@@ -450,7 +479,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                     <div className="h-px bg-slate-200 mb-2" />
 
                     {/* Employee rows — each shows work bar (faint) + lunch + rest on top */}
-                    {workers.map(({ emp, schedule }) => {
+                    {tabWorkers.map(({ emp, schedule }) => {
                       const colorCls = TYPE_COLORS_BG[schedule.type] ?? "bg-slate-400";
                       const workRange = workRanges[emp.id];
                       const breaks = empBreaks[emp.id] ?? { lunch: globalLunch, rest: globalRest };
