@@ -1228,7 +1228,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                           <div className="flex items-center justify-center shrink-0 w-5 mr-1.5 border-r border-blue-200">
                             <span
                               className="text-[9px] font-black text-blue-950 whitespace-nowrap"
-                              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                              style={{ writingMode: "vertical-rl" }}
                             >
                               🧬 연령별 질환별 베스트 세트존
                             </span>
@@ -1252,7 +1252,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                           <div className="flex items-center justify-center shrink-0 w-5 mr-1.5 border-r border-slate-200">
                             <span
                               className="text-[9px] font-black text-slate-800 whitespace-nowrap"
-                              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                              style={{ writingMode: "vertical-rl" }}
                             >
                               🎈 프로모션 이벤트 존
                             </span>
@@ -1319,24 +1319,31 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                           dragOverZone === "slot_bulk" ? "bg-emerald-100 border-emerald-500 scale-102 z-20 shadow-xs" : ""
                         }`}
                       >
-                        <div className="flex items-center justify-between border-b border-emerald-200 pb-1">
-                          <span className="text-[9px] font-black text-emerald-950 flex items-center gap-1">
-                            👥 대량구매상담존
-                          </span>
-                          <span className="text-[9px] font-bold text-slate-500">🛗 EV</span>
+                        <div className="flex flex-row gap-2 h-full">
+                          {/* 왼쪽 90° 회전 레이블 */}
+                          <div className="flex items-center justify-center shrink-0 border-r border-emerald-200 pr-1.5">
+                            <span
+                              className="text-[9px] font-black text-emerald-950 whitespace-nowrap"
+                              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                            >👥 대량구매상담존</span>
+                          </div>
+                          <div className="flex-1 flex flex-col justify-between">
+                            <div className="flex items-center justify-between border-b border-emerald-200 pb-1">
+                              <span className="text-[9px] font-bold text-slate-500">🛗 EV</span>
+                            </div>
+                            <div className="flex-1 py-1">
+                              {bulkConsultStaff.length > 0 ? (
+                                renderPlacedStaffTags(bulkConsultStaff)
+                              ) : (
+                                <span className="text-[8px] text-emerald-700 font-bold italic text-center block py-1">대량 문의 대기</span>
+                              )}
+                            </div>
+                            <div className="text-[7px] text-emerald-700 text-right font-semibold">VIP 전담 안내대</div>
+                          </div>
                         </div>
-
-                        <div className="flex-1 py-1">
-                          {bulkConsultStaff.length > 0 ? (
-                            renderPlacedStaffTags(bulkConsultStaff)
-                          ) : (
-                            <span className="text-[8px] text-emerald-700 font-bold italic text-center block py-1">대량 문의 대기</span>
-                          )}
-                        </div>
-                        <div className="text-[7px] text-emerald-700 text-right font-semibold">VIP 전담 안내대</div>
                       </div>
 
-                      {/* 2B-2. 메인 POS 카운터 (Checkout) — 90° left rotation label */}
+                      {/* 2B-2. 메인 POS 카운터 (Checkout) — 90° right rotation label */}
                       <div
                         onDragOver={(e) => handleDragOver(e, "slot_counter")}
                         onDragLeave={handleDragLeave}
@@ -1345,11 +1352,11 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                           dragOverZone === "slot_counter" ? "bg-blue-50 border-blue-500 z-20 scale-102 shadow-xs" : ""
                         }`}
                       >
-                        {/* Rotated label on left side */}
+                        {/* Rotated label on left side — 오른쪽 90° (위→아래) */}
                         <div className="flex items-center justify-center shrink-0 w-5 mr-2 border-r border-slate-200">
                           <span
                             className="text-[10px] font-black text-slate-900 whitespace-nowrap"
-                            style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                            style={{ writingMode: "vertical-rl" }}
                           >
                             💳 메인 카운터 (Checkout)
                           </span>
@@ -1357,9 +1364,12 @@ export const StoreMap: React.FC<StoreMapProps> = ({
 
                         {/* Content on right */}
                         <div className="flex-1 flex flex-col justify-between">
-                          {/* Stool circles */}
+                          {/* Stool circles — 왼쪽 90° 회전 */}
                           <div className="py-1">
-                            <span className="text-[7px] text-slate-400 block text-center font-bold mb-1">고객 소통형 체어 8석</span>
+                            <span
+                              className="text-[7px] text-slate-400 font-bold mb-1 whitespace-nowrap"
+                              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)", display: "block" }}
+                            >고객 소통형 체어 8석</span>
                             <div className="flex flex-wrap justify-center gap-1 mb-1">
                               {Array.from({ length: 8 }).map((_, seatI) => (
                                 <div key={`stool-ui-${seatI}`} className="w-2.5 h-2.5 rounded-full border border-slate-300 bg-slate-100 shadow-3xs" title={`seats-${seatI}`}></div>
