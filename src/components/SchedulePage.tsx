@@ -6,6 +6,7 @@ import { ScheduleCell } from "./ScheduleCell";
 import { SummaryRow } from "./SummaryRow";
 import { StoreMap } from "./StoreMap";
 import { DayTimelineModal } from "./DayTimelineModal";
+import { EmployeeCalendarModal } from "./EmployeeCalendarModal";
 import { SettingsModal } from "./SettingsModal";
 import { useSettings } from "../hooks/useSettings";
 import {
@@ -139,6 +140,7 @@ export const SchedulePage: React.FC = () => {
   const [editingEmpId, setEditingEmpId] = useState<number | null>(null);
   const [tempDescription, setTempDescription] = useState("");
   const [timelineDate, setTimelineDate] = useState<string | null>(null);
+  const [calendarEmployee, setCalendarEmployee] = useState<Employee | null>(null);
 
   const openCreateEmployeeModal = () => {
     setSelectedEmpForEdit(null);
@@ -1605,21 +1607,22 @@ export const SchedulePage: React.FC = () => {
                               </div>
                             )}
                             <div className="flex-1 flex items-center justify-between overflow-hidden">
-                              {isAdmin ? (
-                                <span
-                                  onClick={() => openBulkScheduleModal(emp)}
-                                  className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[11px] cursor-pointer select-none transition truncate"
-                                  title="클릭하여 일괄 요일 스케줄 등록"
-                                >
-                                  {emp.name}
-                                </span>
-                              ) : (
-                                <span className="text-slate-800 font-bold text-[11px] select-none truncate">
-                                  {emp.name}
-                                </span>
-                              )}
+                              <span
+                                onClick={() => setCalendarEmployee(emp)}
+                                className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[11px] cursor-pointer select-none transition truncate"
+                                title="클릭하여 개인 스케줄 달력 보기"
+                              >
+                                {emp.name}
+                              </span>
                               {isAdmin && (
                                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition duration-150 ml-1 shrink-0">
+                                  <button
+                                    onClick={() => openBulkScheduleModal(emp)}
+                                    className="text-slate-300 hover:text-emerald-500 cursor-pointer p-0.5 rounded transition hover:bg-emerald-50"
+                                    title="일괄 요일 스케줄 등록"
+                                  >
+                                    <Calendar size={11} />
+                                  </button>
                                   <button
                                     onClick={() => openEditEmployeeModal(emp)}
                                     className="text-slate-300 hover:text-indigo-500 cursor-pointer p-0.5 rounded transition hover:bg-indigo-50"
@@ -2525,6 +2528,15 @@ export const SchedulePage: React.FC = () => {
           closeShiftHour={closeShiftHour}
           onClose={() => setTimelineDate(null)}
           onEditEmployee={isAdmin ? openEditEmployeeModal : undefined}
+        />
+      )}
+
+      {calendarEmployee && (
+        <EmployeeCalendarModal
+          employee={calendarEmployee}
+          initialYear={currentYear}
+          initialMonth={currentMonth}
+          onClose={() => setCalendarEmployee(null)}
         />
       )}
     </div>
