@@ -62,6 +62,28 @@ export const SchedulePage: React.FC = () => {
   const [dragOverRowId, setDragOverRowId] = useState<number | null>(null);
 
   // Collapsible column states (persisted to localStorage)
+  const [nameColWidth, setNameColWidth] = useState<number>(() => {
+    const v = parseInt(localStorage.getItem("name_col_width") || "100");
+    return isNaN(v) ? 100 : Math.max(60, Math.min(240, v));
+  });
+
+  const startNameResize = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = nameColWidth;
+    const onMove = (me: MouseEvent) => {
+      const next = Math.max(60, Math.min(240, startW + me.clientX - startX));
+      setNameColWidth(next);
+    };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      setNameColWidth(w => { localStorage.setItem("name_col_width", String(w)); return w; });
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  };
+
   const [colCollapsed, setColCollapsed] = useState<{ position: boolean; description: boolean; hireDate: boolean }>(() => {
     try { return JSON.parse(localStorage.getItem("col_collapsed") || "{}"); }
     catch { return { position: false, description: false, hireDate: false }; }
@@ -1381,7 +1403,7 @@ export const SchedulePage: React.FC = () => {
                 </div>
               ) : (() => {
                 // Dynamic sticky left positions based on which columns are collapsed
-                const NAME_W = 100;
+                const NAME_W = nameColWidth;
                 const stickyPos = {
                   name: 0,
                   position: NAME_W,
@@ -1394,8 +1416,19 @@ export const SchedulePage: React.FC = () => {
                   <thead className="sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
                     {/* Header Row 1: Day of Month Numbers */}
                     <tr className="bg-slate-800 text-slate-200 select-none">
-                      <th className="w-[100px] text-center text-[11px] font-semibold border-r border-slate-700 border-b border-b-slate-700 sticky left-0 bg-slate-800 z-40 py-2.5 tracking-wide">
+                      <th
+                        className="text-center text-[11px] font-semibold border-r border-slate-700 border-b border-b-slate-700 sticky left-0 bg-slate-800 z-40 py-2.5 tracking-wide relative select-none"
+                        style={{ width: NAME_W, minWidth: NAME_W }}
+                      >
                         직원 성명
+                        {/* Resize handle */}
+                        <div
+                          onMouseDown={startNameResize}
+                          className="absolute right-0 top-0 bottom-0 w-2 cursor-col-resize hover:bg-indigo-400/40 group flex items-center justify-center"
+                          title="드래그로 너비 조정"
+                        >
+                          <div className="w-px h-4 bg-slate-500 group-hover:bg-indigo-400" />
+                        </div>
                       </th>
 
                       {/* 직급 column header — collapsible */}
