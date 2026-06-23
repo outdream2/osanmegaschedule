@@ -1382,7 +1382,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                           );
                         })}
                         {/* Total column header */}
-                        <th className="p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-b border-slate-700 bg-slate-900 text-indigo-300 whitespace-nowrap border-l-2 border-l-slate-600">
+                        <th className="p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-b border-slate-700 bg-slate-900 text-indigo-300 whitespace-nowrap border-l-2 border-l-slate-600 w-[44px] sm:w-[52px] lg:w-[64px]">
                           합계
                         </th>
                       </tr>
@@ -1410,7 +1410,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                           );
                         })}
                         {/* Total column sub-header */}
-                        <th className="p-0.5 text-center text-[8px] sm:text-[9px] border-b border-slate-600 bg-slate-800 text-indigo-400 border-l-2 border-l-slate-600">
+                        <th className="p-0.5 text-center text-[8px] sm:text-[9px] border-b border-slate-600 bg-slate-800 text-indigo-400 border-l-2 border-l-slate-600 w-[44px] sm:w-[52px] lg:w-[64px]">
                           일·시간
                         </th>
                       </tr>
