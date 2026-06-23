@@ -11,11 +11,11 @@ const SNAP = 15;
 const SKIP_TYPES = new Set(["휴무", "월차", "지정휴무"]);
 
 const TYPE_COLORS_BG: Record<string, string> = {
-  "오픈":    "bg-emerald-500",
-  "미들":    "bg-blue-500",
-  "마감":    "bg-rose-500",
-  "오전반차": "bg-lime-500",
-  "오후반차": "bg-amber-500",
+  "오픈":    "bg-emerald-200",
+  "미들":    "bg-blue-200",
+  "마감":    "bg-rose-200",
+  "오전반차": "bg-lime-200",
+  "오후반차": "bg-amber-200",
 };
 
 const SLOTS: string[] = [];
@@ -460,7 +460,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                           {/* Layer 1: working hours bar — faint background */}
                           {workRange && (
                             <div
-                              className={`absolute top-1 bottom-1 rounded-md ${colorCls}/20`}
+                              className={`absolute top-1 bottom-1 rounded-md ${colorCls}`}
                               style={{ left: `${pct(workRange.start)}%`, width: `${Math.max(widthPct(workRange.start, workRange.end), 0.5)}%` }}
                             >
                               {/* left resize handle */}
@@ -552,7 +552,7 @@ export const DayTimelineModal: React.FC<Props> = ({
         <div className="flex items-center gap-3 px-5 py-2 bg-slate-50 border-t border-slate-200 flex-shrink-0 flex-wrap">
           {Object.entries(TYPE_COLORS_BG).map(([type, color]) => (
             <div key={type} className="flex items-center gap-1.5">
-              <span className={`w-2.5 h-2.5 rounded ${color} inline-block opacity-40`} />
+              <span className={`w-2.5 h-2.5 rounded ${color} inline-block`} />
               <span className="text-[10px] text-slate-500">{type}</span>
             </div>
           ))}
