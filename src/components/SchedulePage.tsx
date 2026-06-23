@@ -837,14 +837,16 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
             </div>
           )}
 
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            title="환경 설정"
-            className="px-2 sm:px-3 py-1.5 text-xs font-bold border border-[#cbd5e1] bg-white hover:bg-slate-50 text-slate-700 shadow-3xs rounded-lg transition duration-150 flex items-center gap-1 cursor-pointer"
-          >
-            <span>⚙️</span>
-            <span className="hidden sm:inline">환경 설정</span>
-          </button>
+          {isAdmin && (
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              title="환경 설정"
+              className="px-2 sm:px-3 py-1.5 text-xs font-bold border border-[#cbd5e1] bg-white hover:bg-slate-50 text-slate-700 shadow-3xs rounded-lg transition duration-150 flex items-center gap-1 cursor-pointer"
+            >
+              <span>⚙️</span>
+              <span className="hidden sm:inline">환경 설정</span>
+            </button>
+          )}
 
           {isAdmin && undoStack.length > 0 && (
             <button
@@ -1338,13 +1340,15 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                     <Users size={30} />
                   </div>
                   <p className="text-[#64748b] font-bold text-xs">등록된 직원이 없습니다.</p>
-                  <button
-                    onClick={() => openCreateEmployeeModal()}
-                    className="mt-4 px-3 py-1.5 text-xs bg-[#2563eb] font-semibold text-white rounded flex items-center gap-1"
-                  >
-                    <UserPlus size={14} />
-                    <span>첫 직원 등록하기</span>
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => openCreateEmployeeModal()}
+                      className="mt-4 px-3 py-1.5 text-xs bg-[#2563eb] font-semibold text-white rounded flex items-center gap-1"
+                    >
+                      <UserPlus size={14} />
+                      <span>첫 직원 등록하기</span>
+                    </button>
+                  )}
                 </div>
               ) : (() => {
                 return (
