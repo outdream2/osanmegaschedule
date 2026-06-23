@@ -13,7 +13,8 @@ export interface Schedule {
 export interface Employee {
   id: number;
   name: string;
-  position: string;
+  position: string;     // 약사 | 캐셔 | 물류 | 대표 | 임원
+  employmentType: string; // 정직원 | 계약직 | 알바
   hireDate: string;
   description: string;
   workplace: string; // "매장" or "창고"
@@ -27,4 +28,6 @@ export interface MonthlySummary {
   middleCount: number;
   closeCount: number;
   totalCount: number;
+  pharmacistCount: number;
+  staffCount: number;
 }

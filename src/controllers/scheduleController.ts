@@ -102,7 +102,7 @@ export class ScheduleController {
    */
   async createEmployee(req: Request, res: Response): Promise<void> {
     try {
-      const { name, position, hireDate, description, workplace } = req.body;
+      const { name, position, employmentType, hireDate, description, workplace } = req.body;
       if (!name || !position) {
         res.status(400).json({ error: "name and position are required fields" });
         return;
@@ -111,6 +111,7 @@ export class ScheduleController {
       const result = await scheduleService.createEmployee({
         name,
         position,
+        employmentType: employmentType || "정직원",
         hireDate: hireDate || new Date().toISOString().split("T")[0],
         description: description || "",
         workplace: workplace || "매장",
@@ -129,7 +130,7 @@ export class ScheduleController {
   async updateEmployee(req: Request, res: Response): Promise<void> {
     try {
       const id = parseInt(req.params.id);
-      const { name, position, hireDate, description, workplace } = req.body;
+      const { name, position, employmentType, hireDate, description, workplace } = req.body;
 
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid employee ID" });
@@ -139,6 +140,7 @@ export class ScheduleController {
       const result = await scheduleService.updateEmployee(id, {
         name,
         position,
+        employmentType: employmentType || "정직원",
         hireDate,
         description: description || "",
         workplace: workplace || "매장",

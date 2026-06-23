@@ -4,6 +4,7 @@ import { DEFAULT_SCHEDULE_TYPES } from "../constants";
 
 export interface AppSettings {
   positions: string[];
+  employmentTypes: string[];
   workplaces: string[];
   scheduleTypes: string[];
   openShiftHour: string;
@@ -14,7 +15,8 @@ export interface AppSettings {
 const STORAGE_KEY = "app_settings";
 
 const DEFAULT_SETTINGS: AppSettings = {
-  positions: ["부점장", "사원", "사원(주간)", "사원(오픈)", "사원(마감)", "사원(주말)", "일용직", "약사", "캐셔"],
+  positions: ["약사", "캐셔", "물류", "대표", "임원"],
+  employmentTypes: ["정직원", "계약직", "알바"],
   workplaces: ["매장", "창고"],
   scheduleTypes: DEFAULT_SCHEDULE_TYPES,
   openShiftHour: "09:30-18:30",
@@ -31,6 +33,9 @@ function loadSettings(): AppSettings {
       positions: Array.isArray(parsed.positions) && parsed.positions.length > 0
         ? parsed.positions
         : DEFAULT_SETTINGS.positions,
+      employmentTypes: Array.isArray(parsed.employmentTypes) && parsed.employmentTypes.length > 0
+        ? parsed.employmentTypes
+        : DEFAULT_SETTINGS.employmentTypes,
       workplaces: Array.isArray(parsed.workplaces) && parsed.workplaces.length > 0
         ? parsed.workplaces
         : DEFAULT_SETTINGS.workplaces,
@@ -63,6 +68,7 @@ export function useSettings() {
 
   return {
     positions: settings.positions,
+    employmentTypes: settings.employmentTypes,
     workplaces: settings.workplaces,
     scheduleTypes: settings.scheduleTypes,
     openShiftHour: settings.openShiftHour,

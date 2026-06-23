@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { X, Pencil } from "lucide-react";
 import { Employee } from "../types";
 import axios from "axios";
@@ -126,6 +126,61 @@ export const DayTimelineModal: React.FC<Props> = ({
   const pharmacistWorkers = workers.filter(w => w.emp.position === "약사");
   const staffWorkers      = workers.filter(w => w.emp.position !== "약사");
   const tabWorkers        = activeTab === "약사" ? pharmacistWorkers : staffWorkers;
+
+  // Row drag-and-drop reordering state
+  const [dragRowId, setDragRowId] = useState<number | null>(null);
+  const [orderedIds, setOrderedIds] = useState<number[]>(() => tabWorkers.map(w => w.emp.id));
+
+  // Reset order whenever the active tab changes
+  useEffect(() => {
+    setOrderedIds(tabWorkers.map(w => w.emp.id));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  // Derive display order from orderedIds, falling back to tabWorkers order for any missing ids
+  const displayWorkers = (() => {
+    const byId = new Map(tabWorkers.map(w => [w.emp.id, w]));
+    const ordered = orderedIds.flatMap(id => {
+      const w = byId.get(id);
+      return w ? [w] : [];
+    });
+    // Append any workers not yet in orderedIds (e.g. added mid-session)
+    const orderedSet = new Set(orderedIds);
+    tabWorkers.forEach(w => { if (!orderedSet.has(w.emp.id)) ordered.push(w); });
+    return ordered;
+  })();
+
+  const handleRowDragStart = (e: React.DragEvent, empId: number) => {
+    e.stopPropagation();
+    e.dataTransfer.effectAllowed = "move";
+    setDragRowId(empId);
+  };
+
+  const handleRowDragOver = (e: React.DragEvent, empId: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (dragRowId === null || dragRowId === empId) return;
+    setOrderedIds(prev => {
+      const ids = [...prev];
+      const fromIdx = ids.indexOf(dragRowId);
+      const toIdx   = ids.indexOf(empId);
+      if (fromIdx === -1 || toIdx === -1) return prev;
+      ids.splice(fromIdx, 1);
+      ids.splice(toIdx, 0, dragRowId);
+      return ids;
+    });
+  };
+
+  const handleRowDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragRowId(null);
+  };
+
+  const handleRowDragEnd = (e: React.DragEvent) => {
+    e.stopPropagation();
+    setDragRowId(null);
+  };
 
   // Per-employee working hour ranges
   const [workRanges, setWorkRanges] = useState<Record<number, Range | null>>(() => {
@@ -430,7 +485,7 @@ export const DayTimelineModal: React.FC<Props> = ({
 
         {/* Timeline */}
         <div className="overflow-y-auto flex-1 px-4 pt-3 pb-4 select-none">
-          {tabWorkers.length === 0 ? (
+          {displayWorkers.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-32 gap-2">
               <span className="text-2xl">📅</span>
               <span className="text-slate-400 text-sm font-medium">이 날 근무자가 없습니다</span>
@@ -449,8 +504,16 @@ export const DayTimelineModal: React.FC<Props> = ({
                 </div>
                 <div className="h-px bg-slate-200 mb-2" />
                 {/* Employee labels */}
-                {tabWorkers.map(({ emp, schedule }) => (
-                  <div key={emp.id} className="h-16 mb-1.5 flex flex-col justify-center gap-0.5 group">
+                {displayWorkers.map(({ emp, schedule }) => (
+                  <div
+                    key={emp.id}
+                    className={`h-16 mb-1.5 flex flex-col justify-center gap-0.5 group cursor-grab active:cursor-grabbing transition-opacity ${dragRowId === emp.id ? "opacity-40" : "opacity-100"}`}
+                    draggable
+                    onDragStart={e => handleRowDragStart(e, emp.id)}
+                    onDragOver={e => handleRowDragOver(e, emp.id)}
+                    onDrop={handleRowDrop}
+                    onDragEnd={handleRowDragEnd}
+                  >
                     <div className="flex items-center gap-1">
                       <span className="text-xs font-bold text-slate-800 leading-tight truncate">{emp.name}</span>
                       {onEditEmployee && (
@@ -504,13 +567,21 @@ export const DayTimelineModal: React.FC<Props> = ({
                     <div className="h-px bg-slate-200 mb-2" />
 
                     {/* Employee rows — each shows work bar (faint) + lunch + rest on top */}
-                    {tabWorkers.map(({ emp, schedule }) => {
+                    {displayWorkers.map(({ emp, schedule }) => {
                       const colorCls = TYPE_COLORS_BG[schedule.type] ?? "bg-slate-400";
                       const workRange = workRanges[emp.id];
                       const breaks = empBreaks[emp.id] ?? { lunch: globalLunch, rest: globalRest };
 
                       return (
-                        <div key={emp.id} className="relative h-16 mb-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                        <div
+                          key={emp.id}
+                          className={`relative h-16 mb-1.5 bg-slate-50 rounded-lg border border-slate-100 transition-opacity ${dragRowId === emp.id ? "opacity-40" : "opacity-100"}`}
+                          draggable
+                          onDragStart={e => handleRowDragStart(e, emp.id)}
+                          onDragOver={e => handleRowDragOver(e, emp.id)}
+                          onDrop={handleRowDrop}
+                          onDragEnd={handleRowDragEnd}
+                        >
                           {/* Layer 1: working hours bar — faint background */}
                           {workRange && (
                             <div

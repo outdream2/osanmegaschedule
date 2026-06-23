@@ -10,13 +10,14 @@ generator client {
 }
 
 model Employee {
-  id          Int        @id @default(autoincrement())
-  name        String
-  position    String
-  hireDate    String
-  description String     @default("")
-  workplace   String     @default("매장") // "매장" or "창고"
-  schedules   Schedule[]
+  id             Int        @id @default(autoincrement())
+  name           String
+  position       String
+  employmentType String     @default("정직원") // 정직원 | 계약직 | 알바
+  hireDate       String
+  description    String     @default("")
+  workplace      String     @default("매장") // 매장 | 창고
+  schedules      Schedule[]
 }
 
 model Schedule {

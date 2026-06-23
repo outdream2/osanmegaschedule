@@ -41,6 +41,7 @@ export const SchedulePage: React.FC = () => {
   // Settings hook (positions, workplaces, scheduleTypes, shift hours)
   const {
     positions: PRESET_POSITIONS,
+    employmentTypes: PRESET_EMPLOYMENT_TYPES,
     workplaces: settingsWorkplaces,
     scheduleTypes: settingsScheduleTypes,
     openShiftHour: settingsOpenShiftHour,
@@ -57,6 +58,11 @@ export const SchedulePage: React.FC = () => {
   const [summary, setSummary] = useState<MonthlySummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Undo history: stores previous schedule states for the last 20 cell changes
+  const [undoStack, setUndoStack] = useState<Array<{
+    employeeId: number; date: string; type: string; workingHours: string; actualHours: string; memo: string;
+  }>>([]);
 
   // Drag and Drop row states
   const [draggedRowId, setDraggedRowId] = useState<number | null>(null);
@@ -120,6 +126,7 @@ export const SchedulePage: React.FC = () => {
   const [empName, setEmpName] = useState("");
   const [empPosition, setEmpPosition] = useState("");
   const [empCustomPosition, setEmpCustomPosition] = useState("");
+  const [empEmploymentType, setEmpEmploymentType] = useState<string>("정직원");
   const [empHireDate, setEmpHireDate] = useState("");
   const [empDescription, setEmpDescription] = useState("");
   const [empWorkplace, setEmpWorkplace] = useState<string>("매장");
@@ -134,6 +141,7 @@ export const SchedulePage: React.FC = () => {
     setEmpName("");
     setEmpPosition("");
     setEmpCustomPosition("");
+    setEmpEmploymentType("정직원");
     setEmpHireDate("");
     setEmpDescription("");
     setEmpWorkplace("매장");
@@ -144,7 +152,7 @@ export const SchedulePage: React.FC = () => {
     setSelectedEmpForEdit(emp);
     setEmpModalMode("edit");
     setEmpName(emp.name);
-    
+
     if (emp.position && !PRESET_POSITIONS.includes(emp.position)) {
       setEmpPosition("기타");
       setEmpCustomPosition(emp.position);
@@ -152,6 +160,7 @@ export const SchedulePage: React.FC = () => {
       setEmpPosition(emp.position || "");
       setEmpCustomPosition("");
     }
+    setEmpEmploymentType(emp.employmentType || "정직원");
     setEmpHireDate(emp.hireDate || "");
     setEmpDescription(emp.description || "");
     setEmpWorkplace(emp.workplace || "매장");
@@ -159,7 +168,7 @@ export const SchedulePage: React.FC = () => {
   };
 
   // Tabs & Search states
-  const [activeTab, setActiveTab] = useState<"전체" | "매장" | "창고">("전체");
+  const [activeTab, setActiveTab] = useState<"전체" | "매장" | "창고" | "약사" | "캐셔" | "물류">("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [viewMode, setViewMode] = useState<"sheet" | "map">("sheet");
   const [sortBy, setSortBy] = useState<"none" | "position" | "hireDate" | "name">("none");
@@ -388,6 +397,18 @@ export const SchedulePage: React.FC = () => {
     }, 4000);
   };
 
+  // Ctrl+Z global undo shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "z" && isAdmin) {
+        e.preventDefault();
+        handleUndo();
+      }
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [undoStack, isAdmin]);
+
   // Drag and drop handlers for employee rows reordering
   const handleRowDragStart = (e: React.DragEvent, id: number) => {
     if (!isAdmin) {
@@ -469,14 +490,23 @@ export const SchedulePage: React.FC = () => {
     memo?: string;
   }) => {
     try {
+      // Save current state for undo before overwriting
+      const emp = employees.find(e => e.id === data.employeeId);
+      const prevSched = emp?.schedules.find(s => s.date === data.date);
+      if (prevSched) {
+        setUndoStack(prev => [
+          { employeeId: data.employeeId, date: data.date, type: prevSched.type, workingHours: prevSched.workingHours, actualHours: prevSched.actualHours, memo: prevSched.memo ?? "" },
+          ...prev.slice(0, 19),
+        ]);
+      }
+
       await axios.put("/api/schedules", data);
-      
+
       // Update local state live without full refresh, then fetch background calculations
       setEmployees((prevEmployees) => {
         return prevEmployees.map((emp) => {
           if (emp.id !== data.employeeId) return emp;
 
-          // Find if there was an existing schedule for that date
           const existingSchedules = [...emp.schedules];
           const scheduleIndex = existingSchedules.findIndex((s) => s.date === data.date);
 
@@ -506,11 +536,30 @@ export const SchedulePage: React.FC = () => {
       // Refetch summaries quietly in background to update total row metrics
       const summaryRes = await axios.get(`/api/schedules?year=${currentYear}&month=${currentMonth}`);
       setSummary(summaryRes.data.summary || []);
-      
+
       showNotification(`${data.date.split("-").slice(1).join("/")} 스케줄이 성공적으로 변경되었습니다.`);
     } catch (err) {
       console.error("Failed to update cell schedule:", err);
       showNotification("스케줄 정보 저장에 실패했습니다.", "error");
+    }
+  };
+
+  const handleUndo = async () => {
+    if (undoStack.length === 0) return;
+    const [prev, ...rest] = undoStack;
+    setUndoStack(rest);
+    try {
+      await axios.put("/api/schedules", prev);
+      setEmployees(prevEmployees => prevEmployees.map(emp => {
+        if (emp.id !== prev.employeeId) return emp;
+        const schedules = emp.schedules.map(s =>
+          s.date === prev.date ? { ...s, ...prev } : s
+        );
+        return { ...emp, schedules };
+      }));
+      showNotification("마지막 변경을 되돌렸습니다.", "success");
+    } catch {
+      showNotification("되돌리기에 실패했습니다.", "error");
     }
   };
 
@@ -528,6 +577,7 @@ export const SchedulePage: React.FC = () => {
         await axios.put(`/api/employees/${selectedEmpForEdit.id}`, {
           name: empName,
           position: finalPosition,
+          employmentType: empEmploymentType,
           hireDate: empHireDate || new Date().toISOString().split("T")[0],
           description: empDescription,
           workplace: empWorkplace,
@@ -537,17 +587,19 @@ export const SchedulePage: React.FC = () => {
         await axios.post("/api/employees", {
           name: empName,
           position: finalPosition,
+          employmentType: empEmploymentType,
           hireDate: empHireDate || new Date().toISOString().split("T")[0],
           description: empDescription,
           workplace: empWorkplace,
         });
         showNotification(`새 직원 ${empName}님이 등록되었습니다.`);
       }
-      
+
       setIsEmpModalOpen(false);
       setEmpName("");
       setEmpPosition("");
       setEmpCustomPosition("");
+      setEmpEmploymentType("정직원");
       setEmpHireDate("");
       setEmpDescription("");
       setEmpWorkplace("매장");
@@ -630,14 +682,18 @@ export const SchedulePage: React.FC = () => {
 
   const daysList = getDaysArray();
 
+  const WORKPLACE_TABS = new Set(["매장", "창고"]);
+  const POSITION_TABS = new Set(["약사", "캐셔", "물류"]);
+
   const filteredEmployees = employees
     .filter((emp) => {
-      // 1. Tab filtering (전체, 매장, 창고)
       if (activeTab !== "전체") {
-        const empWorkplaceVal = emp.workplace || "매장";
-        if (empWorkplaceVal !== activeTab) return false;
+        if (WORKPLACE_TABS.has(activeTab)) {
+          if ((emp.workplace || "매장") !== activeTab) return false;
+        } else if (POSITION_TABS.has(activeTab)) {
+          if (emp.position !== activeTab) return false;
+        }
       }
-      // 2. Search query filtering (by name)
       if (searchQuery.trim() !== "") {
         return emp.name.toLowerCase().includes(searchQuery.toLowerCase().trim());
       }
@@ -646,15 +702,11 @@ export const SchedulePage: React.FC = () => {
     .sort((a, b) => {
       if (sortBy === "position") {
         const PRESET_MAPPING: Record<string, number> = {
-          "부점장": 1,
-          "약사": 2,
-          "사원": 3,
-          "사원(오픈)": 4,
-          "사원(마감)": 5,
-          "사원(주간)": 6,
-          "사원(주말)": 7,
-          "캐셔": 8,
-          "일용직": 9,
+          "대표": 1,
+          "임원": 2,
+          "약사": 3,
+          "캐셔": 4,
+          "물류": 5,
         };
         const pA = PRESET_MAPPING[a.position] || 99;
         const pB = PRESET_MAPPING[b.position] || 99;
@@ -695,12 +747,14 @@ export const SchedulePage: React.FC = () => {
       let middleCount = 0;
       let closeCount = 0;
       let totalCount = 0;
+      let pharmacistCount = 0;
+      let staffCount = 0;
 
       for (const emp of filteredEmployees) {
         const sched = emp.schedules.find((s) => s.date === currentDate);
         if (sched && sched.type) {
           const type = sched.type;
-          
+
           if (type === "오픈" || type === "오전반차") {
             openCount++;
           } else if (type === "미들") {
@@ -713,6 +767,8 @@ export const SchedulePage: React.FC = () => {
           const isOffType = ["휴무", "월차", "지정휴무", "결근"].includes(type);
           if (!isOffType && type.trim() !== "") {
             totalCount++;
+            if (emp.position === "약사") pharmacistCount++;
+            else staffCount++;
           }
         }
       }
@@ -724,6 +780,8 @@ export const SchedulePage: React.FC = () => {
         middleCount,
         closeCount,
         totalCount,
+        pharmacistCount,
+        staffCount,
       });
     }
 
@@ -731,28 +789,6 @@ export const SchedulePage: React.FC = () => {
   };
 
   const currentSummaryList = getCalculatedSummary();
-
-  const getPositionSummary = () => {
-    const monthStr = String(currentMonth).padStart(2, "0");
-    const totalDays = new Date(currentYear, currentMonth, 0).getDate();
-    const posMap = new Map<string, number[]>();
-    for (const emp of filteredEmployees) {
-      if (!posMap.has(emp.position)) posMap.set(emp.position, Array(totalDays).fill(0));
-    }
-    for (let day = 1; day <= totalDays; day++) {
-      const dateStr = `${currentYear}-${monthStr}-${String(day).padStart(2, "0")}`;
-      for (const emp of filteredEmployees) {
-        const sched = emp.schedules.find(s => s.date === dateStr);
-        if (sched && !["휴무", "월차", "지정휴무", "결근"].includes(sched.type) && sched.type.trim() !== "") {
-          const arr = posMap.get(emp.position);
-          if (arr) arr[day - 1]++;
-        }
-      }
-    }
-    return Array.from(posMap.entries()).map(([position, counts]) => ({ position, counts }));
-  };
-
-  const positionSummaryList = getPositionSummary();
 
   const getAttendanceSummary = () => {
     let totalLates = 0;
@@ -895,6 +931,17 @@ export const SchedulePage: React.FC = () => {
             ⚙️ 환경 설정
           </button>
 
+          {isAdmin && undoStack.length > 0 && (
+            <button
+              onClick={handleUndo}
+              title={`되돌리기 (${undoStack.length}개 남음)`}
+              className="px-3 py-1.5 text-xs font-semibold border border-amber-600/50 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg text-amber-300 transition-all duration-150 cursor-pointer flex items-center gap-1.5"
+            >
+              ↩ <span className="hidden sm:inline">되돌리기</span>
+              <span className="text-[10px] bg-amber-500/30 px-1 rounded">{undoStack.length}</span>
+            </button>
+          )}
+
           <button
             onClick={() => fetchScheduleData(currentYear, currentMonth)}
             className="px-3 py-1.5 text-xs font-semibold border border-slate-700 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-all duration-150 cursor-pointer flex items-center gap-1.5"
@@ -938,43 +985,31 @@ export const SchedulePage: React.FC = () => {
       {/* 1.5 Sub-Header Control Bar for Workplace Tabs, Employee Sorting & Search */}
       {viewMode === "sheet" && (
         <div className="bg-white border-b border-slate-200 px-4 sm:px-6 py-2.5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 shrink-0 shadow-sm">
-          {/* Workplace Tabs in a pill group */}
+          {/* Filter Tabs: workplace + position */}
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">필터</span>
-            <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
-              <button
-                onClick={() => setActiveTab("전체")}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1.5 min-h-[32px] ${
-                  activeTab === "전체"
-                    ? "bg-white text-indigo-600 shadow-sm font-bold"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                <Layers size={12} />
-                <span>전체 <span className="text-slate-400 font-normal">({employees.length})</span></span>
-              </button>
-              <button
-                onClick={() => setActiveTab("매장")}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1.5 min-h-[32px] ${
-                  activeTab === "매장"
-                    ? "bg-white text-emerald-600 shadow-sm font-bold"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                <Building2 size={12} />
-                <span>매장 <span className="text-slate-400 font-normal">({employees.filter(e => (e.workplace || "매장") === "매장").length})</span></span>
-              </button>
-              <button
-                onClick={() => setActiveTab("창고")}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1.5 min-h-[32px] ${
-                  activeTab === "창고"
-                    ? "bg-white text-indigo-600 shadow-sm font-bold"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                }`}
-              >
-                <Warehouse size={12} />
-                <span>창고 <span className="text-slate-400 font-normal">({employees.filter(e => e.workplace === "창고").length})</span></span>
-              </button>
+            <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5 flex-wrap">
+              {([
+                { key: "전체", label: "전체", icon: <Layers size={12} />, color: "text-indigo-600", count: employees.length },
+                { key: "매장", label: "매장", icon: <Building2 size={12} />, color: "text-emerald-600", count: employees.filter(e => (e.workplace || "매장") === "매장").length },
+                { key: "창고", label: "창고", icon: <Warehouse size={12} />, color: "text-indigo-600", count: employees.filter(e => e.workplace === "창고").length },
+                { key: "약사", label: "약사", icon: null, color: "text-violet-600", count: employees.filter(e => e.position === "약사").length },
+                { key: "캐셔", label: "캐셔", icon: null, color: "text-amber-600", count: employees.filter(e => e.position === "캐셔").length },
+                { key: "물류", label: "물류", icon: null, color: "text-sky-600", count: employees.filter(e => e.position === "물류").length },
+              ] as const).map(({ key, label, icon, color, count }) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveTab(key as typeof activeTab)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[32px] ${
+                    activeTab === key
+                      ? `bg-white ${color} shadow-sm font-bold`
+                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  }`}
+                >
+                  {icon}
+                  <span>{label} <span className="text-slate-400 font-normal">({count})</span></span>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -1568,7 +1603,7 @@ export const SchedulePage: React.FC = () => {
                       >
 
                         {/* Column 1: Sticky Employee Name */}
-                        <td className="p-2 text-center text-xs font-medium border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50/80 h-11 shadow-[1px_0_0_0_#e2e8f0] whitespace-nowrap">
+                        <td className="p-2 text-center text-xs font-medium border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50/80 h-11 shadow-[1px_0_0_0_#e2e8f0] whitespace-nowrap min-w-[96px]">
                           <div className="flex items-center gap-1.5 px-0.5">
                             {isAdmin && (
                               <div
@@ -1625,10 +1660,19 @@ export const SchedulePage: React.FC = () => {
                           </td>
                         ) : (
                           <td
-                            className="p-1 px-2 text-center text-[10px] font-semibold border-r border-slate-100 bg-white z-[25] group-hover:bg-slate-50/80 text-slate-600 truncate shadow-[1px_0_0_0_#e2e8f0]"
+                            className="p-1 px-2 text-center text-[10px] font-semibold border-r border-slate-100 bg-white z-[25] group-hover:bg-slate-50/80 text-slate-600 shadow-[1px_0_0_0_#e2e8f0]"
                             style={{ position: "sticky", left: stickyPos.position + "px", width: "80px" }}
                           >
-                            {emp.position}
+                            <div className="flex flex-col items-center gap-0.5">
+                              <span>{emp.position || "—"}</span>
+                              {emp.employmentType && (
+                                <span className={`text-[8px] font-bold px-1 py-0 rounded leading-tight ${
+                                  emp.employmentType === "알바" ? "bg-amber-100 text-amber-700" :
+                                  emp.employmentType === "계약직" ? "bg-blue-100 text-blue-700" :
+                                  "bg-emerald-100 text-emerald-700"
+                                }`}>{emp.employmentType}</span>
+                              )}
+                            </div>
                           </td>
                         )}
 
@@ -1715,22 +1759,8 @@ export const SchedulePage: React.FC = () => {
                     ))}
 
                     {/* Real-time calculated Bottom Summary Rows */}
-                    <SummaryRow summaries={currentSummaryList} label="오픈" />
-                    <SummaryRow summaries={currentSummaryList} label="미들" />
-                    <SummaryRow summaries={currentSummaryList} label="마감" />
-                    {positionSummaryList.map(({ position, counts }) => (
-                      <tr key={`pos-${position}`} className="border-t border-slate-100">
-                        <td colSpan={4}
-                          className="px-3 py-1.5 sticky left-0 z-20 text-center text-[10px] font-semibold border-r border-slate-200 bg-slate-100 text-slate-500 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.05)]">
-                          {position}
-                        </td>
-                        {daysList.map((day) => (
-                          <td key={day} className="p-1 text-center text-[10px] border-r border-slate-100 bg-slate-50 text-slate-500 font-semibold min-w-[36px]">
-                            {counts[day - 1] > 0 ? counts[day - 1] : <span className="text-slate-200">·</span>}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
+                    <SummaryRow summaries={currentSummaryList} label="약사" />
+                    <SummaryRow summaries={currentSummaryList} label="사원" />
                     <SummaryRow summaries={currentSummaryList} label="근무인원" />
                   </tbody>
                 </table>
@@ -2060,6 +2090,27 @@ export const SchedulePage: React.FC = () => {
                   onChange={(e) => setEmpHireDate(e.target.value)}
                   className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
                 />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
+                  근무 형태 <span className="text-rose-500">*</span>
+                </label>
+                <div className="flex gap-3 p-2 bg-slate-50 border border-[#e2e8f0] rounded-lg flex-wrap">
+                  {PRESET_EMPLOYMENT_TYPES.map((et) => (
+                    <label key={et} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-700">
+                      <input
+                        type="radio"
+                        name="empEmploymentType"
+                        value={et}
+                        checked={empEmploymentType === et}
+                        onChange={() => setEmpEmploymentType(et)}
+                        className="cursor-pointer"
+                      />
+                      <span>{et === "정직원" ? "🟢 정직원" : et === "계약직" ? "🔵 계약직" : "🟡 알바"}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
 
               <div>
