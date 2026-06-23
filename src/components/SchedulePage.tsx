@@ -158,6 +158,26 @@ export const SchedulePage: React.FC = () => {
   // Settings modal state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+  const applyShiftHoursToAll = async (open: string, middle: string, close: string) => {
+    const typeMap: Record<string, string> = { "오픈": open, "미들": middle, "마감": close };
+    const monthStr = String(currentMonth).padStart(2, "0");
+    const updates: Promise<void>[] = [];
+    for (const emp of employees) {
+      for (const sc of emp.schedules) {
+        if (!sc.date.startsWith(`${currentYear}-${monthStr}`)) continue;
+        const wh = typeMap[sc.type];
+        if (!wh) continue;
+        updates.push(
+          axios.put("/api/schedules", { employeeId: emp.id, date: sc.date, workingHours: wh })
+            .then(() => {}).catch(() => {})
+        );
+      }
+    }
+    await Promise.all(updates);
+    await fetchScheduleData(currentYear, currentMonth);
+    showNotification("기본 근무시간이 현재 월 전체에 적용되었습니다.", "success");
+  };
+
   // Shift hours derived from settings (kept as local aliases for compatibility)
   const openShiftHour = settingsOpenShiftHour;
   const middleShiftHour = settingsMiddleShiftHour;
@@ -1212,6 +1232,7 @@ export const SchedulePage: React.FC = () => {
             closeShiftHour,
           }}
           onUpdate={updateSettings}
+          onApplyShiftHours={applyShiftHoursToAll}
           onClose={() => setIsSettingsOpen(false)}
         />
       )}
@@ -1358,8 +1379,16 @@ export const SchedulePage: React.FC = () => {
                     <span>첫 직원 등록하기</span>
                   </button>
                 </div>
-              ) : (
-                <table className="w-full text-left border-collapse table-fixed min-w-[2300px]">
+              ) : (() => {
+                // Dynamic sticky left positions based on which columns are collapsed
+                const stickyPos = {
+                  name: 0,
+                  position: 145,
+                  description: 145 + (colCollapsed.position ? 20 : 80),
+                  hireDate: 145 + (colCollapsed.position ? 20 : 80) + (colCollapsed.description ? 20 : 130),
+                };
+                return (
+                <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
                   {/* Table Headers */}
                   <thead className="sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
                     {/* Header Row 1: Day of Month Numbers */}
@@ -1367,15 +1396,91 @@ export const SchedulePage: React.FC = () => {
                       <th className="w-[145px] text-center text-[11px] font-semibold border-r border-slate-700 border-b border-b-slate-700 sticky left-0 bg-slate-800 z-40 py-2.5 tracking-wide">
                         직원 성명
                       </th>
-                      <th className="w-[100px] text-center text-[11px] font-semibold border-r border-slate-700 sticky left-[145px] bg-slate-800 z-40 py-2.5 tracking-wide">
-                        직급
-                      </th>
-                      <th className="w-[165px] text-center text-[11px] font-semibold border-r border-b border-slate-700 sticky left-[245px] bg-slate-800 z-40 py-2.5 tracking-wide">
-                        근무 패턴
-                      </th>
-                      <th className="w-[90px] text-center text-[11px] font-semibold border-r border-b border-slate-700 sticky left-[410px] bg-slate-800 z-40 py-2.5 tracking-wide">
-                        입사일
-                      </th>
+
+                      {/* 직급 column header — collapsible */}
+                      {colCollapsed.position ? (
+                        <th
+                          className="text-center font-semibold border-r border-slate-700 bg-slate-800 z-40 py-2.5 cursor-pointer hover:bg-slate-700 transition-colors"
+                          style={{ position: "sticky", left: stickyPos.position + "px", width: "20px", minWidth: "20px" }}
+                          onClick={() => toggleCol("position")}
+                          title="직급 열 펼치기"
+                        >
+                          <span className="text-[9px] text-slate-400">▶</span>
+                        </th>
+                      ) : (
+                        <th
+                          className="text-center text-[11px] font-semibold border-r border-slate-700 bg-slate-800 z-40 py-2.5 tracking-wide"
+                          style={{ position: "sticky", left: stickyPos.position + "px", width: "80px" }}
+                        >
+                          <div className="flex items-center justify-center gap-0.5 px-1">
+                            <span>직급</span>
+                            <button
+                              onClick={() => toggleCol("position")}
+                              className="text-slate-500 hover:text-slate-300 transition ml-0.5 leading-none cursor-pointer"
+                              title="직급 열 접기"
+                            >
+                              <span className="text-[9px]">◀</span>
+                            </button>
+                          </div>
+                        </th>
+                      )}
+
+                      {/* 구분 column header — collapsible */}
+                      {colCollapsed.description ? (
+                        <th
+                          className="text-center font-semibold border-r border-b border-slate-700 bg-slate-800 z-40 py-2.5 cursor-pointer hover:bg-slate-700 transition-colors"
+                          style={{ position: "sticky", left: stickyPos.description + "px", width: "20px", minWidth: "20px" }}
+                          onClick={() => toggleCol("description")}
+                          title="근무 패턴 열 펼치기"
+                        >
+                          <span className="text-[9px] text-slate-400">▶</span>
+                        </th>
+                      ) : (
+                        <th
+                          className="text-center text-[11px] font-semibold border-r border-b border-slate-700 bg-slate-800 z-40 py-2.5 tracking-wide"
+                          style={{ position: "sticky", left: stickyPos.description + "px", width: "130px" }}
+                        >
+                          <div className="flex items-center justify-center gap-0.5 px-1">
+                            <span>근무 패턴</span>
+                            <button
+                              onClick={() => toggleCol("description")}
+                              className="text-slate-500 hover:text-slate-300 transition ml-0.5 leading-none cursor-pointer"
+                              title="근무 패턴 열 접기"
+                            >
+                              <span className="text-[9px]">◀</span>
+                            </button>
+                          </div>
+                        </th>
+                      )}
+
+                      {/* 입사일 column header — collapsible */}
+                      {colCollapsed.hireDate ? (
+                        <th
+                          className="text-center font-semibold border-r border-b border-slate-700 bg-slate-800 z-40 py-2.5 cursor-pointer hover:bg-slate-700 transition-colors"
+                          style={{ position: "sticky", left: stickyPos.hireDate + "px", width: "20px", minWidth: "20px" }}
+                          onClick={() => toggleCol("hireDate")}
+                          title="입사일 열 펼치기"
+                        >
+                          <span className="text-[9px] text-slate-400">▶</span>
+                        </th>
+                      ) : (
+                        <th
+                          className="text-center text-[11px] font-semibold border-r border-b border-slate-700 bg-slate-800 z-40 py-2.5 tracking-wide"
+                          style={{ position: "sticky", left: stickyPos.hireDate + "px", width: "78px" }}
+                        >
+                          <div className="flex items-center justify-center gap-0.5 px-1">
+                            <span>입사일</span>
+                            <button
+                              onClick={() => toggleCol("hireDate")}
+                              className="text-slate-500 hover:text-slate-300 transition ml-0.5 leading-none cursor-pointer"
+                              title="입사일 열 접기"
+                            >
+                              <span className="text-[9px]">◀</span>
+                            </button>
+                          </div>
+                        </th>
+                      )}
+
                       {daysList.map((day) => {
                         const { fullDate } = getDayDetails(day);
                         const dayIndex = new Date(currentYear, currentMonth - 1, day).getDay();
@@ -1388,7 +1493,7 @@ export const SchedulePage: React.FC = () => {
                           <th
                             key={`day-num-${day}`}
                             onClick={() => setTimelineDate(fullDate)}
-                            className={`p-1.5 text-center text-[11px] font-bold border-r border-b border-slate-700 min-w-[55px] cursor-pointer hover:bg-indigo-700 hover:text-white transition-colors ${headerClass}`}
+                            className={`p-1 text-center text-[10px] font-bold border-r border-b border-slate-700 min-w-[36px] cursor-pointer hover:bg-indigo-700 hover:text-white transition-colors ${headerClass}`}
                             title={`${fullDate} 타임라인 보기`}
                           >
                             {day}
@@ -1399,11 +1504,20 @@ export const SchedulePage: React.FC = () => {
 
                     {/* Header Row 2: Day of Week Characters */}
                     <tr className="bg-slate-700/80 text-slate-400 select-none">
-                      {/* Left spacing headers matching Name, Rank, Classification, HireDate */}
+                      {/* Left spacing headers matching Name, Position, Description, HireDate */}
                       <th className="border-r border-b border-slate-600 sticky left-0 bg-slate-700 z-40 h-6"></th>
-                      <th className="border-r border-b border-slate-600 sticky left-[145px] bg-slate-700 z-40 h-6"></th>
-                      <th className="border-r border-b border-slate-600 sticky left-[245px] bg-slate-700 z-40 h-6"></th>
-                      <th className="border-r border-b border-slate-600 sticky left-[410px] bg-slate-700 z-40 h-6"></th>
+                      <th
+                        className="border-r border-b border-slate-600 bg-slate-700 z-40 h-6"
+                        style={{ position: "sticky", left: stickyPos.position + "px" }}
+                      ></th>
+                      <th
+                        className="border-r border-b border-slate-600 bg-slate-700 z-40 h-6"
+                        style={{ position: "sticky", left: stickyPos.description + "px" }}
+                      ></th>
+                      <th
+                        className="border-r border-b border-slate-600 bg-slate-700 z-40 h-6"
+                        style={{ position: "sticky", left: stickyPos.hireDate + "px" }}
+                      ></th>
 
                       {daysList.map((day) => {
                         const { dayWord } = getDayDetails(day);
@@ -1416,7 +1530,7 @@ export const SchedulePage: React.FC = () => {
                         return (
                           <th
                             key={`day-name-${day}`}
-                            className={`p-0.5 text-center text-[10px] border-r border-b border-slate-600 min-w-[55px] bg-slate-700 ${wordClass}`}
+                            className={`p-0.5 text-center text-[9px] border-r border-b border-slate-600 min-w-[36px] bg-slate-700 ${wordClass}`}
                           >
                             {dayWord}
                           </th>
@@ -1492,46 +1606,80 @@ export const SchedulePage: React.FC = () => {
                           </div>
                         </td>
 
-                        {/* Column 2: Sticky Position/Role (직급) */}
-                        <td className="p-2 text-center text-[11px] font-semibold border-r border-slate-100 bg-white sticky left-[145px] z-[25] group-hover:bg-slate-50/80 text-slate-600 truncate shadow-[1px_0_0_0_#e2e8f0]">
-                          {emp.position}
-                        </td>
+                        {/* Column 2: Sticky Position/Role (직급) — collapsible */}
+                        {colCollapsed.position ? (
+                          <td
+                            className="border-r border-slate-100 bg-white z-[25] group-hover:bg-slate-50/80 text-center text-slate-300 text-[8px] shadow-[1px_0_0_0_#e2e8f0]"
+                            style={{ position: "sticky", left: stickyPos.position + "px", width: "20px", minWidth: "20px" }}
+                          >
+                            ·
+                          </td>
+                        ) : (
+                          <td
+                            className="p-1 px-2 text-center text-[10px] font-semibold border-r border-slate-100 bg-white z-[25] group-hover:bg-slate-50/80 text-slate-600 truncate shadow-[1px_0_0_0_#e2e8f0]"
+                            style={{ position: "sticky", left: stickyPos.position + "px", width: "80px" }}
+                          >
+                            {emp.position}
+                          </td>
+                        )}
 
-                        {/* Column 3: Sticky Description (상세 설명 / 구분) */}
-                        <td
-                          onClick={() => {
-                            if (isAdmin) {
-                              setEditingEmpId(emp.id);
-                              setTempDescription(emp.description || "");
-                            }
-                          }}
-                          className={`p-1 px-2 text-center text-[11px] border-r border-slate-100 bg-slate-50/60 sticky left-[245px] z-[25] group-hover:bg-slate-100/50 text-slate-500 font-medium select-none transition-colors shadow-[1px_0_0_0_#e2e8f0] ${isAdmin ? "cursor-pointer hover:text-slate-700" : "cursor-default"}`}
-                          title={isAdmin ? "클릭하여 직접 수정" : undefined}
-                        >
-                          {editingEmpId === emp.id ? (
-                            <input
-                              value={tempDescription}
-                              onChange={(e) => setTempDescription(e.target.value)}
-                              onBlur={() => handleUpdateDescription(emp.id)}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter") handleUpdateDescription(emp.id);
-                                if (e.key === "Escape") setEditingEmpId(null);
-                              }}
-                              className="w-full text-center text-[11px] px-1.5 py-0.5 border border-indigo-400 rounded focus:outline-none bg-white font-semibold text-slate-800 ring-1 ring-indigo-300"
-                              autoFocus
-                              onClick={(e) => e.stopPropagation()}
-                            />
-                          ) : (
-                            <div className="flex items-center justify-center gap-1">
-                              <span className="truncate max-w-[150px]">{emp.description || <span className="text-slate-300">—</span>}</span>
-                            </div>
-                          )}
-                        </td>
+                        {/* Column 3: Sticky Description (구분 / 근무 패턴) — collapsible */}
+                        {colCollapsed.description ? (
+                          <td
+                            className="border-r border-slate-100 bg-slate-50/60 z-[25] group-hover:bg-slate-100/50 text-center text-slate-300 text-[8px] shadow-[1px_0_0_0_#e2e8f0]"
+                            style={{ position: "sticky", left: stickyPos.description + "px", width: "20px", minWidth: "20px" }}
+                          >
+                            ·
+                          </td>
+                        ) : (
+                          <td
+                            onClick={() => {
+                              if (isAdmin) {
+                                setEditingEmpId(emp.id);
+                                setTempDescription(emp.description || "");
+                              }
+                            }}
+                            className={`p-1 px-2 text-center text-[10px] border-r border-slate-100 bg-slate-50/60 z-[25] group-hover:bg-slate-100/50 text-slate-500 font-medium select-none transition-colors shadow-[1px_0_0_0_#e2e8f0] ${isAdmin ? "cursor-pointer hover:text-slate-700" : "cursor-default"}`}
+                            style={{ position: "sticky", left: stickyPos.description + "px", width: "130px" }}
+                            title={isAdmin ? "클릭하여 직접 수정" : undefined}
+                          >
+                            {editingEmpId === emp.id ? (
+                              <input
+                                value={tempDescription}
+                                onChange={(e) => setTempDescription(e.target.value)}
+                                onBlur={() => handleUpdateDescription(emp.id)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") handleUpdateDescription(emp.id);
+                                  if (e.key === "Escape") setEditingEmpId(null);
+                                }}
+                                className="w-full text-center text-[10px] px-1.5 py-0.5 border border-indigo-400 rounded focus:outline-none bg-white font-semibold text-slate-800 ring-1 ring-indigo-300"
+                                autoFocus
+                                onClick={(e) => e.stopPropagation()}
+                              />
+                            ) : (
+                              <div className="flex items-center justify-center gap-1">
+                                <span className="truncate max-w-[115px]">{emp.description || <span className="text-slate-300">—</span>}</span>
+                              </div>
+                            )}
+                          </td>
+                        )}
 
-                        {/* Column 4: Sticky Hiredate (입사일) */}
-                        <td className="p-2 text-center text-[10px] border-r border-slate-100 bg-white sticky left-[410px] z-[25] group-hover:bg-slate-50/80 text-slate-400 font-mono shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]">
-                          {emp.hireDate ? emp.hireDate.split("-").slice(1).join("/") : "—"}
-                        </td>
+                        {/* Column 4: Sticky Hiredate (입사일) — collapsible */}
+                        {colCollapsed.hireDate ? (
+                          <td
+                            className="border-r border-slate-100 bg-white z-[25] group-hover:bg-slate-50/80 text-center text-slate-300 text-[8px] shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]"
+                            style={{ position: "sticky", left: stickyPos.hireDate + "px", width: "20px", minWidth: "20px" }}
+                          >
+                            ·
+                          </td>
+                        ) : (
+                          <td
+                            className="p-1 text-center text-[10px] border-r border-slate-100 bg-white z-[25] group-hover:bg-slate-50/80 text-slate-400 font-mono shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)]"
+                            style={{ position: "sticky", left: stickyPos.hireDate + "px", width: "78px" }}
+                          >
+                            {emp.hireDate ? emp.hireDate.split("-").slice(1).join("/") : "—"}
+                          </td>
+                        )}
 
                         {/* Schedule Cells 1 to 31 */}
                         {daysList.map((day) => {
@@ -1568,7 +1716,7 @@ export const SchedulePage: React.FC = () => {
                           {position}
                         </td>
                         {daysList.map((day) => (
-                          <td key={day} className="p-1 text-center text-[10px] border-r border-slate-100 bg-slate-50 text-slate-500 font-semibold min-w-[55px]">
+                          <td key={day} className="p-1 text-center text-[10px] border-r border-slate-100 bg-slate-50 text-slate-500 font-semibold min-w-[36px]">
                             {counts[day - 1] > 0 ? counts[day - 1] : <span className="text-slate-200">·</span>}
                           </td>
                         ))}
@@ -1577,7 +1725,8 @@ export const SchedulePage: React.FC = () => {
                     <SummaryRow summaries={currentSummaryList} label="근무인원" />
                   </tbody>
                 </table>
-              )}
+                );
+              })()}
             </div>
 
             {/* Attendance & Status Analysis Dashboard */}
