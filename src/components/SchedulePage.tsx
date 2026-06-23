@@ -77,6 +77,14 @@ export const SchedulePage: React.FC = () => {
     }
   });
 
+  // Mobile date scroll ref
+  const scrollTableRef = useRef<HTMLDivElement>(null);
+  const scrollDays = (days: number) => {
+    if (scrollTableRef.current) {
+      scrollTableRef.current.scrollLeft += days * 30;
+    }
+  };
+
 
   // Administrative / Auth states
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
@@ -1244,17 +1252,31 @@ export const SchedulePage: React.FC = () => {
               </div>
             )}
 
-            {/* Mobile scroll hint */}
-            <div className="sm:hidden px-4 py-2 bg-indigo-50/60 border-b border-indigo-100 flex items-center gap-2 text-[11px] text-indigo-600 font-medium">
-              <span>←</span>
-              <span>좌우로 스크롤하여 날짜를 확인하세요. 날짜를 탭하면 당일 타임라인을 볼 수 있습니다.</span>
-              <span>→</span>
+            {/* Mobile date scroll arrows */}
+            <div className="sm:hidden flex items-center gap-2 px-3 py-1.5 bg-indigo-50/60 border-b border-indigo-100 shrink-0">
+              <button
+                onClick={() => scrollDays(-7)}
+                className="w-8 h-7 flex items-center justify-center bg-white border border-indigo-200 hover:bg-indigo-100 active:bg-indigo-200 rounded-lg text-indigo-600 transition cursor-pointer shrink-0 shadow-sm"
+                aria-label="7일 이전"
+              >
+                <ChevronLeft size={15} />
+              </button>
+              <span className="flex-1 text-center text-[11px] text-indigo-500 font-medium">
+                날짜를 탭하면 당일 타임라인을 볼 수 있습니다
+              </span>
+              <button
+                onClick={() => scrollDays(7)}
+                className="w-8 h-7 flex items-center justify-center bg-white border border-indigo-200 hover:bg-indigo-100 active:bg-indigo-200 rounded-lg text-indigo-600 transition cursor-pointer shrink-0 shadow-sm"
+                aria-label="7일 이후"
+              >
+                <ChevronRight size={15} />
+              </button>
             </div>
 
             {/* Schedule table + Dashboard: side-by-side on desktop, stacked on mobile */}
             <div className="flex flex-col lg:flex-row lg:items-start flex-1 min-h-0">
 
-            <div className="relative overflow-x-auto overflow-y-auto flex-1 min-w-0" style={{ maxHeight: "calc(100vh - 220px)" }}>
+            <div ref={scrollTableRef} className="relative overflow-x-auto overflow-y-auto flex-1 min-w-0" style={{ maxHeight: "calc(100vh - 220px)" }}>
               {isLoading ? (
                 <div className="w-full py-32 flex flex-col items-center justify-center bg-slate-50/50">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563eb]"></div>
@@ -1368,7 +1390,7 @@ export const SchedulePage: React.FC = () => {
                         >
 
                           {/* Column 1: Sticky Employee Name */}
-                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50/80 shadow-[1px_0_0_0_#e2e8f0] min-w-[84px] sm:min-w-[100px] h-[54px] sm:h-[58px] p-0">
+                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50/80 shadow-[1px_0_0_0_#e2e8f0] min-w-[90px] sm:min-w-[104px] h-auto min-h-[54px] sm:min-h-[58px] p-0">
                             <div className="flex items-stretch h-full">
                               {/* Drag handle — desktop only */}
                               {isAdmin && (
@@ -1385,7 +1407,7 @@ export const SchedulePage: React.FC = () => {
                                 <div className="flex items-center gap-0.5 min-w-0">
                                   <span
                                     onClick={() => setCalendarEmployee(emp)}
-                                    className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[10px] sm:text-[11px] cursor-pointer select-none transition truncate"
+                                    className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[10px] sm:text-[11px] cursor-pointer select-none transition break-keep leading-tight"
                                     title="클릭하여 개인 스케줄 달력 보기"
                                   >
                                     {emp.name}
@@ -1400,7 +1422,7 @@ export const SchedulePage: React.FC = () => {
                                   )}
                                 </div>
                                 {/* Middle: position · employmentType */}
-                                <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium leading-tight truncate">
+                                <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium leading-tight break-keep">
                                   {emp.position}{emp.employmentType ? ` · ${emp.employmentType}` : ""}
                                 </span>
                                 {/* Bottom: edit / delete (admin) */}
@@ -1460,144 +1482,127 @@ export const SchedulePage: React.FC = () => {
               })()}
             </div>
 
-            {/* Attendance & Status Analysis Dashboard — sidebar on desktop, below on mobile */}
-            <div id="attendance-dashboard" className="m-2 sm:m-4 p-3 sm:p-4 lg:m-0 lg:p-4 lg:w-72 xl:w-80 lg:shrink-0 lg:border-l lg:border-slate-200 lg:overflow-y-auto bg-white border border-slate-200 lg:border-y-0 lg:border-r-0 rounded-2xl lg:rounded-none shadow-sm lg:shadow-none">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                <div className="flex items-center gap-2.5">
-                  <div className="p-2 bg-slate-100 text-slate-600 rounded-xl">
-                    <Award size={16} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 tracking-tight">
-                      {currentMonth}월 근태 현황 대시보드
-                    </h3>
-                    <p className="text-[11px] text-slate-500 mt-0.5">
-                      이달의 지각, 조퇴, 결근 현황을 실시간 집계합니다.
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full font-semibold flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-                  실시간
-                </span>
-              </div>
+            {/* Attendance Dashboard — sidebar on desktop, below on mobile */}
+            {(() => {
+              const today = new Date();
+              const isThisMonth = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth;
+              const todaySummary = isThisMonth ? currentSummaryList.find(s => s.day === today.getDate()) : null;
+              const totalWorkdays = currentSummaryList.filter(s => s.totalCount > 0).length;
+              const avgPerDay = totalWorkdays > 0
+                ? (currentSummaryList.reduce((acc, s) => acc + s.totalCount, 0) / daysList.length).toFixed(1)
+                : "0";
+              return (
+                <div id="attendance-dashboard" className="m-2 sm:m-4 p-3 lg:m-0 lg:p-4 lg:w-64 xl:w-72 lg:shrink-0 lg:border-l lg:border-slate-200 lg:overflow-y-auto bg-white border border-slate-200 lg:border-y-0 lg:border-r-0 rounded-2xl lg:rounded-none shadow-sm lg:shadow-none flex flex-col gap-3">
 
-              {/* Stat Cards Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                {/* 1. Lateness Stats */}
-                <div className="bg-amber-50/50 border border-amber-250 rounded-xl p-3 flex items-center justify-between shadow-3xs">
-                  <div>
-                    <span className="text-[10px] font-black text-amber-800 uppercase tracking-wider block">⚠️ 지각 (Lateness) 건수</span>
-                    <span className="text-2xl font-black text-amber-900 mt-1 block">{attSummary.totalLates}회</span>
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 bg-slate-100 text-slate-600 rounded-lg">
+                        <Award size={14} />
+                      </div>
+                      <span className="text-xs font-bold text-slate-800">{currentMonth}월 근태 현황</span>
+                    </div>
+                    <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
+                      실시간
+                    </span>
                   </div>
-                  <div className="w-9 h-9 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center text-sm shadow-3xs">
-                    ⚠️
-                  </div>
-                </div>
 
-                {/* 2. Early Leaves Stats */}
-                <div className="bg-purple-50/50 border border-purple-200 rounded-xl p-3 flex items-center justify-between shadow-3xs">
-                  <div>
-                    <span className="text-[10px] font-black text-purple-800 uppercase tracking-wider block">🏃 조퇴 (Early Leave) 건수</span>
-                    <span className="text-2xl font-black text-purple-900 mt-1 block">{attSummary.totalEarlyLeaves}회</span>
-                  </div>
-                  <div className="w-9 h-9 rounded-full bg-purple-100 border border-purple-200 flex items-center justify-center text-sm shadow-3xs">
-                    🏃
-                  </div>
-                </div>
+                  {/* Today's attendance */}
+                  {todaySummary && (
+                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
+                      <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+                        <Clock size={10} />
+                        오늘 ({today.getMonth() + 1}/{today.getDate()}) 근무 현황
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex-1 text-center bg-white/70 rounded-lg py-1.5 border border-indigo-100">
+                          <div className="text-xs font-black text-violet-700">{todaySummary.pharmacistCount}</div>
+                          <div className="text-[9px] text-slate-500 font-medium">약사</div>
+                        </div>
+                        <div className="flex-1 text-center bg-white/70 rounded-lg py-1.5 border border-indigo-100">
+                          <div className="text-xs font-black text-sky-700">{todaySummary.staffCount}</div>
+                          <div className="text-[9px] text-slate-500 font-medium">사원</div>
+                        </div>
+                        <div className="flex-1 text-center bg-indigo-600 rounded-lg py-1.5">
+                          <div className="text-xs font-black text-white">{todaySummary.totalCount}</div>
+                          <div className="text-[9px] text-indigo-200 font-medium">전체</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-                {/* 3. Absence Stats */}
-                <div className="bg-rose-50/50 border border-rose-250 rounded-xl p-3 flex items-center justify-between shadow-3xs">
-                  <div>
-                    <span className="text-[10px] font-black text-rose-800 uppercase tracking-wider block">🚨 결근 (Absence) 건수</span>
-                    <span className="text-2xl font-black text-rose-900 mt-1 block">{attSummary.totalAbsences}회</span>
+                  {/* Monthly quick stats */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center">
+                      <div className="text-sm font-black text-slate-800">{totalWorkdays}일</div>
+                      <div className="text-[10px] text-slate-500 font-medium">근무 있는 날</div>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center">
+                      <div className="text-sm font-black text-slate-800">{avgPerDay}명</div>
+                      <div className="text-[10px] text-slate-500 font-medium">일평균 근무자</div>
+                    </div>
                   </div>
-                  <div className="w-9 h-9 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center text-sm shadow-3xs">
-                    🚨
-                  </div>
-                </div>
-              </div>
 
-              {/* Detailed Breakdown Lists */}
-              {attSummary.employeeRecords.length === 0 ? (
-                <div className="border border-slate-200 rounded-xl py-6 text-center text-[#64748b] bg-slate-50/40 text-[11px] font-semibold">
-                  🎉 이달 해당 사원의 지각 · 조퇴 · 결근 등 근태 이상 수치가 매우 깨끗합니다. 성실 근무 중!
-                </div>
-              ) : (
-                <div className="border border-[#cbd5e1] rounded-xl overflow-x-auto bg-white">
-                  <table className="w-full text-xs text-left text-slate-700 min-w-[700px]">
-                    <thead className="bg-slate-50 text-[10px] font-black text-slate-500 uppercase tracking-wider">
-                      <tr>
-                        <th className="px-4 py-2.5 border-b border-[#cbd5e1] w-[140px]">사원명 (직책)</th>
-                        <th className="px-4 py-2.5 border-b border-[#cbd5e1] border-l border-[#e2e8f0]">지각 기록 ⚠️ ({attSummary.totalLates}건)</th>
-                        <th className="px-4 py-2.5 border-b border-[#cbd5e1] border-l border-[#e2e8f0]">조퇴 기록 🏃 ({attSummary.totalEarlyLeaves}건)</th>
-                        <th className="px-4 py-2.5 border-b border-[#cbd5e1] border-l border-[#e2e8f0]">결근 기록 🚨 ({attSummary.totalAbsences}건)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100 font-sans">
-                      {attSummary.employeeRecords.map((rec) => (
-                        <tr key={`att-row-${rec.employee.id}`} className="hover:bg-slate-50/50 transition bg-white">
-                          <td className="px-4 py-3 font-extrabold text-slate-800 whitespace-nowrap bg-slate-50/10">
-                            <div className="flex flex-col">
-                              <span className="text-xs font-black">{rec.employee.name}</span>
-                              <span className="text-[10px] text-slate-400 font-bold mt-0.5">{rec.employee.position} | {rec.employee.workplace || "매장"}</span>
+                  {/* Absence/late/early counters */}
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <div className={`rounded-xl p-2 text-center border ${attSummary.totalLates > 0 ? "bg-amber-50 border-amber-200" : "bg-slate-50 border-slate-200"}`}>
+                      <div className={`text-sm font-black ${attSummary.totalLates > 0 ? "text-amber-700" : "text-slate-400"}`}>{attSummary.totalLates}</div>
+                      <div className="text-[9px] text-slate-500 font-medium">⚠️ 지각</div>
+                    </div>
+                    <div className={`rounded-xl p-2 text-center border ${attSummary.totalEarlyLeaves > 0 ? "bg-purple-50 border-purple-200" : "bg-slate-50 border-slate-200"}`}>
+                      <div className={`text-sm font-black ${attSummary.totalEarlyLeaves > 0 ? "text-purple-700" : "text-slate-400"}`}>{attSummary.totalEarlyLeaves}</div>
+                      <div className="text-[9px] text-slate-500 font-medium">🏃 조퇴</div>
+                    </div>
+                    <div className={`rounded-xl p-2 text-center border ${attSummary.totalAbsences > 0 ? "bg-rose-50 border-rose-200" : "bg-slate-50 border-slate-200"}`}>
+                      <div className={`text-sm font-black ${attSummary.totalAbsences > 0 ? "text-rose-700" : "text-slate-400"}`}>{attSummary.totalAbsences}</div>
+                      <div className="text-[9px] text-slate-500 font-medium">🚨 결근</div>
+                    </div>
+                  </div>
+
+                  {/* Issue employee list */}
+                  <div>
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">이달 근태 이상자</div>
+                    {attSummary.employeeRecords.length === 0 ? (
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-xl py-4 text-center">
+                        <div className="text-base mb-0.5">🎉</div>
+                        <div className="text-[11px] text-emerald-700 font-bold">이상 없음</div>
+                        <div className="text-[10px] text-emerald-600">전원 성실 근무 중</div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5 max-h-64 overflow-y-auto">
+                        {attSummary.employeeRecords.map((rec) => (
+                          <div key={`att-${rec.employee.id}`} className="flex items-center gap-2 px-2.5 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-[11px] font-bold text-slate-800 break-keep">{rec.employee.name}</div>
+                              <div className="text-[9px] text-slate-400">{rec.employee.position}</div>
                             </div>
-                          </td>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {rec.lates.length > 0 && (
+                                <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-lg border border-amber-200" title={rec.lates.map(l => `${parseInt(l.date.split("-")[2])}일`).join(", ")}>
+                                  ⚠️{rec.lates.length}
+                                </span>
+                              )}
+                              {rec.earlyLeaves.length > 0 && (
+                                <span className="text-[10px] font-black bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-lg border border-purple-200" title={rec.earlyLeaves.map(e => `${parseInt(e.date.split("-")[2])}일`).join(", ")}>
+                                  🏃{rec.earlyLeaves.length}
+                                </span>
+                              )}
+                              {rec.absences.length > 0 && (
+                                <span className="text-[10px] font-black bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-lg border border-rose-200" title={rec.absences.map(a => `${parseInt(a.date.split("-")[2])}일`).join(", ")}>
+                                  🚨{rec.absences.length}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
 
-                          {/* Lates Column */}
-                          <td className="px-4 py-3 border-l border-[#e2e8f0]">
-                            {rec.lates.length === 0 ? (
-                              <span className="text-slate-300 text-[10px] font-semibold">-</span>
-                            ) : (
-                              <div className="flex flex-wrap gap-1">
-                                {rec.lates.map((l, idx) => (
-                                  <span key={idx} className="inline-flex flex-col p-1 px-1.5 rounded bg-amber-50 border border-amber-200 text-amber-800 text-[9px] font-black shadow-3xs" title={l.note}>
-                                    <span>📅 {parseInt(l.date.split("-")[2])}일 ({l.schedType})</span>
-                                    <span className="text-[8px] text-amber-600 font-extrabold">{l.note}</span>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Early Leaves Column */}
-                          <td className="px-4 py-3 border-l border-[#e2e8f0]">
-                            {rec.earlyLeaves.length === 0 ? (
-                              <span className="text-slate-300 text-[10px] font-semibold">-</span>
-                            ) : (
-                              <div className="flex flex-wrap gap-1">
-                                {rec.earlyLeaves.map((e, idx) => (
-                                  <span key={idx} className="inline-flex flex-col p-1 px-1.5 rounded bg-purple-50 border border-purple-200 text-purple-800 text-[9px] font-black shadow-3xs" title={e.note}>
-                                    <span>📅 {parseInt(e.date.split("-")[2])}일 ({e.schedType})</span>
-                                    <span className="text-[8px] text-purple-600 font-extrabold">{e.note}</span>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-
-                          {/* Absences Column */}
-                          <td className="px-4 py-3 border-l border-[#e2e8f0]">
-                            {rec.absences.length === 0 ? (
-                              <span className="text-slate-300 text-[10px] font-semibold">-</span>
-                            ) : (
-                              <div className="flex flex-wrap gap-1">
-                                {rec.absences.map((a, idx) => (
-                                  <span key={idx} className="inline-flex flex-col p-1 px-1.5 rounded bg-rose-50 border border-rose-200 text-rose-800 text-[9px] font-black shadow-3xs" title={a.note}>
-                                    <span>📅 {parseInt(a.date.split("-")[2])}일 ({a.schedType})</span>
-                                    <span className="text-[8px] text-rose-600 font-extrabold">{a.note}</span>
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 </div>
-              )}
-            </div>
+              );
+            })()}
 
             </div>{/* end flex row wrapper */}
           </div>

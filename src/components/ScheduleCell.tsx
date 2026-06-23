@@ -48,7 +48,9 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
   const popoverRef = useRef<HTMLDivElement>(null);
   const cellRef = useRef<HTMLDivElement>(null);
-  const [popoverAlign, setPopoverAlign] = useState<"left" | "right">("left");
+  // Days 20+ default to right-align (popup opens leftward) to stay in viewport
+  const dayNum = parseInt(dateStr.split("-")[2]);
+  const [popoverAlign, setPopoverAlign] = useState<"left" | "right">(dayNum >= 20 ? "right" : "left");
 
   // Reset draft states when popover opens or schedule changes
   useEffect(() => {
@@ -64,7 +66,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
   useEffect(() => {
     if (isOpen && cellRef.current) {
       const rect = cellRef.current.getBoundingClientRect();
-      setPopoverAlign(rect.left + 288 > window.innerWidth - 16 ? "right" : "left");
+      setPopoverAlign(dayNum >= 20 || rect.left + 288 > window.innerWidth * 0.72 ? "right" : "left");
     }
   }, [isOpen]);
 
