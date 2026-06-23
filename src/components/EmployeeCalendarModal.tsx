@@ -100,35 +100,43 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     setEditingDay(day);
   };
 
-  const applyPreset = (presetType: string) => {
-    setEditType(presetType);
-    if (presetType === "오픈") setEditWorkingHours(openShiftHour);
-    else if (presetType === "미들") setEditWorkingHours(middleShiftHour);
-    else if (presetType === "마감") setEditWorkingHours(closeShiftHour);
-    else setEditWorkingHours("");
-  };
-
-  const handleSave = async () => {
+  const saveWith = async (overrides: { type?: string; workingHours?: string; actualHours?: string; memo?: string } = {}) => {
     if (!onUpdate || editingDay === null) return;
     const dayStr = String(editingDay).padStart(2, "0");
     const date = `${year}-${monthStr}-${dayStr}`;
+    const payload = {
+      type: overrides.type ?? editType ?? "휴무",
+      workingHours: overrides.workingHours ?? editWorkingHours,
+      actualHours: overrides.actualHours ?? editActualHours,
+      memo: overrides.memo ?? editMemo,
+    };
     setIsSaving(true);
     try {
-      await onUpdate({
-        employeeId: employee.id,
-        date,
-        type: editType || "휴무",
-        workingHours: editWorkingHours,
-        actualHours: editActualHours,
-        memo: editMemo,
-      });
-      setEditingDay(null);
+      await onUpdate({ employeeId: employee.id, date, ...payload });
+      // Update local form state to reflect saved values
+      setEditType(payload.type);
+      setEditWorkingHours(payload.workingHours);
+      setEditActualHours(payload.actualHours);
+      setEditMemo(payload.memo);
     } catch (err) {
       console.error("Failed to update schedule:", err);
     } finally {
       setIsSaving(false);
     }
   };
+
+  const quickApplyType = async (presetType: string) => {
+    let wh = editWorkingHours;
+    if (presetType === "오픈") wh = openShiftHour;
+    else if (presetType === "미들") wh = middleShiftHour;
+    else if (presetType === "마감") wh = closeShiftHour;
+    else if (["휴무", "월차", "지정휴무"].includes(presetType)) wh = "";
+    setEditType(presetType);
+    setEditWorkingHours(wh);
+    await saveWith({ type: presetType, workingHours: wh });
+  };
+
+  const handleSave = () => saveWith();
 
   return (
     <div
@@ -245,33 +253,41 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               </button>
             </div>
 
-            {/* Quick presets */}
+            {/* Quick presets — click immediately saves */}
             <div className="flex flex-wrap gap-1">
               {activeTypes.map((t) => {
                 const c = SCHEDULE_COLORS[t.value] || DEFAULT_COLOR;
+                const isActive = editType === t.value;
                 return (
                   <button
                     key={t.value}
                     type="button"
-                    onClick={() => applyPreset(t.value)}
-                    className={`px-2 py-1 text-[10px] font-extrabold rounded border transition cursor-pointer ${
-                      editType === t.value
-                        ? `${c.bg} ${c.text} border-blue-400 ring-1 ring-blue-400/30`
+                    disabled={isSaving}
+                    onClick={() => quickApplyType(t.value)}
+                    className={`px-2.5 py-1.5 text-[10px] font-extrabold rounded-lg border transition cursor-pointer disabled:opacity-50 ${
+                      isActive
+                        ? `${c.bg} ${c.text} border-blue-400 ring-2 ring-blue-400/30 shadow-sm`
                         : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
                     }`}
                   >
-                    {t.label}
+                    {isActive && isSaving ? "저장중..." : t.label}
                   </button>
                 );
               })}
               <button
                 type="button"
-                onClick={() => { setEditActualHours("결근"); setEditType("결근"); setEditWorkingHours(""); }}
-                className="px-2 py-1 text-[10px] font-extrabold rounded border bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 transition cursor-pointer"
+                disabled={isSaving}
+                onClick={() => quickApplyType("결근")}
+                className="px-2.5 py-1.5 text-[10px] font-extrabold rounded-lg border bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 transition cursor-pointer disabled:opacity-50"
               >
                 🚨 결근
               </button>
             </div>
+
+            {/* Hint text */}
+            <p className="text-[9px] text-blue-500 font-semibold -mt-1">
+              ▲ 버튼 클릭 즉시 저장됩니다. 시간/메모는 아래에서 수정 후 저장 버튼을 누르세요.
+            </p>
 
             {/* Working hours */}
             <div className="flex gap-2">
