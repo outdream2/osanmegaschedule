@@ -47,6 +47,8 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
   const [memo, setMemo] = useState(schedule?.memo || "");
 
   const popoverRef = useRef<HTMLDivElement>(null);
+  const cellRef = useRef<HTMLDivElement>(null);
+  const [popoverAlign, setPopoverAlign] = useState<"left" | "right">("left");
 
   // Reset draft states when popover opens or schedule changes
   useEffect(() => {
@@ -57,6 +59,14 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
       setMemo(schedule?.memo || "");
     }
   }, [isOpen, schedule]);
+
+  // Detect if cell is near right viewport edge and flip popover alignment
+  useEffect(() => {
+    if (isOpen && cellRef.current) {
+      const rect = cellRef.current.getBoundingClientRect();
+      setPopoverAlign(rect.left + 288 > window.innerWidth - 16 ? "right" : "left");
+    }
+  }, [isOpen]);
 
   // Close popover when clicking outside
   useEffect(() => {
@@ -137,6 +147,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
 
   return (
     <div
+      ref={cellRef}
       className="relative border-r border-b border-[#e2e8f0] h-12 min-w-[36px] flex flex-col justify-between p-0.5 select-none text-center"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -211,7 +222,11 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
       {isOpen && (
         <div
           ref={popoverRef}
-          className="absolute z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 md:translate-x-0 md:translate-y-0 md:top-full md:left-0 mt-1 w-72 bg-white rounded shadow-xl p-4 border border-[#e2e8f0] text-slate-800 text-left animate-in fade-in duration-100"
+          className={`absolute z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 md:translate-x-0 md:translate-y-0 md:top-full mt-1 w-72 bg-white rounded shadow-xl p-4 border border-[#e2e8f0] text-slate-800 text-left animate-in fade-in duration-100 ${
+            popoverAlign === "right"
+              ? "md:right-0 md:left-auto"
+              : "md:left-0 md:right-auto"
+          }`}
         >
           <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-2 mb-3">
             <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">

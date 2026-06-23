@@ -78,8 +78,11 @@ export const SchedulePage: React.FC = () => {
   });
 
   const [colCollapsed, setColCollapsed] = useState<{ position: boolean; description: boolean; hireDate: boolean }>(() => {
-    try { return JSON.parse(localStorage.getItem("col_collapsed") || "{}"); }
-    catch { return { position: false, description: false, hireDate: false }; }
+    try {
+      const saved = JSON.parse(localStorage.getItem("col_collapsed") || "{}");
+      return { position: false, hireDate: false, ...saved, description: true };
+    }
+    catch { return { position: false, description: true, hireDate: false }; }
   });
   const toggleCol = (col: keyof typeof colCollapsed) => {
     setColCollapsed(prev => {
@@ -134,6 +137,14 @@ export const SchedulePage: React.FC = () => {
   const [tempDescription, setTempDescription] = useState("");
   const [timelineDate, setTimelineDate] = useState<string | null>(null);
   const [calendarEmployee, setCalendarEmployee] = useState<Employee | null>(null);
+
+  // Keep calendarEmployee in sync when schedule updates happen
+  useEffect(() => {
+    if (calendarEmployee) {
+      const updated = employees.find(e => e.id === calendarEmployee.id);
+      if (updated) setCalendarEmployee(updated);
+    }
+  }, [employees]);
 
   const openCreateEmployeeModal = () => {
     setSelectedEmpForEdit(null);
@@ -1436,6 +1447,7 @@ export const SchedulePage: React.FC = () => {
                       <th
                         ref={nameThRef}
                         className="text-center text-[11px] font-semibold border-r border-slate-700 border-b border-b-slate-700 sticky left-0 bg-slate-800 z-40 py-2.5 tracking-wide whitespace-nowrap px-3"
+                        style={{ width: "120px", minWidth: "120px" }}
                       >
                         직원 성명
                       </th>
@@ -1614,13 +1626,18 @@ export const SchedulePage: React.FC = () => {
                               </div>
                             )}
                             <div className="flex-1 flex items-center justify-between">
-                              <span
-                                onClick={() => setCalendarEmployee(emp)}
-                                className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[11px] cursor-pointer select-none transition whitespace-nowrap"
-                                title="클릭하여 개인 스케줄 달력 보기"
-                              >
-                                {emp.name}
-                              </span>
+                              <div className="flex flex-col min-w-0">
+                                <span
+                                  onClick={() => setCalendarEmployee(emp)}
+                                  className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[11px] cursor-pointer select-none transition whitespace-nowrap"
+                                  title={emp.description || "클릭하여 개인 스케줄 달력 보기"}
+                                >
+                                  {emp.name}
+                                </span>
+                                <span className="text-[9px] text-slate-400 font-semibold whitespace-nowrap leading-tight">
+                                  {emp.position}{emp.employmentType ? ` (${emp.employmentType})` : ""}
+                                </span>
+                              </div>
                               {isAdmin && (
                                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition duration-150 ml-1 shrink-0">
                                   <button
@@ -1660,19 +1677,18 @@ export const SchedulePage: React.FC = () => {
                           </td>
                         ) : (
                           <td
-                            className="p-1 px-2 text-center text-[10px] font-semibold border-r border-slate-100 bg-white z-[25] group-hover:bg-slate-50/80 text-slate-600 shadow-[1px_0_0_0_#e2e8f0]"
+                            className="p-1 px-2 text-center text-[10px] font-semibold border-r border-slate-100 bg-white z-[25] group-hover:bg-slate-50/80 text-slate-600 shadow-[1px_0_0_0_#e2e8f0] whitespace-nowrap"
                             style={{ position: "sticky", left: stickyPos.position + "px", width: "80px" }}
+                            title={emp.employmentType || ""}
                           >
-                            <div className="flex flex-col items-center gap-0.5">
-                              <span>{emp.position || "—"}</span>
-                              {emp.employmentType && (
-                                <span className={`text-[8px] font-bold px-1 py-0 rounded leading-tight ${
-                                  emp.employmentType === "알바" ? "bg-amber-100 text-amber-700" :
-                                  emp.employmentType === "계약직" ? "bg-blue-100 text-blue-700" :
-                                  "bg-emerald-100 text-emerald-700"
-                                }`}>{emp.employmentType}</span>
-                              )}
-                            </div>
+                            <span className="inline-flex items-center gap-1">
+                              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                emp.employmentType === "알바" ? "bg-amber-400" :
+                                emp.employmentType === "계약직" ? "bg-blue-400" :
+                                "bg-emerald-400"
+                              }`} />
+                              {emp.position || "—"}
+                            </span>
                           </td>
                         )}
 
@@ -2561,6 +2577,12 @@ export const SchedulePage: React.FC = () => {
           initialYear={currentYear}
           initialMonth={currentMonth}
           onClose={() => setCalendarEmployee(null)}
+          isAdmin={isAdmin}
+          onUpdate={handleCellUpdate}
+          scheduleTypes={settingsScheduleTypes.map(v => ({ value: v, label: v }))}
+          openShiftHour={openShiftHour}
+          middleShiftHour={middleShiftHour}
+          closeShiftHour={closeShiftHour}
         />
       )}
     </div>

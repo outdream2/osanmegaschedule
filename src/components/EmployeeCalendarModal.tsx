@@ -1,57 +1,86 @@
-import React, { useState } from "react";
-import { X, ChevronLeft, ChevronRight } from "lucide-react";
-import { Employee } from "../types";
-import { SCHEDULE_COLORS, DEFAULT_COLOR } from "../constants";
+import React, { useState, useEffect } from "react";
+import { X, ChevronLeft, ChevronRight, Save, Clock, MessageSquare } from "lucide-react";
+import { Employee, Schedule } from "../types";
+import { SCHEDULE_COLORS, SCHEDULE_TYPES, DEFAULT_COLOR } from "../constants";
 
 interface Props {
   employee: Employee;
   initialYear: number;
   initialMonth: number;
   onClose: () => void;
+  isAdmin?: boolean;
+  onUpdate?: (data: {
+    employeeId: number;
+    date: string;
+    type: string;
+    workingHours: string;
+    actualHours: string;
+    memo?: string;
+  }) => Promise<void>;
+  scheduleTypes?: { value: string; label: string }[];
+  openShiftHour?: string;
+  middleShiftHour?: string;
+  closeShiftHour?: string;
 }
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
 export const EmployeeCalendarModal: React.FC<Props> = ({
-  employee, initialYear, initialMonth, onClose,
+  employee,
+  initialYear,
+  initialMonth,
+  onClose,
+  isAdmin = false,
+  onUpdate,
+  scheduleTypes: scheduleTypesProp,
+  openShiftHour = "09:30-18:30",
+  middleShiftHour = "11:00-20:00",
+  closeShiftHour = "13:00-22:00",
 }) => {
+  const activeTypes = scheduleTypesProp ?? SCHEDULE_TYPES;
+
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
+
+  const [editingDay, setEditingDay] = useState<number | null>(null);
+  const [editType, setEditType] = useState("");
+  const [editWorkingHours, setEditWorkingHours] = useState("");
+  const [editActualHours, setEditActualHours] = useState("");
+  const [editMemo, setEditMemo] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   const prevMonth = () => {
     if (month === 1) { setYear(y => y - 1); setMonth(12); }
     else setMonth(m => m - 1);
+    setEditingDay(null);
   };
   const nextMonth = () => {
     if (month === 12) { setYear(y => y + 1); setMonth(1); }
     else setMonth(m => m + 1);
+    setEditingDay(null);
   };
 
   const totalDays = new Date(year, month, 0).getDate();
-  const firstDow = new Date(year, month - 1, 1).getDay(); // 0=Sun
+  const firstDow = new Date(year, month - 1, 1).getDay();
   const monthStr = String(month).padStart(2, "0");
 
-  // Build schedule lookup for this month
-  const schedMap: Record<number, { type: string; workingHours: string; actualHours: string }> = {};
+  const schedMap: Record<number, { type: string; workingHours: string; actualHours: string; memo: string }> = {};
   for (const sc of employee.schedules) {
     if (sc.date.startsWith(`${year}-${monthStr}-`)) {
       const day = parseInt(sc.date.slice(8));
-      schedMap[day] = { type: sc.type, workingHours: sc.workingHours, actualHours: sc.actualHours };
+      schedMap[day] = { type: sc.type, workingHours: sc.workingHours, actualHours: sc.actualHours, memo: sc.memo || "" };
     }
   }
 
-  // Build calendar grid: leading empty cells + day cells
   const cells: (number | null)[] = [
     ...Array(firstDow).fill(null),
     ...Array.from({ length: totalDays }, (_, i) => i + 1),
   ];
-  // Pad to complete last row
   while (cells.length % 7 !== 0) cells.push(null);
 
   const weeks: (number | null)[][] = [];
   for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
 
-  // Stats for this month
   const stats: Record<string, number> = {};
   for (let d = 1; d <= totalDays; d++) {
     const sc = schedMap[d];
@@ -61,13 +90,53 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     .filter(([t]) => !["휴무", "월차", "지정휴무"].includes(t))
     .reduce((s, [, n]) => s + n, 0);
 
+  const openEditDay = (day: number) => {
+    if (!isAdmin || !onUpdate) return;
+    const sc = schedMap[day];
+    setEditType(sc?.type || "");
+    setEditWorkingHours(sc?.workingHours || "");
+    setEditActualHours(sc?.actualHours || "");
+    setEditMemo(sc?.memo || "");
+    setEditingDay(day);
+  };
+
+  const applyPreset = (presetType: string) => {
+    setEditType(presetType);
+    if (presetType === "오픈") setEditWorkingHours(openShiftHour);
+    else if (presetType === "미들") setEditWorkingHours(middleShiftHour);
+    else if (presetType === "마감") setEditWorkingHours(closeShiftHour);
+    else setEditWorkingHours("");
+  };
+
+  const handleSave = async () => {
+    if (!onUpdate || editingDay === null) return;
+    const dayStr = String(editingDay).padStart(2, "0");
+    const date = `${year}-${monthStr}-${dayStr}`;
+    setIsSaving(true);
+    try {
+      await onUpdate({
+        employeeId: employee.id,
+        date,
+        type: editType || "휴무",
+        workingHours: editWorkingHours,
+        actualHours: editActualHours,
+        memo: editMemo,
+      });
+      setEditingDay(null);
+    } catch (err) {
+      console.error("Failed to update schedule:", err);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -97,7 +166,6 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
 
         {/* Calendar */}
         <div className="flex-1 overflow-y-auto px-3 py-2">
-          {/* Day-of-week header */}
           <div className="grid grid-cols-7 mb-1">
             {DAY_LABELS.map((d, i) => (
               <div key={d} className={`text-center text-[10px] font-bold py-1 ${i === 0 ? "text-rose-500" : i === 6 ? "text-sky-500" : "text-slate-400"}`}>
@@ -106,7 +174,6 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             ))}
           </div>
 
-          {/* Weeks */}
           <div className="space-y-1">
             {weeks.map((week, wi) => (
               <div key={wi} className="grid grid-cols-7 gap-1">
@@ -119,13 +186,17 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     new Date().getMonth() + 1 === month &&
                     new Date().getDate() === day
                   );
+                  const isEditing = editingDay === day;
                   const dow = (firstDow + day - 1) % 7;
                   return (
                     <div
                       key={di}
-                      className={`rounded-lg p-1 flex flex-col items-center min-h-[52px] border ${
+                      onClick={() => openEditDay(day)}
+                      className={`rounded-lg p-1 flex flex-col items-center min-h-[52px] border transition-all ${
                         color ? `${color.bg} border-transparent` : "bg-white border-slate-100"
-                      } ${isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""}`}
+                      } ${isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""} ${
+                        isEditing ? "ring-2 ring-blue-500 scale-105 z-10 shadow-md" : ""
+                      } ${isAdmin && onUpdate ? "cursor-pointer hover:shadow-sm hover:scale-[1.02]" : ""}`}
                     >
                       <span className={`text-[10px] font-bold leading-none mb-0.5 ${
                         dow === 0 ? "text-rose-500" : dow === 6 ? "text-sky-500" : "text-slate-600"
@@ -158,6 +229,111 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             ))}
           </div>
         </div>
+
+        {/* Inline Edit Panel — shown when a day is selected (admin only) */}
+        {isAdmin && onUpdate && editingDay !== null && (
+          <div className="flex-shrink-0 border-t-2 border-blue-200 bg-blue-50/40 px-4 py-3 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-black text-blue-700">
+                {month}월 {editingDay}일 스케줄 편집
+              </span>
+              <button
+                onClick={() => setEditingDay(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded transition cursor-pointer"
+              >
+                <X size={13} />
+              </button>
+            </div>
+
+            {/* Quick presets */}
+            <div className="flex flex-wrap gap-1">
+              {activeTypes.map((t) => {
+                const c = SCHEDULE_COLORS[t.value] || DEFAULT_COLOR;
+                return (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => applyPreset(t.value)}
+                    className={`px-2 py-1 text-[10px] font-extrabold rounded border transition cursor-pointer ${
+                      editType === t.value
+                        ? `${c.bg} ${c.text} border-blue-400 ring-1 ring-blue-400/30`
+                        : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                );
+              })}
+              <button
+                type="button"
+                onClick={() => { setEditActualHours("결근"); setEditType("결근"); setEditWorkingHours(""); }}
+                className="px-2 py-1 text-[10px] font-extrabold rounded border bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 transition cursor-pointer"
+              >
+                🚨 결근
+              </button>
+            </div>
+
+            {/* Working hours */}
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 flex items-center gap-0.5">
+                  <Clock size={9} /> 근무 시간
+                </label>
+                <input
+                  type="text"
+                  value={editWorkingHours}
+                  onChange={e => setEditWorkingHours(e.target.value)}
+                  placeholder="09:30-18:30"
+                  className="w-full text-[11px] rounded border border-slate-200 focus:border-blue-400 p-1.5 bg-white focus:outline-none"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5 flex items-center gap-0.5">
+                  <MessageSquare size={9} /> 실근무/기타
+                </label>
+                <input
+                  type="text"
+                  value={editActualHours}
+                  onChange={e => setEditActualHours(e.target.value)}
+                  placeholder="지각, 조퇴..."
+                  className="w-full text-[11px] rounded border border-slate-200 focus:border-blue-400 p-1.5 bg-white focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Memo */}
+            <div>
+              <label className="block text-[9px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">메모</label>
+              <input
+                type="text"
+                value={editMemo}
+                onChange={e => setEditMemo(e.target.value)}
+                placeholder="메모 (마우스 오버 시 표시)"
+                className="w-full text-[11px] rounded border border-slate-200 focus:border-blue-400 p-1.5 bg-white focus:outline-none"
+              />
+            </div>
+
+            {/* Save */}
+            <div className="flex justify-end gap-2 pt-0.5">
+              <button
+                type="button"
+                onClick={() => setEditingDay(null)}
+                className="px-3 py-1.5 text-[11px] font-semibold bg-white border border-slate-200 rounded text-slate-600 hover:bg-slate-50 transition cursor-pointer"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleSave}
+                disabled={isSaving}
+                className="px-3 py-1.5 text-[11px] font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded inline-flex items-center gap-1 transition cursor-pointer disabled:opacity-60"
+              >
+                <Save size={11} />
+                {isSaving ? "저장 중..." : "저장"}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Stats footer */}
         <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex-shrink-0 flex items-center gap-3 flex-wrap">

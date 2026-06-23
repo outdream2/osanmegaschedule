@@ -1212,81 +1212,97 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                         <p className="text-[7px] text-[#854d0e] font-bold text-right leading-none">온도: -4°C 청결유지</p>
                       </div>
 
-                      {/* 2A-2. 연령별 질환별 베스트 세트존 (Stretched blue container) */}
-                      <div
-                        onDragOver={(e) => handleDragOver(e, "slot_best_set")}
-                        onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, "slot_best_set")}
-                        className={`flex-1 bg-blue-50/50 border-2 border-blue-400 rounded-xl p-3 flex flex-col justify-between transition min-h-[120px] relative ${
-                          dragOverZone === "slot_best_set" ? "bg-blue-100 border-blue-500 scale-[1.01] z-20 shadow-xs" : ""
-                        }`}
-                      >
-                        <div className="flex items-center gap-1 border-b border-blue-200 pb-1">
-                          <span className="text-blue-500 text-xs">🧬</span>
-                          <span className="text-[10px] font-black text-blue-950 leading-tight">연령별 질환별 베스트 세트존</span>
-                        </div>
+                      {/* 2A-2 + 2A-3. 연령별 질환별 베스트 세트존 & 프로모션 이벤트존 — 나란히 배치, 90° 왼쪽 회전 레이블 */}
+                      <div className="flex gap-2 flex-1">
 
-                        <div className="flex-1 py-1.5 flex flex-col justify-center">
-                          {bestSetStaff.length > 0 ? (
-                            renderPlacedStaffTags(bestSetStaff)
-                          ) : (
-                            <span className="text-[8px] text-blue-700 italic block text-center leading-none">진열 상담원 공석</span>
-                          )}
-                        </div>
-
-                        <div className="text-[7px] text-blue-600 font-extrabold text-right">상담 테이블 매핑</div>
-                      </div>
-
-                      {/* Stacked Event Zones (Three stacked boxes) */}
-                      <div className="bg-white border border-slate-300 rounded-xl p-3 flex flex-col gap-2.5 shadow-3xs">
-                        <span className="text-[9px] font-black text-slate-800 flex items-center gap-1 border-b pb-1">
-                          🎈 프로모션 이벤트 존 (Makers)
-                        </span>
-
-                        {/* Event Zone 1 (House shape card) */}
+                        {/* 연령별 질환별 베스트 세트존 — 90° left rotation label */}
                         <div
-                          onDragOver={(e) => handleDragOver(e, "slot_event1")}
+                          onDragOver={(e) => handleDragOver(e, "slot_best_set")}
                           onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, "slot_event1")}
-                          className={`bg-slate-50 border rounded-lg p-2 flex flex-col justify-between min-h-[55px] transition relative ${
-                            dragOverZone === "slot_event1" ? "bg-red-50 border-red-500 scale-102 z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
+                          onDrop={(e) => handleDrop(e, "slot_best_set")}
+                          className={`flex-1 bg-blue-50/50 border-2 border-blue-400 rounded-xl p-2 flex flex-row min-h-[200px] relative transition ${
+                            dragOverZone === "slot_best_set" ? "bg-blue-100 border-blue-500 scale-[1.01] z-20 shadow-xs" : ""
                           }`}
                         >
-                          <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 1</span>
-                          <span className="text-[9px] font-extrabold text-slate-700">이벤트존 1 🏠</span>
-                          {renderPlacedStaffTags(event1Staff)}
-                          {event1Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
+                          {/* Rotated label on left side */}
+                          <div className="flex items-center justify-center shrink-0 w-5 mr-1.5 border-r border-blue-200">
+                            <span
+                              className="text-[9px] font-black text-blue-950 whitespace-nowrap"
+                              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                            >
+                              🧬 연령별 질환별 베스트 세트존
+                            </span>
+                          </div>
+                          {/* Content */}
+                          <div className="flex-1 flex flex-col justify-between">
+                            <div className="flex-1 py-1 flex flex-col justify-center">
+                              {bestSetStaff.length > 0 ? (
+                                renderPlacedStaffTags(bestSetStaff)
+                              ) : (
+                                <span className="text-[8px] text-blue-700 italic block text-center leading-none">진열 상담원 공석</span>
+                              )}
+                            </div>
+                            <div className="text-[7px] text-blue-600 font-extrabold text-right">상담 테이블 매핑</div>
+                          </div>
                         </div>
 
-                        {/* Event Zone 2 (House shape card) */}
-                        <div
-                          onDragOver={(e) => handleDragOver(e, "slot_event2")}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, "slot_event2")}
-                          className={`bg-slate-50 border rounded-lg p-2 flex flex-col justify-between min-h-[55px] transition relative ${
-                            dragOverZone === "slot_event2" ? "bg-red-50 border-red-500 scale-102 z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
-                          }`}
-                        >
-                          <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 2</span>
-                          <span className="text-[9px] font-extrabold text-slate-700">이벤트존 2 🏠</span>
-                          {renderPlacedStaffTags(event2Staff)}
-                          {event2Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
+                        {/* 프로모션 이벤트 존 — 90° left rotation label, placed next to best-set */}
+                        <div className="flex-1 bg-white border border-slate-300 rounded-xl p-2 flex flex-row min-h-[200px] shadow-3xs">
+                          {/* Rotated label on left side */}
+                          <div className="flex items-center justify-center shrink-0 w-5 mr-1.5 border-r border-slate-200">
+                            <span
+                              className="text-[9px] font-black text-slate-800 whitespace-nowrap"
+                              style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                            >
+                              🎈 프로모션 이벤트 존
+                            </span>
+                          </div>
+                          {/* Three event zones stacked inside */}
+                          <div className="flex-1 flex flex-col gap-1.5">
+                            <div
+                              onDragOver={(e) => handleDragOver(e, "slot_event1")}
+                              onDragLeave={handleDragLeave}
+                              onDrop={(e) => handleDrop(e, "slot_event1")}
+                              className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[50px] transition relative ${
+                                dragOverZone === "slot_event1" ? "bg-red-50 border-red-500 scale-102 z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
+                              }`}
+                            >
+                              <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 1</span>
+                              <span className="text-[8px] font-extrabold text-slate-700">이벤트존 1 🏠</span>
+                              {renderPlacedStaffTags(event1Staff)}
+                              {event1Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
+                            </div>
+
+                            <div
+                              onDragOver={(e) => handleDragOver(e, "slot_event2")}
+                              onDragLeave={handleDragLeave}
+                              onDrop={(e) => handleDrop(e, "slot_event2")}
+                              className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[50px] transition relative ${
+                                dragOverZone === "slot_event2" ? "bg-red-50 border-red-500 scale-102 z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
+                              }`}
+                            >
+                              <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 2</span>
+                              <span className="text-[8px] font-extrabold text-slate-700">이벤트존 2 🏠</span>
+                              {renderPlacedStaffTags(event2Staff)}
+                              {event2Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
+                            </div>
+
+                            <div
+                              onDragOver={(e) => handleDragOver(e, "slot_event3")}
+                              onDragLeave={handleDragLeave}
+                              onDrop={(e) => handleDrop(e, "slot_event3")}
+                              className={`flex-1 bg-slate-50 border rounded-lg p-1.5 flex flex-col justify-between min-h-[50px] transition relative ${
+                                dragOverZone === "slot_event3" ? "bg-red-50 border-red-500 scale-102 z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
+                              }`}
+                            >
+                              <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 3</span>
+                              <span className="text-[8px] font-extrabold text-slate-700">이벤트존 3 🏠</span>
+                              {renderPlacedStaffTags(event3Staff)}
+                              {event3Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Event Zone 3 (House shape card) */}
-                        <div
-                          onDragOver={(e) => handleDragOver(e, "slot_event3")}
-                          onDragLeave={handleDragLeave}
-                          onDrop={(e) => handleDrop(e, "slot_event3")}
-                          className={`bg-slate-50 border rounded-lg p-2 flex flex-col justify-between min-h-[55px] transition relative ${
-                            dragOverZone === "slot_event3" ? "bg-red-50 border-red-500 scale-102 z-20 shadow-xs" : "border-slate-200 hover:bg-slate-100/50"
-                          }`}
-                        >
-                          <span className="text-[8px] font-black text-red-700 bg-red-50 px-1 rounded absolute top-1 right-1">Zone 3</span>
-                          <span className="text-[9px] font-extrabold text-slate-700">이벤트존 3 🏠</span>
-                          {renderPlacedStaffTags(event3Staff)}
-                          {event3Staff.length === 0 && <span className="text-[8px] text-slate-400 italic">담당 대기</span>}
-                        </div>
                       </div>
 
                     </div>
@@ -1320,35 +1336,43 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                         <div className="text-[7px] text-emerald-700 text-right font-semibold">VIP 전담 안내대</div>
                       </div>
 
-                      {/* 2B-2. 메인 POS 카운터 (Checkout) with stools */}
+                      {/* 2B-2. 메인 POS 카운터 (Checkout) — 90° left rotation label */}
                       <div
                         onDragOver={(e) => handleDragOver(e, "slot_counter")}
                         onDragLeave={handleDragLeave}
                         onDrop={(e) => handleDrop(e, "slot_counter")}
-                        className={`bg-white border-2 border-slate-400 rounded-xl p-3 flex flex-col justify-between transition min-h-[140px] relative ${
+                        className={`bg-white border-2 border-slate-400 rounded-xl p-2 flex flex-row justify-between transition min-h-[140px] relative ${
                           dragOverZone === "slot_counter" ? "bg-blue-50 border-blue-500 z-20 scale-102 shadow-xs" : ""
                         }`}
                       >
-                        <div className="flex items-center gap-1 border-b border-slate-200 pb-1">
-                          <span className="text-[#3b82f6] text-xs">💳</span>
-                          <span className="text-[10px] font-black text-slate-900 leading-tight">메인 카운터 (Checkout)</span>
+                        {/* Rotated label on left side */}
+                        <div className="flex items-center justify-center shrink-0 w-5 mr-2 border-r border-slate-200">
+                          <span
+                            className="text-[10px] font-black text-slate-900 whitespace-nowrap"
+                            style={{ writingMode: "vertical-rl", transform: "rotate(180deg)" }}
+                          >
+                            💳 메인 카운터 (Checkout)
+                          </span>
                         </div>
 
-                        {/* Stool circles mapping matching actual blueprint layout exactly */}
-                        <div className="py-1">
-                          <span className="text-[7px] text-slate-400 block text-center font-bold mb-1">고객 소통형 체어 8석</span>
-                          <div className="flex justify-center gap-1 mb-1">
-                            {Array.from({ length: 8 }).map((_, seatI) => (
-                              <div key={`stool-ui-${seatI}`} className="w-2.5 h-2.5 rounded-full border border-slate-300 bg-slate-100 shadow-3xs" title={`seats-${seatI}`}></div>
-                            ))}
+                        {/* Content on right */}
+                        <div className="flex-1 flex flex-col justify-between">
+                          {/* Stool circles */}
+                          <div className="py-1">
+                            <span className="text-[7px] text-slate-400 block text-center font-bold mb-1">고객 소통형 체어 8석</span>
+                            <div className="flex flex-wrap justify-center gap-1 mb-1">
+                              {Array.from({ length: 8 }).map((_, seatI) => (
+                                <div key={`stool-ui-${seatI}`} className="w-2.5 h-2.5 rounded-full border border-slate-300 bg-slate-100 shadow-3xs" title={`seats-${seatI}`}></div>
+                              ))}
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="flex-1 flex flex-col justify-center">
-                          {renderPlacedStaffTags(cashiers)}
-                          {cashiers.length === 0 && (
-                            <span className="text-[8px] text-slate-400 italic block text-center py-1">셀프 결제 단말 가동</span>
-                          )}
+                          <div className="flex-1 flex flex-col justify-center">
+                            {renderPlacedStaffTags(cashiers)}
+                            {cashiers.length === 0 && (
+                              <span className="text-[8px] text-slate-400 italic block text-center py-1">셀프 결제 단말 가동</span>
+                            )}
+                          </div>
                         </div>
                       </div>
 
