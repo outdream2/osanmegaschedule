@@ -537,7 +537,7 @@ export const SchedulePage: React.FC = () => {
     const fullDate = `${currentYear}-${monthStr}-${dayStr}`;
     const dayIndex = new Date(currentYear, currentMonth - 1, dayNum).getDay();
     const dayWord = weekdays[dayIndex];
-    
+
     let colorClass = "text-slate-600 bg-slate-50";
     if (dayIndex === 6) colorClass = "text-blue-600 bg-blue-50 font-bold"; // Saturday Blue
     if (dayIndex === 0) colorClass = "text-rose-600 bg-rose-50 font-bold";  // Sunday Red
@@ -585,7 +585,7 @@ export const SchedulePage: React.FC = () => {
         }
         return a.name.localeCompare(b.name, "ko");
       }
-      
+
       if (sortBy === "hireDate") {
         const dateA = a.hireDate ? new Date(a.hireDate).getTime() : 0;
         const dateB = b.hireDate ? new Date(b.hireDate).getTime() : 0;
@@ -594,13 +594,13 @@ export const SchedulePage: React.FC = () => {
         }
         return a.name.localeCompare(b.name, "ko");
       }
-      
+
       if (sortBy === "name") {
         return sortOrder === "asc"
           ? a.name.localeCompare(b.name, "ko")
           : b.name.localeCompare(a.name, "ko");
       }
-      
+
       return 0; // Default unsorted DB sequence loaded initially
     });
 
@@ -664,14 +664,14 @@ export const SchedulePage: React.FC = () => {
     let totalLates = 0;
     let totalEarlyLeaves = 0;
     let totalAbsences = 0;
-    
+
     interface EmployeeAttendance {
       employee: typeof employees[0];
       lates: Array<{ date: string; note: string; schedType: string }>;
       earlyLeaves: Array<{ date: string; note: string; schedType: string }>;
       absences: Array<{ date: string; note: string; schedType: string }>;
     }
-    
+
     const employeeRecords: EmployeeAttendance[] = [];
     const monthStr = String(currentMonth).padStart(2, "0");
 
@@ -684,7 +684,7 @@ export const SchedulePage: React.FC = () => {
         if (s.date.startsWith(`${currentYear}-${monthStr}-`)) {
           const act = s.actualHours || "";
           const type = s.type || "";
-          
+
           if (act.includes("지각")) {
             lates.push({ date: s.date, note: act, schedType: type });
             totalLates++;
@@ -726,11 +726,10 @@ export const SchedulePage: React.FC = () => {
       {notification && (
         <div className="fixed top-5 right-5 z-[60] pointer-events-none">
           <div
-            className={`px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 border text-sm font-semibold backdrop-blur-sm animate-in slide-in-from-top-2 duration-300 ${
-              notification.type === "success"
-                ? "bg-white/95 text-emerald-800 border-emerald-200 shadow-emerald-100"
-                : "bg-white/95 text-rose-800 border-rose-200 shadow-rose-100"
-            }`}
+            className={`px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 border text-sm font-semibold backdrop-blur-sm animate-in slide-in-from-top-2 duration-300 ${notification.type === "success"
+              ? "bg-white/95 text-emerald-800 border-emerald-200 shadow-emerald-100"
+              : "bg-white/95 text-rose-800 border-rose-200 shadow-rose-100"
+              }`}
           >
             <CheckCircle size={15} className={notification.type === "success" ? "text-emerald-500 shrink-0" : "text-rose-500 shrink-0"} />
             <span>{notification.message}</span>
@@ -746,32 +745,28 @@ export const SchedulePage: React.FC = () => {
             <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
               <Calendar size={14} className="text-white" />
             </div>
-            <span className="font-black text-white tracking-tight text-base leading-none">MEGATOWN</span>
+            <span className="font-black text-white tracking-tight text-base leading-none">OSAN MEGATOWN</span>
           </div>
-          <span className="hidden sm:inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider">
-            SQLite Live
-          </span>
+
 
           {/* Tab Switcher for Sheet vs Map View */}
-          <div className="hidden md:flex items-center gap-0.5 ml-3 p-1 bg-slate-800 rounded-lg border border-slate-700">
+          <div className="hidden sm:flex items-center gap-0.5 ml-2 sm:ml-3 p-1 bg-slate-800 rounded-lg border border-slate-700">
             <button
               onClick={() => setViewMode("sheet")}
-              className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-all flex items-center gap-1.5 ${
-                viewMode === "sheet"
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
+              className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-all flex items-center gap-1.5 ${viewMode === "sheet"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
+                }`}
             >
               <FileSpreadsheet size={12} />
               <span>스케줄 시트</span>
             </button>
             <button
               onClick={() => setViewMode("map")}
-              className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-all flex items-center gap-1.5 ${
-                viewMode === "map"
-                  ? "bg-indigo-600 text-white shadow-sm"
-                  : "text-slate-400 hover:text-slate-200"
-              }`}
+              className={`px-3 py-1 text-xs font-semibold rounded cursor-pointer transition-all flex items-center gap-1.5 ${viewMode === "map"
+                ? "bg-indigo-600 text-white shadow-sm"
+                : "text-slate-400 hover:text-slate-200"
+                }`}
             >
               <Building2 size={12} />
               <span>매장 맵배치도</span>
@@ -796,9 +791,11 @@ export const SchedulePage: React.FC = () => {
 
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="px-3 py-1.5 text-xs font-bold border border-[#cbd5e1] bg-white hover:bg-slate-50 text-slate-700 shadow-3xs rounded-lg transition duration-150 flex items-center gap-1 cursor-pointer"
+            title="환경 설정"
+            className="px-2 sm:px-3 py-1.5 text-xs font-bold border border-[#cbd5e1] bg-white hover:bg-slate-50 text-slate-700 shadow-3xs rounded-lg transition duration-150 flex items-center gap-1 cursor-pointer"
           >
-            ⚙️ 환경 설정
+            <span>⚙️</span>
+            <span className="hidden sm:inline">환경 설정</span>
           </button>
 
           {isAdmin && undoStack.length > 0 && (
@@ -843,10 +840,11 @@ export const SchedulePage: React.FC = () => {
                 setLoginError("");
                 setIsLoginModalOpen(true);
               }}
-              className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
+              title="관리자 로그인"
+              className="px-2 sm:px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               <Lock size={12} />
-              <span>관리자 로그인</span>
+              <span className="hidden sm:inline">관리자 로그인</span>
             </button>
           )}
         </div>
@@ -854,9 +852,9 @@ export const SchedulePage: React.FC = () => {
 
       {/* 1.5 Sub-Header Control Bar for Workplace Tabs, Employee Sorting & Search */}
       {viewMode === "sheet" && (
-        <div className="bg-white border-b border-slate-200 px-4 sm:px-6 py-2.5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 shrink-0 shadow-sm">
+        <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2 sm:gap-3 shrink-0 shadow-sm">
           {/* Filter Tabs: workplace + position */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">필터</span>
             <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5 flex-wrap">
               {([
@@ -870,21 +868,20 @@ export const SchedulePage: React.FC = () => {
                 <button
                   key={key}
                   onClick={() => setActiveTab(key as typeof activeTab)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[32px] ${
-                    activeTab === key
-                      ? `bg-white ${color} shadow-sm font-bold`
-                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                  }`}
+                  className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${activeTab === key
+                    ? `bg-white ${color} shadow-sm font-bold`
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                    }`}
                 >
                   {icon}
-                  <span>{label} <span className="text-slate-400 font-normal">({count})</span></span>
+                  <span>{label} <span className="text-slate-400 font-normal hidden sm:inline">({count})</span><span className="text-slate-400 font-normal sm:hidden"> {count}</span></span>
                 </button>
               ))}
             </div>
           </div>
 
           {/* Employee Sorting Section */}
-          <div className="flex items-center gap-2 flex-wrap text-xs">
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">정렬</span>
             <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
               <button
@@ -897,11 +894,10 @@ export const SchedulePage: React.FC = () => {
                     setSortOrder("asc");
                   }
                 }}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[32px] ${
-                  sortBy === "position"
-                    ? "bg-white text-indigo-600 shadow-sm font-bold"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                }`}
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${sortBy === "position"
+                  ? "bg-white text-indigo-600 shadow-sm font-bold"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  }`}
                 title="직급순 정렬 (부점장 -> 약사 -> 사원 순서)"
               >
                 <span>직급별</span>
@@ -920,11 +916,10 @@ export const SchedulePage: React.FC = () => {
                     setSortOrder("asc");
                   }
                 }}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[32px] ${
-                  sortBy === "hireDate"
-                    ? "bg-white text-indigo-600 shadow-sm font-bold"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                }`}
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${sortBy === "hireDate"
+                  ? "bg-white text-indigo-600 shadow-sm font-bold"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  }`}
                 title="입사일 순 정렬"
               >
                 <span>입사일</span>
@@ -943,11 +938,10 @@ export const SchedulePage: React.FC = () => {
                     setSortOrder("asc");
                   }
                 }}
-                className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[32px] ${
-                  sortBy === "name"
-                    ? "bg-white text-indigo-600 shadow-sm font-bold"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                }`}
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${sortBy === "name"
+                  ? "bg-white text-indigo-600 shadow-sm font-bold"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                  }`}
                 title="이름 성명순 정렬"
               >
                 <span>성명</span>
@@ -963,7 +957,7 @@ export const SchedulePage: React.FC = () => {
                     setSortBy("none");
                     setSortOrder("asc");
                   }}
-                  className="px-2 py-1.5 text-[11px] font-medium text-slate-400 hover:text-rose-500 rounded-md transition cursor-pointer min-h-[32px]"
+                  className="px-2 py-1 sm:py-1.5 text-[11px] font-medium text-slate-400 hover:text-rose-500 rounded-md transition cursor-pointer min-h-[28px] sm:min-h-[32px]"
                   title="기본 순서 정렬 상태로 복원"
                 >
                   초기화
@@ -980,17 +974,17 @@ export const SchedulePage: React.FC = () => {
                       showNotification("정렬 순서가 기본값으로 초기화되었습니다.");
                     }
                   }}
-                  className="px-2.5 py-1.5 text-[10px] font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-md transition cursor-pointer shrink-0 min-h-[32px]"
+                  className="px-2 py-1 sm:py-1.5 text-[10px] font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-md transition cursor-pointer shrink-0 min-h-[28px] sm:min-h-[32px]"
                   title="드래그앤드롭 사용자 지정 순서 초기화"
                 >
-                  순서 초기화
+                  순서초기화
                 </button>
               )}
             </div>
           </div>
 
           {/* Employee Search Group with integrated help feedback */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 max-w-xs w-full">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:max-w-xs w-full">
             <div className="relative flex-1">
               <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
                 <Search size={13} />
@@ -1017,7 +1011,7 @@ export const SchedulePage: React.FC = () => {
 
       {/* 1.6 Personal Schedule Search Results Quick Insights */}
       {viewMode === "sheet" && searchQuery.trim() !== "" && (
-        <div className="bg-blue-50/50 border-b border-[#e2e8f0] px-6 py-4 flex flex-col gap-3 animate-in fade-in slide-in-from-top-2 duration-250 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.01)]">
+        <div className="bg-blue-50/50 border-b border-[#e2e8f0] px-3 sm:px-6 py-3 sm:py-4 flex flex-col gap-2 sm:gap-3 animate-in fade-in slide-in-from-top-2 duration-250 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.01)]">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-extrabold text-[#1e40af] uppercase tracking-wider flex items-center gap-1.5">
               <Award size={14} className="text-blue-600 font-bold" />
@@ -1030,7 +1024,7 @@ export const SchedulePage: React.FC = () => {
               전체 보기로 돌아가기
             </button>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {employees
               .filter((emp) => emp.name.toLowerCase().includes(searchQuery.toLowerCase().trim()))
@@ -1068,11 +1062,10 @@ export const SchedulePage: React.FC = () => {
                         <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">
                           {emp.position}
                         </span>
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
-                          (emp.workplace || "매장") === "매장" 
-                            ? "bg-emerald-50 text-emerald-800 border border-emerald-100" 
-                            : "bg-indigo-50 text-indigo-800 border border-indigo-100"
-                        }`}>
+                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${(emp.workplace || "매장") === "매장"
+                          ? "bg-emerald-50 text-emerald-800 border border-emerald-100"
+                          : "bg-indigo-50 text-indigo-800 border border-indigo-100"
+                          }`}>
                           {emp.workplace || "매장"}
                         </span>
                       </div>
@@ -1088,7 +1081,7 @@ export const SchedulePage: React.FC = () => {
                           근무 <span className="text-blue-600">{workDaysCount}일</span> / 휴무 <span className="text-rose-600">{offDaysCount}일</span>
                         </span>
                       </div>
-                      
+
                       <div className="flex flex-wrap gap-1.5 pt-1">
                         {shiftBreakdown["오픈"] > 0 && (
                           <span className="text-[10px] bg-amber-55 bg-amber-50 text-amber-800 border border-amber-100 px-2 py-0.5 rounded-lg font-extrabold">
@@ -1147,9 +1140,9 @@ export const SchedulePage: React.FC = () => {
       )}
 
       {/* 2. Grid Container Block */}
-      <div className="flex-1 flex flex-col p-3 sm:p-4 bg-slate-100 gap-0">
+      <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-slate-100 gap-0">
         {/* Month Navigation Toolbar */}
-        <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl h-12 flex items-center justify-between px-3 sm:px-5 shrink-0 shadow-sm">
+        <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl h-11 sm:h-12 flex items-center justify-between px-2.5 sm:px-5 shrink-0 shadow-sm">
           {/* Left: Month navigation */}
           <div className="flex items-center gap-1">
             <button
@@ -1216,7 +1209,7 @@ export const SchedulePage: React.FC = () => {
           <div className="bg-white border border-slate-200 rounded-b-xl overflow-hidden flex flex-col flex-1 shadow-sm">
             {/* Copy Previous Month Callout Banner */}
             {!isLoading && !error && isAdmin && employees.length > 0 && !employees.some(emp => emp.schedules && emp.schedules.some(s => s.type.trim() !== "")) && (
-              <div className="m-4 p-4 bg-indigo-50/50 border border-indigo-200/70 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="m-2 sm:m-4 p-3 sm:p-4 bg-indigo-50/50 border border-indigo-200/70 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
                 <div className="flex items-start gap-3">
                   <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg shrink-0">
                     <Layers size={18} />
@@ -1255,7 +1248,7 @@ export const SchedulePage: React.FC = () => {
               <span>→</span>
             </div>
 
-            <div className="relative overflow-x-auto overflow-y-auto max-h-[65vh]">
+            <div className="relative overflow-x-auto overflow-y-auto max-h-[55vh] sm:max-h-[60vh] md:max-h-[65vh]">
               {isLoading ? (
                 <div className="w-full py-32 flex flex-col items-center justify-center bg-slate-50/50">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563eb]"></div>
@@ -1290,177 +1283,179 @@ export const SchedulePage: React.FC = () => {
                 </div>
               ) : (() => {
                 return (
-                <table className="w-full text-left border-collapse table-fixed min-w-[900px]">
-                  {/* Table Headers */}
-                  <thead className="sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-                    {/* Header Row 1: Day of Month Numbers */}
-                    <tr className="bg-slate-800 text-slate-200 select-none">
-                      <th
-                        ref={nameThRef}
-                        className="text-center text-[11px] font-semibold border-r border-slate-700 border-b border-b-slate-700 sticky left-0 bg-slate-800 z-40 py-2.5 tracking-wide whitespace-nowrap px-3"
-                        style={{ width: "120px", minWidth: "120px" }}
-                      >
-                        직원 성명
-                      </th>
+                  <table className="text-left border-collapse table-fixed w-max sm:w-full sm:min-w-[780px] md:min-w-[900px]">
+                    {/* Table Headers */}
+                    <thead className="sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+                      {/* Header Row 1: Day of Month Numbers */}
+                      <tr className="bg-slate-800 text-slate-200 select-none">
+                        <th
+                          ref={nameThRef}
+                          className="text-center text-[10px] sm:text-[11px] font-semibold border-r border-slate-700 border-b border-b-slate-700 sticky left-0 bg-slate-800 z-40 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1.5 sm:px-3"
+                          style={{ width: "80px", minWidth: "80px" }}
+                        >
+                          <span className="hidden sm:inline">직원 성명</span>
+                          <span className="sm:hidden">성명</span>
+                        </th>
 
-                      {daysList.map((day) => {
-                        const { fullDate } = getDayDetails(day);
-                        const dayIndex = new Date(currentYear, currentMonth - 1, day).getDay();
-                        const headerClass = dayIndex === 6
-                          ? "text-sky-300 bg-slate-700"
-                          : dayIndex === 0
-                          ? "text-rose-300 bg-slate-700"
-                          : "text-slate-200 bg-slate-800";
-                        return (
-                          <th
-                            key={`day-num-${day}`}
-                            onClick={() => setTimelineDate(fullDate)}
-                            className={`p-1 text-center text-[10px] font-bold border-r border-b border-slate-700 min-w-[36px] cursor-pointer hover:bg-indigo-700 hover:text-white transition-colors ${headerClass}`}
-                            title={`${fullDate} 타임라인 보기`}
-                          >
-                            {day}
-                          </th>
-                        );
-                      })}
-                    </tr>
-
-                    {/* Header Row 2: Day of Week Characters */}
-                    <tr className="bg-slate-700/80 text-slate-400 select-none">
-                      {/* Left spacing header matching Name column */}
-                      <th className="border-r border-b border-slate-600 sticky left-0 bg-slate-700 z-40 h-6"></th>
-
-                      {daysList.map((day) => {
-                        const { dayWord } = getDayDetails(day);
-                        const dayIndex = new Date(currentYear, currentMonth - 1, day).getDay();
-                        const wordClass = dayIndex === 6
-                          ? "text-sky-400 font-bold"
-                          : dayIndex === 0
-                          ? "text-rose-400 font-bold"
-                          : "text-slate-400";
-                        return (
-                          <th
-                            key={`day-name-${day}`}
-                            className={`p-0.5 text-center text-[9px] border-r border-b border-slate-600 min-w-[36px] bg-slate-700 ${wordClass}`}
-                          >
-                            {dayWord}
-                          </th>
-                        );
-                      })}
-                    </tr>
-                  </thead>
-
-                  {/* Table Body */}
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredEmployees.map((emp) => (
-                      <tr
-                        key={emp.id}
-                        draggable={isAdmin}
-                        onDragStart={(e) => handleRowDragStart(e, emp.id)}
-                        onDragOver={(e) => handleRowDragOver(e, emp.id)}
-                        onDrop={(e) => handleRowDrop(e, emp.id)}
-                        onDragEnd={() => {
-                          setDraggedRowId(null);
-                          setDragOverRowId(null);
-                        }}
-                        className={`bg-white group transition-colors ${
-                          draggedRowId === emp.id ? "opacity-40 bg-slate-50" : ""
-                        } ${
-                          dragOverRowId === emp.id ? "bg-indigo-50/60 outline outline-2 outline-indigo-400" : "hover:bg-slate-50/70"
-                        }`}
-                      >
-
-                        {/* Column 1: Sticky Employee Name */}
-                        <td className="border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50/80 shadow-[1px_0_0_0_#e2e8f0] min-w-[96px] h-12 p-0">
-                          <div className="flex items-stretch h-full">
-                            {/* Drag handle */}
-                            {isAdmin && (
-                              <div
-                                className="text-slate-300 hover:text-indigo-400 cursor-grab active:cursor-grabbing px-0.5 flex items-center transition shrink-0"
-                                title="드래그하여 이 직원 행의 순서 변경"
-                              >
-                                <GripVertical size={11} />
-                              </div>
-                            )}
-                            {/* 3-tier vertical layout */}
-                            <div className="flex-1 flex flex-col justify-between py-1 px-1.5 min-w-0">
-                              {/* Top: name + memo */}
-                              <div className="flex items-center gap-0.5 min-w-0">
-                                <span
-                                  onClick={() => setCalendarEmployee(emp)}
-                                  className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[11px] cursor-pointer select-none transition truncate"
-                                  title="클릭하여 개인 스케줄 달력 보기"
-                                >
-                                  {emp.name}
-                                </span>
-                                {emp.description && (
-                                  <span className="text-indigo-300 hover:text-indigo-500 transition cursor-default shrink-0" title={emp.description}>
-                                    <MessageSquare size={8} />
-                                  </span>
-                                )}
-                              </div>
-                              {/* Middle: position · employmentType */}
-                              <span className="text-[8px] text-slate-500 font-medium leading-tight truncate">
-                                {emp.position}{emp.employmentType ? ` · ${emp.employmentType}` : ""}
-                              </span>
-                              {/* Bottom: edit / delete (admin, subtle until hover) */}
-                              {isAdmin && (
-                                <div className="flex items-center gap-0.5 opacity-20 group-hover:opacity-100 transition duration-150">
-                                  <button
-                                    onClick={() => openEditEmployeeModal(emp)}
-                                    className="text-slate-400 hover:text-indigo-500 cursor-pointer p-0.5 rounded transition hover:bg-indigo-50"
-                                    title="직원 상세 정보 수정"
-                                  >
-                                    <Edit size={9} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteEmployee(emp.id, emp.name)}
-                                    className="text-slate-400 hover:text-rose-500 cursor-pointer p-0.5 rounded transition hover:bg-rose-50"
-                                    title="직원 삭제"
-                                  >
-                                    <Trash2 size={9} />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-
-                        {/* Schedule Cells 1 to 31 */}
                         {daysList.map((day) => {
                           const { fullDate } = getDayDetails(day);
-                          const currentSched = emp.schedules.find((s) => s.date === fullDate);
-
+                          const dayIndex = new Date(currentYear, currentMonth - 1, day).getDay();
+                          const headerClass = dayIndex === 6
+                            ? "text-sky-300 bg-slate-700"
+                            : dayIndex === 0
+                              ? "text-rose-300 bg-slate-700"
+                              : "text-slate-200 bg-slate-800";
                           return (
-                            <td key={`${emp.id}-${day}`} className="p-0 border-r border-[#e2e8f0]">
-                              <ScheduleCell
-                                 schedule={currentSched}
-                                 dateStr={fullDate}
-                                 employeeId={emp.id}
-                                 onUpdate={handleCellUpdate}
-                                 isAdmin={isAdmin}
-                                 openShiftHour={openShiftHour}
-                                 middleShiftHour={middleShiftHour}
-                                 closeShiftHour={closeShiftHour}
-                                 scheduleTypes={settingsScheduleTypes.map((v) => ({ value: v, label: v }))}
-                              />
-                            </td>
+                            <th
+                              key={`day-num-${day}`}
+                              onClick={() => setTimelineDate(fullDate)}
+                              className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-slate-700 w-[30px] sm:w-[36px] cursor-pointer hover:bg-indigo-700 hover:text-white transition-colors ${headerClass}`}
+                              title={`${fullDate} 타임라인 보기`}
+                            >
+                              {day}
+                            </th>
                           );
                         })}
                       </tr>
-                    ))}
 
-                    {/* Real-time calculated Bottom Summary Rows */}
-                    <SummaryRow summaries={currentSummaryList} label="약사" />
-                    <SummaryRow summaries={currentSummaryList} label="사원" />
-                    <SummaryRow summaries={currentSummaryList} label="근무인원" />
-                  </tbody>
-                </table>
+                      {/* Header Row 2: Day of Week Characters */}
+                      <tr className="bg-slate-700/80 text-slate-400 select-none">
+                        {/* Left spacing header matching Name column */}
+                        <th className="border-r border-b border-slate-600 sticky left-0 bg-slate-700 z-40 h-5 sm:h-6" style={{ minWidth: "80px" }}></th>
+
+                        {daysList.map((day) => {
+                          const { dayWord } = getDayDetails(day);
+                          const dayIndex = new Date(currentYear, currentMonth - 1, day).getDay();
+                          const wordClass = dayIndex === 6
+                            ? "text-sky-400 font-bold"
+                            : dayIndex === 0
+                              ? "text-rose-400 font-bold"
+                              : "text-slate-400";
+                          return (
+                            <th
+                              key={`day-name-${day}`}
+                              className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-slate-600 w-[30px] sm:w-[36px] bg-slate-700 ${wordClass}`}
+                            >
+                              {dayWord}
+                            </th>
+                          );
+                        })}
+                      </tr>
+                    </thead>
+
+                    {/* Table Body */}
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredEmployees.map((emp) => (
+                        <tr
+                          key={emp.id}
+                          draggable={isAdmin}
+                          onDragStart={(e) => handleRowDragStart(e, emp.id)}
+                          onDragOver={(e) => handleRowDragOver(e, emp.id)}
+                          onDrop={(e) => handleRowDrop(e, emp.id)}
+                          onDragEnd={() => {
+                            setDraggedRowId(null);
+                            setDragOverRowId(null);
+                          }}
+                          className={`bg-white group transition-colors ${draggedRowId === emp.id ? "opacity-40 bg-slate-50" : ""
+                            } ${dragOverRowId === emp.id ? "bg-indigo-50/60 outline outline-2 outline-indigo-400" : "hover:bg-slate-50/70"
+                            }`}
+                        >
+
+                          {/* Column 1: Sticky Employee Name */}
+                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50/80 shadow-[1px_0_0_0_#e2e8f0] min-w-[84px] sm:min-w-[100px] h-[54px] sm:h-[58px] p-0">
+                            <div className="flex items-stretch h-full">
+                              {/* Drag handle — desktop only */}
+                              {isAdmin && (
+                                <div
+                                  className="text-slate-300 hover:text-indigo-400 cursor-grab active:cursor-grabbing px-0.5 flex items-center transition shrink-0 hidden sm:flex"
+                                  title="드래그하여 이 직원 행의 순서 변경"
+                                >
+                                  <GripVertical size={11} />
+                                </div>
+                              )}
+                              {/* Name / position / actions — vertical stack */}
+                              <div className="flex-1 flex flex-col justify-between py-1 px-1.5 min-w-0">
+                                {/* Top: name + memo dot */}
+                                <div className="flex items-center gap-0.5 min-w-0">
+                                  <span
+                                    onClick={() => setCalendarEmployee(emp)}
+                                    className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[10px] sm:text-[11px] cursor-pointer select-none transition truncate"
+                                    title="클릭하여 개인 스케줄 달력 보기"
+                                  >
+                                    {emp.name}
+                                  </span>
+                                  {emp.description && (
+                                    <span
+                                      className="text-indigo-300 hover:text-indigo-500 transition cursor-default shrink-0"
+                                      title={emp.description}
+                                    >
+                                      <MessageSquare size={8} />
+                                    </span>
+                                  )}
+                                </div>
+                                {/* Middle: position · employmentType */}
+                                <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium leading-tight truncate">
+                                  {emp.position}{emp.employmentType ? ` · ${emp.employmentType}` : ""}
+                                </span>
+                                {/* Bottom: edit / delete (admin) */}
+                                {isAdmin && (
+                                  <div className="flex items-center gap-0.5 opacity-20 group-hover:opacity-100 transition duration-150">
+                                    <button
+                                      onClick={() => openEditEmployeeModal(emp)}
+                                      className="text-slate-400 hover:text-indigo-500 cursor-pointer p-0.5 rounded transition hover:bg-indigo-50"
+                                      title="직원 상세 정보 수정"
+                                    >
+                                      <Edit size={9} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteEmployee(emp.id, emp.name)}
+                                      className="text-slate-400 hover:text-rose-500 cursor-pointer p-0.5 rounded transition hover:bg-rose-50"
+                                      title="직원 삭제"
+                                    >
+                                      <Trash2 size={9} />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Schedule Cells 1 to 31 */}
+                          {daysList.map((day) => {
+                            const { fullDate } = getDayDetails(day);
+                            const currentSched = emp.schedules.find((s) => s.date === fullDate);
+
+                            return (
+                              <td key={`${emp.id}-${day}`} className="p-0 border-r border-[#e2e8f0]">
+                                <ScheduleCell
+                                  schedule={currentSched}
+                                  dateStr={fullDate}
+                                  employeeId={emp.id}
+                                  onUpdate={handleCellUpdate}
+                                  isAdmin={isAdmin}
+                                  openShiftHour={openShiftHour}
+                                  middleShiftHour={middleShiftHour}
+                                  closeShiftHour={closeShiftHour}
+                                  scheduleTypes={settingsScheduleTypes.map((v) => ({ value: v, label: v }))}
+                                />
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+
+                      {/* Real-time calculated Bottom Summary Rows */}
+                      <SummaryRow summaries={currentSummaryList} label="약사" />
+                      <SummaryRow summaries={currentSummaryList} label="사원" />
+                      <SummaryRow summaries={currentSummaryList} label="근무인원" />
+                    </tbody>
+                  </table>
                 );
               })()}
             </div>
 
             {/* Attendance & Status Analysis Dashboard */}
-            <div id="attendance-dashboard" className="m-4 p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+            <div id="attendance-dashboard" className="m-2 sm:m-4 p-3 sm:p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 bg-slate-100 text-slate-600 rounded-xl">
@@ -1542,7 +1537,7 @@ export const SchedulePage: React.FC = () => {
                               <span className="text-[10px] text-slate-400 font-bold mt-0.5">{rec.employee.position} | {rec.employee.workplace || "매장"}</span>
                             </div>
                           </td>
-                          
+
                           {/* Lates Column */}
                           <td className="px-4 py-3 border-l border-[#e2e8f0]">
                             {rec.lates.length === 0 ? (
@@ -1629,8 +1624,8 @@ export const SchedulePage: React.FC = () => {
 
       {/* Roster Add Modal Popup Backdrop */}
       {isEmpModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md bg-white rounded-lg shadow-2xl p-6 border border-[#e2e8f0] transform scale-100 transition animate-in zoom-in-95 duration-100">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="relative w-full sm:max-w-md bg-white sm:rounded-lg rounded-t-2xl shadow-2xl p-4 sm:p-6 border border-[#e2e8f0] transform scale-100 transition animate-in zoom-in-95 duration-100 max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setIsEmpModalOpen(false)}
               className="absolute top-4 right-4 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
@@ -1657,7 +1652,7 @@ export const SchedulePage: React.FC = () => {
                   onChange={(e) => setEmpDescription(e.target.value)}
                   className="w-full text-sm font-bold rounded-md border border-[#94a3b8] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 p-2.5 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all duration-150"
                 />
-                
+
                 {/* Visual Quick Recommendation Patterns to extremely simplify user interaction */}
                 <div className="flex flex-wrap gap-1 mt-1.5 pt-1.5 border-t border-[#e2e8f0]">
                   <span className="text-[10px] text-slate-500 font-bold self-center mr-1">추천 패턴:</span>
@@ -1692,7 +1687,7 @@ export const SchedulePage: React.FC = () => {
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
                   <Briefcase size={13} /> 구분 / 직급 <span className="text-rose-500">*</span>
                 </label>
-                
+
                 <div className="flex gap-2">
                   <select
                     value={PRESET_POSITIONS.includes(empPosition) ? empPosition : (empPosition ? "기타" : "")}
@@ -1735,7 +1730,7 @@ export const SchedulePage: React.FC = () => {
                     className="flex-1 text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white font-semibold text-slate-800 placeholder:text-slate-400"
                   />
                 </div>
-                
+
                 {/* Visual Quick-Select Buttons to make employee position editing/creation extremely rapid */}
                 <div className="flex flex-wrap gap-1 mt-2">
                   {PRESET_POSITIONS.map((pos) => (
@@ -1746,11 +1741,10 @@ export const SchedulePage: React.FC = () => {
                         setEmpPosition(pos);
                         setEmpCustomPosition("");
                       }}
-                      className={`px-2 py-0.5 text-[10px] rounded transition duration-150 font-bold cursor-pointer border ${
-                        empPosition === pos
-                          ? "bg-blue-50 text-[#2563eb] border-blue-200"
-                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                      }`}
+                      className={`px-2 py-0.5 text-[10px] rounded transition duration-150 font-bold cursor-pointer border ${empPosition === pos
+                        ? "bg-blue-50 text-[#2563eb] border-blue-200"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                        }`}
                     >
                       {pos}
                     </button>
@@ -1760,11 +1754,10 @@ export const SchedulePage: React.FC = () => {
                     onClick={() => {
                       setEmpPosition("기타");
                     }}
-                    className={`px-2 py-0.5 text-[10px] rounded transition duration-150 font-bold cursor-pointer border ${
-                      empPosition === "기타"
-                        ? "bg-blue-50 text-[#2563eb] border-blue-200"
-                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                    }`}
+                    className={`px-2 py-0.5 text-[10px] rounded transition duration-150 font-bold cursor-pointer border ${empPosition === "기타"
+                      ? "bg-blue-50 text-[#2563eb] border-blue-200"
+                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                      }`}
                   >
                     직접 입력✒️
                   </button>
