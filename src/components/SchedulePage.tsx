@@ -1630,12 +1630,12 @@ export const SchedulePage: React.FC = () => {
                                 <span
                                   onClick={() => setCalendarEmployee(emp)}
                                   className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[11px] cursor-pointer select-none transition whitespace-nowrap"
-                                  title={emp.description || "클릭하여 개인 스케줄 달력 보기"}
+                                  title={isAdmin && emp.description ? emp.description : "클릭하여 개인 스케줄 달력 보기"}
                                 >
                                   {emp.name}
                                 </span>
                                 <span className="text-[9px] text-slate-400 font-semibold whitespace-nowrap leading-tight">
-                                  {emp.position}{emp.employmentType ? ` (${emp.employmentType})` : ""}
+                                  {emp.position}{isAdmin && emp.employmentType ? ` (${emp.employmentType})` : ""}
                                 </span>
                               </div>
                               {isAdmin && (
@@ -1679,7 +1679,7 @@ export const SchedulePage: React.FC = () => {
                           <td
                             className="p-1 px-2 text-center text-[10px] font-semibold border-r border-slate-100 bg-white z-[25] group-hover:bg-slate-50/80 text-slate-600 shadow-[1px_0_0_0_#e2e8f0] whitespace-nowrap"
                             style={{ position: "sticky", left: stickyPos.position + "px", width: "80px" }}
-                            title={emp.employmentType || ""}
+                            title={isAdmin ? (emp.employmentType || "") : ""}
                           >
                             <span className="inline-flex items-center gap-1">
                               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
