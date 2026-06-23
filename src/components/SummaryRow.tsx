@@ -44,7 +44,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label }) => {
         return (
           <td
             key={sum.day}
-            className={`p-1.5 text-center text-xs border-r border-slate-100 min-w-[36px] transition-colors ${
+            className={`p-1.5 text-center text-xs border-r border-slate-100 w-[30px] sm:w-[44px] transition-colors ${
               val > 0 ? valActiveCls : valEmptyCls
             }`}
           >

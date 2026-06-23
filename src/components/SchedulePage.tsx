@@ -1254,7 +1254,7 @@ export const SchedulePage: React.FC = () => {
             {/* Schedule table + Dashboard: side-by-side on desktop, stacked on mobile */}
             <div className="flex flex-col lg:flex-row lg:items-start flex-1 min-h-0">
 
-            <div className="relative overflow-x-auto overflow-y-auto max-h-[55vh] sm:max-h-[60vh] lg:max-h-none lg:flex-1 lg:min-w-0 lg:self-stretch lg:overflow-y-auto" style={{ maxHeight: "calc(100vh - 260px)" }}>
+            <div className="relative overflow-x-auto overflow-y-auto flex-1 min-w-0" style={{ maxHeight: "calc(100vh - 220px)" }}>
               {isLoading ? (
                 <div className="w-full py-32 flex flex-col items-center justify-center bg-slate-50/50">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563eb]"></div>
@@ -1315,7 +1315,7 @@ export const SchedulePage: React.FC = () => {
                             <th
                               key={`day-num-${day}`}
                               onClick={() => setTimelineDate(fullDate)}
-                              className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-slate-700 w-[30px] sm:w-[36px] cursor-pointer hover:bg-indigo-700 hover:text-white transition-colors ${headerClass}`}
+                              className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-slate-700 w-[30px] sm:w-[44px] cursor-pointer hover:bg-indigo-700 hover:text-white transition-colors ${headerClass}`}
                               title={`${fullDate} 타임라인 보기`}
                             >
                               {day}
@@ -1340,7 +1340,7 @@ export const SchedulePage: React.FC = () => {
                           return (
                             <th
                               key={`day-name-${day}`}
-                              className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-slate-600 w-[30px] sm:w-[36px] bg-slate-700 ${wordClass}`}
+                              className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-slate-600 w-[30px] sm:w-[44px] bg-slate-700 ${wordClass}`}
                             >
                               {dayWord}
                             </th>
