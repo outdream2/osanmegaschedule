@@ -1188,11 +1188,11 @@ export const StoreMap: React.FC<StoreMapProps> = ({
 
                       {/* 2A-1. 영양제 냉장고 (Yellow Box) */}
                       <div
-                        onDragOver={(e) => handleDragOver(e, "slot_fridge")}
+                        onDragOver={(e) => handleDragOver(e, "slot_drink")}
                         onDragLeave={handleDragLeave}
-                        onDrop={(e) => handleDrop(e, "slot_fridge")}
+                        onDrop={(e) => handleDrop(e, "slot_drink")}
                         className={`bg-[#fef08a]/20 border-2 border-yellow-400 rounded-xl p-3 flex flex-col justify-between transition min-h-[90px] relative ${
-                          dragOverZone === "slot_fridge" ? "ring-2 ring-yellow-500 bg-yellow-100" : ""
+                          dragOverZone === "slot_drink" ? "ring-2 ring-yellow-500 bg-yellow-100" : ""
                         }`}
                       >
                         <div className="flex items-center justify-between border-b border-yellow-200/50 pb-1">
