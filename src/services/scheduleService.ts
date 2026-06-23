@@ -76,21 +76,29 @@ export class ScheduleService {
       .like("date", `${prevPrefix}%`);
     if (error) throw new Error(error.message);
 
-    let count = 0;
-    for (const sched of prevSchedules ?? []) {
-      const day = parseInt(sched.date.slice(8));
-      if (isNaN(day) || day > targetMaxDays) continue;
-      const targetDate = `${targetYear}-${targetMonthStr}-${String(day).padStart(2, "0")}`;
-      const { error: upsertErr } = await supabase
-        .from("schedules")
-        .upsert(
-          { employeeId: sched.employeeId, date: targetDate, type: sched.type, workingHours: sched.workingHours, actualHours: sched.actualHours, memo: sched.memo },
-          { onConflict: "employeeId,date" }
-        );
-      if (upsertErr) throw new Error(upsertErr.message);
-      count++;
-    }
-    return { count };
+    const rows = (prevSchedules ?? [])
+      .map((sched) => {
+        const day = parseInt(sched.date.slice(8));
+        if (isNaN(day) || day > targetMaxDays) return null;
+        return {
+          employeeId: sched.employeeId,
+          date: `${targetYear}-${targetMonthStr}-${String(day).padStart(2, "0")}`,
+          type: sched.type,
+          workingHours: sched.workingHours,
+          actualHours: sched.actualHours,
+          memo: sched.memo,
+        };
+      })
+      .filter(Boolean) as object[];
+
+    if (rows.length === 0) return { count: 0 };
+
+    const { error: upsertErr } = await supabase
+      .from("schedules")
+      .upsert(rows, { onConflict: "employeeId,date" });
+    if (upsertErr) throw new Error(upsertErr.message);
+
+    return { count: rows.length };
   }
 
   async createEmployee(data: { name: string; position: string; hireDate: string; description: string; workplace?: string }) {
