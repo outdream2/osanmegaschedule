@@ -1370,54 +1370,54 @@ export const SchedulePage: React.FC = () => {
                       >
 
                         {/* Column 1: Sticky Employee Name */}
-                        <td className="p-2 text-center text-xs font-medium border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50/80 h-11 shadow-[1px_0_0_0_#e2e8f0] whitespace-nowrap min-w-[96px]">
-                          <div className="flex items-center gap-1.5 px-0.5">
+                        <td className="border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50/80 shadow-[1px_0_0_0_#e2e8f0] min-w-[96px] h-12 p-0">
+                          <div className="flex items-stretch h-full">
+                            {/* Drag handle */}
                             {isAdmin && (
                               <div
-                                className="text-slate-300 hover:text-slate-500 cursor-grab active:cursor-grabbing hover:bg-slate-100 p-0.5 rounded transition shrink-0"
+                                className="text-slate-300 hover:text-indigo-400 cursor-grab active:cursor-grabbing px-0.5 flex items-center transition shrink-0"
                                 title="드래그하여 이 직원 행의 순서 변경"
                               >
-                                <GripVertical size={12} />
+                                <GripVertical size={11} />
                               </div>
                             )}
-                            <div className="flex-1 flex items-center justify-between">
-                              <div className="flex flex-col min-w-0">
-                                <div className="flex items-center gap-0.5">
-                                  <span
-                                    onClick={() => setCalendarEmployee(emp)}
-                                    className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[11px] cursor-pointer select-none transition whitespace-nowrap"
-                                    title="클릭하여 개인 스케줄 달력 보기"
-                                  >
-                                    {emp.name}
-                                  </span>
-                                  {emp.description && (
-                                    <span
-                                      className="text-slate-400 hover:text-indigo-500 transition cursor-default shrink-0"
-                                      title={emp.description}
-                                    >
-                                      <MessageSquare size={10} />
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-[9px] text-slate-400 font-semibold whitespace-nowrap leading-tight">
-                                  {emp.position}{isAdmin && emp.employmentType ? ` (${emp.employmentType})` : ""}
+                            {/* 3-tier vertical layout */}
+                            <div className="flex-1 flex flex-col justify-between py-1 px-1.5 min-w-0">
+                              {/* Top: name + memo */}
+                              <div className="flex items-center gap-0.5 min-w-0">
+                                <span
+                                  onClick={() => setCalendarEmployee(emp)}
+                                  className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[11px] cursor-pointer select-none transition truncate"
+                                  title="클릭하여 개인 스케줄 달력 보기"
+                                >
+                                  {emp.name}
                                 </span>
+                                {emp.description && (
+                                  <span className="text-indigo-300 hover:text-indigo-500 transition cursor-default shrink-0" title={emp.description}>
+                                    <MessageSquare size={8} />
+                                  </span>
+                                )}
                               </div>
+                              {/* Middle: position · employmentType */}
+                              <span className="text-[8px] text-slate-500 font-medium leading-tight truncate">
+                                {emp.position}{emp.employmentType ? ` · ${emp.employmentType}` : ""}
+                              </span>
+                              {/* Bottom: edit / delete (admin, subtle until hover) */}
                               {isAdmin && (
-                                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition duration-150 ml-1 shrink-0">
+                                <div className="flex items-center gap-0.5 opacity-20 group-hover:opacity-100 transition duration-150">
                                   <button
                                     onClick={() => openEditEmployeeModal(emp)}
-                                    className="text-slate-300 hover:text-indigo-500 cursor-pointer p-0.5 rounded transition hover:bg-indigo-50"
+                                    className="text-slate-400 hover:text-indigo-500 cursor-pointer p-0.5 rounded transition hover:bg-indigo-50"
                                     title="직원 상세 정보 수정"
                                   >
-                                    <Edit size={11} />
+                                    <Edit size={9} />
                                   </button>
                                   <button
                                     onClick={() => handleDeleteEmployee(emp.id, emp.name)}
-                                    className="text-slate-300 hover:text-rose-500 cursor-pointer p-0.5 rounded transition hover:bg-rose-50"
+                                    className="text-slate-400 hover:text-rose-500 cursor-pointer p-0.5 rounded transition hover:bg-rose-50"
                                     title="직원 삭제"
                                   >
-                                    <Trash2 size={11} />
+                                    <Trash2 size={9} />
                                   </button>
                                 </div>
                               )}

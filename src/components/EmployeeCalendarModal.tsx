@@ -125,6 +125,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     .reduce((s, [, n]) => s + n, 0);
 
   // ── Calendar tab handlers ───────────────────────────────────────
+  const CYCLE = ["오픈", "미들", "마감", "휴무"];
+
   const openEditDay = (day: number) => {
     if (!isAdmin || !onUpdate) return;
     const sc = schedMap[day];
@@ -133,6 +135,36 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     setEditActualHours(sc?.actualHours || "");
     setEditMemo(sc?.memo || "");
     setEditingDay(day);
+  };
+
+  const handleDayQuickCycle = async (day: number) => {
+    if (!isAdmin || !onUpdate) return;
+    const sc = schedMap[day];
+    const cur = sc?.type || "";
+    const idx = CYCLE.indexOf(cur);
+    const nextType = CYCLE[(idx + 1) % CYCLE.length];
+    let nextWh = "";
+    if (nextType === "오픈") nextWh = openShiftHour;
+    else if (nextType === "미들") nextWh = middleShiftHour;
+    else if (nextType === "마감") nextWh = closeShiftHour;
+    const dayStr = String(day).padStart(2, "0");
+    setEditType(nextType);
+    setEditWorkingHours(nextWh);
+    setEditActualHours(sc?.actualHours || "");
+    setEditMemo(sc?.memo || "");
+    setEditingDay(day);
+    try {
+      await onUpdate({
+        employeeId: employee.id,
+        date: `${year}-${monthStr}-${dayStr}`,
+        type: nextType,
+        workingHours: nextWh,
+        actualHours: sc?.actualHours || "",
+        memo: sc?.memo || "",
+      });
+    } catch (err) {
+      console.error("Failed to cycle schedule:", err);
+    }
   };
 
   const saveWith = async (overrides: { type?: string; workingHours?: string; actualHours?: string; memo?: string } = {}) => {
@@ -308,7 +340,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                       return (
                         <div
                           key={di}
-                          onClick={() => openEditDay(day)}
+                          onClick={() => handleDayQuickCycle(day)}
                           className={`rounded-lg p-1 flex flex-col items-center min-h-[52px] border transition-all ${
                             color ? `${color.bg} border-transparent` : "bg-white border-slate-100"
                           } ${isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""} ${
