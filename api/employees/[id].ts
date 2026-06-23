@@ -1,5 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { scheduleService } from "../../src/services/scheduleService";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -13,18 +15,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     if (req.method === "PUT") {
       const { name, position, employmentType, hireDate, description, workplace } = req.body;
-      const result = await scheduleService.updateEmployee(id, {
-        name, position,
-        employmentType: employmentType || "정직원",
-        hireDate,
-        description: description || "",
-        workplace: workplace || "매장",
-      });
-      return res.json(result);
+      const { data, error } = await supabase
+        .from("employees")
+        .update({ name, position, employmentType: employmentType || "정직원", hireDate, description: description || "", workplace: workplace || "매장" })
+        .eq("id", id)
+        .select().single();
+      if (error) throw new Error(error.message);
+      return res.json(data);
     }
 
     if (req.method === "DELETE") {
-      await scheduleService.deleteEmployee(id);
+      const { error } = await supabase.from("employees").delete().eq("id", id);
+      if (error) throw new Error(error.message);
       return res.json({ message: "Employee deleted successfully" });
     }
 
