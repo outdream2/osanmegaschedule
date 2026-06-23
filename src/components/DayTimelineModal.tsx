@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import { X } from "lucide-react";
+import { X, Pencil } from "lucide-react";
 import { Employee } from "../types";
 import axios from "axios";
 
@@ -75,10 +75,11 @@ interface Props {
   middleShiftHour: string;
   closeShiftHour: string;
   onClose: () => void;
+  onEditEmployee?: (emp: Employee) => void;
 }
 
 export const DayTimelineModal: React.FC<Props> = ({
-  date, employees, openShiftHour, middleShiftHour, closeShiftHour, onClose,
+  date, employees, openShiftHour, middleShiftHour, closeShiftHour, onClose, onEditEmployee,
 }) => {
   const [activeTab, setActiveTab] = useState<"사원" | "약사">("사원");
 
@@ -436,8 +437,19 @@ export const DayTimelineModal: React.FC<Props> = ({
                 <div className="h-px bg-slate-200 mb-2" />
                 {/* Employee labels */}
                 {tabWorkers.map(({ emp, schedule }) => (
-                  <div key={emp.id} className="h-16 mb-1.5 flex flex-col justify-center gap-0.5">
-                    <span className="text-xs font-bold text-slate-800 leading-tight truncate">{emp.name}</span>
+                  <div key={emp.id} className="h-16 mb-1.5 flex flex-col justify-center gap-0.5 group">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-bold text-slate-800 leading-tight truncate">{emp.name}</span>
+                      {onEditEmployee && (
+                        <button
+                          onClick={() => onEditEmployee(emp)}
+                          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-200 transition-all cursor-pointer flex-shrink-0"
+                          title="직원 정보 수정"
+                        >
+                          <Pencil size={10} className="text-slate-500" />
+                        </button>
+                      )}
+                    </div>
                     <span className="text-[9px] text-slate-400 leading-tight">{schedule.type}</span>
                     <div className="flex gap-1">
                       <span className="text-[8px] text-yellow-600 leading-tight">점심</span>

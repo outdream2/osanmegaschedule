@@ -2490,6 +2490,7 @@ export const SchedulePage: React.FC = () => {
           middleShiftHour={middleShiftHour}
           closeShiftHour={closeShiftHour}
           onClose={() => setTimelineDate(null)}
+          onEditEmployee={isAdmin ? openEditEmployeeModal : undefined}
         />
       )}
     </div>
