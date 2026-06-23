@@ -745,7 +745,10 @@ export const SchedulePage: React.FC = () => {
             <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
               <Calendar size={14} className="text-white" />
             </div>
-            <span className="font-black text-white tracking-tight text-base leading-none">OSAN MEGATOWN</span>
+            <span className="font-black tracking-tight leading-none">
+              <span className="text-red-500 text-xl">OSAN</span>
+              <span className="text-white text-base"> MEGATOWN</span>
+            </span>
           </div>
 
 
@@ -1248,7 +1251,10 @@ export const SchedulePage: React.FC = () => {
               <span>→</span>
             </div>
 
-            <div className="relative overflow-x-auto overflow-y-auto max-h-[55vh] sm:max-h-[60vh] md:max-h-[65vh]">
+            {/* Schedule table + Dashboard: side-by-side on desktop, stacked on mobile */}
+            <div className="flex flex-col lg:flex-row lg:items-start flex-1 min-h-0">
+
+            <div className="relative overflow-x-auto overflow-y-auto max-h-[55vh] sm:max-h-[60vh] lg:max-h-none lg:flex-1 lg:min-w-0 lg:self-stretch lg:overflow-y-auto" style={{ maxHeight: "calc(100vh - 260px)" }}>
               {isLoading ? (
                 <div className="w-full py-32 flex flex-col items-center justify-center bg-slate-50/50">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563eb]"></div>
@@ -1454,8 +1460,8 @@ export const SchedulePage: React.FC = () => {
               })()}
             </div>
 
-            {/* Attendance & Status Analysis Dashboard */}
-            <div id="attendance-dashboard" className="m-2 sm:m-4 p-3 sm:p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+            {/* Attendance & Status Analysis Dashboard — sidebar on desktop, below on mobile */}
+            <div id="attendance-dashboard" className="m-2 sm:m-4 p-3 sm:p-4 lg:m-0 lg:p-4 lg:w-72 xl:w-80 lg:shrink-0 lg:border-l lg:border-slate-200 lg:overflow-y-auto bg-white border border-slate-200 lg:border-y-0 lg:border-r-0 rounded-2xl lg:rounded-none shadow-sm lg:shadow-none">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
                 <div className="flex items-center gap-2.5">
                   <div className="p-2 bg-slate-100 text-slate-600 rounded-xl">
@@ -1592,6 +1598,8 @@ export const SchedulePage: React.FC = () => {
                 </div>
               )}
             </div>
+
+            </div>{/* end flex row wrapper */}
           </div>
         ) :
           <StoreMap
@@ -1624,7 +1632,7 @@ export const SchedulePage: React.FC = () => {
 
       {/* Roster Add Modal Popup Backdrop */}
       {isEmpModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="relative w-full sm:max-w-md bg-white sm:rounded-lg rounded-t-2xl shadow-2xl p-4 sm:p-6 border border-[#e2e8f0] transform scale-100 transition animate-in zoom-in-95 duration-100 max-h-[90vh] overflow-y-auto">
             <button
               onClick={() => setIsEmpModalOpen(false)}
