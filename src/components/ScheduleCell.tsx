@@ -284,30 +284,52 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
             </div>
 
             {/* Quick Presets */}
-            <div>
-              <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">
-                빠른 근무 설정
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {activeScheduleTypes.map((t) => {
-                  const sColor = SCHEDULE_COLORS[t.value] || DEFAULT_COLOR;
-                  return (
-                    <button
-                      key={t.value}
-                      type="button"
-                      onClick={() => applyPreset(t.value)}
-                      className={`px-2 py-1 text-[10px] sm:text-xs rounded border border-[#e2e8f0] transition cursor-pointer ${
-                        type === t.value
-                          ? `${sColor.bg} ${sColor.text} !border-[#2563eb] ring-1 ring-blue-500/20`
-                          : "bg-slate-50 text-slate-700 hover:bg-slate-100"
-                      }`}
-                    >
-                      {t.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            {(() => {
+              const WORK_TYPES = new Set(["오픈", "미들", "마감", "오전반차", "오후반차"]);
+              const OFF_TYPES = new Set(["휴무", "월차", "지정휴무", "결근"]);
+              const currentGroup = WORK_TYPES.has(type) ? "work" : OFF_TYPES.has(type) ? "off" : null;
+              const workTypes = activeScheduleTypes.filter(t => WORK_TYPES.has(t.value));
+              const offTypes = activeScheduleTypes.filter(t => OFF_TYPES.has(t.value));
+              const otherTypes = activeScheduleTypes.filter(t => !WORK_TYPES.has(t.value) && !OFF_TYPES.has(t.value));
+              const renderBtn = (t: { value: string; label: string }, dimmed: boolean) => {
+                const sColor = SCHEDULE_COLORS[t.value] || DEFAULT_COLOR;
+                return (
+                  <button
+                    key={t.value}
+                    type="button"
+                    onClick={() => applyPreset(t.value)}
+                    className={`px-2 py-1 text-[10px] sm:text-xs rounded border transition cursor-pointer ${
+                      type === t.value
+                        ? `${sColor.bg} ${sColor.text} !border-[#2563eb] ring-1 ring-blue-500/20`
+                        : dimmed
+                          ? "bg-slate-50 text-slate-300 border-slate-100 hover:text-slate-600 hover:border-slate-200"
+                          : "bg-slate-50 text-slate-700 border-[#e2e8f0] hover:bg-slate-100"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                );
+              };
+              return (
+                <div className="space-y-1.5">
+                  <div>
+                    <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">근무</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {workTypes.map(t => renderBtn(t, currentGroup === "off"))}
+                      {otherTypes.map(t => renderBtn(t, false))}
+                    </div>
+                  </div>
+                  {offTypes.length > 0 && (
+                    <div>
+                      <label className="block text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">휴무/연차</label>
+                      <div className="flex flex-wrap gap-1.5">
+                        {offTypes.map(t => renderBtn(t, currentGroup === "work"))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Shift Type (manual or selected from presets) */}
             <div>

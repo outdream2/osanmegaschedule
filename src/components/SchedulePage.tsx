@@ -1274,7 +1274,7 @@ export const SchedulePage: React.FC = () => {
             </div>
 
             {/* Schedule table + Dashboard: side-by-side on desktop, stacked on mobile */}
-            <div className="flex flex-col lg:flex-row lg:items-start flex-1 min-h-0">
+            <div className="flex flex-col lg:flex-row flex-1 min-h-0">
 
             <div ref={scrollTableRef} className="relative overflow-x-auto overflow-y-auto flex-1 min-w-0" style={{ maxHeight: "calc(100vh - 220px)" }}>
               {isLoading ? (
