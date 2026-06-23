@@ -37,7 +37,11 @@ import {
   GripVertical,
 } from "lucide-react";
 
-export const SchedulePage: React.FC = () => {
+interface SchedulePageProps {
+  onBack?: () => void;
+}
+
+export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
   // Settings hook (positions, workplaces, scheduleTypes, shift hours)
   const {
     positions: PRESET_POSITIONS,
@@ -773,6 +777,15 @@ export const SchedulePage: React.FC = () => {
         <div className="flex items-center gap-3 min-w-0">
           {/* Brand */}
           <div className="flex items-center gap-2 shrink-0">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="flex items-center justify-center w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition cursor-pointer mr-1"
+                title="홈으로"
+              >
+                <ChevronLeft size={14} />
+              </button>
+            )}
             <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
               <Calendar size={14} className="text-white" />
             </div>
