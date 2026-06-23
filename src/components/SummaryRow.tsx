@@ -1,0 +1,57 @@
+// src/components/SummaryRow.tsx
+import React from "react";
+import { MonthlySummary } from "../types";
+
+interface SummaryRowProps {
+  summaries: MonthlySummary[];
+  label: "약사" | "사원" | "근무인원";
+}
+
+export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label }) => {
+  const isPharmacist = label === "약사";
+  const isStaff = label === "사원";
+  const isTotal = label === "근무인원";
+
+  const labelCls = isPharmacist
+    ? "bg-violet-600 text-white border-r border-violet-500"
+    : isStaff
+    ? "bg-sky-600 text-white border-r border-sky-500"
+    : "bg-indigo-600 text-white border-r border-indigo-500";
+
+  const valActiveCls = isPharmacist
+    ? "bg-violet-50 text-violet-700 font-extrabold"
+    : isStaff
+    ? "bg-sky-50 text-sky-700 font-extrabold"
+    : "bg-indigo-50 text-indigo-700 font-extrabold";
+
+  const valEmptyCls = isPharmacist
+    ? "bg-violet-50/30 text-slate-300"
+    : isStaff
+    ? "bg-sky-50/30 text-slate-300"
+    : "bg-indigo-50/30 text-slate-300";
+
+  return (
+    <tr className={isTotal ? "border-t-2 border-indigo-200" : "border-t border-slate-100"}>
+      <td
+        colSpan={4}
+        className={`px-4 py-2 sticky left-0 z-20 text-center text-[11px] font-bold tracking-wide shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] ${labelCls}`}
+      >
+        {label}
+      </td>
+
+      {summaries.map((sum) => {
+        const val = isPharmacist ? sum.pharmacistCount : isStaff ? sum.staffCount : sum.totalCount;
+        return (
+          <td
+            key={sum.day}
+            className={`p-1.5 text-center text-xs border-r border-slate-100 min-w-[36px] transition-colors ${
+              val > 0 ? valActiveCls : valEmptyCls
+            }`}
+          >
+            {val > 0 ? val : <span className="opacity-30">·</span>}
+          </td>
+        );
+      })}
+    </tr>
+  );
+};

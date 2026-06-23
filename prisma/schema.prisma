@@ -1,0 +1,35 @@
+// prisma/schema.prisma
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Employee {
+  id             Int        @id @default(autoincrement())
+  name           String
+  position       String
+  employmentType String     @default("정직원") // 정직원 | 계약직 | 알바
+  hireDate       String
+  description    String     @default("")
+  workplace      String     @default("매장") // 매장 | 창고
+  schedules      Schedule[]
+}
+
+model Schedule {
+  id           Int      @id @default(autoincrement())
+  employeeId   Int
+  date         String   // format: YYYY-MM-DD
+  type         String   // 오픈, 마감, 휴무, 월차, 지정휴무, 오전반차, 오후반차 등
+  workingHours String   // 예: "9:30-18:30" 또는 ""
+  actualHours  String   // 예: "2시간 연장", "지각" 또는 ""
+  memo         String   @default("")
+  
+  employee     Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([employeeId, date])
+}

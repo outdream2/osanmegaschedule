@@ -1,0 +1,6 @@
+{
+  "name": "Megatown Staff Scheduler",
+  "description": "A highly-polished full-stack employee schedule manager for Megatown staff, sporting a grid layout mimicking official sheets, SQLite persistent storage, and live aggregation metrics.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
