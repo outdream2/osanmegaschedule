@@ -163,6 +163,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
           colorConfig ? `${colorConfig.bg} ${colorConfig.text}` : "bg-white text-slate-400"
         }`}
         onClick={handleQuickCycle}
+        title={isAdmin ? `클릭: 오픈→미들→마감→휴무 순환 변경\n⚙️ 상세 편집은 호버 후 톱니바퀴 클릭` : undefined}
       >
         {/* Detail edit button — top-right corner on hover */}
         {isAdmin && isHovered && (
@@ -178,6 +179,13 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
         <div className="text-[11px] font-bold leading-tight truncate">
           {displayType || "-"}
         </div>
+
+        {/* Click cycle hint overlay — shown on hover (admin only) */}
+        {isAdmin && isHovered && !isOpen && (
+          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-indigo-600/75 rounded-b-sm py-[2px] pointer-events-none">
+            <span className="text-[7px] font-black text-white leading-none tracking-tight">↻ 클릭</span>
+          </div>
+        )}
 
         {/* Row 2: Working Hours — hidden in cell, visible in timeline modal */}
 

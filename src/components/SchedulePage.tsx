@@ -1315,6 +1315,20 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
               </button>
             </div>
 
+            {/* Admin quick-edit hint bar */}
+            {isAdmin && (
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50/70 border-b border-indigo-100 shrink-0">
+                <span className="text-indigo-500 text-[10px]">💡</span>
+                <span className="text-[10px] text-indigo-700 font-semibold">
+                  셀 <strong>클릭</strong>: 오픈 → 미들 → 마감 → 휴무 순환 변경
+                </span>
+                <span className="text-indigo-300 text-[10px] mx-0.5">|</span>
+                <span className="text-[10px] text-indigo-500">
+                  <strong>⚙️</strong> 호버 후 톱니바퀴: 시간·메모 상세 편집
+                </span>
+              </div>
+            )}
+
             {/* Schedule table + Dashboard: side-by-side on desktop, stacked on mobile */}
             <div className="flex flex-col lg:flex-row flex-1 min-h-0">
 
