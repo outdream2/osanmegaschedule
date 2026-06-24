@@ -230,6 +230,8 @@ const ZoneCell: React.FC<ZoneCellProps> = ({
     }
   }
 
+  const hasQuickRequest = zone.assignedStaffId !== null && !!onQuickRequest;
+
   return (
     <button
       ref={ref}
@@ -242,32 +244,20 @@ const ZoneCell: React.FC<ZoneCellProps> = ({
       onDragOver={onDragOver ? (e) => onDragOver(e, zone) : undefined}
       onDrop={onDrop ? (e) => onDrop(e, zone) : undefined}
       onDragLeave={onDragLeave}
-      className={`relative w-full rounded-lg border-2 transition-all duration-300 active:scale-[0.96] cursor-pointer flex flex-col justify-between items-center p-1 font-bold shadow-sm ${statusCls} ${ringCls} ${className}`}
+      className={`w-full rounded-lg border-2 transition-all duration-300 active:scale-[0.96] cursor-pointer flex flex-col font-bold shadow-sm overflow-hidden ${statusCls} ${ringCls} ${className}`}
     >
-      {/* Zone number — always top-left, small */}
-      <div className="absolute top-0.5 left-1 text-[8px] leading-none font-black opacity-70">
-        {zone.num}
+      {/* Row 1: 구역 번호 + 상태 dot */}
+      <div className="flex items-center justify-between px-1 pt-0.5 shrink-0">
+        <span className="text-[8px] leading-none font-black opacity-70">{zone.num}</span>
+        {zone.status !== "normal" ? (
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot(zone.status)}`} />
+        ) : (
+          <span className="w-1.5 h-1.5 shrink-0" />
+        )}
       </div>
 
-      {/* Status dot — top-right */}
-      {zone.status !== "normal" && (
-        <div className={`absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${statusDot(zone.status)}`} />
-      )}
-
-      {/* Quick request button — bottom-right, only when staff assigned */}
-      {zone.assignedStaffId !== null && onQuickRequest && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onQuickRequest(); }}
-          title={`${zone.assignedStaffName}에게 보충 요청`}
-          className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-amber-400 hover:bg-amber-500 rounded-full flex items-center justify-center opacity-50 hover:opacity-100 transition z-10 cursor-pointer"
-        >
-          <Bell size={7} className="text-white" />
-        </button>
-      )}
-
-      {/* Center content: staff name or empty placeholder */}
-      <div className="flex-1 flex items-center justify-center w-full pt-2">
+      {/* Row 2: 담당자 이름 뱃지 (flex-1 로 중앙 차지) */}
+      <div className="flex-1 flex items-center justify-center w-full px-0.5 min-h-0">
         {zone.assignedStaffName ? (
           <span className={`text-[9px] font-black px-1 py-px rounded leading-tight text-center max-w-full break-all ${
             staffColorIndex !== null && staffColorIndex !== undefined
@@ -281,8 +271,24 @@ const ZoneCell: React.FC<ZoneCellProps> = ({
         )}
       </div>
 
+      {/* Row 3: showDetails 카테고리 텍스트 (선택적) */}
       {showDetails && (
-        <div className="text-[7px] leading-tight font-medium line-clamp-1 text-center opacity-70 w-full">{zone.category}</div>
+        <div className="text-[7px] leading-tight font-medium line-clamp-1 text-center opacity-70 w-full px-0.5 shrink-0">{zone.category}</div>
+      )}
+
+      {/* Row 4: 진열요청 버튼 (담당자 배정 시만) */}
+      {hasQuickRequest ? (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onQuickRequest!(); }}
+          title={`${zone.assignedStaffName}에게 보충 요청`}
+          className="w-full h-4 bg-red-500 hover:bg-red-600 text-white text-[7px] font-black flex items-center justify-center gap-0.5 shrink-0 transition-colors leading-none"
+        >
+          <Bell size={6} />
+          진열요청
+        </button>
+      ) : (
+        <div className="h-0 shrink-0" />
       )}
     </button>
   );
@@ -1050,8 +1056,26 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       실시간 매장 안내 정보
                     </span>
                     <span className="text-[8px] bg-slate-100 px-1.5 py-0.5 rounded-full font-semibold text-slate-500">
-                      {searchQuery ? `검색됨` : `전체 ${zones.length}구역`}
+                      {searchQuery ? `${searchedZones.length}개 검색됨` : `전체 ${zones.length}구역`}
                     </span>
+                  </div>
+                  <div className="relative shrink-0">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="구역명·약품명·증상으로 검색 (예: 감기약, 비타민)"
+                      className="w-full py-1.5 pl-7 pr-6 border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-1 focus:ring-emerald-400 text-[10px] placeholder-slate-400"
+                    />
+                    <Search className="absolute left-2 top-2 text-slate-400" size={11} />
+                    {searchQuery && (
+                      <button
+                        onClick={() => setSearchQuery("")}
+                        className="absolute right-2 top-1.5 text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
                   </div>
                   <div className="flex-1 overflow-y-auto space-y-1 min-h-0 max-h-[300px] pr-0.5">
                     {searchedZones.length === 0 ? (
