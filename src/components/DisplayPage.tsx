@@ -1,36 +1,38 @@
 // src/components/DisplayPage.tsx
-import React, { useEffect, useMemo, useState, useCallback } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  Bell,
+  Boxes,
+  CheckCircle2,
   ChevronLeft,
+  ClipboardList,
   LayoutGrid,
   Package,
-  AlertTriangle,
-  XCircle,
-  Bell,
-  CheckCircle2,
-  X,
-  Send,
   Save,
-  User,
-  Boxes,
-  Clock,
-  ClipboardList,
+  Send,
   Sparkles,
+  User,
+  X,
+  XCircle,
+  AlertTriangle,
+  Users,
+  Loader2,
+  CheckCheck,
+  MapPin,
 } from "lucide-react";
 
-interface DisplayPageProps {
-  onBack: () => void;
-}
+interface DisplayPageProps { onBack: () => void; }
 
+// ─── Types ───────────────────────────────────────────────────────────────────
 type ZoneStatus = "normal" | "low" | "empty";
-type ZoneSection = "horizontal" | "vertical" | "event" | "best" | "counter";
+type ZoneSection = "aisle" | "lower_wall" | "mid_wall" | "upper_wall" | "wing";
 
 interface DisplayZone {
   id: string;
-  label: string;
-  section: ZoneSection;
   num: number;
+  label: string;
   category: string;
+  section: ZoneSection;
   assignedStaffId: number | null;
   assignedStaffName: string;
   status: ZoneStatus;
@@ -49,376 +51,236 @@ interface DisplayRequest {
   note: string;
 }
 
-interface Employee {
-  id: number;
-  name: string;
-  position: string;
-}
+interface ScheduleEntry { date: string; type: string; workingHours?: string; }
+interface Employee { id: number; name: string; position: string; schedules?: ScheduleEntry[]; }
+interface TodayStaff { employee: Employee; scheduleType: string; workingHours: string; }
 
-const ZONES_STORAGE_KEY = "megatown_display_zones";
-const REQUESTS_STORAGE_KEY = "megatown_display_requests";
-
-const CATEGORIES = [
-  "감기·해열",
-  "소화·위장",
-  "비타민·영양제",
-  "관절·근육",
-  "눈·코·귀",
-  "피부·외용제",
-  "한방·자연의학",
-  "건강기능식품",
-  "의료기기·용품",
-  "화장품·뷰티",
-  "음료·식품",
-  "이벤트상품",
-  "베스트세트",
-  "(미지정)",
+// ─── Store data (based on category.jpg, 41 zones) ────────────────────────────
+const ZONE_DEFS: { num: number; label: string; category: string; section: ZoneSection }[] = [
+  // Aisles 1-9 (main floor shelf units, right→left)
+  { num: 1,  label: "진열대 1",  category: "종합감기·코감기·진해거담·한방감기",    section: "aisle" },
+  { num: 2,  label: "진열대 2",  category: "어린이감기약·어린이영양제·알러지",     section: "aisle" },
+  { num: 3,  label: "진열대 3",  category: "해열진통소염·관절근육통·안약",         section: "aisle" },
+  { num: 4,  label: "진열대 4",  category: "소화제·지사제·위염·변비약·수면",       section: "aisle" },
+  { num: 5,  label: "진열대 5",  category: "자양강장·남성용품·금연·모발",          section: "aisle" },
+  { num: 6,  label: "진열대 6",  category: "피부질환용제·기타피부연고",            section: "aisle" },
+  { num: 7,  label: "진열대 7",  category: "여성용품·미용·다이어트·살충제",        section: "aisle" },
+  { num: 8,  label: "진열대 8",  category: "파스·보호대·칫솔·치약·구강용품",       section: "aisle" },
+  { num: 9,  label: "진열대 9",  category: "붕대·마스크·밴드·반창고·거즈",        section: "aisle" },
+  // Lower wall 10-18
+  { num: 10, label: "벽면 10",   category: "종합영양제",                         section: "lower_wall" },
+  { num: 11, label: "벽면 11",   category: "종합영양제",                         section: "lower_wall" },
+  { num: 12, label: "벽면 12",   category: "간기능개선제",                       section: "lower_wall" },
+  { num: 13, label: "벽면 13",   category: "아미노산·아르기닌",                   section: "lower_wall" },
+  { num: 14, label: "벽면 14",   category: "남성기능강화·탈모·전립선",             section: "lower_wall" },
+  { num: 15, label: "벽면 15",   category: "칼슘제·비타민D",                     section: "lower_wall" },
+  { num: 16, label: "벽면 16",   category: "관절영양제·콘드로이틴·MSM",           section: "lower_wall" },
+  { num: 17, label: "벽면 17",   category: "항산화제·면역증강",                   section: "lower_wall" },
+  { num: 18, label: "벽면 18",   category: "뇌기능개선·혈액순환·혈당개선",         section: "lower_wall" },
+  // Mid wall 19-27
+  { num: 19, label: "벽면 19",   category: "눈영양제",                           section: "mid_wall" },
+  { num: 20, label: "벽면 20",   category: "염색약",                             section: "mid_wall" },
+  { num: 21, label: "벽면 21",   category: "동물의약품·동물용품",                  section: "mid_wall" },
+  { num: 22, label: "벽면 22",   category: "동물의약품·동물용품",                  section: "mid_wall" },
+  { num: 23, label: "벽면 23",   category: "의료기기",                           section: "mid_wall" },
+  { num: 24, label: "벽면 24",   category: "어린이종합·키즈용품",                  section: "mid_wall" },
+  { num: 25, label: "벽면 25",   category: "오메가3",                            section: "mid_wall" },
+  { num: 26, label: "벽면 26",   category: "마그네슘·수면",                       section: "mid_wall" },
+  { num: 27, label: "벽면 27",   category: "유산균",                             section: "mid_wall" },
+  // Upper wall 28-35
+  { num: 28, label: "벽면 28",   category: "잇몸건강",                           section: "upper_wall" },
+  { num: 29, label: "벽면 29",   category: "철분제·비타민C",                      section: "upper_wall" },
+  { num: 30, label: "벽면 30",   category: "콜라겐·갱년기·임신부영양제",            section: "upper_wall" },
+  { num: 31, label: "벽면 31",   category: "건강보조식품",                        section: "upper_wall" },
+  { num: 32, label: "벽면 32",   category: "한방관련제품",                        section: "upper_wall" },
+  { num: 33, label: "벽면 33",   category: "PB상품·생활의약품",                   section: "upper_wall" },
+  { num: 34, label: "벽면 34",   category: "드링크제품",                          section: "upper_wall" },
+  { num: 35, label: "벽면 35",   category: "냉장의약품",                          section: "upper_wall" },
+  // Right vertical wing 36-41
+  { num: 36, label: "프로모션",   category: "프로모션·이벤트 상품",                 section: "wing" },
+  { num: 37, label: "기능성화장품", category: "기능성화장품·미용",                  section: "wing" },
+  { num: 38, label: "조제실",     category: "조제실 (약사 전용)",                  section: "wing" },
+  { num: 39, label: "화장실",     category: "(시설)",                             section: "wing" },
+  { num: 40, label: "계산대",     category: "계산대 (POS)",                      section: "wing" },
+  { num: 41, label: "정수기",     category: "(시설)",                             section: "wing" },
 ];
 
-const SHORT_CATEGORY: Record<string, string> = {
-  "감기·해열": "감기·해열",
-  "소화·위장": "소화·위장",
-  "비타민·영양제": "비타민",
-  "관절·근육": "관절근육",
-  "눈·코·귀": "눈·코·귀",
-  "피부·외용제": "피부외용",
-  "한방·자연의학": "한방",
-  "건강기능식품": "건강식품",
-  "의료기기·용품": "의료용품",
-  "화장품·뷰티": "뷰티",
-  "음료·식품": "음료식품",
-  "이벤트상품": "이벤트",
-  "베스트세트": "베스트",
-  "(미지정)": "미지정",
-};
-
-const DEFAULT_CATEGORY_BY_NUM_H = [
-  "감기·해열",
-  "감기·해열",
-  "소화·위장",
-  "소화·위장",
-  "비타민·영양제",
-  "비타민·영양제",
-  "관절·근육",
-  "관절·근육",
-  "눈·코·귀",
-  "피부·외용제",
-  "피부·외용제",
-  "한방·자연의학",
-  "건강기능식품",
-  "건강기능식품",
-  "화장품·뷰티",
-  "화장품·뷰티",
-];
-
-const DEFAULT_CATEGORY_BY_NUM_V = [
-  "비타민·영양제",
-  "건강기능식품",
-  "소화·위장",
-  "음료·식품",
-  "의료기기·용품",
-  "피부·외용제",
-  "화장품·뷰티",
-  "관절·근육",
-];
-
-const DEFAULT_CATEGORY_BY_NUM_C = [
-  "(미지정)",
-  "(미지정)",
-  "(미지정)",
-  "(미지정)",
-  "(미지정)",
-  "(미지정)",
-];
-
-const buildDefaultZones = (): DisplayZone[] => {
-  const zones: DisplayZone[] = [];
-  // Horizontal wing: H-01 ~ H-16
-  for (let i = 1; i <= 16; i++) {
-    const id = `H-${String(i).padStart(2, "0")}`;
-    zones.push({
-      id,
-      label: id,
-      section: "horizontal",
-      num: i,
-      category: DEFAULT_CATEGORY_BY_NUM_H[i - 1] || "(미지정)",
-      assignedStaffId: null,
-      assignedStaffName: "",
-      status: "normal",
-      products: "",
-    });
-  }
-  // Vertical aisles: V-01 ~ V-08
-  for (let i = 1; i <= 8; i++) {
-    const id = `V-${String(i).padStart(2, "0")}`;
-    zones.push({
-      id,
-      label: id,
-      section: "vertical",
-      num: i,
-      category: DEFAULT_CATEGORY_BY_NUM_V[i - 1] || "(미지정)",
-      assignedStaffId: null,
-      assignedStaffName: "",
-      status: "normal",
-      products: "",
-    });
-  }
-  // Event zones
-  for (let i = 1; i <= 3; i++) {
-    const id = `E-${String(i).padStart(2, "0")}`;
-    zones.push({
-      id,
-      label: `이벤트존 ${i}`,
-      section: "event",
-      num: i,
-      category: "이벤트상품",
-      assignedStaffId: null,
-      assignedStaffName: "",
-      status: "normal",
-      products: "",
-    });
-  }
-  // Best set zone
-  zones.push({
-    id: "B-01",
-    label: "베스트세트존",
-    section: "best",
-    num: 1,
-    category: "베스트세트",
+const buildDefaultZones = (): DisplayZone[] =>
+  ZONE_DEFS.map((d) => ({
+    id: String(d.num),
+    num: d.num,
+    label: d.label,
+    category: d.category,
+    section: d.section,
     assignedStaffId: null,
     assignedStaffName: "",
     status: "normal",
     products: "",
-  });
-  // Counter shelves
-  for (let i = 1; i <= 6; i++) {
-    const id = `C-${String(i).padStart(2, "0")}`;
-    zones.push({
-      id,
-      label: `카운터 ${id}`,
-      section: "counter",
-      num: i,
-      category: DEFAULT_CATEGORY_BY_NUM_C[i - 1] || "(미지정)",
-      assignedStaffId: null,
-      assignedStaffName: "",
-      status: "normal",
-      products: "",
-    });
-  }
-  return zones;
-};
+  }));
+
+// ─── localStorage helpers ─────────────────────────────────────────────────────
+const ZONES_KEY = "megatown_display_zones_v2";
+const REQS_KEY  = "megatown_display_requests";
 
 const loadZones = (): DisplayZone[] => {
   try {
-    const raw = localStorage.getItem(ZONES_STORAGE_KEY);
-    if (!raw) {
-      const defaults = buildDefaultZones();
-      localStorage.setItem(ZONES_STORAGE_KEY, JSON.stringify(defaults));
-      return defaults;
-    }
+    const raw = localStorage.getItem(ZONES_KEY);
+    if (!raw) { const d = buildDefaultZones(); localStorage.setItem(ZONES_KEY, JSON.stringify(d)); return d; }
     const parsed = JSON.parse(raw) as DisplayZone[];
-    if (!Array.isArray(parsed) || parsed.length === 0) {
-      const defaults = buildDefaultZones();
-      localStorage.setItem(ZONES_STORAGE_KEY, JSON.stringify(defaults));
-      return defaults;
-    }
-    return parsed;
-  } catch {
-    const defaults = buildDefaultZones();
-    try {
-      localStorage.setItem(ZONES_STORAGE_KEY, JSON.stringify(defaults));
-    } catch {
-      /* ignore */
-    }
-    return defaults;
-  }
+    if (!Array.isArray(parsed) || parsed.length === 0) { const d = buildDefaultZones(); localStorage.setItem(ZONES_KEY, JSON.stringify(d)); return d; }
+    // merge: preserve saved status/staff/products but keep fresh label/category from ZONE_DEFS
+    return ZONE_DEFS.map((def) => {
+      const saved = parsed.find((z) => z.id === String(def.num));
+      return {
+        id: String(def.num), num: def.num, label: def.label, category: def.category,
+        section: def.section,
+        assignedStaffId: saved?.assignedStaffId ?? null,
+        assignedStaffName: saved?.assignedStaffName ?? "",
+        status: saved?.status ?? "normal",
+        products: saved?.products ?? "",
+      };
+    });
+  } catch { return buildDefaultZones(); }
 };
+const saveZones = (z: DisplayZone[]) => { try { localStorage.setItem(ZONES_KEY, JSON.stringify(z)); } catch {} };
 
 const loadRequests = (): DisplayRequest[] => {
-  try {
-    const raw = localStorage.getItem(REQUESTS_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as DisplayRequest[];
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+  try { const r = localStorage.getItem(REQS_KEY); return r ? (JSON.parse(r) as DisplayRequest[]) : []; }
+  catch { return []; }
+};
+const saveRequests = (r: DisplayRequest[]) => { try { localStorage.setItem(REQS_KEY, JSON.stringify(r)); } catch {} };
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const STATUS_LABEL: Record<ZoneStatus, string> = { normal: "정상", low: "부족", empty: "품절" };
+
+const statusCell = (s: ZoneStatus, extra = ""): string => {
+  const m = { normal: "bg-emerald-50 border-emerald-300 hover:border-emerald-400 text-emerald-900", low: "bg-amber-50 border-amber-300 hover:border-amber-400 text-amber-900", empty: "bg-red-50 border-red-300 hover:border-red-400 text-red-900" };
+  return `${m[s]} ${extra}`;
+};
+const statusDot  = (s: ZoneStatus) => ({ normal: "bg-emerald-500", low: "bg-amber-500", empty: "bg-red-500" }[s]);
+const statusBadge = (s: ZoneStatus) => ({ normal: "bg-emerald-100 text-emerald-700 border-emerald-300", low: "bg-amber-100 text-amber-700 border-amber-300", empty: "bg-red-100 text-red-700 border-red-300" }[s]);
+
+const SHIFT_BADGE: Record<string, string> = {
+  "오픈": "bg-amber-100 text-amber-800 border-amber-300",
+  "미들": "bg-sky-100 text-sky-800 border-sky-300",
+  "마감": "bg-emerald-100 text-emerald-800 border-emerald-300",
 };
 
-const saveZones = (zones: DisplayZone[]) => {
-  try {
-    localStorage.setItem(ZONES_STORAGE_KEY, JSON.stringify(zones));
-  } catch {
-    /* ignore quota */
-  }
+const formatRel = (iso: string) => {
+  const diff = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return "방금 전";
+  if (diff < 3600) return `${Math.floor(diff / 60)}분 전`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}시간 전`;
+  return `${Math.floor(diff / 86400)}일 전`;
 };
 
-const saveRequests = (requests: DisplayRequest[]) => {
-  try {
-    localStorage.setItem(REQUESTS_STORAGE_KEY, JSON.stringify(requests));
-  } catch {
-    /* ignore quota */
-  }
-};
-
-const STATUS_LABEL: Record<ZoneStatus, string> = {
-  normal: "정상",
-  low: "부족",
-  empty: "품절",
-};
-
-const formatRelative = (iso: string): string => {
-  try {
-    const then = new Date(iso).getTime();
-    const now = Date.now();
-    const diffSec = Math.max(0, Math.floor((now - then) / 1000));
-    if (diffSec < 60) return "방금 전";
-    const diffMin = Math.floor(diffSec / 60);
-    if (diffMin < 60) return `${diffMin}분 전`;
-    const diffH = Math.floor(diffMin / 60);
-    if (diffH < 24) return `${diffH}시간 전`;
-    const diffD = Math.floor(diffH / 24);
-    if (diffD < 7) return `${diffD}일 전`;
-    const d = new Date(iso);
-    return `${d.getMonth() + 1}/${d.getDate()}`;
-  } catch {
-    return "";
-  }
-};
-
-// Tailwind class helpers — kept verbose so JIT picks them up.
-const statusCellClasses = (status: ZoneStatus): string => {
-  switch (status) {
-    case "normal":
-      return "bg-emerald-50 border-emerald-300 hover:bg-emerald-100 hover:border-emerald-400 text-emerald-900";
-    case "low":
-      return "bg-amber-50 border-amber-300 hover:bg-amber-100 hover:border-amber-400 text-amber-900";
-    case "empty":
-      return "bg-red-50 border-red-300 hover:bg-red-100 hover:border-red-400 text-red-900";
-  }
-};
-
-const statusDotClasses = (status: ZoneStatus): string => {
-  switch (status) {
-    case "normal":
-      return "bg-emerald-500";
-    case "low":
-      return "bg-amber-500";
-    case "empty":
-      return "bg-red-500";
-  }
-};
-
-const statusBadgeClasses = (status: ZoneStatus): string => {
-  switch (status) {
-    case "normal":
-      return "bg-emerald-100 text-emerald-700 border-emerald-300";
-    case "low":
-      return "bg-amber-100 text-amber-700 border-amber-300";
-    case "empty":
-      return "bg-red-100 text-red-700 border-red-300";
-  }
-};
-
+// ─── Sub-components ───────────────────────────────────────────────────────────
 interface ZoneCellProps {
   zone: DisplayZone;
-  onClick: (zone: DisplayZone) => void;
-  size?: "sm" | "md" | "lg";
+  onClick: (z: DisplayZone) => void;
+  size?: "xs" | "sm" | "md";
+  assignMode?: boolean;
+  isAssigned?: boolean;
 }
-
-const ZoneCell: React.FC<ZoneCellProps> = ({ zone, onClick, size = "sm" }) => {
-  const shortCat = SHORT_CATEGORY[zone.category] || zone.category;
-  const sizeClasses =
-    size === "lg"
-      ? "min-h-[78px] p-2.5"
-      : size === "md"
-      ? "min-h-[64px] p-2"
-      : "min-h-[54px] p-1.5";
-  const idClass =
-    size === "lg" ? "text-sm font-bold" : size === "md" ? "text-xs font-bold" : "text-[11px] font-bold";
-  const catClass =
-    size === "lg" ? "text-[11px]" : size === "md" ? "text-[10px]" : "text-[9px]";
+const ZoneCell: React.FC<ZoneCellProps> = ({ zone, onClick, size = "sm", assignMode, isAssigned }) => {
+  const h = size === "md" ? "min-h-[68px]" : size === "sm" ? "min-h-[58px]" : "min-h-[46px]";
+  const numSz = size === "xs" ? "text-[10px]" : "text-xs";
+  const catSz = size === "xs" ? "text-[8px]" : "text-[9px]";
+  let extra = "";
+  if (assignMode) extra = isAssigned ? "ring-2 ring-violet-500 shadow-md" : "opacity-80 hover:opacity-100";
   return (
     <button
       type="button"
       onClick={() => onClick(zone)}
-      className={`relative w-full rounded-lg border-2 transition-all duration-150 active:scale-[0.97] cursor-pointer flex flex-col justify-between text-left ${statusCellClasses(
-        zone.status
-      )} ${sizeClasses}`}
+      className={`relative w-full rounded-lg border-2 transition-all duration-150 active:scale-[0.96] cursor-pointer flex flex-col justify-between text-left p-1.5 ${h} ${statusCell(zone.status, extra)}`}
     >
-      <div className="flex items-start justify-between gap-1">
-        <span className={`tracking-tight ${idClass}`}>{zone.label}</span>
-        <span className={`w-2 h-2 rounded-full ${statusDotClasses(zone.status)} shrink-0 mt-0.5`} />
-      </div>
-      <div className={`mt-1 leading-tight ${catClass} text-slate-600 font-medium line-clamp-2`}>
-        {shortCat}
-      </div>
-      {zone.assignedStaffName ? (
-        <div className="mt-0.5 text-[9px] text-slate-500 truncate font-medium">
-          @{zone.assignedStaffName}
+      {assignMode && isAssigned && (
+        <div className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-violet-600 flex items-center justify-center">
+          <CheckCheck size={8} className="text-white" />
         </div>
-      ) : null}
+      )}
+      <div className="flex items-start justify-between gap-0.5">
+        <span className={`${numSz} font-black tracking-tight`}>{zone.num}</span>
+        <span className={`w-1.5 h-1.5 rounded-full ${statusDot(zone.status)} shrink-0 mt-0.5`} />
+      </div>
+      <div className={`${catSz} leading-tight text-current font-medium line-clamp-2 mt-0.5`}>{zone.category}</div>
+      {zone.assignedStaffName && (
+        <div className="text-[8px] text-slate-500 truncate font-semibold mt-0.5">@{zone.assignedStaffName}</div>
+      )}
     </button>
   );
 };
 
+// ─── Main component ────────────────────────────────────────────────────────────
 export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
   const [requests, setRequests] = useState<DisplayRequest[]>(() => loadRequests());
+
+  // Employees & today's staff
   const [employees, setEmployees] = useState<Employee[]>([]);
-  const [employeesError, setEmployeesError] = useState<string | null>(null);
+  const [todayStaff, setTodayStaff] = useState<TodayStaff[]>([]);
+  const [staffLoading, setStaffLoading] = useState(true);
+  const [staffError, setStaffError] = useState<string | null>(null);
 
+  // Zone assignment mode (for 물류 staff)
+  const [assigningStaffId, setAssigningStaffId] = useState<number | null>(null);
+
+  // Modal
   const [activeZoneId, setActiveZoneId] = useState<string | null>(null);
-  const [requestFilter, setRequestFilter] = useState<"all" | "pending" | "done">("all");
-
-  // Modal-local editable state (committed only on save)
-  const [draftCategory, setDraftCategory] = useState<string>("");
-  const [draftProducts, setDraftProducts] = useState<string>("");
+  const [draftCategory, setDraftCategory] = useState("");
+  const [draftProducts, setDraftProducts] = useState("");
   const [draftStaffId, setDraftStaffId] = useState<number | null>(null);
   const [draftStatus, setDraftStatus] = useState<ZoneStatus>("normal");
-  const [requestNote, setRequestNote] = useState<string>("");
+  const [requestNote, setRequestNote] = useState("");
   const [savedFlash, setSavedFlash] = useState(false);
   const [requestFlash, setRequestFlash] = useState(false);
 
-  // Fetch employees once
+  // Requests panel
+  const [reqFilter, setReqFilter] = useState<"all" | "pending" | "done">("all");
+
+  // ── Fetch employees + today's schedule ──────────────────────────────────────
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      setStaffLoading(true);
       try {
-        const res = await fetch("/api/schedules?year=2026&month=6");
-        if (!res.ok) {
-          if (!cancelled) setEmployeesError(`직원 정보를 불러올 수 없습니다 (${res.status})`);
-          return;
-        }
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = now.getMonth() + 1;
+        const todayStr = `${y}-${String(m).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        const res = await fetch(`/api/schedules?year=${y}&month=${m}`);
+        if (!res.ok) throw new Error(String(res.status));
         const data = await res.json();
-        const list = Array.isArray(data?.employees) ? (data.employees as Employee[]) : [];
-        if (!cancelled) {
-          setEmployees(list);
-          setEmployeesError(null);
+        const empList: Employee[] = Array.isArray(data?.employees) ? data.employees : [];
+        if (cancelled) return;
+        setEmployees(empList);
+
+        const workTypes = new Set(["오픈", "미들", "마감", "오전반차", "오후반차"]);
+        const today: TodayStaff[] = [];
+        for (const emp of empList) {
+          const sc = emp.schedules?.find((s) => s.date === todayStr);
+          if (sc && workTypes.has(sc.type)) {
+            today.push({ employee: emp, scheduleType: sc.type, workingHours: sc.workingHours || "" });
+          }
         }
-      } catch (e) {
-        if (!cancelled) setEmployeesError("직원 정보를 불러올 수 없습니다");
+        setTodayStaff(today);
+        setStaffError(null);
+      } catch {
+        if (!cancelled) setStaffError("직원 정보를 불러올 수 없습니다");
+      } finally {
+        if (!cancelled) setStaffLoading(false);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
-  // Persist on change
-  useEffect(() => {
-    saveZones(zones);
-  }, [zones]);
-  useEffect(() => {
-    saveRequests(requests);
-  }, [requests]);
+  // ── Persist ─────────────────────────────────────────────────────────────────
+  useEffect(() => { saveZones(zones); }, [zones]);
+  useEffect(() => { saveRequests(requests); }, [requests]);
 
-  const activeZone = useMemo(
-    () => (activeZoneId ? zones.find((z) => z.id === activeZoneId) || null : null),
-    [activeZoneId, zones]
-  );
+  // ── Active zone ──────────────────────────────────────────────────────────────
+  const activeZone = useMemo(() => zones.find((z) => z.id === activeZoneId) ?? null, [zones, activeZoneId]);
 
-  // When opening modal, hydrate drafts
   useEffect(() => {
     if (activeZone) {
       setDraftCategory(activeZone.category);
@@ -429,664 +291,515 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
       setSavedFlash(false);
       setRequestFlash(false);
     }
-  }, [activeZoneId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeZoneId]); // eslint-disable-line
 
-  const openZone = useCallback((zone: DisplayZone) => {
+  // ── Zone click (normal vs assignment mode) ───────────────────────────────────
+  const handleZoneClick = useCallback((zone: DisplayZone) => {
+    if (assigningStaffId !== null) {
+      const staff = employees.find((e) => e.id === assigningStaffId);
+      if (!staff) return;
+      setZones((prev) =>
+        prev.map((z) => {
+          if (z.id !== zone.id) return z;
+          if (z.assignedStaffId === assigningStaffId) {
+            return { ...z, assignedStaffId: null, assignedStaffName: "" };
+          }
+          return { ...z, assignedStaffId: staff.id, assignedStaffName: staff.name };
+        })
+      );
+      return;
+    }
     setActiveZoneId(zone.id);
-  }, []);
+  }, [assigningStaffId, employees]);
 
-  const closeModal = useCallback(() => {
-    setActiveZoneId(null);
-  }, []);
-
+  // ── Save / Request ───────────────────────────────────────────────────────────
   const handleSave = useCallback(() => {
     if (!activeZone) return;
-    const staff = employees.find((e) => e.id === draftStaffId) || null;
-    setZones((prev) =>
-      prev.map((z) =>
-        z.id === activeZone.id
-          ? {
-              ...z,
-              category: draftCategory,
-              products: draftProducts,
-              assignedStaffId: staff?.id ?? null,
-              assignedStaffName: staff?.name ?? "",
-              status: draftStatus,
-            }
-          : z
-      )
-    );
+    const staff = employees.find((e) => e.id === draftStaffId) ?? null;
+    setZones((prev) => prev.map((z) => z.id !== activeZone.id ? z : {
+      ...z, category: draftCategory, products: draftProducts,
+      assignedStaffId: staff?.id ?? null, assignedStaffName: staff?.name ?? "",
+      status: draftStatus,
+    }));
     setSavedFlash(true);
-    window.setTimeout(() => setSavedFlash(false), 1500);
+    setTimeout(() => setSavedFlash(false), 1500);
   }, [activeZone, draftCategory, draftProducts, draftStaffId, draftStatus, employees]);
 
-  const canRequest = useMemo(
-    () => (draftStatus === "low" || draftStatus === "empty") && draftStaffId !== null,
-    [draftStatus, draftStaffId]
-  );
+  const canRequest = (draftStatus === "low" || draftStatus === "empty") && draftStaffId !== null;
 
   const handleSendRequest = useCallback(() => {
     if (!activeZone || !canRequest) return;
-    const staff = employees.find((e) => e.id === draftStaffId) || null;
+    const staff = employees.find((e) => e.id === draftStaffId);
     if (!staff) return;
-
-    // Persist any pending edits first so the request reflects the modal state
-    setZones((prev) =>
-      prev.map((z) =>
-        z.id === activeZone.id
-          ? {
-              ...z,
-              category: draftCategory,
-              products: draftProducts,
-              assignedStaffId: staff.id,
-              assignedStaffName: staff.name,
-              status: draftStatus,
-            }
-          : z
-      )
-    );
-
-    const newReq: DisplayRequest = {
-      id: `req_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
-      zoneId: activeZone.id,
-      zoneLabel: activeZone.label,
-      category: draftCategory,
-      requestedAt: new Date().toISOString(),
-      assignedStaffId: staff.id,
-      assignedStaffName: staff.name,
-      status: "pending",
-      note: requestNote.trim(),
+    // Save edits first
+    setZones((prev) => prev.map((z) => z.id !== activeZone.id ? z : {
+      ...z, category: draftCategory, products: draftProducts,
+      assignedStaffId: staff.id, assignedStaffName: staff.name, status: draftStatus,
+    }));
+    const req: DisplayRequest = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      zoneId: activeZone.id, zoneLabel: `${activeZone.num}번 ${activeZone.label}`,
+      category: draftCategory, requestedAt: new Date().toISOString(),
+      assignedStaffId: staff.id, assignedStaffName: staff.name,
+      status: "pending", note: requestNote,
     };
-    setRequests((prev) => [newReq, ...prev]);
+    setRequests((prev) => [req, ...prev]);
     setRequestFlash(true);
-    window.setTimeout(() => setRequestFlash(false), 1500);
-  }, [
-    activeZone,
-    canRequest,
-    employees,
-    draftStaffId,
-    draftCategory,
-    draftProducts,
-    draftStatus,
-    requestNote,
-  ]);
+    setTimeout(() => setRequestFlash(false), 1500);
+  }, [activeZone, canRequest, draftCategory, draftProducts, draftStaffId, draftStatus, requestNote, employees]);
 
-  const markRequestDone = useCallback((id: string) => {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "done" as const } : r))
-    );
-  }, []);
+  // ── Stats ────────────────────────────────────────────────────────────────────
+  const stats = useMemo(() => ({
+    total: zones.length,
+    empty: zones.filter((z) => z.status === "empty").length,
+    low:   zones.filter((z) => z.status === "low").length,
+    pending: requests.filter((r) => r.status === "pending").length,
+  }), [zones, requests]);
 
-  const deleteRequest = useCallback((id: string) => {
-    setRequests((prev) => prev.filter((r) => r.id !== id));
-  }, []);
+  // ── Zone groups ──────────────────────────────────────────────────────────────
+  const aisleZones      = useMemo(() => zones.filter((z) => z.section === "aisle").sort((a, b) => a.num - b.num), [zones]);
+  const lowerWallZones  = useMemo(() => zones.filter((z) => z.section === "lower_wall").sort((a, b) => a.num - b.num), [zones]);
+  const midWallZones    = useMemo(() => zones.filter((z) => z.section === "mid_wall").sort((a, b) => a.num - b.num), [zones]);
+  const upperWallZones  = useMemo(() => zones.filter((z) => z.section === "upper_wall").sort((a, b) => a.num - b.num), [zones]);
+  const wingZones       = useMemo(() => zones.filter((z) => z.section === "wing").sort((a, b) => a.num - b.num), [zones]);
 
-  // Derived stats
-  const stats = useMemo(() => {
-    const total = zones.length;
-    const empty = zones.filter((z) => z.status === "empty").length;
-    const low = zones.filter((z) => z.status === "low").length;
-    const pending = requests.filter((r) => r.status === "pending").length;
-    return { total, empty, low, pending };
-  }, [zones, requests]);
+  const filteredReqs = useMemo(() =>
+    reqFilter === "all" ? requests : requests.filter((r) => r.status === reqFilter),
+    [requests, reqFilter]);
 
-  const horizontalZones = useMemo(
-    () => zones.filter((z) => z.section === "horizontal").sort((a, b) => a.num - b.num),
-    [zones]
-  );
-  const verticalZones = useMemo(
-    () => zones.filter((z) => z.section === "vertical").sort((a, b) => a.num - b.num),
-    [zones]
-  );
-  const eventZones = useMemo(
-    () => zones.filter((z) => z.section === "event").sort((a, b) => a.num - b.num),
-    [zones]
-  );
-  const bestZones = useMemo(() => zones.filter((z) => z.section === "best"), [zones]);
-  const counterZones = useMemo(
-    () => zones.filter((z) => z.section === "counter").sort((a, b) => a.num - b.num),
-    [zones]
-  );
+  // ── Logistics staff zones helper ─────────────────────────────────────────────
+  const getAssignedZones = (staffId: number) => zones.filter((z) => z.assignedStaffId === staffId);
 
-  const filteredRequests = useMemo(() => {
-    if (requestFilter === "all") return requests;
-    return requests.filter((r) => r.status === requestFilter);
-  }, [requests, requestFilter]);
+  const now = new Date();
+  const todayLabel = `${now.getMonth() + 1}월 ${now.getDate()}일`;
 
+  // ─────────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-slate-100 flex flex-col">
+
       {/* Header */}
-      <header className="bg-slate-900 text-white sticky top-0 z-30 shadow-lg shadow-slate-900/20">
-        <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-3 flex items-center gap-3">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
-            aria-label="뒤로가기"
-          >
-            <ChevronLeft size={18} />
-            <span className="text-sm font-medium hidden sm:inline">뒤로</span>
+      <header className="bg-slate-900 text-white sticky top-0 z-30 shadow-lg">
+        <div className="max-w-[1700px] mx-auto px-3 sm:px-5 py-3 flex items-center gap-3">
+          <button onClick={onBack} className="flex items-center gap-1 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg hover:bg-slate-800 transition cursor-pointer">
+            <ChevronLeft size={18} /><span className="text-sm font-medium hidden sm:inline">뒤로</span>
           </button>
           <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center shadow-md shadow-violet-900/40 shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center shadow-md shrink-0">
               <LayoutGrid size={18} className="text-white" />
             </div>
-            <div className="leading-tight min-w-0">
-              <div className="font-bold text-base sm:text-lg tracking-tight truncate">매장진열 관리</div>
-              <div className="text-[11px] text-slate-400 hidden sm:block">
-                진열대 상태 점검 및 보충 요청
-              </div>
+            <div className="leading-tight">
+              <div className="font-bold text-base tracking-tight">매장진열 관리</div>
+              <div className="text-[11px] text-slate-400 hidden sm:block">진열 상태 점검 · 보충 요청</div>
             </div>
           </div>
-          <div className="hidden md:flex items-center gap-2 text-xs font-black tracking-tight shrink-0">
-            <span className="text-red-500">OSAN</span>
-            <span className="text-slate-300">MEGATOWN</span>
+          <div className="hidden md:flex items-center gap-1 text-xs font-black tracking-tight shrink-0">
+            <span className="text-red-500">OSAN</span><span className="text-slate-400">MEGATOWN</span>
           </div>
         </div>
 
         {/* Stats bar */}
         <div className="border-t border-slate-800 bg-slate-900/95">
-          <div className="max-w-[1600px] mx-auto px-3 sm:px-6 py-2.5 grid grid-cols-4 gap-2 sm:gap-4">
-            <StatPill
-              icon={<Boxes size={14} className="text-slate-300" />}
-              label="전체 진열대"
-              value={stats.total}
-              tone="slate"
-            />
-            <StatPill
-              icon={<XCircle size={14} className="text-red-300" />}
-              label="품절"
-              value={stats.empty}
-              tone="red"
-            />
-            <StatPill
-              icon={<AlertTriangle size={14} className="text-amber-300" />}
-              label="부족"
-              value={stats.low}
-              tone="amber"
-            />
-            <StatPill
-              icon={<Bell size={14} className="text-violet-300" />}
-              label="대기요청"
-              value={stats.pending}
-              tone="violet"
-            />
+          <div className="max-w-[1700px] mx-auto px-3 sm:px-5 py-2 grid grid-cols-4 gap-2">
+            {[
+              { icon: <Boxes size={13} className="text-slate-300" />, label: "전체", val: stats.total, cls: "text-slate-100" },
+              { icon: <XCircle size={13} className="text-red-300" />, label: "품절", val: stats.empty, cls: "text-red-300" },
+              { icon: <AlertTriangle size={13} className="text-amber-300" />, label: "부족", val: stats.low, cls: "text-amber-300" },
+              { icon: <Bell size={13} className="text-violet-300" />, label: "대기요청", val: stats.pending, cls: "text-violet-300" },
+            ].map(({ icon, label, val, cls }) => (
+              <div key={label} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/50">
+                {icon}
+                <div className="min-w-0 leading-tight">
+                  <div className="text-[10px] text-slate-400 truncate">{label}</div>
+                  <div className={`text-base font-bold ${cls}`}>{val}</div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </header>
 
-      {/* Main */}
-      <main className="flex-1 max-w-[1600px] mx-auto w-full px-3 sm:px-6 py-4 sm:py-6">
-        {employeesError ? (
-          <div className="mb-4 px-4 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs">
-            ⚠ {employeesError} — 직원 배정이 비활성화됩니다.
+      {/* Main 3-column layout */}
+      <main className="flex-1 max-w-[1700px] mx-auto w-full px-3 sm:px-5 py-4 grid grid-cols-1 xl:grid-cols-[240px_1fr_340px] gap-4">
+
+        {/* ═══ LEFT: Today's staff ═══════════════════════════════════════════ */}
+        <aside className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+          <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
+              <Users size={14} className="text-indigo-600" />
+            </div>
+            <div>
+              <div className="text-sm font-bold text-slate-900">오늘 출근 인원</div>
+              <div className="text-[11px] text-slate-400">{todayLabel}</div>
+            </div>
           </div>
-        ) : null}
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px] gap-4 sm:gap-6">
-          {/* Left: Store map */}
-          <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
-                  <LayoutGrid size={15} className="text-violet-600" />
-                </div>
-                <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                  매장 진열도
-                </h2>
+          <div className="flex-1 overflow-y-auto max-h-[280px] xl:max-h-none">
+            {staffLoading ? (
+              <div className="flex items-center justify-center py-8 text-slate-400 gap-2 text-xs">
+                <Loader2 size={14} className="animate-spin" />불러오는 중...
               </div>
-              <Legend />
+            ) : staffError ? (
+              <div className="px-4 py-3 text-xs text-amber-700 bg-amber-50 border-b border-amber-100">⚠ {staffError}</div>
+            ) : todayStaff.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-8 text-slate-400 text-xs text-center px-4">
+                <Users size={24} className="mb-2 opacity-30" />오늘 출근 인원이 없습니다
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-50">
+                {todayStaff.map(({ employee, scheduleType, workingHours }) => {
+                  const isLogistics = employee.position === "물류";
+                  const assignedZones = getAssignedZones(employee.id);
+                  const isAssigning = assigningStaffId === employee.id;
+                  return (
+                    <li key={employee.id} className={`px-3 py-2.5 ${isAssigning ? "bg-violet-50 border-l-4 border-violet-500" : ""}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 mb-0.5">
+                            <span className="text-sm font-bold text-slate-900 truncate">{employee.name}</span>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${SHIFT_BADGE[scheduleType] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}>
+                              {scheduleType}
+                            </span>
+                          </div>
+                          <div className="text-[11px] text-slate-500 flex items-center gap-1">
+                            <span className={`px-1 py-0.5 rounded text-[10px] font-semibold ${isLogistics ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
+                              {employee.position}
+                            </span>
+                            {workingHours && <span className="text-[10px] text-slate-400">{workingHours}</span>}
+                          </div>
+                        </div>
+                        {isLogistics && (
+                          <button
+                            type="button"
+                            onClick={() => setAssigningStaffId(isAssigning ? null : employee.id)}
+                            className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition shrink-0 cursor-pointer ${
+                              isAssigning
+                                ? "bg-violet-600 text-white border-violet-600"
+                                : "bg-white text-violet-700 border-violet-300 hover:bg-violet-50"
+                            }`}
+                          >
+                            {isAssigning ? "완료" : "구역지정"}
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Assigned zones for logistics staff */}
+                      {isLogistics && assignedZones.length > 0 && (
+                        <div className="mt-1.5 flex flex-wrap gap-1">
+                          {assignedZones.map((z) => (
+                            <span
+                              key={z.id}
+                              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-700 border border-violet-200 flex items-center gap-0.5"
+                            >
+                              <MapPin size={8} />{z.num}번
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Assignment mode hint */}
+                      {isLogistics && isAssigning && (
+                        <div className="mt-1.5 text-[10px] text-violet-600 font-semibold bg-violet-50 rounded px-2 py-1">
+                          💡 맵에서 구역을 탭하여 배정하세요
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* Legend */}
+          <div className="px-4 py-2.5 border-t border-slate-100 flex flex-wrap gap-2 text-[10px] text-slate-500">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />정상</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" />부족</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" />품절</span>
+            {assigningStaffId && (
+              <span className="flex items-center gap-1 text-violet-600 font-semibold ml-auto">
+                <CheckCheck size={10} />구역 지정 중
+              </span>
+            )}
+          </div>
+        </aside>
+
+        {/* ═══ CENTER: Store map ══════════════════════════════════════════════ */}
+        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
+                <LayoutGrid size={14} className="text-violet-600" />
+              </div>
+              <h2 className="text-sm font-bold text-slate-900">매장 진열 맵 (1~41번)</h2>
             </div>
-
-            <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/60 p-3 sm:p-5">
-              {/* Top horizontal wing */}
-              <div className="mb-4">
-                <SectionHeader icon={<Package size={12} />} title="상단 진열대 (벽면)" badge="H-01 ~ H-16" />
-                <div className="mt-2 grid grid-cols-8 sm:grid-cols-16 gap-1.5">
-                  {horizontalZones.map((z) => (
-                    <ZoneCell key={z.id} zone={z} onClick={openZone} size="sm" />
-                  ))}
-                </div>
+            {assigningStaffId && (
+              <div className="flex items-center gap-2 text-[11px] text-violet-700 font-bold bg-violet-50 border border-violet-200 rounded-lg px-2.5 py-1">
+                <CheckCheck size={12} />
+                {employees.find((e) => e.id === assigningStaffId)?.name} 구역 지정 중
+                <button type="button" onClick={() => setAssigningStaffId(null)} className="text-violet-400 hover:text-violet-700 cursor-pointer ml-1"><X size={12} /></button>
               </div>
+            )}
+          </div>
 
-              {/* Middle row: vertical aisles + event/best + counter */}
-              <div className="grid grid-cols-1 md:grid-cols-[1fr_180px_140px] gap-3 sm:gap-4">
-                {/* Vertical aisles */}
-                <div>
-                  <SectionHeader
-                    icon={<Boxes size={12} />}
-                    title="중앙 진열대 (통로)"
-                    badge="V-01 ~ V-08"
-                  />
-                  <div className="mt-2 grid grid-cols-4 gap-1.5 sm:gap-2">
-                    {verticalZones.map((z) => (
-                      <ZoneCell key={z.id} zone={z} onClick={openZone} size="md" />
-                    ))}
-                  </div>
-                </div>
+          <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-3 sm:p-4 space-y-4">
 
-                {/* Event + Best */}
-                <div>
-                  <SectionHeader
-                    icon={<Sparkles size={12} />}
-                    title="이벤트 / 베스트"
-                    badge="E·B"
-                  />
-                  <div className="mt-2 flex flex-col gap-1.5 sm:gap-2">
-                    {eventZones.map((z) => (
-                      <ZoneCell key={z.id} zone={z} onClick={openZone} size="md" />
-                    ))}
-                    {bestZones.map((z) => (
-                      <ZoneCell key={z.id} zone={z} onClick={openZone} size="md" />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Counter */}
-                <div>
-                  <SectionHeader
-                    icon={<Package size={12} />}
-                    title="카운터 진열"
-                    badge="C-01 ~ C-06"
-                  />
-                  <div className="mt-2 flex flex-col gap-1.5 sm:gap-2">
-                    {counterZones.map((z) => (
-                      <ZoneCell key={z.id} zone={z} onClick={openZone} size="md" />
-                    ))}
-                    <div className="mt-1 px-2 py-1.5 rounded-md bg-slate-100 border border-slate-200 text-[10px] text-slate-500 text-center font-medium">
-                      카운터
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 text-[11px] text-slate-500 flex items-center justify-center gap-1.5">
-                <span className="font-medium">↑ 매장 입구</span>
-              </div>
-            </div>
-
-            <p className="mt-3 text-[11px] text-slate-500">
-              진열대를 탭하여 상태를 갱신하고 보충 요청을 보낼 수 있습니다.
-            </p>
-          </section>
-
-          {/* Right: Requests panel */}
-          <aside className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col min-h-0">
-            <div className="p-4 sm:p-5 border-b border-slate-200">
-              <div className="flex items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-                    <ClipboardList size={15} className="text-violet-600" />
-                  </div>
-                  <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight truncate">
-                    진열 요청 현황
-                  </h2>
-                </div>
-                <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700 shrink-0">
-                  {requests.length}건
-                </span>
-              </div>
-
-              <div className="flex items-center gap-1 bg-slate-100 rounded-lg p-1">
-                {([
-                  { key: "all", label: "전체" },
-                  { key: "pending", label: "대기중" },
-                  { key: "done", label: "완료" },
-                ] as const).map((tab) => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setRequestFilter(tab.key)}
-                    className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition-colors cursor-pointer ${
-                      requestFilter === tab.key
-                        ? "bg-white text-slate-900 shadow-sm"
-                        : "text-slate-500 hover:text-slate-700"
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
+            {/* Upper wall (28–35) */}
+            <div>
+              <SectionLabel title="상단 벽면 진열장" badge="28–35" icon="🧱" />
+              <div className="mt-1.5 grid grid-cols-8 gap-1 sm:gap-1.5">
+                {upperWallZones.map((z) => (
+                  <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
+                    assignMode={assigningStaffId !== null}
+                    isAssigned={z.assignedStaffId === assigningStaffId} />
                 ))}
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto max-h-[480px] lg:max-h-[640px]">
-              {filteredRequests.length === 0 ? (
-                <div className="flex flex-col items-center justify-center text-center py-12 px-6 text-slate-400">
-                  <Bell size={28} className="mb-2 opacity-40" />
-                  <p className="text-sm font-medium text-slate-500">
-                    {requestFilter === "done"
-                      ? "완료된 요청이 없습니다"
-                      : requestFilter === "pending"
-                      ? "대기 중인 요청이 없습니다"
-                      : "진열 요청이 없습니다"}
-                  </p>
-                  <p className="text-[11px] mt-1">진열대를 탭하여 보충 요청을 보내보세요.</p>
-                </div>
-              ) : (
-                <ul className="divide-y divide-slate-100">
-                  {filteredRequests.map((req) => (
-                    <li key={req.id} className="p-3.5 sm:p-4 hover:bg-slate-50 transition-colors">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-sm font-bold text-slate-900 tracking-tight">
-                              {req.zoneLabel}
-                            </span>
-                            <span
-                              className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${
-                                req.status === "pending"
-                                  ? "bg-amber-50 text-amber-700 border-amber-300"
-                                  : "bg-emerald-50 text-emerald-700 border-emerald-300"
-                              }`}
-                            >
-                              {req.status === "pending" ? "대기중" : "완료"}
-                            </span>
-                          </div>
-                          <div className="text-xs text-slate-600 leading-relaxed">
-                            <span className="font-medium text-slate-700">{req.category}</span>
-                            {req.assignedStaffName ? (
-                              <span className="text-slate-500"> · 담당 {req.assignedStaffName}</span>
-                            ) : null}
-                          </div>
-                          {req.note ? (
-                            <div className="mt-1.5 text-[11px] text-slate-500 line-clamp-2 bg-slate-50 rounded-md px-2 py-1 border border-slate-100">
-                              {req.note}
-                            </div>
-                          ) : null}
-                          <div className="mt-1.5 flex items-center gap-1 text-[11px] text-slate-400">
-                            <Clock size={11} />
-                            <span>{formatRelative(req.requestedAt)}</span>
-                          </div>
-                        </div>
-                        <div className="flex flex-col gap-1 shrink-0">
-                          {req.status === "pending" ? (
-                            <button
-                              onClick={() => markRequestDone(req.id)}
-                              className="text-[11px] font-semibold px-2 py-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition-colors cursor-pointer flex items-center gap-1"
-                            >
-                              <CheckCircle2 size={11} />
-                              완료
-                            </button>
-                          ) : null}
-                          <button
-                            onClick={() => deleteRequest(req.id)}
-                            className="text-[11px] font-medium px-2 py-1 rounded-md text-slate-500 hover:bg-slate-100 transition-colors cursor-pointer"
-                            aria-label="요청 삭제"
-                          >
-                            삭제
-                          </button>
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
+            {/* Mid wall (19–27) */}
+            <div>
+              <SectionLabel title="중단 벽면 진열장" badge="19–27" icon="🧱" />
+              <div className="mt-1.5 grid grid-cols-9 gap-1 sm:gap-1.5">
+                {midWallZones.map((z) => (
+                  <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
+                    assignMode={assigningStaffId !== null}
+                    isAssigned={z.assignedStaffId === assigningStaffId} />
+                ))}
+              </div>
             </div>
-          </aside>
-        </div>
+
+            {/* Main aisles + vertical wing (side by side) */}
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
+
+              {/* Aisles (1–9) */}
+              <div>
+                <SectionLabel title="중앙 수직 진열대 (통로)" badge="1–9" icon="🏬" />
+                <div className="mt-1.5 grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1.5">
+                  {aisleZones.map((z) => (
+                    <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="md"
+                      assignMode={assigningStaffId !== null}
+                      isAssigned={z.assignedStaffId === assigningStaffId} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Right vertical wing (36–41) */}
+              <div className="w-full md:w-[130px] shrink-0">
+                <SectionLabel title="우측 수직 윙" badge="36–41" icon="🚪" />
+                <div className="mt-1.5 flex flex-row md:flex-col gap-1.5 flex-wrap">
+                  {wingZones.map((z) => (
+                    <div key={z.id} className="w-[calc(33.333%-4px)] md:w-full">
+                      <ZoneCell zone={z} onClick={handleZoneClick} size="md"
+                        assignMode={assigningStaffId !== null}
+                        isAssigned={z.assignedStaffId === assigningStaffId} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Lower wall (10–18) */}
+            <div>
+              <SectionLabel title="하단 벽면 진열장" badge="10–18" icon="🧱" />
+              <div className="mt-1.5 grid grid-cols-9 gap-1 sm:gap-1.5">
+                {lowerWallZones.map((z) => (
+                  <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
+                    assignMode={assigningStaffId !== null}
+                    isAssigned={z.assignedStaffId === assigningStaffId} />
+                ))}
+              </div>
+            </div>
+
+            <div className="text-center text-[11px] text-slate-400 font-medium pt-1">↓ 매장 출입구</div>
+          </div>
+
+          <p className="mt-2.5 text-[11px] text-slate-400">
+            {assigningStaffId
+              ? "💡 구역을 탭하여 담당자를 배정하거나 해제합니다."
+              : "진열대를 탭하여 상태를 갱신하고 보충 요청을 보낼 수 있습니다."}
+          </p>
+        </section>
+
+        {/* ═══ RIGHT: Requests panel ══════════════════════════════════════════ */}
+        <aside className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col">
+          <div className="p-4 border-b border-slate-100">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
+                  <ClipboardList size={14} className="text-violet-600" />
+                </div>
+                <h2 className="text-sm font-bold text-slate-900">진열 요청 현황</h2>
+              </div>
+              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700">
+                {requests.length}건
+              </span>
+            </div>
+            <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
+              {(["all", "pending", "done"] as const).map((k) => (
+                <button key={k} type="button" onClick={() => setReqFilter(k)}
+                  className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition cursor-pointer ${reqFilter === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                  {k === "all" ? "전체" : k === "pending" ? "대기중" : "완료"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto max-h-[400px] xl:max-h-none">
+            {filteredReqs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10 text-slate-400 text-xs text-center px-4">
+                <Bell size={24} className="mb-2 opacity-30" />
+                {reqFilter === "done" ? "완료된 요청 없음" : reqFilter === "pending" ? "대기 요청 없음" : "진열 요청 없음"}
+              </div>
+            ) : (
+              <ul className="divide-y divide-slate-50">
+                {filteredReqs.map((req) => (
+                  <li key={req.id} className="p-3.5 hover:bg-slate-50 transition">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <span className="text-sm font-bold text-slate-900">{req.zoneLabel}</span>
+                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${req.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-300" : "bg-emerald-50 text-emerald-700 border-emerald-300"}`}>
+                            {req.status === "pending" ? "대기" : "완료"}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-500">{req.category}</div>
+                        <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
+                          <User size={10} />{req.assignedStaffName || "미배정"}
+                          <span className="text-slate-300">·</span>
+                          {formatRel(req.requestedAt)}
+                        </div>
+                        {req.note && <div className="text-[11px] text-slate-500 mt-1 italic">"{req.note}"</div>}
+                      </div>
+                      <div className="flex flex-col gap-1 shrink-0">
+                        {req.status === "pending" && (
+                          <button onClick={() => setRequests((prev) => prev.map((r) => r.id === req.id ? { ...r, status: "done" as const } : r))}
+                            className="text-[11px] font-semibold px-2 py-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer flex items-center gap-1">
+                            <CheckCircle2 size={11} />완료
+                          </button>
+                        )}
+                        <button onClick={() => setRequests((prev) => prev.filter((r) => r.id !== req.id))}
+                          className="text-[11px] font-medium px-2 py-1 rounded-md text-slate-500 hover:bg-slate-100 transition cursor-pointer">
+                          삭제
+                        </button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </aside>
       </main>
 
-      {/* Zone Detail Modal */}
-      {activeZone ? (
-        <div
-          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm"
-          onClick={closeModal}
-        >
-          <div
-            className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92vh] flex flex-col overflow-hidden animate-in"
-            onClick={(e) => e.stopPropagation()}
-          >
+      {/* ═══ Zone Detail Modal ══════════════════════════════════════════════════ */}
+      {activeZone && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm" onClick={() => setActiveZoneId(null)}>
+          <div className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
             {/* Modal header */}
             <div className="px-5 py-4 border-b border-slate-200 flex items-center gap-3 bg-slate-50">
-              <div
-                className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center shrink-0 ${statusCellClasses(
-                  draftStatus
-                )}`}
-              >
-                <Package size={18} />
+              <div className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center shrink-0 font-black text-lg ${statusCell(draftStatus)}`}>
+                {activeZone.num}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-lg font-bold text-slate-900 tracking-tight truncate">
-                  {activeZone.label}
-                </div>
-                <div className="text-[11px] text-slate-500 font-medium">
-                  {sectionLabel(activeZone.section)} · ID {activeZone.id}
-                </div>
+                <div className="text-base font-bold text-slate-900 truncate">{activeZone.label}</div>
+                <div className="text-[11px] text-slate-500">{activeZone.category}</div>
               </div>
-              <span
-                className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${statusBadgeClasses(
-                  draftStatus
-                )}`}
-              >
+              <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${statusBadge(draftStatus)}`}>
                 {STATUS_LABEL[draftStatus]}
               </span>
-              <button
-                onClick={closeModal}
-                className="ml-1 w-8 h-8 rounded-lg hover:bg-slate-200 flex items-center justify-center text-slate-500 hover:text-slate-700 cursor-pointer transition-colors"
-                aria-label="닫기"
-              >
+              <button onClick={() => setActiveZoneId(null)} className="w-8 h-8 rounded-lg hover:bg-slate-200 flex items-center justify-center text-slate-500 cursor-pointer">
                 <X size={18} />
               </button>
             </div>
 
             {/* Modal body */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-              {/* Status toggle */}
+              {/* Status */}
               <div>
                 <label className="text-xs font-semibold text-slate-700 mb-1.5 block">진열 상태</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {(["normal", "low", "empty"] as const).map((s) => {
-                    const active = draftStatus === s;
-                    const base =
-                      "py-2 text-xs font-semibold rounded-lg border-2 transition-all cursor-pointer flex items-center justify-center gap-1.5";
-                    const inactive = "bg-white text-slate-500 border-slate-200 hover:border-slate-300";
-                    const activeCls =
-                      s === "normal"
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-400 shadow-sm shadow-emerald-100"
-                        : s === "low"
-                        ? "bg-amber-50 text-amber-700 border-amber-400 shadow-sm shadow-amber-100"
-                        : "bg-red-50 text-red-700 border-red-400 shadow-sm shadow-red-100";
-                    return (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setDraftStatus(s)}
-                        className={`${base} ${active ? activeCls : inactive}`}
-                      >
-                        <span className={`w-2 h-2 rounded-full ${statusDotClasses(s)}`} />
-                        {STATUS_LABEL[s]}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Category */}
-              <div>
-                <label className="text-xs font-semibold text-slate-700 mb-1.5 block">상품 카테고리</label>
-                <select
-                  value={draftCategory}
-                  onChange={(e) => setDraftCategory(e.target.value)}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none transition cursor-pointer"
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
+                  {(["normal", "low", "empty"] as const).map((s) => (
+                    <button key={s} type="button" onClick={() => setDraftStatus(s)}
+                      className={`py-2 text-xs font-semibold rounded-lg border-2 transition cursor-pointer flex items-center justify-center gap-1.5 ${draftStatus === s
+                        ? s === "normal" ? "bg-emerald-50 text-emerald-700 border-emerald-400 shadow-sm"
+                          : s === "low" ? "bg-amber-50 text-amber-700 border-amber-400 shadow-sm"
+                          : "bg-red-50 text-red-700 border-red-400 shadow-sm"
+                        : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"}`}>
+                      <span className={`w-2 h-2 rounded-full ${statusDot(s)}`} />
+                      {STATUS_LABEL[s]}
+                    </button>
                   ))}
-                </select>
+                </div>
               </div>
 
               {/* Products */}
               <div>
                 <label className="text-xs font-semibold text-slate-700 mb-1.5 block">진열 상품 메모</label>
-                <textarea
-                  value={draftProducts}
-                  onChange={(e) => setDraftProducts(e.target.value)}
-                  rows={3}
-                  placeholder="예: 타이레놀 500mg, 판콜에이, 베아제 등"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none transition resize-none"
-                />
+                <textarea value={draftProducts} onChange={(e) => setDraftProducts(e.target.value)} rows={2}
+                  placeholder="예: 타이레놀 500mg, 베아제, 판콜에이..."
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none transition resize-none" />
               </div>
 
               {/* Staff */}
               <div>
-                <label className="text-xs font-semibold text-slate-700 mb-1.5 block flex items-center gap-1">
-                  <User size={12} />
-                  담당 직원
+                <label className="text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1 block">
+                  <User size={11} />담당 직원
                 </label>
-                <select
-                  value={draftStaffId ?? ""}
-                  onChange={(e) =>
-                    setDraftStaffId(e.target.value === "" ? null : Number(e.target.value))
-                  }
+                <select value={draftStaffId ?? ""} onChange={(e) => setDraftStaffId(e.target.value === "" ? null : Number(e.target.value))}
                   disabled={employees.length === 0}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none transition cursor-pointer disabled:bg-slate-50 disabled:cursor-not-allowed"
-                >
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:border-violet-500 outline-none transition cursor-pointer disabled:bg-slate-50">
                   <option value="">— 미배정 —</option>
                   {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.name}
-                      {emp.position ? ` (${emp.position})` : ""}
-                    </option>
+                    <option key={emp.id} value={emp.id}>{emp.name}{emp.position ? ` (${emp.position})` : ""}</option>
                   ))}
                 </select>
-                {employees.length === 0 ? (
-                  <p className="mt-1 text-[10px] text-slate-400">직원 목록을 불러오는 중...</p>
-                ) : null}
               </div>
 
               {/* Request note */}
               <div>
                 <label className="text-xs font-semibold text-slate-700 mb-1.5 block">요청 메모 (선택)</label>
-                <input
-                  type="text"
-                  value={requestNote}
-                  onChange={(e) => setRequestNote(e.target.value)}
-                  placeholder="예: 오늘 오후까지 보충 부탁드립니다"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white text-slate-900 placeholder-slate-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none transition"
-                />
+                <input type="text" value={requestNote} onChange={(e) => setRequestNote(e.target.value)}
+                  placeholder="오늘 오후까지 보충 부탁드립니다"
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:border-violet-500 outline-none transition" />
               </div>
 
-              {savedFlash ? (
+              {savedFlash && (
                 <div className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center gap-1.5">
-                  <CheckCircle2 size={14} />
-                  저장되었습니다
+                  <CheckCircle2 size={13} />저장되었습니다
                 </div>
-              ) : null}
-              {requestFlash ? (
+              )}
+              {requestFlash && (
                 <div className="px-3 py-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold flex items-center gap-1.5">
-                  <Send size={14} />
-                  진열 요청이 전송되었습니다
+                  <Send size={13} />진열 요청이 전송되었습니다
                 </div>
-              ) : null}
+              )}
             </div>
 
             {/* Modal footer */}
             <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
-              <button
-                onClick={handleSave}
-                className="px-4 py-2 text-sm font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-              >
-                <Save size={14} />
-                저장
+              <button onClick={handleSave}
+                className="px-4 py-2 text-sm font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition cursor-pointer flex items-center justify-center gap-1.5">
+                <Save size={14} />저장
               </button>
-              <button
-                onClick={handleSendRequest}
-                disabled={!canRequest}
-                className="px-4 py-2 text-sm font-semibold rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition-colors cursor-pointer flex items-center justify-center gap-1.5 disabled:bg-slate-300 disabled:cursor-not-allowed disabled:text-slate-500"
-                title={
-                  !canRequest
-                    ? "상태가 '부족' 또는 '품절'이고 담당 직원이 배정되어야 요청할 수 있습니다"
-                    : ""
-                }
-              >
-                <Send size={14} />
-                진열 요청 보내기
+              <button onClick={handleSendRequest} disabled={!canRequest}
+                title={!canRequest ? "상태가 부족/품절이고 담당 직원이 배정되어야 요청 가능합니다" : ""}
+                className="px-4 py-2 text-sm font-semibold rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition cursor-pointer flex items-center justify-center gap-1.5 disabled:bg-slate-300 disabled:cursor-not-allowed disabled:text-slate-500">
+                <Send size={14} />진열 요청 보내기
               </button>
             </div>
           </div>
         </div>
-      ) : null}
+      )}
     </div>
   );
 };
 
-// ---- small subcomponents ----
-
-interface StatPillProps {
-  icon: React.ReactNode;
-  label: string;
-  value: number;
-  tone: "slate" | "red" | "amber" | "violet";
-}
-
-const StatPill: React.FC<StatPillProps> = ({ icon, label, value, tone }) => {
-  const toneClass: Record<StatPillProps["tone"], string> = {
-    slate: "text-slate-100",
-    red: "text-red-300",
-    amber: "text-amber-300",
-    violet: "text-violet-300",
-  };
-  return (
-    <div className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/60">
-      <div className="shrink-0">{icon}</div>
-      <div className="min-w-0 flex flex-col leading-tight">
-        <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium truncate">{label}</span>
-        <span className={`text-base sm:text-lg font-bold tracking-tight ${toneClass[tone]}`}>
-          {value}
-        </span>
-      </div>
+// ─── Tiny helper sub-component ────────────────────────────────────────────────
+const SectionLabel: React.FC<{ title: string; badge: string; icon: string }> = ({ title, badge, icon }) => (
+  <div className="flex items-center justify-between">
+    <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-slate-700">
+      <span>{icon}</span>{title}
     </div>
-  );
-};
-
-const Legend: React.FC = () => (
-  <div className="hidden sm:flex items-center gap-3 text-[11px] font-medium text-slate-600">
-    <span className="flex items-center gap-1">
-      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-      정상
-    </span>
-    <span className="flex items-center gap-1">
-      <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-      부족
-    </span>
-    <span className="flex items-center gap-1">
-      <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
-      품절
-    </span>
+    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-500">{badge}</span>
   </div>
 );
-
-interface SectionHeaderProps {
-  icon: React.ReactNode;
-  title: string;
-  badge: string;
-}
-
-const SectionHeader: React.FC<SectionHeaderProps> = ({ icon, title, badge }) => (
-  <div className="flex items-center justify-between gap-2">
-    <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-slate-700 tracking-tight">
-      <span className="text-slate-500">{icon}</span>
-      {title}
-    </div>
-    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-500">
-      {badge}
-    </span>
-  </div>
-);
-
-const sectionLabel = (section: ZoneSection): string => {
-  switch (section) {
-    case "horizontal":
-      return "상단 벽면 진열";
-    case "vertical":
-      return "중앙 통로 진열";
-    case "event":
-      return "이벤트 진열";
-    case "best":
-      return "베스트세트 진열";
-    case "counter":
-      return "카운터 진열";
-  }
-};
 
 export default DisplayPage;
