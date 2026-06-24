@@ -226,7 +226,7 @@ export const DayTimelineModal: React.FC<Props> = ({
   };
 
   const startDrag = (
-    e: React.MouseEvent,
+    e: React.MouseEvent | React.TouchEvent,
     kind: DragKind,
     part: "start" | "end" | "body",
     initStart: number,
@@ -236,13 +236,24 @@ export const DayTimelineModal: React.FC<Props> = ({
     e.preventDefault();
     e.stopPropagation();
 
+    const isTouch = "touches" in e.nativeEvent;
+    const initClientX = isTouch
+      ? (e as React.TouchEvent).touches[0]?.clientX ?? 0
+      : (e as React.MouseEvent).clientX;
+
+    const getX = (ev: MouseEvent | TouchEvent): number =>
+      "touches" in ev
+        ? ev.touches[0]?.clientX ?? (ev as TouchEvent).changedTouches[0]?.clientX ?? 0
+        : (ev as MouseEvent).clientX;
+
     const duration = initEnd - initStart;
-    const bodyOffset = getMinFromX(e.clientX) - initStart;
+    const bodyOffset = getMinFromX(initClientX) - initStart;
     let curStart = initStart;
     let curEnd = initEnd;
 
-    const onMove = (me: MouseEvent) => {
-      const mouse = snapTo(getMinFromX(me.clientX));
+    const onMove = (me: MouseEvent | TouchEvent) => {
+      me.preventDefault();
+      const mouse = snapTo(getMinFromX(getX(me)));
       if (part === "start") {
         curStart = clamp(mouse, DISPLAY_START, initEnd - SNAP);
         curEnd = initEnd;
@@ -250,7 +261,7 @@ export const DayTimelineModal: React.FC<Props> = ({
         curStart = initStart;
         curEnd = clamp(mouse, initStart + SNAP, DISPLAY_END);
       } else {
-        const raw = getMinFromX(me.clientX) - bodyOffset;
+        const raw = getMinFromX(getX(me)) - bodyOffset;
         curStart = clamp(snapTo(raw), DISPLAY_START, DISPLAY_END - duration);
         curEnd = curStart + duration;
       }
@@ -279,8 +290,10 @@ export const DayTimelineModal: React.FC<Props> = ({
     };
 
     const onUp = async () => {
-      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mousemove", onMove as EventListener);
       document.removeEventListener("mouseup", onUp);
+      document.removeEventListener("touchmove", onMove as EventListener);
+      document.removeEventListener("touchend", onUp);
       document.body.style.cursor = "";
 
       if (kind === "work" && empId !== undefined) {
@@ -322,8 +335,10 @@ export const DayTimelineModal: React.FC<Props> = ({
     };
 
     document.body.style.cursor = part === "body" ? "grabbing" : "ew-resize";
-    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mousemove", onMove as EventListener);
     document.addEventListener("mouseup", onUp);
+    document.addEventListener("touchmove", onMove as EventListener, { passive: false });
+    document.addEventListener("touchend", onUp);
   };
 
   // Apply global defaults to all employees
@@ -362,13 +377,15 @@ export const DayTimelineModal: React.FC<Props> = ({
       >
         {/* left resize */}
         <div
-          className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/25 rounded-l-md"
+          className="absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize bg-black/10 hover:bg-black/25 active:bg-black/40 rounded-l-md touch-none"
           onMouseDown={e => startDrag(e, kind, "start", range.start, range.end, empId)}
+          onTouchStart={e => startDrag(e, kind, "start", range.start, range.end, empId)}
         />
         {/* body */}
         <div
-          className="absolute inset-0 mx-2 cursor-grab active:cursor-grabbing flex items-center justify-center"
+          className="absolute inset-0 mx-4 cursor-grab active:cursor-grabbing flex items-center justify-center touch-none"
           onMouseDown={e => startDrag(e, kind, "body", range.start, range.end, empId)}
+          onTouchStart={e => startDrag(e, kind, "body", range.start, range.end, empId)}
         >
           {label && (
             <span className="text-[9px] font-bold whitespace-nowrap select-none truncate px-1">
@@ -383,8 +400,9 @@ export const DayTimelineModal: React.FC<Props> = ({
         </div>
         {/* right resize */}
         <div
-          className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/25 rounded-r-md"
+          className="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize bg-black/10 hover:bg-black/25 active:bg-black/40 rounded-r-md touch-none"
           onMouseDown={e => startDrag(e, kind, "end", range.start, range.end, empId)}
+          onTouchStart={e => startDrag(e, kind, "end", range.start, range.end, empId)}
         />
       </div>
     );
@@ -406,20 +424,23 @@ export const DayTimelineModal: React.FC<Props> = ({
             style={{ left: `${pct(r.start)}%`, width: `${w}%` }}
           >
             <div
-              className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/25 rounded-l-md"
+              className="absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize bg-black/10 hover:bg-black/25 active:bg-black/40 rounded-l-md touch-none"
               onMouseDown={e => startDrag(e, kind, "start", r.start, r.end)}
+              onTouchStart={e => startDrag(e, kind, "start", r.start, r.end)}
             />
             <div
-              className={`absolute inset-0 mx-2 cursor-grab active:cursor-grabbing flex items-center justify-center`}
+              className={`absolute inset-0 mx-4 cursor-grab active:cursor-grabbing flex items-center justify-center touch-none`}
               onMouseDown={e => startDrag(e, kind, "body", r.start, r.end)}
+              onTouchStart={e => startDrag(e, kind, "body", r.start, r.end)}
             >
               <span className={`text-[9px] font-bold whitespace-nowrap select-none ${textCls}`}>
                 {label} {minToStr(r.start)}~{minToStr(r.end)}
               </span>
             </div>
             <div
-              className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize bg-black/10 hover:bg-black/25 rounded-r-md"
+              className="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize bg-black/10 hover:bg-black/25 active:bg-black/40 rounded-r-md touch-none"
               onMouseDown={e => startDrag(e, kind, "end", r.start, r.end)}
+              onTouchStart={e => startDrag(e, kind, "end", r.start, r.end)}
             />
           </div>
         )}
@@ -473,7 +494,7 @@ export const DayTimelineModal: React.FC<Props> = ({
         {/* Hint */}
         <div className="px-5 py-1.5 bg-slate-50 border-b border-slate-200 flex-shrink-0 flex items-center justify-between gap-3 flex-wrap">
           <span className="text-[10px] text-slate-400 font-medium">
-            양 끝 드래그 → 시간 조정 &nbsp;|&nbsp; 가운데 드래그 → 이동 &nbsp;(15분 단위)
+            양 끝 드래그/터치 → 시간 조정 &nbsp;|&nbsp; 가운데 드래그/터치 → 이동 &nbsp;(15분 단위)
           </span>
           <button
             onClick={applyGlobalToAll}
@@ -590,13 +611,15 @@ export const DayTimelineModal: React.FC<Props> = ({
                             >
                               {/* left resize handle */}
                               <div
-                                className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-black/10 rounded-l-md"
+                                className="absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-black/10 active:bg-black/25 rounded-l-md touch-none"
                                 onMouseDown={e => startDrag(e, "work", "start", workRange.start, workRange.end, emp.id)}
+                                onTouchStart={e => startDrag(e, "work", "start", workRange.start, workRange.end, emp.id)}
                               />
                               {/* body */}
                               <div
-                                className="absolute inset-0 mx-2 cursor-grab active:cursor-grabbing flex items-center justify-center"
+                                className="absolute inset-0 mx-4 cursor-grab active:cursor-grabbing flex items-center justify-center touch-none"
                                 onMouseDown={e => startDrag(e, "work", "body", workRange.start, workRange.end, emp.id)}
+                                onTouchStart={e => startDrag(e, "work", "body", workRange.start, workRange.end, emp.id)}
                               >
                                 <span className={`text-[9px] font-medium select-none truncate text-slate-400`}>
                                   {minToStr(workRange.start)}~{minToStr(workRange.end)}
@@ -604,8 +627,9 @@ export const DayTimelineModal: React.FC<Props> = ({
                               </div>
                               {/* right resize handle */}
                               <div
-                                className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-black/10 rounded-r-md"
+                                className="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-black/10 active:bg-black/25 rounded-r-md touch-none"
                                 onMouseDown={e => startDrag(e, "work", "end", workRange.start, workRange.end, emp.id)}
+                                onTouchStart={e => startDrag(e, "work", "end", workRange.start, workRange.end, emp.id)}
                               />
                             </div>
                           )}
@@ -617,19 +641,22 @@ export const DayTimelineModal: React.FC<Props> = ({
                             if (w <= 0) return null;
                             return (
                               <div
-                                className="absolute bg-yellow-300/90 rounded"
+                                className="absolute bg-yellow-300/90 rounded active:scale-y-150 active:z-10 transition-transform"
                                 style={{ top: "5px", height: "20px", left: `${pct(r.start)}%`, width: `${w}%` }}
                               >
-                                <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-yellow-500/40 rounded-l"
-                                  onMouseDown={e => startDrag(e, "lunch", "start", r.start, r.end, emp.id)} />
-                                <div className="absolute inset-0 mx-1.5 cursor-grab active:cursor-grabbing flex items-center justify-center"
-                                  onMouseDown={e => startDrag(e, "lunch", "body", r.start, r.end, emp.id)}>
+                                <div className="absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-yellow-500/40 active:bg-yellow-500/60 rounded-l touch-none"
+                                  onMouseDown={e => startDrag(e, "lunch", "start", r.start, r.end, emp.id)}
+                                  onTouchStart={e => startDrag(e, "lunch", "start", r.start, r.end, emp.id)} />
+                                <div className="absolute inset-0 mx-4 cursor-grab active:cursor-grabbing flex items-center justify-center touch-none"
+                                  onMouseDown={e => startDrag(e, "lunch", "body", r.start, r.end, emp.id)}
+                                  onTouchStart={e => startDrag(e, "lunch", "body", r.start, r.end, emp.id)}>
                                   <span className="text-[8px] font-bold text-yellow-900 whitespace-nowrap select-none truncate">
                                     {minToStr(r.start)}~{minToStr(r.end)}
                                   </span>
                                 </div>
-                                <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-yellow-500/40 rounded-r"
-                                  onMouseDown={e => startDrag(e, "lunch", "end", r.start, r.end, emp.id)} />
+                                <div className="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-yellow-500/40 active:bg-yellow-500/60 rounded-r touch-none"
+                                  onMouseDown={e => startDrag(e, "lunch", "end", r.start, r.end, emp.id)}
+                                  onTouchStart={e => startDrag(e, "lunch", "end", r.start, r.end, emp.id)} />
                               </div>
                             );
                           })()}
@@ -641,19 +668,22 @@ export const DayTimelineModal: React.FC<Props> = ({
                             if (w <= 0) return null;
                             return (
                               <div
-                                className="absolute bg-violet-300/90 rounded"
+                                className="absolute bg-violet-300/90 rounded active:scale-y-150 active:z-10 transition-transform"
                                 style={{ bottom: "5px", height: "20px", left: `${pct(r.start)}%`, width: `${w}%` }}
                               >
-                                <div className="absolute left-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-violet-500/40 rounded-l"
-                                  onMouseDown={e => startDrag(e, "rest", "start", r.start, r.end, emp.id)} />
-                                <div className="absolute inset-0 mx-1.5 cursor-grab active:cursor-grabbing flex items-center justify-center"
-                                  onMouseDown={e => startDrag(e, "rest", "body", r.start, r.end, emp.id)}>
+                                <div className="absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-violet-500/40 active:bg-violet-500/60 rounded-l touch-none"
+                                  onMouseDown={e => startDrag(e, "rest", "start", r.start, r.end, emp.id)}
+                                  onTouchStart={e => startDrag(e, "rest", "start", r.start, r.end, emp.id)} />
+                                <div className="absolute inset-0 mx-4 cursor-grab active:cursor-grabbing flex items-center justify-center touch-none"
+                                  onMouseDown={e => startDrag(e, "rest", "body", r.start, r.end, emp.id)}
+                                  onTouchStart={e => startDrag(e, "rest", "body", r.start, r.end, emp.id)}>
                                   <span className="text-[8px] font-bold text-violet-900 whitespace-nowrap select-none truncate">
                                     {minToStr(r.start)}~{minToStr(r.end)}
                                   </span>
                                 </div>
-                                <div className="absolute right-0 top-0 bottom-0 w-1.5 cursor-ew-resize hover:bg-violet-500/40 rounded-r"
-                                  onMouseDown={e => startDrag(e, "rest", "end", r.start, r.end, emp.id)} />
+                                <div className="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-violet-500/40 active:bg-violet-500/60 rounded-r touch-none"
+                                  onMouseDown={e => startDrag(e, "rest", "end", r.start, r.end, emp.id)}
+                                  onTouchStart={e => startDrag(e, "rest", "end", r.start, r.end, emp.id)} />
                               </div>
                             );
                           })()}
