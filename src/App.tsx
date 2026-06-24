@@ -7,8 +7,9 @@ import { useState } from "react";
 import SchedulePage from "./components/SchedulePage";
 import { LandingPage } from "./components/LandingPage";
 import { ReservationPage } from "./components/ReservationPage";
+import { DisplayPage } from "./components/DisplayPage";
 
-type Page = "landing" | "schedule" | "reservation";
+type Page = "landing" | "schedule" | "reservation" | "display";
 
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
@@ -18,6 +19,9 @@ export default function App() {
   }
   if (page === "reservation") {
     return <ReservationPage onBack={() => setPage("landing")} />;
+  }
+  if (page === "display") {
+    return <DisplayPage onBack={() => setPage("landing")} />;
   }
   return <LandingPage onNavigate={setPage} />;
 }
