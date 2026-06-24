@@ -150,6 +150,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
   const [empWorkplace, setEmpWorkplace] = useState<string>("매장");
   const [empGender, setEmpGender] = useState<"남" | "여" | "">("");
   const [empRank, setEmpRank] = useState("");
+  const [empNumber, setEmpNumber] = useState("");
   const [empZoneNums, setEmpZoneNums] = useState<number[]>([]);
   const [editingEmpId, setEditingEmpId] = useState<number | null>(null);
   const [tempDescription, setTempDescription] = useState("");
@@ -229,6 +230,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
     setEmpWorkplace("매장");
     setEmpGender("");
     setEmpRank("");
+    setEmpNumber("");
     setEmpZoneNums([]);
     setIsEmpModalOpen(true);
   };
@@ -247,6 +249,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
       setEmpCustomPosition("");
     }
     setEmpRank(emp.rank || "");
+    setEmpNumber(emp.employee_number || "");
     setEmpEmploymentType(emp.employmentType || "정직원");
     setEmpHireDate(emp.hireDate || "");
     setEmpDescription(emp.description || "");
@@ -626,6 +629,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
           description: empDescription,
           workplace: empWorkplace,
           gender: empGender || null,
+          employee_number: empNumber.trim() || null,
         });
         applyZones(selectedEmpForEdit.id, empName);
         showNotification(`${empName} 직원의 정보가 수정되었습니다.`);
@@ -639,6 +643,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
           description: empDescription,
           workplace: empWorkplace,
           gender: empGender || null,
+          employee_number: empNumber.trim() || null,
         });
         if (res.data?.id) applyZones(res.data.id, empName);
         showNotification(`새 직원 ${empName}님이 등록되었습니다.`);
@@ -654,6 +659,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
       setEmpWorkplace("매장");
       setEmpGender("");
       setEmpRank("");
+      setEmpNumber("");
       setEmpZoneNums([]);
       setSelectedEmpForEdit(null);
       setEmpModalMode("create");
@@ -1928,18 +1934,30 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-                  <span>직원 성명</span> <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="예: 홍길동"
-                  value={empName}
-                  onChange={(e) => setEmpName(e.target.value)}
-                  className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
+                    <span>직원 성명</span> <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="예: 홍길동"
+                    value={empName}
+                    onChange={(e) => setEmpName(e.target.value)}
+                    className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">사번</label>
+                  <input
+                    type="text"
+                    placeholder="예: EMP-001"
+                    value={empNumber}
+                    onChange={(e) => setEmpNumber(e.target.value)}
+                    className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
+                  />
+                </div>
               </div>
 
               {/* ── 구분 (Classification) — used for filters ── */}

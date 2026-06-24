@@ -6,9 +6,7 @@ function getSupabase(): SupabaseClient {
   if (_supabase) return _supabase;
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_KEY;
-  if (!url || !key) {
-    throw new Error("Supabase environment variables (SUPABASE_URL, SUPABASE_KEY) are not configured");
-  }
+  if (!url || !key) throw new Error("Supabase env vars missing");
   _supabase = createClient(url, key);
   return _supabase;
 }
@@ -20,29 +18,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  const { employeeId, subscription } = req.body ?? {};
+  if (!employeeId || !subscription) {
+    return res.status(400).json({ error: "employeeId and subscription are required" });
+  }
+
   try {
     const supabase = getSupabase();
-    const { name, position, rank, employmentType, hireDate, description, workplace, gender, employee_number } = req.body ?? {};
-    if (!name || !position)
-      return res.status(400).json({ error: "name and position are required" });
-
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("employees")
-      .insert({
-        name, position,
-        rank: rank || null,
-        employmentType: employmentType || "정직원",
-        hireDate: hireDate || new Date().toISOString().split("T")[0],
-        description: description || "",
-        workplace: workplace || "매장",
-        gender: gender || null,
-        employee_number: employee_number || null,
-      })
-      .select().single();
+      .update({ push_subscription: subscription })
+      .eq("id", employeeId);
     if (error) throw new Error(error.message);
-    return res.status(214).json(data);
+    return res.json({ ok: true });
   } catch (err: any) {
     console.error(err);
-    return res.status(500).json({ error: err.message || "Internal server error" });
+    return res.status(500).json({ error: err.message });
   }
 }

@@ -440,6 +440,48 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // Today staff position filter
   const [staffPosFilter, setStaffPosFilter] = useState<string>("전체");
 
+  // Push notification subscription state
+  const [subscribingId, setSubscribingId] = useState<number | null>(null);
+  const [subscribedIds, setSubscribedIds] = useState<Set<number>>(() => {
+    try { return new Set(JSON.parse(localStorage.getItem("megatown_push_subscribed") ?? "[]")); }
+    catch { return new Set(); }
+  });
+
+  const handleSubscribePush = async (employeeId: number, employeeName: string) => {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      alert("이 브라우저는 푸시 알림을 지원하지 않습니다.");
+      return;
+    }
+    setSubscribingId(employeeId);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        alert("알림 권한이 필요합니다. 브라우저 설정에서 허용해 주세요.");
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY,
+      });
+      await fetch("/api/push-subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId, subscription: sub.toJSON() }),
+      });
+      const next = new Set(subscribedIds).add(employeeId);
+      setSubscribedIds(next);
+      localStorage.setItem("megatown_push_subscribed", JSON.stringify([...next]));
+      setQuickReqToast(`${employeeName}님 알림이 이 기기에 등록되었습니다 🔔`);
+      setTimeout(() => setQuickReqToast(null), 3500);
+    } catch (err) {
+      console.error(err);
+      alert("알림 등록 중 오류가 발생했습니다.");
+    } finally {
+      setSubscribingId(null);
+    }
+  };
+
   // Save-all toast
   const [saveAllToast, setSaveAllToast] = useState(false);
 
@@ -462,6 +504,17 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     setRequests((prev) => [req, ...prev]);
     setQuickReqToast(`${zone.assignedStaffName}님께 ${zone.num}번 ${zone.label} 보충 요청 전송됨`);
     setTimeout(() => setQuickReqToast(null), 3500);
+    // Fire-and-forget push notification
+    fetch("/api/push-send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        employeeId: zone.assignedStaffId,
+        title: "📦 진열 보충 요청",
+        body: `${zone.num}번 ${zone.label} (${zone.category}) 보충이 필요합니다.`,
+        url: "/",
+      }),
+    }).catch(() => {});
   }, []);
 
   const handleSaveAll = () => {
@@ -884,9 +937,25 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                               >
                                 {employee.name}
                               </button>
-                              <span className={`text-[9px] font-semibold px-1 rounded border leading-none shrink-0 ${SHIFT_BADGE[scheduleType] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}>
-                                {scheduleType}
-                              </span>
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleSubscribePush(employee.id, employee.name); }}
+                                  title={subscribedIds.has(employee.id) ? "알림 등록됨 (재등록)" : "이 기기에서 알림 받기"}
+                                  className={`w-5 h-5 rounded flex items-center justify-center transition cursor-pointer ${
+                                    subscribedIds.has(employee.id)
+                                      ? "bg-emerald-100 text-emerald-600 hover:bg-emerald-200"
+                                      : "bg-slate-100 text-slate-400 hover:bg-amber-100 hover:text-amber-600"
+                                  }`}
+                                >
+                                  {subscribingId === employee.id
+                                    ? <Loader2 size={10} className="animate-spin" />
+                                    : <Bell size={10} />}
+                                </button>
+                                <span className={`text-[9px] font-semibold px-1 rounded border leading-none ${SHIFT_BADGE[scheduleType] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}>
+                                  {scheduleType}
+                                </span>
+                              </div>
                             </div>
                             <div className="flex items-center justify-between mt-0.5">
                               <span className={`text-[9px] font-semibold px-1 py-0.2 rounded ${isLogistics ? `${STAFF_COLORS[colorIdx % STAFF_COLORS.length]}` : "bg-slate-100 text-slate-650"}`}>

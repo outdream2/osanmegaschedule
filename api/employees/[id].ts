@@ -29,12 +29,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const supabase = getSupabase();
 
     if (req.method === "PUT") {
-      const { name, position, rank, employmentType, hireDate, description, workplace, gender } = req.body ?? {};
+      const { name, position, rank, employmentType, hireDate, description, workplace, gender, employee_number } = req.body ?? {};
       if (!name || !position)
         return res.status(400).json({ error: "name and position are required" });
       const { data, error } = await supabase
         .from("employees")
-        .update({ name, position, rank: rank || null, employmentType: employmentType || "정직원", hireDate, description: description || "", workplace: workplace || "매장", gender: gender || null })
+        .update({ name, position, rank: rank || null, employmentType: employmentType || "정직원", hireDate, description: description || "", workplace: workplace || "매장", gender: gender || null, employee_number: employee_number || null })
         .eq("id", id)
         .select().single();
       if (error) throw new Error(error.message);
