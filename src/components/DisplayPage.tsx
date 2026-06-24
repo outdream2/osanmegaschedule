@@ -172,12 +172,11 @@ interface ZoneCellProps {
   onDragLeave?: () => void;
   showDetails?: boolean;
   isSearchedHighlight?: boolean;
-  onQuickRequest?: () => void;
 }
 
 const ZoneCell: React.FC<ZoneCellProps> = ({
   zone, onContextClick, onDetailClick, className = "", isPopoverOpen, staffColorIndex,
-  isDragOver, onDragOver, onDrop, onDragLeave, showDetails = false, isSearchedHighlight = false, onQuickRequest
+  isDragOver, onDragOver, onDrop, onDragLeave, showDetails = false, isSearchedHighlight = false
 }) => {
   const ref = useRef<HTMLButtonElement>(null);
 
@@ -230,8 +229,6 @@ const ZoneCell: React.FC<ZoneCellProps> = ({
     }
   }
 
-  const hasQuickRequest = zone.assignedStaffId !== null && !!onQuickRequest;
-
   return (
     <button
       ref={ref}
@@ -244,7 +241,7 @@ const ZoneCell: React.FC<ZoneCellProps> = ({
       onDragOver={onDragOver ? (e) => onDragOver(e, zone) : undefined}
       onDrop={onDrop ? (e) => onDrop(e, zone) : undefined}
       onDragLeave={onDragLeave}
-      className={`w-full rounded-lg border-2 transition-all duration-300 active:scale-[0.96] cursor-pointer flex flex-col font-bold shadow-sm overflow-hidden ${statusCls} ${ringCls} ${className}`}
+      className={`w-full rounded-lg border-2 transition-all duration-300 active:scale-[0.96] cursor-pointer flex flex-col font-bold shadow-sm ${statusCls} ${ringCls} ${className}`}
     >
       {/* Row 1: 구역 번호 + 상태 dot */}
       <div className="flex items-center justify-between px-1 pt-0.5 shrink-0">
@@ -256,8 +253,8 @@ const ZoneCell: React.FC<ZoneCellProps> = ({
         )}
       </div>
 
-      {/* Row 2: 담당자 이름 뱃지 (flex-1 로 중앙 차지) */}
-      <div className="flex-1 flex items-center justify-center w-full px-0.5 min-h-0">
+      {/* Row 2: 담당자 이름 뱃지 */}
+      <div className="flex-1 flex items-center justify-center w-full px-0.5 min-h-0 pb-0.5">
         {zone.assignedStaffName ? (
           <span className={`text-[9px] font-black px-1 py-px rounded leading-tight text-center max-w-full break-all ${
             staffColorIndex !== null && staffColorIndex !== undefined
@@ -273,22 +270,7 @@ const ZoneCell: React.FC<ZoneCellProps> = ({
 
       {/* Row 3: showDetails 카테고리 텍스트 (선택적) */}
       {showDetails && (
-        <div className="text-[7px] leading-tight font-medium line-clamp-1 text-center opacity-70 w-full px-0.5 shrink-0">{zone.category}</div>
-      )}
-
-      {/* Row 4: 진열요청 버튼 (담당자 배정 시만) */}
-      {hasQuickRequest ? (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onQuickRequest!(); }}
-          title={`${zone.assignedStaffName}에게 보충 요청`}
-          className="w-full h-4 bg-red-500 hover:bg-red-600 text-white text-[7px] font-black flex items-center justify-center gap-0.5 shrink-0 transition-colors leading-none"
-        >
-          <Bell size={6} />
-          진열요청
-        </button>
-      ) : (
-        <div className="h-0 shrink-0" />
+        <div className="text-[7px] leading-tight font-medium line-clamp-1 text-center opacity-70 w-full px-0.5 shrink-0 pb-0.5">{zone.category}</div>
       )}
     </button>
   );
@@ -717,25 +699,36 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const getZone = (num: number) => zones.find((z) => z.num === num);
 
   // Helper to render Zone Cell on Blueprint
-  const renderZoneCell = (num: number, classes = "", isVertical = false) => {
+  const renderZoneCell = (num: number, classes = "") => {
     const z = getZone(num);
     if (!z) return null;
     return (
-      <ZoneCell
-        key={z.id}
-        zone={z}
-        onContextClick={handleZoneCellClick}
-        onDetailClick={handleOpenZoneDetail}
-        className={classes}
-        isPopoverOpen={popoverAnchor?.zoneId === z.id}
-        staffColorIndex={z.assignedStaffId !== null ? (staffColorMap.get(z.assignedStaffId) ?? null) : null}
-        isDragOver={dragOverZoneId === z.id && !!dragStaff}
-        onDragOver={dragStaff ? handleDragOver : undefined}
-        onDrop={dragStaff ? handleDrop : undefined}
-        onDragLeave={() => setDragOverZoneId(null)}
-        isSearchedHighlight={searchedZoneIds.has(z.id)}
-        onQuickRequest={z.assignedStaffId !== null ? () => handleQuickRequest(z) : undefined}
-      />
+      <div key={z.id} className="flex flex-col gap-0.5">
+        <ZoneCell
+          zone={z}
+          onContextClick={handleZoneCellClick}
+          onDetailClick={handleOpenZoneDetail}
+          className={classes}
+          isPopoverOpen={popoverAnchor?.zoneId === z.id}
+          staffColorIndex={z.assignedStaffId !== null ? (staffColorMap.get(z.assignedStaffId) ?? null) : null}
+          isDragOver={dragOverZoneId === z.id && !!dragStaff}
+          onDragOver={dragStaff ? handleDragOver : undefined}
+          onDrop={dragStaff ? handleDrop : undefined}
+          onDragLeave={() => setDragOverZoneId(null)}
+          isSearchedHighlight={searchedZoneIds.has(z.id)}
+        />
+        {z.assignedStaffId !== null && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); handleQuickRequest(z); }}
+            title={`${z.assignedStaffName}에게 보충 요청`}
+            className="w-full h-4 bg-red-500 hover:bg-red-600 rounded text-white text-[7px] font-black flex items-center justify-center gap-0.5 transition-colors leading-none cursor-pointer shrink-0"
+          >
+            <Bell size={6} />
+            진열요청
+          </button>
+        )}
+      </div>
     );
   };
 
@@ -1099,9 +1092,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                             className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer hover:brightness-95 transition ${cardStyle}`}
                           >
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-1">
+                              <div className="flex items-center gap-1 flex-wrap">
                                 <span className="font-extrabold text-[9px] bg-white/80 px-1 rounded border border-black/10 shrink-0">{z.num}번</span>
                                 <span className="font-bold text-[10px] truncate">{z.label}</span>
+                                {z.category && (
+                                  <span className="text-[9px] text-slate-400 font-medium shrink-0">· {z.category}</span>
+                                )}
                               </div>
                               {z.assignedStaffName && (
                                 <span className="text-[9px] font-semibold text-slate-500 truncate block">👤 {z.assignedStaffName}</span>
