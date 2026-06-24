@@ -25,7 +25,7 @@ interface DisplayPageProps { onBack: () => void; }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type ZoneStatus = "normal" | "low" | "empty";
-type ZoneSection = "aisle" | "lower_wall" | "mid_wall" | "upper_wall" | "wing";
+type ZoneSection = "aisle" | "bottom_wall" | "top_wall" | "left_wall" | "wing";
 
 interface DisplayZone {
   id: string;
@@ -67,35 +67,35 @@ const ZONE_DEFS: { num: number; label: string; category: string; section: ZoneSe
   { num: 7,  label: "진열대 7",  category: "여성용품·미용·다이어트·살충제",        section: "aisle" },
   { num: 8,  label: "진열대 8",  category: "파스·보호대·칫솔·치약·구강용품",       section: "aisle" },
   { num: 9,  label: "진열대 9",  category: "붕대·마스크·밴드·반창고·거즈",        section: "aisle" },
-  // Lower wall 10-18
-  { num: 10, label: "벽면 10",   category: "종합영양제",                         section: "lower_wall" },
-  { num: 11, label: "벽면 11",   category: "종합영양제",                         section: "lower_wall" },
-  { num: 12, label: "벽면 12",   category: "간기능개선제",                       section: "lower_wall" },
-  { num: 13, label: "벽면 13",   category: "아미노산·아르기닌",                   section: "lower_wall" },
-  { num: 14, label: "벽면 14",   category: "남성기능강화·탈모·전립선",             section: "lower_wall" },
-  { num: 15, label: "벽면 15",   category: "칼슘제·비타민D",                     section: "lower_wall" },
-  { num: 16, label: "벽면 16",   category: "관절영양제·콘드로이틴·MSM",           section: "lower_wall" },
-  { num: 17, label: "벽면 17",   category: "항산화제·면역증강",                   section: "lower_wall" },
-  { num: 18, label: "벽면 18",   category: "뇌기능개선·혈액순환·혈당개선",         section: "lower_wall" },
-  // Mid wall 19-27
-  { num: 19, label: "벽면 19",   category: "눈영양제",                           section: "mid_wall" },
-  { num: 20, label: "벽면 20",   category: "염색약",                             section: "mid_wall" },
-  { num: 21, label: "벽면 21",   category: "동물의약품·동물용품",                  section: "mid_wall" },
-  { num: 22, label: "벽면 22",   category: "동물의약품·동물용품",                  section: "mid_wall" },
-  { num: 23, label: "벽면 23",   category: "의료기기",                           section: "mid_wall" },
-  { num: 24, label: "벽면 24",   category: "어린이종합·키즈용품",                  section: "mid_wall" },
-  { num: 25, label: "벽면 25",   category: "오메가3",                            section: "mid_wall" },
-  { num: 26, label: "벽면 26",   category: "마그네슘·수면",                       section: "mid_wall" },
-  { num: 27, label: "벽면 27",   category: "유산균",                             section: "mid_wall" },
-  // Upper wall 28-35
-  { num: 28, label: "벽면 28",   category: "잇몸건강",                           section: "upper_wall" },
-  { num: 29, label: "벽면 29",   category: "철분제·비타민C",                      section: "upper_wall" },
-  { num: 30, label: "벽면 30",   category: "콜라겐·갱년기·임신부영양제",            section: "upper_wall" },
-  { num: 31, label: "벽면 31",   category: "건강보조식품",                        section: "upper_wall" },
-  { num: 32, label: "벽면 32",   category: "한방관련제품",                        section: "upper_wall" },
-  { num: 33, label: "벽면 33",   category: "PB상품·생활의약품",                   section: "upper_wall" },
-  { num: 34, label: "벽면 34",   category: "드링크제품",                          section: "upper_wall" },
-  { num: 35, label: "벽면 35",   category: "냉장의약품",                          section: "upper_wall" },
+  // Bottom wall 10-21 (right→left in store: 10 near exit, 21 at far left)
+  { num: 10, label: "벽면 10",   category: "종합영양제",                         section: "bottom_wall" },
+  { num: 11, label: "벽면 11",   category: "종합영양제",                         section: "bottom_wall" },
+  { num: 12, label: "벽면 12",   category: "간기능개선제",                       section: "bottom_wall" },
+  { num: 13, label: "벽면 13",   category: "아미노산·아르기닌",                   section: "bottom_wall" },
+  { num: 14, label: "벽면 14",   category: "남성기능강화·탈모·전립선",             section: "bottom_wall" },
+  { num: 15, label: "벽면 15",   category: "칼슘제·비타민D",                     section: "bottom_wall" },
+  { num: 16, label: "벽면 16",   category: "관절영양제·콘드로이틴·MSM",           section: "bottom_wall" },
+  { num: 17, label: "벽면 17",   category: "항산화제·면역증강",                   section: "bottom_wall" },
+  { num: 18, label: "벽면 18",   category: "뇌기능개선·혈액순환·혈당개선",         section: "bottom_wall" },
+  { num: 19, label: "벽면 19",   category: "눈영양제",                           section: "bottom_wall" },
+  { num: 20, label: "벽면 20",   category: "염색약",                             section: "bottom_wall" },
+  { num: 21, label: "벽면 21",   category: "동물의약품·동물용품",                  section: "bottom_wall" },
+  // Left wall 22-23 (between aisles and top section, far left)
+  { num: 22, label: "벽면 22",   category: "동물의약품·동물용품",                  section: "left_wall" },
+  { num: 23, label: "벽면 23",   category: "의료기기",                           section: "left_wall" },
+  // Top wall 24-35 (left→right: 24 at far left, 35 at right)
+  { num: 24, label: "벽면 24",   category: "어린이종합·키즈용품",                  section: "top_wall" },
+  { num: 25, label: "벽면 25",   category: "오메가3",                            section: "top_wall" },
+  { num: 26, label: "벽면 26",   category: "마그네슘·수면",                       section: "top_wall" },
+  { num: 27, label: "벽면 27",   category: "유산균",                             section: "top_wall" },
+  { num: 28, label: "벽면 28",   category: "잇몸건강",                           section: "top_wall" },
+  { num: 29, label: "벽면 29",   category: "철분제·비타민C",                      section: "top_wall" },
+  { num: 30, label: "벽면 30",   category: "콜라겐·갱년기·임신부영양제",            section: "top_wall" },
+  { num: 31, label: "벽면 31",   category: "건강보조식품",                        section: "top_wall" },
+  { num: 32, label: "벽면 32",   category: "한방관련제품",                        section: "top_wall" },
+  { num: 33, label: "벽면 33",   category: "PB상품·생활의약품",                   section: "top_wall" },
+  { num: 34, label: "벽면 34",   category: "드링크제품",                          section: "top_wall" },
+  { num: 35, label: "벽면 35",   category: "냉장의약품",                          section: "top_wall" },
   // Right vertical wing 36-41
   { num: 36, label: "프로모션",   category: "프로모션·이벤트 상품",                 section: "wing" },
   { num: 37, label: "기능성화장품", category: "기능성화장품·미용",                  section: "wing" },
@@ -225,7 +225,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
   // Zone assignment mode (for 물류 staff)
   const [assigningStaffId, setAssigningStaffId] = useState<number | null>(null);
 
-  // Modal
+  // Employee info modal
+  const [activeStaffInfo, setActiveStaffInfo] = useState<TodayStaff | null>(null);
+
+  // Zone modal
   const [activeZoneId, setActiveZoneId] = useState<string | null>(null);
   const [draftCategory, setDraftCategory] = useState("");
   const [draftProducts, setDraftProducts] = useState("");
@@ -356,11 +359,16 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
     pending: requests.filter((r) => r.status === "pending").length,
   }), [zones, requests]);
 
-  // ── Zone groups ──────────────────────────────────────────────────────────────
-  const aisleZones      = useMemo(() => zones.filter((z) => z.section === "aisle").sort((a, b) => a.num - b.num), [zones]);
-  const lowerWallZones  = useMemo(() => zones.filter((z) => z.section === "lower_wall").sort((a, b) => a.num - b.num), [zones]);
-  const midWallZones    = useMemo(() => zones.filter((z) => z.section === "mid_wall").sort((a, b) => a.num - b.num), [zones]);
-  const upperWallZones  = useMemo(() => zones.filter((z) => z.section === "upper_wall").sort((a, b) => a.num - b.num), [zones]);
+  // ── Zone groups (matching physical store layout) ─────────────────────────────
+  // Top wall: 24→35 left-to-right (ascending)
+  const topWallZones    = useMemo(() => zones.filter((z) => z.section === "top_wall").sort((a, b) => a.num - b.num), [zones]);
+  // Aisles: displayed 9→1 left-to-right (descending = 9 on left, 1 near exit)
+  const aisleZones      = useMemo(() => zones.filter((z) => z.section === "aisle").sort((a, b) => b.num - a.num), [zones]);
+  // Left wall: 23 on top, 22 on bottom (ascending by num gives 22,23; we want 23 top → sort descending)
+  const leftWallZones   = useMemo(() => zones.filter((z) => z.section === "left_wall").sort((a, b) => b.num - a.num), [zones]);
+  // Bottom wall: 21→10 left-to-right (descending = 21 on left, 10 near exit)
+  const bottomWallZones = useMemo(() => zones.filter((z) => z.section === "bottom_wall").sort((a, b) => b.num - a.num), [zones]);
+  // Wing: 36→41 top-to-bottom (ascending)
   const wingZones       = useMemo(() => zones.filter((z) => z.section === "wing").sort((a, b) => a.num - b.num), [zones]);
 
   const filteredReqs = useMemo(() =>
@@ -455,7 +463,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
                     : "bg-slate-200 text-slate-700";
                   return (
                     <li key={employee.id}
-                      className={`px-3 py-3 transition ${isAssigning ? "bg-violet-50 border-l-[3px] border-violet-500" : "hover:bg-slate-50"}`}>
+                      onClick={() => setActiveStaffInfo({ employee, scheduleType, workingHours })}
+                      className={`px-3 py-3 transition cursor-pointer ${isAssigning ? "bg-violet-50 border-l-[3px] border-violet-500" : "hover:bg-slate-50"}`}>
 
                       {/* Top row: avatar + info */}
                       <div className="flex items-start gap-2.5">
@@ -489,7 +498,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
                         {isLogistics && (
                           <button
                             type="button"
-                            onClick={() => setAssigningStaffId(isAssigning ? null : employee.id)}
+                            onClick={(e) => { e.stopPropagation(); setAssigningStaffId(isAssigning ? null : employee.id); }}
                             className={`shrink-0 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border transition cursor-pointer flex items-center gap-1 ${
                               isAssigning
                                 ? "bg-violet-600 text-white border-violet-600 shadow-sm"
@@ -560,75 +569,85 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
             )}
           </div>
 
-          <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-3 sm:p-4 space-y-4">
+          {/* Store map — layout matches category.jpg physical floor plan */}
+          <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-3 sm:p-4">
+            <div className="flex gap-2 sm:gap-3">
 
-            {/* Upper wall (28–35) */}
-            <div>
-              <SectionLabel title="상단 벽면 진열장" badge="28–35" icon="🧱" />
-              <div className="mt-1.5 grid grid-cols-8 gap-1 sm:gap-1.5">
-                {upperWallZones.map((z) => (
-                  <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
-                    assignMode={assigningStaffId !== null}
-                    isAssigned={z.assignedStaffId === assigningStaffId} />
-                ))}
+              {/* ── Main store body ── */}
+              <div className="flex-1 min-w-0 space-y-2">
+
+                {/* TOP WALL: 24→35, left to right */}
+                <div>
+                  <SectionLabel title="상단 벽면" badge="24–35" icon="🧱" />
+                  <div className="mt-1 grid grid-cols-12 gap-0.5 sm:gap-1">
+                    {topWallZones.map((z) => (
+                      <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
+                        assignMode={assigningStaffId !== null}
+                        isAssigned={z.assignedStaffId === assigningStaffId} />
+                    ))}
+                  </div>
+                </div>
+
+                {/* MIDDLE: left wall (22,23) + aisles (9→1) */}
+                <div className="flex gap-1.5 sm:gap-2">
+
+                  {/* Left wall (22,23) — stacked, 23 on top */}
+                  <div className="shrink-0 flex flex-col gap-0.5 sm:gap-1 pt-4">
+                    {leftWallZones.map((z) => (
+                      <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
+                        assignMode={assigningStaffId !== null}
+                        isAssigned={z.assignedStaffId === assigningStaffId} />
+                    ))}
+                  </div>
+
+                  {/* Aisles 9→1 (9 on left, 1 near exit on right) */}
+                  <div className="flex-1 min-w-0">
+                    <SectionLabel title="중앙 수직 진열대" badge="9←→1" icon="🏬" />
+                    <div className="mt-1 grid grid-cols-9 gap-0.5 sm:gap-1">
+                      {aisleZones.map((z) => (
+                        <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="md"
+                          assignMode={assigningStaffId !== null}
+                          isAssigned={z.assignedStaffId === assigningStaffId} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* BOTTOM WALL: 21→10, left to right */}
+                <div>
+                  <SectionLabel title="하단 벽면" badge="21←→10" icon="🧱" />
+                  <div className="mt-1 grid grid-cols-12 gap-0.5 sm:gap-1">
+                    {bottomWallZones.map((z) => (
+                      <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
+                        assignMode={assigningStaffId !== null}
+                        isAssigned={z.assignedStaffId === assigningStaffId} />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="text-right text-[11px] text-slate-400 font-medium pr-1">↓ 매장 출입구</div>
               </div>
-            </div>
 
-            {/* Mid wall (19–27) */}
-            <div>
-              <SectionLabel title="중단 벽면 진열장" badge="19–27" icon="🧱" />
-              <div className="mt-1.5 grid grid-cols-9 gap-1 sm:gap-1.5">
-                {midWallZones.map((z) => (
-                  <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
-                    assignMode={assigningStaffId !== null}
-                    isAssigned={z.assignedStaffId === assigningStaffId} />
-                ))}
-              </div>
-            </div>
-
-            {/* Main aisles + vertical wing (side by side) */}
-            <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3">
-
-              {/* Aisles (1–9) */}
-              <div>
-                <SectionLabel title="중앙 수직 진열대 (통로)" badge="1–9" icon="🏬" />
-                <div className="mt-1.5 grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-1.5">
-                  {aisleZones.map((z) => (
-                    <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="md"
+              {/* ── RIGHT WING (36–41) — vertical strip, matches map.png right side ── */}
+              <div className="w-[64px] sm:w-[80px] shrink-0 flex flex-col gap-0.5 sm:gap-1">
+                <SectionLabel title="우측 윙" badge="36–41" icon="🚪" />
+                {/* 36 & 37 side by side at top */}
+                <div className="grid grid-cols-2 gap-0.5 sm:gap-1 mt-1">
+                  {wingZones.filter((z) => z.num === 36 || z.num === 37).map((z) => (
+                    <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
                       assignMode={assigningStaffId !== null}
                       isAssigned={z.assignedStaffId === assigningStaffId} />
                   ))}
                 </div>
-              </div>
-
-              {/* Right vertical wing (36–41) */}
-              <div className="w-full md:w-[130px] shrink-0">
-                <SectionLabel title="우측 수직 윙" badge="36–41" icon="🚪" />
-                <div className="mt-1.5 flex flex-row md:flex-col gap-1.5 flex-wrap">
-                  {wingZones.map((z) => (
-                    <div key={z.id} className="w-[calc(33.333%-4px)] md:w-full">
-                      <ZoneCell zone={z} onClick={handleZoneClick} size="md"
-                        assignMode={assigningStaffId !== null}
-                        isAssigned={z.assignedStaffId === assigningStaffId} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Lower wall (10–18) */}
-            <div>
-              <SectionLabel title="하단 벽면 진열장" badge="10–18" icon="🧱" />
-              <div className="mt-1.5 grid grid-cols-9 gap-1 sm:gap-1.5">
-                {lowerWallZones.map((z) => (
+                {/* 40, 38, 39, 41 stacked */}
+                {wingZones.filter((z) => z.num === 40 || z.num === 38 || z.num === 39 || z.num === 41).map((z) => (
                   <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
                     assignMode={assigningStaffId !== null}
                     isAssigned={z.assignedStaffId === assigningStaffId} />
                 ))}
               </div>
-            </div>
 
-            <div className="text-center text-[11px] text-slate-400 font-medium pt-1">↓ 매장 출입구</div>
+            </div>
           </div>
 
           <p className="mt-2.5 text-[11px] text-slate-400">
@@ -732,13 +751,53 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
 
             {/* Modal body */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+
+              {/* Assigned staff — prominent card */}
+              <div>
+                <label className="text-xs font-semibold text-slate-600 mb-2 flex items-center gap-1 block">
+                  <User size={11} />담당 직원
+                </label>
+                {(() => {
+                  const assignedStaff = employees.find((e) => e.id === draftStaffId) ?? null;
+                  const isLogistics = assignedStaff?.position === "물류";
+                  return assignedStaff ? (
+                    <div className="flex items-center gap-3 px-3 py-3 rounded-xl border-2 border-indigo-200 bg-indigo-50">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-base font-black shrink-0 ${isLogistics ? "bg-indigo-600 text-white" : "bg-slate-300 text-slate-700"}`}>
+                        {assignedStaff.name.slice(0, 1)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-slate-900">{assignedStaff.name}</div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${isLogistics ? "bg-indigo-200 text-indigo-800" : "bg-slate-200 text-slate-600"}`}>
+                            {assignedStaff.position || "약사"}
+                          </span>
+                        </div>
+                      </div>
+                      <button type="button" onClick={() => setDraftStaffId(null)}
+                        className="text-slate-400 hover:text-slate-600 transition cursor-pointer p-1">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ) : (
+                    <select value="" onChange={(e) => setDraftStaffId(e.target.value === "" ? null : Number(e.target.value))}
+                      disabled={employees.length === 0}
+                      className="w-full px-3 py-2.5 text-sm rounded-xl border-2 border-dashed border-slate-300 bg-white focus:border-violet-400 outline-none transition cursor-pointer disabled:bg-slate-50 text-slate-500">
+                      <option value="">— 담당 직원 선택 —</option>
+                      {employees.map((emp) => (
+                        <option key={emp.id} value={emp.id}>{emp.name}{emp.position ? ` (${emp.position})` : ""}</option>
+                      ))}
+                    </select>
+                  );
+                })()}
+              </div>
+
               {/* Status */}
               <div>
-                <label className="text-xs font-semibold text-slate-700 mb-1.5 block">진열 상태</label>
+                <label className="text-xs font-semibold text-slate-600 mb-2 block">진열 상태</label>
                 <div className="grid grid-cols-3 gap-2">
                   {(["normal", "low", "empty"] as const).map((s) => (
                     <button key={s} type="button" onClick={() => setDraftStatus(s)}
-                      className={`py-2 text-xs font-semibold rounded-lg border-2 transition cursor-pointer flex items-center justify-center gap-1.5 ${draftStatus === s
+                      className={`py-2.5 text-xs font-semibold rounded-xl border-2 transition cursor-pointer flex items-center justify-center gap-1.5 ${draftStatus === s
                         ? s === "normal" ? "bg-emerald-50 text-emerald-700 border-emerald-400 shadow-sm"
                           : s === "low" ? "bg-amber-50 text-amber-700 border-amber-400 shadow-sm"
                           : "bg-red-50 text-red-700 border-red-400 shadow-sm"
@@ -752,62 +811,132 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
 
               {/* Products */}
               <div>
-                <label className="text-xs font-semibold text-slate-700 mb-1.5 block">진열 상품 메모</label>
+                <label className="text-xs font-semibold text-slate-600 mb-1.5 block">진열 상품 메모</label>
                 <textarea value={draftProducts} onChange={(e) => setDraftProducts(e.target.value)} rows={2}
                   placeholder="예: 타이레놀 500mg, 베아제, 판콜에이..."
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none transition resize-none" />
-              </div>
-
-              {/* Staff */}
-              <div>
-                <label className="text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1 block">
-                  <User size={11} />담당 직원
-                </label>
-                <select value={draftStaffId ?? ""} onChange={(e) => setDraftStaffId(e.target.value === "" ? null : Number(e.target.value))}
-                  disabled={employees.length === 0}
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:border-violet-500 outline-none transition cursor-pointer disabled:bg-slate-50">
-                  <option value="">— 미배정 —</option>
-                  {employees.map((emp) => (
-                    <option key={emp.id} value={emp.id}>{emp.name}{emp.position ? ` (${emp.position})` : ""}</option>
-                  ))}
-                </select>
+                  className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 bg-white focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none transition resize-none" />
               </div>
 
               {/* Request note */}
-              <div>
-                <label className="text-xs font-semibold text-slate-700 mb-1.5 block">요청 메모 (선택)</label>
-                <input type="text" value={requestNote} onChange={(e) => setRequestNote(e.target.value)}
-                  placeholder="오늘 오후까지 보충 부탁드립니다"
-                  className="w-full px-3 py-2 text-sm rounded-lg border border-slate-300 bg-white focus:border-violet-500 outline-none transition" />
-              </div>
+              {(draftStatus === "low" || draftStatus === "empty") && (
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 mb-1.5 block">요청 메모 (선택)</label>
+                  <input type="text" value={requestNote} onChange={(e) => setRequestNote(e.target.value)}
+                    placeholder="오늘 오후까지 보충 부탁드립니다"
+                    className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 bg-white focus:border-violet-500 outline-none transition" />
+                </div>
+              )}
 
               {savedFlash && (
-                <div className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center gap-1.5">
+                <div className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold flex items-center gap-1.5">
                   <CheckCircle2 size={13} />저장되었습니다
                 </div>
               )}
               {requestFlash && (
-                <div className="px-3 py-2 rounded-lg bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold flex items-center gap-1.5">
+                <div className="px-3 py-2 rounded-xl bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold flex items-center gap-1.5">
                   <Send size={13} />진열 요청이 전송되었습니다
                 </div>
               )}
             </div>
 
             {/* Modal footer */}
-            <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex flex-col-reverse sm:flex-row gap-2 sm:justify-end">
+            <div className="px-5 py-3 border-t border-slate-200 bg-slate-50 flex flex-col-reverse sm:flex-row gap-2">
               <button onClick={handleSave}
-                className="px-4 py-2 text-sm font-semibold rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition cursor-pointer flex items-center justify-center gap-1.5">
+                className="flex-1 sm:flex-none px-4 py-2.5 text-sm font-semibold rounded-xl bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 transition cursor-pointer flex items-center justify-center gap-1.5">
                 <Save size={14} />저장
               </button>
               <button onClick={handleSendRequest} disabled={!canRequest}
-                title={!canRequest ? "상태가 부족/품절이고 담당 직원이 배정되어야 요청 가능합니다" : ""}
-                className="px-4 py-2 text-sm font-semibold rounded-lg bg-violet-600 text-white hover:bg-violet-700 transition cursor-pointer flex items-center justify-center gap-1.5 disabled:bg-slate-300 disabled:cursor-not-allowed disabled:text-slate-500">
-                <Send size={14} />진열 요청 보내기
+                title={!canRequest ? "상태를 부족/품절로 변경하고 담당 직원을 배정하세요" : ""}
+                className="flex-1 px-4 py-2.5 text-sm font-bold rounded-xl bg-violet-600 text-white hover:bg-violet-700 transition cursor-pointer flex items-center justify-center gap-2 disabled:bg-slate-200 disabled:cursor-not-allowed disabled:text-slate-400 shadow-sm shadow-violet-200">
+                <Send size={15} />진열 요청 보내기
+                {!canRequest && <span className="text-[10px] font-normal opacity-70">(부족·품절 + 담당자 필요)</span>}
               </button>
             </div>
           </div>
         </div>
       )}
+      {/* ═══ Employee Info Modal ══════════════════════════════════════════════ */}
+      {activeStaffInfo && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm"
+          onClick={() => setActiveStaffInfo(null)}>
+          <div className="w-full sm:max-w-sm bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}>
+
+            {/* Header */}
+            <div className={`px-5 py-5 ${activeStaffInfo.employee.position === "물류" ? "bg-gradient-to-br from-indigo-600 to-indigo-700" : "bg-gradient-to-br from-slate-700 to-slate-800"}`}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl font-black text-white shrink-0">
+                    {activeStaffInfo.employee.name.slice(0, 1)}
+                  </div>
+                  <div>
+                    <div className="text-xl font-black text-white leading-tight">{activeStaffInfo.employee.name}</div>
+                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/25 text-white">
+                        {activeStaffInfo.employee.position || "약사"}
+                      </span>
+                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${SHIFT_BADGE[activeStaffInfo.scheduleType] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}>
+                        {activeStaffInfo.scheduleType}
+                      </span>
+                      {activeStaffInfo.workingHours && (
+                        <span className="text-[11px] text-white/80 font-medium">{activeStaffInfo.workingHours}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <button onClick={() => setActiveStaffInfo(null)}
+                  className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition">
+                  <X size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Assigned zones (logistics only) */}
+            <div className="px-5 py-4">
+              {activeStaffInfo.employee.position === "물류" ? (
+                <>
+                  <div className="text-xs font-bold text-slate-600 mb-2.5 flex items-center gap-1.5">
+                    <MapPin size={12} className="text-indigo-500" />담당 구역
+                  </div>
+                  {(() => {
+                    const az = getAssignedZones(activeStaffInfo.employee.id);
+                    return az.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {az.map((z) => (
+                          <div key={z.id}
+                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold ${statusCell(z.status)}`}>
+                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot(z.status)}`} />
+                            <span className="font-black">{z.num}번</span>
+                            <span className="text-[10px] opacity-80 max-w-[80px] truncate">{z.label}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center py-4 text-slate-400 text-xs text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                        <MapPin size={18} className="mb-1 opacity-30" />
+                        배정된 구역이 없습니다
+                      </div>
+                    );
+                  })()}
+                </>
+              ) : (
+                <div className="flex flex-col items-center py-4 text-slate-400 text-xs text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <Sparkles size={18} className="mb-1 opacity-30" />
+                  구역 배정은 물류 직원에게만 적용됩니다
+                </div>
+              )}
+            </div>
+
+            <div className="px-5 pb-5">
+              <button onClick={() => setActiveStaffInfo(null)}
+                className="w-full py-2.5 text-sm font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition cursor-pointer">
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
