@@ -400,9 +400,49 @@ const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
   );
 };
 
+// ─── API helpers ──────────────────────────────────────────────────────────────
+const fetchZonesFromDB = async (): Promise<DisplayZone[] | null> => {
+  try {
+    const res = await fetch("/api/zones");
+    if (!res.ok) return null;
+    const rows: Array<{ zone_id: string; employee_id: number | null; employee_name: string; status: string; products: string }> = await res.json();
+    if (!Array.isArray(rows) || rows.length === 0) return null;
+    return ZONE_DEFS.map((def) => {
+      const row = rows.find((r) => r.zone_id === String(def.num));
+      return {
+        id: String(def.num), num: def.num, label: def.label, category: def.category,
+        section: def.section,
+        assignedStaffId: row?.employee_id ?? null,
+        assignedStaffName: row?.employee_name ?? "",
+        status: (row?.status as ZoneStatus) ?? "normal",
+        products: row?.products ?? "",
+      };
+    });
+  } catch { return null; }
+};
+
+const saveZonesToDB = async (zones: DisplayZone[]) => {
+  try {
+    await fetch("/api/zones", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        zones: zones.map((z) => ({
+          zone_id: z.id,
+          employee_id: z.assignedStaffId,
+          employee_name: z.assignedStaffName,
+          status: z.status,
+          products: z.products,
+        })),
+      }),
+    });
+  } catch {}
+};
+
 // ─── Main component ────────────────────────────────────────────────────────────
 export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit }) => {
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
+  const [zonesLoaded, setZonesLoaded] = useState(false);
   const [requests, setRequests] = useState<DisplayRequest[]>(() => loadRequests());
 
   // Employees & today's staff
@@ -560,8 +600,26 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     return () => { cancelled = true; };
   }, []);
 
-  // ── Persist ─────────────────────────────────────────────────────────────────
-  useEffect(() => { saveZones(zones); }, [zones]);
+  // ── Load zones from DB on mount (fallback: localStorage already seeded in useState) ──
+  useEffect(() => {
+    fetchZonesFromDB().then((dbZones) => {
+      if (dbZones) {
+        setZones(dbZones);
+        saveZones(dbZones);
+      }
+      setZonesLoaded(true);
+    });
+  }, []); // eslint-disable-line
+
+  // ── Persist: save to localStorage immediately; debounce DB save ──────────────
+  const dbSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    saveZones(zones);
+    if (!zonesLoaded) return;
+    if (dbSaveTimer.current) clearTimeout(dbSaveTimer.current);
+    dbSaveTimer.current = setTimeout(() => saveZonesToDB(zones), 1500);
+    return () => { if (dbSaveTimer.current) clearTimeout(dbSaveTimer.current); };
+  }, [zones, zonesLoaded]);
   useEffect(() => { saveRequests(requests); }, [requests]);
 
   // ── Logistics staff (today only) ────────────────────────────────────────────

@@ -78,6 +78,41 @@ async function startServer() {
     }
   });
 
+  // GET /api/zones — zone assignments
+  app.get("/api/zones", async (req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from("zone_assignments")
+        .select("zone_id, employee_id, employee_name, status, products");
+      if (error) throw new Error(error.message);
+      res.json(data ?? []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/zones — upsert zone assignments
+  app.post("/api/zones", async (req, res) => {
+    const { zones } = req.body ?? {};
+    if (!Array.isArray(zones)) return res.status(400).json({ error: "zones array required" });
+    try {
+      const rows = zones.map((z: any) => ({
+        zone_id: String(z.zone_id),
+        employee_id: z.employee_id ?? null,
+        employee_name: z.employee_name ?? "",
+        status: z.status ?? "normal",
+        products: z.products ?? "",
+      }));
+      const { error } = await supabase
+        .from("zone_assignments")
+        .upsert(rows, { onConflict: "zone_id" });
+      if (error) throw new Error(error.message);
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // GET /api/reservations for local dev fallback
   app.get("/api/reservations", (req, res) => {
     const { date } = req.query;
