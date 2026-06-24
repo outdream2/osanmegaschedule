@@ -28,7 +28,6 @@ export default function App() {
   };
 
   const goBack = () => {
-    clearAuthSession();
     setPage("landing");
   };
 
@@ -56,5 +55,5 @@ export default function App() {
       />
     );
   }
-  return <LandingPage onNavigate={handleNavigate} />;
+  return <LandingPage onNavigate={handleNavigate} authSession={authSession} onLogout={clearAuthSession} />;
 }

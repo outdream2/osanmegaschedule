@@ -106,11 +106,26 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
 
   // Mobile date scroll ref
   const scrollTableRef = useRef<HTMLDivElement>(null);
+  const todayColRef = useRef<HTMLTableCellElement>(null);
   const scrollDays = (days: number) => {
     if (scrollTableRef.current) {
       scrollTableRef.current.scrollLeft += days * 30;
     }
   };
+
+  // Scroll today's column to center on data load
+  useEffect(() => {
+    if (employees.length === 0) return;
+    requestAnimationFrame(() => {
+      if (!scrollTableRef.current || !todayColRef.current) return;
+      const container = scrollTableRef.current;
+      const col = todayColRef.current;
+      const containerRect = container.getBoundingClientRect();
+      const colRect = col.getBoundingClientRect();
+      const colCenter = colRect.left - containerRect.left + container.scrollLeft + col.offsetWidth / 2;
+      container.scrollLeft = Math.max(0, colCenter - container.clientWidth / 2);
+    });
+  }, [employees]);
 
 
   // Administrative / Auth states
@@ -1094,14 +1109,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
   const attSummary = getAttendanceSummary();
 
   return (
-    <div className="w-full min-h-screen bg-slate-100 text-slate-800 font-sans flex flex-col">
+    <div className="w-full min-h-screen bg-gray-50 text-gray-900 font-sans flex flex-col">
       {/* Toast Notification Alert */}
       {notification && (
         <div className="fixed top-5 right-5 z-[60] pointer-events-none">
           <div
-            className={`px-4 py-3 rounded-xl shadow-xl flex items-center gap-2.5 border text-sm font-semibold backdrop-blur-sm animate-in slide-in-from-top-2 duration-300 ${notification.type === "success"
-              ? "bg-white/95 text-emerald-800 border-emerald-200 shadow-emerald-100"
-              : "bg-white/95 text-rose-800 border-rose-200 shadow-rose-100"
+            className={`px-4 py-3 rounded-xl shadow-md flex items-center gap-2.5 border text-sm font-semibold backdrop-blur-sm animate-in slide-in-from-top-2 duration-300 ${notification.type === "success"
+              ? "bg-white text-emerald-800 border-emerald-200 shadow-emerald-100"
+              : "bg-white text-rose-800 border-rose-200 shadow-rose-100"
               }`}
           >
             <CheckCircle size={15} className={notification.type === "success" ? "text-emerald-500 shrink-0" : "text-rose-500 shrink-0"} />
@@ -1110,27 +1125,27 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
         </div>
       )}
 
-      {/* 1. App Header — premium dark slate */}
-      <header className="bg-slate-900 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-md">
+      {/* 1. App Header */}
+      <header className="bg-white border-b border-gray-200 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm">
         <div className="flex items-center gap-3 min-w-0">
           {/* Brand */}
           <div className="flex items-center gap-2 shrink-0">
             {onBack && (
               <button
                 onClick={onBack}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition cursor-pointer mr-1 text-xs font-semibold shrink-0"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 hover:text-gray-900 transition cursor-pointer mr-1 text-xs font-semibold shrink-0"
                 title="메인으로 돌아가기"
               >
                 <ChevronLeft size={13} />
                 <span className="hidden sm:inline">메인</span>
               </button>
             )}
-            <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
               <Calendar size={14} className="text-white" />
             </div>
             <span className="font-black tracking-tight leading-none">
               <span className="text-red-500 text-xl">OSAN</span>
-              <span className="text-white text-base"> MEGATOWN</span>
+              <span className="text-gray-900 text-base"> MEGATOWN</span>
             </span>
           </div>
 
@@ -1140,22 +1155,22 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
         <div className="flex items-center gap-2">
           {/* Mode Badge */}
           {isEmployeeMode ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/40 text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
               <span>직원 모드</span>
               {authSession?.employeeName && (
-                <span className="text-amber-200/90 font-semibold border-l border-amber-500/40 pl-1.5 ml-0.5">
+                <span className="text-amber-600 font-semibold border-l border-amber-300 pl-1.5 ml-0.5">
                   {authSession.employeeName}
                 </span>
               )}
             </div>
           ) : isAdmin ? (
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
               <span>관리자</span>
             </div>
           ) : (
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[11px] font-bold">
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200 text-[11px] font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
               <span>읽기 전용</span>
             </div>
@@ -1165,7 +1180,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
             <button
               onClick={() => setIsSettingsOpen(true)}
               title="환경 설정"
-              className="px-2 sm:px-3 py-1.5 text-xs font-bold border border-[#cbd5e1] bg-white hover:bg-slate-50 text-slate-700 shadow-3xs rounded-lg transition duration-150 flex items-center gap-1 cursor-pointer"
+              className="px-2 sm:px-3 py-1.5 text-xs font-bold border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 shadow-sm rounded-lg transition duration-150 flex items-center gap-1 cursor-pointer"
             >
               <span>⚙️</span>
               <span className="hidden sm:inline">환경 설정</span>
@@ -1176,16 +1191,16 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
             <button
               onClick={handleUndo}
               title={`되돌리기 (${undoStack.length}개 남음)`}
-              className="px-3 py-1.5 text-xs font-semibold border border-amber-600/50 bg-amber-500/10 hover:bg-amber-500/20 rounded-lg text-amber-300 transition-all duration-150 cursor-pointer flex items-center gap-1.5"
+              className="px-3 py-1.5 text-xs font-semibold border border-amber-300 bg-amber-50 hover:bg-amber-100 rounded-lg text-amber-700 transition-all duration-150 cursor-pointer flex items-center gap-1.5"
             >
               ↩ <span className="hidden sm:inline">되돌리기</span>
-              <span className="text-[10px] bg-amber-500/30 px-1 rounded">{undoStack.length}</span>
+              <span className="text-[10px] bg-amber-200 px-1 rounded">{undoStack.length}</span>
             </button>
           )}
 
           <button
             onClick={() => fetchScheduleData()}
-            className="px-3 py-1.5 text-xs font-semibold border border-slate-700 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-all duration-150 cursor-pointer flex items-center gap-1.5"
+            className="px-3 py-1.5 text-xs font-semibold border border-gray-200 bg-white hover:bg-gray-50 rounded-lg text-gray-600 transition-all duration-150 cursor-pointer flex items-center gap-1.5"
           >
             <span className="hidden sm:inline">새로고침</span>
             <span className="sm:hidden">↺</span>
@@ -1195,14 +1210,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
             <>
               <button
                 onClick={() => openCreateEmployeeModal()}
-                className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-600 rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
+                className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
                 <UserPlus size={13} />
                 <span className="hidden sm:inline">직원 등록</span>
               </button>
               <button
                 onClick={handleLogout}
-                className="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-rose-400 border border-slate-700 hover:border-rose-500/40 rounded-lg transition-all duration-150 cursor-pointer flex items-center gap-1.5"
+                className="px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-gray-200 hover:border-rose-300 rounded-lg transition-all duration-150 cursor-pointer flex items-center gap-1.5"
               >
                 <LogOut size={13} />
                 <span className="hidden sm:inline">로그아웃</span>
@@ -1218,7 +1233,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                 setIsLoginModalOpen(true);
               }}
               title="관리자 로그인"
-              className="px-2 sm:px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
+              className="px-2 sm:px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
             >
               <Lock size={12} />
               <span className="hidden sm:inline">관리자 로그인</span>
@@ -1252,7 +1267,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                 </button>
               ))}
             </div>
-            <span className="text-slate-300 text-sm shrink-0">─</span>
+            <span className="text-gray-300 text-sm shrink-0">─</span>
             {/* Group 2: Position */}
             <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
               {([
@@ -1552,7 +1567,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
       )}
 
       {/* 2. Grid Container Block */}
-      <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-slate-100 gap-0">
+      <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-gray-100 gap-0">
         {/* Month Navigation Toolbar */}
         <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl h-11 sm:h-12 flex items-center justify-between px-2.5 sm:px-5 shrink-0 shadow-sm">
           {/* Left: Month navigation */}
@@ -1734,10 +1749,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                     {/* Table Headers */}
                     <thead className="sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
                       {/* Header Row 1: Day of Month Numbers */}
-                      <tr className="bg-slate-800 text-slate-200 select-none">
+                      <tr className="bg-gray-100 text-gray-700 select-none">
                         <th
                           ref={nameThRef}
-                          className="text-center text-[10px] sm:text-[11px] font-semibold border-r border-slate-700 border-b border-b-slate-700 sticky left-0 bg-slate-800 z-40 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1.5 sm:px-3"
+                          className="text-center text-[10px] sm:text-[11px] font-bold border-r border-gray-200 border-b border-b-gray-200 sticky left-0 bg-gray-100 z-40 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1.5 sm:px-3"
                           style={{ width: "80px", minWidth: "80px" }}
                         >
                           <span className="hidden sm:inline">직원 성명</span>
@@ -1749,15 +1764,16 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                           const dayNum = parseInt(dateStr.split('-')[2]);
                           const dayIndex = new Date(dateStr + 'T00:00:00').getDay();
                           const headerClass = dayIndex === 6
-                            ? "text-sky-300 bg-slate-700"
+                            ? "text-sky-600 bg-sky-50"
                             : dayIndex === 0
-                              ? "text-rose-300 bg-slate-700"
-                              : "text-slate-200 bg-slate-800";
+                              ? "text-rose-600 bg-rose-50"
+                              : "text-gray-700 bg-gray-100";
                           return (
                             <th
                               key={`day-num-${dateStr}`}
+                              ref={isToday ? todayColRef : undefined}
                               onClick={() => setTimelineDate(fullDate)}
-                              className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-slate-700 w-[30px] sm:w-[44px] cursor-pointer hover:bg-indigo-700 hover:text-white transition-colors ${headerClass} ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-40 relative" : ""}`}
+                              className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-gray-200 w-[30px] sm:w-[44px] cursor-pointer hover:bg-indigo-100 hover:text-indigo-700 transition-colors ${headerClass} ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-40 relative" : ""}`}
                               title={`${fullDate} 타임라인 보기`}
                             >
                               {dayNum}
@@ -1765,35 +1781,35 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                           );
                         })}
                         {/* Total column header */}
-                        <th className="p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-b border-slate-700 bg-slate-900 text-indigo-300 whitespace-nowrap border-l-2 border-l-slate-600 w-[44px] sm:w-[52px] lg:w-[64px]">
+                        <th className="p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-b border-gray-200 bg-indigo-50 text-indigo-600 whitespace-nowrap border-l-2 border-l-gray-200 w-[44px] sm:w-[52px] lg:w-[64px]">
                           합계
                         </th>
                       </tr>
 
                       {/* Header Row 2: Day of Week Characters */}
-                      <tr className="bg-slate-700/80 text-slate-400 select-none">
+                      <tr className="bg-gray-50 text-gray-500 select-none">
                         {/* Left spacing header matching Name column */}
-                        <th className="border-r border-b border-slate-600 sticky left-0 bg-slate-700 z-40 h-5 sm:h-6" style={{ minWidth: "80px" }}></th>
+                        <th className="border-r border-b border-gray-200 sticky left-0 bg-gray-50 z-40 h-5 sm:h-6" style={{ minWidth: "80px" }}></th>
 
                         {dateList.map((dateStr) => {
                           const { dayWord, isToday } = getDayDetails(dateStr);
                           const dayIndex = new Date(dateStr + 'T00:00:00').getDay();
                           const wordClass = dayIndex === 6
-                            ? "text-sky-400 font-bold"
+                            ? "text-sky-500 font-bold"
                             : dayIndex === 0
-                              ? "text-rose-400 font-bold"
-                              : "text-slate-400";
+                              ? "text-rose-500 font-bold"
+                              : "text-gray-400";
                           return (
                             <th
                               key={`day-name-${dateStr}`}
-                              className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-slate-600 w-[30px] sm:w-[44px] bg-slate-700 ${wordClass} ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-40 relative" : ""}`}
+                              className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-gray-200 w-[30px] sm:w-[44px] bg-gray-50 ${wordClass} ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-40 relative" : ""}`}
                             >
                               {dayWord}
                             </th>
                           );
                         })}
                         {/* Total column sub-header */}
-                        <th className="p-0.5 text-center text-[8px] sm:text-[9px] border-b border-slate-600 bg-slate-800 text-indigo-400 border-l-2 border-l-slate-600 w-[44px] sm:w-[52px] lg:w-[64px]">
+                        <th className="p-0.5 text-center text-[8px] sm:text-[9px] border-b border-gray-200 bg-indigo-50 text-indigo-500 border-l-2 border-l-gray-200 w-[44px] sm:w-[52px] lg:w-[64px]">
                           일·시간
                         </th>
                       </tr>
@@ -1823,7 +1839,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                               {/* Drag handle — desktop only */}
                               {isAdmin && (
                                 <div
-                                  className="text-slate-300 hover:text-indigo-400 cursor-grab active:cursor-grabbing px-0.5 flex items-center transition shrink-0 hidden sm:flex"
+                                  className="text-gray-300 hover:text-indigo-500 cursor-grab active:cursor-grabbing px-0.5 flex items-center transition shrink-0 hidden sm:flex"
                                   title="드래그하여 이 직원 행의 순서 변경"
                                 >
                                   <GripVertical size={11} />
@@ -2072,10 +2088,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
       </div>
 
       {/* Footer */}
-      <footer className="h-9 bg-slate-900 border-t border-slate-800 shrink-0 px-4 sm:px-6 flex items-center justify-between text-[10px] text-slate-500 font-medium">
+      <footer className="h-9 bg-white border-t border-gray-200 shrink-0 px-4 sm:px-6 flex items-center justify-between text-[10px] text-gray-400 font-medium">
         <div className="flex items-center gap-2">
-          <span className="text-slate-600">Connected to</span>
-          <span className="font-mono text-slate-400 bg-slate-800 border border-slate-700 rounded px-1.5 py-0.5">
+          <span className="text-gray-400">Connected to</span>
+          <span className="font-mono text-gray-500 bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5">
             sqlite://mega_town.db
           </span>
         </div>
@@ -2412,17 +2428,17 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
 
       {/* 4. Admin Login Dialog Modal */}
       {isLoginModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-slate-150 p-6 flex flex-col justify-between overflow-hidden animate-in zoom-in-95 duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 flex flex-col justify-between overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
               <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-[#0f172a] text-white rounded-lg">
+                <div className="p-1.5 bg-indigo-600 text-white rounded-lg">
                   <Lock size={16} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-extrabold text-slate-900 tracking-tight">관리자 로그인</h3>
-                  <p className="text-[10px] text-slate-400 font-medium">관리자 계정정보를 기입해 주십시오.</p>
+                  <h3 className="text-sm font-extrabold text-gray-900 tracking-tight">관리자 로그인</h3>
+                  <p className="text-[10px] text-gray-400 font-medium">관리자 계정정보를 기입해 주십시오.</p>
                 </div>
               </div>
               <button
@@ -2431,7 +2447,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                   setIsLoginModalOpen(false);
                   setLoginError("");
                 }}
-                className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-50 rounded-lg transition"
+                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition"
               >
                 <X size={16} />
               </button>
@@ -2440,14 +2456,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
             {/* Form Box */}
             <form onSubmit={handleLoginSubmit} className="space-y-4">
               {loginError && (
-                <div className="p-3 bg-rose-50 text-rose-800 border border-rose-100 rounded-xl text-xs flex items-center gap-2 animate-pulse">
+                <div className="p-3 bg-rose-50 text-rose-800 border border-rose-200 rounded-xl text-xs flex items-center gap-2 animate-pulse">
                   <ShieldAlert size={14} className="shrink-0 text-rose-500" />
                   <span className="font-semibold">{loginError}</span>
                 </div>
               )}
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
                   관리자 아이디 (osanmega)
                 </label>
                 <input
@@ -2455,14 +2471,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                   value={loginId}
                   onChange={(e) => setLoginId(e.target.value)}
                   placeholder="아이디를 입력하세요"
-                  className="w-full text-xs rounded-xl border border-[#e2e8f0] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 p-3 bg-white focus:outline-none font-semibold text-slate-800 transition"
+                  className="w-full text-xs rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 p-3 bg-white focus:outline-none font-semibold text-gray-800 transition"
                   required
                   autoFocus
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
                   비밀번호
                 </label>
                 <input
@@ -2470,7 +2486,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                   value={loginPw}
                   onChange={(e) => setLoginPw(e.target.value)}
                   placeholder="비밀번호를 입력하세요"
-                  className="w-full text-xs rounded-xl border border-[#e2e8f0] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 p-3 bg-white focus:outline-none font-semibold text-slate-800 transition"
+                  className="w-full text-xs rounded-xl border border-gray-300 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/10 p-3 bg-white focus:outline-none font-semibold text-gray-800 transition"
                   required
                 />
               </div>
@@ -2482,13 +2498,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                     setIsLoginModalOpen(false);
                     setLoginError("");
                   }}
-                  className="flex-1 p-3 text-xs font-bold bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 text-slate-600 transition"
+                  className="flex-1 p-3 text-xs font-bold bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 text-gray-600 transition"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 p-3 text-xs font-bold bg-[#0f172a] hover:bg-slate-800 text-white border border-[#0f172a] rounded-xl transition shadow-sm inline-flex items-center justify-center gap-1.5"
+                  className="flex-1 p-3 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 rounded-xl transition shadow-sm inline-flex items-center justify-center gap-1.5"
                 >
                   <LogIn size={13} />
                   <span>로그인</span>

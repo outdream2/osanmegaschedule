@@ -786,45 +786,45 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-gray-800 font-sans flex flex-col" onClick={() => setPopoverAnchor(null)}>
+    <div className="min-h-screen bg-gray-50 text-gray-800 font-sans flex flex-col" onClick={() => setPopoverAnchor(null)}>
 
       {/* Header */}
-      <header className="bg-slate-900 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-md sticky top-0 z-30">
+      <header className="bg-white border-b border-gray-200 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm sticky top-0 z-30">
         <div className="flex items-center gap-3 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={onBack}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition cursor-pointer mr-1 text-xs font-semibold shrink-0"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 hover:text-gray-900 transition cursor-pointer mr-1 text-xs font-semibold shrink-0"
               title="메인으로 돌아가기"
             >
               <ChevronLeft size={13} />
               <span className="hidden sm:inline">메인</span>
             </button>
-            <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shadow-sm">
-              <LayoutGrid size={14} className="text-slate-900" />
+            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
+              <LayoutGrid size={14} className="text-white" />
             </div>
             <span className="font-black tracking-tight leading-none">
               <span className="text-red-500 text-xl">OSAN</span>
-              <span className="text-white text-base"> MEGATOWN</span>
+              <span className="text-gray-900 text-base"> MEGATOWN</span>
             </span>
           </div>
-          <div className="hidden sm:flex items-center gap-2 border-l border-slate-800 pl-3 ml-1">
-            <span className="text-slate-350 text-xs font-bold">매장 담당자 배치용</span>
+          <div className="hidden sm:flex items-center gap-2 border-l border-gray-200 pl-3 ml-1">
+            <span className="text-gray-500 text-xs font-bold">매장 담당자 배치용</span>
           </div>
         </div>
         <div className="flex items-center gap-3">
           <div className="hidden sm:flex items-center gap-2 text-[11px] font-bold">
-            <span className="bg-slate-850 border border-slate-800 px-2.5 py-1 rounded-lg flex items-center gap-1 text-slate-350">
-              전체 <span className="text-indigo-400 font-black">{stats.total}</span>
+            <span className="bg-white border border-gray-200 px-2.5 py-1 rounded-lg flex items-center gap-1 text-gray-600 shadow-sm">
+              전체 <span className="text-indigo-600 font-black">{stats.total}</span>
             </span>
-            <span className="bg-slate-850 border border-red-900/40 px-2.5 py-1 rounded-lg flex items-center gap-1 text-slate-355">
-              품절 <span className="text-rose-400 font-black">{stats.empty}</span>
+            <span className="bg-white border border-rose-200 px-2.5 py-1 rounded-lg flex items-center gap-1 text-gray-600 shadow-sm">
+              품절 <span className="text-rose-600 font-black">{stats.empty}</span>
             </span>
-            <span className="bg-slate-850 border border-amber-900/40 px-2.5 py-1 rounded-lg flex items-center gap-1 text-slate-355">
-              부족 <span className="text-amber-400 font-black">{stats.low}</span>
+            <span className="bg-white border border-amber-200 px-2.5 py-1 rounded-lg flex items-center gap-1 text-gray-600 shadow-sm">
+              부족 <span className="text-amber-600 font-black">{stats.low}</span>
             </span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 text-slate-350 border border-slate-700 text-xs font-semibold shadow-3xs">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200 text-xs font-semibold shadow-sm">
             <MapPin size={11} className="text-rose-500" />
             <span>현위치: 36번 매대 앞</span>
           </div>
@@ -872,7 +872,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   onClick={() => setStaffPosFilter(pos)}
                   className={`flex-1 py-1 text-[10px] font-bold rounded-lg border cursor-pointer transition ${
                     staffPosFilter === pos
-                      ? pos === "전체"   ? "bg-slate-800 text-white border-slate-800"
+                      ? pos === "전체"   ? "bg-gray-800 text-white border-gray-800"
                       : pos === "약사"   ? "bg-violet-600 text-white border-violet-600"
                       : pos === "물류"   ? "bg-orange-500 text-white border-orange-500"
                                          : "bg-teal-500 text-white border-teal-500"
@@ -1333,7 +1333,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-100 text-center p-4 mt-8 text-xs text-gray-500 border-t border-gray-200">
+      <footer className="bg-white text-center p-4 mt-8 text-xs text-gray-400 border-t border-gray-200">
         &copy; 2026 오산메가타운 매장 내비게이션 및 진열 보충 관리 시스템. All Rights Reserved.
       </footer>
 
@@ -1354,7 +1354,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* ─── Zone Detail Modal ────────────────────────────────────────────────── */}
       {activeZone && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm" onClick={() => setActiveZoneId(null)}>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gray-900/60 backdrop-blur-sm" onClick={() => setActiveZoneId(null)}>
           <div className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
             {/* Modal header */}
             <div className="px-5 py-4 border-b border-slate-200 flex items-center gap-3 bg-slate-50">
@@ -1483,7 +1483,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* ─── Employee Info Modal ──────────────────────────────────────────────── */}
       {activeStaffInfo && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm"
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-gray-900/60 backdrop-blur-sm"
           onClick={() => setActiveStaffInfo(null)}>
           <div className="w-full sm:max-w-sm bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}>
