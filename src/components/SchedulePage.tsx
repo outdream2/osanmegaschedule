@@ -1209,18 +1209,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
           {isAdmin ? (
             <>
               <button
-                onClick={handleCopyFromPreviousMonth}
-                disabled={isCopying}
-                title={`${currentMonth === 1 ? 12 : currentMonth - 1}월 스케줄을 이번 달로 복사`}
-                className="px-3 py-1.5 text-xs font-semibold border border-violet-300 bg-violet-50 hover:bg-violet-100 rounded-lg text-violet-700 transition-all duration-150 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
-              >
-                {isCopying ? (
-                  <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-violet-600" /><span className="hidden sm:inline">복사 중...</span></>
-                ) : (
-                  <><Layers size={13} /><span className="hidden sm:inline">전월 복사</span></>
-                )}
-              </button>
-              <button
                 onClick={() => openCreateEmployeeModal()}
                 className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
@@ -1619,13 +1607,11 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
             ))}
           </div>
 
-          {/* Right: Year/Month selectors */}
-          <div className="flex gap-1.5">
+          {/* Right: Year/Month selectors + 전월 복사 */}
+          <div className="flex items-center gap-1.5">
             <select
               value={currentYear}
-              onChange={(e) => {
-                setCurrentYear(parseInt(e.target.value));
-              }}
+              onChange={(e) => setCurrentYear(parseInt(e.target.value))}
               className="bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
             >
               {[2024, 2025, 2026, 2027, 2028].map((y) => (
@@ -1635,15 +1621,27 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
 
             <select
               value={currentMonth}
-              onChange={(e) => {
-                setCurrentMonth(parseInt(e.target.value));
-              }}
+              onChange={(e) => setCurrentMonth(parseInt(e.target.value))}
               className="bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
                 <option key={m} value={m}>{m}월</option>
               ))}
             </select>
+
+            {isAdmin && (
+              <button
+                onClick={handleCopyFromPreviousMonth}
+                disabled={isCopying}
+                title={`${currentMonth === 1 ? 12 : currentMonth - 1}월 스케줄을 ${currentMonth}월로 복사`}
+                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-600 hover:text-violet-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                {isCopying
+                  ? <><div className="w-3 h-3 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" /><span className="hidden sm:inline">복사 중</span></>
+                  : <><Layers size={12} /><span className="hidden sm:inline">전월 복사</span></>
+                }
+              </button>
+            )}
           </div>
         </div>
 
