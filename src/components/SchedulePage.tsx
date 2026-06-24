@@ -4,7 +4,6 @@ import axios from "axios";
 import { Employee, MonthlySummary, Schedule } from "../types";
 import { ScheduleCell } from "./ScheduleCell";
 import { SummaryRow } from "./SummaryRow";
-import { StoreMap } from "./StoreMap";
 import { DayTimelineModal } from "./DayTimelineModal";
 import { EmployeeCalendarModal } from "./EmployeeCalendarModal";
 import { SettingsModal } from "./SettingsModal";
@@ -177,9 +176,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
   };
 
   // Tabs & Search states
-  const [activeTab, setActiveTab] = useState<"전체" | "매장" | "창고" | "약사" | "캐셔" | "물류">("전체");
+  const [activeTab, setActiveTab] = useState<"전체" | "매장" | "창고" | "약사" | "캐셔" | "물류" | "알바">("전체");
   const [searchQuery, setSearchQuery] = useState("");
-  const [viewMode, setViewMode] = useState<"sheet" | "map">("sheet");
   const [sortBy, setSortBy] = useState<"none" | "position" | "hireDate" | "name">("none");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
 
@@ -588,7 +586,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
   const daysList = getDaysArray();
 
   const WORKPLACE_TABS = new Set(["매장", "창고"]);
-  const POSITION_TABS = new Set(["약사", "캐셔", "물류"]);
+  const POSITION_TABS = new Set(["약사", "캐셔", "물류", "알바"]);
 
   const filteredEmployees = employees
     .filter((emp) => {
@@ -876,36 +874,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
         </div>
       </header>
 
-      {/* 1.5 View Mode Tab Switcher Bar */}
-      <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 flex items-center shrink-0">
-        <div className="flex items-center gap-0.5 p-0.5 bg-slate-100 rounded-lg border border-slate-200">
-          <button
-            onClick={() => setViewMode("sheet")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1.5 ${viewMode === "sheet"
-              ? "bg-white text-indigo-600 shadow-sm"
-              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-              }`}
-          >
-            <FileSpreadsheet size={12} />
-            <span>스케줄 시트</span>
-          </button>
-          <button
-            onClick={() => setViewMode("map")}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1.5 ${viewMode === "map"
-              ? "bg-white text-indigo-600 shadow-sm"
-              : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-              }`}
-          >
-            <Building2 size={12} />
-            <span>매장 맵배치도</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-          </button>
-        </div>
-      </div>
-
-      {/* 1.6 Sub-Header Control Bar for Workplace Tabs, Employee Sorting & Search */}
-      {viewMode === "sheet" && (
-        <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2 sm:gap-3 shrink-0 shadow-sm">
+      {/* 1.5 Sub-Header Control Bar for Workplace Tabs, Employee Sorting & Search */}
+      <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2 sm:gap-3 shrink-0 shadow-sm">
           {/* Filter Tabs: workplace + position */}
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">필터</span>
@@ -917,6 +887,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                 { key: "약사", label: "약사", icon: null, color: "text-violet-600", count: employees.filter(e => e.position === "약사").length },
                 { key: "캐셔", label: "캐셔", icon: null, color: "text-amber-600", count: employees.filter(e => e.position === "캐셔").length },
                 { key: "물류", label: "물류", icon: null, color: "text-sky-600", count: employees.filter(e => e.position === "물류").length },
+                { key: "알바", label: "알바", icon: null, color: "text-rose-600", count: employees.filter(e => e.position === "알바").length },
               ] as const).map(({ key, label, icon, color, count }) => (
                 <button
                   key={key}
@@ -1060,10 +1031,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
             </div>
           </div>
         </div>
-      )}
 
       {/* 1.6 Personal Schedule Search Results Quick Insights */}
-      {viewMode === "sheet" && searchQuery.trim() !== "" && (
+      {searchQuery.trim() !== "" && (
         <div className="bg-blue-50/50 border-b border-[#e2e8f0] px-3 sm:px-6 py-3 sm:py-4 flex flex-col gap-2 sm:gap-3 animate-in fade-in slide-in-from-top-2 duration-250 shadow-[inset_0_-2px_4px_rgba(0,0,0,0.01)]">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-extrabold text-[#1e40af] uppercase tracking-wider flex items-center gap-1.5">
@@ -1257,9 +1227,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
           </div>
         </div>
 
-        {/* Dynamic Multi-View: Sheet vs Store Map */}
-        {viewMode === "sheet" ? (
-          <div className="bg-white border border-slate-200 rounded-b-xl overflow-hidden flex flex-col flex-1 shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-b-xl overflow-hidden flex flex-col flex-1 shadow-sm">
             {/* Copy Previous Month Callout Banner */}
             {!isLoading && !error && isAdmin && employees.length > 0 && !employees.some(emp => emp.schedules && emp.schedules.some(s => s.type.trim() !== "")) && (
               <div className="m-2 sm:m-4 p-3 sm:p-4 bg-indigo-50/50 border border-indigo-200/70 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -1695,19 +1663,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
 
             </div>{/* end flex row wrapper */}
           </div>
-        ) :
-          <StoreMap
-            employees={employees}
-            currentYear={currentYear}
-            currentMonth={currentMonth}
-            getDaysArray={getDaysArray}
-            getDayDetails={getDayDetails}
-            isAdmin={isAdmin}
-            openShiftHour={openShiftHour}
-            middleShiftHour={middleShiftHour}
-            closeShiftHour={closeShiftHour}
-          />
-        }
       </div>
 
       {/* Footer */}
