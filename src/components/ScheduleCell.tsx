@@ -150,7 +150,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
   return (
     <div
       ref={cellRef}
-      className="relative border-r border-b border-[#e2e8f0] h-12 sm:h-14 w-[30px] sm:w-[44px] flex flex-col justify-between p-0.5 select-none text-center"
+      className="relative border-r border-b border-[#e2e8f0] h-12 sm:h-14 w-full flex flex-col justify-between p-0.5 select-none text-center"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

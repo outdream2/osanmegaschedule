@@ -1155,11 +1155,11 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
         <div className="flex items-center gap-2">
           {/* Mode Badge */}
           {isEmployeeMode ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
-              <span>직원 모드</span>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold max-w-[140px] sm:max-w-none">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+              <span className="hidden sm:inline">직원 모드</span>
               {authSession?.employeeName && (
-                <span className="text-amber-600 font-semibold border-l border-amber-300 pl-1.5 ml-0.5">
+                <span className="text-amber-600 font-semibold sm:border-l sm:border-amber-300 sm:pl-1.5 sm:ml-0.5 truncate">
                   {authSession.employeeName}
                 </span>
               )}
@@ -1612,7 +1612,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
             <select
               value={currentYear}
               onChange={(e) => setCurrentYear(parseInt(e.target.value))}
-              className="bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
+              className="hidden sm:block bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
             >
               {[2024, 2025, 2026, 2027, 2028].map((y) => (
                 <option key={y} value={y}>{y}년</option>
@@ -1637,8 +1637,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                 className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-600 hover:text-violet-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {isCopying
-                  ? <><div className="w-3 h-3 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" /><span className="hidden sm:inline">복사 중</span></>
-                  : <><Layers size={12} /><span className="hidden sm:inline">전월 복사</span></>
+                  ? <><div className="w-3 h-3 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" /><span>복사 중</span></>
+                  : <><Layers size={12} /><span>전월복사</span></>
                 }
               </button>
             )}

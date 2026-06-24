@@ -145,28 +145,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           </div>
           <span className="font-black tracking-tight leading-none">
             <span className="text-red-500 text-xl">OSAN</span>
-            <span className="text-gray-900 text-base"> MEGATOWN</span>
+            <span className="hidden sm:inline text-gray-900 text-base"> MEGATOWN</span>
           </span>
         </div>
 
         {isLoggedIn ? (
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold">
               {isAdmin ? <Shield size={11} /> : <User size={11} />}
-              <span>{isAdmin ? "관리자" : (authSession.employeeName ?? "직원")}</span>
+              <span className="max-w-[80px] truncate">{isAdmin ? "관리자" : (authSession.employeeName ?? "직원")}</span>
             </div>
             <button
               onClick={onLogout}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-gray-500 hover:text-rose-600 hover:bg-rose-50 border border-gray-200 hover:border-rose-200 transition cursor-pointer"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold text-gray-500 hover:text-rose-600 hover:bg-rose-50 border border-gray-200 hover:border-rose-200 transition cursor-pointer"
             >
               <LogOut size={11} />
-              <span>로그아웃</span>
+              <span className="hidden sm:inline">로그아웃</span>
             </button>
           </div>
         ) : (
           <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
             <Lock size={11} />
-            <span>로그인 필요</span>
+            <span className="hidden sm:inline">로그인 필요</span>
           </div>
         )}
       </header>
