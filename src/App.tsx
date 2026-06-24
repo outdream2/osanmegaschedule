@@ -8,19 +8,37 @@ import SchedulePage from "./components/SchedulePage";
 import { LandingPage } from "./components/LandingPage";
 import { ReservationPage } from "./components/ReservationPage";
 import { DisplayPage } from "./components/DisplayPage";
+import { useAuth } from "./hooks/useAuth";
+import type { AuthSession } from "./types";
 
 type Page = "landing" | "schedule" | "reservation" | "display";
 
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
   const [pendingEditEmpId, setPendingEditEmpId] = useState<number | null>(null);
+  const { session: authSession, setSession: setAuthSession, clearSession: clearAuthSession } = useAuth();
+
+  const handleNavigate = (next: "schedule" | "reservation" | "display", auth?: AuthSession) => {
+    if (auth) {
+      setAuthSession(auth);
+    } else if (next === "reservation") {
+      // 외부용 페이지 — 인증 세션 보유 시에도 외부 컨텍스트로 들어가니 굳이 건드리지 않음
+    }
+    setPage(next);
+  };
+
+  const goBack = () => {
+    clearAuthSession();
+    setPage("landing");
+  };
 
   if (page === "schedule") {
     return (
       <SchedulePage
-        onBack={() => setPage("landing")}
+        onBack={goBack}
         initialEditEmployeeId={pendingEditEmpId}
         onEditEmployeeHandled={() => setPendingEditEmpId(null)}
+        authSession={authSession}
       />
     );
   }
@@ -30,7 +48,7 @@ export default function App() {
   if (page === "display") {
     return (
       <DisplayPage
-        onBack={() => setPage("landing")}
+        onBack={goBack}
         onOpenEmployeeEdit={(id) => {
           setPendingEditEmpId(id);
           setPage("schedule");
@@ -38,5 +56,5 @@ export default function App() {
       />
     );
   }
-  return <LandingPage onNavigate={setPage} />;
+  return <LandingPage onNavigate={handleNavigate} />;
 }

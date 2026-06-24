@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 import { ZONE_DEFS, ZONES_STORAGE_KEY, SECTION_LABEL } from "../constants/displayZones";
-import { Employee, MonthlySummary, Schedule } from "../types";
+import { Employee, MonthlySummary, Schedule, AuthSession } from "../types";
 import { ScheduleCell } from "./ScheduleCell";
 import { SummaryRow } from "./SummaryRow";
 import { DayTimelineModal } from "./DayTimelineModal";
@@ -42,9 +42,15 @@ interface SchedulePageProps {
   onBack?: () => void;
   initialEditEmployeeId?: number | null;
   onEditEmployeeHandled?: () => void;
+  authSession?: AuthSession | null;
 }
 
-export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditEmployeeId, onEditEmployeeHandled }) => {
+export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
+  // ── Auth-derived flags ─────────────────────────────────────────────────────
+  // Employee mode: a non-admin session is active. Restricts UI to read-only
+  // plus a self-service break/lunch modal on the user's own row.
+  const isEmployeeMode = authSession?.role === "employee";
+  const sessionEmployeeId = authSession?.employeeId ?? null;
   // Settings hook (positions, workplaces, scheduleTypes, shift hours)
   const {
     positions: PRESET_POSITIONS,
@@ -108,9 +114,22 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
 
 
   // Administrative / Auth states
+  // Employee-mode sessions always force isAdmin=false (read-only).
+  // Admin-mode sessions imply admin even before localStorage check.
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    if (authSession?.role === "employee") return false;
+    if (authSession?.role === "admin") return true;
     return localStorage.getItem("megatown_admin") === "true";
   });
+
+  // Keep isAdmin in sync if authSession changes during the page lifetime
+  useEffect(() => {
+    if (authSession?.role === "employee") {
+      setIsAdmin(false);
+    } else if (authSession?.role === "admin") {
+      setIsAdmin(true);
+    }
+  }, [authSession?.role]);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [loginId, setLoginId] = useState("");
   const [loginPw, setLoginPw] = useState("");
@@ -150,12 +169,62 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
   const [empWorkplace, setEmpWorkplace] = useState<string>("매장");
   const [empGender, setEmpGender] = useState<"남" | "여" | "">("");
   const [empRank, setEmpRank] = useState("");
-  const [empNumber, setEmpNumber] = useState("");
   const [empZoneNums, setEmpZoneNums] = useState<number[]>([]);
   const [editingEmpId, setEditingEmpId] = useState<number | null>(null);
   const [tempDescription, setTempDescription] = useState("");
   const [timelineDate, setTimelineDate] = useState<string | null>(null);
   const [calendarEmployee, setCalendarEmployee] = useState<Employee | null>(null);
+
+  // ── Employee break/lunch modal state (employee mode only) ───────────────────
+  // When an employee clicks one of their own row cells, this modal opens so
+  // they can record 점심/휴게 windows. Data is merged into the existing memo
+  // field as JSON ({ lunch: "HH:MM-HH:MM", break: "HH:MM-HH:MM" }) to avoid
+  // any Supabase schema changes.
+  const [breakModal, setBreakModal] = useState<{
+    employeeId: number;
+    date: string;
+    scheduleId?: number;
+    type: string;
+    workingHours: string;
+    actualHours: string;
+    memo: string;
+    lunchStart: string;
+    lunchEnd: string;
+    breakStart: string;
+    breakEnd: string;
+  } | null>(null);
+  const [isSavingBreak, setIsSavingBreak] = useState(false);
+
+  // Parse possible JSON break info from a memo string. Tolerates plain text:
+  // returns the original raw memo as `other` so we never lose user notes.
+  const parseBreakMemo = (memoStr: string): { lunch?: string; break?: string; other?: string } => {
+    if (!memoStr) return {};
+    const trimmed = memoStr.trim();
+    if (!trimmed.startsWith("{")) return { other: memoStr };
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (parsed && typeof parsed === "object") {
+        return {
+          lunch: typeof parsed.lunch === "string" ? parsed.lunch : undefined,
+          break: typeof parsed.break === "string" ? parsed.break : undefined,
+          other: typeof parsed.other === "string" ? parsed.other : undefined,
+        };
+      }
+    } catch { /* fall through */ }
+    return { other: memoStr };
+  };
+
+  const splitTimeRange = (range?: string): [string, string] => {
+    if (!range) return ["", ""];
+    const m = range.match(/^(\d{1,2}:\d{2})\s*[-~]\s*(\d{1,2}:\d{2})$/);
+    if (!m) return ["", ""];
+    return [m[1], m[2]];
+  };
+
+  // ── Admin: per-employee password set (inline in edit modal) ─────────────────
+  const [showPasswordSet, setShowPasswordSet] = useState(false);
+  const [newEmpPassword, setNewEmpPassword] = useState("");
+  const [isSavingPassword, setIsSavingPassword] = useState(false);
 
   // Keep calendarEmployee in sync when schedule updates happen
   useEffect(() => {
@@ -230,7 +299,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
     setEmpWorkplace("매장");
     setEmpGender("");
     setEmpRank("");
-    setEmpNumber("");
     setEmpZoneNums([]);
     setIsEmpModalOpen(true);
   };
@@ -249,7 +317,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
       setEmpCustomPosition("");
     }
     setEmpRank(emp.rank || "");
-    setEmpNumber(emp.employee_number || "");
     setEmpEmploymentType(emp.employmentType || "정직원");
     setEmpHireDate(emp.hireDate || "");
     setEmpDescription(emp.description || "");
@@ -261,7 +328,122 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
     } else {
       setEmpZoneNums([]);
     }
+    // Reset inline password set form
+    setShowPasswordSet(false);
+    setNewEmpPassword("");
+    setIsSavingPassword(false);
     setIsEmpModalOpen(true);
+  };
+
+  // Open the break/lunch modal for an employee-mode cell click. Initializes
+  // form values from the existing schedule's memo (so re-opening the same cell
+  // pre-fills the previously chosen ranges).
+  const openBreakModalForCell = useCallback((employeeId: number, date: string) => {
+    const emp = employees.find(e => e.id === employeeId);
+    const sched = emp?.schedules.find(s => s.date === date);
+    const parsed = parseBreakMemo(sched?.memo || "");
+    const [ls, le] = splitTimeRange(parsed.lunch);
+    const [bs, be] = splitTimeRange(parsed.break);
+    setBreakModal({
+      employeeId,
+      date,
+      scheduleId: sched?.id,
+      type: sched?.type || "",
+      workingHours: sched?.workingHours || "",
+      actualHours: sched?.actualHours || "",
+      memo: sched?.memo || "",
+      lunchStart: ls,
+      lunchEnd: le,
+      breakStart: bs,
+      breakEnd: be,
+    });
+  }, [employees]);
+
+  // Persist a break/lunch entry by merging into the schedule's memo JSON and
+  // upserting the row through the existing PUT /api/schedules endpoint.
+  const handleSaveBreak = async () => {
+    if (!breakModal) return;
+    setIsSavingBreak(true);
+    try {
+      const existing = parseBreakMemo(breakModal.memo || "");
+      const next: { lunch?: string; break?: string; other?: string } = { ...existing };
+      const lunch = breakModal.lunchStart && breakModal.lunchEnd
+        ? `${breakModal.lunchStart}-${breakModal.lunchEnd}`
+        : "";
+      const brk = breakModal.breakStart && breakModal.breakEnd
+        ? `${breakModal.breakStart}-${breakModal.breakEnd}`
+        : "";
+      if (lunch) next.lunch = lunch; else delete next.lunch;
+      if (brk) next.break = brk; else delete next.break;
+
+      // Empty payload → store plain string (preserve other text or empty memo)
+      let memoOut = "";
+      if (next.lunch || next.break) {
+        memoOut = JSON.stringify(next);
+      } else if (next.other) {
+        memoOut = next.other;
+      }
+
+      await axios.put("/api/schedules", {
+        employeeId: breakModal.employeeId,
+        date: breakModal.date,
+        type: breakModal.type || "휴무",
+        workingHours: breakModal.workingHours || "",
+        actualHours: breakModal.actualHours || "",
+        memo: memoOut,
+      });
+
+      setEmployees(prev => prev.map(emp => {
+        if (emp.id !== breakModal.employeeId) return emp;
+        const idx = emp.schedules.findIndex(s => s.date === breakModal.date);
+        const updatedSched: Schedule = {
+          ...(idx >= 0 ? emp.schedules[idx] : {
+            employeeId: breakModal.employeeId,
+            date: breakModal.date,
+            type: breakModal.type || "휴무",
+            workingHours: breakModal.workingHours || "",
+            actualHours: breakModal.actualHours || "",
+          }),
+          memo: memoOut,
+        };
+        const schedules = idx >= 0
+          ? emp.schedules.map((s, i) => (i === idx ? updatedSched : s))
+          : [...emp.schedules, updatedSched];
+        return { ...emp, schedules };
+      }));
+
+      showNotification("점심/휴게 시간이 저장되었습니다.", "success");
+      setBreakModal(null);
+    } catch (err) {
+      console.error("Failed to save break/lunch:", err);
+      showNotification("점심/휴게 시간 저장에 실패했습니다.", "error");
+    } finally {
+      setIsSavingBreak(false);
+    }
+  };
+
+  // Admin tool: set/reset an employee's login password
+  const handleSetEmployeePassword = async () => {
+    if (!selectedEmpForEdit) return;
+    if (!newEmpPassword || newEmpPassword.length < 4) {
+      showNotification("비밀번호는 최소 4자 이상이어야 합니다.", "error");
+      return;
+    }
+    setIsSavingPassword(true);
+    try {
+      await axios.post("/api/auth/set-password", {
+        employeeId: selectedEmpForEdit.id,
+        password: newEmpPassword,
+      });
+      showNotification(`${selectedEmpForEdit.name}님의 비밀번호가 설정되었습니다.`, "success");
+      setNewEmpPassword("");
+      setShowPasswordSet(false);
+    } catch (err) {
+      console.error("Failed to set password:", err);
+      showNotification("비밀번호 설정에 실패했습니다.", "error");
+    } finally {
+      setIsSavingPassword(false);
+    }
   };
 
   // Tabs & Search states
@@ -629,7 +811,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
           description: empDescription,
           workplace: empWorkplace,
           gender: empGender || null,
-          employee_number: empNumber.trim() || null,
         });
         applyZones(selectedEmpForEdit.id, empName);
         showNotification(`${empName} 직원의 정보가 수정되었습니다.`);
@@ -643,7 +824,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
           description: empDescription,
           workplace: empWorkplace,
           gender: empGender || null,
-          employee_number: empNumber.trim() || null,
         });
         if (res.data?.id) applyZones(res.data.id, empName);
         showNotification(`새 직원 ${empName}님이 등록되었습니다.`);
@@ -659,7 +839,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
       setEmpWorkplace("매장");
       setEmpGender("");
       setEmpRank("");
-      setEmpNumber("");
       setEmpZoneNums([]);
       setSelectedEmpForEdit(null);
       setEmpModalMode("create");
@@ -960,7 +1139,17 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
 
         <div className="flex items-center gap-2">
           {/* Mode Badge */}
-          {isAdmin ? (
+          {isEmployeeMode ? (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/40 text-[11px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+              <span>직원 모드</span>
+              {authSession?.employeeName && (
+                <span className="text-amber-200/90 font-semibold border-l border-amber-500/40 pl-1.5 ml-0.5">
+                  {authSession.employeeName}
+                </span>
+              )}
+            </div>
+          ) : isAdmin ? (
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
               <span>관리자</span>
@@ -1005,7 +1194,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
           {isAdmin ? (
             <>
               <button
-                onClick={() => setIsEmpModalOpen(true)}
+                onClick={() => openCreateEmployeeModal()}
                 className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white border border-indigo-600 rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
                 <UserPlus size={13} />
@@ -1019,6 +1208,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                 <span className="hidden sm:inline">로그아웃</span>
               </button>
             </>
+          ) : isEmployeeMode ? (
+            // Employee mode: no admin-login button. The user logs out via 메인 button.
+            null
           ) : (
             <button
               onClick={() => {
@@ -1694,14 +1886,20 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                           {dateList.map((dateStr) => {
                             const { fullDate, isToday } = getDayDetails(dateStr);
                             const currentSched = emp.schedules.find((s) => s.date === fullDate);
+                            const isOwnRow = isEmployeeMode && sessionEmployeeId === emp.id;
 
                             return (
-                              <td key={`${emp.id}-${dateStr}`} className={`p-0 border-r border-[#e2e8f0] ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-25 relative" : ""}`}>
+                              <td
+                                key={`${emp.id}-${dateStr}`}
+                                className={`p-0 border-r border-[#e2e8f0] ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-25 relative" : ""} ${isOwnRow ? "cursor-pointer hover:bg-amber-50/50" : ""}`}
+                                onClick={isOwnRow ? () => openBreakModalForCell(emp.id, fullDate) : undefined}
+                                title={isOwnRow ? "클릭하여 점심/휴게 시간 설정" : undefined}
+                              >
                                 <ScheduleCell
                                   schedule={currentSched}
                                   dateStr={fullDate}
                                   employeeId={emp.id}
-                                  onUpdate={handleCellUpdate}
+                                  onUpdate={isEmployeeMode ? (async () => {}) : handleCellUpdate}
                                   isAdmin={isAdmin}
                                   openShiftHour={openShiftHour}
                                   middleShiftHour={middleShiftHour}
@@ -1945,16 +2143,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                     placeholder="예: 홍길동"
                     value={empName}
                     onChange={(e) => setEmpName(e.target.value)}
-                    className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1">사번</label>
-                  <input
-                    type="text"
-                    placeholder="예: EMP-001"
-                    value={empNumber}
-                    onChange={(e) => setEmpNumber(e.target.value)}
                     className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
                   />
                 </div>

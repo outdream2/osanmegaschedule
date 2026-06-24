@@ -926,17 +926,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-1">
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onOpenEmployeeEdit?.(employee.id);
-                                }}
-                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline leading-tight truncate cursor-pointer text-left"
-                                title="스케줄조회에서 직원정보 수정"
-                              >
+                              <span className="text-xs font-bold text-slate-700 leading-tight truncate">
                                 {employee.name}
-                              </button>
+                              </span>
                               <div className="flex items-center gap-0.5 shrink-0">
                                 <button
                                   type="button"

@@ -1,5 +1,13 @@
 // src/types.ts
 
+export type AuthRole = 'admin' | 'employee';
+
+export interface AuthSession {
+  role: AuthRole;
+  employeeId?: number;
+  employeeName?: string;
+}
+
 export interface Schedule {
   id?: number;
   employeeId: number;
@@ -20,7 +28,6 @@ export interface Employee {
   description: string;
   workplace: string; // "매장" or "창고"
   gender?: "남" | "여";
-  employee_number?: string;    // 사번
   push_subscription?: object | null; // Web Push 구독 정보
   schedules: Schedule[];
 }

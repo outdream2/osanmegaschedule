@@ -27,7 +27,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: err.message || "Internal server error" });
   }
 
-  // GET /api/reservations?date=YYYY-MM-DD  → booked time strings for that date
+  // GET /api/reservations?date=YYYY-MM-DD  → booked reservation items for that date
   if (req.method === "GET") {
     const { date } = req.query;
     if (!date || typeof date !== "string") {
@@ -35,10 +35,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     const { data, error } = await supabase
       .from("reservations")
-      .select("time")
+      .select("time, note, purpose, company, contact_name, phone")
       .eq("date", date);
     if (error) return res.status(500).json({ error: error.message });
-    return res.status(200).json((data ?? []).map((r: { time: string }) => r.time));
+    return res.status(200).json(data ?? []);
   }
 
   // POST /api/reservations  → create reservation
@@ -48,14 +48,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "필수 항목이 누락되었습니다." });
     }
 
-    // Check slot not already taken
+    // Check slot not already taken for this target (parsed from note prefix)
     const { data: existing } = await supabase
       .from("reservations")
-      .select("id")
+      .select("id, note, purpose")
       .eq("date", date)
-      .eq("time", time)
-      .maybeSingle();
-    if (existing) {
+      .eq("time", time);
+
+    const getTarget = (n: string) => {
+      const match = (n || "").match(/^\[대상:(대표|이사|부장)\]/);
+      return match ? match[1] : "대표";
+    };
+    const targetToBook = getTarget(note || "");
+    const isAlreadyBooked = (existing ?? []).some((r: any) => getTarget(r.note || r.purpose) === targetToBook);
+
+    if (isAlreadyBooked) {
       return res.status(409).json({ error: "이미 예약된 시간입니다." });
     }
 
