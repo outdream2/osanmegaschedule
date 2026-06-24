@@ -1,7 +1,17 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
+let _supabase: SupabaseClient | null = null;
+function getSupabase(): SupabaseClient {
+  if (_supabase) return _supabase;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_KEY;
+  if (!url || !key) {
+    throw new Error("Supabase environment variables (SUPABASE_URL, SUPABASE_KEY) are not configured");
+  }
+  _supabase = createClient(url, key);
+  return _supabase;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -9,15 +19,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
 
+  if (req.query.id === undefined || req.query.id === null || req.query.id === "")
+    return res.status(400).json({ error: "Employee ID is required" });
+
   const id = parseInt(req.query.id as string);
   if (isNaN(id)) return res.status(400).json({ error: "Invalid employee ID" });
 
   try {
+    const supabase = getSupabase();
+
     if (req.method === "PUT") {
-      const { name, position, employmentType, hireDate, description, workplace } = req.body;
+      const { name, position, rank, employmentType, hireDate, description, workplace, gender } = req.body ?? {};
+      if (!name || !position)
+        return res.status(400).json({ error: "name and position are required" });
       const { data, error } = await supabase
         .from("employees")
-        .update({ name, position, employmentType: employmentType || "정직원", hireDate, description: description || "", workplace: workplace || "매장" })
+        .update({ name, position, rank: rank || null, employmentType: employmentType || "정직원", hireDate, description: description || "", workplace: workplace || "매장", gender: gender || null })
         .eq("id", id)
         .select().single();
       if (error) throw new Error(error.message);

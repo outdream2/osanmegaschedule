@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Employee, Schedule } from "../types";
+import { ZONE_DEFS, ZONES_STORAGE_KEY, SECTION_LABEL } from "../constants/displayZones";
 import {
   Calendar,
   Clock,
@@ -57,6 +58,9 @@ export const StoreMap: React.FC<StoreMapProps> = ({
   // Selected shift: "전체" | "오픈" | "미들" | "마감"
   const [selectedShift, setSelectedShift] = useState<string>("전체");
 
+  // Position filter for sidebar active staff list
+  const [sidebarPositionFilter, setSidebarPositionFilter] = useState<string>("전체");
+
   // Open & Close operating hours (Korean store business hours)
   const [openTime, setOpenTime] = useState<string>(() => localStorage.getItem("store_open_time") || "09:00");
   const [closeTime, setCloseTime] = useState<string>(() => localStorage.getItem("store_close_time") || "22:00");
@@ -75,6 +79,16 @@ export const StoreMap: React.FC<StoreMapProps> = ({
 
   // Hover target track for dragover highlighting
   const [dragOverZone, setDragOverZone] = useState<string | null>(null);
+
+  // Display zone assignments (ZONE_DEFS 기반, 41개 진열대 담당직원 표시)
+  type DisplayZoneSlim = {
+    id: string; num: number; assignedStaffId: number | null;
+    assignedStaffName: string; status: string; label: string;
+    category: string; section: string; products: string;
+  };
+  const [displayZones, setDisplayZones] = useState<DisplayZoneSlim[]>([]);
+  const [zoneVer, setZoneVer] = useState(0);
+  const [dragOverZoneNum, setDragOverZoneNum] = useState<number | null>(null);
 
   // Responsive Zoom-scale level configuration for L-shape blueprint view
   const [zoomLevel, setZoomLevel] = useState<number>(0.9);
@@ -194,6 +208,53 @@ export const StoreMap: React.FC<StoreMapProps> = ({
       offDutyStaff.push(emp);
     }
   });
+
+  // Load display zone assignments from localStorage (ZONES_STORAGE_KEY)
+  const loadDisplayZones = (): DisplayZoneSlim[] => {
+    try {
+      const raw = localStorage.getItem(ZONES_STORAGE_KEY);
+      if (!raw) return ZONE_DEFS.map(d => ({
+        id: String(d.num), num: d.num, label: d.label,
+        category: d.category, section: d.section,
+        assignedStaffId: null, assignedStaffName: "",
+        status: "normal", products: ""
+      }));
+      return JSON.parse(raw) as DisplayZoneSlim[];
+    } catch { return []; }
+  };
+
+  const saveZoneAssignment = (zoneNum: number, empId: number | null, empName: string) => {
+    const current = loadDisplayZones();
+    const updated = current.map(z =>
+      z.num === zoneNum
+        ? { ...z, assignedStaffId: empId, assignedStaffName: empName }
+        : z
+    );
+    localStorage.setItem(ZONES_STORAGE_KEY, JSON.stringify(updated));
+    setZoneVer(v => v + 1);
+  };
+
+  // Sync displayZones state whenever zoneVer changes
+  useEffect(() => {
+    setDisplayZones(loadDisplayZones());
+  }, [zoneVer]);
+
+  // Zone drag-and-drop handlers (담당직원 배정용, 시뮬레이터 핸들러와는 별개)
+  const handleZoneDragOver = (e: React.DragEvent, num: number) => {
+    e.preventDefault();
+    setDragOverZoneNum(num);
+  };
+  const handleZoneDragLeave = () => setDragOverZoneNum(null);
+  const handleZoneDrop = (e: React.DragEvent, zoneNum: number) => {
+    e.preventDefault();
+    const empId = e.dataTransfer.getData("text/plain");
+    if (!empId) { setDragOverZoneNum(null); return; }
+    const emp = employees.find(e => String(e.id) === empId);
+    if (!emp) { setDragOverZoneNum(null); return; }
+    saveZoneAssignment(zoneNum, emp.id, emp.name);
+    setDragOverZoneNum(null);
+  };
+  const handleZoneUnassign = (zoneNum: number) => saveZoneAssignment(zoneNum, null, "");
 
   // Default distribution initializer based on roles
   const initializeDefaultAssignments = () => {
@@ -329,10 +390,14 @@ export const StoreMap: React.FC<StoreMapProps> = ({
   });
 
   // Calculate search matching lists
-  const matchedActiveStaff = activeWorkingStaff.filter((item) =>
-    item.employee.name.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
-    item.employee.position.toLowerCase().includes(staffSearchQuery.toLowerCase())
-  );
+  const matchedActiveStaff = activeWorkingStaff
+    .filter((item) =>
+      sidebarPositionFilter === "전체" || item.employee.position.includes(sidebarPositionFilter)
+    )
+    .filter((item) =>
+      item.employee.name.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
+      item.employee.position.toLowerCase().includes(staffSearchQuery.toLowerCase())
+    );
 
   const matchedOffStaff = offDutyStaff.filter((emp) =>
     emp.name.toLowerCase().includes(staffSearchQuery.toLowerCase()) ||
@@ -684,6 +749,52 @@ export const StoreMap: React.FC<StoreMapProps> = ({
             </button>
           </div>
 
+          {/* Shift filter pills (오늘 출근인원 아래) */}
+          <div className="flex bg-slate-100 p-1 rounded-xl border border-slate-200 gap-0.5">
+            {(["전체", "오픈", "미들", "마감"] as const).map((shift) => (
+              <button
+                key={`sidebar-shift-${shift}`}
+                onClick={() => setSelectedShift(shift)}
+                className={`flex-1 py-1 text-[10px] font-bold rounded-lg cursor-pointer transition ${
+                  selectedShift === shift
+                    ? shiftColors[shift]
+                    : "text-slate-600 hover:text-slate-800 hover:bg-slate-200"
+                }`}
+              >
+                {shift === "전체" && "전체"}
+                {shift === "오픈" && "☀️ 오픈"}
+                {shift === "미들" && "⛅ 미들"}
+                {shift === "마감" && "🌙 마감"}
+              </button>
+            ))}
+          </div>
+
+          {/* Position filter pills */}
+          <div className="flex gap-1">
+            {(["전체", "약사", "물류", "캐셔"] as const).map((pos) => (
+              <button
+                key={`pos-filter-${pos}`}
+                onClick={() => setSidebarPositionFilter(pos)}
+                className={`flex-1 py-1 text-[10px] font-bold rounded-lg cursor-pointer transition border ${
+                  sidebarPositionFilter === pos
+                    ? pos === "전체"
+                      ? "bg-slate-800 text-white border-slate-800"
+                      : pos === "약사"
+                      ? "bg-violet-600 text-white border-violet-600"
+                      : pos === "물류"
+                      ? "bg-orange-500 text-white border-orange-500"
+                      : "bg-teal-500 text-white border-teal-500"
+                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                }`}
+              >
+                {pos === "전체" && "전체"}
+                {pos === "약사" && "💊 약사"}
+                {pos === "물류" && "📦 물류"}
+                {pos === "캐셔" && "💳 캐셔"}
+              </button>
+            ))}
+          </div>
+
           {/* Search box */}
           <div className="relative">
             <input
@@ -949,19 +1060,63 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                     </div>
                   </div>
 
-                  {/* Blueprint Graphic: long row of vertical shelf units (matches map.png top band) */}
-                  <div className="grid grid-cols-[repeat(20,minmax(0,1fr))] gap-1 py-2 bg-slate-50 p-2 rounded-xl border border-slate-200 mb-2">
-                    {Array.from({ length: 20 }).map((_, index) => (
-                      <div
-                        key={`shelf-${index}`}
-                        className="h-12 bg-white border border-slate-300 rounded-sm flex flex-col items-center justify-between py-1 shadow-3xs"
-                      >
-                        <span className="text-[6px] font-black text-slate-400 leading-none">진열</span>
-                        <div className="w-3/4 h-[1px] bg-slate-200"></div>
-                        <div className="w-3/4 h-[1px] bg-slate-200"></div>
-                        <span className="text-[6px] font-bold text-slate-500 leading-none">{index + 1}</span>
-                      </div>
-                    ))}
+                  {/* 구역별 담당직원 배정 타일 (ZONE_DEFS 기반, ZONES_STORAGE_KEY 연동) */}
+                  <div className="space-y-2 mb-2">
+                    {(["top_wall", "aisle", "bottom_wall"] as const).map((section) => {
+                      const sectionZones = ZONE_DEFS.filter(z => z.section === section);
+                      const sectionLabel = SECTION_LABEL[section];
+                      return (
+                        <div key={section}>
+                          <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1 px-0.5">
+                            {sectionLabel}
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {sectionZones.map((zoneDef) => {
+                              const dz = displayZones.find(z => z.num === zoneDef.num);
+                              const isAssigned = !!(dz?.assignedStaffId);
+                              const isDragTarget = dragOverZoneNum === zoneDef.num;
+                              return (
+                                <div
+                                  key={zoneDef.num}
+                                  onDragOver={(e) => handleZoneDragOver(e, zoneDef.num)}
+                                  onDragLeave={handleZoneDragLeave}
+                                  onDrop={(e) => handleZoneDrop(e, zoneDef.num)}
+                                  className={`relative flex flex-col items-center justify-between rounded border p-1 min-w-[36px] transition-all ${
+                                    isDragTarget
+                                      ? "bg-violet-100 border-violet-500 scale-[1.04] z-10 shadow-sm"
+                                      : isAssigned
+                                        ? "bg-violet-50 border-violet-300"
+                                        : "bg-white border-slate-200 hover:border-violet-300 hover:bg-violet-50/40"
+                                  }`}
+                                  title={`${zoneDef.num}번 - ${zoneDef.category}`}
+                                >
+                                  <span className={`text-[9px] font-black leading-none ${isAssigned ? "text-violet-700" : "text-slate-500"}`}>
+                                    {zoneDef.num}
+                                  </span>
+                                  <span className={`text-[7px] leading-none mt-0.5 text-center ${isAssigned ? "text-violet-600" : "text-slate-300"}`}>
+                                    {dz?.assignedStaffName
+                                      ? dz.assignedStaffName.length > 3
+                                        ? dz.assignedStaffName.slice(0, 3)
+                                        : dz.assignedStaffName
+                                      : "·"}
+                                  </span>
+                                  {isAssigned && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleZoneUnassign(zoneDef.num)}
+                                      className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-400 hover:bg-rose-600 text-white rounded-full text-[7px] font-black flex items-center justify-center transition cursor-pointer z-10"
+                                      title="담당 해제"
+                                    >
+                                      ✕
+                                    </button>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   {/* Drop zone for aisles staff (the wide aisle/walkway underneath the shelves) */}

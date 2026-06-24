@@ -176,26 +176,29 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
     <div className="min-h-screen bg-slate-950 flex flex-col">
 
       {/* Header */}
-      <header className="bg-slate-900 border-b border-slate-800 h-14 flex items-center px-4 sm:px-6 gap-3 shrink-0">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1.5 text-slate-400 hover:text-white transition text-sm font-medium cursor-pointer"
-        >
-          <ChevronLeft size={16} />
-          <span>홈으로</span>
-        </button>
-        <span className="text-slate-700">|</span>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-emerald-600 flex items-center justify-center">
-            <Calendar size={13} className="text-white" />
+      <header className="bg-slate-900 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-md">
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={onBack}
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition cursor-pointer mr-1 text-xs font-semibold shrink-0"
+            title="메인으로 돌아가기"
+          >
+            <ChevronLeft size={13} />
+            <span className="hidden sm:inline">메인</span>
+          </button>
+          <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shadow-sm">
+            <Calendar size={14} className="text-white" />
           </div>
-          <span className="font-bold text-white text-sm">방문예약</span>
-        </div>
-        <div className="ml-auto">
-          <span className="font-black tracking-tight">
-            <span className="text-red-500 text-base">OSAN</span>
-            <span className="text-slate-400 text-sm"> MEGATOWN</span>
+          <span className="font-black tracking-tight leading-none">
+            <span className="text-red-500 text-xl">OSAN</span>
+            <span className="text-white text-base"> MEGATOWN</span>
           </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-bold">
+            <Calendar size={11} />
+            <span>방문예약</span>
+          </div>
         </div>
       </header>
 

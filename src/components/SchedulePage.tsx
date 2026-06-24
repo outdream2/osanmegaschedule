@@ -1,11 +1,12 @@
-﻿// src/components/SchedulePage.tsx
-import React, { useState, useEffect, useRef } from "react";
+// src/components/SchedulePage.tsx
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
+import { ZONE_DEFS, ZONES_STORAGE_KEY, SECTION_LABEL } from "../constants/displayZones";
 import { Employee, MonthlySummary, Schedule } from "../types";
 import { ScheduleCell } from "./ScheduleCell";
 import { SummaryRow } from "./SummaryRow";
 import { DayTimelineModal } from "./DayTimelineModal";
-import { EmployeeCalendarModal } from "./EmployeeCalendarModal";
+import { EmployeeCalendarModal, type LogisticsZoneProps } from "./EmployeeCalendarModal";
 import { SettingsModal } from "./SettingsModal";
 import { useSettings } from "../hooks/useSettings";
 import {
@@ -34,13 +35,16 @@ import {
   ShieldAlert,
   Edit,
   GripVertical,
+  MapPin,
 } from "lucide-react";
 
 interface SchedulePageProps {
   onBack?: () => void;
+  initialEditEmployeeId?: number | null;
+  onEditEmployeeHandled?: () => void;
 }
 
-export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
+export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditEmployeeId, onEditEmployeeHandled }) => {
   // Settings hook (positions, workplaces, scheduleTypes, shift hours)
   const {
     positions: PRESET_POSITIONS,
@@ -53,8 +57,18 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
     update: updateSettings,
   } = useSettings();
   // Navigation states
-  const [currentYear, setCurrentYear] = useState<number>(2026);
-  const [currentMonth, setCurrentMonth] = useState<number>(5); // default May 2026 matching seed
+  const [currentYear, setCurrentYear] = useState<number>(() => new Date().getFullYear());
+  const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth() + 1);
+
+  // Today's date string in YYYY-MM-DD format (locale-safe, local timezone)
+  const todayStr = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })();
+
 
   // Server state
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -67,9 +81,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
     employeeId: number; date: string; type: string; workingHours: string; actualHours: string; memo: string;
   }>>([]);
 
-  // Drag and Drop row states
+  // Drag and Drop row states (HTML5 desktop)
   const [draggedRowId, setDraggedRowId] = useState<number | null>(null);
   const [dragOverRowId, setDragOverRowId] = useState<number | null>(null);
+
+  // Touch-based row reorder states (mobile)
+  const [touchDragId, setTouchDragId] = useState<number | null>(null);
+  const [touchOverId, setTouchOverId] = useState<number | null>(null);
 
   // Name column: auto-fit to content, measured via ref
   const nameThRef = useRef<HTMLTableCellElement>(null);
@@ -130,6 +148,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
   const [empHireDate, setEmpHireDate] = useState("");
   const [empDescription, setEmpDescription] = useState("");
   const [empWorkplace, setEmpWorkplace] = useState<string>("매장");
+  const [empGender, setEmpGender] = useState<"남" | "여" | "">("");
+  const [empRank, setEmpRank] = useState("");
+  const [empZoneNums, setEmpZoneNums] = useState<number[]>([]);
   const [editingEmpId, setEditingEmpId] = useState<number | null>(null);
   const [tempDescription, setTempDescription] = useState("");
   const [timelineDate, setTimelineDate] = useState<string | null>(null);
@@ -143,6 +164,59 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
     }
   }, [employees]);
 
+  // ── Open edit modal when navigated from DisplayPage ─────────────────────────
+  useEffect(() => {
+    if (!initialEditEmployeeId || employees.length === 0) return;
+    const emp = employees.find(e => e.id === initialEditEmployeeId);
+    if (emp) {
+      openEditEmployeeModal(emp);
+      onEditEmployeeHandled?.();
+    }
+  }, [initialEditEmployeeId, employees]);
+
+  // ── Display zone assignment (shared with DisplayPage via localStorage) ───────
+  type DisplayZoneSlim = { id: string; num: number; assignedStaffId: number | null; assignedStaffName: string; status: string; label: string; category: string; section: string; products: string };
+
+  const [displayZoneVer, setDisplayZoneVer] = useState(0);
+
+  const loadDisplayZones = (): DisplayZoneSlim[] => {
+    try {
+      const raw = localStorage.getItem(ZONES_STORAGE_KEY);
+      if (!raw) return ZONE_DEFS.map(d => ({ id: String(d.num), num: d.num, label: d.label, category: d.category, section: d.section, assignedStaffId: null, assignedStaffName: "", status: "normal", products: "" }));
+      return JSON.parse(raw) as DisplayZoneSlim[];
+    } catch { return []; }
+  };
+
+  const saveDisplayZones = (zones: DisplayZoneSlim[]) => {
+    localStorage.setItem(ZONES_STORAGE_KEY, JSON.stringify(zones));
+    setDisplayZoneVer(v => v + 1);
+  };
+
+  const calendarLogisticsZoneProps: LogisticsZoneProps | undefined =
+    calendarEmployee?.position === "물류"
+      ? (() => {
+          const zones = loadDisplayZones();
+          const assignedZoneNums = zones.filter(z => z.assignedStaffId === calendarEmployee.id).map(z => z.num);
+          return {
+            assignedZoneNums,
+            onToggle: (zoneNum: number) => {
+              const current = loadDisplayZones();
+              saveDisplayZones(current.map(z => {
+                if (z.num !== zoneNum) return z;
+                return z.assignedStaffId === calendarEmployee.id
+                  ? { ...z, assignedStaffId: null, assignedStaffName: "" }
+                  : { ...z, assignedStaffId: calendarEmployee.id, assignedStaffName: calendarEmployee.name };
+              }));
+            },
+            onClearAll: () => {
+              saveDisplayZones(loadDisplayZones().map(z =>
+                z.assignedStaffId === calendarEmployee.id ? { ...z, assignedStaffId: null, assignedStaffName: "" } : z
+              ));
+            },
+          };
+        })()
+      : undefined;
+
   const openCreateEmployeeModal = () => {
     setSelectedEmpForEdit(null);
     setEmpModalMode("create");
@@ -153,6 +227,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
     setEmpHireDate("");
     setEmpDescription("");
     setEmpWorkplace("매장");
+    setEmpGender("");
+    setEmpRank("");
+    setEmpZoneNums([]);
     setIsEmpModalOpen(true);
   };
 
@@ -161,25 +238,36 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
     setEmpModalMode("edit");
     setEmpName(emp.name);
 
-    if (emp.position && !PRESET_POSITIONS.includes(emp.position)) {
+    const knownPositions = ["약사", "캐셔", "물류", "알바"];
+    if (emp.position && !knownPositions.includes(emp.position)) {
       setEmpPosition("기타");
       setEmpCustomPosition(emp.position);
     } else {
       setEmpPosition(emp.position || "");
       setEmpCustomPosition("");
     }
+    setEmpRank(emp.rank || "");
     setEmpEmploymentType(emp.employmentType || "정직원");
     setEmpHireDate(emp.hireDate || "");
     setEmpDescription(emp.description || "");
     setEmpWorkplace(emp.workplace || "매장");
+    setEmpGender((emp.gender as "남" | "여") || "");
+    if (emp.position === "물류") {
+      const zones = loadDisplayZones();
+      setEmpZoneNums(zones.filter(z => z.assignedStaffId === emp.id).map(z => z.num));
+    } else {
+      setEmpZoneNums([]);
+    }
     setIsEmpModalOpen(true);
   };
 
   // Tabs & Search states
-  const [activeTab, setActiveTab] = useState<"전체" | "매장" | "창고" | "약사" | "캐셔" | "물류" | "알바">("전체");
+  const [workplaceTab, setWorkplaceTab] = useState<"전체" | "매장" | "창고">("전체");
+  const [positionTab, setPositionTab] = useState<"전체" | "약사" | "캐셔" | "물류" | "알바" | "기타">("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"none" | "position" | "hireDate" | "name">("none");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
+  const [todayFirst, setTodayFirst] = useState(true);
 
   // Settings modal state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -197,7 +285,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
       }
     }
     if (items.length > 0) await axios.post("/api/schedules/batch", { items });
-    await fetchScheduleData(currentYear, currentMonth);
+    await fetchScheduleData();
     showNotification("기본 근무시간이 현재 월 전체에 적용되었습니다.", "success");
   };
 
@@ -219,7 +307,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
         targetMonth: currentMonth,
       });
       showNotification(`이전 달의 스케줄 ${response.data.count || 0}건이 성공적으로 복사되었습니다!`);
-      await fetchScheduleData(currentYear, currentMonth);
+      await fetchScheduleData();
     } catch (err: any) {
       console.error("Failed to copy schedules:", err);
       showNotification("이전 달 스케줄을 가져오는 도중 오류가 발생했습니다.", "error");
@@ -228,27 +316,94 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
     }
   };
 
-  // Trigger loading schedule
-  const fetchScheduleData = async (year: number, month: number) => {
+  const handlePrevMonth = () => {
+    let year = currentYear;
+    let month = currentMonth - 1;
+    if (month < 1) { month = 12; year--; }
+    setCurrentYear(year);
+    setCurrentMonth(month);
+  };
+
+  const handleNextMonth = () => {
+    let year = currentYear;
+    let month = currentMonth + 1;
+    if (month > 12) { month = 1; year++; }
+    setCurrentYear(year);
+    setCurrentMonth(month);
+  };
+
+  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
+
+  const getDayDetails = (dateStr: string) => {
+    const d = new Date(dateStr + 'T00:00:00');
+    const dayIndex = d.getDay();
+    const dayWord = weekdays[dayIndex];
+    const isToday = dateStr === todayStr;
+
+    let colorClass = "text-slate-600 bg-slate-50";
+    if (isToday) colorClass = "text-white bg-rose-500 font-bold";
+    else if (dayIndex === 6) colorClass = "text-blue-600 bg-blue-50 font-bold";
+    else if (dayIndex === 0) colorClass = "text-rose-600 bg-rose-50 font-bold";
+
+    return { dayWord, colorClass, fullDate: dateStr, isToday };
+  };
+
+  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  const monthStr = String(currentMonth).padStart(2, '0');
+  const dateList: string[] = Array.from({ length: daysInMonth }, (_, i) => {
+    const day = String(i + 1).padStart(2, '0');
+    return `${currentYear}-${monthStr}-${day}`;
+  });
+
+  // Trigger loading schedule — supports a multi-month date range by fetching each month
+  // in parallel and merging employee schedule arrays.
+  const fetchScheduleData = async (dates?: string[]) => {
+    const targetDates = dates ?? dateList;
     setIsLoading(true);
     setError(null);
     try {
-      const response = await axios.get(`/api/schedules?year=${year}&month=${month}`);
-      const fetchedEmployees = response.data.employees || [];
+      // Unique YYYY-MM month keys present in the target date range
+      const monthKeys = Array.from(new Set(targetDates.map(d => d.substring(0, 7))));
+      const months = monthKeys.map(k => ({
+        year: parseInt(k.substring(0, 4)),
+        month: parseInt(k.substring(5, 7)),
+      }));
+
+      const responses = await Promise.all(
+        months.map(({ year, month }) =>
+          axios.get(`/api/schedules?year=${year}&month=${month}`)
+        )
+      );
+
+      // Merge employee data across months (combine schedule arrays by employee id)
+      const empMap = new Map<number, Employee>();
+      for (const res of responses) {
+        const empList: Employee[] = res.data.employees || [];
+        for (const emp of empList) {
+          if (empMap.has(emp.id)) {
+            const existing = empMap.get(emp.id)!;
+            const existingDates = new Set(existing.schedules.map(s => s.date));
+            const newSchedules = emp.schedules.filter(s => !existingDates.has(s.date));
+            existing.schedules = [...existing.schedules, ...newSchedules];
+          } else {
+            empMap.set(emp.id, { ...emp, schedules: [...emp.schedules] });
+          }
+        }
+      }
+
+      let merged = Array.from(empMap.values());
 
       // Apply the localStorage custom order if it exists
       const savedOrderStr = localStorage.getItem("megatown_employee_order");
       if (savedOrderStr) {
         try {
           const savedOrder = JSON.parse(savedOrderStr) as number[];
-          fetchedEmployees.sort((a: any, b: any) => {
-            const indexA = savedOrder.indexOf(a.id);
-            const indexB = savedOrder.indexOf(b.id);
-            if (indexA !== -1 && indexB !== -1) {
-              return indexA - indexB;
-            }
-            if (indexA !== -1) return -1;
-            if (indexB !== -1) return 1;
+          merged.sort((a, b) => {
+            const iA = savedOrder.indexOf(a.id);
+            const iB = savedOrder.indexOf(b.id);
+            if (iA !== -1 && iB !== -1) return iA - iB;
+            if (iA !== -1) return -1;
+            if (iB !== -1) return 1;
             return a.id - b.id; // secondary fallback
           });
         } catch (e) {
@@ -256,8 +411,16 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
         }
       }
 
-      setEmployees(fetchedEmployees);
-      setSummary(response.data.summary || []);
+      setEmployees(merged);
+
+      // Prefer today's month summary when present in the loaded range; else first month's
+      const todayMeta = { year: new Date().getFullYear(), month: new Date().getMonth() + 1 };
+      const primaryIdx = months.findIndex(m => m.year === todayMeta.year && m.month === todayMeta.month);
+      if (primaryIdx !== -1) {
+        setSummary(responses[primaryIdx].data.summary || []);
+      } else if (responses.length > 0) {
+        setSummary(responses[0].data.summary || []);
+      }
     } catch (err: any) {
       console.error("Error fetching schedules:", err);
       setError("스케줄 데이터를 불러오는 중에 오류가 발생했습니다.");
@@ -266,8 +429,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
     }
   };
 
+  // Re-fetch whenever year or month changes
   useEffect(() => {
-    fetchScheduleData(currentYear, currentMonth);
+    fetchScheduleData(dateList);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentYear, currentMonth]);
 
   const showNotification = (message: string, type: "success" | "error" = "success") => {
@@ -341,25 +506,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
     setDragOverRowId(null);
   };
 
-  // Nav Month handlers
-  const handlePrevMonth = () => {
-    if (currentMonth === 1) {
-      setCurrentMonth(12);
-      setCurrentYear((prev) => prev - 1);
-    } else {
-      setCurrentMonth((prev) => prev - 1);
-    }
-  };
-
-  const handleNextMonth = () => {
-    if (currentMonth === 12) {
-      setCurrentMonth(1);
-      setCurrentYear((prev) => prev + 1);
-    } else {
-      setCurrentMonth((prev) => prev + 1);
-    }
-  };
-
   // Cell Update callback
   const handleCellUpdate = async (data: {
     employeeId: number;
@@ -414,7 +560,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
       });
 
       // Refetch summaries quietly in background to update total row metrics
-      const summaryRes = await axios.get(`/api/schedules?year=${currentYear}&month=${currentMonth}`);
+      // (today's month is the most useful for the sidebar dashboard)
+      const primaryYear = new Date().getFullYear();
+      const primaryMonth = new Date().getMonth() + 1;
+      const summaryRes = await axios.get(`/api/schedules?year=${primaryYear}&month=${primaryMonth}`);
       setSummary(summaryRes.data.summary || []);
 
       showNotification(`${data.date.split("-").slice(1).join("/")} 스케줄이 성공적으로 변경되었습니다.`);
@@ -446,32 +595,52 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
   // Add/Edit Employee Handler
   const handleAddEmployeeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalPosition = empPosition === "기타" ? empCustomPosition.trim() : empPosition.trim();
+    const finalPosition = (!["약사", "캐셔", "물류", "알바"].includes(empPosition) && empCustomPosition.trim())
+      ? empCustomPosition.trim()
+      : empPosition.trim();
     if (!empName.trim() || !finalPosition) {
-      showNotification("직원 성명과 구분/직급을 완벽하게 기입해 주십시오.", "error");
+      showNotification("직원 성명과 구분을 입력해 주십시오.", "error");
       return;
     }
+
+    const applyZones = (empId: number, name: string) => {
+      if (finalPosition !== "물류") return;
+      const current = loadDisplayZones();
+      const cleared = current.map(z =>
+        z.assignedStaffId === empId ? { ...z, assignedStaffId: null, assignedStaffName: "" } : z
+      );
+      const updated = cleared.map(z =>
+        empZoneNums.includes(z.num) ? { ...z, assignedStaffId: empId, assignedStaffName: name } : z
+      );
+      saveDisplayZones(updated);
+    };
 
     try {
       if (empModalMode === "edit" && selectedEmpForEdit) {
         await axios.put(`/api/employees/${selectedEmpForEdit.id}`, {
           name: empName,
           position: finalPosition,
+          rank: empRank.trim() || null,
           employmentType: empEmploymentType,
           hireDate: empHireDate || new Date().toISOString().split("T")[0],
           description: empDescription,
           workplace: empWorkplace,
+          gender: empGender || null,
         });
+        applyZones(selectedEmpForEdit.id, empName);
         showNotification(`${empName} 직원의 정보가 수정되었습니다.`);
       } else {
-        await axios.post("/api/employees", {
+        const res = await axios.post("/api/employees", {
           name: empName,
           position: finalPosition,
+          rank: empRank.trim() || null,
           employmentType: empEmploymentType,
           hireDate: empHireDate || new Date().toISOString().split("T")[0],
           description: empDescription,
           workplace: empWorkplace,
+          gender: empGender || null,
         });
+        if (res.data?.id) applyZones(res.data.id, empName);
         showNotification(`새 직원 ${empName}님이 등록되었습니다.`);
       }
 
@@ -483,9 +652,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
       setEmpHireDate("");
       setEmpDescription("");
       setEmpWorkplace("매장");
+      setEmpGender("");
+      setEmpRank("");
+      setEmpZoneNums([]);
       setSelectedEmpForEdit(null);
       setEmpModalMode("create");
-      fetchScheduleData(currentYear, currentMonth); // refresh roster
+      fetchScheduleData(); // refresh roster
     } catch (err: any) {
       console.error("Failed to solve employee form request:", err);
       showNotification(empModalMode === "edit" ? "직원 정보 수정 도중 오류가 발생했습니다." : "직원 등록 도중 오류가 발생했습니다.", "error");
@@ -501,7 +673,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
     try {
       await axios.delete(`/api/employees/${id}`);
       showNotification(`${name} 직원이 삭제되었습니다.`);
-      fetchScheduleData(currentYear, currentMonth); // refresh roster
+      fetchScheduleData(); // refresh roster
     } catch (err) {
       console.error("Failed to delete employee:", err);
       showNotification("직원 삭제 도중 오류가 발생했습니다.", "error");
@@ -552,49 +724,28 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
   const OFF_TYPES_SET = new Set(["휴무", "월차", "지정휴무", "결근"]);
 
   const getEmpMonthStats = (emp: Employee) => {
-    const monthStr = String(currentMonth).padStart(2, "0");
-    const monthSchedules = emp.schedules.filter(s => s.date.startsWith(`${currentYear}-${monthStr}-`));
-    const workDays = monthSchedules.filter(s => s.type && !OFF_TYPES_SET.has(s.type)).length;
-    const totalHours = monthSchedules.reduce((sum, s) => {
+    const dateSet = new Set(dateList);
+    const visibleSchedules = emp.schedules.filter(s => dateSet.has(s.date));
+    const workDays = visibleSchedules.filter(s => s.type && !OFF_TYPES_SET.has(s.type)).length;
+    const totalHours = visibleSchedules.reduce((sum, s) => {
       if (!s.type || OFF_TYPES_SET.has(s.type)) return sum;
       return sum + parseWorkingHours(s.workingHours || "");
     }, 0);
     return { workDays, totalHours };
   };
 
-  // Help calculate weekday name mapping
-  const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
-  const getDayDetails = (dayNum: number) => {
-    const monthStr = String(currentMonth).padStart(2, "0");
-    const dayStr = String(dayNum).padStart(2, "0");
-    const fullDate = `${currentYear}-${monthStr}-${dayStr}`;
-    const dayIndex = new Date(currentYear, currentMonth - 1, dayNum).getDay();
-    const dayWord = weekdays[dayIndex];
-
-    let colorClass = "text-slate-600 bg-slate-50";
-    if (dayIndex === 6) colorClass = "text-blue-600 bg-blue-50 font-bold"; // Saturday Blue
-    if (dayIndex === 0) colorClass = "text-rose-600 bg-rose-50 font-bold";  // Sunday Red
-
-    return { dayWord, colorClass, fullDate };
-  };
-
-  const getDaysArray = () => {
-    const totalDays = new Date(currentYear, currentMonth, 0).getDate();
-    return Array.from({ length: totalDays }, (_, i) => i + 1);
-  };
-
-  const daysList = getDaysArray();
-
-  const WORKPLACE_TABS = new Set(["매장", "창고"]);
-  const POSITION_TABS = new Set(["약사", "캐셔", "물류", "알바"]);
+  const KNOWN_POSITIONS = new Set(["약사", "캐셔", "물류", "알바"]);
 
   const filteredEmployees = employees
     .filter((emp) => {
-      if (activeTab !== "전체") {
-        if (WORKPLACE_TABS.has(activeTab)) {
-          if ((emp.workplace || "매장") !== activeTab) return false;
-        } else if (POSITION_TABS.has(activeTab)) {
-          if (emp.position !== activeTab) return false;
+      if (workplaceTab !== "전체") {
+        if ((emp.workplace || "매장") !== workplaceTab) return false;
+      }
+      if (positionTab !== "전체") {
+        if (positionTab === "기타") {
+          if (KNOWN_POSITIONS.has(emp.position)) return false;
+        } else {
+          if (emp.position !== positionTab) return false;
         }
       }
       if (searchQuery.trim() !== "") {
@@ -603,6 +754,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
       return true;
     })
     .sort((a, b) => {
+      // 오늘 출근 우선 정렬 (최우선)
+      if (todayFirst) {
+        const aToday = a.schedules.some(s => s.date === todayStr && s.type && !OFF_TYPES_SET.has(s.type));
+        const bToday = b.schedules.some(s => s.date === todayStr && s.type && !OFF_TYPES_SET.has(s.type));
+        if (aToday !== bToday) return aToday ? -1 : 1;
+      }
+
       if (sortBy === "position") {
         const PRESET_MAPPING: Record<string, number> = {
           "대표": 1,
@@ -634,17 +792,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
           : b.name.localeCompare(a.name, "ko");
       }
 
-      return 0; // Default unsorted DB sequence loaded initially
+      return 0;
     });
 
   const getCalculatedSummary = () => {
-    const totalDays = new Date(currentYear, currentMonth, 0).getDate();
     const result: MonthlySummary[] = [];
-    const monthStr = String(currentMonth).padStart(2, "0");
 
-    for (let day = 1; day <= totalDays; day++) {
-      const dayStr = String(day).padStart(2, "0");
-      const currentDate = `${currentYear}-${monthStr}-${dayStr}`;
+    dateList.forEach((currentDate) => {
+      const day = parseInt(currentDate.split('-')[2]);
 
       let openCount = 0;
       let middleCount = 0;
@@ -686,7 +841,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
         pharmacistCount,
         staffCount,
       });
-    }
+    });
 
     return result;
   };
@@ -706,7 +861,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
     }
 
     const employeeRecords: EmployeeAttendance[] = [];
-    const monthStr = String(currentMonth).padStart(2, "0");
+    const visibleDateSet = new Set(dateList);
 
     for (const emp of employees) {
       const lates: Array<{ date: string; note: string; schedType: string }> = [];
@@ -714,7 +869,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
       const absences: Array<{ date: string; note: string; schedType: string }> = [];
 
       emp.schedules.forEach((s) => {
-        if (s.date.startsWith(`${currentYear}-${monthStr}-`)) {
+        if (visibleDateSet.has(s.date)) {
           const act = s.actualHours || "";
           const type = s.type || "";
 
@@ -834,7 +989,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
           )}
 
           <button
-            onClick={() => fetchScheduleData(currentYear, currentMonth)}
+            onClick={() => fetchScheduleData()}
             className="px-3 py-1.5 text-xs font-semibold border border-slate-700 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 transition-all duration-150 cursor-pointer flex items-center gap-1.5"
           >
             <span className="hidden sm:inline">새로고침</span>
@@ -876,23 +1031,44 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
 
       {/* 1.5 Sub-Header Control Bar for Workplace Tabs, Employee Sorting & Search */}
       <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2 sm:gap-3 shrink-0 shadow-sm">
-          {/* Filter Tabs: workplace + position */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+          {/* Filter Tabs: two independent groups */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">필터</span>
-            <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5 flex-wrap">
+            {/* Group 1: Workplace */}
+            <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
               {([
                 { key: "전체", label: "전체", icon: <Layers size={12} />, color: "text-indigo-600", count: employees.length },
                 { key: "매장", label: "매장", icon: <Building2 size={12} />, color: "text-emerald-600", count: employees.filter(e => (e.workplace || "매장") === "매장").length },
                 { key: "창고", label: "창고", icon: <Warehouse size={12} />, color: "text-indigo-600", count: employees.filter(e => e.workplace === "창고").length },
+              ] as const).map(({ key, label, icon, color, count }) => (
+                <button
+                  key={key}
+                  onClick={() => setWorkplaceTab(key)}
+                  className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${workplaceTab === key
+                    ? `bg-white ${color} shadow-sm font-bold`
+                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                    }`}
+                >
+                  {icon}
+                  <span>{label} <span className="text-slate-400 font-normal hidden sm:inline">({count})</span><span className="text-slate-400 font-normal sm:hidden"> {count}</span></span>
+                </button>
+              ))}
+            </div>
+            <span className="text-slate-300 text-sm shrink-0">─</span>
+            {/* Group 2: Position */}
+            <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
+              {([
+                { key: "전체", label: "전체", icon: <Layers size={12} />, color: "text-indigo-600", count: employees.length },
                 { key: "약사", label: "약사", icon: null, color: "text-violet-600", count: employees.filter(e => e.position === "약사").length },
                 { key: "캐셔", label: "캐셔", icon: null, color: "text-amber-600", count: employees.filter(e => e.position === "캐셔").length },
                 { key: "물류", label: "물류", icon: null, color: "text-sky-600", count: employees.filter(e => e.position === "물류").length },
                 { key: "알바", label: "알바", icon: null, color: "text-rose-600", count: employees.filter(e => e.position === "알바").length },
+                { key: "기타", label: "기타", icon: null, color: "text-slate-600", count: employees.filter(e => !["약사","캐셔","물류","알바"].includes(e.position)).length },
               ] as const).map(({ key, label, icon, color, count }) => (
                 <button
                   key={key}
-                  onClick={() => setActiveTab(key as typeof activeTab)}
-                  className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${activeTab === key
+                  onClick={() => setPositionTab(key)}
+                  className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${positionTab === key
                     ? `bg-white ${color} shadow-sm font-bold`
                     : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                     }`}
@@ -906,6 +1082,21 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
 
           {/* Employee Sorting Section */}
           <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs">
+            {/* 오늘 출근 우선 토글 */}
+            <button
+              type="button"
+              onClick={() => setTodayFirst(v => !v)}
+              className={`inline-flex items-center gap-1 px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                todayFirst
+                  ? "bg-rose-500 text-white border-rose-500 shadow-sm"
+                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+              }`}
+              title="오늘 출근 직원을 목록 상단에 표시"
+            >
+              <span>🟢</span>
+              <span className="hidden sm:inline">오늘 출근 우선</span>
+              <span className="sm:hidden">오늘순</span>
+            </button>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">정렬</span>
             <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
               <button
@@ -994,7 +1185,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                   onClick={async () => {
                     if (window.confirm("드래그 앤 드롭으로 재배치한 순서를 지우고, 원래 기본 순서로 복구하시겠습니까?")) {
                       localStorage.removeItem("megatown_employee_order");
-                      await fetchScheduleData(currentYear, currentMonth);
+                      await fetchScheduleData();
                       showNotification("정렬 순서가 기본값으로 초기화되었습니다.");
                     }
                   }}
@@ -1207,7 +1398,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
           <div className="flex gap-1.5">
             <select
               value={currentYear}
-              onChange={(e) => setCurrentYear(parseInt(e.target.value))}
+              onChange={(e) => {
+                setCurrentYear(parseInt(e.target.value));
+              }}
               className="bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
             >
               {[2024, 2025, 2026, 2027, 2028].map((y) => (
@@ -1217,7 +1410,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
 
             <select
               value={currentMonth}
-              onChange={(e) => setCurrentMonth(parseInt(e.target.value))}
+              onChange={(e) => {
+                setCurrentMonth(parseInt(e.target.value));
+              }}
               className="bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
             >
               {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
@@ -1313,7 +1508,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                   </div>
                   <p className="text-rose-700 font-bold text-xs">{error}</p>
                   <button
-                    onClick={() => fetchScheduleData(currentYear, currentMonth)}
+                    onClick={() => fetchScheduleData()}
                     className="mt-4 px-3 py-1 text-xs bg-slate-50 border border-slate-200 hover:bg-slate-100 font-semibold rounded"
                   >
                     다시 시도
@@ -1351,9 +1546,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                           <span className="sm:hidden">성명</span>
                         </th>
 
-                        {daysList.map((day) => {
-                          const { fullDate } = getDayDetails(day);
-                          const dayIndex = new Date(currentYear, currentMonth - 1, day).getDay();
+                        {dateList.map((dateStr) => {
+                          const { fullDate, isToday } = getDayDetails(dateStr);
+                          const dayNum = parseInt(dateStr.split('-')[2]);
+                          const dayIndex = new Date(dateStr + 'T00:00:00').getDay();
                           const headerClass = dayIndex === 6
                             ? "text-sky-300 bg-slate-700"
                             : dayIndex === 0
@@ -1361,12 +1557,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                               : "text-slate-200 bg-slate-800";
                           return (
                             <th
-                              key={`day-num-${day}`}
+                              key={`day-num-${dateStr}`}
                               onClick={() => setTimelineDate(fullDate)}
-                              className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-slate-700 w-[30px] sm:w-[44px] cursor-pointer hover:bg-indigo-700 hover:text-white transition-colors ${headerClass}`}
+                              className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-slate-700 w-[30px] sm:w-[44px] cursor-pointer hover:bg-indigo-700 hover:text-white transition-colors ${headerClass} ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-40 relative" : ""}`}
                               title={`${fullDate} 타임라인 보기`}
                             >
-                              {day}
+                              {dayNum}
                             </th>
                           );
                         })}
@@ -1381,9 +1577,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                         {/* Left spacing header matching Name column */}
                         <th className="border-r border-b border-slate-600 sticky left-0 bg-slate-700 z-40 h-5 sm:h-6" style={{ minWidth: "80px" }}></th>
 
-                        {daysList.map((day) => {
-                          const { dayWord } = getDayDetails(day);
-                          const dayIndex = new Date(currentYear, currentMonth - 1, day).getDay();
+                        {dateList.map((dateStr) => {
+                          const { dayWord, isToday } = getDayDetails(dateStr);
+                          const dayIndex = new Date(dateStr + 'T00:00:00').getDay();
                           const wordClass = dayIndex === 6
                             ? "text-sky-400 font-bold"
                             : dayIndex === 0
@@ -1391,8 +1587,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                               : "text-slate-400";
                           return (
                             <th
-                              key={`day-name-${day}`}
-                              className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-slate-600 w-[30px] sm:w-[44px] bg-slate-700 ${wordClass}`}
+                              key={`day-name-${dateStr}`}
+                              className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-slate-600 w-[30px] sm:w-[44px] bg-slate-700 ${wordClass} ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-40 relative" : ""}`}
                             >
                               {dayWord}
                             </th>
@@ -1439,6 +1635,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                               <div className="flex-1 flex flex-col justify-between py-1 px-1.5 min-w-0">
                                 {/* Top: name + memo dot */}
                                 <div className="flex items-center gap-0.5 min-w-0">
+                                  {emp.gender === "남" && (
+                                    <span className="text-[9px] font-bold text-sky-500 shrink-0 leading-none">♂</span>
+                                  )}
+                                  {emp.gender === "여" && (
+                                    <span className="text-[9px] font-bold text-rose-400 shrink-0 leading-none">♀</span>
+                                  )}
                                   <span
                                     onClick={() => setCalendarEmployee(emp)}
                                     className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[10px] sm:text-[11px] cursor-pointer select-none transition break-keep leading-tight"
@@ -1455,9 +1657,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                                     </span>
                                   )}
                                 </div>
-                                {/* Middle: position · employmentType */}
+                                {/* Middle: position (구분) · rank (직급) · employmentType */}
                                 <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium leading-tight break-keep">
-                                  {emp.position}{emp.employmentType ? ` · ${emp.employmentType}` : ""}
+                                  {emp.position}{emp.rank ? ` / ${emp.rank}` : ""}{emp.employmentType ? ` · ${emp.employmentType}` : ""}
                                 </span>
                                 {/* Bottom: edit / delete (admin) */}
                                 {isAdmin && (
@@ -1482,13 +1684,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                             </div>
                           </td>
 
-                          {/* Schedule Cells 1 to 31 */}
-                          {daysList.map((day) => {
-                            const { fullDate } = getDayDetails(day);
+                          {/* Schedule Cells */}
+                          {dateList.map((dateStr) => {
+                            const { fullDate, isToday } = getDayDetails(dateStr);
                             const currentSched = emp.schedules.find((s) => s.date === fullDate);
 
                             return (
-                              <td key={`${emp.id}-${day}`} className="p-0 border-r border-[#e2e8f0]">
+                              <td key={`${emp.id}-${dateStr}`} className={`p-0 border-r border-[#e2e8f0] ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-25 relative" : ""}`}>
                                 <ScheduleCell
                                   schedule={currentSched}
                                   dateStr={fullDate}
@@ -1546,7 +1748,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
               const todaySummary = isThisMonth ? currentSummaryList.find(s => s.day === today.getDate()) : null;
               const totalWorkdays = currentSummaryList.filter(s => s.totalCount > 0).length;
               const avgPerDay = totalWorkdays > 0
-                ? (currentSummaryList.reduce((acc, s) => acc + s.totalCount, 0) / daysList.length).toFixed(1)
+                ? (currentSummaryList.reduce((acc, s) => acc + s.totalCount, 0) / dateList.length).toFixed(1)
                 : "0";
               return (
                 <div id="attendance-dashboard" className="m-2 sm:m-4 p-3 lg:m-0 lg:p-4 lg:w-64 xl:w-72 lg:shrink-0 lg:border-l lg:border-slate-200 lg:overflow-y-auto bg-white border border-slate-200 lg:border-y-0 lg:border-r-0 rounded-2xl lg:rounded-none shadow-sm lg:shadow-none flex flex-col gap-3">
@@ -1740,85 +1942,151 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                 />
               </div>
 
+              {/* ── 구분 (Classification) — used for filters ── */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-                  <Briefcase size={13} /> 구분 / 직급 <span className="text-rose-500">*</span>
+                  <Briefcase size={13} /> 구분 <span className="text-rose-500">*</span>
+                  <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">업무 분류 (필터에 사용)</span>
                 </label>
-
-                <div className="flex gap-2">
-                  <select
-                    value={PRESET_POSITIONS.includes(empPosition) ? empPosition : (empPosition ? "기타" : "")}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === "기타") {
-                        setEmpPosition("기타");
-                        if (!empCustomPosition) {
-                          setEmpCustomPosition("");
-                        }
-                      } else {
-                        setEmpPosition(val);
-                        setEmpCustomPosition("");
-                      }
-                    }}
-                    className="flex-1 text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white font-medium text-slate-800 focus:outline-none cursor-pointer text-ellipsis overflow-hidden"
-                  >
-                    <option value="">-- 프리셋 선택 --</option>
-                    {PRESET_POSITIONS.map((pos) => (
-                      <option key={pos} value={pos}>{pos}</option>
-                    ))}
-                    <option value="기타">기타 (직접 수정/입력)</option>
-                  </select>
-
-                  <input
-                    type="text"
-                    required
-                    placeholder="직급명 직접 입력 또는 수정"
-                    value={empPosition === "기타" ? empCustomPosition : empPosition}
-                    onChange={(e) => {
-                      const text = e.target.value;
-                      if (PRESET_POSITIONS.includes(text)) {
-                        setEmpPosition(text);
-                        setEmpCustomPosition("");
-                      } else {
-                        setEmpPosition("기타");
-                        setEmpCustomPosition(text);
-                      }
-                    }}
-                    className="flex-1 text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white font-semibold text-slate-800 placeholder:text-slate-400"
-                  />
-                </div>
-
-                {/* Visual Quick-Select Buttons to make employee position editing/creation extremely rapid */}
-                <div className="flex flex-wrap gap-1 mt-2">
-                  {PRESET_POSITIONS.map((pos) => (
+                <div className="flex flex-wrap gap-1">
+                  {(["약사", "캐셔", "물류", "알바"] as const).map((pos) => (
                     <button
                       key={pos}
                       type="button"
-                      onClick={() => {
-                        setEmpPosition(pos);
-                        setEmpCustomPosition("");
-                      }}
-                      className={`px-2 py-0.5 text-[10px] rounded transition duration-150 font-bold cursor-pointer border ${empPosition === pos
-                        ? "bg-blue-50 text-[#2563eb] border-blue-200"
-                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                        }`}
+                      onClick={() => { setEmpPosition(pos); setEmpCustomPosition(""); if (pos !== "물류") setEmpZoneNums([]); }}
+                      className={`px-2.5 py-1 text-[11px] rounded-lg transition font-bold cursor-pointer border ${
+                        empPosition === pos
+                          ? "bg-indigo-50 text-indigo-700 border-indigo-300 shadow-sm"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                      }`}
                     >
                       {pos}
                     </button>
                   ))}
                   <button
                     type="button"
-                    onClick={() => {
-                      setEmpPosition("기타");
-                    }}
-                    className={`px-2 py-0.5 text-[10px] rounded transition duration-150 font-bold cursor-pointer border ${empPosition === "기타"
-                      ? "bg-blue-50 text-[#2563eb] border-blue-200"
-                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                      }`}
+                    onClick={() => setEmpPosition("기타")}
+                    className={`px-2.5 py-1 text-[11px] rounded-lg transition font-bold cursor-pointer border ${
+                      !["약사", "캐셔", "물류", "알바"].includes(empPosition) && empPosition !== ""
+                        ? "bg-indigo-50 text-indigo-700 border-indigo-300 shadow-sm"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                    }`}
                   >
-                    직접 입력✒️
+                    기타
                   </button>
                 </div>
+                {(empPosition === "기타" || (!["약사", "캐셔", "물류", "알바", ""].includes(empPosition))) && (
+                  <input
+                    type="text"
+                    placeholder="직접 입력"
+                    value={empCustomPosition}
+                    onChange={(e) => setEmpCustomPosition(e.target.value)}
+                    className="w-full mt-1.5 text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
+                  />
+                )}
+              </div>
+
+              {/* ── 구역 배정 (물류 직원 전용) ── */}
+              {(empPosition === "물류") && (
+                <div className="border border-violet-200 bg-violet-50/40 rounded-xl p-3 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-extrabold text-violet-800 flex items-center gap-1.5">
+                      <MapPin size={13} className="text-violet-600" />
+                      담당 구역 배정
+                      <span className="text-[10px] font-normal text-violet-500">(복수 선택 가능)</span>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      {empZoneNums.length > 0 && (
+                        <span className="text-[10px] font-black text-violet-700 bg-violet-100 border border-violet-200 px-2 py-0.5 rounded-full">
+                          {empZoneNums.length}개 선택
+                        </span>
+                      )}
+                      {empZoneNums.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => setEmpZoneNums([])}
+                          className="text-[10px] font-bold text-rose-500 hover:text-rose-700 cursor-pointer transition"
+                        >
+                          전체 해제
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 섹션별 구역 목록 */}
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-0.5">
+                    {(["top_wall", "aisle", "left_wall", "bottom_wall", "wing"] as const).map((section) => {
+                      const zones = ZONE_DEFS.filter(z => z.section === section);
+                      return (
+                        <div key={section}>
+                          <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">
+                            {SECTION_LABEL[section]}
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {zones.map((z) => {
+                              const isOn = empZoneNums.includes(z.num);
+                              return (
+                                <button
+                                  key={z.num}
+                                  type="button"
+                                  onClick={() =>
+                                    setEmpZoneNums(prev =>
+                                      isOn ? prev.filter(n => n !== z.num) : [...prev, z.num]
+                                    )
+                                  }
+                                  className={`px-1.5 py-1 rounded-lg border text-left transition-all cursor-pointer active:scale-[0.96] ${
+                                    isOn
+                                      ? "bg-violet-100 border-violet-400 shadow-sm"
+                                      : "bg-white border-slate-200 hover:border-violet-300 hover:bg-violet-50"
+                                  }`}
+                                  title={z.category}
+                                >
+                                  <span className={`text-[10px] font-black leading-none ${isOn ? "text-violet-800" : "text-slate-600"}`}>
+                                    {z.num}
+                                  </span>
+                                  <span className={`text-[8px] ml-0.5 ${isOn ? "text-violet-600" : "text-slate-400"}`}>
+                                    {z.label}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ── 직급 (Rank) — separate, independent field ── */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
+                  직급
+                  <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">직위/직책 (선택)</span>
+                </label>
+                <div className="flex flex-wrap gap-1 mb-1.5">
+                  {(["대표", "부장", "팀장", "과장", "약사", "사원"] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setEmpRank(prev => prev === r ? "" : r)}
+                      className={`px-2.5 py-1 text-[11px] rounded-lg transition font-bold cursor-pointer border ${
+                        empRank === r
+                          ? "bg-amber-50 text-amber-700 border-amber-300 shadow-sm"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                      }`}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  placeholder="직접 입력 또는 위 버튼 선택"
+                  value={empRank}
+                  onChange={(e) => setEmpRank(e.target.value)}
+                  className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
+                />
               </div>
 
               <div>
@@ -1851,6 +2119,38 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
                       <span>{et === "정직원" ? "🟢 정직원" : et === "계약직" ? "🔵 계약직" : "🟡 알바"}</span>
                     </label>
                   ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
+                  성별
+                </label>
+                <div className="flex gap-3 p-2 bg-slate-50 border border-[#e2e8f0] rounded-lg">
+                  {(["남", "여"] as const).map((g) => (
+                    <label key={g} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-700">
+                      <input
+                        type="radio"
+                        name="empGender"
+                        value={g}
+                        checked={empGender === g}
+                        onChange={() => setEmpGender(g)}
+                        className="cursor-pointer"
+                      />
+                      <span>{g === "남" ? "♂ 남자" : "♀ 여자"}</span>
+                    </label>
+                  ))}
+                  <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-500">
+                    <input
+                      type="radio"
+                      name="empGender"
+                      value=""
+                      checked={empGender === ""}
+                      onChange={() => setEmpGender("")}
+                      className="cursor-pointer"
+                    />
+                    <span>미지정</span>
+                  </label>
                 </div>
               </div>
 
@@ -2002,7 +2302,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
           closeShiftHour={closeShiftHour}
           onClose={() => setTimelineDate(null)}
           onEditEmployee={isAdmin ? openEditEmployeeModal : undefined}
-          onScheduleUpdate={() => fetchScheduleData(currentYear, currentMonth)}
+          onScheduleUpdate={() => fetchScheduleData()}
         />
       )}
 
@@ -2019,12 +2319,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack }) => {
               items: items.map(item => ({ employeeId: calendarEmployee.id, ...item })),
             });
             showNotification(`${calendarEmployee.name}님의 ${items.length}일 일괄 스케줄이 반영되었습니다.`);
-            await fetchScheduleData(currentYear, currentMonth);
+            await fetchScheduleData();
           }}
           scheduleTypes={settingsScheduleTypes.map(v => ({ value: v, label: v }))}
           openShiftHour={openShiftHour}
           middleShiftHour={middleShiftHour}
           closeShiftHour={closeShiftHour}
+          logisticsZoneProps={calendarLogisticsZoneProps}
         />
       )}
     </div>

@@ -1,13 +1,31 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
+let _supabase: SupabaseClient | null = null;
+function getSupabase(): SupabaseClient {
+  if (_supabase) return _supabase;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_KEY;
+  if (!url || !key) {
+    throw new Error("Supabase environment variables (SUPABASE_URL, SUPABASE_KEY) are not configured");
+  }
+  _supabase = createClient(url, key);
+  return _supabase;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(200).end();
+
+  let supabase: SupabaseClient;
+  try {
+    supabase = getSupabase();
+  } catch (err: any) {
+    console.error(err);
+    return res.status(500).json({ error: err.message || "Internal server error" });
+  }
 
   // GET /api/reservations?date=YYYY-MM-DD  → booked time strings for that date
   if (req.method === "GET") {
@@ -25,7 +43,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   // POST /api/reservations  → create reservation
   if (req.method === "POST") {
-    const { date, time, company, contactName, phone, purpose, note } = req.body;
+    const { date, time, company, contactName, phone, purpose, note } = req.body ?? {};
     if (!date || !time || !company || !contactName || !phone || !purpose) {
       return res.status(400).json({ error: "필수 항목이 누락되었습니다." });
     }

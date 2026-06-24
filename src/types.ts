@@ -13,11 +13,13 @@ export interface Schedule {
 export interface Employee {
   id: number;
   name: string;
-  position: string;     // 약사 | 캐셔 | 물류 | 대표 | 임원
+  position: string;     // 구분: 약사 | 캐셔 | 물류 | 알바 | 기타
+  rank?: string;        // 직급: 대표 | 부장 | 팀장 | 과장 | 사원 | ...
   employmentType: string; // 정직원 | 계약직 | 알바
   hireDate: string;
   description: string;
   workplace: string; // "매장" or "창고"
+  gender?: "남" | "여";
   schedules: Schedule[];
 }
 

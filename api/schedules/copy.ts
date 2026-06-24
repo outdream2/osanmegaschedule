@@ -1,7 +1,17 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_KEY!);
+let _supabase: SupabaseClient | null = null;
+function getSupabase(): SupabaseClient {
+  if (_supabase) return _supabase;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_KEY;
+  if (!url || !key) {
+    throw new Error("Supabase environment variables (SUPABASE_URL, SUPABASE_KEY) are not configured");
+  }
+  _supabase = createClient(url, key);
+  return _supabase;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -11,12 +21,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { targetYear, targetMonth } = req.body;
+    const supabase = getSupabase();
+    const { targetYear, targetMonth } = req.body ?? {};
     if (!targetYear || !targetMonth)
       return res.status(400).json({ error: "Missing targetYear or targetMonth" });
 
-    const ty = parseInt(targetYear);
-    const tm = parseInt(targetMonth);
+    const ty = parseInt(targetYear as string);
+    const tm = parseInt(targetMonth as string);
+    if (isNaN(ty) || isNaN(tm) || tm < 1 || tm > 12)
+      return res.status(400).json({ error: "Invalid targetYear or targetMonth" });
+
     const prevMonth = tm === 1 ? 12 : tm - 1;
     const prevYear = tm === 1 ? ty - 1 : ty;
     const prevPrefix = `${prevYear}-${String(prevMonth).padStart(2, "0")}-`;
@@ -28,8 +42,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const rows = (prevSchedules ?? [])
       .map((s: any) => {
+        if (!s || typeof s.date !== "string" || s.date.length < 10) return null;
         const day = parseInt(s.date.slice(8));
-        if (isNaN(day) || day > targetMaxDays) return null;
+        if (isNaN(day) || day < 1 || day > targetMaxDays) return null;
         return { employeeId: s.employeeId, date: `${ty}-${targetMonthStr}-${String(day).padStart(2, "0")}`, type: s.type, workingHours: s.workingHours, actualHours: s.actualHours, memo: s.memo };
       })
       .filter(Boolean);

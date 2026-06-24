@@ -37,6 +37,14 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, totalC
     ? "bg-sky-100 text-sky-800"
     : "bg-indigo-100 text-indigo-800";
 
+  const todayStr = (() => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  })();
+
   return (
     <tr className={isTotal ? "border-t-2 border-indigo-200" : "border-t border-slate-100"}>
       <td
@@ -47,12 +55,13 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, totalC
 
       {summaries.map((sum) => {
         const val = isPharmacist ? sum.pharmacistCount : isStaff ? sum.staffCount : sum.totalCount;
+        const isToday = sum.date === todayStr;
         return (
           <td
             key={sum.day}
             className={`p-1.5 text-center text-xs border-r border-slate-100 w-[30px] sm:w-[44px] transition-colors ${
               val > 0 ? valActiveCls : valEmptyCls
-            }`}
+            } ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-20 relative" : ""}`}
           >
             {val > 0 ? val : <span className="opacity-30">·</span>}
           </td>

@@ -13,15 +13,30 @@ type Page = "landing" | "schedule" | "reservation" | "display";
 
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
+  const [pendingEditEmpId, setPendingEditEmpId] = useState<number | null>(null);
 
   if (page === "schedule") {
-    return <SchedulePage onBack={() => setPage("landing")} />;
+    return (
+      <SchedulePage
+        onBack={() => setPage("landing")}
+        initialEditEmployeeId={pendingEditEmpId}
+        onEditEmployeeHandled={() => setPendingEditEmpId(null)}
+      />
+    );
   }
   if (page === "reservation") {
     return <ReservationPage onBack={() => setPage("landing")} />;
   }
   if (page === "display") {
-    return <DisplayPage onBack={() => setPage("landing")} />;
+    return (
+      <DisplayPage
+        onBack={() => setPage("landing")}
+        onOpenEmployeeEdit={(id) => {
+          setPendingEditEmpId(id);
+          setPage("schedule");
+        }}
+      />
+    );
   }
   return <LandingPage onNavigate={setPage} />;
 }

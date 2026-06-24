@@ -19,9 +19,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   employmentTypes: ["정직원", "계약직", "알바"],
   workplaces: ["매장", "창고"],
   scheduleTypes: DEFAULT_SCHEDULE_TYPES,
-  openShiftHour: "09:30-18:30",
-  middleShiftHour: "11:00-20:00",
-  closeShiftHour: "13:00-22:00",
+  openShiftHour: "10:00-18:00",
+  middleShiftHour: "11:00-18:00",
+  closeShiftHour: "12:00-20:00",
 };
 
 function loadSettings(): AppSettings {

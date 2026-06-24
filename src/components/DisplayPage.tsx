@@ -1,10 +1,12 @@
 // src/components/DisplayPage.tsx
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ZONE_DEFS, ZONES_STORAGE_KEY, type ZoneSection } from "../constants/displayZones";
 import {
   Bell,
   Boxes,
   CheckCircle2,
   ChevronLeft,
+  ChevronRight,
   ClipboardList,
   LayoutGrid,
   Package,
@@ -17,15 +19,18 @@ import {
   AlertTriangle,
   Users,
   Loader2,
-  CheckCheck,
   MapPin,
+  Search,
+  Coffee,
 } from "lucide-react";
 
-interface DisplayPageProps { onBack: () => void; }
+interface DisplayPageProps {
+  onBack: () => void;
+  onOpenEmployeeEdit?: (employeeId: number) => void;
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 type ZoneStatus = "normal" | "low" | "empty";
-type ZoneSection = "aisle" | "bottom_wall" | "top_wall" | "left_wall" | "wing";
 
 interface DisplayZone {
   id: string;
@@ -55,55 +60,11 @@ interface ScheduleEntry { date: string; type: string; workingHours?: string; }
 interface Employee { id: number; name: string; position: string; schedules?: ScheduleEntry[]; }
 interface TodayStaff { employee: Employee; scheduleType: string; workingHours: string; }
 
-// ─── Store data (based on category.jpg, 41 zones) ────────────────────────────
-const ZONE_DEFS: { num: number; label: string; category: string; section: ZoneSection }[] = [
-  // Aisles 1-9 (main floor shelf units, right→left)
-  { num: 1,  label: "진열대 1",  category: "종합감기·코감기·진해거담·한방감기",    section: "aisle" },
-  { num: 2,  label: "진열대 2",  category: "어린이감기약·어린이영양제·알러지",     section: "aisle" },
-  { num: 3,  label: "진열대 3",  category: "해열진통소염·관절근육통·안약",         section: "aisle" },
-  { num: 4,  label: "진열대 4",  category: "소화제·지사제·위염·변비약·수면",       section: "aisle" },
-  { num: 5,  label: "진열대 5",  category: "자양강장·남성용품·금연·모발",          section: "aisle" },
-  { num: 6,  label: "진열대 6",  category: "피부질환용제·기타피부연고",            section: "aisle" },
-  { num: 7,  label: "진열대 7",  category: "여성용품·미용·다이어트·살충제",        section: "aisle" },
-  { num: 8,  label: "진열대 8",  category: "파스·보호대·칫솔·치약·구강용품",       section: "aisle" },
-  { num: 9,  label: "진열대 9",  category: "붕대·마스크·밴드·반창고·거즈",        section: "aisle" },
-  // Bottom wall 10-21 (right→left in store: 10 near exit, 21 at far left)
-  { num: 10, label: "벽면 10",   category: "종합영양제",                         section: "bottom_wall" },
-  { num: 11, label: "벽면 11",   category: "종합영양제",                         section: "bottom_wall" },
-  { num: 12, label: "벽면 12",   category: "간기능개선제",                       section: "bottom_wall" },
-  { num: 13, label: "벽면 13",   category: "아미노산·아르기닌",                   section: "bottom_wall" },
-  { num: 14, label: "벽면 14",   category: "남성기능강화·탈모·전립선",             section: "bottom_wall" },
-  { num: 15, label: "벽면 15",   category: "칼슘제·비타민D",                     section: "bottom_wall" },
-  { num: 16, label: "벽면 16",   category: "관절영양제·콘드로이틴·MSM",           section: "bottom_wall" },
-  { num: 17, label: "벽면 17",   category: "항산화제·면역증강",                   section: "bottom_wall" },
-  { num: 18, label: "벽면 18",   category: "뇌기능개선·혈액순환·혈당개선",         section: "bottom_wall" },
-  { num: 19, label: "벽면 19",   category: "눈영양제",                           section: "bottom_wall" },
-  { num: 20, label: "벽면 20",   category: "염색약",                             section: "bottom_wall" },
-  { num: 21, label: "벽면 21",   category: "동물의약품·동물용품",                  section: "bottom_wall" },
-  // Left wall 22-23 (between aisles and top section, far left)
-  { num: 22, label: "벽면 22",   category: "동물의약품·동물용품",                  section: "left_wall" },
-  { num: 23, label: "벽면 23",   category: "의료기기",                           section: "left_wall" },
-  // Top wall 24-35 (left→right: 24 at far left, 35 at right)
-  { num: 24, label: "벽면 24",   category: "어린이종합·키즈용품",                  section: "top_wall" },
-  { num: 25, label: "벽면 25",   category: "오메가3",                            section: "top_wall" },
-  { num: 26, label: "벽면 26",   category: "마그네슘·수면",                       section: "top_wall" },
-  { num: 27, label: "벽면 27",   category: "유산균",                             section: "top_wall" },
-  { num: 28, label: "벽면 28",   category: "잇몸건강",                           section: "top_wall" },
-  { num: 29, label: "벽면 29",   category: "철분제·비타민C",                      section: "top_wall" },
-  { num: 30, label: "벽면 30",   category: "콜라겐·갱년기·임신부영양제",            section: "top_wall" },
-  { num: 31, label: "벽면 31",   category: "건강보조식품",                        section: "top_wall" },
-  { num: 32, label: "벽면 32",   category: "한방관련제품",                        section: "top_wall" },
-  { num: 33, label: "벽면 33",   category: "PB상품·생활의약품",                   section: "top_wall" },
-  { num: 34, label: "벽면 34",   category: "드링크제품",                          section: "top_wall" },
-  { num: 35, label: "벽면 35",   category: "냉장의약품",                          section: "top_wall" },
-  // Right vertical wing 36-41
-  { num: 36, label: "프로모션",   category: "프로모션·이벤트 상품",                 section: "wing" },
-  { num: 37, label: "기능성화장품", category: "기능성화장품·미용",                  section: "wing" },
-  { num: 38, label: "조제실",     category: "조제실 (약사 전용)",                  section: "wing" },
-  { num: 39, label: "화장실",     category: "(시설)",                             section: "wing" },
-  { num: 40, label: "계산대",     category: "계산대 (POS)",                      section: "wing" },
-  { num: 41, label: "정수기",     category: "(시설)",                             section: "wing" },
-];
+// ─── Popover anchor ──────────────────────────────────────────────────────────
+interface PopoverAnchor {
+  zoneId: string;
+  rect: DOMRect;
+}
 
 const buildDefaultZones = (): DisplayZone[] =>
   ZONE_DEFS.map((d) => ({
@@ -119,7 +80,7 @@ const buildDefaultZones = (): DisplayZone[] =>
   }));
 
 // ─── localStorage helpers ─────────────────────────────────────────────────────
-const ZONES_KEY = "megatown_display_zones_v2";
+const ZONES_KEY = ZONES_STORAGE_KEY;
 const REQS_KEY  = "megatown_display_requests";
 
 const loadZones = (): DisplayZone[] => {
@@ -154,7 +115,11 @@ const saveRequests = (r: DisplayRequest[]) => { try { localStorage.setItem(REQS_
 const STATUS_LABEL: Record<ZoneStatus, string> = { normal: "정상", low: "부족", empty: "품절" };
 
 const statusCell = (s: ZoneStatus, extra = ""): string => {
-  const m = { normal: "bg-emerald-50 border-emerald-300 hover:border-emerald-400 text-emerald-900", low: "bg-amber-50 border-amber-300 hover:border-amber-400 text-amber-900", empty: "bg-red-50 border-red-300 hover:border-red-400 text-red-900" };
+  const m = {
+    normal: "bg-emerald-50 border-emerald-300 hover:border-emerald-400 text-emerald-900",
+    low: "bg-amber-50 border-amber-300 hover:border-amber-400 text-amber-900",
+    empty: "bg-red-50 border-red-300 hover:border-red-400 text-red-900"
+  };
   return `${m[s]} ${extra}`;
 };
 const statusDot  = (s: ZoneStatus) => ({ normal: "bg-emerald-500", low: "bg-amber-500", empty: "bg-red-500" }[s]);
@@ -174,45 +139,281 @@ const formatRel = (iso: string) => {
   return `${Math.floor(diff / 86400)}일 전`;
 };
 
+// ─── Staff color palette (for assigned zone chip coloring) ────────────────────
+const STAFF_COLORS = [
+  "bg-violet-100 text-violet-800 border-violet-300",
+  "bg-sky-100 text-sky-800 border-sky-300",
+  "bg-rose-100 text-rose-800 border-rose-300",
+  "bg-teal-100 text-teal-800 border-teal-300",
+  "bg-orange-100 text-orange-800 border-orange-300",
+  "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300",
+];
+
+const STAFF_AVATAR_COLORS = [
+  "bg-violet-600 text-white",
+  "bg-sky-600 text-white",
+  "bg-rose-600 text-white",
+  "bg-teal-600 text-white",
+  "bg-orange-600 text-white",
+  "bg-fuchsia-600 text-white",
+];
+
 // ─── Sub-components ───────────────────────────────────────────────────────────
 interface ZoneCellProps {
   zone: DisplayZone;
-  onClick: (z: DisplayZone) => void;
-  size?: "xs" | "sm" | "md";
-  assignMode?: boolean;
-  isAssigned?: boolean;
+  onContextClick: (z: DisplayZone, rect: DOMRect) => void;
+  onDetailClick: (z: DisplayZone) => void;
+  className?: string;
+  isPopoverOpen?: boolean;
+  staffColorIndex?: number | null;
+  isDragOver?: boolean;
+  onDragOver?: (e: React.DragEvent, zone: DisplayZone) => void;
+  onDrop?: (e: React.DragEvent, zone: DisplayZone) => void;
+  onDragLeave?: () => void;
+  showDetails?: boolean;
+  isSearchedHighlight?: boolean;
+  onQuickRequest?: () => void;
 }
-const ZoneCell: React.FC<ZoneCellProps> = ({ zone, onClick, size = "sm", assignMode, isAssigned }) => {
-  const h = size === "md" ? "min-h-[68px]" : size === "sm" ? "min-h-[58px]" : "min-h-[46px]";
-  const numSz = size === "xs" ? "text-[10px]" : "text-xs";
-  const catSz = size === "xs" ? "text-[8px]" : "text-[9px]";
-  let extra = "";
-  if (assignMode) extra = isAssigned ? "ring-2 ring-violet-500 shadow-md" : "opacity-80 hover:opacity-100";
+
+const ZoneCell: React.FC<ZoneCellProps> = ({
+  zone, onContextClick, onDetailClick, className = "", isPopoverOpen, staffColorIndex,
+  isDragOver, onDragOver, onDrop, onDragLeave, showDetails = false, isSearchedHighlight = false, onQuickRequest
+}) => {
+  const ref = useRef<HTMLButtonElement>(null);
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      onContextClick(zone, rect);
+    }
+  };
+
+  const ringCls = isDragOver
+    ? "ring-2 ring-emerald-500 ring-offset-1 shadow-lg z-10 scale-[1.04]"
+    : isPopoverOpen
+    ? "ring-2 ring-indigo-500 ring-offset-1 shadow-lg z-10"
+    : isSearchedHighlight
+    ? "ring-4 ring-emerald-500 animate-pulse scale-[1.05] z-10"
+    : "";
+
+  let statusCls = "bg-white text-gray-700 border-gray-300 hover:border-gray-400";
+  if (zone.status === "low") {
+    statusCls = "bg-amber-500 text-white border-amber-600 hover:bg-amber-600";
+  } else if (zone.status === "empty") {
+    statusCls = "bg-red-500 text-white border-red-650 hover:bg-red-600";
+  } else {
+    // Normal background color scheme based on sections / map definitions
+    if (zone.section === "aisle") {
+      const aisleColors: Record<number, string> = {
+        9: "bg-blue-500 text-white border-blue-600 hover:bg-blue-600",
+        8: "bg-blue-400 text-white border-blue-500 hover:bg-blue-500",
+        7: "bg-sky-500 text-white border-sky-600 hover:bg-sky-600",
+        6: "bg-purple-400 text-white border-purple-500 hover:bg-purple-500",
+        5: "bg-stone-400 text-white border-stone-500 hover:bg-stone-500",
+        4: "bg-orange-300 text-white border-orange-400 hover:bg-orange-400",
+        3: "bg-teal-500 text-white border-teal-600 hover:bg-teal-600",
+        2: "bg-yellow-400 text-gray-900 border-yellow-500 hover:bg-yellow-500",
+        1: "bg-green-500 text-white border-green-600 hover:bg-green-600",
+      };
+      statusCls = aisleColors[zone.num] || "bg-blue-500 text-white border-blue-600";
+    } else if (zone.num === 36) {
+      statusCls = "bg-blue-50 text-blue-900 border-blue-300 hover:bg-blue-100 hover:border-blue-400";
+    } else if (zone.num === 37) {
+      statusCls = "bg-[#fef08a] text-amber-950 border-yellow-400 hover:bg-yellow-100 hover:border-yellow-500";
+    } else if (zone.num === 38) {
+      statusCls = "bg-orange-500 text-white border-orange-600 hover:bg-orange-600";
+    } else if (zone.num === 40) {
+      statusCls = "bg-blue-500 text-white border-blue-600 hover:bg-blue-600";
+    } else if (zone.num === 39 || zone.num === 41) {
+      statusCls = "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200 hover:border-gray-400";
+    }
+  }
+
   return (
     <button
+      ref={ref}
       type="button"
-      onClick={() => onClick(zone)}
-      className={`relative w-full rounded-lg border-2 transition-all duration-150 active:scale-[0.96] cursor-pointer flex flex-col justify-between text-left p-1.5 ${h} ${statusCell(zone.status, extra)}`}
+      onClick={handleClick}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        if (ref.current) onDetailClick(zone);
+      }}
+      onDragOver={onDragOver ? (e) => onDragOver(e, zone) : undefined}
+      onDrop={onDrop ? (e) => onDrop(e, zone) : undefined}
+      onDragLeave={onDragLeave}
+      className={`relative w-full rounded-lg border-2 transition-all duration-300 active:scale-[0.96] cursor-pointer flex flex-col justify-between items-center p-1 font-bold shadow-sm ${statusCls} ${ringCls} ${className}`}
     >
-      {assignMode && isAssigned && (
-        <div className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-violet-600 flex items-center justify-center">
-          <CheckCheck size={8} className="text-white" />
-        </div>
-      )}
-      <div className="flex items-start justify-between gap-0.5">
-        <span className={`${numSz} font-black tracking-tight`}>{zone.num}</span>
-        <span className={`w-1.5 h-1.5 rounded-full ${statusDot(zone.status)} shrink-0 mt-0.5`} />
+      {/* Zone number — always top-left, small */}
+      <div className="absolute top-0.5 left-1 text-[8px] leading-none font-black opacity-70">
+        {zone.num}
       </div>
-      <div className={`${catSz} leading-tight text-current font-medium line-clamp-2 mt-0.5`}>{zone.category}</div>
-      {zone.assignedStaffName && (
-        <div className="text-[8px] text-slate-500 truncate font-semibold mt-0.5">@{zone.assignedStaffName}</div>
+
+      {/* Status dot — top-right */}
+      {zone.status !== "normal" && (
+        <div className={`absolute top-0.5 right-0.5 w-1.5 h-1.5 rounded-full ${statusDot(zone.status)}`} />
+      )}
+
+      {/* Quick request button — bottom-right, only when staff assigned */}
+      {zone.assignedStaffId !== null && onQuickRequest && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onQuickRequest(); }}
+          title={`${zone.assignedStaffName}에게 보충 요청`}
+          className="absolute bottom-0.5 right-0.5 w-3.5 h-3.5 bg-amber-400 hover:bg-amber-500 rounded-full flex items-center justify-center opacity-50 hover:opacity-100 transition z-10 cursor-pointer"
+        >
+          <Bell size={7} className="text-white" />
+        </button>
+      )}
+
+      {/* Center content: staff name or empty placeholder */}
+      <div className="flex-1 flex items-center justify-center w-full pt-2">
+        {zone.assignedStaffName ? (
+          <span className={`text-[9px] font-black px-1 py-px rounded leading-tight text-center max-w-full break-all ${
+            staffColorIndex !== null && staffColorIndex !== undefined
+              ? STAFF_AVATAR_COLORS[staffColorIndex % STAFF_AVATAR_COLORS.length]
+              : "bg-slate-600 text-white"
+          }`}>
+            {zone.assignedStaffName.slice(0, 3)}
+          </span>
+        ) : (
+          <span className="text-[9px] opacity-30 font-normal">-</span>
+        )}
+      </div>
+
+      {showDetails && (
+        <div className="text-[7px] leading-tight font-medium line-clamp-1 text-center opacity-70 w-full">{zone.category}</div>
       )}
     </button>
   );
 };
 
+// ─── Zone Assignment Popover ──────────────────────────────────────────────────
+interface ZoneAssignPopoverProps {
+  zone: DisplayZone;
+  anchor: DOMRect;
+  logisticsStaff: TodayStaff[];
+  staffColorMap: Map<number, number>;
+  onAssign: (staffId: number, staffName: string) => void;
+  onUnassign: () => void;
+  onOpenDetail: () => void;
+  onClose: () => void;
+  onStaffInfoClick: (staff: TodayStaff) => void;
+}
+
+const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
+  zone, anchor, logisticsStaff, staffColorMap, onAssign, onUnassign, onOpenDetail, onClose, onStaffInfoClick,
+}) => {
+  const [style, setStyle] = useState<React.CSSProperties>({});
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!popoverRef.current) return;
+    const popoverHeight = popoverRef.current.offsetHeight || 220;
+    const popoverWidth  = popoverRef.current.offsetWidth || 240;
+
+    let top  = anchor.bottom + window.scrollY + 6;
+    let left = anchor.left + window.scrollX + (anchor.width / 2) - (popoverWidth / 2);
+
+    // Keep within window bounds
+    if (left < 10) left = 10;
+    if (left + popoverWidth > window.innerWidth - 10) {
+      left = window.innerWidth - popoverWidth - 10;
+    }
+    if (top + popoverHeight > window.innerHeight + window.scrollY - 10) {
+      top = anchor.top + window.scrollY - popoverHeight - 6;
+    }
+
+    setStyle({ top, left, position: "absolute", zIndex: 100 });
+  }, [anchor]);
+
+  return (
+    <div
+      ref={popoverRef}
+      style={style}
+      onClick={(e) => e.stopPropagation()}
+      className="w-[240px] bg-white rounded-2xl border border-slate-200 shadow-2xl p-3 flex flex-col gap-2.5 animate-in fade-in zoom-in-95 duration-100"
+    >
+      {/* Popover Header */}
+      <div className="flex items-start justify-between border-b border-slate-100 pb-2">
+        <div className="min-w-0">
+          <div className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+            <span className={`px-1.5 py-0.5 rounded-md border text-[10px] ${statusCell(zone.status)}`}>
+              {zone.num}번
+            </span>
+            <span className="truncate">{zone.label}</span>
+          </div>
+          <p className="text-[10px] text-slate-400 truncate mt-0.5">{zone.category}</p>
+        </div>
+        <button onClick={onClose} className="w-5 h-5 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer">
+          <X size={12} />
+        </button>
+      </div>
+
+      {/* Logistics Roster */}
+      <div className="space-y-1">
+        <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1">
+          <Users size={11} />물류 담당 배정
+        </div>
+
+        {logisticsStaff.length === 0 ? (
+          <div className="text-[10px] text-slate-400 italic py-2 text-center">오늘 출근한 물류 직원이 없습니다.</div>
+        ) : (
+          <div className="grid grid-cols-2 gap-1.5 max-h-[120px] overflow-y-auto pr-0.5">
+            {logisticsStaff.map((ts) => {
+              const { employee } = ts;
+              const isAssigned = zone.assignedStaffId === employee.id;
+              const colorIdx = staffColorMap.get(employee.id) ?? 0;
+
+              return (
+                <button
+                  key={employee.id}
+                  type="button"
+                  onClick={() => onAssign(employee.id, employee.name)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    onStaffInfoClick(ts);
+                  }}
+                  className={`px-2 py-1.5 rounded-lg border text-left text-[11px] font-bold truncate transition cursor-pointer flex items-center gap-1.5 ${
+                    isAssigned
+                      ? `${STAFF_COLORS[colorIdx % STAFF_COLORS.length]} border-indigo-400 shadow-3xs`
+                      : "bg-white border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700"
+                  }`}
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isAssigned ? "bg-indigo-600" : "bg-slate-300"}`} />
+                  {employee.name}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Popover actions */}
+      <div className="border-t border-slate-100 pt-2 flex gap-1.5">
+        {zone.assignedStaffId !== null && (
+          <button
+            type="button"
+            onClick={onUnassign}
+            className="flex-1 text-[10px] font-bold text-rose-600 hover:text-rose-700 py-1.5 rounded-xl hover:bg-rose-50 border border-transparent transition cursor-pointer"
+          >
+            배정 해제
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={onOpenDetail}
+          className="flex-1 text-[10px] font-semibold text-slate-500 hover:text-slate-700 py-1.5 rounded-xl hover:bg-slate-100 border border-transparent transition cursor-pointer flex items-center justify-center gap-1"
+        >
+          <Package size={11} />상세 편집 열기
+        </button>
+      </div>
+    </div>
+  );
+};
+
 // ─── Main component ────────────────────────────────────────────────────────────
-export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
+export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit }) => {
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
   const [requests, setRequests] = useState<DisplayRequest[]>(() => loadRequests());
 
@@ -222,13 +423,20 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
   const [staffLoading, setStaffLoading] = useState(true);
   const [staffError, setStaffError] = useState<string | null>(null);
 
-  // Zone assignment mode (for 물류 staff)
-  const [assigningStaffId, setAssigningStaffId] = useState<number | null>(null);
+  // Search query
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Zone assignment popover
+  const [popoverAnchor, setPopoverAnchor] = useState<PopoverAnchor | null>(null);
+
+  // Drag-and-drop assignment
+  const [dragStaff, setDragStaff] = useState<TodayStaff | null>(null);
+  const [dragOverZoneId, setDragOverZoneId] = useState<string | null>(null);
 
   // Employee info modal
   const [activeStaffInfo, setActiveStaffInfo] = useState<TodayStaff | null>(null);
 
-  // Zone modal
+  // Zone detail modal
   const [activeZoneId, setActiveZoneId] = useState<string | null>(null);
   const [draftCategory, setDraftCategory] = useState("");
   const [draftProducts, setDraftProducts] = useState("");
@@ -240,6 +448,40 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
 
   // Requests panel
   const [reqFilter, setReqFilter] = useState<"all" | "pending" | "done">("all");
+
+  // Today staff position filter
+  const [staffPosFilter, setStaffPosFilter] = useState<string>("전체");
+
+  // Save-all toast
+  const [saveAllToast, setSaveAllToast] = useState(false);
+
+  // Quick request toast
+  const [quickReqToast, setQuickReqToast] = useState<string | null>(null);
+
+  const handleQuickRequest = useCallback((zone: DisplayZone) => {
+    if (!zone.assignedStaffId) return;
+    const req: DisplayRequest = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      zoneId: zone.id,
+      zoneLabel: `${zone.num}번 ${zone.label}`,
+      category: zone.category,
+      requestedAt: new Date().toISOString(),
+      assignedStaffId: zone.assignedStaffId,
+      assignedStaffName: zone.assignedStaffName,
+      status: "pending",
+      note: "빠른 요청",
+    };
+    setRequests((prev) => [req, ...prev]);
+    setQuickReqToast(`${zone.assignedStaffName}님께 ${zone.num}번 ${zone.label} 보충 요청 전송됨`);
+    setTimeout(() => setQuickReqToast(null), 3500);
+  }, []);
+
+  const handleSaveAll = () => {
+    saveZones(zones);
+    saveRequests(requests);
+    setSaveAllToast(true);
+    setTimeout(() => setSaveAllToast(false), 2500);
+  };
 
   // ── Fetch employees + today's schedule ──────────────────────────────────────
   useEffect(() => {
@@ -281,6 +523,21 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
   useEffect(() => { saveZones(zones); }, [zones]);
   useEffect(() => { saveRequests(requests); }, [requests]);
 
+  // ── Logistics staff (today only) ────────────────────────────────────────────
+  const logisticsStaff = useMemo(
+    () => todayStaff.filter((s) => s.employee.position === "물류"),
+    [todayStaff],
+  );
+
+  // ── Staff color map: stable color index per staff ID ─────────────────────────
+  const staffColorMap = useMemo(() => {
+    const map = new Map<number, number>();
+    logisticsStaff.forEach(({ employee }, idx) => {
+      map.set(employee.id, idx);
+    });
+    return map;
+  }, [logisticsStaff]);
+
   // ── Active zone ──────────────────────────────────────────────────────────────
   const activeZone = useMemo(() => zones.find((z) => z.id === activeZoneId) ?? null, [zones, activeZoneId]);
 
@@ -296,24 +553,83 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
     }
   }, [activeZoneId]); // eslint-disable-line
 
-  // ── Zone click (normal vs assignment mode) ───────────────────────────────────
-  const handleZoneClick = useCallback((zone: DisplayZone) => {
-    if (assigningStaffId !== null) {
-      const staff = employees.find((e) => e.id === assigningStaffId);
-      if (!staff) return;
-      setZones((prev) =>
-        prev.map((z) => {
-          if (z.id !== zone.id) return z;
-          if (z.assignedStaffId === assigningStaffId) {
-            return { ...z, assignedStaffId: null, assignedStaffName: "" };
-          }
-          return { ...z, assignedStaffId: staff.id, assignedStaffName: staff.name };
-        })
-      );
-      return;
-    }
+  // ── Close popover on outside click / Escape ──────────────────────────────────
+  useEffect(() => {
+    if (!popoverAnchor) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setPopoverAnchor(null);
+    };
+    const handleClick = () => setPopoverAnchor(null);
+    document.addEventListener("keydown", handleKey);
+    document.addEventListener("click", handleClick);
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      document.removeEventListener("click", handleClick);
+    };
+  }, [popoverAnchor]);
+
+  // ── Zone cell click → open popover ───────────────────────────────────────────
+  const handleZoneCellClick = useCallback((zone: DisplayZone, rect: DOMRect) => {
+    setPopoverAnchor((prev) => {
+      // Toggle: clicking same zone again closes popover
+      if (prev?.zoneId === zone.id) return null;
+      return { zoneId: zone.id, rect };
+    });
+  }, []);
+
+  // ── Open zone detail modal ───────────────────────────────────────────────────
+  const handleOpenZoneDetail = useCallback((zone: DisplayZone) => {
+    setPopoverAnchor(null);
     setActiveZoneId(zone.id);
-  }, [assigningStaffId, employees]);
+  }, []);
+
+  // ── Assign / unassign from popover ───────────────────────────────────────────
+  const handlePopoverAssign = useCallback((staffId: number, staffName: string) => {
+    if (!popoverAnchor) return;
+    const zoneId = popoverAnchor.zoneId;
+    setZones((prev) =>
+      prev.map((z) =>
+        z.id === zoneId
+          ? { ...z, assignedStaffId: staffId, assignedStaffName: staffName }
+          : z,
+      ),
+    );
+    setPopoverAnchor(null);
+  }, [popoverAnchor]);
+
+  const handlePopoverUnassign = useCallback(() => {
+    if (!popoverAnchor) return;
+    const zoneId = popoverAnchor.zoneId;
+    setZones((prev) =>
+      prev.map((z) =>
+        z.id === zoneId
+          ? { ...z, assignedStaffId: null, assignedStaffName: "" }
+          : z,
+      ),
+    );
+    setPopoverAnchor(null);
+  }, [popoverAnchor]);
+
+  // ── Drag-and-drop assignment ─────────────────────────────────────────────────
+  const handleDragOver = useCallback((e: React.DragEvent, zone: DisplayZone) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    setDragOverZoneId(zone.id);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, zone: DisplayZone) => {
+    e.preventDefault();
+    setDragOverZoneId(null);
+    if (!dragStaff) return;
+    setZones((prev) =>
+      prev.map((z) =>
+        z.id === zone.id
+          ? { ...z, assignedStaffId: dragStaff.employee.id, assignedStaffName: dragStaff.employee.name }
+          : z,
+      ),
+    );
+    setDragStaff(null);
+  }, [dragStaff]);
 
   // ── Save / Request ───────────────────────────────────────────────────────────
   const handleSave = useCallback(() => {
@@ -334,7 +650,6 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
     if (!activeZone || !canRequest) return;
     const staff = employees.find((e) => e.id === draftStaffId);
     if (!staff) return;
-    // Save edits first
     setZones((prev) => prev.map((z) => z.id !== activeZone.id ? z : {
       ...z, category: draftCategory, products: draftProducts,
       assignedStaffId: staff.id, assignedStaffName: staff.name, status: draftStatus,
@@ -359,17 +674,23 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
     pending: requests.filter((r) => r.status === "pending").length,
   }), [zones, requests]);
 
-  // ── Zone groups (matching physical store layout) ─────────────────────────────
-  // Top wall: 24→35 left-to-right (ascending)
-  const topWallZones    = useMemo(() => zones.filter((z) => z.section === "top_wall").sort((a, b) => a.num - b.num), [zones]);
-  // Aisles: displayed 9→1 left-to-right (descending = 9 on left, 1 near exit)
-  const aisleZones      = useMemo(() => zones.filter((z) => z.section === "aisle").sort((a, b) => b.num - a.num), [zones]);
-  // Left wall: 23 on top, 22 on bottom (ascending by num gives 22,23; we want 23 top → sort descending)
-  const leftWallZones   = useMemo(() => zones.filter((z) => z.section === "left_wall").sort((a, b) => b.num - a.num), [zones]);
-  // Bottom wall: 21→10 left-to-right (descending = 21 on left, 10 near exit)
-  const bottomWallZones = useMemo(() => zones.filter((z) => z.section === "bottom_wall").sort((a, b) => b.num - a.num), [zones]);
-  // Wing: 36→41 top-to-bottom (ascending)
-  const wingZones       = useMemo(() => zones.filter((z) => z.section === "wing").sort((a, b) => a.num - b.num), [zones]);
+  // ── Filtered Zones for Sidebar & Highlights ────────────────────────────────
+  const searchedZones = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return zones;
+    return zones.filter(
+      (z) =>
+        z.num.toString().includes(q) ||
+        z.label.toLowerCase().includes(q) ||
+        z.category.toLowerCase().includes(q) ||
+        z.products.toLowerCase().includes(q)
+    );
+  }, [zones, searchQuery]);
+
+  const searchedZoneIds = useMemo(
+    () => new Set(searchQuery ? searchedZones.map((z) => z.id) : []),
+    [searchedZones, searchQuery]
+  );
 
   const filteredReqs = useMemo(() =>
     reqFilter === "all" ? requests : requests.filter((r) => r.status === reqFilter),
@@ -381,354 +702,576 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
   const now = new Date();
   const todayLabel = `${now.getMonth() + 1}월 ${now.getDate()}일`;
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  const popoverZone = useMemo(
+    () => (popoverAnchor ? zones.find((z) => z.id === popoverAnchor.zoneId) ?? null : null),
+    [popoverAnchor, zones],
+  );
+
+  // Helper to find specific zones by number
+  const getZone = (num: number) => zones.find((z) => z.num === num);
+
+  // Helper to render Zone Cell on Blueprint
+  const renderZoneCell = (num: number, classes = "", isVertical = false) => {
+    const z = getZone(num);
+    if (!z) return null;
+    return (
+      <ZoneCell
+        key={z.id}
+        zone={z}
+        onContextClick={handleZoneCellClick}
+        onDetailClick={handleOpenZoneDetail}
+        className={classes}
+        isPopoverOpen={popoverAnchor?.zoneId === z.id}
+        staffColorIndex={z.assignedStaffId !== null ? (staffColorMap.get(z.assignedStaffId) ?? null) : null}
+        isDragOver={dragOverZoneId === z.id && !!dragStaff}
+        onDragOver={dragStaff ? handleDragOver : undefined}
+        onDrop={dragStaff ? handleDrop : undefined}
+        onDragLeave={() => setDragOverZoneId(null)}
+        isSearchedHighlight={searchedZoneIds.has(z.id)}
+        onQuickRequest={z.assignedStaffId !== null ? () => handleQuickRequest(z) : undefined}
+      />
+    );
+  };
+
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
+    <div className="min-h-screen bg-slate-50 text-gray-800 font-sans flex flex-col" onClick={() => setPopoverAnchor(null)}>
 
       {/* Header */}
-      <header className="bg-slate-900 text-white sticky top-0 z-30 shadow-lg">
-        <div className="max-w-[1700px] mx-auto px-3 sm:px-5 py-3 flex items-center gap-3">
-          <button onClick={onBack} className="flex items-center gap-1 text-slate-300 hover:text-white px-2 py-1.5 rounded-lg hover:bg-slate-800 transition cursor-pointer">
-            <ChevronLeft size={18} /><span className="text-sm font-medium hidden sm:inline">뒤로</span>
-          </button>
-          <div className="flex items-center gap-2 flex-1 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-violet-600 flex items-center justify-center shadow-md shrink-0">
-              <LayoutGrid size={18} className="text-white" />
+      <header className="bg-slate-900 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-md sticky top-0 z-30">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={onBack}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-400 hover:text-white transition cursor-pointer mr-1 text-xs font-semibold shrink-0"
+              title="메인으로 돌아가기"
+            >
+              <ChevronLeft size={13} />
+              <span className="hidden sm:inline">메인</span>
+            </button>
+            <div className="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center shadow-sm">
+              <LayoutGrid size={14} className="text-slate-900" />
             </div>
-            <div className="leading-tight">
-              <div className="font-bold text-base tracking-tight">매장진열 관리</div>
-              <div className="text-[11px] text-slate-400 hidden sm:block">진열 상태 점검 · 보충 요청</div>
-            </div>
+            <span className="font-black tracking-tight leading-none">
+              <span className="text-red-500 text-xl">OSAN</span>
+              <span className="text-white text-base"> MEGATOWN</span>
+            </span>
           </div>
-          <div className="hidden md:flex items-center gap-1 text-xs font-black tracking-tight shrink-0">
-            <span className="text-red-500">OSAN</span><span className="text-slate-400">MEGATOWN</span>
+          <div className="hidden sm:flex items-center gap-2 border-l border-slate-800 pl-3 ml-1">
+            <span className="text-slate-350 text-xs font-bold">매장 담당자 배치용</span>
           </div>
         </div>
-
-        {/* Stats bar */}
-        <div className="border-t border-slate-800 bg-slate-900/95">
-          <div className="max-w-[1700px] mx-auto px-3 sm:px-5 py-2 grid grid-cols-4 gap-2">
-            {[
-              { icon: <Boxes size={13} className="text-slate-300" />, label: "전체", val: stats.total, cls: "text-slate-100" },
-              { icon: <XCircle size={13} className="text-red-300" />, label: "품절", val: stats.empty, cls: "text-red-300" },
-              { icon: <AlertTriangle size={13} className="text-amber-300" />, label: "부족", val: stats.low, cls: "text-amber-300" },
-              { icon: <Bell size={13} className="text-violet-300" />, label: "대기요청", val: stats.pending, cls: "text-violet-300" },
-            ].map(({ icon, label, val, cls }) => (
-              <div key={label} className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/50">
-                {icon}
-                <div className="min-w-0 leading-tight">
-                  <div className="text-[10px] text-slate-400 truncate">{label}</div>
-                  <div className={`text-base font-bold ${cls}`}>{val}</div>
-                </div>
-              </div>
-            ))}
+        <div className="flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2 text-[11px] font-bold">
+            <span className="bg-slate-850 border border-slate-800 px-2.5 py-1 rounded-lg flex items-center gap-1 text-slate-350">
+              전체 <span className="text-indigo-400 font-black">{stats.total}</span>
+            </span>
+            <span className="bg-slate-850 border border-red-900/40 px-2.5 py-1 rounded-lg flex items-center gap-1 text-slate-355">
+              품절 <span className="text-rose-400 font-black">{stats.empty}</span>
+            </span>
+            <span className="bg-slate-850 border border-amber-900/40 px-2.5 py-1 rounded-lg flex items-center gap-1 text-slate-355">
+              부족 <span className="text-amber-400 font-black">{stats.low}</span>
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 text-slate-350 border border-slate-700 text-xs font-semibold shadow-3xs">
+            <MapPin size={11} className="text-rose-500" />
+            <span>현위치: 36번 매대 앞</span>
           </div>
         </div>
       </header>
 
-      {/* Main 3-column layout */}
-      <main className="flex-1 max-w-[1700px] mx-auto w-full px-3 sm:px-5 py-4 grid grid-cols-1 xl:grid-cols-[240px_1fr_340px] gap-4">
-
-        {/* ═══ LEFT: Today's staff ═══════════════════════════════════════════ */}
-        <aside className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col">
-          <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
-              <Users size={14} className="text-indigo-600" />
-            </div>
-            <div>
-              <div className="text-sm font-bold text-slate-900">오늘 출근 인원</div>
-              <div className="text-[11px] text-slate-400">{todayLabel}</div>
-            </div>
+      {/* Main Content Grid */}
+      <main className="max-w-[1700px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+        
+        {/* LEFT COLUMN: Search & Directory (Stacked) */}
+        <section className="lg:col-span-3 flex flex-col space-y-4 lg:max-h-[calc(100vh-80px)] lg:sticky lg:top-20">
+          
+          {/* Search box */}
+          <div className="relative">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="찾으시는 약이나 증상을 입력하세요 (예: 감기약, 비타민)" 
+              className="w-full p-2.5 pl-9 pr-9 border border-gray-300 rounded-xl shadow-3xs focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-xs"
+            />
+            <Search className="absolute left-3 top-3.5 text-gray-400" size={13} />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            )}
           </div>
 
-          <div className="flex-1 overflow-y-auto max-h-[280px] xl:max-h-none">
-            {staffLoading ? (
-              <div className="flex items-center justify-center py-8 text-slate-400 gap-2 text-xs">
-                <Loader2 size={14} className="animate-spin" />불러오는 중...
-              </div>
-            ) : staffError ? (
-              <div className="px-4 py-3 text-xs text-amber-700 bg-amber-50 border-b border-amber-100">⚠ {staffError}</div>
-            ) : todayStaff.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-8 text-slate-400 text-xs text-center px-4">
-                <Users size={24} className="mb-2 opacity-30" />오늘 출근 인원이 없습니다
-              </div>
-            ) : (
-              <ul className="divide-y divide-slate-100">
-                {todayStaff.map(({ employee, scheduleType, workingHours }) => {
-                  const isLogistics = employee.position === "물류";
-                  const assignedZones = getAssignedZones(employee.id);
-                  const isAssigning = assigningStaffId === employee.id;
-                  const avatarBg = isLogistics
-                    ? "bg-indigo-600 text-white"
-                    : "bg-slate-200 text-slate-700";
-                  return (
-                    <li key={employee.id}
-                      onClick={() => setActiveStaffInfo({ employee, scheduleType, workingHours })}
-                      className={`px-3 py-3 transition cursor-pointer ${isAssigning ? "bg-violet-50 border-l-[3px] border-violet-500" : "hover:bg-slate-50"}`}>
+          {/* Today's Active Staff Panel */}
+          <div className="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex flex-col flex-1 min-h-0">
+            <div className="flex items-center gap-2 border-b border-slate-100 pb-2 mb-2 shrink-0">
+              <Users size={14} className="text-emerald-600" />
+              <h3 className="text-xs font-bold text-slate-800">오늘 출근 직원 ({todayStaff.length}명)</h3>
+            </div>
 
-                      {/* Top row: avatar + info */}
-                      <div className="flex items-start gap-2.5">
-                        {/* Avatar */}
-                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${avatarBg}`}>
-                          {employee.name.slice(0, 1)}
+            {/* Position filter pills */}
+            <div className="flex gap-1 mb-2 shrink-0">
+              {(["전체", "약사", "물류", "캐셔"] as const).map((pos) => (
+                <button
+                  key={pos}
+                  onClick={() => setStaffPosFilter(pos)}
+                  className={`flex-1 py-1 text-[10px] font-bold rounded-lg border cursor-pointer transition ${
+                    staffPosFilter === pos
+                      ? pos === "전체"   ? "bg-slate-800 text-white border-slate-800"
+                      : pos === "약사"   ? "bg-violet-600 text-white border-violet-600"
+                      : pos === "물류"   ? "bg-orange-500 text-white border-orange-500"
+                                         : "bg-teal-500 text-white border-teal-500"
+                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  {pos === "전체" ? "전체" : pos === "약사" ? "💊 약사" : pos === "물류" ? "📦 물류" : "💳 캐셔"}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex-1 overflow-y-auto min-h-0 pr-1">
+              {staffLoading ? (
+                <div className="flex items-center justify-center py-12 text-slate-400 gap-2 text-xs">
+                  <Loader2 size={13} className="animate-spin" />불러오는 중...
+                </div>
+              ) : staffError ? (
+                <div className="px-4 py-3 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg">⚠ {staffError}</div>
+              ) : todayStaff.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-slate-400 text-xs text-center px-4">
+                  <Users size={20} className="mb-2 opacity-30" />오늘 근무 직원 정보가 없습니다
+                </div>
+              ) : (
+                <ul className="divide-y divide-slate-100">
+                  {todayStaff.filter(({ employee }) =>
+                    staffPosFilter === "전체" || employee.position.includes(staffPosFilter)
+                  ).map(({ employee, scheduleType, workingHours }) => {
+                    const isLogistics = employee.position === "물류";
+                    const assignedZones = getAssignedZones(employee.id);
+                    const colorIdx = staffColorMap.get(employee.id) ?? 0;
+                    const avatarBg = isLogistics
+                      ? STAFF_AVATAR_COLORS[colorIdx % STAFF_AVATAR_COLORS.length]
+                      : "bg-slate-200 text-slate-700";
+                    return (
+                      <li key={employee.id}
+                        draggable={isLogistics}
+                        onDragStart={(e) => {
+                          if (!isLogistics) return;
+                          setDragStaff({ employee, scheduleType, workingHours });
+                          e.dataTransfer.effectAllowed = "move";
+                          e.dataTransfer.setData("text/plain", String(employee.id));
+                        }}
+                        onDragEnd={() => { setDragStaff(null); setDragOverZoneId(null); }}
+                        onClick={() => setActiveStaffInfo({ employee, scheduleType, workingHours })}
+                        className={`px-2 py-2.5 transition cursor-pointer hover:bg-slate-50 rounded-lg ${isLogistics ? "cursor-grab active:cursor-grabbing" : ""}`}
+                        title={isLogistics ? "드래그하여 지도 구역에 배정" : undefined}
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${avatarBg}`}>
+                            {employee.name.slice(0, 1)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onOpenEmployeeEdit?.(employee.id);
+                                }}
+                                className="text-xs font-bold text-indigo-600 hover:text-indigo-800 hover:underline leading-tight truncate cursor-pointer text-left"
+                                title="스케줄조회에서 직원정보 수정"
+                              >
+                                {employee.name}
+                              </button>
+                              <span className={`text-[9px] font-semibold px-1 rounded border leading-none shrink-0 ${SHIFT_BADGE[scheduleType] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}>
+                                {scheduleType}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between mt-0.5">
+                              <span className={`text-[9px] font-semibold px-1 py-0.2 rounded ${isLogistics ? `${STAFF_COLORS[colorIdx % STAFF_COLORS.length]}` : "bg-slate-100 text-slate-650"}`}>
+                                {employee.position || "약사"}
+                              </span>
+                              {workingHours && (
+                                <span className="text-[9px] text-slate-400 font-medium">{workingHours}</span>
+                              )}
+                            </div>
+                          </div>
                         </div>
 
-                        {/* Info block */}
-                        <div className="flex-1 min-w-0">
-                          {/* Name + shift badge */}
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="text-sm font-bold text-slate-900 leading-tight">{employee.name}</span>
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border leading-none ${SHIFT_BADGE[scheduleType] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}>
-                              {scheduleType}
-                            </span>
+                        {isLogistics && assignedZones.length > 0 && (
+                          <div className="mt-2 ml-10 flex flex-wrap gap-1">
+                            {assignedZones.map((z) => (
+                              <span
+                                key={z.id}
+                                className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border flex items-center gap-0.5 ${STAFF_COLORS[colorIdx % STAFF_COLORS.length]}`}
+                              >
+                                <MapPin size={8} />{z.num}번
+                              </span>
+                            ))}
                           </div>
-
-                          {/* Position + working hours */}
-                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${isLogistics ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
-                              {employee.position || "약사"}
-                            </span>
-                            {workingHours && (
-                              <span className="text-[10px] text-slate-400 font-medium">{workingHours}</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Zone assign button (logistics only) */}
-                        {isLogistics && (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setAssigningStaffId(isAssigning ? null : employee.id); }}
-                            className={`shrink-0 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border transition cursor-pointer flex items-center gap-1 ${
-                              isAssigning
-                                ? "bg-violet-600 text-white border-violet-600 shadow-sm"
-                                : "bg-white text-violet-700 border-violet-300 hover:bg-violet-50"
-                            }`}
-                          >
-                            <MapPin size={10} />
-                            {isAssigning ? "완료" : "구역배정"}
-                          </button>
                         )}
-                      </div>
 
-                      {/* Assigned zones */}
-                      {isLogistics && assignedZones.length > 0 && (
-                        <div className="mt-2 ml-11 flex flex-wrap gap-1">
-                          {assignedZones.map((z) => (
-                            <span
-                              key={z.id}
-                              className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-700 border border-violet-200 flex items-center gap-0.5"
-                            >
-                              <MapPin size={8} />{z.num}번
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Assignment mode hint */}
-                      {isAssigning && (
-                        <div className="mt-2 ml-11 text-[10px] text-violet-600 font-semibold bg-violet-100/60 rounded-md px-2 py-1 flex items-center gap-1">
-                          <CheckCheck size={10} />맵에서 구역을 탭해 배정·해제하세요
-                        </div>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </div>
-
-          {/* Legend */}
-          <div className="px-4 py-2.5 border-t border-slate-100 flex flex-wrap gap-2 text-[10px] text-slate-500">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" />정상</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" />부족</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" />품절</span>
-            {assigningStaffId && (
-              <span className="flex items-center gap-1 text-violet-600 font-semibold ml-auto">
-                <CheckCheck size={10} />구역 지정 중
-              </span>
-            )}
-          </div>
-        </aside>
-
-        {/* ═══ CENTER: Store map ══════════════════════════════════════════════ */}
-        <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
-                <LayoutGrid size={14} className="text-violet-600" />
-              </div>
-              <h2 className="text-sm font-bold text-slate-900">매장 진열 맵 (1~41번)</h2>
-            </div>
-            {assigningStaffId && (
-              <div className="flex items-center gap-2 text-[11px] text-violet-700 font-bold bg-violet-50 border border-violet-200 rounded-lg px-2.5 py-1">
-                <CheckCheck size={12} />
-                {employees.find((e) => e.id === assigningStaffId)?.name} 구역 지정 중
-                <button type="button" onClick={() => setAssigningStaffId(null)} className="text-violet-400 hover:text-violet-700 cursor-pointer ml-1"><X size={12} /></button>
-              </div>
-            )}
-          </div>
-
-          {/* Store map — layout matches category.jpg physical floor plan */}
-          <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50/50 p-3 sm:p-4">
-            <div className="flex gap-2 sm:gap-3">
-
-              {/* ── Main store body ── */}
-              <div className="flex-1 min-w-0 space-y-2">
-
-                {/* TOP WALL: 24→35, left to right */}
-                <div>
-                  <SectionLabel title="상단 벽면" badge="24–35" icon="🧱" />
-                  <div className="mt-1 grid grid-cols-12 gap-0.5 sm:gap-1">
-                    {topWallZones.map((z) => (
-                      <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
-                        assignMode={assigningStaffId !== null}
-                        isAssigned={z.assignedStaffId === assigningStaffId} />
-                    ))}
-                  </div>
-                </div>
-
-                {/* MIDDLE: left wall (22,23) + aisles (9→1) */}
-                <div className="flex gap-1.5 sm:gap-2">
-
-                  {/* Left wall (22,23) — stacked, 23 on top */}
-                  <div className="shrink-0 flex flex-col gap-0.5 sm:gap-1 pt-4">
-                    {leftWallZones.map((z) => (
-                      <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
-                        assignMode={assigningStaffId !== null}
-                        isAssigned={z.assignedStaffId === assigningStaffId} />
-                    ))}
-                  </div>
-
-                  {/* Aisles 9→1 (9 on left, 1 near exit on right) */}
-                  <div className="flex-1 min-w-0">
-                    <SectionLabel title="중앙 수직 진열대" badge="9←→1" icon="🏬" />
-                    <div className="mt-1 grid grid-cols-9 gap-0.5 sm:gap-1">
-                      {aisleZones.map((z) => (
-                        <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="md"
-                          assignMode={assigningStaffId !== null}
-                          isAssigned={z.assignedStaffId === assigningStaffId} />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* BOTTOM WALL: 21→10, left to right */}
-                <div>
-                  <SectionLabel title="하단 벽면" badge="21←→10" icon="🧱" />
-                  <div className="mt-1 grid grid-cols-12 gap-0.5 sm:gap-1">
-                    {bottomWallZones.map((z) => (
-                      <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
-                        assignMode={assigningStaffId !== null}
-                        isAssigned={z.assignedStaffId === assigningStaffId} />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="text-right text-[11px] text-slate-400 font-medium pr-1">↓ 매장 출입구</div>
-              </div>
-
-              {/* ── RIGHT WING (36–41) — vertical strip, matches map.png right side ── */}
-              <div className="w-[64px] sm:w-[80px] shrink-0 flex flex-col gap-0.5 sm:gap-1">
-                <SectionLabel title="우측 윙" badge="36–41" icon="🚪" />
-                {/* 36 & 37 side by side at top */}
-                <div className="grid grid-cols-2 gap-0.5 sm:gap-1 mt-1">
-                  {wingZones.filter((z) => z.num === 36 || z.num === 37).map((z) => (
-                    <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
-                      assignMode={assigningStaffId !== null}
-                      isAssigned={z.assignedStaffId === assigningStaffId} />
-                  ))}
-                </div>
-                {/* 40, 38, 39, 41 stacked */}
-                {wingZones.filter((z) => z.num === 40 || z.num === 38 || z.num === 39 || z.num === 41).map((z) => (
-                  <ZoneCell key={z.id} zone={z} onClick={handleZoneClick} size="xs"
-                    assignMode={assigningStaffId !== null}
-                    isAssigned={z.assignedStaffId === assigningStaffId} />
-                ))}
-              </div>
-
+                        {isLogistics && assignedZones.length === 0 && (
+                          <div className="mt-1.5 ml-10 text-[9px] text-slate-400 flex items-center gap-1">
+                            <MapPin size={8} />맵에서 구역 셀을 눌러 배정
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           </div>
 
-          <p className="mt-2.5 text-[11px] text-slate-400">
-            {assigningStaffId
-              ? "💡 구역을 탭하여 담당자를 배정하거나 해제합니다."
-              : "진열대를 탭하여 상태를 갱신하고 보충 요청을 보낼 수 있습니다."}
-          </p>
         </section>
 
-        {/* ═══ RIGHT: Requests panel ══════════════════════════════════════════ */}
-        <aside className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col">
-          <div className="p-4 border-b border-slate-100">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
-                  <ClipboardList size={14} className="text-violet-600" />
-                </div>
-                <h2 className="text-sm font-bold text-slate-900">진열 요청 현황</h2>
+        {/* RIGHT COLUMN: Interactive Blueprint Map (Structured according to map.png) */}
+        <section className="lg:col-span-9 flex flex-col">
+          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex-1 flex flex-col">
+
+            {/* Save-all toast */}
+            {saveAllToast && (
+              <div className="fixed top-5 right-5 z-[70] bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 animate-in slide-in-from-top-2 duration-200">
+                <CheckCircle2 size={14} />
+                전체 구역 배정이 저장되었습니다.
               </div>
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700">
-                {requests.length}건
+            )}
+
+            {/* Quick request toast */}
+            {quickReqToast && (
+              <div className="fixed top-5 right-5 z-[71] bg-amber-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 animate-in slide-in-from-top-2 duration-200 max-w-xs">
+                <Bell size={14} />
+                {quickReqToast}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-xl">🗺️</span>
+                <h2 className="text-lg font-bold text-gray-700">실시간 매장 지도</h2>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                {logisticsStaff.length > 0 && logisticsStaff.map(({ employee }) => {
+                  const colorIdx = staffColorMap.get(employee.id) ?? 0;
+                  return (
+                    <span key={employee.id} className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${STAFF_COLORS[colorIdx % STAFF_COLORS.length]}`}>
+                      {employee.name}
+                    </span>
+                  );
+                })}
+                <button
+                  onClick={handleSaveAll}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition cursor-pointer"
+                >
+                  <Save size={13} />
+                  전체저장
+                </button>
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-400 mb-4">* 구역 번호를 누르면 상세 편집창이 열립니다. 전체저장 시 직원 구역배정 정보가 반영됩니다.</p>
+
+            {/* Simulated 2D Floor Plan L-Shape Grid matches map.png */}
+            <div className="overflow-x-auto">
+            <div className="p-4 bg-slate-200 rounded-2xl flex flex-col justify-between border-4 border-emerald-500 shadow-inner gap-4 min-w-[780px] min-h-[550px]">
+              
+              {/* SECTION 1: TOP HORIZONTAL BAND (Shelves 24-35 + corner cart/elevator) */}
+              <div className="flex justify-between items-stretch gap-3 w-full shrink-0">
+                
+                {/* Left corner mini-wall shelves: 23, 22 */}
+                <div className="flex flex-col gap-1 bg-gray-300 p-1.5 rounded-lg w-12 justify-center shadow-3xs">
+                  <div className="text-[6px] font-black text-gray-500 text-center uppercase">좌측벽</div>
+                  {renderZoneCell(23, "h-8 text-[9px] justify-center")}
+                  {renderZoneCell(22, "h-8 text-[9px] justify-center")}
+                </div>
+
+                {/* Main Horizontal Shelving Wing: includes Top Wall, Aisle Shelves, and Bottom Wall */}
+                <div className="flex-1 bg-white border-2 border-emerald-600 rounded-xl p-3 flex flex-col shadow-sm relative">
+                  
+                  {/* Outer Top Wall Shelves: 24 to 35 */}
+                  <div className="w-full">
+                    <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">상단 외곽 매대 (24~35)</div>
+                    <div className="grid grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
+                      {[24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35].map((num) =>
+                        renderZoneCell(num, "h-10 text-[9px] p-0.5 justify-center")
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Inner Aisle Shelves: 9 to 1 (Vertical shelves spaced inside top wing) */}
+                  <div className="my-3 w-full">
+                    <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-1">중앙 수직 진열대 (9~1)</div>
+                    <div className="flex justify-around items-center px-4 bg-slate-50 border border-slate-200 py-2 rounded-lg gap-3">
+                      {[9, 8, 7, 6, 5, 4, 3, 2, 1].map((num) =>
+                        renderZoneCell(num, "w-9 h-20 flex flex-col justify-between items-center py-1.5 px-0.5 text-[9px]")
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Outer Bottom Wall Shelves of Horizontal Wing: 21 to 10 */}
+                  <div className="w-full">
+                    <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">하단 외곽 매대 (21~10)</div>
+                    <div className="grid grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
+                      {[21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10].map((num) =>
+                        renderZoneCell(num, "h-10 text-[9px] p-0.5 justify-center")
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Expiring Products Zone Marker at far right of top wing */}
+                  <div className="absolute top-1 right-2 bg-rose-50 text-rose-700 text-[8px] border border-rose-300 font-extrabold px-1.5 rounded-full uppercase tracking-wider shadow-3xs">
+                    유통기한 임박존
+                  </div>
+                </div>
+
+                {/* Right Top Corner: Cart zone / Elevator / Stairs */}
+                <div className="w-14 bg-white border-2 border-emerald-600 rounded-xl p-1.5 flex flex-col justify-between items-center shadow-sm shrink-0 text-center">
+                  <div className="text-[8px] font-extrabold text-slate-700 leading-none">🛒 카트존</div>
+                  <div className="w-full flex flex-col gap-1 my-1">
+                    <div className="bg-slate-50 border rounded p-0.5 text-[10px] leading-none" title="계단"> Stairs ↗️ </div>
+                    <div className="bg-slate-50 border rounded p-0.5 text-[10px] leading-none" title="엘리베이터"> EV 🛗 </div>
+                  </div>
+                  <div className="text-[6px] text-slate-400 leading-none">2층 연결</div>
+                </div>
+
+              </div>
+
+              {/* SECTION 2: MIDDLE/BOTTOM AREA (Guidance console + Right vertical wing) */}
+              <div className="flex justify-between items-stretch gap-3 w-full flex-1">
+                
+                {/* Left guidance area — 위치 카테고리 안내 */}
+                <div className="flex-1 bg-white/95 border border-slate-300 rounded-xl p-3 flex flex-col shadow-3xs gap-2 min-w-0 overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-slate-200 pb-1.5 shrink-0">
+                    <span className="text-[10px] uppercase font-black text-emerald-700 tracking-wider flex items-center gap-1">
+                      <ClipboardList size={11} className="text-emerald-600" />
+                      실시간 매장 안내 정보
+                    </span>
+                    <span className="text-[8px] bg-slate-100 px-1.5 py-0.5 rounded-full font-semibold text-slate-500">
+                      {searchQuery ? `검색됨` : `전체 ${zones.length}구역`}
+                    </span>
+                  </div>
+                  <div className="flex-1 overflow-y-auto space-y-1 min-h-0 max-h-[300px] pr-0.5">
+                    {searchedZones.length === 0 ? (
+                      <div className="text-center py-8 text-slate-400 text-[10px]">검색 결과가 없습니다</div>
+                    ) : (
+                      searchedZones.map((z) => {
+                        let cardStyle = "bg-gray-50 border-gray-300 text-gray-700 border-l-4";
+                        if (z.section === "aisle") {
+                          if (z.num === 1) cardStyle = "bg-green-50 border-green-400 text-green-700 border-l-4";
+                          else if (z.num === 2) cardStyle = "bg-yellow-50 border-yellow-400 text-yellow-800 border-l-4";
+                          else if (z.num === 3) cardStyle = "bg-teal-50 border-teal-400 text-teal-700 border-l-4";
+                          else if (z.num === 9) cardStyle = "bg-blue-50 border-blue-400 text-blue-700 border-l-4";
+                          else cardStyle = "bg-slate-50 border-slate-300 text-slate-700 border-l-4";
+                        }
+                        if (z.status === "empty") cardStyle = "bg-red-50 border-red-400 text-red-700 border-l-4 animate-pulse";
+                        else if (z.status === "low") cardStyle = "bg-amber-50 border-amber-400 text-amber-700 border-l-4";
+                        return (
+                          <div
+                            key={z.id}
+                            onClick={() => handleOpenZoneDetail(z)}
+                            className={`flex items-center justify-between px-2 py-1.5 rounded cursor-pointer hover:brightness-95 transition ${cardStyle}`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1">
+                                <span className="font-extrabold text-[9px] bg-white/80 px-1 rounded border border-black/10 shrink-0">{z.num}번</span>
+                                <span className="font-bold text-[10px] truncate">{z.label}</span>
+                              </div>
+                              {z.assignedStaffName && (
+                                <span className="text-[9px] font-semibold text-slate-500 truncate block">👤 {z.assignedStaffName}</span>
+                              )}
+                            </div>
+                            <ChevronRight size={10} className="text-gray-400 shrink-0 ml-1" />
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between text-[9px] text-slate-400 font-bold border-t border-slate-100 pt-1.5 shrink-0">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500 block" />정상</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500 block" />부족</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500 block" />품절</span>
+                  </div>
+                </div>
+
+                {/* Right Vertical Wing of L-Shape (wing zones 36-41) */}
+                <div className="w-[300px] bg-slate-50 border-2 border-emerald-600 rounded-xl p-3 flex flex-col gap-2 shadow-sm shrink-0 relative">
+                  
+                  {/* Wing Title Badge */}
+                  <div className="absolute -top-3 left-3 bg-emerald-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20">
+                    🚪 우측 수직 카운터 윙
+                  </div>
+
+                  <div className="flex items-center justify-between border-b pb-1.5 mt-1 border-slate-200">
+                    <span className="text-[10px] font-black text-slate-800">🚪 조제/카운터/이벤트 동선</span>
+                    <span className="text-[7px] text-slate-400">Vertical Wing</span>
+                  </div>
+
+                  {/* Interactive 4-Column Layout matches map.png side-by-side structures */}
+                  <div className="flex gap-2 items-stretch flex-1 min-h-[220px]">
+                    
+                    {/* Column 1: Refrigerator (37) & Best Set Zone (36) */}
+                    <div className="flex-1 flex flex-col gap-1.5 justify-between">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[7px] font-black text-amber-950 leading-none">🧊 냉장고</span>
+                        {renderZoneCell(37, "h-11 w-full text-[9px] p-0.5 justify-center")}
+                      </div>
+                      <div className="flex-1 flex flex-col gap-0.5 justify-between">
+                        <span className="text-[7px] font-black text-blue-900 leading-none">🧬 베스트 세트</span>
+                        {renderZoneCell(36, "flex-1 w-full text-[9px] p-1 justify-center")}
+                      </div>
+                    </div>
+
+                    {/* Column 2: Event Zones (Z1-Z3) */}
+                    <div className="flex-1 bg-white border border-slate-200 rounded-lg p-1 flex flex-col gap-1 mr-3">
+                      <span className="text-[7px] font-black text-slate-500 uppercase tracking-wide border-b pb-0.5 leading-none">🎈 이벤트존</span>
+                      <div className="flex-1 flex flex-col gap-1 justify-around text-center py-1">
+                        <div className="border border-dashed border-rose-300 bg-rose-50/20 rounded p-0.5 text-[7px] font-bold text-rose-750">Z1</div>
+                        <div className="border border-dashed border-rose-300 bg-rose-50/20 rounded p-0.5 text-[7px] font-bold text-rose-750">Z2</div>
+                        <div className="border border-dashed border-rose-300 bg-rose-50/20 rounded p-0.5 text-[7px] font-bold text-rose-750">Z3</div>
+                      </div>
+                    </div>
+
+                    {/* Column 3: Main Counter Checkout (40) */}
+                    <div className="flex-1 flex flex-col gap-1">
+                      <span className="text-[7px] font-black text-slate-500 uppercase tracking-wide leading-none">💳 메인카운터</span>
+                      {renderZoneCell(40, "flex-1 w-full justify-between items-center text-[9px] p-1 bg-gray-700 text-white")}
+                    </div>
+
+                    {/* Column 4: Front Medicine Display (38) */}
+                    <div className="flex-1 flex flex-col gap-1">
+                      <span className="text-[7px] font-black text-slate-500 uppercase tracking-wide leading-none">💊 정면 약진열</span>
+                      {renderZoneCell(38, "flex-1 w-full justify-center bg-emerald-700 text-white text-[9px] p-1 font-bold")}
+                    </div>
+
+                  </div>
+
+                  {/* Bottom facilities: Breakroom (41), Lockers (39) */}
+                  <div className="border-t border-slate-200 pt-2 grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[7px] font-bold text-slate-400">☕ 휴게실/정수기</span>
+                      {renderZoneCell(41, "h-10 text-[9px] bg-gray-200 justify-center border-none")}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[7px] font-bold text-slate-400">🗄️ 사물함/화장실</span>
+                      {renderZoneCell(39, "h-10 text-[9px] bg-gray-200 justify-center border-none")}
+                    </div>
+                  </div>
+
+                  {/* Corner Annex: EV icon + plumbing at very bottom */}
+                  <div className="flex justify-between items-center text-[8px] text-slate-400 border-t border-slate-200 pt-1 leading-none">
+                    <span>🛗 1층 연결 EV</span>
+                    <span>🚰 수도 시설</span>
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+            </div>{/* end overflow-x-auto */}
+          </div>
+        </section>
+
+        {/* BOTTOM FULL-WIDTH COLUMN: Requests panel */}
+        <section className="lg:col-span-12 mt-4 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+          <div className="border-b border-slate-100 pb-3 flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <ClipboardList size={16} className="text-violet-600" />
+              </div>
+              <h2 className="text-base font-bold text-slate-900">실시간 진열 보충 요청 현황</h2>
+              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700 shrink-0">
+                대기 {requests.filter(r => r.status === "pending").length}건 / 전체 {requests.length}건
               </span>
             </div>
-            <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5">
+            <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5 text-xs">
               {(["all", "pending", "done"] as const).map((k) => (
                 <button key={k} type="button" onClick={() => setReqFilter(k)}
-                  className={`flex-1 text-xs font-semibold py-1.5 rounded-md transition cursor-pointer ${reqFilter === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                  className={`px-3 py-1.5 font-semibold rounded-md transition cursor-pointer ${reqFilter === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                   {k === "all" ? "전체" : k === "pending" ? "대기중" : "완료"}
                 </button>
               ))}
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto max-h-[400px] xl:max-h-none">
+          <div className="overflow-x-auto max-h-[300px] overflow-y-auto mt-3">
             {filteredReqs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-slate-400 text-xs text-center px-4">
-                <Bell size={24} className="mb-2 opacity-30" />
-                {reqFilter === "done" ? "완료된 요청 없음" : reqFilter === "pending" ? "대기 요청 없음" : "진열 요청 없음"}
+              <div className="flex flex-col items-center justify-center py-12 text-slate-400 text-xs text-center px-4">
+                <Bell size={28} className="mb-2 opacity-30 animate-bounce" />
+                {reqFilter === "done" ? "완료된 요청이 없습니다" : reqFilter === "pending" ? "대기 중인 요청이 없습니다" : "등록된 진열 요청이 없습니다"}
               </div>
             ) : (
-              <ul className="divide-y divide-slate-50">
-                {filteredReqs.map((req) => (
-                  <li key={req.id} className="p-3.5 hover:bg-slate-50 transition">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-sm font-bold text-slate-900">{req.zoneLabel}</span>
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${req.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-300" : "bg-emerald-50 text-emerald-700 border-emerald-300"}`}>
-                            {req.status === "pending" ? "대기" : "완료"}
-                          </span>
-                        </div>
-                        <div className="text-[11px] text-slate-500">{req.category}</div>
-                        <div className="text-[11px] text-slate-500 flex items-center gap-1 mt-0.5">
-                          <User size={10} />{req.assignedStaffName || "미배정"}
-                          <span className="text-slate-300">·</span>
-                          {formatRel(req.requestedAt)}
-                        </div>
-                        {req.note && <div className="text-[11px] text-slate-500 mt-1 italic">"{req.note}"</div>}
-                      </div>
-                      <div className="flex flex-col gap-1 shrink-0">
+              <table className="w-full text-left text-xs border-collapse">
+                <thead>
+                  <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                    <th className="p-3 w-28">요청 구역</th>
+                    <th className="p-3">진열 카테고리</th>
+                    <th className="p-3 w-24">담당 직원</th>
+                    <th className="p-3 w-28">요청 시각</th>
+                    <th className="p-3">요청 메모</th>
+                    <th className="p-3 w-24 text-center">진행 상태</th>
+                    <th className="p-3 w-24 text-center">작업</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filteredReqs.map((req) => (
+                    <tr key={req.id} className="hover:bg-slate-50 transition">
+                      <td className="p-3 font-bold text-slate-900">{req.zoneLabel}</td>
+                      <td className="p-3 text-slate-600">{req.category}</td>
+                      <td className="p-3 font-bold text-slate-800">{req.assignedStaffName || "미배정"}</td>
+                      <td className="p-3 text-slate-500">{formatRel(req.requestedAt)}</td>
+                      <td className="p-3 text-slate-500 italic">{req.note ? `"${req.note}"` : "-"}</td>
+                      <td className="p-3 text-center">
+                        <span className={`px-2 py-0.5 rounded-full font-bold border ${req.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-300" : "bg-emerald-50 text-emerald-700 border-emerald-300"}`}>
+                          {req.status === "pending" ? "대기" : "완료"}
+                        </span>
+                      </td>
+                      <td className="p-3 flex items-center justify-center gap-1.5">
                         {req.status === "pending" && (
                           <button onClick={() => setRequests((prev) => prev.map((r) => r.id === req.id ? { ...r, status: "done" as const } : r))}
-                            className="text-[11px] font-semibold px-2 py-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer flex items-center gap-1">
-                            <CheckCircle2 size={11} />완료
+                            className="text-[10px] font-bold px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer flex items-center gap-1">
+                            <CheckCircle2 size={10} />완료
                           </button>
                         )}
                         <button onClick={() => setRequests((prev) => prev.filter((r) => r.id !== req.id))}
-                          className="text-[11px] font-medium px-2 py-1 rounded-md text-slate-500 hover:bg-slate-100 transition cursor-pointer">
+                          className="text-[10px] font-medium px-2 py-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer border border-slate-200">
                           삭제
                         </button>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             )}
           </div>
-        </aside>
+        </section>
+
       </main>
 
-      {/* ═══ Zone Detail Modal ══════════════════════════════════════════════════ */}
+      {/* Footer */}
+      <footer className="bg-gray-100 text-center p-4 mt-8 text-xs text-gray-500 border-t border-gray-200">
+        &copy; 2026 오산메가타운 매장 내비게이션 및 진열 보충 관리 시스템. All Rights Reserved.
+      </footer>
+
+      {/* ─── Zone Assignment Popover ────────────────────────────────────────── */}
+      {popoverAnchor && popoverZone && (
+        <ZoneAssignPopover
+          zone={popoverZone}
+          anchor={popoverAnchor.rect}
+          logisticsStaff={logisticsStaff}
+          staffColorMap={staffColorMap}
+          onAssign={handlePopoverAssign}
+          onUnassign={handlePopoverUnassign}
+          onOpenDetail={() => handleOpenZoneDetail(popoverZone)}
+          onClose={() => setPopoverAnchor(null)}
+          onStaffInfoClick={(staff) => { setActiveStaffInfo(staff); setPopoverAnchor(null); }}
+        />
+      )}
+
+      {/* ─── Zone Detail Modal ────────────────────────────────────────────────── */}
       {activeZone && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm" onClick={() => setActiveZoneId(null)}>
           <div className="w-full sm:max-w-lg bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92vh] flex flex-col overflow-hidden" onClick={(e) => e.stopPropagation()}>
@@ -752,7 +1295,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
             {/* Modal body */}
             <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
 
-              {/* Assigned staff — prominent card */}
+              {/* Assigned staff */}
               <div>
                 <label className="text-xs font-semibold text-slate-600 mb-2 flex items-center gap-1 block">
                   <User size={11} />담당 직원
@@ -760,9 +1303,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
                 {(() => {
                   const assignedStaff = employees.find((e) => e.id === draftStaffId) ?? null;
                   const isLogistics = assignedStaff?.position === "물류";
+                  const colorIdx = assignedStaff ? (staffColorMap.get(assignedStaff.id) ?? 0) : 0;
                   return assignedStaff ? (
                     <div className="flex items-center gap-3 px-3 py-3 rounded-xl border-2 border-indigo-200 bg-indigo-50">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-base font-black shrink-0 ${isLogistics ? "bg-indigo-600 text-white" : "bg-slate-300 text-slate-700"}`}>
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center text-base font-black shrink-0 ${isLogistics ? STAFF_AVATAR_COLORS[colorIdx % STAFF_AVATAR_COLORS.length] : "bg-slate-300 text-slate-700"}`}>
                         {assignedStaff.name.slice(0, 1)}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -855,7 +1399,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
           </div>
         </div>
       )}
-      {/* ═══ Employee Info Modal ══════════════════════════════════════════════ */}
+
+      {/* ─── Employee Info Modal ──────────────────────────────────────────────── */}
       {activeStaffInfo && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-sm"
           onClick={() => setActiveStaffInfo(null)}>
@@ -863,69 +1408,126 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
             onClick={(e) => e.stopPropagation()}>
 
             {/* Header */}
-            <div className={`px-5 py-5 ${activeStaffInfo.employee.position === "물류" ? "bg-gradient-to-br from-indigo-600 to-indigo-700" : "bg-gradient-to-br from-slate-700 to-slate-800"}`}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl font-black text-white shrink-0">
-                    {activeStaffInfo.employee.name.slice(0, 1)}
-                  </div>
-                  <div>
-                    <div className="text-xl font-black text-white leading-tight">{activeStaffInfo.employee.name}</div>
-                    <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/25 text-white">
-                        {activeStaffInfo.employee.position || "약사"}
-                      </span>
-                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${SHIFT_BADGE[activeStaffInfo.scheduleType] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}>
-                        {activeStaffInfo.scheduleType}
-                      </span>
-                      {activeStaffInfo.workingHours && (
-                        <span className="text-[11px] text-white/80 font-medium">{activeStaffInfo.workingHours}</span>
-                      )}
+            {(() => {
+              const colorIdx = staffColorMap.get(activeStaffInfo.employee.id) ?? 0;
+              const isLogistics = activeStaffInfo.employee.position === "물류";
+              return (
+                <div className={`px-5 py-5 bg-gradient-to-br ${isLogistics ? "from-indigo-600 to-indigo-700" : "from-slate-700 to-slate-800"}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-full bg-white/20 flex items-center justify-center text-2xl font-black text-white shrink-0">
+                        {activeStaffInfo.employee.name.slice(0, 1)}
+                      </div>
+                      <div>
+                        <div className="text-xl font-black text-white leading-tight">{activeStaffInfo.employee.name}</div>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-white/25 text-white">
+                            {activeStaffInfo.employee.position || "약사"}
+                          </span>
+                          <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full border ${SHIFT_BADGE[activeStaffInfo.scheduleType] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}>
+                            {activeStaffInfo.scheduleType}
+                          </span>
+                          {activeStaffInfo.workingHours && (
+                            <span className="text-[11px] text-white/80 font-medium">{activeStaffInfo.workingHours}</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
+                    <button onClick={() => setActiveStaffInfo(null)}
+                      className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition">
+                      <X size={16} />
+                    </button>
                   </div>
                 </div>
-                <button onClick={() => setActiveStaffInfo(null)}
-                  className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 flex items-center justify-center text-white cursor-pointer transition">
-                  <X size={16} />
-                </button>
-              </div>
-            </div>
+              );
+            })()}
 
-            {/* Assigned zones (logistics only) */}
-            <div className="px-5 py-4">
-              {activeStaffInfo.employee.position === "물류" ? (
-                <>
-                  <div className="text-xs font-bold text-slate-600 mb-2.5 flex items-center gap-1.5">
-                    <MapPin size={12} className="text-indigo-500" />담당 구역
+            {/* Zone assignment (logistics only) */}
+            {activeStaffInfo.employee.position === "물류" ? (
+              <div className="px-5 pt-3 pb-2 max-h-[60vh] overflow-y-auto">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
+                    <MapPin size={12} className="text-indigo-500" />
+                    구역 배정
+                    {getAssignedZones(activeStaffInfo.employee.id).length > 0 && (
+                      <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-black">
+                        {getAssignedZones(activeStaffInfo.employee.id).length}개
+                      </span>
+                    )}
                   </div>
-                  {(() => {
-                    const az = getAssignedZones(activeStaffInfo.employee.id);
-                    return az.length > 0 ? (
-                      <div className="flex flex-wrap gap-1.5">
-                        {az.map((z) => (
-                          <div key={z.id}
-                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border text-xs font-semibold ${statusCell(z.status)}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot(z.status)}`} />
-                            <span className="font-black">{z.num}번</span>
-                            <span className="text-[10px] opacity-80 max-w-[80px] truncate">{z.label}</span>
-                          </div>
-                        ))}
+                  {getAssignedZones(activeStaffInfo.employee.id).length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const empId = activeStaffInfo.employee.id;
+                        setZones(prev => prev.map(z =>
+                          z.assignedStaffId === empId
+                            ? { ...z, assignedStaffId: null, assignedStaffName: "" }
+                            : z
+                        ));
+                      }}
+                      className="text-[10px] font-bold text-rose-500 hover:text-rose-700 px-2 py-1 rounded-lg hover:bg-rose-50 transition cursor-pointer"
+                    >
+                      전체 해제
+                    </button>
+                  )}
+                </div>
+                {/* Zone grid by section */}
+                {(["top_wall", "aisle", "left_wall", "bottom_wall", "wing"] as const).map((section) => {
+                  const sectionZones = zones.filter(z => z.section === section);
+                  const sectionLabel: Record<string, string> = { top_wall: "상단 벽면", aisle: "중앙 진열대", left_wall: "좌측 벽면", bottom_wall: "하단 벽면", wing: "우측 윙" };
+                  return (
+                    <div key={section} className="mb-3">
+                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">{sectionLabel[section]}</div>
+                      <div className="grid grid-cols-5 gap-1">
+                        {sectionZones.map((z) => {
+                          const empId = activeStaffInfo.employee.id;
+                          const isAssigned = z.assignedStaffId === empId;
+                          const otherName = !isAssigned && z.assignedStaffId !== null ? z.assignedStaffName : null;
+                          return (
+                            <button
+                              key={z.id}
+                              type="button"
+                              onClick={() => {
+                                setZones(prev => prev.map(zone =>
+                                  zone.id !== z.id ? zone : (
+                                    isAssigned
+                                      ? { ...zone, assignedStaffId: null, assignedStaffName: "" }
+                                      : { ...zone, assignedStaffId: empId, assignedStaffName: activeStaffInfo.employee.name }
+                                  )
+                                ));
+                              }}
+                              title={otherName ? `현재: ${otherName} 담당 (클릭 시 재배정)` : z.category}
+                              className={`rounded-lg border-2 p-1 text-left transition-all cursor-pointer active:scale-95 ${
+                                isAssigned
+                                  ? "bg-indigo-100 border-indigo-400 shadow-sm"
+                                  : otherName
+                                  ? "bg-amber-50 border-amber-300 hover:border-indigo-300"
+                                  : "bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50"
+                              }`}
+                            >
+                              <div className={`text-[10px] font-black leading-tight ${isAssigned ? "text-indigo-800" : otherName ? "text-amber-700" : "text-slate-700"}`}>
+                                {z.num}
+                              </div>
+                              <div className={`text-[8px] leading-none mt-0.5 truncate ${isAssigned ? "text-indigo-500" : otherName ? "text-amber-500" : "text-slate-400"}`}>
+                                {otherName ? otherName : z.label}
+                              </div>
+                            </button>
+                          );
+                        })}
                       </div>
-                    ) : (
-                      <div className="flex flex-col items-center py-4 text-slate-400 text-xs text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
-                        <MapPin size={18} className="mb-1 opacity-30" />
-                        배정된 구역이 없습니다
-                      </div>
-                    );
-                  })()}
-                </>
-              ) : (
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="px-5 py-4">
                 <div className="flex flex-col items-center py-4 text-slate-400 text-xs text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
                   <Sparkles size={18} className="mb-1 opacity-30" />
                   구역 배정은 물류 직원에게만 적용됩니다
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
             <div className="px-5 pb-5">
               <button onClick={() => setActiveStaffInfo(null)}
@@ -940,15 +1542,5 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
     </div>
   );
 };
-
-// ─── Tiny helper sub-component ────────────────────────────────────────────────
-const SectionLabel: React.FC<{ title: string; badge: string; icon: string }> = ({ title, badge, icon }) => (
-  <div className="flex items-center justify-between">
-    <div className="flex items-center gap-1.5 text-[11px] sm:text-xs font-bold text-slate-700">
-      <span>{icon}</span>{title}
-    </div>
-    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 border border-slate-200 text-slate-500">{badge}</span>
-  </div>
-);
 
 export default DisplayPage;
