@@ -1209,6 +1209,18 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
           {isAdmin ? (
             <>
               <button
+                onClick={handleCopyFromPreviousMonth}
+                disabled={isCopying}
+                title={`${currentMonth === 1 ? 12 : currentMonth - 1}월 스케줄을 이번 달로 복사`}
+                className="px-3 py-1.5 text-xs font-semibold border border-violet-300 bg-violet-50 hover:bg-violet-100 rounded-lg text-violet-700 transition-all duration-150 cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isCopying ? (
+                  <><div className="animate-spin rounded-full h-3 w-3 border-b-2 border-violet-600" /><span className="hidden sm:inline">복사 중...</span></>
+                ) : (
+                  <><Layers size={13} /><span className="hidden sm:inline">전월 복사</span></>
+                )}
+              </button>
+              <button
                 onClick={() => openCreateEmployeeModal()}
                 className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
               >
