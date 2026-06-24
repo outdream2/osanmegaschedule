@@ -83,11 +83,14 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
   const [reservations, setReservations] = useState<any[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
 
-  // Staff availability (휴무 check)
+  // Staff availability for selected date (휴무 check — per-column)
   const [staffAvailability, setStaffAvailability] = useState<StaffAvailability[]>(
     STAFF_NAMES.map((name, i) => ({ employeeId: i + 1, name, scheduleType: null, isOff: false }))
   );
   const [availLoading, setAvailLoading] = useState(false);
+
+  // Monthly off map: date → names of staff who are off
+  const [monthlyOff, setMonthlyOff] = useState<Record<string, string[]>>({});
 
   // Modal state
   const [modalTime, setModalTime] = useState<string | null>(null);
@@ -114,6 +117,23 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
     if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
     else setViewMonth(m => m + 1);
   };
+
+  const fetchMonthlyOff = useCallback(async (year: number, month: number) => {
+    try {
+      const res = await fetch(`/api/staff-monthly?year=${year}&month=${month}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMonthlyOff(data ?? {});
+      }
+    } catch {
+      // silently ignore
+    }
+  }, []);
+
+  // Fetch monthly off when month changes
+  useEffect(() => {
+    fetchMonthlyOff(viewYear, viewMonth + 1);
+  }, [viewYear, viewMonth, fetchMonthlyOff]);
 
   // Booked slots per target
   const bookedByTarget: Record<string, string[]> = {};
@@ -317,13 +337,22 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
               const isSelected = ymd === selectedDate;
               const weekday = cell.getDay();
 
+              // 휴무 정보
+              const offStaff = monthlyOff[ymd] ?? [];
+              const isFullyOff = offStaff.length === 3; // 3명 모두 휴무
+              const isPartialOff = offStaff.length > 0 && !isFullyOff;
+
               let textColor = "text-gray-700";
               if (weekday === 0) textColor = "text-rose-500";
               else if (weekday === 6) textColor = "text-sky-600";
 
-              let cellCls = "aspect-square flex items-center justify-center rounded-lg text-xs font-semibold transition ";
-              if (isPast) {
-                cellCls += "text-gray-300 cursor-not-allowed ";
+              const isDisabled = isPast || isFullyOff;
+
+              let cellCls = "aspect-square flex flex-col items-center justify-center rounded-lg text-xs font-semibold transition relative ";
+              if (isDisabled) {
+                cellCls += isFullyOff
+                  ? "bg-gray-100 text-gray-300 cursor-not-allowed "
+                  : "text-gray-300 cursor-not-allowed ";
               } else if (isSelected) {
                 cellCls += "bg-emerald-600 text-white ring-2 ring-emerald-400 cursor-pointer ";
               } else if (isToday) {
@@ -336,11 +365,22 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
                 <button
                   key={ymd}
                   type="button"
-                  disabled={isPast}
-                  onClick={() => handleDayClick(cell)}
+                  disabled={isDisabled}
+                  onClick={() => !isDisabled && handleDayClick(cell)}
                   className={cellCls}
+                  title={isFullyOff ? `${ymd} — 전원 휴무 (예약 불가)` : isPartialOff ? `휴무: ${offStaff.join(", ")}` : undefined}
                 >
                   {cell.getDate()}
+                  {isFullyOff && (
+                    <span className="text-[7px] font-bold text-gray-400 leading-none mt-0.5">휴무</span>
+                  )}
+                  {isPartialOff && !isSelected && !isDisabled && (
+                    <span className="absolute bottom-1 left-1/2 -translate-x-1/2 flex gap-px">
+                      {offStaff.map((_, i) => (
+                        <span key={i} className="w-1 h-1 rounded-full bg-amber-400 inline-block" />
+                      ))}
+                    </span>
+                  )}
                 </button>
               );
             })}
@@ -357,16 +397,14 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
               선택
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-md bg-emerald-100 border border-emerald-300 inline-block" />
-              예약 가능
+              <span className="w-2.5 h-2.5 rounded-md bg-gray-100 inline-block" />
+              전원 휴무
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-md bg-rose-100 border border-rose-300 inline-block" />
-              예약 완료
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-md bg-gray-200 inline-block" />
-              휴무
+              <span className="w-2.5 h-2.5 rounded-md bg-white border border-gray-200 flex items-end justify-center pb-0.5 inline-flex">
+                <span className="w-1 h-1 rounded-full bg-amber-400 inline-block" />
+              </span>
+              일부 휴무
             </div>
           </div>
         </div>

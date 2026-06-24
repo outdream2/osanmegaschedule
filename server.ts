@@ -49,6 +49,35 @@ async function startServer() {
     }
   });
 
+  // GET /api/staff-monthly?year=YYYY&month=M — monthly off dates for employees 1,2,3
+  app.get("/api/staff-monthly", async (req, res) => {
+    const { year, month } = req.query;
+    if (!year || !month) {
+      return res.status(400).json({ error: "year and month required" });
+    }
+    const monthStr = String(month).padStart(2, "0");
+    const datePrefix = `${year}-${monthStr}-`;
+    try {
+      const { data, error } = await supabase
+        .from("schedules")
+        .select("employeeId, date, type")
+        .like("date", `${datePrefix}%`)
+        .in("employeeId", STAFF_LIST.map(s => s.id));
+      if (error) throw new Error(error.message);
+      const result: Record<string, string[]> = {};
+      for (const row of (data ?? [])) {
+        if (!OFF_TYPES.includes(row.type)) continue;
+        const staff = STAFF_LIST.find(s => s.id === row.employeeId);
+        if (!staff) continue;
+        if (!result[row.date]) result[row.date] = [];
+        result[row.date].push(staff.name);
+      }
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // GET /api/reservations for local dev fallback
   app.get("/api/reservations", (req, res) => {
     const { date } = req.query;
