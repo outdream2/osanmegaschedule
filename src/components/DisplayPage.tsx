@@ -445,46 +445,66 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
                 <Users size={24} className="mb-2 opacity-30" />오늘 출근 인원이 없습니다
               </div>
             ) : (
-              <ul className="divide-y divide-slate-50">
+              <ul className="divide-y divide-slate-100">
                 {todayStaff.map(({ employee, scheduleType, workingHours }) => {
                   const isLogistics = employee.position === "물류";
                   const assignedZones = getAssignedZones(employee.id);
                   const isAssigning = assigningStaffId === employee.id;
+                  const avatarBg = isLogistics
+                    ? "bg-indigo-600 text-white"
+                    : "bg-slate-200 text-slate-700";
                   return (
-                    <li key={employee.id} className={`px-3 py-2.5 ${isAssigning ? "bg-violet-50 border-l-4 border-violet-500" : ""}`}>
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-1.5 mb-0.5">
-                            <span className="text-sm font-bold text-slate-900 truncate">{employee.name}</span>
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${SHIFT_BADGE[scheduleType] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}>
+                    <li key={employee.id}
+                      className={`px-3 py-3 transition ${isAssigning ? "bg-violet-50 border-l-[3px] border-violet-500" : "hover:bg-slate-50"}`}>
+
+                      {/* Top row: avatar + info */}
+                      <div className="flex items-start gap-2.5">
+                        {/* Avatar */}
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-black shrink-0 ${avatarBg}`}>
+                          {employee.name.slice(0, 1)}
+                        </div>
+
+                        {/* Info block */}
+                        <div className="flex-1 min-w-0">
+                          {/* Name + shift badge */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-sm font-bold text-slate-900 leading-tight">{employee.name}</span>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full border leading-none ${SHIFT_BADGE[scheduleType] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}>
                               {scheduleType}
                             </span>
                           </div>
-                          <div className="text-[11px] text-slate-500 flex items-center gap-1">
-                            <span className={`px-1 py-0.5 rounded text-[10px] font-semibold ${isLogistics ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
-                              {employee.position}
+
+                          {/* Position + working hours */}
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${isLogistics ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600"}`}>
+                              {employee.position || "약사"}
                             </span>
-                            {workingHours && <span className="text-[10px] text-slate-400">{workingHours}</span>}
+                            {workingHours && (
+                              <span className="text-[10px] text-slate-400 font-medium">{workingHours}</span>
+                            )}
                           </div>
                         </div>
+
+                        {/* Zone assign button (logistics only) */}
                         {isLogistics && (
                           <button
                             type="button"
                             onClick={() => setAssigningStaffId(isAssigning ? null : employee.id)}
-                            className={`text-[11px] font-bold px-2 py-1 rounded-lg border transition shrink-0 cursor-pointer ${
+                            className={`shrink-0 text-[11px] font-bold px-2.5 py-1.5 rounded-lg border transition cursor-pointer flex items-center gap-1 ${
                               isAssigning
-                                ? "bg-violet-600 text-white border-violet-600"
+                                ? "bg-violet-600 text-white border-violet-600 shadow-sm"
                                 : "bg-white text-violet-700 border-violet-300 hover:bg-violet-50"
                             }`}
                           >
-                            {isAssigning ? "완료" : "구역지정"}
+                            <MapPin size={10} />
+                            {isAssigning ? "완료" : "구역배정"}
                           </button>
                         )}
                       </div>
 
-                      {/* Assigned zones for logistics staff */}
+                      {/* Assigned zones */}
                       {isLogistics && assignedZones.length > 0 && (
-                        <div className="mt-1.5 flex flex-wrap gap-1">
+                        <div className="mt-2 ml-11 flex flex-wrap gap-1">
                           {assignedZones.map((z) => (
                             <span
                               key={z.id}
@@ -497,9 +517,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack }) => {
                       )}
 
                       {/* Assignment mode hint */}
-                      {isLogistics && isAssigning && (
-                        <div className="mt-1.5 text-[10px] text-violet-600 font-semibold bg-violet-50 rounded px-2 py-1">
-                          💡 맵에서 구역을 탭하여 배정하세요
+                      {isAssigning && (
+                        <div className="mt-2 ml-11 text-[10px] text-violet-600 font-semibold bg-violet-100/60 rounded-md px-2 py-1 flex items-center gap-1">
+                          <CheckCheck size={10} />맵에서 구역을 탭해 배정·해제하세요
                         </div>
                       )}
                     </li>
