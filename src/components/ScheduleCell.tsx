@@ -157,7 +157,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
       {/* Clickable Card Grid Cell */}
       <div
         id={`cell-${employeeId}-${dateStr}`}
-        className={`w-full h-full rounded-sm flex flex-col justify-center p-0.5 relative transition-all ${
+        className={`w-full h-full rounded-sm flex flex-col justify-center items-center p-0.5 relative transition-all ${
           isAdmin ? "cursor-pointer hover:bg-slate-50/80 hover:scale-[1.02] shadow-xs" : "cursor-default text-slate-400"
         } ${
           colorConfig ? `${colorConfig.bg} ${colorConfig.text}` : "bg-white text-slate-400"
@@ -176,7 +176,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
           </button>
         )}
         {/* Row 1: Type (오픈, 마감, 휴무 등) */}
-        <div className="text-[11px] font-bold leading-tight truncate">
+        <div className="text-[11px] font-bold leading-tight truncate text-center w-full">
           {displayType || "-"}
         </div>
 
