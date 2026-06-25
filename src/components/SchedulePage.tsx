@@ -1,13 +1,16 @@
 // src/components/SchedulePage.tsx
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
-import { ZONE_DEFS, ZONES_STORAGE_KEY, SECTION_LABEL } from "../constants/displayZones";
+import { ZONE_DEFS, ZONES_STORAGE_KEY } from "../constants/displayZones";
 import { Employee, MonthlySummary, Schedule, AuthSession } from "../types";
 import { ScheduleCell } from "./ScheduleCell";
 import { SummaryRow } from "./SummaryRow";
 import { DayTimelineModal } from "./DayTimelineModal";
 import { EmployeeCalendarModal, type LogisticsZoneProps } from "./EmployeeCalendarModal";
 import { SettingsModal } from "./SettingsModal";
+import { EmployeeFormModal } from "./EmployeeFormModal";
+import { ScheduleFilterBar } from "./ScheduleFilterBar";
+import { BreakModal } from "./BreakModal";
 import { useSettings } from "../hooks/useSettings";
 import {
   Calendar,
@@ -16,26 +19,19 @@ import {
   ChevronRight,
   Info,
   Users,
-  Briefcase,
   X,
   Trash2,
   CheckCircle,
-  FileSpreadsheet,
-  Search,
-  Building2,
-  Warehouse,
   Layers,
   Award,
   Clock,
   MessageSquare,
   Lock,
-  Unlock,
   LogIn,
   LogOut,
   ShieldAlert,
   Edit,
   GripVertical,
-  MapPin,
 } from "lucide-react";
 
 interface SchedulePageProps {
@@ -1288,153 +1284,26 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
       </header>
 
       {/* 1.5 Sub-Header Control Bar for Workplace Tabs, Employee Sorting & Search */}
-      <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2 sm:gap-3 shrink-0 shadow-sm">
-          {/* Filter Tabs: two independent groups */}
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">필터</span>
-            {/* Group 1: Workplace */}
-            <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
-              {([
-                { key: "전체", label: "전체", icon: <Layers size={12} />, color: "text-indigo-600", count: employees.length },
-                { key: "매장", label: "매장", icon: <Building2 size={12} />, color: "text-emerald-600", count: employees.filter(e => (e.workplace || "매장") === "매장").length },
-                { key: "창고", label: "창고", icon: <Warehouse size={12} />, color: "text-indigo-600", count: employees.filter(e => e.workplace === "창고").length },
-              ] as const).map(({ key, label, icon, color, count }) => (
-                <button
-                  key={key}
-                  onClick={() => setWorkplaceTab(key)}
-                  className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${workplaceTab === key
-                    ? `bg-white ${color} shadow-sm font-bold`
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                    }`}
-                >
-                  {icon}
-                  <span>{label} <span className="text-slate-400 font-normal hidden sm:inline">({count})</span><span className="text-slate-400 font-normal sm:hidden"> {count}</span></span>
-                </button>
-              ))}
-            </div>
-            <span className="text-gray-300 text-sm shrink-0">─</span>
-            {/* Group 2: Position */}
-            <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
-              {([
-                { key: "전체", label: "전체", icon: <Layers size={12} />, color: "text-indigo-600", count: employees.length },
-                { key: "약사", label: "약사", icon: null, color: "text-violet-600", count: employees.filter(e => e.position === "약사").length },
-                { key: "캐셔", label: "캐셔", icon: null, color: "text-amber-600", count: employees.filter(e => e.position === "캐셔").length },
-                { key: "물류", label: "물류", icon: null, color: "text-sky-600", count: employees.filter(e => e.position === "물류").length },
-                { key: "알바", label: "알바", icon: null, color: "text-rose-600", count: employees.filter(e => e.rank === "알바" || e.position === "알바").length },
-                { key: "기타", label: "기타", icon: null, color: "text-slate-600", count: employees.filter(e => !["약사","캐셔","물류"].includes(e.position) && e.rank !== "알바" && e.position !== "알바").length },
-              ] as const).map(({ key, label, icon, color, count }) => (
-                <button
-                  key={key}
-                  onClick={() => setPositionTab(key)}
-                  className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${positionTab === key
-                    ? `bg-white ${color} shadow-sm font-bold`
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                    }`}
-                >
-                  {icon}
-                  <span>{label} <span className="text-slate-400 font-normal hidden sm:inline">({count})</span><span className="text-slate-400 font-normal sm:hidden"> {count}</span></span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Employee Sorting Section */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs">
-            {/* 오늘 출근 우선 토글 */}
-            <button
-              type="button"
-              onClick={() => setTodayFirst(v => !v)}
-              className={`inline-flex items-center gap-1 px-2.5 py-1 sm:py-1.5 text-[11px] sm:text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                todayFirst
-                  ? "bg-rose-500 text-white border-rose-500 shadow-sm"
-                  : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-              }`}
-              title="오늘 출근 직원을 목록 상단에 표시"
-            >
-              <span>🟢</span>
-              <span className="hidden sm:inline">오늘 출근 우선</span>
-              <span className="sm:hidden">오늘순</span>
-            </button>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">정렬</span>
-            <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
-              {(["position", "rank", "hireDate", "name"] as const).map((key) => {
-                const labels: Record<string, string> = { position: "구분", rank: "직급", hireDate: "입사일", name: "이름" };
-                return (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => {
-                      if (sortBy === key) setSortOrder(prev => prev === "asc" ? "desc" : "asc");
-                      else { setSortBy(key); setSortOrder("asc"); }
-                    }}
-                    className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${
-                      sortBy === key ? "bg-white text-indigo-600 shadow-sm font-bold" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    <span>{labels[key]}</span>
-                    {sortBy === key && <span className="text-[10px] font-mono">{sortOrder === "asc" ? "↑" : "↓"}</span>}
-                  </button>
-                );
-              })}
-
-
-              {sortBy !== "none" && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSortBy("none");
-                    setSortOrder("asc");
-                  }}
-                  className="px-2 py-1 sm:py-1.5 text-[11px] font-medium text-slate-400 hover:text-rose-500 rounded-md transition cursor-pointer min-h-[28px] sm:min-h-[32px]"
-                  title="기본 순서 정렬 상태로 복원"
-                >
-                  초기화
-                </button>
-              )}
-
-              {sortBy === "none" && typeof window !== "undefined" && localStorage.getItem("megatown_employee_order") && (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    if (window.confirm("드래그 앤 드롭으로 재배치한 순서를 지우고, 원래 기본 순서로 복구하시겠습니까?")) {
-                      localStorage.removeItem("megatown_employee_order");
-                      await fetchScheduleData();
-                      showNotification("정렬 순서가 기본값으로 초기화되었습니다.");
-                    }
-                  }}
-                  className="px-2 py-1 sm:py-1.5 text-[10px] font-bold text-rose-500 hover:text-rose-600 hover:bg-rose-50 rounded-md transition cursor-pointer shrink-0 min-h-[28px] sm:min-h-[32px]"
-                  title="드래그앤드롭 사용자 지정 순서 초기화"
-                >
-                  순서초기화
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Employee Search Group with integrated help feedback */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:max-w-xs w-full">
-            <div className="relative flex-1">
-              <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
-                <Search size={13} />
-              </div>
-              <input
-                type="text"
-                placeholder="성명으로 조회 (예: 정윤수)"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full text-xs font-medium pl-9 pr-8 py-2 bg-slate-50 border border-slate-200 focus:border-indigo-400 focus:bg-white rounded-lg focus:outline-none placeholder-slate-400 text-slate-800 transition-all min-h-[32px]"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="absolute inset-y-0 right-2.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
+      <ScheduleFilterBar
+        employees={employees}
+        workplaceTab={workplaceTab}
+        setWorkplaceTab={setWorkplaceTab}
+        positionTab={positionTab}
+        setPositionTab={setPositionTab}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        sortOrder={sortOrder}
+        setSortOrder={setSortOrder}
+        todayFirst={todayFirst}
+        setTodayFirst={setTodayFirst}
+        onResetCustomOrder={async () => {
+          localStorage.removeItem("megatown_employee_order");
+          await fetchScheduleData();
+          showNotification("정렬 순서가 기본값으로 초기화되었습니다.");
+        }}
+      />
 
       {/* 1.6 Personal Schedule Search Results Quick Insights */}
       {searchQuery.trim() !== "" && (
@@ -1889,11 +1758,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                                 <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium leading-tight break-keep">
                                   {emp.position}{emp.rank ? ` / ${emp.rank}` : ""}{emp.employmentType ? ` · ${emp.employmentType}` : ""}
                                 </span>
-                                {/* 남은 월차 */}
+                                {/* 남은 월차: 로딩된 스케줄에서 직접 계산 */}
                                 {(() => {
-                                  const leaveTotal = Number(emp.annual_leave_days ?? 0);
-                                  if (!leaveTotal || isNaN(leaveTotal)) return null;
-                                  const leaveUsed = Number(yearLeaveStats[emp.id] ?? 0);
+                                  const leaveTotal = parseInt(String(emp.annual_leave_days ?? ""), 10);
+                                  if (!leaveTotal || !Number.isFinite(leaveTotal)) return null;
+                                  const leaveUsed = emp.schedules.filter(
+                                    s => s.type === "월차" && s.date.startsWith(`${currentYear}-`)
+                                  ).length;
                                   const leaveRemaining = Math.max(0, leaveTotal - leaveUsed);
                                   return (
                                     <span className={`text-[8px] font-bold leading-tight ${leaveRemaining === 0 ? "text-rose-500" : "text-amber-500"}`}>
@@ -2151,441 +2022,44 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
 
       {/* Roster Add Modal Popup Backdrop */}
       {isEmpModalOpen && (
-        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="relative w-full sm:max-w-md bg-white sm:rounded-lg rounded-t-2xl shadow-2xl p-4 sm:p-6 border border-[#e2e8f0] transform scale-100 transition animate-in zoom-in-95 duration-100 max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setIsEmpModalOpen(false)}
-              className="absolute top-4 right-4 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-            >
-              <X size={18} />
-            </button>
-
-            <div className="flex items-center gap-2 border-b pb-3 mb-4">
-              <Users className="text-[#2563eb]" size={20} />
-              <h3 className="text-sm font-bold text-slate-900">{empModalMode === "edit" ? "직원 정보 수정" : "새로운 직원 등록"}</h3>
-            </div>
-
-            <form onSubmit={handleAddEmployeeSubmit} className="space-y-4">
-              {/* Highlighted, prominent Description (상세 설명) at the very beginning */}
-              <div className="bg-slate-50 p-3 rounded-lg border border-[#cbd5e1] space-y-1">
-                <label className="block text-xs font-extrabold text-[#1e293b] flex items-center gap-1">
-                  <span>💡 상세 설명 (근무 패턴 / 클래스)</span> <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="예: 주6일 일 휴무, 금일, 주5일 (수목휴무) 등"
-                  value={empDescription}
-                  onChange={(e) => setEmpDescription(e.target.value)}
-                  className="w-full text-sm font-bold rounded-md border border-[#94a3b8] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 p-2.5 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all duration-150"
-                />
-
-                {/* Visual Quick Recommendation Patterns to extremely simplify user interaction */}
-                <div className="flex flex-wrap gap-1 mt-1.5 pt-1.5 border-t border-[#e2e8f0]">
-                  <span className="text-[10px] text-slate-500 font-bold self-center mr-1">추천 패턴:</span>
-                  {["주6일 일 휴무", "수목 휴무", "토일", "금일", "일월", "3주 목<->토", "월화", "화수", "평일마감 주말오픈"].map((pat) => (
-                    <button
-                      key={pat}
-                      type="button"
-                      onClick={() => setEmpDescription(pat)}
-                      className="px-1.5 py-0.5 text-[9px] bg-white hover:bg-slate-100 border border-[#cbd5e1] hover:border-slate-400 rounded text-slate-700 font-semibold cursor-pointer transition duration-100"
-                    >
-                      {pat}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-                    <span>직원 성명</span> <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="예: 홍길동"
-                    value={empName}
-                    onChange={(e) => setEmpName(e.target.value)}
-                    className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
-                  />
-                </div>
-              </div>
-
-              {/* ── 구분 (Classification) — used for filters ── */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-                  <Briefcase size={13} /> 구분 <span className="text-rose-500">*</span>
-                  <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">업무 분류 (필터에 사용)</span>
-                </label>
-                <div className="flex flex-wrap gap-1">
-                  {(["약사", "캐셔", "물류"] as const).map((pos) => (
-                    <button
-                      key={pos}
-                      type="button"
-                      onClick={() => { setEmpPosition(pos); setEmpCustomPosition(""); if (pos !== "물류") setEmpZoneNums([]); }}
-                      className={`px-2.5 py-1 text-[11px] rounded-lg transition font-bold cursor-pointer border ${
-                        empPosition === pos
-                          ? "bg-indigo-50 text-indigo-700 border-indigo-300 shadow-sm"
-                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                      }`}
-                    >
-                      {pos}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setEmpPosition("기타")}
-                    className={`px-2.5 py-1 text-[11px] rounded-lg transition font-bold cursor-pointer border ${
-                      !["약사", "캐셔", "물류"].includes(empPosition) && empPosition !== ""
-                        ? "bg-indigo-50 text-indigo-700 border-indigo-300 shadow-sm"
-                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                    }`}
-                  >
-                    기타
-                  </button>
-                </div>
-                {(empPosition === "기타" || (!["약사", "캐셔", "물류", ""].includes(empPosition))) && (
-                  <input
-                    type="text"
-                    placeholder="직접 입력"
-                    value={empCustomPosition}
-                    onChange={(e) => setEmpCustomPosition(e.target.value)}
-                    className="w-full mt-1.5 text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
-                  />
-                )}
-              </div>
-
-              {/* ── 구역 배정 (물류 직원 전용) ── */}
-              {(empPosition === "물류") && (
-                <div className="border border-violet-200 bg-violet-50/40 rounded-xl p-3 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-extrabold text-violet-800 flex items-center gap-1.5">
-                      <MapPin size={13} className="text-violet-600" />
-                      담당 구역 배정
-                      <span className="text-[10px] font-normal text-violet-500">(복수 선택 가능)</span>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      {empZoneNums.length > 0 && (
-                        <span className="text-[10px] font-black text-violet-700 bg-violet-100 border border-violet-200 px-2 py-0.5 rounded-full">
-                          {empZoneNums.length}개 선택
-                        </span>
-                      )}
-                      {empZoneNums.length > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => setEmpZoneNums([])}
-                          className="text-[10px] font-bold text-rose-500 hover:text-rose-700 cursor-pointer transition"
-                        >
-                          전체 해제
-                        </button>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 섹션별 구역 목록 */}
-                  <div className="space-y-2 max-h-56 overflow-y-auto pr-0.5">
-                    {(["top_wall", "aisle", "left_wall", "bottom_wall", "wing"] as const).map((section) => {
-                      const zones = ZONE_DEFS.filter(z => z.section === section);
-                      return (
-                        <div key={section}>
-                          <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">
-                            {SECTION_LABEL[section]}
-                          </div>
-                          <div className="flex flex-wrap gap-1">
-                            {zones.map((z) => {
-                              const isOn = empZoneNums.includes(z.num);
-                              return (
-                                <button
-                                  key={z.num}
-                                  type="button"
-                                  onClick={() =>
-                                    setEmpZoneNums(prev =>
-                                      isOn ? prev.filter(n => n !== z.num) : [...prev, z.num]
-                                    )
-                                  }
-                                  className={`px-1.5 py-1 rounded-lg border text-left transition-all cursor-pointer active:scale-[0.96] ${
-                                    isOn
-                                      ? "bg-violet-100 border-violet-400 shadow-sm"
-                                      : "bg-white border-slate-200 hover:border-violet-300 hover:bg-violet-50"
-                                  }`}
-                                  title={z.category}
-                                >
-                                  <span className={`text-[10px] font-black leading-none ${isOn ? "text-violet-800" : "text-slate-600"}`}>
-                                    {z.num}
-                                  </span>
-                                  <span className={`text-[8px] ml-0.5 ${isOn ? "text-violet-600" : "text-slate-400"}`}>
-                                    {z.label}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* ── 직급 (Rank) — separate, independent field ── */}
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-                  직급
-                  <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">직위/직책 (선택)</span>
-                </label>
-                <div className="flex flex-wrap gap-1 mb-1.5">
-                  {(["대표", "이사", "부장", "팀장", "과장", "사원", "알바"] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setEmpRank(prev => prev === r ? "" : r)}
-                      className={`px-2.5 py-1 text-[11px] rounded-lg transition font-bold cursor-pointer border ${
-                        empRank === r
-                          ? "bg-amber-50 text-amber-700 border-amber-300 shadow-sm"
-                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                      }`}
-                    >
-                      {r}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  placeholder="직접 입력 또는 위 버튼 선택"
-                  value={empRank}
-                  onChange={(e) => setEmpRank(e.target.value)}
-                  className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-                  연간 월차
-                  <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">총 부여 일수 (0 = 미설정)</span>
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  max={30}
-                  value={empAnnualLeave || ""}
-                  onChange={(e) => setEmpAnnualLeave(parseInt(e.target.value) || 0)}
-                  placeholder="예: 15"
-                  className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-                  <Calendar size={13} /> 입사일
-                </label>
-                <input
-                  type="date"
-                  value={empHireDate}
-                  onChange={(e) => setEmpHireDate(e.target.value)}
-                  className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-                  근무 형태 <span className="text-rose-500">*</span>
-                </label>
-                <div className="flex gap-3 p-2 bg-slate-50 border border-[#e2e8f0] rounded-lg flex-wrap">
-                  {PRESET_EMPLOYMENT_TYPES.map((et) => (
-                    <label key={et} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-700">
-                      <input
-                        type="radio"
-                        name="empEmploymentType"
-                        value={et}
-                        checked={empEmploymentType === et}
-                        onChange={() => setEmpEmploymentType(et)}
-                        className="cursor-pointer"
-                      />
-                      <span>{et === "정직원" ? "🟢 정직원" : et === "계약직" ? "🔵 계약직" : "🟡 알바"}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-                  성별
-                </label>
-                <div className="flex gap-3 p-2 bg-slate-50 border border-[#e2e8f0] rounded-lg">
-                  {(["남", "여"] as const).map((g) => (
-                    <label key={g} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-700">
-                      <input
-                        type="radio"
-                        name="empGender"
-                        value={g}
-                        checked={empGender === g}
-                        onChange={() => setEmpGender(g)}
-                        className="cursor-pointer"
-                      />
-                      <span>{g === "남" ? "♂ 남자" : "♀ 여자"}</span>
-                    </label>
-                  ))}
-                  <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-500">
-                    <input
-                      type="radio"
-                      name="empGender"
-                      value=""
-                      checked={empGender === ""}
-                      onChange={() => setEmpGender("")}
-                      className="cursor-pointer"
-                    />
-                    <span>미지정</span>
-                  </label>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-                  근무부서 / 근무지 <span className="text-rose-500">*</span>
-                </label>
-                <div className="flex gap-4 p-2 bg-slate-50 border border-[#e2e8f0] rounded-lg">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-700">
-                    <input
-                      type="radio"
-                      name="empWorkplace"
-                      value="매장"
-                      checked={empWorkplace === "매장"}
-                      onChange={() => setEmpWorkplace("매장")}
-                      className="cursor-pointer"
-                    />
-                    <span>🏬 매장 (기본)</span>
-                  </label>
-                  <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-700">
-                    <input
-                      type="radio"
-                      name="empWorkplace"
-                      value="창고"
-                      checked={empWorkplace === "창고"}
-                      onChange={() => setEmpWorkplace("창고")}
-                      className="cursor-pointer"
-                    />
-                    <span>📦 창고 (물류)</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t mt-6">
-                <button
-                  type="button"
-                  onClick={() => setIsEmpModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold bg-slate-50 hover:bg-slate-100 rounded border border-[#e2e8f0] text-slate-650 text-slate-600 transition cursor-pointer"
-                >
-                  취소
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-bold bg-[#2563eb] hover:bg-blue-700 text-white rounded transition cursor-pointer"
-                >
-                  {empModalMode === "edit" ? "수정 완료" : "등록 완료"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <EmployeeFormModal
+          empModalMode={empModalMode}
+          empName={empName}
+          setEmpName={setEmpName}
+          empPosition={empPosition}
+          setEmpPosition={setEmpPosition}
+          empCustomPosition={empCustomPosition}
+          setEmpCustomPosition={setEmpCustomPosition}
+          empEmploymentType={empEmploymentType}
+          setEmpEmploymentType={setEmpEmploymentType}
+          empHireDate={empHireDate}
+          setEmpHireDate={setEmpHireDate}
+          empDescription={empDescription}
+          setEmpDescription={setEmpDescription}
+          empWorkplace={empWorkplace}
+          setEmpWorkplace={setEmpWorkplace}
+          empGender={empGender}
+          setEmpGender={setEmpGender}
+          empRank={empRank}
+          setEmpRank={setEmpRank}
+          empAnnualLeave={empAnnualLeave}
+          setEmpAnnualLeave={setEmpAnnualLeave}
+          empZoneNums={empZoneNums}
+          setEmpZoneNums={setEmpZoneNums}
+          employmentTypes={PRESET_EMPLOYMENT_TYPES}
+          onSubmit={handleAddEmployeeSubmit}
+          onClose={() => setIsEmpModalOpen(false)}
+        />
       )}
 
       {/* 4a. Break/Lunch Time Modal (employee self-service) */}
       {breakModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-amber-500 text-white rounded-lg">
-                  <Clock size={16} />
-                </div>
-                <div>
-                  <h3 className="text-sm font-extrabold text-gray-900 tracking-tight">점심 / 휴게 시간</h3>
-                  <p className="text-[10px] text-gray-400 font-medium">{breakModal.date}</p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setBreakModal(null)}
-                className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-lg transition"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-2">🍱 점심 시간</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="time"
-                    value={breakModal.lunchStart}
-                    onChange={e => setBreakModal(prev => prev ? { ...prev, lunchStart: e.target.value } : null)}
-                    className="flex-1 text-sm font-semibold rounded-xl border border-gray-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 p-3 bg-white focus:outline-none text-gray-800 transition"
-                  />
-                  <span className="text-gray-400 font-bold text-sm">~</span>
-                  <input
-                    type="time"
-                    value={breakModal.lunchEnd}
-                    onChange={e => setBreakModal(prev => prev ? { ...prev, lunchEnd: e.target.value } : null)}
-                    className="flex-1 text-sm font-semibold rounded-xl border border-gray-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 p-3 bg-white focus:outline-none text-gray-800 transition"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setBreakModal(prev => prev ? { ...prev, lunchStart: "", lunchEnd: "" } : null)}
-                  className="mt-1 text-[10px] text-gray-400 hover:text-rose-500 transition"
-                >
-                  초기화
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-2">☕ 휴게 시간</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="time"
-                    value={breakModal.breakStart}
-                    onChange={e => setBreakModal(prev => prev ? { ...prev, breakStart: e.target.value } : null)}
-                    className="flex-1 text-sm font-semibold rounded-xl border border-gray-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 p-3 bg-white focus:outline-none text-gray-800 transition"
-                  />
-                  <span className="text-gray-400 font-bold text-sm">~</span>
-                  <input
-                    type="time"
-                    value={breakModal.breakEnd}
-                    onChange={e => setBreakModal(prev => prev ? { ...prev, breakEnd: e.target.value } : null)}
-                    className="flex-1 text-sm font-semibold rounded-xl border border-gray-300 focus:border-amber-500 focus:ring-2 focus:ring-amber-500/10 p-3 bg-white focus:outline-none text-gray-800 transition"
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setBreakModal(prev => prev ? { ...prev, breakStart: "", breakEnd: "" } : null)}
-                  className="mt-1 text-[10px] text-gray-400 hover:text-rose-500 transition"
-                >
-                  초기화
-                </button>
-              </div>
-            </div>
-
-            <div className="flex gap-2 pt-2 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={() => setBreakModal(null)}
-                className="flex-1 p-3 text-xs font-bold bg-gray-50 hover:bg-gray-100 rounded-xl border border-gray-200 text-gray-600 transition"
-              >
-                취소
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveBreak}
-                disabled={isSavingBreak}
-                className="flex-1 p-3 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white border border-amber-500 rounded-xl transition shadow-sm disabled:opacity-60"
-              >
-                {isSavingBreak ? "저장 중…" : "저장"}
-              </button>
-            </div>
-          </div>
-        </div>
+        <BreakModal
+          breakModal={breakModal}
+          setBreakModal={setBreakModal}
+          isSavingBreak={isSavingBreak}
+          onSave={handleSaveBreak}
+        />
       )}
 
       {/* 4. Admin Login Dialog Modal */}
