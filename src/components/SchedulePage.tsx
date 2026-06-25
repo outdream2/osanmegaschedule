@@ -995,7 +995,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
     })
     .sort((a, b) => {
       const POSITION_ORDER: Record<string, number> = { "대표": 1, "임원": 2, "약사": 3, "캐셔": 4, "물류": 5 };
-      const RANK_ORDER: Record<string, number> = { "대표": 1, "부장": 2, "차장": 3, "과장": 4, "팀장": 5, "사원": 6, "알바": 7 };
+      const RANK_ORDER: Record<string, number> = { "대표": 1, "이사": 2, "부장": 3, "차장": 4, "과장": 5, "팀장": 6, "사원": 7, "알바": 8 };
 
       if (sortBy === "position") {
         const pA = POSITION_ORDER[a.position] ?? 99;
@@ -1371,49 +1371,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                 );
               })}
 
-              <button
-                type="button"
-                onClick={() => {
-                  if (sortBy === "hireDate") {
-                    setSortOrder(prev => prev === "asc" ? "desc" : "asc");
-                  } else {
-                    setSortBy("hireDate");
-                    setSortOrder("asc");
-                  }
-                }}
-                className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${sortBy === "hireDate"
-                  ? "bg-white text-indigo-600 shadow-sm font-bold"
-                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                  }`}
-                title="입사일 순 정렬"
-              >
-                <span>입사일</span>
-                {sortBy === "hireDate" && (
-                  <span className="text-[10px] font-mono">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (sortBy === "name") {
-                    setSortOrder(prev => prev === "asc" ? "desc" : "asc");
-                  } else {
-                    setSortBy("name");
-                    setSortOrder("asc");
-                  }
-                }}
-                className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${sortBy === "name"
-                  ? "bg-white text-indigo-600 shadow-sm font-bold"
-                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                  }`}
-                title="이름 성명순 정렬"
-              >
-                <span>성명</span>
-                {sortBy === "name" && (
-                  <span className="text-[10px] font-mono">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                )}
-              </button>
 
               {sortBy !== "none" && (
                 <button
