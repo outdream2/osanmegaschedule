@@ -60,6 +60,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
     openShiftHour: settingsOpenShiftHour,
     middleShiftHour: settingsMiddleShiftHour,
     closeShiftHour: settingsCloseShiftHour,
+    wageRates: settingsWageRates,
+    employeeWageOverrides: settingsEmployeeWageOverrides,
     update: updateSettings,
   } = useSettings();
   // Navigation states
@@ -927,11 +929,27 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
     const dateSet = new Set(dateList);
     const visibleSchedules = emp.schedules.filter(s => dateSet.has(s.date));
     const workDays = visibleSchedules.filter(s => s.type && !OFF_TYPES_SET.has(s.type)).length;
-    const totalHours = visibleSchedules.reduce((sum, s) => {
-      if (!s.type || OFF_TYPES_SET.has(s.type)) return sum;
-      return sum + parseWorkingHours(s.workingHours || "");
-    }, 0);
-    return { workDays, totalHours };
+    let totalHours = 0;
+    let laborCost = 0;
+
+    // Resolve wage rate: individual override takes precedence over position rate.
+    const wageRates = settingsWageRates ?? {};
+    const empOverrides = settingsEmployeeWageOverrides ?? {};
+    const empRate = empOverrides[emp.id] ?? wageRates[emp.position] ?? null;
+
+    for (const s of visibleSchedules) {
+      if (!s.type || OFF_TYPES_SET.has(s.type)) continue;
+      const hours = parseWorkingHours(s.workingHours || "");
+      totalHours += hours;
+      if (empRate) {
+        const d = new Date(s.date);
+        const dow = d.getDay();
+        const isWeekend = dow === 0 || dow === 6;
+        laborCost += hours * (isWeekend ? empRate.weekend : empRate.weekday);
+      }
+    }
+
+    return { workDays, totalHours, laborCost };
   };
 
   const KNOWN_POSITIONS = new Set(["약사", "캐셔", "물류", "알바"]);
@@ -1554,12 +1572,16 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
         <SettingsModal
           settings={{
             positions: PRESET_POSITIONS,
+            employmentTypes: PRESET_EMPLOYMENT_TYPES,
             workplaces: settingsWorkplaces,
             scheduleTypes: settingsScheduleTypes,
             openShiftHour,
             middleShiftHour,
             closeShiftHour,
+            wageRates: settingsWageRates,
+            employeeWageOverrides: settingsEmployeeWageOverrides,
           }}
+          employees={employees.map(e => ({ id: e.id, name: e.name, position: e.position }))}
           onUpdate={updateSettings}
           onApplyShiftHours={applyShiftHoursToAll}
           onClose={() => setIsSettingsOpen(false)}
@@ -1936,16 +1958,23 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                             );
                           })}
 
-                          {/* Total column: work days + hours */}
+                          {/* Total column: work days + hours + labor cost */}
                           {(() => {
-                            const { workDays, totalHours } = getEmpMonthStats(emp);
+                            const { workDays, totalHours, laborCost } = getEmpMonthStats(emp);
                             const h = Math.floor(totalHours);
                             const m = Math.round((totalHours - h) * 60);
                             const hoursLabel = h > 0 ? (m > 0 ? `${h}h${m}m` : `${h}h`) : "";
+                            // Format: ≥10,000원 → "123만", else raw "1,234"
+                            const costLabel = laborCost > 0
+                              ? laborCost >= 10000
+                                ? `${Math.round(laborCost / 10000)}만`
+                                : `${Math.round(laborCost).toLocaleString()}`
+                              : "";
                             return (
                               <td className="border-l-2 border-slate-200 bg-indigo-50/50 text-center align-middle p-1">
                                 <div className="text-[11px] sm:text-xs font-black text-indigo-700 leading-tight">{workDays}일</div>
                                 {hoursLabel && <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium leading-tight">{hoursLabel}</div>}
+                                {costLabel && <div className="text-[9px] sm:text-[10px] text-emerald-600 font-bold leading-tight">{costLabel}원</div>}
                               </td>
                             );
                           })()}

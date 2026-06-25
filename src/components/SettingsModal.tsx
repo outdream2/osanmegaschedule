@@ -1,25 +1,27 @@
 // src/components/SettingsModal.tsx
 import React, { useState } from "react";
 import { X, Plus, Trash2, GripVertical } from "lucide-react";
-import { AppSettings } from "../hooks/useSettings";
+import { AppSettings, WageRate } from "../hooks/useSettings";
 
 interface SettingsModalProps {
   settings: AppSettings;
   onUpdate: (partial: Partial<AppSettings>) => void;
   onApplyShiftHours: (open: string, middle: string, close: string) => Promise<void>;
   onClose: () => void;
+  employees: Array<{ id: number; name: string; position: string }>;
 }
 
-type TabId = "positions" | "workplaces" | "scheduleTypes" | "shiftHours";
+type TabId = "positions" | "workplaces" | "scheduleTypes" | "shiftHours" | "wages";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "positions", label: "직급 종류" },
   { id: "workplaces", label: "근무지 종류" },
   { id: "scheduleTypes", label: "근무 유형" },
   { id: "shiftHours", label: "기본 근무시간" },
+  { id: "wages", label: "시급 설정" },
 ];
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onApplyShiftHours, onClose }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onApplyShiftHours, onClose, employees }) => {
   const [activeTab, setActiveTab] = useState<TabId>("positions");
 
   // Local draft states — committed immediately on each action
@@ -36,6 +38,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
   const [middleShiftHour, setMiddleShiftHour] = useState(settings.middleShiftHour);
   const [closeShiftHour, setCloseShiftHour] = useState(settings.closeShiftHour);
   const [applying, setApplying] = useState(false);
+
+  // Wage settings local drafts (committed immediately)
+  const [wageRates, setWageRates] = useState<Record<string, WageRate>>({ ...(settings.wageRates ?? {}) });
+  const [employeeWageOverrides, setEmployeeWageOverrides] = useState<Record<number, WageRate>>({ ...(settings.employeeWageOverrides ?? {}) });
+  const [selectedEmpId, setSelectedEmpId] = useState<number | "">("");
 
   // Drag state for positions reorder
   const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -143,6 +150,58 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
     setCloseShiftHour(close);
     saveShiftHours(open, middle, close);
   };
+
+  // ── wages ─────────────────────────────────────────────────────────────────
+
+  const saveWageRates = (next: Record<string, WageRate>) => {
+    setWageRates(next);
+    onUpdate({ wageRates: next });
+  };
+
+  const saveEmployeeOverrides = (next: Record<number, WageRate>) => {
+    setEmployeeWageOverrides(next);
+    onUpdate({ employeeWageOverrides: next });
+  };
+
+  const updatePositionWage = (position: string, field: keyof WageRate, value: number) => {
+    const prev = wageRates[position] ?? { weekday: 0, weekend: 0 };
+    const next = { ...wageRates, [position]: { ...prev, [field]: value } };
+    saveWageRates(next);
+  };
+
+  const updateEmployeeOverride = (empId: number, field: keyof WageRate, value: number) => {
+    const prev = employeeWageOverrides[empId] ?? { weekday: 0, weekend: 0 };
+    const next = { ...employeeWageOverrides, [empId]: { ...prev, [field]: value } };
+    saveEmployeeOverrides(next);
+  };
+
+  const addEmployeeOverride = () => {
+    if (selectedEmpId === "" || selectedEmpId === null) return;
+    const id = Number(selectedEmpId);
+    if (!Number.isFinite(id)) return;
+    if (employeeWageOverrides[id]) return; // already exists
+    // Seed from the employee's position wage if defined, else zeros
+    const emp = employees.find((e) => e.id === id);
+    const seed: WageRate = (emp && wageRates[emp.position])
+      ? { ...wageRates[emp.position] }
+      : { weekday: 0, weekend: 0 };
+    saveEmployeeOverrides({ ...employeeWageOverrides, [id]: seed });
+    setSelectedEmpId("");
+  };
+
+  const removeEmployeeOverride = (empId: number) => {
+    const next = { ...employeeWageOverrides };
+    delete next[empId];
+    saveEmployeeOverrides(next);
+  };
+
+  const parseWageInput = (raw: string): number => {
+    const n = parseInt(raw.replace(/[^0-9]/g, ""), 10);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  };
+
+  const employeesWithOverride = employees.filter((e) => employeeWageOverrides[e.id]);
+  const employeesWithoutOverride = employees.filter((e) => !employeeWageOverrides[e.id]);
 
   // ── render ────────────────────────────────────────────────────────────────
 
@@ -424,6 +483,152 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                     </>
                   ) : "📋 현재 스케쥴에 전체적용"}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Wages Tab ─────────────────────────────────────────────── */}
+          {activeTab === "wages" && (
+            <div className="space-y-6">
+              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                직급별 기본 시급과 개인별 시급(직급별 설정을 덮어쓰기)을 설정합니다. 인건비 합계는 스케줄 표의 합계 셀에 자동 표시됩니다.
+              </p>
+
+              {/* ── Section 1: 직급별 시급 ───────────────────────────── */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                  <span className="w-1 h-3 bg-[#2563eb] rounded-full inline-block"></span>
+                  직급별 시급
+                </h3>
+
+                {positions.length === 0 ? (
+                  <p className="text-[11px] text-slate-400 italic">먼저 "직급 종류" 탭에서 직급을 추가해 주세요.</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {/* Header row */}
+                    <div className="grid grid-cols-[1fr,1fr,1fr] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                      <span>직급</span>
+                      <span>주중 시급 (원)</span>
+                      <span>주말 시급 (원)</span>
+                    </div>
+                    {positions.map((pos) => {
+                      const rate = wageRates[pos] ?? { weekday: 0, weekend: 0 };
+                      return (
+                        <div
+                          key={pos}
+                          className="grid grid-cols-[1fr,1fr,1fr] gap-2 items-center bg-white border border-slate-200 rounded-lg px-3 py-2"
+                        >
+                          <span className="text-xs font-semibold text-slate-800 truncate">{pos}</span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={rate.weekday || ""}
+                            onChange={(e) => updatePositionWage(pos, "weekday", parseWageInput(e.target.value))}
+                            placeholder="예: 10340"
+                            className="w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                          />
+                          <input
+                            type="number"
+                            min={0}
+                            value={rate.weekend || ""}
+                            onChange={(e) => updatePositionWage(pos, "weekend", parseWageInput(e.target.value))}
+                            placeholder="예: 10340"
+                            className="w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* ── Section 2: 개인별 시급 ───────────────────────────── */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-extrabold text-slate-800 flex items-center gap-1.5">
+                  <span className="w-1 h-3 bg-emerald-500 rounded-full inline-block"></span>
+                  개인별 시급
+                  <span className="text-[10px] font-semibold text-slate-400">(직급별 설정 덮어쓰기)</span>
+                </h3>
+
+                {/* Existing overrides list */}
+                {employeesWithOverride.length > 0 ? (
+                  <div className="space-y-1.5">
+                    <div className="grid grid-cols-[1fr,1fr,1fr,32px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                      <span>직원</span>
+                      <span>주중 시급 (원)</span>
+                      <span>주말 시급 (원)</span>
+                      <span></span>
+                    </div>
+                    {employeesWithOverride.map((emp) => {
+                      const rate = employeeWageOverrides[emp.id] ?? { weekday: 0, weekend: 0 };
+                      return (
+                        <div
+                          key={emp.id}
+                          className="grid grid-cols-[1fr,1fr,1fr,32px] gap-2 items-center bg-white border border-slate-200 rounded-lg px-3 py-2"
+                        >
+                          <span className="text-xs font-semibold text-slate-800 truncate">
+                            {emp.name}
+                            <span className="text-[10px] font-medium text-slate-400 ml-1">({emp.position})</span>
+                          </span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={rate.weekday || ""}
+                            onChange={(e) => updateEmployeeOverride(emp.id, "weekday", parseWageInput(e.target.value))}
+                            placeholder="예: 10340"
+                            className="w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                          />
+                          <input
+                            type="number"
+                            min={0}
+                            value={rate.weekend || ""}
+                            onChange={(e) => updateEmployeeOverride(emp.id, "weekend", parseWageInput(e.target.value))}
+                            placeholder="예: 10340"
+                            className="w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeEmployeeOverride(emp.id)}
+                            className="text-slate-300 hover:text-rose-500 transition cursor-pointer p-1 rounded justify-self-center"
+                            title="개인 시급 제거"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="text-[11px] text-slate-400 italic">아직 개인별 시급이 설정된 직원이 없습니다.</p>
+                )}
+
+                {/* Add new override */}
+                <div className="flex gap-2 pt-1">
+                  <select
+                    value={selectedEmpId === "" ? "" : String(selectedEmpId)}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setSelectedEmpId(v === "" ? "" : Number(v));
+                    }}
+                    className="flex-1 text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                  >
+                    <option value="">직원 선택...</option>
+                    {employeesWithoutOverride.map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name} ({emp.position})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={addEmployeeOverride}
+                    disabled={selectedEmpId === ""}
+                    className="px-3 py-2 text-xs font-bold bg-[#2563eb] hover:bg-blue-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-1 transition cursor-pointer"
+                  >
+                    <Plus size={13} />
+                    추가
+                  </button>
+                </div>
               </div>
             </div>
           )}
