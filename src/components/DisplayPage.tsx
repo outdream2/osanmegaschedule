@@ -23,7 +23,9 @@ import {
   Search,
   Coffee,
   Calendar,
+  ScanLine,
 } from "lucide-react";
+import { BarcodeScanner } from "./BarcodeScanner";
 
 interface DisplayPageProps {
   onBack: () => void;
@@ -476,6 +478,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const [savedFlash, setSavedFlash] = useState(false);
   const [requestFlash, setRequestFlash] = useState(false);
 
+  // Barcode scanner
+  type ScannerMode = "search" | "products" | null;
+  const [scannerMode, setScannerMode] = useState<ScannerMode>(null);
+
   // Requests panel
   const [reqFilter, setReqFilter] = useState<"all" | "pending" | "done">("all");
 
@@ -845,8 +851,25 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     );
   };
 
+  const handleBarcodeScan = (result: string) => {
+    if (scannerMode === "search") {
+      setSearchQuery(result);
+    } else if (scannerMode === "products") {
+      setDraftProducts((prev) => prev ? `${prev}, ${result}` : result);
+    }
+    setScannerMode(null);
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 font-sans flex flex-col" onClick={() => setPopoverAnchor(null)}>
+
+      {scannerMode && (
+        <BarcodeScanner
+          onScan={handleBarcodeScan}
+          onClose={() => setScannerMode(null)}
+          title={scannerMode === "search" ? "상품 검색 스캔" : "상품 바코드 스캔"}
+        />
+      )}
 
       {/* Header */}
       <header className="bg-white border-b border-gray-200 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm sticky top-0 z-30">
@@ -910,23 +933,32 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         <section className="lg:col-span-3 flex flex-col space-y-4 lg:max-h-[calc(100vh-80px)] lg:sticky lg:top-20">
           
           {/* Search box */}
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="찾으시는 약이나 증상을 입력하세요 (예: 감기약, 비타민)" 
-              className="w-full p-2.5 pl-9 pr-9 border border-gray-300 rounded-xl shadow-3xs focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-xs"
-            />
-            <Search className="absolute left-3 top-3.5 text-gray-400" size={13} />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 cursor-pointer"
-              >
-                <X size={15} />
-              </button>
-            )}
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="찾으시는 약이나 증상을 입력하세요 (예: 감기약, 비타민)"
+                className="w-full p-2.5 pl-9 pr-9 border border-gray-300 rounded-xl shadow-3xs focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white text-xs"
+              />
+              <Search className="absolute left-3 top-3.5 text-gray-400" size={13} />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 cursor-pointer"
+                >
+                  <X size={15} />
+                </button>
+              )}
+            </div>
+            <button
+              onClick={() => setScannerMode("search")}
+              title="바코드 스캔으로 검색"
+              className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl border border-gray-300 bg-white hover:bg-emerald-50 hover:border-emerald-400 text-gray-500 hover:text-emerald-600 transition cursor-pointer shadow-3xs"
+            >
+              <ScanLine size={16} />
+            </button>
           </div>
 
           {/* Today's Active Staff Panel */}
@@ -1508,7 +1540,18 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
               {/* Products */}
               <div>
-                <label className="text-xs font-semibold text-slate-600 mb-1.5 block">진열 상품 메모</label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-xs font-semibold text-slate-600">진열 상품 메모</label>
+                  <button
+                    type="button"
+                    onClick={() => setScannerMode("products")}
+                    title="바코드 스캔으로 상품 추가"
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition cursor-pointer"
+                  >
+                    <ScanLine size={11} />
+                    바코드 스캔
+                  </button>
+                </div>
                 <textarea value={draftProducts} onChange={(e) => setDraftProducts(e.target.value)} rows={2}
                   placeholder="예: 타이레놀 500mg, 베아제, 판콜에이..."
                   className="w-full px-3 py-2 text-sm rounded-xl border border-slate-300 bg-white focus:border-violet-500 focus:ring-2 focus:ring-violet-200 outline-none transition resize-none" />
