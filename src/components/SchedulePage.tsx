@@ -1926,6 +1926,18 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                                 <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium leading-tight break-keep">
                                   {emp.position}{emp.rank ? ` / ${emp.rank}` : ""}{emp.employmentType ? ` · ${emp.employmentType}` : ""}
                                 </span>
+                                {/* 남은 월차 */}
+                                {(() => {
+                                  const leaveTotal = emp.annual_leave_days ?? 0;
+                                  if (leaveTotal <= 0) return null;
+                                  const leaveUsed = yearLeaveStats[emp.id] ?? 0;
+                                  const leaveRemaining = Math.max(0, leaveTotal - leaveUsed);
+                                  return (
+                                    <span className={`text-[8px] font-bold leading-tight ${leaveRemaining === 0 ? "text-rose-500" : "text-amber-500"}`}>
+                                      월차 {leaveRemaining}일 남음
+                                    </span>
+                                  );
+                                })()}
                                 {/* Bottom: edit / delete (admin) */}
                                 {isAdmin && (
                                   <div className="flex items-center gap-0.5 opacity-20 group-hover:opacity-100 transition duration-150">
@@ -1989,19 +2001,11 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                                 ? `${Math.round(laborCost / 10000)}만`
                                 : `${Math.round(laborCost).toLocaleString()}`
                               : "";
-                            const leaveTotal = emp.annual_leave_days ?? 0;
-                            const leaveUsed = yearLeaveStats[emp.id] ?? 0;
-                            const leaveRemaining = Math.max(0, leaveTotal - leaveUsed);
                             return (
                               <td className="border-l-2 border-slate-200 bg-indigo-50/50 text-center align-middle p-1">
                                 <div className="text-[11px] sm:text-xs font-black text-indigo-700 leading-tight">{workDays}일</div>
                                 {hoursLabel && <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium leading-tight">{hoursLabel}</div>}
                                 {costLabel && <div className="text-[9px] sm:text-[10px] text-emerald-600 font-bold leading-tight">{costLabel}원</div>}
-                                {leaveTotal > 0 && (
-                                  <div className={`text-[9px] sm:text-[10px] font-bold leading-tight ${leaveRemaining === 0 ? "text-rose-500" : "text-amber-600"}`}>
-                                    월차{leaveUsed}/{leaveTotal}
-                                  </div>
-                                )}
                               </td>
                             );
                           })()}
