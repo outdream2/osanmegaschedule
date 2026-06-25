@@ -327,7 +327,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
     setEmpModalMode("edit");
     setEmpName(emp.name);
 
-    const knownPositions = ["약사", "캐셔", "물류", "알바"];
+    const knownPositions = ["약사", "캐셔", "물류"];
     if (emp.position && !knownPositions.includes(emp.position)) {
       setEmpPosition("기타");
       setEmpCustomPosition(emp.position);
@@ -811,7 +811,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
   // Add/Edit Employee Handler
   const handleAddEmployeeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalPosition = (!["약사", "캐셔", "물류", "알바"].includes(empPosition) && empCustomPosition.trim())
+    const finalPosition = (!["약사", "캐셔", "물류"].includes(empPosition) && empCustomPosition.trim())
       ? empCustomPosition.trim()
       : empPosition.trim();
     if (!empName.trim() || !finalPosition) {
@@ -974,7 +974,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
     return { workDays, totalHours, laborCost };
   };
 
-  const KNOWN_POSITIONS = new Set(["약사", "캐셔", "물류", "알바"]);
+  const KNOWN_POSITIONS = new Set(["약사", "캐셔", "물류"]);
 
   const filteredEmployees = employees
     .filter((emp) => {
@@ -982,8 +982,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
         if ((emp.workplace || "매장") !== workplaceTab) return false;
       }
       if (positionTab !== "전체") {
-        if (positionTab === "기타") {
-          if (KNOWN_POSITIONS.has(emp.position)) return false;
+        if (positionTab === "알바") {
+          if (emp.rank !== "알바" && emp.position !== "알바") return false;
+        } else if (positionTab === "기타") {
+          if (KNOWN_POSITIONS.has(emp.position) || emp.rank === "알바" || emp.position === "알바") return false;
         } else {
           if (emp.position !== positionTab) return false;
         }
@@ -1314,8 +1316,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                 { key: "약사", label: "약사", icon: null, color: "text-violet-600", count: employees.filter(e => e.position === "약사").length },
                 { key: "캐셔", label: "캐셔", icon: null, color: "text-amber-600", count: employees.filter(e => e.position === "캐셔").length },
                 { key: "물류", label: "물류", icon: null, color: "text-sky-600", count: employees.filter(e => e.position === "물류").length },
-                { key: "알바", label: "알바", icon: null, color: "text-rose-600", count: employees.filter(e => e.position === "알바").length },
-                { key: "기타", label: "기타", icon: null, color: "text-slate-600", count: employees.filter(e => !["약사","캐셔","물류","알바"].includes(e.position)).length },
+                { key: "알바", label: "알바", icon: null, color: "text-rose-600", count: employees.filter(e => e.rank === "알바" || e.position === "알바").length },
+                { key: "기타", label: "기타", icon: null, color: "text-slate-600", count: employees.filter(e => !["약사","캐셔","물류"].includes(e.position) && e.rank !== "알바" && e.position !== "알바").length },
               ] as const).map(({ key, label, icon, color, count }) => (
                 <button
                   key={key}
@@ -2213,7 +2215,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                   <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">업무 분류 (필터에 사용)</span>
                 </label>
                 <div className="flex flex-wrap gap-1">
-                  {(["약사", "캐셔", "물류", "알바"] as const).map((pos) => (
+                  {(["약사", "캐셔", "물류"] as const).map((pos) => (
                     <button
                       key={pos}
                       type="button"
@@ -2231,7 +2233,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                     type="button"
                     onClick={() => setEmpPosition("기타")}
                     className={`px-2.5 py-1 text-[11px] rounded-lg transition font-bold cursor-pointer border ${
-                      !["약사", "캐셔", "물류", "알바"].includes(empPosition) && empPosition !== ""
+                      !["약사", "캐셔", "물류"].includes(empPosition) && empPosition !== ""
                         ? "bg-indigo-50 text-indigo-700 border-indigo-300 shadow-sm"
                         : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
                     }`}
@@ -2239,7 +2241,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                     기타
                   </button>
                 </div>
-                {(empPosition === "기타" || (!["약사", "캐셔", "물류", "알바", ""].includes(empPosition))) && (
+                {(empPosition === "기타" || (!["약사", "캐셔", "물류", ""].includes(empPosition))) && (
                   <input
                     type="text"
                     placeholder="직접 입력"
@@ -2329,7 +2331,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                   <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">직위/직책 (선택)</span>
                 </label>
                 <div className="flex flex-wrap gap-1 mb-1.5">
-                  {(["대표", "부장", "팀장", "과장", "약사", "사원"] as const).map((r) => (
+                  {(["대표", "이사", "부장", "팀장", "과장", "사원", "알바"] as const).map((r) => (
                     <button
                       key={r}
                       type="button"
