@@ -1046,7 +1046,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       return 0;
     });
 
-  const getCalculatedSummary = () => {
+  const getCalculatedSummary = (sourceEmployees = filteredEmployees) => {
     const result: MonthlySummary[] = [];
 
     dateList.forEach((currentDate) => {
@@ -1059,7 +1059,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       let pharmacistCount = 0;
       let staffCount = 0;
 
-      for (const emp of filteredEmployees) {
+      for (const emp of sourceEmployees) {
         const sched = emp.schedules.find((s) => s.date === currentDate);
         if (sched && sched.type) {
           const type = sched.type;
@@ -1097,7 +1097,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     return result;
   };
 
-  const currentSummaryList = getCalculatedSummary();
+  const currentSummaryList = getCalculatedSummary(filteredEmployees);
+  const totalSummaryList = getCalculatedSummary(employees);
 
   const getAttendanceSummary = () => {
     let totalLates = 0;
@@ -1911,30 +1912,30 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                         </tr>
                       ))}
 
-                      {/* Real-time calculated Bottom Summary Rows */}
+                      {/* Real-time calculated Bottom Summary Rows — always uses ALL employees regardless of filter */}
                       {(() => {
                         const fmtCost = (cost: number) => cost <= 0 ? "" :
                           cost >= 10000 ? `${Math.round(cost / 10000)}만원` : `${Math.round(cost).toLocaleString()}원`;
-                        const pharmacistCost = filteredEmployees
+                        const pharmacistCost = employees
                           .filter(e => e.position === "약사")
                           .reduce((sum, e) => sum + getEmpMonthStats(e).laborCost, 0);
-                        const staffCost = filteredEmployees
+                        const staffCost = employees
                           .filter(e => e.position !== "약사")
                           .reduce((sum, e) => sum + getEmpMonthStats(e).laborCost, 0);
                         const totalCost = pharmacistCost + staffCost;
                         return (
                           <>
                             <SummaryRow
-                              summaries={currentSummaryList} label="약사"
-                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.pharmacistCount, 0)}인일</div>{isSuperAdmin && pharmacistCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(pharmacistCost)}</div>}</div>}
+                              summaries={totalSummaryList} label="약사"
+                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.pharmacistCount, 0)}인일</div>{isSuperAdmin && pharmacistCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(pharmacistCost)}</div>}</div>}
                             />
                             <SummaryRow
-                              summaries={currentSummaryList} label="사원"
-                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.staffCount, 0)}인일</div>{isSuperAdmin && staffCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(staffCost)}</div>}</div>}
+                              summaries={totalSummaryList} label="사원"
+                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.staffCount, 0)}인일</div>{isSuperAdmin && staffCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(staffCost)}</div>}</div>}
                             />
                             <SummaryRow
-                              summaries={currentSummaryList} label="근무인원"
-                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.totalCount, 0)}인일</div>{isSuperAdmin && totalCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(totalCost)}</div>}</div>}
+                              summaries={totalSummaryList} label="근무인원"
+                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.totalCount, 0)}인일</div>{isSuperAdmin && totalCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(totalCost)}</div>}</div>}
                             />
                           </>
                         );

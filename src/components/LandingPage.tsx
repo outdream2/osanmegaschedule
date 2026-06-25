@@ -41,14 +41,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
   useEffect(() => {
     if (pendingPage) {
-      setActiveTab("admin");
+      setActiveTab("employee");
       setPin("");
       setAdminError(false);
       setEmpNumber("");
       setEmpPassword("");
       setEmpError(null);
       setEmpLoading(false);
-      setTimeout(() => pinInputRef.current?.focus(), 50);
+      setTimeout(() => empNumberRef.current?.focus(), 50);
     }
   }, [pendingPage]);
 
