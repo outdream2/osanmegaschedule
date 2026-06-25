@@ -1928,13 +1928,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                                 </span>
                                 {/* 남은 월차 */}
                                 {(() => {
-                                  const leaveTotal = emp.annual_leave_days ?? 0;
-                                  if (leaveTotal <= 0) return null;
-                                  const leaveUsed = yearLeaveStats[emp.id] ?? 0;
+                                  const leaveTotal = Number(emp.annual_leave_days ?? 0);
+                                  if (!leaveTotal || isNaN(leaveTotal)) return null;
+                                  const leaveUsed = Number(yearLeaveStats[emp.id] ?? 0);
                                   const leaveRemaining = Math.max(0, leaveTotal - leaveUsed);
                                   return (
                                     <span className={`text-[8px] font-bold leading-tight ${leaveRemaining === 0 ? "text-rose-500" : "text-amber-500"}`}>
-                                      월차 {leaveRemaining}일 남음
+                                      월차{leaveRemaining}
                                     </span>
                                   );
                                 })()}
