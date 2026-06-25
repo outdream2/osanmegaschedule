@@ -27,7 +27,7 @@ type AuthTab = "admin" | "employee";
 
 export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigate, onLogout }) => {
   const [pendingPage, setPendingPage] = useState<"schedule" | "display" | null>(null);
-  const [activeTab, setActiveTab] = useState<AuthTab>("admin");
+  const [activeTab, setActiveTab] = useState<AuthTab>("employee");
 
   const [pin, setPin] = useState("");
   const [adminError, setAdminError] = useState(false);
@@ -333,23 +333,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             <div className="grid grid-cols-2 gap-1 p-1 bg-gray-100 border border-gray-200 rounded-xl mb-5">
               <button
                 type="button"
-                onClick={() => setActiveTab("admin")}
-                className={`flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
-                  activeTab === "admin" ? "bg-indigo-600 text-white shadow" : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                <Shield size={13} />
-                <span>관리자</span>
-              </button>
-              <button
-                type="button"
                 onClick={() => setActiveTab("employee")}
                 className={`flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
                   activeTab === "employee" ? "bg-indigo-600 text-white shadow" : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 <User size={13} />
-                <span>직원</span>
+                <span>직원 로그인</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("admin")}
+                className={`flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
+                  activeTab === "admin" ? "bg-indigo-600 text-white shadow" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Shield size={13} />
+                <span>최고관리자</span>
               </button>
             </div>
 
