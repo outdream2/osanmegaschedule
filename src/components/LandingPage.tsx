@@ -87,20 +87,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
   const handleEmployeeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!empNumber.trim() || !empPassword) {
-      setEmpError("사번과 비밀번호를 모두 입력해 주세요.");
+    const phone = empNumber.trim().replace(/[^0-9]/g, "");
+    if (!phone || !empPassword) {
+      setEmpError("전화번호와 비밀번호를 모두 입력해 주세요.");
       return;
     }
     setEmpLoading(true);
     setEmpError(null);
     try {
       const res = await axios.post("/api/auth/login", {
-        employee_id: parseInt(empNumber.trim()),
+        employee_id: phone,
         password: empPassword,
       });
       const { id, name } = res.data ?? {};
       if (!id) {
-        setEmpError("사번 또는 비밀번호가 올바르지 않습니다");
+        setEmpError("전화번호 또는 비밀번호가 올바르지 않습니다");
         setEmpLoading(false);
         return;
       }
@@ -112,7 +113,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 401 || status === 400) {
-        setEmpError("사번 또는 비밀번호가 올바르지 않습니다");
+        setEmpError("전화번호 또는 비밀번호가 올바르지 않습니다");
       } else {
         setEmpError("로그인 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
       }
@@ -377,16 +378,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </form>
             ) : (
               <form onSubmit={handleEmployeeSubmit} className="flex flex-col gap-3">
-                <p className="text-gray-500 text-xs text-center">사번 + 비밀번호로 입장합니다</p>
+                <p className="text-gray-500 text-xs text-center">전화번호 + 비밀번호로 입장합니다</p>
                 <div>
-                  <label className="text-gray-600 text-xs font-semibold block mb-1.5">사번</label>
+                  <label className="text-gray-600 text-xs font-semibold block mb-1.5">전화번호</label>
                   <input
                     ref={empNumberRef}
-                    type="number"
+                    type="tel"
                     inputMode="numeric"
                     value={empNumber}
                     onChange={(e) => { setEmpNumber(e.target.value); setEmpError(null); }}
-                    placeholder="숫자 사번 입력 (예: 3)"
+                    placeholder="010-0000-0000"
                     className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 text-sm font-semibold focus:outline-none focus:border-indigo-500 transition"
                     autoComplete="username"
                     disabled={empLoading}
