@@ -104,7 +104,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
     if (nameThRef.current) {
       setNameColWidth(nameThRef.current.getBoundingClientRect().width);
     }
-  });
+  }, [employees.length]);
 
   // Mobile date scroll ref
   const scrollTableRef = useRef<HTMLDivElement>(null);
@@ -910,9 +910,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
       await axios.put(`/api/employees/${id}`, {
         name: emp.name,
         position: emp.position,
+        rank: emp.rank ?? null,
+        employmentType: emp.employmentType,
         hireDate: emp.hireDate,
         description: tempDescription,
         workplace: emp.workplace,
+        gender: emp.gender ?? null,
+        annual_leave_days: emp.annual_leave_days ?? null,
       });
 
       setEmployees((prev) =>
@@ -1466,7 +1470,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                 emp.schedules.forEach((s) => {
                   if (s.date.startsWith(`${currentYear}-${monthStr}-`)) {
                     const type = s.type;
-                    if (["휴무", "월차", "지정휴무"].includes(type)) {
+                    if (["휴무", "월차", "지정휴무", "결근"].includes(type)) {
                       offDaysCount++;
                     } else if (type.trim() !== "") {
                       workDaysCount++;

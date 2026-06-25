@@ -123,6 +123,7 @@ export function useSettings() {
       setSettings(dbSettings);
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(dbSettings)); } catch {}
     }).catch(() => {});
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, []);
 
   const update = useCallback((partial: Partial<AppSettings>) => {
