@@ -150,15 +150,15 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
   return (
     <div
       ref={cellRef}
-      className="relative border-r border-b border-[#e2e8f0] h-12 sm:h-14 w-full select-none"
+      className="relative border-r border-b border-[#e2e8f0] h-12 sm:h-14 w-full flex flex-col justify-between p-0.5 select-none text-center"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Clickable Card Grid Cell — absolute inset-0 so it always fills the td */}
+      {/* Clickable Card Grid Cell */}
       <div
         id={`cell-${employeeId}-${dateStr}`}
-        className={`absolute inset-0 flex flex-col justify-center items-center relative transition-all ${
-          isAdmin ? "cursor-pointer hover:brightness-95 hover:scale-[1.01] shadow-xs" : "cursor-default text-slate-400"
+        className={`w-full h-full rounded-sm flex flex-col justify-center items-center p-0.5 relative transition-all ${
+          isAdmin ? "cursor-pointer hover:bg-slate-50/80 hover:scale-[1.02] shadow-xs" : "cursor-default text-slate-400"
         } ${
           colorConfig ? `${colorConfig.bg} ${colorConfig.text}` : "bg-white text-slate-400"
         }`}
