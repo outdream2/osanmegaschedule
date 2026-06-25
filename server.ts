@@ -86,6 +86,30 @@ async function startServer() {
     }
   });
 
+  // GET /api/settings?key=xxx — app settings (wages etc.)
+  app.get("/api/settings", async (req, res) => {
+    const { key } = req.query;
+    if (!key || typeof key !== "string") return res.status(400).json({ error: "key required" });
+    try {
+      const { data, error } = await supabase
+        .from("app_settings").select("value").eq("key", key).maybeSingle();
+      if (error) throw new Error(error.message);
+      res.json({ value: data?.value ?? null });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // POST /api/settings — upsert app setting
+  app.post("/api/settings", async (req, res) => {
+    const { key, value } = req.body ?? {};
+    if (!key) return res.status(400).json({ error: "key required" });
+    try {
+      const { error } = await supabase.from("app_settings")
+        .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      if (error) throw new Error(error.message);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // GET /api/zones — zone assignments
   app.get("/api/zones", async (req, res) => {
     try {
