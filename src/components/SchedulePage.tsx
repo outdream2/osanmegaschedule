@@ -36,12 +36,13 @@ import {
 
 interface SchedulePageProps {
   onBack?: () => void;
+  onLogout?: () => void;
   initialEditEmployeeId?: number | null;
   onEditEmployeeHandled?: () => void;
   authSession?: AuthSession | null;
 }
 
-export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
+export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
   // ── Auth-derived flags ─────────────────────────────────────────────────────
   const isSuperAdmin = authSession?.role === "superadmin" || authSession?.role === "admin";
   // 관리자: read-only + can open break modal for any employee, no labor cost
@@ -166,8 +167,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
 
   const handleLogout = () => {
     setIsAdmin(false);
-    localStorage.removeItem("megatown_admin");
-    showNotification("로그아웃되었습니다. (읽기 전용 모드)");
+    if (onLogout) {
+      onLogout();
+    } else {
+      localStorage.removeItem("megatown_admin");
+      localStorage.removeItem("megatown_auth_session");
+      onBack?.();
+    }
   };
 
   // Modal / Form states for adding/editing employee

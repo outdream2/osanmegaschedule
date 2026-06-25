@@ -31,10 +31,17 @@ export default function App() {
     setPage("landing");
   };
 
+  const handleLogout = () => {
+    clearAuthSession();
+    localStorage.removeItem("megatown_admin");
+    setPage("landing");
+  };
+
   if (page === "schedule") {
     return (
       <SchedulePage
         onBack={goBack}
+        onLogout={handleLogout}
         initialEditEmployeeId={pendingEditEmpId}
         onEditEmployeeHandled={() => setPendingEditEmpId(null)}
         authSession={authSession}
@@ -55,5 +62,5 @@ export default function App() {
       />
     );
   }
-  return <LandingPage onNavigate={handleNavigate} authSession={authSession} onLogout={clearAuthSession} />;
+  return <LandingPage onNavigate={handleNavigate} authSession={authSession} onLogout={handleLogout} />;
 }
