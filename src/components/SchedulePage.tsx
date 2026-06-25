@@ -937,14 +937,19 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
     const empOverrides = settingsEmployeeWageOverrides ?? {};
     const empRate = empOverrides[emp.id] ?? wageRates[emp.position] ?? null;
 
+    const shiftHourFallback: Record<string, string> = {
+      "오픈": openShiftHour, "미들": middleShiftHour, "마감": closeShiftHour,
+      "오전반차": openShiftHour, "오후반차": closeShiftHour,
+    };
+
     for (const s of visibleSchedules) {
       if (!s.type || OFF_TYPES_SET.has(s.type)) continue;
-      const hours = parseWorkingHours(s.workingHours || "");
+      const wh = s.workingHours || shiftHourFallback[s.type] || "";
+      const hours = parseWorkingHours(wh);
       totalHours += hours;
-      if (empRate) {
+      if (empRate && hours > 0) {
         const d = new Date(s.date);
-        const dow = d.getDay();
-        const isWeekend = dow === 0 || dow === 6;
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
         laborCost += hours * (isWeekend ? empRate.weekend : empRate.weekday);
       }
     }
