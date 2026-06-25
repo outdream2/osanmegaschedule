@@ -5,14 +5,22 @@ import path from "path";
 import { createServer as createViteServer } from "vite";
 import { scheduleController } from "./src/controllers/scheduleController";
 import { supabase } from "./src/supabase/client";
+import bcrypt from "bcryptjs";
+import webpush from "web-push";
+
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+
+  if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
+    webpush.setVapidDetails(
+      process.env.VAPID_SUBJECT ?? "mailto:admin@osanmegatown.com",
+      process.env.VAPID_PUBLIC_KEY,
+      process.env.VAPID_PRIVATE_KEY,
+    );
+  }
 
   app.use(express.json());
-
-  // Memory cache for reservations in local dev
-  let mockReservations: Array<{ date: string; time: string; company: string; contactName: string; phone: string; purpose: string; note: string }> = [];
 
   // API router endpoints
   app.get("/api/schedules", (req, res) => scheduleController.getSchedules(req, res));
@@ -113,47 +121,126 @@ async function startServer() {
     }
   });
 
-  // GET /api/reservations for local dev fallback
-  app.get("/api/reservations", (req, res) => {
+  // POST /api/auth/login
+  app.post("/api/auth/login", async (req, res) => {
+    const { employee_id, password } = req.body ?? {};
+    const idNum = typeof employee_id === "string" ? parseInt(employee_id) : employee_id;
+    if (!idNum || isNaN(idNum) || !password) {
+      return res.status(400).json({ error: "employee_id and password are required" });
+    }
+    try {
+      const { data: emp, error } = await supabase
+        .from("employees")
+        .select("id, name, password_hash")
+        .eq("id", idNum)
+        .maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!emp || !emp.password_hash) {
+        return res.status(401).json({ error: "사번 또는 비밀번호가 올바르지 않습니다" });
+      }
+      const ok = await bcrypt.compare(password, emp.password_hash);
+      if (!ok) return res.status(401).json({ error: "사번 또는 비밀번호가 올바르지 않습니다" });
+      return res.status(200).json({ id: emp.id, name: emp.name });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/auth/set-password
+  app.post("/api/auth/set-password", async (req, res) => {
+    const { employeeId, password } = req.body ?? {};
+    const idNum = typeof employeeId === "string" ? parseInt(employeeId) : employeeId;
+    if (!idNum || isNaN(idNum)) return res.status(400).json({ error: "valid employeeId is required" });
+    if (!password || password.length < 4) return res.status(400).json({ error: "password must be at least 4 characters" });
+    try {
+      const password_hash = await bcrypt.hash(password, 10);
+      const { error } = await supabase.from("employees").update({ password_hash }).eq("id", idNum);
+      if (error) throw new Error(error.message);
+      return res.status(200).json({ ok: true });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/push-subscribe
+  app.post("/api/push-subscribe", async (req, res) => {
+    const { employeeId, subscription } = req.body ?? {};
+    if (!employeeId || !subscription) return res.status(400).json({ error: "employeeId and subscription are required" });
+    try {
+      const { error } = await supabase.from("employees").update({ push_subscription: subscription }).eq("id", employeeId);
+      if (error) throw new Error(error.message);
+      return res.json({ ok: true });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/push-send
+  app.post("/api/push-send", async (req, res) => {
+    const { employeeId, title, body, url } = req.body ?? {};
+    if (!employeeId) return res.status(400).json({ error: "employeeId is required" });
+    try {
+      const { data, error } = await supabase
+        .from("employees")
+        .select("push_subscription, name")
+        .eq("id", employeeId)
+        .single();
+      if (error || !data) return res.status(404).json({ error: "Employee not found" });
+      if (!data.push_subscription) return res.status(200).json({ ok: false, reason: "no_subscription" });
+      const payload = JSON.stringify({
+        title: title ?? "진열 보충 요청",
+        body: body ?? `${data.name}님께 새로운 진열 보충 요청이 도착했습니다.`,
+        url: url ?? "/",
+        tag: `req-${employeeId}-${Date.now()}`,
+      });
+      await webpush.sendNotification(data.push_subscription as webpush.PushSubscription, payload);
+      return res.json({ ok: true });
+    } catch (err: any) {
+      if ((err as any).statusCode === 410) {
+        await supabase.from("employees").update({ push_subscription: null }).eq("id", employeeId);
+        return res.json({ ok: false, reason: "subscription_expired" });
+      }
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/reservations
+  app.get("/api/reservations", async (req, res) => {
     const { date } = req.query;
     if (!date || typeof date !== "string") {
       return res.status(400).json({ error: "date query param required" });
     }
-    const filtered = mockReservations.filter((r) => r.date === date);
-    res.json(
-      filtered.map((r) => ({
-        time: r.time,
-        note: r.note,
-        purpose: r.purpose,
-        company: r.company,
-        contact_name: r.contactName,
-        phone: r.phone,
-      }))
-    );
+    const { data, error } = await supabase
+      .from("reservations")
+      .select("time, note, purpose, company, contact_name, phone")
+      .eq("date", date);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json(data ?? []);
   });
 
-  // POST /api/reservations for local dev fallback
-  app.post("/api/reservations", (req, res) => {
+  // POST /api/reservations
+  app.post("/api/reservations", async (req, res) => {
     const { date, time, company, contactName, phone, purpose, note } = req.body ?? {};
     if (!date || !time || !company || !contactName || !phone || !purpose) {
       return res.status(400).json({ error: "필수 항목이 누락되었습니다." });
     }
-
     const getTarget = (n: string) => {
       const match = (n || "").match(/^\[대상:(대표|이사|부장)\]/);
       return match ? match[1] : "대표";
     };
     const targetToBook = getTarget(note || "");
-    const isAlreadyBooked = mockReservations.some(
-      (r) => r.date === date && r.time === time && getTarget(r.note) === targetToBook
-    );
-
-    if (isAlreadyBooked) {
-      return res.status(409).json({ error: "이미 예약된 시간입니다." });
-    }
-
-    mockReservations.push({ date, time, company, contactName, phone, purpose, note: note || "" });
-    res.status(201).json({ ok: true });
+    const { data: existing } = await supabase
+      .from("reservations")
+      .select("note")
+      .eq("date", date)
+      .eq("time", time);
+    const isAlreadyBooked = (existing ?? []).some((r: any) => getTarget(r.note ?? "") === targetToBook);
+    if (isAlreadyBooked) return res.status(409).json({ error: "이미 예약된 시간입니다." });
+    const { error } = await supabase.from("reservations").insert({
+      date, time, company, contact_name: contactName, phone, purpose, note: note || "",
+    });
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(201).json({ ok: true });
   });
 
   // Vite middleware for development
