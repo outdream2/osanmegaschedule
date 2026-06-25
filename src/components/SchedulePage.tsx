@@ -32,17 +32,20 @@ import {
   ShieldAlert,
   Edit,
   GripVertical,
+  Settings,
+  LayoutGrid,
 } from "lucide-react";
 
 interface SchedulePageProps {
   onBack?: () => void;
   onLogout?: () => void;
+  onNavigateToDisplay?: () => void;
   initialEditEmployeeId?: number | null;
   onEditEmployeeHandled?: () => void;
   authSession?: AuthSession | null;
 }
 
-export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
+export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, onNavigateToDisplay, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
   // ── Auth-derived flags ─────────────────────────────────────────────────────
   const isSuperAdmin = authSession?.role === "superadmin" || authSession?.role === "admin";
   // 관리자: read-only + can open break modal for any employee, no labor cost
@@ -1174,135 +1177,173 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, in
       )}
 
       {/* 1. App Header */}
-      <header className="bg-white border-b border-gray-200 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm">
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Brand */}
-          <div className="flex items-center gap-2 shrink-0">
+      <header className="bg-white border-b border-gray-200 shrink-0 shadow-sm">
+
+        {/* ── Row 1: Brand + Role badge + Logout ── */}
+        <div className="h-14 flex items-center justify-between px-4 sm:px-6">
+
+          {/* Left: back button + logo + desktop nav */}
+          <div className="flex items-center gap-2 min-w-0">
             {onBack && (
               <button
                 onClick={onBack}
-                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 hover:text-gray-900 transition cursor-pointer mr-1 text-xs font-semibold shrink-0"
+                className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 hover:text-gray-900 transition cursor-pointer text-xs font-semibold shrink-0"
                 title="메인으로 돌아가기"
               >
                 <ChevronLeft size={13} />
                 <span className="hidden sm:inline">메인</span>
               </button>
             )}
-            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm shrink-0">
               <Calendar size={14} className="text-white" />
             </div>
-            <span className="font-black tracking-tight leading-none">
+            <span className="font-black tracking-tight leading-none shrink-0">
               <span className="text-red-500 text-xl">OSAN</span>
-              <span className="text-gray-900 text-base"> MEGATOWN</span>
+              <span className="hidden sm:inline text-gray-900 text-base"> MEGATOWN</span>
             </span>
+
+            {/* Desktop nav tabs */}
+            <div className="hidden sm:flex items-center gap-1 ml-3 bg-gray-100 rounded-xl p-1">
+              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-black bg-white text-indigo-700 shadow-sm border border-indigo-100">
+                <Calendar size={11} /> 스케줄관리
+              </span>
+              {(isAdmin || isManagerRole) && onNavigateToDisplay && (
+                <button
+                  onClick={onNavigateToDisplay}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
+                >
+                  <LayoutGrid size={11} /> 매장관리
+                </button>
+              )}
+            </div>
           </div>
 
+          {/* Right: role badge + actions */}
+          <div className="flex items-center gap-1.5">
+            {/* Role badge — desktop only */}
+            {isAdmin ? (
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <span>최고관리자</span>
+              </div>
+            ) : isManagerRole ? (
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200 text-[11px] font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
+                <span>관리자</span>
+                {authSession?.employeeName && (
+                  <span className="text-sky-600 font-semibold border-l border-sky-300 pl-1.5 ml-0.5 truncate max-w-[60px]">{authSession.employeeName}</span>
+                )}
+              </div>
+            ) : isEmployeeMode ? (
+              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                <span className="truncate max-w-[80px]">{authSession?.employeeName ?? "직원 모드"}</span>
+              </div>
+            ) : null}
 
-        </div>
+            {/* Settings gear — superadmin only, icon only */}
+            {isAdmin && (
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                title="환경 설정"
+                className="p-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 rounded-lg transition cursor-pointer"
+              >
+                <Settings size={14} />
+              </button>
+            )}
 
-        <div className="flex items-center gap-2">
-          {/* Mode Badge */}
-          {isAdmin ? (
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>최고관리자</span>
-            </div>
-          ) : isManagerRole ? (
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200 text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
-              <span>관리자</span>
-              {authSession?.employeeName && (
-                <span className="text-sky-600 font-semibold border-l border-sky-300 pl-1.5 ml-0.5 truncate max-w-[60px]">
-                  {authSession.employeeName}
-                </span>
-              )}
-            </div>
-          ) : isEmployeeMode ? (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold max-w-[140px] sm:max-w-none">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
-              <span className="hidden sm:inline">직원 모드</span>
-              {authSession?.employeeName && (
-                <span className="text-amber-600 font-semibold sm:border-l sm:border-amber-300 sm:pl-1.5 sm:ml-0.5 truncate">
-                  {authSession.employeeName}
-                </span>
-              )}
-            </div>
-          ) : (
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200 text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-              <span>읽기 전용</span>
-            </div>
-          )}
+            {/* Undo — desktop only */}
+            {isAdmin && undoStack.length > 0 && (
+              <button
+                onClick={handleUndo}
+                title={`되돌리기 (${undoStack.length}개 남음)`}
+                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold border border-amber-300 bg-amber-50 hover:bg-amber-100 rounded-lg text-amber-700 transition cursor-pointer"
+              >
+                ↩ <span className="text-[10px] bg-amber-200 px-1 rounded">{undoStack.length}</span>
+              </button>
+            )}
 
-          {isAdmin && (
+            {/* Refresh */}
             <button
-              onClick={() => setIsSettingsOpen(true)}
-              title="환경 설정"
-              className="px-2 sm:px-3 py-1.5 text-xs font-bold border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 shadow-sm rounded-lg transition duration-150 flex items-center gap-1 cursor-pointer"
+              onClick={() => fetchScheduleData()}
+              className="p-2 border border-gray-200 bg-white hover:bg-gray-50 rounded-lg text-gray-600 transition cursor-pointer"
+              title="새로고침"
             >
-              <span>⚙️</span>
-              <span className="hidden sm:inline">환경 설정</span>
+              <span className="text-sm leading-none">↺</span>
             </button>
-          )}
 
-          {isAdmin && undoStack.length > 0 && (
-            <button
-              onClick={handleUndo}
-              title={`되돌리기 (${undoStack.length}개 남음)`}
-              className="px-3 py-1.5 text-xs font-semibold border border-amber-300 bg-amber-50 hover:bg-amber-100 rounded-lg text-amber-700 transition-all duration-150 cursor-pointer flex items-center gap-1.5"
-            >
-              ↩ <span className="hidden sm:inline">되돌리기</span>
-              <span className="text-[10px] bg-amber-200 px-1 rounded">{undoStack.length}</span>
-            </button>
-          )}
-
-          <button
-            onClick={() => fetchScheduleData()}
-            className="px-3 py-1.5 text-xs font-semibold border border-gray-200 bg-white hover:bg-gray-50 rounded-lg text-gray-600 transition-all duration-150 cursor-pointer flex items-center gap-1.5"
-          >
-            <span className="hidden sm:inline">새로고침</span>
-            <span className="sm:hidden">↺</span>
-          </button>
-
-          {isAdmin ? (
-            <>
+            {/* 직원 등록 — desktop + superadmin */}
+            {isAdmin && (
               <button
                 onClick={() => openCreateEmployeeModal()}
-                className="px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 rounded-lg transition cursor-pointer shadow-sm"
               >
                 <UserPlus size={13} />
-                <span className="hidden sm:inline">직원 등록</span>
+                <span>직원 등록</span>
               </button>
+            )}
+
+            {/* Logout / Login */}
+            {isAdmin || isManagerRole || isEmployeeMode ? (
               <button
                 onClick={handleLogout}
-                className="px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-gray-200 hover:border-rose-300 rounded-lg transition-all duration-150 cursor-pointer flex items-center gap-1.5"
+                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-gray-200 hover:border-rose-300 rounded-lg transition cursor-pointer"
               >
                 <LogOut size={13} />
                 <span className="hidden sm:inline">로그아웃</span>
               </button>
-            </>
-          ) : (isManagerRole || isEmployeeMode) ? (
-            <button
-              onClick={handleLogout}
-              className="px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-gray-200 hover:border-rose-300 rounded-lg transition-all duration-150 cursor-pointer flex items-center gap-1.5"
-            >
-              <LogOut size={13} />
-              <span className="hidden sm:inline">로그아웃</span>
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                setLoginError("");
-                setIsLoginModalOpen(true);
-              }}
-              title="관리자 로그인"
-              className="px-2 sm:px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-all duration-150 flex items-center gap-1.5 cursor-pointer shadow-sm"
-            >
-              <Lock size={12} />
-              <span className="hidden sm:inline">관리자 로그인</span>
-            </button>
-          )}
+            ) : (
+              <button
+                onClick={() => { setLoginError(""); setIsLoginModalOpen(true); }}
+                title="관리자 로그인"
+                className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition cursor-pointer shadow-sm"
+              >
+                <Lock size={12} />
+                <span className="hidden sm:inline">관리자 로그인</span>
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* ── Row 2: Mobile only — nav tabs + action buttons ── */}
+        <div className="sm:hidden flex items-center gap-1.5 px-4 pb-2">
+          {/* Nav tabs */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 flex-1">
+            <span className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-black bg-white text-indigo-700 shadow-sm border border-indigo-100">
+              <Calendar size={11} /> 스케줄
+            </span>
+            {(isAdmin || isManagerRole) && onNavigateToDisplay && (
+              <button
+                onClick={onNavigateToDisplay}
+                className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
+              >
+                <LayoutGrid size={11} /> 매장관리
+              </button>
+            )}
+          </div>
+
+          {/* Mobile action buttons */}
+          <div className="flex items-center gap-1">
+            {isAdmin && undoStack.length > 0 && (
+              <button
+                onClick={handleUndo}
+                className="flex items-center gap-0.5 px-2 py-1.5 text-[11px] font-semibold border border-amber-300 bg-amber-50 rounded-lg text-amber-700 cursor-pointer"
+              >
+                ↩<span className="text-[10px] bg-amber-200 px-1 rounded">{undoStack.length}</span>
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                onClick={() => openCreateEmployeeModal()}
+                className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition cursor-pointer"
+                title="직원 등록"
+              >
+                <UserPlus size={13} />
+              </button>
+            )}
+          </div>
+        </div>
+
       </header>
 
       {/* 1.5 Sub-Header Control Bar for Workplace Tabs, Employee Sorting & Search */}

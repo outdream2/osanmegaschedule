@@ -42,6 +42,7 @@ export default function App() {
       <SchedulePage
         onBack={goBack}
         onLogout={handleLogout}
+        onNavigateToDisplay={() => setPage("display")}
         initialEditEmployeeId={pendingEditEmpId}
         onEditEmployeeHandled={() => setPendingEditEmpId(null)}
         authSession={authSession}
