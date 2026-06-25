@@ -3,8 +3,8 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { DEFAULT_SCHEDULE_TYPES } from "../constants";
 
 export interface WageRate {
-  weekday: number;  // 주중 시급 (원)
-  weekend: number;  // 주말 시급 (원)
+  weekday: number;
+  weekend: number;
 }
 
 export interface AppSettings {
@@ -20,6 +20,7 @@ export interface AppSettings {
 }
 
 const STORAGE_KEY = "app_settings";
+const DB_KEY = "all_settings";
 
 const DEFAULT_SETTINGS: AppSettings = {
   positions: ["약사", "캐셔", "물류", "대표", "임원"],
@@ -35,8 +36,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 
 function isWageRate(v: unknown): v is WageRate {
   return (
-    typeof v === "object" &&
-    v !== null &&
+    typeof v === "object" && v !== null &&
     typeof (v as WageRate).weekday === "number" &&
     typeof (v as WageRate).weekend === "number"
   );
@@ -62,67 +62,67 @@ function sanitizeEmployeeOverrides(input: unknown): Record<number, WageRate> {
   return out;
 }
 
-function loadSettings(): AppSettings {
+function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
+  return {
+    positions: Array.isArray(parsed.positions) && parsed.positions.length > 0
+      ? parsed.positions : DEFAULT_SETTINGS.positions,
+    employmentTypes: Array.isArray(parsed.employmentTypes) && parsed.employmentTypes.length > 0
+      ? parsed.employmentTypes : DEFAULT_SETTINGS.employmentTypes,
+    workplaces: Array.isArray(parsed.workplaces) && parsed.workplaces.length > 0
+      ? parsed.workplaces : DEFAULT_SETTINGS.workplaces,
+    scheduleTypes: Array.isArray(parsed.scheduleTypes) && parsed.scheduleTypes.length > 0
+      ? parsed.scheduleTypes : DEFAULT_SETTINGS.scheduleTypes,
+    openShiftHour: parsed.openShiftHour || DEFAULT_SETTINGS.openShiftHour,
+    middleShiftHour: parsed.middleShiftHour || DEFAULT_SETTINGS.middleShiftHour,
+    closeShiftHour: parsed.closeShiftHour || DEFAULT_SETTINGS.closeShiftHour,
+    wageRates: sanitizeWageRates(parsed.wageRates),
+    employeeWageOverrides: sanitizeEmployeeOverrides(parsed.employeeWageOverrides),
+  };
+}
+
+function loadFromLocalStorage(): AppSettings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_SETTINGS;
-    const parsed = JSON.parse(raw) as Partial<AppSettings>;
-    return {
-      positions: Array.isArray(parsed.positions) && parsed.positions.length > 0
-        ? parsed.positions : DEFAULT_SETTINGS.positions,
-      employmentTypes: Array.isArray(parsed.employmentTypes) && parsed.employmentTypes.length > 0
-        ? parsed.employmentTypes : DEFAULT_SETTINGS.employmentTypes,
-      workplaces: Array.isArray(parsed.workplaces) && parsed.workplaces.length > 0
-        ? parsed.workplaces : DEFAULT_SETTINGS.workplaces,
-      scheduleTypes: Array.isArray(parsed.scheduleTypes) && parsed.scheduleTypes.length > 0
-        ? parsed.scheduleTypes : DEFAULT_SETTINGS.scheduleTypes,
-      openShiftHour: parsed.openShiftHour || DEFAULT_SETTINGS.openShiftHour,
-      middleShiftHour: parsed.middleShiftHour || DEFAULT_SETTINGS.middleShiftHour,
-      closeShiftHour: parsed.closeShiftHour || DEFAULT_SETTINGS.closeShiftHour,
-      wageRates: sanitizeWageRates(parsed.wageRates),
-      employeeWageOverrides: sanitizeEmployeeOverrides(parsed.employeeWageOverrides),
-    };
+    return mergeWithDefaults(JSON.parse(raw) as Partial<AppSettings>);
   } catch {
     return DEFAULT_SETTINGS;
   }
 }
 
-async function fetchSetting(key: string): Promise<unknown> {
-  const res = await fetch(`/api/settings?key=${encodeURIComponent(key)}`);
-  if (!res.ok) throw new Error("fetch failed");
-  const json = await res.json();
-  return json.value;
+async function fetchAllSettings(): Promise<AppSettings | null> {
+  try {
+    const res = await fetch(`/api/settings?key=${DB_KEY}`);
+    if (!res.ok) return null;
+    const { value } = await res.json();
+    if (!value) return null;
+    return mergeWithDefaults(value as Partial<AppSettings>);
+  } catch {
+    return null;
+  }
 }
 
-async function saveSetting(key: string, value: unknown): Promise<void> {
-  const res = await fetch("/api/settings", {
+async function saveAllSettings(s: AppSettings): Promise<void> {
+  await fetch("/api/settings", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ key, value }),
+    body: JSON.stringify({ key: DB_KEY, value: s }),
   });
-  if (!res.ok) throw new Error("save failed");
 }
 
 export function useSettings() {
-  const [settings, setSettings] = useState<AppSettings>(loadSettings);
+  const [settings, setSettings] = useState<AppSettings>(loadFromLocalStorage);
   const settingsRef = useRef(settings);
   settingsRef.current = settings;
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load wage settings from DB on mount (overrides localStorage)
+  // On mount: load from DB and override localStorage
   useEffect(() => {
-    Promise.all([
-      fetchSetting("wage_rates"),
-      fetchSetting("employee_wage_overrides"),
-    ]).then(([rates, overrides]) => {
-      const wageRates = sanitizeWageRates(rates);
-      const employeeWageOverrides = sanitizeEmployeeOverrides(overrides);
-      setSettings(prev => {
-        const next = { ...prev, wageRates, employeeWageOverrides };
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(next)); } catch {}
-        return next;
-      });
-    }).catch(() => {}); // silently fall back to localStorage
+    fetchAllSettings().then((dbSettings) => {
+      if (!dbSettings) return;
+      setSettings(dbSettings);
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(dbSettings)); } catch {}
+    }).catch(() => {});
   }, []);
 
   const update = useCallback((partial: Partial<AppSettings>) => {
@@ -132,19 +132,12 @@ export function useSettings() {
       return next;
     });
 
-    // Debounced DB save for wage-related changes
-    if ("wageRates" in partial || "employeeWageOverrides" in partial) {
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(() => {
-        const current = settingsRef.current;
-        const nextWages = "wageRates" in partial ? (partial.wageRates ?? current.wageRates) : current.wageRates;
-        const nextOverrides = "employeeWageOverrides" in partial ? (partial.employeeWageOverrides ?? current.employeeWageOverrides) : current.employeeWageOverrides;
-        Promise.all([
-          saveSetting("wage_rates", nextWages),
-          saveSetting("employee_wage_overrides", nextOverrides),
-        ]).catch(console.error);
-      }, 800);
-    }
+    // Debounced save to DB
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      const next = { ...settingsRef.current, ...partial };
+      saveAllSettings(next).catch(console.error);
+    }, 800);
   }, []);
 
   return {
