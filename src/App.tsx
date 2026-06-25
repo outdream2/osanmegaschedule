@@ -33,8 +33,10 @@ export default function App() {
 
   const handleLogout = () => {
     clearAuthSession();
-    localStorage.removeItem("megatown_admin");
-    setPage("landing");
+    Object.keys(localStorage)
+      .filter(k => k.startsWith("megatown_"))
+      .forEach(k => localStorage.removeItem(k));
+    window.location.replace("/");
   };
 
   if (page === "schedule") {

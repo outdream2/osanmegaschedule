@@ -391,7 +391,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     inputMode="numeric"
                     value={empNumber}
                     onChange={(e) => { setEmpNumber(e.target.value); setEmpError(null); }}
-                    placeholder="010-0000-0000"
+                    placeholder="숫자만 입력 (예: 01012345678)"
                     className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 text-sm font-semibold focus:outline-none focus:border-indigo-500 transition"
                     autoComplete="username"
                     disabled={empLoading}
