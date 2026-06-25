@@ -14,11 +14,18 @@ import {
   Building2,
   Loader2,
   Ban,
+  Lock,
+  LockOpen,
 } from "lucide-react";
+import type { AuthSession } from "../types";
 
 interface ReservationPageProps {
   onBack: () => void;
+  authSession?: AuthSession | null;
 }
+
+// Employee IDs 1,2,3 (대표/이사/부장) can manage blocked slots
+const STAFF_MANAGER_IDS = [1, 2, 3];
 
 interface StaffAvailability {
   employeeId: number;
@@ -70,7 +77,13 @@ const getTargetFromNote = (noteStr: string): string => {
 
 const STAFF_NAMES = ["대표", "이사", "부장"];
 
-export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
+export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSession }) => {
+  // Internal staff (대표/이사/부장 or superadmin) can block/unblock time slots
+  const isInternalStaff = authSession != null && (
+    authSession.role === "superadmin" ||
+    authSession.role === "admin" ||
+    STAFF_MANAGER_IDS.includes(authSession.employeeId ?? -1)
+  );
   const now = new Date();
   const todayYMD = formatYMD(now);
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -82,6 +95,10 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
   // Reservations for the selected date
   const [reservations, setReservations] = useState<any[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
+
+  // Blocked slots: staffName → array of blocked times
+  const [blockedSlots, setBlockedSlots] = useState<Record<string, string[]>>({});
+  const [togglingSlot, setTogglingSlot] = useState<string | null>(null); // "staffName|time"
 
   // Staff availability for selected date (휴무 check — per-column)
   const [staffAvailability, setStaffAvailability] = useState<StaffAvailability[]>(
@@ -159,6 +176,57 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
     }
   }, []);
 
+  const fetchBlockedSlots = useCallback(async (ymd: string) => {
+    try {
+      const res = await fetch(`/api/blocked-slots?date=${ymd}`);
+      if (res.ok) {
+        const data = await res.json();
+        setBlockedSlots(data ?? {});
+      }
+    } catch {
+      setBlockedSlots({});
+    }
+  }, []);
+
+  const toggleBlockedSlot = async (staffName: string, time: string) => {
+    const key = `${staffName}|${time}`;
+    if (togglingSlot === key) return;
+    const currentlyBlocked = blockedSlots[staffName]?.includes(time) ?? false;
+    // Optimistic update
+    setBlockedSlots(prev => {
+      const next = { ...prev };
+      if (!next[staffName]) next[staffName] = [];
+      if (currentlyBlocked) {
+        next[staffName] = next[staffName].filter(t => t !== time);
+      } else {
+        next[staffName] = [...next[staffName], time];
+      }
+      return next;
+    });
+    setTogglingSlot(key);
+    try {
+      await fetch("/api/blocked-slots", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date: selectedDate, staffName, time, blocked: !currentlyBlocked }),
+      });
+    } catch {
+      // Revert on failure
+      setBlockedSlots(prev => {
+        const next = { ...prev };
+        if (!next[staffName]) next[staffName] = [];
+        if (currentlyBlocked) {
+          if (!next[staffName].includes(time)) next[staffName] = [...next[staffName], time];
+        } else {
+          next[staffName] = next[staffName].filter(t => t !== time);
+        }
+        return next;
+      });
+    } finally {
+      setTogglingSlot(null);
+    }
+  };
+
   const fetchStaffAvailability = useCallback(async (ymd: string) => {
     setAvailLoading(true);
     try {
@@ -177,7 +245,8 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
   useEffect(() => {
     fetchReservations(selectedDate);
     fetchStaffAvailability(selectedDate);
-  }, [selectedDate, fetchReservations, fetchStaffAvailability]);
+    fetchBlockedSlots(selectedDate);
+  }, [selectedDate, fetchReservations, fetchStaffAvailability, fetchBlockedSlots]);
 
   const handleDayClick = (d: Date) => {
     if (d < todayStart) return;
@@ -186,6 +255,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
 
   const openModal = (time: string, target: string) => {
     if (bookedByTarget[target]?.includes(time)) return;
+    if (blockedSlots[target]?.includes(time)) return;
     setModalTime(time);
     setModalTarget(target);
     setError("");
@@ -406,6 +476,10 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
               </span>
               일부 휴무
             </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-md bg-gray-200 border border-gray-300 inline-block" />
+              예약불가
+            </div>
           </div>
         </div>
 
@@ -424,7 +498,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
                 ) : (
                   <p className="text-gray-500 text-xs mt-0.5 flex items-center gap-1">
                     <Clock size={11} />
-                    시간 슬롯을 클릭해 예약하세요
+                    {isInternalStaff ? "슬롯을 클릭해 예약불가 시간 지정/해제" : "시간 슬롯을 클릭해 예약하세요"}
                   </p>
                 )}
               </div>
@@ -490,22 +564,66 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack }) => {
                         }
 
                         const isBooked = bookedByTarget[staff.name]?.includes(t);
+                        const isBlocked = blockedSlots[staff.name]?.includes(t) ?? false;
+                        const slotKey = `${staff.name}|${t}`;
+                        const isToggling = togglingSlot === slotKey;
 
+                        if (isInternalStaff) {
+                          // Internal staff: toggle block/unblock; booked slots shown but not togglable
+                          if (isBooked) {
+                            return (
+                              <div
+                                key={staff.employeeId}
+                                className="py-2 rounded-lg text-[11px] font-bold border bg-rose-50 border-rose-200 text-rose-400 text-center"
+                              >
+                                완료
+                              </div>
+                            );
+                          }
+                          return (
+                            <button
+                              key={staff.employeeId}
+                              type="button"
+                              disabled={isToggling}
+                              onClick={() => toggleBlockedSlot(staff.name, t)}
+                              className={`py-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center gap-1 cursor-pointer active:scale-[0.98] ${
+                                isBlocked
+                                  ? "bg-gray-200 border-gray-300 text-gray-500 hover:bg-gray-100"
+                                  : isPeak
+                                  ? "bg-emerald-100 border-emerald-300 text-emerald-700 hover:bg-gray-200 hover:border-gray-300 hover:text-gray-500"
+                                  : "bg-white border-emerald-200 text-emerald-600 hover:bg-gray-200 hover:border-gray-300 hover:text-gray-500"
+                              }`}
+                              title={isBlocked ? "클릭하여 예약불가 해제" : "클릭하여 예약불가 지정"}
+                            >
+                              {isToggling ? (
+                                <Loader2 size={10} className="animate-spin" />
+                              ) : isBlocked ? (
+                                <><LockOpen size={10} /><span>불가</span></>
+                              ) : (
+                                <><Lock size={10} className="opacity-30" /><span>가능</span></>
+                              )}
+                            </button>
+                          );
+                        }
+
+                        // External user view
                         return (
                           <button
                             key={staff.employeeId}
                             type="button"
-                            disabled={isBooked}
+                            disabled={isBooked || isBlocked}
                             onClick={() => openModal(t, staff.name)}
                             className={`py-2 rounded-lg text-[11px] font-bold border transition-all ${
                               isBooked
                                 ? "bg-rose-50 border-rose-200 text-rose-400 cursor-not-allowed"
+                                : isBlocked
+                                ? "bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed"
                                 : isPeak
                                 ? "bg-emerald-100 border-emerald-300 text-emerald-700 hover:bg-emerald-600 hover:border-emerald-500 hover:text-white cursor-pointer active:scale-[0.98]"
                                 : "bg-white border-emerald-200 text-emerald-600 hover:bg-emerald-600 hover:border-emerald-500 hover:text-white cursor-pointer active:scale-[0.98]"
                             }`}
                           >
-                            {isBooked ? "완료" : "예약"}
+                            {isBooked ? "완료" : isBlocked ? "불가" : "예약"}
                           </button>
                         );
                       })}

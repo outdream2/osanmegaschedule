@@ -145,6 +145,41 @@ async function startServer() {
     }
   });
 
+  // GET /api/blocked-slots?date=YYYY-MM-DD
+  app.get("/api/blocked-slots", async (req, res) => {
+    const { date } = req.query;
+    if (!date || typeof date !== "string") return res.status(400).json({ error: "date required" });
+    try {
+      const { data, error } = await supabase.from("app_settings").select("value")
+        .eq("key", `blocked_slots_${date}`).maybeSingle();
+      if (error) throw new Error(error.message);
+      res.json((data?.value as Record<string, string[]>) ?? {});
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // POST /api/blocked-slots — toggle a slot blocked/unblocked
+  app.post("/api/blocked-slots", async (req, res) => {
+    const { date, staffName, time, blocked } = req.body ?? {};
+    if (!date || !staffName || !time) {
+      return res.status(400).json({ error: "date, staffName, time required" });
+    }
+    const key = `blocked_slots_${date}`;
+    try {
+      const { data } = await supabase.from("app_settings").select("value").eq("key", key).maybeSingle();
+      const current: Record<string, string[]> = (data?.value as Record<string, string[]>) ?? {};
+      if (!current[staffName]) current[staffName] = [];
+      if (blocked) {
+        if (!current[staffName].includes(time)) current[staffName].push(time);
+      } else {
+        current[staffName] = current[staffName].filter((t: string) => t !== time);
+      }
+      const { error } = await supabase.from("app_settings")
+        .upsert({ key, value: current, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      if (error) throw new Error(error.message);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // POST /api/auth/login
   app.post("/api/auth/login", async (req, res) => {
     const { employee_id, password } = req.body ?? {};

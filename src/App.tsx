@@ -49,7 +49,7 @@ export default function App() {
     );
   }
   if (page === "reservation") {
-    return <ReservationPage onBack={() => setPage("landing")} />;
+    return <ReservationPage onBack={() => setPage("landing")} authSession={authSession} />;
   }
   if (page === "display") {
     return (
