@@ -265,7 +265,10 @@ export const DayTimelineModal: React.FC<Props> = ({
         : (ev as MouseEvent).clientX;
 
     const duration = initEnd - initStart;
-    const bodyOffset = getMinFromX(initClientX) - initStart;
+    // On touch, snap bar center to finger; on mouse, preserve offset from click position
+    const bodyOffset = (isTouch && part === "body")
+      ? duration / 2
+      : getMinFromX(initClientX) - initStart;
     let curStart = initStart;
     let curEnd = initEnd;
 
