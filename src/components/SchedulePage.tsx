@@ -467,7 +467,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
   const [workplaceTab, setWorkplaceTab] = useState<"전체" | "매장" | "창고">("전체");
   const [positionTab, setPositionTab] = useState<"전체" | "약사" | "캐셔" | "물류" | "알바" | "기타">("전체");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"none" | "position" | "hireDate" | "name">("none");
+  const [sortBy, setSortBy] = useState<"none" | "position" | "rank" | "hireDate" | "name">("none");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [todayFirst, setTodayFirst] = useState(true);
 
@@ -977,35 +977,27 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
       return true;
     })
     .sort((a, b) => {
-      // 오늘 출근 우선 정렬 (최우선)
-      if (todayFirst) {
-        const aToday = a.schedules.some(s => s.date === todayStr && s.type && !OFF_TYPES_SET.has(s.type));
-        const bToday = b.schedules.some(s => s.date === todayStr && s.type && !OFF_TYPES_SET.has(s.type));
-        if (aToday !== bToday) return aToday ? -1 : 1;
-      }
+      const POSITION_ORDER: Record<string, number> = { "대표": 1, "임원": 2, "약사": 3, "캐셔": 4, "물류": 5 };
+      const RANK_ORDER: Record<string, number> = { "대표": 1, "부장": 2, "차장": 3, "과장": 4, "팀장": 5, "사원": 6, "알바": 7 };
 
       if (sortBy === "position") {
-        const PRESET_MAPPING: Record<string, number> = {
-          "대표": 1,
-          "임원": 2,
-          "약사": 3,
-          "캐셔": 4,
-          "물류": 5,
-        };
-        const pA = PRESET_MAPPING[a.position] || 99;
-        const pB = PRESET_MAPPING[b.position] || 99;
-        if (pA !== pB) {
-          return sortOrder === "asc" ? pA - pB : pB - pA;
-        }
+        const pA = POSITION_ORDER[a.position] ?? 99;
+        const pB = POSITION_ORDER[b.position] ?? 99;
+        if (pA !== pB) return sortOrder === "asc" ? pA - pB : pB - pA;
+        return a.name.localeCompare(b.name, "ko");
+      }
+
+      if (sortBy === "rank") {
+        const rA = RANK_ORDER[a.rank ?? ""] ?? 99;
+        const rB = RANK_ORDER[b.rank ?? ""] ?? 99;
+        if (rA !== rB) return sortOrder === "asc" ? rA - rB : rB - rA;
         return a.name.localeCompare(b.name, "ko");
       }
 
       if (sortBy === "hireDate") {
         const dateA = a.hireDate ? new Date(a.hireDate).getTime() : 0;
         const dateB = b.hireDate ? new Date(b.hireDate).getTime() : 0;
-        if (dateA !== dateB) {
-          return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
-        }
+        if (dateA !== dateB) return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
         return a.name.localeCompare(b.name, "ko");
       }
 
@@ -1013,6 +1005,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
         return sortOrder === "asc"
           ? a.name.localeCompare(b.name, "ko")
           : b.name.localeCompare(a.name, "ko");
+      }
+
+      // sortBy === "none": todayFirst as secondary sort only
+      if (todayFirst) {
+        const aToday = a.schedules.some(s => s.date === todayStr && s.type && !OFF_TYPES_SET.has(s.type));
+        const bToday = b.schedules.some(s => s.date === todayStr && s.type && !OFF_TYPES_SET.has(s.type));
+        if (aToday !== bToday) return aToday ? -1 : 1;
       }
 
       return 0;
@@ -1335,27 +1334,25 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
             </button>
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">정렬</span>
             <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
-              <button
-                type="button"
-                onClick={() => {
-                  if (sortBy === "position") {
-                    setSortOrder(prev => prev === "asc" ? "desc" : "asc");
-                  } else {
-                    setSortBy("position");
-                    setSortOrder("asc");
-                  }
-                }}
-                className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${sortBy === "position"
-                  ? "bg-white text-indigo-600 shadow-sm font-bold"
-                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                  }`}
-                title="직급순 정렬 (부점장 -> 약사 -> 사원 순서)"
-              >
-                <span>직급별</span>
-                {sortBy === "position" && (
-                  <span className="text-[10px] font-mono">{sortOrder === "asc" ? "↑" : "↓"}</span>
-                )}
-              </button>
+              {(["position", "rank", "hireDate", "name"] as const).map((key) => {
+                const labels: Record<string, string> = { position: "구분", rank: "직급", hireDate: "입사일", name: "이름" };
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      if (sortBy === key) setSortOrder(prev => prev === "asc" ? "desc" : "asc");
+                      else { setSortBy(key); setSortOrder("asc"); }
+                    }}
+                    className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${
+                      sortBy === key ? "bg-white text-indigo-600 shadow-sm font-bold" : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{labels[key]}</span>
+                    {sortBy === key && <span className="text-[10px] font-mono">{sortOrder === "asc" ? "↑" : "↓"}</span>}
+                  </button>
+                );
+              })}
 
               <button
                 type="button"
