@@ -1,6 +1,6 @@
 // src/types.ts
 
-export type AuthRole = 'admin' | 'employee';
+export type AuthRole = 'superadmin' | 'admin' | 'manager' | 'employee';
 
 export interface AuthSession {
   role: AuthRole;

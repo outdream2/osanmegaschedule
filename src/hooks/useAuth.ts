@@ -9,7 +9,8 @@ function readSession(): AuthSession | null {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as AuthSession;
-    if (parsed && (parsed.role === "admin" || parsed.role === "employee")) {
+    const VALID_ROLES: string[] = ["superadmin", "admin", "manager", "employee"];
+    if (parsed && VALID_ROLES.includes(parsed.role)) {
       return parsed;
     }
     return null;

@@ -155,7 +155,7 @@ async function startServer() {
     try {
       const { data: emp, error } = await supabase
         .from("employees")
-        .select("id, name, password_hash")
+        .select("id, name, password_hash, is_manager")
         .eq("phone", phone)
         .maybeSingle();
       if (error) throw new Error(error.message);
@@ -164,7 +164,8 @@ async function startServer() {
       }
       const ok = await bcrypt.compare(password, emp.password_hash);
       if (!ok) return res.status(401).json({ error: "전화번호 또는 비밀번호가 올바르지 않습니다" });
-      return res.status(200).json({ id: emp.id, name: emp.name });
+      const role = emp.is_manager ? "manager" : "employee";
+      return res.status(200).json({ id: emp.id, name: emp.name, role });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }

@@ -43,8 +43,10 @@ interface SchedulePageProps {
 
 export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
   // ── Auth-derived flags ─────────────────────────────────────────────────────
-  // Employee mode: a non-admin session is active. Restricts UI to read-only
-  // plus a self-service break/lunch modal on the user's own row.
+  const isSuperAdmin = authSession?.role === "superadmin" || authSession?.role === "admin";
+  // 관리자: read-only + can open break modal for any employee, no labor cost
+  const isManagerRole = authSession?.role === "manager";
+  // 직원모드: read-only + can open break modal on own row only
   const isEmployeeMode = authSession?.role === "employee";
   const sessionEmployeeId = authSession?.employeeId ?? null;
   // Settings hook (positions, workplaces, scheduleTypes, shift hours)
@@ -127,19 +129,18 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
 
 
   // Administrative / Auth states
-  // Employee-mode sessions always force isAdmin=false (read-only).
-  // Admin-mode sessions imply admin even before localStorage check.
+  // isAdmin = full superadmin access (schedule editing, employee management, labor costs)
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
-    if (authSession?.role === "employee") return false;
-    if (authSession?.role === "admin") return true;
+    if (authSession?.role === "employee" || authSession?.role === "manager") return false;
+    if (authSession?.role === "superadmin" || authSession?.role === "admin") return true;
     return localStorage.getItem("megatown_admin") === "true";
   });
 
   // Keep isAdmin in sync if authSession changes during the page lifetime
   useEffect(() => {
-    if (authSession?.role === "employee") {
+    if (authSession?.role === "employee" || authSession?.role === "manager") {
       setIsAdmin(false);
-    } else if (authSession?.role === "admin") {
+    } else if (authSession?.role === "superadmin" || authSession?.role === "admin") {
       setIsAdmin(true);
     }
   }, [authSession?.role]);
@@ -1195,7 +1196,22 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
 
         <div className="flex items-center gap-2">
           {/* Mode Badge */}
-          {isEmployeeMode ? (
+          {isAdmin ? (
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>최고관리자</span>
+            </div>
+          ) : isManagerRole ? (
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200 text-[11px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse"></span>
+              <span>관리자</span>
+              {authSession?.employeeName && (
+                <span className="text-sky-600 font-semibold border-l border-sky-300 pl-1.5 ml-0.5 truncate max-w-[60px]">
+                  {authSession.employeeName}
+                </span>
+              )}
+            </div>
+          ) : isEmployeeMode ? (
             <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold max-w-[140px] sm:max-w-none">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
               <span className="hidden sm:inline">직원 모드</span>
@@ -1204,11 +1220,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                   {authSession.employeeName}
                 </span>
               )}
-            </div>
-          ) : isAdmin ? (
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>관리자</span>
             </div>
           ) : (
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 border border-amber-200 text-[11px] font-bold">
@@ -1264,9 +1275,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                 <span className="hidden sm:inline">로그아웃</span>
               </button>
             </>
-          ) : isEmployeeMode ? (
-            // Employee mode: no admin-login button. The user logs out via 메인 button.
-            null
+          ) : (isManagerRole || isEmployeeMode) ? (
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-gray-200 hover:border-rose-300 rounded-lg transition-all duration-150 cursor-pointer flex items-center gap-1.5"
+            >
+              <LogOut size={13} />
+              <span className="hidden sm:inline">로그아웃</span>
+            </button>
           ) : (
             <button
               onClick={() => {
@@ -1800,19 +1816,21 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                             const { fullDate, isToday } = getDayDetails(dateStr);
                             const currentSched = emp.schedules.find((s) => s.date === fullDate);
                             const isOwnRow = isEmployeeMode && sessionEmployeeId === emp.id;
+                            // 관리자 can open break modal for any row; 직원 only own row
+                            const canOpenBreak = isManagerRole || isOwnRow;
 
                             return (
                               <td
                                 key={`${emp.id}-${dateStr}`}
-                                className={`p-0 border-r border-[#e2e8f0] ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-25 relative" : ""} ${isOwnRow ? "cursor-pointer hover:bg-amber-50/50" : ""}`}
-                                onClick={isOwnRow ? () => openBreakModalForCell(emp.id, fullDate) : undefined}
-                                title={isOwnRow ? "클릭하여 점심/휴게 시간 설정" : undefined}
+                                className={`p-0 border-r border-[#e2e8f0] ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-25 relative" : ""} ${canOpenBreak ? "cursor-pointer hover:bg-amber-50/50" : ""}`}
+                                onClick={canOpenBreak ? () => openBreakModalForCell(emp.id, fullDate) : undefined}
+                                title={canOpenBreak ? "클릭하여 점심/휴게 시간 설정" : undefined}
                               >
                                 <ScheduleCell
                                   schedule={currentSched}
                                   dateStr={fullDate}
                                   employeeId={emp.id}
-                                  onUpdate={isEmployeeMode ? (async () => {}) : handleCellUpdate}
+                                  onUpdate={(isEmployeeMode || isManagerRole) ? (async () => {}) : handleCellUpdate}
                                   isAdmin={isAdmin}
                                   openShiftHour={openShiftHour}
                                   middleShiftHour={middleShiftHour}
@@ -1839,7 +1857,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                               <td className="border-l-2 border-slate-200 bg-indigo-50/50 text-center align-middle p-1">
                                 <div className="text-[11px] sm:text-xs font-black text-indigo-700 leading-tight">{workDays}일</div>
                                 {hoursLabel && <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium leading-tight">{hoursLabel}</div>}
-                                {costLabel && <div className="text-[9px] sm:text-[10px] text-emerald-600 font-bold leading-tight">{costLabel}원</div>}
+                                {isSuperAdmin && costLabel && <div className="text-[9px] sm:text-[10px] text-emerald-600 font-bold leading-tight">{costLabel}원</div>}
                               </td>
                             );
                           })()}
@@ -1861,15 +1879,15 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                           <>
                             <SummaryRow
                               summaries={currentSummaryList} label="약사"
-                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.pharmacistCount, 0)}인일</div>{pharmacistCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(pharmacistCost)}</div>}</div>}
+                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.pharmacistCount, 0)}인일</div>{isSuperAdmin && pharmacistCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(pharmacistCost)}</div>}</div>}
                             />
                             <SummaryRow
                               summaries={currentSummaryList} label="사원"
-                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.staffCount, 0)}인일</div>{staffCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(staffCost)}</div>}</div>}
+                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.staffCount, 0)}인일</div>{isSuperAdmin && staffCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(staffCost)}</div>}</div>}
                             />
                             <SummaryRow
                               summaries={currentSummaryList} label="근무인원"
-                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.totalCount, 0)}인일</div>{totalCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(totalCost)}</div>}</div>}
+                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.totalCount, 0)}인일</div>{isSuperAdmin && totalCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(totalCost)}</div>}</div>}
                             />
                           </>
                         );

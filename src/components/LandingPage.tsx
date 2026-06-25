@@ -77,7 +77,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       const page = pendingPage!;
       setPendingPage(null);
       setPin("");
-      onNavigate(page, { role: "admin" });
+      onNavigate(page, { role: "superadmin" });
     } else {
       setAdminError(true);
       setPin("");
@@ -99,7 +99,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         employee_id: phone,
         password: empPassword,
       });
-      const { id, name } = res.data ?? {};
+      const { id, name, role } = res.data ?? {};
       if (!id) {
         setEmpError("전화번호 또는 비밀번호가 올바르지 않습니다");
         setEmpLoading(false);
@@ -109,7 +109,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       setPendingPage(null);
       setEmpNumber("");
       setEmpPassword("");
-      onNavigate(page, { role: "employee", employeeId: id, employeeName: name });
+      onNavigate(page, { role: role === "manager" ? "manager" : "employee", employeeId: id, employeeName: name });
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 401 || status === 400) {
@@ -123,14 +123,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     }
   };
 
-  const isAdmin = authSession?.role === "admin";
+  const isSuperAdmin = authSession?.role === "superadmin" || authSession?.role === "admin";
+  const isManagerRole = authSession?.role === "manager";
+  const isAdmin = isSuperAdmin;
   const isEmployee = authSession?.role === "employee";
   const isLoggedIn = !!authSession;
+
+  const roleLabel = isSuperAdmin ? "최고관리자" : isManagerRole ? "관리자" : (authSession?.employeeName ?? "직원");
 
   // Permission check per menu
   const canAccess = (page: "schedule" | "display"): boolean => {
     if (!isLoggedIn) return false;
-    if (isAdmin) return true;
+    if (isSuperAdmin || isManagerRole) return true;
     if (isEmployee && page === "schedule") return true;
     return false;
   };
@@ -153,8 +157,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         {isLoggedIn ? (
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold">
-              {isAdmin ? <Shield size={11} /> : <User size={11} />}
-              <span className="max-w-[80px] truncate">{isAdmin ? "관리자" : (authSession.employeeName ?? "직원")}</span>
+              {(isSuperAdmin || isManagerRole) ? <Shield size={11} /> : <User size={11} />}
+              <span className="max-w-[80px] truncate">{roleLabel}</span>
             </div>
             <button
               onClick={onLogout}
