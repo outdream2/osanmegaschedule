@@ -1987,18 +1987,33 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                       ))}
 
                       {/* Real-time calculated Bottom Summary Rows */}
-                      <SummaryRow
-                        summaries={currentSummaryList} label="약사"
-                        totalCell={<span>{currentSummaryList.reduce((a, s) => a + s.pharmacistCount, 0)}인일</span>}
-                      />
-                      <SummaryRow
-                        summaries={currentSummaryList} label="사원"
-                        totalCell={<span>{currentSummaryList.reduce((a, s) => a + s.staffCount, 0)}인일</span>}
-                      />
-                      <SummaryRow
-                        summaries={currentSummaryList} label="근무인원"
-                        totalCell={<span>{currentSummaryList.reduce((a, s) => a + s.totalCount, 0)}인일</span>}
-                      />
+                      {(() => {
+                        const fmtCost = (cost: number) => cost <= 0 ? "" :
+                          cost >= 10000 ? `${Math.round(cost / 10000)}만원` : `${Math.round(cost).toLocaleString()}원`;
+                        const pharmacistCost = filteredEmployees
+                          .filter(e => e.position === "약사")
+                          .reduce((sum, e) => sum + getEmpMonthStats(e).laborCost, 0);
+                        const staffCost = filteredEmployees
+                          .filter(e => e.position !== "약사")
+                          .reduce((sum, e) => sum + getEmpMonthStats(e).laborCost, 0);
+                        const totalCost = pharmacistCost + staffCost;
+                        return (
+                          <>
+                            <SummaryRow
+                              summaries={currentSummaryList} label="약사"
+                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.pharmacistCount, 0)}인일</div>{pharmacistCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(pharmacistCost)}</div>}</div>}
+                            />
+                            <SummaryRow
+                              summaries={currentSummaryList} label="사원"
+                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.staffCount, 0)}인일</div>{staffCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(staffCost)}</div>}</div>}
+                            />
+                            <SummaryRow
+                              summaries={currentSummaryList} label="근무인원"
+                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.totalCount, 0)}인일</div>{totalCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(totalCost)}</div>}</div>}
+                            />
+                          </>
+                        );
+                      })()}
                     </tbody>
                   </table>
                 );
