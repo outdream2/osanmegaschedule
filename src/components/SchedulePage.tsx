@@ -186,7 +186,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
   const [empWorkplace, setEmpWorkplace] = useState<string>("매장");
   const [empGender, setEmpGender] = useState<"남" | "여" | "">("");
   const [empRank, setEmpRank] = useState("");
+  const [empAnnualLeave, setEmpAnnualLeave] = useState<number>(0);
   const [empZoneNums, setEmpZoneNums] = useState<number[]>([]);
+  const [yearLeaveStats, setYearLeaveStats] = useState<Record<number, number>>({});
   const [editingEmpId, setEditingEmpId] = useState<number | null>(null);
   const [tempDescription, setTempDescription] = useState("");
   const [timelineDate, setTimelineDate] = useState<string | null>(null);
@@ -334,6 +336,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
       setEmpCustomPosition("");
     }
     setEmpRank(emp.rank || "");
+    setEmpAnnualLeave(emp.annual_leave_days ?? 0);
     setEmpEmploymentType(emp.employmentType || "정직원");
     setEmpHireDate(emp.hireDate || "");
     setEmpDescription(emp.description || "");
@@ -623,6 +626,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
       } else if (responses.length > 0) {
         setSummary(responses[0].data.summary || []);
       }
+      // Refresh year-to-date 월차 stats in background
+      axios.get(`/api/leave-stats?year=${currentYear}`)
+        .then(res => setYearLeaveStats(res.data ?? {}))
+        .catch(() => {});
     } catch (err: any) {
       console.error("Error fetching schedules:", err);
       setError("스케줄 데이터를 불러오는 중에 오류가 발생했습니다.");
@@ -636,6 +643,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
     fetchScheduleData(dateList);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentYear, currentMonth]);
+
+  // Load year-to-date 월차 usage counts per employee
+  useEffect(() => {
+    axios.get(`/api/leave-stats?year=${currentYear}`)
+      .then(res => setYearLeaveStats(res.data ?? {}))
+      .catch(() => {});
+  }, [currentYear]);
 
   const showNotification = (message: string, type: "success" | "error" = "success") => {
     setNotification({ message, type });
@@ -828,6 +842,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
           description: empDescription,
           workplace: empWorkplace,
           gender: empGender || null,
+          annual_leave_days: empAnnualLeave > 0 ? empAnnualLeave : null,
         });
         applyZones(selectedEmpForEdit.id, empName);
         showNotification(`${empName} 직원의 정보가 수정되었습니다.`);
@@ -841,6 +856,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
           description: empDescription,
           workplace: empWorkplace,
           gender: empGender || null,
+          annual_leave_days: empAnnualLeave > 0 ? empAnnualLeave : null,
         });
         if (res.data?.id) applyZones(res.data.id, empName);
         showNotification(`새 직원 ${empName}님이 등록되었습니다.`);
@@ -856,6 +872,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
       setEmpWorkplace("매장");
       setEmpGender("");
       setEmpRank("");
+      setEmpAnnualLeave(0);
       setEmpZoneNums([]);
       setSelectedEmpForEdit(null);
       setEmpModalMode("create");
@@ -1960,7 +1977,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                             );
                           })}
 
-                          {/* Total column: work days + hours + labor cost */}
+                          {/* Total column: work days + hours + labor cost + 월차 remaining */}
                           {(() => {
                             const { workDays, totalHours, laborCost } = getEmpMonthStats(emp);
                             const h = Math.floor(totalHours);
@@ -1972,11 +1989,19 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                                 ? `${Math.round(laborCost / 10000)}만`
                                 : `${Math.round(laborCost).toLocaleString()}`
                               : "";
+                            const leaveTotal = emp.annual_leave_days ?? 0;
+                            const leaveUsed = yearLeaveStats[emp.id] ?? 0;
+                            const leaveRemaining = Math.max(0, leaveTotal - leaveUsed);
                             return (
                               <td className="border-l-2 border-slate-200 bg-indigo-50/50 text-center align-middle p-1">
                                 <div className="text-[11px] sm:text-xs font-black text-indigo-700 leading-tight">{workDays}일</div>
                                 {hoursLabel && <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium leading-tight">{hoursLabel}</div>}
                                 {costLabel && <div className="text-[9px] sm:text-[10px] text-emerald-600 font-bold leading-tight">{costLabel}원</div>}
+                                {leaveTotal > 0 && (
+                                  <div className={`text-[9px] sm:text-[10px] font-bold leading-tight ${leaveRemaining === 0 ? "text-rose-500" : "text-amber-600"}`}>
+                                    월차{leaveUsed}/{leaveTotal}
+                                  </div>
+                                )}
                               </td>
                             );
                           })()}
@@ -2363,6 +2388,22 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, initialEditE
                   placeholder="직접 입력 또는 위 버튼 선택"
                   value={empRank}
                   onChange={(e) => setEmpRank(e.target.value)}
+                  className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
+                  연간 월차
+                  <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">총 부여 일수 (0 = 미설정)</span>
+                </label>
+                <input
+                  type="number"
+                  min={0}
+                  max={30}
+                  value={empAnnualLeave || ""}
+                  onChange={(e) => setEmpAnnualLeave(parseInt(e.target.value) || 0)}
+                  placeholder="예: 15"
                   className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
                 />
               </div>

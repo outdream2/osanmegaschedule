@@ -228,6 +228,28 @@ async function startServer() {
     }
   });
 
+  // GET /api/leave-stats?year=YYYY — count of 월차 per employee for the year
+  app.get("/api/leave-stats", async (req, res) => {
+    const { year } = req.query;
+    if (!year || typeof year !== "string") return res.status(400).json({ error: "year required" });
+    try {
+      const { data, error } = await supabase
+        .from("schedules")
+        .select("employeeId")
+        .like("date", `${year}-%`)
+        .eq("type", "월차");
+      if (error) throw new Error(error.message);
+      const counts: Record<number, number> = {};
+      for (const row of (data ?? [])) {
+        const id = row.employeeId as number;
+        counts[id] = (counts[id] ?? 0) + 1;
+      }
+      return res.json(counts);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // GET /api/reservations
   app.get("/api/reservations", async (req, res) => {
     const { date } = req.query;

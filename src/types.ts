@@ -29,6 +29,7 @@ export interface Employee {
   workplace: string; // "매장" or "창고"
   gender?: "남" | "여";
   push_subscription?: object | null; // Web Push 구독 정보
+  annual_leave_days?: number | null;
   schedules: Schedule[];
 }
 
