@@ -89,7 +89,7 @@ export const DayTimelineModal: React.FC<Props> = ({
     try {
       const s = JSON.parse(localStorage.getItem("tl_lunch") || "");
       return { start: toMin(s.start), end: toMin(s.end) };
-    } catch { return { start: 12 * 60, end: 13 * 60 }; }
+    } catch { return { start: 12 * 60, end: 12 * 60 + 30 }; }
   });
   const [globalRest, setGlobalRest] = useState<Range>(() => {
     try {
@@ -212,6 +212,10 @@ export const DayTimelineModal: React.FC<Props> = ({
     return r;
   });
 
+  // Zoom + overlap warning state
+  const [activeEmpId, setActiveEmpId] = useState<number | null>(null);
+  const [overlapWarning, setOverlapWarning] = useState<string | null>(null);
+
   const gridRef = useRef<HTMLDivElement>(null);
 
   const getMinFromX = (clientX: number): number => {
@@ -225,6 +229,19 @@ export const DayTimelineModal: React.FC<Props> = ({
     setEmpBreaks(next);
   };
 
+  const checkBreakOverlap = (empId: number, kind: "lunch" | "rest", start: number, end: number): string | null => {
+    for (const [idStr, breaks] of Object.entries(empBreaks as Record<number, EmpBreak>)) {
+      const otherId = Number(idStr);
+      if (otherId === empId) continue;
+      const other = kind === "lunch" ? breaks.lunch : breaks.rest;
+      if (start < other.end && end > other.start) {
+        const otherWorker = workers.find(w => w.emp.id === otherId);
+        return `⚠️ ${otherWorker?.emp.name ?? "다른 직원"}님의 ${kind === "lunch" ? "점심" : "휴게"}시간(${minToStr(other.start)}~${minToStr(other.end)})과 겹칩니다!`;
+      }
+    }
+    return null;
+  };
+
   const startDrag = (
     e: React.MouseEvent | React.TouchEvent,
     kind: DragKind,
@@ -233,8 +250,9 @@ export const DayTimelineModal: React.FC<Props> = ({
     initEnd: number,
     empId?: number,
   ) => {
-    e.preventDefault();
     e.stopPropagation();
+
+    if (empId !== undefined) setActiveEmpId(empId);
 
     const isTouch = "touches" in e.nativeEvent;
     const initClientX = isTouch
@@ -295,6 +313,7 @@ export const DayTimelineModal: React.FC<Props> = ({
       document.removeEventListener("touchmove", onMove as EventListener);
       document.removeEventListener("touchend", onUp);
       document.body.style.cursor = "";
+      setActiveEmpId(null);
 
       if (kind === "work" && empId !== undefined) {
         const worker = workers.find(w => w.emp.id === empId);
@@ -313,6 +332,8 @@ export const DayTimelineModal: React.FC<Props> = ({
         }
       } else if (kind === "lunch") {
         if (empId !== undefined) {
+          const warning = checkBreakOverlap(empId, "lunch", curStart, curEnd);
+          if (warning) { setOverlapWarning(warning); setTimeout(() => setOverlapWarning(null), 4000); }
           setEmpBreaks(prev => {
             const next = { ...prev, [empId]: { ...prev[empId], lunch: { start: curStart, end: curEnd } } };
             localStorage.setItem(`tl_emp_breaks_${date}`, JSON.stringify(next));
@@ -323,6 +344,8 @@ export const DayTimelineModal: React.FC<Props> = ({
         }
       } else if (kind === "rest") {
         if (empId !== undefined) {
+          const warning = checkBreakOverlap(empId, "rest", curStart, curEnd);
+          if (warning) { setOverlapWarning(warning); setTimeout(() => setOverlapWarning(null), 4000); }
           setEmpBreaks(prev => {
             const next = { ...prev, [empId]: { ...prev[empId], rest: { start: curStart, end: curEnd } } };
             localStorage.setItem(`tl_emp_breaks_${date}`, JSON.stringify(next));
@@ -492,9 +515,15 @@ export const DayTimelineModal: React.FC<Props> = ({
         </div>
 
         {/* Hint */}
+        {overlapWarning && (
+          <div className="px-5 py-2 bg-amber-50 border-b border-amber-200 flex items-center gap-2 animate-in slide-in-from-top-1 duration-200 flex-shrink-0">
+            <span className="text-xs font-bold text-amber-800">{overlapWarning}</span>
+          </div>
+        )}
+
         <div className="px-5 py-1.5 bg-slate-50 border-b border-slate-200 flex-shrink-0 flex items-center justify-between gap-3 flex-wrap">
           <span className="text-[10px] text-slate-400 font-medium">
-            양 끝 드래그/터치 → 시간 조정 &nbsp;|&nbsp; 가운데 드래그/터치 → 이동 &nbsp;(15분 단위)
+            양 끝/가운데 드래그·터치 → 시간조정 (15분 단위) &nbsp;|&nbsp; 터치 시 행 확대
           </span>
           <button
             onClick={applyGlobalToAll}
@@ -528,7 +557,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                 {displayWorkers.map(({ emp, schedule }) => (
                   <div
                     key={emp.id}
-                    className={`h-16 mb-1.5 flex flex-col justify-center gap-0.5 group cursor-grab active:cursor-grabbing transition-opacity ${dragRowId === emp.id ? "opacity-40" : "opacity-100"}`}
+                    className={`mb-1.5 flex flex-col justify-center gap-0.5 group cursor-grab active:cursor-grabbing transition-all duration-200 ${dragRowId === emp.id ? "opacity-40" : "opacity-100"} ${activeEmpId === emp.id ? "h-28" : "h-16"}`}
                     draggable
                     onDragStart={e => handleRowDragStart(e, emp.id)}
                     onDragOver={e => handleRowDragOver(e, emp.id)}
@@ -593,10 +622,11 @@ export const DayTimelineModal: React.FC<Props> = ({
                       const workRange = workRanges[emp.id];
                       const breaks = empBreaks[emp.id] ?? { lunch: globalLunch, rest: globalRest };
 
+                      const isActive = activeEmpId === emp.id;
                       return (
                         <div
                           key={emp.id}
-                          className={`relative h-16 mb-1.5 bg-slate-50 rounded-lg border border-slate-100 transition-opacity ${dragRowId === emp.id ? "opacity-40" : "opacity-100"}`}
+                          className={`relative mb-1.5 bg-slate-50 rounded-lg border transition-all duration-200 ${dragRowId === emp.id ? "opacity-40" : "opacity-100"} ${isActive ? "h-28 border-amber-300 shadow-md" : "h-16 border-slate-100"}`}
                           draggable
                           onDragStart={e => handleRowDragStart(e, emp.id)}
                           onDragOver={e => handleRowDragOver(e, emp.id)}
@@ -606,7 +636,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                           {/* Layer 1: working hours bar — faint background */}
                           {workRange && (
                             <div
-                              className={`absolute top-1 bottom-1 rounded-md ${colorCls}`}
+                              className={`absolute top-1 bottom-1 rounded-md touch-none ${colorCls}`}
                               style={{ left: `${pct(workRange.start)}%`, width: `${Math.max(widthPct(workRange.start, workRange.end), 0.5)}%` }}
                             >
                               {/* left resize handle */}
@@ -639,10 +669,12 @@ export const DayTimelineModal: React.FC<Props> = ({
                             const r = breaks.lunch;
                             const w = widthPct(r.start, r.end);
                             if (w <= 0) return null;
+                            const barH = isActive ? 44 : 20;
+                            const barTop = isActive ? 8 : 5;
                             return (
                               <div
-                                className="absolute bg-yellow-300/90 rounded active:scale-y-150 active:z-10 transition-transform"
-                                style={{ top: "5px", height: "20px", left: `${pct(r.start)}%`, width: `${w}%` }}
+                                className="absolute bg-yellow-300/90 rounded touch-none transition-all duration-200"
+                                style={{ top: `${barTop}px`, height: `${barH}px`, left: `${pct(r.start)}%`, width: `${w}%` }}
                               >
                                 <div className="absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-yellow-500/40 active:bg-yellow-500/60 rounded-l touch-none"
                                   onMouseDown={e => startDrag(e, "lunch", "start", r.start, r.end, emp.id)}
@@ -666,10 +698,12 @@ export const DayTimelineModal: React.FC<Props> = ({
                             const r = breaks.rest;
                             const w = widthPct(r.start, r.end);
                             if (w <= 0) return null;
+                            const barH = isActive ? 44 : 20;
+                            const barBottom = isActive ? 8 : 5;
                             return (
                               <div
-                                className="absolute bg-violet-300/90 rounded active:scale-y-150 active:z-10 transition-transform"
-                                style={{ bottom: "5px", height: "20px", left: `${pct(r.start)}%`, width: `${w}%` }}
+                                className="absolute bg-violet-300/90 rounded touch-none transition-all duration-200"
+                                style={{ bottom: `${barBottom}px`, height: `${barH}px`, left: `${pct(r.start)}%`, width: `${w}%` }}
                               >
                                 <div className="absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-violet-500/40 active:bg-violet-500/60 rounded-l touch-none"
                                   onMouseDown={e => startDrag(e, "rest", "start", r.start, r.end, emp.id)}
