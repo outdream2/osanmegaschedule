@@ -1780,7 +1780,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                         >
 
                           {/* Column 1: Sticky Employee Name */}
-                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50/80 shadow-[1px_0_0_0_#e2e8f0] min-w-[90px] sm:min-w-[104px] h-auto min-h-[54px] sm:min-h-[58px] p-0">
+                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] min-w-[90px] sm:min-w-[104px] h-auto min-h-[54px] sm:min-h-[58px] p-0">
                             <div className="flex items-stretch h-full">
                               {/* Drag handle — desktop only */}
                               {isAdmin && (

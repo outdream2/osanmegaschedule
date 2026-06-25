@@ -56,6 +56,7 @@ export default function App() {
     return (
       <DisplayPage
         onBack={goBack}
+        onNavigateToSchedule={() => setPage("schedule")}
         onOpenEmployeeEdit={(id) => {
           setPendingEditEmpId(id);
           setPage("schedule");

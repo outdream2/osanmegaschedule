@@ -22,11 +22,13 @@ import {
   MapPin,
   Search,
   Coffee,
+  Calendar,
 } from "lucide-react";
 
 interface DisplayPageProps {
   onBack: () => void;
   onOpenEmployeeEdit?: (employeeId: number) => void;
+  onNavigateToSchedule?: () => void;
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -440,7 +442,7 @@ const saveZonesToDB = async (zones: DisplayZone[]) => {
 };
 
 // ─── Main component ────────────────────────────────────────────────────────────
-export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit }) => {
+export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit, onNavigateToSchedule }) => {
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
   const [zonesLoaded, setZonesLoaded] = useState(false);
   const [requests, setRequests] = useState<DisplayRequest[]>(() => loadRequests());
@@ -848,26 +850,38 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* Header */}
       <header className="bg-white border-b border-gray-200 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm sticky top-0 z-30">
-        <div className="flex items-center gap-3 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={onBack}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 hover:text-gray-900 transition cursor-pointer mr-1 text-xs font-semibold shrink-0"
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 hover:text-gray-900 transition cursor-pointer text-xs font-semibold shrink-0"
               title="메인으로 돌아가기"
             >
               <ChevronLeft size={13} />
               <span className="hidden sm:inline">메인</span>
             </button>
-            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
+            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm shrink-0">
               <LayoutGrid size={14} className="text-white" />
             </div>
-            <span className="font-black tracking-tight leading-none">
+            <span className="font-black tracking-tight leading-none shrink-0">
               <span className="text-red-500 text-xl">OSAN</span>
-              <span className="text-gray-900 text-base"> MEGATOWN</span>
+              <span className="hidden sm:inline text-gray-900 text-base"> MEGATOWN</span>
             </span>
           </div>
-          <div className="hidden sm:flex items-center gap-2 border-l border-gray-200 pl-3 ml-1">
-            <span className="text-gray-500 text-xs font-bold">매장 담당자 배치용</span>
+
+          {/* Nav tabs */}
+          <div className="flex items-center gap-1 ml-2 bg-gray-100 rounded-xl p-1">
+            {onNavigateToSchedule && (
+              <button
+                onClick={onNavigateToSchedule}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
+              >
+                <Calendar size={11} /> 스케줄관리
+              </button>
+            )}
+            <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-black bg-white text-indigo-700 shadow-sm border border-indigo-100">
+              <LayoutGrid size={11} /> 매장관리
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-3">
