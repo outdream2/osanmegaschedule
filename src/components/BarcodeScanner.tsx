@@ -196,6 +196,44 @@ function avgBrightness(src: ImageData): number {
   return sum / n;
 }
 
+// ── Horizontal box blur — smooths e-ink dot-matrix grain along scanlines ─────
+// E-ink bars appear as dotted rows; blurring horizontally merges dots into solid
+// strips that ZBar's horizontal scanline decoder handles cleanly.
+function horzBlur(src: ImageData, radius = 2): ImageData {
+  const w = src.width, h = src.height;
+  const d = new Uint8ClampedArray(src.data.length);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let sum = 0;
+      for (let dx = -radius; dx <= radius; dx++) {
+        sum += src.data[(y * w + Math.max(0, Math.min(w - 1, x + dx))) * 4];
+      }
+      const idx = (y * w + x) * 4;
+      const v = Math.round(sum / (radius * 2 + 1));
+      d[idx] = d[idx + 1] = d[idx + 2] = v; d[idx + 3] = 255;
+    }
+  }
+  return new ImageData(d, w, h);
+}
+
+// ── White quiet-zone padding — adds synthetic left/right margins ───────────
+// Barcode decoders require a quiet zone on each side. If the crop is tight,
+// padding with white pixels simulates proper quiet zones without re-cropping.
+function padQuietZone(src: ImageData, pad = 30): ImageData {
+  const sw = src.width, h = src.height;
+  const dw = sw + pad * 2;
+  const d = new Uint8ClampedArray(dw * h * 4).fill(255);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < sw; x++) {
+      const si = (y * sw + x) * 4;
+      const di = (y * dw + x + pad) * 4;
+      d[di] = src.data[si]; d[di + 1] = src.data[si + 1];
+      d[di + 2] = src.data[si + 2]; d[di + 3] = 255;
+    }
+  }
+  return new ImageData(d, dw, h);
+}
+
 // ── OCR digit extraction: pull 8-14 digit sequences from Tesseract output ─────
 function extractBarcodeDigits(text: string): string | null {
   const matches = text.replace(/\s/g, "").match(/\d{8,14}/g);
@@ -278,6 +316,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     clearInterval(intervalRef.current);
     clearInterval(quaggaIntervalRef.current);
     clearInterval(ocrIntervalRef.current);
+
+    // Turn off torch on recognition
+    if (mountedRef.current) setTorchOn(false);
 
     // Capture frame now (canvas may change before timeout fires)
     const canvas = canvasRef.current;
@@ -364,9 +405,14 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         up2ctx.drawImage(tc, 0, 0, w * 2, h * 2);
         const upFull = up2ctx.getImageData(0, 0, w * 2, h * 2);
         if (!code) code = await decode(upFull);
-        if (!code) code = await decode(adaptiveThreshold(upFull, 45, 0.08));
+        const dynBlockUp = Math.floor((w * 2) * 0.05) | 1;
+        if (!code) code = await decode(adaptiveThreshold(upFull, dynBlockUp, 0.08));
         const muUp = avgBrightness(upFull);
         if (!code) code = await decode(toGrayContrast(upFull, 8, false, muUp));
+        // Horizontal blur passes for e-ink (static image)
+        const blurUp = horzBlur(upFull, 2);
+        if (!code) code = await decode(adaptiveThreshold(blurUp, dynBlockUp, 0.08));
+        if (!code) code = await decode(padQuietZone(adaptiveThreshold(blurUp, dynBlockUp, 0.08), 40));
 
         // Brightened 2x
         up2ctx.filter = "brightness(2.5) contrast(1.3)";
@@ -377,6 +423,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         if (!code) code = await decode(adaptiveThreshold(upBright, 45, 0.06));
         const muBr = avgBrightness(upBright);
         if (!code) code = await decode(toGrayContrast(upBright, 8, false, muBr));
+        if (!code) code = await decode(padQuietZone(adaptiveThreshold(horzBlur(upBright, 2), dynBlockUp, 0.08), 40));
       }
 
       // Quagga fallback
@@ -445,23 +492,18 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     } catch {}
   }, [torchOn, videoRef]);
 
-  // ── Auto torch on scanner open — illuminate barcode without manual press ───
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (mountedRef.current) setTorchOn(true);
-    }, 800); // short delay so stream is ready before torch request
-    return () => clearTimeout(t);
-  }, []);
-
-  // ── Android auto-focus: trigger single-shot→continuous on stream start ───
-  // Android Chrome often starts with fixed focus — needs an explicit AF kick.
+  // ── Auto-focus + auto-torch on camera ready ────────────────────────────────
+  // Torch fires as soon as the camera stream starts (playing event) — no timer.
+  // Also kicks Android focus: single-shot → continuous for sharp initial lock.
   useEffect(() => {
     const video = videoRef.current as HTMLVideoElement | null;
     if (!video) return;
 
-    const kickFocus = () => {
+    const kickFocusAndTorch = () => {
       const track = (video.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
       if (!track) return;
+      // Torch on immediately when camera is live
+      if (mountedRef.current) setTorchOn(true);
       // Max exposure compensation from the start
       track.applyConstraints({
         advanced: [{ exposureMode: "continuous", exposureCompensation: 2.5 } as any],
@@ -473,10 +515,10 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       }, 600);
     };
 
-    video.addEventListener("playing", kickFocus);
-    // Fallback: also try 1.5 s after mount in case event already fired
-    const t = setTimeout(kickFocus, 1500);
-    return () => { video.removeEventListener("playing", kickFocus); clearTimeout(t); };
+    video.addEventListener("playing", kickFocusAndTorch);
+    // Fallback: try 1.5 s after mount in case playing event already fired
+    const t = setTimeout(kickFocusAndTorch, 1500);
+    return () => { video.removeEventListener("playing", kickFocusAndTorch); clearTimeout(t); };
   }, [videoRef]);
 
   // ── Tap-to-focus: re-trigger AF on tap (essential on Android) ────────────
@@ -551,13 +593,17 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           if (await tryZBar(upscaled)) return;
 
           // ── E-ink / ESL: adaptive threshold + dilation on 3x upscaled ────────
+          // ── E-ink / ESL: multi-strategy pipeline ─────────────────────────────
           // E-ink bars are gray (~145) on light gray (~210) — not true black/white.
-          // vertDilate thickens broken bar lines; adaptiveThreshold handles gray offset.
-          if (await tryZBar(adaptiveThreshold(upscaled, 45, 0.08))) return;
+          // Strategy A: horzBlur smooths dot-matrix grain → bars become solid stripes
+          // Strategy B: dynamic blockSize = 5% of width (scales with resolution)
+          // Strategy C: padQuietZone adds synthetic left/right margins for tight crops
+          const dynBlock = Math.floor((cw * 3) * 0.05) | 1; // ~5% of upscaled width, odd
+          if (await tryZBar(adaptiveThreshold(upscaled, dynBlock, 0.08))) return;
           if (await tryZBar(adaptiveThreshold(upscaled, 25, 0.05))) return;
           // Dilation → adaptive threshold (fills micro-gaps in e-ink dot-matrix bars)
           const dilated = vertDilate(upscaled, 2);
-          if (await tryZBar(adaptiveThreshold(dilated, 45, 0.08))) return;
+          if (await tryZBar(adaptiveThreshold(dilated, dynBlock, 0.08))) return;
           if (await tryZBar(adaptiveThreshold(dilated, 31, 0.06))) return;
           // Mean-centered high contrast: center at image mean, factor=8 → bars→black
           const muUp = avgBrightness(upscaled);
@@ -565,6 +611,16 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           if (await tryZBar(toGrayContrast(upscaled, 10, false, muUp))) return;
           if (await tryZBar(toGrayContrast(dilated, 8, false, muUp))) return;
           if (await tryZBar(binarize(toGrayContrast(upscaled, 8, false, muUp), 128))) return;
+          // Strategy A: horizontal blur first, then adaptive threshold (key for e-ink)
+          const blurred = horzBlur(upscaled, 2);
+          if (await tryZBar(blurred)) return;
+          if (await tryZBar(adaptiveThreshold(blurred, dynBlock, 0.08))) return;
+          if (await tryZBar(adaptiveThreshold(blurred, 31, 0.06))) return;
+          if (await tryZBar(adaptiveThreshold(vertDilate(blurred, 2), dynBlock, 0.08))) return;
+          // Strategy C: quiet-zone padding on binarized result
+          if (await tryZBar(padQuietZone(adaptiveThreshold(upscaled, dynBlock, 0.08), 40))) return;
+          if (await tryZBar(padQuietZone(adaptiveThreshold(blurred, dynBlock, 0.08), 40))) return;
+          if (await tryZBar(padQuietZone(adaptiveThreshold(dilated, dynBlock, 0.08), 40))) return;
 
           // 4. Crop — 3x upscaled + brightness(2.5) contrast(1.3)
           // ctx.filter on drawImage affects actual getImageData pixels (unlike CSS filter on video)
