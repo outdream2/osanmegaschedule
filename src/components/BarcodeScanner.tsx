@@ -26,7 +26,7 @@ function loadZBar(): Promise<void> {
 const FORMATS = [
   "ean_13", "ean_8", "code_128", "code_39", "code_93",
   "upc_a", "upc_e", "itf", "qr_code", "data_matrix", "codabar",
-  "aztec", "pdf_417",
+  "aztec", "pdf417",
 ] as const;
 
 // ── Camera constraints: high-res for better detail pickup ─────────────────────
