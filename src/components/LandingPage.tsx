@@ -429,13 +429,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   if (file) {
                     const ext = file.name.split(".").pop()?.toLowerCase();
                     const validMime = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "application/octet-stream"];
-                    if (ext !== "xlsx" && ext !== "xls") {
-                      setUploadResult({ ok: false, msg: "형식이 다른 파일입니다. 상품리스트를 업로드해주세요." });
-                      e.target.value = "";
-                      return;
-                    }
-                    if (file.type && !validMime.includes(file.type)) {
-                      setUploadResult({ ok: false, msg: "형식이 다른 파일입니다. 상품리스트를 업로드해주세요." });
+                    const invalid = (ext !== "xlsx" && ext !== "xls") || (!!file.type && !validMime.includes(file.type));
+                    if (invalid) {
+                      alert("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
                       e.target.value = "";
                       return;
                     }
