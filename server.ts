@@ -292,7 +292,7 @@ async function startServer() {
       // Validate Excel magic bytes: xlsx=PK\x03\x04, xls=OLE2 D0CF11E0
       const isXlsx = buf[0] === 0x50 && buf[1] === 0x4B && buf[2] === 0x03 && buf[3] === 0x04;
       const isXls  = buf[0] === 0xD0 && buf[1] === 0xCF && buf[2] === 0x11 && buf[3] === 0xE0;
-      if (!isXlsx && !isXls) return res.status(400).json({ error: "xlsx 또는 xls 파일만 업로드할 수 있습니다." });
+      if (!isXlsx && !isXls) return res.status(400).json({ error: "형식이 다른 파일입니다. 상품리스트를 업로드해주세요." });
       const rows = xlsxToRows(buf);
       if (rows.length === 0) return res.status(400).json({ error: "엑셀에 데이터가 없습니다" });
       console.log(`[upload] parsed ${rows.length} rows`);
