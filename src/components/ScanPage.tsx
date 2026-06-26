@@ -278,12 +278,21 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
             ) : product ? (
               <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
                 <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">상품 정보</p>
-                <p className="text-lg font-black text-gray-900 leading-tight mb-2">{product.name}</p>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-bold text-gray-500">상품코드</span>
-                  <span className="text-xs font-mono text-gray-700 bg-gray-100 px-2 py-0.5 rounded">{product.code}</span>
-                  <span className="text-[10px] font-bold text-gray-500 ml-2">배정구역</span>
-                  <span className="text-xs font-black text-teal-700 bg-teal-50 border border-teal-200 px-2 py-0.5 rounded-lg">{product.spec || "미지정"}</span>
+                <p className="text-base font-black text-gray-900 leading-tight mb-3">{product.name}</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  {([
+                    ["상품코드",   product.code,                    "font-mono"],
+                    ["배정구역",   product.spec || "미지정",         "text-teal-700"],
+                    ["현재고",     product.current_stock ?? "-",     ""],
+                    ["공급",       product.supplier ?? "-",          ""],
+                    ["판매상태",   product.sale_status ?? "-",       ""],
+                    ["최근매입일", product.last_purchase_date ?? "-",""],
+                  ] as [string, string, string][]).map(([label, value, extra]) => (
+                    <div key={label}>
+                      <p className="text-[10px] font-bold text-gray-400">{label}</p>
+                      <p className={`text-xs font-semibold text-gray-800 truncate ${extra}`}>{value}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
             ) : null}
