@@ -185,8 +185,10 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   onScan, onClose, title = "바코드 스캔",
 }) => {
   const scannedRef    = useRef(false);
+  const mountedRef    = useRef(true);
   const canvasRef     = useRef<HTMLCanvasElement>(null);
   const procCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const rotSrcRef     = useRef<HTMLCanvasElement | null>(null);
   const intervalRef   = useRef<ReturnType<typeof setInterval>>();
   const quaggaIntervalRef = useRef<ReturnType<typeof setInterval>>();
   const ocrIntervalRef    = useRef<ReturnType<typeof setInterval>>();
@@ -203,10 +205,13 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   const [scanKey,      setScanKey]     = useState(0);
   const [flashing,     setFlashing]    = useState(false);
 
-  // Load ZBar eagerly; create offscreen proc canvas
+  // Load ZBar eagerly; create offscreen canvases; set mounted flag
   useEffect(() => {
-    loadZBar().then(() => setZbarReady(!!_zbarScan));
+    mountedRef.current = true;
+    loadZBar().then(() => { if (mountedRef.current) setZbarReady(!!_zbarScan); });
     procCanvasRef.current = document.createElement("canvas");
+    rotSrcRef.current    = document.createElement("canvas");
+    return () => { mountedRef.current = false; };
   }, []);
 
   // ── Quagga2 lazy load ────────────────────────────────────────────────────────
@@ -245,7 +250,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   }, []);
 
   const handleResult = useCallback((raw: string) => {
-    if (scannedRef.current) return;
+    if (scannedRef.current || !mountedRef.current) return;
     scannedRef.current = true;
     clearInterval(intervalRef.current);
     clearInterval(quaggaIntervalRef.current);
@@ -476,8 +481,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           if (await tryZBar(adaptiveThreshold(sqUpBright, 31, 0.06))) return;
 
           // ── Rotation passes (curved / tilted barcodes on cylinders, bottles) ──
-          // Put crop onto a temp canvas once; rotate proc canvas multiple ways.
-          const rotSrc = document.createElement("canvas");
+          // rotSrcRef is created once on mount to avoid per-tick canvas allocation.
+          const rotSrc = rotSrcRef.current;
+          if (!rotSrc) return;
           rotSrc.width = cw; rotSrc.height = ch;
           rotSrc.getContext("2d")!.putImageData(crop, 0, 0);
 
@@ -524,9 +530,8 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
       // Dark-environment passes (threshold broadened: avg < 120)
       const avg = avgBrightness(crop);
-      setDarkHint(!torchOnRef.current && avg < 120);
-      // Auto-enable torch when extremely dark (avg < 40) — user can turn off if unwanted
-      if (avg < 40 && !torchOnRef.current) setTorchOn(true);
+      if (mountedRef.current) setDarkHint(!torchOnRef.current && avg < 120);
+      if (avg < 40 && !torchOnRef.current && mountedRef.current) setTorchOn(true);
       if (avg < 120) {
         const gamma40 = brightenGamma(crop, 0.4);
         const gamma55 = brightenGamma(crop, 0.55);
