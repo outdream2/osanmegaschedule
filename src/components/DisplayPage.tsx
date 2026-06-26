@@ -464,6 +464,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
   // Drag-and-drop assignment
   const [dragStaff, setDragStaff] = useState<TodayStaff | null>(null);
+  const dragStaffRef = useRef<TodayStaff | null>(null);
   const [dragOverZoneId, setDragOverZoneId] = useState<string | null>(null);
 
   // Employee info modal
@@ -719,26 +720,28 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   }, [popoverAnchor]);
 
   // ── Drag-and-drop assignment ─────────────────────────────────────────────────
-  const handleDragOver = useCallback((e: React.DragEvent, zone: DisplayZone) => {
-    if (!dragStaff) return;
+  const handleDragOver = useCallback((e: React.DragEvent, _zone: DisplayZone) => {
+    if (!dragStaffRef.current) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    setDragOverZoneId(zone.id);
-  }, [dragStaff]);
+    setDragOverZoneId(_zone.id);
+  }, []);
 
   const handleDrop = useCallback((e: React.DragEvent, zone: DisplayZone) => {
     e.preventDefault();
     setDragOverZoneId(null);
-    if (!dragStaff) return;
+    const staff = dragStaffRef.current;
+    if (!staff) return;
     setZones((prev) =>
       prev.map((z) =>
         z.id === zone.id
-          ? { ...z, assignedStaffId: dragStaff.employee.id, assignedStaffName: dragStaff.employee.name }
+          ? { ...z, assignedStaffId: staff.employee.id, assignedStaffName: staff.employee.name }
           : z,
       ),
     );
+    dragStaffRef.current = null;
     setDragStaff(null);
-  }, [dragStaff]);
+  }, []);
 
   // ── Save / Request ───────────────────────────────────────────────────────────
   const handleSave = useCallback(() => {
@@ -1017,11 +1020,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                         draggable={isLogistics}
                         onDragStart={(e) => {
                           if (!isLogistics) return;
-                          setDragStaff({ employee, scheduleType, workingHours });
+                          const s = { employee, scheduleType, workingHours };
+                          dragStaffRef.current = s;
+                          setDragStaff(s);
                           e.dataTransfer.effectAllowed = "move";
                           e.dataTransfer.setData("text/plain", String(employee.id));
                         }}
-                        onDragEnd={() => { setDragStaff(null); setDragOverZoneId(null); }}
+                        onDragEnd={() => { dragStaffRef.current = null; setDragStaff(null); setDragOverZoneId(null); }}
                         onClick={() => setActiveStaffInfo({ employee, scheduleType, workingHours })}
                         className={`px-2 py-2.5 transition cursor-pointer hover:bg-slate-50 rounded-lg ${isLogistics ? "cursor-grab active:cursor-grabbing" : ""}`}
                         title={isLogistics ? "드래그하여 지도 구역에 배정" : undefined}
@@ -1313,13 +1318,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       </div>
                     </div>
 
-                    {/* Column 2: Event Zones (Z1-Z3) */}
+                    {/* Column 2: Event Zone (42) */}
                     <div className="flex-1 bg-white border border-slate-200 rounded-lg p-1 flex flex-col gap-1 mr-3">
-                      <span className="text-[7px] font-black text-slate-500 uppercase tracking-wide border-b pb-0.5 leading-none">🎈 이벤트존</span>
-                      <div className="flex-1 flex flex-col gap-1 justify-around text-center py-1">
-                        <div className="border border-dashed border-rose-300 bg-rose-50/20 rounded p-0.5 text-[7px] font-bold text-rose-750">Z1</div>
-                        <div className="border border-dashed border-rose-300 bg-rose-50/20 rounded p-0.5 text-[7px] font-bold text-rose-750">Z2</div>
-                        <div className="border border-dashed border-rose-300 bg-rose-50/20 rounded p-0.5 text-[7px] font-bold text-rose-750">Z3</div>
+                      <span className="text-[7px] font-black text-rose-600 uppercase tracking-wide border-b pb-0.5 leading-none">🎈 이벤트존</span>
+                      <div className="flex-1 flex flex-col justify-center py-1">
+                        {renderZoneCell(42, "flex-1 w-full text-[9px] p-1 justify-center")}
                       </div>
                     </div>
 
@@ -1673,9 +1676,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   )}
                 </div>
                 {/* Zone grid by section */}
-                {(["top_wall", "aisle", "left_wall", "bottom_wall", "wing"] as const).map((section) => {
+                {(["top_wall", "aisle", "left_wall", "bottom_wall", "wing", "event"] as const).map((section) => {
                   const sectionZones = zones.filter(z => z.section === section);
-                  const sectionLabel: Record<string, string> = { top_wall: "상단 벽면", aisle: "중앙 진열대", left_wall: "좌측 벽면", bottom_wall: "하단 벽면", wing: "우측 윙" };
+                  const sectionLabel: Record<string, string> = { top_wall: "상단 벽면", aisle: "중앙 진열대", left_wall: "좌측 벽면", bottom_wall: "하단 벽면", wing: "우측 윙", event: "이벤트존" };
                   return (
                     <div key={section} className="mb-3">
                       <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">{sectionLabel[section]}</div>

@@ -1,7 +1,7 @@
 // src/constants/displayZones.ts
 // Shared zone definitions — used by both DisplayPage and SchedulePage (logistics zone assignment)
 
-export type ZoneSection = "aisle" | "bottom_wall" | "top_wall" | "left_wall" | "wing";
+export type ZoneSection = "aisle" | "bottom_wall" | "top_wall" | "left_wall" | "wing" | "event";
 
 export interface ZoneDef {
   num: number;
@@ -57,6 +57,8 @@ export const ZONE_DEFS: ZoneDef[] = [
   { num: 39, label: "화장실",       category: "(시설)",                             section: "wing" },
   { num: 40, label: "계산대",       category: "계산대 (POS)",                      section: "wing" },
   { num: 41, label: "정수기",       category: "(시설)",                             section: "wing" },
+  // Event zone (floor stand area)
+  { num: 42, label: "이벤트존",     category: "이벤트·프로모션 상품",                  section: "event" },
 ];
 
 export const ZONES_STORAGE_KEY = "megatown_display_zones_v2";
@@ -67,4 +69,5 @@ export const SECTION_LABEL: Record<ZoneSection, string> = {
   left_wall: "좌측 벽면",
   bottom_wall: "하단 벽면",
   wing: "우측 윙",
+  event: "이벤트존",
 };
