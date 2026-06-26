@@ -47,6 +47,20 @@ function xlsxToRows(buf: Buffer): Record<string, any>[] {
   return result;
 }
 
+function rowsToCSV(rows: Record<string, any>[]): string {
+  const headers = [...COL_KEYS];
+  const esc = (v: any): string => {
+    if (v === null || v === undefined) return "";
+    const s = String(v);
+    if (s.includes(",") || s.includes('"') || s.includes("\n") || s.includes("\r")) {
+      return `"${s.replace(/"/g, '""')}"`;
+    }
+    return s;
+  };
+  const lines = [headers.join(","), ...rows.map(r => headers.map(h => esc(r[h])).join(","))];
+  return lines.join("\n");
+}
+
 async function getProductMap(): Promise<Record<string, ProductInfo>> {
   if (productMapCache) return productMapCache;
   if (productMapPromise) return productMapPromise;
@@ -88,7 +102,7 @@ async function startServer() {
   }
 
   app.use(compression());
-  app.use(express.json({ limit: "10mb" }));
+  app.use(express.json({ limit: "50mb" }));
 
   // API router endpoints
   app.get("/api/schedules", (req, res) => scheduleController.getSchedules(req, res));
@@ -274,15 +288,35 @@ async function startServer() {
       if (!authorized) return res.status(403).json({ error: "관리자만 가능합니다" });
       const buf = Buffer.from(fileBase64, "base64");
       const rows = xlsxToRows(buf);
+      if (rows.length === 0) return res.status(400).json({ error: "엑셀에 데이터가 없습니다" });
+      console.log(`[upload] parsed ${rows.length} rows`);
       // Delete all existing products
-      const { error: delErr } = await supabase.from("products").delete().not("product_code", "is", null);
-      if (delErr) throw new Error(delErr.message);
-      // Bulk insert in chunks of 500
-      const CHUNK = 500;
-      for (let i = 0; i < rows.length; i += CHUNK) {
-        const { error: insErr } = await supabase.from("products").insert(rows.slice(i, i + CHUNK));
-        if (insErr) throw new Error(insErr.message);
+      const { error: delErr } = await supabase.from("products").delete().gte("product_code", "");
+      if (delErr) {
+        console.error("[upload] delete error:", delErr);
+        throw new Error(`삭제 실패: ${delErr.message}`);
       }
+      console.log(`[upload] table cleared, inserting via CSV...`);
+      // Bulk insert via Supabase REST API with CSV (much faster than row-by-row)
+      const csv = rowsToCSV(rows);
+      const sbUrl = process.env.SUPABASE_URL!;
+      const sbKey = process.env.SUPABASE_KEY!;
+      const insertRes = await fetch(`${sbUrl}/rest/v1/products`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/csv",
+          "apikey": sbKey,
+          "Authorization": `Bearer ${sbKey}`,
+          "Prefer": "return=minimal",
+        },
+        body: csv,
+      });
+      if (!insertRes.ok) {
+        const errText = await insertRes.text();
+        console.error("[upload] CSV insert error:", errText);
+        throw new Error(`CSV 삽입 실패: ${errText}`);
+      }
+      console.log(`[upload] CSV insert done`);
       productMapCache = null;
       productMapPromise = null;
       // Append to import log (keep last 20)
