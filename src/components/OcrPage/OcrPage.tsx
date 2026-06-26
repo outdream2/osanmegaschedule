@@ -25,6 +25,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
   const [items, setItems] = useState<OcrItem[]>([]);
   const [meta, setMeta] = useState<OcrMeta[]>([]);
   const [pageImages, setPageImages] = useState<string[]>([]);
+  const [imageRotations, setImageRotations] = useState<number[]>([]);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
 
   const renderPdfToImages = useCallback(async (file: File): Promise<{ data: string; mimeType: string }[]> => {
@@ -42,7 +43,10 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
       await page.render({ canvasContext: ctx as any, viewport: vp, canvas } as any).promise;
       const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
       images.push({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
+      // landscape canvas = document was scanned sideways → auto-rotate 90° CW
+      const autoRot = canvas.width > canvas.height ? 90 : 0;
       setPageImages(prev => [...prev, dataUrl]);
+      setImageRotations(prev => [...prev, autoRot]);
     }
     return images;
   }, []);
@@ -54,6 +58,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
     setProcessed(0);
     setPageCount(0);
     setPageImages([]);
+    setImageRotations([]);
     setCurrentPageIdx(0);
     setFileName(file.name);
     setLoading(true);
@@ -71,6 +76,16 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
         images = [{ data: dataUrl.split(",")[1], mimeType: file.type || "image/jpeg" }];
         setPageCount(1);
         setPageImages([dataUrl]);
+        // detect orientation via Image element
+        await new Promise<void>(resolve => {
+          const img = new Image();
+          img.onload = () => {
+            setImageRotations([img.naturalWidth > img.naturalHeight ? 90 : 0]);
+            resolve();
+          };
+          img.onerror = () => { setImageRotations([0]); resolve(); };
+          img.src = dataUrl;
+        });
       }
 
       const BATCH = 4;
@@ -104,6 +119,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
     setItems([]);
     setMeta([]);
     setPageImages([]);
+    setImageRotations([]);
     setCurrentPageIdx(0);
   }, []);
 
@@ -166,6 +182,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
           loading={loading}
           currentIdx={currentPageIdx}
           onChangeIdx={setCurrentPageIdx}
+          autoRotations={imageRotations}
         />
 
         {/* Progress */}

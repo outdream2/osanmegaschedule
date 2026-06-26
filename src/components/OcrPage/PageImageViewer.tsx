@@ -7,24 +7,23 @@ interface PageImageViewerProps {
   loading: boolean;
   currentIdx: number;
   onChangeIdx: (i: number) => void;
+  autoRotations: number[];       // computed by parent from image aspect ratios
 }
 
 export const PageImageViewer: React.FC<PageImageViewerProps> = ({
-  images, totalPages, loading, currentIdx, onChangeIdx,
+  images, totalPages, loading, currentIdx, onChangeIdx, autoRotations,
 }) => {
-  const [rotations, setRotations] = useState<number[]>([]);
+  // Per-page manual overrides on top of autoRotations
+  const [overrides, setOverrides] = useState<Record<number, number>>({});
+
+  const getDeg = (i: number) => overrides[i] ?? autoRotations[i] ?? 0;
+  const deg = getDeg(currentIdx);
+  const isVertical = deg === 90 || deg === 270;
 
   const rotate = (delta: -90 | 90) => {
-    setRotations(prev => {
-      const next = [...prev];
-      const cur = next[currentIdx] ?? 0;
-      next[currentIdx] = ((cur + delta) + 360) % 360;
-      return next;
-    });
+    const cur = getDeg(currentIdx);
+    setOverrides(prev => ({ ...prev, [currentIdx]: ((cur + delta) + 360) % 360 }));
   };
-
-  const deg = rotations[currentIdx] ?? 0;
-  const isVertical = deg === 90 || deg === 270;
 
   if (images.length === 0) return null;
 
@@ -59,27 +58,29 @@ export const PageImageViewer: React.FC<PageImageViewerProps> = ({
         </div>
       </div>
 
-      {/* Image area */}
+      {/* Image container — fixed 70vh height, image fits inside after rotation */}
       <div
         className="relative bg-gray-100 flex items-center justify-center overflow-hidden"
-        style={{ minHeight: 200 }}
+        style={{ height: "70vh" }}
       >
-        <div
-          className="transition-transform duration-300"
+        <img
+          key={`${currentIdx}-${deg}`}
+          src={images[currentIdx]}
+          alt={`페이지 ${currentIdx + 1}`}
           style={{
+            display: "block",
             transform: `rotate(${deg}deg)`,
-            // When rotated 90/270, swap width/height so the image fills correctly
-            width: isVertical ? "70vh" : "100%",
-            maxWidth: isVertical ? "70vh" : undefined,
+            transition: "transform 0.25s ease",
+            // When vertical (90/270): CSS pre-rotation box is landscape (W > H).
+            //   maxWidth: '70vh'  → limits CSS width → visual height after rotation ≤ 70vh
+            //   maxHeight: '100%' → limits CSS height → visual width after rotation ≤ container height
+            // When horizontal (0/180): normal portrait display
+            maxWidth: isVertical ? "70vh" : "100%",
+            maxHeight: isVertical ? "100%" : "70vh",
+            width: "auto",
+            height: "auto",
           }}
-        >
-          <img
-            src={images[currentIdx]}
-            alt={`페이지 ${currentIdx + 1}`}
-            className="w-full h-auto block"
-            style={{ maxHeight: isVertical ? undefined : "70vh", objectFit: "contain" }}
-          />
-        </div>
+        />
 
         {images.length > 1 && (
           <>
