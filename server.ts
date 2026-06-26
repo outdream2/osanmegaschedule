@@ -7,6 +7,34 @@ import { scheduleController } from "./src/controllers/scheduleController";
 import { supabase } from "./src/supabase/client";
 import bcrypt from "bcryptjs";
 import webpush from "web-push";
+import XLSX from "xlsx";
+
+// ── Product lookup cache (loaded once from xlsx) ──────────────────────────────
+interface ProductInfo { code: string; name: string; spec: string; }
+let productCache: Map<string, ProductInfo> | null = null;
+
+function loadProductCache(): Map<string, ProductInfo> {
+  if (productCache) return productCache;
+  const xlsxPath = path.join(process.cwd(), "src", "listfile", "list.xlsx");
+  const wb = XLSX.readFile(xlsxPath);
+  const ws = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 }) as string[][];
+  const map = new Map<string, ProductInfo>();
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    const code = String(row[0] ?? "").trim();
+    const name = String(row[1] ?? "").trim();
+    const spec = String(row[5] ?? "").trim();
+    if (code) {
+      map.set(code, { code, name, spec });
+      // Also index by stripped leading zeros for barcode matching
+      const stripped = code.replace(/^0+/, "");
+      if (stripped && stripped !== code) map.set(stripped, { code, name, spec });
+    }
+  }
+  productCache = map;
+  return map;
+}
 
 async function startServer() {
   const app = express();
@@ -178,6 +206,21 @@ async function startServer() {
       if (error) throw new Error(error.message);
       res.json({ ok: true });
     } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // GET /api/product?code=BARCODE — product lookup from xlsx
+  app.get("/api/product", (req, res) => {
+    const { code } = req.query;
+    if (!code || typeof code !== "string") return res.status(400).json({ error: "code required" });
+    try {
+      const cache = loadProductCache();
+      const q = code.trim();
+      const result = cache.get(q) ?? cache.get(q.replace(/^0+/, ""));
+      if (!result) return res.status(404).json({ error: "not_found" });
+      res.json(result);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   // POST /api/auth/login

@@ -720,10 +720,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
   // ── Drag-and-drop assignment ─────────────────────────────────────────────────
   const handleDragOver = useCallback((e: React.DragEvent, zone: DisplayZone) => {
+    if (!dragStaff) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
     setDragOverZoneId(zone.id);
-  }, []);
+  }, [dragStaff]);
 
   const handleDrop = useCallback((e: React.DragEvent, zone: DisplayZone) => {
     e.preventDefault();
@@ -832,8 +833,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           isPopoverOpen={popoverAnchor?.zoneId === z.id}
           staffColorIndex={z.assignedStaffId !== null ? (staffColorMap.get(z.assignedStaffId) ?? null) : null}
           isDragOver={dragOverZoneId === z.id && !!dragStaff}
-          onDragOver={dragStaff ? handleDragOver : undefined}
-          onDrop={dragStaff ? handleDrop : undefined}
+          onDragOver={handleDragOver}
+          onDrop={handleDrop}
           onDragLeave={() => setDragOverZoneId(null)}
           isSearchedHighlight={searchedZoneIds.has(z.id)}
         />
