@@ -25,18 +25,35 @@ export default function App() {
     if (authSession) prefetchProducts();
   }, [authSession]);
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan", auth?: AuthSession) => {
-    if (auth) {
-      setAuthSession(auth);
-    } else if (next === "reservation") {
-      // 외부용 페이지 — 인증 세션 보유 시에도 외부 컨텍스트로 들어가니 굳이 건드리지 않음
-    }
+  // Sync page state with browser History API so the back button works
+  useEffect(() => {
+    // Stamp the initial entry so popstate can always return here
+    history.replaceState({ page: "landing" }, "");
+
+    const onPop = (e: PopStateEvent) => {
+      const p = (e.state as any)?.page as Page | undefined;
+      setPage(p ?? "landing");
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  // Push a history entry whenever we move to a non-landing page
+  const navigate = (next: Page) => {
     setPage(next);
+    if (next === "landing") {
+      history.back(); // let browser pop back to the landing entry
+    } else {
+      history.pushState({ page: next }, "");
+    }
   };
 
-  const goBack = () => {
-    setPage("landing");
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan", auth?: AuthSession) => {
+    if (auth) setAuthSession(auth);
+    navigate(next);
   };
+
+  const goBack = () => navigate("landing");
 
   const handleLogout = () => {
     clearAuthSession();
@@ -51,7 +68,7 @@ export default function App() {
       <SchedulePage
         onBack={goBack}
         onLogout={handleLogout}
-        onNavigateToDisplay={() => setPage("display")}
+        onNavigateToDisplay={() => navigate("display")}
         initialEditEmployeeId={pendingEditEmpId}
         onEditEmployeeHandled={() => setPendingEditEmpId(null)}
         authSession={authSession}
@@ -59,19 +76,19 @@ export default function App() {
     );
   }
   if (page === "reservation") {
-    return <ReservationPage onBack={() => setPage("landing")} authSession={authSession} />;
+    return <ReservationPage onBack={goBack} authSession={authSession} />;
   }
   if (page === "scan") {
-    return <ScanPage onBack={() => setPage("landing")} />;
+    return <ScanPage onBack={goBack} />;
   }
   if (page === "display") {
     return (
       <DisplayPage
         onBack={goBack}
-        onNavigateToSchedule={() => setPage("schedule")}
+        onNavigateToSchedule={() => navigate("schedule")}
         onOpenEmployeeEdit={(id) => {
           setPendingEditEmpId(id);
-          setPage("schedule");
+          navigate("schedule");
         }}
       />
     );
