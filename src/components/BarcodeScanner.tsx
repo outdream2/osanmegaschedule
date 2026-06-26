@@ -210,18 +210,23 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     clearInterval(quaggaIntervalRef.current);
     clearInterval(ocrIntervalRef.current);
 
-    // Shutter flash
-    setFlashing(true);
-    setTimeout(() => setFlashing(false), 300);
+    // Capture frame now (canvas may change before timeout fires)
     const canvas = canvasRef.current;
-    if (canvas && canvas.width > 0) setFrozenFrame(canvas.toDataURL("image/jpeg", 0.92));
-    setScannedCode(raw.trim());
-    // onScan is called only after user confirms — not automatically
+    const frameUrl = (canvas && canvas.width > 0) ? canvas.toDataURL("image/jpeg", 0.92) : null;
+    const code = raw.trim();
+
+    // Flash renders first; photo + code appear after flash peaks
+    setFlashing(true);
+    setTimeout(() => {
+      setFlashing(false);
+      if (frameUrl) setFrozenFrame(frameUrl);
+      setScannedCode(code);
+    }, 220);
   }, []);
 
   const handleConfirm = useCallback(() => {
-    if (scannedCode) onScan(scannedCode);
-  }, [scannedCode, onScan]);
+    if (scannedCode) { onScan(scannedCode); onClose(); }
+  }, [scannedCode, onScan, onClose]);
 
   const handleRetry = useCallback(() => {
     scannedRef.current = false;
@@ -332,11 +337,11 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       const full = ctx.getImageData(0, 0, w, h);
       if (await tryZBar(full)) return;
 
-      // Centre crop: matches scan guide box (inset-x-[8%] top-[25%] bottom-[25%])
+      // Centre crop: matches scan guide box (inset-x-[8%] top-[18%] bottom-[18%])
       const cx = Math.floor(w * 0.08);
-      const cy = Math.floor(h * 0.25);
+      const cy = Math.floor(h * 0.18);
       const cw = Math.floor(w * 0.84);
-      const ch = Math.floor(h * 0.50);
+      const ch = Math.floor(h * 0.64);
 
       // 2. Crop — original
       const crop = ctx.getImageData(cx, cy, cw, ch);
@@ -451,9 +456,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       const h = video.videoHeight;
 
       const cx = Math.floor(w * 0.08);
-      const cy = Math.floor(h * 0.25);
+      const cy = Math.floor(h * 0.18);
       const cw = Math.floor(w * 0.84);
-      const ch = Math.floor(h * 0.50);
+      const ch = Math.floor(h * 0.64);
 
       const tmpCanvas = document.createElement("canvas");
       tmpCanvas.width  = cw;
@@ -625,50 +630,38 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
           {/* Snapshot confirmation overlay */}
           {frozenFrame && (
-            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3 px-5">
-              {/* Polaroid photo card */}
-              <div style={{ animation: "photoSnap 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards", width: "80%", transform: "rotate(-2deg)" }}>
-                <div className="bg-white p-2 pb-7 shadow-[0_12px_40px_rgba(0,0,0,0.8)]">
-                  <img
-                    src={frozenFrame}
-                    alt="snap"
-                    className="w-full block"
-                    style={{ aspectRatio: "4/3", objectFit: "cover" }}
-                  />
-                  <p className="text-center text-gray-500 font-mono text-[10px] font-bold tracking-widest mt-2 px-1">
-                    {scannedCode}
-                  </p>
+            <div className="absolute inset-0" style={{ animation: "photoSnap 0.28s ease-out forwards" }}>
+              <img src={frozenFrame} alt="snap" className="w-full h-full object-cover" />
+              <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/75 to-transparent px-4 pt-10 pb-3 flex flex-col gap-2.5">
+                <p className="text-white font-mono text-sm font-bold tracking-widest text-center drop-shadow-lg">{scannedCode}</p>
+                <div className="flex gap-2.5">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleRetry(); }}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-white/15 border border-white/30 active:scale-95 transition-transform cursor-pointer backdrop-blur-sm"
+                  >
+                    다시 스캔
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 border border-emerald-500 active:scale-95 transition-transform shadow-lg cursor-pointer"
+                  >
+                    ✓ 확인
+                  </button>
                 </div>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex gap-2.5 w-[80%]">
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleRetry(); }}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-gray-700/90 border border-gray-500 active:scale-95 transition-transform cursor-pointer"
-                >
-                  다시 스캔
-                </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 border border-emerald-500 active:scale-95 transition-transform shadow-lg cursor-pointer"
-                >
-                  ✓ 확인
-                </button>
               </div>
             </div>
           )}
 
-          {/* Shutter flash */}
+          {/* Shutter flash — always fires via state timing separation */}
           {flashing && (
-            <div className="absolute inset-0 pointer-events-none" style={{ animation: "shutterFlash 0.3s ease-out forwards" }} />
+            <div className="absolute inset-0 pointer-events-none" style={{ animation: "shutterFlash 0.35s ease-out forwards" }} />
           )}
 
           {/* Scan guide overlay (live only) */}
           {!frozenFrame && (
             <div className="absolute inset-0 pointer-events-none">
               <div className="absolute inset-0 bg-black/40" />
-              <div className="absolute inset-x-[8%] top-[25%] bottom-[25%]">
+              <div className="absolute inset-x-[8%] top-[18%] bottom-[18%]">
                 <div className="absolute inset-0 bg-transparent" style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)" }} />
                 {[
                   "top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-md",
@@ -712,12 +705,11 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           100% { top: 4px;    opacity: 1; }
         }
         @keyframes photoSnap {
-          0%   { opacity: 0; transform: rotate(-2deg) scale(0.72) translateY(-12px); }
-          65%  { transform: rotate(-2deg) scale(1.04) translateY(0); }
-          100% { opacity: 1; transform: rotate(-2deg) scale(1) translateY(0); }
+          0%   { opacity: 0; transform: scale(1.07); }
+          100% { opacity: 1; transform: scale(1); }
         }
         @keyframes shutterFlash {
-          0%   { background: rgba(255,255,255,0.92); }
+          0%   { background: rgba(255,255,255,0.95); }
           100% { background: rgba(255,255,255,0); }
         }
       `}</style>
