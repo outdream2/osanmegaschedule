@@ -320,9 +320,23 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     // Turn off torch on recognition
     if (mountedRef.current) setTorchOn(false);
 
-    // Capture frame now (canvas may change before timeout fires)
-    const canvas = canvasRef.current;
-    const frameUrl = (canvas && canvas.width > 0) ? canvas.toDataURL("image/jpeg", 0.92) : null;
+    // Capture the scan-guide crop region directly from video so the barcode
+    // fills the preview image (not lost in a full wide-angle frame).
+    let frameUrl: string | null = null;
+    const video = videoRef.current as HTMLVideoElement | null;
+    if (video && video.videoWidth > 0) {
+      const vw = video.videoWidth, vh = video.videoHeight;
+      const cx = Math.floor(vw * 0.08), cy = Math.floor(vh * 0.18);
+      const cw = Math.floor(vw * 0.84), ch = Math.floor(vh * 0.64);
+      const tc = document.createElement("canvas");
+      tc.width = cw; tc.height = ch;
+      const tctx = tc.getContext("2d");
+      if (tctx) { tctx.drawImage(video, cx, cy, cw, ch, 0, 0, cw, ch); frameUrl = tc.toDataURL("image/jpeg", 0.92); }
+    }
+    if (!frameUrl) {
+      const canvas = canvasRef.current;
+      if (canvas && canvas.width > 0) frameUrl = canvas.toDataURL("image/jpeg", 0.92);
+    }
     const code = raw.trim();
 
     // Flash renders first; photo + code appear after flash peaks
@@ -950,7 +964,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
           {/* Snapshot confirmation overlay */}
           {frozenFrame && (
-            <div className="absolute inset-0" style={{ animation: "photoSnap 0.28s ease-out forwards" }}>
+            <div className="absolute inset-0">
               <img src={frozenFrame} alt="snap" className="w-full h-full object-cover" />
               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/75 to-transparent px-4 pt-10 pb-3 flex flex-col gap-2.5">
                 <p className="text-white font-mono text-sm font-bold tracking-widest text-center drop-shadow-lg">{scannedCode}</p>
@@ -1053,10 +1067,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           50%  { top: calc(100% - 4px); opacity: 0.4; }
           52%  { opacity: 1; }
           100% { top: 4px;    opacity: 1; }
-        }
-        @keyframes photoSnap {
-          0%   { opacity: 0; transform: scale(1.07); }
-          100% { opacity: 1; transform: scale(1); }
         }
         @keyframes shutterFlash {
           0%   { background: rgba(255,255,255,0.95); }
