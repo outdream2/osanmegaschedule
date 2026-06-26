@@ -239,12 +239,50 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       track.applyConstraints({
         advanced: [{
           torch: torchOn,
-          exposureCompensation: 2.0,  // hint: prefer brighter exposure in dark rooms
+          exposureCompensation: 2.0,
           brightness: 100,
         } as any],
-      }).catch(() => { /* unsupported on this device */ });
-    } catch { /* unsupported */ }
+      }).catch(() => {});
+    } catch {}
   }, [torchOn, videoRef]);
+
+  // ── Android auto-focus: trigger single-shot→continuous on stream start ───
+  // Android Chrome often starts with fixed focus — needs an explicit AF kick.
+  useEffect(() => {
+    const video = videoRef.current as HTMLVideoElement | null;
+    if (!video) return;
+
+    const kickFocus = () => {
+      const track = (video.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
+      if (!track) return;
+      // Max exposure compensation from the start
+      track.applyConstraints({
+        advanced: [{ exposureMode: "continuous", exposureCompensation: 2.5 } as any],
+      }).catch(() => {});
+      // Single-shot resets AF, then continuous keeps it sharp
+      track.applyConstraints({ advanced: [{ focusMode: "single-shot" } as any] }).catch(() => {});
+      setTimeout(() => {
+        track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] }).catch(() => {});
+      }, 600);
+    };
+
+    video.addEventListener("playing", kickFocus);
+    // Fallback: also try 1.5 s after mount in case event already fired
+    const t = setTimeout(kickFocus, 1500);
+    return () => { video.removeEventListener("playing", kickFocus); clearTimeout(t); };
+  }, [videoRef]);
+
+  // ── Tap-to-focus: re-trigger AF on tap (essential on Android) ────────────
+  const handleTapFocus = useCallback(() => {
+    if (frozenFrame) return;
+    const video = videoRef.current as HTMLVideoElement | null;
+    const track = (video?.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
+    if (!track) return;
+    track.applyConstraints({ advanced: [{ focusMode: "single-shot" } as any] }).catch(() => {});
+    setTimeout(() => {
+      track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] }).catch(() => {});
+    }, 600);
+  }, [frozenFrame, videoRef]);
 
   // ── ZBar WASM (secondary — better for blurry/screen/e-ink barcodes) ───────
   useEffect(() => {
@@ -363,6 +401,8 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       // Dark-environment passes (threshold broadened: avg < 120)
       const avg = avgBrightness(crop);
       setDarkHint(!torchOnRef.current && avg < 120);
+      // Auto-enable torch when extremely dark (avg < 40) — user can turn off if unwanted
+      if (avg < 40 && !torchOnRef.current) setTorchOn(true);
       if (avg < 120) {
         const gamma40 = brightenGamma(crop, 0.4);
         const gamma55 = brightenGamma(crop, 0.55);
@@ -561,7 +601,11 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         </div>
 
         {/* Camera / Freeze frame */}
-        <div className="relative bg-black" style={{ aspectRatio: "4/3" }}>
+        <div
+          className="relative bg-black cursor-pointer"
+          style={{ aspectRatio: "4/3" }}
+          onClick={handleTapFocus}
+        >
           {/* Live video — hidden when frozen */}
           <video ref={videoRef} className={`w-full h-full object-cover ${frozenFrame ? "invisible" : ""}`} style={{ filter: "brightness(1.5)" }} autoPlay muted playsInline />
 
@@ -605,15 +649,18 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         </div>
 
         {/* Hint */}
-        <div className="px-4 py-3 text-center">
-          {darkHint ? (
-            <p className="text-xs text-yellow-400 font-bold animate-pulse">
-              ⚡ 어둡습니다 — 오른쪽 상단 손전등을 켜주세요
-            </p>
+        <div className="px-4 py-3 text-center flex flex-col items-center gap-1.5">
+          {darkHint && !torchOn ? (
+            <button
+              onClick={() => setTorchOn(true)}
+              className="flex items-center gap-1.5 text-xs text-yellow-300 font-bold bg-yellow-400/15 border border-yellow-400/40 px-3 py-1.5 rounded-lg animate-pulse active:scale-95 transition-transform cursor-pointer"
+            >
+              <Zap size={12} /> 어둡습니다 — 여기를 눌러 손전등 켜기
+            </button>
           ) : (
             <p className="text-xs text-gray-400 font-medium">바코드를 사각형 안에 맞춰주세요</p>
           )}
-          <p className="text-[10px] text-gray-600 mt-0.5">종이 바코드는 5~10cm 거리에서 스캔해주세요</p>
+          <p className="text-[10px] text-gray-500">화면을 탭하면 초점 조정 · 종이 바코드는 5~10cm 거리</p>
         </div>
       </div>
 
