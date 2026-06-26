@@ -1,6 +1,7 @@
 // src/components/LandingPage.tsx
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
+import XLSX from "xlsx";
 import {
   Calendar,
   CalendarCheck,
@@ -141,6 +142,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       const logs = Array.isArray(res.data?.value) ? res.data.value : [];
       setImportLog(logs);
     } catch { setImportLog([]); }
+  };
+
+  const handleClearImportLog = async () => {
+    if (!confirm("임포트 이력을 모두 삭제할까요?")) return;
+    await axios.delete("/api/product-import-log");
+    setImportLog([]);
   };
 
   const handleUpload = async () => {
@@ -424,19 +431,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                <input ref={uploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => {
+                <input ref={uploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={async e => {
                   const file = e.target.files?.[0] ?? null;
-                  if (file) {
-                    const ext = file.name.split(".").pop()?.toLowerCase();
-                    const validMime = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "application/octet-stream"];
-                    const invalid = (ext !== "xlsx" && ext !== "xls") || (!!file.type && !validMime.includes(file.type));
-                    if (invalid) {
-                      alert("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
-                      e.target.value = "";
-                      return;
-                    }
-                    setUploadResult(null);
+                  if (!file) { setUploadFile(null); return; }
+                  const ext = file.name.split(".").pop()?.toLowerCase();
+                  const validMime = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "application/octet-stream"];
+                  if ((ext !== "xlsx" && ext !== "xls") || (!!file.type && !validMime.includes(file.type))) {
+                    alert("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
+                    e.target.value = ""; return;
                   }
+                  try {
+                    const buf = await file.arrayBuffer();
+                    const wb = XLSX.read(buf, { sheetRows: 1 });
+                    const ws = wb.Sheets[wb.SheetNames[0]];
+                    const header = (XLSX.utils.sheet_to_json<any[]>(ws, { header: 1 })[0] ?? []) as any[];
+                    if (header.length < 52) {
+                      alert("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
+                      e.target.value = ""; return;
+                    }
+                  } catch {
+                    alert("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
+                    e.target.value = ""; return;
+                  }
+                  setUploadResult(null);
                   setUploadFile(file);
                 }} />
                 <button
@@ -463,7 +480,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             {/* Import log */}
             {importLog.length > 0 && (
               <div className="mt-4 pt-4 border-t border-gray-100">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">임포트 이력</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">임포트 이력</p>
+                  <button onClick={handleClearImportLog} className="text-[10px] text-gray-400 hover:text-rose-500 transition cursor-pointer">clear</button>
+                </div>
                 <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
                   {importLog.map((entry, i) => (
                     <div key={i} className="flex items-center justify-between text-[11px]">

@@ -334,6 +334,12 @@ async function startServer() {
     }
   });
 
+  // DELETE /api/product-import-log — clear import history
+  app.delete("/api/product-import-log", async (_req, res) => {
+    await supabase.from("app_settings").upsert({ key: "product_import_log", value: [], updated_at: new Date().toISOString() }, { onConflict: "key" });
+    res.json({ ok: true });
+  });
+
   // GET /api/products/:code — single product lookup by barcode code
   app.get("/api/products/:code", async (req, res) => {
     const code = (req.params.code ?? "").trim();
