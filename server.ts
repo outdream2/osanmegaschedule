@@ -515,6 +515,75 @@ async function startServer() {
     return res.status(201).json({ ok: true });
   });
 
+  // ── POST /api/ocr — 거래명세서 OCR via Gemini ────────────────────────────
+  app.post("/api/ocr", async (req, res) => {
+    const { images } = req.body ?? {};
+    if (!Array.isArray(images) || images.length === 0) {
+      return res.status(400).json({ error: "images 배열이 필요합니다." });
+    }
+    const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? "";
+    if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY가 설정되지 않았습니다." });
+
+    try {
+      const { GoogleGenAI } = await import("@google/genai");
+      const ai = new GoogleGenAI({ apiKey });
+
+      const allItems: any[] = [];
+      const meta: any[] = [];
+
+      for (let i = 0; i < images.length; i++) {
+        const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
+        const prompt = `이 이미지는 한국 거래명세서(납품서)입니다.
+다음 정보를 JSON 형식으로 추출하세요. 필드가 없으면 null로 설정하세요.
+
+응답 형식 (JSON만, 마크다운 없이):
+{
+  "supplier": "공급자명",
+  "recipient": "수신자/구매처명",
+  "date": "거래일자 (YYYY-MM-DD 또는 원문 그대로)",
+  "items": [
+    {
+      "name": "품명",
+      "spec": "규격/단위",
+      "qty": 수량(숫자),
+      "unit_price": 단가(숫자),
+      "amount": 금액(숫자)
+    }
+  ],
+  "subtotal": 공급가액합계(숫자),
+  "vat": 세액합계(숫자),
+  "total": 합계금액(숫자)
+}`;
+
+        const resp = await ai.models.generateContent({
+          model: "gemini-2.0-flash",
+          contents: [{
+            role: "user",
+            parts: [
+              { inlineData: { mimeType: mimeType ?? "image/jpeg", data: b64 } },
+              { text: prompt },
+            ],
+          }],
+        });
+
+        let text = resp.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+        // strip markdown fences
+        text = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+        try {
+          const parsed = JSON.parse(text);
+          meta.push({ page: i + 1, supplier: parsed.supplier, recipient: parsed.recipient, date: parsed.date, subtotal: parsed.subtotal, vat: parsed.vat, total: parsed.total });
+          (parsed.items ?? []).forEach((item: any) => allItems.push({ ...item, _page: i + 1 }));
+        } catch {
+          meta.push({ page: i + 1, _rawText: text });
+        }
+      }
+
+      res.json({ items: allItems, meta });
+    } catch (err: any) {
+      res.status(500).json({ error: err?.message ?? "OCR 처리 중 오류" });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

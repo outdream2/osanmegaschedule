@@ -232,7 +232,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
       {isOpen && (
         <div
           ref={popoverRef}
-          className={`absolute z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 md:translate-x-0 md:translate-y-0 md:top-full mt-1 w-72 bg-white rounded shadow-xl p-4 border border-[#e2e8f0] text-slate-800 text-left animate-in fade-in duration-100 ${
+          className={`fixed z-[200] inset-x-4 top-[5vh] max-h-[90dvh] overflow-y-auto md:absolute md:inset-x-auto md:top-full md:max-h-none md:overflow-y-visible md:mt-1 w-auto md:w-72 bg-white rounded shadow-xl p-4 border border-[#e2e8f0] text-slate-800 text-left animate-in fade-in duration-100 ${
             popoverAlign === "right"
               ? "md:right-0 md:left-auto"
               : "md:left-0 md:right-auto"

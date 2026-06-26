@@ -9,11 +9,12 @@ import { LandingPage } from "./components/LandingPage";
 import { ReservationPage } from "./components/ReservationPage";
 import { DisplayPage } from "./components/DisplayPage";
 import { ScanPage } from "./components/ScanPage";
+import { OcrPage } from "./components/OcrPage";
 import { useAuth } from "./hooks/useAuth";
 import type { AuthSession } from "./types";
 import { prefetchProducts } from "./lib/productsCache";
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "ocr";
 
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
@@ -48,7 +49,7 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan", auth?: AuthSession) => {
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "ocr", auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
     navigate(next);
   };
@@ -80,6 +81,9 @@ export default function App() {
   }
   if (page === "scan") {
     return <ScanPage onBack={goBack} />;
+  }
+  if (page === "ocr") {
+    return <OcrPage onBack={goBack} />;
   }
   if (page === "display") {
     return (

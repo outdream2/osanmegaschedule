@@ -169,11 +169,11 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           style={{ aspectRatio: "4/3" }}
           onClick={handleTapFocus}
         >
-          {/* Live video — hidden when frozen. brightness/contrast boost makes barcode area clearly visible */}
+          {/* Live video — hidden when frozen. No CSS filter: camera's own auto-exposure
+              is more accurate than JS post-processing (avoids banding/color shift) */}
           <video
             ref={videoRef}
             className={`w-full h-full object-cover ${state.frozenFrame ? "invisible" : ""}`}
-            style={state.frozenFrame ? undefined : { filter: "brightness(1.45) contrast(1.08)" }}
             autoPlay muted playsInline
           />
 

@@ -11,7 +11,7 @@ export const FORMATS = [
   "aztec", "pdf417",
 ] as const;
 
-// ── Camera constraints: high-res for better detail pickup ─────────────────────
+// ── Camera constraints: high-res for better barcode detail pickup ─────────────
 export const VIDEO_CONSTRAINTS: MediaTrackConstraints = {
   facingMode: "environment",
   width:  { min: 640, ideal: 1920, max: 1920 },

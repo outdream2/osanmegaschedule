@@ -17,13 +17,14 @@ import {
   ScanLine,
   Upload,
   FileSpreadsheet,
+  FileText,
   CheckCircle2,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
-  onNavigate: (page: "schedule" | "reservation" | "display" | "scan", auth?: AuthSession) => void;
+  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr", auth?: AuthSession) => void;
   onLogout: () => void;
 }
 
@@ -352,6 +353,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">xlsx 파일 업로드로 상품 DB 갱신</div>
                     <div className="flex items-center gap-1 mt-2 sm:mt-4 text-orange-600 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">업로드하기</span>
+                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+              )}
+
+              {/* 거래명세서 OCR — 관리자 전용 */}
+              {(isSuperAdmin || isManagerRole) && (
+                <button
+                  onClick={() => onNavigate("ocr", authSession!)}
+                  className="group relative bg-white border border-gray-200 hover:border-amber-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-amber-200 transition-colors">
+                      <FileText size={18} className="text-amber-600 sm:hidden" />
+                      <FileText size={22} className="text-amber-600 hidden sm:block" />
+                    </div>
+                    <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">거래명세서 OCR</div>
+                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">PDF 업로드로 거래명세서 자동 추출</div>
+                    <div className="flex items-center gap-1 mt-2 sm:mt-4 text-amber-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">추출하기</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>

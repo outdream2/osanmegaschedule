@@ -31,8 +31,7 @@ export function useCameraControls({
         advanced: [{
           torch: torchOn,
           exposureMode: "continuous",
-          exposureCompensation: 3.0,
-          brightness: 200,
+          exposureCompensation: torchOn ? 0.3 : 0.0,
         } as any],
       }).catch(() => {});
     } catch {}
@@ -48,15 +47,10 @@ export function useCameraControls({
     const kickFocusAndTorch = () => {
       const track = (video.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
       if (!track) return;
-      // Max exposure compensation from the start
+      // continuous focus+exposure — "single-shot" is iOS-only and locks focus on Android
       track.applyConstraints({
-        advanced: [{ exposureMode: "continuous", exposureCompensation: 2.5 } as any],
+        advanced: [{ focusMode: "continuous", exposureMode: "continuous", exposureCompensation: 0.0 } as any],
       }).catch(() => {});
-      // Single-shot resets AF, then continuous keeps it sharp
-      track.applyConstraints({ advanced: [{ focusMode: "single-shot" } as any] }).catch(() => {});
-      setTimeout(() => {
-        track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] }).catch(() => {});
-      }, 600);
     };
 
     video.addEventListener("playing", kickFocusAndTorch);
@@ -71,10 +65,21 @@ export function useCameraControls({
     const video = videoRef.current as HTMLVideoElement | null;
     const track = (video?.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
     if (!track) return;
-    track.applyConstraints({ advanced: [{ focusMode: "single-shot" } as any] }).catch(() => {});
-    setTimeout(() => {
+    // Re-apply continuous to nudge AF — single-shot is not supported on Android Chrome
+    track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] }).catch(() => {});
+  }, [frozenFrame, videoRef]);
+
+  // ── Periodic refocus: kick AF every 6 s to prevent continuous-mode drift ──
+  useEffect(() => {
+    if (frozenFrame) return;
+    const id = setInterval(() => {
+      if (frozenFrame) return;
+      const video = videoRef.current as HTMLVideoElement | null;
+      const track = (video?.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
+      if (!track) return;
       track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] }).catch(() => {});
-    }, 600);
+    }, 6000);
+    return () => clearInterval(id);
   }, [frozenFrame, videoRef]);
 
   return handleTapFocus;
