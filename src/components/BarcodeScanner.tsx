@@ -159,6 +159,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   const [frozenFrame,  setFrozenFrame] = useState<string | null>(null);
   const [scannedCode,  setScannedCode] = useState<string | null>(null);
   const [darkHint,     setDarkHint]    = useState(false);
+  const [scanKey,      setScanKey]     = useState(0);
 
   // Load ZBar eagerly; create offscreen proc canvas
   useEffect(() => {
@@ -208,14 +209,23 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     clearInterval(quaggaIntervalRef.current);
     clearInterval(ocrIntervalRef.current);
 
-    // ZBar interval already drew the last frame onto canvasRef — reuse it
     const canvas = canvasRef.current;
-    if (canvas && canvas.width > 0) {
-      setFrozenFrame(canvas.toDataURL("image/jpeg", 0.8));
-    }
+    if (canvas && canvas.width > 0) setFrozenFrame(canvas.toDataURL("image/jpeg", 0.8));
     setScannedCode(raw.trim());
-    setTimeout(() => onScan(raw.trim()), 1500);
-  }, [onScan]);
+    // onScan is called only after user confirms — not automatically
+  }, []);
+
+  const handleConfirm = useCallback(() => {
+    if (scannedCode) onScan(scannedCode);
+  }, [scannedCode, onScan]);
+
+  const handleRetry = useCallback(() => {
+    scannedRef.current = false;
+    setFrozenFrame(null);
+    setScannedCode(null);
+    setDarkHint(false);
+    setScanKey((k) => k + 1); // restarts all scan intervals via useEffect deps
+  }, []);
 
   // ── ZXing via react-zxing (primary — fast on clear codes) ─────────────────
   const { ref: videoRef } = useZxing({
@@ -419,7 +429,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     }, 250);
 
     return () => clearInterval(intervalRef.current);
-  }, [handleResult, videoRef]);
+  }, [handleResult, videoRef, scanKey]);
 
   // ── Quagga2 (third engine — good at 1D codes on paper/screens) ───────────
   useEffect(() => {
@@ -483,7 +493,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     }, 300);
 
     return () => clearInterval(quaggaIntervalRef.current);
-  }, [quaggaReady, handleResult, videoRef]);
+  }, [quaggaReady, handleResult, videoRef, scanKey]);
 
   // ── Tesseract OCR (final fallback — reads printed digit string on label) ──
   useEffect(() => {
@@ -527,7 +537,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     }, 800);
 
     return () => clearInterval(ocrIntervalRef.current);
-  }, [ocrReady, handleResult, videoRef]);
+  }, [ocrReady, handleResult, videoRef, scanKey]);
 
   // Cleanup OCR worker on unmount
   useEffect(() => {
@@ -609,18 +619,30 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           {/* Live video — hidden when frozen */}
           <video ref={videoRef} className={`w-full h-full object-cover ${frozenFrame ? "invisible" : ""}`} style={{ filter: "brightness(1.5)" }} autoPlay muted playsInline />
 
-          {/* Frozen frame + success overlay */}
+          {/* Frozen frame + confirmation overlay */}
           {frozenFrame && (
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <img src={frozenFrame} className="w-full h-full object-cover" alt="scan" />
-              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-3">
-                <div className="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg">
-                  <svg viewBox="0 0 24 24" className="w-8 h-8 text-white fill-none stroke-white stroke-[2.5] stroke-linecap-round stroke-linejoin-round">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
+              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-4 px-6">
+                <p className="text-gray-300 text-[11px] font-medium tracking-wide">스캔 결과를 확인해주세요</p>
+                <div className="w-full bg-black/60 border border-white/20 rounded-xl px-4 py-3 text-center">
+                  <p className="text-[10px] text-gray-400 mb-1">인식된 코드</p>
+                  <p className="text-white font-mono text-base font-bold tracking-widest">{scannedCode}</p>
                 </div>
-                <p className="text-white font-black text-sm tracking-wider">인식 완료</p>
-                <p className="text-emerald-300 font-mono text-xs px-3 py-1 bg-black/40 rounded-lg">{scannedCode}</p>
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleRetry(); }}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-gray-700/80 border border-gray-500 active:scale-95 transition-transform cursor-pointer"
+                  >
+                    다시 스캔
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 border border-emerald-500 active:scale-95 transition-transform shadow-lg cursor-pointer"
+                  >
+                    ✓ 확인
+                  </button>
+                </div>
               </div>
             </div>
           )}
