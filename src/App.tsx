@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import SchedulePage from "./components/SchedulePage";
 import { LandingPage } from "./components/LandingPage";
 import { ReservationPage } from "./components/ReservationPage";
@@ -11,6 +11,7 @@ import { DisplayPage } from "./components/DisplayPage";
 import { ScanPage } from "./components/ScanPage";
 import { useAuth } from "./hooks/useAuth";
 import type { AuthSession } from "./types";
+import { prefetchProducts } from "./lib/productsCache";
 
 type Page = "landing" | "schedule" | "reservation" | "display" | "scan";
 
@@ -18,6 +19,11 @@ export default function App() {
   const [page, setPage] = useState<Page>("landing");
   const [pendingEditEmpId, setPendingEditEmpId] = useState<number | null>(null);
   const { session: authSession, setSession: setAuthSession, clearSession: clearAuthSession } = useAuth();
+
+  // Prefetch product list as soon as user is authenticated
+  useEffect(() => {
+    if (authSession) prefetchProducts();
+  }, [authSession]);
 
   const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan", auth?: AuthSession) => {
     if (auth) {

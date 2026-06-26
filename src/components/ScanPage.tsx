@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ZONE_DEFS } from "../constants/displayZones";
 import { BarcodeScanner } from "./BarcodeScanner";
 import {
@@ -11,6 +11,7 @@ import {
   RotateCcw,
   AlertCircle,
 } from "lucide-react";
+import { getProductsMap, lookupProduct, isProductsLoaded, type ProductInfo } from "../lib/productsCache";
 
 interface ScanPageProps {
   onBack: () => void;
@@ -30,8 +31,6 @@ interface Zone {
   products: string;
 }
 
-interface ProductInfo { code: string; name: string; spec: string; }
-
 const STAFF_COLORS = [
   "bg-violet-100 text-violet-800 border-violet-300",
   "bg-sky-100 text-sky-800 border-sky-300",
@@ -40,25 +39,6 @@ const STAFF_COLORS = [
   "bg-orange-100 text-orange-800 border-orange-300",
   "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300",
 ];
-
-// Module-level cache — survives navigation, loaded only once per session
-let _productsMap: Record<string, ProductInfo> | null = null;
-let _productsMapPromise: Promise<Record<string, ProductInfo>> | null = null;
-
-function getProductsMap(): Promise<Record<string, ProductInfo>> {
-  if (_productsMap) return Promise.resolve(_productsMap);
-  if (_productsMapPromise) return _productsMapPromise;
-  _productsMapPromise = fetch("/products.json")
-    .then(r => r.json())
-    .then(map => { _productsMap = map; return map; })
-    .catch(() => { _productsMapPromise = null; return {}; });
-  return _productsMapPromise;
-}
-
-function lookupProduct(map: Record<string, ProductInfo>, code: string): ProductInfo | null {
-  const q = code.trim();
-  return map[q] ?? map[q.replace(/^0+/, "")] ?? null;
-}
 
 // 규격에서 구역 번호 추출: "9B" → [9], "2A/24" → [2, 24], "21" → [21]
 function extractZoneNums(spec: string): number[] {
@@ -77,13 +57,12 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
   const [productNotFound, setProductNotFound] = useState(false);
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
-  const mapRef = useRef<Record<string, ProductInfo> | null>(_productsMap);
 
   useEffect(() => {
-    // Prefetch product map in background (caches module-level)
-    if (!_productsMap) {
+    // If not yet loaded, trigger load and show spinner
+    if (!isProductsLoaded()) {
       setMapLoading(true);
-      getProductsMap().then(map => { mapRef.current = map; setMapLoading(false); });
+      getProductsMap().then(() => setMapLoading(false));
     }
     // Load zone assignments
     (async () => {
@@ -135,15 +114,13 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
     setRequestedIds(new Set());
     setScannerOpen(false);
 
-    // Use cached map if available, else wait for it
-    let map = mapRef.current;
-    if (!map) {
+    // If not yet loaded, wait (rare — prefetch starts on login)
+    if (!isProductsLoaded()) {
       setMapLoading(true);
-      map = await getProductsMap();
-      mapRef.current = map;
+      await getProductsMap();
       setMapLoading(false);
     }
-    const found = lookupProduct(map, result);
+    const found = lookupProduct(result);
     if (found) setProduct(found);
     else setProductNotFound(true);
   };
