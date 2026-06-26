@@ -26,6 +26,7 @@ function loadZBar(): Promise<void> {
 const FORMATS = [
   "ean_13", "ean_8", "code_128", "code_39", "code_93",
   "upc_a", "upc_e", "itf", "qr_code", "data_matrix", "codabar",
+  "aztec", "pdf_417",
 ] as const;
 
 // ── Camera constraints: high-res for better detail pickup ─────────────────────
@@ -456,6 +457,24 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             if (await tryZBar(toGrayContrast(upscaledBright, 8, false, muBr))) return;
           }
 
+          // ── Square crop passes — QR / Data Matrix / Aztec (square 2D codes) ──
+          // Centred square within the guide box: avoids cutting off QR finder patterns.
+          const sq  = Math.min(cw, ch);
+          const sqx = cx + Math.floor((cw - sq) / 2);
+          const sqy = cy + Math.floor((ch - sq) / 2);
+          proc.width = sq * 2; proc.height = sq * 2;
+          pc.filter = "none";
+          pc.drawImage(canvas, sqx, sqy, sq, sq, 0, 0, sq * 2, sq * 2);
+          const sqUp = pc.getImageData(0, 0, sq * 2, sq * 2);
+          if (await tryZBar(sqUp)) return;
+          pc.filter = "brightness(2) contrast(1.2)";
+          pc.drawImage(canvas, sqx, sqy, sq, sq, 0, 0, sq * 2, sq * 2);
+          const sqUpBright = pc.getImageData(0, 0, sq * 2, sq * 2);
+          pc.filter = "none";
+          if (await tryZBar(sqUpBright)) return;
+          if (await tryZBar(adaptiveThreshold(sqUp, 31, 0.08))) return;
+          if (await tryZBar(adaptiveThreshold(sqUpBright, 31, 0.06))) return;
+
           // ── Rotation passes (curved / tilted barcodes on cylinders, bottles) ──
           // Put crop onto a temp canvas once; rotate proc canvas multiple ways.
           const rotSrc = document.createElement("canvas");
@@ -758,6 +777,16 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                   <div key={i} className={`absolute w-6 h-6 border-emerald-400 ${cls}`} />
                 ))}
                 <div className="absolute inset-x-0 h-0.5 bg-emerald-400/80" style={{ animation: "scanline 2s ease-in-out infinite" }} />
+                {/* QR / 2D support indicator */}
+                <div className="absolute bottom-1.5 right-2 flex flex-col gap-[2px]">
+                  {[0,1,2].map(r => (
+                    <div key={r} className="flex gap-[2px]">
+                      {[0,1,2].map(c => (
+                        <div key={c} className={`w-[4px] h-[4px] ${(r===0&&c===0)||(r===0&&c===2)||(r===2&&c===0)||(r===1&&c===1) ? "bg-emerald-400/70" : "bg-transparent"}`} />
+                      ))}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
