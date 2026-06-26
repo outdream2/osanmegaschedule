@@ -19,7 +19,7 @@ import {
   FileSpreadsheet,
   CheckCircle2,
 } from "lucide-react";
-import type { AuthSession } from "../types";
+import type { AuthSession } from "../../types";
 
 interface LandingPageProps {
   authSession: AuthSession | null;

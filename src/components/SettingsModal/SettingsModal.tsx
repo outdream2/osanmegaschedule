@@ -1,7 +1,7 @@
 // src/components/SettingsModal.tsx
 import React, { useState } from "react";
 import { X, Plus, Trash2, GripVertical } from "lucide-react";
-import { AppSettings, WageRate } from "../hooks/useSettings";
+import { AppSettings, WageRate } from "../../hooks/useSettings";
 
 interface SettingsModalProps {
   settings: AppSettings;

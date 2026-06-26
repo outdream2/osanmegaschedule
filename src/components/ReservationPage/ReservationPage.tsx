@@ -17,7 +17,7 @@ import {
   Lock,
   LockOpen,
 } from "lucide-react";
-import type { AuthSession } from "../types";
+import type { AuthSession } from "../../types";
 
 interface ReservationPageProps {
   onBack: () => void;

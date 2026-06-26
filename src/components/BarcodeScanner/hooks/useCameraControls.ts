@@ -30,8 +30,9 @@ export function useCameraControls({
       track.applyConstraints({
         advanced: [{
           torch: torchOn,
-          exposureCompensation: 2.0,
-          brightness: 100,
+          exposureMode: "continuous",
+          exposureCompensation: 3.0,
+          brightness: 200,
         } as any],
       }).catch(() => {});
     } catch {}

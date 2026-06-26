@@ -169,8 +169,13 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           style={{ aspectRatio: "4/3" }}
           onClick={handleTapFocus}
         >
-          {/* Live video — hidden when frozen */}
-          <video ref={videoRef} className={`w-full h-full object-cover ${state.frozenFrame ? "invisible" : ""}`} autoPlay muted playsInline />
+          {/* Live video — hidden when frozen. brightness/contrast boost makes barcode area clearly visible */}
+          <video
+            ref={videoRef}
+            className={`w-full h-full object-cover ${state.frozenFrame ? "invisible" : ""}`}
+            style={state.frozenFrame ? undefined : { filter: "brightness(1.45) contrast(1.08)" }}
+            autoPlay muted playsInline
+          />
 
           {/* Snapshot confirmation overlay */}
           {state.frozenFrame && (
@@ -204,9 +209,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           {/* Scan guide overlay (live only) */}
           {!state.frozenFrame && (
             <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute inset-0 bg-black/40" />
+              {/* No base overlay — scan area shows at full brightness. boxShadow darkens surrounds only. */}
               <div className="absolute inset-x-[8%] top-[18%] bottom-[18%]">
-                <div className="absolute inset-0 bg-transparent" style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)" }} />
+                <div className="absolute inset-0 bg-transparent" style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.65)" }} />
                 {[
                   "top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-md",
                   "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-md",

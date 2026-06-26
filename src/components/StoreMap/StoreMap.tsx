@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Employee, Schedule } from "../types";
-import { ZONE_DEFS, ZONES_STORAGE_KEY, SECTION_LABEL } from "../constants/displayZones";
+import { Employee, Schedule } from "../../types";
+import { ZONE_DEFS, ZONES_STORAGE_KEY, SECTION_LABEL } from "../../constants/displayZones";
 import {
   Calendar,
   Clock,

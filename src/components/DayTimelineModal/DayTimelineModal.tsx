@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { X, Pencil } from "lucide-react";
-import { Employee } from "../types";
+import { Employee } from "../../types";
 import axios from "axios";
+import { DragBar } from "./DragBar";
 
 const DISPLAY_START = 10 * 60;
 const DISPLAY_END = 20 * 60;
@@ -374,64 +375,6 @@ export const DayTimelineModal: React.FC<Props> = ({
       next[w.emp.id] = { lunch: { ...globalLunch }, rest: { ...globalRest } };
     });
     saveEmpBreaks(next);
-  };
-
-  // Draggable bar sub-component
-  const DragBar = ({
-    kind, part_start, part_end, range, empId, colorCls, label, position,
-  }: {
-    kind: DragKind;
-    part_start?: never;
-    part_end?: never;
-    range: Range;
-    empId?: number;
-    colorCls: string;
-    label?: string;
-    position: "top" | "bottom" | "full";
-  }) => {
-    const w = widthPct(range.start, range.end);
-    if (w <= 0) return null;
-    const posStyle = position === "top"
-      ? { top: "4px", height: "22px" }
-      : position === "bottom"
-      ? { bottom: "4px", height: "22px" }
-      : { top: "50%", transform: "translateY(-50%)", height: "24px" };
-    return (
-      <div
-        className={`absolute rounded-md ${colorCls}`}
-        style={{ left: `${pct(range.start)}%`, width: `${w}%`, position: "absolute", ...posStyle }}
-      >
-        {/* left resize */}
-        <div
-          className="absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize bg-black/10 hover:bg-black/25 active:bg-black/40 rounded-l-md touch-none"
-          onMouseDown={e => startDrag(e, kind, "start", range.start, range.end, empId)}
-          onTouchStart={e => startDrag(e, kind, "start", range.start, range.end, empId)}
-        />
-        {/* body */}
-        <div
-          className="absolute inset-0 mx-4 cursor-grab active:cursor-grabbing flex items-center justify-center touch-none"
-          onMouseDown={e => startDrag(e, kind, "body", range.start, range.end, empId)}
-          onTouchStart={e => startDrag(e, kind, "body", range.start, range.end, empId)}
-        >
-          {label && (
-            <span className="text-[9px] font-bold whitespace-nowrap select-none truncate px-1">
-              {label} {minToStr(range.start)}~{minToStr(range.end)}
-            </span>
-          )}
-          {!label && (
-            <span className="text-[9px] font-semibold whitespace-nowrap select-none text-white/60 truncate">
-              {minToStr(range.start)}~{minToStr(range.end)}
-            </span>
-          )}
-        </div>
-        {/* right resize */}
-        <div
-          className="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize bg-black/10 hover:bg-black/25 active:bg-black/40 rounded-r-md touch-none"
-          onMouseDown={e => startDrag(e, kind, "end", range.start, range.end, empId)}
-          onTouchStart={e => startDrag(e, kind, "end", range.start, range.end, empId)}
-        />
-      </div>
-    );
   };
 
   // Global break row (top section)
