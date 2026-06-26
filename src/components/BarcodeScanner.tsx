@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useZxing } from "react-zxing";
-import { X, ScanLine, Zap } from "lucide-react";
+import { X, ScanLine, Zap, ImageIcon } from "lucide-react";
 
 interface BarcodeScannerProps {
   onScan: (result: string) => void;
@@ -204,6 +204,8 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   const [darkHint,     setDarkHint]    = useState(false);
   const [scanKey,      setScanKey]     = useState(0);
   const [flashing,     setFlashing]    = useState(false);
+  const [isDecoding,   setIsDecoding]  = useState(false);
+  const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Load ZBar eagerly; create offscreen canvases; set mounted flag
   useEffect(() => {
@@ -279,7 +281,118 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     setFrozenFrame(null);
     setScannedCode(null);
     setDarkHint(false);
-    setScanKey((k) => k + 1); // restarts all scan intervals via useEffect deps
+    setIsDecoding(false);
+    if (imageInputRef.current) imageInputRef.current.value = "";
+    setScanKey((k) => k + 1);
+  }, []);
+
+  // ── Static image decode (gallery / file picker) ────────────────────────────
+  const handleImageDecode = useCallback(async (file: File) => {
+    if (!file.type.startsWith("image/") || scannedRef.current) return;
+    if (mountedRef.current) setIsDecoding(true);
+
+    const decode = async (data: ImageData): Promise<string | null> => {
+      if (!_zbarScan) return null;
+      try {
+        const syms = await _zbarScan(data);
+        return syms.length > 0 ? syms[0].decode() : null;
+      } catch { return null; }
+    };
+
+    let code: string | null = null;
+    try {
+      const url = URL.createObjectURL(file);
+      const img = await new Promise<HTMLImageElement>((res, rej) => {
+        const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url;
+      });
+      URL.revokeObjectURL(url);
+
+      const w = img.naturalWidth, h = img.naturalHeight;
+      const tc = document.createElement("canvas");
+      tc.width = w; tc.height = h;
+      const tctx = tc.getContext("2d", { willReadFrequently: true })!;
+      tctx.drawImage(img, 0, 0);
+      const imageDataUrl = tc.toDataURL("image/jpeg", 0.92);
+
+      // 1. BarcodeDetector (native Android/Chrome — fastest)
+      if ("BarcodeDetector" in window) {
+        try {
+          const bd = new (window as any).BarcodeDetector();
+          const codes = await bd.detect(tc);
+          if (codes.length) code = codes[0].rawValue;
+        } catch {}
+      }
+
+      if (!code) {
+        const full = tctx.getImageData(0, 0, w, h);
+        code = await decode(full);
+        if (!code) code = await decode(adaptiveThreshold(full, 31, 0.08));
+        if (!code) code = await decode(adaptiveThreshold(full, 21, 0.05));
+        const mu = avgBrightness(full);
+        if (!code) code = await decode(toGrayContrast(full, 8, false, mu));
+        if (!code) code = await decode(toGrayContrast(full, 10, false, mu));
+        if (!code) code = await decode(toGrayContrast(full, 3));
+        if (!code) code = await decode(sharpenGray(toGrayContrast(full, 2)));
+        if (!code) code = await decode(binarize(toGrayContrast(full, 2, false, mu), 128));
+        if (!code) code = await decode(histoStretch(full));
+
+        // 2x upscale
+        const up2 = document.createElement("canvas");
+        up2.width = w * 2; up2.height = h * 2;
+        const up2ctx = up2.getContext("2d", { willReadFrequently: true })!;
+        up2ctx.drawImage(tc, 0, 0, w * 2, h * 2);
+        const upFull = up2ctx.getImageData(0, 0, w * 2, h * 2);
+        if (!code) code = await decode(upFull);
+        if (!code) code = await decode(adaptiveThreshold(upFull, 45, 0.08));
+        const muUp = avgBrightness(upFull);
+        if (!code) code = await decode(toGrayContrast(upFull, 8, false, muUp));
+
+        // Brightened 2x
+        up2ctx.filter = "brightness(2.5) contrast(1.3)";
+        up2ctx.drawImage(tc, 0, 0, w * 2, h * 2);
+        const upBright = up2ctx.getImageData(0, 0, w * 2, h * 2);
+        up2ctx.filter = "none";
+        if (!code) code = await decode(upBright);
+        if (!code) code = await decode(adaptiveThreshold(upBright, 45, 0.06));
+        const muBr = avgBrightness(upBright);
+        if (!code) code = await decode(toGrayContrast(upBright, 8, false, muBr));
+      }
+
+      // Quagga fallback
+      if (!code) {
+        const Quagga = (window as any).__quagga2;
+        if (Quagga) {
+          code = await new Promise<string | null>((res) => {
+            Quagga.decodeSingle({
+              src: imageDataUrl, numOfWorkers: 0,
+              locator: { halfSample: false, patchSize: "medium" },
+              decoder: { readers: ["ean_reader","ean_8_reader","code_128_reader","code_39_reader","upc_reader","upc_e_reader"] },
+              locate: true,
+            }, (r: any) => res(r?.codeResult?.code ?? null));
+          });
+        }
+      }
+
+      if (code && mountedRef.current && !scannedRef.current) {
+        scannedRef.current = true;
+        clearInterval(intervalRef.current);
+        clearInterval(quaggaIntervalRef.current);
+        clearInterval(ocrIntervalRef.current);
+        setFlashing(true);
+        setTimeout(() => {
+          if (!mountedRef.current) return;
+          setFlashing(false);
+          setFrozenFrame(imageDataUrl);
+          setScannedCode(code!.trim());
+        }, 220);
+      } else if (mountedRef.current) {
+        alert("바코드를 인식하지 못했습니다.\n더 선명하거나 가까이 찍은 이미지를 사용해주세요.");
+      }
+    } catch {
+      if (mountedRef.current) alert("이미지를 불러오지 못했습니다.");
+    } finally {
+      if (mountedRef.current) setIsDecoding(false);
+    }
   }, []);
 
   // ── ZXing via react-zxing (primary — fast on clear codes) ─────────────────
@@ -713,6 +826,13 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
               )}
             </div>
             <button
+              onClick={() => imageInputRef.current?.click()}
+              title="갤러리에서 이미지 선택"
+              className="p-1 rounded-md text-gray-500 hover:text-white transition cursor-pointer"
+            >
+              <ImageIcon size={16} />
+            </button>
+            <button
               onClick={() => setTorchOn((v) => !v)}
               title={torchOn ? "손전등 끄기" : "손전등 켜기"}
               className={`p-1 rounded-md transition cursor-pointer ${
@@ -796,8 +916,28 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             </div>
           )}
 
+          {/* Image decoding spinner */}
+          {isDecoding && (
+            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3 pointer-events-none">
+              <div className="w-9 h-9 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+              <p className="text-white text-xs font-medium tracking-wide">이미지 인식 중...</p>
+            </div>
+          )}
+
           {/* Hidden canvas for ZBar frame capture */}
           <canvas ref={canvasRef} className="hidden" />
+
+          {/* Hidden file input for gallery/image decode */}
+          <input
+            ref={imageInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) handleImageDecode(file);
+            }}
+          />
         </div>
 
         {/* Hint */}
