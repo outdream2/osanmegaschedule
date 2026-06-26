@@ -9,6 +9,7 @@ import { supabase } from "./src/supabase/client";
 import bcrypt from "bcryptjs";
 import webpush from "web-push";
 import XLSX from "xlsx";
+import compression from "compression";
 
 // ── Product map cache ─────────────────────────────────────────────────────────
 interface ProductInfo { code: string; name: string; spec: string; }
@@ -72,6 +73,7 @@ async function startServer() {
     );
   }
 
+  app.use(compression());
   app.use(express.json({ limit: "10mb" }));
 
   // API router endpoints
@@ -418,6 +420,11 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
+    // products.json: 1 hour browser cache (admin upload invalidates in-memory; client reloads on next session)
+    app.get("/products.json", (_req, res) => {
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      res.sendFile(path.join(distPath, "products.json"));
+    });
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));

@@ -48,7 +48,7 @@ let _productsMapPromise: Promise<Record<string, ProductInfo>> | null = null;
 function getProductsMap(): Promise<Record<string, ProductInfo>> {
   if (_productsMap) return Promise.resolve(_productsMap);
   if (_productsMapPromise) return _productsMapPromise;
-  _productsMapPromise = fetch("/api/products-map")
+  _productsMapPromise = fetch("/products.json")
     .then(r => r.json())
     .then(map => { _productsMap = map; return map; })
     .catch(() => { _productsMapPromise = null; return {}; });
