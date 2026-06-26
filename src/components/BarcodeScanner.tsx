@@ -234,9 +234,31 @@ function padQuietZone(src: ImageData, pad = 30): ImageData {
   return new ImageData(d, dw, h);
 }
 
-// ── OCR digit extraction: pull 8-14 digit sequences from Tesseract output ─────
+// ── Vertical box blur — merges vertically-stacked dots into solid bar lines ──
+// Complement to horzBlur: blurs only in the column direction so horizontal bar
+// boundaries stay sharp while dot gaps in the vertical axis close up.
+// Principle: 1D mean filter along Y axis (1×N kernel, N = radius*2+1).
+function vertBlur(src: ImageData, radius = 5): ImageData {
+  const w = src.width, h = src.height;
+  const d = new Uint8ClampedArray(src.data.length);
+  const diam = radius * 2 + 1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let sum = 0;
+      for (let dy = -radius; dy <= radius; dy++) {
+        sum += src.data[(Math.max(0, Math.min(h - 1, y + dy)) * w + x) * 4];
+      }
+      const idx = (y * w + x) * 4;
+      const v = Math.round(sum / diam);
+      d[idx] = d[idx + 1] = d[idx + 2] = v; d[idx + 3] = 255;
+    }
+  }
+  return new ImageData(d, w, h);
+}
+
+// ── OCR digit extraction: pull 6-14 digit sequences from Tesseract output ────
 function extractBarcodeDigits(text: string): string | null {
-  const matches = text.replace(/\s/g, "").match(/\d{8,14}/g);
+  const matches = text.replace(/\s/g, "").match(/\d{6,14}/g);
   return matches?.[0] ?? null;
 }
 
@@ -296,7 +318,10 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           workerBlobURL: false,
           logger: () => {},
         } as any);
-        await worker.setParameters({ tessedit_char_whitelist: "0123456789" } as any);
+        await worker.setParameters({
+          tessedit_char_whitelist: "0123456789",
+          tessedit_pageseg_mode: "11", // SPARSE_TEXT — best for scattered digit rows
+        } as any);
         if (!cancelled) {
           ocrWorkerRef.current = worker;
           setOcrReady(true);
@@ -453,6 +478,29 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             }, (r: any) => res(r?.codeResult?.code ?? null));
           });
         }
+      }
+
+      // OCR final fallback — reads the printed digit string below the barcode
+      if (!code && ocrWorkerRef.current) {
+        try {
+          // Try full image first
+          const { data: { text: t1 } } = await ocrWorkerRef.current.recognize(tc);
+          code = extractBarcodeDigits(t1) ?? null;
+          if (!code) {
+            // Try lower half where barcode digits typically print
+            const halfC = document.createElement("canvas");
+            const hy = Math.floor(h * 0.6);
+            halfC.width = w * 2; halfC.height = (h - hy) * 2;
+            const hctx = halfC.getContext("2d");
+            if (hctx) {
+              hctx.filter = "grayscale(1) contrast(2.5) brightness(1.1)";
+              hctx.drawImage(tc, 0, hy, w, h - hy, 0, 0, halfC.width, halfC.height);
+              hctx.filter = "none";
+              const { data: { text: t2 } } = await ocrWorkerRef.current.recognize(halfC);
+              code = extractBarcodeDigits(t2) ?? null;
+            }
+          }
+        } catch { /* OCR unavailable */ }
       }
 
       if (code && mountedRef.current && !scannedRef.current) {
@@ -625,16 +673,29 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           if (await tryZBar(toGrayContrast(upscaled, 10, false, muUp))) return;
           if (await tryZBar(toGrayContrast(dilated, 8, false, muUp))) return;
           if (await tryZBar(binarize(toGrayContrast(upscaled, 8, false, muUp), 128))) return;
-          // Strategy A: horizontal blur first, then adaptive threshold (key for e-ink)
+          // Strategy A: horizontal blur (smooths dot grain) → THEN binarize
           const blurred = horzBlur(upscaled, 2);
           if (await tryZBar(blurred)) return;
           if (await tryZBar(adaptiveThreshold(blurred, dynBlock, 0.08))) return;
           if (await tryZBar(adaptiveThreshold(blurred, 31, 0.06))) return;
           if (await tryZBar(adaptiveThreshold(vertDilate(blurred, 2), dynBlock, 0.08))) return;
+          // Vertical blur (1×11 kernel) — closes gaps between column-stacked dots → THEN binarize
+          // Order: gray → vertBlur → adaptiveThreshold (never binarize before blurring)
+          const vblur = vertBlur(upscaled, 5);
+          if (await tryZBar(adaptiveThreshold(vblur, dynBlock, 0.08))) return;
+          if (await tryZBar(adaptiveThreshold(vblur, 31, 0.06))) return;
+          // Large vertical dilation (radius=5 = 11px window, bridges wider dot gaps)
+          const dilated5 = vertDilate(upscaled, 5);
+          if (await tryZBar(adaptiveThreshold(dilated5, dynBlock, 0.08))) return;
+          if (await tryZBar(adaptiveThreshold(dilated5, 31, 0.06))) return;
+          // Combined 2D smoothing: horzBlur + vertBlur → adaptiveThreshold
+          const smoothed = vertBlur(blurred, 5);
+          if (await tryZBar(adaptiveThreshold(smoothed, dynBlock, 0.08))) return;
+          if (await tryZBar(padQuietZone(adaptiveThreshold(smoothed, dynBlock, 0.08), 40))) return;
           // Strategy C: quiet-zone padding on binarized result
           if (await tryZBar(padQuietZone(adaptiveThreshold(upscaled, dynBlock, 0.08), 40))) return;
           if (await tryZBar(padQuietZone(adaptiveThreshold(blurred, dynBlock, 0.08), 40))) return;
-          if (await tryZBar(padQuietZone(adaptiveThreshold(dilated, dynBlock, 0.08), 40))) return;
+          if (await tryZBar(padQuietZone(adaptiveThreshold(dilated5, dynBlock, 0.08), 40))) return;
 
           // 4. Crop — 3x upscaled + brightness(2.5) contrast(1.3)
           // ctx.filter on drawImage affects actual getImageData pixels (unlike CSS filter on video)
@@ -844,33 +905,40 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
       ocrBusy = true;
       try {
-        const w = video.videoWidth;
-        const h = video.videoHeight;
+        const w = video.videoWidth, h = video.videoHeight;
+        // Guide box bounds (matches scan guide UI)
+        const cx = Math.floor(w * 0.08), cy = Math.floor(h * 0.18);
+        const cw = Math.floor(w * 0.84), ch = Math.floor(h * 0.64);
 
-        // Bottom strip of the scan window where printed digits live
-        const cx = Math.floor(w * 0.08);
-        const cy = Math.floor(h * 0.60);
-        const cw = Math.floor(w * 0.84);
-        const ch = Math.floor(h * 0.15);
+        // Scan regions in priority order:
+        // 1. Lower 35% of guide box — barcode digit row is typically here
+        // 2. Full guide box — when digits span the entire barcode height
+        const regions = [
+          { sx: cx, sy: cy + Math.floor(ch * 0.65), sw: cw, sh: Math.floor(ch * 0.35) },
+          { sx: cx, sy: cy, sw: cw, sh: ch },
+        ];
 
-        const ocrCanvas = document.createElement("canvas");
-        ocrCanvas.width  = cw * 2;
-        ocrCanvas.height = ch * 2;
-        const ocrCtx = ocrCanvas.getContext("2d");
-        if (!ocrCtx) return;
-        ocrCtx.drawImage(video, cx, cy, cw, ch, 0, 0, cw * 2, ch * 2);
-
-        const { data: { text } } = await ocrWorkerRef.current.recognize(ocrCanvas);
-        const digits = extractBarcodeDigits(text);
-        if (digits) {
-          handleResult(digits);
+        for (const r of regions) {
+          if (scannedRef.current) break;
+          const scale = 4;
+          const oc = document.createElement("canvas");
+          oc.width = r.sw * scale; oc.height = r.sh * scale;
+          const octx = oc.getContext("2d");
+          if (!octx) continue;
+          // High-contrast grayscale for cleaner digit recognition
+          octx.filter = "grayscale(1) contrast(2.5) brightness(1.1)";
+          octx.drawImage(video, r.sx, r.sy, r.sw, r.sh, 0, 0, oc.width, oc.height);
+          octx.filter = "none";
+          const { data: { text } } = await ocrWorkerRef.current.recognize(oc);
+          const digits = extractBarcodeDigits(text);
+          if (digits && !scannedRef.current) { handleResult(digits); break; }
         }
       } catch {
         /* OCR error — barcode engines still handle scanning */
       } finally {
         ocrBusy = false;
       }
-    }, 800);
+    }, 1200);
 
     return () => clearInterval(ocrIntervalRef.current);
   }, [ocrReady, handleResult, videoRef, scanKey]);
