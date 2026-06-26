@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useZxing } from "react-zxing";
-import { X, ScanLine, Zap, Flame } from "lucide-react";
+import { X, ScanLine, Zap } from "lucide-react";
 
 interface BarcodeScannerProps {
   onScan: (result: string) => void;
@@ -271,14 +271,14 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       canvas.height = h;
       const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) return;
+
+      // Normal draw — main canvas stays clean for freeze-frame capture
+      ctx.filter = "none";
       ctx.drawImage(video, 0, 0, w, h);
 
       // 1. Full frame — original (fast path for large, clear codes)
       const full = ctx.getImageData(0, 0, w, h);
       if (await tryZBar(full)) return;
-
-      // 2. Full frame — high contrast (helps with dim screen barcodes)
-      if (await tryZBar(toGrayContrast(full, 2.5))) return;
 
       // Centre crop: matches scan guide box (inset-x-[8%] top-[25%] bottom-[25%])
       const cx = Math.floor(w * 0.08);
@@ -286,61 +286,91 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       const cw = Math.floor(w * 0.84);
       const ch = Math.floor(h * 0.50);
 
-      // 3. Crop — original
+      // 2. Crop — original
       const crop = ctx.getImageData(cx, cy, cw, ch);
       if (await tryZBar(crop)) return;
 
-      // 4. Crop — 2x upscaled (gives ZBar more pixels for thin e-ink label bars)
       const proc = procCanvasRef.current;
+      let upscaled: ImageData | null = null;
+      let upscaledBright: ImageData | null = null;
+
       if (proc) {
-        proc.width  = cw * 2;
-        proc.height = ch * 2;
         const pc = proc.getContext("2d", { willReadFrequently: true });
         if (pc) {
-          pc.drawImage(canvas, cx, cy, cw, ch, 0, 0, cw * 2, ch * 2);
-          const upscaled = pc.getImageData(0, 0, cw * 2, ch * 2);
+          // 3. Crop — 3x upscaled normal (more pixels for thin e-ink label bars)
+          proc.width  = cw * 3;
+          proc.height = ch * 3;
+          pc.filter = "none";
+          pc.drawImage(canvas, cx, cy, cw, ch, 0, 0, cw * 3, ch * 3);
+          upscaled = pc.getImageData(0, 0, cw * 3, ch * 3);
           if (await tryZBar(upscaled)) return;
-          // 5. Upscaled + high contrast (ESL/e-ink: low contrast + thin bars)
-          if (await tryZBar(toGrayContrast(upscaled, 3))) return;
+
+          // 4. Crop — 3x upscaled + brightness(2.5) contrast(1.3)
+          // ctx.filter on drawImage affects actual getImageData pixels (unlike CSS filter on video)
+          pc.filter = "brightness(2.5) contrast(1.3)";
+          pc.drawImage(canvas, cx, cy, cw, ch, 0, 0, cw * 3, ch * 3);
+          upscaledBright = pc.getImageData(0, 0, cw * 3, ch * 3);
+          pc.filter = "none";
+          if (await tryZBar(upscaledBright)) return;
+
+          // 5. Crop — 3x upscaled + brightness(3.5) (dim / dark environments)
+          pc.filter = "brightness(3.5) contrast(1.5)";
+          pc.drawImage(canvas, cx, cy, cw, ch, 0, 0, cw * 3, ch * 3);
+          const upscaledMax = pc.getImageData(0, 0, cw * 3, ch * 3);
+          pc.filter = "none";
+          if (await tryZBar(upscaledMax)) return;
+
+          // 6. Center of scan zone — extra-bright + 3x (tightest focus on barcode area)
+          const ccx = Math.floor(w * 0.15);
+          const ccy = Math.floor(h * 0.30);
+          const ccw = Math.floor(w * 0.70);
+          const cch = Math.floor(h * 0.40);
+          proc.width  = ccw * 3;
+          proc.height = cch * 3;
+          pc.filter = "brightness(3) contrast(1.4)";
+          pc.drawImage(canvas, ccx, ccy, ccw, cch, 0, 0, ccw * 3, cch * 3);
+          const centerBright = pc.getImageData(0, 0, ccw * 3, cch * 3);
+          pc.filter = "none";
+          if (await tryZBar(centerBright)) return;
+
+          // 7. Upscaled + high contrast
+          if (upscaled && await tryZBar(toGrayContrast(upscaled, 3))) return;
+          // 8. Upscaled bright + contrast + sharpen
+          if (upscaledBright) {
+            const gcBright = toGrayContrast(upscaledBright, 2);
+            if (await tryZBar(sharpenGray(gcBright))) return;
+            if (await tryZBar(binarize(gcBright, 128))) return;
+            if (await tryZBar(binarize(gcBright, 100))) return;
+            if (await tryZBar(binarize(gcBright, 160))) return;
+          }
         }
       }
 
-      // 6. Crop — strong contrast (e-ink price tag labels)
-      if (await tryZBar(toGrayContrast(crop, 4))) return;
+      // 9. Full frame — high contrast (dim screen barcodes)
+      if (await tryZBar(toGrayContrast(full, 2.5))) return;
 
-      // 7. Crop — inverted high contrast (white-on-dark label variants)
+      // 10. Crop — strong contrast / inverted
+      if (await tryZBar(toGrayContrast(crop, 4))) return;
       if (await tryZBar(toGrayContrast(crop, 3, true))) return;
 
-      // ── Paper-barcode focused passes (ESL price tags, printed stickers) ──
-      // 8. Crop — gray+contrast then sharpening (edge enhancement on thin ink bars)
+      // Paper-barcode passes (ESL price tags, printed stickers)
       const grayCrop = toGrayContrast(crop, 2);
       if (await tryZBar(sharpenGray(grayCrop))) return;
-
-      // 9. Crop — binarized at mid threshold (normal printed paper)
       if (await tryZBar(binarize(grayCrop, 128))) return;
-
-      // 10. Crop — binarized low threshold (dim / dark ink underexposed)
       if (await tryZBar(binarize(grayCrop, 100))) return;
-
-      // 11. Crop — binarized high threshold (bright / overexposed paper)
       if (await tryZBar(binarize(grayCrop, 160))) return;
 
-      // ── Dark-environment passes (avg brightness < 80) ──────────────────────
+      // Dark-environment passes (threshold broadened: avg < 120)
       const avg = avgBrightness(crop);
-      setDarkHint(!torchOnRef.current && avg < 70);
-      if (avg < 80) {
-        const gamma40 = brightenGamma(crop, 0.4);   // aggressive lift
-        const gamma55 = brightenGamma(crop, 0.55);  // moderate lift
-        // 12. Gamma 0.4 — raw lifted
+      setDarkHint(!torchOnRef.current && avg < 120);
+      if (avg < 120) {
+        const gamma40 = brightenGamma(crop, 0.4);
+        const gamma55 = brightenGamma(crop, 0.55);
         if (await tryZBar(gamma40)) return;
-        // 13. Gamma 0.4 + high contrast (substitute for toGrayContrast on dark img)
         if (await tryZBar(toGrayContrast(gamma40, 2.5))) return;
-        // 14. Gamma 0.4 + binarize (ink-on-dark-paper)
         if (await tryZBar(binarize(gamma40, 100))) return;
         if (await tryZBar(binarize(gamma40, 128))) return;
-        // 15. Gamma 0.55 + histogram stretch (room with mixed lighting)
         if (await tryZBar(histoStretch(gamma55))) return;
-        // 16. Histogram stretch alone (maximize whatever contrast exists)
         const stretched = histoStretch(toGrayContrast(crop, 1));
         if (await tryZBar(stretched)) return;
         if (await tryZBar(sharpenGray(stretched))) return;
@@ -376,7 +406,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       tmpCanvas.height = ch;
       const tmpCtx = tmpCanvas.getContext("2d");
       if (!tmpCtx) return;
+      tmpCtx.filter = "brightness(2) contrast(1.3)";
       tmpCtx.drawImage(video, cx, cy, cw, ch, 0, 0, cw, ch);
+      tmpCtx.filter = "none";
 
       try {
         Quagga.decodeSingle(
@@ -531,7 +563,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         {/* Camera / Freeze frame */}
         <div className="relative bg-black" style={{ aspectRatio: "4/3" }}>
           {/* Live video — hidden when frozen */}
-          <video ref={videoRef} className={`w-full h-full object-cover ${frozenFrame ? "invisible" : ""}`} autoPlay muted playsInline />
+          <video ref={videoRef} className={`w-full h-full object-cover ${frozenFrame ? "invisible" : ""}`} style={{ filter: "brightness(1.5)" }} autoPlay muted playsInline />
 
           {/* Frozen frame + success overlay */}
           {frozenFrame && (
