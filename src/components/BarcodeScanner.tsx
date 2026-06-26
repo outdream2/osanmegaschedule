@@ -39,12 +39,12 @@ const VIDEO_CONSTRAINTS: MediaTrackConstraints = {
 };
 
 // ── Image preprocessing: grayscale + contrast stretch ─────────────────────────
-// Helps with e-ink/ESL price tags (low contrast, thin bars)
-function toGrayContrast(src: ImageData, factor: number, invert = false): ImageData {
+// center=128 default; pass avgBrightness(src) as center for e-ink gray barcodes
+function toGrayContrast(src: ImageData, factor: number, invert = false, center = 128): ImageData {
   const d = new Uint8ClampedArray(src.data.length);
   for (let i = 0; i < src.data.length; i += 4) {
     const g = 0.299 * src.data[i] + 0.587 * src.data[i + 1] + 0.114 * src.data[i + 2];
-    let v = Math.min(255, Math.max(0, (g - 128) * factor + 128));
+    let v = Math.min(255, Math.max(0, (g - center) * factor + center));
     if (invert) v = 255 - v;
     d[i] = d[i + 1] = d[i + 2] = v;
     d[i + 3] = 255;
@@ -123,6 +123,46 @@ function histoStretch(src: ImageData): ImageData {
     d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255;
   }
   return new ImageData(d, src.width, src.height);
+}
+
+// ── Adaptive threshold (integral image Sauvola) — best for e-ink/ESL barcodes ─
+// Bars on e-ink are gray (~145) on light-gray background (~210). Global binarize
+// fails. Local mean-based threshold handles the gray-on-gray contrast cleanly.
+function adaptiveThreshold(src: ImageData, blockSize = 31, k = 0.08): ImageData {
+  const w = src.width, h = src.height;
+  const gray = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    const d4 = i * 4;
+    gray[i] = 0.299 * src.data[d4] + 0.587 * src.data[d4 + 1] + 0.114 * src.data[d4 + 2];
+  }
+  // Build integral image (padded by 1 row/col for clean boundary math)
+  const iw = w + 1;
+  const integral = new Float64Array(iw * (h + 1));
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      integral[(y + 1) * iw + (x + 1)] = gray[y * w + x]
+        + integral[y * iw + (x + 1)]
+        + integral[(y + 1) * iw + x]
+        - integral[y * iw + x];
+    }
+  }
+  const half = blockSize >> 1;
+  const d = new Uint8ClampedArray(src.data.length);
+  for (let y = 0; y < h; y++) {
+    const y0 = Math.max(0, y - half), y1 = Math.min(h - 1, y + half);
+    for (let x = 0; x < w; x++) {
+      const x0 = Math.max(0, x - half), x1 = Math.min(w - 1, x + half);
+      const count = (x1 - x0 + 1) * (y1 - y0 + 1);
+      const sum = integral[(y1 + 1) * iw + (x1 + 1)]
+                - integral[y0 * iw + (x1 + 1)]
+                - integral[(y1 + 1) * iw + x0]
+                + integral[y0 * iw + x0];
+      const v = gray[y * w + x] < (sum / count) * (1 - k) ? 0 : 255;
+      const idx = (y * w + x) * 4;
+      d[idx] = d[idx + 1] = d[idx + 2] = v; d[idx + 3] = 255;
+    }
+  }
+  return new ImageData(d, w, h);
 }
 
 // ── Average brightness of ImageData (0–255) ───────────────────────────────────
@@ -362,6 +402,17 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           upscaled = pc.getImageData(0, 0, cw * 3, ch * 3);
           if (await tryZBar(upscaled)) return;
 
+          // ── E-ink / ESL: adaptive threshold on 3x upscaled ──────────────────
+          // E-ink bars are gray (~145) on light gray (~210) — not true black/white.
+          // adaptiveThreshold uses local mean so it's immune to the global gray offset.
+          if (await tryZBar(adaptiveThreshold(upscaled, 45, 0.08))) return;
+          if (await tryZBar(adaptiveThreshold(upscaled, 25, 0.05))) return;
+          // Mean-centered high contrast: center at image mean, factor=8 → bars→black
+          const muUp = avgBrightness(upscaled);
+          if (await tryZBar(toGrayContrast(upscaled, 8, false, muUp))) return;
+          if (await tryZBar(toGrayContrast(upscaled, 10, false, muUp))) return;
+          if (await tryZBar(binarize(toGrayContrast(upscaled, 8, false, muUp), 128))) return;
+
           // 4. Crop — 3x upscaled + brightness(2.5) contrast(1.3)
           // ctx.filter on drawImage affects actual getImageData pixels (unlike CSS filter on video)
           pc.filter = "brightness(2.5) contrast(1.3)";
@@ -399,6 +450,10 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             if (await tryZBar(binarize(gcBright, 128))) return;
             if (await tryZBar(binarize(gcBright, 100))) return;
             if (await tryZBar(binarize(gcBright, 160))) return;
+            // E-ink on brightened upscale
+            if (await tryZBar(adaptiveThreshold(upscaledBright, 45, 0.06))) return;
+            const muBr = avgBrightness(upscaledBright);
+            if (await tryZBar(toGrayContrast(upscaledBright, 8, false, muBr))) return;
           }
         }
       }
@@ -409,6 +464,13 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       // 10. Crop — strong contrast / inverted
       if (await tryZBar(toGrayContrast(crop, 4))) return;
       if (await tryZBar(toGrayContrast(crop, 3, true))) return;
+
+      // E-ink passes on crop (fallback if proc canvas unavailable)
+      if (await tryZBar(adaptiveThreshold(crop, 31, 0.08))) return;
+      if (await tryZBar(adaptiveThreshold(crop, 19, 0.05))) return;
+      const muCrop = avgBrightness(crop);
+      if (await tryZBar(toGrayContrast(crop, 8, false, muCrop))) return;
+      if (await tryZBar(toGrayContrast(crop, 10, true, muCrop))) return;
 
       // Paper-barcode passes (ESL price tags, printed stickers)
       const grayCrop = toGrayContrast(crop, 2);
