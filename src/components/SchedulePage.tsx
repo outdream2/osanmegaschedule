@@ -117,9 +117,19 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     }
   };
 
-  // Scroll today's column to center on data load
+  // Mobile 7-day window state
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
+  const [mobileWeekOffset, setMobileWeekOffset] = useState(0);
+
   useEffect(() => {
-    if (employees.length === 0) return;
+    const onResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // Scroll today's column to center on data load (desktop only)
+  useEffect(() => {
+    if (employees.length === 0 || isMobile) return;
     requestAnimationFrame(() => {
       if (!scrollTableRef.current || !todayColRef.current) return;
       const container = scrollTableRef.current;
@@ -129,7 +139,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       const colCenter = colRect.left - containerRect.left + container.scrollLeft + col.offsetWidth / 2;
       container.scrollLeft = Math.max(0, colCenter - container.clientWidth / 2);
     });
-  }, [employees]);
+  }, [employees, isMobile]);
 
 
   // Administrative / Auth states
@@ -565,6 +575,17 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     const day = String(i + 1).padStart(2, '0');
     return `${currentYear}-${monthStr}-${day}`;
   });
+
+  // Mobile: 7-day window centered on today (±3 days) + week offset
+  const mobileDates = React.useMemo(() => {
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(todayStr + "T00:00:00");
+      d.setDate(d.getDate() + i - 3 + mobileWeekOffset * 7);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    });
+  }, [todayStr, mobileWeekOffset]);
+
+  const displayDates = isMobile ? mobileDates : dateList;
 
   // Trigger loading schedule — supports a multi-month date range by fetching each month
   // in parallel and merging employee schedule arrays.
@@ -1046,10 +1067,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       return 0;
     });
 
-  const getCalculatedSummary = (sourceEmployees = filteredEmployees) => {
+  const getCalculatedSummary = (sourceEmployees = filteredEmployees, dates = displayDates) => {
     const result: MonthlySummary[] = [];
 
-    dateList.forEach((currentDate) => {
+    dates.forEach((currentDate) => {
       const day = parseInt(currentDate.split('-')[2]);
 
       let openCount = 0;
@@ -1617,20 +1638,23 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               </div>
             )}
 
-            {/* Mobile date scroll arrows */}
+            {/* Mobile 7-day week navigation */}
             <div className="sm:hidden flex items-center gap-2 px-3 py-1.5 bg-indigo-50/60 border-b border-indigo-100 shrink-0">
               <button
-                onClick={() => scrollDays(-7)}
+                onClick={() => setMobileWeekOffset(o => o - 1)}
                 className="w-8 h-7 flex items-center justify-center bg-white border border-indigo-200 hover:bg-indigo-100 active:bg-indigo-200 rounded-lg text-indigo-600 transition cursor-pointer shrink-0 shadow-sm"
-                aria-label="7일 이전"
+                aria-label="이전 주"
               >
                 <ChevronLeft size={15} />
               </button>
-              <span className="flex-1 text-center text-[11px] text-indigo-500 font-medium">
-                날짜를 탭하면 당일 타임라인을 볼 수 있습니다
-              </span>
               <button
-                onClick={() => scrollDays(7)}
+                onClick={() => setMobileWeekOffset(0)}
+                className="flex-1 text-center text-[11px] text-indigo-600 font-bold py-1 hover:bg-indigo-100 rounded-lg transition cursor-pointer"
+              >
+                {mobileWeekOffset === 0 ? "오늘 기준 7일" : `${mobileDates[0].slice(5).replace("-", "/")} – ${mobileDates[6].slice(5).replace("-", "/")}`}
+              </button>
+              <button
+                onClick={() => setMobileWeekOffset(o => o + 1)}
                 className="w-8 h-7 flex items-center justify-center bg-white border border-indigo-200 hover:bg-indigo-100 active:bg-indigo-200 rounded-lg text-indigo-600 transition cursor-pointer shrink-0 shadow-sm"
                 aria-label="7일 이후"
               >
@@ -1706,7 +1730,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                           <span className="sm:hidden">성명</span>
                         </th>
 
-                        {dateList.map((dateStr) => {
+                        {displayDates.map((dateStr) => {
                           const { fullDate, isToday } = getDayDetails(dateStr);
                           const dayNum = parseInt(dateStr.split('-')[2]);
                           const dayIndex = new Date(dateStr + 'T00:00:00').getDay();
@@ -1738,7 +1762,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                         {/* Left spacing header matching Name column */}
                         <th className="border-r border-b border-gray-200 sticky left-0 bg-gray-50 z-40 h-5 sm:h-6" style={{ minWidth: "80px" }}></th>
 
-                        {dateList.map((dateStr) => {
+                        {displayDates.map((dateStr) => {
                           const { dayWord, isToday } = getDayDetails(dateStr);
                           const dayIndex = new Date(dateStr + 'T00:00:00').getDay();
                           const wordClass = dayIndex === 6
@@ -1860,7 +1884,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                           </td>
 
                           {/* Schedule Cells */}
-                          {dateList.map((dateStr) => {
+                          {displayDates.map((dateStr) => {
                             const { fullDate, isToday } = getDayDetails(dateStr);
                             const currentSched = emp.schedules.find((s) => s.date === fullDate);
                             const isOwnRow = isEmployeeMode && sessionEmployeeId === emp.id;
