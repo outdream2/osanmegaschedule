@@ -102,7 +102,7 @@ async function startServer() {
   }
 
   app.use(compression());
-  app.use(express.json({ limit: "50mb" }));
+  app.use(express.json({ limit: "200mb" }));
 
   // API router endpoints
   app.get("/api/schedules", (req, res) => scheduleController.getSchedules(req, res));
@@ -273,10 +273,12 @@ async function startServer() {
     }
   });
 
-  // POST /api/upload-products — manager or superadmin; xlsx base64 → bulk-imports to products table
-  app.post("/api/upload-products", async (req, res) => {
-    const { managerId, fileBase64, adminKey } = req.body ?? {};
-    if (!fileBase64) return res.status(400).json({ error: "fileBase64 required" });
+  // POST /api/upload-products — manager or superadmin; raw xlsx binary → bulk-imports to products table
+  app.post("/api/upload-products", express.raw({ type: "application/octet-stream", limit: "100mb" }), async (req, res) => {
+    const { adminKey, managerId } = req.query as Record<string, string>;
+    if (!req.body || !Buffer.isBuffer(req.body) || req.body.length === 0) {
+      return res.status(400).json({ error: "파일이 없습니다" });
+    }
     try {
       let authorized = false;
       if (adminKey && adminKey === (process.env.ADMIN_PIN ?? "1234")) {
@@ -286,7 +288,7 @@ async function startServer() {
         authorized = !!emp?.is_manager;
       }
       if (!authorized) return res.status(403).json({ error: "관리자만 가능합니다" });
-      const buf = Buffer.from(fileBase64, "base64");
+      const buf = req.body as Buffer;
       const rows = xlsxToRows(buf);
       if (rows.length === 0) return res.status(400).json({ error: "엑셀에 데이터가 없습니다" });
       console.log(`[upload] parsed ${rows.length} rows`);
@@ -296,27 +298,24 @@ async function startServer() {
         console.error("[upload] delete error:", delErr);
         throw new Error(`삭제 실패: ${delErr.message}`);
       }
-      console.log(`[upload] table cleared, inserting via CSV...`);
-      // Bulk insert via Supabase REST API with CSV (much faster than row-by-row)
-      const csv = rowsToCSV(rows);
-      const sbUrl = process.env.SUPABASE_URL!;
-      const sbKey = process.env.SUPABASE_KEY!;
-      const insertRes = await fetch(`${sbUrl}/rest/v1/products`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/csv",
-          "apikey": sbKey,
-          "Authorization": `Bearer ${sbKey}`,
-          "Prefer": "return=minimal",
-        },
-        body: csv,
-      });
-      if (!insertRes.ok) {
-        const errText = await insertRes.text();
-        console.error("[upload] CSV insert error:", errText);
-        throw new Error(`CSV 삽입 실패: ${errText}`);
+      console.log(`[upload] table cleared, inserting ${rows.length} rows in chunks...`);
+      // Bulk insert via supabase-js client in parallel chunks
+      const CHUNK_SIZE = 500;
+      const chunks: Record<string, any>[][] = [];
+      for (let i = 0; i < rows.length; i += CHUNK_SIZE) chunks.push(rows.slice(i, i + CHUNK_SIZE));
+      const PARALLEL = 3;
+      for (let i = 0; i < chunks.length; i += PARALLEL) {
+        const batch = chunks.slice(i, i + PARALLEL);
+        const results = await Promise.all(batch.map(chunk => supabase.from("products").insert(chunk)));
+        for (const { error: insertErr } of results) {
+          if (insertErr) {
+            console.error("[upload] insert error:", insertErr);
+            throw new Error(`삽입 실패: ${insertErr.message}`);
+          }
+        }
+        console.log(`[upload] inserted chunks ${i + 1}~${Math.min(i + PARALLEL, chunks.length)} / ${chunks.length}`);
       }
-      console.log(`[upload] CSV insert done`);
+      console.log(`[upload] insert done`);
       productMapCache = null;
       productMapPromise = null;
       // Append to import log (keep last 20)

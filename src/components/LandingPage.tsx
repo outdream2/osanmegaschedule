@@ -150,16 +150,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     setUploadLoading(true);
     setUploadResult(null);
     try {
-      const fileBase64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve((reader.result as string).split(",")[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(uploadFile);
+      const params = isSuperAdmin && !authSession?.employeeId
+        ? "adminKey=1234"
+        : `managerId=${authSession!.employeeId}`;
+      const buf = await uploadFile.arrayBuffer();
+      const res = await axios.post(`/api/upload-products?${params}`, buf, {
+        headers: { "Content-Type": "application/octet-stream" },
       });
-      const body = isSuperAdmin && !authSession?.employeeId
-        ? { adminKey: "1234", fileBase64 }
-        : { managerId: authSession!.employeeId, fileBase64 };
-      const res = await axios.post("/api/upload-products", body);
       setUploadResult({ ok: true, count: res.data.count });
       await fetchImportLog();
     } catch (err: any) {
@@ -196,7 +193,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           </div>
           <span className="font-black tracking-tight leading-none">
             <span className="text-red-500 text-xl">OSAN</span>
-            <span className="hidden sm:inline text-gray-900 text-base"> MEGATOWN</span>
+            <span className="text-gray-900 text-base"> MEGATOWN</span>
           </span>
         </div>
 

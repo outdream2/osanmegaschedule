@@ -187,7 +187,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
           </div>
           <span className="font-black tracking-tight leading-none">
             <span className="text-red-500 text-xl">OSAN</span>
-            <span className="hidden sm:inline text-gray-900 text-base"> MEGATOWN</span>
+            <span className="text-gray-900 text-base"> MEGATOWN</span>
           </span>
           <span className="text-xs font-bold text-gray-500 hidden sm:inline">· 상품 스캔</span>
         </div>

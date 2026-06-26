@@ -1221,7 +1221,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             </div>
             <span className="font-black tracking-tight leading-none shrink-0">
               <span className="text-red-500 text-xl">OSAN</span>
-              <span className="hidden sm:inline text-gray-900 text-base"> MEGATOWN</span>
+              <span className="text-gray-900 text-base"> MEGATOWN</span>
             </span>
 
             {/* Desktop nav tabs */}
