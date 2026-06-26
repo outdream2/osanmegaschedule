@@ -304,19 +304,20 @@ const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
     const popoverHeight = popoverRef.current.offsetHeight || 220;
     const popoverWidth  = popoverRef.current.offsetWidth || 240;
 
-    let top  = anchor.bottom + window.scrollY + 6;
-    let left = anchor.left + window.scrollX + (anchor.width / 2) - (popoverWidth / 2);
+    let top  = anchor.bottom + 6;
+    let left = anchor.left + (anchor.width / 2) - (popoverWidth / 2);
 
     // Keep within window bounds
     if (left < 10) left = 10;
     if (left + popoverWidth > window.innerWidth - 10) {
       left = window.innerWidth - popoverWidth - 10;
     }
-    if (top + popoverHeight > window.innerHeight + window.scrollY - 10) {
-      top = anchor.top + window.scrollY - popoverHeight - 6;
+    if (top + popoverHeight > window.innerHeight - 10) {
+      top = anchor.top - popoverHeight - 6;
     }
+    if (top < 10) top = 10;
 
-    setStyle({ top, left, position: "absolute", zIndex: 100 });
+    setStyle({ top, left, position: "fixed", zIndex: 100 });
   }, [anchor]);
 
   return (
@@ -479,13 +480,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const [requestFlash, setRequestFlash] = useState(false);
 
   // Barcode scanner
-  type ScannerMode = "search" | "products" | "zone" | null;
+  type ScannerMode = "search" | "products" | null;
   const [scannerMode, setScannerMode] = useState<ScannerMode>(null);
-
-  // Main content tab
-  const [mainTab, setMainTab] = useState<"map" | "scan">("map");
-  const [scanResult, setScanResult] = useState<string | null>(null);
-  const [scanRequestedIds, setScanRequestedIds] = useState<Set<string>>(new Set());
 
   // Requests panel
   const [reqFilter, setReqFilter] = useState<"all" | "pending" | "done">("all");
@@ -861,9 +857,6 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       setSearchQuery(result);
     } else if (scannerMode === "products") {
       setDraftProducts((prev) => prev ? `${prev}, ${result}` : result);
-    } else if (scannerMode === "zone") {
-      setScanResult(result);
-      setScanRequestedIds(new Set());
     }
     setScannerMode(null);
   };
@@ -1120,185 +1113,36 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               </div>
             )}
 
-            {/* Tab bar */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-2">
+                <span className="text-xl">🗺️</span>
+                <h2 className="text-lg font-bold text-gray-700">실시간 매장 지도</h2>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap justify-end">
+                {logisticsStaff.length > 0 && logisticsStaff.map(({ employee }) => {
+                  const colorIdx = staffColorMap.get(employee.id) ?? 0;
+                  return (
+                    <span key={employee.id} className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${STAFF_COLORS[colorIdx % STAFF_COLORS.length]}`}>
+                      {employee.name}
+                    </span>
+                  );
+                })}
                 <button
-                  onClick={() => setMainTab("map")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${mainTab === "map" ? "bg-white text-indigo-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
+                  onClick={handleSaveAll}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition cursor-pointer"
                 >
-                  🗺️ 실시간 매장 지도
-                </button>
-                <button
-                  onClick={() => { setMainTab("scan"); setScanResult(null); setScanRequestedIds(new Set()); }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${mainTab === "scan" ? "bg-white text-indigo-700 shadow-sm" : "text-gray-500 hover:text-gray-700"}`}
-                >
-                  <ScanLine size={13} /> 바코드 스캔
+                  <Save size={13} />
+                  전체저장
                 </button>
               </div>
-              {mainTab === "map" && (
-                <div className="flex items-center gap-2 flex-wrap justify-end">
-                  {logisticsStaff.length > 0 && logisticsStaff.map(({ employee }) => {
-                    const colorIdx = staffColorMap.get(employee.id) ?? 0;
-                    return (
-                      <span key={employee.id} className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${STAFF_COLORS[colorIdx % STAFF_COLORS.length]}`}>
-                        {employee.name}
-                      </span>
-                    );
-                  })}
-                  <button
-                    onClick={handleSaveAll}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition cursor-pointer"
-                  >
-                    <Save size={13} />
-                    전체저장
-                  </button>
-                </div>
-              )}
             </div>
 
-            {mainTab === "map" && <p className="text-xs text-gray-400 mb-4">* 구역 번호를 누르면 상세 편집창이 열립니다. 전체저장 시 직원 구역배정 정보가 반영됩니다.</p>}
+            <p className="text-xs text-gray-400 mb-4">* 구역 번호를 누르면 상세 편집창이 열립니다. 전체저장 시 직원 구역배정 정보가 반영됩니다.</p>
 
-            {/* ── SCAN TAB ─────────────────────────────────────────────────── */}
-            {mainTab === "scan" && (() => {
-              const matchedZones = scanResult
-                ? zones.filter((z) =>
-                    z.products.toLowerCase().includes(scanResult.toLowerCase()) ||
-                    z.label.toLowerCase().includes(scanResult.toLowerCase()) ||
-                    z.category.toLowerCase().includes(scanResult.toLowerCase())
-                  )
-                : [];
-
-              return (
-                <div className="flex flex-col gap-4 py-2">
-                  {/* Scan button / result header */}
-                  {!scanResult ? (
-                    <div className="flex flex-col items-center justify-center gap-5 py-16">
-                      <div className="w-20 h-20 rounded-2xl bg-indigo-50 border-2 border-indigo-200 flex items-center justify-center">
-                        <ScanLine size={36} className="text-indigo-500" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-sm font-bold text-gray-700 mb-1">상품 바코드를 스캔하세요</p>
-                        <p className="text-xs text-gray-400">스캔 후 해당 상품이 있는 구역의 담당자에게 진열요청을 보낼 수 있습니다</p>
-                      </div>
-                      <button
-                        onClick={() => setScannerMode("zone")}
-                        className="flex items-center gap-2 px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-sm transition cursor-pointer"
-                      >
-                        <ScanLine size={16} />
-                        스캔 시작
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      {/* Scanned result bar */}
-                      <div className="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50 border border-indigo-200 rounded-xl">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <ScanLine size={15} className="text-indigo-500 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-[10px] text-indigo-500 font-semibold">스캔 결과</p>
-                            <p className="text-sm font-black text-indigo-800 truncate">{scanResult}</p>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => { setScanResult(null); setScanRequestedIds(new Set()); }}
-                          className="shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 bg-white border border-gray-200 hover:border-indigo-300 hover:text-indigo-600 transition cursor-pointer"
-                        >
-                          <ScanLine size={11} />
-                          다시 스캔
-                        </button>
-                      </div>
-
-                      {/* Matched zones */}
-                      {matchedZones.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                          <Package size={28} className="text-gray-300" />
-                          <p className="text-sm font-bold text-gray-500">등록된 구역을 찾을 수 없습니다</p>
-                          <p className="text-xs text-gray-400">구역 상세편집에서 상품 메모에 바코드 번호를 등록해 주세요</p>
-                          <button
-                            onClick={() => setScannerMode("zone")}
-                            className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl transition cursor-pointer"
-                          >
-                            <ScanLine size={12} /> 다시 스캔
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="flex flex-col gap-3">
-                          <p className="text-xs font-bold text-gray-600">{matchedZones.length}개 구역에서 검색됨</p>
-                          {matchedZones.map((zone) => {
-                            const colorIdx = zone.assignedStaffId !== null ? (staffColorMap.get(zone.assignedStaffId) ?? 0) : null;
-                            const alreadyRequested = scanRequestedIds.has(zone.id);
-                            return (
-                              <div key={zone.id} className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-xl shadow-sm">
-                                {/* Zone badge */}
-                                <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0 border-2 ${
-                                  zone.status === "empty" ? "bg-red-100 border-red-300" :
-                                  zone.status === "low" ? "bg-amber-100 border-amber-300" :
-                                  "bg-emerald-100 border-emerald-300"
-                                }`}>
-                                  <span className="text-[10px] font-black text-gray-700 leading-tight">{zone.num}번</span>
-                                  <span className={`text-[8px] font-bold ${zone.status === "empty" ? "text-red-600" : zone.status === "low" ? "text-amber-600" : "text-emerald-600"}`}>
-                                    {STATUS_LABEL[zone.status]}
-                                  </span>
-                                </div>
-
-                                {/* Zone info */}
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-bold text-gray-800 truncate">{zone.label}</p>
-                                  <p className="text-[10px] text-gray-500 truncate">{zone.category}</p>
-                                  {zone.products && (
-                                    <p className="text-[10px] text-indigo-600 font-medium truncate mt-0.5">{zone.products}</p>
-                                  )}
-                                </div>
-
-                                {/* Staff + request button */}
-                                <div className="flex flex-col items-end gap-1.5 shrink-0">
-                                  {zone.assignedStaffId ? (
-                                    <>
-                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${colorIdx !== null ? STAFF_COLORS[colorIdx % STAFF_COLORS.length] : "bg-gray-100 text-gray-600 border-gray-200"}`}>
-                                        {zone.assignedStaffName}
-                                      </span>
-                                      {alreadyRequested ? (
-                                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 px-2 py-1 bg-emerald-50 border border-emerald-200 rounded-lg">
-                                          <CheckCircle2 size={11} /> 요청됨
-                                        </span>
-                                      ) : (
-                                        <button
-                                          onClick={() => {
-                                            handleQuickRequest(zone);
-                                            setScanRequestedIds((prev) => new Set([...prev, zone.id]));
-                                          }}
-                                          className="flex items-center gap-1 text-[10px] font-black px-2.5 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg transition cursor-pointer"
-                                        >
-                                          <Bell size={10} /> 진열요청
-                                        </button>
-                                      )}
-                                    </>
-                                  ) : (
-                                    <span className="text-[10px] text-gray-400 font-medium">담당자 미배정</span>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                          {/* Scan again */}
-                          <button
-                            onClick={() => setScannerMode("zone")}
-                            className="flex items-center justify-center gap-1.5 w-full py-2.5 border-2 border-dashed border-gray-300 hover:border-indigo-400 text-gray-500 hover:text-indigo-600 text-xs font-bold rounded-xl transition cursor-pointer"
-                          >
-                            <ScanLine size={13} /> 다른 상품 스캔
-                          </button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              );
-            })()}
 
             {/* ── MAP TAB ─────────────────────────────────────────────────── */}
             {/* Simulated 2D Floor Plan L-Shape Grid matches map.png */}
-            {mainTab === "map" && <div className="overflow-x-auto">
+            <div className="overflow-x-auto">
             <div className="p-4 bg-slate-200 rounded-2xl flex flex-col justify-between border-4 border-emerald-500 shadow-inner gap-4 min-w-[780px] min-h-[550px]">
               
               {/* SECTION 1: TOP HORIZONTAL BAND (Shelves 24-35 + corner cart/elevator) */}
@@ -1515,7 +1359,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               </div>
 
             </div>
-            </div>}{/* end overflow-x-auto / map tab */}
+            </div>{/* end overflow-x-auto */}
           </div>
         </section>
 

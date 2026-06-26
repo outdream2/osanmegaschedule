@@ -14,12 +14,13 @@ import {
   User,
   LogOut,
   AlertCircle,
+  ScanLine,
 } from "lucide-react";
 import type { AuthSession } from "../types";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
-  onNavigate: (page: "schedule" | "reservation" | "display", auth?: AuthSession) => void;
+  onNavigate: (page: "schedule" | "reservation" | "display" | "scan", auth?: AuthSession) => void;
   onLogout: () => void;
 }
 
@@ -280,6 +281,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <div className="text-gray-500 text-sm leading-relaxed">상담 및 방문 일정을 간편하게 예약</div>
                   <div className="flex items-center gap-1 mt-4 text-emerald-600 text-xs font-bold">
                     <span>예약하기</span>
+                    <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+              </button>
+
+              <button
+                onClick={() => onNavigate("scan")}
+                className="group relative bg-white border border-gray-200 hover:border-teal-400 rounded-2xl p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-teal-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="relative">
+                  <div className="w-11 h-11 rounded-xl bg-teal-100 border border-teal-200 flex items-center justify-center mb-4 group-hover:bg-teal-200 transition-colors">
+                    <ScanLine size={22} className="text-teal-600" />
+                  </div>
+                  <div className="text-gray-900 font-bold text-lg mb-1 tracking-tight">상품 스캔</div>
+                  <div className="text-gray-500 text-sm leading-relaxed">바코드 스캔으로 진열 보충 요청</div>
+                  <div className="flex items-center gap-1 mt-4 text-teal-600 text-xs font-bold">
+                    <span>스캔하기</span>
                     <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </div>

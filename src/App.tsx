@@ -8,17 +8,18 @@ import SchedulePage from "./components/SchedulePage";
 import { LandingPage } from "./components/LandingPage";
 import { ReservationPage } from "./components/ReservationPage";
 import { DisplayPage } from "./components/DisplayPage";
+import { ScanPage } from "./components/ScanPage";
 import { useAuth } from "./hooks/useAuth";
 import type { AuthSession } from "./types";
 
-type Page = "landing" | "schedule" | "reservation" | "display";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan";
 
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
   const [pendingEditEmpId, setPendingEditEmpId] = useState<number | null>(null);
   const { session: authSession, setSession: setAuthSession, clearSession: clearAuthSession } = useAuth();
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display", auth?: AuthSession) => {
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan", auth?: AuthSession) => {
     if (auth) {
       setAuthSession(auth);
     } else if (next === "reservation") {
@@ -53,6 +54,9 @@ export default function App() {
   }
   if (page === "reservation") {
     return <ReservationPage onBack={() => setPage("landing")} authSession={authSession} />;
+  }
+  if (page === "scan") {
+    return <ScanPage onBack={() => setPage("landing")} />;
   }
   if (page === "display") {
     return (
