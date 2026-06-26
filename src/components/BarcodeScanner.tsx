@@ -160,6 +160,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   const [scannedCode,  setScannedCode] = useState<string | null>(null);
   const [darkHint,     setDarkHint]    = useState(false);
   const [scanKey,      setScanKey]     = useState(0);
+  const [flashing,     setFlashing]    = useState(false);
 
   // Load ZBar eagerly; create offscreen proc canvas
   useEffect(() => {
@@ -209,8 +210,11 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     clearInterval(quaggaIntervalRef.current);
     clearInterval(ocrIntervalRef.current);
 
+    // Shutter flash
+    setFlashing(true);
+    setTimeout(() => setFlashing(false), 300);
     const canvas = canvasRef.current;
-    if (canvas && canvas.width > 0) setFrozenFrame(canvas.toDataURL("image/jpeg", 0.8));
+    if (canvas && canvas.width > 0) setFrozenFrame(canvas.toDataURL("image/jpeg", 0.92));
     setScannedCode(raw.trim());
     // onScan is called only after user confirms — not automatically
   }, []);
@@ -619,32 +623,45 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           {/* Live video — hidden when frozen */}
           <video ref={videoRef} className={`w-full h-full object-cover ${frozenFrame ? "invisible" : ""}`} style={{ filter: "brightness(1.5)" }} autoPlay muted playsInline />
 
-          {/* Frozen frame + confirmation overlay */}
+          {/* Snapshot confirmation overlay */}
           {frozenFrame && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <img src={frozenFrame} className="w-full h-full object-cover" alt="scan" />
-              <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-4 px-6">
-                <p className="text-gray-300 text-[11px] font-medium tracking-wide">스캔 결과를 확인해주세요</p>
-                <div className="w-full bg-black/60 border border-white/20 rounded-xl px-4 py-3 text-center">
-                  <p className="text-[10px] text-gray-400 mb-1">인식된 코드</p>
-                  <p className="text-white font-mono text-base font-bold tracking-widest">{scannedCode}</p>
-                </div>
-                <div className="flex gap-3 w-full">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleRetry(); }}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-gray-700/80 border border-gray-500 active:scale-95 transition-transform cursor-pointer"
-                  >
-                    다시 스캔
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
-                    className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 border border-emerald-500 active:scale-95 transition-transform shadow-lg cursor-pointer"
-                  >
-                    ✓ 확인
-                  </button>
+            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3 px-5">
+              {/* Polaroid photo card */}
+              <div style={{ animation: "photoSnap 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards", width: "80%", transform: "rotate(-2deg)" }}>
+                <div className="bg-white p-2 pb-7 shadow-[0_12px_40px_rgba(0,0,0,0.8)]">
+                  <img
+                    src={frozenFrame}
+                    alt="snap"
+                    className="w-full block"
+                    style={{ aspectRatio: "4/3", objectFit: "cover" }}
+                  />
+                  <p className="text-center text-gray-500 font-mono text-[10px] font-bold tracking-widest mt-2 px-1">
+                    {scannedCode}
+                  </p>
                 </div>
               </div>
+
+              {/* Buttons */}
+              <div className="flex gap-2.5 w-[80%]">
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleRetry(); }}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-gray-700/90 border border-gray-500 active:scale-95 transition-transform cursor-pointer"
+                >
+                  다시 스캔
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleConfirm(); }}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-emerald-600 border border-emerald-500 active:scale-95 transition-transform shadow-lg cursor-pointer"
+                >
+                  ✓ 확인
+                </button>
+              </div>
             </div>
+          )}
+
+          {/* Shutter flash */}
+          {flashing && (
+            <div className="absolute inset-0 pointer-events-none" style={{ animation: "shutterFlash 0.3s ease-out forwards" }} />
           )}
 
           {/* Scan guide overlay (live only) */}
@@ -693,6 +710,15 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           50%  { top: calc(100% - 4px); opacity: 0.4; }
           52%  { opacity: 1; }
           100% { top: 4px;    opacity: 1; }
+        }
+        @keyframes photoSnap {
+          0%   { opacity: 0; transform: rotate(-2deg) scale(0.72) translateY(-12px); }
+          65%  { transform: rotate(-2deg) scale(1.04) translateY(0); }
+          100% { opacity: 1; transform: rotate(-2deg) scale(1) translateY(0); }
+        }
+        @keyframes shutterFlash {
+          0%   { background: rgba(255,255,255,0.92); }
+          100% { background: rgba(255,255,255,0); }
         }
       `}</style>
     </div>
