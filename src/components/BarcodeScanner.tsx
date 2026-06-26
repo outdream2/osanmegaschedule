@@ -166,6 +166,27 @@ function adaptiveThreshold(src: ImageData, blockSize = 31, k = 0.08): ImageData 
   return new ImageData(d, w, h);
 }
 
+// ── Vertical morphological dilation — thickens thin dark bars ─────────────────
+// E-ink bars can be broken/faint due to limited dot pitch. Taking the MIN in a
+// vertical window expands dark regions downward, filling micro-gaps in bar lines.
+function vertDilate(src: ImageData, radius = 2): ImageData {
+  const w = src.width, h = src.height;
+  const d = new Uint8ClampedArray(src.data.length);
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      let minV = src.data[(y * w + x) * 4]; // start with own value
+      for (let dy = -radius; dy <= radius; dy++) {
+        const yy = Math.max(0, Math.min(h - 1, y + dy));
+        const v = src.data[(yy * w + x) * 4];
+        if (v < minV) minV = v;
+      }
+      const idx = (y * w + x) * 4;
+      d[idx] = d[idx + 1] = d[idx + 2] = minV; d[idx + 3] = 255;
+    }
+  }
+  return new ImageData(d, w, h);
+}
+
 // ── Average brightness of ImageData (0–255) ───────────────────────────────────
 function avgBrightness(src: ImageData): number {
   let sum = 0;
@@ -424,6 +445,14 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     } catch {}
   }, [torchOn, videoRef]);
 
+  // ── Auto torch on scanner open — illuminate barcode without manual press ───
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (mountedRef.current) setTorchOn(true);
+    }, 800); // short delay so stream is ready before torch request
+    return () => clearTimeout(t);
+  }, []);
+
   // ── Android auto-focus: trigger single-shot→continuous on stream start ───
   // Android Chrome often starts with fixed focus — needs an explicit AF kick.
   useEffect(() => {
@@ -521,15 +550,20 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           upscaled = pc.getImageData(0, 0, cw * 3, ch * 3);
           if (await tryZBar(upscaled)) return;
 
-          // ── E-ink / ESL: adaptive threshold on 3x upscaled ──────────────────
+          // ── E-ink / ESL: adaptive threshold + dilation on 3x upscaled ────────
           // E-ink bars are gray (~145) on light gray (~210) — not true black/white.
-          // adaptiveThreshold uses local mean so it's immune to the global gray offset.
+          // vertDilate thickens broken bar lines; adaptiveThreshold handles gray offset.
           if (await tryZBar(adaptiveThreshold(upscaled, 45, 0.08))) return;
           if (await tryZBar(adaptiveThreshold(upscaled, 25, 0.05))) return;
+          // Dilation → adaptive threshold (fills micro-gaps in e-ink dot-matrix bars)
+          const dilated = vertDilate(upscaled, 2);
+          if (await tryZBar(adaptiveThreshold(dilated, 45, 0.08))) return;
+          if (await tryZBar(adaptiveThreshold(dilated, 31, 0.06))) return;
           // Mean-centered high contrast: center at image mean, factor=8 → bars→black
           const muUp = avgBrightness(upscaled);
           if (await tryZBar(toGrayContrast(upscaled, 8, false, muUp))) return;
           if (await tryZBar(toGrayContrast(upscaled, 10, false, muUp))) return;
+          if (await tryZBar(toGrayContrast(dilated, 8, false, muUp))) return;
           if (await tryZBar(binarize(toGrayContrast(upscaled, 8, false, muUp), 128))) return;
 
           // 4. Crop — 3x upscaled + brightness(2.5) contrast(1.3)
@@ -856,7 +890,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           onClick={handleTapFocus}
         >
           {/* Live video — hidden when frozen */}
-          <video ref={videoRef} className={`w-full h-full object-cover ${frozenFrame ? "invisible" : ""}`} style={{ filter: "brightness(1.5)" }} autoPlay muted playsInline />
+          <video ref={videoRef} className={`w-full h-full object-cover ${frozenFrame ? "invisible" : ""}`} autoPlay muted playsInline />
 
           {/* Snapshot confirmation overlay */}
           {frozenFrame && (
