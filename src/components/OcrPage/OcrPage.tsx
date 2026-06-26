@@ -1,36 +1,19 @@
 import React, { useCallback, useRef, useState } from "react";
 import axios from "axios";
-import { ArrowLeft, FileText, Upload, Loader2, X, ChevronDown, ChevronUp, Download, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, FileText, Upload, Loader2, X } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
+import type { OcrItem, OcrMeta } from "./types";
+import { fmt } from "./types";
+import { PageImageViewer } from "./PageImageViewer";
+import { ItemsTable } from "./ItemsTable";
+import { MetaAccordion } from "./MetaAccordion";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
-
-interface OcrItem {
-  name: string | null;
-  spec: string | null;
-  qty: number | null;
-  unit_price: number | null;
-  amount: number | null;
-  _page: number;
-}
-interface OcrMeta {
-  page: number;
-  supplier?: string | null;
-  recipient?: string | null;
-  date?: string | null;
-  subtotal?: number | null;
-  vat?: number | null;
-  total?: number | null;
-  _rawText?: string;
-}
 
 interface OcrPageProps {
   onBack: () => void;
 }
-
-const fmt = (n: number | null | undefined) =>
-  n == null ? "-" : n.toLocaleString("ko-KR");
 
 export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -41,7 +24,6 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<OcrItem[]>([]);
   const [meta, setMeta] = useState<OcrMeta[]>([]);
-  const [expandedPage, setExpandedPage] = useState<number | null>(null);
   const [pageImages, setPageImages] = useState<string[]>([]);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
 
@@ -59,8 +41,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
       const ctx = canvas.getContext("2d")!;
       await page.render({ canvasContext: ctx as any, viewport: vp, canvas } as any).promise;
       const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-      const b64 = dataUrl.split(",")[1];
-      images.push({ data: b64, mimeType: "image/jpeg" });
+      images.push({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
       setPageImages(prev => [...prev, dataUrl]);
     }
     return images;
@@ -82,26 +63,22 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
       if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
         images = await renderPdfToImages(file);
       } else {
-        // single image
         const dataUrl = await new Promise<string>((resolve) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result as string);
           reader.readAsDataURL(file);
         });
-        const b64 = dataUrl.split(",")[1];
-        images = [{ data: b64, mimeType: file.type || "image/jpeg" }];
+        images = [{ data: dataUrl.split(",")[1], mimeType: file.type || "image/jpeg" }];
         setPageCount(1);
         setPageImages([dataUrl]);
       }
 
-      // Send in batches of 4 pages
       const BATCH = 4;
       const allItems: OcrItem[] = [];
       const allMeta: OcrMeta[] = [];
       for (let i = 0; i < images.length; i += BATCH) {
         const batch = images.slice(i, i + BATCH);
         const res = await axios.post("/api/ocr", { images: batch });
-        // adjust page numbers relative to global offset
         (res.data.items ?? []).forEach((item: OcrItem) => allItems.push({ ...item, _page: i + item._page }));
         (res.data.meta ?? []).forEach((m: OcrMeta) => allMeta.push({ ...m, page: i + m.page }));
         setProcessed(Math.min(i + BATCH, images.length));
@@ -122,37 +99,20 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
     if (file) handleFile(file);
   }, [handleFile]);
 
-  const totalAmount = items.reduce((s, it) => s + (it.amount ?? 0), 0);
-  const uniqueDates = [...new Set(meta.map(m => m.date).filter(Boolean))];
-  const uniqueSuppliers = [...new Set(meta.map(m => m.supplier).filter(Boolean))];
+  const clearFile = useCallback(() => {
+    setFileName(null);
+    setItems([]);
+    setMeta([]);
+    setPageImages([]);
+    setCurrentPageIdx(0);
+  }, []);
 
-  const handleExportCsv = useCallback(() => {
-    const header = ["페이지", "품명", "규격", "수량", "단가", "금액"];
-    const rows = items.map(it => [
-      it._page,
-      it.name ?? "",
-      it.spec ?? "",
-      it.qty ?? "",
-      it.unit_price ?? "",
-      it.amount ?? "",
-    ]);
-    const csv = [header, ...rows]
-      .map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(","))
-      .join("\r\n");
-    const bom = "﻿";
-    const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    const dateStr = uniqueDates[0]?.replace(/[-/]/g, "") ?? "export";
-    a.download = `거래명세서_${dateStr}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, [items, uniqueDates]);
+  const uniqueDates = [...new Set(meta.map(m => m.date).filter(Boolean))] as string[];
+  const uniqueSuppliers = [...new Set(meta.map(m => m.supplier).filter(Boolean))] as string[];
+  const totalAmount = items.reduce((s, it) => s + (it.amount ?? 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 h-14 flex items-center gap-3 px-4 shrink-0 shadow-sm">
         <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-gray-100 transition cursor-pointer">
           <ArrowLeft size={18} className="text-gray-600" />
@@ -164,7 +124,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
       </header>
 
       <div className="flex-1 flex flex-col items-center px-4 py-6 gap-5 max-w-5xl mx-auto w-full">
-        {/* Upload area */}
+        {/* Upload */}
         <div
           className="w-full border-2 border-dashed border-gray-300 hover:border-amber-400 rounded-2xl p-8 flex flex-col items-center gap-3 cursor-pointer transition-colors bg-white"
           onClick={() => fileInputRef.current?.click()}
@@ -183,7 +143,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
               <FileText size={13} className="text-amber-600" />
               <span className="text-xs font-semibold text-amber-800">{fileName}</span>
               <button
-                onClick={e => { e.stopPropagation(); setFileName(null); setItems([]); setMeta([]); setPageImages([]); setCurrentPageIdx(0); }}
+                onClick={e => { e.stopPropagation(); clearFile(); }}
                 className="text-amber-500 hover:text-amber-800 ml-1 cursor-pointer"
               >
                 <X size={12} />
@@ -199,65 +159,21 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
           onChange={e => { const f = e.target.files?.[0]; if (f) { handleFile(f); e.target.value = ""; } }}
         />
 
-        {/* Page image viewer */}
-        {pageImages.length > 0 && (
-          <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
-              <span className="text-xs font-bold text-gray-500">원본 이미지</span>
-              <span className="text-xs font-bold text-gray-400">
-                {currentPageIdx + 1} / {pageImages.length}
-                {loading && pageImages.length < pageCount && (
-                  <span className="text-amber-500 ml-1">· 렌더링 중...</span>
-                )}
-              </span>
-            </div>
-            <div className="relative">
-              <img
-                src={pageImages[currentPageIdx]}
-                alt={`페이지 ${currentPageIdx + 1}`}
-                className="w-full h-auto block"
-                style={{ maxHeight: "70vh", objectFit: "contain", background: "#f8f8f8" }}
-              />
-              {pageImages.length > 1 && (
-                <>
-                  <button
-                    onClick={() => setCurrentPageIdx(i => Math.max(0, i - 1))}
-                    disabled={currentPageIdx === 0}
-                    className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white disabled:opacity-20 disabled:cursor-not-allowed transition cursor-pointer"
-                  >
-                    <ChevronLeft size={20} />
-                  </button>
-                  <button
-                    onClick={() => setCurrentPageIdx(i => Math.min(pageImages.length - 1, i + 1))}
-                    disabled={currentPageIdx === pageImages.length - 1}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white disabled:opacity-20 disabled:cursor-not-allowed transition cursor-pointer"
-                  >
-                    <ChevronRight size={20} />
-                  </button>
-                  {/* Page dots */}
-                  <div className="absolute bottom-2 inset-x-0 flex justify-center gap-1.5">
-                    {pageImages.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setCurrentPageIdx(i)}
-                        className={`w-1.5 h-1.5 rounded-full transition cursor-pointer ${
-                          i === currentPageIdx ? "bg-amber-400 w-4" : "bg-white/60 hover:bg-white/90"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Image viewer — appears as pages render */}
+        <PageImageViewer
+          images={pageImages}
+          totalPages={pageCount}
+          loading={loading}
+          currentIdx={currentPageIdx}
+          onChangeIdx={setCurrentPageIdx}
+        />
 
         {/* Progress */}
         {loading && (
           <div className="w-full bg-white border border-gray-200 rounded-2xl p-6 flex flex-col items-center gap-4">
             <Loader2 size={28} className="text-amber-500 animate-spin" />
             <p className="text-sm font-bold text-gray-700">
-              {pageCount > 0 ? `${processed} / ${pageCount} 페이지 처리 중...` : "파일 읽는 중..."}
+              {pageCount > 0 ? `${processed} / ${pageCount} 페이지 OCR 처리 중...` : "파일 읽는 중..."}
             </p>
             {pageCount > 0 && (
               <div className="w-full bg-gray-100 rounded-full h-2">
@@ -299,100 +215,8 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
           </div>
         )}
 
-        {/* Items table */}
-        {items.length > 0 && (
-          <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
-              <span className="font-bold text-gray-900 text-sm">품목 목록</span>
-              <div className="flex items-center gap-3">
-                <span className="text-xs text-gray-400">{items.length}개 항목</span>
-                <button
-                  onClick={handleExportCsv}
-                  className="flex items-center gap-1.5 text-xs font-bold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 px-2.5 py-1 rounded-lg transition cursor-pointer"
-                >
-                  <Download size={12} />CSV 내보내기
-                </button>
-              </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 text-gray-500 text-xs font-bold">
-                    <th className="text-left px-4 py-2.5">품명</th>
-                    <th className="text-left px-3 py-2.5 whitespace-nowrap">규격</th>
-                    <th className="text-right px-3 py-2.5">수량</th>
-                    <th className="text-right px-3 py-2.5 whitespace-nowrap">단가</th>
-                    <th className="text-right px-4 py-2.5">금액</th>
-                    <th className="text-center px-3 py-2.5">페이지</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((it, i) => (
-                    <tr key={i} className="border-t border-gray-50 hover:bg-amber-50/50 transition-colors">
-                      <td className="px-4 py-2.5 font-medium text-gray-900">{it.name ?? "-"}</td>
-                      <td className="px-3 py-2.5 text-gray-500">{it.spec ?? "-"}</td>
-                      <td className="px-3 py-2.5 text-right text-gray-700">{it.qty ?? "-"}</td>
-                      <td className="px-3 py-2.5 text-right text-gray-700 whitespace-nowrap">{fmt(it.unit_price)}</td>
-                      <td className="px-4 py-2.5 text-right font-semibold text-gray-900 whitespace-nowrap">{fmt(it.amount)}</td>
-                      <td className="px-3 py-2.5 text-center">
-                        <span className="text-[10px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold">{it._page}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot>
-                  <tr className="bg-amber-50 border-t-2 border-amber-200">
-                    <td colSpan={4} className="px-4 py-2.5 text-right font-black text-gray-700 text-sm">합계</td>
-                    <td className="px-4 py-2.5 text-right font-black text-amber-700 text-sm whitespace-nowrap">{fmt(totalAmount)}원</td>
-                    <td />
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Per-page meta */}
-        {meta.length > 0 && (
-          <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-100">
-              <span className="font-bold text-gray-900 text-sm">페이지별 요약</span>
-            </div>
-            <div className="divide-y divide-gray-50">
-              {meta.map((m) => (
-                <div key={m.page}>
-                  <button
-                    className="w-full flex items-center justify-between px-4 py-3 hover:bg-gray-50 transition cursor-pointer"
-                    onClick={() => setExpandedPage(expandedPage === m.page ? null : m.page)}
-                  >
-                    <span className="text-sm font-semibold text-gray-700">페이지 {m.page}</span>
-                    <div className="flex items-center gap-3">
-                      {m.date && <span className="text-xs text-gray-500">{m.date}</span>}
-                      {m.total != null && <span className="text-xs font-bold text-amber-700">{fmt(m.total)}원</span>}
-                      {expandedPage === m.page ? <ChevronUp size={14} className="text-gray-400" /> : <ChevronDown size={14} className="text-gray-400" />}
-                    </div>
-                  </button>
-                  {expandedPage === m.page && (
-                    <div className="px-4 pb-3 grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                      {m.supplier && <div><span className="text-gray-400">공급자: </span><span className="font-semibold text-gray-700">{m.supplier}</span></div>}
-                      {m.recipient && <div><span className="text-gray-400">수신자: </span><span className="font-semibold text-gray-700">{m.recipient}</span></div>}
-                      {m.date && <div><span className="text-gray-400">일자: </span><span className="font-semibold text-gray-700">{m.date}</span></div>}
-                      {m.subtotal != null && <div><span className="text-gray-400">공급가액: </span><span className="font-semibold text-gray-700">{fmt(m.subtotal)}원</span></div>}
-                      {m.vat != null && <div><span className="text-gray-400">부가세: </span><span className="font-semibold text-gray-700">{fmt(m.vat)}원</span></div>}
-                      {m.total != null && <div><span className="text-gray-400">합계: </span><span className="font-bold text-amber-700">{fmt(m.total)}원</span></div>}
-                      {m._rawText && (
-                        <div className="col-span-full">
-                          <p className="text-gray-400 mb-1">원문 응답:</p>
-                          <pre className="text-[10px] text-gray-600 bg-gray-50 p-2 rounded overflow-x-auto">{m._rawText}</pre>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        <ItemsTable items={items} uniqueDates={uniqueDates} />
+        <MetaAccordion meta={meta} />
       </div>
     </div>
   );

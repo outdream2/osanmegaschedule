@@ -17,5 +17,7 @@ services:
         sync: false
       - key: VAPID_SUBJECT
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
       - key: VITE_VAPID_PUBLIC_KEY
         sync: false
