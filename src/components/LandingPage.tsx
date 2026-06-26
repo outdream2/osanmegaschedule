@@ -424,7 +424,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                <input ref={uploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => setUploadFile(e.target.files?.[0] ?? null)} />
+                <input ref={uploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => {
+                  const file = e.target.files?.[0] ?? null;
+                  if (file) {
+                    const ext = file.name.split(".").pop()?.toLowerCase();
+                    const validMime = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "application/octet-stream"];
+                    if (ext !== "xlsx" && ext !== "xls") {
+                      setUploadResult({ ok: false, msg: "xlsx 또는 xls 파일만 업로드할 수 있습니다." });
+                      e.target.value = "";
+                      return;
+                    }
+                    if (file.type && !validMime.includes(file.type)) {
+                      setUploadResult({ ok: false, msg: "엑셀 파일 형식이 아닙니다." });
+                      e.target.value = "";
+                      return;
+                    }
+                    setUploadResult(null);
+                  }
+                  setUploadFile(file);
+                }} />
                 <button
                   type="button"
                   onClick={() => uploadInputRef.current?.click()}

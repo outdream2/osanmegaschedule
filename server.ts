@@ -289,6 +289,10 @@ async function startServer() {
       }
       if (!authorized) return res.status(403).json({ error: "관리자만 가능합니다" });
       const buf = req.body as Buffer;
+      // Validate Excel magic bytes: xlsx=PK\x03\x04, xls=OLE2 D0CF11E0
+      const isXlsx = buf[0] === 0x50 && buf[1] === 0x4B && buf[2] === 0x03 && buf[3] === 0x04;
+      const isXls  = buf[0] === 0xD0 && buf[1] === 0xCF && buf[2] === 0x11 && buf[3] === 0xE0;
+      if (!isXlsx && !isXls) return res.status(400).json({ error: "xlsx 또는 xls 파일만 업로드할 수 있습니다." });
       const rows = xlsxToRows(buf);
       if (rows.length === 0) return res.status(400).json({ error: "엑셀에 데이터가 없습니다" });
       console.log(`[upload] parsed ${rows.length} rows`);
