@@ -2,6 +2,7 @@
 import "dotenv/config";
 import express from "express";
 import path from "path";
+import { readFile } from "fs/promises";
 import { createServer as createViteServer } from "vite";
 import { scheduleController } from "./src/controllers/scheduleController";
 import { supabase } from "./src/supabase/client";
@@ -9,31 +10,54 @@ import bcrypt from "bcryptjs";
 import webpush from "web-push";
 import XLSX from "xlsx";
 
-// ── Product lookup cache (loaded once from xlsx) ──────────────────────────────
+// ── Product map cache ─────────────────────────────────────────────────────────
 interface ProductInfo { code: string; name: string; spec: string; }
-let productCache: Map<string, ProductInfo> | null = null;
+let productMapCache: Record<string, ProductInfo> | null = null;
+let productMapPromise: Promise<Record<string, ProductInfo>> | null = null;
 
-function loadProductCache(): Map<string, ProductInfo> {
-  if (productCache) return productCache;
-  const xlsxPath = path.join(process.cwd(), "src", "listfile", "list.xlsx");
-  const wb = XLSX.readFile(xlsxPath);
+function xlsxBufToMap(buf: Buffer): Record<string, ProductInfo> {
+  const wb = XLSX.read(buf, { type: "buffer" });
   const ws = wb.Sheets[wb.SheetNames[0]];
   const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 }) as string[][];
-  const map = new Map<string, ProductInfo>();
+  const map: Record<string, ProductInfo> = {};
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     const code = String(row[0] ?? "").trim();
     const name = String(row[1] ?? "").trim();
     const spec = String(row[5] ?? "").trim();
-    if (code) {
-      map.set(code, { code, name, spec });
-      // Also index by stripped leading zeros for barcode matching
-      const stripped = code.replace(/^0+/, "");
-      if (stripped && stripped !== code) map.set(stripped, { code, name, spec });
-    }
+    if (!code) continue;
+    map[code] = { code, name, spec };
+    const stripped = code.replace(/^0+/, "");
+    if (stripped && stripped !== code && !map[stripped]) map[stripped] = { code, name, spec };
   }
-  productCache = map;
   return map;
+}
+
+async function getProductMap(): Promise<Record<string, ProductInfo>> {
+  if (productMapCache) return productMapCache;
+  if (productMapPromise) return productMapPromise;
+  productMapPromise = (async () => {
+    // 1. Check Supabase for admin-uploaded version
+    try {
+      const { data } = await supabase.from("app_settings").select("value").eq("key", "products_v1").maybeSingle();
+      if (data?.value && typeof data.value === "object" && !Array.isArray(data.value)) {
+        productMapCache = data.value as Record<string, ProductInfo>;
+        return productMapCache;
+      }
+    } catch {}
+    // 2. Fall back to pre-built public/products.json
+    try {
+      const jsonPath = path.join(process.cwd(), "public", "products.json");
+      const raw = await readFile(jsonPath, "utf8");
+      productMapCache = JSON.parse(raw);
+      return productMapCache!;
+    } catch {}
+    // 3. Last resort: parse xlsx directly
+    const buf = await readFile(path.join(process.cwd(), "src", "listfile", "list.xlsx"));
+    productMapCache = xlsxBufToMap(buf);
+    return productMapCache;
+  })();
+  return productMapPromise;
 }
 
 async function startServer() {
@@ -48,7 +72,7 @@ async function startServer() {
     );
   }
 
-  app.use(express.json());
+  app.use(express.json({ limit: "10mb" }));
 
   // API router endpoints
   app.get("/api/schedules", (req, res) => scheduleController.getSchedules(req, res));
@@ -208,16 +232,30 @@ async function startServer() {
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
-  // GET /api/product?code=BARCODE — product lookup from xlsx
-  app.get("/api/product", (req, res) => {
-    const { code } = req.query;
-    if (!code || typeof code !== "string") return res.status(400).json({ error: "code required" });
+  // GET /api/products-map — full product map (client caches and searches locally)
+  app.get("/api/products-map", async (_req, res) => {
     try {
-      const cache = loadProductCache();
-      const q = code.trim();
-      const result = cache.get(q) ?? cache.get(q.replace(/^0+/, ""));
-      if (!result) return res.status(404).json({ error: "not_found" });
-      res.json(result);
+      const map = await getProductMap();
+      res.setHeader("Cache-Control", "public, max-age=300");
+      res.json(map);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/upload-products — manager only; xlsx base64 → updates cache + Supabase
+  app.post("/api/upload-products", async (req, res) => {
+    const { managerId, fileBase64 } = req.body ?? {};
+    if (!managerId || !fileBase64) return res.status(400).json({ error: "managerId and fileBase64 required" });
+    try {
+      const { data: emp } = await supabase.from("employees").select("is_manager").eq("id", Number(managerId)).maybeSingle();
+      if (!emp?.is_manager) return res.status(403).json({ error: "관리자만 가능합니다" });
+      const buf = Buffer.from(fileBase64, "base64");
+      const map = xlsxBufToMap(buf);
+      await supabase.from("app_settings").upsert({ key: "products_v1", value: map, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      productMapCache = map;
+      productMapPromise = null;
+      res.json({ ok: true, count: Object.keys(map).length });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }

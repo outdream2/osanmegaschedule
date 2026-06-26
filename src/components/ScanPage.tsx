@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ZONE_DEFS } from "../constants/displayZones";
 import { BarcodeScanner } from "./BarcodeScanner";
 import {
@@ -41,6 +41,25 @@ const STAFF_COLORS = [
   "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300",
 ];
 
+// Module-level cache — survives navigation, loaded only once per session
+let _productsMap: Record<string, ProductInfo> | null = null;
+let _productsMapPromise: Promise<Record<string, ProductInfo>> | null = null;
+
+function getProductsMap(): Promise<Record<string, ProductInfo>> {
+  if (_productsMap) return Promise.resolve(_productsMap);
+  if (_productsMapPromise) return _productsMapPromise;
+  _productsMapPromise = fetch("/api/products-map")
+    .then(r => r.json())
+    .then(map => { _productsMap = map; return map; })
+    .catch(() => { _productsMapPromise = null; return {}; });
+  return _productsMapPromise;
+}
+
+function lookupProduct(map: Record<string, ProductInfo>, code: string): ProductInfo | null {
+  const q = code.trim();
+  return map[q] ?? map[q.replace(/^0+/, "")] ?? null;
+}
+
 // 규격에서 구역 번호 추출: "9B" → [9], "2A/24" → [2, 24], "21" → [21]
 function extractZoneNums(spec: string): number[] {
   return [...new Set(
@@ -50,16 +69,23 @@ function extractZoneNums(spec: string): number[] {
 
 export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
   const [zones, setZones] = useState<Zone[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);      // zones loading
+  const [mapLoading, setMapLoading] = useState(false); // products map loading (first time only)
   const [scannerOpen, setScannerOpen] = useState(false);
   const [scanResult, setScanResult] = useState<string | null>(null);
   const [product, setProduct] = useState<ProductInfo | null>(null);
-  const [productLoading, setProductLoading] = useState(false);
   const [productNotFound, setProductNotFound] = useState(false);
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
+  const mapRef = useRef<Record<string, ProductInfo> | null>(_productsMap);
 
   useEffect(() => {
+    // Prefetch product map in background (caches module-level)
+    if (!_productsMap) {
+      setMapLoading(true);
+      getProductsMap().then(map => { mapRef.current = map; setMapLoading(false); });
+    }
+    // Load zone assignments
     (async () => {
       try {
         const res = await fetch("/api/zones");
@@ -108,20 +134,18 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
     setProductNotFound(false);
     setRequestedIds(new Set());
     setScannerOpen(false);
-    setProductLoading(true);
-    try {
-      const res = await fetch(`/api/product?code=${encodeURIComponent(result)}`);
-      if (res.status === 404) {
-        setProductNotFound(true);
-      } else if (res.ok) {
-        const data: ProductInfo = await res.json();
-        setProduct(data);
-      }
-    } catch {
-      setProductNotFound(true);
-    } finally {
-      setProductLoading(false);
+
+    // Use cached map if available, else wait for it
+    let map = mapRef.current;
+    if (!map) {
+      setMapLoading(true);
+      map = await getProductsMap();
+      mapRef.current = map;
+      setMapLoading(false);
     }
+    const found = lookupProduct(map, result);
+    if (found) setProduct(found);
+    else setProductNotFound(true);
   };
 
   const handleRequest = async (zone: Zone) => {
@@ -261,7 +285,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
             </div>
 
             {/* ── 상품 정보 카드 ── */}
-            {productLoading ? (
+            {mapLoading ? (
               <div className="flex items-center justify-center gap-2 py-8 text-gray-400">
                 <Loader2 size={18} className="animate-spin" />
                 <span className="text-sm">상품 정보 조회 중...</span>
@@ -288,7 +312,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
             ) : null}
 
             {/* ── 매칭 구역 ── */}
-            {!productLoading && (product || productNotFound) && (
+            {!mapLoading && (product || productNotFound) && (
               <>
                 {matchedZones.length === 0 ? (
                   <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">

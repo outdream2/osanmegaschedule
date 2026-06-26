@@ -15,6 +15,9 @@ import {
   LogOut,
   AlertCircle,
   ScanLine,
+  Upload,
+  FileSpreadsheet,
+  CheckCircle2,
 } from "lucide-react";
 import type { AuthSession } from "../types";
 
@@ -33,6 +36,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [pin, setPin] = useState("");
   const [adminError, setAdminError] = useState(false);
   const pinInputRef = useRef<HTMLInputElement>(null);
+
+  // Product list upload (manager only)
+  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadLoading, setUploadLoading] = useState(false);
+  const [uploadResult, setUploadResult] = useState<{ ok: boolean; count?: number; msg?: string } | null>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const [empNumber, setEmpNumber] = useState("");
   const [empPassword, setEmpPassword] = useState("");
@@ -121,6 +131,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       setEmpPassword("");
     } finally {
       setEmpLoading(false);
+    }
+  };
+
+  const handleUpload = async () => {
+    if (!uploadFile || !authSession?.employeeId) return;
+    setUploadLoading(true);
+    setUploadResult(null);
+    try {
+      const fileBase64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(uploadFile);
+      });
+      const res = await axios.post("/api/upload-products", { managerId: authSession.employeeId, fileBase64 });
+      setUploadResult({ ok: true, count: res.data.count });
+    } catch (err: any) {
+      setUploadResult({ ok: false, msg: err?.response?.data?.error ?? "업로드 실패" });
+    } finally {
+      setUploadLoading(false);
     }
   };
 
@@ -258,6 +288,53 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 </button>
               )}
+
+              {/* 상품 스캔 — 로그인한 직원 */}
+              {(isLoggedIn || !isLoggedIn) && (
+                <button
+                  onClick={() => isLoggedIn ? onNavigate("scan") : setPendingPage("schedule")}
+                  className="group relative bg-white border border-gray-200 hover:border-teal-400 rounded-2xl p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-teal-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {!isLoggedIn && (
+                    <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-70 transition-opacity">
+                      <Lock size={13} className="text-teal-400" />
+                    </div>
+                  )}
+                  <div className="relative">
+                    <div className="w-11 h-11 rounded-xl bg-teal-100 border border-teal-200 flex items-center justify-center mb-4 group-hover:bg-teal-200 transition-colors">
+                      <ScanLine size={22} className="text-teal-600" />
+                    </div>
+                    <div className="text-gray-900 font-bold text-lg mb-1 tracking-tight">상품 스캔</div>
+                    <div className="text-gray-500 text-sm leading-relaxed">바코드 스캔으로 진열 보충 요청</div>
+                    <div className="flex items-center gap-1 mt-4 text-teal-600 text-xs font-bold">
+                      <span>{isLoggedIn ? "스캔하기" : "로그인 필요"}</span>
+                      <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+              )}
+
+              {/* 상품 목록 관리 — 관리자 전용 */}
+              {(isSuperAdmin || isManagerRole) && (
+                <button
+                  onClick={() => { setUploadOpen(true); setUploadResult(null); setUploadFile(null); }}
+                  className="group relative bg-white border border-gray-200 hover:border-orange-400 rounded-2xl p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative">
+                    <div className="w-11 h-11 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center mb-4 group-hover:bg-orange-200 transition-colors">
+                      <FileSpreadsheet size={22} className="text-orange-600" />
+                    </div>
+                    <div className="text-gray-900 font-bold text-lg mb-1 tracking-tight">상품 목록 관리</div>
+                    <div className="text-gray-500 text-sm leading-relaxed">xlsx 파일 업로드로 상품 DB 갱신</div>
+                    <div className="flex items-center gap-1 mt-4 text-orange-600 text-xs font-bold">
+                      <span>업로드하기</span>
+                      <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+              )}
             </div>
           </div>
 
@@ -286,23 +363,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </div>
               </button>
 
-              <button
-                onClick={() => onNavigate("scan")}
-                className="group relative bg-white border border-gray-200 hover:border-teal-400 rounded-2xl p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-teal-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                <div className="relative">
-                  <div className="w-11 h-11 rounded-xl bg-teal-100 border border-teal-200 flex items-center justify-center mb-4 group-hover:bg-teal-200 transition-colors">
-                    <ScanLine size={22} className="text-teal-600" />
-                  </div>
-                  <div className="text-gray-900 font-bold text-lg mb-1 tracking-tight">상품 스캔</div>
-                  <div className="text-gray-500 text-sm leading-relaxed">바코드 스캔으로 진열 보충 요청</div>
-                  <div className="flex items-center gap-1 mt-4 text-teal-600 text-xs font-bold">
-                    <span>스캔하기</span>
-                    <ChevronRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                </div>
-              </button>
             </div>
           </div>
 
@@ -320,6 +380,58 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           </div>
         </div>
       </div>
+
+      {/* ── Product upload modal ── */}
+      {uploadOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4" onClick={() => setUploadOpen(false)}>
+          <div className="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                  <FileSpreadsheet size={15} className="text-orange-600" />
+                </div>
+                <span className="text-gray-900 font-bold text-sm">상품 목록 업로드</span>
+              </div>
+              <button onClick={() => setUploadOpen(false)} className="text-gray-400 hover:text-gray-700 transition cursor-pointer"><X size={18} /></button>
+            </div>
+            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+              xlsx 파일을 업로드하면 상품코드·상품명·배정구역이 자동 변환되어 서버에 저장됩니다.<br />
+              <span className="text-gray-400">컬럼: A=상품코드, B=상품명, F=규격(배정구역)</span>
+            </p>
+            {uploadResult?.ok ? (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <CheckCircle2 size={36} className="text-emerald-500" />
+                <p className="text-sm font-bold text-emerald-700">업로드 완료</p>
+                <p className="text-xs text-gray-500">{uploadResult.count?.toLocaleString()}개 상품 등록됨</p>
+                <button onClick={() => setUploadOpen(false)} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">닫기</button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <input ref={uploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => setUploadFile(e.target.files?.[0] ?? null)} />
+                <button
+                  type="button"
+                  onClick={() => uploadInputRef.current?.click()}
+                  className="w-full py-3 border-2 border-dashed border-gray-300 hover:border-orange-400 text-gray-500 hover:text-orange-600 text-sm font-semibold rounded-xl transition cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Upload size={16} />
+                  {uploadFile ? uploadFile.name : "파일 선택 (.xlsx)"}
+                </button>
+                {uploadResult?.ok === false && (
+                  <p className="text-xs text-rose-500 font-semibold text-center">{uploadResult.msg}</p>
+                )}
+                <button
+                  type="button"
+                  disabled={!uploadFile || uploadLoading}
+                  onClick={handleUpload}
+                  className="w-full py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-sm flex items-center justify-center gap-2"
+                >
+                  {uploadLoading ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>변환 중...</span></> : <><Upload size={14} /><span>업로드 및 변환</span></>}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── Auth modal ── */}
       {pendingPage && (
