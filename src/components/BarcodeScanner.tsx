@@ -52,6 +52,46 @@ function toGrayContrast(src: ImageData, factor: number, invert = false): ImageDa
   return new ImageData(d, src.width, src.height);
 }
 
+// ── Sharpening: 3x3 convolution for edge enhancement ──────────────────────────
+// Operates on already-grayscale ImageData (R=G=B). Crucial for paper barcodes
+// where ink edges blur slightly during print + camera capture.
+function sharpenGray(src: ImageData): ImageData {
+  const w = src.width;
+  const h = src.height;
+  const s = src.data;
+  const d = new Uint8ClampedArray(s.length);
+  // Copy alpha + initial RGB (border pixels stay original)
+  for (let i = 0; i < s.length; i++) d[i] = s[i];
+
+  // kernel [0,-1,0,-1,5,-1,0,-1,0] — apply to interior pixels only
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = (y * w + x) * 4;
+      const top    = s[i - w * 4];
+      const left   = s[i - 4];
+      const centre = s[i];
+      const right  = s[i + 4];
+      const bottom = s[i + w * 4];
+      const v = Math.min(255, Math.max(0, 5 * centre - top - left - right - bottom));
+      d[i] = d[i + 1] = d[i + 2] = v;
+      d[i + 3] = 255;
+    }
+  }
+  return new ImageData(d, w, h);
+}
+
+// ── Binarization: pure black/white from grayscale ─────────────────────────────
+// Pairs with ink-on-paper barcodes where bars are well-defined but contrast is uneven.
+function binarize(src: ImageData, threshold: number): ImageData {
+  const d = new Uint8ClampedArray(src.data.length);
+  for (let i = 0; i < src.data.length; i += 4) {
+    const v = src.data[i] >= threshold ? 255 : 0;
+    d[i] = d[i + 1] = d[i + 2] = v;
+    d[i + 3] = 255;
+  }
+  return new ImageData(d, src.width, src.height);
+}
+
 // ── OCR digit extraction: pull 8-14 digit sequences from Tesseract output ─────
 function extractBarcodeDigits(text: string): string | null {
   const matches = text.replace(/\s/g, "").match(/\d{8,14}/g);
@@ -72,6 +112,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   const [zbarReady,   setZbarReady]   = useState(!!_zbarScan);
   const [quaggaReady, setQuaggaReady] = useState(false);
   const [ocrReady,    setOcrReady]    = useState(false);
+  const [torchOn,     setTorchOn]     = useState(false);
 
   // Load ZBar eagerly; create offscreen proc canvas
   useEffect(() => {
@@ -131,6 +172,18 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     trySkew:                       true,
     timeBetweenDecodingAttempts:   150,
   });
+
+  // ── Torch (flashlight) toggle — biggest single quality boost for paper ────
+  useEffect(() => {
+    const video = videoRef.current as HTMLVideoElement | null;
+    const stream = video?.srcObject as MediaStream | null;
+    const track = stream?.getVideoTracks?.()[0];
+    if (!track) return;
+    try {
+      track.applyConstraints({ advanced: [{ torch: torchOn }] as any })
+        .catch(() => { /* device may not support torch */ });
+    } catch { /* unsupported */ }
+  }, [torchOn, videoRef]);
 
   // ── ZBar WASM (secondary — better for blurry/screen/e-ink barcodes) ───────
   useEffect(() => {
@@ -197,6 +250,20 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
       // 7. Crop — inverted high contrast (white-on-dark label variants)
       if (await tryZBar(toGrayContrast(crop, 3, true))) return;
 
+      // ── Paper-barcode focused passes (ESL price tags, printed stickers) ──
+      // 8. Crop — gray+contrast then sharpening (edge enhancement on thin ink bars)
+      const grayCrop = toGrayContrast(crop, 2);
+      if (await tryZBar(sharpenGray(grayCrop))) return;
+
+      // 9. Crop — binarized at mid threshold (normal printed paper)
+      if (await tryZBar(binarize(grayCrop, 128))) return;
+
+      // 10. Crop — binarized low threshold (dim / dark ink underexposed)
+      if (await tryZBar(binarize(grayCrop, 100))) return;
+
+      // 11. Crop — binarized high threshold (bright / overexposed paper)
+      if (await tryZBar(binarize(grayCrop, 160))) return;
+
     }, 250);
 
     return () => clearInterval(intervalRef.current);
@@ -234,6 +301,10 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           {
             src: tmpCanvas.toDataURL("image/jpeg", 0.92),
             numOfWorkers: 0,
+            locator: {
+              halfSample: false,
+              patchSize: "medium",
+            },
             decoder: {
               readers: [
                 "ean_reader",
@@ -358,6 +429,17 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                 </div>
               )}
             </div>
+            <button
+              onClick={() => setTorchOn((v) => !v)}
+              title={torchOn ? "손전등 끄기" : "손전등 켜기"}
+              className={`p-1 rounded-md transition cursor-pointer ${
+                torchOn
+                  ? "text-yellow-400 bg-yellow-400/10 hover:text-yellow-300"
+                  : "text-gray-500 hover:text-white"
+              }`}
+            >
+              <Zap size={16} />
+            </button>
             <button onClick={onClose} className="text-gray-500 hover:text-white transition cursor-pointer">
               <X size={18} />
             </button>
@@ -397,7 +479,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         <div className="px-4 py-3 text-center">
           <p className="text-xs text-gray-400 font-medium">바코드를 사각형 안에 맞춰주세요</p>
           <p className="text-[10px] text-gray-600 mt-0.5">
-            가격표, 화면, 종이, 흐릿한 바코드도 인식됩니다
+            종이 바코드: 손전등을 켜고 5~10cm 거리에서 천천히 스캔해주세요
           </p>
         </div>
       </div>
