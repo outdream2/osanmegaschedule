@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, RotateCcw, RotateCw } from "lucide-react";
 
 interface PageImageViewerProps {
@@ -7,23 +7,24 @@ interface PageImageViewerProps {
   loading: boolean;
   currentIdx: number;
   onChangeIdx: (i: number) => void;
-  autoRotations: number[];       // computed by parent from image aspect ratios
+  autoRotation: number; // single value for all pages (from first-page detection)
 }
 
 export const PageImageViewer: React.FC<PageImageViewerProps> = ({
-  images, totalPages, loading, currentIdx, onChangeIdx, autoRotations,
+  images, totalPages, loading, currentIdx, onChangeIdx, autoRotation,
 }) => {
-  // Per-page manual overrides on top of autoRotations
-  const [overrides, setOverrides] = useState<Record<number, number>>({});
+  // Single global rotation — applies to ALL pages uniformly
+  const [rotation, setRotation] = useState(0);
 
-  const getDeg = (i: number) => overrides[i] ?? autoRotations[i] ?? 0;
-  const deg = getDeg(currentIdx);
-  const isVertical = deg === 90 || deg === 270;
+  // Apply auto-detected rotation when it first becomes non-zero
+  useEffect(() => {
+    if (autoRotation !== 0) setRotation(autoRotation);
+  }, [autoRotation]);
 
-  const rotate = (delta: -90 | 90) => {
-    const cur = getDeg(currentIdx);
-    setOverrides(prev => ({ ...prev, [currentIdx]: ((cur + delta) + 360) % 360 }));
-  };
+  const isVertical = rotation === 90 || rotation === 270;
+
+  const rotateCcw = () => setRotation(r => (r - 90 + 360) % 360);
+  const rotateCw  = () => setRotation(r => (r + 90) % 360);
 
   if (images.length === 0) return null;
 
@@ -39,42 +40,44 @@ export const PageImageViewer: React.FC<PageImageViewerProps> = ({
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => rotate(-90)}
-            title="왼쪽으로 회전"
+            onClick={rotateCcw}
+            title="전체 왼쪽 회전"
             className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
           >
             <RotateCcw size={14} />
           </button>
           <button
-            onClick={() => rotate(90)}
-            title="오른쪽으로 회전"
+            onClick={rotateCw}
+            title="전체 오른쪽 회전"
             className="p-1 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition cursor-pointer"
           >
             <RotateCw size={14} />
           </button>
+          {rotation !== 0 && (
+            <span className="text-[10px] text-amber-600 font-bold">{rotation}°</span>
+          )}
           <span className="text-xs font-bold text-gray-400 ml-1">
             {currentIdx + 1} / {images.length}
           </span>
         </div>
       </div>
 
-      {/* Image container — fixed 70vh height, image fits inside after rotation */}
+      {/* Image — fixed 70vh container, image scaled to fit after rotation */}
       <div
         className="relative bg-gray-100 flex items-center justify-center overflow-hidden"
         style={{ height: "70vh" }}
       >
         <img
-          key={`${currentIdx}-${deg}`}
           src={images[currentIdx]}
           alt={`페이지 ${currentIdx + 1}`}
           style={{
             display: "block",
-            transform: `rotate(${deg}deg)`,
+            transform: `rotate(${rotation}deg)`,
             transition: "transform 0.25s ease",
-            // When vertical (90/270): CSS pre-rotation box is landscape (W > H).
-            //   maxWidth: '70vh'  → limits CSS width → visual height after rotation ≤ 70vh
-            //   maxHeight: '100%' → limits CSS height → visual width after rotation ≤ container height
-            // When horizontal (0/180): normal portrait display
+            // After 90/270° rotation the original landscape image visually becomes portrait.
+            // CSS layout box stays pre-rotation, so we constrain against the rotated visual:
+            //   maxWidth (CSS) → limits visual HEIGHT after rotation → use container height (70vh)
+            //   maxHeight (CSS) → limits visual WIDTH after rotation → use 100% of container width
             maxWidth: isVertical ? "70vh" : "100%",
             maxHeight: isVertical ? "100%" : "70vh",
             width: "auto",

@@ -17,22 +17,24 @@ interface OcrPageProps {
 
 export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [fileName, setFileName]   = useState<string | null>(null);
   const [pageCount, setPageCount] = useState(0);
   const [processed, setProcessed] = useState(0);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [items, setItems] = useState<OcrItem[]>([]);
-  const [meta, setMeta] = useState<OcrMeta[]>([]);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState<string | null>(null);
+  const [items, setItems]         = useState<OcrItem[]>([]);
+  const [meta, setMeta]           = useState<OcrMeta[]>([]);
   const [pageImages, setPageImages] = useState<string[]>([]);
-  const [imageRotations, setImageRotations] = useState<number[]>([]);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
+  // single rotation applied to all pages — detected from first page's aspect ratio
+  const [autoRotation, setAutoRotation] = useState(0);
 
   const renderPdfToImages = useCallback(async (file: File): Promise<{ data: string; mimeType: string }[]> => {
     const buf = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
     const images: { data: string; mimeType: string }[] = [];
     setPageCount(pdf.numPages);
+    let firstPageRotSet = false;
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       const vp = page.getViewport({ scale: 2.0 });
@@ -43,10 +45,12 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
       await page.render({ canvasContext: ctx as any, viewport: vp, canvas } as any).promise;
       const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
       images.push({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
-      // landscape canvas = document was scanned sideways → auto-rotate 90° CW
-      const autoRot = canvas.width > canvas.height ? 90 : 0;
       setPageImages(prev => [...prev, dataUrl]);
-      setImageRotations(prev => [...prev, autoRot]);
+      // use first page to set global rotation
+      if (!firstPageRotSet) {
+        firstPageRotSet = true;
+        if (canvas.width > canvas.height) setAutoRotation(90);
+      }
     }
     return images;
   }, []);
@@ -58,7 +62,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
     setProcessed(0);
     setPageCount(0);
     setPageImages([]);
-    setImageRotations([]);
+    setAutoRotation(0);
     setCurrentPageIdx(0);
     setFileName(file.name);
     setLoading(true);
@@ -76,14 +80,14 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
         images = [{ data: dataUrl.split(",")[1], mimeType: file.type || "image/jpeg" }];
         setPageCount(1);
         setPageImages([dataUrl]);
-        // detect orientation via Image element
+        // detect landscape via Image element dimensions
         await new Promise<void>(resolve => {
           const img = new Image();
           img.onload = () => {
-            setImageRotations([img.naturalWidth > img.naturalHeight ? 90 : 0]);
+            if (img.naturalWidth > img.naturalHeight) setAutoRotation(90);
             resolve();
           };
-          img.onerror = () => { setImageRotations([0]); resolve(); };
+          img.onerror = () => resolve();
           img.src = dataUrl;
         });
       }
@@ -94,11 +98,14 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
       for (let i = 0; i < images.length; i += BATCH) {
         const batch = images.slice(i, i + BATCH);
         const res = await axios.post("/api/ocr", { images: batch });
-        (res.data.items ?? []).forEach((item: OcrItem) => allItems.push({ ...item, _page: i + item._page }));
-        (res.data.meta ?? []).forEach((m: OcrMeta) => allMeta.push({ ...m, page: i + m.page }));
+        (res.data.items ?? []).forEach((item: OcrItem) =>
+          allItems.push({ ...item, _page: i + item._page })
+        );
+        (res.data.meta ?? []).forEach((m: OcrMeta) =>
+          allMeta.push({ ...m, page: i + m.page })
+        );
         setProcessed(Math.min(i + BATCH, images.length));
       }
-
       setItems(allItems);
       setMeta(allMeta);
     } catch (err: any) {
@@ -119,13 +126,13 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
     setItems([]);
     setMeta([]);
     setPageImages([]);
-    setImageRotations([]);
+    setAutoRotation(0);
     setCurrentPageIdx(0);
   }, []);
 
-  const uniqueDates = [...new Set(meta.map(m => m.date).filter(Boolean))] as string[];
+  const uniqueDates     = [...new Set(meta.map(m => m.date).filter(Boolean))] as string[];
   const uniqueSuppliers = [...new Set(meta.map(m => m.supplier).filter(Boolean))] as string[];
-  const totalAmount = items.reduce((s, it) => s + (it.amount ?? 0), 0);
+  const totalAmount     = items.reduce((s, it) => s + (it.amount ?? 0), 0);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -182,7 +189,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
           loading={loading}
           currentIdx={currentPageIdx}
           onChangeIdx={setCurrentPageIdx}
-          autoRotations={imageRotations}
+          autoRotation={autoRotation}
         />
 
         {/* Progress */}
