@@ -1,6 +1,6 @@
 import React, { useCallback, useRef, useState } from "react";
 import axios from "axios";
-import { ArrowLeft, FileText, Upload, Loader2, X, ChevronDown, ChevronUp, Download } from "lucide-react";
+import { ArrowLeft, FileText, Upload, Loader2, X, ChevronDown, ChevronUp, Download, ChevronLeft, ChevronRight } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 
@@ -42,6 +42,8 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
   const [items, setItems] = useState<OcrItem[]>([]);
   const [meta, setMeta] = useState<OcrMeta[]>([]);
   const [expandedPage, setExpandedPage] = useState<number | null>(null);
+  const [pageImages, setPageImages] = useState<string[]>([]);
+  const [currentPageIdx, setCurrentPageIdx] = useState(0);
 
   const renderPdfToImages = useCallback(async (file: File): Promise<{ data: string; mimeType: string }[]> => {
     const buf = await file.arrayBuffer();
@@ -59,6 +61,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
       const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
       const b64 = dataUrl.split(",")[1];
       images.push({ data: b64, mimeType: "image/jpeg" });
+      setPageImages(prev => [...prev, dataUrl]);
     }
     return images;
   }, []);
@@ -69,6 +72,8 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
     setMeta([]);
     setProcessed(0);
     setPageCount(0);
+    setPageImages([]);
+    setCurrentPageIdx(0);
     setFileName(file.name);
     setLoading(true);
 
@@ -78,10 +83,15 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
         images = await renderPdfToImages(file);
       } else {
         // single image
-        const buf = await file.arrayBuffer();
-        const b64 = btoa(String.fromCharCode(...new Uint8Array(buf)));
+        const dataUrl = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(file);
+        });
+        const b64 = dataUrl.split(",")[1];
         images = [{ data: b64, mimeType: file.type || "image/jpeg" }];
         setPageCount(1);
+        setPageImages([dataUrl]);
       }
 
       // Send in batches of 4 pages
@@ -173,7 +183,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
               <FileText size={13} className="text-amber-600" />
               <span className="text-xs font-semibold text-amber-800">{fileName}</span>
               <button
-                onClick={e => { e.stopPropagation(); setFileName(null); setItems([]); setMeta([]); }}
+                onClick={e => { e.stopPropagation(); setFileName(null); setItems([]); setMeta([]); setPageImages([]); setCurrentPageIdx(0); }}
                 className="text-amber-500 hover:text-amber-800 ml-1 cursor-pointer"
               >
                 <X size={12} />
@@ -188,6 +198,59 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
           className="hidden"
           onChange={e => { const f = e.target.files?.[0]; if (f) { handleFile(f); e.target.value = ""; } }}
         />
+
+        {/* Page image viewer */}
+        {pageImages.length > 0 && (
+          <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
+              <span className="text-xs font-bold text-gray-500">원본 이미지</span>
+              <span className="text-xs font-bold text-gray-400">
+                {currentPageIdx + 1} / {pageImages.length}
+                {loading && pageImages.length < pageCount && (
+                  <span className="text-amber-500 ml-1">· 렌더링 중...</span>
+                )}
+              </span>
+            </div>
+            <div className="relative">
+              <img
+                src={pageImages[currentPageIdx]}
+                alt={`페이지 ${currentPageIdx + 1}`}
+                className="w-full h-auto block"
+                style={{ maxHeight: "70vh", objectFit: "contain", background: "#f8f8f8" }}
+              />
+              {pageImages.length > 1 && (
+                <>
+                  <button
+                    onClick={() => setCurrentPageIdx(i => Math.max(0, i - 1))}
+                    disabled={currentPageIdx === 0}
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white disabled:opacity-20 disabled:cursor-not-allowed transition cursor-pointer"
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+                  <button
+                    onClick={() => setCurrentPageIdx(i => Math.min(pageImages.length - 1, i + 1))}
+                    disabled={currentPageIdx === pageImages.length - 1}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/40 hover:bg-black/60 text-white disabled:opacity-20 disabled:cursor-not-allowed transition cursor-pointer"
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                  {/* Page dots */}
+                  <div className="absolute bottom-2 inset-x-0 flex justify-center gap-1.5">
+                    {pageImages.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCurrentPageIdx(i)}
+                        className={`w-1.5 h-1.5 rounded-full transition cursor-pointer ${
+                          i === currentPageIdx ? "bg-amber-400 w-4" : "bg-white/60 hover:bg-white/90"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Progress */}
         {loading && (
