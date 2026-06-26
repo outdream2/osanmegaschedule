@@ -42,6 +42,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadResult, setUploadResult] = useState<{ ok: boolean; count?: number; msg?: string } | null>(null);
+  const [importLog, setImportLog] = useState<{ timestamp: string; count: number }[]>([]);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   const [empNumber, setEmpNumber] = useState("");
@@ -134,8 +135,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     }
   };
 
+  const fetchImportLog = async () => {
+    try {
+      const res = await axios.get("/api/settings?key=product_import_log");
+      const logs = Array.isArray(res.data?.value) ? res.data.value : [];
+      setImportLog(logs);
+    } catch { setImportLog([]); }
+  };
+
   const handleUpload = async () => {
-    if (!uploadFile || !authSession?.employeeId) return;
+    if (!uploadFile) return;
+    const canUpload = isSuperAdmin || (isManagerRole && !!authSession?.employeeId);
+    if (!canUpload) return;
     setUploadLoading(true);
     setUploadResult(null);
     try {
@@ -145,8 +156,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         reader.onerror = reject;
         reader.readAsDataURL(uploadFile);
       });
-      const res = await axios.post("/api/upload-products", { managerId: authSession.employeeId, fileBase64 });
+      const body = isSuperAdmin && !authSession?.employeeId
+        ? { adminKey: "1234", fileBase64 }
+        : { managerId: authSession!.employeeId, fileBase64 };
+      const res = await axios.post("/api/upload-products", body);
       setUploadResult({ ok: true, count: res.data.count });
+      await fetchImportLog();
     } catch (err: any) {
       setUploadResult({ ok: false, msg: err?.response?.data?.error ?? "업로드 실패" });
     } finally {
@@ -321,7 +336,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               {/* 상품 목록 관리 — 관리자 전용 */}
               {(isSuperAdmin || isManagerRole) && (
                 <button
-                  onClick={() => { setUploadOpen(true); setUploadResult(null); setUploadFile(null); }}
+                  onClick={() => { setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog(); }}
                   className="group relative bg-white border border-gray-200 hover:border-orange-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -400,8 +415,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               <button onClick={() => setUploadOpen(false)} className="text-gray-400 hover:text-gray-700 transition cursor-pointer"><X size={18} /></button>
             </div>
             <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-              xlsx 파일을 업로드하면 상품코드·상품명·배정구역이 자동 변환되어 서버에 저장됩니다.<br />
-              <span className="text-gray-400">컬럼: A=상품코드, B=상품명, F=규격(배정구역)</span>
+              xlsx 파일을 업로드하면 전체 상품 데이터가 DB에 임포트됩니다.<br />
+              <span className="text-gray-400">기존 데이터는 모두 덮어씁니다.</span>
             </p>
             {uploadResult?.ok ? (
               <div className="flex flex-col items-center gap-3 py-4">
@@ -430,8 +445,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   onClick={handleUpload}
                   className="w-full py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-sm flex items-center justify-center gap-2"
                 >
-                  {uploadLoading ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>변환 중...</span></> : <><Upload size={14} /><span>업로드 및 변환</span></>}
+                  {uploadLoading ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>임포트 중...</span></> : <><Upload size={14} /><span>DB 임포트</span></>}
                 </button>
+              </div>
+            )}
+            {/* Import log */}
+            {importLog.length > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">임포트 이력</p>
+                <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
+                  {importLog.map((entry, i) => (
+                    <div key={i} className="flex items-center justify-between text-[11px]">
+                      <span className="text-gray-500">
+                        {new Date(entry.timestamp).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                      <span className={`font-semibold ${i === 0 ? "text-orange-600" : "text-gray-400"}`}>
+                        {entry.count.toLocaleString()}개
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

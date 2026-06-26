@@ -52,6 +52,12 @@ function toGrayContrast(src: ImageData, factor: number, invert = false): ImageDa
   return new ImageData(d, src.width, src.height);
 }
 
+// ── OCR digit extraction: pull 8-14 digit sequences from Tesseract output ─────
+function extractBarcodeDigits(text: string): string | null {
+  const matches = text.replace(/\s/g, "").match(/\d{8,14}/g);
+  return matches?.[0] ?? null;
+}
+
 export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   onScan, onClose, title = "바코드 스캔",
 }) => {
@@ -59,18 +65,61 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   const canvasRef     = useRef<HTMLCanvasElement>(null);
   const procCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const intervalRef   = useRef<ReturnType<typeof setInterval>>();
-  const [zbarReady, setZbarReady] = useState(!!_zbarScan);
+  const quaggaIntervalRef = useRef<ReturnType<typeof setInterval>>();
+  const ocrIntervalRef    = useRef<ReturnType<typeof setInterval>>();
+  const ocrWorkerRef      = useRef<any>(null);
 
-  // Load ZBar eagerly when component mounts; create offscreen proc canvas
+  const [zbarReady,   setZbarReady]   = useState(!!_zbarScan);
+  const [quaggaReady, setQuaggaReady] = useState(false);
+  const [ocrReady,    setOcrReady]    = useState(false);
+
+  // Load ZBar eagerly; create offscreen proc canvas
   useEffect(() => {
     loadZBar().then(() => setZbarReady(!!_zbarScan));
     procCanvasRef.current = document.createElement("canvas");
+  }, []);
+
+  // ── Quagga2 lazy load ────────────────────────────────────────────────────────
+  useEffect(() => {
+    import("@ericblade/quagga2")
+      .then((mod) => {
+        const Quagga = (mod as any).default ?? mod;
+        (window as any).__quagga2 = Quagga;
+        setQuaggaReady(true);
+      })
+      .catch(() => { /* Quagga unavailable, ZXing+ZBar still run */ });
+  }, []);
+
+  // ── Tesseract OCR worker initialization (lazy, once) ─────────────────────────
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { createWorker } = await import("tesseract.js");
+        const worker = await createWorker("eng", 1, {
+          workerBlobURL: false,
+          logger: () => {},
+        } as any);
+        await worker.setParameters({ tessedit_char_whitelist: "0123456789" } as any);
+        if (!cancelled) {
+          ocrWorkerRef.current = worker;
+          setOcrReady(true);
+        } else {
+          await worker.terminate();
+        }
+      } catch {
+        /* OCR unavailable — barcode engines still handle scanning */
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   const handleResult = useCallback((raw: string) => {
     if (scannedRef.current) return;
     scannedRef.current = true;
     clearInterval(intervalRef.current);
+    clearInterval(quaggaIntervalRef.current);
+    clearInterval(ocrIntervalRef.current);
     onScan(raw.trim());
   }, [onScan]);
 
@@ -153,6 +202,118 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     return () => clearInterval(intervalRef.current);
   }, [handleResult, videoRef]);
 
+  // ── Quagga2 (third engine — good at 1D codes on paper/screens) ───────────
+  useEffect(() => {
+    if (!quaggaReady) return;
+
+    quaggaIntervalRef.current = setInterval(() => {
+      if (scannedRef.current) return;
+      const Quagga = (window as any).__quagga2;
+      if (!Quagga) return;
+
+      const video = videoRef.current as HTMLVideoElement | null;
+      if (!video || video.readyState < 2 || video.videoWidth === 0) return;
+
+      const w = video.videoWidth;
+      const h = video.videoHeight;
+
+      const cx = Math.floor(w * 0.08);
+      const cy = Math.floor(h * 0.25);
+      const cw = Math.floor(w * 0.84);
+      const ch = Math.floor(h * 0.50);
+
+      const tmpCanvas = document.createElement("canvas");
+      tmpCanvas.width  = cw;
+      tmpCanvas.height = ch;
+      const tmpCtx = tmpCanvas.getContext("2d");
+      if (!tmpCtx) return;
+      tmpCtx.drawImage(video, cx, cy, cw, ch, 0, 0, cw, ch);
+
+      try {
+        Quagga.decodeSingle(
+          {
+            src: tmpCanvas.toDataURL("image/jpeg", 0.92),
+            numOfWorkers: 0,
+            decoder: {
+              readers: [
+                "ean_reader",
+                "ean_8_reader",
+                "code_128_reader",
+                "code_39_reader",
+                "upc_reader",
+                "upc_e_reader",
+              ],
+            },
+            locate: true,
+          },
+          (result: any) => {
+            if (result?.codeResult?.code) {
+              handleResult(result.codeResult.code);
+            }
+          },
+        );
+      } catch {
+        /* Quagga error — other engines continue */
+      }
+    }, 300);
+
+    return () => clearInterval(quaggaIntervalRef.current);
+  }, [quaggaReady, handleResult, videoRef]);
+
+  // ── Tesseract OCR (final fallback — reads printed digit string on label) ──
+  useEffect(() => {
+    if (!ocrReady) return;
+
+    let ocrBusy = false;
+
+    ocrIntervalRef.current = setInterval(async () => {
+      if (scannedRef.current || ocrBusy || !ocrWorkerRef.current) return;
+      const video = videoRef.current as HTMLVideoElement | null;
+      if (!video || video.readyState < 2 || video.videoWidth === 0) return;
+
+      ocrBusy = true;
+      try {
+        const w = video.videoWidth;
+        const h = video.videoHeight;
+
+        // Bottom strip of the scan window where printed digits live
+        const cx = Math.floor(w * 0.08);
+        const cy = Math.floor(h * 0.60);
+        const cw = Math.floor(w * 0.84);
+        const ch = Math.floor(h * 0.15);
+
+        const ocrCanvas = document.createElement("canvas");
+        ocrCanvas.width  = cw * 2;
+        ocrCanvas.height = ch * 2;
+        const ocrCtx = ocrCanvas.getContext("2d");
+        if (!ocrCtx) return;
+        ocrCtx.drawImage(video, cx, cy, cw, ch, 0, 0, cw * 2, ch * 2);
+
+        const { data: { text } } = await ocrWorkerRef.current.recognize(ocrCanvas);
+        const digits = extractBarcodeDigits(text);
+        if (digits) {
+          handleResult(digits);
+        }
+      } catch {
+        /* OCR error — barcode engines still handle scanning */
+      } finally {
+        ocrBusy = false;
+      }
+    }, 800);
+
+    return () => clearInterval(ocrIntervalRef.current);
+  }, [ocrReady, handleResult, videoRef]);
+
+  // Cleanup OCR worker on unmount
+  useEffect(() => {
+    return () => {
+      if (ocrWorkerRef.current) {
+        ocrWorkerRef.current.terminate().catch(() => {});
+        ocrWorkerRef.current = null;
+      }
+    };
+  }, []);
+
   // Esc key
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -176,7 +337,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             <span className="text-sm font-bold">{title}</span>
           </div>
           <div className="flex items-center gap-3">
-            {/* Engine indicator */}
+            {/* Engine indicators */}
             <div className="flex items-center gap-1.5">
               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-900/60 border border-emerald-700 text-emerald-400 text-[10px] font-bold">
                 <Zap size={9} />ZXing
@@ -184,6 +345,16 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
               {zbarReady && (
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-900/60 border border-blue-700 text-blue-400 text-[10px] font-bold">
                   <Zap size={9} />ZBar
+                </div>
+              )}
+              {quaggaReady && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-900/60 border border-amber-700 text-amber-400 text-[10px] font-bold">
+                  <Zap size={9} />Q2
+                </div>
+              )}
+              {ocrReady && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-purple-900/60 border border-purple-700 text-purple-400 text-[10px] font-bold">
+                  <Zap size={9} />OCR
                 </div>
               )}
             </div>
@@ -202,9 +373,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             <div className="absolute inset-0 bg-black/40" />
             {/* Scan window */}
             <div className="absolute inset-x-[8%] top-[25%] bottom-[25%]">
-              {/* Clear area */}
               <div className="absolute inset-0 bg-transparent" style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)" }} />
-              {/* Corner markers */}
               {[
                 "top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-md",
                 "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-md",
@@ -213,7 +382,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
               ].map((cls, i) => (
                 <div key={i} className={`absolute w-6 h-6 border-emerald-400 ${cls}`} />
               ))}
-              {/* Animated scan line */}
               <div
                 className="absolute inset-x-0 h-0.5 bg-emerald-400/80"
                 style={{ animation: "scanline 2s ease-in-out infinite" }}

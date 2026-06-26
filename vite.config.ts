@@ -7,7 +7,7 @@ export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
     optimizeDeps: {
-      exclude: ["@undecaf/zbar-wasm"],
+      exclude: ["@undecaf/zbar-wasm", "@ericblade/quagga2"],
     },
     resolve: {
       alias: {

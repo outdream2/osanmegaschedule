@@ -2,7 +2,6 @@
 import "dotenv/config";
 import express from "express";
 import path from "path";
-import { readFile } from "fs/promises";
 import { createServer as createViteServer } from "vite";
 import { scheduleController } from "./src/controllers/scheduleController";
 import { supabase } from "./src/supabase/client";
@@ -12,51 +11,66 @@ import XLSX from "xlsx";
 import compression from "compression";
 
 // ── Product map cache ─────────────────────────────────────────────────────────
-interface ProductInfo { code: string; name: string; spec: string; }
+interface ProductInfo { code: string; name: string; spec: string; [key: string]: any; }
 let productMapCache: Record<string, ProductInfo> | null = null;
 let productMapPromise: Promise<Record<string, ProductInfo>> | null = null;
 
-function xlsxBufToMap(buf: Buffer): Record<string, ProductInfo> {
+const COL_KEYS = [
+  "product_code","product_name","col_i","product_type","origin","spec",
+  "purchase_price","sale_price","profit_rate","delivery_price","delivery_profit_rate",
+  "sale_status","app_registered","image_registered","preset_registered","preset_group",
+  "promotion_name","promotion_priority","promotion_purchase_price","promotion_sale_price",
+  "promotion_profit_rate","promotion_discount_rate","wholesale_price1","supplier_code",
+  "supplier","supplier_type","expiry_date","display_location","management_group","unit_type",
+  "current_stock","stock_amount","optimal_stock","last_purchase_date","last_sale_date",
+  "category_code","category","operator","last_modified_at","registered_at",
+  "min_order","point_rate","sales_commission","delivery_margin_rate","search_keywords",
+  "unit","total_volume","unit_volume","unit_price","connection_type","individual_code","individual_quantity",
+] as const;
+
+function xlsxToRows(buf: Buffer): Record<string, any>[] {
   const wb = XLSX.read(buf, { type: "buffer" });
   const ws = wb.Sheets[wb.SheetNames[0]];
-  const rows = XLSX.utils.sheet_to_json<string[]>(ws, { header: 1 }) as string[][];
-  const map: Record<string, ProductInfo> = {};
+  const rows = XLSX.utils.sheet_to_json<any[]>(ws, { header: 1 }) as any[][];
+  const result: Record<string, any>[] = [];
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i];
     const code = String(row[0] ?? "").trim();
-    const name = String(row[1] ?? "").trim();
-    const spec = String(row[5] ?? "").trim();
     if (!code) continue;
-    map[code] = { code, name, spec };
-    const stripped = code.replace(/^0+/, "");
-    if (stripped && stripped !== code && !map[stripped]) map[stripped] = { code, name, spec };
+    const obj: Record<string, any> = {};
+    for (let c = 0; c < COL_KEYS.length; c++) {
+      const v = row[c];
+      obj[COL_KEYS[c]] = (v !== undefined && v !== null && String(v).trim() !== "") ? String(v).trim() : null;
+    }
+    result.push(obj);
   }
-  return map;
+  return result;
 }
 
 async function getProductMap(): Promise<Record<string, ProductInfo>> {
   if (productMapCache) return productMapCache;
   if (productMapPromise) return productMapPromise;
   productMapPromise = (async () => {
-    // 1. Check Supabase for admin-uploaded version
-    try {
-      const { data } = await supabase.from("app_settings").select("value").eq("key", "products_v1").maybeSingle();
-      if (data?.value && typeof data.value === "object" && !Array.isArray(data.value)) {
-        productMapCache = data.value as Record<string, ProductInfo>;
-        return productMapCache;
+    const PAGE = 1000;
+    const map: Record<string, ProductInfo> = {};
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase.from("products").select("*").range(from, from + PAGE - 1);
+      if (error) throw new Error(error.message);
+      if (!data || data.length === 0) break;
+      for (const row of data) {
+        const code = String(row.product_code ?? "").trim();
+        if (!code) continue;
+        const info: ProductInfo = { code, name: row.product_name ?? "", spec: row.spec ?? "", ...row };
+        map[code] = info;
+        const stripped = code.replace(/^0+/, "");
+        if (stripped && stripped !== code && !map[stripped]) map[stripped] = info;
       }
-    } catch {}
-    // 2. Fall back to pre-built public/products.json
-    try {
-      const jsonPath = path.join(process.cwd(), "public", "products.json");
-      const raw = await readFile(jsonPath, "utf8");
-      productMapCache = JSON.parse(raw);
-      return productMapCache!;
-    } catch {}
-    // 3. Last resort: parse xlsx directly
-    const buf = await readFile(path.join(process.cwd(), "src", "listfile", "list.xlsx"));
-    productMapCache = xlsxBufToMap(buf);
-    return productMapCache;
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    productMapCache = map;
+    return map;
   })();
   return productMapPromise;
 }
@@ -245,19 +259,59 @@ async function startServer() {
     }
   });
 
-  // POST /api/upload-products — manager only; xlsx base64 → updates cache + Supabase
+  // POST /api/upload-products — manager or superadmin; xlsx base64 → bulk-imports to products table
   app.post("/api/upload-products", async (req, res) => {
-    const { managerId, fileBase64 } = req.body ?? {};
-    if (!managerId || !fileBase64) return res.status(400).json({ error: "managerId and fileBase64 required" });
+    const { managerId, fileBase64, adminKey } = req.body ?? {};
+    if (!fileBase64) return res.status(400).json({ error: "fileBase64 required" });
     try {
-      const { data: emp } = await supabase.from("employees").select("is_manager").eq("id", Number(managerId)).maybeSingle();
-      if (!emp?.is_manager) return res.status(403).json({ error: "관리자만 가능합니다" });
+      let authorized = false;
+      if (adminKey && adminKey === (process.env.ADMIN_PIN ?? "1234")) {
+        authorized = true;
+      } else if (managerId) {
+        const { data: emp } = await supabase.from("employees").select("is_manager").eq("id", Number(managerId)).maybeSingle();
+        authorized = !!emp?.is_manager;
+      }
+      if (!authorized) return res.status(403).json({ error: "관리자만 가능합니다" });
       const buf = Buffer.from(fileBase64, "base64");
-      const map = xlsxBufToMap(buf);
-      await supabase.from("app_settings").upsert({ key: "products_v1", value: map, updated_at: new Date().toISOString() }, { onConflict: "key" });
-      productMapCache = map;
+      const rows = xlsxToRows(buf);
+      // Delete all existing products
+      const { error: delErr } = await supabase.from("products").delete().not("product_code", "is", null);
+      if (delErr) throw new Error(delErr.message);
+      // Bulk insert in chunks of 500
+      const CHUNK = 500;
+      for (let i = 0; i < rows.length; i += CHUNK) {
+        const { error: insErr } = await supabase.from("products").insert(rows.slice(i, i + CHUNK));
+        if (insErr) throw new Error(insErr.message);
+      }
+      productMapCache = null;
       productMapPromise = null;
-      res.json({ ok: true, count: Object.keys(map).length });
+      // Append to import log (keep last 20)
+      const { data: logData } = await supabase.from("app_settings").select("value").eq("key", "product_import_log").maybeSingle();
+      const prevLogs = Array.isArray(logData?.value) ? (logData.value as any[]) : [];
+      const newEntry = { timestamp: new Date().toISOString(), count: rows.length };
+      const logs = [newEntry, ...prevLogs].slice(0, 20);
+      await supabase.from("app_settings").upsert({ key: "product_import_log", value: logs, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      res.json({ ok: true, count: rows.length, timestamp: newEntry.timestamp });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/products/:code — single product lookup by barcode code
+  app.get("/api/products/:code", async (req, res) => {
+    const code = (req.params.code ?? "").trim();
+    if (!code) return res.status(400).json({ error: "code required" });
+    try {
+      let { data, error } = await supabase.from("products").select("*").eq("product_code", code).maybeSingle();
+      if (error) throw new Error(error.message);
+      if (!data && /^0+/.test(code)) {
+        const stripped = code.replace(/^0+/, "");
+        const r2 = await supabase.from("products").select("*").eq("product_code", stripped).maybeSingle();
+        if (r2.error) throw new Error(r2.error.message);
+        data = r2.data;
+      }
+      if (!data) return res.status(404).json({ error: "상품을 찾을 수 없습니다" });
+      res.json(data);
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
@@ -420,10 +474,16 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    // products.json: 1 hour browser cache (admin upload invalidates in-memory; client reloads on next session)
-    app.get("/products.json", (_req, res) => {
-      res.setHeader("Cache-Control", "public, max-age=3600");
-      res.sendFile(path.join(distPath, "products.json"));
+    // products.json: served dynamically so DB-uploaded data takes effect immediately
+    app.get("/products.json", async (_req, res) => {
+      try {
+        const map = await getProductMap();
+        res.setHeader("Cache-Control", "public, max-age=3600");
+        res.json(map);
+      } catch {
+        res.setHeader("Cache-Control", "public, max-age=3600");
+        res.sendFile(path.join(distPath, "products.json"));
+      }
     });
     app.use(express.static(distPath));
     app.get("*", (req, res) => {

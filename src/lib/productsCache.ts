@@ -1,4 +1,4 @@
-export interface ProductInfo { code: string; name: string; spec: string; }
+export interface ProductInfo { code: string; name: string; spec: string; [key: string]: any; }
 
 let _map: Record<string, ProductInfo> | null = null;
 let _promise: Promise<Record<string, ProductInfo>> | null = null;
