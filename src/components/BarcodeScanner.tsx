@@ -81,7 +81,6 @@ function sharpenGray(src: ImageData): ImageData {
 }
 
 // ── Binarization: pure black/white from grayscale ─────────────────────────────
-// Pairs with ink-on-paper barcodes where bars are well-defined but contrast is uneven.
 function binarize(src: ImageData, threshold: number): ImageData {
   const d = new Uint8ClampedArray(src.data.length);
   for (let i = 0; i < src.data.length; i += 4) {
@@ -90,6 +89,49 @@ function binarize(src: ImageData, threshold: number): ImageData {
     d[i + 3] = 255;
   }
   return new ImageData(d, src.width, src.height);
+}
+
+// ── Gamma correction — brightens dark frames (gamma < 1) ──────────────────────
+// LUT-based for speed. gamma=0.4 turns pixel-30 → ~97, making dark barcodes visible.
+// toGrayContrast crushes dark pixels to 0; this fixes that by lifting them first.
+function brightenGamma(src: ImageData, gamma = 0.4): ImageData {
+  const lut = new Uint8Array(256);
+  for (let i = 0; i < 256; i++) lut[i] = Math.round(255 * Math.pow(i / 255, gamma));
+  const d = new Uint8ClampedArray(src.data.length);
+  for (let i = 0; i < src.data.length; i += 4) {
+    const g = Math.round(0.299 * src.data[i] + 0.587 * src.data[i + 1] + 0.114 * src.data[i + 2]);
+    const v = lut[g];
+    d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255;
+  }
+  return new ImageData(d, src.width, src.height);
+}
+
+// ── Histogram stretch — maps actual min-max to full 0-255 range ───────────────
+// Robust to varying room brightness: always uses the full dynamic range available.
+function histoStretch(src: ImageData): ImageData {
+  let min = 255, max = 0;
+  for (let i = 0; i < src.data.length; i += 4) {
+    const v = src.data[i];
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  if (max <= min) return src;
+  const scale = 255 / (max - min);
+  const d = new Uint8ClampedArray(src.data.length);
+  for (let i = 0; i < src.data.length; i += 4) {
+    const v = Math.round((src.data[i] - min) * scale);
+    d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255;
+  }
+  return new ImageData(d, src.width, src.height);
+}
+
+// ── Average brightness of ImageData (0–255) ───────────────────────────────────
+function avgBrightness(src: ImageData): number {
+  let sum = 0;
+  const n = src.data.length / 4;
+  for (let i = 0; i < src.data.length; i += 4)
+    sum += 0.299 * src.data[i] + 0.587 * src.data[i + 1] + 0.114 * src.data[i + 2];
+  return sum / n;
 }
 
 // ── OCR digit extraction: pull 8-14 digit sequences from Tesseract output ─────
@@ -108,11 +150,15 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   const quaggaIntervalRef = useRef<ReturnType<typeof setInterval>>();
   const ocrIntervalRef    = useRef<ReturnType<typeof setInterval>>();
   const ocrWorkerRef      = useRef<any>(null);
+  const torchOnRef        = useRef(false);
 
-  const [zbarReady,   setZbarReady]   = useState(!!_zbarScan);
-  const [quaggaReady, setQuaggaReady] = useState(false);
-  const [ocrReady,    setOcrReady]    = useState(false);
-  const [torchOn,     setTorchOn]     = useState(false);
+  const [zbarReady,    setZbarReady]   = useState(!!_zbarScan);
+  const [quaggaReady,  setQuaggaReady] = useState(false);
+  const [ocrReady,     setOcrReady]    = useState(false);
+  const [torchOn,      setTorchOn]     = useState(false);
+  const [frozenFrame,  setFrozenFrame] = useState<string | null>(null);
+  const [scannedCode,  setScannedCode] = useState<string | null>(null);
+  const [darkHint,     setDarkHint]    = useState(false);
 
   // Load ZBar eagerly; create offscreen proc canvas
   useEffect(() => {
@@ -161,7 +207,14 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     clearInterval(intervalRef.current);
     clearInterval(quaggaIntervalRef.current);
     clearInterval(ocrIntervalRef.current);
-    onScan(raw.trim());
+
+    // ZBar interval already drew the last frame onto canvasRef — reuse it
+    const canvas = canvasRef.current;
+    if (canvas && canvas.width > 0) {
+      setFrozenFrame(canvas.toDataURL("image/jpeg", 0.8));
+    }
+    setScannedCode(raw.trim());
+    setTimeout(() => onScan(raw.trim()), 1500);
   }, [onScan]);
 
   // ── ZXing via react-zxing (primary — fast on clear codes) ─────────────────
@@ -173,6 +226,9 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     timeBetweenDecodingAttempts:   150,
   });
 
+  // Keep torchOnRef in sync for use inside intervals (avoids stale closure)
+  useEffect(() => { torchOnRef.current = torchOn; }, [torchOn]);
+
   // ── Torch (flashlight) toggle — biggest single quality boost for paper ────
   useEffect(() => {
     const video = videoRef.current as HTMLVideoElement | null;
@@ -180,8 +236,13 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     const track = stream?.getVideoTracks?.()[0];
     if (!track) return;
     try {
-      track.applyConstraints({ advanced: [{ torch: torchOn }] as any })
-        .catch(() => { /* device may not support torch */ });
+      track.applyConstraints({
+        advanced: [{
+          torch: torchOn,
+          exposureCompensation: 2.0,  // hint: prefer brighter exposure in dark rooms
+          brightness: 100,
+        } as any],
+      }).catch(() => { /* unsupported on this device */ });
     } catch { /* unsupported */ }
   }, [torchOn, videoRef]);
 
@@ -263,6 +324,27 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
       // 11. Crop — binarized high threshold (bright / overexposed paper)
       if (await tryZBar(binarize(grayCrop, 160))) return;
+
+      // ── Dark-environment passes (avg brightness < 80) ──────────────────────
+      const avg = avgBrightness(crop);
+      setDarkHint(!torchOnRef.current && avg < 70);
+      if (avg < 80) {
+        const gamma40 = brightenGamma(crop, 0.4);   // aggressive lift
+        const gamma55 = brightenGamma(crop, 0.55);  // moderate lift
+        // 12. Gamma 0.4 — raw lifted
+        if (await tryZBar(gamma40)) return;
+        // 13. Gamma 0.4 + high contrast (substitute for toGrayContrast on dark img)
+        if (await tryZBar(toGrayContrast(gamma40, 2.5))) return;
+        // 14. Gamma 0.4 + binarize (ink-on-dark-paper)
+        if (await tryZBar(binarize(gamma40, 100))) return;
+        if (await tryZBar(binarize(gamma40, 128))) return;
+        // 15. Gamma 0.55 + histogram stretch (room with mixed lighting)
+        if (await tryZBar(histoStretch(gamma55))) return;
+        // 16. Histogram stretch alone (maximize whatever contrast exists)
+        const stretched = histoStretch(toGrayContrast(crop, 1));
+        if (await tryZBar(stretched)) return;
+        if (await tryZBar(sharpenGray(stretched))) return;
+      }
 
     }, 250);
 
@@ -446,30 +528,45 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
           </div>
         </div>
 
-        {/* Camera */}
+        {/* Camera / Freeze frame */}
         <div className="relative bg-black" style={{ aspectRatio: "4/3" }}>
-          <video ref={videoRef} className="w-full h-full object-cover" autoPlay muted playsInline />
+          {/* Live video — hidden when frozen */}
+          <video ref={videoRef} className={`w-full h-full object-cover ${frozenFrame ? "invisible" : ""}`} autoPlay muted playsInline />
 
-          {/* Dark overlay with hole */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute inset-0 bg-black/40" />
-            {/* Scan window */}
-            <div className="absolute inset-x-[8%] top-[25%] bottom-[25%]">
-              <div className="absolute inset-0 bg-transparent" style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)" }} />
-              {[
-                "top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-md",
-                "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-md",
-                "bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-md",
-                "bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-md",
-              ].map((cls, i) => (
-                <div key={i} className={`absolute w-6 h-6 border-emerald-400 ${cls}`} />
-              ))}
-              <div
-                className="absolute inset-x-0 h-0.5 bg-emerald-400/80"
-                style={{ animation: "scanline 2s ease-in-out infinite" }}
-              />
+          {/* Frozen frame + success overlay */}
+          {frozenFrame && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <img src={frozenFrame} className="w-full h-full object-cover" alt="scan" />
+              <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center gap-3">
+                <div className="w-14 h-14 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg">
+                  <svg viewBox="0 0 24 24" className="w-8 h-8 text-white fill-none stroke-white stroke-[2.5] stroke-linecap-round stroke-linejoin-round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+                <p className="text-white font-black text-sm tracking-wider">인식 완료</p>
+                <p className="text-emerald-300 font-mono text-xs px-3 py-1 bg-black/40 rounded-lg">{scannedCode}</p>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Scan guide overlay (live only) */}
+          {!frozenFrame && (
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute inset-0 bg-black/40" />
+              <div className="absolute inset-x-[8%] top-[25%] bottom-[25%]">
+                <div className="absolute inset-0 bg-transparent" style={{ boxShadow: "0 0 0 9999px rgba(0,0,0,0.45)" }} />
+                {[
+                  "top-0 left-0 border-t-[3px] border-l-[3px] rounded-tl-md",
+                  "top-0 right-0 border-t-[3px] border-r-[3px] rounded-tr-md",
+                  "bottom-0 left-0 border-b-[3px] border-l-[3px] rounded-bl-md",
+                  "bottom-0 right-0 border-b-[3px] border-r-[3px] rounded-br-md",
+                ].map((cls, i) => (
+                  <div key={i} className={`absolute w-6 h-6 border-emerald-400 ${cls}`} />
+                ))}
+                <div className="absolute inset-x-0 h-0.5 bg-emerald-400/80" style={{ animation: "scanline 2s ease-in-out infinite" }} />
+              </div>
+            </div>
+          )}
 
           {/* Hidden canvas for ZBar frame capture */}
           <canvas ref={canvasRef} className="hidden" />
@@ -477,10 +574,14 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
         {/* Hint */}
         <div className="px-4 py-3 text-center">
-          <p className="text-xs text-gray-400 font-medium">바코드를 사각형 안에 맞춰주세요</p>
-          <p className="text-[10px] text-gray-600 mt-0.5">
-            종이 바코드: 손전등을 켜고 5~10cm 거리에서 천천히 스캔해주세요
-          </p>
+          {darkHint ? (
+            <p className="text-xs text-yellow-400 font-bold animate-pulse">
+              ⚡ 어둡습니다 — 오른쪽 상단 손전등을 켜주세요
+            </p>
+          ) : (
+            <p className="text-xs text-gray-400 font-medium">바코드를 사각형 안에 맞춰주세요</p>
+          )}
+          <p className="text-[10px] text-gray-600 mt-0.5">종이 바코드는 5~10cm 거리에서 스캔해주세요</p>
         </div>
       </div>
 
