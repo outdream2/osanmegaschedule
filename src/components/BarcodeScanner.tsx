@@ -455,6 +455,30 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
             const muBr = avgBrightness(upscaledBright);
             if (await tryZBar(toGrayContrast(upscaledBright, 8, false, muBr))) return;
           }
+
+          // ── Rotation passes (curved / tilted barcodes on cylinders, bottles) ──
+          // Put crop onto a temp canvas once; rotate proc canvas multiple ways.
+          const rotSrc = document.createElement("canvas");
+          rotSrc.width = cw; rotSrc.height = ch;
+          rotSrc.getContext("2d")!.putImageData(crop, 0, 0);
+
+          for (const deg of [12, -12, 24, -24, 36, -36]) {
+            const rad = (deg * Math.PI) / 180;
+            const cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
+            const rw = Math.ceil(cw * cos + ch * sin);
+            const rh = Math.ceil(cw * sin + ch * cos);
+            proc.width = rw; proc.height = rh;
+            pc.filter = "none";
+            pc.save();
+            pc.translate(rw / 2, rh / 2);
+            pc.rotate(rad);
+            pc.drawImage(rotSrc, -cw / 2, -ch / 2);
+            pc.restore();
+            const rotated = pc.getImageData(0, 0, rw, rh);
+            if (await tryZBar(rotated)) return;
+            if (await tryZBar(adaptiveThreshold(rotated, 31, 0.08))) return;
+            if (await tryZBar(toGrayContrast(rotated, 3))) return;
+          }
         }
       }
 
