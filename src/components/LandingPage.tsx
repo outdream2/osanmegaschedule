@@ -1,7 +1,6 @@
 // src/components/LandingPage.tsx
 import React, { useState, useRef, useEffect } from "react";
 import axios from "axios";
-import XLSX from "xlsx";
 import {
   Calendar,
   CalendarCheck,
@@ -431,25 +430,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                <input ref={uploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={async e => {
+                <input ref={uploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => {
                   const file = e.target.files?.[0] ?? null;
                   if (!file) { setUploadFile(null); return; }
                   const ext = file.name.split(".").pop()?.toLowerCase();
                   const validMime = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "application/octet-stream"];
                   if ((ext !== "xlsx" && ext !== "xls") || (!!file.type && !validMime.includes(file.type))) {
-                    alert("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
-                    e.target.value = ""; return;
-                  }
-                  try {
-                    const buf = await file.arrayBuffer();
-                    const wb = XLSX.read(buf, { sheetRows: 1 });
-                    const ws = wb.Sheets[wb.SheetNames[0]];
-                    const header = (XLSX.utils.sheet_to_json<any[]>(ws, { header: 1 })[0] ?? []) as any[];
-                    if (header.length < 52) {
-                      alert("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
-                      e.target.value = ""; return;
-                    }
-                  } catch {
                     alert("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
                     e.target.value = ""; return;
                   }

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useZxing } from "react-zxing";
-import { X, ScanLine, Zap } from "lucide-react";
+import { X, ScanLine, Zap, Flame } from "lucide-react";
 
 interface BarcodeScannerProps {
   onScan: (result: string) => void;

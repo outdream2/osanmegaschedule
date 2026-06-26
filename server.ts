@@ -293,6 +293,13 @@ async function startServer() {
       const isXlsx = buf[0] === 0x50 && buf[1] === 0x4B && buf[2] === 0x03 && buf[3] === 0x04;
       const isXls  = buf[0] === 0xD0 && buf[1] === 0xCF && buf[2] === 0x11 && buf[3] === 0xE0;
       if (!isXlsx && !isXls) return res.status(400).json({ error: "형식이 다른 파일입니다. 상품리스트를 업로드해주세요." });
+      // Validate column count using header row
+      const wbCheck = XLSX.read(buf, { sheetRows: 1 });
+      const wsCheck = wbCheck.Sheets[wbCheck.SheetNames[0]];
+      const headerRow = (XLSX.utils.sheet_to_json<any[]>(wsCheck, { header: 1 })[0] ?? []) as any[];
+      if (headerRow.length < COL_KEYS.length) {
+        return res.status(400).json({ error: "형식이 다른 파일입니다. 상품리스트를 업로드해주세요." });
+      }
       const rows = xlsxToRows(buf);
       if (rows.length === 0) return res.status(400).json({ error: "엑셀에 데이터가 없습니다" });
       console.log(`[upload] parsed ${rows.length} rows`);
