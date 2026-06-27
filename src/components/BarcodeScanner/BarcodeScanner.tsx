@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef } from "react";
 import { useZxing } from "react-zxing";
 import { X, ScanLine, Zap, ImageIcon } from "lucide-react";
+
+const isAndroid = /android/i.test(navigator.userAgent);
 import type { BarcodeScannerProps } from "./types";
 import { FORMATS, VIDEO_CONSTRAINTS } from "./types";
 import { useEngineState } from "./hooks/useEngineState";
@@ -166,7 +168,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         {/* Camera / Freeze frame */}
         <div
           className="relative bg-black cursor-pointer"
-          style={{ aspectRatio: "4/3" }}
+          style={{ aspectRatio: isAndroid ? "16/9" : "4/3" }}
           onClick={handleTapFocus}
         >
           {/* Live video — hidden when frozen. No CSS filter: camera's own auto-exposure

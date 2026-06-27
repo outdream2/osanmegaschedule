@@ -1,5 +1,7 @@
 import React, { useEffect } from "react";
 
+const isAndroid = /android/i.test(navigator.userAgent);
+
 interface UseQuaggaLoopParams {
   quaggaReady: boolean;
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -57,7 +59,9 @@ export function useQuaggaLoop({
         if (active) setTimeout(tick, 300);
         return;
       }
-      tmpCtx.filter = "brightness(2) contrast(1.3)";
+      // Android video is overexposed; attenuate before Quagga analysis.
+      // Non-Android: standard boost for dim barcodes.
+      tmpCtx.filter = isAndroid ? "brightness(1.0) contrast(1.4)" : "brightness(2) contrast(1.3)";
       tmpCtx.drawImage(video, cx, cy, cw, ch, 0, 0, cw, ch);
       tmpCtx.filter = "none";
 

@@ -1,5 +1,7 @@
 import React, { useEffect } from "react";
 import { _zbarScan } from "../zbar";
+
+const isAndroid = /android/i.test(navigator.userAgent);
 import {
   toGrayContrast,
   sharpenGray,
@@ -73,9 +75,11 @@ export function useZBarLoop({
         return;
       }
 
-      // Normal draw — main canvas stays clean for freeze-frame capture
-      ctx.filter = "none";
+      // Android: apply brightness/contrast on canvas capture so ZBar gets
+      // corrected pixel data (video.style.filter only affects display, not canvas).
+      ctx.filter = isAndroid ? "brightness(0.72) contrast(1.35)" : "none";
       ctx.drawImage(video, 0, 0, w, h);
+      ctx.filter = "none";
 
       // 1. Full frame — original (fast path for large, clear codes)
       const full = ctx.getImageData(0, 0, w, h);
