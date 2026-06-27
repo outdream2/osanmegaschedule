@@ -14,8 +14,6 @@ import {
   vertBlur,
 } from "../imageProcessing";
 
-const isAndroid = /android/i.test(navigator.userAgent);
-
 interface UseZBarLoopParams {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   scanKey: number;
@@ -77,20 +75,6 @@ export function useZBarLoop({
 
       ctx.filter = "none";
       ctx.drawImage(video, 0, 0, w, h);
-
-      // Native BarcodeDetector (Chrome/Android hardware acceleration — ultra fast path)
-      if (isAndroid && "BarcodeDetector" in window) {
-        try {
-          const bd = new (window as any).BarcodeDetector({
-            formats: ["ean_13", "ean_8", "code_128", "code_39", "qr_code", "upc_a", "upc_e"],
-          });
-          const codes = await bd.detect(canvas);
-          if (codes.length > 0 && codes[0].rawValue) {
-            handleResult(codes[0].rawValue);
-            return;
-          }
-        } catch {}
-      }
 
       // 1. Full frame — original (fast path for large, clear codes)
       const full = ctx.getImageData(0, 0, w, h);

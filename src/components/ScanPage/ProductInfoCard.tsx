@@ -65,12 +65,27 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
               ["판매상태", product.sale_status ?? "-", ""],
               ["최근매입일", product.last_purchase_date ?? "-", ""],
             ] as [string, string, string][]
-          ).map(([label, value, extra]) => (
-            <div key={label}>
-              <p className="text-xs font-bold text-gray-400 mb-0.5">{label}</p>
-              <p className={`text-base font-semibold text-gray-800 truncate ${extra}`}>{value}</p>
-            </div>
-          ))}
+          ).map(([label, value, extra]) => {
+            if (label === "배정구역") {
+              return (
+                <div key={label}>
+                  <p className="text-xs font-bold text-gray-400 mb-0.5">{label}</p>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className={`text-base font-semibold text-gray-800 ${extra}`}>{value}</p>
+                    {realMap && (
+                      <p className="text-base font-black text-red-500">{realMap}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+            return (
+              <div key={label}>
+                <p className="text-xs font-bold text-gray-400 mb-0.5">{label}</p>
+                <p className={`text-base font-semibold text-gray-800 truncate ${extra}`}>{value}</p>
+              </div>
+            );
+          })}
         </div>
       </div>
 
