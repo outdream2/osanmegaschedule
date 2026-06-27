@@ -73,6 +73,9 @@ export function useZBarLoop({
         return;
       }
 
+      // 안드로이드 크롬이 drawImage 시 경계를 회색으로 뭉개는 보간 차단.
+      // EAN 바코드 선의 흑/백 경계가 칼같이 유지되어 ZBar 디코딩 정확도 향상.
+      ctx.imageSmoothingEnabled = false;
       ctx.filter = "none";
       ctx.drawImage(video, 0, 0, w, h);
 
@@ -97,6 +100,7 @@ export function useZBarLoop({
       if (proc) {
         const pc = proc.getContext("2d", { willReadFrequently: true });
         if (pc) {
+          pc.imageSmoothingEnabled = false;
           // Dynamic scaleFactor: Target width around 800px.
           // For 1080p width (cw ~ 1612px), scaleFactor will be 1 (preventing 10M pixel memory load).
           // For low-res width (cw ~ 400px), scaleFactor will be 2.

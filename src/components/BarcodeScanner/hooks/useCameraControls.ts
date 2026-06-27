@@ -21,6 +21,7 @@ function buildAdvanced(
     exposureMode?: string;
     exposureCompensation?: number;
     whiteBalanceMode?: string;
+    zoom?: number;
   }
 ): object[] {
   const arr: object[] = [];
@@ -40,6 +41,11 @@ function buildAdvanced(
   }
   if (opts.whiteBalanceMode && (caps as any).whiteBalanceMode?.includes(opts.whiteBalanceMode)) {
     arr.push({ whiteBalanceMode: opts.whiteBalanceMode });
+  }
+  if (opts.zoom !== undefined && (caps as any).zoom) {
+    const z = (caps as any).zoom as { min: number; max: number };
+    const clamped = Math.max(z.min, Math.min(z.max, opts.zoom));
+    arr.push({ zoom: clamped });
   }
   return arr;
 }
@@ -97,6 +103,13 @@ export function useCameraControls({
 
       // Android: 최초 구동 시 continuous만 적용하면 가까운 거리에서 렌즈가 움직이지 않는 현상 방지.
       // single-shot으로 먼저 한 번 AF 렌즈를 깨운 뒤, 800ms 후에 continuous로 순차 전환합니다.
+      // Android: 소프트웨어 디지털 줌 1.5x — 렌즈 핀트 거리를 확보하면서
+      // 알고리즘에는 1D 바코드 선이 더 굵고 선명하게 들어오도록 유도.
+      const zoomAdvanced = buildAdvanced(caps, { zoom: 1.5 });
+      if (zoomAdvanced.length > 0) {
+        track.applyConstraints({ advanced: zoomAdvanced } as any).catch(() => {});
+      }
+
       if (supportedModes.includes("single-shot")) {
         const initAdvanced = buildAdvanced(caps, {
           focusMode: "single-shot",
