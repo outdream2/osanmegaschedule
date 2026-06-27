@@ -1,7 +1,5 @@
 import React, { useEffect } from "react";
 import { _zbarScan } from "../zbar";
-
-const isAndroid = /android/i.test(navigator.userAgent);
 import {
   toGrayContrast,
   sharpenGray,
@@ -15,6 +13,8 @@ import {
   padQuietZone,
   vertBlur,
 } from "../imageProcessing";
+
+const isAndroid = /android/i.test(navigator.userAgent);
 
 interface UseZBarLoopParams {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -80,6 +80,20 @@ export function useZBarLoop({
       ctx.filter = isAndroid ? "brightness(0.72) contrast(1.35)" : "none";
       ctx.drawImage(video, 0, 0, w, h);
       ctx.filter = "none";
+
+      // Native BarcodeDetector (Chrome/Android hardware acceleration — ultra fast path)
+      if (isAndroid && "BarcodeDetector" in window) {
+        try {
+          const bd = new (window as any).BarcodeDetector({
+            formats: ["ean_13", "ean_8", "code_128", "code_39", "qr_code", "upc_a", "upc_e"],
+          });
+          const codes = await bd.detect(canvas);
+          if (codes.length > 0 && codes[0].rawValue) {
+            handleResult(codes[0].rawValue);
+            return;
+          }
+        } catch {}
+      }
 
       // 1. Full frame — original (fast path for large, clear codes)
       const full = ctx.getImageData(0, 0, w, h);
@@ -221,7 +235,10 @@ export function useZBarLoop({
             rotSrc.width = cw; rotSrc.height = ch;
             rotSrc.getContext("2d")!.putImageData(crop, 0, 0);
 
-            for (const deg of [15, -15, 30, -30]) {
+            // 안드로이드에서 세로로 들고 스캔할 때 90도 회전된 바코드를 인식하기 위해 직각 회전(90, -90)을 추가합니다.
+            // 아이폰은 기본 센서 조향이 브라우저에서 보정되므로 부하 방지를 위해 제외합니다.
+            const angles = isAndroid ? [90, -90, 15, -15, 30, -30] : [15, -15, 30, -30];
+            for (const deg of angles) {
               const rad = (deg * Math.PI) / 180;
               const cos = Math.abs(Math.cos(rad)), sin = Math.abs(Math.sin(rad));
               const rw = Math.ceil(cw * cos + ch * sin);

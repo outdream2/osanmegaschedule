@@ -222,7 +222,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                 ].map((cls, i) => (
                   <div key={i} className={`absolute w-6 h-6 border-emerald-400 ${cls}`} />
                 ))}
-                <div className="absolute inset-x-0 h-0.5 bg-emerald-400/80" style={{ animation: "scanline 2s ease-in-out infinite" }} />
+                <div className="absolute inset-x-0 h-0.5 bg-red-500" style={{ animation: "scanline 2s ease-in-out infinite", boxShadow: "0 0 6px 1px rgba(239,68,68,0.8)" }} />
                 {/* QR / 2D support indicator */}
                 <div className="absolute bottom-1.5 right-2 flex flex-col gap-[2px]">
                   {[0,1,2].map(r => (
