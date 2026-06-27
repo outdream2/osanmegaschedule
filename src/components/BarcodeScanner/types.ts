@@ -18,6 +18,7 @@ export const FORMATS = [
 // These are applied via applyConstraints() in useCameraControls instead.
 export const VIDEO_CONSTRAINTS: MediaTrackConstraints = {
   facingMode: "environment",
-  width:  { min: 640, ideal: 1920, max: 1920 },
-  height: { min: 480, ideal: 1080, max: 1080 },
+  width:  { ideal: 1920 },
+  height: { ideal: 1080 },
+  aspectRatio: { ideal: 16 / 9 },
 };
