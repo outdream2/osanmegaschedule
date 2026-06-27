@@ -9,6 +9,8 @@ interface UseCameraControlsParams {
   frozenFrame: string | null;
 }
 
+const isAndroid = /android/i.test(navigator.userAgent);
+
 export function useCameraControls({
   videoRef,
   torchOn,
@@ -20,7 +22,7 @@ export function useCameraControls({
   // Keep torchOnRef in sync for use inside intervals (avoids stale closure)
   useEffect(() => { torchOnRef.current = torchOn; }, [torchOn, torchOnRef]);
 
-  // ── Torch (flashlight) toggle — biggest single quality boost for paper ────
+  // ── Torch (flashlight) toggle ──────────────────────────────────────────────
   useEffect(() => {
     const video = videoRef.current as HTMLVideoElement | null;
     const stream = video?.srcObject as MediaStream | null;
@@ -37,39 +39,61 @@ export function useCameraControls({
     } catch {}
   }, [torchOn, videoRef]);
 
-  // ── Auto-focus + auto-torch on camera ready ────────────────────────────────
-  // Torch fires as soon as the camera stream starts (playing event) — no timer.
-  // Also kicks Android focus: single-shot → continuous for sharp initial lock.
+  // ── Camera ready: kick AF + apply Android-only corrections ────────────────
   useEffect(() => {
     const video = videoRef.current as HTMLVideoElement | null;
     if (!video) return;
 
-    const kickFocusAndTorch = () => {
+    const onReady = () => {
       const track = (video.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
       if (!track) return;
-      // continuous focus+exposure — "single-shot" is iOS-only and locks focus on Android
+
+      // Android: counteract overexposure with CSS filter on the video element.
+      // iOS is intentionally left untouched (its AE is already balanced).
+      if (isAndroid) {
+        video.style.filter = "brightness(0.72) contrast(1.35)";
+      }
+
+      // Android needs negative exposure compensation to prevent blown-out paper.
+      // iOS: keep at 0.0 (no change from default).
       track.applyConstraints({
-        advanced: [{ focusMode: "continuous", exposureMode: "continuous", exposureCompensation: 0.0 } as any],
+        advanced: [{
+          focusMode: "continuous",
+          exposureMode: "continuous",
+          exposureCompensation: isAndroid ? -0.8 : 0.0,
+          whiteBalanceMode: "continuous",
+        } as any],
       }).catch(() => {});
     };
 
-    video.addEventListener("playing", kickFocusAndTorch);
-    // Fallback: try 1.5 s after mount in case playing event already fired
-    const t = setTimeout(kickFocusAndTorch, 1500);
-    return () => { video.removeEventListener("playing", kickFocusAndTorch); clearTimeout(t); };
+    video.addEventListener("playing", onReady);
+    const t = setTimeout(onReady, 1500);
+    return () => { video.removeEventListener("playing", onReady); clearTimeout(t); };
   }, [videoRef, mountedRef, setTorchOn]);
 
-  // ── Tap-to-focus: re-trigger AF on tap (essential on Android) ────────────
+  // ── Tap-to-focus ──────────────────────────────────────────────────────────
   const handleTapFocus = useCallback(() => {
     if (frozenFrame) return;
     const video = videoRef.current as HTMLVideoElement | null;
     const track = (video?.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
     if (!track) return;
-    // Re-apply continuous to nudge AF — single-shot is not supported on Android Chrome
-    track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] }).catch(() => {});
+
+    if (isAndroid) {
+      // Android: momentarily reset focus mode to force AF re-trigger,
+      // then return to continuous so it keeps tracking after the tap.
+      track.applyConstraints({ advanced: [{ focusMode: "none" } as any] }).catch(() => {});
+      setTimeout(() => {
+        track.applyConstraints({
+          advanced: [{ focusMode: "continuous", exposureCompensation: -0.8 } as any],
+        }).catch(() => {});
+      }, 300);
+    } else {
+      // iOS: nudge continuous AF (works fine without reset)
+      track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] }).catch(() => {});
+    }
   }, [frozenFrame, videoRef]);
 
-  // ── Periodic refocus: kick AF every 6 s to prevent continuous-mode drift ──
+  // ── Periodic refocus every 6 s (prevents continuous-mode drift on Android) ─
   useEffect(() => {
     if (frozenFrame) return;
     const id = setInterval(() => {
@@ -77,7 +101,12 @@ export function useCameraControls({
       const video = videoRef.current as HTMLVideoElement | null;
       const track = (video?.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
       if (!track) return;
-      track.applyConstraints({ advanced: [{ focusMode: "continuous" } as any] }).catch(() => {});
+      track.applyConstraints({
+        advanced: [{
+          focusMode: "continuous",
+          ...(isAndroid ? { exposureCompensation: -0.8 } : {}),
+        } as any],
+      }).catch(() => {});
     }, 6000);
     return () => clearInterval(id);
   }, [frozenFrame, videoRef]);

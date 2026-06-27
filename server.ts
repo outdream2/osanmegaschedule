@@ -303,30 +303,26 @@ async function startServer() {
       const rows = xlsxToRows(buf);
       if (rows.length === 0) return res.status(400).json({ error: "엑셀에 데이터가 없습니다" });
       console.log(`[upload] parsed ${rows.length} rows`);
-      // Delete all existing products
-      const { error: delErr } = await supabase.from("products").delete().gte("product_code", "");
-      if (delErr) {
-        console.error("[upload] delete error:", delErr);
-        throw new Error(`삭제 실패: ${delErr.message}`);
-      }
-      console.log(`[upload] table cleared, inserting ${rows.length} rows in chunks...`);
-      // Bulk insert via supabase-js client in parallel chunks
+      // Upsert: update existing rows, insert new ones (conflict on product_code)
+      console.log(`[upload] upserting ${rows.length} rows in chunks...`);
       const CHUNK_SIZE = 500;
       const chunks: Record<string, any>[][] = [];
       for (let i = 0; i < rows.length; i += CHUNK_SIZE) chunks.push(rows.slice(i, i + CHUNK_SIZE));
       const PARALLEL = 3;
       for (let i = 0; i < chunks.length; i += PARALLEL) {
         const batch = chunks.slice(i, i + PARALLEL);
-        const results = await Promise.all(batch.map(chunk => supabase.from("products").insert(chunk)));
-        for (const { error: insertErr } of results) {
-          if (insertErr) {
-            console.error("[upload] insert error:", insertErr);
-            throw new Error(`삽입 실패: ${insertErr.message}`);
+        const results = await Promise.all(
+          batch.map(chunk => supabase.from("products").upsert(chunk, { onConflict: "product_code" }))
+        );
+        for (const { error: upsertErr } of results) {
+          if (upsertErr) {
+            console.error("[upload] upsert error:", upsertErr);
+            throw new Error(`업서트 실패: ${upsertErr.message}`);
           }
         }
-        console.log(`[upload] inserted chunks ${i + 1}~${Math.min(i + PARALLEL, chunks.length)} / ${chunks.length}`);
+        console.log(`[upload] upserted chunks ${i + 1}~${Math.min(i + PARALLEL, chunks.length)} / ${chunks.length}`);
       }
-      console.log(`[upload] insert done`);
+      console.log(`[upload] upsert done`);
       productMapCache = null;
       productMapPromise = null;
       // Append to import log (keep last 20)
@@ -515,70 +511,88 @@ async function startServer() {
     return res.status(201).json({ ok: true });
   });
 
-  // ── POST /api/ocr — 거래명세서 OCR via Gemini ────────────────────────────
+  // ── POST /api/ocr — 거래명세서 OCR ──────────────────────────────────────────
+  // mode "free"  → Tesseract.js (로컬, API 키 불필요, 원시 텍스트 추출)
+  // mode "paid"  → Gemini 2.0 Flash (구조화 테이블 추출, GEMINI_API_KEY 필요)
   app.post("/api/ocr", async (req, res) => {
-    const { images } = req.body ?? {};
+    const { images, mode = "paid" } = req.body ?? {};
     if (!Array.isArray(images) || images.length === 0) {
       return res.status(400).json({ error: "images 배열이 필요합니다." });
     }
-    const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? "";
-    if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY가 설정되지 않았습니다." });
 
     try {
+      if (mode === "free") {
+        // Tesseract.js — dynamic import works from CJS context (no static ESM issue)
+        const { createWorker } = await import("tesseract.js");
+        const pages: any[] = [];
+        for (let i = 0; i < images.length; i++) {
+          const { data: b64 } = images[i] as { data: string; mimeType: string };
+          const imageBuffer = Buffer.from(b64, "base64");
+          const worker = await createWorker(["kor", "eng"]);
+          const { data: { text } } = await worker.recognize(imageBuffer);
+          await worker.terminate();
+          const lines = text.split("\n").map((l: string) => l.trim()).filter(Boolean);
+          pages.push({
+            page: i + 1,
+            headers: ["추출 텍스트"],
+            rows: lines.map((l: string) => [l]),
+            meta: {},
+            rawText: text,
+          });
+        }
+        return res.json({ pages, mode: "free" });
+      }
+
+      // paid: Gemini 구조화 테이블 추출
+      const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? "";
+      if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY가 설정되지 않았습니다." });
+
       const { GoogleGenAI } = await import("@google/genai");
       const ai = new GoogleGenAI({ apiKey });
+      const pages: any[] = [];
 
-      const allItems: any[] = [];
-      const meta: any[] = [];
-
-      for (let i = 0; i < images.length; i++) {
-        const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
-        const prompt = `이 이미지는 한국 거래명세서(납품서)입니다.
-다음 정보를 JSON 형식으로 추출하세요. 필드가 없으면 null로 설정하세요.
+      const prompt = `이 이미지는 한국 거래명세서(납품서)입니다.
+이미지에 보이는 모든 표 데이터를 빠짐없이 추출하세요. 컬럼명은 이미지에서 보이는 그대로 사용하세요.
 
 응답 형식 (JSON만, 마크다운 없이):
 {
-  "supplier": "공급자명",
-  "recipient": "수신자/구매처명",
-  "date": "거래일자 (YYYY-MM-DD 또는 원문 그대로)",
-  "items": [
-    {
-      "name": "품명",
-      "spec": "규격/단위",
-      "qty": 수량(숫자),
-      "unit_price": 단가(숫자),
-      "amount": 금액(숫자)
-    }
+  "headers": ["컬럼명1", "컬럼명2", ...],
+  "rows": [
+    ["값1", "값2", ...],
+    ...
   ],
-  "subtotal": 공급가액합계(숫자),
-  "vat": 세액합계(숫자),
-  "total": 합계금액(숫자)
+  "meta": {
+    "supplier": "공급자명 또는 null",
+    "recipient": "수신자명 또는 null",
+    "date": "거래일자 (YYYY-MM-DD 또는 원문) 또는 null",
+    "total": 합계금액숫자 또는 null
+  }
 }`;
 
+      for (let i = 0; i < images.length; i++) {
+        const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
         const resp = await ai.models.generateContent({
           model: "gemini-2.0-flash",
-          contents: [{
-            role: "user",
-            parts: [
-              { inlineData: { mimeType: mimeType ?? "image/jpeg", data: b64 } },
-              { text: prompt },
-            ],
-          }],
+          contents: [{ role: "user", parts: [
+            { inlineData: { mimeType: mimeType ?? "image/jpeg", data: b64 } },
+            { text: prompt },
+          ]}],
         });
-
         let text = resp.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-        // strip markdown fences
         text = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
         try {
           const parsed = JSON.parse(text);
-          meta.push({ page: i + 1, supplier: parsed.supplier, recipient: parsed.recipient, date: parsed.date, subtotal: parsed.subtotal, vat: parsed.vat, total: parsed.total });
-          (parsed.items ?? []).forEach((item: any) => allItems.push({ ...item, _page: i + 1 }));
+          pages.push({
+            page: i + 1,
+            headers: parsed.headers ?? [],
+            rows: parsed.rows ?? [],
+            meta: parsed.meta ?? {},
+          });
         } catch {
-          meta.push({ page: i + 1, _rawText: text });
+          pages.push({ page: i + 1, headers: ["원문 응답"], rows: [[text]], meta: {}, rawText: text });
         }
       }
-
-      res.json({ items: allItems, meta });
+      return res.json({ pages, mode: "paid" });
     } catch (err: any) {
       res.status(500).json({ error: err?.message ?? "OCR 처리 중 오류" });
     }
