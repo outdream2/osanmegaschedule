@@ -11,11 +11,13 @@ export const FORMATS = [
   "aztec", "pdf417",
 ] as const;
 
-// ── Camera constraints: high-res for better barcode detail pickup ─────────────
+// ── Camera constraints ────────────────────────────────────────────────────────
+// 720p: reduces per-frame pixel load (~half of 1080p), speeds up ZBar ticks
+// and AF feedback loop. scaleFactor logic in useZBarLoop compensates if needed.
 export const VIDEO_CONSTRAINTS: MediaTrackConstraints = {
   facingMode: "environment",
-  width:  { min: 640, ideal: 1920, max: 1920 },
-  height: { min: 480, ideal: 1080, max: 1080 },
+  width:  { min: 640, ideal: 1280, max: 1920 },
+  height: { min: 480, ideal: 720,  max: 1080 },
   // @ts-ignore — non-standard but widely supported
   focusMode: "continuous",
   exposureMode: "continuous",
