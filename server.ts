@@ -363,6 +363,20 @@ async function startServer() {
     }
   });
 
+  // PATCH /api/products/:code/realmap — update real_map for a product
+  app.patch("/api/products/:code/realmap", async (req, res) => {
+    const code = (req.params.code ?? "").trim();
+    const { real_map } = req.body ?? {};
+    if (!code) return res.status(400).json({ error: "code required" });
+    try {
+      const { error } = await supabase.from("products").update({ real_map }).eq("product_code", code);
+      if (error) throw new Error(error.message);
+      productMapCache = null;
+      productMapPromise = null;
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // POST /api/auth/login
   app.post("/api/auth/login", async (req, res) => {
     const { employee_id, password } = req.body ?? {};

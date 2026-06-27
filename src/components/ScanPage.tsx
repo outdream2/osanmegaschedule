@@ -12,6 +12,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { getProductsMap, lookupProduct, isProductsLoaded, type ProductInfo } from "../lib/productsCache";
+import { ProductInfoCard } from "./ScanPage/ProductInfoCard";
 
 interface ScanPageProps {
   onBack: () => void;
@@ -167,6 +168,10 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
     setRequestedIds(new Set());
   };
 
+  const handleRealMapUpdate = (newVal: string) => {
+    setProduct((prev) => (prev ? { ...prev, real_map: newVal } : prev));
+  };
+
   const staffIds = [...new Set(zones.map((z) => z.assignedStaffId).filter(Boolean))] as number[];
   const staffColorMap = new Map(staffIds.map((id, i) => [id, i]));
 
@@ -276,25 +281,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
                 </div>
               </div>
             ) : product ? (
-              <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
-                <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">상품 정보</p>
-                <p className="text-2xl font-black text-gray-900 leading-tight mb-4">{product.name}</p>
-                <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                  {([
-                    ["상품코드",   product.code,                    "font-mono text-gray-700"],
-                    ["배정구역",   product.spec || "미지정",         "text-teal-700 font-black text-base"],
-                    ["현재고",     product.current_stock ?? "-",     ""],
-                    ["공급",       product.supplier ?? "-",          ""],
-                    ["판매상태",   product.sale_status ?? "-",       ""],
-                    ["최근매입일", product.last_purchase_date ?? "-",""],
-                  ] as [string, string, string][]).map(([label, value, extra]) => (
-                    <div key={label}>
-                      <p className="text-xs font-bold text-gray-400 mb-0.5">{label}</p>
-                      <p className={`text-sm font-semibold text-gray-800 truncate ${extra}`}>{value}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ProductInfoCard product={product} onRealMapUpdate={handleRealMapUpdate} />
             ) : null}
 
             {/* ── 매칭 구역 ── */}

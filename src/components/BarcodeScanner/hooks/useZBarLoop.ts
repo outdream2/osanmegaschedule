@@ -75,11 +75,8 @@ export function useZBarLoop({
         return;
       }
 
-      // Android: apply brightness/contrast on canvas capture so ZBar gets
-      // corrected pixel data (video.style.filter only affects display, not canvas).
-      ctx.filter = isAndroid ? "brightness(0.72) contrast(1.35)" : "none";
-      ctx.drawImage(video, 0, 0, w, h);
       ctx.filter = "none";
+      ctx.drawImage(video, 0, 0, w, h);
 
       // Native BarcodeDetector (Chrome/Android hardware acceleration — ultra fast path)
       if (isAndroid && "BarcodeDetector" in window) {

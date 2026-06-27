@@ -84,9 +84,10 @@ export function useCameraControls({
       const track = (video.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
       if (!track) return;
 
-      // Android 전용 CSS 밝기 보정 (iOS는 자체 AE가 처리하므로 건드리지 않음)
+      // ZBar 루프의 캔버스 캡처 레벨에서 이미 보정 필터가 적용되므로,
+      // 사용자 눈에 보이는 프리뷰 비디오는 원본 밝기를 유지하여 화면이 어둡게 찌그러지는 문제를 해결합니다.
       if (isAndroid) {
-        video.style.filter = "brightness(0.72) contrast(1.35)";
+        video.style.filter = "none";
       }
 
       if (!isAndroid) return; // iOS는 focus 제약 자체를 Safari가 무시 → 개입 불필요
