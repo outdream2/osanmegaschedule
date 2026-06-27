@@ -92,15 +92,42 @@ export function useCameraControls({
       if (!isAndroid) return; // iOS는 focus 제약 자체를 Safari가 무시 → 개입 불필요
 
       const caps = getCaps(track);
-      // 지원 항목만 개별 객체로 분리해 배열에 담음
-      const advanced = buildAdvanced(caps, {
-        focusMode: "continuous",
-        exposureMode: "continuous",
-        exposureCompensation: -0.8,
-        whiteBalanceMode: "continuous",
-      });
-      if (advanced.length > 0) {
-        track.applyConstraints({ advanced } as any).catch(() => {});
+      const supportedModes: string[] = (caps as any).focusMode ?? [];
+
+      // Android: 최초 구동 시 continuous만 적용하면 가까운 거리에서 렌즈가 움직이지 않는 현상 방지.
+      // single-shot으로 먼저 한 번 AF 렌즈를 깨운 뒤, 800ms 후에 continuous로 순차 전환합니다.
+      if (supportedModes.includes("single-shot")) {
+        const initAdvanced = buildAdvanced(caps, {
+          focusMode: "single-shot",
+          exposureMode: "continuous",
+          exposureCompensation: -0.8,
+          whiteBalanceMode: "continuous",
+        });
+        if (initAdvanced.length > 0) {
+          track.applyConstraints({ advanced: initAdvanced } as any)
+            .catch(() => {})
+            .finally(() => {
+              setTimeout(() => {
+                const finalAdvanced = buildAdvanced(caps, {
+                  focusMode: "continuous",
+                  exposureCompensation: -0.8,
+                });
+                if (finalAdvanced.length > 0) {
+                  track.applyConstraints({ advanced: finalAdvanced } as any).catch(() => {});
+                }
+              }, 800);
+            });
+        }
+      } else {
+        const advanced = buildAdvanced(caps, {
+          focusMode: "continuous",
+          exposureMode: "continuous",
+          exposureCompensation: -0.8,
+          whiteBalanceMode: "continuous",
+        });
+        if (advanced.length > 0) {
+          track.applyConstraints({ advanced } as any).catch(() => {});
+        }
       }
     };
 
