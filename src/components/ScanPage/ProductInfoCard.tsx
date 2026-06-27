@@ -15,12 +15,12 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
   const handleRealMapSelect = async (zoneLabel: string) => {
     setSaving(true);
     try {
-      await fetch(`/api/products/${encodeURIComponent(product.code)}/realmap`, {
+      const res = await fetch(`/api/products/${encodeURIComponent(product.code)}/realmap`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ real_map: zoneLabel || null }),
       });
-      onRealMapUpdate(zoneLabel);
+      if (res.ok) onRealMapUpdate(zoneLabel);
     } catch {}
     setSaving(false);
   };
