@@ -80,9 +80,20 @@ export function useZBarLoop({
       if (bdDetector) {
         try {
           const codes = await (bdDetector as any).detect(video);
-          if (codes.length > 0 && codes[0].rawValue && active && !scannedRef.current) {
-            handleResult(codes[0].rawValue);
-            return;
+          if (codes.length > 0 && active && !scannedRef.current) {
+            const vw = video.videoWidth;
+            const vh = video.videoHeight;
+            // 가이드 박스 안에 있는 바코드만 허용 (inset-x-[8%] top-[18%] bottom-[18%])
+            // boundingBox 좌표는 videoWidth/videoHeight 기준 픽셀값.
+            const hit = codes.find((c: any) => {
+              if (!c.rawValue) return false;
+              const box = c.boundingBox;
+              if (!box || !vw || !vh) return true; // 좌표 정보 없으면 통과
+              const cx = box.x + box.width / 2;
+              const cy = box.y + box.height / 2;
+              return cx >= vw * 0.08 && cx <= vw * 0.92 && cy >= vh * 0.18 && cy <= vh * 0.82;
+            });
+            if (hit) { handleResult(hit.rawValue); return; }
           }
         } catch {}
       }
@@ -109,9 +120,10 @@ export function useZBarLoop({
       ctx.filter = "none";
       ctx.drawImage(video, 0, 0, w, h);
 
-      // 1. Full frame — original (fast path for large, clear codes)
+      // 1. Full frame — Android는 BarcodeDetector가 이미 전체 프레임을 커버하므로 생략.
+      //    ZBar full-frame pass가 가이드 박스 밖 바코드를 잡는 오탐 방지.
       const full = ctx.getImageData(0, 0, w, h);
-      if (await tryZBar(full)) return;
+      if (!isAndroid && await tryZBar(full)) return;
 
       // Centre crop: matches scan guide box (inset-x-[8%] top-[18%] bottom-[18%])
       const cx = Math.floor(w * 0.08);
