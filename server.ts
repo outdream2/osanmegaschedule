@@ -1010,20 +1010,12 @@ async function startServer() {
 {"headers":["번호","품명","규격","단위","수량","단가","금액","세액"],"rows":[[1,"상품A","500ml","EA",10,1500,15000,1500]],"meta":{"supplier":"(주)공급사","recipient":"수신사","date":"2024-01-15","total":16500}}`;
 
   // 폴백 키 포함 — env 키 우선, 없으면 하드코딩 키 시도
-  const GEMINI_FALLBACK_KEYS = [
-    "AIzaSyBiIYB7yhygk1OUjHfVOdYXifeUUb0Z5tA",
-    "AIzaSyDDAlMRJ00sxw3xeCrhGA-tE8kmN4ke130",
-  ];
-
   function getGeminiKeys(): string[] {
     const keys: string[] = [];
     if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
     for (let i = 1; i <= 20; i++) {
       const k = process.env[`GEMINI_API_KEY_${i}`];
       if (k) keys.push(k);
-    }
-    for (const k of GEMINI_FALLBACK_KEYS) {
-      if (!keys.includes(k)) keys.push(k);
     }
     return keys;
   }
@@ -1111,6 +1103,52 @@ ${rawText}`;
   app.get("/api/ocr-ping", (_req, res) => {
     const keys = getGeminiKeys();
     res.json({ ok: true, gemini: keys.length > 0, geminiKeyCount: keys.length });
+  });
+
+  app.post("/api/ocr-match", async (req, res) => {
+    try {
+      const { names } = req.body ?? {};
+      if (!Array.isArray(names)) return res.status(400).json({ error: "names 배열 필요" });
+
+      const map = await getProductMap();
+      const products = Object.values(map);
+
+      const norm = (s: string) =>
+        s.toLowerCase().replace(/[\s\-_()（）,·./[\]{}]/g, "");
+
+      const bigramScore = (ocr: string, pName: string): number => {
+        const o = norm(ocr);
+        const p = norm(pName);
+        if (!o || !p) return 0;
+        if (o === p) return 100;
+        if (p.includes(o) || o.includes(p)) return 90;
+        const bg = (s: string) => Array.from({ length: s.length - 1 }, (_, i) => s.slice(i, i + 2));
+        const og = bg(o);
+        const pg = new Set(bg(p));
+        if (!og.length) return 0;
+        const inter = og.filter(g => pg.has(g)).length;
+        return Math.round((inter / Math.max(og.length, pg.size)) * 100);
+      };
+
+      const matches = names.map((name: string) => {
+        if (!name?.trim()) return { input: name, matched: null };
+        let best: ProductInfo | null = null;
+        let bestScore = 0;
+        for (const p of products) {
+          const s = bigramScore(name, p.name ?? "");
+          if (s > bestScore) { bestScore = s; best = p; }
+        }
+        if (!best || bestScore < 30) return { input: name, matched: null, score: bestScore };
+        return {
+          input: name,
+          matched: { code: best.code, name: best.name, spec: best.spec, score: bestScore },
+        };
+      });
+
+      res.json({ matches });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
   });
 
   app.post("/api/ocr", async (req, res) => {

@@ -54,13 +54,8 @@ export const PageImageViewer: React.FC<PageImageViewerProps> = ({
   };
   const handleMouseUp = () => { dragRef.current = null; };
 
-  const effW = naturalSize ? (isVertical ? naturalSize.h : naturalSize.w) : null;
-  const effH = naturalSize ? (isVertical ? naturalSize.w : naturalSize.h) : null;
-
   const containerStyle: React.CSSProperties = {
-    maxHeight: "70vh",
     overflow: "hidden",
-    ...(effW && effH ? { aspectRatio: `${effW} / ${effH}` } : { height: "70vh" }),
     cursor: zoom > 1 ? "grab" : "default",
     userSelect: "none",
   };
@@ -136,8 +131,8 @@ export const PageImageViewer: React.FC<PageImageViewerProps> = ({
             display: "block",
             transform: `rotate(${rotation}deg) scale(${zoom}) translate(${offset.x / zoom}px, ${offset.y / zoom}px)`,
             transition: dragRef.current ? "none" : "transform 0.15s ease",
-            maxWidth: isVertical ? "70vh" : "100%",
-            maxHeight: isVertical ? "100%" : "70vh",
+            maxWidth: isVertical ? "55vh" : "100%",
+            maxHeight: isVertical ? "100%" : "55vh",
             width: "auto",
             height: "auto",
             transformOrigin: "center center",

@@ -259,25 +259,23 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
               </div>
             )}
 
-            <div className="w-full bg-white border border-gray-200 rounded-2xl p-3">
-              <div className="flex gap-2">
-                <button onClick={() => setEngine("gemini")}
-                  className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${engine === "gemini" ? "bg-amber-500 text-white shadow-sm" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
-                  Gemini OCR
-                </button>
-                {hasPdfText && (
+            {hasPdfText && (
+              <div className="w-full bg-white border border-gray-200 rounded-2xl p-3">
+                <div className="flex gap-2">
+                  <button onClick={() => setEngine("gemini")}
+                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${engine === "gemini" ? "bg-amber-500 text-white shadow-sm" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
+                    이미지 인식
+                  </button>
                   <button onClick={() => setEngine("pdf-text")}
                     className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${engine === "pdf-text" ? "bg-emerald-500 text-white shadow-sm" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
                     PDF 텍스트
                   </button>
-                )}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-1.5">
+                  {engine === "pdf-text" ? "PDF 텍스트 레이어 직접 추출 — 가장 빠름" : "Gemini 비전 인식 — 이미지/스캔 PDF"}
+                </p>
               </div>
-              <p className="text-[10px] text-gray-400 mt-1.5">
-                {engine === "pdf-text"
-                  ? "PDF 텍스트 레이어 직접 추출 — 가장 빠름"
-                  : "Gemini 2.5 Flash 비전 인식 — 무료 키 순차 사용"}
-              </p>
-            </div>
+            )}
 
             <button onClick={handleExtract} disabled={extracting}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm">
@@ -305,7 +303,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
         )}
 
         {/* Results */}
-        {pages.length > 0 && <RawOcrTable pages={pages} />}
+        {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} />}
       </div>
     </div>
   );
