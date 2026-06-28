@@ -150,6 +150,21 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     return () => { video.removeEventListener("playing", trySelect); clearTimeout(t); };
   }, [videoRef]);
 
+  // Android: playing 후 800ms 뒤 scanKey 증가 → 줌 하드웨어 적용 완료 시점에 스캔 루프 재시작.
+  // 줌 없는 프레임을 스캔하다가 실패하는 헛수고를 없앰.
+  useEffect(() => {
+    if (!isAndroid) return;
+    const video = videoRef.current as HTMLVideoElement | null;
+    if (!video) return;
+    let t: ReturnType<typeof setTimeout>;
+    const onPlaying = () => {
+      clearTimeout(t);
+      t = setTimeout(() => state.setScanKey(k => k + 1), 800);
+    };
+    video.addEventListener("playing", onPlaying);
+    return () => { video.removeEventListener("playing", onPlaying); clearTimeout(t); };
+  }, [videoRef, state.setScanKey]);
+
   // Esc key
   useEffect(() => {
     const h = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
