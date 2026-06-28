@@ -11,7 +11,7 @@ interface RawPage {
 
 interface MatchedItem {
   input: string;
-  matched: { code: string; name: string; spec: string; score: number } | null;
+  matched: { code: string; name: string; spec: string; score: number; masterPrice: number | null } | null;
   score?: number;
 }
 
@@ -347,26 +347,34 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
                   </thead>
                   <tbody>
                     {corrRows.map((row, ri) => {
-                      const score    = matchItems[ri]?.matched?.score ?? 0;
-                      const hasMatch = !!matchItems[ri]?.matched;
-                      const nameColIdx = corrHeaders.indexOf("품명");
+                      const score       = matchItems[ri]?.matched?.score ?? 0;
+                      const hasMatch    = !!matchItems[ri]?.matched;
+                      const masterPrice = matchItems[ri]?.matched?.masterPrice ?? null;
+                      const nameColIdx  = corrHeaders.indexOf("품명");
+                      const priceColIdx = corrHeaders.indexOf("단가");
                       return (
                         <tr key={ri} className={`border-t border-gray-100 hover:bg-indigo-50/40 transition-colors ${ri % 2 !== 0 ? "bg-gray-50/30" : ""}`}>
                           {corrHeaders.map((h, ci) => {
-                            const cell   = row[ci];
-                            const isNum  = typeof cell === "number";
-                            const isName = ci === nameColIdx;
+                            const cell      = row[ci];
+                            const isNum     = typeof cell === "number";
+                            const isName    = ci === nameColIdx;
+                            const isPrice   = ci === priceColIdx;
+                            const priceDiff = isPrice && masterPrice != null && typeof cell === "number" && cell !== masterPrice;
                             return (
                               <td key={ci}
                                 onClick={isName && pageImages?.length ? () => openModal(ri) : undefined}
                                 className={`px-3 py-2 whitespace-nowrap ${
                                   h === "금액"    ? "text-right font-bold text-indigo-700" :
+                                  priceDiff       ? "text-right font-bold text-rose-600" :
                                   isNum           ? "text-right text-gray-700" :
                                   h === "상품코드" ? "text-gray-400 text-[10px]" :
                                   isName          ? `font-semibold ${pageImages?.length ? "cursor-pointer hover:underline underline-offset-2" : ""} ${hasMatch ? (score >= 80 ? "text-emerald-700" : score >= 50 ? "text-amber-700" : "text-rose-600") : "text-rose-500 italic"}` :
                                                     "text-gray-600"
-                                }`}>
+                                }`}
+                                title={priceDiff ? `마스터단가: ${fmt(masterPrice!)}` : undefined}
+                              >
                                 {cell == null ? <span className="text-gray-300">—</span> : isNum ? fmt(cell) : String(cell)}
+                                {priceDiff && <span className="ml-1 text-[10px] text-rose-400">↑{fmt(masterPrice!)}</span>}
                               </td>
                             );
                           })}

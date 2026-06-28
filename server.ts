@@ -1141,7 +1141,13 @@ ${rawText}`;
         if (!best || bestScore < 30) return { input: name, matched: null, score: bestScore };
         return {
           input: name,
-          matched: { code: best.code, name: best.name, spec: best.spec, score: bestScore },
+          matched: {
+            code: best.code,
+            name: best.name,
+            spec: best.spec,
+            score: bestScore,
+            masterPrice: best.purchase_price != null ? Number(best.purchase_price) : null,
+          },
         };
       });
 
