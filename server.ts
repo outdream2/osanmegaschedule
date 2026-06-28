@@ -1011,13 +1011,57 @@ async function startServer() {
 
   // 폴백 키 포함 — env 키 우선, 없으면 하드코딩 키 시도
   function getGeminiKeys(): string[] {
+    const seen = new Set<string>();
     const keys: string[] = [];
-    if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
+    const push = (k: string | undefined) => { if (k && !seen.has(k)) { seen.add(k); keys.push(k); } };
+    push(process.env.GEMINI_API_KEY);
     for (let i = 1; i <= 20; i++) {
-      const k = process.env[`GEMINI_API_KEY_${i}`];
+      push(process.env[`GEMINI_API_KEY_${i}`]);   // GEMINI_API_KEY_1
+      push(process.env[`GEMINI_API_KEY${i}`]);     // GEMINI_API_KEY1
+    }
+    return keys;
+  }
+
+  function getMistralKeys(): string[] {
+    const keys: string[] = [];
+    if (process.env.MISTRAL_API_KEY) keys.push(process.env.MISTRAL_API_KEY);
+    for (let i = 1; i <= 10; i++) {
+      const k = process.env[`MISTRAL_API_KEY_${i}`];
       if (k) keys.push(k);
     }
     return keys;
+  }
+
+  async function callMistralOcr(b64: string, mimeType: string, apiKey: string): Promise<GeminiResult> {
+    try {
+      const resp = await fetch("https://api.mistral.ai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model: "pixtral-12b-2409",
+          messages: [{
+            role: "user",
+            content: [
+              { type: "image_url", image_url: `data:${mimeType};base64,${b64}` },
+              { type: "text", text: GEMINI_OCR_PROMPT },
+            ],
+          }],
+          max_tokens: 4096,
+        }),
+        signal: AbortSignal.timeout(60_000),
+      });
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({})) as any;
+        const msg = err?.message ?? JSON.stringify(err);
+        return { ok: false, quota: resp.status === 429, error: `Mistral ${resp.status}: ${msg}` };
+      }
+      const data = await resp.json() as any;
+      const raw = data.choices?.[0]?.message?.content ?? "";
+      if (!raw) return { ok: false, quota: false, error: "Mistral 빈 응답" };
+      return { ok: true, text: parseGeminiText(raw) };
+    } catch (e: any) {
+      return { ok: false, quota: false, error: String(e?.message ?? e) };
+    }
   }
 
   function parseGeminiText(raw: string): string {
@@ -1102,7 +1146,8 @@ ${rawText}`;
 
   app.get("/api/ocr-ping", (_req, res) => {
     const keys = getGeminiKeys();
-    res.json({ ok: true, gemini: keys.length > 0, geminiKeyCount: keys.length });
+    const mKeys = getMistralKeys();
+    res.json({ ok: true, gemini: keys.length > 0, geminiKeyCount: keys.length, mistral: mKeys.length > 0, mistralKeyCount: mKeys.length });
   });
 
   app.post("/api/ocr-match", async (req, res) => {
@@ -1167,8 +1212,8 @@ ${rawText}`;
     } else {
       if (!Array.isArray(images) || images.length === 0)
         return res.status(400).json({ error: "images 배열이 필요합니다." });
-      if (engine === "gemini" && getGeminiKeys().length === 0)
-        return res.status(400).json({ error: "GEMINI_API_KEY가 설정되지 않았습니다. .env에 추가하세요." });
+      if (engine === "gemini" && getGeminiKeys().length === 0 && getMistralKeys().length === 0)
+        return res.status(400).json({ error: "GEMINI_API_KEY 또는 MISTRAL_API_KEY가 설정되지 않았습니다. .env에 추가하세요." });
     }
 
     try {
@@ -1196,12 +1241,23 @@ ${rawText}`;
 
           if (!rawText) {
             if (quotaCount === keys.length) {
-              return res.status(429).json({
-                error: `Gemini 무료 키 ${keys.length}개 모두 할당량 초과입니다. ` +
-                  `Google AI Studio(aistudio.google.com)에서 새 키를 발급하거나 내일 다시 시도하세요.`,
-              });
+              // Gemini 모두 할당량 초과 → Mistral로 폴백
+              const mistralKeys = getMistralKeys();
+              for (const mKey of mistralKeys) {
+                const r = await callMistralOcr(b64, mimeType, mKey);
+                if (r.ok) { rawText = r.text; console.log(`[OCR/Mistral] page ${i + 1}: 성공`); break; }
+                console.warn(`[OCR/Mistral] 실패: ${r.error}`);
+              }
             }
-            return res.status(500).json({ error: `Gemini OCR 실패: ${lastError}` });
+            if (!rawText) {
+              if (quotaCount === keys.length) {
+                return res.status(429).json({
+                  error: `Gemini 무료 키 ${keys.length}개 모두 할당량 초과이며 Mistral 폴백도 실패했습니다. ` +
+                    `Google AI Studio(aistudio.google.com)에서 새 키를 발급하거나 내일 다시 시도하세요.`,
+                });
+              }
+              return res.status(500).json({ error: `Gemini OCR 실패: ${lastError}` });
+            }
           }
 
           try {

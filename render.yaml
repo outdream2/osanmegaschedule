@@ -20,9 +20,13 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
-      - key: GEMINI_API_KEY_2
+      - key: GEMINI_API_KEY1
         sync: false
-      - key: GEMINI_API_KEY_3
+      - key: GEMINI_API_KEY2
+        sync: false
+      - key: GEMINI_API_KEY3
+        sync: false
+      - key: MISTRAL_API_KEY
         sync: false
       - key: VITE_VAPID_PUBLIC_KEY
         sync: false
