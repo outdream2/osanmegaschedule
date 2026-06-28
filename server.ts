@@ -1079,7 +1079,7 @@ async function startServer() {
   function makeGeminiClient(apiKey: string): GoogleGenAI {
     return new GoogleGenAI({
       apiKey,
-      httpOptions: { headers: { "User-Agent": "aistudio-build" } },
+      httpOptions: { headers: { "User-Agent": "aistudio-build" }, timeout: 25_000 },
     });
   }
 
@@ -1225,8 +1225,8 @@ ${rawText}`;
         for (let i = 0; i < images.length; i++) {
           const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
           // 라운드로빈: 요청마다 시작 키를 순환
-          const startIdx = geminiRoundRobinIdx % keys.length;
-          geminiRoundRobinIdx = (geminiRoundRobinIdx + 1) % keys.length;
+          const startIdx = keys.length > 0 ? geminiRoundRobinIdx % keys.length : 0;
+          if (keys.length > 0) geminiRoundRobinIdx = (geminiRoundRobinIdx + 1) % keys.length;
           console.log(`[OCR/Gemini] page ${i + 1}/${images.length} — 키 ${startIdx + 1}번부터 순환 (총 ${keys.length}개)`);
 
           let parsed: any = null;
