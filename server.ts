@@ -93,6 +93,16 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
+  // real_map 컬럼 존재 확인 — 없으면 Supabase 대시보드에서 추가 필요
+  (async () => {
+    const { error } = await supabase.from("products").select("real_map").limit(1);
+    if (error && /column|does not exist/i.test(error.message)) {
+      console.warn("[SETUP REQUIRED] Supabase products 테이블에 real_map 컬럼이 없습니다.");
+      console.warn("[SETUP REQUIRED] Supabase SQL Editor에서 실행하세요:");
+      console.warn("  ALTER TABLE products ADD COLUMN IF NOT EXISTS real_map TEXT;");
+    }
+  })();
+
   if (process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY) {
     webpush.setVapidDetails(
       process.env.VAPID_SUBJECT ?? "mailto:admin@osanmegatown.com",
