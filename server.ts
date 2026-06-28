@@ -258,13 +258,13 @@ async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
-  // realMap 컬럼 존재 확인 — 없으면 Supabase 대시보드에서 추가 필요
+  // real_map 컬럼 존재 확인 — 없으면 Supabase 대시보드에서 추가 필요
   (async () => {
-    const { error } = await supabase.from("products").select("realMap").limit(1);
+    const { error } = await supabase.from("products").select("real_map").limit(1);
     if (error && /column|does not exist/i.test(error.message)) {
-      console.warn("[SETUP REQUIRED] Supabase products 테이블에 realMap 컬럼이 없습니다.");
+      console.warn("[SETUP REQUIRED] Supabase products 테이블에 real_map 컬럼이 없습니다.");
       console.warn("[SETUP REQUIRED] Supabase SQL Editor에서 실행하세요:");
-      console.warn("  ALTER TABLE products ADD COLUMN IF NOT EXISTS \"realMap\" TEXT;");
+      console.warn("  ALTER TABLE products ADD COLUMN IF NOT EXISTS \"real_map\" TEXT;");
     }
   })();
 
@@ -532,32 +532,32 @@ async function startServer() {
         data = r2.data;
       }
       if (!data) return res.status(404).json({ error: "상품을 찾을 수 없습니다" });
-      res.json(data);
+      res.json({ ...data, realMap: data.real_map ?? null });
     } catch (err: any) {
       res.status(500).json({ error: err.message });
     }
   });
 
-  // GET /api/products/realmap-check — realMap 컬럼 존재 여부 진단
+  // GET /api/products/realmap-check — real_map 컬럼 존재 여부 진단
   app.get("/api/products/realmap-check", async (_req, res) => {
-    const { data, error } = await supabase.from("products").select("realMap").limit(1);
+    const { data, error } = await supabase.from("products").select("real_map").limit(1);
     if (error) {
       return res.status(500).json({
         ok: false,
         error: error.message,
-        fix: "Supabase SQL Editor에서 실행: ALTER TABLE products ADD COLUMN IF NOT EXISTS \"realMap\" TEXT;",
+        fix: "Supabase SQL Editor에서 실행: ALTER TABLE products ADD COLUMN IF NOT EXISTS \"real_map\" TEXT;",
       });
     }
-    res.json({ ok: true, sample: data?.[0]?.realMap ?? null });
+    res.json({ ok: true, sample: data?.[0]?.real_map ?? null });
   });
 
-  // PATCH /api/products/:code/realmap — update realMap for a product
+  // PATCH /api/products/:code/realmap — update real_map for a product
   app.patch("/api/products/:code/realmap", async (req, res) => {
     const code = (req.params.code ?? "").trim();
-    const { realMap } = req.body ?? {};
+    const { realMap } = req.body ?? {};  // 프론트는 realMap 키로 전송
     if (!code) return res.status(400).json({ error: "code required" });
     try {
-      const { error } = await supabase.from("products").update({ realMap }).eq("product_code", code);
+      const { error } = await supabase.from("products").update({ real_map: realMap }).eq("product_code", code);
       if (error) {
         console.error("[realmap PATCH] Supabase error:", error.message, "code:", code);
         return res.status(500).json({ error: error.message });
@@ -1083,7 +1083,11 @@ async function startServer() {
     });
   }
 
-  async function callGeminiOcr(b64: string, mimeType: string, apiKey: string): Promise<GeminiResult> {
+  async function callGeminiOcr(b64: string, mimeType: string, apiKey: string, timeoutMs = 20_000): Promise<GeminiResult> {
+    const timeoutPromise: Promise<GeminiResult> = new Promise(resolve =>
+      setTimeout(() => resolve({ ok: false, quota: false, error: `Gemini 응답 없음 (${timeoutMs / 1000}s 초과)` }), timeoutMs)
+    );
+    const callPromise: Promise<GeminiResult> = (async () => {
     try {
       const ai = makeGeminiClient(apiKey);
       const result = await ai.models.generateContent({
@@ -1109,6 +1113,8 @@ async function startServer() {
       const msg = String(e?.message ?? e);
       return { ok: false, quota: isQuotaError(msg), error: msg };
     }
+    })();
+    return Promise.race([callPromise, timeoutPromise]);
   }
 
   async function structureWithGemini(rawText: string, apiKey: string): Promise<GeminiResult> {
