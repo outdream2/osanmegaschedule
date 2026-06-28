@@ -19,9 +19,16 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   // Android 기본 2x — 스캔 시작 즉시 줌 적용. iOS는 1x (변경 없음)
   const [zoomLevel, setZoomLevel] = useState(isAndroid ? 2 : 1);
 
-  // Android: 초광각 렌즈 우회를 위해 enumerateDevices()로 최적 카메라 선택.
-  // 초기값은 facingMode 기반, 권한 획득 후 deviceId로 교체 시도.
-  const [videoConstraints, setVideoConstraints] = useState<MediaTrackConstraints>(VIDEO_CONSTRAINTS);
+  // Android: 이전 세션에서 선택한 최적 카메라 ID가 있으면 바로 사용 — 전환 지연 제거.
+  // ideal 사용 시 ID가 유효하지 않아도 graceful fallback.
+  const [videoConstraints, setVideoConstraints] = useState<MediaTrackConstraints>(() => {
+    if (!isAndroid) return VIDEO_CONSTRAINTS;
+    try {
+      const saved = localStorage.getItem("android_best_camera_id");
+      if (saved) return { ...VIDEO_CONSTRAINTS, deviceId: { ideal: saved } };
+    } catch {}
+    return VIDEO_CONSTRAINTS;
+  });
 
   // handleResultRef: resolves circular dep between useZxing() (needs callback)
   // and handleResult (needs videoRef from useZxing return). useZxing's
@@ -129,9 +136,10 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         if (!best) return;
         const currentDeviceId = (videoRef.current?.srcObject as MediaStream)
           ?.getVideoTracks()[0]?.getSettings?.()?.deviceId;
+        try { localStorage.setItem("android_best_camera_id", best.deviceId); } catch {}
         if (currentDeviceId !== best.deviceId) {
           switched = true;
-          setVideoConstraints({ ...VIDEO_CONSTRAINTS, deviceId: { exact: best.deviceId } });
+          setVideoConstraints({ ...VIDEO_CONSTRAINTS, deviceId: { ideal: best.deviceId } });
         }
       } catch {}
     };
