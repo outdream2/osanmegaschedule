@@ -11,11 +11,11 @@ interface ProductInfoCardProps {
 export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRealMapUpdate }) => {
   const [mapSelectorOpen, setMapSelectorOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleRealMapSelect = async (zoneLabel: string) => {
     setSaving(true);
-    setSaveError(false);
+    setSaveError(null);
     try {
       const res = await fetch(`/api/products/${encodeURIComponent(product.code)}/realmap`, {
         method: "PATCH",
@@ -25,10 +25,16 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
       if (res.ok) {
         onRealMapUpdate(zoneLabel);
       } else {
-        setSaveError(true);
+        const body = await res.json().catch(() => ({}));
+        const msg: string = body?.error ?? `서버 오류 (${res.status})`;
+        const isColMissing = /column|does not exist|schema cache/i.test(msg);
+        setSaveError(isColMissing
+          ? "DB에 real_map 컬럼이 없습니다. Supabase SQL Editor에서 실행:\nALTER TABLE products ADD COLUMN IF NOT EXISTS real_map TEXT;"
+          : msg
+        );
       }
     } catch {
-      setSaveError(true);
+      setSaveError("네트워크 오류 — 다시 시도해주세요");
     }
     setSaving(false);
   };
@@ -108,9 +114,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
               </div>
             )}
             {saveError && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
-                <AlertTriangle size={11} className="text-red-500 shrink-0" />
-                <p className="text-[10px] font-bold text-red-600">저장 실패 — 다시 시도해주세요</p>
+              <div className="flex items-start gap-1.5 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
+                <AlertTriangle size={11} className="text-red-500 shrink-0 mt-0.5" />
+                <p className="text-[10px] font-bold text-red-600 whitespace-pre-wrap">{saveError}</p>
               </div>
             )}
           </div>

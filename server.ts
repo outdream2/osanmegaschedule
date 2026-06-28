@@ -373,6 +373,19 @@ async function startServer() {
     }
   });
 
+  // GET /api/products/realmap-check — real_map 컬럼 존재 여부 진단
+  app.get("/api/products/realmap-check", async (_req, res) => {
+    const { data, error } = await supabase.from("products").select("real_map").limit(1);
+    if (error) {
+      return res.status(500).json({
+        ok: false,
+        error: error.message,
+        fix: "Supabase SQL Editor에서 실행: ALTER TABLE products ADD COLUMN IF NOT EXISTS real_map TEXT;",
+      });
+    }
+    res.json({ ok: true, sample: data?.[0]?.real_map ?? null });
+  });
+
   // PATCH /api/products/:code/realmap — update real_map for a product
   app.patch("/api/products/:code/realmap", async (req, res) => {
     const code = (req.params.code ?? "").trim();
@@ -380,11 +393,17 @@ async function startServer() {
     if (!code) return res.status(400).json({ error: "code required" });
     try {
       const { error } = await supabase.from("products").update({ real_map }).eq("product_code", code);
-      if (error) throw new Error(error.message);
+      if (error) {
+        console.error("[realmap PATCH] Supabase error:", error.message, "code:", code);
+        return res.status(500).json({ error: error.message });
+      }
       productMapCache = null;
       productMapPromise = null;
       res.json({ ok: true });
-    } catch (err: any) { res.status(500).json({ error: err.message }); }
+    } catch (err: any) {
+      console.error("[realmap PATCH] exception:", err.message);
+      res.status(500).json({ error: err.message });
+    }
   });
 
   // POST /api/auth/login
