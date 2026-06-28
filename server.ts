@@ -1251,27 +1251,21 @@ ${rawText}`;
             lastError = fail.error;
             if (fail.quota) quotaCount++;
             console.warn(`[OCR/Gemini] 키 ${ki + 1}/${keys.length} 실패: ${fail.error}`);
-            if (!isRetryableError(fail.error)) break; // 재시도 의미없는 에러는 즉시 중단
           }
 
           if (!rawText) {
-            if (quotaCount === keys.length) {
-              // Gemini 모두 할당량 초과 → Mistral로 폴백
-              const mistralKeys = getMistralKeys();
-              for (const mKey of mistralKeys) {
-                const r = await callMistralOcr(b64, mimeType, mKey);
-                if (r.ok) { rawText = r.text; console.log(`[OCR/Mistral] page ${i + 1}: 성공`); break; }
-                console.warn(`[OCR/Mistral] 실패: ${r.error}`);
-              }
+            // 모든 Gemini 키 실패 → Mistral 폴백
+            const mistralKeys = getMistralKeys();
+            for (const mKey of mistralKeys) {
+              const r = await callMistralOcr(b64, mimeType, mKey);
+              if (r.ok) { rawText = r.text; console.log(`[OCR/Mistral] page ${i + 1}: 성공`); break; }
+              console.warn(`[OCR/Mistral] 실패: ${r.error}`);
             }
             if (!rawText) {
-              if (quotaCount === keys.length) {
-                return res.status(429).json({
-                  error: `Gemini 무료 키 ${keys.length}개 모두 할당량 초과이며 Mistral 폴백도 실패했습니다. ` +
-                    `Google AI Studio(aistudio.google.com)에서 새 키를 발급하거나 내일 다시 시도하세요.`,
-                });
-              }
-              return res.status(500).json({ error: `Gemini OCR 실패: ${lastError}` });
+              const errMsg = quotaCount === keys.length
+                ? `Gemini 키 ${keys.length}개 모두 할당량 초과입니다. 내일 다시 시도하거나 새 키를 발급하세요.`
+                : `Gemini OCR 실패: ${lastError}`;
+              return res.status(500).json({ error: errMsg });
             }
           }
 

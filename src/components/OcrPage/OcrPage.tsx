@@ -167,17 +167,21 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
                 .then(res => ({ idx: i + j, pages: res.data.pages ?? [] }))
             )
           );
-          let firstError = "";
+          const pageErrors: string[] = [];
           settled.forEach((r, j) => {
             if (r.status === "fulfilled") {
               all[i + j] = r.value.pages[0] ? { ...r.value.pages[0], page: i + j + 1 } : null;
             } else {
-              firstError = firstError || (r.reason?.response?.data?.error ?? r.reason?.message ?? "OCR 실패");
+              const msg = r.reason?.response?.data?.error ?? r.reason?.message ?? "OCR 실패";
+              pageErrors.push(`페이지 ${i + j + 1}: ${msg}`);
             }
           });
           const done = all.filter(Boolean).length;
           setProcessed(done);
-          if (done === 0 && firstError) throw new Error(firstError);
+          if (pageErrors.length > 0) {
+            if (done === 0) throw new Error(pageErrors[0]);
+            setError(`일부 페이지 실패 — ${pageErrors.join(" / ")}`);
+          }
         }
         setPages(all.filter(Boolean) as OcrPageResult[]);
       }
