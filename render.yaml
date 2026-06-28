@@ -2,8 +2,9 @@ services:
   - type: web
     name: megatown-staff-scheduler
     runtime: node
-    buildCommand: npm install && npm run build
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
@@ -18,6 +19,10 @@ services:
       - key: VAPID_SUBJECT
         sync: false
       - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_API_KEY_2
+        sync: false
+      - key: GEMINI_API_KEY_3
         sync: false
       - key: VITE_VAPID_PUBLIC_KEY
         sync: false

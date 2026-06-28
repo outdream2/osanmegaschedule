@@ -1,6 +1,8 @@
 // server.ts
 import "dotenv/config";
+import { GoogleGenAI } from "@google/genai";
 import express from "express";
+import http from "http";
 import path from "path";
 import { createServer as createViteServer } from "vite";
 import { scheduleController } from "./src/controllers/scheduleController";
@@ -11,6 +13,7 @@ import XLSX from "xlsx";
 import compression from "compression";
 
 // ── Product map cache ─────────────────────────────────────────────────────────
+type GeminiResult = { ok: true; text: string } | { ok: false; quota: boolean; error: string };
 interface ProductInfo { code: string; name: string; spec: string; [key: string]: any; }
 let productMapCache: Record<string, ProductInfo> | null = null;
 let productMapPromise: Promise<Record<string, ProductInfo>> | null = null;
@@ -89,17 +92,179 @@ async function getProductMap(): Promise<Record<string, ProductInfo>> {
   return productMapPromise;
 }
 
+// ── Korean invoice text parser (Tesseract raw text → structured data) ────────
+function parseKoreanInvoice(text: string): {
+  headers: string[]; rows: (string | number | null)[][]; meta: any; rawText?: string;
+} {
+  const lines = text.split("\n").map(l => l.trim()).filter(l => l.length > 1);
+  const meta: Record<string, any> = {};
+
+  // Date
+  const dateM = text.match(/(\d{4})[년.\-\/]\s*(\d{1,2})[월.\-\/]\s*(\d{1,2})[일]?/);
+  if (dateM) meta.date = `${dateM[1]}-${dateM[2].padStart(2,"0")}-${dateM[3].padStart(2,"0")}`;
+
+  // Supplier / Recipient
+  const supM = text.match(/공\s*급\s*자\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,20})/);
+  if (supM) meta.supplier = supM[1].trim().replace(/\s{2,}.*$/, "");
+  const recM = text.match(/공\s*급\s*받\s*는\s*자?\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,20})/);
+  if (recM) meta.recipient = recM[1].trim().replace(/\s{2,}.*$/, "");
+
+  // Total (max of all candidate amounts)
+  const totals: number[] = [];
+  for (const pat of [/합\s*계[^\d]*(\d[\d,]+)/, /총\s*금\s*액[^\d]*(\d[\d,]+)/, /공\s*급\s*가\s*액[^\d]*(\d[\d,]+)/]) {
+    const m = text.match(pat);
+    if (m) totals.push(parseInt(m[1].replace(/,/g, "")));
+  }
+  if (totals.length > 0) meta.total = Math.max(...totals);
+
+  // Table header detection
+  const KW = ["품목","품명","상품명","수량","단가","금액","규격","단위","공급가액","세액","적요","번호","No"];
+  let hIdx = -1;
+  let headers: string[] = [];
+  let useSingleSpaceSplit = false;
+
+  // Try splitting by 2+ spaces or tabs first (preserves single spaces inside column names)
+  for (let i = 0; i < lines.length; i++) {
+    const parts = lines[i].split(/\s{2,}|\t/).map(p => p.trim()).filter(Boolean);
+    const hits = parts.filter(p => KW.some(k => p.includes(k))).length;
+    if (hits >= 2 && parts.length >= 3) { hIdx = i; headers = parts; break; }
+  }
+
+  // Fallback 1: Try splitting by any whitespace for header line
+  if (hIdx === -1) {
+    for (let i = 0; i < lines.length; i++) {
+      const parts = lines[i].split(/\s+/).map(p => p.trim()).filter(Boolean);
+      const hits = parts.filter(p => KW.some(k => p.includes(k))).length;
+      if (hits >= 2 && parts.length >= 3) {
+        hIdx = i;
+        headers = parts;
+        useSingleSpaceSplit = true;
+        break;
+      }
+    }
+  }
+
+  // Fallback 2: Check lines for any header keywords (more loose check)
+  if (hIdx === -1) {
+    for (let i = 0; i < lines.length; i++) {
+      const parts = lines[i].split(/\s{2,}|\t/).map(p => p.trim()).filter(Boolean);
+      if (parts.length >= 3 && parts.some(p => KW.some(k => p.includes(k)))) {
+        hIdx = i; headers = parts; break;
+      }
+    }
+  }
+
+  // Fallback 3: Loose check with single space split
+  if (hIdx === -1) {
+    for (let i = 0; i < lines.length; i++) {
+      const parts = lines[i].split(/\s+/).map(p => p.trim()).filter(Boolean);
+      if (parts.length >= 3 && parts.some(p => KW.some(k => p.includes(k)))) {
+        hIdx = i;
+        headers = parts;
+        useSingleSpaceSplit = true;
+        break;
+      }
+    }
+  }
+
+  if (hIdx === -1 || headers.length === 0) {
+    return { headers: ["원문 텍스트"], rows: lines.map(l => [l]), meta, rawText: text };
+  }
+
+  // 숫자로 취급하는 헤더 컬럼명
+  const NUMERIC_KW = ["번호","수량","단가","금액","공급가액","세액"];
+  const numericIdxs = headers.map((h, i) => NUMERIC_KW.some(k => h.includes(k)) ? i : -1).filter(i => i >= 0);
+  const textIdxs    = headers.map((_, i) => i).filter(i => !numericIdxs.includes(i));
+
+  const isNumToken = (t: string) => /^[\d,]+(\.\d+)?$/.test(t.trim());
+
+  const toVal = (s: string): string | number | null => {
+    if (!s) return null;
+    const c = s.replace(/,/g, "");
+    const n = parseFloat(c);
+    return (!isNaN(n) && /^-?\d+(\.\d+)?$/.test(c)) ? n : s;
+  };
+
+  /**
+   * 핵심 수정: 숫자 우정렬 스마트 분할
+   * 거래명세서 특성상 우측 컬럼(수량·단가·금액)은 숫자,
+   * 좌측 컬럼(품명·규격)은 텍스트이므로 토큰을 그 방향으로 배정.
+   */
+  function smartAlign(tokens: string[], H: number): string[] {
+    const result = new Array(H).fill("");
+    if (tokens.length === 0) return result;
+
+    // 우측: 숫자처럼 생긴 토큰을 숫자 컬럼에 오른쪽부터 채움
+    const numToks = [...tokens].reverse().filter(isNumToken).slice(0, numericIdxs.length).reverse();
+    const textToks = tokens.slice(0, tokens.length - numToks.length);
+
+    for (let j = 0; j < numericIdxs.length; j++) {
+      result[numericIdxs[j]] = numToks[j] ?? "";
+    }
+    // 좌측: 텍스트 토큰을 텍스트 컬럼에 배정 (품명이 여러 토큰이면 첫 텍스트 컬럼에 합침)
+    if (textIdxs.length > 0) {
+      if (textToks.length <= textIdxs.length) {
+        textToks.forEach((t, j) => { result[textIdxs[j]] = t; });
+      } else {
+        // 토큰이 텍스트 컬럼보다 많으면 마지막 텍스트 컬럼 이전까지 1:1, 나머지는 첫 컬럼에 합침
+        const overflowCount = textToks.length - textIdxs.length;
+        result[textIdxs[0]] = textToks.slice(0, overflowCount + 1).join(" ");
+        for (let j = 1; j < textIdxs.length; j++) {
+          result[textIdxs[j]] = textToks[overflowCount + j] ?? "";
+        }
+      }
+    }
+    return result;
+  }
+
+  const rows: (string | number | null)[][] = [];
+
+  for (let i = hIdx + 1; i < lines.length; i++) {
+    if (/^[-=*─━]+$/.test(lines[i].trim())) continue;        // 구분선
+    if (/합계|소계|총계|합 계/.test(lines[i]) && !/품/.test(lines[i])) continue; // 합계행
+
+    // 1) 엄격 분할 (2+공백/탭)
+    let parts = lines[i].split(/\s{2,}|\t/).map(p => p.trim()).filter(Boolean);
+    // 2) 불충분하면 단일공백 분할로 재시도
+    if (parts.length < 2 || useSingleSpaceSplit) {
+      const loose = lines[i].split(/\s+/).map(p => p.trim()).filter(Boolean);
+      if (loose.length > parts.length) parts = loose;
+    }
+    if (parts.length < 1) continue;
+
+    const H = headers.length;
+    const P = parts.length;
+    let alignedParts: string[];
+
+    if (P === H) {
+      alignedParts = parts;
+    } else if (P > H) {
+      alignedParts = smartAlign(parts, H);
+    } else {
+      // P < H: 숫자 우정렬로 배정 (단순 left-pad 제거)
+      alignedParts = smartAlign(parts, H);
+    }
+
+    const row = alignedParts.map(toVal);
+    if (row.every(v => v === null || v === "")) continue;
+    rows.push(row);
+  }
+
+  if (rows.length === 0) return { headers: ["원문 텍스트"], rows: lines.map(l => [l]), meta, rawText: text };
+  return { headers, rows, meta };
+}
+
 async function startServer() {
   const app = express();
   const PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
 
-  // real_map 컬럼 존재 확인 — 없으면 Supabase 대시보드에서 추가 필요
+  // realMap 컬럼 존재 확인 — 없으면 Supabase 대시보드에서 추가 필요
   (async () => {
-    const { error } = await supabase.from("products").select("real_map").limit(1);
+    const { error } = await supabase.from("products").select("realMap").limit(1);
     if (error && /column|does not exist/i.test(error.message)) {
-      console.warn("[SETUP REQUIRED] Supabase products 테이블에 real_map 컬럼이 없습니다.");
+      console.warn("[SETUP REQUIRED] Supabase products 테이블에 realMap 컬럼이 없습니다.");
       console.warn("[SETUP REQUIRED] Supabase SQL Editor에서 실행하세요:");
-      console.warn("  ALTER TABLE products ADD COLUMN IF NOT EXISTS real_map TEXT;");
+      console.warn("  ALTER TABLE products ADD COLUMN IF NOT EXISTS \"realMap\" TEXT;");
     }
   })();
 
@@ -373,26 +538,26 @@ async function startServer() {
     }
   });
 
-  // GET /api/products/realmap-check — real_map 컬럼 존재 여부 진단
+  // GET /api/products/realmap-check — realMap 컬럼 존재 여부 진단
   app.get("/api/products/realmap-check", async (_req, res) => {
-    const { data, error } = await supabase.from("products").select("real_map").limit(1);
+    const { data, error } = await supabase.from("products").select("realMap").limit(1);
     if (error) {
       return res.status(500).json({
         ok: false,
         error: error.message,
-        fix: "Supabase SQL Editor에서 실행: ALTER TABLE products ADD COLUMN IF NOT EXISTS real_map TEXT;",
+        fix: "Supabase SQL Editor에서 실행: ALTER TABLE products ADD COLUMN IF NOT EXISTS \"realMap\" TEXT;",
       });
     }
-    res.json({ ok: true, sample: data?.[0]?.real_map ?? null });
+    res.json({ ok: true, sample: data?.[0]?.realMap ?? null });
   });
 
-  // PATCH /api/products/:code/realmap — update real_map for a product
+  // PATCH /api/products/:code/realmap — update realMap for a product
   app.patch("/api/products/:code/realmap", async (req, res) => {
     const code = (req.params.code ?? "").trim();
-    const { real_map } = req.body ?? {};
+    const { realMap } = req.body ?? {};
     if (!code) return res.status(400).json({ error: "code required" });
     try {
-      const { error } = await supabase.from("products").update({ real_map }).eq("product_code", code);
+      const { error } = await supabase.from("products").update({ realMap }).eq("product_code", code);
       if (error) {
         console.error("[realmap PATCH] Supabase error:", error.message, "code:", code);
         return res.status(500).json({ error: error.message });
@@ -656,77 +821,399 @@ async function startServer() {
     return res.status(201).json({ ok: true });
   });
 
-  // ── POST /api/ocr — 거래명세서 OCR (Gemini 2.0 Flash 구조화 추출) ──────────
-  app.post("/api/ocr", async (req, res) => {
-    const { images } = req.body ?? {};
-    if (!Array.isArray(images) || images.length === 0) {
-      return res.status(400).json({ error: "images 배열이 필요합니다." });
+  // ── PDF 텍스트 레이어 표 추출 헬퍼 ──────────────────────────────────────────
+  interface PdfTextItem { text: string; x: number; y: number; height: number; }
+  const PDF_KW = ["품목","품명","상품명","수량","단가","금액","규격","단위","공급가액","세액","적요","번호"];
+  const PDF_TOTAL_KW = /합\s*계|소\s*계|총\s*계|합\s*금|총\s*금/;
+
+  function pdfGroupIntoRows(items: PdfTextItem[]): PdfTextItem[][] {
+    if (items.length === 0) return [];
+    const sorted = [...items].sort((a, b) => b.y - a.y); // PDF Y is bottom-up → desc = top-down
+    const heights = sorted.map(i => i.height).filter(h => h > 0).sort((a, b) => a - b);
+    const medH = heights[Math.floor(heights.length / 2)] ?? 12;
+    const thr = Math.max(4, medH * 0.55);
+    const groups: PdfTextItem[][] = [];
+    let cur: PdfTextItem[] = [sorted[0]];
+    let curAnchor = sorted[0].y;
+    for (const item of sorted.slice(1)) {
+      if (Math.abs(item.y - curAnchor) < thr) {
+        cur.push(item);
+      } else {
+        groups.push([...cur].sort((a, b) => a.x - b.x));
+        cur = [item];
+        curAnchor = item.y;
+      }
     }
-    const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? "";
-    if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY가 설정되지 않았습니다." });
+    if (cur.length) groups.push([...cur].sort((a, b) => a.x - b.x));
+    return groups;
+  }
+
+  function pdfFindHeaderRow(groups: PdfTextItem[][]): { headerIdx: number; colXs: number[]; headers: string[] } {
+    const textRows = groups.map(g => g.map(i => i.text));
+    const isMostlyNumeric = (row: string[]) => {
+      const num = row.filter(c => /^[\d,.\s]+$/.test(c.trim())).length;
+      return row.length > 0 && num / row.length >= 0.5;
+    };
+    const isCandidate = (row: string[]) => !PDF_TOTAL_KW.test(row.join(" ")) && !isMostlyNumeric(row);
+    for (let i = 0; i < textRows.length; i++) {
+      const row = textRows[i];
+      if (!isCandidate(row)) continue;
+      const hits = row.filter(c => PDF_KW.some(k => k === c.trim())).length;
+      if (hits >= 2 && row.length >= 3) return { headerIdx: i, colXs: groups[i].map(it => it.x), headers: row };
+    }
+    for (let i = 0; i < textRows.length; i++) {
+      const row = textRows[i];
+      if (!isCandidate(row)) continue;
+      const hits = row.filter(c => PDF_KW.some(k => c.includes(k))).length;
+      if (hits >= 2 && row.length >= 3) return { headerIdx: i, colXs: groups[i].map(it => it.x), headers: row };
+    }
+    for (let i = 0; i < textRows.length; i++) {
+      const row = textRows[i];
+      if (!isCandidate(row)) continue;
+      if (row.length >= 3 && row.some(c => PDF_KW.some(k => c.includes(k))))
+        return { headerIdx: i, colXs: groups[i].map(it => it.x), headers: row };
+    }
+    return { headerIdx: -1, colXs: [], headers: [] };
+  }
+
+  function pdfAlignRow(group: PdfTextItem[], colXs: number[]): (string | null)[] {
+    const avgGap = colXs.length >= 2 ? (colXs[colXs.length - 1] - colXs[0]) / (colXs.length - 1) : Infinity;
+    const maxDist = colXs.length >= 2 ? avgGap * 0.6 : Infinity;
+    const row: (string | null)[] = new Array(colXs.length).fill(null);
+    for (const item of group) {
+      const dists = colXs.map(cx => Math.abs(item.x - cx));
+      const nearest = dists.indexOf(Math.min(...dists));
+      if (dists[nearest] > maxDist) continue;
+      row[nearest] = row[nearest] === null ? item.text : row[nearest] + " " + item.text;
+    }
+    return row;
+  }
+
+  function pdfBuildResult(items: PdfTextItem[]): { headers: string[]; rows: any[][]; meta: any; rawText: string } {
+    const groups = pdfGroupIntoRows(items);
+    const fullText = groups.map(g => g.map(i => i.text).join(" ")).join("\n");
+    const meta: any = {};
+    const dm = fullText.match(/(\d{4})[년.\-\/]\s*(\d{1,2})[월.\-\/]\s*(\d{1,2})[일]?/);
+    if (dm) meta.date = `${dm[1]}-${dm[2].padStart(2,"0")}-${dm[3].padStart(2,"0")}`;
+    const sm = fullText.match(/공\s*급\s*자\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,20})/);
+    if (sm) meta.supplier = sm[1].trim().split(/\s{2,}/)[0];
+    const rm = fullText.match(/공\s*급\s*받\s*는\s*자?\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,20})/);
+    if (rm) meta.recipient = rm[1].trim().split(/\s{2,}/)[0];
+    const tots: number[] = [];
+    for (const p of [/합\s*계[^\d]*(\d[\d,]+)/, /총\s*금\s*액[^\d]*(\d[\d,]+)/, /공\s*급\s*가\s*액[^\d]*(\d[\d,]+)/]) {
+      const m = fullText.match(p); if (m) tots.push(parseInt(m[1].replace(/,/g,"")));
+    }
+    if (tots.length) meta.total = Math.max(...tots);
+
+    const { headerIdx, colXs, headers } = pdfFindHeaderRow(groups);
+    if (headerIdx < 0) return { headers: ["원문 텍스트"], rows: groups.map(g => [g.map(i => i.text).join(" ")]), meta, rawText: fullText };
+
+    const rows: any[][] = [];
+    for (const group of groups.slice(headerIdx + 1)) {
+      const aligned = pdfAlignRow(group, colXs);
+      const nonEmpty = aligned.filter(c => c !== null && String(c).trim());
+      if (nonEmpty.length < 2) continue;
+      if (PDF_TOTAL_KW.test(aligned.filter(Boolean).join(" "))) continue;
+      rows.push(aligned.map(c => {
+        if (c === null) return null;
+        const s = c.replace(/,/g, "").trim();
+        const n = parseFloat(s);
+        return !isNaN(n) && s !== "" ? (Number.isInteger(n) ? n : n) : c;
+      }));
+    }
+    if (rows.length === 0) return { headers: ["원문 텍스트"], rows: groups.map(g => [g.map(i => i.text).join(" ")]), meta, rawText: fullText };
+    return { headers, rows, meta, rawText: fullText };
+  }
+
+  // ── POST /api/ocr — 거래명세서 OCR (Gemini / PDF텍스트) ─────────────────────
+
+  // ── 거래명세서 표준 컬럼 정의 ───────────────────────────────────────────────
+  const INVOICE_SCHEMA = [
+    { name: "번호",  re: /^(번호|no\.?|순번)$/i },
+    { name: "품명",  re: /품\s*명|품\s*목|상품\s*명|제품\s*명/ },
+    { name: "규격",  re: /규격|사양/ },
+    { name: "단위",  re: /단위/ },
+    { name: "수량",  re: /수량|매수/ },
+    { name: "단가",  re: /단가/ },
+    { name: "금액",  re: /금액|공급가액/ },
+    { name: "세액",  re: /세액|부가세/ },
+    { name: "비고",  re: /비고|적요/ },
+  ] as const;
+
+  // OCR이 추출한 컬럼명을 표준 거래명세서 컬럼으로 정규화 + 순서 정렬
+  function normalizeInvoiceCols(
+    headers: string[],
+    rows: (string | number | null)[][]
+  ): { headers: string[]; rows: (string | number | null)[][] } {
+    const mapping = INVOICE_SCHEMA
+      .map(s => ({ std: s.name, oi: headers.findIndex(h => s.re.test(h.trim())) }))
+      .filter(m => m.oi >= 0);
+
+    const usedIdx = new Set(mapping.map(m => m.oi));
+    const extra = headers.map((h, i) => ({ h, i })).filter(({ i }) => !usedIdx.has(i));
+
+    const outHeaders = [...mapping.map(m => m.std), ...extra.map(e => e.h)];
+    const outRows    = rows.map(row => [
+      ...mapping.map(m => row[m.oi]),
+      ...extra.map(e => row[e.i]),
+    ]);
+    return { headers: outHeaders, rows: outRows };
+  }
+
+  // 금액 = 수량 × 단가 자동 보정
+  function fixAmounts(
+    headers: string[],
+    rows: (string | number | null)[][]
+  ): (string | number | null)[][] {
+    const qI = headers.indexOf("수량");
+    const pI = headers.indexOf("단가");
+    const aI = headers.indexOf("금액");
+    if (qI < 0 || pI < 0 || aI < 0) return rows;
+    return rows.map(row => {
+      const q = typeof row[qI] === "number" ? row[qI] as number : null;
+      const p = typeof row[pI] === "number" ? row[pI] as number : null;
+      const a = typeof row[aI] === "number" ? row[aI] as number : null;
+      if (q != null && p != null && a == null) {
+        const r = [...row]; r[aI] = q * p; return r;
+      }
+      return row;
+    });
+  }
+
+  // ── Gemini API — 키 순환 ──────────────────────────────────────────────────
+  const GEMINI_MODEL = "gemini-2.5-flash";
+
+  const GEMINI_OCR_PROMPT = `당신은 한국 거래명세서·납품서·세금계산서 전문 OCR 분석 엔진입니다.
+이미지에서 품목 표 데이터를 정확히 추출하여 JSON으로 반환하세요.
+
+[문서 구조]
+- 상단: 공급자/공급받는자 상호, 날짜, 사업자번호
+- 중단: 품목 표 (번호·품명·규격·단위·수량·단가·금액·세액·비고 등)
+- 하단: 공급가액 합계, 세액 합계, 총합계
+
+[추출 규칙]
+1. 표의 헤더 행을 정확히 찾아 실제 컬럼명을 그대로 사용하세요
+2. 헤더 아래 품목 행만 rows로 추출하세요
+3. 합계·소계·총계·총합·계 등이 포함된 행은 rows에서 제외하세요
+4. 숫자는 쉼표 제거 후 숫자형으로 반환 (예: "1,500" → 1500, "3개" → 3)
+5. 비거나 읽을 수 없는 셀은 null
+6. 이미지가 흐리거나 기울어져 있어도 최선을 다해 판독하세요
+7. 한글이 뭉개진 경우 문맥으로 추론하세요
+
+[메타데이터]
+- date: YYYY-MM-DD 형식 (찾을 수 없으면 null)
+- supplier: 공급자 상호 (없으면 null)
+- recipient: 공급받는자 상호 (없으면 null)
+- total: 총합계 숫자 (없으면 null)
+
+마크다운·설명 없이 JSON만 응답:
+{"headers":["번호","품명","규격","단위","수량","단가","금액","세액"],"rows":[[1,"상품A","500ml","EA",10,1500,15000,1500]],"meta":{"supplier":"(주)공급사","recipient":"수신사","date":"2024-01-15","total":16500}}`;
+
+  // 폴백 키 포함 — env 키 우선, 없으면 하드코딩 키 시도
+  const GEMINI_FALLBACK_KEYS = [
+    "AIzaSyBiIYB7yhygk1OUjHfVOdYXifeUUb0Z5tA",
+    "AIzaSyDDAlMRJ00sxw3xeCrhGA-tE8kmN4ke130",
+  ];
+
+  function getGeminiKeys(): string[] {
+    const keys: string[] = [];
+    if (process.env.GEMINI_API_KEY) keys.push(process.env.GEMINI_API_KEY);
+    for (let i = 1; i <= 20; i++) {
+      const k = process.env[`GEMINI_API_KEY_${i}`];
+      if (k) keys.push(k);
+    }
+    for (const k of GEMINI_FALLBACK_KEYS) {
+      if (!keys.includes(k)) keys.push(k);
+    }
+    return keys;
+  }
+
+  function parseGeminiText(raw: string): string {
+    let text = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const m = text.match(/\{[\s\S]*\}/);
+    if (m) text = m[0];
+    return text;
+  }
+
+  function isQuotaError(msg: string): boolean {
+    return /429|quota|rate.?limit|resource.?exhausted/i.test(msg);
+  }
+
+  function makeGeminiClient(apiKey: string): GoogleGenAI {
+    return new GoogleGenAI({
+      apiKey,
+      httpOptions: { headers: { "User-Agent": "aistudio-build" } },
+    });
+  }
+
+  async function callGeminiOcr(b64: string, mimeType: string, apiKey: string): Promise<GeminiResult> {
+    try {
+      const ai = makeGeminiClient(apiKey);
+      const result = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: [{
+          parts: [
+            { inlineData: { mimeType: mimeType ?? "image/jpeg", data: b64 } },
+            { text: GEMINI_OCR_PROMPT },
+          ],
+        }],
+        config: { temperature: 0 },
+      });
+
+      const finishReason = result.candidates?.[0]?.finishReason ?? "STOP";
+      if (finishReason !== "STOP" && finishReason !== "MAX_TOKENS") {
+        return { ok: false, quota: false, error: `Gemini 응답 차단됨 (${finishReason})` };
+      }
+
+      const raw = result.text ?? "";
+      if (!raw) return { ok: false, quota: false, error: "Gemini 빈 응답" };
+      return { ok: true, text: parseGeminiText(raw) };
+    } catch (e: any) {
+      const msg = String(e?.message ?? e);
+      return { ok: false, quota: isQuotaError(msg), error: msg };
+    }
+  }
+
+  async function structureWithGemini(rawText: string, apiKey: string): Promise<GeminiResult> {
+    const prompt = `당신은 한국 거래명세서·납품서·세금계산서 전문 데이터 추출 엔진입니다.
+아래 OCR 텍스트에서 품목 표를 찾아 JSON으로 반환하세요.
+
+[추출 규칙]
+1. 표의 헤더 행을 정확히 찾아 실제 컬럼명을 그대로 headers에 넣으세요
+2. 헤더 아래 품목 행만 rows로 추출 (합계·소계·총계 행 제외)
+3. 숫자 쉼표 제거 후 숫자형 반환 (예: "1,500" → 1500)
+4. 비어있거나 없는 셀은 null
+5. meta: date(YYYY-MM-DD), supplier(공급자), recipient(수신자), total(합계숫자)
+
+마크다운·설명 없이 JSON만:
+{"headers":["번호","품명","규격","단위","수량","단가","금액","세액"],"rows":[[1,"상품A","500ml","EA",10,1500,15000,1500]],"meta":{"supplier":"(주)공급사","recipient":"수신사","date":"2024-01-15","total":16500}}
+
+[OCR 텍스트]
+${rawText}`;
+    try {
+      const ai = makeGeminiClient(apiKey);
+      const result = await ai.models.generateContent({
+        model: GEMINI_MODEL,
+        contents: [{ parts: [{ text: prompt }] }],
+        config: { temperature: 0 },
+      });
+      const raw = result.text ?? "";
+      if (!raw) return { ok: false, quota: false, error: "Gemini 빈 응답" };
+      return { ok: true, text: parseGeminiText(raw) };
+    } catch (e: any) {
+      const msg = String(e?.message ?? e);
+      return { ok: false, quota: isQuotaError(msg), error: msg };
+    }
+  }
+
+  app.get("/api/health", (_req, res) => res.json({ ok: true }));
+
+  app.get("/api/ocr-ping", (_req, res) => {
+    const keys = getGeminiKeys();
+    res.json({ ok: true, gemini: keys.length > 0, geminiKeyCount: keys.length });
+  });
+
+  app.post("/api/ocr", async (req, res) => {
+    const { images, textPages, engine: reqEngine = "gemini" } = req.body ?? {};
+    const engine = reqEngine as string;
+
+    if (engine === "pdf-text") {
+      if (!Array.isArray(textPages) || textPages.length === 0)
+        return res.status(400).json({ error: "textPages 배열이 필요합니다." });
+    } else {
+      if (!Array.isArray(images) || images.length === 0)
+        return res.status(400).json({ error: "images 배열이 필요합니다." });
+      if (engine === "gemini" && getGeminiKeys().length === 0)
+        return res.status(400).json({ error: "GEMINI_API_KEY가 설정되지 않았습니다. .env에 추가하세요." });
+    }
 
     try {
-      const { GoogleGenAI } = await import("@google/genai");
-      const ai = new GoogleGenAI({ apiKey });
       const pages: any[] = [];
 
-      const prompt = `이 이미지는 한국 거래명세서(납품서)입니다.
-이미지에 보이는 모든 표 데이터를 빠짐없이 추출하세요. 컬럼명은 이미지에서 보이는 그대로 사용하세요.
+      if (engine === "gemini") {
+        const keys = getGeminiKeys();
+        for (let i = 0; i < images.length; i++) {
+          const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
+          console.log(`[OCR/Gemini] page ${i + 1}/${images.length} — ${keys.length}개 키 순환 준비`);
 
-응답 형식 (JSON만, 마크다운 없이):
-{
-  "headers": ["컬럼명1", "컬럼명2", ...],
-  "rows": [
-    ["값1", "값2", ...],
-    ...
-  ],
-  "meta": {
-    "supplier": "공급자명 또는 null",
-    "recipient": "수신자명 또는 null",
-    "date": "거래일자 (YYYY-MM-DD 또는 원문) 또는 null",
-    "total": 합계금액숫자 또는 null
-  }
-}`;
+          let parsed: any = null;
+          let rawText = "";
+          let quotaCount = 0;
+          let lastError = "";
 
-      for (let i = 0; i < images.length; i++) {
-        const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
-        const resp = await ai.models.generateContent({
-          model: "gemini-2.0-flash",
-          contents: [{ role: "user", parts: [
-            { inlineData: { mimeType: mimeType ?? "image/jpeg", data: b64 } },
-            { text: prompt },
-          ]}],
-        });
-        let text = resp.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-        text = text.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
-        try {
-          const parsed = JSON.parse(text);
-          pages.push({
-            page: i + 1,
-            headers: parsed.headers ?? [],
-            rows: parsed.rows ?? [],
-            meta: parsed.meta ?? {},
-          });
-        } catch {
-          pages.push({ page: i + 1, headers: ["원문 응답"], rows: [[text]], meta: {}, rawText: text });
+          for (let ki = 0; ki < keys.length; ki++) {
+            const r = await callGeminiOcr(b64, mimeType, keys[ki]);
+            if (r.ok) { rawText = r.text; console.log(`[OCR/Gemini] page ${i + 1}: 키 ${ki + 1} 성공`); break; }
+            const fail = r as Extract<GeminiResult, { ok: false }>;
+            lastError = fail.error;
+            if (fail.quota) quotaCount++;
+            console.warn(`[OCR/Gemini] 키 ${ki + 1}/${keys.length} 실패: ${fail.error}`);
+          }
+
+          if (!rawText) {
+            if (quotaCount === keys.length) {
+              return res.status(429).json({
+                error: `Gemini 무료 키 ${keys.length}개 모두 할당량 초과입니다. ` +
+                  `Google AI Studio(aistudio.google.com)에서 새 키를 발급하거나 내일 다시 시도하세요.`,
+              });
+            }
+            return res.status(500).json({ error: `Gemini OCR 실패: ${lastError}` });
+          }
+
+          try {
+            parsed = JSON.parse(rawText);
+          } catch {
+            pages.push({ page: i + 1, headers: ["원문 응답"], rows: [[rawText]], meta: {}, rawText });
+            continue;
+          }
+
+          const norm = normalizeInvoiceCols(parsed.headers ?? [], parsed.rows ?? []);
+          const rows = fixAmounts(norm.headers, norm.rows);
+          const logLines = [
+            `\n[OCR 결과] page ${i + 1}`,
+            `  헤더: ${JSON.stringify(norm.headers)}`,
+            `  행 수: ${rows.length}`,
+            ...rows.map((r, ri) => `  [${ri + 1}] ${JSON.stringify(r)}`),
+            `  메타: ${JSON.stringify(parsed.meta)}`,
+          ].join("\n");
+          process.stdout.write(logLines + "\n");
+          pages.push({ page: i + 1, headers: norm.headers, rows, meta: parsed.meta ?? {}, rawText });
+        }
+
+      } else if (engine === "pdf-text") {
+        const tps = textPages as PdfTextItem[][];
+        for (let i = 0; i < tps.length; i++) {
+          console.log(`[OCR/PDF] page ${i + 1}/${tps.length} — PDF 텍스트 레이어`);
+          const result = pdfBuildResult(tps[i]);
+          const norm = normalizeInvoiceCols(result.headers, result.rows);
+          const rows = fixAmounts(norm.headers, norm.rows);
+          console.log(`\n[OCR 결과] page ${i + 1}`);
+          console.log("  헤더:", norm.headers);
+          console.log("  행 수:", rows.length);
+          rows.forEach((r, ri) => console.log(`  [${ri + 1}]`, r));
+          console.log("  메타:", result.meta);
+          pages.push({ page: i + 1, headers: norm.headers, rows, meta: result.meta, rawText: result.rawText });
         }
       }
-      return res.json({ pages });
+
+      return res.json({ pages, engine });
     } catch (err: any) {
+      console.error("[OCR] error:", err?.message);
       res.status(500).json({ error: err?.message ?? "OCR 처리 중 오류" });
     }
   });
 
+  const httpServer = http.createServer(app);
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: { server: httpServer } },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    // products.json: served dynamically so DB-uploaded data takes effect immediately
     app.get("/products.json", async (_req, res) => {
       try {
         const map = await getProductMap();
@@ -743,7 +1230,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`[Server] Megatown schedule service running on http://localhost:${PORT}`);
   });
 }

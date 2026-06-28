@@ -171,8 +171,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
   };
 
   const handleRealMapUpdate = (newVal: string) => {
-    setProduct((prev) => (prev ? { ...prev, real_map: newVal } : prev));
-    if (scanResult) updateCachedProduct(scanResult, { real_map: newVal || null });
+    setProduct((prev) => (prev ? { ...prev, realMap: newVal } : prev));
+    if (scanResult) updateCachedProduct(scanResult, { realMap: newVal || null });
   };
 
   const staffIds = [...new Set(zones.map((z) => z.assignedStaffId).filter(Boolean))] as number[];

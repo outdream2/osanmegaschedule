@@ -20,7 +20,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
       const res = await fetch(`/api/products/${encodeURIComponent(product.code)}/realmap`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ real_map: zoneLabel || null }),
+        body: JSON.stringify({ realMap: zoneLabel || null }),
       });
       if (res.ok) {
         onRealMapUpdate(zoneLabel);
@@ -47,7 +47,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
         const msg: string = body?.error ?? `서버 오류 (${res.status})`;
         const isColMissing = /column|does not exist|schema cache/i.test(msg);
         setSaveError(isColMissing
-          ? "DB에 real_map 컬럼이 없습니다. Supabase SQL Editor에서 실행:\nALTER TABLE products ADD COLUMN IF NOT EXISTS real_map TEXT;"
+          ? "DB에 realMap 컬럼이 없습니다. Supabase SQL Editor에서 실행:\nALTER TABLE products ADD COLUMN IF NOT EXISTS \"realMap\" TEXT;"
           : msg
         );
       }
@@ -57,7 +57,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
     setSaving(false);
   };
 
-  const realMap: string | null = product.real_map ?? null;
+  const realMap: string | null = product.realMap ?? null;
   const specZone = product.spec || "미지정";
   const hasMismatch = !!realMap && realMap !== specZone;
 
