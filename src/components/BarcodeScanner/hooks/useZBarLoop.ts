@@ -27,6 +27,8 @@ interface UseZBarLoopParams {
   setDarkHint: (v: boolean) => void;
 }
 
+const isAndroid = /android/i.test(navigator.userAgent);
+
 export function useZBarLoop({
   videoRef,
   scanKey,
@@ -46,6 +48,17 @@ export function useZBarLoop({
 
     let active = true;
 
+    // Android ML Kit BarcodeDetector — 싱글턴으로 1회만 생성.
+    // 매 틱마다 new BarcodeDetector() 하면 ML Kit 초기화 비용이 누적되어 파이프라인 블로킹.
+    let bdDetector: any = null;
+    if (isAndroid && "BarcodeDetector" in window) {
+      try {
+        bdDetector = new (window as any).BarcodeDetector({
+          formats: ["ean_13", "ean_8", "code_128", "code_39", "upc_a", "upc_e", "qr_code"],
+        });
+      } catch {}
+    }
+
     async function tryZBar(data: ImageData): Promise<boolean> {
       if (!_zbarScan || scannedRef.current || !active) return false;
       try {
@@ -56,10 +69,27 @@ export function useZBarLoop({
     }
 
     async function tick() {
-      if (!active || scannedRef.current || !_zbarScan) return;
+      if (!active || scannedRef.current) return;
       const video = videoRef.current as HTMLVideoElement | null;
       if (!video || video.readyState < 2 || video.videoWidth === 0) {
         if (active) setTimeout(tick, 250);
+        return;
+      }
+
+      // ── Android ML Kit fast path (Google Play Services 경유, EAN-13 네이티브 지원) ─
+      if (bdDetector) {
+        try {
+          const codes = await (bdDetector as any).detect(video);
+          if (codes.length > 0 && codes[0].rawValue && active && !scannedRef.current) {
+            handleResult(codes[0].rawValue);
+            return;
+          }
+        } catch {}
+      }
+
+      // ZBar WASM이 아직 로드 안 됐으면 250ms 후 재시도
+      if (!_zbarScan) {
+        if (active && !scannedRef.current) setTimeout(tick, 250);
         return;
       }
 

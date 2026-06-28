@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useZxing } from "react-zxing";
 import { X, ScanLine, Zap, ImageIcon } from "lucide-react";
 
@@ -17,6 +17,10 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 }) => {
   const state = useEngineState();
 
+  // Android: 초광각 렌즈 우회를 위해 enumerateDevices()로 최적 카메라 선택.
+  // 초기값은 facingMode 기반, 권한 획득 후 deviceId로 교체 시도.
+  const [videoConstraints, setVideoConstraints] = useState<MediaTrackConstraints>(VIDEO_CONSTRAINTS);
+
   // handleResultRef: resolves circular dep between useZxing() (needs callback)
   // and handleResult (needs videoRef from useZxing return). useZxing's
   // onDecodeResult reads .current at call-time, so we get the latest closure.
@@ -26,7 +30,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     onDecodeResult: useCallback((result: any) => {
       handleResultRef.current(result.rawValue);
     }, []),
-    constraints: { video: VIDEO_CONSTRAINTS },
+    constraints: { video: videoConstraints },
     formats: FORMATS as unknown as Parameters<typeof useZxing>[0]["formats"],
     trySkew: true,
     timeBetweenDecodingAttempts: 150,
@@ -96,6 +100,36 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     ocrWorkerRef: state.ocrWorkerRef,
     ocrCanvasRef: state.ocrCanvasRef,
   });
+
+  // Android: 카메라 권한 획득 후(~1.5초) 최적 카메라 자동 선택.
+  // facingMode:"environment"는 초광각 렌즈를 선택할 수 있어 1D 바코드 초점이 안 잡힘.
+  // label에 ultrawide/telephoto/macro 없는 후면 카메라 중 첫 번째(가장 낮은 index)를 선택.
+  useEffect(() => {
+    if (!isAndroid) return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      if (cancelled) return;
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const inputs = devices.filter(d => d.kind === "videoinput" && d.label);
+        if (inputs.length === 0) return; // 권한 없으면 label 없음
+        const backCams = inputs.filter(d => /back|rear|facing back/i.test(d.label));
+        const pool = backCams.length > 0 ? backCams : inputs;
+        const standard = pool.filter(d =>
+          !/ultra.?wide|wide.?angle|telephoto|\btele\b|macro|\bdepth\b|\bir\b/i.test(d.label)
+        );
+        const best = (standard.length > 0 ? standard : pool)
+          .sort((a, b) => a.label.localeCompare(b.label))[0];
+        if (!best || cancelled) return;
+        const currentDeviceId = (videoRef.current?.srcObject as MediaStream)
+          ?.getVideoTracks()[0]?.getSettings?.()?.deviceId;
+        if (currentDeviceId !== best.deviceId) {
+          setVideoConstraints({ ...VIDEO_CONSTRAINTS, deviceId: { exact: best.deviceId } });
+        }
+      } catch {}
+    }, 1500);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [videoRef]);
 
   // Esc key
   useEffect(() => {
