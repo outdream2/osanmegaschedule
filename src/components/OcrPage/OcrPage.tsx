@@ -125,7 +125,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
     } finally {
       setExtracting(false);
     }
-  }, [extracting, planMode]);
+  }, [extracting]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
