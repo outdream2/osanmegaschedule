@@ -27,3 +27,11 @@ export function lookupProduct(code: string): ProductInfo | null {
 export function isProductsLoaded(): boolean {
   return _map !== null;
 }
+
+export function updateCachedProduct(code: string, updates: Record<string, any>): void {
+  if (!_map) return;
+  const q = code.trim();
+  if (_map[q]) _map[q] = { ..._map[q], ...updates };
+  const stripped = q.replace(/^0+/, "");
+  if (stripped && stripped !== q && _map[stripped]) _map[stripped] = { ..._map[stripped], ...updates };
+}

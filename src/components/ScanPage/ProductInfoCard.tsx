@@ -66,6 +66,24 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
               ["최근매입일", product.last_purchase_date ?? "-", ""],
             ] as [string, string, string][]
           ).map(([label, value, extra]) => {
+            if (label === "현재고") {
+              const cur = product.current_stock != null ? Number(product.current_stock) : null;
+              const opt = product.optimal_stock != null ? Number(product.optimal_stock) : null;
+              const isLow = cur != null && opt != null && cur < opt;
+              return (
+                <div key={label}>
+                  <p className="text-xs font-bold text-gray-400 mb-0.5">{label}</p>
+                  <div className="flex items-baseline gap-1">
+                    <p className={`text-base font-semibold ${isLow ? "text-red-500 font-black" : "text-gray-800"}`}>
+                      {cur ?? "-"}
+                    </p>
+                    {opt != null && (
+                      <p className="text-xs text-gray-400 font-medium">/ {opt}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            }
             if (label === "배정구역") {
               return (
                 <div key={label}>

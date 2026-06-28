@@ -112,7 +112,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   });
 
   // Android: playing 이벤트 시점에 최적 카메라 자동 선택.
-  // 고정 1500ms 대기 → playing 이벤트 즉시 실행으로 변경 (카메라 준비되는 순간 = 권한 획득 = label 사용 가능)
+  // 캐시된 deviceId가 현재 스트림과 일치하면 enumerateDevices 생략 — 불필요한 async 비용 제거.
   // facingMode:"environment"는 초광각 렌즈를 선택할 수 있어 1D 바코드 초점이 안 잡힘.
   useEffect(() => {
     if (!isAndroid) return;
@@ -122,6 +122,18 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
     const trySelect = async () => {
       if (switched) return;
+
+      // Fast path: 현재 스트림이 이미 캐시된 최적 카메라라면 enumeration 없이 즉시 완료.
+      const currentDeviceId = (videoRef.current?.srcObject as MediaStream)
+        ?.getVideoTracks()[0]?.getSettings?.()?.deviceId;
+      try {
+        const cached = localStorage.getItem("android_best_camera_id");
+        if (cached && currentDeviceId && currentDeviceId === cached) {
+          switched = true;
+          return;
+        }
+      } catch {}
+
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const inputs = devices.filter(d => d.kind === "videoinput" && d.label);
@@ -134,12 +146,12 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         const best = (standard.length > 0 ? standard : pool)
           .sort((a, b) => a.label.localeCompare(b.label))[0];
         if (!best) return;
-        const currentDeviceId = (videoRef.current?.srcObject as MediaStream)
-          ?.getVideoTracks()[0]?.getSettings?.()?.deviceId;
         try { localStorage.setItem("android_best_camera_id", best.deviceId); } catch {}
         if (currentDeviceId !== best.deviceId) {
           switched = true;
           setVideoConstraints({ ...VIDEO_CONSTRAINTS, deviceId: { ideal: best.deviceId } });
+          // 카메라 전환 후 줌 정착 대기 후 스캔 루프 재시작
+          setTimeout(() => state.setScanKey(k => k + 1), 600);
         }
       } catch {}
     };
@@ -148,21 +160,6 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     // 1500ms 폴백 — playing이 이미 발생한 경우 대비
     const t = setTimeout(trySelect, 1500);
     return () => { video.removeEventListener("playing", trySelect); clearTimeout(t); };
-  }, [videoRef]);
-
-  // Android: playing 후 800ms 뒤 scanKey 증가 → 줌 하드웨어 적용 완료 시점에 스캔 루프 재시작.
-  // 줌 없는 프레임을 스캔하다가 실패하는 헛수고를 없앰.
-  useEffect(() => {
-    if (!isAndroid) return;
-    const video = videoRef.current as HTMLVideoElement | null;
-    if (!video) return;
-    let t: ReturnType<typeof setTimeout>;
-    const onPlaying = () => {
-      clearTimeout(t);
-      t = setTimeout(() => state.setScanKey(k => k + 1), 800);
-    };
-    video.addEventListener("playing", onPlaying);
-    return () => { video.removeEventListener("playing", onPlaying); clearTimeout(t); };
   }, [videoRef, state.setScanKey]);
 
   // Esc key

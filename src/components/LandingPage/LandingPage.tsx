@@ -31,7 +31,7 @@ interface LandingPageProps {
 type AuthTab = "admin" | "employee";
 
 export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigate, onLogout }) => {
-  const [pendingPage, setPendingPage] = useState<"schedule" | "display" | null>(null);
+  const [pendingPage, setPendingPage] = useState<"schedule" | "display" | "scan" | null>(null);
   const [activeTab, setActiveTab] = useState<AuthTab>("employee");
 
   const [pin, setPin] = useState("");
@@ -313,7 +313,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               {/* 상품 스캔 — 로그인한 직원 */}
               {(isLoggedIn || !isLoggedIn) && (
                 <button
-                  onClick={() => isLoggedIn ? onNavigate("scan") : setPendingPage("schedule")}
+                  onClick={() => isLoggedIn ? onNavigate("scan") : setPendingPage("scan")}
                   className="group relative bg-white border border-gray-200 hover:border-teal-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-teal-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

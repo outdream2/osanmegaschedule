@@ -12,7 +12,7 @@ import {
   RotateCcw,
   AlertCircle,
 } from "lucide-react";
-import { getProductsMap, lookupProduct, isProductsLoaded, type ProductInfo } from "../lib/productsCache";
+import { getProductsMap, lookupProduct, isProductsLoaded, updateCachedProduct, type ProductInfo } from "../lib/productsCache";
 import { ProductInfoCard } from "./ScanPage/ProductInfoCard";
 
 interface ScanPageProps {
@@ -174,6 +174,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
 
   const handleRealMapUpdate = (newVal: string) => {
     setProduct((prev) => (prev ? { ...prev, real_map: newVal } : prev));
+    if (scanResult) updateCachedProduct(scanResult, { real_map: newVal || null });
   };
 
   const staffIds = [...new Set(zones.map((z) => z.assignedStaffId).filter(Boolean))] as number[];
