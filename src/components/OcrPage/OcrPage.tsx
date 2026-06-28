@@ -86,20 +86,25 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
       // 이미지 렌더
       const vp     = page.getViewport({ scale });
       const canvas = document.createElement("canvas");
-      canvas.width  = vp.width;
-      canvas.height = vp.height;
+      canvas.width  = Math.floor(vp.width);
+      canvas.height = Math.floor(vp.height);
       const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error(`페이지 ${i} Canvas 컨텍스트를 가져올 수 없습니다 (메모리 부족일 수 있음)`);
+      if (!ctx) throw new Error(`페이지 ${i} Canvas를 초기화할 수 없습니다. 파일이 너무 크거나 메모리가 부족합니다.`);
       await page.render({ canvasContext: ctx as any, viewport: vp, canvas } as any).promise;
       const dataUrl = canvas.toDataURL("image/jpeg", quality);
       imgs.push({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
       setPageImages(prev => [...prev, dataUrl]);
-      // 텍스트 레이어 추출
-      const tc = await page.getTextContent();
-      const items: PdfTextItem[] = (tc.items as any[])
-        .filter(it => it.str && it.str.trim())
-        .map(it => ({ text: it.str.trim(), x: it.transform[4], y: it.transform[5], height: it.height ?? 12 }));
-      textPages.push(items);
+      // 텍스트 레이어 추출 — 실패해도 이미지 렌더는 유지
+      try {
+        const tc = await page.getTextContent();
+        const rawItems: any[] = Array.isArray(tc?.items) ? tc.items : [];
+        const items: PdfTextItem[] = rawItems
+          .filter(it => it && it.str && it.str.trim())
+          .map(it => ({ text: it.str.trim(), x: it.transform[4], y: it.transform[5], height: it.height ?? 12 }));
+        textPages.push(items);
+      } catch {
+        textPages.push([]);
+      }
     }
     textPagesRef.current = textPages;
     const hasText = textPages.some(p => p.length > 5);
