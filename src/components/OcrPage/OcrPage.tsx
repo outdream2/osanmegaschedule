@@ -32,8 +32,6 @@ const fmtCell = (v: string | number | null | undefined): string => {
   return String(v);
 };
 
-type PlanMode = "free" | "paid";
-
 export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imagesDataRef = useRef<{ data: string; mimeType: string }[]>([]);
@@ -48,7 +46,6 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
   const [expandedPage, setExpandedPage] = useState<number | null>(null);
   const [pageImages, setPageImages] = useState<string[]>([]);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
-  const [planMode, setPlanMode] = useState<PlanMode>("paid");
   const [rotation, setRotation] = useState(-90);
   const [lightbox, setLightbox] = useState(false);
 
@@ -117,7 +114,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
       const allPages: OcrPageResult[] = [];
       for (let i = 0; i < images.length; i += BATCH) {
         const batch = images.slice(i, i + BATCH);
-        const res = await axios.post("/api/ocr", { images: batch, mode: planMode });
+        const res = await axios.post("/api/ocr", { images: batch });
         const batchPages: OcrPageResult[] = res.data.pages ?? [];
         batchPages.forEach(p => allPages.push({ ...p, page: i + p.page }));
         setProcessed(Math.min(i + BATCH, images.length));
@@ -306,30 +303,15 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
 
         {/* OCR extract controls */}
         {pageImages.length > 0 && !loading && (
-          <div className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3 flex items-center gap-3">
-            <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-bold shrink-0">
-              <button onClick={() => setPlanMode("free")}
-                className={`px-3 py-2 transition cursor-pointer ${planMode === "free" ? "bg-emerald-500 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}>
-                무료
-              </button>
-              <button onClick={() => setPlanMode("paid")}
-                className={`px-3 py-2 transition cursor-pointer ${planMode === "paid" ? "bg-amber-500 text-white" : "bg-white text-gray-500 hover:bg-gray-50"}`}>
-                유료
-              </button>
-            </div>
-            <div className="text-[10px] text-gray-400 shrink-0">
-              {planMode === "free" ? "Tesseract · 로컬" : "Gemini · API"}
-            </div>
-            <button
-              onClick={handleExtract}
-              disabled={extracting}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm"
-            >
-              {extracting
-                ? <><Loader2 size={15} className="animate-spin" />OCR 추출 중... ({processed}/{pageCount > 0 ? pageCount : "?"})</>
-                : <><Zap size={15} />OCR 추출</>}
-            </button>
-          </div>
+          <button
+            onClick={handleExtract}
+            disabled={extracting}
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm"
+          >
+            {extracting
+              ? <><Loader2 size={15} className="animate-spin" />OCR 추출 중... ({processed}/{pageCount > 0 ? pageCount : "?"})</>
+              : <><Zap size={15} />OCR 추출</>}
+          </button>
         )}
 
         {/* OCR progress bar */}

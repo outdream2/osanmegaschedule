@@ -656,42 +656,16 @@ async function startServer() {
     return res.status(201).json({ ok: true });
   });
 
-  // ── POST /api/ocr — 거래명세서 OCR ──────────────────────────────────────────
-  // mode "free"  → Tesseract.js (로컬, API 키 불필요, 원시 텍스트 추출)
-  // mode "paid"  → Gemini 2.0 Flash (구조화 테이블 추출, GEMINI_API_KEY 필요)
+  // ── POST /api/ocr — 거래명세서 OCR (Gemini 2.0 Flash 구조화 추출) ──────────
   app.post("/api/ocr", async (req, res) => {
-    const { images, mode = "paid" } = req.body ?? {};
+    const { images } = req.body ?? {};
     if (!Array.isArray(images) || images.length === 0) {
       return res.status(400).json({ error: "images 배열이 필요합니다." });
     }
+    const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? "";
+    if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY가 설정되지 않았습니다." });
 
     try {
-      if (mode === "free") {
-        // Tesseract.js — dynamic import works from CJS context (no static ESM issue)
-        const { createWorker } = await import("tesseract.js");
-        const pages: any[] = [];
-        for (let i = 0; i < images.length; i++) {
-          const { data: b64 } = images[i] as { data: string; mimeType: string };
-          const imageBuffer = Buffer.from(b64, "base64");
-          const worker = await createWorker(["kor", "eng"]);
-          const { data: { text } } = await worker.recognize(imageBuffer);
-          await worker.terminate();
-          const lines = text.split("\n").map((l: string) => l.trim()).filter(Boolean);
-          pages.push({
-            page: i + 1,
-            headers: ["추출 텍스트"],
-            rows: lines.map((l: string) => [l]),
-            meta: {},
-            rawText: text,
-          });
-        }
-        return res.json({ pages, mode: "free" });
-      }
-
-      // paid: Gemini 구조화 테이블 추출
-      const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY ?? "";
-      if (!apiKey) return res.status(500).json({ error: "GEMINI_API_KEY가 설정되지 않았습니다." });
-
       const { GoogleGenAI } = await import("@google/genai");
       const ai = new GoogleGenAI({ apiKey });
       const pages: any[] = [];
@@ -737,7 +711,7 @@ async function startServer() {
           pages.push({ page: i + 1, headers: ["원문 응답"], rows: [[text]], meta: {}, rawText: text });
         }
       }
-      return res.json({ pages, mode: "paid" });
+      return res.json({ pages });
     } catch (err: any) {
       res.status(500).json({ error: err?.message ?? "OCR 처리 중 오류" });
     }
