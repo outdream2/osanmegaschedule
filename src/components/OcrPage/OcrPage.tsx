@@ -72,6 +72,10 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
   }, []);
 
   const renderPdfToImages = useCallback(async (file: File): Promise<{ data: string; mimeType: string }[]> => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    const scale   = isMobile ? 1.5 : 2.0;
+    const quality = isMobile ? 0.80 : 0.92;
+
     const buf = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
     const imgs: { data: string; mimeType: string }[] = [];
@@ -80,11 +84,14 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
       // 이미지 렌더
-      const vp   = page.getViewport({ scale: 2.0 });
+      const vp     = page.getViewport({ scale });
       const canvas = document.createElement("canvas");
-      canvas.width = vp.width; canvas.height = vp.height;
-      await page.render({ canvasContext: canvas.getContext("2d") as any, viewport: vp, canvas } as any).promise;
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      canvas.width  = vp.width;
+      canvas.height = vp.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error(`페이지 ${i} Canvas 컨텍스트를 가져올 수 없습니다 (메모리 부족일 수 있음)`);
+      await page.render({ canvasContext: ctx as any, viewport: vp, canvas } as any).promise;
+      const dataUrl = canvas.toDataURL("image/jpeg", quality);
       imgs.push({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
       setPageImages(prev => [...prev, dataUrl]);
       // 텍스트 레이어 추출
