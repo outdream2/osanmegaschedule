@@ -1072,6 +1072,9 @@ async function startServer() {
     return text;
   }
 
+  function isRetryableError(msg: string): boolean {
+    return /429|503|quota|rate.?limit|resource.?exhausted|unavailable|overloaded/i.test(msg);
+  }
   function isQuotaError(msg: string): boolean {
     return /429|quota|rate.?limit|resource.?exhausted/i.test(msg);
   }
@@ -1248,6 +1251,7 @@ ${rawText}`;
             lastError = fail.error;
             if (fail.quota) quotaCount++;
             console.warn(`[OCR/Gemini] 키 ${ki + 1}/${keys.length} 실패: ${fail.error}`);
+            if (!isRetryableError(fail.error)) break; // 재시도 의미없는 에러는 즉시 중단
           }
 
           if (!rawText) {

@@ -157,15 +157,29 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
           ? images
           : await Promise.all(images.map(img => physicallyRotate(img.data, img.mimeType, rotation)));
 
-        const BATCH = 1;
-        const all: OcrPageResult[] = [];
-        for (let i = 0; i < rotatedImages.length; i += BATCH) {
-          const batch = rotatedImages.slice(i, i + BATCH);
-          const res = await axios.post("/api/ocr", { images: batch, engine });
-          (res.data.pages ?? []).forEach((p: OcrPageResult) => all.push({ ...p, page: i + p.page }));
-          setProcessed(Math.min(i + BATCH, rotatedImages.length));
+        const CONCURRENT = 4;
+        const all: OcrPageResult[] = new Array(rotatedImages.length).fill(null);
+        for (let i = 0; i < rotatedImages.length; i += CONCURRENT) {
+          const batchImgs = rotatedImages.slice(i, i + CONCURRENT);
+          const settled = await Promise.allSettled(
+            batchImgs.map((img, j) =>
+              axios.post("/api/ocr", { images: [img], engine })
+                .then(res => ({ idx: i + j, pages: res.data.pages ?? [] }))
+            )
+          );
+          let firstError = "";
+          settled.forEach((r, j) => {
+            if (r.status === "fulfilled") {
+              all[i + j] = r.value.pages[0] ? { ...r.value.pages[0], page: i + j + 1 } : null;
+            } else {
+              firstError = firstError || (r.reason?.response?.data?.error ?? r.reason?.message ?? "OCR 실패");
+            }
+          });
+          const done = all.filter(Boolean).length;
+          setProcessed(done);
+          if (done === 0 && firstError) throw new Error(firstError);
         }
-        setPages(all);
+        setPages(all.filter(Boolean) as OcrPageResult[]);
       }
     } catch (err: any) {
       setError(err?.response?.data?.error ?? err?.message ?? "OCR 처리 중 오류가 발생했습니다.");
