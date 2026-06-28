@@ -19,19 +19,20 @@ import {
   FileSpreadsheet,
   FileText,
   CheckCircle2,
+  List,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
-  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr", auth?: AuthSession) => void;
+  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests", auth?: AuthSession) => void;
   onLogout: () => void;
 }
 
 type AuthTab = "admin" | "employee";
 
 export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigate, onLogout }) => {
-  const [pendingPage, setPendingPage] = useState<"schedule" | "display" | "scan" | null>(null);
+  const [pendingPage, setPendingPage] = useState<"schedule" | "display" | "scan" | "requests" | null>(null);
   const [activeTab, setActiveTab] = useState<AuthTab>("employee");
 
   const [pin, setPin] = useState("");
@@ -331,6 +332,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">바코드 스캔으로 진열 보충 요청</div>
                     <div className="flex items-center gap-1 mt-2 sm:mt-4 text-teal-600 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">{isLoggedIn ? "스캔하기" : "로그인 필요"}</span>
+                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+              )}
+
+              {/* 요청목록 조회 */}
+              {(isLoggedIn || !isLoggedIn) && (
+                <button
+                  onClick={() => isLoggedIn ? onNavigate("requests") : setPendingPage("requests")}
+                  className="group relative bg-white border border-gray-200 hover:border-indigo-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {!isLoggedIn && (
+                    <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-70 transition-opacity">
+                      <Lock size={13} className="text-indigo-400" />
+                    </div>
+                  )}
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-indigo-200 transition-colors">
+                      <List size={18} className="text-indigo-600 sm:hidden" />
+                      <List size={22} className="text-indigo-600 hidden sm:block" />
+                    </div>
+                    <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">요청목록 조회</div>
+                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">진열·발주요청 및 배정구역 불일치 확인</div>
+                    <div className="flex items-center gap-1 mt-2 sm:mt-4 text-indigo-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">{isLoggedIn ? "조회하기" : "로그인 필요"}</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
