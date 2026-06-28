@@ -982,6 +982,7 @@ async function startServer() {
 
   // ── Gemini API — 키 순환 ──────────────────────────────────────────────────
   const GEMINI_MODEL = "gemini-2.5-flash";
+  let geminiRoundRobinIdx = 0;
 
   const GEMINI_OCR_PROMPT = `당신은 한국 거래명세서·납품서·세금계산서 전문 OCR 분석 엔진입니다.
 이미지에서 품목 표 데이터를 정확히 추출하여 JSON으로 반환하세요.
@@ -1223,14 +1224,18 @@ ${rawText}`;
         const keys = getGeminiKeys();
         for (let i = 0; i < images.length; i++) {
           const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
-          console.log(`[OCR/Gemini] page ${i + 1}/${images.length} — ${keys.length}개 키 순환 준비`);
+          // 라운드로빈: 요청마다 시작 키를 순환
+          const startIdx = geminiRoundRobinIdx % keys.length;
+          geminiRoundRobinIdx = (geminiRoundRobinIdx + 1) % keys.length;
+          console.log(`[OCR/Gemini] page ${i + 1}/${images.length} — 키 ${startIdx + 1}번부터 순환 (총 ${keys.length}개)`);
 
           let parsed: any = null;
           let rawText = "";
           let quotaCount = 0;
           let lastError = "";
 
-          for (let ki = 0; ki < keys.length; ki++) {
+          for (let k = 0; k < keys.length; k++) {
+            const ki = (startIdx + k) % keys.length;
             const r = await callGeminiOcr(b64, mimeType, keys[ki]);
             if (r.ok) { rawText = r.text; console.log(`[OCR/Gemini] page ${i + 1}: 키 ${ki + 1} 성공`); break; }
             const fail = r as Extract<GeminiResult, { ok: false }>;
