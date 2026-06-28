@@ -16,6 +16,8 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   onScan, onClose, title = "바코드 스캔",
 }) => {
   const state = useEngineState();
+  // Android 기본 2x — 스캔 시작 즉시 줌 적용. iOS는 1x (변경 없음)
+  const [zoomLevel, setZoomLevel] = useState(isAndroid ? 2 : 1);
 
   // Android: 초광각 렌즈 우회를 위해 enumerateDevices()로 최적 카메라 선택.
   // 초기값은 facingMode 기반, 권한 획득 후 deviceId로 교체 시도.
@@ -67,6 +69,7 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     torchOnRef: state.torchOnRef,
     mountedRef: state.mountedRef,
     frozenFrame: state.frozenFrame,
+    zoomLevel,
   });
 
   useZBarLoop({
@@ -268,6 +271,28 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Android 전용 줌 버튼 — iOS 코드 경로 완전 분리 */}
+          {isAndroid && !state.frozenFrame && (
+            <div
+              className="absolute bottom-2.5 inset-x-0 flex justify-center items-center gap-2 z-10"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {[1, 2, 3].map((z) => (
+                <button
+                  key={z}
+                  onClick={() => setZoomLevel(z)}
+                  className={`w-9 h-9 rounded-full text-[11px] font-bold border transition-all active:scale-90 cursor-pointer ${
+                    zoomLevel === z
+                      ? "bg-yellow-400/90 text-black border-yellow-300 shadow-lg"
+                      : "bg-black/50 text-white border-white/30 backdrop-blur-sm"
+                  }`}
+                >
+                  {z}×
+                </button>
+              ))}
             </div>
           )}
 

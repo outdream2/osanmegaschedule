@@ -7,6 +7,7 @@ interface UseCameraControlsParams {
   torchOnRef: React.MutableRefObject<boolean>;
   mountedRef: React.MutableRefObject<boolean>;
   frozenFrame: string | null;
+  zoomLevel: number;
 }
 
 const isAndroid = /android/i.test(navigator.userAgent);
@@ -61,8 +62,13 @@ export function useCameraControls({
   torchOnRef,
   mountedRef,
   frozenFrame,
+  zoomLevel,
 }: UseCameraControlsParams) {
   useEffect(() => { torchOnRef.current = torchOn; }, [torchOn, torchOnRef]);
+
+  // ref로 최신 줌 레벨 추적 — onReady 클로저가 stale값 참조하는 것 방지
+  const zoomLevelRef = React.useRef(zoomLevel);
+  useEffect(() => { zoomLevelRef.current = zoomLevel; }, [zoomLevel]);
 
   // ── Torch toggle ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -101,17 +107,12 @@ export function useCameraControls({
       const caps = getCaps(track);
       const supportedModes: string[] = (caps as any).focusMode ?? [];
 
-      // Android: 최초 구동 시 continuous만 적용하면 가까운 거리에서 렌즈가 움직이지 않는 현상 방지.
-      // single-shot으로 먼저 한 번 AF 렌즈를 깨운 뒤, 800ms 후에 continuous로 순차 전환합니다.
-      // Android: 소프트웨어 디지털 줌 1.5x — 렌즈 핀트 거리를 확보하면서
-      // 알고리즘에는 1D 바코드 선이 더 굵고 선명하게 들어오도록 유도.
-      const zoomAdvanced = buildAdvanced(caps, { zoom: 1.5 });
-      if (zoomAdvanced.length > 0) {
-        track.applyConstraints({ advanced: zoomAdvanced } as any).catch(() => {});
-      }
-
+      // Android: 줌 + AF + 노출을 하나의 applyConstraints 호출로 통합.
+      // 별도 zoom 호출을 먼저 하면 일부 기기에서 연속 호출 크래시 발생.
+      // single-shot으로 AF 렌즈를 깨운 뒤 800ms 후 continuous 전환.
       if (supportedModes.includes("single-shot")) {
         const initAdvanced = buildAdvanced(caps, {
+          zoom: zoomLevelRef.current,
           focusMode: "single-shot",
           exposureMode: "continuous",
           exposureCompensation: -0.8,
@@ -134,6 +135,7 @@ export function useCameraControls({
         }
       } else {
         const advanced = buildAdvanced(caps, {
+          zoom: zoomLevelRef.current,
           focusMode: "continuous",
           exposureMode: "continuous",
           exposureCompensation: -0.8,
@@ -189,6 +191,19 @@ export function useCameraControls({
       }
     }
   }, [frozenFrame, videoRef]);
+
+  // ── 줌 버튼 클릭 시 즉시 적용 (Android only) ─────────────────────────────
+  useEffect(() => {
+    if (!isAndroid) return;
+    const video = videoRef.current as HTMLVideoElement | null;
+    const track = (video?.srcObject as MediaStream | null)?.getVideoTracks?.()[0];
+    if (!track) return;
+    const caps = getCaps(track);
+    const advanced = buildAdvanced(caps, { zoom: zoomLevel });
+    if (advanced.length > 0) {
+      track.applyConstraints({ advanced } as any).catch(() => {});
+    }
+  }, [zoomLevel, videoRef]);
 
   // ── 주기적 refocus — 6초마다 continuous 재적용 (Android drift 방지) ────────
   useEffect(() => {
