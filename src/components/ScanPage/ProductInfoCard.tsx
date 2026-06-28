@@ -24,6 +24,24 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
       });
       if (res.ok) {
         onRealMapUpdate(zoneLabel);
+        const specZone = product.spec || "미지정";
+        const isMismatch = !!zoneLabel && zoneLabel !== specZone;
+        if (isMismatch) {
+          fetch("/api/zone-mismatches", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              product_code: product.code,
+              product_name: product.name,
+              spec_zone: specZone,
+              real_zone: zoneLabel,
+            }),
+          }).catch(() => {});
+        } else {
+          fetch(`/api/zone-mismatches/by-code/${encodeURIComponent(product.code)}`, {
+            method: "DELETE",
+          }).catch(() => {});
+        }
       } else {
         const body = await res.json().catch(() => ({}));
         const msg: string = body?.error ?? `서버 오류 (${res.status})`;

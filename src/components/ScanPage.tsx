@@ -133,21 +133,19 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
   const handleRequest = async (zone: Zone) => {
     if (!zone.assignedStaffId) return;
     const productNote = product ? `${product.name} (${product.spec})` : "바코드 스캔 요청";
-    const req = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      zoneId: zone.id,
-      zoneLabel: `${zone.num}번 ${zone.label}`,
-      category: zone.category,
-      requestedAt: new Date().toISOString(),
-      assignedStaffId: zone.assignedStaffId,
-      assignedStaffName: zone.assignedStaffName,
-      status: "pending",
-      note: productNote,
-    };
-    try {
-      const existing = JSON.parse(localStorage.getItem("megatown_display_requests") ?? "[]");
-      localStorage.setItem("megatown_display_requests", JSON.stringify([req, ...existing]));
-    } catch {}
+    fetch("/api/display-requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        zone_id: zone.id,
+        zone_label: `${zone.num}번 ${zone.label}`,
+        category: zone.category,
+        requested_at: new Date().toISOString(),
+        assigned_staff_id: zone.assignedStaffId,
+        assigned_staff_name: zone.assignedStaffName,
+        note: productNote,
+      }),
+    }).catch(() => {});
     fetch("/api/push-send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

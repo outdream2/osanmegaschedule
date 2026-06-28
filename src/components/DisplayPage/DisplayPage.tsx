@@ -313,6 +313,20 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     setRequests((prev) => [req, ...prev]);
     setQuickReqToast(`${zone.assignedStaffName}님께 ${zone.num}번 ${zone.label} 보충 요청 전송됨`);
     setTimeout(() => setQuickReqToast(null), 3500);
+    // Save to DB
+    fetch("/api/display-requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        zone_id: zone.id,
+        zone_label: `${zone.num}번 ${zone.label}`,
+        category: zone.category,
+        requested_at: new Date().toISOString(),
+        assigned_staff_id: zone.assignedStaffId,
+        assigned_staff_name: zone.assignedStaffName,
+        note: "빠른 요청",
+      }),
+    }).catch(() => {});
     // Fire-and-forget push notification
     fetch("/api/push-send", {
       method: "POST",
@@ -533,6 +547,20 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       status: "pending", note: requestNote,
     };
     setRequests((prev) => [req, ...prev]);
+    // Save to DB
+    fetch("/api/display-requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        zone_id: activeZone.id,
+        zone_label: `${activeZone.num}번 ${activeZone.label}`,
+        category: draftCategory,
+        requested_at: new Date().toISOString(),
+        assigned_staff_id: staff.id,
+        assigned_staff_name: staff.name,
+        note: requestNote,
+      }),
+    }).catch(() => {});
     setRequestFlash(true);
     setTimeout(() => setRequestFlash(false), 1500);
   }, [activeZone, canRequest, draftCategory, draftProducts, draftStaffId, draftStatus, requestNote, employees]);

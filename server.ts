@@ -406,6 +406,108 @@ async function startServer() {
     }
   });
 
+  // ── display_requests ──────────────────────────────────────────────────────────
+  app.get("/api/display-requests", async (_req, res) => {
+    const { data, error } = await supabase
+      .from("display_requests")
+      .select("*")
+      .order("requested_at", { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data ?? []);
+  });
+
+  app.post("/api/display-requests", async (req, res) => {
+    const b = req.body ?? {};
+    const { data, error } = await supabase
+      .from("display_requests")
+      .insert([{
+        zone_id: String(b.zone_id ?? ""),
+        zone_label: String(b.zone_label ?? ""),
+        category: String(b.category ?? ""),
+        requested_at: b.requested_at ? new Date(b.requested_at).toISOString() : new Date().toISOString(),
+        assigned_staff_id: b.assigned_staff_id ? Number(b.assigned_staff_id) : null,
+        assigned_staff_name: String(b.assigned_staff_name ?? ""),
+        note: String(b.note ?? ""),
+        status: "pending",
+      }])
+      .select("id")
+      .single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true, id: data?.id });
+  });
+
+  app.delete("/api/display-requests/:id", async (req, res) => {
+    const { error } = await supabase.from("display_requests").delete().eq("id", req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true });
+  });
+
+  // ── order_requests ─────────────────────────────────────────────────────────
+  app.get("/api/order-requests", async (_req, res) => {
+    const { data, error } = await supabase
+      .from("order_requests")
+      .select("*")
+      .order("requested_at", { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data ?? []);
+  });
+
+  app.post("/api/order-requests", async (req, res) => {
+    const b = req.body ?? {};
+    const { error } = await supabase.from("order_requests").insert([{
+      product_code: String(b.product_code ?? ""),
+      product_name: String(b.product_name ?? ""),
+      current_stock: b.current_stock != null ? Number(b.current_stock) : null,
+      optimal_stock: b.optimal_stock != null ? Number(b.optimal_stock) : null,
+      note: String(b.note ?? ""),
+    }]);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true });
+  });
+
+  app.delete("/api/order-requests/:id", async (req, res) => {
+    const { error } = await supabase.from("order_requests").delete().eq("id", req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true });
+  });
+
+  // ── zone_mismatches ────────────────────────────────────────────────────────
+  app.get("/api/zone-mismatches", async (_req, res) => {
+    const { data, error } = await supabase
+      .from("zone_mismatches")
+      .select("*")
+      .order("registered_at", { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data ?? []);
+  });
+
+  app.post("/api/zone-mismatches", async (req, res) => {
+    const b = req.body ?? {};
+    const { error } = await supabase.from("zone_mismatches").upsert([{
+      product_code: String(b.product_code ?? ""),
+      product_name: String(b.product_name ?? ""),
+      spec_zone: String(b.spec_zone ?? ""),
+      real_zone: String(b.real_zone ?? ""),
+    }], { onConflict: "product_code" });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true });
+  });
+
+  // more specific route must come before /:id
+  app.delete("/api/zone-mismatches/by-code/:code", async (req, res) => {
+    const code = decodeURIComponent(req.params.code ?? "").trim();
+    if (!code) return res.status(400).json({ error: "code required" });
+    const { error } = await supabase.from("zone_mismatches").delete().eq("product_code", code);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true });
+  });
+
+  app.delete("/api/zone-mismatches/:id", async (req, res) => {
+    const { error } = await supabase.from("zone_mismatches").delete().eq("id", req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true });
+  });
+
   // POST /api/auth/login
   app.post("/api/auth/login", async (req, res) => {
     const { employee_id, password } = req.body ?? {};
