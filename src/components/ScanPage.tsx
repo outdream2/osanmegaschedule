@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { ZONE_DEFS } from "../constants/displayZones";
 import { BarcodeScanner } from "./BarcodeScanner";
+import { loadZBar } from "./BarcodeScanner/zbar";
 import {
   ChevronLeft,
   ScanLine,
@@ -58,6 +59,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
   const [productNotFound, setProductNotFound] = useState(false);
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<string | null>(null);
+
+  // ZBar WASM 미리 로드 — 스캔 버튼 누르기 전에 로딩 완료되도록
+  useEffect(() => { loadZBar(); }, []);
 
   useEffect(() => {
     // If not yet loaded, trigger load and show spinner

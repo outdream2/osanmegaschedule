@@ -104,18 +104,21 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     ocrCanvasRef: state.ocrCanvasRef,
   });
 
-  // Android: 카메라 권한 획득 후(~1.5초) 최적 카메라 자동 선택.
+  // Android: playing 이벤트 시점에 최적 카메라 자동 선택.
+  // 고정 1500ms 대기 → playing 이벤트 즉시 실행으로 변경 (카메라 준비되는 순간 = 권한 획득 = label 사용 가능)
   // facingMode:"environment"는 초광각 렌즈를 선택할 수 있어 1D 바코드 초점이 안 잡힘.
-  // label에 ultrawide/telephoto/macro 없는 후면 카메라 중 첫 번째(가장 낮은 index)를 선택.
   useEffect(() => {
     if (!isAndroid) return;
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      if (cancelled) return;
+    const video = videoRef.current as HTMLVideoElement | null;
+    if (!video) return;
+    let switched = false;
+
+    const trySelect = async () => {
+      if (switched) return;
       try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         const inputs = devices.filter(d => d.kind === "videoinput" && d.label);
-        if (inputs.length === 0) return; // 권한 없으면 label 없음
+        if (inputs.length === 0) return; // 권한 없으면 label 없음 — playing 재발생 시 재시도
         const backCams = inputs.filter(d => /back|rear|facing back/i.test(d.label));
         const pool = backCams.length > 0 ? backCams : inputs;
         const standard = pool.filter(d =>
@@ -123,15 +126,20 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
         );
         const best = (standard.length > 0 ? standard : pool)
           .sort((a, b) => a.label.localeCompare(b.label))[0];
-        if (!best || cancelled) return;
+        if (!best) return;
         const currentDeviceId = (videoRef.current?.srcObject as MediaStream)
           ?.getVideoTracks()[0]?.getSettings?.()?.deviceId;
         if (currentDeviceId !== best.deviceId) {
+          switched = true;
           setVideoConstraints({ ...VIDEO_CONSTRAINTS, deviceId: { exact: best.deviceId } });
         }
       } catch {}
-    }, 1500);
-    return () => { cancelled = true; clearTimeout(timer); };
+    };
+
+    video.addEventListener("playing", trySelect);
+    // 1500ms 폴백 — playing이 이미 발생한 경우 대비
+    const t = setTimeout(trySelect, 1500);
+    return () => { video.removeEventListener("playing", trySelect); clearTimeout(t); };
   }, [videoRef]);
 
   // Esc key
