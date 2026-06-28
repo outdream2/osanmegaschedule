@@ -48,57 +48,73 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
         <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1">상품 정보</p>
         <p className="text-2xl font-black text-gray-900 leading-tight mb-4">{product.name}</p>
 
-        {/* ── 배정 구역 섹션 ── */}
-        <div className={`rounded-xl border px-4 py-3 mb-3 ${
-          hasMismatch ? "bg-orange-50 border-orange-300" : "bg-gray-50 border-gray-200"
-        }`}>
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">배정 구역</p>
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* 전산 배정구역 */}
-                <div>
-                  <p className="text-[9px] font-bold text-gray-400 mb-0.5">전산</p>
-                  <p className="text-sm font-bold text-gray-700">{specZone}</p>
-                </div>
+        {/* ── 배정 구역: 전산 카드 | 실제 카드 나란히 ── */}
+        <div className="flex gap-2 mb-3">
+          {/* 전산 배정구역 카드 */}
+          <div className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-3">
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">전산 배정구역</p>
+            <p className="text-sm font-black text-gray-800 leading-tight">{specZone}</p>
+          </div>
 
-                {/* 실제 배정구역 */}
+          {/* 화살표 */}
+          <div className="flex items-center shrink-0">
+            <ArrowRight size={16} className={hasMismatch ? "text-orange-400" : "text-gray-300"} />
+          </div>
+
+          {/* 실제 배정구역 카드 */}
+          <div className={`flex-1 rounded-xl border px-3 py-3 ${
+            hasMismatch
+              ? "bg-orange-50 border-orange-300"
+              : realMap
+              ? "bg-teal-50 border-teal-300"
+              : "bg-white border-dashed border-gray-300"
+          }`}>
+            <div className="flex items-start justify-between gap-1">
+              <div className="min-w-0">
+                <p className={`text-[9px] font-bold uppercase tracking-wide mb-1.5 ${
+                  hasMismatch ? "text-orange-500" : realMap ? "text-teal-600" : "text-gray-400"
+                }`}>실제 배정구역</p>
                 {realMap ? (
-                  <>
-                    <ArrowRight size={13} className={`shrink-0 ${hasMismatch ? "text-orange-400" : "text-gray-300"}`} />
-                    <div>
-                      <p className={`text-[9px] font-bold mb-0.5 ${hasMismatch ? "text-red-500" : "text-teal-600"}`}>실제</p>
-                      <p className={`text-sm font-black ${hasMismatch ? "text-red-500" : "text-teal-700"}`}>{realMap}</p>
-                    </div>
-                  </>
+                  <p className={`text-sm font-black leading-tight ${hasMismatch ? "text-red-500" : "text-teal-700"}`}>
+                    {realMap}
+                  </p>
                 ) : (
-                  <p className="text-xs text-gray-400 italic ml-1">실제 위치 미입력</p>
+                  <p className="text-xs text-gray-400">미등록</p>
                 )}
               </div>
-
-              {hasMismatch && (
-                <div className="flex items-center gap-1 mt-2">
-                  <AlertTriangle size={11} className="text-orange-500 shrink-0" />
-                  <p className="text-[10px] font-bold text-orange-600">전산과 실제 위치가 다릅니다</p>
-                </div>
-              )}
-
-              {saveError && (
-                <p className="text-[10px] font-bold text-red-500 mt-1">저장 실패 — 다시 시도해주세요</p>
-              )}
+              <button
+                onClick={() => setMapSelectorOpen(true)}
+                disabled={saving}
+                className={`shrink-0 flex items-center gap-0.5 px-2 py-1 rounded-lg border text-[10px] font-bold transition cursor-pointer ${
+                  realMap
+                    ? "bg-white border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600"
+                    : "bg-teal-500 border-teal-600 text-white hover:bg-teal-600"
+                }`}
+              >
+                {saving ? <Loader2 size={10} className="animate-spin" /> : <Pencil size={10} />}
+                {saving ? "" : realMap ? "변경" : "등록"}
+              </button>
             </div>
-
-            {/* 등록/변경 버튼 */}
-            <button
-              onClick={() => setMapSelectorOpen(true)}
-              disabled={saving}
-              className="shrink-0 flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-gray-300 text-gray-600 hover:border-teal-400 hover:text-teal-600 transition cursor-pointer text-xs font-bold"
-            >
-              {saving ? <Loader2 size={12} className="animate-spin" /> : <Pencil size={12} />}
-              {saving ? "" : (realMap ? "변경" : "등록")}
-            </button>
           </div>
         </div>
+
+        {/* 불일치 경고 / 저장 오류 */}
+        {(hasMismatch || saveError) && (
+          <div className="flex flex-col gap-1 mb-3">
+            {hasMismatch && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg">
+                <AlertTriangle size={11} className="text-orange-500 shrink-0" />
+                <p className="text-[10px] font-bold text-orange-600">전산 배정구역과 실제 위치가 다릅니다</p>
+              </div>
+            )}
+            {saveError && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
+                <AlertTriangle size={11} className="text-red-500 shrink-0" />
+                <p className="text-[10px] font-bold text-red-600">저장 실패 — 다시 시도해주세요</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── 재고 현황 섹션 ── */}
         <div className={`rounded-xl border px-4 py-3 mb-4 ${
