@@ -147,19 +147,27 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
     const h = [...dispHeaders];
     const ni = h.indexOf("품명");
     if (ni >= 0) h.splice(ni, 0, "상품코드");
+    const di = h.indexOf("단가");
+    if (di >= 0) h.splice(di + 1, 0, "마스터단가");
     return h;
   })() : [];
 
   const corrRows: (string | number | null)[][] = matchItems
     ? dispRows.map((row, ri) => {
-        const item     = matchItems[ri];
-        const corrName = overrides[ri] ?? item?.matched?.name ?? null;
-        const code     = item?.matched?.code ?? null;
-        const r = [...row];
-        if (nameIdx >= 0) r[nameIdx] = corrName ?? row[nameIdx];
-        const ni = dispHeaders.indexOf("품명");
-        r.splice(ni >= 0 ? ni : 0, 0, code);
-        return r;
+        const item        = matchItems[ri];
+        const corrName    = overrides[ri] ?? item?.matched?.name ?? null;
+        const code        = item?.matched?.code ?? null;
+        const masterPrice = item?.matched?.masterPrice ?? null;
+        return corrHeaders.map(h => {
+          if (h === "상품코드")   return code;
+          if (h === "마스터단가") return masterPrice;
+          if (h === "품명") {
+            const si = dispHeaders.indexOf("품명");
+            return corrName ?? (si >= 0 ? row[si] : null);
+          }
+          const si = dispHeaders.indexOf(h);
+          return si >= 0 ? row[si] : null;
+        });
       })
     : [];
 
@@ -339,7 +347,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
                   <thead>
                     <tr className="bg-indigo-50 border-b-2 border-indigo-200">
                       {corrHeaders.map((h, ci) => (
-                        <th key={ci} className={`px-3 py-2.5 font-bold text-indigo-900 whitespace-nowrap text-[11px] ${NUM_COLS.has(h) ? "text-right" : "text-left"}`}>
+                        <th key={ci} className={`px-3 py-2.5 font-bold whitespace-nowrap text-[11px] ${
+                          h === "마스터단가" ? "text-right text-blue-700" :
+                          NUM_COLS.has(h)    ? "text-right text-indigo-900" :
+                                               "text-left text-indigo-900"
+                        }`}>
                           {h}
                         </th>
                       ))}
@@ -347,34 +359,36 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
                   </thead>
                   <tbody>
                     {corrRows.map((row, ri) => {
-                      const score       = matchItems[ri]?.matched?.score ?? 0;
-                      const hasMatch    = !!matchItems[ri]?.matched;
-                      const masterPrice = matchItems[ri]?.matched?.masterPrice ?? null;
-                      const nameColIdx  = corrHeaders.indexOf("품명");
-                      const priceColIdx = corrHeaders.indexOf("단가");
+                      const score        = matchItems[ri]?.matched?.score ?? 0;
+                      const hasMatch     = !!matchItems[ri]?.matched;
+                      const masterPrice  = matchItems[ri]?.matched?.masterPrice ?? null;
+                      const nameColIdx   = corrHeaders.indexOf("품명");
+                      const priceColIdx  = corrHeaders.indexOf("단가");
+                      const mPriceColIdx = corrHeaders.indexOf("마스터단가");
+                      const ocrPrice     = priceColIdx >= 0 ? row[priceColIdx] : null;
+                      const priceMismatch = masterPrice != null && typeof ocrPrice === "number" && ocrPrice !== masterPrice;
                       return (
                         <tr key={ri} className={`border-t border-gray-100 hover:bg-indigo-50/40 transition-colors ${ri % 2 !== 0 ? "bg-gray-50/30" : ""}`}>
                           {corrHeaders.map((h, ci) => {
-                            const cell      = row[ci];
-                            const isNum     = typeof cell === "number";
-                            const isName    = ci === nameColIdx;
-                            const isPrice   = ci === priceColIdx;
-                            const priceDiff = isPrice && masterPrice != null && typeof cell === "number" && cell !== masterPrice;
+                            const cell   = row[ci];
+                            const isNum  = typeof cell === "number";
+                            const isName = ci === nameColIdx;
+                            const isOcrPrice    = ci === priceColIdx;
+                            const isMasterPrice = ci === mPriceColIdx;
                             return (
                               <td key={ci}
                                 onClick={isName && pageImages?.length ? () => openModal(ri) : undefined}
                                 className={`px-3 py-2 whitespace-nowrap ${
-                                  h === "금액"    ? "text-right font-bold text-indigo-700" :
-                                  priceDiff       ? "text-right font-bold text-rose-600" :
-                                  isNum           ? "text-right text-gray-700" :
-                                  h === "상품코드" ? "text-gray-400 text-[10px]" :
-                                  isName          ? `font-semibold ${pageImages?.length ? "cursor-pointer hover:underline underline-offset-2" : ""} ${hasMatch ? (score >= 80 ? "text-emerald-700" : score >= 50 ? "text-amber-700" : "text-rose-600") : "text-rose-500 italic"}` :
-                                                    "text-gray-600"
+                                  h === "금액"       ? "text-right font-bold text-indigo-700" :
+                                  isMasterPrice      ? `text-right font-bold ${priceMismatch ? "text-blue-600" : "text-blue-400"}` :
+                                  isOcrPrice && priceMismatch ? "text-right font-bold text-rose-600" :
+                                  isNum              ? "text-right text-gray-700" :
+                                  h === "상품코드"   ? "text-gray-400 text-[10px]" :
+                                  isName             ? `font-semibold ${pageImages?.length ? "cursor-pointer hover:underline underline-offset-2" : ""} ${hasMatch ? (score >= 80 ? "text-emerald-700" : score >= 50 ? "text-amber-700" : "text-rose-600") : "text-rose-500 italic"}` :
+                                                       "text-gray-600"
                                 }`}
-                                title={priceDiff ? `마스터단가: ${fmt(masterPrice!)}` : undefined}
                               >
                                 {cell == null ? <span className="text-gray-300">—</span> : isNum ? fmt(cell) : String(cell)}
-                                {priceDiff && <span className="ml-1 text-[10px] text-rose-400">↑{fmt(masterPrice!)}</span>}
                               </td>
                             );
                           })}
