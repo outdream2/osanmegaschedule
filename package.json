@@ -9,7 +9,9 @@
     "build:frontend": "vite build",
     "start": "node dist/server.cjs",
     "clean": "rm -rf dist dev.db server.js",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "deploy": "npm run build && wrangler deploy",
+    "preview": "npm run build && wrangler dev"
   },
   "dependencies": {
     "@ericblade/quagga2": "^1.12.1",
@@ -42,6 +44,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.42.3",
     "@types/express": "^4.17.21",
     "@types/node": "^22.14.0",
     "@types/web-push": "^3.6.4",
@@ -52,6 +55,7 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.3"
+    "vite": "^6.2.3",
+    "wrangler": "^4.105.0"
   }
 }
