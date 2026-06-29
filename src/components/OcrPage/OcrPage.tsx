@@ -327,7 +327,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
               </div>
               <p className="text-[10px] text-gray-400 mt-2 text-center">
                 {engine === "paddle"
-                  ? "PaddleOCR — 서버 Python 처리 · API 불필요 · 한글 특화 고정밀"
+                  ? "EasyOCR — 서버 Python 처리 · API 불필요 · 한글 지원"
                   : "Gemini 비전 AI — 고정밀 인식 · API 키 필요"}
               </p>
             </div>

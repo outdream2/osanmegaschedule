@@ -844,6 +844,9 @@ async function startServer() {
   ): { headers: string[]; rows: (string | number | null)[][] } {
     const COMPOUNDS: [string, string, string][] = [
       ["품", "명", "품명"], ["품", "목", "품목"], ["상품", "명", "상품명"],
+      ["수", "량", "수량"], ["단", "가", "단가"], ["금", "액", "금액"],
+      ["세", "액", "세액"], ["규", "격", "규격"], ["단", "위", "단위"],
+      ["비", "고", "비고"],
     ];
     const mergeAt = new Set<number>();
     const merged = [...headers];
@@ -875,7 +878,7 @@ async function startServer() {
     rows: (string | number | null)[][]
   ): { headers: string[]; rows: (string | number | null)[][] } {
     const mapping = INVOICE_SCHEMA
-      .map(s => ({ std: s.name, oi: headers.findIndex(h => s.re.test(h.trim())) }))
+      .map(s => ({ std: s.name, oi: headers.findIndex(h => s.re.test(h.trim().replace(/\s+/g, ""))) }))
       .filter(m => m.oi >= 0);
 
     const usedIdx = new Set(mapping.map(m => m.oi));
@@ -1081,24 +1084,24 @@ ${rawText}`;
     }
   }
 
-  // ── PaddleOCR Python 서브프로세스 ─────────────────────────────────────────────
+  // ── EasyOCR Python 서브프로세스 ──────────────────────────────────────────────
   const PYTHON = process.platform === "win32" ? "python" : "python3";
 
-  function runPaddleOcrProcess(b64: string, mimeType: string): Promise<any> {
+  function runEasyOcrProcess(b64: string, mimeType: string): Promise<any> {
     return new Promise((resolve, reject) => {
-      const proc = spawn(PYTHON, ["scripts/paddle_ocr.py"], { env: { ...process.env, PYTHONIOENCODING: "utf-8" } });
+      const proc = spawn(PYTHON, ["scripts/easyocr_ocr.py"], { env: { ...process.env, PYTHONIOENCODING: "utf-8" } });
       let out = "";
       let err = "";
       proc.stdout.on("data", (d: Buffer) => { out += d.toString("utf-8"); });
       proc.stderr.on("data", (d: Buffer) => { err += d.toString("utf-8"); });
-      proc.on("error", (e) => reject(new Error(`PaddleOCR 프로세스 실행 실패: ${e.message}. Python 및 paddleocr 패키지가 설치되어 있는지 확인하세요.`)));
+      proc.on("error", (e) => reject(new Error(`EasyOCR 프로세스 실행 실패: ${e.message}. Python 및 easyocr 패키지가 설치되어 있는지 확인하세요.`)));
       proc.on("close", (code) => {
         try {
           const result = JSON.parse(out.trim());
-          if (!result.success) reject(new Error(result.error ?? "PaddleOCR 실패"));
+          if (!result.success) reject(new Error(result.error ?? "EasyOCR 실패"));
           else resolve(result);
         } catch {
-          reject(new Error(`PaddleOCR 출력 파싱 실패 (code=${code}): ${(err || out).slice(0, 300)}`));
+          reject(new Error(`EasyOCR 출력 파싱 실패 (code=${code}): ${(err || out).slice(0, 300)}`));
         }
       });
       proc.stdin.write(JSON.stringify({ data: b64, mimeType }), "utf-8");
@@ -1183,24 +1186,24 @@ ${rawText}`;
         return res.status(400).json({ error: "GEMINI_API_KEY 또는 MISTRAL_API_KEY가 설정되지 않았습니다. .env에 추가하세요." });
     }
 
-    // paddle 엔진 분기 — Python 서브프로세스로 처리 후 바로 반환
+    // easyocr 엔진 분기 — Python 서브프로세스로 처리 후 바로 반환
     if (engine === "paddle") {
       try {
         const pages: any[] = [];
         for (let i = 0; i < images.length; i++) {
           const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
-          console.log(`[OCR/Paddle] page ${i + 1}/${images.length}`);
-          const raw = await runPaddleOcrProcess(b64, mimeType);
+          console.log(`[OCR/EasyOCR] page ${i + 1}/${images.length}`);
+          const raw = await runEasyOcrProcess(b64, mimeType);
           const pre  = mergeAdjacentHeaders(raw.headers ?? [], raw.rows ?? []);
           const norm = normalizeInvoiceCols(pre.headers, pre.rows);
           const rows = fixAmounts(norm.headers, norm.rows);
-          console.log(`[OCR/Paddle] page ${i + 1}: 헤더=${JSON.stringify(norm.headers)}, 행=${rows.length}`);
+          console.log(`[OCR/EasyOCR] page ${i + 1}: 헤더=${JSON.stringify(norm.headers)}, 행=${rows.length}`);
           pages.push({ page: i + 1, headers: norm.headers, rows, meta: raw.meta ?? {}, rawText: raw.rawText ?? "" });
         }
         return res.json({ pages, engine });
       } catch (err: any) {
-        console.error("[OCR/Paddle] error:", err?.message);
-        return res.status(500).json({ error: err?.message ?? "PaddleOCR 처리 중 오류" });
+        console.error("[OCR/EasyOCR] error:", err?.message);
+        return res.status(500).json({ error: err?.message ?? "EasyOCR 처리 중 오류" });
       }
     }
 

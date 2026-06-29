@@ -112,6 +112,25 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
 
   const meta = pages.map(p => p.meta).find(m => m.date || m.supplier) ?? {};
 
+  // 공급처별 합계
+  const dispSupplierIdx = dispHeaders.indexOf("공급처");
+  const supplierTotals: { supplier: string; total: number; count: number }[] = amtIdx >= 0
+    ? (() => {
+        const map = new Map<string, { total: number; count: number }>();
+        dispRows.forEach((row, ri) => {
+          const supp = String(
+            dispSupplierIdx >= 0 && row[dispSupplierIdx] != null
+              ? row[dispSupplierIdx]
+              : (structuredPages[pageNums[ri] - 1]?.meta.supplier ?? meta.supplier ?? "미상")
+          ).trim() || "미상";
+          const amt = typeof row[amtIdx] === "number" ? (row[amtIdx] as number) : 0;
+          const prev = map.get(supp) ?? { total: 0, count: 0 };
+          map.set(supp, { total: prev.total + amt, count: prev.count + 1 });
+        });
+        return [...map.entries()].map(([supplier, v]) => ({ supplier, ...v }));
+      })()
+    : [];
+
   // ── 이미지 모달 상태 ──────────────────────────────────────────────────────
   const [modalImg,   setModalImg  ] = useState<string | null>(null);
   const [modalLabel, setModalLabel] = useState("");
@@ -223,8 +242,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
               <X size={16} className="text-gray-500" />
             </button>
           </div>
-          <div className="overflow-auto max-h-[80vh]">
-            <img src={modalImg} alt={modalLabel} className="w-full object-contain" />
+          <div className="overflow-auto max-h-[80vh] flex items-center justify-center py-4">
+            <img
+              src={modalImg}
+              alt={modalLabel}
+              style={{ transform: "rotate(-90deg)", maxWidth: "70vh", maxHeight: "70vw", width: "auto", height: "auto" }}
+            />
           </div>
         </div>
       </div>
@@ -295,6 +318,32 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
                 </tfoot>
               )}
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── 공급처별 합계 ── */}
+      {supplierTotals.length >= 1 && total > 0 && (
+        <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className="px-4 py-2.5 bg-gray-50 border-b border-gray-100">
+            <span className="text-xs font-bold text-gray-700">공급처별 합계</span>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {supplierTotals.map(({ supplier, total: sTotal, count }) => (
+              <div key={supplier} className="flex items-center justify-between px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-gray-800">{supplier}</span>
+                  <span className="text-[10px] text-gray-400">{count}건</span>
+                </div>
+                <span className="text-xs font-black text-amber-700">{fmt(sTotal)}원</span>
+              </div>
+            ))}
+            {supplierTotals.length >= 2 && (
+              <div className="flex items-center justify-between px-4 py-2.5 bg-amber-50">
+                <span className="text-xs font-black text-gray-800">합 계</span>
+                <span className="text-sm font-black text-amber-800">{fmt(total)}원</span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -390,11 +439,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
                   </thead>
                   <tbody>
                     {confRows.map((row, ri) => {
-                      const m         = matchItems![ri]?.matched ?? null;
-                      const score     = m?.score ?? 0;
-                      const masterP   = m?.masterPrice ?? null;
-                      const invoiceP  = row[CONF_HEADERS.indexOf("전표 매입단가")];
-                      const mismatch  = masterP != null && typeof invoiceP === "number" && invoiceP !== masterP;
+                      const m        = matchItems![ri]?.matched ?? null;
+                      const score    = m?.score ?? 0;
+                      const masterP  = m?.masterPrice ?? null;
+                      const invoiceP = row[CONF_HEADERS.indexOf("전표 매입단가")];
+                      const priceDiff = masterP != null && typeof invoiceP === "number" && invoiceP !== masterP
+                        ? (invoiceP > masterP ? "high" : "low")
+                        : null;
                       return (
                         <tr key={ri} className={`border-t border-gray-100 hover:bg-indigo-50/40 transition-colors ${ri % 2 !== 0 ? "bg-gray-50/30" : ""}`}>
                           {CONF_HEADERS.map((h, ci) => {
@@ -408,15 +459,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
                               <td key={ci}
                                 onClick={isName && pageImages?.length ? () => openModal(ri) : undefined}
                                 className={`px-3 py-2 whitespace-nowrap ${
-                                  h === "매입총계"    ? "text-right font-bold text-indigo-700" :
-                                  isMasterPrice       ? `text-right font-bold ${mismatch ? "text-blue-600" : "text-blue-400"}` :
-                                  isInvoiceP && mismatch ? "text-right font-bold text-rose-600" :
-                                  isProfitRate        ? "text-right text-emerald-700 font-semibold" :
-                                  isNum               ? "text-right text-gray-700" :
-                                  h === "상품코드"    ? "text-gray-400 text-[10px] font-mono" :
-                                  h === "소비기한"    ? "text-gray-500 text-[10px]" :
-                                  isName              ? `font-semibold ${pageImages?.length ? "cursor-pointer hover:underline underline-offset-2" : ""} ${m ? (score >= 80 ? "text-emerald-700" : score >= 50 ? "text-amber-700" : "text-rose-600") : "text-rose-500 italic"}` :
-                                                        "text-gray-600"
+                                  h === "매입총계"          ? "text-right font-bold text-indigo-700" :
+                                  isMasterPrice             ? `text-right font-bold ${priceDiff ? "text-blue-600" : "text-blue-400"}` :
+                                  isInvoiceP && priceDiff === "high" ? "text-right font-bold text-rose-600" :
+                                  isInvoiceP && priceDiff === "low"  ? "text-right font-bold text-emerald-600" :
+                                  isInvoiceP                ? "text-right text-gray-700" :
+                                  isProfitRate              ? "text-right text-emerald-700 font-semibold" :
+                                  isNum                     ? "text-right text-gray-700" :
+                                  h === "상품코드"          ? "text-gray-400 text-[10px] font-mono" :
+                                  h === "소비기한"          ? "text-gray-500 text-[10px]" :
+                                  isName                    ? `font-semibold ${pageImages?.length ? "cursor-pointer hover:underline underline-offset-2" : ""} ${m ? (score >= 80 ? "text-emerald-700" : score >= 50 ? "text-amber-700" : "text-rose-600") : "text-rose-500 italic"}` :
+                                                              "text-gray-600"
                                 }`}
                               >
                                 {cell == null
