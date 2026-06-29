@@ -910,7 +910,7 @@ async function startServer() {
   }
 
   // ── Gemini API — 키 순환 ──────────────────────────────────────────────────
-  const GEMINI_MODEL = "gemini-2.5-flash";
+  const GEMINI_MODEL = "gemini-1.5-flash";
   let geminiRoundRobinIdx = 0;
 
   const GEMINI_OCR_PROMPT = `당신은 한국 거래명세서·납품서·세금계산서 전문 OCR 분석 엔진입니다.
@@ -1155,7 +1155,10 @@ ${rawText}`;
             name: best.name,
             spec: best.spec,
             score: bestScore,
-            masterPrice: best.purchase_price != null ? Number(best.purchase_price) : null,
+            masterPrice:  best.purchase_price != null ? Number(best.purchase_price)  : null,
+            salePrice:    best.sale_price      != null ? Number(best.sale_price)      : null,
+            profitRate:   best.profit_rate     != null ? Number(best.profit_rate)     : null,
+            expiryDate:   best.expiry_date     != null ? String(best.expiry_date)     : null,
           },
         };
       });

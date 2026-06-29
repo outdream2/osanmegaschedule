@@ -5,8 +5,8 @@ import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { PageImageViewer } from "./PageImageViewer";
 import { RawOcrTable } from "./RawOcrTable";
-import { runPaddleOcr } from "./paddleEngine";
-import type { OcrPageResult } from "./paddleEngine";
+import { runTesseractOcr } from "./tesseractEngine";
+import type { OcrPageResult } from "./tesseractEngine";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 
@@ -122,9 +122,13 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
         : await Promise.all(images.map(img => physicallyRotate(img.data, img.mimeType, rotation)));
 
       if (engine === "tesseract") {
-        const results = await runPaddleOcr(rotatedImages, p => {
-          setStatusMsg(`페이지 ${p.done}/${p.total} 처리 중...`);
-          setProcessed(p.done);
+        const results = await runTesseractOcr(rotatedImages, p => {
+          if (p.type === "status") {
+            setStatusMsg(p.status ?? "");
+          } else if (p.type === "page") {
+            setStatusMsg(`페이지 ${p.done}/${p.total} 처리 중...`);
+            setProcessed(p.done ?? 0);
+          }
         });
         setPages(results);
       } else {
@@ -272,7 +276,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
               </div>
               <p className="text-[10px] text-gray-400 mt-2 text-center">
                 {engine === "tesseract"
-                  ? "PaddleOCR — 서버 Python 처리 · API 불필요 · 한글 특화 고정밀"
+                  ? "Tesseract.js — 브라우저 로컬 연산 · API 불필요 · 오프라인 지원"
                   : "Gemini 비전 AI — 고정밀 인식 · API 키 필요"}
               </p>
             </div>

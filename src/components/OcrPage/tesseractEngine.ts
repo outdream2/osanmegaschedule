@@ -33,13 +33,7 @@ export async function runTesseractOcr(
     workerBlobURL: false,
     gzip:          false,   // 로컬 .traineddata는 gzip 아님 → .gz 탐색 방지
     cacheMethod:   "none",  // 이전 CDN 손상 캐시 무시
-    logger: (m: any) => {
-      if (m?.status === "loading language traineddata") {
-        onProgress({ type: "status", status: `언어 데이터 로딩 중... ${Math.round((m.progress ?? 0) * 100)}%` });
-      } else if (m?.status === "initializing api") {
-        onProgress({ type: "status", status: "OCR 엔진 초기화 중..." });
-      }
-    },
+    logger: () => {},
   });
 
   const rawTexts: string[] = [];
