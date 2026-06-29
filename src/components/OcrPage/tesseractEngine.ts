@@ -22,14 +22,15 @@ export async function runTesseractOcr(
   onProgress: (p: TesseractProgress) => void,
 ): Promise<OcrPageResult[]> {
   const { createWorker } = await import("tesseract.js");
-  const base = window.location.origin;
 
   onProgress({ type: "status", status: "Tesseract 초기화 중..." });
 
   const worker = await createWorker(["kor", "eng"], 1, {
-    workerPath: `${base}/tesseract/worker.min.js`,
-    corePath:   `${base}/tesseract`,
-    langPath:   `${base}/tessdata`,
+    workerPath:    "/tesseract/worker.min.js",
+    // 특정 파일을 지정하면 wasm-feature-detect(외부망 필요) 단계를 건너뜀
+    corePath:      "/tesseract/tesseract-core-simd-lstm.wasm.js",
+    langPath:      "/tessdata",
+    workerBlobURL: false,
     logger: (m: any) => {
       if (m?.status === "loading language traineddata") {
         onProgress({ type: "status", status: `언어 데이터 로딩 중... ${Math.round((m.progress ?? 0) * 100)}%` });
