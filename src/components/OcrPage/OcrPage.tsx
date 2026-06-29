@@ -72,9 +72,8 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
   }, []);
 
   const renderPdfToImages = useCallback(async (file: File): Promise<{ data: string; mimeType: string }[]> => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const scale   = isMobile ? 1.5 : 2.0;
-    const quality = isMobile ? 0.80 : 0.92;
+    const scale   = 1.5;
+    const quality = 0.80;
 
     const buf = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: buf }).promise;

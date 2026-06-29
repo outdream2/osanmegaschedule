@@ -930,7 +930,7 @@ async function startServer() {
   // ── 거래명세서 표준 컬럼 정의 ───────────────────────────────────────────────
   const INVOICE_SCHEMA = [
     { name: "번호",  re: /^(번호|no\.?|순번)$/i },
-    { name: "품명",  re: /품\s*명|품\s*목|상품\s*명|제품\s*명/ },
+    { name: "품명",  re: /^품$|^명$|^품목$|품\s*명|품\s*목|상품\s*명|제품\s*명/ },
     { name: "규격",  re: /규격|사양/ },
     { name: "단위",  re: /단위/ },
     { name: "수량",  re: /수량|매수/ },
@@ -939,6 +939,38 @@ async function startServer() {
     { name: "세액",  re: /세액|부가세/ },
     { name: "비고",  re: /비고|적요/ },
   ] as const;
+
+  // "품"+"명" 처럼 두 셀로 쪼개진 복합 헤더를 병합
+  function mergeAdjacentHeaders(
+    headers: string[],
+    rows: (string | number | null)[][]
+  ): { headers: string[]; rows: (string | number | null)[][] } {
+    const COMPOUNDS: [string, string, string][] = [
+      ["품", "명", "품명"], ["품", "목", "품목"], ["상품", "명", "상품명"],
+    ];
+    const mergeAt = new Set<number>();
+    const merged = [...headers];
+    for (let i = 0; i < merged.length - 1; i++) {
+      const a = merged[i].trim(), b = merged[i + 1].trim();
+      for (const [p1, p2, result] of COMPOUNDS) {
+        if (a === p1 && b === p2) { merged[i] = result; mergeAt.add(i + 1); break; }
+      }
+    }
+    if (mergeAt.size === 0) return { headers, rows };
+    const keep = headers.map((_, i) => i).filter(i => !mergeAt.has(i));
+    const pairs = new Map<number, number>();
+    for (const mi of mergeAt) pairs.set(mi - 1, mi);
+    const outRows = rows.map(row => {
+      const r = [...row];
+      for (const [ai, bi] of pairs) {
+        if (bi < row.length && row[bi] != null && String(row[bi]).trim()) {
+          r[ai] = r[ai] != null ? `${String(r[ai])} ${String(row[bi])}`.trim() : row[bi];
+        }
+      }
+      return keep.map(i => r[i]);
+    });
+    return { headers: keep.map(i => merged[i]), rows: outRows };
+  }
 
   // OCR이 추출한 컬럼명을 표준 거래명세서 컬럼으로 정규화 + 순서 정렬
   function normalizeInvoiceCols(
@@ -1276,7 +1308,8 @@ ${rawText}`;
             continue;
           }
 
-          const norm = normalizeInvoiceCols(parsed.headers ?? [], parsed.rows ?? []);
+          const pre  = mergeAdjacentHeaders(parsed.headers ?? [], parsed.rows ?? []);
+          const norm = normalizeInvoiceCols(pre.headers, pre.rows);
           const rows = fixAmounts(norm.headers, norm.rows);
           const logLines = [
             `\n[OCR 결과] page ${i + 1}`,

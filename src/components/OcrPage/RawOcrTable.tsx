@@ -122,6 +122,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
   const [matching,   setMatching  ] = useState(false);
   const [matchItems, setMatchItems] = useState<MatchedItem[] | null>(null);
   const [overrides,  setOverrides ] = useState<Record<number, string>>({});
+  const [confirmed,  setConfirmed ] = useState(false);
 
   const handleMatch = useCallback(async () => {
     if (nameIdx < 0) return;
@@ -129,6 +130,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
     setMatching(true);
     setMatchItems(null);
     setOverrides({});
+    setConfirmed(false);
     try {
       const res = await fetch("/api/ocr-match", {
         method: "POST",
@@ -307,10 +309,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
                     className="text-[11px] text-indigo-500 hover:text-indigo-700 font-bold cursor-pointer">
                     재실행
                   </button>
-                  <button onClick={() => handleExport(corrHeaders, corrRows, "보정")}
-                    className="flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-white border border-indigo-200 hover:bg-indigo-50 px-2 py-1 rounded-lg transition cursor-pointer shrink-0">
-                    <Download size={11} />CSV
+                  <button onClick={() => { setConfirmed(true); }}
+                    className="text-[11px] font-bold text-white bg-indigo-500 hover:bg-indigo-600 px-3 py-1 rounded-lg transition cursor-pointer shrink-0">
+                    확정
                   </button>
+                  {confirmed && (
+                    <button onClick={() => handleExport(corrHeaders, corrRows, "보정")}
+                      className="flex items-center gap-1 text-[11px] font-bold text-indigo-700 bg-white border border-indigo-200 hover:bg-indigo-50 px-2 py-1 rounded-lg transition cursor-pointer shrink-0">
+                      <Download size={11} />CSV
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -334,15 +342,25 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
                           {item.matched.code && <span className="text-gray-300 shrink-0 text-[10px]">{item.matched.code}</span>}
                         </div>
                       ) : (
-                        <span className="text-rose-400 italic">매칭 실패</span>
+                        <input
+                          className="flex-1 font-semibold text-rose-500 bg-transparent border-b border-rose-200 hover:border-rose-300 focus:border-rose-400 outline-none truncate min-w-0 placeholder-rose-300 italic"
+                          value={overrides[ri] ?? ""}
+                          placeholder="직접 입력..."
+                          onChange={e => setOverrides(prev => ({ ...prev, [ri]: e.target.value }))}
+                        />
                       )}
                     </div>
                   );
                 })}
               </div>
 
-              {/* 보정 표 */}
-              <div className="overflow-x-auto">
+              {/* 보정 표 — 확정 후 표시 */}
+              {!confirmed && (
+                <div className="px-4 py-3 text-center text-[11px] text-indigo-400 font-semibold">
+                  상품명을 확인·수정한 후 <span className="text-indigo-600 font-bold">확정</span> 버튼을 누르면 표가 생성됩니다.
+                </div>
+              )}
+              {confirmed && <div className="overflow-x-auto">
                 <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="bg-indigo-50 border-b-2 border-indigo-200">
@@ -406,7 +424,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
                     </tfoot>
                   )}
                 </table>
-              </div>
+              </div>}
             </div>
           )}
         </>
