@@ -26,8 +26,8 @@ interface RawOcrTableProps {
   pageImages?: string[]; // dataURL per page (index = page-1)
 }
 
-const SCHEMA_ORDER = ["공급처","품명","규격","단위","수량","단가","금액","세액","비고"];
-const HIDDEN_COLS  = new Set(["번호"]);
+const SCHEMA_ORDER = ["공급처","일자","품명","규격","단위","수량","단가","금액","세액","비고"];
+const HIDDEN_COLS  = new Set(["번호", "배치번호", "에누리"]);
 const NUM_COLS     = new Set(["수량","단가","금액","세액"]);
 
 function fmt(v: number) { return v.toLocaleString("ko-KR"); }
