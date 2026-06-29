@@ -46,41 +46,9 @@ export function useEngineState() {
       .catch(() => { /* Quagga unavailable, ZXing+ZBar still run */ });
   }, []);
 
-  // ── Tesseract OCR worker initialization (lazy, once) ─────────────────────────
+  // ── Tesseract OCR worker initialization (Disabled) ──────────────────────────
   useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { createWorker } = await import(/* @vite-ignore */ "tesseract.js");
-        const worker = await createWorker("eng", 1, {
-          workerBlobURL: false,
-          logger: () => {},
-        } as any);
-        await worker.setParameters({
-          tessedit_char_whitelist: "0123456789",
-          tessedit_pageseg_mode: "11", // SPARSE_TEXT — best for scattered digit rows
-        } as any);
-        if (!cancelled) {
-          ocrWorkerRef.current = worker;
-          setOcrReady(true);
-        } else {
-          await worker.terminate();
-        }
-      } catch {
-        /* OCR unavailable — barcode engines still handle scanning */
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  // Cleanup OCR worker on unmount
-  useEffect(() => {
-    return () => {
-      if (ocrWorkerRef.current) {
-        ocrWorkerRef.current.terminate().catch(() => {});
-        ocrWorkerRef.current = null;
-      }
-    };
+    setOcrReady(false);
   }, []);
 
   return {
