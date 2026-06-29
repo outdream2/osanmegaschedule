@@ -593,6 +593,23 @@ async function startServer() {
     }
   });
 
+  // ── requests/pending-counts ───────────────────────────────────────────────────
+  app.get("/api/requests/pending-counts", async (_req, res) => {
+    const [display, order, mismatch, leave] = await Promise.all([
+      supabase.from("display_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("order_requests").select("id", { count: "exact", head: true }),
+      supabase.from("zone_mismatches").select("id", { count: "exact", head: true }),
+      supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    ]);
+    res.json({
+      display:  display.count  ?? 0,
+      order:    order.count    ?? 0,
+      mismatch: mismatch.count ?? 0,
+      leave:    leave.count    ?? 0,
+      total: (display.count ?? 0) + (order.count ?? 0) + (mismatch.count ?? 0) + (leave.count ?? 0),
+    });
+  });
+
   // ── display_requests ──────────────────────────────────────────────────────────
   app.get("/api/display-requests", async (_req, res) => {
     const { data, error } = await supabase

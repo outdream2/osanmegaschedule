@@ -36,6 +36,7 @@ type AuthTab = "admin" | "employee";
 export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigate, onLogout, onAuthOnly }) => {
   const [pendingPage, setPendingPage] = useState<"schedule" | "display" | "scan" | "requests" | "ocr" | "upload" | "leave" | null>(null);
   const [leavePendingCount, setLeavePendingCount] = useState(0);
+  const [requestsPendingCount, setRequestsPendingCount] = useState(0);
   const [activeTab, setActiveTab] = useState<AuthTab>("employee");
 
   const [pin, setPin] = useState("");
@@ -196,12 +197,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const isLoggedIn = !!authSession;
   const isManagerOrAdmin = isSuperAdmin || isManagerRole;
 
-  // Load pending leave count for managers
+  // Load pending counts for managers
   useEffect(() => {
     if (!isManagerOrAdmin) return;
-    fetch("/api/leave-requests/pending-count")
-      .then(r => r.ok ? r.json() : { count: 0 })
-      .then(d => setLeavePendingCount(d.count ?? 0))
+    fetch("/api/requests/pending-counts")
+      .then(r => r.ok ? r.json() : {})
+      .then(d => {
+        setLeavePendingCount(d.leave ?? 0);
+        setRequestsPendingCount((d.display ?? 0) + (d.order ?? 0) + (d.mismatch ?? 0));
+      })
       .catch(() => {});
   }, [isManagerOrAdmin]);
 
@@ -327,6 +331,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <button onClick={() => onNavigate("requests", authSession!)}
                   className="group relative bg-white border border-gray-200 hover:border-indigo-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {requestsPendingCount > 0 && (
+                    <div className="absolute top-2 right-2 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-black shadow">
+                      {requestsPendingCount}
+                    </div>
+                  )}
                   <div className="relative">
                     <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-indigo-200 transition-colors">
                       <List size={16} className="text-indigo-600 sm:hidden" /><List size={20} className="text-indigo-600 hidden sm:block" />
@@ -334,7 +343,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="text-gray-900 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">요청목록 조회</div>
                     <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">진열·발주요청 및 배정구역 불일치 확인</div>
                     <div className="flex items-center gap-1 mt-2 text-indigo-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">조회하기</span>
+                      <span className="text-[11px] sm:text-xs">
+                        {requestsPendingCount > 0 ? `대기 ${requestsPendingCount}건` : "조회하기"}
+                      </span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
