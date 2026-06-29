@@ -236,28 +236,40 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession }) => 
                     </div>
                   </div>
                   {/* 날짜 */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="text-xs font-bold text-gray-600 block mb-1.5">시작일</label>
-                      <input
-                        type="date"
-                        value={formStart}
-                        onChange={e => setFormStart(e.target.value)}
-                        className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2.5 text-gray-900 text-sm font-semibold focus:outline-none focus:border-green-500 transition"
-                        required
-                      />
+                  <div className="flex flex-col gap-1.5">
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-xs font-bold text-gray-600 block mb-1.5">시작일</label>
+                        <input
+                          type="date"
+                          value={formStart}
+                          onChange={e => {
+                            const s = e.target.value;
+                            setFormStart(s);
+                            if (formEnd < s) setFormEnd(s);
+                          }}
+                          className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2.5 text-gray-900 text-sm font-semibold focus:outline-none focus:border-green-500 transition"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs font-bold text-gray-600 block mb-1.5">종료일</label>
+                        <input
+                          type="date"
+                          value={formEnd}
+                          min={formStart}
+                          onChange={e => setFormEnd(e.target.value)}
+                          className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2.5 text-gray-900 text-sm font-semibold focus:outline-none focus:border-green-500 transition"
+                          required
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-xs font-bold text-gray-600 block mb-1.5">종료일</label>
-                      <input
-                        type="date"
-                        value={formEnd}
-                        min={formStart}
-                        onChange={e => setFormEnd(e.target.value)}
-                        className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2.5 text-gray-900 text-sm font-semibold focus:outline-none focus:border-green-500 transition"
-                        required
-                      />
-                    </div>
+                    {/* 일수 자동 계산 */}
+                    {formStart && formEnd && (
+                      <p className="text-xs text-green-600 font-bold text-right">
+                        총 {Math.round((new Date(formEnd).getTime() - new Date(formStart).getTime()) / 86400000) + 1}일
+                      </p>
+                    )}
                   </div>
                   {/* 사유 */}
                   <div>
