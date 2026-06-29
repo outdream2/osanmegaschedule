@@ -1429,7 +1429,7 @@ ${rawText}`;
     throw new Error("EasyOCR 서버에 연결할 수 없습니다. ocr_server.py가 실행 중인지 확인하세요.");
   }
 
-  ensureOcrServer().catch(() => {});
+  // EasyOCR 서버는 paddle 엔진 요청 시에만 시작 (자동 시작 시 PyTorch ~2GB 로드로 OOM 발생)
 
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
