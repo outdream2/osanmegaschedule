@@ -153,7 +153,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
   // 확정 표 — 고정 스키마
   const CONF_HEADERS = [
     "상품코드", "상품명", "규격",
-    "마스터 매입단가", "공급처", "전표 매입단가", "매입수량", "매입총계",
+    "마스터 매입단가", "전표 매입단가", "공급처", "매입수량", "매입총계",
     "판매단가", "이익률", "소비기한",
   ];
   const CONF_NUM = new Set(["마스터 매입단가", "전표 매입단가", "매입수량", "매입총계", "판매단가", "이익률"]);
@@ -175,16 +175,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
         const spec = ocrSpecIdx >= 0 ? (row[ocrSpecIdx] ?? m?.spec ?? null) : (m?.spec ?? null);
         const supp = ocrSuppIdx >= 0 ? (row[ocrSuppIdx] ?? globalSupplier) : globalSupplier;
         return [
-          m?.code      ?? null,
+          m?.code        ?? null,
           corrName,
           spec,
           m?.masterPrice ?? null,
-          supp,
           pri,
+          supp,
           qty,
           amt,
           m?.salePrice   ?? null,
-          m?.profitRate  != null ? m.profitRate  : null,
+          m?.profitRate  != null ? m.profitRate : null,
           m?.expiryDate  ?? null,
         ];
       })

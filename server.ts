@@ -910,7 +910,7 @@ async function startServer() {
   }
 
   // ── Gemini API — 키 순환 ──────────────────────────────────────────────────
-  const GEMINI_MODEL = "gemini-1.5-flash";
+  const GEMINI_MODEL = "gemini-2.5-flash-lite";
   let geminiRoundRobinIdx = 0;
 
   const GEMINI_OCR_PROMPT = `당신은 한국 거래명세서·납품서·세금계산서 전문 OCR 분석 엔진입니다.
