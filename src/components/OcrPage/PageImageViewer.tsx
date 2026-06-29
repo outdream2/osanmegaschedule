@@ -19,7 +19,28 @@ export const PageImageViewer: React.FC<PageImageViewerProps> = ({
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
   const dragRef = useRef<{ startX: number; startY: number; ox: number; oy: number } | null>(null);
 
+  const containerRef  = useRef<HTMLDivElement>(null);
+
   useEffect(() => { setNaturalSize(null); setZoom(1); setOffset({ x: 0, y: 0 }); }, [currentIdx]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleNativeWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      setZoom(z => {
+        const next = Math.min(5, Math.max(1, +(z - e.deltaY * 0.002).toFixed(2)));
+        if (next === 1) setOffset({ x: 0, y: 0 });
+        return next;
+      });
+    };
+
+    container.addEventListener("wheel", handleNativeWheel, { passive: false });
+    return () => {
+      container.removeEventListener("wheel", handleNativeWheel);
+    };
+  }, []);
 
   const isVertical = rotation === 90 || rotation === 270;
   const rotateCcw  = () => { onRotate((rotation - 90 + 360) % 360); setZoom(1); setOffset({ x: 0, y: 0 }); };
@@ -28,15 +49,6 @@ export const PageImageViewer: React.FC<PageImageViewerProps> = ({
   const clampOffset = (ox: number, oy: number, z: number) => {
     const m = 500 * (z - 1);
     return { x: Math.max(-m, Math.min(m, ox)), y: Math.max(-m, Math.min(m, oy)) };
-  };
-
-  const handleWheel = (e: React.WheelEvent) => {
-    e.preventDefault();
-    setZoom(z => {
-      const next = Math.min(5, Math.max(1, +(z - e.deltaY * 0.002).toFixed(2)));
-      if (next === 1) setOffset({ x: 0, y: 0 });
-      return next;
-    });
   };
 
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -111,9 +123,9 @@ export const PageImageViewer: React.FC<PageImageViewerProps> = ({
 
       {/* Image area */}
       <div
+        ref={containerRef}
         className="relative bg-gray-100 flex items-center justify-center w-full"
         style={containerStyle}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}

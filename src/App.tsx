@@ -101,5 +101,5 @@ export default function App() {
       />
     );
   }
-  return <LandingPage onNavigate={handleNavigate} authSession={authSession} onLogout={handleLogout} />;
+  return <LandingPage onNavigate={handleNavigate} authSession={authSession} onLogout={handleLogout} onAuthOnly={setAuthSession} />;
 }

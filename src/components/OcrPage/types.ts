@@ -1,3 +1,16 @@
+export interface OcrPageResult {
+  page: number;
+  headers: string[];
+  rows: (string | number | null)[][];
+  meta: {
+    supplier?: string | null;
+    recipient?: string | null;
+    date?: string | null;
+    total?: number | null;
+  };
+  rawText?: string;
+}
+
 export interface OcrItem {
   name: string | null;
   spec: string | null;

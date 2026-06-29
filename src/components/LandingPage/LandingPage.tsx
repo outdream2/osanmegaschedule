@@ -27,12 +27,13 @@ interface LandingPageProps {
   authSession: AuthSession | null;
   onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests", auth?: AuthSession) => void;
   onLogout: () => void;
+  onAuthOnly?: (auth: AuthSession) => void;
 }
 
 type AuthTab = "admin" | "employee";
 
-export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigate, onLogout }) => {
-  const [pendingPage, setPendingPage] = useState<"schedule" | "display" | "scan" | "requests" | null>(null);
+export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigate, onLogout, onAuthOnly }) => {
+  const [pendingPage, setPendingPage] = useState<"schedule" | "display" | "scan" | "requests" | "ocr" | "upload" | null>(null);
   const [activeTab, setActiveTab] = useState<AuthTab>("employee");
 
   const [pin, setPin] = useState("");
@@ -91,7 +92,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       const page = pendingPage!;
       setPendingPage(null);
       setPin("");
-      onNavigate(page, { role: "superadmin" });
+      const auth: AuthSession = { role: "superadmin" };
+      if (page === "upload") {
+        onAuthOnly?.(auth);
+        setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog();
+      } else {
+        onNavigate(page as any, auth);
+      }
     } else {
       setAdminError(true);
       setPin("");
@@ -123,7 +130,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       setPendingPage(null);
       setEmpNumber("");
       setEmpPassword("");
-      onNavigate(page, { role: role === "manager" ? "manager" : "employee", employeeId: id, employeeName: name });
+      const auth: AuthSession = { role: role === "manager" ? "manager" : "employee", employeeId: id, employeeName: name };
+      if (page === "upload") {
+        onAuthOnly?.(auth);
+        if (role === "manager") { setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog(); }
+      } else {
+        onNavigate(page as any, auth);
+      }
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 401 || status === 400) {
@@ -365,49 +378,59 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </button>
               )}
 
-              {/* 상품 목록 관리 — 관리자 전용 */}
-              {(isSuperAdmin || isManagerRole) && (
-                <button
-                  onClick={() => { setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog(); }}
-                  className="group relative bg-white border border-gray-200 hover:border-orange-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-orange-200 transition-colors">
-                      <FileSpreadsheet size={18} className="text-orange-600 sm:hidden" />
-                      <FileSpreadsheet size={22} className="text-orange-600 hidden sm:block" />
-                    </div>
-                    <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">상품 목록 관리</div>
-                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">xlsx 파일 업로드로 상품 DB 갱신</div>
-                    <div className="flex items-center gap-1 mt-2 sm:mt-4 text-orange-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">업로드하기</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+              {/* 상품 목록 관리 */}
+              <button
+                onClick={() => isLoggedIn
+                  ? (isSuperAdmin || isManagerRole)
+                    ? (setUploadOpen(true), setUploadResult(null), setUploadFile(null), fetchImportLog())
+                    : undefined
+                  : setPendingPage("upload")}
+                className="group relative bg-white border border-gray-200 hover:border-orange-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                {!isLoggedIn && (
+                  <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-70 transition-opacity">
+                    <Lock size={13} className="text-orange-400" />
                   </div>
-                </button>
-              )}
+                )}
+                <div className="relative">
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-orange-200 transition-colors">
+                    <FileSpreadsheet size={18} className="text-orange-600 sm:hidden" />
+                    <FileSpreadsheet size={22} className="text-orange-600 hidden sm:block" />
+                  </div>
+                  <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">상품 목록 관리</div>
+                  <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">xlsx 파일 업로드로 상품 DB 갱신</div>
+                  <div className="flex items-center gap-1 mt-2 sm:mt-4 text-orange-600 text-xs font-bold">
+                    <span className="text-[11px] sm:text-xs">{isLoggedIn ? "업로드하기" : "로그인 필요"}</span>
+                    <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+              </button>
 
-              {/* 거래명세서 OCR — 관리자 전용 */}
-              {(isSuperAdmin || isManagerRole) && (
-                <button
-                  onClick={() => onNavigate("ocr", authSession!)}
-                  className="group relative bg-white border border-gray-200 hover:border-amber-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-amber-200 transition-colors">
-                      <FileText size={18} className="text-amber-600 sm:hidden" />
-                      <FileText size={22} className="text-amber-600 hidden sm:block" />
-                    </div>
-                    <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">거래명세서 OCR</div>
-                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">PDF 업로드로 거래명세서 자동 추출</div>
-                    <div className="flex items-center gap-1 mt-2 sm:mt-4 text-amber-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">추출하기</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
+              {/* 거래명세서 OCR */}
+              <button
+                onClick={() => isLoggedIn ? onNavigate("ocr", authSession!) : setPendingPage("ocr")}
+                className="group relative bg-white border border-gray-200 hover:border-amber-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                {!isLoggedIn && (
+                  <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-70 transition-opacity">
+                    <Lock size={13} className="text-amber-400" />
                   </div>
-                </button>
-              )}
+                )}
+                <div className="relative">
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-amber-200 transition-colors">
+                    <FileText size={18} className="text-amber-600 sm:hidden" />
+                    <FileText size={22} className="text-amber-600 hidden sm:block" />
+                  </div>
+                  <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">거래명세서 OCR</div>
+                  <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">PDF 업로드로 거래명세서 자동 추출</div>
+                  <div className="flex items-center gap-1 mt-2 sm:mt-4 text-amber-600 text-xs font-bold">
+                    <span className="text-[11px] sm:text-xs">{isLoggedIn ? "추출하기" : "로그인 필요"}</span>
+                    <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
 

@@ -18,6 +18,8 @@ type GeminiResult = { ok: true; text: string } | { ok: false; quota: boolean; er
 interface ProductInfo { code: string; name: string; spec: string; [key: string]: any; }
 let productMapCache: Record<string, ProductInfo> | null = null;
 let productMapPromise: Promise<Record<string, ProductInfo>> | null = null;
+let synonymMapCache: Map<string, string> | null = null;
+let synonymMapPromise: Promise<Map<string, string>> | null = null;
 
 const COL_KEYS = [
   "product_code","product_name","col_i","product_type","origin","spec",
@@ -93,6 +95,22 @@ async function getProductMap(): Promise<Record<string, ProductInfo>> {
   return productMapPromise;
 }
 
+async function getSynonymMap(): Promise<Map<string, string>> {
+  if (synonymMapCache) return synonymMapCache;
+  if (synonymMapPromise) return synonymMapPromise;
+  synonymMapPromise = (async () => {
+    const { data, error } = await supabase.from("ocr_synonyms").select("alias,product_code");
+    if (error) { synonymMapPromise = null; return new Map(); }
+    const map = new Map<string, string>();
+    for (const row of (data ?? [])) {
+      map.set(String(row.alias).trim().toLowerCase(), String(row.product_code).trim());
+    }
+    synonymMapCache = map;
+    return map;
+  })();
+  return synonymMapPromise;
+}
+
 // ── Korean invoice text parser (Tesseract raw text → structured data) ────────
 function parseKoreanInvoice(text: string): {
   headers: string[]; rows: (string | number | null)[][]; meta: any; rawText?: string;
@@ -105,7 +123,7 @@ function parseKoreanInvoice(text: string): {
   if (dateM) meta.date = `${dateM[1]}-${dateM[2].padStart(2,"0")}-${dateM[3].padStart(2,"0")}`;
 
   // Supplier / Recipient
-  const supM = text.match(/공\s*급\s*자\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,20})/);
+  const supM = text.match(/공\s*급\s*[자처사]\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,20})/);
   if (supM) meta.supplier = supM[1].trim().replace(/\s{2,}.*$/, "");
   const recM = text.match(/공\s*급\s*받\s*는\s*자?\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,20})/);
   if (recM) meta.recipient = recM[1].trim().replace(/\s{2,}.*$/, "");
@@ -289,8 +307,11 @@ async function startServer() {
   app.put("/api/employees/:id", (req, res) => scheduleController.updateEmployee(req, res));
   app.delete("/api/employees/:id", (req, res) => scheduleController.deleteEmployee(req, res));
 
-  // GET /api/staff-availability?date=YYYY-MM-DD — schedule status for employees 1,2,3
-  const STAFF_LIST = [{ id: 1, name: "대표" }, { id: 2, name: "이사" }, { id: 3, name: "부장" }];
+  // GET /api/staff-availability?date=YYYY-MM-DD — schedule status for core employees
+  // Configure via .env STAFF_IDS=1:대표,2:이사,3:부장
+  const STAFF_LIST = (process.env.STAFF_IDS ?? "1:대표,2:이사,3:부장")
+    .split(",").map(e => { const [id, name] = e.split(":"); return { id: parseInt(id.trim()), name: name?.trim() ?? "" }; })
+    .filter(s => !isNaN(s.id) && s.id > 0);
   const OFF_TYPES = ["휴무", "월차", "지정휴무", "오전반차", "오후반차"];
   app.get("/api/staff-availability", async (req, res) => {
     const { date } = req.query;
@@ -896,6 +917,79 @@ async function startServer() {
     return { headers: outHeaders, rows: outRows };
   }
 
+  // ── 품명에서 규격 분리 ───────────────────────────────────────────────────────
+  // 단위 정규식: 용량(mg/g/mL/L/IU…), 개수(T/C/정/캡슐/포/개/EA), 크기(NxN mm/cm)
+  const SPEC_UNIT_RE =
+    /^(\d+(?:[./]\d+)*)\s*(mg|mcg|μg|ug|g|kg|ml|mL|L|IU|mEq|%|T|C|정|캡슐|포|개|EA|ea)(?:\s*[×xX]\s*\d+\s*(?:mm|cm|m)?)?$/i;
+
+  function parseSpecFromName(raw: string): { name: string; spec: string | null } {
+    const s = raw.trim();
+
+    // 1. 마지막 괄호/대괄호: "이름(규격)" — 복수 괄호면 마지막만 취함
+    const bracketM = s.match(/^(.*?)\s*[(\[]([\d\w./×xX\s%μ]+)[)\]]\s*$/);
+    if (bracketM) {
+      const cand = bracketM[2].trim();
+      if (SPEC_UNIT_RE.test(cand))
+        return { name: bracketM[1].trim(), spec: cand };
+    }
+
+    // 2. 공백 뒤 규격: "이름 500mg" / "이름 80/5mg" / "이름 50×70mm"
+    //    (.+?) 비탐욕적 → 규격 패턴이 시작하는 마지막 공백 기준 분리
+    const spaceM = s.match(/^(.+?)\s+(\d[\d./]*\s*(?:mg|mcg|μg|ug|g|kg|ml|mL|L|IU|mEq|%|T|C|정|캡슐|포|개|EA|ea)(?:\s*[×xX]\s*\d+\s*(?:mm|cm|m)?)?)$/i);
+    if (spaceM) {
+      const cand = spaceM[2].trim();
+      if (SPEC_UNIT_RE.test(cand))
+        return { name: spaceM[1].trim(), spec: cand };
+    }
+
+    // 3. 붙임형: "알파리포산600mg" — 이름 끝에 공백 없이 숫자+단위
+    //    이름이 숫자로 끝나지 않아야 함 (Q10, 오메가3 같은 케이스 방지)
+    const glueM = s.match(/^(.+?)(\d+(?:[./]\d+)?\s*(?:mg|mcg|μg|ug|g|kg|ml|mL|L|IU|mEq|%|T|C|정|캡슐|포|개|EA|ea))$/i);
+    if (glueM && /\D$/.test(glueM[1])) {
+      return { name: glueM[1].trim(), spec: glueM[2].trim() };
+    }
+
+    return { name: s, spec: null };
+  }
+
+  function extractSpecFromName(
+    headers: string[],
+    rows: (string | number | null)[][]
+  ): { headers: string[]; rows: (string | number | null)[][] } {
+    const nameI = headers.indexOf("품명");
+    if (nameI < 0) return { headers, rows };
+
+    let specI = headers.indexOf("규격");
+    let outHeaders = headers;
+
+    // 규격 컬럼이 아예 없으면 품명 바로 뒤에 추가
+    if (specI < 0) {
+      outHeaders = [...headers.slice(0, nameI + 1), "규격", ...headers.slice(nameI + 1)];
+      specI = nameI + 1;
+    }
+
+    const outRows = rows.map(row => {
+      const nameCellRaw = row[nameI];
+      if (typeof nameCellRaw !== "string" || !nameCellRaw.trim()) return row;
+
+      // 규격이 이미 있으면 스킵
+      const existing = row[specI];
+      if (existing != null && String(existing).trim()) return row;
+
+      const { name, spec } = parseSpecFromName(nameCellRaw);
+      if (!spec) return row;
+
+      const r = [...row];
+      // 헤더가 늘었으면(규격 컬럼 신규 삽입) 새 슬롯 삽입
+      if (r.length < outHeaders.length) r.splice(specI, 0, null);
+      r[nameI] = name;
+      r[specI] = spec;
+      return r;
+    });
+
+    return { headers: outHeaders, rows: outRows };
+  }
+
   // 금액 = 수량 × 단가 자동 보정
   function fixAmounts(
     headers: string[],
@@ -929,22 +1023,39 @@ async function startServer() {
 - 하단: 공급가액 합계, 세액 합계, 총합계
 
 [추출 규칙]
-1. 표의 헤더 행을 정확히 찾아 실제 컬럼명을 그대로 사용하세요
-2. 헤더 아래 품목 행만 rows로 추출하세요
-3. 합계·소계·총계·총합·계 등이 포함된 행은 rows에서 제외하세요
-4. 숫자는 쉼표 제거 후 숫자형으로 반환 (예: "1,500" → 1500, "3개" → 3)
-5. 비거나 읽을 수 없는 셀은 null
-6. 이미지가 흐리거나 기울어져 있어도 최선을 다해 판독하세요
-7. 한글이 뭉개진 경우 문맥으로 추론하세요
+1. 헤더 아래 품목 행만 rows로 추출하세요
+2. 합계·소계·총계·총합·계 등이 포함된 행은 rows에서 제외하세요
+3. 숫자는 쉼표 제거 후 숫자형으로 반환 (예: "1,500" → 1500, "3개" → 3)
+4. 비거나 읽을 수 없는 셀은 null
+5. 이미지가 흐리거나 기울어져 있어도 최선을 다해 판독하세요
+6. 한글이 뭉개진 경우 문맥으로 추론하세요
+
+[컬럼명 표준화 — 반드시 아래 표준명 사용]
+- 품명/품목/상품명/제품명 → "품명"
+- 규격/사양/스펙 → "규격"
+- 금액/공급가액/총매출액/순매출액/매출액 → "금액"
+- 세액/부가세/VAT → "세액"
+- 수량/매수/qty → "수량"
+- 단가/단위가격/price → "단가"
+- 단위/UOM → "단위"
+- 비고/적요/메모 → "비고"
+- 일자/날짜/발행일/거래일 → "일자"
+
+[규격 분리 규칙 — 중요]
+- 문서에 규격 컬럼이 없거나 품명에 규격이 붙어 있으면 분리하여 "규격" 컬럼에 기입하세요
+- 규격 패턴: 숫자+단위 (mg·g·ml·L·IU·T·C·정·캡슐·포·EA 등), 분수형 (5/50mg), 크기 (50×70mm)
+- 예) "비타민C 500mg" → 품명:"비타민C", 규격:"500mg"
+- 예) "아모잘탄정 5/50mg" → 품명:"아모잘탄정", 규격:"5/50mg"
+- 예) "포카리스웨트(500ml)" → 품명:"포카리스웨트", 규격:"500ml"
+- 예) "홍삼정 60캡슐" → 품명:"홍삼정", 규격:"60캡슐"
 
 [메타데이터]
 - date: YYYY-MM-DD 형식 (찾을 수 없으면 null)
-- supplier: 공급자 상호 (없으면 null)
-- recipient: 공급받는자 상호 (없으면 null)
+- supplier: 거래명세서 왼쪽 박스(공급자/판매자 측) 상호명만 기입. 오른쪽 박스(공급받는자/구매처/약국)는 절대 기입 금지. (없으면 null)
 - total: 총합계 숫자 (없으면 null)
 
 마크다운·설명 없이 JSON만 응답:
-{"headers":["번호","품명","규격","단위","수량","단가","금액","세액"],"rows":[[1,"상품A","500ml","EA",10,1500,15000,1500]],"meta":{"supplier":"(주)공급사","recipient":"수신사","date":"2024-01-15","total":16500}}`;
+{"headers":["품명","규격","단위","수량","단가","금액","세액"],"rows":[["비타민C","500mg","EA",10,1500,15000,1500],["아모잘탄정","5/50mg","정",5,2000,10000,1000]],"meta":{"supplier":"(주)공급사","date":"2024-01-15","total":26500}}`;
 
   // 폴백 키 포함 — env 키 우선, 없으면 하드코딩 키 시도
   function getGeminiKeys(): string[] {
@@ -1027,31 +1138,49 @@ async function startServer() {
       setTimeout(() => resolve({ ok: false, quota: false, error: `Gemini 응답 없음 (${timeoutMs / 1000}s 초과)` }), timeoutMs)
     );
     const callPromise: Promise<GeminiResult> = (async () => {
-    try {
-      const ai = makeGeminiClient(apiKey);
-      const result = await ai.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: [{
-          parts: [
-            { inlineData: { mimeType: mimeType ?? "image/jpeg", data: b64 } },
-            { text: GEMINI_OCR_PROMPT },
-          ],
-        }],
-        config: { temperature: 0 },
-      });
+      let attempts = 3;
+      let lastResult: GeminiResult = { ok: false, quota: false, error: "알 수 없는 에러" };
+      
+      for (let attempt = 1; attempt <= attempts; attempt++) {
+        try {
+          const ai = makeGeminiClient(apiKey);
+          const result = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: [{
+              parts: [
+                { inlineData: { mimeType: mimeType ?? "image/jpeg", data: b64 } },
+                { text: GEMINI_OCR_PROMPT },
+              ],
+            }],
+            config: { temperature: 0, responseMimeType: "application/json" },
+          });
 
-      const finishReason = result.candidates?.[0]?.finishReason ?? "STOP";
-      if (finishReason !== "STOP" && finishReason !== "MAX_TOKENS") {
-        return { ok: false, quota: false, error: `Gemini 응답 차단됨 (${finishReason})` };
+          const finishReason = result.candidates?.[0]?.finishReason ?? "STOP";
+          if (finishReason !== "STOP" && finishReason !== "MAX_TOKENS") {
+            lastResult = { ok: false, quota: false, error: `Gemini 응답 차단됨 (${finishReason})` };
+            continue;
+          }
+
+          const raw = result.text ?? "";
+          if (!raw) {
+            lastResult = { ok: false, quota: false, error: "Gemini 빈 응답" };
+            continue;
+          }
+          return { ok: true, text: parseGeminiText(raw) };
+        } catch (e: any) {
+          const msg = String(e?.message ?? e);
+          const isQuota = isQuotaError(msg);
+          lastResult = { ok: false, quota: isQuota, error: msg };
+          
+          if (isQuota || msg.includes("503") || msg.includes("UNAVAILABLE")) {
+            console.log(`[OCR/Gemini] API 오류로 인해 ${attempt}/${attempts}차 재시도 대기 중...`);
+            await new Promise(r => setTimeout(r, 2000 * attempt)); // 2초, 4초 대기 후 시도
+            continue;
+          }
+          break; // 치명적 에러는 즉시 루프 탈출
+        }
       }
-
-      const raw = result.text ?? "";
-      if (!raw) return { ok: false, quota: false, error: "Gemini 빈 응답" };
-      return { ok: true, text: parseGeminiText(raw) };
-    } catch (e: any) {
-      const msg = String(e?.message ?? e);
-      return { ok: false, quota: isQuotaError(msg), error: msg };
-    }
+      return lastResult;
     })();
     return Promise.race([callPromise, timeoutPromise]);
   }
@@ -1072,46 +1201,87 @@ async function startServer() {
 
 [OCR 텍스트]
 ${rawText}`;
-    try {
-      const ai = makeGeminiClient(apiKey);
-      const result = await ai.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: [{ parts: [{ text: prompt }] }],
-        config: { temperature: 0 },
-      });
-      const raw = result.text ?? "";
-      if (!raw) return { ok: false, quota: false, error: "Gemini 빈 응답" };
-      return { ok: true, text: parseGeminiText(raw) };
-    } catch (e: any) {
-      const msg = String(e?.message ?? e);
-      return { ok: false, quota: isQuotaError(msg), error: msg };
-    }
-  }
 
-  // ── EasyOCR Python 서브프로세스 ──────────────────────────────────────────────
-  const PYTHON = process.platform === "win32" ? "python" : "python3";
-
-  function runEasyOcrProcess(b64: string, mimeType: string): Promise<any> {
-    return new Promise((resolve, reject) => {
-      const proc = spawn(PYTHON, ["scripts/easyocr_ocr.py"], { env: { ...process.env, PYTHONIOENCODING: "utf-8" } });
-      let out = "";
-      let err = "";
-      proc.stdout.on("data", (d: Buffer) => { out += d.toString("utf-8"); });
-      proc.stderr.on("data", (d: Buffer) => { err += d.toString("utf-8"); });
-      proc.on("error", (e) => reject(new Error(`EasyOCR 프로세스 실행 실패: ${e.message}. Python 및 easyocr 패키지가 설치되어 있는지 확인하세요.`)));
-      proc.on("close", (code) => {
-        try {
-          const result = JSON.parse(out.trim());
-          if (!result.success) reject(new Error(result.error ?? "EasyOCR 실패"));
-          else resolve(result);
-        } catch {
-          reject(new Error(`EasyOCR 출력 파싱 실패 (code=${code}): ${(err || out).slice(0, 300)}`));
+    let attempts = 3;
+    let lastResult: GeminiResult = { ok: false, quota: false, error: "알 수 없는 에러" };
+    
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+      try {
+        const ai = makeGeminiClient(apiKey);
+        const result = await ai.models.generateContent({
+          model: GEMINI_MODEL,
+          contents: [{ parts: [{ text: prompt }] }],
+          config: { temperature: 0 },
+        });
+        const raw = result.text ?? "";
+        if (!raw) {
+          lastResult = { ok: false, quota: false, error: "Gemini 빈 응답" };
+          continue;
         }
-      });
-      proc.stdin.write(JSON.stringify({ data: b64, mimeType }), "utf-8");
-      proc.stdin.end();
-    });
+        return { ok: true, text: parseGeminiText(raw) };
+      } catch (e: any) {
+        const msg = String(e?.message ?? e);
+        const isQuota = isQuotaError(msg);
+        lastResult = { ok: false, quota: isQuota, error: msg };
+        
+        if (isQuota || msg.includes("503") || msg.includes("UNAVAILABLE")) {
+          console.log(`[OCR/Gemini] 구조화 API 오류로 인해 ${attempt}/${attempts}차 재시도 대기 중...`);
+          await new Promise(r => setTimeout(r, 2000 * attempt));
+          continue;
+        }
+        break;
+      }
+    }
+    return lastResult;
   }
+
+  // ── EasyOCR 영속 서버 (ocr_server.py, port 8001) ────────────────────────────
+  const PYTHON = process.platform === "win32" ? "python" : "python3";
+  const OCR_SERVER_URL = "http://localhost:8001";
+  let ocrServerProc: ReturnType<typeof spawn> | null = null;
+
+  async function ensureOcrServer(): Promise<void> {
+    try {
+      const r = await fetch(`${OCR_SERVER_URL}/health`, { signal: AbortSignal.timeout(2000) });
+      if (r.ok) { console.log("[OCR Server] 이미 실행 중."); return; }
+    } catch {}
+    if (ocrServerProc) return;
+    console.log("[OCR Server] EasyOCR 서버 시작 중 (ocr_server.py)...");
+    ocrServerProc = spawn(PYTHON, ["scripts/ocr_server.py"], {
+      env: { ...process.env, PYTHONIOENCODING: "utf-8" },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    ocrServerProc.stdout?.on("data", (d: Buffer) => process.stdout.write(`[OCR Server] ${d}`));
+    ocrServerProc.stderr?.on("data", (d: Buffer) => process.stderr.write(`[OCR Server] ${d}`));
+    ocrServerProc.on("error", (e: Error) => console.error("[OCR Server] 시작 실패:", e.message));
+    ocrServerProc.on("exit", () => { ocrServerProc = null; });
+  }
+
+  async function callEasyOcrServer(b64: string, mimeType: string): Promise<any> {
+    for (let attempt = 0; attempt < 45; attempt++) {
+      try {
+        const res = await fetch(`${OCR_SERVER_URL}/ocr`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data: b64, mimeType }),
+          signal: AbortSignal.timeout(60000),
+        });
+        const json = await res.json() as any;
+        if (!json.success) throw new Error(json.error ?? "EasyOCR 실패");
+        return json;
+      } catch (e: any) {
+        const connRefused = e?.cause?.code === "ECONNREFUSED" || e?.code === "ECONNREFUSED" || String(e).includes("ECONNREFUSED");
+        if (connRefused && attempt < 44) {
+          await new Promise(r => setTimeout(r, 1000));
+          continue;
+        }
+        throw e;
+      }
+    }
+    throw new Error("EasyOCR 서버에 연결할 수 없습니다. ocr_server.py가 실행 중인지 확인하세요.");
+  }
+
+  ensureOcrServer().catch(() => {});
 
   app.get("/api/health", (_req, res) => res.json({ ok: true }));
 
@@ -1128,33 +1298,136 @@ ${rawText}`;
 
       const map = await getProductMap();
       const products = Object.values(map);
+      const synonymMap = await getSynonymMap();
 
+      // ── 한글 자모 분해 + 레벤슈타인 ─────────────────────────────────────────
+      const CHOSUNGS  = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ';
+      const JUNGSUNGS = 'ㅏㅐㅑㅒㅓㅔㅕㅖㅗㅘㅙㅚㅛㅜㅝㅞㅟㅠㅡㅢㅣ';
+      const JONGSUNGS = ' ㄱㄲㄳㄴㄵㄶㄷㄹㄺㄻㄼㄽㄾㄿㅀㅁㅂㅄㅅㅆㅇㅈㅊㅋㅌㅍㅎ';
+
+      function toJamo(s: string): string[] {
+        const res: string[] = [];
+        for (const ch of s) {
+          const code = ch.charCodeAt(0);
+          if (code >= 0xAC00 && code <= 0xD7A3) {
+            const off  = code - 0xAC00;
+            const jong = off % 28;
+            const jung = Math.floor(off / 28) % 21;
+            const cho  = Math.floor(off / 588);
+            res.push(CHOSUNGS[cho], JUNGSUNGS[jung]);
+            if (jong > 0) res.push(JONGSUNGS[jong]);
+          } else if (ch.trim()) {
+            res.push(ch.toLowerCase());
+          }
+        }
+        return res;
+      }
+
+      function levenshtein(a: string[], b: string[]): number {
+        const m = a.length, n = b.length;
+        let prev = Array.from({ length: n + 1 }, (_, j) => j);
+        const curr = new Array<number>(n + 1);
+        for (let i = 1; i <= m; i++) {
+          curr[0] = i;
+          for (let j = 1; j <= n; j++) {
+            curr[j] = a[i-1] === b[j-1] ? prev[j-1] : 1 + Math.min(prev[j], curr[j-1], prev[j-1]);
+          }
+          prev = [...curr];
+        }
+        return prev[n];
+      }
+
+      function jamoSim(a: string, b: string): number {
+        const ja = toJamo(a), jb = toJamo(b);
+        if (!ja.length || !jb.length) return 0;
+        const maxLen = Math.max(ja.length, jb.length);
+        return Math.round((1 - levenshtein(ja, jb) / maxLen) * 100);
+      }
+
+      // 기본 정규화: 소문자 + 구두점 제거
       const norm = (s: string) =>
-        s.toLowerCase().replace(/[\s\-_()（）,·./[\]{}]/g, "");
+        s.toLowerCase().replace(/[\s\-_()（）,·./[\]{}「」『』]/g, "");
 
-      const bigramScore = (ocr: string, pName: string): number => {
-        const o = norm(ocr);
-        const p = norm(pName);
-        if (!o || !p) return 0;
-        if (o === p) return 100;
-        if (p.includes(o) || o.includes(p)) return 90;
-        const bg = (s: string) => Array.from({ length: s.length - 1 }, (_, i) => s.slice(i, i + 2));
-        const og = bg(o);
-        const pg = new Set(bg(p));
-        if (!og.length) return 0;
-        const inter = og.filter(g => pg.has(g)).length;
-        return Math.round((inter / Math.max(og.length, pg.size)) * 100);
+      // 약제형·규격 제거: 숫자+단위, 제형명(정/캡슐/주 등) 모두 삭제
+      const DOSE_FORM = /정|캡슐|연질캡슐|경질캡슐|서방정|필름코팅정|당의정|시럽|건조시럽|주사|주|앰풀|바이알|좌약|크림|겔|젤|로션|패취|패치|점안|점이|흡입|분말|과립|환|액|현탁액|산/g;
+      const SPEC_PAT  = /\d+(?:[./×x]\d+)?(?:mg|mcg|μg|ug|g|kg|ml|mL|L|IU|mEq|%|t|c|tab|cap|ea)/gi;
+      const stripMed  = (s: string) => norm(s).replace(SPEC_PAT, "").replace(DOSE_FORM, "").replace(/\d+/g, "");
+
+      // 바이그램 유사도 (길이 비율로 substring 점수 보정)
+      const bigramSim = (a: string, b: string): number => {
+        if (!a || !b) return 0;
+        if (a === b) return 100;
+        const ratio = Math.min(a.length, b.length) / Math.max(a.length, b.length);
+        if (a.includes(b) || b.includes(a)) return Math.round(90 * (0.35 + 0.65 * ratio));
+        const bg = (s: string) => Array.from({ length: Math.max(0, s.length - 1) }, (_, i) => s.slice(i, i + 2));
+        const ag = bg(a); const bs = new Set(bg(b));
+        if (!ag.length || !bs.size) return 0;
+        return Math.round((ag.filter(g => bs.has(g)).length / Math.max(ag.length, bs.size)) * 100);
       };
+
+      // 거래명세표 특화 점수: 4가지 정규화 조합 + 키워드 + 접두사 보너스
+      const invoiceMatchScore = (ocrRaw: string, p: ProductInfo): number => {
+        // 앞에 붙은 행번호 제거: "1." "001." "①" 형태
+        const ocrClean = ocrRaw.replace(/^\s*[\d①②③④⑤⑥⑦⑧⑨⑩]+[.)]\s*/, "").trim();
+
+        const oc = norm(ocrClean);
+        const os = stripMed(ocrClean);
+        const dc = norm(p.name ?? "");
+        const ds = stripMed(p.name ?? "");
+
+        if (!oc || !dc) return 0;
+
+        const scores = [
+          bigramSim(oc, dc),
+          bigramSim(os, ds),
+          bigramSim(oc, ds),
+          bigramSim(os, dc),
+          jamoSim(oc, dc),   // OCR 오타 보정: 자모 단위 레벤슈타인
+          jamoSim(os, ds),
+        ];
+
+        // 검색 키워드로도 비교
+        if (p.search_keywords) {
+          for (const kw of String(p.search_keywords).split(/[,|;]/)) {
+            const k = norm(kw.trim());
+            if (k.length >= 2) {
+              scores.push(bigramSim(oc, k), bigramSim(os, k));
+            }
+          }
+        }
+
+        return Math.max(...scores, 0);
+      };
+
+      const makeResult = (name: string, p: ProductInfo, score: number) => ({
+        input: name,
+        matched: {
+          code: p.code, name: p.name, spec: p.spec, score,
+          masterPrice: p.purchase_price != null ? Number(p.purchase_price) : null,
+          salePrice:   p.sale_price     != null ? Number(p.sale_price)     : null,
+          profitRate:  p.profit_rate    != null ? Number(p.profit_rate)    : null,
+          expiryDate:  p.expiry_date    != null ? String(p.expiry_date)    : null,
+        },
+      });
 
       const matches = names.map((name: string) => {
         if (!name?.trim()) return { input: name, matched: null };
+
+        // 1. 동의어 사전 우선 매칭
+        const synCode = synonymMap.get(name.trim().toLowerCase());
+        if (synCode) {
+          const sp = map[synCode] ?? products.find(p => p.code === synCode);
+          if (sp) return makeResult(name, sp, 100);
+        }
+
+        // 2. 퍼지 매칭
         let best: ProductInfo | null = null;
         let bestScore = 0;
         for (const p of products) {
-          const s = bigramScore(name, p.name ?? "");
+          const s = invoiceMatchScore(name, p);
           if (s > bestScore) { bestScore = s; best = p; }
         }
-        if (!best || bestScore < 30) return { input: name, matched: null, score: bestScore };
+        if (!best || bestScore < 25) return { input: name, matched: null, score: bestScore };
         return {
           input: name,
           matched: {
@@ -1176,34 +1449,73 @@ ${rawText}`;
     }
   });
 
+  // ── OCR 동의어 사전 CRUD ─────────────────────────────────────────────────────
+  app.get("/api/ocr-synonyms", async (_req, res) => {
+    try {
+      const { data, error } = await supabase.from("ocr_synonyms").select("*").order("created_at", { ascending: false });
+      if (error) throw new Error(error.message);
+      res.json({ synonyms: data ?? [] });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/ocr-synonyms", async (req, res) => {
+    try {
+      const { alias, product_code, supplier } = req.body ?? {};
+      if (!alias?.trim() || !product_code?.trim()) return res.status(400).json({ error: "alias, product_code 필요" });
+      const { data, error } = await supabase.from("ocr_synonyms")
+        .insert({ alias: alias.trim().toLowerCase(), product_code: product_code.trim(), supplier: supplier?.trim() ?? null })
+        .select().single();
+      if (error) throw new Error(error.message);
+      synonymMapCache = null; synonymMapPromise = null;
+      res.json({ synonym: data });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  app.delete("/api/ocr-synonyms/:id", async (req, res) => {
+    try {
+      const { error } = await supabase.from("ocr_synonyms").delete().eq("id", Number(req.params.id));
+      if (error) throw new Error(error.message);
+      synonymMapCache = null; synonymMapPromise = null;
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // 공급받는자(수신인) 상호 목록 — .env OCR_RECIPIENT (쉼표 구분)
+  const OCR_RECIPIENTS: string[] = (process.env.OCR_RECIPIENT ?? "")
+    .split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
+
+  function sanitizeOcrMeta(meta: any): any {
+    if (!meta || !meta.supplier) return meta;
+    const sup = String(meta.supplier).trim().toLowerCase();
+    const isRecipient = OCR_RECIPIENTS.some(r => sup.includes(r));
+    return isRecipient ? { ...meta, supplier: null } : meta;
+  }
+
   app.post("/api/ocr", async (req, res) => {
     const { images, texts, engine: reqEngine = "gemini" } = req.body ?? {};
     const engine = reqEngine as string;
 
-    if (engine === "tesseract") {
-      if (!Array.isArray(texts) || texts.length === 0)
-        return res.status(400).json({ error: "texts 배열이 필요합니다." });
-    } else {
-      if (!Array.isArray(images) || images.length === 0)
-        return res.status(400).json({ error: "images 배열이 필요합니다." });
-      if (engine === "gemini" && getGeminiKeys().length === 0 && getMistralKeys().length === 0)
-        return res.status(400).json({ error: "GEMINI_API_KEY 또는 MISTRAL_API_KEY가 설정되지 않았습니다. .env에 추가하세요." });
-    }
+    if (!Array.isArray(images) || images.length === 0)
+      return res.status(400).json({ error: "images 배열이 필요합니다." });
+    if (engine === "gemini" && getGeminiKeys().length === 0 && getMistralKeys().length === 0)
+      return res.status(400).json({ error: "GEMINI_API_KEY 또는 MISTRAL_API_KEY가 설정되지 않았습니다. .env에 추가하세요." });
 
-    // easyocr 엔진 분기 — Python 서브프로세스로 처리 후 바로 반환
+    // easyocr 엔진 분기 — 영속 서버로 병렬 처리
     if (engine === "paddle") {
       try {
-        const pages: any[] = [];
-        for (let i = 0; i < images.length; i++) {
-          const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
-          console.log(`[OCR/EasyOCR] page ${i + 1}/${images.length}`);
-          const raw = await runEasyOcrProcess(b64, mimeType);
-          const pre  = mergeAdjacentHeaders(raw.headers ?? [], raw.rows ?? []);
-          const norm = normalizeInvoiceCols(pre.headers, pre.rows);
-          const rows = fixAmounts(norm.headers, norm.rows);
-          console.log(`[OCR/EasyOCR] page ${i + 1}: 헤더=${JSON.stringify(norm.headers)}, 행=${rows.length}`);
-          pages.push({ page: i + 1, headers: norm.headers, rows, meta: raw.meta ?? {}, rawText: raw.rawText ?? "" });
-        }
+        await ensureOcrServer();
+        const pages = await Promise.all(
+          (images as { data: string; mimeType: string }[]).map(async ({ data: b64, mimeType }, i) => {
+            console.log(`[OCR/EasyOCR] page ${i + 1}/${images.length}`);
+            const raw = await callEasyOcrServer(b64, mimeType);
+            const pre  = mergeAdjacentHeaders(raw.headers ?? [], raw.rows ?? []);
+            const norm = normalizeInvoiceCols(pre.headers, pre.rows);
+            const spec = extractSpecFromName(norm.headers, norm.rows);
+            const rows = fixAmounts(spec.headers, spec.rows);
+            console.log(`[OCR/EasyOCR] page ${i + 1}: 헤더=${JSON.stringify(spec.headers)}, 행=${rows.length}`);
+            return { page: i + 1, headers: spec.headers, rows, meta: sanitizeOcrMeta(raw.meta ?? {}), rawText: raw.rawText ?? "" };
+          })
+        );
         return res.json({ pages, engine });
       } catch (err: any) {
         console.error("[OCR/EasyOCR] error:", err?.message);
@@ -1214,46 +1526,12 @@ ${rawText}`;
     try {
       const pages: any[] = [];
 
-      if (engine === "tesseract") {
-        const rawTexts = texts as string[];
-        const geminiKeys = getGeminiKeys();
-        for (let i = 0; i < rawTexts.length; i++) {
-          console.log(`[OCR/Tesseract] page ${i + 1}/${rawTexts.length}`);
-          const parsed = parseKoreanInvoice(rawTexts[i]);
-          const isFallback =
-            parsed.headers.length <= 1 &&
-            (parsed.headers[0] === "원문 텍스트" || parsed.rows.length === 0);
-
-          if (isFallback && geminiKeys.length > 0) {
-            console.log(`[OCR/Tesseract] page ${i + 1}: 구조화 실패 → Gemini 텍스트 구조화 시도`);
-            const ki = geminiRoundRobinIdx % geminiKeys.length;
-            geminiRoundRobinIdx = (geminiRoundRobinIdx + 1) % geminiKeys.length;
-            const gr = await structureWithGemini(rawTexts[i], geminiKeys[ki]);
-            if (gr.ok) {
-              try {
-                const gp = JSON.parse(gr.text);
-                const pre  = mergeAdjacentHeaders(gp.headers ?? [], gp.rows ?? []);
-                const norm = normalizeInvoiceCols(pre.headers, pre.rows);
-                const rows = fixAmounts(norm.headers, norm.rows);
-                pages.push({ page: i + 1, headers: norm.headers, rows, meta: gp.meta ?? {}, rawText: rawTexts[i] });
-                continue;
-              } catch { /* 파싱 실패 시 원본 그대로 */ }
-            }
-          }
-
-          const pre  = mergeAdjacentHeaders(parsed.headers, parsed.rows);
-          const norm = normalizeInvoiceCols(pre.headers, pre.rows);
-          const rows = fixAmounts(norm.headers, norm.rows);
-          console.log(`[OCR/Tesseract] page ${i + 1}: 헤더=${JSON.stringify(norm.headers)}, 행=${rows.length}`);
-          pages.push({ page: i + 1, headers: norm.headers, rows, meta: parsed.meta, rawText: rawTexts[i] });
-        }
-
-      } else if (engine === "gemini") {
+      if (engine === "gemini") {
         const keys = getGeminiKeys();
+        const failedKeys = new Set<string>();
         for (let i = 0; i < images.length; i++) {
           const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
           const startIdx = keys.length > 0 ? geminiRoundRobinIdx % keys.length : 0;
-          if (keys.length > 0) geminiRoundRobinIdx = (geminiRoundRobinIdx + 1) % keys.length;
           console.log(`[OCR/Gemini] page ${i + 1}/${images.length} — 키 ${startIdx + 1}번부터 순환 (총 ${keys.length}개)`);
 
           let rawText = "";
@@ -1262,11 +1540,24 @@ ${rawText}`;
 
           for (let k = 0; k < keys.length; k++) {
             const ki = (startIdx + k) % keys.length;
-            const r = await callGeminiOcr(b64, mimeType, keys[ki]);
-            if (r.ok) { rawText = r.text; console.log(`[OCR/Gemini] page ${i + 1}: 키 ${ki + 1} 성공`); break; }
+            const apiKey = keys[ki];
+            if (failedKeys.has(apiKey)) {
+              quotaCount++;
+              continue;
+            }
+            const r = await callGeminiOcr(b64, mimeType, apiKey);
+            if (r.ok) {
+              rawText = r.text;
+              geminiRoundRobinIdx = ki; // 성공한 키로 고정!
+              console.log(`[OCR/Gemini] page ${i + 1}: 키 ${ki + 1} 성공`);
+              break;
+            }
             const fail = r as Extract<GeminiResult, { ok: false }>;
             lastError = fail.error;
             if (fail.quota) quotaCount++;
+            if (fail.quota || fail.error.includes("API_KEY_INVALID") || fail.error.includes("not valid")) {
+              failedKeys.add(apiKey);
+            }
             console.warn(`[OCR/Gemini] 키 ${ki + 1}/${keys.length} 실패: ${fail.error}`);
           }
 
@@ -1275,7 +1566,7 @@ ${rawText}`;
             for (const mKey of mistralKeys) {
               const r = await callMistralOcr(b64, mimeType, mKey);
               if (r.ok) { rawText = r.text; console.log(`[OCR/Mistral] page ${i + 1}: 성공`); break; }
-              console.warn(`[OCR/Mistral] 실패: ${r.error}`);
+              console.warn(`[OCR/Mistral] 실패: ${(r as Extract<GeminiResult, { ok: false }>).error}`);
             }
             if (!rawText) {
               const errMsg = quotaCount === keys.length
@@ -1286,18 +1577,19 @@ ${rawText}`;
           }
 
           let parsed: any;
-          try {
-            parsed = JSON.parse(rawText);
-          } catch {
+          try { parsed = JSON.parse(rawText); }
+          catch {
             pages.push({ page: i + 1, headers: ["원문 응답"], rows: [[rawText]], meta: {}, rawText });
             continue;
           }
 
           const pre  = mergeAdjacentHeaders(parsed.headers ?? [], parsed.rows ?? []);
           const norm = normalizeInvoiceCols(pre.headers, pre.rows);
-          const rows = fixAmounts(norm.headers, norm.rows);
-          process.stdout.write(`\n[OCR 결과] page ${i + 1}\n  헤더: ${JSON.stringify(norm.headers)}\n  행 수: ${rows.length}\n  메타: ${JSON.stringify(parsed.meta)}\n`);
-          pages.push({ page: i + 1, headers: norm.headers, rows, meta: parsed.meta ?? {}, rawText });
+          const spec = extractSpecFromName(norm.headers, norm.rows);
+          const rows = fixAmounts(spec.headers, spec.rows);
+          const cleanMeta = sanitizeOcrMeta(parsed.meta ?? {});
+          process.stdout.write(`\n[OCR 결과] page ${i + 1}\n  헤더: ${JSON.stringify(spec.headers)}\n  행 수: ${rows.length}\n  메타: ${JSON.stringify(cleanMeta)}\n`);
+          pages.push({ page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText });
         }
       }
 

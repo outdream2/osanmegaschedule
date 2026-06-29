@@ -69,16 +69,16 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
     setPageCount(pdf.numPages);
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
-      const vp     = page.getViewport({ scale: 1.5 });
+      const vp = page.getViewport({ scale: 2.0 });
       const canvas = document.createElement("canvas");
       canvas.width  = Math.floor(vp.width);
       canvas.height = Math.floor(vp.height);
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error(`페이지 ${i} Canvas를 초기화할 수 없습니다.`);
       await page.render({ canvasContext: ctx as any, viewport: vp, canvas } as any).promise;
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.80);
-      imgs.push({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
       setPageImages(prev => [...prev, dataUrl]);
+      imgs.push({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
     }
     return imgs;
   }, []);
@@ -109,8 +109,8 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
             reader.onload = () => res(reader.result as string);
             reader.readAsDataURL(file);
           });
-          imgs.push({ data: dataUrl.split(",")[1], mimeType: file.type || "image/jpeg" });
           setPageImages(prev => [...prev, dataUrl]);
+          imgs.push({ data: dataUrl.split(",")[1], mimeType: file.type || "image/jpeg" });
         }
       }
       imagesDataRef.current = imgs;

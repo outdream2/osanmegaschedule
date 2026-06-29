@@ -1,4 +1,4 @@
-import type { OcrPageResult } from "./tesseractEngine";
+import type { OcrPageResult } from "./types";
 
 export type { OcrPageResult };
 

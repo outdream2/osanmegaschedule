@@ -91,19 +91,11 @@ def find_header_row(row_groups):
 
 
 def align_row(group, col_xs):
-    """각 셀을 가장 가까운 헤더 컬럼 X로 배정."""
-    if len(col_xs) >= 2:
-        avg_gap = (col_xs[-1] - col_xs[0]) / (len(col_xs) - 1)
-        max_dist = avg_gap * 0.65
-    else:
-        max_dist = float("inf")
-
+    """각 셀을 가장 가까운 헤더 컬럼 X로 배정 — 셀을 버리지 않고 항상 배정."""
     row = [None] * len(col_xs)
     for item in group:
         dists = [abs(item["x"] - cx) for cx in col_xs]
         nearest = min(range(len(col_xs)), key=lambda i: dists[i])
-        if dists[nearest] > max_dist:
-            continue
         if row[nearest] is None:
             row[nearest] = item["text"]
         else:
@@ -127,7 +119,7 @@ def extract_meta(text):
     dm = re.search(r"(\d{4})[년.\-\/]\s*(\d{1,2})[월.\-\/]\s*(\d{1,2})[일]?", text)
     if dm:
         meta["date"] = f"{dm[1]}-{dm[2].zfill(2)}-{dm[3].zfill(2)}"
-    sm = re.search(r"공\s*급\s*자\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,20})", text)
+    sm = re.search(r"공\s*급\s*[자처사]\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,20})", text)
     if sm:
         meta["supplier"] = sm[1].strip().split()[0]
     rm = re.search(r"공\s*급\s*받\s*는\s*자?\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,20})", text)
@@ -156,7 +148,7 @@ def main():
     lines = []
     for (bbox, text, conf) in results:
         text = text.strip()
-        if not text or conf < 0.25:
+        if not text or conf < 0.3:
             continue
         x, y, h = bbox_center(bbox)
         lines.append({"text": text, "x": x, "y": y, "h": h})
