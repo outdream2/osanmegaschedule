@@ -27,10 +27,12 @@ export async function runTesseractOcr(
 
   const worker = await createWorker(["kor", "eng"], 1, {
     workerPath:    "/tesseract/worker.min.js",
-    // 특정 파일을 지정하면 wasm-feature-detect(외부망 필요) 단계를 건너뜀
+    // 특정 파일 지정 → wasm-feature-detect(외부망) 단계 건너뜀
     corePath:      "/tesseract/tesseract-core-simd-lstm.wasm.js",
     langPath:      "/tessdata",
     workerBlobURL: false,
+    gzip:          false,   // 로컬 .traineddata는 gzip 아님 → .gz 탐색 방지
+    cacheMethod:   "none",  // 이전 CDN 손상 캐시 무시
     logger: (m: any) => {
       if (m?.status === "loading language traineddata") {
         onProgress({ type: "status", status: `언어 데이터 로딩 중... ${Math.round((m.progress ?? 0) * 100)}%` });
