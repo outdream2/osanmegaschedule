@@ -821,111 +821,7 @@ async function startServer() {
     return res.status(201).json({ ok: true });
   });
 
-  // ── PDF 텍스트 레이어 표 추출 헬퍼 ──────────────────────────────────────────
-  interface PdfTextItem { text: string; x: number; y: number; height: number; }
-  const PDF_KW = ["품목","품명","상품명","수량","단가","금액","규격","단위","공급가액","세액","적요","번호"];
-  const PDF_TOTAL_KW = /합\s*계|소\s*계|총\s*계|합\s*금|총\s*금/;
-
-  function pdfGroupIntoRows(items: PdfTextItem[]): PdfTextItem[][] {
-    if (items.length === 0) return [];
-    const sorted = [...items].sort((a, b) => b.y - a.y); // PDF Y is bottom-up → desc = top-down
-    const heights = sorted.map(i => i.height).filter(h => h > 0).sort((a, b) => a - b);
-    const medH = heights[Math.floor(heights.length / 2)] ?? 12;
-    const thr = Math.max(4, medH * 0.55);
-    const groups: PdfTextItem[][] = [];
-    let cur: PdfTextItem[] = [sorted[0]];
-    let curAnchor = sorted[0].y;
-    for (const item of sorted.slice(1)) {
-      if (Math.abs(item.y - curAnchor) < thr) {
-        cur.push(item);
-      } else {
-        groups.push([...cur].sort((a, b) => a.x - b.x));
-        cur = [item];
-        curAnchor = item.y;
-      }
-    }
-    if (cur.length) groups.push([...cur].sort((a, b) => a.x - b.x));
-    return groups;
-  }
-
-  function pdfFindHeaderRow(groups: PdfTextItem[][]): { headerIdx: number; colXs: number[]; headers: string[] } {
-    const textRows = groups.map(g => g.map(i => i.text));
-    const isMostlyNumeric = (row: string[]) => {
-      const num = row.filter(c => /^[\d,.\s]+$/.test(c.trim())).length;
-      return row.length > 0 && num / row.length >= 0.5;
-    };
-    const isCandidate = (row: string[]) => !PDF_TOTAL_KW.test(row.join(" ")) && !isMostlyNumeric(row);
-    for (let i = 0; i < textRows.length; i++) {
-      const row = textRows[i];
-      if (!isCandidate(row)) continue;
-      const hits = row.filter(c => PDF_KW.some(k => k === c.trim())).length;
-      if (hits >= 2 && row.length >= 3) return { headerIdx: i, colXs: groups[i].map(it => it.x), headers: row };
-    }
-    for (let i = 0; i < textRows.length; i++) {
-      const row = textRows[i];
-      if (!isCandidate(row)) continue;
-      const hits = row.filter(c => PDF_KW.some(k => c.includes(k))).length;
-      if (hits >= 2 && row.length >= 3) return { headerIdx: i, colXs: groups[i].map(it => it.x), headers: row };
-    }
-    for (let i = 0; i < textRows.length; i++) {
-      const row = textRows[i];
-      if (!isCandidate(row)) continue;
-      if (row.length >= 3 && row.some(c => PDF_KW.some(k => c.includes(k))))
-        return { headerIdx: i, colXs: groups[i].map(it => it.x), headers: row };
-    }
-    return { headerIdx: -1, colXs: [], headers: [] };
-  }
-
-  function pdfAlignRow(group: PdfTextItem[], colXs: number[]): (string | null)[] {
-    const avgGap = colXs.length >= 2 ? (colXs[colXs.length - 1] - colXs[0]) / (colXs.length - 1) : Infinity;
-    const maxDist = colXs.length >= 2 ? avgGap * 0.6 : Infinity;
-    const row: (string | null)[] = new Array(colXs.length).fill(null);
-    for (const item of group) {
-      const dists = colXs.map(cx => Math.abs(item.x - cx));
-      const nearest = dists.indexOf(Math.min(...dists));
-      if (dists[nearest] > maxDist) continue;
-      row[nearest] = row[nearest] === null ? item.text : row[nearest] + " " + item.text;
-    }
-    return row;
-  }
-
-  function pdfBuildResult(items: PdfTextItem[]): { headers: string[]; rows: any[][]; meta: any; rawText: string } {
-    const groups = pdfGroupIntoRows(items);
-    const fullText = groups.map(g => g.map(i => i.text).join(" ")).join("\n");
-    const meta: any = {};
-    const dm = fullText.match(/(\d{4})[년.\-\/]\s*(\d{1,2})[월.\-\/]\s*(\d{1,2})[일]?/);
-    if (dm) meta.date = `${dm[1]}-${dm[2].padStart(2,"0")}-${dm[3].padStart(2,"0")}`;
-    const sm = fullText.match(/공\s*급\s*자\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,20})/);
-    if (sm) meta.supplier = sm[1].trim().split(/\s{2,}/)[0];
-    const rm = fullText.match(/공\s*급\s*받\s*는\s*자?\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,20})/);
-    if (rm) meta.recipient = rm[1].trim().split(/\s{2,}/)[0];
-    const tots: number[] = [];
-    for (const p of [/합\s*계[^\d]*(\d[\d,]+)/, /총\s*금\s*액[^\d]*(\d[\d,]+)/, /공\s*급\s*가\s*액[^\d]*(\d[\d,]+)/]) {
-      const m = fullText.match(p); if (m) tots.push(parseInt(m[1].replace(/,/g,"")));
-    }
-    if (tots.length) meta.total = Math.max(...tots);
-
-    const { headerIdx, colXs, headers } = pdfFindHeaderRow(groups);
-    if (headerIdx < 0) return { headers: ["원문 텍스트"], rows: groups.map(g => [g.map(i => i.text).join(" ")]), meta, rawText: fullText };
-
-    const rows: any[][] = [];
-    for (const group of groups.slice(headerIdx + 1)) {
-      const aligned = pdfAlignRow(group, colXs);
-      const nonEmpty = aligned.filter(c => c !== null && String(c).trim());
-      if (nonEmpty.length < 2) continue;
-      if (PDF_TOTAL_KW.test(aligned.filter(Boolean).join(" "))) continue;
-      rows.push(aligned.map(c => {
-        if (c === null) return null;
-        const s = c.replace(/,/g, "").trim();
-        const n = parseFloat(s);
-        return !isNaN(n) && s !== "" ? (Number.isInteger(n) ? n : n) : c;
-      }));
-    }
-    if (rows.length === 0) return { headers: ["원문 텍스트"], rows: groups.map(g => [g.map(i => i.text).join(" ")]), meta, rawText: fullText };
-    return { headers, rows, meta, rawText: fullText };
-  }
-
-  // ── POST /api/ocr — 거래명세서 OCR (Gemini / PDF텍스트) ─────────────────────
+  // ── POST /api/ocr — 거래명세서 OCR (Tesseract 무료 / Gemini 유료) ───────────
 
   // ── 거래명세서 표준 컬럼 정의 ───────────────────────────────────────────────
   const INVOICE_SCHEMA = [
@@ -1245,12 +1141,12 @@ ${rawText}`;
   });
 
   app.post("/api/ocr", async (req, res) => {
-    const { images, textPages, engine: reqEngine = "gemini" } = req.body ?? {};
+    const { images, texts, engine: reqEngine = "gemini" } = req.body ?? {};
     const engine = reqEngine as string;
 
-    if (engine === "pdf-text") {
-      if (!Array.isArray(textPages) || textPages.length === 0)
-        return res.status(400).json({ error: "textPages 배열이 필요합니다." });
+    if (engine === "tesseract") {
+      if (!Array.isArray(texts) || texts.length === 0)
+        return res.status(400).json({ error: "texts 배열이 필요합니다." });
     } else {
       if (!Array.isArray(images) || images.length === 0)
         return res.status(400).json({ error: "images 배열이 필요합니다." });
@@ -1261,16 +1157,48 @@ ${rawText}`;
     try {
       const pages: any[] = [];
 
-      if (engine === "gemini") {
+      if (engine === "tesseract") {
+        const rawTexts = texts as string[];
+        const geminiKeys = getGeminiKeys();
+        for (let i = 0; i < rawTexts.length; i++) {
+          console.log(`[OCR/Tesseract] page ${i + 1}/${rawTexts.length}`);
+          const parsed = parseKoreanInvoice(rawTexts[i]);
+          const isFallback =
+            parsed.headers.length <= 1 &&
+            (parsed.headers[0] === "원문 텍스트" || parsed.rows.length === 0);
+
+          if (isFallback && geminiKeys.length > 0) {
+            console.log(`[OCR/Tesseract] page ${i + 1}: 구조화 실패 → Gemini 텍스트 구조화 시도`);
+            const ki = geminiRoundRobinIdx % geminiKeys.length;
+            geminiRoundRobinIdx = (geminiRoundRobinIdx + 1) % geminiKeys.length;
+            const gr = await structureWithGemini(rawTexts[i], geminiKeys[ki]);
+            if (gr.ok) {
+              try {
+                const gp = JSON.parse(gr.text);
+                const pre  = mergeAdjacentHeaders(gp.headers ?? [], gp.rows ?? []);
+                const norm = normalizeInvoiceCols(pre.headers, pre.rows);
+                const rows = fixAmounts(norm.headers, norm.rows);
+                pages.push({ page: i + 1, headers: norm.headers, rows, meta: gp.meta ?? {}, rawText: rawTexts[i] });
+                continue;
+              } catch { /* 파싱 실패 시 원본 그대로 */ }
+            }
+          }
+
+          const pre  = mergeAdjacentHeaders(parsed.headers, parsed.rows);
+          const norm = normalizeInvoiceCols(pre.headers, pre.rows);
+          const rows = fixAmounts(norm.headers, norm.rows);
+          console.log(`[OCR/Tesseract] page ${i + 1}: 헤더=${JSON.stringify(norm.headers)}, 행=${rows.length}`);
+          pages.push({ page: i + 1, headers: norm.headers, rows, meta: parsed.meta, rawText: rawTexts[i] });
+        }
+
+      } else if (engine === "gemini") {
         const keys = getGeminiKeys();
         for (let i = 0; i < images.length; i++) {
           const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
-          // 라운드로빈: 요청마다 시작 키를 순환
           const startIdx = keys.length > 0 ? geminiRoundRobinIdx % keys.length : 0;
           if (keys.length > 0) geminiRoundRobinIdx = (geminiRoundRobinIdx + 1) % keys.length;
           console.log(`[OCR/Gemini] page ${i + 1}/${images.length} — 키 ${startIdx + 1}번부터 순환 (총 ${keys.length}개)`);
 
-          let parsed: any = null;
           let rawText = "";
           let quotaCount = 0;
           let lastError = "";
@@ -1286,7 +1214,6 @@ ${rawText}`;
           }
 
           if (!rawText) {
-            // 모든 Gemini 키 실패 → Mistral 폴백
             const mistralKeys = getMistralKeys();
             for (const mKey of mistralKeys) {
               const r = await callMistralOcr(b64, mimeType, mKey);
@@ -1301,6 +1228,7 @@ ${rawText}`;
             }
           }
 
+          let parsed: any;
           try {
             parsed = JSON.parse(rawText);
           } catch {
@@ -1311,30 +1239,8 @@ ${rawText}`;
           const pre  = mergeAdjacentHeaders(parsed.headers ?? [], parsed.rows ?? []);
           const norm = normalizeInvoiceCols(pre.headers, pre.rows);
           const rows = fixAmounts(norm.headers, norm.rows);
-          const logLines = [
-            `\n[OCR 결과] page ${i + 1}`,
-            `  헤더: ${JSON.stringify(norm.headers)}`,
-            `  행 수: ${rows.length}`,
-            ...rows.map((r, ri) => `  [${ri + 1}] ${JSON.stringify(r)}`),
-            `  메타: ${JSON.stringify(parsed.meta)}`,
-          ].join("\n");
-          process.stdout.write(logLines + "\n");
+          process.stdout.write(`\n[OCR 결과] page ${i + 1}\n  헤더: ${JSON.stringify(norm.headers)}\n  행 수: ${rows.length}\n  메타: ${JSON.stringify(parsed.meta)}\n`);
           pages.push({ page: i + 1, headers: norm.headers, rows, meta: parsed.meta ?? {}, rawText });
-        }
-
-      } else if (engine === "pdf-text") {
-        const tps = textPages as PdfTextItem[][];
-        for (let i = 0; i < tps.length; i++) {
-          console.log(`[OCR/PDF] page ${i + 1}/${tps.length} — PDF 텍스트 레이어`);
-          const result = pdfBuildResult(tps[i]);
-          const norm = normalizeInvoiceCols(result.headers, result.rows);
-          const rows = fixAmounts(norm.headers, norm.rows);
-          console.log(`\n[OCR 결과] page ${i + 1}`);
-          console.log("  헤더:", norm.headers);
-          console.log("  행 수:", rows.length);
-          rows.forEach((r, ri) => console.log(`  [${ri + 1}]`, r));
-          console.log("  메타:", result.meta);
-          pages.push({ page: i + 1, headers: norm.headers, rows, meta: result.meta, rawText: result.rawText });
         }
       }
 

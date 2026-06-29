@@ -1,26 +1,18 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { ArrowLeft, FileText, Upload, Loader2, X, Zap, AlertCircle } from "lucide-react";
+import { ArrowLeft, FileText, Upload, Loader2, X, Zap, AlertCircle, Cpu } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { PageImageViewer } from "./PageImageViewer";
 import { RawOcrTable } from "./RawOcrTable";
+import { runTesseractOcr } from "./tesseractEngine";
+import type { OcrPageResult } from "./tesseractEngine";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 
-interface OcrPageResult {
-  page: number;
-  headers: string[];
-  rows: (string | number | null)[][];
-  meta: { supplier?: string | null; recipient?: string | null; date?: string | null; total?: number | null };
-  rawText?: string;
-}
-
-interface PdfTextItem { text: string; x: number; y: number; height: number; }
-
 interface OcrPageProps { onBack: () => void; }
 
-/** Canvas로 이미지를 물리적으로 회전 — 서버에 올바른 방향으로 전송 */
+/** Canvas로 이미지를 물리적으로 회전 */
 async function physicallyRotate(
   b64: string,
   mimeType: string,
@@ -46,78 +38,57 @@ async function physicallyRotate(
 }
 
 export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
-  const fileInputRef   = useRef<HTMLInputElement>(null);
-  const imagesDataRef  = useRef<{ data: string; mimeType: string }[]>([]);
-  const textPagesRef   = useRef<PdfTextItem[][]>([]);
+  const fileInputRef  = useRef<HTMLInputElement>(null);
+  const imagesDataRef = useRef<{ data: string; mimeType: string }[]>([]);
 
   const [fileName,       setFileName      ] = useState<string | null>(null);
   const [pageCount,      setPageCount     ] = useState(0);
   const [processed,      setProcessed     ] = useState(0);
+  const [statusMsg,      setStatusMsg     ] = useState<string>("");
   const [loading,        setLoading       ] = useState(false);
   const [extracting,     setExtracting    ] = useState(false);
   const [error,          setError         ] = useState<string | null>(null);
   const [pages,          setPages         ] = useState<OcrPageResult[]>([]);
   const [pageImages,     setPageImages    ] = useState<string[]>([]);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
-  const [hasPdfText,     setHasPdfText    ] = useState(false);
-  const [engine,         setEngine        ] = useState<"gemini" | "pdf-text">("gemini");
+  const [engine,         setEngine        ] = useState<"tesseract" | "gemini">("tesseract");
   const [pingStatus,     setPingStatus    ] = useState<{ ok: boolean; gemini: boolean; geminiKeyCount: number } | null>(null);
-  // rotation을 여기서 관리 → handleExtract에서 물리적 회전에 사용
   const [rotation,       setRotation      ] = useState(-90);
 
   useEffect(() => {
-    axios.get("/api/ocr-ping").then(r => {
-      setPingStatus(r.data);
-    }).catch(() => setPingStatus({ ok: false, gemini: false, geminiKeyCount: 0 }));
+    axios.get("/api/ocr-ping")
+      .then(r => setPingStatus(r.data))
+      .catch(() => setPingStatus({ ok: false, gemini: false, geminiKeyCount: 0 }));
   }, []);
 
   const renderPdfToImages = useCallback(async (file: File): Promise<{ data: string; mimeType: string }[]> => {
     const scale   = 1.5;
     const quality = 0.80;
-
     const buf = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
     const imgs: { data: string; mimeType: string }[] = [];
-    const textPages: PdfTextItem[][] = [];
     setPageCount(pdf.numPages);
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
-      // 이미지 렌더
       const vp     = page.getViewport({ scale });
       const canvas = document.createElement("canvas");
       canvas.width  = Math.floor(vp.width);
       canvas.height = Math.floor(vp.height);
       const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error(`페이지 ${i} Canvas를 초기화할 수 없습니다. 파일이 너무 크거나 메모리가 부족합니다.`);
+      if (!ctx) throw new Error(`페이지 ${i} Canvas를 초기화할 수 없습니다.`);
       await page.render({ canvasContext: ctx as any, viewport: vp, canvas } as any).promise;
       const dataUrl = canvas.toDataURL("image/jpeg", quality);
       imgs.push({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
       setPageImages(prev => [...prev, dataUrl]);
-      // 텍스트 레이어 추출 — 실패해도 이미지 렌더는 유지
-      try {
-        const tc = await page.getTextContent();
-        const rawItems: any[] = Array.isArray(tc?.items) ? tc.items : [];
-        const items: PdfTextItem[] = rawItems
-          .filter(it => it && it.str && it.str.trim())
-          .map(it => ({ text: it.str.trim(), x: it.transform[4], y: it.transform[5], height: it.height ?? 12 }));
-        textPages.push(items);
-      } catch {
-        textPages.push([]);
-      }
     }
-    textPagesRef.current = textPages;
-    const hasText = textPages.some(p => p.length > 5);
-    setHasPdfText(hasText);
-    if (hasText) setEngine("pdf-text");
     return imgs;
   }, []);
 
   const handleFile = useCallback(async (file: File) => {
-    setError(null); setPages([]); setProcessed(0); setPageCount(0);
+    setError(null); setPages([]); setProcessed(0); setPageCount(0); setStatusMsg("");
     setPageImages([]); setCurrentPageIdx(0); setFileName(file.name);
-    setLoading(true); setRotation(-90); setHasPdfText(false);
+    setLoading(true); setRotation(-90);
     imagesDataRef.current = [];
-    textPagesRef.current = [];
     try {
       let imgs: { data: string; mimeType: string }[];
       if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
@@ -142,54 +113,46 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
 
   const handleExtract = useCallback(async () => {
     const images = imagesDataRef.current;
-    if ((engine === "pdf-text" ? textPagesRef.current.length === 0 : images.length === 0) || extracting) return;
-    setExtracting(true); setPages([]); setProcessed(0); setError(null);
-    try {
-      if (engine === "pdf-text") {
-        const textPages = textPagesRef.current;
-        const res = await axios.post("/api/ocr", { textPages, engine: "pdf-text" });
-        setPages(res.data.pages ?? []);
-        setProcessed(textPages.length);
-      } else {
-        // 화면 회전 각도만큼 이미지를 물리적으로 회전 후 서버 전송
-        const rotatedImages = rotation === 0
-          ? images
-          : await Promise.all(images.map(img => physicallyRotate(img.data, img.mimeType, rotation)));
+    if (images.length === 0 || extracting) return;
+    setExtracting(true); setPages([]); setProcessed(0); setError(null); setStatusMsg("");
 
-        const CONCURRENT = 4;
-        const all: OcrPageResult[] = new Array(rotatedImages.length).fill(null);
-        for (let i = 0; i < rotatedImages.length; i += CONCURRENT) {
-          const batchImgs = rotatedImages.slice(i, i + CONCURRENT);
-          const settled = await Promise.allSettled(
-            batchImgs.map((img, j) =>
-              axios.post("/api/ocr", { images: [img], engine })
-                .then(res => ({ idx: i + j, pages: res.data.pages ?? [] }))
-            )
-          );
-          const pageErrors: string[] = [];
-          settled.forEach((r, j) => {
-            if (r.status === "fulfilled") {
-              all[i + j] = r.value.pages[0] ? { ...r.value.pages[0], page: i + j + 1 } : null;
-            } else {
-              const msg = r.reason?.response?.data?.error ?? r.reason?.message ?? "OCR 실패";
-              pageErrors.push(`페이지 ${i + j + 1}: ${msg}`);
-            }
-          });
-          const done = all.filter(Boolean).length;
-          setProcessed(done);
-          if (pageErrors.length > 0) {
-            if (done === 0) throw new Error(pageErrors[0]);
-            setError(`일부 페이지 실패 — ${pageErrors.join(" / ")}`);
+    try {
+      const rotatedImages = rotation === 0
+        ? images
+        : await Promise.all(images.map(img => physicallyRotate(img.data, img.mimeType, rotation)));
+
+      if (engine === "tesseract") {
+        const results = await runTesseractOcr(rotatedImages, p => {
+          if (p.type === "status") setStatusMsg(p.status ?? "");
+          if (p.type === "page")   setProcessed(p.done ?? 0);
+        });
+        setPages(results);
+      } else {
+        // gemini — 순차 처리
+        const all: OcrPageResult[] = [];
+        for (let i = 0; i < rotatedImages.length; i++) {
+          try {
+            const res = await axios.post("/api/ocr", { images: [rotatedImages[i]], engine: "gemini" });
+            const page = res.data.pages?.[0];
+            if (page) all.push({ ...page, page: i + 1 });
+          } catch (e: any) {
+            const msg = e?.response?.data?.error ?? e?.message ?? "OCR 실패";
+            if (all.length === 0 && i === rotatedImages.length - 1) throw new Error(msg);
+            setError(`페이지 ${i + 1} 실패: ${msg}`);
           }
+          setProcessed(i + 1);
         }
-        setPages(all.filter(Boolean) as OcrPageResult[]);
+        setPages(all);
       }
     } catch (err: any) {
       setError(err?.response?.data?.error ?? err?.message ?? "OCR 처리 중 오류가 발생했습니다.");
     } finally {
       setExtracting(false);
+      setStatusMsg("");
     }
   }, [extracting, engine, rotation]);
+
+  const rotDeg = ((rotation % 360) + 360) % 360;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -205,9 +168,8 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
 
       <div className="flex-1 flex flex-col items-center px-4 py-6 gap-5 max-w-5xl mx-auto w-full">
 
-        {/* Upload + 이미지 뷰어 통합 */}
+        {/* 파일 업로드 + 이미지 뷰어 */}
         <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden">
-          {/* 업로드 클릭 영역 */}
           <div
             className={`flex flex-col items-center gap-3 cursor-pointer transition-colors ${pageImages.length === 0 ? "p-8 border-2 border-dashed border-gray-300 hover:border-amber-400 m-2 rounded-xl" : "px-4 py-2.5 border-b border-gray-100 hover:bg-gray-50"}`}
             onClick={() => fileInputRef.current?.click()}
@@ -234,14 +196,17 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
                   )}
                 </div>
                 <button
-                  onClick={e => { e.stopPropagation(); setFileName(null); setPages([]); setPageImages([]); setCurrentPageIdx(0); imagesDataRef.current = []; textPagesRef.current = []; }}
+                  onClick={e => {
+                    e.stopPropagation();
+                    setFileName(null); setPages([]); setPageImages([]);
+                    setCurrentPageIdx(0); imagesDataRef.current = [];
+                  }}
                   className="text-gray-400 hover:text-gray-700 cursor-pointer p-1"
                 ><X size={14} /></button>
               </div>
             )}
           </div>
 
-          {/* 로딩 */}
           {loading && pageImages.length === 0 && (
             <div className="p-6 flex flex-col items-center gap-4">
               <Loader2 size={28} className="text-amber-500 animate-spin" />
@@ -256,7 +221,6 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
             </div>
           )}
 
-          {/* 이미지 뷰어 인라인 */}
           <PageImageViewer
             key={fileName ?? ""}
             images={pageImages}
@@ -271,67 +235,72 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
         <input ref={fileInputRef} type="file" accept="application/pdf,image/*" className="hidden"
           onChange={e => { const f = e.target.files?.[0]; if (f) { handleFile(f); e.target.value = ""; } }} />
 
-        {/* Engine selector + extract */}
+        {/* 엔진 선택 + 추출 */}
         {pageImages.length > 0 && !loading && (
           <>
-            {/* 서버 상태 배너 */}
+            {/* 배너 */}
             {pingStatus && !pingStatus.ok && (
               <div className="w-full bg-rose-50 border border-rose-200 rounded-xl px-4 py-2.5 flex items-center gap-2 text-rose-700 text-xs font-semibold">
                 <AlertCircle size={14} />
                 서버가 OCR을 지원하지 않습니다. <code className="font-mono bg-rose-100 px-1 rounded">npx tsx server.ts</code> 로 재시작하세요.
               </div>
             )}
-            {pingStatus?.ok && !pingStatus.gemini && (
+            {engine === "gemini" && pingStatus?.ok && !pingStatus.gemini && (
               <div className="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center gap-2 text-amber-700 text-xs font-semibold">
                 <AlertCircle size={14} />
-                GEMINI_API_KEY가 없습니다. .env에 키를 추가하세요.
+                GEMINI_API_KEY가 없습니다. .env에 키를 추가하거나 무료 OCR을 사용하세요.
               </div>
             )}
 
-            {hasPdfText && (
-              <div className="w-full bg-white border border-gray-200 rounded-2xl p-3">
-                <div className="flex gap-2">
-                  <button onClick={() => setEngine("gemini")}
-                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${engine === "gemini" ? "bg-amber-500 text-white shadow-sm" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
-                    이미지 인식
-                  </button>
-                  <button onClick={() => setEngine("pdf-text")}
-                    className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition cursor-pointer ${engine === "pdf-text" ? "bg-emerald-500 text-white shadow-sm" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
-                    PDF 텍스트
-                  </button>
-                </div>
-                <p className="text-[10px] text-gray-400 mt-1.5">
-                  {engine === "pdf-text" ? "PDF 텍스트 레이어 직접 추출 — 가장 빠름" : "Gemini 비전 인식 — 이미지/스캔 PDF"}
-                </p>
+            {/* 무료 / 유료 엔진 선택 */}
+            <div className="w-full bg-white border border-gray-200 rounded-2xl p-3">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEngine("tesseract")}
+                  className={`flex-1 flex flex-col items-center py-3 rounded-xl text-xs font-bold transition cursor-pointer gap-1 ${engine === "tesseract" ? "bg-emerald-500 text-white shadow-sm" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+                >
+                  <Cpu size={14} />
+                  무료 OCR
+                </button>
+                <button
+                  onClick={() => setEngine("gemini")}
+                  className={`flex-1 flex flex-col items-center py-3 rounded-xl text-xs font-bold transition cursor-pointer gap-1 ${engine === "gemini" ? "bg-amber-500 text-white shadow-sm" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+                >
+                  <Zap size={14} />
+                  유료 OCR
+                </button>
               </div>
-            )}
+              <p className="text-[10px] text-gray-400 mt-2 text-center">
+                {engine === "tesseract"
+                  ? "무료 로컬 OCR — API 불필요 · 브라우저에서 직접 처리 (첫 실행 시 언어팩 로딩)"
+                  : "Gemini 비전 AI — 고정밀 인식 · API 키 필요"}
+              </p>
+            </div>
 
             <button onClick={handleExtract} disabled={extracting}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm">
+              className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm ${engine === "tesseract" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-amber-500 hover:bg-amber-600"}`}>
               {extracting
-                ? <><Loader2 size={15} className="animate-spin" />OCR 추출 중... ({processed}/{pageCount || "?"})</>
-                : <><Zap size={15} />OCR 추출{rotation !== 0 ? ` (${((rotation % 360) + 360) % 360}° 회전 적용)` : ""}</>}
+                ? <><Loader2 size={15} className="animate-spin" />{statusMsg || `OCR 추출 중... (${processed}/${pageCount || "?"})`}</>
+                : <>{engine === "tesseract" ? <Cpu size={15} /> : <Zap size={15} />}OCR 추출{rotDeg !== 0 ? ` (${rotDeg}° 회전 적용)` : ""}</>}
             </button>
           </>
         )}
 
-        {/* Extract progress */}
         {extracting && pageCount > 0 && (
-          <div className="w-full bg-white border border-amber-200 rounded-2xl px-4 py-3">
-            <div className="w-full bg-amber-100 rounded-full h-1.5">
-              <div className="bg-amber-500 h-1.5 rounded-full transition-all" style={{ width: `${(processed / pageCount) * 100}%` }} />
+          <div className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3">
+            <div className="w-full bg-gray-100 rounded-full h-1.5">
+              <div className={`h-1.5 rounded-full transition-all ${engine === "tesseract" ? "bg-emerald-500" : "bg-amber-500"}`}
+                style={{ width: `${(processed / pageCount) * 100}%` }} />
             </div>
           </div>
         )}
 
-        {/* Error */}
         {error && (
           <div className="w-full bg-rose-50 border border-rose-200 rounded-2xl p-4 text-rose-700 text-sm font-semibold">
             {error}
           </div>
         )}
 
-        {/* Results */}
         {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} />}
       </div>
     </div>

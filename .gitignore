@@ -9,3 +9,5 @@ coverage/
 *.db
 .claude/
 *.traineddata
+!public/tessdata/kor.traineddata
+!public/tessdata/eng.traineddata
