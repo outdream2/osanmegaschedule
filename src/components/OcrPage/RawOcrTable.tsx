@@ -24,6 +24,7 @@ interface MatchedItem {
 interface RawOcrTableProps {
   pages: RawPage[];
   pageImages?: string[]; // dataURL per page (index = page-1)
+  rotation?: number;     // CSS rotation applied in PageImageViewer (degrees)
 }
 
 const SCHEMA_ORDER = ["공급처","일자","품명","규격","단위","수량","단가","금액","세액","비고"];
@@ -88,7 +89,7 @@ const parseNumber = (val: any): number => {
   return isNaN(num) ? 0 : num;
 };
 
-export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) => {
+export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rotation = -90 }) => {
   const structuredPages = pages.filter(p => !isFallback(p.headers) && p.rows.length > 0);
   const fallbackPages   = pages.filter(p => isFallback(p.headers) || p.rows.length === 0);
 
@@ -309,7 +310,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
         onClick={closeModal}>
         <div className="relative w-full bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col"
-          style={{ maxWidth: "min(900px, 95vw)", maxHeight: "95vh" }}
+          style={{ maxWidth: "min(900px, 95vw)", height: "90vh" }}
           onClick={e => e.stopPropagation()}>
 
           {/* 헤더 */}
@@ -335,21 +336,25 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
             </div>
           </div>
 
-          {/* 뷰포트 */}
+          {/* 뷰포트 — flex-1 + min-h-0 로 남은 공간 전부 차지 */}
           <div ref={viewportCbRef}
-            className="relative overflow-hidden flex-1 select-none"
-            style={{ minHeight: 0, height: "80vh",
-                     cursor: isDragging ? "grabbing" : zoom > 1 ? "grab" : "zoom-in" }}
+            className="relative flex-1 min-h-0 overflow-hidden select-none flex items-center justify-center"
+            style={{ cursor: isDragging ? "grabbing" : zoom > 1 ? "grab" : "zoom-in" }}
             onMouseDown={onMouseDown} onMouseMove={onMouseMove}
             onMouseUp={onMouseUp} onMouseLeave={onMouseUp} onDoubleClick={onDblClick}>
-            <div style={{ position: "absolute", inset: 0, display: "flex",
-                          alignItems: "center", justifyContent: "center",
-                          transform: `translate(${pan.x}px,${pan.y}px) scale(${zoom})`,
-                          transformOrigin: "center center",
-                          transition: isDragging ? "none" : "transform 0.12s ease-out" }}>
+            <div style={{
+              transform: `translate(${pan.x}px,${pan.y}px) scale(${zoom})`,
+              transformOrigin: "center center",
+              transition: isDragging ? "none" : "transform 0.12s ease-out",
+            }}>
               <img src={modalImg} alt={modalLabel} draggable={false}
-                style={{ transform: "rotate(-90deg)", maxWidth: "70vh", maxHeight: "70vw",
-                         width: "auto", height: "auto", userSelect: "none", pointerEvents: "none" }} />
+                style={{
+                  display: "block",
+                  transform: `rotate(${rotation}deg)`,
+                  maxWidth:  (rotation === 90 || rotation === -90 || rotation === 270) ? "80vh" : "90vw",
+                  maxHeight: (rotation === 90 || rotation === -90 || rotation === 270) ? "80vw" : "80vh",
+                  width: "auto", height: "auto", userSelect: "none", pointerEvents: "none",
+                }} />
             </div>
             {zoom <= 1 && (
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] text-white/70 bg-black/40 px-3 py-1 rounded-full pointer-events-none whitespace-nowrap">
@@ -394,20 +399,24 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
               </thead>
               <tbody>
                 {dispRows.map((row, ri) => (
-                  <tr key={ri} className={`border-t border-gray-100 hover:bg-amber-50/50 transition-colors ${ri % 2 !== 0 ? "bg-gray-50/40" : ""}`}>
+                  <tr
+                    key={ri}
+                    onClick={pageImages?.length ? () => openModal(ri) : undefined}
+                    className={`border-t border-gray-100 transition-colors ${
+                      pageImages?.length ? "cursor-pointer hover:bg-amber-100/70" : "hover:bg-amber-50/50"
+                    } ${ri % 2 !== 0 ? "bg-gray-50/40" : ""}`}
+                  >
                     {dispHeaders.map((h, ci) => {
-                      const cell   = row[ci];
-                      const isNum  = typeof cell === "number";
-                      const isName = h === "품명";
-                      const isAmt  = h === "금액";
+                      const cell  = row[ci];
+                      const isNum = typeof cell === "number";
+                      const isAmt = h === "금액";
                       return (
                         <td key={ci}
-                          onClick={isName && pageImages?.length ? () => openModal(ri) : undefined}
                           className={`px-3 py-2 whitespace-nowrap ${
-                            isAmt  ? "text-right font-bold text-amber-800" :
-                            isNum  ? "text-right text-gray-700" :
-                            isName ? `font-semibold text-gray-900 ${pageImages?.length ? "cursor-pointer hover:text-amber-600 hover:underline underline-offset-2" : ""}` :
-                                     "text-gray-600"
+                            isAmt ? "text-right font-bold text-amber-800" :
+                            isNum ? "text-right text-gray-700" :
+                            h === "품명" ? "font-semibold text-gray-900" :
+                                          "text-gray-600"
                           }`}>
                           {cell == null ? <span className="text-gray-300">—</span> : isNum ? fmt(cell) : String(cell)}
                         </td>
@@ -541,7 +550,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
                         const priceDiff = masterP != null && typeof invoiceP === "number" && invoiceP !== masterP
                           ? (invoiceP > masterP ? "high" : "low") : null;
                         return (
-                          <tr key={ri} className={`border-t border-gray-100 hover:bg-indigo-50/40 transition-colors ${ri % 2 !== 0 ? "bg-gray-50/30" : ""}`}>
+                          <tr
+                            key={ri}
+                            onClick={pageImages?.length ? () => openModal(ri) : undefined}
+                            className={`border-t border-gray-100 transition-colors ${
+                              pageImages?.length ? "cursor-pointer hover:bg-indigo-100/60" : "hover:bg-indigo-50/40"
+                            } ${ri % 2 !== 0 ? "bg-gray-50/30" : ""}`}
+                          >
                             {CONF_HEADERS.map((h, ci) => {
                               const cell          = row[ci];
                               const isNum         = typeof cell === "number";
@@ -551,7 +566,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
                               const isProfitRate  = h === "이익률";
                               return (
                                 <td key={ci}
-                                  onClick={isName && pageImages?.length ? () => openModal(ri) : undefined}
                                   className={`px-3 py-2 whitespace-nowrap ${
                                     h === "매입총계"                       ? "text-right font-bold text-indigo-700" :
                                     isMasterPrice                          ? `text-right font-bold ${priceDiff ? "text-blue-600" : "text-blue-400"}` :
@@ -562,7 +576,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages }) =
                                     isNum                                  ? "text-right text-gray-700" :
                                     h === "상품코드"                       ? "text-gray-400 text-[10px] font-mono" :
                                     h === "소비기한"                       ? "text-gray-500 text-[10px]" :
-                                    isName ? `font-semibold ${pageImages?.length ? "cursor-pointer hover:underline underline-offset-2" : ""} ${m ? (score >= 80 ? "text-emerald-700" : score >= 50 ? "text-amber-700" : "text-rose-600") : "text-rose-500 italic"}` :
+                                    isName ? `font-semibold ${m ? (score >= 80 ? "text-emerald-700" : score >= 50 ? "text-amber-700" : "text-rose-600") : "text-rose-500 italic"}` :
                                              "text-gray-600"
                                   }`}>
                                   {cell == null

@@ -804,6 +804,137 @@ async function startServer() {
     }
   });
 
+  // ── Leave Requests ────────────────────────────────────────────────────────────
+  // GET /api/leave-requests — manager: all, employee: own (requires ?employeeId=N)
+  app.get("/api/leave-requests", async (req, res) => {
+    const { employeeId, all } = req.query;
+    try {
+      let q = supabase.from("leave_requests").select("*").order("created_at", { ascending: false });
+      if (all !== "true" && employeeId) {
+        q = q.eq("employee_id", Number(employeeId));
+      }
+      const { data, error } = await q;
+      if (error) throw new Error(error.message);
+      return res.json(data ?? []);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // GET /api/leave-requests/pending-count — for badge display
+  app.get("/api/leave-requests/pending-count", async (_req, res) => {
+    try {
+      const { count, error } = await supabase
+        .from("leave_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (error) throw new Error(error.message);
+      return res.json({ count: count ?? 0 });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // POST /api/leave-requests — employee submits
+  app.post("/api/leave-requests", async (req, res) => {
+    const { employee_id, employee_name, leave_type, start_date, end_date, reason } = req.body ?? {};
+    if (!employee_id || !employee_name || !leave_type || !start_date || !end_date) {
+      return res.status(400).json({ error: "필수 항목이 누락되었습니다." });
+    }
+    try {
+      const { data, error } = await supabase.from("leave_requests").insert([{
+        employee_id: Number(employee_id),
+        employee_name,
+        leave_type,
+        start_date,
+        end_date,
+        reason: reason ?? "",
+        status: "pending",
+      }]).select().single();
+      if (error) throw new Error(error.message);
+
+      // Push notification → all managers
+      const { data: managers } = await supabase
+        .from("employees")
+        .select("id, push_subscription")
+        .eq("is_manager", true);
+      if (managers) {
+        await Promise.allSettled(managers
+          .filter(m => m.push_subscription)
+          .map(m => webpush.sendNotification(
+            m.push_subscription as webpush.PushSubscription,
+            JSON.stringify({
+              title: "연차 신청 도착",
+              body: `${employee_name}님이 ${leave_type}을(를) 신청했습니다.`,
+              url: "/",
+              tag: `leave-new-${data?.id}`,
+            })
+          ).catch(() => null))
+        );
+      }
+
+      return res.status(201).json(data);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PUT /api/leave-requests/:id — manager approves or rejects
+  app.put("/api/leave-requests/:id", async (req, res) => {
+    const { status, reviewer_note } = req.body ?? {};
+    if (!status || !["approved", "rejected"].includes(status)) {
+      return res.status(400).json({ error: "status must be 'approved' or 'rejected'" });
+    }
+    try {
+      const { data, error } = await supabase
+        .from("leave_requests")
+        .update({ status, reviewer_note: reviewer_note ?? "", reviewed_at: new Date().toISOString() })
+        .eq("id", req.params.id)
+        .select()
+        .single();
+      if (error) throw new Error(error.message);
+      if (!data) return res.status(404).json({ error: "not found" });
+
+      // Push notification → requesting employee
+      const { data: emp } = await supabase
+        .from("employees")
+        .select("push_subscription")
+        .eq("id", data.employee_id)
+        .maybeSingle();
+      if (emp?.push_subscription) {
+        const label = status === "approved" ? "승인" : "반려";
+        await webpush.sendNotification(
+          emp.push_subscription as webpush.PushSubscription,
+          JSON.stringify({
+            title: `연차 신청 ${label}`,
+            body: `${data.leave_type} 신청이 ${label}되었습니다.${reviewer_note ? ` (${reviewer_note})` : ""}`,
+            url: "/",
+            tag: `leave-reviewed-${data.id}`,
+          })
+        ).catch(() => null);
+      }
+
+      return res.json(data);
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
+  // DELETE /api/leave-requests/:id — employee cancels pending request
+  app.delete("/api/leave-requests/:id", async (req, res) => {
+    try {
+      const { error } = await supabase
+        .from("leave_requests")
+        .delete()
+        .eq("id", req.params.id)
+        .eq("status", "pending");
+      if (error) throw new Error(error.message);
+      return res.json({ ok: true });
+    } catch (err: any) {
+      return res.status(500).json({ error: err.message });
+    }
+  });
+
   // GET /api/reservations
   app.get("/api/reservations", async (req, res) => {
     const { date } = req.query;

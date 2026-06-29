@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  ChevronLeft, Bell, Package, MapPin, AlertTriangle,
-  CheckCircle2, Clock, List, RefreshCw, ArrowRight, Trash2, ShoppingCart,
+  ChevronLeft, Bell, Package, MapPin,
+  CheckCircle2, XCircle, Clock, List, RefreshCw, ArrowRight, Trash2, ShoppingCart, CalendarDays,
 } from "lucide-react";
 import { getProductsMap, type ProductInfo } from "../lib/productsCache";
+import type { AuthSession } from "../types";
 
 interface RequestsPageProps {
   onBack: () => void;
+  authSession?: AuthSession | null;
 }
 
 interface DisplayRequest {
@@ -40,7 +42,28 @@ interface ZoneMismatch {
   registered_at: string;
 }
 
-type Tab = "display" | "order" | "mismatch";
+interface LeaveRequest {
+  id: string;
+  employee_id: number;
+  employee_name: string;
+  leave_type: string;
+  start_date: string;
+  end_date: string;
+  reason: string;
+  status: "pending" | "approved" | "rejected";
+  reviewer_note: string | null;
+  created_at: string;
+  reviewed_at: string | null;
+}
+
+const LEAVE_STATUS_LABEL: Record<string, string> = { pending: "대기", approved: "승인", rejected: "반려" };
+const LEAVE_STATUS_COLOR: Record<string, string> = {
+  pending: "text-amber-600 bg-amber-50 border-amber-200",
+  approved: "text-emerald-600 bg-emerald-50 border-emerald-200",
+  rejected: "text-rose-600 bg-rose-50 border-rose-200",
+};
+
+type Tab = "display" | "order" | "mismatch" | "leave";
 
 function fmtDate(iso: string) {
   try {
@@ -49,8 +72,9 @@ function fmtDate(iso: string) {
   } catch { return iso; }
 }
 
-export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack }) => {
+export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession }) => {
   const [tab, setTab] = useState<Tab>("display");
+  const isManager = authSession?.role === "manager" || authSession?.role === "admin" || authSession?.role === "superadmin";
 
   // 진열요청
   const [displayReqs, setDisplayReqs] = useState<DisplayRequest[]>([]);
@@ -71,6 +95,13 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack }) => {
   const [mismatches, setMismatches] = useState<ZoneMismatch[]>([]);
   const [mismatchLoading, setMismatchLoading] = useState(false);
   const [deletingMismatch, setDeletingMismatch] = useState<Set<string>>(new Set());
+
+  // 연차신청
+  const [leaveReqs, setLeaveReqs] = useState<LeaveRequest[]>([]);
+  const [leaveLoading, setLeaveLoading] = useState(false);
+  const [processingLeave, setProcessingLeave] = useState<string | null>(null);
+  const [reviewingLeave, setReviewingLeave] = useState<string | null>(null);
+  const [reviewNote, setReviewNote] = useState("");
 
   const loadDisplayReqs = useCallback(async () => {
     setDisplayLoading(true);
@@ -108,11 +139,27 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack }) => {
     } finally { setProductsLoading(false); }
   }, [products.length]);
 
+  const loadLeaveReqs = useCallback(async () => {
+    setLeaveLoading(true);
+    try {
+      const url = isManager
+        ? "/api/leave-requests?all=true"
+        : authSession?.employeeId
+          ? `/api/leave-requests?employeeId=${authSession.employeeId}`
+          : null;
+      if (!url) { setLeaveReqs([]); return; }
+      const res = await fetch(url);
+      setLeaveReqs(res.ok ? await res.json() : []);
+    } catch { setLeaveReqs([]); }
+    finally { setLeaveLoading(false); }
+  }, [isManager, authSession?.employeeId]);
+
   useEffect(() => { loadDisplayReqs(); }, []);
 
   useEffect(() => {
     if (tab === "order") { loadOrderReqs(); loadProducts(); }
     if (tab === "mismatch") { loadMismatches(); }
+    if (tab === "leave") { loadLeaveReqs(); }
   }, [tab]);
 
   const handleDeleteDisplay = async (id: string) => {
@@ -165,6 +212,24 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack }) => {
     }
   };
 
+  const handleLeaveReview = async (id: string, status: "approved" | "rejected") => {
+    setProcessingLeave(id);
+    try {
+      const res = await fetch(`/api/leave-requests/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status, reviewer_note: reviewNote }),
+      });
+      if (res.ok) {
+        setLeaveReqs(prev => prev.map(r =>
+          r.id === id ? { ...r, status, reviewer_note: reviewNote, reviewed_at: new Date().toISOString() } : r
+        ));
+        setReviewingLeave(null);
+        setReviewNote("");
+      }
+    } finally { setProcessingLeave(null); }
+  };
+
   // 이미 발주요청된 product_code 집합
   const requestedCodes = new Set(orderReqs.map(r => r.product_code));
 
@@ -180,10 +245,13 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack }) => {
   const pending = displayReqs.filter(r => r.status === "pending");
   const done    = displayReqs.filter(r => r.status === "done");
 
+  const leavePending = leaveReqs.filter(r => r.status === "pending").length;
+
   const TABS: [Tab, string, number, string, string][] = [
-    ["display",  "진열요청",   pending.length,  "text-blue-600",   "border-blue-500"],
-    ["order",    "발주요청",   orderReqs.length, "text-red-600",    "border-red-500"],
-    ["mismatch", "구역불일치", mismatches.length,"text-orange-600", "border-orange-500"],
+    ["display",  "진열요청",   pending.length,   "text-blue-600",   "border-blue-500"],
+    ["order",    "발주요청",   orderReqs.length,  "text-red-600",    "border-red-500"],
+    ["mismatch", "구역불일치", mismatches.length, "text-orange-600", "border-orange-500"],
+    ["leave",    "연차신청",   leaveReqs.length,  "text-green-600",  "border-green-500"],
   ];
 
   return (
@@ -501,6 +569,99 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack }) => {
                       <CheckCircle2 size={12} />
                       {deletingMismatch.has(m.id) ? "처리 중..." : "완료 (구역 수정 완료)"}
                     </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+        {/* ── 연차신청 ── */}
+        {tab === "leave" && (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-gray-500">
+                {isManager
+                  ? <>전체 <strong className="text-green-600">{leaveReqs.length}</strong>건 · 대기 <strong className="text-amber-600">{leavePending}</strong>건</>
+                  : <>내 신청 <strong className="text-green-600">{leaveReqs.length}</strong>건</>}
+              </p>
+              <button onClick={loadLeaveReqs} disabled={leaveLoading} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer px-2 py-1 rounded-lg hover:bg-gray-100 transition">
+                <RefreshCw size={11} className={leaveLoading ? "animate-spin" : ""} />
+              </button>
+            </div>
+
+            {leaveLoading ? (
+              <div className="flex justify-center py-20">
+                <div className="w-7 h-7 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : leaveReqs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-20 text-gray-300">
+                <CalendarDays size={36} className="mb-3" />
+                <p className="text-sm font-bold text-gray-400">신청 내역이 없습니다</p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {leaveReqs.map(r => (
+                  <div key={r.id} className={`bg-white border rounded-xl p-4 shadow-sm ${r.status === "pending" ? "border-amber-200" : r.status === "approved" ? "border-emerald-200" : "border-rose-200"}`}>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        {isManager && <p className="text-xs font-black text-gray-700 mb-0.5">{r.employee_name}</p>}
+                        <p className="text-sm font-bold text-gray-900">{r.leave_type}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {r.start_date} ~ {r.end_date}
+                        </p>
+                      </div>
+                      <span className={`shrink-0 text-[10px] font-bold px-2 py-1 rounded-full border ${LEAVE_STATUS_COLOR[r.status]}`}>
+                        {LEAVE_STATUS_LABEL[r.status]}
+                      </span>
+                    </div>
+                    {r.reason && <p className="text-xs text-gray-500 mb-2 bg-gray-50 px-2.5 py-1.5 rounded-lg">{r.reason}</p>}
+                    {r.reviewer_note && (
+                      <p className="text-xs text-indigo-700 bg-indigo-50 px-2.5 py-1.5 rounded-lg mb-2">
+                        <span className="font-bold">메모:</span> {r.reviewer_note}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-gray-400 mb-2">신청: {r.created_at ? new Date(r.created_at).toLocaleDateString("ko-KR") : ""}</p>
+
+                    {/* 관리자 승인/반려 */}
+                    {isManager && r.status === "pending" && (
+                      reviewingLeave === r.id ? (
+                        <div className="flex flex-col gap-2 mt-2">
+                          <input
+                            type="text"
+                            value={reviewNote}
+                            onChange={e => setReviewNote(e.target.value)}
+                            placeholder="메모 (선택)"
+                            className="w-full bg-white border border-gray-300 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-green-500 transition"
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              onClick={() => handleLeaveReview(r.id, "approved")}
+                              disabled={processingLeave === r.id}
+                              className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer disabled:opacity-50"
+                            >
+                              <CheckCircle2 size={12} />
+                              {processingLeave === r.id ? "처리 중..." : "승인"}
+                            </button>
+                            <button
+                              onClick={() => handleLeaveReview(r.id, "rejected")}
+                              disabled={processingLeave === r.id}
+                              className="flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition cursor-pointer disabled:opacity-50"
+                            >
+                              <XCircle size={12} />
+                              {processingLeave === r.id ? "처리 중..." : "반려"}
+                            </button>
+                          </div>
+                          <button onClick={() => { setReviewingLeave(null); setReviewNote(""); }} className="text-[11px] text-gray-400 hover:text-gray-600 text-center cursor-pointer">취소</button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => { setReviewingLeave(r.id); setReviewNote(""); }}
+                          className="mt-2 w-full flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-bold bg-green-50 border border-green-200 text-green-700 hover:bg-green-100 transition cursor-pointer"
+                        >
+                          검토하기
+                        </button>
+                      )
+                    )}
                   </div>
                 ))}
               </div>

@@ -21,11 +21,11 @@ async function physicallyRotate(
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
-      const rad  = (degrees * Math.PI) / 180;
+      const rad = (degrees * Math.PI) / 180;
       const swap = degrees === 90 || degrees === 270 || degrees === -90 || degrees === -270;
       const canvas = document.createElement("canvas");
-      canvas.width  = swap ? img.height : img.width;
-      canvas.height = swap ? img.width  : img.height;
+      canvas.width = swap ? img.height : img.width;
+      canvas.height = swap ? img.width : img.height;
       const ctx = canvas.getContext("2d")!;
       ctx.translate(canvas.width / 2, canvas.height / 2);
       ctx.rotate(rad);
@@ -37,24 +37,24 @@ async function physicallyRotate(
 }
 
 export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
-  const pdfInputRef    = useRef<HTMLInputElement>(null);
-  const imageInputRef  = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
-  const imagesDataRef  = useRef<{ data: string; mimeType: string }[]>([]);
+  const imagesDataRef = useRef<{ data: string; mimeType: string }[]>([]);
 
-  const [fileName,       setFileName      ] = useState<string | null>(null);
-  const [pageCount,      setPageCount     ] = useState(0);
-  const [processed,      setProcessed     ] = useState(0);
-  const [statusMsg,      setStatusMsg     ] = useState<string>("");
-  const [loading,        setLoading       ] = useState(false);
-  const [extracting,     setExtracting    ] = useState(false);
-  const [error,          setError         ] = useState<string | null>(null);
-  const [pages,          setPages         ] = useState<OcrPageResult[]>([]);
-  const [pageImages,     setPageImages    ] = useState<string[]>([]);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [pageCount, setPageCount] = useState(0);
+  const [processed, setProcessed] = useState(0);
+  const [statusMsg, setStatusMsg] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pages, setPages] = useState<OcrPageResult[]>([]);
+  const [pageImages, setPageImages] = useState<string[]>([]);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
-  const [engine,         setEngine        ] = useState<"paddle" | "gemini">("paddle");
-  const [pingStatus,     setPingStatus    ] = useState<{ ok: boolean; gemini: boolean; geminiKeyCount: number } | null>(null);
-  const [rotation,       setRotation      ] = useState(-90);
+  const [engine, setEngine] = useState<"paddle" | "gemini">("paddle");
+  const [pingStatus, setPingStatus] = useState<{ ok: boolean; gemini: boolean; geminiKeyCount: number } | null>(null);
+  const [rotation, setRotation] = useState(-90);
 
   useEffect(() => {
     axios.get("/api/ocr-ping")
@@ -71,7 +71,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
       const page = await pdf.getPage(i);
       const vp = page.getViewport({ scale: 2.0 });
       const canvas = document.createElement("canvas");
-      canvas.width  = Math.floor(vp.width);
+      canvas.width = Math.floor(vp.width);
       canvas.height = Math.floor(vp.height);
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error(`페이지 ${i} Canvas를 초기화할 수 없습니다.`);
@@ -125,7 +125,6 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
     const images = imagesDataRef.current;
     if (images.length === 0 || extracting) return;
     setExtracting(true); setPages([]); setProcessed(0); setError(null); setStatusMsg("");
-
     try {
       const rotatedImages = rotation === 0
         ? images
@@ -356,7 +355,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
           </div>
         )}
 
-        {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} />}
+        {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} rotation={rotation} />}
       </div>
     </div>
   );

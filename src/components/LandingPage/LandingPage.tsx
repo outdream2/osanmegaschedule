@@ -4,6 +4,7 @@ import axios from "axios";
 import {
   Calendar,
   CalendarCheck,
+  CalendarDays,
   ChevronRight,
   MapPin,
   Clock,
@@ -25,7 +26,7 @@ import type { AuthSession } from "../../types";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
-  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests", auth?: AuthSession) => void;
+  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave", auth?: AuthSession) => void;
   onLogout: () => void;
   onAuthOnly?: (auth: AuthSession) => void;
 }
@@ -33,7 +34,8 @@ interface LandingPageProps {
 type AuthTab = "admin" | "employee";
 
 export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigate, onLogout, onAuthOnly }) => {
-  const [pendingPage, setPendingPage] = useState<"schedule" | "display" | "scan" | "requests" | "ocr" | "upload" | null>(null);
+  const [pendingPage, setPendingPage] = useState<"schedule" | "display" | "scan" | "requests" | "ocr" | "upload" | "leave" | null>(null);
+  const [leavePendingCount, setLeavePendingCount] = useState(0);
   const [activeTab, setActiveTab] = useState<AuthTab>("employee");
 
   const [pin, setPin] = useState("");
@@ -192,6 +194,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const isAdmin = isSuperAdmin;
   const isEmployee = authSession?.role === "employee";
   const isLoggedIn = !!authSession;
+  const isManagerOrAdmin = isSuperAdmin || isManagerRole;
+
+  // Load pending leave count for managers
+  useEffect(() => {
+    if (!isManagerOrAdmin) return;
+    fetch("/api/leave-requests/pending-count")
+      .then(r => r.ok ? r.json() : { count: 0 })
+      .then(d => setLeavePendingCount(d.count ?? 0))
+      .catch(() => {});
+  }, [isManagerOrAdmin]);
 
   const roleLabel = isSuperAdmin ? "최고관리자" : isManagerRole ? "관리자" : (authSession?.employeeName ?? "직원");
 
@@ -260,196 +272,212 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             오산 메가타운 약국 · 통합 관리 시스템
           </p>
 
-          {/* 직원용 */}
-          <div className="w-full mb-6">
-            <div className="flex items-center gap-2 mb-3">
-              <Lock size={12} className="text-gray-400" />
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">직원용</span>
-              <div className="flex-1 h-px bg-gray-200" />
-              {!isLoggedIn && (
-                <span className="text-[10px] text-gray-400 font-medium">로그인 후 이용 가능</span>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+          {/* ── 관리자 도구 (관리자 로그인 시에만 표시) ── */}
+          {isManagerOrAdmin && (
+            <div className="w-full mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Shield size={12} className="text-violet-400" />
+                <span className="text-[11px] font-bold text-violet-400 uppercase tracking-widest">관리자 도구</span>
+                <div className="flex-1 h-px bg-violet-100" />
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
 
-              {/* 스케줄표 조회 */}
-              <button
-                onClick={() => handleMenuClick("schedule")}
-                className="group relative bg-white border border-gray-200 hover:border-indigo-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                {!isLoggedIn && (
-                  <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-70 transition-opacity">
-                    <Lock size={13} className="text-indigo-400" />
-                  </div>
-                )}
-                <div className="relative">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-indigo-200 transition-colors">
-                    <Calendar size={18} className="text-indigo-600 sm:hidden" />
-                    <Calendar size={22} className="text-indigo-600 hidden sm:block" />
-                  </div>
-                  <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">스케줄표 조회</div>
-                  <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">직원 월간 근무 스케줄 확인 및 관리</div>
-                  <div className={`flex items-center gap-1 mt-2 sm:mt-4 text-xs font-bold ${isLoggedIn || !isLoggedIn ? "text-indigo-600" : "text-gray-400"}`}>
-                    <span className="text-[11px] sm:text-xs">{isLoggedIn ? "입장하기" : "로그인 필요"}</span>
-                    <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                </div>
-              </button>
-
-              {/* 매장진열 관리 — admin only */}
-              {(isAdmin || !isLoggedIn) && (
-                <button
-                  onClick={() => handleMenuClick("display")}
-                  className="group relative bg-white border border-gray-200 hover:border-violet-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
-                >
+                {/* 매장진열 관리 */}
+                <button onClick={() => onNavigate("display", authSession!)}
+                  className="group relative bg-white border border-gray-200 hover:border-violet-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-violet-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  {!isLoggedIn && (
-                    <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-70 transition-opacity">
-                      <Lock size={13} className="text-violet-400" />
-                    </div>
-                  )}
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-violet-100 border border-violet-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-violet-200 transition-colors">
-                      <LayoutGrid size={18} className="text-violet-600 sm:hidden" />
-                      <LayoutGrid size={22} className="text-violet-600 hidden sm:block" />
+                      <LayoutGrid size={18} className="text-violet-600 sm:hidden" /><LayoutGrid size={22} className="text-violet-600 hidden sm:block" />
                     </div>
                     <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">매장진열 관리</div>
                     <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">진열대 상태 점검 및 보충 요청 관리</div>
                     <div className="flex items-center gap-1 mt-2 sm:mt-4 text-violet-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">{isLoggedIn ? "관리하기" : "로그인 필요"}</span>
+                      <span className="text-[11px] sm:text-xs">관리하기</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 </button>
-              )}
 
-              {/* 상품 스캔 — 로그인한 직원 */}
-              {(isLoggedIn || !isLoggedIn) && (
-                <button
-                  onClick={() => isLoggedIn ? onNavigate("scan") : setPendingPage("scan")}
-                  className="group relative bg-white border border-gray-200 hover:border-teal-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-teal-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  {!isLoggedIn && (
-                    <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-70 transition-opacity">
-                      <Lock size={13} className="text-teal-400" />
+                {/* 연차 승인 (관리자) */}
+                <button onClick={() => onNavigate("leave", authSession!)}
+                  className="group relative bg-white border border-gray-200 hover:border-green-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  {leavePendingCount > 0 && (
+                    <div className="absolute top-3 right-3 flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-black shadow">
+                      {leavePendingCount}
                     </div>
                   )}
                   <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-teal-100 border border-teal-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-teal-200 transition-colors">
-                      <ScanLine size={18} className="text-teal-600 sm:hidden" />
-                      <ScanLine size={22} className="text-teal-600 hidden sm:block" />
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-green-100 border border-green-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-green-200 transition-colors">
+                      <CalendarDays size={18} className="text-green-600 sm:hidden" /><CalendarDays size={22} className="text-green-600 hidden sm:block" />
                     </div>
-                    <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">상품 스캔</div>
-                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">바코드 스캔으로 진열 보충 요청</div>
-                    <div className="flex items-center gap-1 mt-2 sm:mt-4 text-teal-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">{isLoggedIn ? "스캔하기" : "로그인 필요"}</span>
+                    <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">연차 승인</div>
+                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">직원 휴가·연차 신청 승인 처리</div>
+                    <div className="flex items-center gap-1 mt-2 sm:mt-4 text-green-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">
+                        {leavePendingCount > 0 ? `대기 ${leavePendingCount}건` : "확인하기"}
+                      </span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 </button>
-              )}
 
-              {/* 요청목록 조회 */}
-              {(isLoggedIn || !isLoggedIn) && (
-                <button
-                  onClick={() => isLoggedIn ? onNavigate("requests") : setPendingPage("requests")}
-                  className="group relative bg-white border border-gray-200 hover:border-indigo-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
-                >
+                {/* 요청목록 조회 */}
+                <button onClick={() => onNavigate("requests", authSession!)}
+                  className="group relative bg-white border border-gray-200 hover:border-indigo-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
                   <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  {!isLoggedIn && (
-                    <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-70 transition-opacity">
-                      <Lock size={13} className="text-indigo-400" />
-                    </div>
-                  )}
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-indigo-200 transition-colors">
-                      <List size={18} className="text-indigo-600 sm:hidden" />
-                      <List size={22} className="text-indigo-600 hidden sm:block" />
+                      <List size={18} className="text-indigo-600 sm:hidden" /><List size={22} className="text-indigo-600 hidden sm:block" />
                     </div>
                     <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">요청목록 조회</div>
                     <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">진열·발주요청 및 배정구역 불일치 확인</div>
                     <div className="flex items-center gap-1 mt-2 sm:mt-4 text-indigo-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">{isLoggedIn ? "조회하기" : "로그인 필요"}</span>
+                      <span className="text-[11px] sm:text-xs">조회하기</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 </button>
-              )}
 
-              {/* 상품 목록 관리 */}
+                {/* 상품 목록 관리 */}
+                <button
+                  onClick={() => { setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog(); }}
+                  className="group relative bg-white border border-gray-200 hover:border-orange-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-orange-200 transition-colors">
+                      <FileSpreadsheet size={18} className="text-orange-600 sm:hidden" /><FileSpreadsheet size={22} className="text-orange-600 hidden sm:block" />
+                    </div>
+                    <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">상품 목록 관리</div>
+                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">xlsx 파일 업로드로 상품 DB 갱신</div>
+                    <div className="flex items-center gap-1 mt-2 sm:mt-4 text-orange-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">업로드하기</span>
+                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+
+                {/* 거래명세서 OCR */}
+                <button onClick={() => onNavigate("ocr", authSession!)}
+                  className="group relative bg-white border border-gray-200 hover:border-amber-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-amber-200 transition-colors">
+                      <FileText size={18} className="text-amber-600 sm:hidden" /><FileText size={22} className="text-amber-600 hidden sm:block" />
+                    </div>
+                    <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">거래명세서 OCR</div>
+                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">PDF 업로드로 거래명세서 자동 추출</div>
+                    <div className="flex items-center gap-1 mt-2 sm:mt-4 text-amber-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">추출하기</span>
+                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+
+              </div>
+            </div>
+          )}
+
+          {/* ── 직원용 (로그인 시에만 표시) ── */}
+          {isLoggedIn && (
+            <div className="w-full mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Lock size={12} className="text-gray-400" />
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">직원용</span>
+                <div className="flex-1 h-px bg-gray-200" />
+              </div>
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+
+                {/* 스케줄표 조회 */}
+                <button onClick={() => onNavigate("schedule", authSession!)}
+                  className="group relative bg-white border border-gray-200 hover:border-indigo-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-indigo-200 transition-colors">
+                      <Calendar size={18} className="text-indigo-600 sm:hidden" /><Calendar size={22} className="text-indigo-600 hidden sm:block" />
+                    </div>
+                    <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">스케줄표 조회</div>
+                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">직원 월간 근무 스케줄 확인 및 관리</div>
+                    <div className="flex items-center gap-1 mt-2 sm:mt-4 text-indigo-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">입장하기</span>
+                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+
+                {/* 상품 스캔 */}
+                <button onClick={() => onNavigate("scan", authSession!)}
+                  className="group relative bg-white border border-gray-200 hover:border-teal-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-teal-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-teal-100 border border-teal-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-teal-200 transition-colors">
+                      <ScanLine size={18} className="text-teal-600 sm:hidden" /><ScanLine size={22} className="text-teal-600 hidden sm:block" />
+                    </div>
+                    <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">상품 스캔</div>
+                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">바코드 스캔으로 진열 보충 요청</div>
+                    <div className="flex items-center gap-1 mt-2 sm:mt-4 text-teal-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">스캔하기</span>
+                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+
+                {/* 연차 신청 */}
+                <button onClick={() => onNavigate("leave", authSession!)}
+                  className="group relative bg-white border border-gray-200 hover:border-green-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-green-100 border border-green-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-green-200 transition-colors">
+                      <CalendarDays size={18} className="text-green-600 sm:hidden" /><CalendarDays size={22} className="text-green-600 hidden sm:block" />
+                    </div>
+                    <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">연차 신청</div>
+                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">휴가·연차 신청 및 내역 조회</div>
+                    <div className="flex items-center gap-1 mt-2 sm:mt-4 text-green-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">신청하기</span>
+                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+
+              </div>
+            </div>
+          )}
+
+          {/* ── 비로그인 안내 ── */}
+          {!isLoggedIn && (
+            <div className="w-full mb-6">
               <button
-                onClick={() => isLoggedIn
-                  ? (isSuperAdmin || isManagerRole)
-                    ? (setUploadOpen(true), setUploadResult(null), setUploadFile(null), fetchImportLog())
-                    : undefined
-                  : setPendingPage("upload")}
-                className="group relative bg-white border border-gray-200 hover:border-orange-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
+                onClick={() => setPendingPage("schedule")}
+                className="w-full group flex items-center justify-between bg-indigo-50 border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-100 rounded-2xl px-5 py-4 transition cursor-pointer"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                {!isLoggedIn && (
-                  <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-70 transition-opacity">
-                    <Lock size={13} className="text-orange-400" />
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
+                    <Lock size={16} className="text-indigo-500" />
                   </div>
-                )}
-                <div className="relative">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-orange-200 transition-colors">
-                    <FileSpreadsheet size={18} className="text-orange-600 sm:hidden" />
-                    <FileSpreadsheet size={22} className="text-orange-600 hidden sm:block" />
-                  </div>
-                  <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">상품 목록 관리</div>
-                  <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">xlsx 파일 업로드로 상품 DB 갱신</div>
-                  <div className="flex items-center gap-1 mt-2 sm:mt-4 text-orange-600 text-xs font-bold">
-                    <span className="text-[11px] sm:text-xs">{isLoggedIn ? "업로드하기" : "로그인 필요"}</span>
-                    <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                  <div className="text-left">
+                    <div className="text-indigo-700 font-bold text-sm">직원 로그인</div>
+                    <div className="text-indigo-500 text-xs">스케줄표·연차신청·스캔 등 이용 가능</div>
                   </div>
                 </div>
-              </button>
-
-              {/* 거래명세서 OCR */}
-              <button
-                onClick={() => isLoggedIn ? onNavigate("ocr", authSession!) : setPendingPage("ocr")}
-                className="group relative bg-white border border-gray-200 hover:border-amber-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                {!isLoggedIn && (
-                  <div className="absolute top-3 right-3 opacity-40 group-hover:opacity-70 transition-opacity">
-                    <Lock size={13} className="text-amber-400" />
-                  </div>
-                )}
-                <div className="relative">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-amber-200 transition-colors">
-                    <FileText size={18} className="text-amber-600 sm:hidden" />
-                    <FileText size={22} className="text-amber-600 hidden sm:block" />
-                  </div>
-                  <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">거래명세서 OCR</div>
-                  <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">PDF 업로드로 거래명세서 자동 추출</div>
-                  <div className="flex items-center gap-1 mt-2 sm:mt-4 text-amber-600 text-xs font-bold">
-                    <span className="text-[11px] sm:text-xs">{isLoggedIn ? "추출하기" : "로그인 필요"}</span>
-                    <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                </div>
+                <ChevronRight size={16} className="text-indigo-400 group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
-          </div>
+          )}
 
-          {/* 외부용 */}
+          {/* ── 외부용 ── */}
           <div className="w-full">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">외부용</span>
               <div className="flex-1 h-px bg-gray-200" />
             </div>
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <button
-                onClick={() => onNavigate("reservation")}
-                className="group relative bg-white border border-gray-200 hover:border-emerald-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden"
-              >
+              <button onClick={() => onNavigate("reservation")}
+                className="group relative bg-white border border-gray-200 hover:border-emerald-400 rounded-2xl p-4 sm:p-6 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="relative">
                   <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center mb-3 sm:mb-4 group-hover:bg-emerald-200 transition-colors">
-                    <CalendarCheck size={18} className="text-emerald-600 sm:hidden" />
-                    <CalendarCheck size={22} className="text-emerald-600 hidden sm:block" />
+                    <CalendarCheck size={18} className="text-emerald-600 sm:hidden" /><CalendarCheck size={22} className="text-emerald-600 hidden sm:block" />
                   </div>
                   <div className="text-gray-900 font-bold text-sm sm:text-lg mb-0.5 sm:mb-1 tracking-tight">방문예약</div>
                   <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">상담 및 방문 일정을 간편하게 예약</div>
@@ -459,21 +487,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 </div>
               </button>
-
             </div>
           </div>
 
           {/* Footer */}
           <div className="flex items-center gap-4 mt-10 text-gray-400 text-[11px] font-medium">
-            <span className="flex items-center gap-1.5">
-              <MapPin size={11} />
-              경기도 오산시 메가타운
-            </span>
+            <span className="flex items-center gap-1.5"><MapPin size={11} />경기도 오산시 메가타운</span>
             <span className="w-1 h-1 rounded-full bg-gray-300" />
-            <span className="flex items-center gap-1.5">
-              <Clock size={11} />
-              09:00 – 22:00
-            </span>
+            <span className="flex items-center gap-1.5"><Clock size={11} />09:00 – 22:00</span>
           </div>
         </div>
       </div>

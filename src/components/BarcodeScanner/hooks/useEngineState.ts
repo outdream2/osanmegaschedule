@@ -51,7 +51,7 @@ export function useEngineState() {
     let cancelled = false;
     (async () => {
       try {
-        const { createWorker } = await import("tesseract.js");
+        const { createWorker } = await import(/* @vite-ignore */ "tesseract.js");
         const worker = await createWorker("eng", 1, {
           workerBlobURL: false,
           logger: () => {},
