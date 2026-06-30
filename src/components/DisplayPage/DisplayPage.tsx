@@ -132,10 +132,14 @@ const statusDot  = (s: ZoneStatus) => ({ normal: "bg-emerald-500", low: "bg-ambe
 const statusBadge = (s: ZoneStatus) => ({ normal: "bg-emerald-100 text-emerald-700 border-emerald-300", low: "bg-amber-100 text-amber-700 border-amber-300", empty: "bg-red-100 text-red-700 border-red-300" }[s]);
 
 const SHIFT_BADGE: Record<string, string> = {
-  "오픈": "bg-amber-100 text-amber-800 border-amber-300",
-  "미들": "bg-sky-100 text-sky-800 border-sky-300",
-  "마감": "bg-emerald-100 text-emerald-800 border-emerald-300",
+  "오픈":    "bg-emerald-100 text-emerald-800 border-emerald-300",
+  "미들":    "bg-blue-100 text-blue-800 border-blue-300",
+  "마감":    "bg-rose-100 text-rose-800 border-rose-300",
+  "오전반차": "bg-lime-100 text-lime-800 border-lime-300",
+  "오후반차": "bg-amber-100 text-amber-800 border-amber-300",
 };
+
+const SKIP_TYPES = new Set(["휴무", "월차", "지정휴무"]);
 
 const formatRel = (iso: string) => {
   const diff = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
@@ -256,6 +260,22 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     catch { return new Set(); }
   });
 
+  // Selected date for schedule view (default: today)
+  const todayStr = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  })();
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const selectedYM = selectedDate.slice(0, 7);
+
+  const navigateDate = (delta: number) => {
+    setSelectedDate(prev => {
+      const d = new Date(prev + "T00:00:00");
+      d.setDate(d.getDate() + delta);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    });
+  };
+
   const handleSubscribePush = async (employeeId: number, employeeName: string) => {
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
       alert("이 브라우저는 푸시 알림을 지원하지 않습니다.");
@@ -347,32 +367,19 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     setTimeout(() => setSaveAllToast(false), 2500);
   };
 
-  // ── Fetch employees + today's schedule ──────────────────────────────────────
+  // ── Fetch employees by month (re-fetches only when month changes) ──────────
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setStaffLoading(true);
       try {
-        const now = new Date();
-        const y = now.getFullYear();
-        const m = now.getMonth() + 1;
-        const todayStr = `${y}-${String(m).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+        const [y, m] = selectedYM.split("-").map(Number);
         const res = await fetch(`/api/schedules?year=${y}&month=${m}`);
         if (!res.ok) throw new Error(String(res.status));
         const data = await res.json();
         const empList: Employee[] = Array.isArray(data?.employees) ? data.employees : [];
         if (cancelled) return;
         setEmployees(empList);
-
-        const workTypes = new Set(["오픈", "미들", "마감", "오전반차", "오후반차"]);
-        const today: TodayStaff[] = [];
-        for (const emp of empList) {
-          const sc = emp.schedules?.find((s) => s.date === todayStr);
-          if (sc && workTypes.has(sc.type)) {
-            today.push({ employee: emp, scheduleType: sc.type, workingHours: sc.workingHours || "" });
-          }
-        }
-        setTodayStaff(today);
         setStaffError(null);
       } catch {
         if (!cancelled) setStaffError("직원 정보를 불러올 수 없습니다");
@@ -381,7 +388,19 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [selectedYM]);
+
+  // ── Derive today's staff from employees + selectedDate ────────────────────
+  useEffect(() => {
+    const staff: TodayStaff[] = [];
+    for (const emp of employees) {
+      const sc = emp.schedules?.find((s) => s.date === selectedDate);
+      if (sc && !SKIP_TYPES.has(sc.type)) {
+        staff.push({ employee: emp, scheduleType: sc.type, workingHours: sc.workingHours || "" });
+      }
+    }
+    setTodayStaff(staff);
+  }, [employees, selectedDate]);
 
   // ── Load zones from DB on mount (fallback: localStorage already seeded in useState) ──
   useEffect(() => {
@@ -598,8 +617,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // ── Logistics staff zones helper ─────────────────────────────────────────────
   const getAssignedZones = (staffId: number) => zones.filter((z) => z.assignedStaffId === staffId);
 
-  const now = new Date();
-  const todayLabel = `${now.getMonth() + 1}월 ${now.getDate()}일`;
+  const selectedDateObj = new Date(selectedDate + "T00:00:00");
+  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+  const selectedDateLabel = `${selectedDateObj.getMonth() + 1}월 ${selectedDateObj.getDate()}일 (${dayNames[selectedDateObj.getDay()]})`;
+  const isToday = selectedDate === todayStr;
 
   const popoverZone = useMemo(
     () => (popoverAnchor ? zones.find((z) => z.id === popoverAnchor.zoneId) ?? null : null),
@@ -757,7 +778,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           <div className="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex flex-col flex-1 min-h-0">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-2 mb-2 shrink-0">
               <Users size={14} className="text-emerald-600" />
-              <h3 className="text-xs font-bold text-slate-800">오늘 출근 직원 ({todayStaff.length}명)</h3>
+              <h3 className="text-xs font-bold text-slate-800">{selectedDateLabel} 출근 직원 ({todayStaff.length}명)</h3>
             </div>
 
             {/* Position filter pills */}
@@ -906,10 +927,38 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               </div>
             )}
 
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center space-x-2">
-                <span className="text-xl">🗺️</span>
-                <h2 className="text-lg font-bold text-gray-700">실시간 매장 지도</h2>
+            {/* Date navigation */}
+            <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => navigateDate(-1)}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-gray-800 transition cursor-pointer"
+                >
+                  <ChevronLeft size={18} />
+                </button>
+                <div className="text-center min-w-[160px]">
+                  <div className="text-3xl font-black text-gray-900 leading-tight tracking-tight">
+                    {selectedDateObj.getMonth() + 1}월 {selectedDateObj.getDate()}일
+                  </div>
+                  <div className="flex items-center justify-center gap-1.5 mt-0.5">
+                    <span className="text-sm font-semibold text-gray-400">{dayNames[selectedDateObj.getDay()]}요일</span>
+                    {isToday && <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600">오늘</span>}
+                    {!isToday && (
+                      <button
+                        onClick={() => setSelectedDate(todayStr)}
+                        className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 hover:bg-indigo-100 hover:text-indigo-600 transition cursor-pointer"
+                      >
+                        오늘로
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => navigateDate(1)}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-gray-800 transition cursor-pointer"
+                >
+                  <ChevronRight size={18} />
+                </button>
               </div>
               <div className="flex items-center gap-2 flex-wrap justify-end">
                 {logisticsStaff.length > 0 && logisticsStaff.map(({ employee }) => {
@@ -920,6 +969,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     </span>
                   );
                 })}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xl">🗺️</span>
+                  <span className="text-sm font-bold text-gray-600">매장 배치도</span>
+                </div>
                 <button
                   onClick={handleSaveAll}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition cursor-pointer"
