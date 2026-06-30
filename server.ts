@@ -714,12 +714,30 @@ async function startServer() {
 
   // ── zone_mismatches ────────────────────────────────────────────────────────
   app.get("/api/zone-mismatches", async (_req, res) => {
-    const { data, error } = await supabase
-      .from("zone_mismatches")
-      .select("*")
-      .order("registered_at", { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data ?? []);
+    // Compute mismatches directly from products table (display_location vs real_map)
+    const { data: products, error: prodErr } = await supabase
+      .from("products")
+      .select("product_code, product_name, display_location, real_map, last_modified_at")
+      .not("real_map", "is", null)
+      .neq("real_map", "");
+    if (prodErr) return res.status(500).json({ error: prodErr.message });
+
+    const computed = (products ?? [])
+      .filter(p => {
+        const spec = (p.display_location ?? "").trim();
+        const real = (p.real_map ?? "").trim();
+        return spec && real && spec !== real;
+      })
+      .map(p => ({
+        id: p.product_code,
+        product_code: p.product_code,
+        product_name: p.product_name ?? "",
+        spec_zone: (p.display_location ?? "").trim(),
+        real_zone: (p.real_map ?? "").trim(),
+        registered_at: p.last_modified_at ?? new Date().toISOString(),
+      }));
+
+    res.json(computed);
   });
 
   app.post("/api/zone-mismatches", async (req, res) => {
@@ -744,8 +762,15 @@ async function startServer() {
   });
 
   app.delete("/api/zone-mismatches/:id", async (req, res) => {
-    const { error } = await supabase.from("zone_mismatches").delete().eq("id", req.params.id);
+    const id = decodeURIComponent(req.params.id ?? "").trim();
+    // id is product_code — clear real_map to resolve the mismatch
+    const { error } = await supabase
+      .from("products")
+      .update({ real_map: null })
+      .eq("product_code", id);
     if (error) return res.status(500).json({ error: error.message });
+    // Also clean up legacy zone_mismatches table
+    await supabase.from("zone_mismatches").delete().eq("product_code", id).catch(() => {});
     res.json({ ok: true });
   });
 

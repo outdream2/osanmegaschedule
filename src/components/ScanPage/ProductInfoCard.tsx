@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Pencil, Loader2, ArrowRight, AlertTriangle } from "lucide-react";
+import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2 } from "lucide-react";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
 
@@ -12,6 +12,29 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
   const [mapSelectorOpen, setMapSelectorOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  type OrderStatus = "idle" | "loading" | "done" | "error";
+  const [orderStatus, setOrderStatus] = useState<OrderStatus>("idle");
+
+  const handleOrderRequest = async () => {
+    setOrderStatus("loading");
+    try {
+      const res = await fetch("/api/order-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_code: product.code,
+          product_name: product.name,
+          current_stock: product.current_stock != null ? Number(product.current_stock) : null,
+          optimal_stock: product.optimal_stock != null ? Number(product.optimal_stock) : null,
+          note: "",
+        }),
+      });
+      setOrderStatus(res.ok ? "done" : "error");
+    } catch {
+      setOrderStatus("error");
+    }
+  };
 
   const handleRealMapSelect = async (zoneLabel: string) => {
     setSaving(true);
@@ -165,6 +188,34 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
               <AlertTriangle size={11} className="text-red-500 shrink-0" />
               <p className="text-[10px] font-bold text-red-600">재고 부족 — 보충이 필요합니다</p>
             </div>
+          )}
+        </div>
+
+        {/* ── 발주요청 버튼 ── */}
+        <div className="mb-4">
+          {orderStatus === "done" ? (
+            <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold">
+              <CheckCircle2 size={15} />
+              발주 요청이 등록되었습니다
+            </div>
+          ) : (
+            <button
+              onClick={handleOrderRequest}
+              disabled={orderStatus === "loading"}
+              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition cursor-pointer disabled:opacity-60 ${
+                isLow
+                  ? "bg-red-500 hover:bg-red-600 text-white shadow-sm shadow-red-200"
+                  : "bg-white border border-gray-300 hover:border-indigo-400 hover:text-indigo-600 text-gray-600"
+              }`}
+            >
+              {orderStatus === "loading"
+                ? <Loader2 size={15} className="animate-spin" />
+                : <ShoppingCart size={15} />}
+              {orderStatus === "loading" ? "요청 중..." : orderStatus === "error" ? "재시도" : "발주 요청"}
+            </button>
+          )}
+          {orderStatus === "error" && (
+            <p className="text-[10px] text-red-500 text-center mt-1">요청 실패 — 다시 시도해주세요</p>
           )}
         </div>
 

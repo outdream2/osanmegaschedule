@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import {
   Bell, Package, MapPin,
   CheckCircle2, XCircle, Clock, RefreshCw, ArrowRight, Trash2, ShoppingCart, CalendarDays, Square, CheckSquare,
+  Send, Loader2,
 } from "lucide-react";
 import { getProductsMap, type ProductInfo } from "../lib/productsCache";
 import type { AuthSession } from "../types";
@@ -53,12 +54,13 @@ function fmtDate(iso: string) {
 
 /* ── 공통 툴바 ── */
 function ListToolbar({
-  total, selected, allChecked, onToggleAll, onDeleteSelected, onDeleteAll, onRefresh, loading, accentColor,
+  total, selected, allChecked, onToggleAll, onDeleteSelected, onDeleteAll, onRefresh, loading, accentColor, extraActions,
 }: {
   total: number; selected: number; allChecked: boolean;
   onToggleAll: () => void; onDeleteSelected: () => void;
   onDeleteAll: () => void; onRefresh: () => void;
   loading: boolean; accentColor: string;
+  extraActions?: React.ReactNode;
 }) {
   return (
     <div className="flex items-center gap-2 mb-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5 shadow-sm">
@@ -78,6 +80,7 @@ function ListToolbar({
           선택삭제
         </button>
       )}
+      {extraActions}
       <button
         onClick={onDeleteAll}
         disabled={total === 0}
@@ -124,6 +127,52 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [reviewingLeave, setReviewingLeave] = useState<string | null>(null);
   const [reviewNote, setReviewNote] = useState("");
 
+  // 진열요청 알림 전송
+  const [notifying, setNotifying] = useState(false);
+  const [notifyToast, setNotifyToast] = useState<string | null>(null);
+
+  const handleNotifyAll = useCallback(async () => {
+    const pending = displayReqs.filter(r => r.status === "pending" && r.assigned_staff_id);
+    if (pending.length === 0) {
+      setNotifyToast("전송할 대기 중인 진열요청이 없습니다");
+      setTimeout(() => setNotifyToast(null), 3000);
+      return;
+    }
+    setNotifying(true);
+    // 담당자별로 그룹화
+    const byStaff = new Map<number, { name: string; zones: string[] }>();
+    for (const r of pending) {
+      if (!r.assigned_staff_id) continue;
+      const entry = byStaff.get(r.assigned_staff_id) ?? { name: r.assigned_staff_name, zones: [] };
+      entry.zones.push(r.zone_label);
+      byStaff.set(r.assigned_staff_id, entry);
+    }
+    try {
+      await Promise.all(
+        [...byStaff.entries()].map(([staffId, { name, zones }]) =>
+          fetch("/api/notifications", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              employee_id: staffId,
+              title: "📦 진열 보충 요청",
+              body: zones.length === 1
+                ? `${zones[0]} 진열 보충이 필요합니다`
+                : `${zones[0]} 외 ${zones.length - 1}개 구역 보충이 필요합니다`,
+              type: "alert",
+            }),
+          })
+        )
+      );
+      setNotifyToast(`${byStaff.size}명 담당자에게 알림을 전송했습니다`);
+    } catch {
+      setNotifyToast("알림 전송 중 오류가 발생했습니다");
+    } finally {
+      setNotifying(false);
+      setTimeout(() => setNotifyToast(null), 3500);
+    }
+  }, [displayReqs]);
+
   // 로드
   const loadDisplayReqs = useCallback(async () => {
     setDisplayLoading(true);
@@ -161,10 +210,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     } catch { setLeaveReqs([]); } finally { setLeaveLoading(false); }
   }, [isManager, authSession?.employeeId]);
 
-  useEffect(() => { loadDisplayReqs(); }, []);
+  useEffect(() => { loadDisplayReqs(); loadMismatches(); }, []);
   useEffect(() => {
     if (tab === "order") { loadOrderReqs(); loadProducts(); }
-    if (tab === "mismatch") { loadMismatches(); }
     if (tab === "leave") { loadLeaveReqs(); }
   }, [tab]);
 
@@ -285,6 +333,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         {/* ── 진열요청 ── */}
         {tab === "display" && (
           <div className="flex flex-col gap-2">
+            {notifyToast && (
+              <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-blue-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 whitespace-nowrap">
+                <Bell size={13} />{notifyToast}
+              </div>
+            )}
             <ListToolbar
               total={displayReqs.length} selected={selectedDisplay.size}
               allChecked={selectedDisplay.size === displayReqs.length && displayReqs.length > 0}
@@ -292,6 +345,16 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               onDeleteSelected={() => deleteDisplay([...selectedDisplay])}
               onDeleteAll={() => { if (confirm(`진열요청 전체 ${displayReqs.length}건을 삭제할까요?`)) deleteDisplay(displayReqs.map(r => r.id)); }}
               onRefresh={loadDisplayReqs} loading={displayLoading} accentColor="text-blue-600"
+              extraActions={
+                <button
+                  onClick={handleNotifyAll}
+                  disabled={notifying || displayReqs.filter(r => r.status === "pending").length === 0}
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-blue-500 hover:bg-blue-600 border border-blue-400 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                >
+                  {notifying ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                  진열요청
+                </button>
+              }
             />
 
             {displayLoading ? (
