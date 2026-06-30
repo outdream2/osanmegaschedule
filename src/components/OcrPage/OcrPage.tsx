@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { Upload, Loader2, X, Zap, AlertCircle, Cpu, Camera, Images } from "lucide-react";
+import { Upload, Loader2, X, Zap, AlertCircle, Camera, Images } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import { PageImageViewer } from "./PageImageViewer";
 import { RawOcrTable } from "./RawOcrTable";
-import { runPaddleOcr } from "./paddleEngine";
 import type { OcrPageResult } from "./paddleEngine";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession } from "../../types";
@@ -137,7 +136,6 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   const [pages, setPages] = useState<OcrPageResult[]>([]);
   const [pageImages, setPageImages] = useState<string[]>([]);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
-  const [engine, setEngine] = useState<"paddle" | "gemini">("paddle");
   const [pingStatus, setPingStatus] = useState<{ ok: boolean; gemini: boolean; geminiKeyCount: number } | null>(null);
   const [rotation, setRotation] = useState(0);
   const [detectingOrient, setDetectingOrient] = useState(false);
@@ -228,35 +226,28 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
         ? images
         : await Promise.all(images.map(img => physicallyRotate(img.data, img.mimeType, rotation)));
 
-if (engine === "paddle") {
-  const results = await runPaddleOcr(rotatedImages, p => {
-    setStatusMsg(`페이지 ${p.done}/${p.total} 처리 중...`);
-    setProcessed(p.done);
-  });
-  setPages(results);
-} else {
-  const all: OcrPageResult[] = [];
-  for (let i = 0; i < rotatedImages.length; i++) {
-    try {
-      const res = await axios.post("/api/ocr", { images: [rotatedImages[i]], engine: "gemini" });
-      const page = res.data.pages?.[0];
-      if (page) all.push({ ...page, page: i + 1 });
-    } catch (e: any) {
-      const msg = e?.response?.data?.error ?? e?.message ?? "OCR 실패";
-      if (all.length === 0 && i === rotatedImages.length - 1) throw new Error(msg);
-      setError(`페이지 ${i + 1} 실패: ${msg}`);
-    }
-    setProcessed(i + 1);
-  }
-  setPages(all);
-}
+      const all: OcrPageResult[] = [];
+      for (let i = 0; i < rotatedImages.length; i++) {
+        try {
+          const res = await axios.post("/api/ocr", { images: [rotatedImages[i]], engine: "gemini" });
+          const page = res.data.pages?.[0];
+          if (page) all.push({ ...page, page: i + 1 });
+        } catch (e: any) {
+          const msg = e?.response?.data?.error ?? e?.message ?? "OCR 실패";
+          if (all.length === 0 && i === rotatedImages.length - 1) throw new Error(msg);
+          setError(`페이지 ${i + 1} 실패: ${msg}`);
+        }
+        setProcessed(i + 1);
+        setStatusMsg(`페이지 ${i + 1}/${rotatedImages.length} 처리 중...`);
+      }
+      setPages(all);
     } catch (err: any) {
   setError(err?.response?.data?.error ?? err?.message ?? "OCR 처리 중 오류가 발생했습니다.");
 } finally {
   setExtracting(false);
   setStatusMsg("");
 }
-  }, [extracting, engine, rotation]);
+  }, [extracting, rotation]);
 
 const rotDeg = ((rotation % 360) + 360) % 360;
 
@@ -402,42 +393,18 @@ return (
               서버가 OCR을 지원하지 않습니다. <code className="font-mono bg-rose-100 px-1 rounded">npx tsx server.ts</code> 로 재시작하세요.
             </div>
           )}
-          {engine === "gemini" && pingStatus?.ok && !pingStatus.gemini && (
+          {pingStatus?.ok && !pingStatus.gemini && (
             <div className="w-full bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 flex items-center gap-2 text-amber-700 text-xs font-semibold">
               <AlertCircle size={14} />
-              GEMINI_API_KEY가 없습니다. .env에 키를 추가하거나 무료 OCR을 사용하세요.
+              GEMINI_API_KEY가 없습니다. .env에 키를 추가하세요.
             </div>
           )}
 
-          <div className="w-full bg-white border border-gray-200 rounded-2xl p-3">
-            <div className="flex gap-2">
-              <button
-                onClick={() => setEngine("paddle")}
-                className={`flex-1 flex flex-col items-center py-3 rounded-xl text-xs font-bold transition cursor-pointer gap-1 ${engine === "paddle" ? "bg-emerald-500 text-white shadow-sm" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
-              >
-                <Cpu size={14} />
-                무료 OCR
-              </button>
-              <button
-                onClick={() => setEngine("gemini")}
-                className={`flex-1 flex flex-col items-center py-3 rounded-xl text-xs font-bold transition cursor-pointer gap-1 ${engine === "gemini" ? "bg-amber-500 text-white shadow-sm" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
-              >
-                <Zap size={14} />
-                유료 OCR
-              </button>
-            </div>
-            <p className="text-[10px] text-gray-400 mt-2 text-center">
-              {engine === "paddle"
-                ? "EasyOCR — 서버 Python 처리 · API 불필요 · 한글 지원"
-                : "Gemini 비전 AI — 고정밀 인식 · API 키 필요"}
-            </p>
-          </div>
-
           <button onClick={handleExtract} disabled={extracting}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm ${engine === "paddle" ? "bg-emerald-500 hover:bg-emerald-600" : "bg-amber-500 hover:bg-amber-600"}`}>
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm">
             {extracting
               ? <><Loader2 size={15} className="animate-spin" />{statusMsg || `OCR 추출 중... (${processed}/${pageCount || "?"})`}</>
-              : <>{engine === "paddle" ? <Cpu size={15} /> : <Zap size={15} />}OCR 추출{rotDeg !== 0 ? ` (${rotDeg}° 회전 적용)` : ""}</>}
+              : <><Zap size={15} />OCR 추출{rotDeg !== 0 ? ` (${rotDeg}° 회전 적용)` : ""}</>}
           </button>
         </>
       )}
@@ -445,7 +412,7 @@ return (
       {extracting && pageCount > 0 && (
         <div className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3">
           <div className="w-full bg-gray-100 rounded-full h-1.5">
-            <div className={`h-1.5 rounded-full transition-all ${engine === "paddle" ? "bg-emerald-500" : "bg-amber-500"}`}
+            <div className="h-1.5 rounded-full transition-all bg-amber-500"
               style={{ width: `${(processed / pageCount) * 100}%` }} />
           </div>
         </div>

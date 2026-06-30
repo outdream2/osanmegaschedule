@@ -36,6 +36,7 @@ import {
   LayoutGrid,
   FileText,
   Package,
+  Utensils,
 } from "lucide-react";
 
 interface SchedulePageProps {
@@ -46,12 +47,13 @@ interface SchedulePageProps {
   onNavigateToLeave?: () => void;
   onNavigateToScan?: () => void;
   onNavigateToOcr?: () => void;
+  onNavigateToLunch?: () => void;
   initialEditEmployeeId?: number | null;
   onEditEmployeeHandled?: () => void;
   authSession?: AuthSession | null;
 }
 
-export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, onNavigateToDisplay, onNavigateToRequests, onNavigateToLeave, onNavigateToScan, onNavigateToOcr, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
+export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, onNavigateToDisplay, onNavigateToRequests, onNavigateToLeave, onNavigateToScan, onNavigateToOcr, onNavigateToLunch, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
   // ── Auth-derived flags (level-based, with role fallback for old sessions) ───
   const userLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
@@ -212,6 +214,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const [empAnnualLeave, setEmpAnnualLeave] = useState<number>(0);
   const [empLevel, setEmpLevel] = useState<number>(1);
   const [empZoneNums, setEmpZoneNums] = useState<number[]>([]);
+  const [empContractFile, setEmpContractFile] = useState<File | null>(null);
+  const [empContractUrl, setEmpContractUrl] = useState<string | null>(null);
   const [yearLeaveStats, setYearLeaveStats] = useState<Record<number, number>>({});
   const [editingEmpId, setEditingEmpId] = useState<number | null>(null);
   const [tempDescription, setTempDescription] = useState("");
@@ -344,6 +348,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     setEmpRank("");
     setEmpLevel(1);
     setEmpZoneNums([]);
+    setEmpContractFile(null);
+    setEmpContractUrl(null);
     setIsEmpModalOpen(true);
   };
 
@@ -374,6 +380,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     } else {
       setEmpZoneNums([]);
     }
+    setEmpContractFile(null);
+    setEmpContractUrl((emp as any).contract_file_url ?? null);
     // Reset inline password set form
     setShowPasswordSet(false);
     setNewEmpPassword("");
@@ -531,6 +539,16 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const [isCopying, setIsCopying] = useState(false);
 
   const handleCopyFromPreviousMonth = async () => {
+    const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
+    const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
+    const monthPrefix = `${currentYear}-${String(currentMonth).padStart(2, "0")}`;
+    const currentMonthHasData = employees.some(emp =>
+      emp.schedules && emp.schedules.some(s => s.date.startsWith(monthPrefix) && s.type.trim() !== "")
+    );
+    if (currentMonthHasData) {
+      if (!confirm(`${currentMonth}월에 이미 스케줄 데이터가 있습니다.\n${prevYear}년 ${prevMonth}월 데이터로 덮어쓰시겠습니까?`)) return;
+      if (!confirm(`정말 덮어쓰시겠습니까?\n현재 ${currentMonth}월 스케줄 전체가 삭제되고 ${prevMonth}월 데이터로 교체됩니다.`)) return;
+    }
     setIsCopying(true);
     try {
       const response = await axios.post("/api/schedules/copy", {
@@ -880,6 +898,19 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     };
 
     try {
+      const uploadContract = async (empId: number) => {
+        if (!empContractFile) return;
+        const fd = new FormData();
+        fd.append("contract", empContractFile);
+        try {
+          await axios.post(`/api/employees/${empId}/contract`, fd, {
+            headers: { "Content-Type": "multipart/form-data" },
+          });
+        } catch {
+          showNotification("근로계약서 업로드 중 오류가 발생했습니다.", "error");
+        }
+      };
+
       if (empModalMode === "edit" && selectedEmpForEdit) {
         await axios.put(`/api/employees/${selectedEmpForEdit.id}`, {
           name: empName,
@@ -893,6 +924,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           annual_leave_days: empAnnualLeave > 0 ? empAnnualLeave : null,
           level: empLevel,
         });
+        await uploadContract(selectedEmpForEdit.id);
         applyZones(selectedEmpForEdit.id, empName);
         showNotification(`${empName} 직원의 정보가 수정되었습니다.`);
       } else {
@@ -908,7 +940,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           annual_leave_days: empAnnualLeave > 0 ? empAnnualLeave : null,
           level: empLevel,
         });
-        if (res.data?.id) applyZones(res.data.id, empName);
+        if (res.data?.id) {
+          await uploadContract(res.data.id);
+          applyZones(res.data.id, empName);
+        }
         showNotification(`새 직원 ${empName}님이 등록되었습니다.`);
       }
 
@@ -925,6 +960,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       setEmpAnnualLeave(0);
       setEmpLevel(1);
       setEmpZoneNums([]);
+      setEmpContractFile(null);
+      setEmpContractUrl(null);
       setSelectedEmpForEdit(null);
       setEmpModalMode("create");
       fetchScheduleData(); // refresh roster
@@ -1404,6 +1441,11 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 <FileText size={12} /><span>OCR</span>
               </button>
             )}
+            {onNavigateToLunch && (
+              <button onClick={onNavigateToLunch} className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer">
+                <Utensils size={12} /><span>점심</span>
+              </button>
+            )}
           </div>
 
           {/* Mobile action buttons */}
@@ -1867,7 +1909,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                         >
 
                           {/* Column 1: Sticky Employee Name */}
-                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] min-w-[90px] sm:min-w-[104px] h-auto min-h-[54px] sm:min-h-[58px] p-0">
+                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] min-w-[96px] sm:min-w-[112px] h-auto min-h-[54px] sm:min-h-[58px] p-0">
                             <div className="flex items-stretch h-full">
                               {/* Drag handle — desktop only */}
                               {isAdmin && (
@@ -1879,7 +1921,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                 </div>
                               )}
                               {/* Name / position / actions — vertical stack */}
-                              <div className="flex-1 flex flex-col justify-between py-1 px-1.5 min-w-0">
+                              <div className="flex-1 flex flex-col justify-between py-1 pl-2 pr-1 min-w-0">
                                 {/* Top: name + memo dot */}
                                 <div className="flex items-center gap-0.5 min-w-0">
                                   {emp.gender === "남" && (
@@ -1890,9 +1932,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   )}
                                   <span
                                     onMouseDown={(e) => e.stopPropagation()}
-                                    onClick={(e) => { e.stopPropagation(); setCalendarEmployee(emp); }}
-                                    className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[10px] sm:text-[11px] cursor-pointer select-none transition break-keep leading-tight"
-                                    title="클릭하여 개인 스케줄 달력 보기"
+                                    onClick={(e) => { e.stopPropagation(); if (isSuperAdmin) { openEditEmployeeModal(emp); } else { setCalendarEmployee(emp); } }}
+                                    className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-xs sm:text-[13px] cursor-pointer select-none transition break-keep leading-tight"
+                                    title={isSuperAdmin ? "클릭하여 직원정보 보기" : "클릭하여 개인 스케줄 달력 보기"}
                                   >
                                     {emp.name}
                                   </span>
@@ -1905,11 +1947,25 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                     </span>
                                   )}
                                 </div>
-                                {/* 구분 / 직급 | 계약상태 — 두 줄로 분리 */}
+                                {/* 구분 / 직급 → 월차 → 계약상태 순서 */}
                                 <div className="flex flex-col gap-0 leading-tight">
                                   <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium break-keep">
-                                    {emp.position}{emp.rank ? ` · ${emp.rank}` : ""}
+                                    {emp.position}{emp.rank ? ` ${emp.rank}` : ""}
                                   </span>
+                                  {/* 남은 월차: position 바로 다음 줄 */}
+                                  {(() => {
+                                    const leaveTotal = parseInt(String(emp.annual_leave_days ?? ""), 10);
+                                    if (!leaveTotal || !Number.isFinite(leaveTotal)) return null;
+                                    const leaveUsed = emp.schedules.filter(
+                                      s => s.type === "월차" && s.date.startsWith(`${currentYear}-`)
+                                    ).length;
+                                    const leaveRemaining = Math.max(0, leaveTotal - leaveUsed);
+                                    return (
+                                      <span className={`text-[8px] font-bold leading-tight ${leaveRemaining === 0 ? "text-rose-500" : "text-amber-500"}`}>
+                                        월차{leaveRemaining}
+                                      </span>
+                                    );
+                                  })()}
                                   {emp.employmentType && (
                                     <span className={`text-[8px] font-semibold break-keep ${
                                       emp.employmentType === "정직원" ? "text-emerald-600" :
@@ -1920,20 +1976,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                     </span>
                                   )}
                                 </div>
-                                {/* 남은 월차: 로딩된 스케줄에서 직접 계산 */}
-                                {(() => {
-                                  const leaveTotal = parseInt(String(emp.annual_leave_days ?? ""), 10);
-                                  if (!leaveTotal || !Number.isFinite(leaveTotal)) return null;
-                                  const leaveUsed = emp.schedules.filter(
-                                    s => s.type === "월차" && s.date.startsWith(`${currentYear}-`)
-                                  ).length;
-                                  const leaveRemaining = Math.max(0, leaveTotal - leaveUsed);
-                                  return (
-                                    <span className={`text-[8px] font-bold leading-tight ${leaveRemaining === 0 ? "text-rose-500" : "text-amber-500"}`}>
-                                      월차{leaveRemaining}
-                                    </span>
-                                  );
-                                })()}
                                 {/* Bottom: edit / delete (admin) */}
                                 {isAdmin && (
                                   <div className="flex items-center gap-0.5 opacity-20 group-hover:opacity-100 transition duration-150">
@@ -2217,6 +2259,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           empZoneNums={empZoneNums}
           setEmpZoneNums={setEmpZoneNums}
           employmentTypes={PRESET_EMPLOYMENT_TYPES}
+          empContractFile={empContractFile}
+          setEmpContractFile={setEmpContractFile}
+          empContractUrl={empContractUrl}
           onSubmit={handleAddEmployeeSubmit}
           onClose={() => setIsEmpModalOpen(false)}
         />
@@ -2363,6 +2408,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           middleShiftHour={middleShiftHour}
           closeShiftHour={closeShiftHour}
           logisticsZoneProps={calendarLogisticsZoneProps}
+          onViewEmployeeInfo={isSuperAdmin ? () => { const emp = calendarEmployee; setCalendarEmployee(null); if (emp) openEditEmployeeModal(emp); } : undefined}
         />
       )}
     </div>

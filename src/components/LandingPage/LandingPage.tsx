@@ -23,13 +23,14 @@ import {
   List,
   Eye,
   EyeOff,
+  Utensils,
 } from "lucide-react";
 import type { AuthSession, AuthRole } from "../../types";
 import { NotificationBell } from "../NotificationBell";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
-  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions", auth?: AuthSession) => void;
+  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch", auth?: AuthSession) => void;
   onLogout: () => void;
   onAuthOnly?: (auth: AuthSession) => void;
 }
@@ -37,7 +38,7 @@ interface LandingPageProps {
 export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigate, onLogout, onAuthOnly }) => {
   const [pendingPage, setPendingPage] = useState<"schedule" | "display" | "scan" | "requests" | "ocr" | "upload" | "leave" | null>(null);
   const [leavePendingCount, setLeavePendingCount] = useState(0);
-  const [requestsPendingCount, setRequestsPendingCount] = useState(0);
+  const [requestsCounts, setRequestsCounts] = useState({ display: 0, order: 0, mismatch: 0, lunch: 0 });
 
   // Product list upload (manager only)
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -170,9 +171,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     if (!isManagerOrAdmin) return;
     fetch("/api/requests/pending-counts")
       .then(r => r.ok ? r.json() : {})
-      .then((d: { leave?: number; display?: number; order?: number; mismatch?: number }) => {
+      .then((d: { leave?: number; display?: number; order?: number; mismatch?: number; lunch?: number }) => {
         setLeavePendingCount(d.leave ?? 0);
-        setRequestsPendingCount((d.display ?? 0) + (d.order ?? 0) + (d.mismatch ?? 0));
+        setRequestsCounts({
+          display: d.display ?? 0,
+          order: d.order ?? 0,
+          mismatch: d.mismatch ?? 0,
+          lunch: d.lunch ?? 0,
+        });
       })
       .catch(() => {});
   }, [isManagerOrAdmin]);
@@ -322,19 +328,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <button onClick={() => onNavigate("requests", authSession!)}
                   className="group relative bg-white border border-slate-200/80 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,231,255,0.7) 0%, transparent 60%)" }} />
-                  {requestsPendingCount > 0 && (
-                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-white text-[10px] font-black" style={{ background: "linear-gradient(135deg, #f43f5e, #e11d48)", boxShadow: "0 0 0 2px white, 0 2px 6px rgba(244,63,94,0.4)" }}>
-                      {requestsPendingCount}
-                    </div>
-                  )}
+                  <div className="absolute top-2 right-2 flex items-center gap-0.5">
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-blue-500 shadow-sm">{requestsCounts.display}</span>
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-red-500 shadow-sm">{requestsCounts.order}</span>
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-orange-500 shadow-sm">{requestsCounts.mismatch}</span>
+                    <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white bg-emerald-500 shadow-sm">{requestsCounts.lunch}</span>
+                  </div>
                   <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)", border: "1px solid #a5b4fc" }}>
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105 mt-5 sm:mt-6" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)", border: "1px solid #a5b4fc" }}>
                       <List size={16} className="text-indigo-600 sm:hidden" /><List size={20} className="text-indigo-600 hidden sm:block" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">요청목록 조회</div>
                     <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">진열·발주요청 및 배정구역 불일치 확인</div>
                     <div className="flex items-center gap-1 mt-2 text-indigo-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">{requestsPendingCount > 0 ? `대기 ${requestsPendingCount}건` : "조회하기"}</span>
+                      <span className="text-[11px] sm:text-xs">{(requestsCounts.display + requestsCounts.order + requestsCounts.mismatch + requestsCounts.lunch) > 0 ? `대기 ${requestsCounts.display + requestsCounts.order + requestsCounts.mismatch + requestsCounts.lunch}건` : "조회하기"}</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
@@ -455,6 +462,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">연차 신청</div>
                     <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">휴가·연차 신청 및 내역 조회</div>
                     <div className="flex items-center gap-1 mt-2 text-rose-500 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">신청하기</span>
+                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+
+                {/* 점심 신청 — orange */}
+                <button onClick={() => onNavigate("lunch", authSession!)}
+                  className="group relative bg-white border border-slate-200/80 hover:border-orange-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffedd5, #fed7aa)", border: "1px solid #fdba74" }}>
+                      <Utensils size={16} className="text-orange-500 sm:hidden" /><Utensils size={20} className="text-orange-500 hidden sm:block" />
+                    </div>
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">점심 신청</div>
+                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">오늘의 점심 식사 신청</div>
+                    <div className="flex items-center gap-1 mt-2 text-orange-500 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">신청하기</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>

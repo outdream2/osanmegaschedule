@@ -1,6 +1,6 @@
 // src/components/EmployeeFormModal.tsx
-import React from "react";
-import { X, Users, Briefcase, Calendar, MapPin } from "lucide-react";
+import React, { useRef } from "react";
+import { X, Users, Calendar, MapPin, FileText, ExternalLink, Upload } from "lucide-react";
 import { ZONE_DEFS, SECTION_LABEL } from "../constants/displayZones";
 
 interface EmployeeFormModalProps {
@@ -30,152 +30,222 @@ interface EmployeeFormModalProps {
   empZoneNums: number[];
   setEmpZoneNums: React.Dispatch<React.SetStateAction<number[]>>;
   employmentTypes: string[];
+  // 근로계약서
+  empContractFile: File | null;
+  setEmpContractFile: React.Dispatch<React.SetStateAction<File | null>>;
+  empContractUrl: string | null;
   onSubmit: (e: React.FormEvent) => void;
   onClose: () => void;
 }
 
+const SELECT_CLS = "w-full text-xs rounded border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 p-2 bg-white text-slate-800 focus:outline-none transition-all";
+const LABEL_CLS = "block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1";
+
+const POSITIONS = ["약사", "캐셔", "진열", "물류", "기타"];
+const RANKS     = ["", "대표", "이사", "부장", "팀장", "과장", "사원", "알바"];
+const WORKPLACES = ["매장", "창고", "본사", "기타"];
+const GENDERS   = [{ v: "", label: "미지정" }, { v: "남", label: "남자" }, { v: "여", label: "여자" }];
+const LEVELS    = [
+  { v: 0,  label: "0 — 미지정" },
+  { v: 1,  label: "1 — 직원" },
+  { v: 2,  label: "2" },
+  { v: 3,  label: "3" },
+  { v: 4,  label: "4" },
+  { v: 5,  label: "5" },
+  { v: 6,  label: "6" },
+  { v: 7,  label: "7 — 관리자" },
+  { v: 8,  label: "8 — 대표" },
+  { v: 9,  label: "9 — 최고관리자" },
+];
+
 export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   empModalMode,
-  empName,
-  setEmpName,
-  empPosition,
-  setEmpPosition,
-  empCustomPosition,
-  setEmpCustomPosition,
-  empEmploymentType,
-  setEmpEmploymentType,
-  empHireDate,
-  setEmpHireDate,
-  empDescription,
-  setEmpDescription,
-  empWorkplace,
-  setEmpWorkplace,
-  empGender,
-  setEmpGender,
-  empRank,
-  setEmpRank,
-  empAnnualLeave,
-  setEmpAnnualLeave,
-  empLevel,
-  setEmpLevel,
-  empZoneNums,
-  setEmpZoneNums,
+  empName, setEmpName,
+  empPosition, setEmpPosition,
+  empCustomPosition, setEmpCustomPosition,
+  empEmploymentType, setEmpEmploymentType,
+  empHireDate, setEmpHireDate,
+  empDescription, setEmpDescription,
+  empWorkplace, setEmpWorkplace,
+  empGender, setEmpGender,
+  empRank, setEmpRank,
+  empAnnualLeave, setEmpAnnualLeave,
+  empLevel, setEmpLevel,
+  empZoneNums, setEmpZoneNums,
   employmentTypes,
-  onSubmit,
-  onClose,
+  empContractFile, setEmpContractFile,
+  empContractUrl,
+  onSubmit, onClose,
 }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const isCustomPosition = !["약사", "캐셔", "진열", "물류", ""].includes(empPosition);
+
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full sm:max-w-md bg-white sm:rounded-lg rounded-t-2xl shadow-2xl p-4 sm:p-6 border border-[#e2e8f0] transform scale-100 transition animate-in zoom-in-95 duration-100 max-h-[90vh] overflow-y-auto">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer"
-        >
-          <X size={18} />
-        </button>
-
-        <div className="flex items-center gap-2 border-b pb-3 mb-4">
-          <Users className="text-[#2563eb]" size={20} />
-          <h3 className="text-sm font-bold text-slate-900">{empModalMode === "edit" ? "직원 정보 수정" : "새로운 직원 등록"}</h3>
+      <div className="relative w-full sm:max-w-md bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-slate-200 transform scale-100 transition animate-in zoom-in-95 duration-100 max-h-[92vh] overflow-y-auto">
+        {/* 헤더 */}
+        <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-5 py-3.5 flex items-center justify-between rounded-t-2xl">
+          <div className="flex items-center gap-2">
+            <Users className="text-blue-600" size={18} />
+            <h3 className="text-sm font-bold text-slate-900">
+              {empModalMode === "edit" ? "직원 정보 수정" : "새 직원 등록"}
+            </h3>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition cursor-pointer">
+            <X size={16} />
+          </button>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4">
-          {/* Highlighted, prominent Description (상세 설명) at the very beginning */}
-          <div className="bg-slate-50 p-3 rounded-lg border border-[#cbd5e1] space-y-1">
-            <label className="block text-xs font-extrabold text-[#1e293b] flex items-center gap-1">
-              <span>💡 상세 설명 (근무 패턴 / 클래스)</span> <span className="text-rose-500">*</span>
+        <form onSubmit={onSubmit} className="px-5 py-4 space-y-4">
+
+          {/* ── 1. 성명 ── */}
+          <div>
+            <label className={LABEL_CLS}>
+              성명 <span className="text-rose-500 normal-case">*</span>
             </label>
             <input
               type="text"
-              placeholder="예: 주6일 일 휴무, 금일, 주5일 (수목휴무) 등"
-              value={empDescription}
-              onChange={(e) => setEmpDescription(e.target.value)}
-              className="w-full text-sm font-bold rounded-md border border-[#94a3b8] focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/10 p-2.5 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all duration-150"
+              placeholder="홍길동"
+              value={empName}
+              onChange={e => setEmpName(e.target.value)}
+              className="w-full text-sm font-semibold rounded-lg border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 px-3 py-2.5 bg-white text-slate-900 placeholder:text-slate-300 focus:outline-none transition-all"
+              required
             />
-
-            {/* Visual Quick Recommendation Patterns to extremely simplify user interaction */}
-            <div className="flex flex-wrap gap-1 mt-1.5 pt-1.5 border-t border-[#e2e8f0]">
-              <span className="text-[10px] text-slate-500 font-bold self-center mr-1">추천 패턴:</span>
-              {["주6일 일 휴무", "수목 휴무", "토일", "금일", "일월", "3주 목<->토", "월화", "화수", "평일마감 주말오픈"].map((pat) => (
-                <button
-                  key={pat}
-                  type="button"
-                  onClick={() => setEmpDescription(pat)}
-                  className="px-1.5 py-0.5 text-[9px] bg-white hover:bg-slate-100 border border-[#cbd5e1] hover:border-slate-400 rounded text-slate-700 font-semibold cursor-pointer transition duration-100"
-                >
-                  {pat}
-                </button>
-              ))}
-            </div>
           </div>
 
+          {/* ── 2. 구분 | 직급 ── */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-                <span>직원 성명</span> <span className="text-rose-500">*</span>
+              <label className={LABEL_CLS}>
+                구분 <span className="text-rose-500 normal-case">*</span>
+              </label>
+              <select
+                value={isCustomPosition ? "기타" : empPosition}
+                onChange={e => {
+                  const v = e.target.value;
+                  setEmpPosition(v);
+                  if (v !== "기타") setEmpCustomPosition("");
+                  if (v !== "물류") setEmpZoneNums([]);
+                }}
+                className={SELECT_CLS}
+              >
+                <option value="">선택</option>
+                {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+              {(empPosition === "기타" || isCustomPosition) && (
+                <input
+                  type="text"
+                  placeholder="직종 직접 입력"
+                  value={empCustomPosition}
+                  onChange={e => setEmpCustomPosition(e.target.value)}
+                  className="mt-1.5 w-full text-xs rounded border border-slate-200 focus:border-blue-400 px-2 py-1.5 bg-white focus:outline-none"
+                />
+              )}
+            </div>
+            <div>
+              <label className={LABEL_CLS}>직급</label>
+              <select
+                value={empRank}
+                onChange={e => setEmpRank(e.target.value)}
+                className={SELECT_CLS}
+              >
+                {RANKS.map(r => <option key={r} value={r}>{r || "선택 안 함"}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* ── 3. 레벨 ── */}
+          <div>
+            <label className={LABEL_CLS}>
+              레벨
+              <span className="text-slate-400 font-normal normal-case ml-1.5">접근 권한 (1=직원, 7=관리자, 8=대표, 9=최고관리자)</span>
+            </label>
+            <select
+              value={empLevel}
+              onChange={e => setEmpLevel(Number(e.target.value))}
+              className={SELECT_CLS}
+            >
+              {LEVELS.map(l => <option key={l.v} value={l.v}>{l.label}</option>)}
+            </select>
+          </div>
+
+          {/* ── 4. 입사일 | 연간월차 ── */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className={`${LABEL_CLS} flex items-center gap-1`}>
+                <Calendar size={11} /> 입사일
               </label>
               <input
-                type="text"
-                placeholder="예: 홍길동"
-                value={empName}
-                onChange={(e) => setEmpName(e.target.value)}
-                className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
+                type="date"
+                value={empHireDate}
+                onChange={e => setEmpHireDate(e.target.value)}
+                className={SELECT_CLS}
               />
             </div>
-          </div>
-
-          {/* ── 구분 (Classification) — used for filters ── */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-              <Briefcase size={13} /> 구분 <span className="text-rose-500">*</span>
-              <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">업무 분류 (필터에 사용)</span>
-            </label>
-            <div className="flex flex-wrap gap-1">
-              {(["약사", "캐셔", "진열", "물류"] as const).map((pos) => (
-                <button
-                  key={pos}
-                  type="button"
-                  onClick={() => { setEmpPosition(pos); setEmpCustomPosition(""); if (pos !== "물류") setEmpZoneNums([]); }}
-                  className={`px-2.5 py-1 text-[11px] rounded-lg transition font-bold cursor-pointer border ${
-                    empPosition === pos
-                      ? "bg-indigo-50 text-indigo-700 border-indigo-300 shadow-sm"
-                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                  }`}
-                >
-                  {pos}
-                </button>
-              ))}
-              <button
-                type="button"
-                onClick={() => setEmpPosition("기타")}
-                className={`px-2.5 py-1 text-[11px] rounded-lg transition font-bold cursor-pointer border ${
-                  !["약사", "캐셔", "물류", "진열"].includes(empPosition) && empPosition !== ""
-                    ? "bg-indigo-50 text-indigo-700 border-indigo-300 shadow-sm"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                }`}
-              >
-                기타
-              </button>
-            </div>
-            {(empPosition === "기타" || (!["약사", "캐셔", "물류", "진열", ""].includes(empPosition))) && (
+            <div>
+              <label className={LABEL_CLS}>
+                연간 월차
+                <span className="text-slate-400 font-normal normal-case ml-1">일수</span>
+              </label>
               <input
-                type="text"
-                placeholder="직접 입력"
-                value={empCustomPosition}
-                onChange={(e) => setEmpCustomPosition(e.target.value)}
-                className="w-full mt-1.5 text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
+                type="number"
+                min={0} max={30}
+                value={empAnnualLeave || ""}
+                onChange={e => setEmpAnnualLeave(parseInt(e.target.value) || 0)}
+                placeholder="예: 15"
+                className={SELECT_CLS}
               />
-            )}
+            </div>
           </div>
 
-          {/* ── 구역 배정 (물류 직원 전용) ── */}
-          {(empPosition === "물류") && (
+          {/* ── 5. 근무형태 | 성별 | 근무지 ── */}
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className={LABEL_CLS}>
+                근무형태 <span className="text-rose-500 normal-case">*</span>
+              </label>
+              <select
+                value={empEmploymentType}
+                onChange={e => setEmpEmploymentType(e.target.value)}
+                className={SELECT_CLS}
+              >
+                {employmentTypes.map(et => (
+                  <option key={et} value={et}>{et}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={LABEL_CLS}>성별</label>
+              <select
+                value={empGender}
+                onChange={e => setEmpGender(e.target.value as "남" | "여" | "")}
+                className={SELECT_CLS}
+              >
+                {GENDERS.map(g => <option key={g.v} value={g.v}>{g.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={LABEL_CLS}>
+                근무지 <span className="text-rose-500 normal-case">*</span>
+              </label>
+              <select
+                value={empWorkplace}
+                onChange={e => setEmpWorkplace(e.target.value)}
+                className={SELECT_CLS}
+              >
+                {WORKPLACES.map(w => <option key={w} value={w}>{w}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* ── 6. 구역 배정 (물류 전용) ── */}
+          {empPosition === "물류" && (
             <div className="border border-violet-200 bg-violet-50/40 rounded-xl p-3 space-y-2.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-extrabold text-violet-800 flex items-center gap-1.5">
                   <MapPin size={13} className="text-violet-600" />
                   담당 구역 배정
-                  <span className="text-[10px] font-normal text-violet-500">(복수 선택 가능)</span>
+                  <span className="text-[10px] font-normal text-violet-500">(복수 선택)</span>
                 </label>
                 <div className="flex items-center gap-2">
                   {empZoneNums.length > 0 && (
@@ -184,51 +254,32 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                     </span>
                   )}
                   {empZoneNums.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setEmpZoneNums([])}
-                      className="text-[10px] font-bold text-rose-500 hover:text-rose-700 cursor-pointer transition"
-                    >
+                    <button type="button" onClick={() => setEmpZoneNums([])}
+                      className="text-[10px] font-bold text-rose-500 hover:text-rose-700 cursor-pointer transition">
                       전체 해제
                     </button>
                   )}
                 </div>
               </div>
-
-              {/* 섹션별 구역 목록 */}
-              <div className="space-y-2 max-h-56 overflow-y-auto pr-0.5">
-                {(["top_wall", "aisle", "left_wall", "bottom_wall", "wing"] as const).map((section) => {
+              <div className="space-y-2 max-h-52 overflow-y-auto pr-0.5">
+                {(["top_wall", "aisle", "left_wall", "bottom_wall", "wing"] as const).map(section => {
                   const zones = ZONE_DEFS.filter(z => z.section === section);
                   return (
                     <div key={section}>
-                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">
-                        {SECTION_LABEL[section]}
-                      </div>
+                      <div className="text-[9px] font-black text-slate-400 uppercase tracking-wider mb-1">{SECTION_LABEL[section]}</div>
                       <div className="flex flex-wrap gap-1">
-                        {zones.map((z) => {
+                        {zones.map(z => {
                           const isOn = empZoneNums.includes(z.num);
                           return (
-                            <button
-                              key={z.num}
-                              type="button"
-                              onClick={() =>
-                                setEmpZoneNums(prev =>
-                                  isOn ? prev.filter(n => n !== z.num) : [...prev, z.num]
-                                )
-                              }
+                            <button key={z.num} type="button"
+                              onClick={() => setEmpZoneNums(prev => isOn ? prev.filter(n => n !== z.num) : [...prev, z.num])}
                               className={`px-1.5 py-1 rounded-lg border text-left transition-all cursor-pointer active:scale-[0.96] ${
-                                isOn
-                                  ? "bg-violet-100 border-violet-400 shadow-sm"
-                                  : "bg-white border-slate-200 hover:border-violet-300 hover:bg-violet-50"
+                                isOn ? "bg-violet-100 border-violet-400 shadow-sm" : "bg-white border-slate-200 hover:border-violet-300 hover:bg-violet-50"
                               }`}
                               title={z.category}
                             >
-                              <span className={`text-[10px] font-black leading-none ${isOn ? "text-violet-800" : "text-slate-600"}`}>
-                                {z.num}
-                              </span>
-                              <span className={`text-[8px] ml-0.5 ${isOn ? "text-violet-600" : "text-slate-400"}`}>
-                                {z.label}
-                              </span>
+                              <span className={`text-[10px] font-black leading-none ${isOn ? "text-violet-800" : "text-slate-600"}`}>{z.num}</span>
+                              <span className={`text-[8px] ml-0.5 ${isOn ? "text-violet-600" : "text-slate-400"}`}>{z.label}</span>
                             </button>
                           );
                         })}
@@ -240,196 +291,85 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </div>
           )}
 
-          {/* ── 직급 (Rank) — separate, independent field ── */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-              직급
-              <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">직위/직책 (선택)</span>
+          {/* ── 7. 상세사항 ── */}
+          <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+            <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
+              상세사항
+              <span className="text-[10px] font-normal text-slate-400">(근무 패턴 / 메모)</span>
             </label>
-            <div className="flex flex-wrap gap-1 mb-1.5">
-              {(["대표", "이사", "부장", "팀장", "과장", "사원", "알바"] as const).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setEmpRank(prev => prev === r ? "" : r)}
-                  className={`px-2.5 py-1 text-[11px] rounded-lg transition font-bold cursor-pointer border ${
-                    empRank === r
-                      ? "bg-amber-50 text-amber-700 border-amber-300 shadow-sm"
-                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
-                  }`}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
             <input
               type="text"
-              placeholder="직접 입력 또는 위 버튼 선택"
-              value={empRank}
-              onChange={(e) => setEmpRank(e.target.value)}
-              className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
+              placeholder="예: 주6일 일 휴무, 수목휴무, 토일 등"
+              value={empDescription}
+              onChange={e => setEmpDescription(e.target.value)}
+              className="w-full text-xs rounded-lg border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 px-3 py-2 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none transition-all"
             />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-              직원 레벨
-              <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">0–9 (1=직원, 8=대표, 9=최고관리자)</span>
-            </label>
-            <div className="flex flex-wrap gap-1">
-              {[
-                { v: 0, label: "0 미지정" },
-                { v: 1, label: "1 직원" },
-                { v: 2, label: "2" },
-                { v: 3, label: "3" },
-                { v: 4, label: "4" },
-                { v: 5, label: "5" },
-                { v: 6, label: "6" },
-                { v: 7, label: "7 관리자" },
-                { v: 8, label: "8 대표" },
-                { v: 9, label: "9 최고관리자" },
-              ].map(({ v, label }) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setEmpLevel(v)}
-                  className={`px-2 py-1 text-[11px] rounded-lg font-bold transition cursor-pointer border ${
-                    empLevel === v
-                      ? v >= 8 ? "bg-rose-50 text-rose-700 border-rose-300 shadow-sm"
-                        : v >= 7 ? "bg-amber-50 text-amber-700 border-amber-300 shadow-sm"
-                        : "bg-indigo-50 text-indigo-700 border-indigo-300 shadow-sm"
-                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  {label}
+            <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-slate-200">
+              <span className="text-[10px] text-slate-400 font-semibold self-center mr-0.5">패턴:</span>
+              {["주6일 일 휴무", "수목 휴무", "토일", "금일", "일월", "3주 목<->토", "월화", "화수", "평일마감 주말오픈"].map(pat => (
+                <button key={pat} type="button" onClick={() => setEmpDescription(pat)}
+                  className="px-1.5 py-0.5 text-[9px] bg-white hover:bg-slate-100 border border-slate-200 hover:border-slate-400 rounded text-slate-600 font-semibold cursor-pointer transition">
+                  {pat}
                 </button>
               ))}
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-              연간 월차
-              <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">총 부여 일수 (0 = 미설정)</span>
+          {/* ── 8. 근로계약서 첨부 ── */}
+          <div className="border border-slate-200 rounded-xl p-3">
+            <label className="block text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+              <FileText size={13} className="text-slate-500" />
+              근로계약서 첨부
+              <span className="text-[10px] font-normal text-slate-400">(PDF, HWP, 이미지, 20MB 이하)</span>
             </label>
+
+            {/* 기존 파일 링크 */}
+            {empContractUrl && !empContractFile && (
+              <a href={empContractUrl} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-[11px] text-blue-600 hover:text-blue-800 font-semibold mb-2 hover:underline">
+                <ExternalLink size={11} />
+                현재 첨부 파일 열기
+              </a>
+            )}
+
+            {/* 파일 선택 영역 */}
             <input
-              type="number"
-              min={0}
-              max={30}
-              value={empAnnualLeave || ""}
-              onChange={(e) => setEmpAnnualLeave(parseInt(e.target.value) || 0)}
-              placeholder="예: 15"
-              className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,.hwp,.png,.jpg,.jpeg"
+              className="hidden"
+              onChange={e => setEmpContractFile(e.target.files?.[0] ?? null)}
             />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-              <Calendar size={13} /> 입사일
-            </label>
-            <input
-              type="date"
-              value={empHireDate}
-              onChange={(e) => setEmpHireDate(e.target.value)}
-              className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-              근무 형태 <span className="text-rose-500">*</span>
-            </label>
-            <div className="flex gap-3 p-2 bg-slate-50 border border-[#e2e8f0] rounded-lg flex-wrap">
-              {employmentTypes.map((et) => (
-                <label key={et} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-700">
-                  <input
-                    type="radio"
-                    name="empEmploymentType"
-                    value={et}
-                    checked={empEmploymentType === et}
-                    onChange={() => setEmpEmploymentType(et)}
-                    className="cursor-pointer"
-                  />
-                  <span>{et === "정직원" ? "🟢 정직원" : et === "계약직" ? "🔵 계약직" : "🟡 알바"}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-              성별
-            </label>
-            <div className="flex gap-3 p-2 bg-slate-50 border border-[#e2e8f0] rounded-lg">
-              {(["남", "여"] as const).map((g) => (
-                <label key={g} className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-700">
-                  <input
-                    type="radio"
-                    name="empGender"
-                    value={g}
-                    checked={empGender === g}
-                    onChange={() => setEmpGender(g)}
-                    className="cursor-pointer"
-                  />
-                  <span>{g === "남" ? "♂ 남자" : "♀ 여자"}</span>
-                </label>
-              ))}
-              <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-500">
-                <input
-                  type="radio"
-                  name="empGender"
-                  value=""
-                  checked={empGender === ""}
-                  onChange={() => setEmpGender("")}
-                  className="cursor-pointer"
-                />
-                <span>미지정</span>
-              </label>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
-              근무부서 / 근무지 <span className="text-rose-500">*</span>
-            </label>
-            <div className="flex gap-4 p-2 bg-slate-50 border border-[#e2e8f0] rounded-lg">
-              <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-700">
-                <input
-                  type="radio"
-                  name="empWorkplace"
-                  value="매장"
-                  checked={empWorkplace === "매장"}
-                  onChange={() => setEmpWorkplace("매장")}
-                  className="cursor-pointer"
-                />
-                <span>🏬 매장 (기본)</span>
-              </label>
-              <label className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer text-slate-700">
-                <input
-                  type="radio"
-                  name="empWorkplace"
-                  value="창고"
-                  checked={empWorkplace === "창고"}
-                  onChange={() => setEmpWorkplace("창고")}
-                  className="cursor-pointer"
-                />
-                <span>📦 창고 (물류)</span>
-              </label>
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-3 border-t mt-6">
             <button
               type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-xs font-bold bg-slate-50 hover:bg-slate-100 rounded border border-[#e2e8f0] text-slate-650 text-slate-600 transition cursor-pointer"
+              onClick={() => fileInputRef.current?.click()}
+              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-lg border-2 border-dashed transition cursor-pointer text-xs font-semibold ${
+                empContractFile
+                  ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                  : "border-slate-200 bg-slate-50 text-slate-500 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600"
+              }`}
             >
+              <Upload size={13} />
+              {empContractFile
+                ? <span className="truncate max-w-[220px]">{empContractFile.name}</span>
+                : <span>{empContractUrl ? "파일 교체" : "파일 선택"}</span>}
+            </button>
+            {empContractFile && (
+              <button type="button" onClick={() => setEmpContractFile(null)}
+                className="mt-1 text-[10px] text-rose-400 hover:text-rose-600 font-semibold cursor-pointer transition">
+                선택 취소
+              </button>
+            )}
+          </div>
+
+          {/* ── 버튼 ── */}
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 mt-2">
+            <button type="button" onClick={onClose}
+              className="px-4 py-2 text-xs font-bold bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 text-slate-600 transition cursor-pointer">
               취소
             </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-xs font-bold bg-[#2563eb] hover:bg-blue-700 text-white rounded transition cursor-pointer"
-            >
+            <button type="submit"
+              className="px-5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition cursor-pointer shadow-sm">
               {empModalMode === "edit" ? "수정 완료" : "등록 완료"}
             </button>
           </div>

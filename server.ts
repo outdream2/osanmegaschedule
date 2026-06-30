@@ -4,6 +4,7 @@ import { GoogleGenAI } from "@google/genai";
 import express from "express";
 import http from "http";
 import path from "path";
+import fs from "fs";
 import { spawn } from "child_process";
 import { createServer as createViteServer } from "vite";
 import { scheduleController } from "./src/controllers/scheduleController";
@@ -14,6 +15,7 @@ import bcrypt from "bcryptjs";
 import webpush from "web-push";
 import XLSX from "xlsx";
 import compression from "compression";
+import multer from "multer";
 
 // ── Product map cache ─────────────────────────────────────────────────────────
 type GeminiResult = { ok: true; text: string } | { ok: false; quota: boolean; error: string };
@@ -101,11 +103,17 @@ async function getSynonymMap(): Promise<Map<string, string>> {
   if (synonymMapCache) return synonymMapCache;
   if (synonymMapPromise) return synonymMapPromise;
   synonymMapPromise = (async () => {
-    const { data, error } = await supabase.from("ocr_synonyms").select("alias,product_code");
+    const { data, error } = await supabase.from("ocr_synonyms").select("alias,product_code,supply");
     if (error) { synonymMapPromise = null; return new Map(); }
     const map = new Map<string, string>();
     for (const row of (data ?? [])) {
-      map.set(String(row.alias).trim().toLowerCase(), String(row.product_code).trim());
+      const alias = String(row.alias).trim().toLowerCase();
+      const code  = String(row.product_code).trim();
+      // supply 있으면 "공급사|alias" 복합키로 우선 등록, alias 단독키도 유지
+      if (row.supply) {
+        map.set(`${String(row.supply).trim().toLowerCase()}|${alias}`, code);
+      }
+      if (!map.has(alias)) map.set(alias, code);
     }
     synonymMapCache = map;
     return map;
@@ -300,6 +308,27 @@ async function startServer() {
   app.use(compression());
   app.use(express.json({ limit: "200mb" }));
 
+  // ── 근로계약서 파일 업로드 설정 ──────────────────────────────────────────────
+  const contractsDir = path.join(process.cwd(), "uploads", "contracts");
+  if (!fs.existsSync(contractsDir)) fs.mkdirSync(contractsDir, { recursive: true });
+  const contractUpload = multer({
+    storage: multer.diskStorage({
+      destination: (_req, _file, cb) => cb(null, contractsDir),
+      filename: (_req, file, cb) => {
+        const ts = Date.now();
+        const safe = file.originalname.replace(/[^a-zA-Z0-9가-힣._-]/g, "_");
+        cb(null, `${ts}_${safe}`);
+      },
+    }),
+    limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
+    fileFilter: (_req, file, cb) => {
+      const ok = /pdf|doc|docx|hwp|image\//.test(file.mimetype) ||
+                 /\.(pdf|doc|docx|hwp|png|jpg|jpeg)$/i.test(file.originalname);
+      cb(null, ok);
+    },
+  });
+  app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
   // API router endpoints
   app.get("/api/schedules", (req, res) => scheduleController.getSchedules(req, res));
   app.put("/api/schedules", (req, res) => scheduleController.updateSchedule(req, res));
@@ -308,6 +337,26 @@ async function startServer() {
   app.post("/api/employees", (req, res) => scheduleController.createEmployee(req, res));
   app.put("/api/employees/:id", (req, res) => scheduleController.updateEmployee(req, res));
   app.delete("/api/employees/:id", (req, res) => scheduleController.deleteEmployee(req, res));
+
+  // POST /api/employees/:id/contract — 근로계약서 첨부
+  app.post("/api/employees/:id/contract", contractUpload.single("contract"), async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+      if (!req.file) return res.status(400).json({ error: "파일이 없습니다" });
+      const fileUrl = `/uploads/contracts/${req.file.filename}`;
+      const { error } = await supabase.from("employees").update({ contract_file_url: fileUrl }).eq("id", id);
+      if (error) {
+        // 컬럼이 없는 경우 안내 메시지
+        if (/column|does not exist/i.test(error.message)) {
+          return res.status(500).json({ error: "Supabase employees 테이블에 contract_file_url TEXT 컬럼이 없습니다. 대시보드 SQL Editor에서 추가해 주세요." });
+        }
+        throw error;
+      }
+      return res.json({ url: fileUrl });
+    } catch (e: any) {
+      return res.status(500).json({ error: e.message });
+    }
+  });
 
   // GET /api/staff-availability?date=YYYY-MM-DD — schedule status for core employees
   // Configure via .env STAFF_IDS=1:대표,2:이사,3:부장
@@ -649,27 +698,29 @@ async function startServer() {
 
   // ── requests/pending-counts ───────────────────────────────────────────────────
   app.get("/api/requests/pending-counts", async (_req, res) => {
-    const [display, order, productsWithRealMap, legacy, leave] = await Promise.all([
+    const today = new Date().toISOString().split("T")[0];
+    const [display, order, productsWithRealMap, legacy, leave, lunch] = await Promise.all([
       supabase.from("display_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
       supabase.from("order_requests").select("id", { count: "exact", head: true }),
       supabase.from("products").select("product_code, spec, real_map").not("real_map", "is", null).neq("real_map", ""),
       supabase.from("zone_mismatches").select("product_code"),
       supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("lunch_requests").select("id", { count: "exact", head: true }).eq("date", today).eq("eating", true),
     ]);
-    // computed mismatches: products where spec != real_map
     const computedCodes = new Set(
       (productsWithRealMap.data ?? [])
         .filter(p => (p.real_map ?? "").trim() !== (p.spec ?? "").trim())
         .map(p => p.product_code)
     );
-    // legacy manual mismatches not already in computed
     const legacyCodes = (legacy.data ?? []).filter(r => !computedCodes.has(r.product_code));
     const mismatchCount = computedCodes.size + legacyCodes.length;
+    const lunchCount = lunch.count ?? 0;
     res.json({
       display:  display.count ?? 0,
       order:    order.count   ?? 0,
       mismatch: mismatchCount,
       leave:    leave.count   ?? 0,
+      lunch:    lunchCount,
       total: (display.count ?? 0) + (order.count ?? 0) + mismatchCount + (leave.count ?? 0),
     });
   });
@@ -1144,6 +1195,55 @@ async function startServer() {
     }
   });
 
+  // ── 점심신청 (lunch_requests) ─────────────────────────────────────────────
+  // Supabase SQL (최초 1회):
+  // create table lunch_requests (
+  //   id bigserial primary key,
+  //   employee_id integer not null,
+  //   employee_name text not null,
+  //   date date not null default current_date,
+  //   eating boolean not null default true,
+  //   memo text,
+  //   created_at timestamptz default now(),
+  //   updated_at timestamptz default now(),
+  //   unique(employee_id, date)
+  // );
+
+  app.get("/api/lunch-requests", async (req, res) => {
+    const date = (req.query.date as string) || new Date().toISOString().split("T")[0];
+    const { data, error } = await supabase
+      .from("lunch_requests")
+      .select("*")
+      .eq("date", date)
+      .order("updated_at", { ascending: true });
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ requests: data ?? [] });
+  });
+
+  app.put("/api/lunch-requests", async (req, res) => {
+    const { employee_id, employee_name, date, eating, memo } = req.body ?? {};
+    if (!employee_id || !employee_name || !date || eating === undefined)
+      return res.status(400).json({ error: "필수 항목 누락" });
+    const { error } = await supabase.from("lunch_requests").upsert(
+      { employee_id, employee_name, date, eating, memo: memo || null, updated_at: new Date().toISOString() },
+      { onConflict: "employee_id,date" }
+    );
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true });
+  });
+
+  app.delete("/api/lunch-requests", async (req, res) => {
+    const { employee_id, date } = req.query;
+    if (!employee_id || !date) return res.status(400).json({ error: "필수 파라미터 누락" });
+    const { error } = await supabase
+      .from("lunch_requests")
+      .delete()
+      .eq("employee_id", Number(employee_id))
+      .eq("date", date as string);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true });
+  });
+
   // GET /api/reservations
   app.get("/api/reservations", async (req, res) => {
     const { date } = req.query;
@@ -1391,7 +1491,7 @@ async function startServer() {
 
 [메타데이터]
 - date: YYYY-MM-DD 형식 (찾을 수 없으면 null)
-- supplier: 거래명세서 왼쪽 박스(공급자/판매자 측) 상호명만 기입. 오른쪽 박스(공급받는자/구매처/약국)는 절대 기입 금지. (없으면 null)
+- supplier: 공급자(납품자/판매자/도매상/제조사) 상호명. 레이아웃에 따라 왼쪽 또는 오른쪽 박스에 위치할 수 있음. "공급자", "판매자", "공급처" 레이블 기준으로 식별. 약국·병원·의원 등 구매처(공급받는자)는 절대 입력 금지. (없으면 null)
 - total: 총합계 숫자 (없으면 null)
 
 마크다운·설명 없이 JSON만 응답:
@@ -1534,7 +1634,7 @@ async function startServer() {
 2. 헤더 아래 품목 행만 rows로 추출 (합계·소계·총계 행 제외)
 3. 숫자 쉼표 제거 후 숫자형 반환 (예: "1,500" → 1500)
 4. 비어있거나 없는 셀은 null
-5. meta: date(YYYY-MM-DD), supplier(공급자), recipient(수신자), total(합계숫자)
+5. meta: date(YYYY-MM-DD), supplier(공급자/납품자/도매상 — 약국·병원 등 구매처 제외, 위치 무관), recipient(수신자/구매처), total(합계숫자)
 
 마크다운·설명 없이 JSON만:
 {"headers":["번호","품명","규격","단위","수량","단가","금액","세액"],"rows":[[1,"상품A","500ml","EA",10,1500,15000,1500]],"meta":{"supplier":"(주)공급사","recipient":"수신사","date":"2024-01-15","total":16500}}
@@ -1634,7 +1734,9 @@ ${rawText}`;
   app.post("/api/ocr-match", async (req, res) => {
     try {
       const { names } = req.body ?? {};
-      if (!Array.isArray(names)) return res.status(400).json({ error: "names 배열 필요" });
+      // 단일 후보 모드 검사는 names 유효성 검사 전에 먼저 수행
+      const isCandidateMode = typeof req.body?.name === "string" && req.body?.topN;
+      if (!isCandidateMode && !Array.isArray(names)) return res.status(400).json({ error: "names 배열 필요" });
 
       const map = await getProductMap();
       const products = Object.values(map);
@@ -1750,6 +1852,53 @@ ${rawText}`;
         },
       });
 
+      // 유사 상품 후보 모드 (단일 품명 → 공급사 상품 전체 매칭율 비교)
+      if (isCandidateMode) {
+        const name = req.body.name as string;
+        const topN = Math.min(Number(req.body.topN) || 10, 30);
+        const supplierHint = (req.body.supplier as string | undefined)?.trim() ?? "";
+
+        // 동의어 사전: 공급사 복합키 먼저 → 일반키 fallback
+        const nameLC = name.trim().toLowerCase();
+        const synKeyCompound = supplierHint ? `${supplierHint.toLowerCase()}|${nameLC}` : null;
+        const synCode = (synKeyCompound && synonymMap.get(synKeyCompound)) ?? synonymMap.get(nameLC);
+        if (synCode) {
+          const sp = map[synCode] ?? products.find(p => p.code === synCode);
+          if (sp) return res.json({ candidates: [makeResult(name, sp, 100).matched] });
+        }
+
+        // 공급사 상품만 필터 (포함 관계 또는 bigram 40% 이상)
+        // 공급사 DB 매칭 실패 시 전체 DB fallback
+        const pool: typeof products = (() => {
+          if (!supplierHint) return products;
+          const sh = norm(supplierHint);
+          const filtered = products.filter(p => {
+            if (!p.supplier) return false;
+            const sp = norm(String(p.supplier));
+            return sp === sh || sp.includes(sh) || sh.includes(sp) || bigramSim(sp, sh) >= 40;
+          });
+          return filtered.length > 0 ? filtered : products;
+        })();
+
+        // trigram 필터 없이 전체 글씨 매칭율로 직접 스코어링
+        // → 결과 부족해도 낮은 점수 상품까지 포함해 topN 반환
+        const scored = pool
+          .map(p => ({ p, score: invoiceMatchScore(name, p) }))
+          .sort((a, b) => b.score - a.score)
+          .slice(0, topN);
+
+        return res.json({
+          candidates: scored.map(({ p, score }) => ({
+            code: p.code, name: p.name, spec: p.spec, score,
+            supplier:    p.supplier    != null ? String(p.supplier)    : null,
+            masterPrice: p.purchase_price != null ? Number(p.purchase_price) : null,
+            salePrice:   p.sale_price     != null ? Number(p.sale_price)     : null,
+            profitRate:  p.profit_rate    != null ? Number(p.profit_rate)    : null,
+            expiryDate:  p.expiry_date    != null ? String(p.expiry_date)    : null,
+          })),
+        });
+      }
+
       const matches = names.map((name: string) => {
         if (!name?.trim()) return { input: name, matched: null };
 
@@ -1800,10 +1949,13 @@ ${rawText}`;
 
   app.post("/api/ocr-synonyms", async (req, res) => {
     try {
-      const { alias, product_code, supplier } = req.body ?? {};
+      const { alias, product_code, supply } = req.body ?? {};
       if (!alias?.trim() || !product_code?.trim()) return res.status(400).json({ error: "alias, product_code 필요" });
       const { data, error } = await supabase.from("ocr_synonyms")
-        .insert({ alias: alias.trim().toLowerCase(), product_code: product_code.trim(), supplier: supplier?.trim() ?? null })
+        .upsert(
+          { alias: alias.trim().toLowerCase(), product_code: product_code.trim(), supply: supply?.trim() ?? null },
+          { onConflict: "alias" }
+        )
         .select().single();
       if (error) throw new Error(error.message);
       synonymMapCache = null; synonymMapPromise = null;

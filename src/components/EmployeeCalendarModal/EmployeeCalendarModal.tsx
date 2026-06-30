@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   X, ChevronLeft, ChevronRight, Save, Clock, MessageSquare,
-  Calendar, CheckCircle, MapPin,
+  Calendar, CheckCircle, MapPin, User,
 } from "lucide-react";
 import { Employee, Schedule } from "../../types";
 import { SCHEDULE_COLORS, SCHEDULE_TYPES, DEFAULT_COLOR } from "../../constants";
@@ -37,6 +37,7 @@ interface Props {
   middleShiftHour?: string;
   closeShiftHour?: string;
   logisticsZoneProps?: LogisticsZoneProps;
+  onViewEmployeeInfo?: () => void;
 }
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -54,6 +55,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   middleShiftHour = "11:00-20:00",
   closeShiftHour = "13:00-22:00",
   logisticsZoneProps,
+  onViewEmployeeInfo,
 }) => {
   const activeTypes = scheduleTypesProp ?? SCHEDULE_TYPES;
   const isLogistics = employee.position === "물류";
@@ -283,7 +285,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
         </div>
 
         {/* Tab bar */}
-        {(isAdmin || (isLogistics && logisticsZoneProps)) && (
+        {(isAdmin || (isLogistics && logisticsZoneProps) || onViewEmployeeInfo) && (
           <div className="flex border-b border-slate-200 bg-slate-50 flex-shrink-0">
             {isAdmin && (
               <>
@@ -324,6 +326,14 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     {logisticsZoneProps.assignedZoneNums.length}
                   </span>
                 )}
+              </button>
+            )}
+            {onViewEmployeeInfo && (
+              <button
+                onClick={onViewEmployeeInfo}
+                className="flex-1 py-2.5 text-[11px] font-bold transition flex items-center justify-center gap-1.5 text-slate-500 hover:text-fuchsia-700 hover:bg-fuchsia-50"
+              >
+                <User size={12} /> 직원정보
               </button>
             )}
           </div>

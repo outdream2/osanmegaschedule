@@ -13,12 +13,13 @@ import { OcrPage } from "./components/OcrPage";
 import { RequestsPage } from "./components/RequestsPage";
 import { LeavePage } from "./components/LeavePage/LeavePage";
 import { PermissionsPage } from "./components/PermissionsPage";
+import { LunchPage } from "./components/LunchPage/LunchPage";
 import { SessionTimeoutWarning } from "./components/SessionTimeoutWarning";
 import { useAuth } from "./hooks/useAuth";
 import type { AuthSession } from "./types";
 import { prefetchProducts } from "./lib/productsCache";
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch";
 
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
@@ -60,7 +61,7 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions", auth?: AuthSession) => {
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch", auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
     navigate(next);
   };
@@ -86,7 +87,7 @@ export default function App() {
 
   // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
   // The user is already authenticated here, so no AuthSession is required.
-  const navigateInner = (next: "schedule" | "display" | "requests" | "leave" | "scan" | "ocr") => navigate(next);
+  const navigateInner = (next: "schedule" | "display" | "requests" | "leave" | "scan" | "ocr" | "lunch") => navigate(next);
 
   let pageContent: React.ReactElement;
 
@@ -100,6 +101,7 @@ export default function App() {
         onNavigateToLeave={() => navigate("leave")}
         onNavigateToScan={() => navigate("scan")}
         onNavigateToOcr={() => navigate("ocr")}
+        onNavigateToLunch={() => navigate("lunch")}
         initialEditEmployeeId={pendingEditEmpId}
         onEditEmployeeHandled={() => setPendingEditEmpId(null)}
         authSession={authSession}
@@ -155,6 +157,15 @@ export default function App() {
           setPendingEditEmpId(id);
           navigate("schedule");
         }}
+      />
+    );
+  } else if (page === "lunch") {
+    pageContent = (
+      <LunchPage
+        onBack={goBack}
+        authSession={authSession}
+        onNavigate={navigateInner}
+        onLogout={handleLogout}
       />
     );
   } else if (page === "permissions") {

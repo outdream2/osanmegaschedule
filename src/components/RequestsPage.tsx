@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import {
   Bell, Package, MapPin,
   CheckCircle2, Clock, RefreshCw, ShoppingCart, Square, CheckSquare,
-  Send, Loader2,
+  Send, Loader2, Utensils, X,
 } from "lucide-react";
 import { getProductsMap, type ProductInfo } from "../lib/productsCache";
 import type { AuthSession } from "../types";
@@ -29,7 +29,11 @@ interface ZoneMismatch {
   id: string; product_code: string; product_name: string;
   spec_zone: string; real_zone: string; registered_at: string;
 }
-type Tab = "display" | "order" | "mismatch";
+interface LunchRequest {
+  id: number; employee_id: number; employee_name: string;
+  date: string; eating: boolean; memo: string | null; updated_at: string;
+}
+type Tab = "display" | "order" | "mismatch" | "lunch";
 
 function fmtDate(iso: string) {
   try {
@@ -105,6 +109,10 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [mismatchLoading, setMismatchLoading] = useState(false);
   const [mismatchError, setMismatchError] = useState<string | null>(null);
   const [selectedMismatch, setSelectedMismatch] = useState<Set<string>>(new Set());
+
+  // 점심신청
+  const [lunchRequests, setLunchRequests] = useState<LunchRequest[]>([]);
+  const [lunchLoading, setLunchLoading] = useState(false);
 
 
   // 진열요청 알림 전송
@@ -189,7 +197,18 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     finally { setProductsLoading(false); }
   }, [products.length]);
 
-  useEffect(() => { loadDisplayReqs(); loadMismatches(); }, []);
+  const loadLunch = useCallback(async () => {
+    setLunchLoading(true);
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const res = await fetch(`/api/lunch-requests?date=${today}`);
+      const data = res.ok ? await res.json() : {};
+      setLunchRequests(data.requests ?? []);
+    } catch { setLunchRequests([]); }
+    finally { setLunchLoading(false); }
+  }, []);
+
+  useEffect(() => { loadDisplayReqs(); loadMismatches(); loadLunch(); }, []);
   useEffect(() => {
     if (tab === "order") { loadOrderReqs(); loadProducts(); }
   }, [tab]);
@@ -248,10 +267,14 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
   const pending = displayReqs.filter(r => r.status === "pending");
 
+  const eatCount = lunchRequests.filter(r => r.eating).length;
+  const noEatCount = lunchRequests.filter(r => !r.eating).length;
+
   const TABS: [Tab, string, number, string, string][] = [
-    ["display",  "진열요청",   pending.length,    "text-blue-600",   "border-blue-500"],
-    ["order",    "발주요청",   orderReqs.length,  "text-red-600",    "border-red-500"],
-    ["mismatch", "구역불일치", mismatches.length, "text-orange-600", "border-orange-500"],
+    ["display",  "진열요청",   pending.length,         "text-blue-600",   "border-blue-500"],
+    ["order",    "발주요청",   orderReqs.length,       "text-red-600",    "border-red-500"],
+    ["mismatch", "구역불일치", mismatches.length,      "text-orange-600", "border-orange-500"],
+    ["lunch",    "점심신청",   lunchRequests.length,   "text-emerald-600","border-emerald-500"],
   ];
 
   // 공통 체크박스
@@ -477,6 +500,54 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                       <p className="text-[10px] text-gray-400 font-mono mt-0.5">{m.product_code}</p>
                     </div>
                     <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(m.registered_at)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── 점심신청 ── */}
+        {tab === "lunch" && (
+          <div className="flex flex-col gap-3">
+            {/* 요약 뱃지 */}
+            <div className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-2">
+                <Utensils size={14} className="text-emerald-500" />
+                <span className="text-xs font-bold text-gray-700">오늘의 점심 신청 현황</span>
+                <span className="text-[10px] text-gray-400">({lunchRequests.length}명 응답)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1 text-[11px] font-bold">
+                  <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full">🍱 {eatCount}명</span>
+                  <span className="bg-gray-100 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full"><X size={9} className="inline mr-0.5" />{noEatCount}명</span>
+                </div>
+                <button onClick={loadLunch} className="p-1.5 text-gray-400 hover:text-gray-600 transition cursor-pointer">
+                  <RefreshCw size={12} className={lunchLoading ? "animate-spin" : ""} />
+                </button>
+              </div>
+            </div>
+
+            {lunchLoading ? (
+              <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" /></div>
+            ) : lunchRequests.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-gray-300">
+                <Utensils size={32} className="mb-2" />
+                <p className="text-sm font-bold text-gray-400">아직 신청자가 없습니다</p>
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
+                {lunchRequests.map(r => (
+                  <div key={r.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition">
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${r.eating ? "bg-emerald-500" : "bg-gray-300"}`} />
+                    <span className="text-sm font-semibold text-gray-800 flex-1">{r.employee_name}</span>
+                    {r.memo && <span className="text-[10px] text-gray-400 max-w-[120px] truncate">{r.memo}</span>}
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.eating ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-gray-100 text-gray-500 border border-gray-200"}`}>
+                      {r.eating ? "🍱 식사" : "불참"}
+                    </span>
+                    <span className="text-[10px] text-gray-300 shrink-0">
+                      {new Date(r.updated_at).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}
+                    </span>
                   </div>
                 ))}
               </div>
