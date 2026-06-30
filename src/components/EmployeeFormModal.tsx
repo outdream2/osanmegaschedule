@@ -131,7 +131,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">업무 분류 (필터에 사용)</span>
             </label>
             <div className="flex flex-wrap gap-1">
-              {(["약사", "캐셔", "물류"] as const).map((pos) => (
+              {(["약사", "캐셔", "진열", "물류"] as const).map((pos) => (
                 <button
                   key={pos}
                   type="button"
@@ -149,7 +149,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 type="button"
                 onClick={() => setEmpPosition("기타")}
                 className={`px-2.5 py-1 text-[11px] rounded-lg transition font-bold cursor-pointer border ${
-                  !["약사", "캐셔", "물류"].includes(empPosition) && empPosition !== ""
+                  !["약사", "캐셔", "물류", "진열"].includes(empPosition) && empPosition !== ""
                     ? "bg-indigo-50 text-indigo-700 border-indigo-300 shadow-sm"
                     : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
                 }`}
@@ -157,7 +157,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 기타
               </button>
             </div>
-            {(empPosition === "기타" || (!["약사", "캐셔", "물류", ""].includes(empPosition))) && (
+            {(empPosition === "기타" || (!["약사", "캐셔", "물류", "진열", ""].includes(empPosition))) && (
               <input
                 type="text"
                 placeholder="직접 입력"

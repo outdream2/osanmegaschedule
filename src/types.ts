@@ -21,7 +21,7 @@ export interface Schedule {
 export interface Employee {
   id: number;
   name: string;
-  position: string;     // 구분: 약사 | 캐셔 | 물류 | 알바 | 기타
+  position: string;     // 구분: 약사 | 캐셔 | 진열 | 물류 | 알바 | 기타
   rank?: string;        // 직급: 대표 | 부장 | 팀장 | 과장 | 사원 | ...
   employmentType: string; // 정직원 | 계약직 | 알바
   hireDate: string;

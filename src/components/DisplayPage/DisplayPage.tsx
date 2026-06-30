@@ -783,7 +783,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
             {/* Position filter pills */}
             <div className="flex gap-1 mb-2 shrink-0">
-              {(["전체", "약사", "물류", "캐셔"] as const).map((pos) => (
+              {(["전체", "약사", "물류", "캐셔", "진열"] as const).map((pos) => (
                 <button
                   key={pos}
                   onClick={() => setStaffPosFilter(pos)}
@@ -792,11 +792,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       ? pos === "전체"   ? "bg-gray-800 text-white border-gray-800"
                       : pos === "약사"   ? "bg-violet-600 text-white border-violet-600"
                       : pos === "물류"   ? "bg-orange-500 text-white border-orange-500"
+                      : pos === "캐셔"   ? "bg-amber-500 text-white border-amber-500"
                                          : "bg-teal-500 text-white border-teal-500"
                       : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
                   }`}
                 >
-                  {pos === "전체" ? "전체" : pos === "약사" ? "💊 약사" : pos === "물류" ? "📦 물류" : "💳 캐셔"}
+                  {pos === "전체" ? "전체" : pos === "약사" ? "💊 약사" : pos === "물류" ? "📦 물류" : pos === "캐셔" ? "💳 캐셔" : "🛒 진열"}
                 </button>
               ))}
             </div>
@@ -814,9 +815,11 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 </div>
               ) : (
                 <ul className="divide-y divide-slate-100">
-                  {todayStaff.filter(({ employee }) =>
-                    staffPosFilter === "전체" || employee.position.includes(staffPosFilter)
-                  ).map(({ employee, scheduleType, workingHours }) => {
+                  {todayStaff.filter(({ employee }) => {
+                    if (staffPosFilter === "전체") return true;
+                    if (staffPosFilter === "물류") return ["물류", "캐셔", "진열"].includes(employee.position);
+                    return employee.position === staffPosFilter;
+                  }).map(({ employee, scheduleType, workingHours }) => {
                     const isLogistics = employee.position === "물류";
                     const assignedZones = getAssignedZones(employee.id);
                     const colorIdx = staffColorMap.get(employee.id) ?? 0;

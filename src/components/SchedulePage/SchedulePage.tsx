@@ -351,7 +351,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     setEmpModalMode("edit");
     setEmpName(emp.name);
 
-    const knownPositions = ["약사", "캐셔", "물류"];
+    const knownPositions = ["약사", "캐셔", "물류", "진열"];
     if (emp.position && !knownPositions.includes(emp.position)) {
       setEmpPosition("기타");
       setEmpCustomPosition(emp.position);
@@ -493,9 +493,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
   // Tabs & Search states
   const [workplaceTab, setWorkplaceTab] = useState<"전체" | "매장" | "창고">("전체");
-  const [positionTab, setPositionTab] = useState<"전체" | "약사" | "캐셔" | "물류" | "알바" | "기타">("전체");
+  const [positionTab, setPositionTab] = useState<"전체" | "약사" | "물류" | "캐셔" | "진열" | "알바" | "기타">("전체");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"none" | "position" | "rank" | "hireDate" | "name">("none");
+  const [sortBy, setSortBy] = useState<"none" | "position" | "name">("none");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [todayFirst, setTodayFirst] = useState(true);
 
@@ -732,26 +732,37 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       return;
     }
 
-    const currentIndex = employees.findIndex((emp) => emp.id === draggedRowId);
-    const targetIndex = employees.findIndex((emp) => emp.id === targetId);
+    // Use filteredEmployees indices so drag matches what the user sees on screen.
+    // After reordering, merge back into the full employees array while preserving
+    // non-visible employees (those excluded by current filters) in their positions.
+    const fromIdx = filteredEmployees.findIndex((emp) => emp.id === draggedRowId);
+    const toIdx = filteredEmployees.findIndex((emp) => emp.id === targetId);
 
-    if (currentIndex !== -1 && targetIndex !== -1) {
+    if (fromIdx !== -1 && toIdx !== -1) {
+      // Reorder the filtered slice
+      const reorderedFiltered = [...filteredEmployees];
+      const [draggedItem] = reorderedFiltered.splice(fromIdx, 1);
+      reorderedFiltered.splice(toIdx, 0, draggedItem);
+
+      // Find the slots in employees[] that the filtered employees occupy (in their current order)
+      const filteredIds = new Set(filteredEmployees.map((emp) => emp.id));
+      const slots: number[] = [];
+      employees.forEach((emp, idx) => {
+        if (filteredIds.has(emp.id)) slots.push(idx);
+      });
+
+      // Fill those slots with the reordered filtered employees
       const updatedEmployees = [...employees];
-      const [draggedItem] = updatedEmployees.splice(currentIndex, 1);
-      updatedEmployees.splice(targetIndex, 0, draggedItem);
+      slots.forEach((slotIdx, i) => {
+        updatedEmployees[slotIdx] = reorderedFiltered[i];
+      });
 
       setEmployees(updatedEmployees);
+      if (sortBy !== "none") setSortBy("none");
+      if (todayFirst) setTodayFirst(false);
 
-      // Save custom order to localStorage
-      const orderIds = updatedEmployees.map((emp) => emp.id);
-      localStorage.setItem("megatown_employee_order", JSON.stringify(orderIds));
-
-      if (sortBy !== "none") {
-        setSortBy("none");
-        showNotification("정렬을 사용자 정의 순서로 변경했습니다.");
-      } else {
-        showNotification("직원 순서가 변경되었습니다.");
-      }
+      localStorage.setItem("megatown_employee_order", JSON.stringify(updatedEmployees.map((emp) => emp.id)));
+      showNotification("직원 순서가 변경되었습니다.");
     }
 
     setDraggedRowId(null);
@@ -847,7 +858,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   // Add/Edit Employee Handler
   const handleAddEmployeeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalPosition = (!["약사", "캐셔", "물류"].includes(empPosition) && empCustomPosition.trim())
+    const finalPosition = (!["약사", "캐셔", "물류", "진열"].includes(empPosition) && empCustomPosition.trim())
       ? empCustomPosition.trim()
       : empPosition.trim();
     if (!empName.trim() || !finalPosition) {
@@ -1018,7 +1029,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     return { workDays, totalHours, laborCost };
   };
 
-  const KNOWN_POSITIONS = new Set(["약사", "캐셔", "물류"]);
+  const KNOWN_POSITIONS = new Set(["약사", "캐셔", "물류", "진열"]);
 
   const filteredEmployees = employees
     .filter((emp) => {
@@ -1028,8 +1039,11 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       if (positionTab !== "전체") {
         if (positionTab === "알바") {
           if (emp.rank !== "알바" && emp.position !== "알바") return false;
+        } else if (positionTab === "물류") {
+          if (!["물류", "캐셔", "진열"].includes(emp.position)) return false;
         } else if (positionTab === "기타") {
-          if (KNOWN_POSITIONS.has(emp.position) || emp.rank === "알바" || emp.position === "알바") return false;
+          const LOGISTICS = new Set(["물류", "캐셔", "진열"]);
+          if (LOGISTICS.has(emp.position) || emp.position === "약사" || emp.rank === "알바" || emp.position === "알바") return false;
         } else {
           if (emp.position !== positionTab) return false;
         }
@@ -1040,27 +1054,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       return true;
     })
     .sort((a, b) => {
-      const POSITION_ORDER: Record<string, number> = { "대표": 1, "임원": 2, "약사": 3, "캐셔": 4, "물류": 5 };
-      const RANK_ORDER: Record<string, number> = { "대표": 1, "이사": 2, "부장": 3, "차장": 4, "과장": 5, "팀장": 6, "사원": 7, "알바": 8 };
+      const POSITION_ORDER: Record<string, number> = { "대표": 1, "임원": 2, "약사": 3, "캐셔": 4, "진열": 5, "물류": 6 };
 
       if (sortBy === "position") {
         const pA = POSITION_ORDER[a.position] ?? 99;
         const pB = POSITION_ORDER[b.position] ?? 99;
         if (pA !== pB) return sortOrder === "asc" ? pA - pB : pB - pA;
-        return a.name.localeCompare(b.name, "ko");
-      }
-
-      if (sortBy === "rank") {
-        const rA = RANK_ORDER[a.rank ?? ""] ?? 99;
-        const rB = RANK_ORDER[b.rank ?? ""] ?? 99;
-        if (rA !== rB) return sortOrder === "asc" ? rA - rB : rB - rA;
-        return a.name.localeCompare(b.name, "ko");
-      }
-
-      if (sortBy === "hireDate") {
-        const dateA = a.hireDate ? new Date(a.hireDate).getTime() : 0;
-        const dateB = b.hireDate ? new Date(b.hireDate).getTime() : 0;
-        if (dateA !== dateB) return sortOrder === "asc" ? dateA - dateB : dateB - dateA;
         return a.name.localeCompare(b.name, "ko");
       }
 

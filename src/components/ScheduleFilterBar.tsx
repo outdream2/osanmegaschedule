@@ -4,8 +4,8 @@ import { X, Search, Building2, Warehouse, Layers } from "lucide-react";
 import { Employee } from "../types";
 
 export type WorkplaceTab = "전체" | "매장" | "창고";
-export type PositionTab = "전체" | "약사" | "캐셔" | "물류" | "알바" | "기타";
-export type SortBy = "none" | "position" | "rank" | "hireDate" | "name";
+export type PositionTab = "전체" | "약사" | "물류" | "캐셔" | "진열" | "알바" | "기타";
+export type SortBy = "none" | "position" | "name";
 export type SortOrder = "asc" | "desc";
 
 interface ScheduleFilterBarProps {
@@ -70,17 +70,18 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
           {/* Group 2: Position */}
           <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
             {([
-              { key: "전체", label: "전체", icon: <Layers size={12} />, color: "text-indigo-600", count: employees.length },
-              { key: "약사", label: "약사", icon: null, color: "text-violet-600", count: employees.filter(e => e.position === "약사").length },
-              { key: "캐셔", label: "캐셔", icon: null, color: "text-amber-600", count: employees.filter(e => e.position === "캐셔").length },
-              { key: "물류", label: "물류", icon: null, color: "text-sky-600", count: employees.filter(e => e.position === "물류").length },
-              { key: "알바", label: "알바", icon: null, color: "text-rose-600", count: employees.filter(e => e.rank === "알바" || e.position === "알바").length },
-              { key: "기타", label: "기타", icon: null, color: "text-slate-600", count: employees.filter(e => !["약사","캐셔","물류"].includes(e.position) && e.rank !== "알바" && e.position !== "알바").length },
-            ] as const).map(({ key, label, icon, color, count }) => (
+              { key: "전체", label: "전체", icon: <Layers size={12} />, color: "text-indigo-600", count: employees.length, sub: false },
+              { key: "약사", label: "약사", icon: null, color: "text-violet-600", count: employees.filter(e => e.position === "약사").length, sub: false },
+              { key: "물류", label: "물류", icon: null, color: "text-sky-600", count: employees.filter(e => ["물류","캐셔","진열"].includes(e.position)).length, sub: false },
+              { key: "캐셔", label: "└ 캐셔", icon: null, color: "text-amber-600", count: employees.filter(e => e.position === "캐셔").length, sub: true },
+              { key: "진열", label: "└ 진열", icon: null, color: "text-teal-600", count: employees.filter(e => e.position === "진열").length, sub: true },
+              { key: "알바", label: "알바", icon: null, color: "text-rose-600", count: employees.filter(e => e.rank === "알바" || e.position === "알바").length, sub: false },
+              { key: "기타", label: "기타", icon: null, color: "text-slate-600", count: employees.filter(e => !["약사","캐셔","물류","진열"].includes(e.position) && e.rank !== "알바" && e.position !== "알바").length, sub: false },
+            ] as const).map(({ key, label, icon, color, count, sub }) => (
               <button
                 key={key}
                 onClick={() => setPositionTab(key)}
-                className={`px-2 sm:px-3 py-1 sm:py-1.5 text-[11px] sm:text-xs font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${positionTab === key
+                className={`px-2 sm:px-3 py-1 sm:py-1.5 ${sub ? "text-[10px] sm:text-[11px]" : "text-[11px] sm:text-xs"} font-semibold rounded-md cursor-pointer transition-all flex items-center gap-1 min-h-[28px] sm:min-h-[32px] ${positionTab === key
                   ? `bg-white ${color} shadow-sm font-bold`
                   : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
                   }`}
@@ -111,8 +112,8 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
           </button>
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">정렬</span>
           <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
-            {(["position", "rank", "hireDate", "name"] as const).map((key) => {
-              const labels: Record<string, string> = { position: "구분", rank: "직급", hireDate: "입사일", name: "이름" };
+            {(["position", "name"] as const).map((key) => {
+              const labels: Record<string, string> = { position: "구분", name: "이름" };
               return (
                 <button
                   key={key}
