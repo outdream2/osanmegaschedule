@@ -1,25 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { Upload, Loader2, X, Zap, AlertCircle, Cpu, Camera, Images } from "lucide-react";
+import { ArrowLeft, FileText, Upload, Loader2, X, Zap, AlertCircle, Cpu, Camera, Images } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
+import pdfjsWorkerUrl from "pdfjs-dist/build/pdf.worker.min.mjs?url";
 import { PageImageViewer } from "./PageImageViewer";
 import { RawOcrTable } from "./RawOcrTable";
 import { runPaddleOcr } from "./paddleEngine";
 import type { OcrPageResult } from "./paddleEngine";
-import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
-import type { AuthSession } from "../../types";
 
-pdfjsLib.GlobalWorkerOptions.workerPort = new Worker(
-  new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url),
-  { type: "module" }
-);
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorkerUrl;
 
-interface OcrPageProps {
-  onBack: () => void;
-  authSession?: AuthSession | null;
-  onNavigate?: (page: AppNavPage) => void;
-  onLogout?: () => void;
-}
+interface OcrPageProps { onBack: () => void; }
 
 async function physicallyRotate(
   b64: string,
@@ -45,7 +36,7 @@ async function physicallyRotate(
   });
 }
 
-export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
+export const OcrPage: React.FC<OcrPageProps> = ({ onBack }) => {
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -136,7 +127,8 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
     setExtracting(true); setPages([]); setProcessed(0); setError(null); setStatusMsg("");
     try {
       const rotatedImages = rotation === 0
-        ? images
+ocr 에러나 Setting up fake worker failed: "Importing a module script failed.".
+
         : await Promise.all(images.map(img => physicallyRotate(img.data, img.mimeType, rotation)));
 
 if (engine === "paddle") {
@@ -179,14 +171,15 @@ const clearFiles = () => {
 
 return (
   <div className="min-h-screen bg-gray-50 flex flex-col">
-    {/* Shared App Nav Header */}
-    <AppNavHeader
-      activePage="ocr"
-      authSession={authSession ?? null}
-      onBack={onBack}
-      onNavigate={onNavigate}
-      onLogout={onLogout}
-    />
+    <header className="bg-white border-b border-gray-200 h-14 flex items-center gap-3 px-4 shrink-0 shadow-sm">
+      <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-gray-100 transition cursor-pointer">
+        <ArrowLeft size={18} className="text-gray-600" />
+      </button>
+      <div className="w-7 h-7 rounded-lg bg-amber-500 flex items-center justify-center">
+        <FileText size={14} className="text-white" />
+      </div>
+      <span className="font-bold text-gray-900 text-sm">거래명세서 OCR</span>
+    </header>
 
     <div className="flex-1 flex flex-col items-center px-4 py-6 gap-5 max-w-5xl mx-auto w-full">
 

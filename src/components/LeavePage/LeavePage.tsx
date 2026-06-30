@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  ChevronLeft, CalendarDays, Clock, CheckCircle2, XCircle,
+  CalendarDays, Clock, CheckCircle2, XCircle,
   RefreshCw, Plus, X, Trash2, ChevronDown,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
+import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 
 interface LeaveRequest {
   id: string;
@@ -22,6 +23,8 @@ interface LeaveRequest {
 interface LeavePageProps {
   onBack: () => void;
   authSession: AuthSession | null;
+  onNavigate?: (page: AppNavPage) => void;
+  onLogout?: () => void;
 }
 
 type ManagerTab = "pending" | "all";
@@ -58,7 +61,7 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession }) => {
+export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const isManager = authSession?.role === "manager" || authSession?.role === "admin" || authSession?.role === "superadmin";
   const employeeId = authSession?.employeeId;
   const employeeName = authSession?.employeeName ?? "";
@@ -174,28 +177,22 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession }) => 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 h-14 flex items-center gap-3 px-4 shadow-sm sticky top-0 z-30">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 text-xs font-semibold cursor-pointer"
-        >
-          <ChevronLeft size={13} />
-          <span className="hidden sm:inline">메인</span>
-        </button>
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-green-600 flex items-center justify-center shadow-sm">
-            <CalendarDays size={14} className="text-white" />
-          </div>
-          <span className="font-black text-gray-900 text-base tracking-tight">연차 신청</span>
-        </div>
-        {isManager && (
-          <span className="ml-auto flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">
-            <Clock size={11} />
-            대기 {pending.length}건
-          </span>
-        )}
-      </header>
+      {/* Shared App Nav Header */}
+      <AppNavHeader
+        activePage="leave"
+        authSession={authSession}
+        onBack={onBack}
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+        rightSlot={
+          isManager ? (
+            <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">
+              <Clock size={11} />
+              대기 {pending.length}건
+            </span>
+          ) : undefined
+        }
+      />
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-5">
 

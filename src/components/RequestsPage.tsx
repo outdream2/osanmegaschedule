@@ -1,14 +1,17 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
-  ChevronLeft, Bell, Package, MapPin,
-  CheckCircle2, XCircle, Clock, List, RefreshCw, ArrowRight, Trash2, ShoppingCart, CalendarDays, Square, CheckSquare,
+  Bell, Package, MapPin,
+  CheckCircle2, XCircle, Clock, RefreshCw, ArrowRight, Trash2, ShoppingCart, CalendarDays, Square, CheckSquare,
 } from "lucide-react";
 import { getProductsMap, type ProductInfo } from "../lib/productsCache";
 import type { AuthSession } from "../types";
+import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
 
 interface RequestsPageProps {
   onBack: () => void;
   authSession?: AuthSession | null;
+  onNavigate?: (page: AppNavPage) => void;
+  onLogout?: () => void;
 }
 
 interface DisplayRequest {
@@ -89,7 +92,7 @@ function ListToolbar({
   );
 }
 
-export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession }) => {
+export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const [tab, setTab] = useState<Tab>("display");
   const isManager = authSession?.role === "manager" || authSession?.role === "admin" || authSession?.role === "superadmin";
 
@@ -257,18 +260,14 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession 
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 h-14 flex items-center gap-3 px-4 shadow-sm sticky top-0 z-30">
-        <button onClick={onBack} className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 text-xs font-semibold cursor-pointer">
-          <ChevronLeft size={13} /><span className="hidden sm:inline">메인</span>
-        </button>
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
-            <List size={14} className="text-white" />
-          </div>
-          <span className="font-black text-gray-900 text-base tracking-tight">요청목록 조회</span>
-        </div>
-      </header>
+      {/* Shared App Nav Header */}
+      <AppNavHeader
+        activePage="requests"
+        authSession={authSession ?? null}
+        onBack={onBack}
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+      />
 
       {/* 탭 바 */}
       <div className="bg-white border-b border-gray-200 flex sticky top-14 z-20">

@@ -3,7 +3,6 @@ import { ZONE_DEFS } from "../constants/displayZones";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { loadZBar } from "./BarcodeScanner/zbar";
 import {
-  ChevronLeft,
   ScanLine,
   Bell,
   CheckCircle2,
@@ -14,9 +13,14 @@ import {
 } from "lucide-react";
 import { getProductsMap, lookupProduct, isProductsLoaded, updateCachedProduct, type ProductInfo } from "../lib/productsCache";
 import { ProductInfoCard } from "./ScanPage/ProductInfoCard";
+import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
+import type { AuthSession } from "../types";
 
 interface ScanPageProps {
   onBack: () => void;
+  authSession?: AuthSession | null;
+  onNavigate?: (page: AppNavPage) => void;
+  onLogout?: () => void;
 }
 
 type ZoneStatus = "normal" | "low" | "empty";
@@ -49,7 +53,7 @@ function extractZoneNums(spec: string): number[] {
   )];
 }
 
-export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
+export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const [zones, setZones] = useState<Zone[]>([]);
   const [loading, setLoading] = useState(true);      // zones loading
   const [mapLoading, setMapLoading] = useState(false); // products map loading (first time only)
@@ -180,34 +184,24 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack }) => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm sticky top-0 z-30">
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 hover:text-gray-900 transition cursor-pointer text-xs font-semibold"
-          >
-            <ChevronLeft size={13} />
-            <span className="hidden sm:inline">메인</span>
-          </button>
-          <div className="w-7 h-7 rounded-lg bg-teal-600 flex items-center justify-center shadow-sm">
-            <ScanLine size={14} className="text-white" />
-          </div>
-          <span className="font-black tracking-tight leading-none">
-            <span className="text-red-500 text-xl">OSAN</span>
-            <span className="text-gray-900 text-base"> MEGATOWN</span>
-          </span>
-          <span className="text-xs font-bold text-gray-500 hidden sm:inline">· 상품 스캔</span>
-        </div>
-        {scanResult && (
-          <button
-            onClick={reset}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:text-gray-800 bg-gray-100 border border-gray-200 hover:bg-gray-200 transition cursor-pointer"
-          >
-            <RotateCcw size={12} /> 초기화
-          </button>
-        )}
-      </header>
+      {/* Shared App Nav Header */}
+      <AppNavHeader
+        activePage="scan"
+        authSession={authSession ?? null}
+        onBack={onBack}
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+        rightSlot={
+          scanResult ? (
+            <button
+              onClick={reset}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:text-gray-800 bg-gray-100 border border-gray-200 hover:bg-gray-200 transition cursor-pointer"
+            >
+              <RotateCcw size={12} /> 초기화
+            </button>
+          ) : undefined
+        }
+      />
 
       {/* Toast */}
       {toast && (

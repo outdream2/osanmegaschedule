@@ -82,25 +82,60 @@ export default function App() {
       />
     );
   }
+  // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
+  // The user is already authenticated here, so no AuthSession is required.
+  const navigateInner = (next: "schedule" | "display" | "requests" | "leave" | "scan" | "ocr") => navigate(next);
+
   if (page === "reservation") {
     return <ReservationPage onBack={goBack} authSession={authSession} />;
   }
   if (page === "scan") {
-    return <ScanPage onBack={goBack} />;
+    return (
+      <ScanPage
+        onBack={goBack}
+        authSession={authSession}
+        onNavigate={navigateInner}
+        onLogout={handleLogout}
+      />
+    );
   }
   if (page === "ocr") {
-    return <OcrPage onBack={goBack} />;
+    return (
+      <OcrPage
+        onBack={goBack}
+        authSession={authSession}
+        onNavigate={navigateInner}
+        onLogout={handleLogout}
+      />
+    );
   }
   if (page === "requests") {
-    return <RequestsPage onBack={goBack} authSession={authSession} />;
+    return (
+      <RequestsPage
+        onBack={goBack}
+        authSession={authSession}
+        onNavigate={navigateInner}
+        onLogout={handleLogout}
+      />
+    );
   }
   if (page === "leave") {
-    return <LeavePage onBack={goBack} authSession={authSession} />;
+    return (
+      <LeavePage
+        onBack={goBack}
+        authSession={authSession}
+        onNavigate={navigateInner}
+        onLogout={handleLogout}
+      />
+    );
   }
   if (page === "display") {
     return (
       <DisplayPage
         onBack={goBack}
+        authSession={authSession}
+        onNavigate={navigateInner}
+        onLogout={handleLogout}
         onNavigateToSchedule={() => navigate("schedule")}
         onOpenEmployeeEdit={(id) => {
           setPendingEditEmpId(id);
