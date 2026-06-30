@@ -536,17 +536,29 @@ export const DayTimelineModal: React.FC<Props> = ({
                 <div ref={gridRef} style={{ minWidth: "600px" }}>
                   {/* Time axis */}
                   <div className="relative h-8 mb-0.5">
+                    {/* Peak time highlight in header 14:00-17:00 */}
+                    <div
+                      className="absolute top-0 bottom-0 bg-orange-100 rounded pointer-events-none flex items-end justify-center pb-0.5"
+                      style={{ left: `${pct(14 * 60)}%`, width: `${widthPct(14 * 60, 17 * 60)}%` }}
+                    >
+                      <span className="text-[8px] font-black text-orange-500 tracking-tight">피크타임</span>
+                    </div>
                     {SLOTS.map((slot, i) => (
                       <div key={slot} className="absolute top-0 flex flex-col items-center"
                         style={{ left: `${(i / (SLOTS.length - 1)) * 100}%`, transform: "translateX(-50%)" }}>
-                        <span className="text-[9px] text-slate-400 whitespace-nowrap font-medium">{slot}</span>
-                        <span className="mt-1 block w-px h-2 bg-slate-300" />
+                        <span className={`text-[9px] whitespace-nowrap font-medium ${i >= 8 && i <= 14 ? "text-orange-500 font-bold" : "text-slate-400"}`}>{slot}</span>
+                        <span className={`mt-1 block w-px h-2 ${i >= 8 && i <= 14 ? "bg-orange-300" : "bg-slate-300"}`} />
                       </div>
                     ))}
                   </div>
 
                   {/* Bars area */}
                   <div className="relative">
+                    {/* Peak time full-height background box 14:00-17:00 */}
+                    <div
+                      className="absolute top-0 bottom-0 bg-orange-50 border-l-2 border-r-2 border-orange-200/70 pointer-events-none"
+                      style={{ left: `${pct(14 * 60)}%`, width: `${widthPct(14 * 60, 17 * 60)}%` }}
+                    />
                     {/* Grid lines */}
                     {SLOTS.map((slot, i) => (
                       <div key={`g-${slot}`}
@@ -610,27 +622,25 @@ export const DayTimelineModal: React.FC<Props> = ({
                             </div>
                           )}
 
-                          {/* Layer 2: lunch break — upper portion */}
+                          {/* Layer 2: lunch break — same thickness as work bar */}
                           {(() => {
                             const r = breaks.lunch;
                             const w = widthPct(r.start, r.end);
                             if (w <= 0) return null;
-                            const barH = isActive ? 44 : 20;
-                            const barTop = isActive ? 8 : 5;
                             return (
                               <div
-                                className="absolute bg-yellow-300/90 rounded touch-none transition-all duration-200"
-                                style={{ top: `${barTop}px`, height: `${barH}px`, left: `${pct(r.start)}%`, width: `${w}%` }}
+                                className="absolute inset-y-1 bg-yellow-300/75 rounded touch-none transition-all duration-200"
+                                style={{ left: `${pct(r.start)}%`, width: `${w}%` }}
                               >
                                 <div className="absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-yellow-500/40 active:bg-yellow-500/60 rounded-l touch-none"
                                   onMouseDown={e => startDrag(e, "lunch", "start", r.start, r.end, emp.id)}
                                   onTouchStart={e => startDrag(e, "lunch", "start", r.start, r.end, emp.id)} />
-                                <div className="absolute inset-0 mx-4 cursor-grab active:cursor-grabbing flex items-center justify-center touch-none"
+                                <div className="absolute inset-0 mx-4 cursor-grab active:cursor-grabbing flex flex-col items-center justify-center touch-none"
                                   onMouseDown={e => startDrag(e, "lunch", "body", r.start, r.end, emp.id)}
                                   onTouchStart={e => startDrag(e, "lunch", "body", r.start, r.end, emp.id)}>
-                                  <span className="text-[8px] font-bold text-yellow-900 whitespace-nowrap select-none truncate">
-                                    {minToStr(r.start)}~{minToStr(r.end)}
-                                  </span>
+                                  <span className="text-[8px] font-black text-yellow-900 select-none leading-none">점심</span>
+                                  <span className="text-[8px] font-semibold text-yellow-800 select-none leading-tight whitespace-nowrap">{minToStr(r.start)}</span>
+                                  <span className="text-[8px] font-semibold text-yellow-800 select-none leading-tight whitespace-nowrap">~{minToStr(r.end)}</span>
                                 </div>
                                 <div className="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-yellow-500/40 active:bg-yellow-500/60 rounded-r touch-none"
                                   onMouseDown={e => startDrag(e, "lunch", "end", r.start, r.end, emp.id)}
@@ -639,27 +649,25 @@ export const DayTimelineModal: React.FC<Props> = ({
                             );
                           })()}
 
-                          {/* Layer 3: rest break — lower portion */}
+                          {/* Layer 3: rest break — same thickness as work bar */}
                           {(() => {
                             const r = breaks.rest;
                             const w = widthPct(r.start, r.end);
                             if (w <= 0) return null;
-                            const barH = isActive ? 44 : 20;
-                            const barBottom = isActive ? 8 : 5;
                             return (
                               <div
-                                className="absolute bg-violet-300/90 rounded touch-none transition-all duration-200"
-                                style={{ bottom: `${barBottom}px`, height: `${barH}px`, left: `${pct(r.start)}%`, width: `${w}%` }}
+                                className="absolute inset-y-1 bg-violet-300/75 rounded touch-none transition-all duration-200"
+                                style={{ left: `${pct(r.start)}%`, width: `${w}%` }}
                               >
                                 <div className="absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-violet-500/40 active:bg-violet-500/60 rounded-l touch-none"
                                   onMouseDown={e => startDrag(e, "rest", "start", r.start, r.end, emp.id)}
                                   onTouchStart={e => startDrag(e, "rest", "start", r.start, r.end, emp.id)} />
-                                <div className="absolute inset-0 mx-4 cursor-grab active:cursor-grabbing flex items-center justify-center touch-none"
+                                <div className="absolute inset-0 mx-4 cursor-grab active:cursor-grabbing flex flex-col items-center justify-center touch-none"
                                   onMouseDown={e => startDrag(e, "rest", "body", r.start, r.end, emp.id)}
                                   onTouchStart={e => startDrag(e, "rest", "body", r.start, r.end, emp.id)}>
-                                  <span className="text-[8px] font-bold text-violet-900 whitespace-nowrap select-none truncate">
-                                    {minToStr(r.start)}~{minToStr(r.end)}
-                                  </span>
+                                  <span className="text-[8px] font-black text-violet-900 select-none leading-none">휴게</span>
+                                  <span className="text-[8px] font-semibold text-violet-800 select-none leading-tight whitespace-nowrap">{minToStr(r.start)}</span>
+                                  <span className="text-[8px] font-semibold text-violet-800 select-none leading-tight whitespace-nowrap">~{minToStr(r.end)}</span>
                                 </div>
                                 <div className="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-violet-500/40 active:bg-violet-500/60 rounded-r touch-none"
                                   onMouseDown={e => startDrag(e, "rest", "end", r.start, r.end, emp.id)}
