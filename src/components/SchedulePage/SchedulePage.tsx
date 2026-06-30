@@ -203,6 +203,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const [empGender, setEmpGender] = useState<"남" | "여" | "">("");
   const [empRank, setEmpRank] = useState("");
   const [empAnnualLeave, setEmpAnnualLeave] = useState<number>(0);
+  const [empLevel, setEmpLevel] = useState<number>(1);
   const [empZoneNums, setEmpZoneNums] = useState<number[]>([]);
   const [yearLeaveStats, setYearLeaveStats] = useState<Record<number, number>>({});
   const [editingEmpId, setEditingEmpId] = useState<number | null>(null);
@@ -334,6 +335,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     setEmpWorkplace("매장");
     setEmpGender("");
     setEmpRank("");
+    setEmpLevel(1);
     setEmpZoneNums([]);
     setIsEmpModalOpen(true);
   };
@@ -353,6 +355,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     }
     setEmpRank(emp.rank || "");
     setEmpAnnualLeave(emp.annual_leave_days ?? 0);
+    setEmpLevel(emp.level ?? 1);
     setEmpEmploymentType(emp.employmentType || "정직원");
     setEmpHireDate(emp.hireDate || "");
     setEmpDescription(emp.description || "");
@@ -870,6 +873,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           workplace: empWorkplace,
           gender: empGender || null,
           annual_leave_days: empAnnualLeave > 0 ? empAnnualLeave : null,
+          level: empLevel,
         });
         applyZones(selectedEmpForEdit.id, empName);
         showNotification(`${empName} 직원의 정보가 수정되었습니다.`);
@@ -884,6 +888,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           workplace: empWorkplace,
           gender: empGender || null,
           annual_leave_days: empAnnualLeave > 0 ? empAnnualLeave : null,
+          level: empLevel,
         });
         if (res.data?.id) applyZones(res.data.id, empName);
         showNotification(`새 직원 ${empName}님이 등록되었습니다.`);
@@ -900,6 +905,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       setEmpGender("");
       setEmpRank("");
       setEmpAnnualLeave(0);
+      setEmpLevel(1);
       setEmpZoneNums([]);
       setSelectedEmpForEdit(null);
       setEmpModalMode("create");
@@ -944,6 +950,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         workplace: emp.workplace,
         gender: emp.gender ?? null,
         annual_leave_days: emp.annual_leave_days ?? null,
+        level: emp.level ?? 1,
       });
 
       setEmployees((prev) =>
@@ -2134,6 +2141,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           setEmpRank={setEmpRank}
           empAnnualLeave={empAnnualLeave}
           setEmpAnnualLeave={setEmpAnnualLeave}
+          empLevel={empLevel}
+          setEmpLevel={setEmpLevel}
           empZoneNums={empZoneNums}
           setEmpZoneNums={setEmpZoneNums}
           employmentTypes={PRESET_EMPLOYMENT_TYPES}

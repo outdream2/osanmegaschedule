@@ -125,17 +125,17 @@ export class ScheduleService {
     return { count: rows.length };
   }
 
-  async createEmployee(data: { name: string; position: string; employmentType?: string; hireDate: string; description: string; workplace?: string; rank?: string | null; gender?: string | null; annual_leave_days?: number }) {
+  async createEmployee(data: { name: string; position: string; employmentType?: string; hireDate: string; description: string; workplace?: string; rank?: string | null; gender?: string | null; annual_leave_days?: number; level?: number }) {
     const { data: result, error } = await supabase
       .from("employees")
-      .insert({ ...data, workplace: data.workplace ?? "매장", employmentType: data.employmentType ?? "정직원" })
+      .insert({ ...data, workplace: data.workplace ?? "매장", employmentType: data.employmentType ?? "정직원", level: data.level ?? 1 })
       .select()
       .single();
     if (error) throw new Error(error.message);
     return result;
   }
 
-  async updateEmployee(id: number, data: { name: string; position: string; employmentType?: string; hireDate: string; description: string; workplace?: string; rank?: string | null; gender?: string | null; annual_leave_days?: number }) {
+  async updateEmployee(id: number, data: { name: string; position: string; employmentType?: string; hireDate: string; description: string; workplace?: string; rank?: string | null; gender?: string | null; annual_leave_days?: number; level?: number }) {
     const { data: result, error } = await supabase
       .from("employees")
       .update({ ...data, workplace: data.workplace ?? "매장", employmentType: data.employmentType ?? "정직원" })

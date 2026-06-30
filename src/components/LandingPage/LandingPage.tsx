@@ -137,6 +137,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       if (page === "upload") {
         onAuthOnly?.(auth);
         if (role === "manager") { setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog(); }
+      } else if (role === "employee") {
+        onAuthOnly?.(auth);
       } else {
         onNavigate(page as any, auth);
       }
@@ -202,7 +204,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     if (!isManagerOrAdmin) return;
     fetch("/api/requests/pending-counts")
       .then(r => r.ok ? r.json() : {})
-      .then(d => {
+      .then((d: { leave?: number; display?: number; order?: number; mismatch?: number }) => {
         setLeavePendingCount(d.leave ?? 0);
         setRequestsPendingCount((d.display ?? 0) + (d.order ?? 0) + (d.mismatch ?? 0));
       })

@@ -30,6 +30,7 @@ export interface Employee {
   gender?: "남" | "여";
   push_subscription?: object | null; // Web Push 구독 정보
   annual_leave_days?: number | null;
+  level?: number | null; // 0-9: 1=직원, 8=대표, 9=최고관리자
   schedules: Schedule[];
 }
 

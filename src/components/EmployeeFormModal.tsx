@@ -25,6 +25,8 @@ interface EmployeeFormModalProps {
   setEmpRank: React.Dispatch<React.SetStateAction<string>>;
   empAnnualLeave: number;
   setEmpAnnualLeave: React.Dispatch<React.SetStateAction<number>>;
+  empLevel: number;
+  setEmpLevel: React.Dispatch<React.SetStateAction<number>>;
   empZoneNums: number[];
   setEmpZoneNums: React.Dispatch<React.SetStateAction<number[]>>;
   employmentTypes: string[];
@@ -54,6 +56,8 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   setEmpRank,
   empAnnualLeave,
   setEmpAnnualLeave,
+  empLevel,
+  setEmpLevel,
   empZoneNums,
   setEmpZoneNums,
   employmentTypes,
@@ -83,7 +87,6 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </label>
             <input
               type="text"
-              required
               placeholder="예: 주6일 일 휴무, 금일, 주5일 (수목휴무) 등"
               value={empDescription}
               onChange={(e) => setEmpDescription(e.target.value)}
@@ -113,7 +116,6 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               </label>
               <input
                 type="text"
-                required
                 placeholder="예: 홍길동"
                 value={empName}
                 onChange={(e) => setEmpName(e.target.value)}
@@ -267,6 +269,42 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               onChange={(e) => setEmpRank(e.target.value)}
               className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wide mb-1 flex items-center gap-1">
+              직원 레벨
+              <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">0–9 (1=직원, 8=대표, 9=최고관리자)</span>
+            </label>
+            <div className="flex flex-wrap gap-1">
+              {[
+                { v: 0, label: "0 미지정" },
+                { v: 1, label: "1 직원" },
+                { v: 2, label: "2" },
+                { v: 3, label: "3" },
+                { v: 4, label: "4" },
+                { v: 5, label: "5" },
+                { v: 6, label: "6" },
+                { v: 7, label: "7 관리자" },
+                { v: 8, label: "8 대표" },
+                { v: 9, label: "9 최고관리자" },
+              ].map(({ v, label }) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setEmpLevel(v)}
+                  className={`px-2 py-1 text-[11px] rounded-lg font-bold transition cursor-pointer border ${
+                    empLevel === v
+                      ? v >= 8 ? "bg-rose-50 text-rose-700 border-rose-300 shadow-sm"
+                        : v >= 7 ? "bg-amber-50 text-amber-700 border-amber-300 shadow-sm"
+                        : "bg-indigo-50 text-indigo-700 border-indigo-300 shadow-sm"
+                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>
