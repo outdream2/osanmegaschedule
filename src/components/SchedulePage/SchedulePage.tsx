@@ -34,18 +34,24 @@ import {
   GripVertical,
   Settings,
   LayoutGrid,
+  FileText,
+  Package,
 } from "lucide-react";
 
 interface SchedulePageProps {
   onBack?: () => void;
   onLogout?: () => void;
   onNavigateToDisplay?: () => void;
+  onNavigateToRequests?: () => void;
+  onNavigateToLeave?: () => void;
+  onNavigateToScan?: () => void;
+  onNavigateToOcr?: () => void;
   initialEditEmployeeId?: number | null;
   onEditEmployeeHandled?: () => void;
   authSession?: AuthSession | null;
 }
 
-export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, onNavigateToDisplay, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
+export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, onNavigateToDisplay, onNavigateToRequests, onNavigateToLeave, onNavigateToScan, onNavigateToOcr, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
   // ── Auth-derived flags ─────────────────────────────────────────────────────
   const isSuperAdmin = authSession?.role === "superadmin" || authSession?.role === "admin";
   // 관리자: read-only + can open break modal for any employee, no labor cost
@@ -1242,6 +1248,38 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
                 >
                   <LayoutGrid size={11} /> 매장관리
+                </button>
+              )}
+              {(isAdmin || isManagerRole) && onNavigateToRequests && (
+                <button
+                  onClick={onNavigateToRequests}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
+                >
+                  <MessageSquare size={11} /> 요청목록
+                </button>
+              )}
+              {(isAdmin || isManagerRole) && onNavigateToLeave && (
+                <button
+                  onClick={onNavigateToLeave}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
+                >
+                  <CheckCircle size={11} /> 연차승인
+                </button>
+              )}
+              {(isAdmin || isManagerRole) && onNavigateToScan && (
+                <button
+                  onClick={onNavigateToScan}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
+                >
+                  <Package size={11} /> 상품관리
+                </button>
+              )}
+              {(isAdmin || isManagerRole) && onNavigateToOcr && (
+                <button
+                  onClick={onNavigateToOcr}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
+                >
+                  <FileText size={11} /> 거래명세서
                 </button>
               )}
             </div>

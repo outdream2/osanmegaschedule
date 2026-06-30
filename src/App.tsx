@@ -72,6 +72,10 @@ export default function App() {
         onBack={goBack}
         onLogout={handleLogout}
         onNavigateToDisplay={() => navigate("display")}
+        onNavigateToRequests={() => navigate("requests")}
+        onNavigateToLeave={() => navigate("leave")}
+        onNavigateToScan={() => navigate("scan")}
+        onNavigateToOcr={() => navigate("ocr")}
         initialEditEmployeeId={pendingEditEmpId}
         onEditEmployeeHandled={() => setPendingEditEmpId(null)}
         authSession={authSession}
