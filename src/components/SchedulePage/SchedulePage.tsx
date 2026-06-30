@@ -1871,7 +1871,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                     <span className="text-[9px] font-bold text-rose-400 shrink-0 leading-none">♀</span>
                                   )}
                                   <span
-                                    onClick={() => setCalendarEmployee(emp)}
+                                    onMouseDown={(e) => e.stopPropagation()}
+                                    onClick={(e) => { e.stopPropagation(); setCalendarEmployee(emp); }}
                                     className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-[10px] sm:text-[11px] cursor-pointer select-none transition break-keep leading-tight"
                                     title="클릭하여 개인 스케줄 달력 보기"
                                   >
@@ -1908,14 +1909,18 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                 {isAdmin && (
                                   <div className="flex items-center gap-0.5 opacity-20 group-hover:opacity-100 transition duration-150">
                                     <button
-                                      onClick={() => openEditEmployeeModal(emp)}
+                                      draggable={false}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      onClick={(e) => { e.stopPropagation(); openEditEmployeeModal(emp); }}
                                       className="text-slate-400 hover:text-indigo-500 cursor-pointer p-0.5 rounded transition hover:bg-indigo-50"
                                       title="직원 상세 정보 수정"
                                     >
                                       <Edit size={9} />
                                     </button>
                                     <button
-                                      onClick={() => handleDeleteEmployee(emp.id, emp.name)}
+                                      draggable={false}
+                                      onMouseDown={(e) => e.stopPropagation()}
+                                      onClick={(e) => { e.stopPropagation(); handleDeleteEmployee(emp.id, emp.name); }}
                                       className="text-slate-400 hover:text-rose-500 cursor-pointer p-0.5 rounded transition hover:bg-rose-50"
                                       title="직원 삭제"
                                     >
