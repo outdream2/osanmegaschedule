@@ -12,6 +12,7 @@ import {
   Package,
 } from "lucide-react";
 import type { AuthSession } from "../types";
+import { NotificationBell } from "./NotificationBell";
 
 export type AppNavPage =
   | "schedule"
@@ -41,7 +42,7 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { key: "schedule", label: "스케줄관리", icon: Calendar,        managerOnly: false },
-  { key: "display",  label: "매장관리",   icon: LayoutGrid,      managerOnly: false },
+  { key: "display",  label: "매장관리",   icon: LayoutGrid,      managerOnly: true  },
   { key: "requests", label: "요청목록",   icon: MessageSquare,   managerOnly: true  },
   { key: "leave",    label: "연차승인",   icon: CheckCircle,     managerOnly: true  },
   { key: "scan",     label: "상품관리",   icon: Package,         managerOnly: true  },
@@ -56,11 +57,14 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   onLogout,
   rightSlot,
 }) => {
-  const isAdmin =
-    authSession?.role === "superadmin" || authSession?.role === "admin";
-  const isManager = authSession?.role === "manager";
-  const isEmployee = authSession?.role === "employee";
-  const isPrivileged = isAdmin || isManager;
+  const userLevel = authSession?.level ??
+    (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
+    : authSession?.role === "manager" ? 2
+    : authSession?.role === "employee" ? 1 : 0);
+  const isAdmin = userLevel >= 9;
+  const isManager = userLevel >= 2 && userLevel < 9;
+  const isEmployee = userLevel === 1;
+  const isPrivileged = userLevel >= 2;
 
   const visibleTabs = TABS.filter((t) => !t.managerOnly || isPrivileged);
 
@@ -148,9 +152,11 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             </div>
           ) : null}
 
+          <NotificationBell authSession={authSession} />
+
           {rightSlot}
 
-          {(isAdmin || isManager || isEmployee) ? (
+          {userLevel >= 1 ? (
             onLogout && (
               <button
                 onClick={onLogout}

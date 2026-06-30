@@ -52,12 +52,14 @@ interface SchedulePageProps {
 }
 
 export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, onNavigateToDisplay, onNavigateToRequests, onNavigateToLeave, onNavigateToScan, onNavigateToOcr, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
-  // ── Auth-derived flags ─────────────────────────────────────────────────────
-  const isSuperAdmin = authSession?.role === "superadmin" || authSession?.role === "admin";
-  // 관리자: read-only + can open break modal for any employee, no labor cost
-  const isManagerRole = authSession?.role === "manager";
-  // 직원모드: read-only + can open break modal on own row only
-  const isEmployeeMode = authSession?.role === "employee";
+  // ── Auth-derived flags (level-based, with role fallback for old sessions) ───
+  const userLevel = authSession?.level ??
+    (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
+    : authSession?.role === "manager" ? 2
+    : authSession?.role === "employee" ? 1 : 0);
+  const isSuperAdmin = userLevel >= 9;             // 최고관리자 badge
+  const isManagerRole = userLevel >= 2 && userLevel < 9;  // 관리자 badge
+  const isEmployeeMode = userLevel === 1;          // 직원 read-only mode
   const sessionEmployeeId = authSession?.employeeId ?? null;
   // Settings hook (positions, workplaces, scheduleTypes, shift hours)
   const {
@@ -148,22 +150,21 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   }, [employees, isMobile]);
 
 
-  // Administrative / Auth states
-  // isAdmin = full superadmin access (schedule editing, employee management, labor costs)
+  // isAdmin = full edit access (schedule editing, employee management, labor costs)
+  // level >= 2 means any manager or above can edit
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
-    if (authSession?.role === "employee" || authSession?.role === "manager") return false;
-    if (authSession?.role === "superadmin" || authSession?.role === "admin") return true;
+    const lvl = authSession?.level ?? 0;
+    if (lvl >= 2) return true;
+    if (lvl === 1) return false;
     return localStorage.getItem("megatown_admin") === "true";
   });
 
   // Keep isAdmin in sync if authSession changes during the page lifetime
   useEffect(() => {
-    if (authSession?.role === "employee" || authSession?.role === "manager") {
-      setIsAdmin(false);
-    } else if (authSession?.role === "superadmin" || authSession?.role === "admin") {
-      setIsAdmin(true);
-    }
-  }, [authSession?.role]);
+    const lvl = authSession?.level ?? 0;
+    if (lvl >= 2) setIsAdmin(true);
+    else if (lvl === 1) setIsAdmin(false);
+  }, [authSession?.level]);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [loginId, setLoginId] = useState("");
   const [loginPw, setLoginPw] = useState("");
@@ -1287,7 +1288,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           {/* Right: role badge + actions */}
           <div className="flex items-center gap-1.5">
             {/* Role badge — desktop only */}
-            {isAdmin ? (
+            {isSuperAdmin ? (
               <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                 <span>최고관리자</span>
@@ -1350,7 +1351,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             )}
 
             {/* Logout / Login */}
-            {isAdmin || isManagerRole || isEmployeeMode ? (
+            {userLevel >= 1 ? (
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-gray-200 hover:border-rose-300 rounded-lg transition cursor-pointer"
@@ -1887,10 +1888,21 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                     </span>
                                   )}
                                 </div>
-                                {/* Middle: position (구분) · rank (직급) · employmentType */}
-                                <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium leading-tight break-keep">
-                                  {emp.position}{emp.rank ? ` / ${emp.rank}` : ""}{emp.employmentType ? ` · ${emp.employmentType}` : ""}
-                                </span>
+                                {/* 구분 / 직급 | 계약상태 — 두 줄로 분리 */}
+                                <div className="flex flex-col gap-0 leading-tight">
+                                  <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium break-keep">
+                                    {emp.position}{emp.rank ? ` · ${emp.rank}` : ""}
+                                  </span>
+                                  {emp.employmentType && (
+                                    <span className={`text-[8px] font-semibold break-keep ${
+                                      emp.employmentType === "정직원" ? "text-emerald-600" :
+                                      emp.employmentType === "계약직" ? "text-blue-500" :
+                                      "text-amber-500"
+                                    }`}>
+                                      {emp.employmentType}
+                                    </span>
+                                  )}
+                                </div>
                                 {/* 남은 월차: 로딩된 스케줄에서 직접 계산 */}
                                 {(() => {
                                   const leaveTotal = parseInt(String(emp.annual_leave_days ?? ""), 10);

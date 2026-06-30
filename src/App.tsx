@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import SchedulePage from "./components/SchedulePage";
 import { LandingPage } from "./components/LandingPage";
 import { ReservationPage } from "./components/ReservationPage";
@@ -12,16 +12,25 @@ import { ScanPage } from "./components/ScanPage";
 import { OcrPage } from "./components/OcrPage";
 import { RequestsPage } from "./components/RequestsPage";
 import { LeavePage } from "./components/LeavePage/LeavePage";
+import { PermissionsPage } from "./components/PermissionsPage";
+import { SessionTimeoutWarning } from "./components/SessionTimeoutWarning";
 import { useAuth } from "./hooks/useAuth";
 import type { AuthSession } from "./types";
 import { prefetchProducts } from "./lib/productsCache";
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions";
 
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
   const [pendingEditEmpId, setPendingEditEmpId] = useState<number | null>(null);
-  const { session: authSession, setSession: setAuthSession, clearSession: clearAuthSession } = useAuth();
+  const {
+    session: authSession,
+    setSession: setAuthSession,
+    clearSession: clearAuthSession,
+    showTimeoutWarning,
+    secondsRemaining,
+    extendSession,
+  } = useAuth();
 
   // Prefetch product list as soon as user is authenticated
   useEffect(() => {
@@ -51,7 +60,7 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave", auth?: AuthSession) => {
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions", auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
     navigate(next);
   };
@@ -60,14 +69,29 @@ export default function App() {
 
   const handleLogout = () => {
     clearAuthSession();
+    // clearAuthSession already removes all megatown_* keys, but belt-and-suspenders:
     Object.keys(localStorage)
       .filter(k => k.startsWith("megatown_"))
       .forEach(k => localStorage.removeItem(k));
     window.location.replace("/");
   };
 
+  const timeoutWarningOverlay = authSession && showTimeoutWarning ? (
+    <SessionTimeoutWarning
+      initialSeconds={secondsRemaining}
+      onExtend={extendSession}
+      onLogout={handleLogout}
+    />
+  ) : null;
+
+  // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
+  // The user is already authenticated here, so no AuthSession is required.
+  const navigateInner = (next: "schedule" | "display" | "requests" | "leave" | "scan" | "ocr") => navigate(next);
+
+  let pageContent: React.ReactElement;
+
   if (page === "schedule") {
-    return (
+    pageContent = (
       <SchedulePage
         onBack={goBack}
         onLogout={handleLogout}
@@ -81,16 +105,10 @@ export default function App() {
         authSession={authSession}
       />
     );
-  }
-  // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
-  // The user is already authenticated here, so no AuthSession is required.
-  const navigateInner = (next: "schedule" | "display" | "requests" | "leave" | "scan" | "ocr") => navigate(next);
-
-  if (page === "reservation") {
-    return <ReservationPage onBack={goBack} authSession={authSession} />;
-  }
-  if (page === "scan") {
-    return (
+  } else if (page === "reservation") {
+    pageContent = <ReservationPage onBack={goBack} authSession={authSession} />;
+  } else if (page === "scan") {
+    pageContent = (
       <ScanPage
         onBack={goBack}
         authSession={authSession}
@@ -98,9 +116,8 @@ export default function App() {
         onLogout={handleLogout}
       />
     );
-  }
-  if (page === "ocr") {
-    return (
+  } else if (page === "ocr") {
+    pageContent = (
       <OcrPage
         onBack={goBack}
         authSession={authSession}
@@ -108,9 +125,8 @@ export default function App() {
         onLogout={handleLogout}
       />
     );
-  }
-  if (page === "requests") {
-    return (
+  } else if (page === "requests") {
+    pageContent = (
       <RequestsPage
         onBack={goBack}
         authSession={authSession}
@@ -118,9 +134,8 @@ export default function App() {
         onLogout={handleLogout}
       />
     );
-  }
-  if (page === "leave") {
-    return (
+  } else if (page === "leave") {
+    pageContent = (
       <LeavePage
         onBack={goBack}
         authSession={authSession}
@@ -128,9 +143,8 @@ export default function App() {
         onLogout={handleLogout}
       />
     );
-  }
-  if (page === "display") {
-    return (
+  } else if (page === "display") {
+    pageContent = (
       <DisplayPage
         onBack={goBack}
         authSession={authSession}
@@ -143,6 +157,29 @@ export default function App() {
         }}
       />
     );
+  } else if (page === "permissions") {
+    pageContent = (
+      <PermissionsPage
+        authSession={authSession}
+        onBack={goBack}
+        onLogout={handleLogout}
+      />
+    );
+  } else {
+    pageContent = (
+      <LandingPage
+        onNavigate={handleNavigate}
+        authSession={authSession}
+        onLogout={handleLogout}
+        onAuthOnly={setAuthSession}
+      />
+    );
   }
-  return <LandingPage onNavigate={handleNavigate} authSession={authSession} onLogout={handleLogout} onAuthOnly={setAuthSession} />;
+
+  return (
+    <>
+      {pageContent}
+      {timeoutWarningOverlay}
+    </>
+  );
 }

@@ -1,12 +1,15 @@
 // src/components/DisplayPage/DisplayPage.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ZONE_DEFS, ZONES_STORAGE_KEY, type ZoneSection } from "../../constants/displayZones";
+import { getProductsMap } from "../../lib/productsCache";
 import {
   Bell,
   Boxes,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   ClipboardList,
   Package,
   Save,
@@ -22,6 +25,7 @@ import {
   Search,
   Coffee,
   ScanLine,
+  Pill,
 } from "lucide-react";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { ZoneCell } from "./ZoneCell";
@@ -210,6 +214,25 @@ const saveZonesToDB = async (zones: DisplayZone[]) => {
   } catch {}
 };
 
+const fetchRequestsFromDB = async (): Promise<DisplayRequest[] | null> => {
+  try {
+    const res = await fetch("/api/display-requests");
+    if (!res.ok) return null;
+    const rows: any[] = await res.json();
+    return rows.map((r) => ({
+      id: String(r.id),
+      zoneId: r.zone_id ?? "",
+      zoneLabel: r.zone_label ?? "",
+      category: r.category ?? "",
+      requestedAt: r.requested_at ?? new Date().toISOString(),
+      assignedStaffId: r.assigned_staff_id ?? null,
+      assignedStaffName: r.assigned_staff_name ?? "",
+      status: (r.status ?? "pending") as "pending" | "done",
+      note: r.note ?? "",
+    }));
+  } catch { return null; }
+};
+
 // ─── Main component ────────────────────────────────────────────────────────────
 export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit, onNavigateToSchedule, authSession, onNavigate, onLogout }) => {
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
@@ -250,11 +273,18 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   type ScannerMode = "search" | "products" | null;
   const [scannerMode, setScannerMode] = useState<ScannerMode>(null);
 
+  // Product DB search (약찾기)
+  const [productsMap, setProductsMap] = useState<Record<string, any>>({});
+  const [productMatchZoneId, setProductMatchZoneId] = useState<string | null>(null);
+
   // Requests panel
   const [reqFilter, setReqFilter] = useState<"all" | "pending" | "done">("all");
 
   // Today staff position filter
   const [staffPosFilter, setStaffPosFilter] = useState<string>("전체");
+
+  // Staff panel collapse
+  const [staffPanelOpen, setStaffPanelOpen] = useState(true);
 
   // Push notification subscription state
   const [subscribingId, setSubscribingId] = useState<number | null>(null);
@@ -415,6 +445,21 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       setZonesLoaded(true);
     });
   }, []); // eslint-disable-line
+
+  // ── Load requests from DB on mount ──────────────────────────────────────────
+  useEffect(() => {
+    fetchRequestsFromDB().then((dbReqs) => {
+      if (dbReqs) {
+        setRequests(dbReqs);
+        saveRequests(dbReqs);
+      }
+    });
+  }, []);
+
+  // ── Load products map for medicine search ────────────────────────────────────
+  useEffect(() => {
+    getProductsMap().then(m => setProductsMap(m));
+  }, []);
 
   // ── Persist: save to localStorage immediately; debounce DB save ──────────────
   const dbSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -608,10 +653,31 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     );
   }, [zones, searchQuery]);
 
-  const searchedZoneIds = useMemo(
-    () => new Set(searchQuery ? searchedZones.map((z) => z.id) : []),
-    [searchedZones, searchQuery]
-  );
+  const searchedZoneIds = useMemo(() => {
+    const ids = new Set(searchQuery ? searchedZones.map((z) => z.id) : []);
+    if (productMatchZoneId) ids.add(productMatchZoneId);
+    return ids;
+  }, [searchedZones, searchQuery, productMatchZoneId]);
+
+  // ── Product DB search results (약찾기) ────────────────────────────────────────
+  const productSearchResults = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (q.length < 1) return [];
+    const seen = new Set<string>();
+    const results: Array<{ code: string; name: string; spec: string; realMap: string | null }> = [];
+    for (const p of Object.values(productsMap)) {
+      const code = String(p.code ?? p.product_code ?? "");
+      if (seen.has(code)) continue;
+      seen.add(code);
+      const name = String(p.name ?? p.product_name ?? "");
+      const spec = String(p.spec ?? "");
+      if (name.toLowerCase().includes(q) || spec.toLowerCase().includes(q)) {
+        results.push({ code, name, spec, realMap: p.real_map ?? null });
+        if (results.length >= 30) break;
+      }
+    }
+    return results;
+  }, [productsMap, searchQuery]);
 
   const filteredReqs = useMemo(() =>
     reqFilter === "all" ? requests : requests.filter((r) => r.status === reqFilter),
@@ -666,6 +732,17 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       </div>
     );
   };
+
+  // ── Product search result click: highlight matching zone on the map ──────────
+  const handleProductResultClick = useCallback((realMap: string | null) => {
+    if (!realMap) return;
+    const m = realMap.match(/^(\d+)번/);
+    if (m) {
+      const num = parseInt(m[1], 10);
+      const zone = zones.find((z) => z.num === num);
+      if (zone) setProductMatchZoneId(zone.id);
+    }
+  }, [zones]);
 
   const handleBarcodeScan = (result: string) => {
     if (scannerMode === "search") {
@@ -737,7 +814,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               <Search className="absolute left-3 top-3.5 text-gray-400" size={13} />
               {searchQuery && (
                 <button
-                  onClick={() => setSearchQuery("")}
+                  onClick={() => { setSearchQuery(""); setProductMatchZoneId(null); }}
                   className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 cursor-pointer"
                 >
                   <X size={15} />
@@ -753,13 +830,72 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             </button>
           </div>
 
-          {/* Today's Active Staff Panel */}
-          <div className="bg-white p-4 rounded-xl shadow-xs border border-gray-100 flex flex-col flex-1 min-h-0">
-            <div className="flex items-center gap-2 border-b border-slate-100 pb-2 mb-2 shrink-0">
-              <Users size={14} className="text-emerald-600" />
-              <h3 className="text-xs font-bold text-slate-800">{selectedDateLabel} 출근 직원 ({todayStaff.length}명)</h3>
+          {/* ── 약찾기 결과 패널 ──────────────────────────────────────────────── */}
+          {productSearchResults.length > 0 && (
+            <div className="bg-white rounded-xl border border-emerald-200 shadow-xs overflow-hidden shrink-0">
+              <div className="px-3 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700">
+                  <Pill size={12} />
+                  약 위치 검색 결과 ({productSearchResults.length}건)
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setSearchQuery(""); setProductMatchZoneId(null); }}
+                  className="text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+              <div className="max-h-52 overflow-y-auto divide-y divide-slate-50">
+                {productSearchResults.map((p) => (
+                  <button
+                    key={p.code}
+                    type="button"
+                    onClick={() => handleProductResultClick(p.realMap)}
+                    className={`w-full text-left px-3 py-2 transition cursor-pointer flex items-start justify-between gap-2 ${
+                      p.realMap
+                        ? "hover:bg-emerald-50"
+                        : "hover:bg-slate-50 opacity-60"
+                    } ${productMatchZoneId && zones.find(z => z.id === productMatchZoneId)?.num === parseInt((p.realMap ?? "").match(/^(\d+)번/)?.[1] ?? "-1") ? "bg-emerald-50 border-l-2 border-emerald-400" : ""}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-semibold text-slate-800 truncate">{p.name}</div>
+                      {p.spec && <div className="text-[10px] text-slate-400 truncate mt-0.5">{p.spec}</div>}
+                    </div>
+                    {p.realMap ? (
+                      <div className="flex items-center gap-0.5 shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap">
+                        <MapPin size={9} />
+                        {p.realMap}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-slate-300 shrink-0 whitespace-nowrap">위치 미등록</span>
+                    )}
+                  </button>
+                ))}
+              </div>
             </div>
+          )}
 
+          {/* Today's Active Staff Panel */}
+          <div className={`bg-white rounded-xl shadow-xs border border-gray-100 flex flex-col ${staffPanelOpen ? "flex-1 min-h-0 p-4" : "shrink-0 px-4 py-2.5"}`}>
+            <button
+              type="button"
+              onClick={() => setStaffPanelOpen(o => !o)}
+              className={`flex items-center justify-between w-full cursor-pointer shrink-0 ${staffPanelOpen ? "border-b border-slate-100 pb-2 mb-2" : ""}`}
+            >
+              <div className="flex items-center gap-2">
+                <Users size={14} className="text-emerald-600" />
+                <h3 className="text-xs font-bold text-slate-800">{selectedDateLabel} 출근 직원 ({todayStaff.length}명)</h3>
+              </div>
+              <div className="flex items-center gap-1 text-[10px] font-semibold text-slate-400">
+                <span>{staffPanelOpen ? "숨기기" : "보기"}</span>
+                {staffPanelOpen
+                  ? <ChevronUp size={12} />
+                  : <ChevronDown size={12} />}
+              </div>
+            </button>
+
+            {staffPanelOpen && (<>
             {/* Position filter pills */}
             <div className="flex gap-1 mb-2 shrink-0">
               {(["전체", "약사", "물류", "캐셔", "진열"] as const).map((pos) => (
@@ -885,6 +1021,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 </ul>
               )}
             </div>
+            </>)}
           </div>
 
         </section>
@@ -1245,12 +1382,22 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       </td>
                       <td className="p-3 flex items-center justify-center gap-1.5">
                         {req.status === "pending" && (
-                          <button onClick={() => setRequests((prev) => prev.map((r) => r.id === req.id ? { ...r, status: "done" as const } : r))}
+                          <button onClick={() => {
+                            setRequests((prev) => prev.map((r) => r.id === req.id ? { ...r, status: "done" as const } : r));
+                            fetch(`/api/display-requests/${req.id}`, {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ status: "done" }),
+                            }).catch(() => {});
+                          }}
                             className="text-[10px] font-bold px-2 py-1 rounded bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer flex items-center gap-1">
                             <CheckCircle2 size={10} />완료
                           </button>
                         )}
-                        <button onClick={() => setRequests((prev) => prev.filter((r) => r.id !== req.id))}
+                        <button onClick={() => {
+                          setRequests((prev) => prev.filter((r) => r.id !== req.id));
+                          fetch(`/api/display-requests/${req.id}`, { method: "DELETE" }).catch(() => {});
+                        }}
                           className="text-[10px] font-medium px-2 py-1 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer border border-slate-200">
                           삭제
                         </button>

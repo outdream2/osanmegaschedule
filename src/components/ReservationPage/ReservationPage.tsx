@@ -25,7 +25,6 @@ interface ReservationPageProps {
 }
 
 // Employee IDs 1,2,3 (대표/이사/부장) can manage blocked slots
-const STAFF_MANAGER_IDS = [1, 2, 3];
 
 interface StaffAvailability {
   employeeId: number;
@@ -78,12 +77,8 @@ const getTargetFromNote = (noteStr: string): string => {
 const STAFF_NAMES = ["대표", "이사", "부장"];
 
 export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSession }) => {
-  // Internal staff (대표/이사/부장 or superadmin) can block/unblock time slots
-  const isInternalStaff = authSession != null && (
-    authSession.role === "superadmin" ||
-    authSession.role === "admin" ||
-    STAFF_MANAGER_IDS.includes(authSession.employeeId ?? -1)
-  );
+  // Internal staff (level >= 2) can block/unblock time slots
+  const isInternalStaff = (authSession?.level ?? 0) >= 2;
   const now = new Date();
   const todayYMD = formatYMD(now);
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());

@@ -62,7 +62,7 @@ function today() {
 }
 
 export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
-  const isManager = authSession?.role === "manager" || authSession?.role === "admin" || authSession?.role === "superadmin";
+  const isManager = (authSession?.level ?? 0) >= 2;
   const employeeId = authSession?.employeeId;
   const employeeName = authSession?.employeeName ?? "";
 

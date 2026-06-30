@@ -94,7 +94,7 @@ function ListToolbar({
 
 export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const [tab, setTab] = useState<Tab>("display");
-  const isManager = authSession?.role === "manager" || authSession?.role === "admin" || authSession?.role === "superadmin";
+  const isManager = (authSession?.level ?? 0) >= 2;
 
   // 진열요청
   const [displayReqs, setDisplayReqs] = useState<DisplayRequest[]>([]);

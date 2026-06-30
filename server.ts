@@ -7,6 +7,7 @@ import path from "path";
 import { spawn } from "child_process";
 import { createServer as createViteServer } from "vite";
 import { scheduleController } from "./src/controllers/scheduleController";
+import { notificationsService } from "./src/services/notificationsService";
 import { supabase } from "./src/supabase/client";
 import bcrypt from "bcryptjs";
 import webpush from "web-push";
@@ -389,6 +390,31 @@ async function startServer() {
     } catch (err: any) { res.status(500).json({ error: err.message }); }
   });
 
+  // GET /api/permissions — page-level access config
+  app.get("/api/permissions", async (req, res) => {
+    try {
+      const { data, error } = await supabase.from("app_settings").select("value").eq("key", "page_permissions").maybeSingle();
+      if (error) throw new Error(error.message);
+      const defaults = { schedule:{read:1,write:1}, display:{read:2,write:2}, scan:{read:1,write:1}, requests:{read:2,write:2}, leave:{read:1,write:1}, ocr:{read:2,write:2}, upload:{read:2,write:2} };
+      res.json(data?.value ?? defaults);
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
+  // POST /api/permissions — update page permissions (level 9 only, verified from DB)
+  app.post("/api/permissions", async (req, res) => {
+    const { permissions, employeeId } = req.body ?? {};
+    if (!employeeId) return res.status(403).json({ error: "인증 정보가 없습니다" });
+    try {
+      const { data: emp } = await supabase.from("employees").select("level").eq("id", Number(employeeId)).maybeSingle();
+      if (!emp || (emp.level ?? 1) < 9) return res.status(403).json({ error: "권한이 없습니다 (level 9 필요)" });
+      if (!permissions) return res.status(400).json({ error: "permissions required" });
+      const { error } = await supabase.from("app_settings")
+        .upsert({ key: "page_permissions", value: permissions, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      if (error) throw new Error(error.message);
+      res.json({ ok: true });
+    } catch (err: any) { res.status(500).json({ error: err.message }); }
+  });
+
   // GET /api/zones — zone assignments
   app.get("/api/zones", async (req, res) => {
     try {
@@ -640,6 +666,17 @@ async function startServer() {
     res.json({ ok: true, id: data?.id });
   });
 
+  app.patch("/api/display-requests/:id", async (req, res) => {
+    const { status } = req.body ?? {};
+    if (!status) return res.status(400).json({ error: "status required" });
+    const { error } = await supabase
+      .from("display_requests")
+      .update({ status })
+      .eq("id", req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ ok: true });
+  });
+
   app.delete("/api/display-requests/:id", async (req, res) => {
     const { error } = await supabase.from("display_requests").delete().eq("id", req.params.id);
     if (error) return res.status(500).json({ error: error.message });
@@ -722,7 +759,7 @@ async function startServer() {
     try {
       const { data: emp, error } = await supabase
         .from("employees")
-        .select("id, name, password_hash, is_manager")
+        .select("id, name, password_hash, level, rank")
         .eq("phone", phone)
         .maybeSingle();
       if (error) throw new Error(error.message);
@@ -734,8 +771,10 @@ async function startServer() {
       }
       const ok = await bcrypt.compare(password, emp.password_hash);
       if (!ok) return res.status(401).json({ error: "전화번호 또는 비밀번호가 올바르지 않습니다" });
-      const role = emp.is_manager ? "manager" : "employee";
-      return res.status(200).json({ id: emp.id, name: emp.name, role });
+      const level: number = emp.level ?? 1;
+      if (level === 0) return res.status(401).json({ error: "접근 권한이 없습니다", debug: "level_0" });
+      const role = level >= 9 ? "superadmin" : level >= 2 ? "manager" : "employee";
+      return res.status(200).json({ id: emp.id, name: emp.name, role, level, rank: emp.rank ?? null });
     } catch (err: any) {
       return res.status(500).json({ error: err.message });
     }
@@ -1746,6 +1785,46 @@ ${rawText}`;
       console.error("[OCR] error:", err?.message);
       res.status(500).json({ error: err?.message ?? "OCR 처리 중 오류" });
     }
+  });
+
+  // ── Notifications ────────────────────────────────────────────────────────────
+  app.get("/api/notifications", async (req, res) => {
+    const employeeId = parseInt(req.query.employeeId as string);
+    if (!employeeId) return res.status(400).json({ error: "employeeId required" });
+    const limit = Math.min(parseInt((req.query.limit as string) ?? "30"), 100);
+    try {
+      const data = await notificationsService.getForEmployee(employeeId, limit);
+      return res.json(data);
+    } catch (err: any) { return res.status(500).json({ error: err.message }); }
+  });
+
+  app.patch("/api/notifications/:id/read", async (req, res) => {
+    const id = parseInt(req.params.id);
+    if (!id) return res.status(400).json({ error: "invalid id" });
+    try {
+      await notificationsService.markRead(id);
+      return res.json({ ok: true });
+    } catch (err: any) { return res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/notifications/read-all", async (req, res) => {
+    const { employeeId } = req.body as { employeeId?: number };
+    if (!employeeId) return res.status(400).json({ error: "employeeId required" });
+    try {
+      await notificationsService.markAllRead(employeeId);
+      return res.json({ ok: true });
+    } catch (err: any) { return res.status(500).json({ error: err.message }); }
+  });
+
+  app.post("/api/notifications", async (req, res) => {
+    const { employee_id, title, body, type } = req.body as {
+      employee_id?: number; title?: string; body?: string; type?: string;
+    };
+    if (!employee_id || !title) return res.status(400).json({ error: "employee_id and title required" });
+    try {
+      const data = await notificationsService.create({ employee_id, title, body, type: type as any });
+      return res.status(201).json(data);
+    } catch (err: any) { return res.status(500).json({ error: err.message }); }
   });
 
   const httpServer = http.createServer(app);

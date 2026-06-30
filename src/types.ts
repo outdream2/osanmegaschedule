@@ -6,6 +6,12 @@ export interface AuthSession {
   role: AuthRole;
   employeeId?: number;
   employeeName?: string;
+  employeeRank?: string;
+  level?: number; // 0-9: 0=차단, 1-6=직원, 7=관리자, 8=대표(admin), 9=최고관리자
+  /** Unix ms — time the session was originally created (used for absolute timeout) */
+  loginAt?: number;
+  /** Unix ms — last recorded user activity (used for idle timeout) */
+  lastActiveAt?: number;
 }
 
 export interface Schedule {
@@ -33,6 +39,31 @@ export interface Employee {
   level?: number | null; // 0-9: 1=직원, 8=대표, 9=최고관리자
   schedules: Schedule[];
 }
+
+export interface PagePermission {
+  read: number;  // minimum level to view
+  write: number; // minimum level to edit/submit
+}
+
+export interface PagePermissions {
+  schedule: PagePermission;
+  display: PagePermission;
+  scan: PagePermission;
+  requests: PagePermission;
+  leave: PagePermission;
+  ocr: PagePermission;
+  upload: PagePermission;
+}
+
+export const DEFAULT_PERMISSIONS: PagePermissions = {
+  schedule:  { read: 1, write: 1 },
+  display:   { read: 2, write: 2 },
+  scan:      { read: 1, write: 1 },
+  requests:  { read: 2, write: 2 },
+  leave:     { read: 1, write: 1 },
+  ocr:       { read: 2, write: 2 },
+  upload:    { read: 2, write: 2 },
+};
 
 export interface MonthlySummary {
   day: number;

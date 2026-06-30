@@ -25,26 +25,20 @@ import {
   EyeOff,
   Pill,
 } from "lucide-react";
-import type { AuthSession } from "../../types";
+import type { AuthSession, AuthRole } from "../../types";
+import { NotificationBell } from "../NotificationBell";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
-  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave", auth?: AuthSession) => void;
+  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions", auth?: AuthSession) => void;
   onLogout: () => void;
   onAuthOnly?: (auth: AuthSession) => void;
 }
-
-type AuthTab = "admin" | "employee";
 
 export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigate, onLogout, onAuthOnly }) => {
   const [pendingPage, setPendingPage] = useState<"schedule" | "display" | "scan" | "requests" | "ocr" | "upload" | "leave" | null>(null);
   const [leavePendingCount, setLeavePendingCount] = useState(0);
   const [requestsPendingCount, setRequestsPendingCount] = useState(0);
-  const [activeTab, setActiveTab] = useState<AuthTab>("employee");
-
-  const [pin, setPin] = useState("");
-  const [adminError, setAdminError] = useState(false);
-  const pinInputRef = useRef<HTMLInputElement>(null);
 
   // Product list upload (manager only)
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -63,9 +57,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
   useEffect(() => {
     if (pendingPage) {
-      setActiveTab("employee");
-      setPin("");
-      setAdminError(false);
       setEmpNumber("");
       setEmpPassword("");
       setEmpError(null);
@@ -75,14 +66,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     }
   }, [pendingPage]);
 
-  useEffect(() => {
-    if (!pendingPage) return;
-    setTimeout(() => {
-      if (activeTab === "admin") pinInputRef.current?.focus();
-      else empNumberRef.current?.focus();
-    }, 50);
-  }, [activeTab, pendingPage]);
-
   const closeModal = () => setPendingPage(null);
 
   // If already logged in, go directly; otherwise open login modal
@@ -91,24 +74,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       onNavigate(page, authSession);
     } else {
       setPendingPage(page);
-    }
-  };
-
-  const handlePinSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (pin === "1234") {
-      const page = pendingPage;
-      setPendingPage(null);
-      setPin("");
-      const auth: AuthSession = { role: "superadmin" };
-      onAuthOnly?.(auth);
-      if (page === "upload") {
-        setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog();
-      }
-    } else {
-      setAdminError(true);
-      setPin("");
-      setTimeout(() => pinInputRef.current?.focus(), 50);
     }
   };
 
@@ -126,7 +91,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         employee_id: phone,
         password: empPassword,
       });
-      const { id, name, role } = res.data ?? {};
+      const { id, name, role, level, rank } = res.data ?? {};
       if (!id) {
         setEmpError("전화번호 또는 비밀번호가 올바르지 않습니다");
         setEmpLoading(false);
@@ -136,11 +101,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       setPendingPage(null);
       setEmpNumber("");
       setEmpPassword("");
-      const auth: AuthSession = { role: role === "manager" ? "manager" : "employee", employeeId: id, employeeName: name };
+      const validRoles = ["superadmin", "admin", "manager", "employee"] as const;
+      const authRole: AuthRole = (validRoles as readonly string[]).includes(role) ? (role as AuthRole) : "employee";
+      const auth: AuthSession = { role: authRole, employeeId: id, employeeName: name, level: level ?? 1, employeeRank: rank ?? undefined };
       onAuthOnly?.(auth);
-      if (page === "upload" && role === "manager") {
-        setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog();
-      }
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 401 || status === 400) {
@@ -170,14 +134,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
   const handleUpload = async () => {
     if (!uploadFile) return;
-    const canUpload = isSuperAdmin || (isManagerRole && !!authSession?.employeeId);
+    const canUpload = isManagerOrAdmin && !!authSession?.employeeId;
     if (!canUpload) return;
     setUploadLoading(true);
     setUploadResult(null);
     try {
-      const params = isSuperAdmin && !authSession?.employeeId
-        ? "adminKey=1234"
-        : `managerId=${authSession!.employeeId}`;
+      const params = `managerId=${authSession!.employeeId}`;
       const buf = await uploadFile.arrayBuffer();
       const res = await axios.post(`/api/upload-products?${params}`, buf, {
         headers: { "Content-Type": "application/octet-stream" },
@@ -191,12 +153,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     }
   };
 
-  const isSuperAdmin = authSession?.role === "superadmin" || authSession?.role === "admin";
-  const isManagerRole = authSession?.role === "manager";
+  // Level with role-based fallback for backwards-compat with old sessions
+  const userLevel = authSession?.level ??
+    (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
+    : authSession?.role === "manager" ? 2
+    : authSession?.role === "employee" ? 1 : 0);
+  const isSuperAdmin = userLevel >= 9;
+  const isManagerRole = userLevel >= 2 && userLevel < 9;
   const isAdmin = isSuperAdmin;
-  const isEmployee = authSession?.role === "employee";
+  const isEmployee = userLevel === 1;
   const isLoggedIn = !!authSession;
-  const isManagerOrAdmin = isSuperAdmin || isManagerRole;
+  const isManagerOrAdmin = userLevel >= 2;
+  const isSuperAdminLevel9 = userLevel >= 9;
 
   // Load pending counts for managers
   useEffect(() => {
@@ -221,36 +189,37 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #f8faff 0%, #f1f5ff 40%, #f0fdf4 100%)" }}>
 
       {/* ── Header ── */}
-      <header className="bg-white border-b border-gray-200 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm">
+      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/70 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-30" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.06), 0 2px 8px 0 rgba(15,23,42,0.04)" }}>
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
+          <div className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}>
             <Calendar size={14} className="text-white" />
           </div>
           <span className="font-black tracking-tight leading-none">
             <span className="text-red-500 text-xl">OSAN</span>
-            <span className="text-gray-900 text-base"> MEGATOWN</span>
+            <span className="text-slate-800 text-base"> MEGATOWN</span>
           </span>
         </div>
 
         {isLoggedIn ? (
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-indigo-50 border border-indigo-200 text-indigo-700 text-[11px] font-bold">
-              {(isSuperAdmin || isManagerRole) ? <Shield size={11} /> : <User size={11} />}
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border" style={{ background: "linear-gradient(135deg, #eef2ff, #e0e7ff)", borderColor: "#c7d2fe", color: "#4338ca" }}>
+              {isManagerOrAdmin ? <Shield size={11} /> : <User size={11} />}
               <span className="max-w-[80px] truncate">{roleLabel}</span>
             </div>
+            <NotificationBell authSession={authSession} />
             <button
               onClick={onLogout}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-[11px] font-semibold text-gray-500 hover:text-rose-600 hover:bg-rose-50 border border-gray-200 hover:border-rose-200 transition cursor-pointer"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all duration-150 cursor-pointer"
             >
               <LogOut size={11} />
               <span className="hidden sm:inline">로그아웃</span>
             </button>
           </div>
         ) : (
-          <div className="flex items-center gap-1.5 text-[11px] text-gray-400">
+          <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
             <Lock size={11} />
             <span className="hidden sm:inline">로그인 필요</span>
           </div>
@@ -258,134 +227,173 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       </header>
 
       {/* ── Main content ── */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 relative overflow-hidden py-10">
+      <div className="flex-1 flex flex-col items-center px-4 sm:px-6 relative overflow-hidden pt-8 pb-12">
 
-        {/* Background effects */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: "linear-gradient(#94a3b8 1px, transparent 1px), linear-gradient(90deg, #94a3b8 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
-          }}
-        />
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-indigo-400/10 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-1/4 left-1/3 w-[400px] h-[200px] bg-red-400/8 rounded-full blur-[80px] pointer-events-none" />
+        {/* Ambient background blobs */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[360px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(99,102,241,0.07) 0%, transparent 70%)" }} />
+        <div className="absolute bottom-1/3 left-1/4 w-[500px] h-[260px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(16,185,129,0.05) 0%, transparent 70%)" }} />
 
         <div className="relative z-10 flex flex-col items-center w-full max-w-3xl">
 
-          <p className="text-gray-500 text-sm font-medium mb-10 tracking-wide">
-            오산 메가타운 약국 · 통합 관리 시스템
-          </p>
+          {/* ── Hero brand area ── */}
+          <div className="w-full mb-7 px-1">
+            <p className="text-[11px] text-slate-400 font-medium mb-0.5">오산 메가타운 약국</p>
+            <h1 className="text-slate-900 font-black text-xl sm:text-2xl tracking-tight leading-none">통합 관리 시스템</h1>
+            {isLoggedIn && authSession?.employeeName && (
+              <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border"
+                style={
+                  isSuperAdmin
+                    ? { background: "#ecfdf5", borderColor: "#6ee7b7", color: "#065f46" }
+                    : isManagerRole
+                    ? { background: "#eff6ff", borderColor: "#93c5fd", color: "#1e40af" }
+                    : { background: "#fffbeb", borderColor: "#fcd34d", color: "#92400e" }
+                }
+              >
+                <span className="w-1.5 h-1.5 rounded-full animate-pulse"
+                  style={{ background: isSuperAdmin ? "#10b981" : isManagerRole ? "#3b82f6" : "#f59e0b" }}
+                />
+                {(isSuperAdmin || isManagerRole) && (
+                  <>
+                    <span>{isSuperAdmin ? "최고관리자" : "관리자"}</span>
+                    <span className="opacity-40 mx-0.5">·</span>
+                  </>
+                )}
+                <span className="font-semibold">
+                  {authSession.employeeName}
+                  {authSession.employeeRank && (
+                    <span className="opacity-70 ml-1">{authSession.employeeRank}</span>
+                  )}
+                </span>
+              </div>
+            )}
+          </div>
 
           {/* ── 관리자 도구 (관리자 로그인 시에만 표시) ── */}
           {isManagerOrAdmin && (
-            <div className="w-full mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <Shield size={12} className="text-violet-400" />
-                <span className="text-[11px] font-bold text-violet-400 uppercase tracking-widest">관리자 도구</span>
-                <div className="flex-1 h-px bg-violet-100" />
+            <div className="w-full mb-7">
+              <div className="flex items-center gap-2 mb-3.5">
+                <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #7c3aed, #8b5cf6)" }}>
+                  <Shield size={10} className="text-white" />
+                </div>
+                <span className="text-[11px] font-bold text-violet-600 uppercase tracking-widest">관리자 도구</span>
+                <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #ddd6fe, transparent)" }} />
               </div>
               <div className="grid grid-cols-3 gap-3">
 
-                {/* 매장진열 관리 */}
+                {/* 매장진열 관리 — sky */}
                 <button onClick={() => onNavigate("display", authSession!)}
-                  className="group relative bg-white border border-gray-200 hover:border-violet-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-violet-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  className="group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,242,254,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-violet-100 border border-violet-200 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-violet-200 transition-colors">
-                      <LayoutGrid size={16} className="text-violet-600 sm:hidden" /><LayoutGrid size={20} className="text-violet-600 hidden sm:block" />
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #7dd3fc" }}>
+                      <LayoutGrid size={16} className="text-sky-600 sm:hidden" /><LayoutGrid size={20} className="text-sky-600 hidden sm:block" />
                     </div>
-                    <div className="text-gray-900 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">매장진열 관리</div>
-                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">진열대 상태 점검 및 보충 요청 관리</div>
-                    <div className="flex items-center gap-1 mt-2 text-violet-600 text-xs font-bold">
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">매장진열 관리</div>
+                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">진열대 상태 점검 및 보충 요청 관리</div>
+                    <div className="flex items-center gap-1 mt-2 text-sky-600 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">관리하기</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 </button>
 
-                {/* 연차 승인 (관리자) */}
+                {/* 연차 승인 — teal */}
                 <button onClick={() => onNavigate("leave", authSession!)}
-                  className="group relative bg-white border border-gray-200 hover:border-green-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  className="group relative bg-white border border-slate-200/80 hover:border-teal-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(204,251,241,0.7) 0%, transparent 60%)" }} />
                   {leavePendingCount > 0 && (
-                    <div className="absolute top-3 right-3 flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-black shadow">
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-white text-[10px] font-black" style={{ background: "linear-gradient(135deg, #f43f5e, #e11d48)", boxShadow: "0 0 0 2px white, 0 2px 6px rgba(244,63,94,0.4)" }}>
                       {leavePendingCount}
                     </div>
                   )}
                   <div className="relative">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-green-100 border border-green-200 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-green-200 transition-colors">
-                      <CalendarDays size={16} className="text-green-600 sm:hidden" /><CalendarDays size={20} className="text-green-600 hidden sm:block" />
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ccfbf1, #99f6e4)", border: "1px solid #5eead4" }}>
+                      <CalendarDays size={16} className="text-teal-600 sm:hidden" /><CalendarDays size={20} className="text-teal-600 hidden sm:block" />
                     </div>
-                    <div className="text-gray-900 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">연차 승인</div>
-                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">직원 휴가·연차 신청 승인 처리</div>
-                    <div className="flex items-center gap-1 mt-2 text-green-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">
-                        {leavePendingCount > 0 ? `대기 ${leavePendingCount}건` : "확인하기"}
-                      </span>
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">연차 승인</div>
+                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">직원 휴가·연차 신청 승인 처리</div>
+                    <div className="flex items-center gap-1 mt-2 text-teal-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">{leavePendingCount > 0 ? `대기 ${leavePendingCount}건` : "확인하기"}</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 </button>
 
-                {/* 요청목록 조회 */}
+                {/* 요청목록 조회 — indigo */}
                 <button onClick={() => onNavigate("requests", authSession!)}
-                  className="group relative bg-white border border-gray-200 hover:border-indigo-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  className="group relative bg-white border border-slate-200/80 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,231,255,0.7) 0%, transparent 60%)" }} />
                   {requestsPendingCount > 0 && (
-                    <div className="absolute top-2 right-2 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-black shadow">
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-white text-[10px] font-black" style={{ background: "linear-gradient(135deg, #f43f5e, #e11d48)", boxShadow: "0 0 0 2px white, 0 2px 6px rgba(244,63,94,0.4)" }}>
                       {requestsPendingCount}
                     </div>
                   )}
                   <div className="relative">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-indigo-200 transition-colors">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)", border: "1px solid #a5b4fc" }}>
                       <List size={16} className="text-indigo-600 sm:hidden" /><List size={20} className="text-indigo-600 hidden sm:block" />
                     </div>
-                    <div className="text-gray-900 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">요청목록 조회</div>
-                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">진열·발주요청 및 배정구역 불일치 확인</div>
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">요청목록 조회</div>
+                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">진열·발주요청 및 배정구역 불일치 확인</div>
                     <div className="flex items-center gap-1 mt-2 text-indigo-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">
-                        {requestsPendingCount > 0 ? `대기 ${requestsPendingCount}건` : "조회하기"}
-                      </span>
+                      <span className="text-[11px] sm:text-xs">{requestsPendingCount > 0 ? `대기 ${requestsPendingCount}건` : "조회하기"}</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 </button>
 
-                {/* 상품 목록 관리 */}
+                {/* 상품 목록 관리 — orange */}
                 <button
                   onClick={() => { setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog(); }}
-                  className="group relative bg-white border border-gray-200 hover:border-orange-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  className="group relative bg-white border border-slate-200/80 hover:border-orange-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-orange-100 border border-orange-200 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-orange-200 transition-colors">
-                      <FileSpreadsheet size={16} className="text-orange-600 sm:hidden" /><FileSpreadsheet size={20} className="text-orange-600 hidden sm:block" />
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffedd5, #fed7aa)", border: "1px solid #fdba74" }}>
+                      <FileSpreadsheet size={16} className="text-orange-500 sm:hidden" /><FileSpreadsheet size={20} className="text-orange-500 hidden sm:block" />
                     </div>
-                    <div className="text-gray-900 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품 목록 관리</div>
-                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">xlsx 파일 업로드로 상품 DB 갱신</div>
-                    <div className="flex items-center gap-1 mt-2 text-orange-600 text-xs font-bold">
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품 목록 관리</div>
+                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">xlsx 파일 업로드로 상품 DB 갱신</div>
+                    <div className="flex items-center gap-1 mt-2 text-orange-500 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">업로드하기</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 </button>
 
-                {/* 거래명세서 OCR */}
+                {/* 거래명세서 OCR — amber */}
                 <button onClick={() => onNavigate("ocr", authSession!)}
-                  className="group relative bg-white border border-gray-200 hover:border-amber-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-amber-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  className="group relative bg-white border border-slate-200/80 hover:border-amber-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(254,243,199,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-amber-200 transition-colors">
-                      <FileText size={16} className="text-amber-600 sm:hidden" /><FileText size={20} className="text-amber-600 hidden sm:block" />
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #fef9c3, #fef08a)", border: "1px solid #fde047" }}>
+                      <FileText size={16} className="text-yellow-600 sm:hidden" /><FileText size={20} className="text-yellow-600 hidden sm:block" />
                     </div>
-                    <div className="text-gray-900 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">거래명세서 OCR</div>
-                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">PDF 업로드로 거래명세서 자동 추출</div>
-                    <div className="flex items-center gap-1 mt-2 text-amber-600 text-xs font-bold">
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">거래명세서 OCR</div>
+                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">PDF 업로드로 거래명세서 자동 추출</div>
+                    <div className="flex items-center gap-1 mt-2 text-yellow-600 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">추출하기</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 </button>
+
+                {/* 권한 조정 — fuchsia (level 9 전용) */}
+                {isSuperAdminLevel9 && (
+                  <button onClick={() => onNavigate("permissions", authSession!)}
+                    className="group relative bg-white border border-fuchsia-200/80 hover:border-fuchsia-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(253,244,255,0.7) 0%, transparent 60%)" }} />
+                    <div className="relative">
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #fdf4ff, #fae8ff)", border: "1px solid #e879f9" }}>
+                        <Shield size={16} className="text-fuchsia-600 sm:hidden" /><Shield size={20} className="text-fuchsia-600 hidden sm:block" />
+                      </div>
+                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">권한 조정</div>
+                      <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">페이지별 레벨 읽기·쓰기 권한 설정</div>
+                      <div className="flex items-center gap-1 mt-2 text-fuchsia-600 text-xs font-bold">
+                        <span className="text-[11px] sm:text-xs">설정하기</span>
+                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </div>
+                  </button>
+                )}
 
               </div>
             </div>
@@ -393,59 +401,61 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
           {/* ── 직원용 (로그인 시에만 표시) ── */}
           {isLoggedIn && (
-            <div className="w-full mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <Lock size={12} className="text-gray-400" />
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">직원용</span>
-                <div className="flex-1 h-px bg-gray-200" />
+            <div className="w-full mb-7">
+              <div className="flex items-center gap-2 mb-3.5">
+                <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}>
+                  <User size={10} className="text-white" />
+                </div>
+                <span className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest">직원용</span>
+                <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #c7d2fe, transparent)" }} />
               </div>
               <div className="grid grid-cols-3 gap-3">
 
-                {/* 스케줄표 조회 */}
+                {/* 스케줄표 조회 — blue */}
                 <button onClick={() => onNavigate("schedule", authSession!)}
-                  className="group relative bg-white border border-gray-200 hover:border-indigo-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  className="group relative bg-white border border-slate-200/80 hover:border-blue-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(219,234,254,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-indigo-200 transition-colors">
-                      <Calendar size={16} className="text-indigo-600 sm:hidden" /><Calendar size={20} className="text-indigo-600 hidden sm:block" />
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #dbeafe, #bfdbfe)", border: "1px solid #93c5fd" }}>
+                      <Calendar size={16} className="text-blue-600 sm:hidden" /><Calendar size={20} className="text-blue-600 hidden sm:block" />
                     </div>
-                    <div className="text-gray-900 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">스케줄표 조회</div>
-                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">직원 월간 근무 스케줄 확인 및 관리</div>
-                    <div className="flex items-center gap-1 mt-2 text-indigo-600 text-xs font-bold">
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">스케줄표 조회</div>
+                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">직원 월간 근무 스케줄 확인 및 관리</div>
+                    <div className="flex items-center gap-1 mt-2 text-blue-600 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">입장하기</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 </button>
 
-                {/* 상품 스캔 */}
+                {/* 상품 스캔 — violet */}
                 <button onClick={() => onNavigate("scan", authSession!)}
-                  className="group relative bg-white border border-gray-200 hover:border-teal-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-teal-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  className="group relative bg-white border border-slate-200/80 hover:border-violet-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(237,233,254,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-teal-100 border border-teal-200 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-teal-200 transition-colors">
-                      <ScanLine size={16} className="text-teal-600 sm:hidden" /><ScanLine size={20} className="text-teal-600 hidden sm:block" />
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ede9fe, #ddd6fe)", border: "1px solid #c4b5fd" }}>
+                      <ScanLine size={16} className="text-violet-600 sm:hidden" /><ScanLine size={20} className="text-violet-600 hidden sm:block" />
                     </div>
-                    <div className="text-gray-900 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품 스캔</div>
-                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">바코드 스캔으로 진열 보충 요청</div>
-                    <div className="flex items-center gap-1 mt-2 text-teal-600 text-xs font-bold">
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품 스캔</div>
+                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">바코드 스캔으로 진열 보충 요청</div>
+                    <div className="flex items-center gap-1 mt-2 text-violet-600 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">스캔하기</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>
                 </button>
 
-                {/* 연차 신청 */}
+                {/* 연차 신청 — rose */}
                 <button onClick={() => onNavigate("leave", authSession!)}
-                  className="group relative bg-white border border-gray-200 hover:border-green-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                  className="group relative bg-white border border-slate-200/80 hover:border-rose-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,228,230,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
-                    <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-green-100 border border-green-200 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-green-200 transition-colors">
-                      <CalendarDays size={16} className="text-green-600 sm:hidden" /><CalendarDays size={20} className="text-green-600 hidden sm:block" />
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffe4e6, #fecdd3)", border: "1px solid #fda4af" }}>
+                      <CalendarDays size={16} className="text-rose-500 sm:hidden" /><CalendarDays size={20} className="text-rose-500 hidden sm:block" />
                     </div>
-                    <div className="text-gray-900 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">연차 신청</div>
-                    <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">휴가·연차 신청 및 내역 조회</div>
-                    <div className="flex items-center gap-1 mt-2 text-green-600 text-xs font-bold">
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">연차 신청</div>
+                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">휴가·연차 신청 및 내역 조회</div>
+                    <div className="flex items-center gap-1 mt-2 text-rose-500 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">신청하기</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
@@ -458,41 +468,49 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
           {/* ── 비로그인 안내 ── */}
           {!isLoggedIn && (
-            <div className="w-full mb-6">
+            <div className="w-full mb-7">
               <button
                 onClick={() => setPendingPage("schedule")}
-                className="w-full group flex items-center justify-between bg-indigo-50 border border-indigo-200 hover:border-indigo-400 hover:bg-indigo-100 rounded-2xl px-5 py-4 transition cursor-pointer"
+                className="w-full group relative overflow-hidden flex items-center justify-between rounded-2xl px-5 py-4 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 cursor-pointer border border-indigo-200/80 shadow-sm"
+                style={{ background: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)" }}
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-100 border border-indigo-200 flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
-                    <Lock size={16} className="text-indigo-500" />
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-2xl" style={{ background: "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)" }} />
+                <div className="relative flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}>
+                    <Lock size={16} className="text-white" />
                   </div>
                   <div className="text-left">
-                    <div className="text-indigo-700 font-bold text-sm">직원 로그인</div>
-                    <div className="text-indigo-500 text-xs">스케줄표·연차신청·스캔 등 이용 가능</div>
+                    <div className="text-indigo-800 font-bold text-sm tracking-tight">직원 로그인</div>
+                    <div className="text-indigo-500 text-xs mt-0.5">스케줄표·연차신청·스캔 등 이용 가능</div>
                   </div>
                 </div>
-                <ChevronRight size={16} className="text-indigo-400 group-hover:translate-x-0.5 transition-transform" />
+                <div className="relative flex items-center gap-1 text-indigo-500 group-hover:text-indigo-700 transition-colors">
+                  <span className="text-xs font-bold hidden sm:inline">시작하기</span>
+                  <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                </div>
               </button>
             </div>
           )}
 
           {/* ── 외부용 ── */}
           <div className="w-full">
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">외부용</span>
-              <div className="flex-1 h-px bg-gray-200" />
+            <div className="flex items-center gap-2 mb-3.5">
+              <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}>
+                <CalendarCheck size={10} className="text-white" />
+              </div>
+              <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">외부용</span>
+              <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #a7f3d0, transparent)" }} />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <button onClick={() => onNavigate("reservation")}
-                className="group relative bg-white border border-gray-200 hover:border-emerald-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-md active:scale-[0.98] cursor-pointer overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-emerald-50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                className="group relative bg-white border border-slate-200/80 hover:border-emerald-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(209,250,229,0.6) 0%, transparent 60%)" }} />
                 <div className="relative">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center mb-2 sm:mb-3 group-hover:bg-emerald-200 transition-colors">
+                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #d1fae5, #a7f3d0)", border: "1px solid #6ee7b7" }}>
                     <CalendarCheck size={16} className="text-emerald-600 sm:hidden" /><CalendarCheck size={20} className="text-emerald-600 hidden sm:block" />
                   </div>
-                  <div className="text-gray-900 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">방문예약</div>
-                  <div className="text-gray-500 text-xs sm:text-sm leading-relaxed hidden sm:block">상담 및 방문 일정을 간편하게 예약</div>
+                  <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">방문예약</div>
+                  <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">상담 및 방문 일정을 간편하게 예약</div>
                   <div className="flex items-center gap-1 mt-2 text-emerald-600 text-xs font-bold">
                     <span className="text-[11px] sm:text-xs">예약하기</span>
                     <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
@@ -503,9 +521,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           </div>
 
           {/* Footer */}
-          <div className="flex items-center gap-4 mt-10 text-gray-400 text-[11px] font-medium">
+          <div className="flex items-center gap-4 mt-10 pt-6 border-t border-slate-200/60 w-full justify-center text-slate-400 text-[11px] font-medium">
             <span className="flex items-center gap-1.5"><MapPin size={11} />경기도 오산시 메가타운</span>
-            <span className="w-1 h-1 rounded-full bg-gray-300" />
+            <span className="w-1 h-1 rounded-full bg-slate-300" />
             <span className="flex items-center gap-1.5"><Clock size={11} />09:00 – 22:00</span>
           </div>
         </div>
@@ -658,86 +676,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             {/* ── Form area ── */}
             <div className="px-7 pt-5 pb-7">
 
-              {/* Tab switcher — sliding pill style */}
-              <div className="relative flex bg-slate-100 rounded-2xl p-1 mb-6">
-                {/* Sliding background indicator */}
-                <div
-                  className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-xl shadow-sm transition-all duration-200 ease-out"
-                  style={{
-                    left: activeTab === "employee" ? "4px" : "calc(50%)",
-                    background: "linear-gradient(135deg, #4338ca, #6366f1)",
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("employee")}
-                  className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-xl transition-colors duration-150 cursor-pointer ${
-                    activeTab === "employee" ? "text-white" : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  <User size={12} />
-                  <span>직원 로그인</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("admin")}
-                  className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-xl transition-colors duration-150 cursor-pointer ${
-                    activeTab === "admin" ? "text-white" : "text-slate-500 hover:text-slate-700"
-                  }`}
-                >
-                  <Shield size={12} />
-                  <span>최고관리자</span>
-                </button>
-              </div>
-
-              {/* ── Admin PIN tab ── */}
-              {activeTab === "admin" ? (
-                <form onSubmit={handlePinSubmit} className="flex flex-col gap-5">
-                  <div className="flex flex-col items-center gap-2 py-1">
-                    <div
-                      className="w-12 h-12 rounded-2xl flex items-center justify-center mb-1"
-                      style={{ background: "linear-gradient(135deg, #ede9fe, #c7d2fe)" }}
-                    >
-                      <Shield size={22} className="text-indigo-600" />
-                    </div>
-                    <p className="text-slate-500 text-xs text-center leading-relaxed">
-                      관리자 비밀번호를 입력하세요
-                    </p>
-                  </div>
-
-                  <div className="relative">
-                    <input
-                      ref={pinInputRef}
-                      type="password"
-                      value={pin}
-                      onChange={(e) => { setPin(e.target.value); setAdminError(false); }}
-                      placeholder="비밀번호 입력"
-                      className={`w-full rounded-2xl px-5 py-4 text-slate-900 text-center text-xl tracking-[0.6em] font-black placeholder:tracking-normal placeholder:text-slate-300 placeholder:text-sm placeholder:font-normal focus:outline-none transition-all duration-150 ${
-                        adminError
-                          ? "border-2 border-rose-400 bg-rose-50 ring-2 ring-rose-100"
-                          : "border-2 border-slate-200 bg-slate-50 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-                      }`}
-                      maxLength={10}
-                      autoComplete="off"
-                    />
-                    {adminError && (
-                      <div className="flex items-center justify-center gap-1.5 mt-2.5">
-                        <AlertCircle size={12} className="text-rose-500 shrink-0" />
-                        <p className="text-rose-500 text-xs font-semibold">비밀번호가 올바르지 않습니다.</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="w-full py-3.5 rounded-2xl text-white font-bold text-sm transition-all duration-150 cursor-pointer active:scale-[0.98] shadow-lg shadow-indigo-200"
-                    style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}
-                  >
-                    관리자로 입장하기
-                  </button>
-                </form>
-              ) : (
-                /* ── Employee login tab ── */
+                {/* ── Employee login form ── */}
                 <form onSubmit={handleEmployeeSubmit} className="flex flex-col gap-4">
 
                   {/* Phone number field */}
@@ -829,7 +768,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     비밀번호 분실 시 관리자에게 문의하세요
                   </p>
                 </form>
-              )}
             </div>
           </div>
         </div>
