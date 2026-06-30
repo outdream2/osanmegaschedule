@@ -118,11 +118,12 @@ export class ScheduleService {
       actualHours: item.actualHours,
       memo: item.memo ?? "",
     }));
-    const { error } = await supabase
+    const { data: saved, error } = await supabase
       .from("schedules")
-      .upsert(rows, { onConflict: "employeeId,date" });
+      .upsert(rows, { onConflict: "employeeId,date" })
+      .select();
     if (error) throw new Error(error.message);
-    return { count: rows.length };
+    return { count: saved?.length ?? rows.length };
   }
 
   async createEmployee(data: { name: string; position: string; employmentType?: string; hireDate: string; description: string; workplace?: string; rank?: string | null; gender?: string | null; annual_leave_days?: number; level?: number }) {

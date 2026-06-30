@@ -2272,11 +2272,20 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           isAdmin={isAdmin}
           onUpdate={handleCellUpdate}
           onBulkSave={async (items) => {
-            await axios.post("/api/schedules/batch", {
-              items: items.map(item => ({ employeeId: calendarEmployee.id, ...item })),
-            });
-            showNotification(`${calendarEmployee.name}님의 ${items.length}일 일괄 스케줄이 반영되었습니다.`);
-            await fetchScheduleData();
+            try {
+              await axios.post("/api/schedules/batch", {
+                items: items.map(item => ({ employeeId: calendarEmployee.id, ...item })),
+              });
+              showNotification(`${calendarEmployee.name}님의 ${items.length}일 일괄 스케줄이 반영되었습니다.`);
+              // Include saved dates so the modal calendar refreshes even if it's on a different month
+              const savedDates = items.map(i => i.date);
+              const allDates = Array.from(new Set([...dateList, ...savedDates]));
+              await fetchScheduleData(allDates);
+            } catch (err) {
+              console.error("Bulk save failed:", err);
+              showNotification("일괄 저장 중 오류가 발생했습니다.", "error");
+              throw err;
+            }
           }}
           scheduleTypes={settingsScheduleTypes.map(v => ({ value: v, label: v }))}
           openShiftHour={openShiftHour}
