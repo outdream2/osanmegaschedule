@@ -92,15 +92,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const handlePinSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (pin === "1234") {
-      const page = pendingPage!;
+      const page = pendingPage;
       setPendingPage(null);
       setPin("");
       const auth: AuthSession = { role: "superadmin" };
+      onAuthOnly?.(auth);
       if (page === "upload") {
-        onAuthOnly?.(auth);
         setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog();
-      } else {
-        onNavigate(page as any, auth);
       }
     } else {
       setAdminError(true);
@@ -129,18 +127,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         setEmpLoading(false);
         return;
       }
-      const page = pendingPage!;
+      const page = pendingPage;
       setPendingPage(null);
       setEmpNumber("");
       setEmpPassword("");
       const auth: AuthSession = { role: role === "manager" ? "manager" : "employee", employeeId: id, employeeName: name };
-      if (page === "upload") {
-        onAuthOnly?.(auth);
-        if (role === "manager") { setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog(); }
-      } else if (role === "employee") {
-        onAuthOnly?.(auth);
-      } else {
-        onNavigate(page as any, auth);
+      onAuthOnly?.(auth);
+      if (page === "upload" && role === "manager") {
+        setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog();
       }
     } catch (err: any) {
       const status = err?.response?.status;
