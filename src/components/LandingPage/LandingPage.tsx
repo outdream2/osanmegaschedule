@@ -21,6 +21,9 @@ import {
   FileText,
   CheckCircle2,
   List,
+  Eye,
+  EyeOff,
+  Pill,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 
@@ -55,6 +58,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [empPassword, setEmpPassword] = useState("");
   const [empError, setEmpError] = useState<string | null>(null);
   const [empLoading, setEmpLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const empNumberRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -66,6 +70,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       setEmpPassword("");
       setEmpError(null);
       setEmpLoading(false);
+      setShowPassword(false);
       setTimeout(() => empNumberRef.current?.focus(), 50);
     }
   }, [pendingPage]);
@@ -593,132 +598,239 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       {/* ── Auth modal ── */}
       {pendingPage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(15, 23, 42, 0.72)", backdropFilter: "blur(12px)" }}
           onClick={closeModal}
         >
           <div
-            className="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
+            className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
+            style={{ background: "rgba(255,255,255,0.98)" }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
-                  <Lock size={15} className="text-indigo-600" />
+            {/* ── Branded hero panel ── */}
+            <div
+              className="relative px-7 pt-8 pb-6 overflow-hidden"
+              style={{
+                background: "linear-gradient(135deg, #312e81 0%, #4338ca 50%, #6366f1 100%)",
+              }}
+            >
+              {/* Decorative blobs */}
+              <div
+                className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20"
+                style={{ background: "radial-gradient(circle, #a5b4fc, transparent)" }}
+              />
+              <div
+                className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full opacity-15"
+                style={{ background: "radial-gradient(circle, #c7d2fe, transparent)" }}
+              />
+              <div
+                className="absolute top-4 left-1/2 w-64 h-64 rounded-full opacity-[0.07]"
+                style={{ transform: "translateX(-50%)", background: "radial-gradient(circle, #e0e7ff, transparent)" }}
+              />
+
+              {/* Close button */}
+              <button
+                onClick={closeModal}
+                aria-label="닫기"
+                className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-indigo-200 hover:text-white transition cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+
+              {/* Brand identity */}
+              <div className="relative flex items-center gap-3 mb-3">
+                <div
+                  className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg"
+                  style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)" }}
+                >
+                  <Pill size={20} className="text-white" />
                 </div>
-                <span className="text-gray-900 font-bold text-sm">직원 전용 접근</span>
+                <div>
+                  <div className="text-white font-black text-lg leading-tight tracking-tight">메가타운 약국</div>
+                  <div className="text-indigo-200 text-[11px] font-medium tracking-wide">MEGATOWN PHARMACY</div>
+                </div>
               </div>
-              <button onClick={closeModal} className="text-gray-400 hover:text-gray-700 transition cursor-pointer">
-                <X size={18} />
-              </button>
+              <p className="relative text-indigo-200/80 text-xs font-medium">
+                직원 전용 관리 시스템 · 로그인이 필요합니다
+              </p>
             </div>
 
-            <p className="text-xs text-gray-400 mb-4 ml-10 flex items-center gap-1">
-              <AlertCircle size={11} />
-              로그인이 필요한 메뉴입니다
-            </p>
+            {/* ── Form area ── */}
+            <div className="px-7 pt-5 pb-7">
 
-            {/* Tabs */}
-            <div className="grid grid-cols-2 gap-1 p-1 bg-gray-100 border border-gray-200 rounded-xl mb-5">
-              <button
-                type="button"
-                onClick={() => setActiveTab("employee")}
-                className={`flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
-                  activeTab === "employee" ? "bg-indigo-600 text-white shadow" : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                <User size={13} />
-                <span>직원 로그인</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("admin")}
-                className={`flex items-center justify-center gap-1.5 py-2 text-xs font-bold rounded-lg transition cursor-pointer ${
-                  activeTab === "admin" ? "bg-indigo-600 text-white shadow" : "text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                <Shield size={13} />
-                <span>최고관리자</span>
-              </button>
+              {/* Tab switcher — sliding pill style */}
+              <div className="relative flex bg-slate-100 rounded-2xl p-1 mb-6">
+                {/* Sliding background indicator */}
+                <div
+                  className="absolute top-1 bottom-1 w-[calc(50%-4px)] rounded-xl shadow-sm transition-all duration-200 ease-out"
+                  style={{
+                    left: activeTab === "employee" ? "4px" : "calc(50%)",
+                    background: "linear-gradient(135deg, #4338ca, #6366f1)",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("employee")}
+                  className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-xl transition-colors duration-150 cursor-pointer ${
+                    activeTab === "employee" ? "text-white" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  <User size={12} />
+                  <span>직원 로그인</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("admin")}
+                  className={`relative z-10 flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-bold rounded-xl transition-colors duration-150 cursor-pointer ${
+                    activeTab === "admin" ? "text-white" : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  <Shield size={12} />
+                  <span>최고관리자</span>
+                </button>
+              </div>
+
+              {/* ── Admin PIN tab ── */}
+              {activeTab === "admin" ? (
+                <form onSubmit={handlePinSubmit} className="flex flex-col gap-5">
+                  <div className="flex flex-col items-center gap-2 py-1">
+                    <div
+                      className="w-12 h-12 rounded-2xl flex items-center justify-center mb-1"
+                      style={{ background: "linear-gradient(135deg, #ede9fe, #c7d2fe)" }}
+                    >
+                      <Shield size={22} className="text-indigo-600" />
+                    </div>
+                    <p className="text-slate-500 text-xs text-center leading-relaxed">
+                      관리자 비밀번호를 입력하세요
+                    </p>
+                  </div>
+
+                  <div className="relative">
+                    <input
+                      ref={pinInputRef}
+                      type="password"
+                      value={pin}
+                      onChange={(e) => { setPin(e.target.value); setAdminError(false); }}
+                      placeholder="비밀번호 입력"
+                      className={`w-full rounded-2xl px-5 py-4 text-slate-900 text-center text-xl tracking-[0.6em] font-black placeholder:tracking-normal placeholder:text-slate-300 placeholder:text-sm placeholder:font-normal focus:outline-none transition-all duration-150 ${
+                        adminError
+                          ? "border-2 border-rose-400 bg-rose-50 ring-2 ring-rose-100"
+                          : "border-2 border-slate-200 bg-slate-50 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                      }`}
+                      maxLength={10}
+                      autoComplete="off"
+                    />
+                    {adminError && (
+                      <div className="flex items-center justify-center gap-1.5 mt-2.5">
+                        <AlertCircle size={12} className="text-rose-500 shrink-0" />
+                        <p className="text-rose-500 text-xs font-semibold">비밀번호가 올바르지 않습니다.</p>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 rounded-2xl text-white font-bold text-sm transition-all duration-150 cursor-pointer active:scale-[0.98] shadow-lg shadow-indigo-200"
+                    style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}
+                  >
+                    관리자로 입장하기
+                  </button>
+                </form>
+              ) : (
+                /* ── Employee login tab ── */
+                <form onSubmit={handleEmployeeSubmit} className="flex flex-col gap-4">
+
+                  {/* Phone number field */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-slate-600 text-xs font-semibold pl-1">
+                      전화번호
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                        <User size={14} className="text-slate-400" />
+                      </div>
+                      <input
+                        ref={empNumberRef}
+                        type="tel"
+                        inputMode="numeric"
+                        value={empNumber}
+                        onChange={(e) => { setEmpNumber(e.target.value); setEmpError(null); }}
+                        placeholder="01012345678"
+                        className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-slate-900 text-sm font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${
+                          empError
+                            ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
+                            : "border-2 border-slate-200 bg-slate-50 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                        }`}
+                        autoComplete="username"
+                        disabled={empLoading}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Password field */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-slate-600 text-xs font-semibold pl-1">
+                      비밀번호
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                        <Lock size={14} className="text-slate-400" />
+                      </div>
+                      <input
+                        type={showPassword ? "text" : "password"}
+                        value={empPassword}
+                        onChange={(e) => { setEmpPassword(e.target.value); setEmpError(null); }}
+                        placeholder="비밀번호 입력"
+                        className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-slate-900 text-sm font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${
+                          empError
+                            ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
+                            : "border-2 border-slate-200 bg-slate-50 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                        }`}
+                        autoComplete="current-password"
+                        disabled={empLoading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((v) => !v)}
+                        className="absolute inset-y-0 right-4 flex items-center text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                        aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+                      >
+                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Error message */}
+                  {empError && (
+                    <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
+                      <AlertCircle size={13} className="text-rose-500 mt-0.5 shrink-0" />
+                      <p className="text-rose-600 text-xs font-semibold leading-relaxed">{empError}</p>
+                    </div>
+                  )}
+
+                  {/* Submit button */}
+                  <button
+                    type="submit"
+                    disabled={empLoading}
+                    className="w-full py-3.5 rounded-2xl text-white font-bold text-sm mt-1 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-indigo-200"
+                    style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}
+                  >
+                    {empLoading ? (
+                      <>
+                        <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                        <span>로그인 중...</span>
+                      </>
+                    ) : (
+                      <span>직원으로 입장하기</span>
+                    )}
+                  </button>
+
+                  <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+                    비밀번호 분실 시 관리자에게 문의하세요
+                  </p>
+                </form>
+              )}
             </div>
-
-            {activeTab === "admin" ? (
-              <form onSubmit={handlePinSubmit} className="flex flex-col gap-4">
-                <div>
-                  <label className="text-gray-600 text-xs font-semibold block mb-2">관리자 비밀번호</label>
-                  <input
-                    ref={pinInputRef}
-                    type="password"
-                    value={pin}
-                    onChange={(e) => { setPin(e.target.value); setAdminError(false); }}
-                    placeholder="••••"
-                    className={`w-full bg-white border rounded-xl px-4 py-3 text-gray-900 text-center text-lg tracking-[0.5em] font-black focus:outline-none focus:border-indigo-500 transition ${
-                      adminError ? "border-rose-500 animate-pulse" : "border-gray-300"
-                    }`}
-                    maxLength={10}
-                    autoComplete="off"
-                  />
-                  {adminError && (
-                    <p className="text-rose-500 text-xs font-semibold mt-2 text-center">비밀번호가 올바르지 않습니다.</p>
-                  )}
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition cursor-pointer text-sm shadow-sm"
-                >
-                  관리자로 입장하기
-                </button>
-              </form>
-            ) : (
-              <form onSubmit={handleEmployeeSubmit} className="flex flex-col gap-3">
-                <p className="text-gray-500 text-xs text-center">전화번호 + 비밀번호로 입장합니다</p>
-                <div>
-                  <label className="text-gray-600 text-xs font-semibold block mb-1.5">전화번호</label>
-                  <input
-                    ref={empNumberRef}
-                    type="tel"
-                    inputMode="numeric"
-                    value={empNumber}
-                    onChange={(e) => { setEmpNumber(e.target.value); setEmpError(null); }}
-                    placeholder="숫자만 입력 (예: 01012345678)"
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 text-sm font-semibold focus:outline-none focus:border-indigo-500 transition"
-                    autoComplete="username"
-                    disabled={empLoading}
-                  />
-                </div>
-                <div>
-                  <label className="text-gray-600 text-xs font-semibold block mb-1.5">비밀번호</label>
-                  <input
-                    type="password"
-                    value={empPassword}
-                    onChange={(e) => { setEmpPassword(e.target.value); setEmpError(null); }}
-                    placeholder="비밀번호를 입력하세요"
-                    className="w-full bg-white border border-gray-300 rounded-xl px-3.5 py-2.5 text-gray-900 text-sm font-semibold focus:outline-none focus:border-indigo-500 transition"
-                    autoComplete="current-password"
-                    disabled={empLoading}
-                  />
-                </div>
-                {empError && (
-                  <p className="text-rose-500 text-xs font-semibold text-center">{empError}</p>
-                )}
-                <button
-                  type="submit"
-                  disabled={empLoading}
-                  className="w-full py-3 mt-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-300 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-sm flex items-center justify-center gap-2 shadow-sm"
-                >
-                  {empLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" />
-                      <span>로그인 중...</span>
-                    </>
-                  ) : (
-                    <span>직원으로 입장하기</span>
-                  )}
-                </button>
-                <p className="text-[10px] text-gray-400 text-center mt-1 leading-relaxed">
-                  비밀번호는 관리자가 설정합니다. 분실 시 관리자에게 문의해 주세요.
-                </p>
-              </form>
-            )}
           </div>
         </div>
       )}
