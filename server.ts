@@ -7,6 +7,7 @@ import path from "path";
 import { spawn } from "child_process";
 import { createServer as createViteServer } from "vite";
 import { scheduleController } from "./src/controllers/scheduleController";
+import { scheduleService } from "./src/services/scheduleService";
 import { notificationsService } from "./src/services/notificationsService";
 import { supabase } from "./src/supabase/client";
 import bcrypt from "bcryptjs";
@@ -450,6 +451,33 @@ async function startServer() {
     }
   });
 
+  // GET /api/zone-groups — zone group configuration
+  app.get("/api/zone-groups", async (_req, res) => {
+    try {
+      const { data, error } = await supabase
+        .from("app_settings").select("value").eq("key", "zone_groups").maybeSingle();
+      if (error) throw new Error(error.message);
+      const value = data?.value;
+      res.json(Array.isArray(value) ? value : []);
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  // PUT /api/zone-groups — upsert zone group configuration
+  app.put("/api/zone-groups", async (req, res) => {
+    const body = req.body;
+    if (!Array.isArray(body)) return res.status(400).json({ error: "array required" });
+    try {
+      const { error } = await supabase.from("app_settings")
+        .upsert({ key: "zone_groups", value: body, updated_at: new Date().toISOString() }, { onConflict: "key" });
+      if (error) throw new Error(error.message);
+      res.json({ ok: true });
+    } catch (err: any) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // GET /api/blocked-slots?date=YYYY-MM-DD
   app.get("/api/blocked-slots", async (req, res) => {
     const { date } = req.query;
@@ -621,18 +649,28 @@ async function startServer() {
 
   // ── requests/pending-counts ───────────────────────────────────────────────────
   app.get("/api/requests/pending-counts", async (_req, res) => {
-    const [display, order, mismatch, leave] = await Promise.all([
+    const [display, order, productsWithRealMap, legacy, leave] = await Promise.all([
       supabase.from("display_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
       supabase.from("order_requests").select("id", { count: "exact", head: true }),
-      supabase.from("zone_mismatches").select("id", { count: "exact", head: true }),
+      supabase.from("products").select("product_code, spec, real_map").not("real_map", "is", null).neq("real_map", ""),
+      supabase.from("zone_mismatches").select("product_code"),
       supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     ]);
+    // computed mismatches: products where spec != real_map
+    const computedCodes = new Set(
+      (productsWithRealMap.data ?? [])
+        .filter(p => (p.real_map ?? "").trim() !== (p.spec ?? "").trim())
+        .map(p => p.product_code)
+    );
+    // legacy manual mismatches not already in computed
+    const legacyCodes = (legacy.data ?? []).filter(r => !computedCodes.has(r.product_code));
+    const mismatchCount = computedCodes.size + legacyCodes.length;
     res.json({
-      display:  display.count  ?? 0,
-      order:    order.count    ?? 0,
-      mismatch: mismatch.count ?? 0,
-      leave:    leave.count    ?? 0,
-      total: (display.count ?? 0) + (order.count ?? 0) + (mismatch.count ?? 0) + (leave.count ?? 0),
+      display:  display.count ?? 0,
+      order:    order.count   ?? 0,
+      mismatch: mismatchCount,
+      leave:    leave.count   ?? 0,
+      total: (display.count ?? 0) + (order.count ?? 0) + mismatchCount + (leave.count ?? 0),
     });
   });
 
@@ -714,30 +752,56 @@ async function startServer() {
 
   // ── zone_mismatches ────────────────────────────────────────────────────────
   app.get("/api/zone-mismatches", async (_req, res) => {
-    // Compute mismatches directly from products table (display_location vs real_map)
-    const { data: products, error: prodErr } = await supabase
+    // 1) Compute mismatches from products: spec (전산 배정구역) vs real_map (실제 배정구역)
+    const { data: productRows, error: prodErr } = await supabase
       .from("products")
-      .select("product_code, product_name, display_location, real_map, last_modified_at")
+      .select("product_code, product_name, spec, real_map, last_modified_at")
       .not("real_map", "is", null)
       .neq("real_map", "");
-    if (prodErr) return res.status(500).json({ error: prodErr.message });
 
-    const computed = (products ?? [])
+    if (prodErr) {
+      console.error("[zone-mismatches] products 쿼리 오류:", prodErr.message);
+      return res.status(500).json({ error: prodErr.message });
+    }
+    console.log(`[zone-mismatches] real_map 있는 상품 ${productRows?.length ?? 0}건`);
+    if (productRows?.length) {
+      console.log("[zone-mismatches] sample:", JSON.stringify(productRows[0]));
+    }
+
+    const computed = (productRows ?? [])
       .filter(p => {
-        const spec = (p.display_location ?? "").trim();
+        const specZone = (p.spec ?? "").trim();
         const real = (p.real_map ?? "").trim();
-        return spec && real && spec !== real;
+        return real && specZone !== real;
       })
       .map(p => ({
         id: p.product_code,
         product_code: p.product_code,
         product_name: p.product_name ?? "",
-        spec_zone: (p.display_location ?? "").trim(),
+        spec_zone: (p.spec ?? "").trim() || "미지정",
         real_zone: (p.real_map ?? "").trim(),
         registered_at: p.last_modified_at ?? new Date().toISOString(),
       }));
 
-    res.json(computed);
+    // 2) Also include manually logged mismatches from zone_mismatches table
+    const { data: legacy } = await supabase
+      .from("zone_mismatches")
+      .select("product_code, product_name, spec_zone, real_zone, created_at")
+      .order("created_at", { ascending: false });
+
+    const computedCodes = new Set(computed.map(c => c.product_code));
+    const legacyRows = (legacy ?? [])
+      .filter(r => !computedCodes.has(r.product_code))
+      .map(r => ({
+        id: r.product_code,
+        product_code: r.product_code,
+        product_name: r.product_name ?? "",
+        spec_zone: r.spec_zone ?? "미지정",
+        real_zone: r.real_zone ?? "",
+        registered_at: r.created_at ?? new Date().toISOString(),
+      }));
+
+    res.json([...computed, ...legacyRows]);
   });
 
   app.post("/api/zone-mismatches", async (req, res) => {
@@ -976,14 +1040,56 @@ async function startServer() {
       if (error) throw new Error(error.message);
       if (!data) return res.status(404).json({ error: "not found" });
 
-      // Push notification → requesting employee
+      const label = status === "approved" ? "승인" : "반려";
+
+      // ── 승인 시: 스케줄에 자동 반영 ──────────────────────────────────────────
+      if (status === "approved") {
+        // leave_type → schedule type 매핑
+        const scheduleType = ["오전반차", "오후반차"].includes(data.leave_type)
+          ? data.leave_type
+          : "월차";
+
+        // start_date ~ end_date 사이 모든 날짜 계산
+        const dates: string[] = [];
+        const cur = new Date(data.start_date + "T00:00:00");
+        const end = new Date(data.end_date + "T00:00:00");
+        while (cur <= end) {
+          dates.push(cur.toISOString().slice(0, 10));
+          cur.setDate(cur.getDate() + 1);
+        }
+
+        // 스케줄 일괄 upsert
+        if (dates.length > 0) {
+          await scheduleService.batchUpdateSchedules(
+            dates.map(date => ({
+              employeeId: data.employee_id,
+              date,
+              type: scheduleType,
+              workingHours: "",
+              actualHours: "",
+              memo: `연차 승인 (${data.leave_type})`,
+            }))
+          ).catch(() => null);
+        }
+      }
+
+      // ── 알림: 해당 직원 (in-app + push) ─────────────────────────────────────
       const { data: emp } = await supabase
         .from("employees")
         .select("push_subscription")
         .eq("id", data.employee_id)
         .maybeSingle();
+
+      // in-app 알림
+      await notificationsService.create({
+        employee_id: data.employee_id,
+        title: `연차 신청 ${label}`,
+        body: `${data.leave_type} (${data.start_date} ~ ${data.end_date}) 신청이 ${label}되었습니다.${reviewer_note ? ` — ${reviewer_note}` : ""}`,
+        type: status === "approved" ? "success" : "alert",
+      }).catch(() => null);
+
+      // web push
       if (emp?.push_subscription) {
-        const label = status === "approved" ? "승인" : "반려";
         await webpush.sendNotification(
           emp.push_subscription as webpush.PushSubscription,
           JSON.stringify({
@@ -993,6 +1099,28 @@ async function startServer() {
             tag: `leave-reviewed-${data.id}`,
           })
         ).catch(() => null);
+      }
+
+      // ── 알림: 관리자 전원 (level >= 2) ───────────────────────────────────────
+      if (status === "approved") {
+        const { data: managers } = await supabase
+          .from("employees")
+          .select("id")
+          .gte("level", 2);
+        if (managers && managers.length > 0) {
+          await Promise.all(
+            managers
+              .filter(m => m.id !== data.employee_id)
+              .map(m =>
+                notificationsService.create({
+                  employee_id: m.id,
+                  title: "연차 자동 반영",
+                  body: `${data.employee_name}님의 ${data.leave_type} (${data.start_date} ~ ${data.end_date})이 승인되어 스케줄에 반영되었습니다.`,
+                  type: "info",
+                }).catch(() => null)
+              )
+          );
+        }
       }
 
       return res.json(data);

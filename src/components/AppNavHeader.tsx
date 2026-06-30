@@ -35,18 +35,18 @@ interface AppNavHeaderProps {
 interface TabDef {
   key: AppNavPage;
   label: string;
+  mobileLabel: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
-  /** When true, the tab is only shown to admin/manager users. */
   managerOnly: boolean;
 }
 
 const TABS: TabDef[] = [
-  { key: "schedule", label: "스케줄관리", icon: Calendar,        managerOnly: false },
-  { key: "display",  label: "매장관리",   icon: LayoutGrid,      managerOnly: true  },
-  { key: "requests", label: "요청목록",   icon: MessageSquare,   managerOnly: true  },
-  { key: "leave",    label: "연차승인",   icon: CheckCircle,     managerOnly: true  },
-  { key: "scan",     label: "상품관리",   icon: Package,         managerOnly: true  },
-  { key: "ocr",      label: "거래명세서", icon: FileText,        managerOnly: true  },
+  { key: "schedule", label: "스케줄관리", mobileLabel: "스케줄",  icon: Calendar,      managerOnly: false },
+  { key: "display",  label: "매장관리",   mobileLabel: "매장",    icon: LayoutGrid,    managerOnly: true  },
+  { key: "requests", label: "요청목록",   mobileLabel: "요청",    icon: MessageSquare, managerOnly: true  },
+  { key: "leave",    label: "연차승인",   mobileLabel: "연차",    icon: CheckCircle,   managerOnly: true  },
+  { key: "scan",     label: "상품관리",   mobileLabel: "상품",    icon: Package,       managerOnly: true  },
+  { key: "ocr",      label: "거래명세서", mobileLabel: "OCR",     icon: FileText,      managerOnly: true  },
 ];
 
 export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
@@ -61,24 +61,17 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
     : authSession?.role === "manager" ? 2
     : authSession?.role === "employee" ? 1 : 0);
-  const isAdmin = userLevel >= 9;
-  const isManager = userLevel >= 2 && userLevel < 9;
+  const isAdmin    = userLevel >= 9;
+  const isManager  = userLevel >= 2 && userLevel < 9;
   const isEmployee = userLevel === 1;
   const isPrivileged = userLevel >= 2;
 
   const visibleTabs = TABS.filter((t) => !t.managerOnly || isPrivileged);
 
-  // Mobile shows only these 3 tabs
-  const mobileTabs = TABS.filter(
-    (t) => t.key === "schedule" || t.key === "requests" || t.key === "leave"
-  ).filter((t) => !t.managerOnly || isPrivileged);
-
-  const renderTab = (tab: TabDef, size: "sm" | "xs" = "sm") => {
+  const renderDesktopTab = (tab: TabDef) => {
     const Icon = tab.icon;
     const isActive = tab.key === activePage;
-    const baseDesktop = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold";
-    const baseMobile  = "flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold";
-    const base = size === "sm" ? baseDesktop : baseMobile;
+    const base = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold";
     if (isActive) {
       return (
         <span key={tab.key} className={`${base} bg-white text-indigo-700 shadow-sm border border-indigo-100 font-black`}>
@@ -94,6 +87,31 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         className={`${base} text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer disabled:opacity-40`}
       >
         <Icon size={11} /> {tab.label}
+      </button>
+    );
+  };
+
+  const renderMobileTab = (tab: TabDef) => {
+    const Icon = tab.icon;
+    const isActive = tab.key === activePage;
+    const base = "shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition";
+    if (isActive) {
+      return (
+        <span key={tab.key} className={`${base} bg-white text-indigo-700 shadow-sm border border-indigo-100 font-black`}>
+          <Icon size={12} />
+          <span>{tab.mobileLabel}</span>
+        </span>
+      );
+    }
+    return (
+      <button
+        key={tab.key}
+        onClick={() => onNavigate?.(tab.key)}
+        disabled={!onNavigate}
+        className={`${base} text-gray-500 hover:text-gray-800 hover:bg-white cursor-pointer disabled:opacity-40`}
+      >
+        <Icon size={12} />
+        <span>{tab.mobileLabel}</span>
       </button>
     );
   };
@@ -124,7 +142,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
 
           {/* Desktop nav tabs — all tabs, hidden on mobile */}
           <div className="hidden sm:flex items-center gap-1 ml-3 bg-gray-100 rounded-xl p-1">
-            {visibleTabs.map((tab) => renderTab(tab, "sm"))}
+            {visibleTabs.map(renderDesktopTab)}
           </div>
         </div>
 
@@ -174,11 +192,11 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         </div>
       </div>
 
-      {/* ── Mobile tab row: 스케줄관리 · 요청목록 · 연차승인 only ── */}
-      {mobileTabs.length > 0 && (
+      {/* ── Mobile tab row: all visible tabs, horizontally scrollable ── */}
+      {visibleTabs.length > 1 && (
         <div className="sm:hidden px-3 pb-2">
-          <div className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1">
-            {mobileTabs.map((tab) => renderTab(tab, "xs"))}
+          <div className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1 overflow-x-auto scrollbar-none">
+            {visibleTabs.map(renderMobileTab)}
           </div>
         </div>
       )}

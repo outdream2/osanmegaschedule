@@ -23,7 +23,6 @@ import {
   List,
   Eye,
   EyeOff,
-  Pill,
 } from "lucide-react";
 import type { AuthSession, AuthRole } from "../../types";
 import { NotificationBell } from "../NotificationBell";
@@ -595,7 +594,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">임포트 이력</p>
                   <button onClick={handleClearImportLog} className="text-[10px] text-gray-400 hover:text-rose-500 transition cursor-pointer">clear</button>
                 </div>
-                <div className="flex flex-col gap-1 max-h-32 overflow-y-auto">
+                <div className="flex flex-col gap-1 max-h-[220px] overflow-y-auto">
                   {importLog.map((entry, i) => (
                     <div key={i} className="flex items-center justify-between text-[11px]">
                       <span className="text-gray-500">
@@ -656,20 +655,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </button>
 
               {/* Brand identity */}
-              <div className="relative flex items-center gap-3 mb-3">
+              <div className="relative flex items-center gap-4 mb-3">
+                {/* Pharmacy cross logo */}
                 <div
-                  className="w-11 h-11 rounded-2xl flex items-center justify-center shadow-lg"
-                  style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.25)" }}
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0"
+                  style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)" }}
                 >
-                  <Pill size={20} className="text-white" />
+                  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="12" y="3" width="8" height="26" rx="3" fill="white"/>
+                    <rect x="3" y="12" width="26" height="8" rx="3" fill="white"/>
+                  </svg>
                 </div>
                 <div>
-                  <div className="text-white font-black text-lg leading-tight tracking-tight">메가타운 약국</div>
-                  <div className="text-indigo-200 text-[11px] font-medium tracking-wide">MEGATOWN PHARMACY</div>
+                  <div className="text-white/60 text-[10px] font-semibold tracking-widest uppercase mb-0.5">Osan Megatown</div>
+                  <div className="text-white font-black text-2xl leading-tight tracking-tight">오산메가타운</div>
+                  <div className="text-indigo-200 text-[11px] font-medium tracking-wide mt-0.5">약국 통합 관리 시스템</div>
                 </div>
               </div>
-              <p className="relative text-indigo-200/80 text-xs font-medium">
-                직원 전용 관리 시스템 · 로그인이 필요합니다
+              <p className="relative text-indigo-200/70 text-xs font-medium">
+                직원 전용 · 로그인이 필요합니다
               </p>
             </div>
 

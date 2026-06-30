@@ -1373,24 +1373,41 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         </div>
 
         {/* ── Row 2: Mobile only — nav tabs + action buttons ── */}
-        <div className="sm:hidden flex items-center gap-1.5 px-4 pb-2">
-          {/* Nav tabs */}
-          <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1 flex-1">
-            <span className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-black bg-white text-indigo-700 shadow-sm border border-indigo-100">
-              <Calendar size={11} /> 스케줄
+        <div className="sm:hidden px-3 pb-2 flex items-end gap-1.5">
+          {/* Nav tabs — scrollable, matches AppNavHeader mobile style */}
+          <div className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1 overflow-x-auto scrollbar-none flex-1">
+            <span className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-black bg-white text-indigo-700 shadow-sm border border-indigo-100">
+              <Calendar size={12} /><span>스케줄</span>
             </span>
             {(isAdmin || isManagerRole) && onNavigateToDisplay && (
-              <button
-                onClick={onNavigateToDisplay}
-                className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
-              >
-                <LayoutGrid size={11} /> 매장관리
+              <button onClick={onNavigateToDisplay} className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer">
+                <LayoutGrid size={12} /><span>매장</span>
+              </button>
+            )}
+            {(isAdmin || isManagerRole) && onNavigateToRequests && (
+              <button onClick={onNavigateToRequests} className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer">
+                <MessageSquare size={12} /><span>요청</span>
+              </button>
+            )}
+            {(isAdmin || isManagerRole) && onNavigateToLeave && (
+              <button onClick={onNavigateToLeave} className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer">
+                <CheckCircle size={12} /><span>연차</span>
+              </button>
+            )}
+            {(isAdmin || isManagerRole) && onNavigateToScan && (
+              <button onClick={onNavigateToScan} className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer">
+                <Package size={12} /><span>상품</span>
+              </button>
+            )}
+            {(isAdmin || isManagerRole) && onNavigateToOcr && (
+              <button onClick={onNavigateToOcr} className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer">
+                <FileText size={12} /><span>OCR</span>
               </button>
             )}
           </div>
 
           {/* Mobile action buttons */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0 pb-1">
             {isAdmin && undoStack.length > 0 && (
               <button
                 onClick={handleUndo}

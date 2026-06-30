@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
   Bell, Package, MapPin,
-  CheckCircle2, XCircle, Clock, RefreshCw, ArrowRight, Trash2, ShoppingCart, CalendarDays, Square, CheckSquare,
+  CheckCircle2, Clock, RefreshCw, ShoppingCart, Square, CheckSquare,
   Send, Loader2,
 } from "lucide-react";
 import { getProductsMap, type ProductInfo } from "../lib/productsCache";
@@ -29,21 +29,7 @@ interface ZoneMismatch {
   id: string; product_code: string; product_name: string;
   spec_zone: string; real_zone: string; registered_at: string;
 }
-interface LeaveRequest {
-  id: string; employee_id: number; employee_name: string;
-  leave_type: string; start_date: string; end_date: string;
-  reason: string; status: "pending" | "approved" | "rejected";
-  reviewer_note: string | null; created_at: string; reviewed_at: string | null;
-}
-
-const LEAVE_STATUS_LABEL: Record<string, string> = { pending: "대기", approved: "승인", rejected: "반려" };
-const LEAVE_STATUS_COLOR: Record<string, string> = {
-  pending: "text-amber-600 bg-amber-50 border-amber-200",
-  approved: "text-emerald-600 bg-emerald-50 border-emerald-200",
-  rejected: "text-rose-600 bg-rose-50 border-rose-200",
-};
-
-type Tab = "display" | "order" | "mismatch" | "leave";
+type Tab = "display" | "order" | "mismatch";
 
 function fmtDate(iso: string) {
   try {
@@ -117,15 +103,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   // 구역불일치
   const [mismatches, setMismatches] = useState<ZoneMismatch[]>([]);
   const [mismatchLoading, setMismatchLoading] = useState(false);
+  const [mismatchError, setMismatchError] = useState<string | null>(null);
   const [selectedMismatch, setSelectedMismatch] = useState<Set<string>>(new Set());
 
-  // 연차신청
-  const [leaveReqs, setLeaveReqs] = useState<LeaveRequest[]>([]);
-  const [leaveLoading, setLeaveLoading] = useState(false);
-  const [selectedLeave, setSelectedLeave] = useState<Set<string>>(new Set());
-  const [processingLeave, setProcessingLeave] = useState<string | null>(null);
-  const [reviewingLeave, setReviewingLeave] = useState<string | null>(null);
-  const [reviewNote, setReviewNote] = useState("");
 
   // 진열요청 알림 전송
   const [notifying, setNotifying] = useState(false);
@@ -188,8 +168,18 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
   const loadMismatches = useCallback(async () => {
     setMismatchLoading(true);
-    try { const res = await fetch("/api/zone-mismatches"); setMismatches(res.ok ? await res.json() : []); }
-    catch { setMismatches([]); } finally { setMismatchLoading(false); }
+    setMismatchError(null);
+    try {
+      const res = await fetch("/api/zone-mismatches");
+      if (res.ok) {
+        setMismatches(await res.json());
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setMismatchError(body.error ?? `서버 오류 (${res.status})`);
+        setMismatches([]);
+      }
+    } catch { setMismatchError("네트워크 오류"); setMismatches([]); }
+    finally { setMismatchLoading(false); }
   }, []);
 
   const loadProducts = useCallback(async () => {
@@ -199,21 +189,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     finally { setProductsLoading(false); }
   }, [products.length]);
 
-  const loadLeaveReqs = useCallback(async () => {
-    setLeaveLoading(true);
-    try {
-      const url = isManager ? "/api/leave-requests?all=true"
-        : authSession?.employeeId ? `/api/leave-requests?employeeId=${authSession.employeeId}` : null;
-      if (!url) { setLeaveReqs([]); return; }
-      const res = await fetch(url);
-      setLeaveReqs(res.ok ? await res.json() : []);
-    } catch { setLeaveReqs([]); } finally { setLeaveLoading(false); }
-  }, [isManager, authSession?.employeeId]);
-
   useEffect(() => { loadDisplayReqs(); loadMismatches(); }, []);
   useEffect(() => {
     if (tab === "order") { loadOrderReqs(); loadProducts(); }
-    if (tab === "leave") { loadLeaveReqs(); }
   }, [tab]);
 
   // ── 단건 삭제 헬퍼 ──
@@ -240,13 +218,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     setSelectedMismatch(new Set());
   };
 
-  // ── 연차 삭제 ──
-  const deleteLeave = async (ids: string[]) => {
-    await Promise.all(ids.map(id => deleteOne(`/api/leave-requests/${id}`)));
-    setLeaveReqs(prev => prev.filter(r => !ids.includes(r.id)));
-    setSelectedLeave(new Set());
-  };
-
   const handleRequestOrder = async (p: ProductInfo) => {
     setRequestingOrder(prev => new Set([...prev, p.code]));
     try {
@@ -258,20 +229,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       });
       if (res.ok) await loadOrderReqs();
     } finally { setRequestingOrder(prev => { const s = new Set(prev); s.delete(p.code); return s; }); }
-  };
-
-  const handleLeaveReview = async (id: string, status: "approved" | "rejected") => {
-    setProcessingLeave(id);
-    try {
-      const res = await fetch(`/api/leave-requests/${id}`, {
-        method: "PUT", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status, reviewer_note: reviewNote }),
-      });
-      if (res.ok) {
-        setLeaveReqs(prev => prev.map(r => r.id === id ? { ...r, status, reviewer_note: reviewNote, reviewed_at: new Date().toISOString() } : r));
-        setReviewingLeave(null); setReviewNote("");
-      }
-    } finally { setProcessingLeave(null); }
   };
 
   // 선택 토글 헬퍼
@@ -290,13 +247,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   }).sort((a, b) => (Number(b.optimal_stock) - Number(b.current_stock)) - (Number(a.optimal_stock) - Number(a.current_stock)));
 
   const pending = displayReqs.filter(r => r.status === "pending");
-  const leavePending = leaveReqs.filter(r => r.status === "pending").length;
 
   const TABS: [Tab, string, number, string, string][] = [
     ["display",  "진열요청",   pending.length,    "text-blue-600",   "border-blue-500"],
     ["order",    "발주요청",   orderReqs.length,  "text-red-600",    "border-red-500"],
     ["mismatch", "구역불일치", mismatches.length, "text-orange-600", "border-orange-500"],
-    ["leave",    "연차신청",   leaveReqs.length,  "text-green-600",  "border-green-500"],
   ];
 
   // 공통 체크박스
@@ -307,7 +262,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #f8faff 0%, #f1f5ff 40%, #f0fdf4 100%)" }}>
       {/* Shared App Nav Header */}
       <AppNavHeader
         activePage="requests"
@@ -318,12 +273,15 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       />
 
       {/* 탭 바 */}
-      <div className="bg-white border-b border-gray-200 flex sticky top-14 z-20">
+      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/70 flex sticky top-14 z-20" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.06)" }}>
         {TABS.map(([key, label, count, color, border]) => (
           <button key={key} onClick={() => setTab(key)}
-            className={`flex-1 py-3 flex flex-col items-center gap-0.5 border-b-2 transition cursor-pointer ${tab === key ? `${color} ${border}` : "text-gray-400 border-transparent hover:text-gray-600"}`}>
-            <span className="text-[11px] font-black">{label}</span>
-            <span className={`text-[10px] font-bold ${tab === key ? color : "text-gray-400"}`}>{count}건</span>
+            className={`flex-1 py-3 flex flex-col items-center gap-0.5 border-b-2 transition cursor-pointer ${tab === key ? `${color} ${border}` : "text-slate-400 border-transparent hover:text-slate-600"}`}>
+            <span className="text-[11px] font-black tracking-tight">{label}</span>
+            {count > 0
+              ? <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${tab === key ? color.replace("text-", "bg-").replace("-600", "-100") + " " + color : "bg-slate-100 text-slate-400"}`}>{count}</span>
+              : <span className="text-[10px] text-slate-300">0</span>
+            }
           </button>
         ))}
       </div>
@@ -368,16 +326,36 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 {displayReqs.map(r => (
                   <div key={r.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition ${selectedDisplay.has(r.id) ? "bg-rose-50/40" : ""}`}>
                     <Checkbox checked={selectedDisplay.has(r.id)} onChange={() => toggleOne(selectedDisplay, r.id, setSelectedDisplay)} />
-                    <span className={`shrink-0 flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${r.status === "pending" ? "text-blue-600 bg-blue-50 border-blue-200" : "text-emerald-600 bg-emerald-50 border-emerald-200"}`}>
-                      {r.status === "pending" ? <Clock size={8} /> : <CheckCircle2 size={8} />}
-                      {r.status === "pending" ? "대기" : "완료"}
-                    </span>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-900 truncate">{r.zone_label}</p>
-                      {r.note && <p className="text-[11px] text-indigo-600 truncate">{r.note}</p>}
-                      <p className="text-[10px] text-gray-400">{r.category} {r.assigned_staff_name && `· ${r.assigned_staff_name}`}</p>
+                      {/* 담당자 · 구역 · 카테고리 */}
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {r.assigned_staff_name ? (
+                          <span className="text-[12px] font-black text-indigo-700">{r.assigned_staff_name}</span>
+                        ) : (
+                          <span className="text-[11px] text-gray-300">미지정</span>
+                        )}
+                        {r.zone_label && (
+                          <><span className="text-gray-300 text-[10px]">·</span>
+                          <span className="text-[12px] font-bold text-gray-800 truncate">{r.zone_label}</span></>
+                        )}
+                        {r.category && (
+                          <><span className="text-gray-300 text-[10px]">·</span>
+                          <span className="text-[11px] text-gray-500 truncate">{r.category}</span></>
+                        )}
+                        {r.note && (
+                          <><span className="text-gray-300 text-[10px]">·</span>
+                          <span className="text-[11px] text-indigo-500 truncate">{r.note}</span></>
+                        )}
+                      </div>
                     </div>
-                    <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(r.requested_at)}</span>
+                    {/* 상태 + 날짜 한 줄 */}
+                    <div className="shrink-0 flex items-center gap-1.5">
+                      <span className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${r.status === "pending" ? "text-blue-600 bg-blue-50 border-blue-200" : "text-emerald-600 bg-emerald-50 border-emerald-200"}`}>
+                        {r.status === "pending" ? <Clock size={8} /> : <CheckCircle2 size={8} />}
+                        {r.status === "pending" ? "대기" : "완료"}
+                      </span>
+                      <span className="text-[10px] text-gray-400">{fmtDate(r.requested_at)}</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -476,6 +454,12 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             />
             {mismatchLoading ? (
               <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" /></div>
+            ) : mismatchError ? (
+              <div className="flex flex-col items-center justify-center py-10 gap-2">
+                <p className="text-sm font-bold text-red-500">불러오기 오류</p>
+                <p className="text-xs text-red-400 font-mono text-center px-4">{mismatchError}</p>
+                <button onClick={loadMismatches} className="mt-2 text-xs text-orange-600 underline cursor-pointer">다시 시도</button>
+              </div>
             ) : mismatches.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-300">
                 <MapPin size={32} className="mb-2" /><p className="text-sm font-bold text-gray-400">불일치 상품이 없습니다</p>
@@ -488,11 +472,8 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     <Checkbox checked={selectedMismatch.has(m.id)} onChange={() => toggleOne(selectedMismatch, m.id, setSelectedMismatch)} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold text-gray-900 truncate">{m.product_name}</p>
-                      <div className="flex items-center gap-1.5 text-[11px] mt-0.5">
-                        <span className="text-gray-400">{m.spec_zone || "미지정"}</span>
-                        <ArrowRight size={10} className="text-orange-400 shrink-0" />
-                        <span className="text-red-600 font-bold">{m.real_zone}</span>
-                      </div>
+                      <p className="text-[11px] text-gray-500 mt-0.5">배정위치: <span className="font-semibold">{m.spec_zone || "미지정"}</span></p>
+                      <p className="text-[11px] text-red-600 font-bold">실제위치: {m.real_zone}</p>
                       <p className="text-[10px] text-gray-400 font-mono mt-0.5">{m.product_code}</p>
                     </div>
                     <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(m.registered_at)}</span>
@@ -503,74 +484,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
           </div>
         )}
 
-        {/* ── 연차신청 ── */}
-        {tab === "leave" && (
-          <div className="flex flex-col gap-2">
-            <ListToolbar
-              total={leaveReqs.length} selected={selectedLeave.size}
-              allChecked={selectedLeave.size === leaveReqs.length && leaveReqs.length > 0}
-              onToggleAll={() => toggleAll(leaveReqs, selectedLeave, setSelectedLeave)}
-              onDeleteSelected={() => deleteLeave([...selectedLeave])}
-              onDeleteAll={() => { if (confirm(`연차신청 전체 ${leaveReqs.length}건을 삭제할까요?`)) deleteLeave(leaveReqs.map(r => r.id)); }}
-              onRefresh={loadLeaveReqs} loading={leaveLoading} accentColor="text-green-600"
-            />
-            {leaveLoading ? (
-              <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-green-400 border-t-transparent rounded-full animate-spin" /></div>
-            ) : leaveReqs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-300">
-                <CalendarDays size={32} className="mb-2" /><p className="text-sm font-bold text-gray-400">신청 내역이 없습니다</p>
-              </div>
-            ) : (
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
-                {leaveReqs.map(r => (
-                  <div key={r.id} className={`hover:bg-gray-50 transition ${selectedLeave.has(r.id) ? "bg-rose-50/40" : ""}`}>
-                    <div className="flex items-center gap-3 px-4 py-3">
-                      <Checkbox checked={selectedLeave.has(r.id)} onChange={() => toggleOne(selectedLeave, r.id, setSelectedLeave)} />
-                      <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${LEAVE_STATUS_COLOR[r.status]}`}>
-                        {LEAVE_STATUS_LABEL[r.status]}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        {isManager && <p className="text-[11px] font-black text-gray-600">{r.employee_name}</p>}
-                        <p className="text-sm font-bold text-gray-900">{r.leave_type} · {r.start_date} ~ {r.end_date}</p>
-                        {r.reason && <p className="text-[11px] text-gray-400 truncate">{r.reason}</p>}
-                        {r.reviewer_note && <p className="text-[11px] text-indigo-600 truncate">메모: {r.reviewer_note}</p>}
-                      </div>
-                      <span className="text-[10px] text-gray-400 shrink-0">{r.created_at ? new Date(r.created_at).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" }) : ""}</span>
-                    </div>
-                    {/* 관리자 승인/반려 */}
-                    {isManager && r.status === "pending" && (
-                      <div className="px-4 pb-3 pl-11">
-                        {reviewingLeave === r.id ? (
-                          <div className="flex flex-col gap-2">
-                            <input type="text" value={reviewNote} onChange={e => setReviewNote(e.target.value)}
-                              placeholder="메모 (선택)" className="w-full bg-white border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-green-500 transition" />
-                            <div className="flex gap-2">
-                              <button onClick={() => handleLeaveReview(r.id, "approved")} disabled={processingLeave === r.id}
-                                className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer disabled:opacity-50">
-                                <CheckCircle2 size={11} />{processingLeave === r.id ? "처리 중..." : "승인"}
-                              </button>
-                              <button onClick={() => handleLeaveReview(r.id, "rejected")} disabled={processingLeave === r.id}
-                                className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg text-xs font-bold bg-rose-600 hover:bg-rose-700 text-white transition cursor-pointer disabled:opacity-50">
-                                <XCircle size={11} />{processingLeave === r.id ? "처리 중..." : "반려"}
-                              </button>
-                              <button onClick={() => { setReviewingLeave(null); setReviewNote(""); }}
-                                className="px-3 py-1.5 rounded-lg text-xs text-gray-400 hover:text-gray-600 border border-gray-200 hover:bg-gray-100 transition cursor-pointer">취소</button>
-                            </div>
-                          </div>
-                        ) : (
-                          <button onClick={() => { setReviewingLeave(r.id); setReviewNote(""); }}
-                            className="text-[11px] font-bold text-green-700 bg-green-50 border border-green-200 px-3 py-1.5 rounded-lg hover:bg-green-100 transition cursor-pointer">
-                            검토하기
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
       </main>
     </div>
   );

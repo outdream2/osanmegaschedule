@@ -21,6 +21,82 @@ interface OcrPageProps {
   onLogout?: () => void;
 }
 
+async function detectTextOrientation(dataUrl: string): Promise<number> {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 320;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const sw = Math.floor(img.width * scale);
+      const sh = Math.floor(img.height * scale);
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return resolve(0);
+
+      // Render at `deg` CW degrees, return row-projection + variance
+      function renderProj(deg: number) {
+        const swap = deg === 90 || deg === 270;
+        const cw = swap ? sh : sw;
+        const ch = swap ? sw : sh;
+        canvas.width = cw; canvas.height = ch;
+        ctx.clearRect(0, 0, cw, ch);
+        ctx.save();
+        ctx.translate(cw / 2, ch / 2);
+        ctx.rotate((deg * Math.PI) / 180);
+        ctx.drawImage(img, -sw / 2, -sh / 2, sw, sh);
+        ctx.restore();
+        const px = ctx.getImageData(0, 0, cw, ch).data;
+        const proj = new Float64Array(ch);
+        for (let y = 0; y < ch; y++) {
+          let d = 0;
+          for (let x = 0; x < cw; x++) {
+            const i = (y * cw + x) * 4;
+            if (px[i]*0.299 + px[i+1]*0.587 + px[i+2]*0.114 < 180) d++;
+          }
+          proj[y] = d;
+        }
+        const mean = proj.reduce((a, b) => a + b, 0) / ch;
+        const variance = proj.reduce((a, b) => a + (b - mean)**2, 0) / ch;
+        return { proj, ch, variance };
+      }
+
+      // Ratio of top-quarter dark pixels to bottom-quarter
+      // > 1 → text heavier at top (document is right-side-up)
+      // < 1 → text heavier at bottom (document is upside-down / needs 180°)
+      function topHeavyRatio(proj: Float64Array, ch: number) {
+        const slice = Math.max(1, Math.floor(ch * 0.22));
+        let top = 0, bot = 0;
+        for (let y = 0; y < slice; y++) top += proj[y];
+        for (let y = ch - slice; y < ch; y++) bot += proj[y];
+        return top / (bot + 1);
+      }
+
+      // Step 1: is text horizontal or vertical?
+      const r0  = renderProj(0);
+      const r90 = renderProj(90);
+
+      let bestDeg: number;
+      if (r0.variance >= r90.variance) {
+        // Horizontal text — distinguish 0° vs 180° by top-heavy ratio at 0°
+        // Documents (invoices): title/supplier at top → topRatio > 1 when upright
+        const ratio = topHeavyRatio(r0.proj, r0.ch);
+        bestDeg = ratio >= 0.9 ? 0 : 180;
+      } else {
+        // Vertical text — distinguish 90° vs 270° by top-heavy ratio at 90°
+        // At deg=90 rendering: if doc header lands at TOP → topRatio > 1 → bestDeg=90
+        // If doc header lands at BOTTOM → topRatio < 1 → bestDeg=270
+        const ratio = topHeavyRatio(r90.proj, r90.ch);
+        bestDeg = ratio >= 0.9 ? 90 : 270;
+      }
+
+      // Convert to UI correction: deg > 180 → wrap to negative
+      resolve(bestDeg > 180 ? bestDeg - 360 : bestDeg);
+    };
+    img.onerror = () => resolve(0);
+    img.src = dataUrl;
+  });
+}
+
 async function physicallyRotate(
   b64: string,
   mimeType: string,
@@ -63,7 +139,8 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
   const [engine, setEngine] = useState<"paddle" | "gemini">("paddle");
   const [pingStatus, setPingStatus] = useState<{ ok: boolean; gemini: boolean; geminiKeyCount: number } | null>(null);
-  const [rotation, setRotation] = useState(-90);
+  const [rotation, setRotation] = useState(0);
+  const [detectingOrient, setDetectingOrient] = useState(false);
 
   useEffect(() => {
     axios.get("/api/ocr-ping")
@@ -123,6 +200,18 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
         }
       }
       imagesDataRef.current = imgs;
+
+      // Auto-detect text orientation from the first image
+      if (imgs.length > 0) {
+        setDetectingOrient(true);
+        try {
+          const firstDataUrl = `data:${imgs[0].mimeType};base64,${imgs[0].data}`;
+          const detected = await detectTextOrientation(firstDataUrl);
+          setRotation(detected);
+        } catch { /* keep default 0 */ } finally {
+          setDetectingOrient(false);
+        }
+      }
     } catch (err: any) {
       setError(err?.message ?? "파일 처리 중 오류가 발생했습니다.");
     } finally {
@@ -174,7 +263,7 @@ const rotDeg = ((rotation % 360) + 360) % 360;
 const clearFiles = () => {
   setFileName(null); setPages([]); setPageImages([]);
   setCurrentPageIdx(0); imagesDataRef.current = [];
-  setPageCount(0); setError(null);
+  setPageCount(0); setError(null); setRotation(0);
 };
 
 return (
@@ -255,7 +344,12 @@ return (
                   · {pageImages.length}/{pageCount} 로딩 중...
                 </span>
               )}
-              {!loading && pageCount > 1 && (
+              {detectingOrient && (
+                <span className="text-[10px] text-sky-500 font-bold flex items-center gap-1">
+                  <Loader2 size={10} className="animate-spin" />방향 감지 중...
+                </span>
+              )}
+              {!loading && !detectingOrient && pageCount > 1 && (
                 <span className="text-[10px] text-gray-400">{pageCount}장</span>
               )}
             </div>

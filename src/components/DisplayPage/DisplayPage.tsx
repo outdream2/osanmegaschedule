@@ -26,10 +26,12 @@ import {
   Coffee,
   ScanLine,
   Pill,
+  Layers,
 } from "lucide-react";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { ZoneCell } from "./ZoneCell";
 import { ZoneAssignPopover } from "./ZoneAssignPopover";
+import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession } from "../../types";
 
@@ -286,6 +288,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // Staff panel collapse
   const [staffPanelOpen, setStaffPanelOpen] = useState(true);
 
+  // Zone groups
+  const [zoneGroups, setZoneGroups] = useState<ZoneGroup[]>([]);
+  const [zoneGroupsLoaded, setZoneGroupsLoaded] = useState(false);
+  const [zoneConfigOpen, setZoneConfigOpen] = useState(false);
+  const [activeGroupId, setActiveGroupId] = useState<string | null>(null);
+
   // Push notification subscription state
   const [subscribingId, setSubscribingId] = useState<number | null>(null);
   const [subscribedIds, setSubscribedIds] = useState<Set<number>>(() => {
@@ -460,6 +468,28 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   useEffect(() => {
     getProductsMap().then(m => setProductsMap(m));
   }, []);
+
+  // ── Load zone groups from DB on mount ────────────────────────────────────────
+  useEffect(() => {
+    fetch("/api/zone-groups")
+      .then((r) => r.json())
+      .then((data) => setZoneGroups(Array.isArray(data) ? data : []))
+      .catch(() => {})
+      .finally(() => setZoneGroupsLoaded(true));
+  }, []);
+
+  // ── Debounced save zone groups to DB when changed ───────────────────────────
+  useEffect(() => {
+    if (!zoneGroupsLoaded) return;
+    const t = setTimeout(() => {
+      fetch("/api/zone-groups", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(zoneGroups),
+      }).catch(() => {});
+    }, 800);
+    return () => clearTimeout(t);
+  }, [zoneGroups, zoneGroupsLoaded]);
 
   // ── Persist: save to localStorage immediately; debounce DB save ──────────────
   const dbSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -699,12 +729,41 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // Helper to find specific zones by number
   const getZone = (num: number) => zones.find((z) => z.num === num);
 
+  const getZoneGroup = useCallback(
+    (areaId: string) => zoneGroups.find((g) => g.areaIds.includes(areaId)) ?? null,
+    [zoneGroups],
+  );
+
+  const activeGroup = useMemo(
+    () => zoneGroups.find((g) => g.id === activeGroupId) ?? null,
+    [zoneGroups, activeGroupId],
+  );
+
+  const handleZoneConfigClick = useCallback((zoneId: string) => {
+    if (!activeGroupId) return;
+    setZoneGroups((prev) =>
+      prev.map((g) => {
+        if (g.id === activeGroupId) {
+          return g.areaIds.includes(zoneId)
+            ? { ...g, areaIds: g.areaIds.filter((id) => id !== zoneId) }
+            : { ...g, areaIds: [...g.areaIds, zoneId] };
+        }
+        if (g.areaIds.includes(zoneId)) {
+          return { ...g, areaIds: g.areaIds.filter((id) => id !== zoneId) };
+        }
+        return g;
+      }),
+    );
+  }, [activeGroupId]);
+
   // Helper to render Zone Cell on Blueprint
-  const renderZoneCell = (num: number, classes = "") => {
+  const renderZoneCell = (num: number, classes = "", wrapperClass = "") => {
     const z = getZone(num);
     if (!z) return null;
+    const group = getZoneGroup(z.id);
+    const inSelectedGroup = !!(activeGroup && activeGroup.areaIds.includes(z.id));
     return (
-      <div key={z.id} className="flex flex-col gap-0.5">
+      <div key={z.id} className={`flex flex-col gap-0.5 ${wrapperClass}`}>
         <ZoneCell
           zone={z}
           onContextClick={handleZoneCellClick}
@@ -717,8 +776,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           onDrop={handleDrop}
           onDragLeave={() => setDragOverZoneId(null)}
           isSearchedHighlight={searchedZoneIds.has(z.id)}
+          groupColor={group?.color}
+          groupLabel={group?.name?.slice(0, 1)}
+          configMode={zoneConfigOpen}
+          inSelectedGroup={inSelectedGroup}
+          onConfigClick={zoneConfigOpen ? (zone) => handleZoneConfigClick(zone.id) : undefined}
         />
-        {z.assignedStaffId !== null && (
+        {!zoneConfigOpen && z.assignedStaffId !== null && (
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); handleQuickRequest(z); }}
@@ -934,6 +998,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     if (staffPosFilter === "전체") return true;
                     if (staffPosFilter === "물류") return ["물류", "캐셔", "진열"].includes(employee.position);
                     return employee.position === staffPosFilter;
+                  }).sort((a, b) => {
+                    const ORDER: Record<string, number> = { "오픈": 0, "미들": 1, "마감": 2 };
+                    return (ORDER[a.scheduleType] ?? 3) - (ORDER[b.scheduleType] ?? 3);
                   }).map(({ employee, scheduleType, workingHours }) => {
                     const isLogistics = employee.position === "물류";
                     const assignedZones = getAssignedZones(employee.id);
@@ -1093,6 +1160,17 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   <span className="text-sm font-bold text-gray-600">매장 배치도</span>
                 </div>
                 <button
+                  onClick={() => { setZoneConfigOpen((v) => !v); setActiveGroupId(null); }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer ${
+                    zoneConfigOpen
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "bg-white border border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600"
+                  }`}
+                >
+                  <Layers size={13} />
+                  구역 설정
+                </button>
+                <button
                   onClick={handleSaveAll}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition cursor-pointer"
                 >
@@ -1104,6 +1182,16 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
             <p className="text-xs text-gray-400 mb-4">* 구역 번호를 누르면 상세 편집창이 열립니다. 전체저장 시 직원 구역배정 정보가 반영됩니다.</p>
 
+            {zoneConfigOpen && (
+              <ZoneGroupPanel
+                groups={zoneGroups}
+                activeGroupId={activeGroupId}
+                employees={employees}
+                onGroupsChange={setZoneGroups}
+                onActiveGroupChange={setActiveGroupId}
+              />
+            )}
+
 
             {/* ── MAP TAB ─────────────────────────────────────────────────── */}
             {/* Simulated 2D Floor Plan L-Shape Grid matches map.png */}
@@ -1114,10 +1202,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               <div className="flex justify-between items-stretch gap-3 w-full shrink-0">
 
                 {/* Left corner mini-wall shelves: 23, 22 */}
-                <div className="flex flex-col gap-1 bg-gray-300 p-1.5 rounded-lg w-12 justify-center shadow-3xs">
-                  <div className="text-[6px] font-black text-gray-500 text-center uppercase">좌측벽</div>
-                  {renderZoneCell(23, "h-8 text-[9px] justify-center")}
-                  {renderZoneCell(22, "h-8 text-[9px] justify-center")}
+                <div className="flex flex-col gap-1.5 bg-gray-300 p-1.5 rounded-lg w-[72px] justify-center shadow-3xs">
+                  <div className="text-[6px] font-black text-gray-500 text-center uppercase tracking-wider">좌측벽</div>
+                  {renderZoneCell(23, "h-16 text-[9px] justify-center")}
+                  {renderZoneCell(22, "h-16 text-[9px] justify-center")}
                 </div>
 
                 {/* Main Horizontal Shelving Wing: includes Top Wall, Aisle Shelves, and Bottom Wall */}
@@ -1263,38 +1351,36 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   </div>
 
                   {/* Interactive 4-Column Layout matches map.png side-by-side structures */}
-                  <div className="flex gap-2 items-stretch flex-1 min-h-[220px]">
+                  <div className="flex gap-2 items-stretch flex-1 min-h-[300px]">
 
                     {/* Column 1: Refrigerator (37) & Best Set Zone (36) */}
-                    <div className="flex-1 flex flex-col gap-1.5 justify-between">
+                    <div className="flex-1 flex flex-col gap-1.5">
                       <div className="flex flex-col gap-0.5">
                         <span className="text-[7px] font-black text-amber-950 leading-none">🧊 냉장고</span>
                         {renderZoneCell(37, "h-11 w-full text-[9px] p-0.5 justify-center")}
                       </div>
-                      <div className="flex-1 flex flex-col gap-0.5 justify-between">
+                      <div className="flex-1 flex flex-col gap-0.5">
                         <span className="text-[7px] font-black text-blue-900 leading-none">🧬 베스트 세트</span>
-                        {renderZoneCell(36, "flex-1 w-full text-[9px] p-1 justify-center")}
+                        {renderZoneCell(36, "w-full text-[9px] p-1 justify-center", "flex-1")}
                       </div>
                     </div>
 
                     {/* Column 2: Event Zone (42) */}
                     <div className="flex-1 bg-white border border-slate-200 rounded-lg p-1 flex flex-col gap-1 mr-3">
                       <span className="text-[7px] font-black text-rose-600 uppercase tracking-wide border-b pb-0.5 leading-none">🎈 이벤트존</span>
-                      <div className="flex-1 flex flex-col justify-center py-1">
-                        {renderZoneCell(42, "flex-1 w-full text-[9px] p-1 justify-center")}
-                      </div>
+                      {renderZoneCell(42, "w-full text-[9px] p-1 justify-center", "flex-1")}
                     </div>
 
                     {/* Column 3: Main Counter Checkout (40) */}
                     <div className="flex-1 flex flex-col gap-1">
                       <span className="text-[7px] font-black text-slate-500 uppercase tracking-wide leading-none">💳 메인카운터</span>
-                      {renderZoneCell(40, "flex-1 w-full justify-between items-center text-[9px] p-1 bg-gray-700 text-white")}
+                      {renderZoneCell(40, "flex-1 w-full justify-between items-center text-[9px] p-1 bg-gray-700 text-white", "flex-1")}
                     </div>
 
                     {/* Column 4: Front Medicine Display (38) */}
                     <div className="flex-1 flex flex-col gap-1">
                       <span className="text-[7px] font-black text-slate-500 uppercase tracking-wide leading-none">💊 정면 약진열</span>
-                      {renderZoneCell(38, "flex-1 w-full justify-center bg-emerald-700 text-white text-[9px] p-1 font-bold")}
+                      {renderZoneCell(38, "flex-1 w-full justify-center bg-emerald-700 text-white text-[9px] p-1 font-bold", "flex-1")}
                     </div>
 
                   </div>
