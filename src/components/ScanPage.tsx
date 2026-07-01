@@ -101,35 +101,30 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavig
     })();
   }, []);
 
-  // 구역 매칭: realMap(수동등록) 우선, 없으면 spec 파싱
-  const matchedZones: Zone[] = (() => {
+  // 전산 배정구역: spec 파싱
+  const specZones: Zone[] = (() => {
     if (!product) return [];
-
-    // 실제 배정구역이 등록된 경우 → 해당 구역 하나만 표시
-    const rm: string | null = product.realMap ?? product.real_map ?? null;
-    if (rm) {
-      const m = rm.match(/^(\d+)번/);
-      if (m) {
-        const zoneNum = parseInt(m[1]);
-        const found = zones.filter(z => z.num === zoneNum);
-        if (found.length > 0) return found;
-      }
-    }
-
-    // realMap 없으면 spec으로 매칭
     const spec: string = product.spec ?? "";
     const nums = extractZoneNums(spec);
-    if (nums.length > 0) {
-      return zones.filter((z) => nums.includes(z.num));
-    }
-    // 숫자가 없으면 spec 텍스트로 zone products 검색
+    if (nums.length > 0) return zones.filter(z => nums.includes(z.num));
     const q = spec.toLowerCase();
     if (!q) return [];
-    return zones.filter((z) =>
-      z.products.toLowerCase().includes(q) ||
-      z.category.toLowerCase().includes(q)
+    return zones.filter(z =>
+      z.products.toLowerCase().includes(q) || z.category.toLowerCase().includes(q)
     );
   })();
+
+  // 실제 배정구역: realMap 파싱
+  const realMapZone: Zone | null = (() => {
+    if (!product) return null;
+    const rm: string | null = product.realMap ?? product.real_map ?? null;
+    if (!rm) return null;
+    const m = rm.match(/^(\d+)번/);
+    if (!m) return null;
+    return zones.find(z => z.num === parseInt(m[1])) ?? null;
+  })();
+
+  const matchedZones = specZones; // 하위 호환 (진열요청 로직에서 사용)
 
   const handleScan = async (result: string) => {
     setScanResult(result);
@@ -309,9 +304,60 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavig
             ) : null}
 
             {/* ── 매칭 구역 ── */}
-            {!mapLoading && (product || productNotFound) && (
-              <>
-                {matchedZones.length === 0 ? (
+            {!mapLoading && (product || productNotFound) && (() => {
+              const renderZoneCard = (zone: Zone) => {
+                const colorIdx = zone.assignedStaffId !== null ? (staffColorMap.get(zone.assignedStaffId) ?? 0) : 0;
+                const requested = requestedIds.has(zone.id);
+                return (
+                  <div key={zone.id} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                    <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center shrink-0 border-2 ${
+                      zone.status === "empty" ? "bg-red-100 border-red-300" :
+                      zone.status === "low"   ? "bg-amber-100 border-amber-300" :
+                                                "bg-teal-100 border-teal-300"
+                    }`}>
+                      <span className="text-xs font-black text-gray-700 leading-tight">{zone.num}번</span>
+                      <span className={`text-[9px] font-bold ${
+                        zone.status === "empty" ? "text-red-600" :
+                        zone.status === "low"   ? "text-amber-600" :
+                                                  "text-teal-600"
+                      }`}>{STATUS_LABEL[zone.status]}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-gray-800 truncate">{zone.label}</p>
+                      <p className="text-[11px] text-gray-400 truncate">{zone.category}</p>
+                      {zone.products && (
+                        <p className="text-[11px] text-indigo-600 font-medium truncate mt-0.5">{zone.products}</p>
+                      )}
+                    </div>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      {zone.assignedStaffId ? (
+                        <>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STAFF_COLORS[colorIdx % STAFF_COLORS.length]}`}>
+                            {zone.assignedStaffName}
+                          </span>
+                          {requested ? (
+                            <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg">
+                              <CheckCircle2 size={12} /> 요청됨
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => handleRequest(zone)}
+                              className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-xl transition cursor-pointer shadow-sm"
+                            >
+                              <Bell size={11} /> 진열요청
+                            </button>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-[11px] text-gray-400 font-medium">담당자 미배정</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              };
+
+              if (specZones.length === 0 && !realMapZone) {
+                return (
                   <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
                     <Package size={28} className="text-gray-300" />
                     <p className="text-sm font-bold text-gray-500">
@@ -319,66 +365,26 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavig
                     </p>
                     <p className="text-xs text-gray-400">구역 번호가 매장 배치도와 다를 수 있습니다</p>
                   </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    <p className="text-xs font-bold text-gray-500">{matchedZones.length}개 구역 매칭됨</p>
-                    {matchedZones.map((zone) => {
-                      const colorIdx = zone.assignedStaffId !== null ? (staffColorMap.get(zone.assignedStaffId) ?? 0) : 0;
-                      const requested = requestedIds.has(zone.id);
-                      return (
-                        <div
-                          key={zone.id}
-                          className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm flex items-center gap-3"
-                        >
-                          <div className={`w-14 h-14 rounded-xl flex flex-col items-center justify-center shrink-0 border-2 ${
-                            zone.status === "empty" ? "bg-red-100 border-red-300" :
-                            zone.status === "low"   ? "bg-amber-100 border-amber-300" :
-                                                      "bg-teal-100 border-teal-300"
-                          }`}>
-                            <span className="text-xs font-black text-gray-700 leading-tight">{zone.num}번</span>
-                            <span className={`text-[9px] font-bold ${
-                              zone.status === "empty" ? "text-red-600" :
-                              zone.status === "low"   ? "text-amber-600" :
-                                                        "text-teal-600"
-                            }`}>{STATUS_LABEL[zone.status]}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-gray-800 truncate">{zone.label}</p>
-                            <p className="text-[11px] text-gray-400 truncate">{zone.category}</p>
-                            {zone.products && (
-                              <p className="text-[11px] text-indigo-600 font-medium truncate mt-0.5">{zone.products}</p>
-                            )}
-                          </div>
-                          <div className="flex flex-col items-end gap-2 shrink-0">
-                            {zone.assignedStaffId ? (
-                              <>
-                                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STAFF_COLORS[colorIdx % STAFF_COLORS.length]}`}>
-                                  {zone.assignedStaffName}
-                                </span>
-                                {requested ? (
-                                  <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-lg">
-                                    <CheckCircle2 size={12} /> 요청됨
-                                  </span>
-                                ) : (
-                                  <button
-                                    onClick={() => handleRequest(zone)}
-                                    className="flex items-center gap-1.5 text-[11px] font-black px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-xl transition cursor-pointer shadow-sm"
-                                  >
-                                    <Bell size={11} /> 진열요청
-                                  </button>
-                                )}
-                              </>
-                            ) : (
-                              <span className="text-[11px] text-gray-400 font-medium">담당자 미배정</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </>
-            )}
+                );
+              }
+
+              return (
+                <div className="flex flex-col gap-4">
+                  {realMapZone && (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest px-1">실제 배정구역</p>
+                      {renderZoneCard(realMapZone)}
+                    </div>
+                  )}
+                  {specZones.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">전산 배정구역</p>
+                      {specZones.map(renderZoneCard)}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </>
         )}
       </main>
