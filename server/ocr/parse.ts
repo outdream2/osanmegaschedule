@@ -103,6 +103,7 @@ export function extractSpecFromName(
 
   let specI = headers.indexOf("규격");
   let outHeaders = headers;
+  const specWasAdded = specI < 0;
 
   if (specI < 0) {
     outHeaders = [...headers.slice(0, nameI + 1), "규격", ...headers.slice(nameI + 1)];
@@ -110,23 +111,41 @@ export function extractSpecFromName(
   }
 
   const outRows = rows.map(row => {
-    const nameCellRaw = row[nameI];
-    if (typeof nameCellRaw !== "string" || !nameCellRaw.trim()) return row;
+    const r = [...row];
+    // 규격 컬럼이 새로 추가된 경우 모든 행에 null을 삽입해 컬럼 정렬 유지
+    if (specWasAdded && r.length < outHeaders.length) {
+      r.splice(specI, 0, null);
+    }
 
-    const existing = row[specI];
-    if (existing != null && String(existing).trim()) return row;
+    const nameCellRaw = r[nameI];
+    if (typeof nameCellRaw !== "string" || !nameCellRaw.trim()) return r;
+
+    const existing = r[specI];
+    if (existing != null && String(existing).trim()) return r;
 
     const { name, spec } = parseSpecFromName(nameCellRaw);
-    if (!spec) return row;
+    if (!spec) return r;
 
-    const r = [...row];
-    if (r.length < outHeaders.length) r.splice(specI, 0, null);
     r[nameI] = name;
     r[specI] = spec;
     return r;
   });
 
   return { headers: outHeaders, rows: outRows };
+}
+
+function safeParseNumber(val: any): number | null {
+  if (val == null || val === "") return null;
+  if (typeof val === "number") return isNaN(val) ? null : val;
+  const s = String(val).trim();
+  const clean = s.replace(/[^0-9.,]/g, "");
+  if (!clean) return null;
+  // "15.000" → 15000 (OCR이 천 단위 쉼표를 마침표로 오독한 경우)
+  if (/^\d{1,3}(\.\d{3})+$/.test(clean)) {
+    return parseInt(clean.replace(/\./g, ""), 10);
+  }
+  const num = parseFloat(clean.replace(/,/g, ""));
+  return isNaN(num) ? null : num;
 }
 
 export function fixAmounts(
@@ -137,17 +156,44 @@ export function fixAmounts(
   const pI = headers.indexOf("단가");
   const aI = headers.indexOf("금액");
   if (qI < 0 || pI < 0 || aI < 0) return rows;
+
   return rows.map(row => {
-    const q = typeof row[qI] === "number" ? row[qI] as number : null;
-    const p = typeof row[pI] === "number" ? row[pI] as number : null;
-    const a = typeof row[aI] === "number" ? row[aI] as number : null;
-    if (q != null && p != null) {
-      const computed = q * p;
-      // Fill missing or correct mismatched amount (1원 tolerance for rounding)
-      if (a == null || Math.abs(Math.round(a) - Math.round(computed)) > 1) {
-        const r = [...row]; r[aI] = computed; return r;
-      }
+    const q = safeParseNumber(row[qI]);
+    const p = safeParseNumber(row[pI]);
+    const a = safeParseNumber(row[aI]);
+
+    // 금액 누락 시에만 수량×단가로 채움 (유효한 금액은 절대 덮어쓰지 않음)
+    if (a == null && q != null && p != null && q > 0 && p > 0) {
+      const r = [...row];
+      r[aI] = Math.round(q * p);
+      return r;
     }
+
+    // 삼각 교차 검증: 세 값 모두 존재할 때 불일치 시 오독된 컬럼 역산 복원
+    if (q != null && p != null && a != null && q > 0 && p > 0 && a > 0) {
+      if (Math.abs(Math.round(q * p) - a) <= 1) return row; // 일치, 보정 불필요
+
+      // 수량 역산: a / p → 정수이면 수량이 오독된 것
+      const qRecov = a / p;
+      const qRecovInt = Math.round(qRecov);
+      if (qRecovInt > 0 && Math.abs(qRecovInt * p - a) <= 1 && Math.abs(qRecovInt - q) > 0.5) {
+        const r = [...row];
+        r[qI] = qRecovInt;
+        return r;
+      }
+
+      // 단가 역산: a / q → 정수이면 단가가 오독된 것
+      const pRecov = a / q;
+      const pRecovInt = Math.round(pRecov);
+      if (pRecovInt > 0 && Math.abs(pRecovInt * q - a) <= 1 && Math.abs(pRecovInt - p) > 0.5) {
+        const r = [...row];
+        r[pI] = pRecovInt;
+        return r;
+      }
+
+      // 판별 불가(두 개 이상 오독 추정) → 금액 건드리지 않고 원본 반환
+    }
+
     return row;
   });
 }

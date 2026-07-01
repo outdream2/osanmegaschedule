@@ -3,8 +3,8 @@ import React from "react";
 import {
   Calendar,
   CheckCircle,
-  ChevronLeft,
   FileText,
+  Home,
   LayoutGrid,
   Lock,
   LogOut,
@@ -123,25 +123,22 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     <header className="bg-white border-b border-[#e2e8f0] shrink-0 shadow-sm">
       {/* ── Top row: logo + desktop tabs + right actions ── */}
       <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
-        {/* Left: back + logo + desktop nav tabs */}
+        {/* Left: logo (clickable → landing) + desktop nav tabs */}
         <div className="flex items-center gap-2 min-w-0">
-          {onBack && (
-            <button
-              onClick={onBack}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 hover:text-gray-900 transition cursor-pointer text-xs font-semibold shrink-0"
-              title="메인으로 돌아가기"
-            >
-              <ChevronLeft size={13} />
-              <span className="hidden sm:inline">메인</span>
-            </button>
-          )}
-          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm shrink-0">
-            <Calendar size={14} className="text-white" />
-          </div>
-          <span className="font-black tracking-tight leading-none shrink-0">
-            <span className="text-red-500 text-xl">OSAN</span>
-            <span className="text-gray-900 text-base hidden sm:inline"> MEGATOWN</span>
-          </span>
+          <button
+            onClick={onBack ?? undefined}
+            disabled={!onBack}
+            className={`flex items-center gap-1.5 shrink-0 rounded-lg px-1 py-0.5 transition ${onBack ? "cursor-pointer hover:bg-indigo-50" : "cursor-default"}`}
+            title={onBack ? "랜딩페이지로 이동" : undefined}
+          >
+            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
+              <Home size={14} className="text-white" />
+            </div>
+            <span className="font-black tracking-tight leading-none">
+              <span className="text-red-500 text-xl">OSAN</span>
+              <span className="text-gray-900 text-base hidden sm:inline"> MEGATOWN</span>
+            </span>
+          </button>
 
           {/* Desktop nav tabs — all tabs, hidden on mobile */}
           <div className="hidden sm:flex items-center gap-1 ml-3 bg-gray-100 rounded-xl p-1">

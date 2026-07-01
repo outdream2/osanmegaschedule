@@ -124,13 +124,23 @@ export function parseKoreanInvoice(text: string): {
   const numericIdxs = headers.map((h, i) => NUMERIC_KW.some(k => h.includes(k)) ? i : -1).filter(i => i >= 0);
   const textIdxs    = headers.map((_, i) => i).filter(i => !numericIdxs.includes(i));
 
-  const isNumToken = (t: string) => /^[\d,]+(\.\d+)?$/.test(t.trim());
+  const isNumToken = (t: string) => {
+    const core = t.trim().replace(/[가-힣a-zA-Z]+$/, "").replace(/,/g, "");
+    return core.length > 0 && /^\d+(\.\d+)?$/.test(core);
+  };
 
   const toVal = (s: string): string | number | null => {
     if (!s) return null;
-    const c = s.replace(/,/g, "");
+    const stripped = s.replace(/[가-힣a-zA-Z]+$/, "").trim();
+    if (!stripped) return s;
+    // 천 단위 쉼표를 마침표로 오독한 경우: "15.000" → 15000, "1.500.000" → 1500000
+    const dotThousands = stripped.replace(/,/g, "");
+    if (/^\d{1,3}(\.\d{3})+$/.test(dotThousands)) {
+      return parseInt(dotThousands.replace(/\./g, ""), 10);
+    }
+    const c = stripped.replace(/,/g, "");
     const n = parseFloat(c);
-    return (!isNaN(n) && /^-?\d+(\.\d+)?$/.test(c)) ? n : s;
+    return (c.length > 0 && !isNaN(n) && /^-?\d+(\.\d+)?$/.test(c)) ? n : s;
   };
 
   function smartAlign(tokens: string[], H: number): string[] {
@@ -138,8 +148,9 @@ export function parseKoreanInvoice(text: string): {
     if (tokens.length === 0) return result;
     const numToks = [...tokens].reverse().filter(isNumToken).slice(0, numericIdxs.length).reverse();
     const textToks = tokens.slice(0, tokens.length - numToks.length);
-    for (let j = 0; j < numericIdxs.length; j++) {
-      result[numericIdxs[j]] = numToks[j] ?? "";
+    const offset = numericIdxs.length - numToks.length;
+    for (let j = 0; j < numToks.length; j++) {
+      result[numericIdxs[offset + j]] = numToks[j];
     }
     if (textIdxs.length > 0) {
       if (textToks.length <= textIdxs.length) {
