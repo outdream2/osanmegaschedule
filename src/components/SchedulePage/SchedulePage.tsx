@@ -1990,49 +1990,33 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   <GripVertical size={11} />
                                 </div>
                               )}
-                              {/* Name / position / actions — vertical stack */}
-                              <div className="flex-1 flex flex-col justify-between py-1 pl-2 pr-1 min-w-0">
-                                {/* Row 1: name + position + rank + memo (나란히) */}
-                                <div className="flex items-baseline gap-0.5 min-w-0 flex-wrap">
+                              {/* Name / position / actions — single line */}
+                              <div className="flex-1 flex flex-col justify-center py-1 pl-2 pr-1 min-w-0">
+                                <div className="flex items-center gap-0.5 min-w-0 flex-nowrap overflow-hidden">
                                   {emp.gender === "남" && (
-                                    <span className="text-[9px] font-bold text-sky-500 shrink-0 leading-none">♂</span>
+                                    <span className="text-[9px] font-bold text-sky-500 shrink-0">♂</span>
                                   )}
                                   {emp.gender === "여" && (
-                                    <span className="text-[9px] font-bold text-rose-400 shrink-0 leading-none">♀</span>
+                                    <span className="text-[9px] font-bold text-rose-400 shrink-0">♀</span>
                                   )}
                                   <span
                                     onMouseDown={(e) => e.stopPropagation()}
                                     onClick={(e) => { e.stopPropagation(); setCalendarEmployee(emp); }}
-                                    className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-xs sm:text-[13px] cursor-pointer select-none transition break-keep leading-tight"
+                                    className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-xs sm:text-[13px] cursor-pointer select-none transition shrink-0"
                                     title="클릭하여 개인 스케줄 달력 보기"
                                   >
                                     {emp.name}
                                   </span>
-                                  <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium break-keep shrink-0 leading-tight">
-                                    {emp.position}
-                                  </span>
-                                </div>
-                                {/* Row 2 & 3: 월차 + 계약상태 */}
-                                <div className="flex flex-col gap-0 leading-tight">
+                                  <span className="text-[8px] text-slate-400 font-medium shrink-0">{emp.position}</span>
                                   {(() => {
                                     const leaveTotal = parseInt(String(emp.annual_leave_days ?? ""), 10);
                                     if (!leaveTotal || !Number.isFinite(leaveTotal)) return null;
-                                    const leaveUsed = emp.schedules.filter(
-                                      s => s.type === "월차" && s.date.startsWith(`${currentYear}-`)
-                                    ).length;
+                                    const leaveUsed = emp.schedules.filter(s => s.type === "월차" && s.date.startsWith(`${currentYear}-`)).length;
                                     const leaveRemaining = Math.max(0, leaveTotal - leaveUsed);
-                                    return (
-                                      <span className={`text-[8px] font-bold leading-tight ${leaveRemaining === 0 ? "text-rose-500" : "text-amber-500"}`}>
-                                        {leaveRemaining}
-                                      </span>
-                                    );
+                                    return <span className={`text-[8px] font-bold shrink-0 ${leaveRemaining === 0 ? "text-rose-500" : "text-amber-500"}`}>{leaveRemaining}</span>;
                                   })()}
-                                  {emp.employmentType && (
-                                    <span className={`text-[8px] font-semibold break-keep ${
-                                      emp.employmentType === "정직원" ? "text-emerald-600" :
-                                      emp.employmentType === "계약직" ? "text-blue-500" :
-                                      "text-amber-500"
-                                    }`}>
+                                  {emp.employmentType && emp.employmentType !== "정직원" && (
+                                    <span className={`text-[8px] font-semibold shrink-0 ${emp.employmentType === "계약직" ? "text-blue-500" : "text-amber-500"}`}>
                                       {emp.employmentType}
                                     </span>
                                   )}
