@@ -2015,7 +2015,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                     const leaveRemaining = Math.max(0, leaveTotal - leaveUsed);
                                     return <span className={`text-[8px] font-bold shrink-0 ${leaveRemaining === 0 ? "text-rose-500" : "text-amber-500"}`}>{leaveRemaining}</span>;
                                   })()}
-                                  {emp.employmentType && emp.employmentType !== "정직원" && (
+                                  {userLevel >= 8 && emp.employmentType && emp.employmentType !== "정직원" && (
                                     <span className={`text-[8px] font-semibold shrink-0 ${emp.employmentType === "계약직" ? "text-blue-500" : "text-amber-500"}`}>
                                       {emp.employmentType}
                                     </span>
