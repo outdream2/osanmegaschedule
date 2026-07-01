@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import {
   Bell, Package, MapPin,
   CheckCircle2, Clock, RefreshCw, ShoppingCart, Square, CheckSquare,
-  Send, Loader2, Utensils, X, ChevronDown, ChevronUp, ScrollText,
+  Send, Loader2, Utensils, UtensilsCrossed, ChevronDown, ChevronUp, ScrollText,
 } from "lucide-react";
 import { getProductsMap, type ProductInfo } from "../lib/productsCache";
 import type { AuthSession } from "../types";
@@ -707,7 +707,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1 text-[11px] font-bold">
                   <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full">🍱 {eatCount}명</span>
-                  <span className="bg-gray-100 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full"><X size={9} className="inline mr-0.5" />{noEatCount}명</span>
+                  <span className="bg-gray-100 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full flex items-center gap-0.5"><UtensilsCrossed size={9} />{noEatCount}명</span>
                 </div>
                 <button onClick={loadLunch} className="p-1.5 text-gray-400 hover:text-gray-600 transition cursor-pointer">
                   <RefreshCw size={12} className={lunchLoading ? "animate-spin" : ""} />

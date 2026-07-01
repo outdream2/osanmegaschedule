@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { X, CheckCircle, Clock, RefreshCw, Users } from "lucide-react";
+import { UtensilsCrossed, CheckCircle, Clock, RefreshCw, Users } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession } from "../../types";
 
@@ -158,7 +158,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
           <div className="rounded-2xl border-2 bg-gray-50 border-gray-300 p-5 flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <X size={22} className="text-gray-400" />
+                <UtensilsCrossed size={22} className="text-gray-400" />
                 <span className="font-black text-xl text-gray-600">오늘 점심 불참</span>
               </div>
               <button
@@ -194,7 +194,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               disabled={submitting}
               className="w-full flex items-center justify-center gap-2 py-5 rounded-2xl text-base font-black bg-gray-100 hover:bg-gray-200 active:scale-[0.97] text-gray-700 shadow-sm transition cursor-pointer disabled:opacity-50"
             >
-              <X size={18} /> 오늘 점심 안 먹습니다
+              <UtensilsCrossed size={18} /> 오늘 점심 안 먹습니다
             </button>
           </div>
         )}
