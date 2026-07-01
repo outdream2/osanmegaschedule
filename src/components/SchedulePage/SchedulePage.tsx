@@ -1990,9 +1990,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   <GripVertical size={11} />
                                 </div>
                               )}
-                              {/* Name / position / actions — single line */}
-                              <div className="flex-1 flex flex-col justify-center py-1 pl-2 pr-1 min-w-0">
-                                <div className="flex items-center gap-0.5 min-w-0 flex-nowrap overflow-hidden">
+                              {/* Name / position / actions — 2 lines */}
+                              <div className="flex-1 flex flex-col justify-center py-1 pl-2 pr-1 min-w-0 gap-0">
+                                {/* 1줄: 성별 + 이름 */}
+                                <div className="flex items-center gap-0.5 min-w-0">
                                   {emp.gender === "남" && (
                                     <span className="text-[9px] font-bold text-sky-500 shrink-0">♂</span>
                                   )}
@@ -2002,11 +2003,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   <span
                                     onMouseDown={(e) => e.stopPropagation()}
                                     onClick={(e) => { e.stopPropagation(); setCalendarEmployee(emp); }}
-                                    className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-xs sm:text-[13px] cursor-pointer select-none transition shrink-0"
+                                    className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-xs sm:text-[13px] cursor-pointer select-none transition truncate"
                                     title="클릭하여 개인 스케줄 달력 보기"
                                   >
                                     {emp.name}
                                   </span>
+                                </div>
+                                {/* 2줄: 직종 + 월차 + 고용형태 */}
+                                <div className="flex items-center gap-1 min-w-0">
                                   <span className="text-[8px] text-slate-400 font-medium shrink-0">{emp.position}</span>
                                   {(() => {
                                     const leaveTotal = parseInt(String(emp.annual_leave_days ?? ""), 10);
