@@ -141,8 +141,12 @@ export function fixAmounts(
     const q = typeof row[qI] === "number" ? row[qI] as number : null;
     const p = typeof row[pI] === "number" ? row[pI] as number : null;
     const a = typeof row[aI] === "number" ? row[aI] as number : null;
-    if (q != null && p != null && a == null) {
-      const r = [...row]; r[aI] = q * p; return r;
+    if (q != null && p != null) {
+      const computed = q * p;
+      // Fill missing or correct mismatched amount (1원 tolerance for rounding)
+      if (a == null || Math.abs(Math.round(a) - Math.round(computed)) > 1) {
+        const r = [...row]; r[aI] = computed; return r;
+      }
     }
     return row;
   });

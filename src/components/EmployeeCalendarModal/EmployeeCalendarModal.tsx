@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   X, ChevronLeft, ChevronRight, Save, Clock, MessageSquare,
-  Calendar, CheckCircle, MapPin, User, Lock, Edit2,
+  Calendar, CheckCircle, MapPin, User, Lock, Edit2, FileText,
 } from "lucide-react";
 import { Employee, Schedule } from "../../types";
 import { SCHEDULE_COLORS, SCHEDULE_TYPES, DEFAULT_COLOR } from "../../constants";
@@ -756,52 +756,62 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 <span className="text-xs font-semibold text-amber-700">이달 스케줄이 확정된 상태입니다</span>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">이름</div>
-                <div className="text-sm font-bold text-slate-800">{employee.name}</div>
+                <div className="text-xs font-bold text-slate-800">{employee.name}</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">성별</div>
-                <div className="text-sm font-bold text-slate-800">{employee.gender ?? "—"}</div>
+                <div className="text-xs font-bold text-slate-800">{employee.gender ?? "—"}</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">구분</div>
-                <div className="text-sm font-bold text-slate-800">{employee.position}</div>
+                <div className="text-xs font-bold text-slate-800">{employee.position}</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">직급</div>
-                <div className="text-sm font-bold text-slate-800">{employee.rank ?? "—"}</div>
+                <div className="text-xs font-bold text-slate-800">{employee.rank ?? "—"}</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">고용형태</div>
-                <div className="text-sm font-bold text-slate-800">{employee.employmentType}</div>
+                <div className="text-xs font-bold text-slate-800">{employee.employmentType}</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">근무지</div>
-                <div className="text-sm font-bold text-slate-800">{employee.workplace}</div>
+                <div className="text-xs font-bold text-slate-800">{employee.workplace}</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">입사일</div>
-                <div className="text-sm font-bold text-slate-800">{employee.hireDate || "—"}</div>
+                <div className="text-xs font-bold text-slate-800">{employee.hireDate || "—"}</div>
               </div>
-              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">연차</div>
-                <div className="text-sm font-bold text-slate-800">{employee.annual_leave_days != null ? `${employee.annual_leave_days}일` : "—"}</div>
+                <div className="text-xs font-bold text-slate-800">{employee.annual_leave_days != null ? `${employee.annual_leave_days}일` : "—"}</div>
               </div>
             </div>
             {employee.description && (
-              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+              <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">비고</div>
-                <div className="text-sm text-slate-700">{employee.description}</div>
+                <div className="text-xs text-slate-700">{employee.description}</div>
               </div>
+            )}
+            {employee.contract_file_url && (
+              <a
+                href={employee.contract_file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white transition cursor-pointer"
+              >
+                <FileText size={13} /> 근로계약서 보기
+              </a>
             )}
             {onEditEmployee && (
               <button
                 onClick={onEditEmployee}
-                className="w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white transition cursor-pointer"
+                className="w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white transition cursor-pointer"
               >
-                <Edit2 size={14} /> 수정하기
+                <Edit2 size={13} /> 수정하기
               </button>
             )}
           </div>

@@ -130,6 +130,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   // Mobile 7-day window state
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   const [mobileWeekOffset, setMobileWeekOffset] = useState(0);
+  const mobileTouchStartX = React.useRef<number | null>(null);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
@@ -996,7 +997,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       fetchScheduleData(); // refresh roster
     } catch (err: any) {
       console.error("Failed to solve employee form request:", err);
-      showNotification(empModalMode === "edit" ? "직원 정보 수정 도중 오류가 발생했습니다." : "직원 등록 도중 오류가 발생했습니다.", "error");
+      const serverMsg = err?.response?.data?.error;
+      const base = empModalMode === "edit" ? "직원 정보 수정 오류" : "직원 등록 오류";
+      showNotification(serverMsg ? `${base}: ${serverMsg}` : `${base}가 발생했습니다.`, "error");
     }
   };
 
@@ -1264,7 +1267,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     <div className="w-full min-h-screen bg-gray-50 text-gray-900 font-sans flex flex-col">
       {/* Toast Notification Alert */}
       {notification && (
-        <div className="fixed top-5 right-5 z-[60] pointer-events-none">
+        <div className="fixed top-5 right-5 z-[9999] pointer-events-none">
           <div
             className={`px-4 py-3 rounded-xl shadow-md flex items-center gap-2.5 border text-sm font-semibold backdrop-blur-sm animate-in slide-in-from-top-2 duration-300 ${notification.type === "success"
               ? "bg-white text-emerald-800 border-emerald-200 shadow-emerald-100"
@@ -1838,7 +1841,19 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             {/* Schedule table + Dashboard: side-by-side on desktop, stacked on mobile */}
             <div className="flex flex-col lg:flex-row flex-1 min-h-0">
 
-            <div ref={scrollTableRef} className="relative overflow-x-auto overflow-y-auto flex-1 min-w-0" style={{ maxHeight: "calc(100vh - 220px)" }}>
+            <div
+              ref={scrollTableRef}
+              className="relative overflow-x-auto overflow-y-auto flex-1 min-w-0"
+              style={{ maxHeight: "calc(100vh - 220px)" }}
+              onTouchStart={isMobile ? (e) => { mobileTouchStartX.current = e.touches[0].clientX; } : undefined}
+              onTouchEnd={isMobile ? (e) => {
+                if (mobileTouchStartX.current === null) return;
+                const dx = e.changedTouches[0].clientX - mobileTouchStartX.current;
+                mobileTouchStartX.current = null;
+                if (Math.abs(dx) < 50) return;
+                setMobileWeekOffset(o => dx < 0 ? o + 1 : o - 1);
+              } : undefined}
+            >
               {isLoading ? (
                 <div className="w-full py-32 flex flex-col items-center justify-center bg-slate-50/50">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563eb]"></div>
@@ -1977,8 +1992,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                               )}
                               {/* Name / position / actions — vertical stack */}
                               <div className="flex-1 flex flex-col justify-between py-1 pl-2 pr-1 min-w-0">
-                                {/* Top: name + memo dot */}
-                                <div className="flex items-center gap-0.5 min-w-0">
+                                {/* Row 1: name + position + rank + memo (나란히) */}
+                                <div className="flex items-baseline gap-0.5 min-w-0 flex-wrap">
                                   {emp.gender === "남" && (
                                     <span className="text-[9px] font-bold text-sky-500 shrink-0 leading-none">♂</span>
                                   )}
@@ -1993,6 +2008,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   >
                                     {emp.name}
                                   </span>
+                                  <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium break-keep shrink-0 leading-tight">
+                                    {emp.position}{emp.rank ? ` ${emp.rank}` : ""}
+                                  </span>
                                   {emp.description && (
                                     <span
                                       className="text-indigo-300 hover:text-indigo-500 transition cursor-default shrink-0"
@@ -2002,12 +2020,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                     </span>
                                   )}
                                 </div>
-                                {/* 구분 / 직급 → 월차 → 계약상태 순서 */}
+                                {/* Row 2 & 3: 월차 + 계약상태 */}
                                 <div className="flex flex-col gap-0 leading-tight">
-                                  <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium break-keep">
-                                    {emp.position}{emp.rank ? ` ${emp.rank}` : ""}
-                                  </span>
-                                  {/* 남은 월차: position 바로 다음 줄 */}
                                   {(() => {
                                     const leaveTotal = parseInt(String(emp.annual_leave_days ?? ""), 10);
                                     if (!leaveTotal || !Number.isFinite(leaveTotal)) return null;

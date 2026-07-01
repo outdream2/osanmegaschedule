@@ -68,18 +68,34 @@ router.post("/api/ocr-match", async (req, res) => {
       });
     }
 
-    const matches = names.map((name: string) => {
+    const supplierHints: string[] = Array.isArray(req.body?.suppliers) ? req.body.suppliers : [];
+
+    const matches = names.map((name: string, i: number) => {
       if (!name?.trim()) return { input: name, matched: null };
 
-      const synCode = synonymMap.get(name.trim().toLowerCase());
+      const supplierHint = (supplierHints[i] ?? "").trim();
+      const nameLC = name.trim().toLowerCase();
+      const synKeyCompound = supplierHint ? `${supplierHint.toLowerCase()}|${nameLC}` : null;
+      const synCode = (synKeyCompound && synonymMap.get(synKeyCompound)) ?? synonymMap.get(nameLC);
       if (synCode) {
         const sp = map[synCode] ?? products.find(p => p.code === synCode);
         if (sp) return makeMatchResult(name, sp, 100);
       }
 
+      const pool = (() => {
+        if (!supplierHint) return products;
+        const sh = norm(supplierHint);
+        const filtered = products.filter(p => {
+          if (!p.supplier) return false;
+          const sp = norm(String(p.supplier));
+          return sp === sh || sp.includes(sh) || sh.includes(sp) || bigramSim(sp, sh) >= 40;
+        });
+        return filtered.length > 0 ? filtered : products;
+      })();
+
       let best = null as (typeof products)[0] | null;
       let bestScore = 0;
-      for (const p of products) {
+      for (const p of pool) {
         const s = invoiceMatchScore(name, p);
         if (s > bestScore) { bestScore = s; best = p; }
       }
