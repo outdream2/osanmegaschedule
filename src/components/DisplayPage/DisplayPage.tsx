@@ -27,6 +27,7 @@ import {
   ScanLine,
   Pill,
   Layers,
+  Info,
 } from "lucide-react";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { ZoneCell } from "./ZoneCell";
@@ -278,6 +279,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // Product DB search (약찾기)
   const [productsMap, setProductsMap] = useState<Record<string, ProductInfo>>({});
   const [productMatchZoneId, setProductMatchZoneId] = useState<string | null>(null);
+  const [productInfoModal, setProductInfoModal] = useState<ProductInfo | null>(null);
 
   // Requests panel
   const [reqFilter, setReqFilter] = useState<"all" | "pending" | "done">("all");
@@ -912,29 +914,45 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               </div>
               <div className="max-h-52 overflow-y-auto divide-y divide-slate-50">
                 {productSearchResults.map((p) => (
-                  <button
+                  <div
                     key={p.code}
-                    type="button"
-                    onClick={() => handleProductResultClick(p.realMap)}
-                    className={`w-full text-left px-3 py-2 transition cursor-pointer flex items-start justify-between gap-2 ${
-                      p.realMap
-                        ? "hover:bg-emerald-50"
-                        : "hover:bg-slate-50 opacity-60"
-                    } ${productMatchZoneId && zones.find(z => z.id === productMatchZoneId)?.num === parseInt((p.realMap ?? "").match(/^(\d+)번/)?.[1] ?? "-1") ? "bg-emerald-50 border-l-2 border-emerald-400" : ""}`}
+                    className={`px-3 py-2 flex items-start justify-between gap-2 ${
+                      productMatchZoneId && zones.find(z => z.id === productMatchZoneId)?.num === parseInt((p.realMap ?? "").match(/^(\d+)번/)?.[1] ?? "-1") ? "bg-emerald-50 border-l-2 border-emerald-400" : ""
+                    }`}
                   >
-                    <div className="flex-1 min-w-0">
+                    <button
+                      type="button"
+                      onClick={() => handleProductResultClick(p.realMap)}
+                      className="flex-1 min-w-0 text-left hover:opacity-75 transition cursor-pointer"
+                    >
                       <div className="text-xs font-semibold text-slate-800 truncate">{p.name}</div>
                       {p.spec && <div className="text-[10px] text-slate-400 truncate mt-0.5">{p.spec}</div>}
+                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      {p.realMap && (
+                        <button
+                          type="button"
+                          onClick={() => handleProductResultClick(p.realMap)}
+                          className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-emerald-200 transition cursor-pointer"
+                        >
+                          <MapPin size={9} />
+                          {p.realMap}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const full = productsMap[p.code] ?? productsMap[p.code.replace(/^0+/, "")] ?? p as ProductInfo;
+                          setProductInfoModal(full);
+                        }}
+                        className="flex items-center gap-0.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-indigo-100 transition cursor-pointer"
+                      >
+                        <Info size={9} />
+                        상품정보
+                      </button>
                     </div>
-                    {p.realMap ? (
-                      <div className="flex items-center gap-0.5 shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap">
-                        <MapPin size={9} />
-                        {p.realMap}
-                      </div>
-                    ) : (
-                      <span className="text-[10px] text-slate-300 shrink-0 whitespace-nowrap">위치 미등록</span>
-                    )}
-                  </button>
+                  </div>
                 ))}
               </div>
             </div>
@@ -1790,6 +1808,42 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             <div className="px-5 pb-5">
               <button onClick={() => setActiveStaffInfo(null)}
                 className="w-full py-2.5 text-sm font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 transition cursor-pointer">
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 상품정보 모달 ── */}
+      {productInfoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={() => setProductInfoModal(null)}>
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-5 pt-5 pb-3 border-b border-gray-100 flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">상품 기본정보</p>
+                <p className="text-base font-black text-gray-900 leading-tight truncate">{productInfoModal.name ?? productInfoModal.product_name}</p>
+              </div>
+              <button onClick={() => setProductInfoModal(null)} className="shrink-0 p-1 text-gray-400 hover:text-gray-600 transition cursor-pointer mt-0.5">
+                <X size={16} />
+              </button>
+            </div>
+            <div className="px-5 py-4 flex flex-col gap-3">
+              {([
+                ["상품코드", productInfoModal.code ?? productInfoModal.product_code, "font-mono text-xs"],
+                ["상품명",   productInfoModal.name ?? productInfoModal.product_name, ""],
+                ["공급사",   productInfoModal.supplier ?? "-", ""],
+                ["판매단가", productInfoModal.sale_price != null ? `${Number(productInfoModal.sale_price).toLocaleString()}원` : "-", "font-black text-gray-900"],
+                ["사입가",   productInfoModal.purchase_price != null ? `${Number(productInfoModal.purchase_price).toLocaleString()}원` : "-", "font-black text-indigo-700"],
+              ] as [string, string, string][]).map(([label, value, extra]) => (
+                <div key={label} className="flex items-center justify-between gap-3">
+                  <span className="text-[11px] font-bold text-gray-400 shrink-0">{label}</span>
+                  <span className={`text-sm text-gray-800 text-right truncate ${extra}`}>{value || "-"}</span>
+                </div>
+              ))}
+            </div>
+            <div className="px-5 pb-5">
+              <button onClick={() => setProductInfoModal(null)} className="w-full py-2.5 text-sm font-semibold rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition cursor-pointer">
                 닫기
               </button>
             </div>
