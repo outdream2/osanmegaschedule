@@ -12,6 +12,8 @@ export interface AuthSession {
   loginAt?: number;
   /** Unix ms — last recorded user activity (used for idle timeout) */
   lastActiveAt?: number;
+  /** When true, idle/absolute timeouts are skipped — session persists until explicit logout */
+  rememberMe?: boolean;
 }
 
 export interface Schedule {

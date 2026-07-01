@@ -48,16 +48,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [importLog, setImportLog] = useState<{ timestamp: string; count: number }[]>([]);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
-  const [empNumber, setEmpNumber] = useState("");
+  const [empNumber, setEmpNumber] = useState(() => localStorage.getItem("megatown_remembered_phone") ?? "");
   const [empPassword, setEmpPassword] = useState("");
   const [empError, setEmpError] = useState<string | null>(null);
   const [empLoading, setEmpLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem("megatown_remembered_phone"));
   const empNumberRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (pendingPage) {
-      setEmpNumber("");
+      setEmpNumber(localStorage.getItem("megatown_remembered_phone") ?? "");
       setEmpPassword("");
       setEmpError(null);
       setEmpLoading(false);
@@ -99,11 +100,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       }
       const page = pendingPage;
       setPendingPage(null);
-      setEmpNumber("");
       setEmpPassword("");
+      if (rememberMe) {
+        localStorage.setItem("megatown_remembered_phone", phone);
+      } else {
+        localStorage.removeItem("megatown_remembered_phone");
+        setEmpNumber("");
+      }
       const validRoles = ["superadmin", "admin", "manager", "employee"] as const;
       const authRole: AuthRole = (validRoles as readonly string[]).includes(role) ? (role as AuthRole) : "employee";
-      const auth: AuthSession = { role: authRole, employeeId: id, employeeName: name, level: level ?? 1, employeeRank: rank ?? undefined };
+      const auth: AuthSession = { role: authRole, employeeId: id, employeeName: name, level: level ?? 1, employeeRank: rank ?? undefined, rememberMe: rememberMe || undefined };
       onAuthOnly?.(auth);
     } catch (err: any) {
       const status = err?.response?.status;
@@ -766,6 +772,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       </button>
                     </div>
                   </div>
+
+                  {/* Remember me checkbox */}
+                  <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                    <input
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={(e) => setRememberMe(e.target.checked)}
+                      className="w-4 h-4 rounded border-2 border-slate-300 text-indigo-600 accent-indigo-600 cursor-pointer"
+                    />
+                    <span className="text-xs text-slate-500 group-hover:text-slate-700 transition">자동 로그인</span>
+                  </label>
 
                   {/* Error message */}
                   {empError && (

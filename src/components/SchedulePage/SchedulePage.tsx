@@ -1932,9 +1932,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   )}
                                   <span
                                     onMouseDown={(e) => e.stopPropagation()}
-                                    onClick={(e) => { e.stopPropagation(); if (isSuperAdmin) { openEditEmployeeModal(emp); } else { setCalendarEmployee(emp); } }}
+                                    onClick={(e) => { e.stopPropagation(); if (isSuperAdmin && !isMobile) { openEditEmployeeModal(emp); } else { setCalendarEmployee(emp); } }}
                                     className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-xs sm:text-[13px] cursor-pointer select-none transition break-keep leading-tight"
-                                    title={isSuperAdmin ? "클릭하여 직원정보 보기" : "클릭하여 개인 스케줄 달력 보기"}
+                                    title={isSuperAdmin && !isMobile ? "클릭하여 직원정보 보기" : "클릭하여 개인 스케줄 달력 보기"}
                                   >
                                     {emp.name}
                                   </span>

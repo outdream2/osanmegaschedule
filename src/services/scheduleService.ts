@@ -76,20 +76,51 @@ export class ScheduleService {
       .like("date", `${prevPrefix}%`);
     if (error) throw new Error(error.message);
 
-    const rows = (prevSchedules ?? [])
-      .map((sched) => {
-        const day = parseInt(sched.date.slice(8));
-        if (isNaN(day) || day > targetMaxDays) return null;
-        return {
-          employeeId: sched.employeeId,
-          date: `${targetYear}-${targetMonthStr}-${String(day).padStart(2, "0")}`,
+    // Build per-employee weekday template via majority vote
+    // structure: empId → dayOfWeek (0=Sun…6=Sat) → { type, workingHours, actualHours, memo, count }
+    type DowData = { type: string; workingHours: string; actualHours: string; memo: string; count: number };
+    const empDowMap = new Map<number, Map<number, DowData>>();
+
+    for (const sched of (prevSchedules ?? [])) {
+      if (!sched.type?.trim()) continue;
+      const dow = new Date(sched.date + "T00:00:00").getDay();
+      if (!empDowMap.has(sched.employeeId)) empDowMap.set(sched.employeeId, new Map());
+      const dowMap = empDowMap.get(sched.employeeId)!;
+      const existing = dowMap.get(dow);
+      if (!existing || sched.type === existing.type) {
+        // Same type: accumulate (majority); first occurrence sets baseline
+        dowMap.set(dow, {
           type: sched.type,
-          workingHours: sched.workingHours,
-          actualHours: sched.actualHours,
-          memo: sched.memo,
-        };
-      })
-      .filter(Boolean) as object[];
+          workingHours: sched.workingHours ?? "",
+          actualHours: sched.actualHours ?? "",
+          memo: sched.memo ?? "",
+          count: (existing?.count ?? 0) + 1,
+        });
+      } else if ((existing.count ?? 1) < 2) {
+        // Replace if current entry only had 1 occurrence and this type differs
+        dowMap.set(dow, { type: sched.type, workingHours: sched.workingHours ?? "", actualHours: sched.actualHours ?? "", memo: sched.memo ?? "", count: 1 });
+      }
+    }
+
+    // Generate one row per (employee × day) where the weekday has a template entry
+    const rows: object[] = [];
+    for (const [empId, dowMap] of empDowMap) {
+      for (let day = 1; day <= targetMaxDays; day++) {
+        const dateStr = `${targetYear}-${targetMonthStr}-${String(day).padStart(2, "0")}`;
+        const dow = new Date(dateStr + "T00:00:00").getDay();
+        const tmpl = dowMap.get(dow);
+        if (tmpl?.type.trim()) {
+          rows.push({
+            employeeId: empId,
+            date: dateStr,
+            type: tmpl.type,
+            workingHours: tmpl.workingHours,
+            actualHours: tmpl.actualHours,
+            memo: tmpl.memo,
+          });
+        }
+      }
+    }
 
     if (rows.length === 0) return { count: 0 };
 

@@ -49,6 +49,8 @@ function clearAllMegatownKeys(): void {
 }
 
 function isExpired(session: AuthSession, now: number): boolean {
+  // rememberMe sessions never expire automatically — only explicit logout clears them
+  if (session.rememberMe) return false;
   // Absolute timeout: hard cap from login time
   if (session.loginAt !== undefined && now - session.loginAt > ABSOLUTE_TIMEOUT_MS) {
     return true;
@@ -62,6 +64,7 @@ function isExpired(session: AuthSession, now: number): boolean {
 }
 
 function isWarnWindow(session: AuthSession, now: number): boolean {
+  if (session.rememberMe) return false;
   const lastActivity = session.lastActiveAt ?? session.loginAt;
   if (lastActivity === undefined) return false;
   const idleElapsed = now - lastActivity;
