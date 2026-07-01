@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import {
   X, ChevronLeft, ChevronRight, Save, Clock, MessageSquare,
-  Calendar, CheckCircle, MapPin, User,
+  Calendar, CheckCircle, MapPin, User, Lock, Edit2,
 } from "lucide-react";
 import { Employee, Schedule } from "../../types";
 import { SCHEDULE_COLORS, SCHEDULE_TYPES, DEFAULT_COLOR } from "../../constants";
@@ -37,7 +37,8 @@ interface Props {
   middleShiftHour?: string;
   closeShiftHour?: string;
   logisticsZoneProps?: LogisticsZoneProps;
-  onViewEmployeeInfo?: () => void;
+  onEditEmployee?: () => void;
+  isLocked?: boolean;
 }
 
 const DAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -55,14 +56,15 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   middleShiftHour = "11:00-20:00",
   closeShiftHour = "13:00-22:00",
   logisticsZoneProps,
-  onViewEmployeeInfo,
+  onEditEmployee,
+  isLocked = false,
 }) => {
   const activeTypes = scheduleTypesProp ?? SCHEDULE_TYPES;
   const isLogistics = employee.position === "물류";
 
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
-  const [activeTab, setActiveTab] = useState<"calendar" | "bulk" | "zone">(
+  const [activeTab, setActiveTab] = useState<"calendar" | "bulk" | "zone" | "info">(
     isLogistics && logisticsZoneProps ? "zone" : "calendar"
   );
 
@@ -284,8 +286,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
           <div className="text-xs text-slate-400">{employee.workplace} · {employee.description}</div>
         </div>
 
-        {/* Tab bar */}
-        {(isAdmin || (isLogistics && logisticsZoneProps) || onViewEmployeeInfo) && (
+        {/* Tab bar — always visible since info tab is available to everyone */}
+        {(
           <div className="flex border-b border-slate-200 bg-slate-50 flex-shrink-0">
             {isAdmin && (
               <>
@@ -328,14 +330,16 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 )}
               </button>
             )}
-            {onViewEmployeeInfo && (
-              <button
-                onClick={onViewEmployeeInfo}
-                className="flex-1 py-2.5 text-[11px] font-bold transition flex items-center justify-center gap-1.5 text-slate-500 hover:text-fuchsia-700 hover:bg-fuchsia-50"
-              >
-                <User size={12} /> 직원정보
-              </button>
-            )}
+            <button
+              onClick={() => setActiveTab("info")}
+              className={`flex-1 py-2.5 text-[11px] font-bold transition flex items-center justify-center gap-1.5 ${
+                activeTab === "info"
+                  ? "text-fuchsia-600 border-b-2 border-fuchsia-500 bg-white"
+                  : "text-slate-500 hover:text-fuchsia-600 hover:bg-fuchsia-50"
+              }`}
+            >
+              <User size={12} /> 직원정보
+            </button>
           </div>
         )}
 
@@ -740,6 +744,66 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 )}
               </button>
             </div>
+          </div>
+        )}
+
+        {/* ── INFO TAB ── */}
+        {activeTab === "info" && (
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+            {isLocked && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                <Lock size={12} className="text-amber-500 shrink-0" />
+                <span className="text-xs font-semibold text-amber-700">이달 스케줄이 확정된 상태입니다</span>
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">이름</div>
+                <div className="text-sm font-bold text-slate-800">{employee.name}</div>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">성별</div>
+                <div className="text-sm font-bold text-slate-800">{employee.gender ?? "—"}</div>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">구분</div>
+                <div className="text-sm font-bold text-slate-800">{employee.position}</div>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">직급</div>
+                <div className="text-sm font-bold text-slate-800">{employee.rank ?? "—"}</div>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">고용형태</div>
+                <div className="text-sm font-bold text-slate-800">{employee.employmentType}</div>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">근무지</div>
+                <div className="text-sm font-bold text-slate-800">{employee.workplace}</div>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">입사일</div>
+                <div className="text-sm font-bold text-slate-800">{employee.hireDate || "—"}</div>
+              </div>
+              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">연차</div>
+                <div className="text-sm font-bold text-slate-800">{employee.annual_leave_days != null ? `${employee.annual_leave_days}일` : "—"}</div>
+              </div>
+            </div>
+            {employee.description && (
+              <div className="bg-slate-50 rounded-xl p-3 space-y-0.5">
+                <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">비고</div>
+                <div className="text-sm text-slate-700">{employee.description}</div>
+              </div>
+            )}
+            {onEditEmployee && (
+              <button
+                onClick={onEditEmployee}
+                className="w-full py-2.5 rounded-xl text-sm font-bold flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white transition cursor-pointer"
+              >
+                <Edit2 size={14} /> 수정하기
+              </button>
+            )}
           </div>
         )}
       </div>

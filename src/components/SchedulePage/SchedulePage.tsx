@@ -538,6 +538,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   // Copy Previous Month state
   const [isCopying, setIsCopying] = useState(false);
 
+  // Month lock state
+  const [isMonthLocked, setIsMonthLocked] = useState(false);
+  const [isLockLoading, setIsLockLoading] = useState(false);
+
   const handleCopyFromPreviousMonth = async () => {
     const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
     const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
@@ -562,6 +566,23 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       showNotification("이전 달 스케줄을 가져오는 도중 오류가 발생했습니다.", "error");
     } finally {
       setIsCopying(false);
+    }
+  };
+
+  const handleToggleMonthLock = async () => {
+    const next = !isMonthLocked;
+    const label = next ? "확정" : "확정해제";
+    if (!confirm(`${currentYear}년 ${currentMonth}월 스케줄을 ${label}하시겠습니까?${next ? "\n확정 후에는 관리자도 수정할 수 없습니다." : ""}`)) return;
+    setIsLockLoading(true);
+    try {
+      const key = `schedule_lock_${currentYear}-${String(currentMonth).padStart(2, "0")}`;
+      await axios.post("/api/settings", { key, value: next });
+      setIsMonthLocked(next);
+      showNotification(`${currentMonth}월 스케줄이 ${label}되었습니다.`);
+    } catch {
+      showNotification("처리 중 오류가 발생했습니다.", "error");
+    } finally {
+      setIsLockLoading(false);
     }
   };
 
@@ -697,6 +718,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   useEffect(() => {
     fetchScheduleData(dateList);
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentYear, currentMonth]);
+
+  // Load month lock state when month changes
+  useEffect(() => {
+    const key = `schedule_lock_${currentYear}-${String(currentMonth).padStart(2, "0")}`;
+    axios.get(`/api/settings?key=${key}`)
+      .then(res => setIsMonthLocked(res.data?.value === true))
+      .catch(() => setIsMonthLocked(false));
   }, [currentYear, currentMonth]);
 
   // Load year-to-date 월차 usage counts per employee
@@ -1693,6 +1722,25 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
             {isAdmin && (
               <button
+                onClick={handleToggleMonthLock}
+                disabled={isLockLoading}
+                title={isMonthLocked ? `${currentMonth}월 확정 해제` : `${currentMonth}월 스케줄 확정 (이후 수정 불가)`}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                  isMonthLocked
+                    ? "border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700"
+                    : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600"
+                }`}
+              >
+                {isLockLoading
+                  ? <div className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                  : <Lock size={12} />
+                }
+                <span>{isMonthLocked ? "확정해제" : "확정"}</span>
+              </button>
+            )}
+
+            {isAdmin && !isMonthLocked && (
+              <button
                 onClick={handleCopyFromPreviousMonth}
                 disabled={isCopying}
                 title={`${currentMonth === 1 ? 12 : currentMonth - 1}월 스케줄을 ${currentMonth}월로 복사`}
@@ -1708,6 +1756,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         </div>
 
         <div className="bg-white border border-slate-200 rounded-b-xl overflow-hidden flex flex-col flex-1 shadow-sm">
+            {/* Month locked banner */}
+            {isMonthLocked && (
+              <div className="mx-2 mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2">
+                <Lock size={13} className="text-amber-500 shrink-0" />
+                <span className="text-xs font-bold text-amber-700">{currentMonth}월 스케줄이 확정된 상태입니다. 수정하려면 확정해제 후 진행하세요.</span>
+              </div>
+            )}
             {/* Copy Previous Month Callout Banner */}
             {!isLoading && !error && isAdmin && employees.length > 0 && !employees.some(emp => emp.schedules && emp.schedules.some(s => s.type.trim() !== "")) && (
               <div className="m-2 sm:m-4 p-3 sm:p-4 bg-indigo-50/50 border border-indigo-200/70 rounded-xl flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -1932,9 +1987,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   )}
                                   <span
                                     onMouseDown={(e) => e.stopPropagation()}
-                                    onClick={(e) => { e.stopPropagation(); if (isSuperAdmin && !isMobile) { openEditEmployeeModal(emp); } else { setCalendarEmployee(emp); } }}
+                                    onClick={(e) => { e.stopPropagation(); setCalendarEmployee(emp); }}
                                     className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-xs sm:text-[13px] cursor-pointer select-none transition break-keep leading-tight"
-                                    title={isSuperAdmin && !isMobile ? "클릭하여 직원정보 보기" : "클릭하여 개인 스케줄 달력 보기"}
+                                    title="클릭하여 개인 스케줄 달력 보기"
                                   >
                                     {emp.name}
                                   </span>
@@ -2022,8 +2077,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   schedule={currentSched}
                                   dateStr={fullDate}
                                   employeeId={emp.id}
-                                  onUpdate={(isEmployeeMode || isManagerRole) ? (async () => {}) : handleCellUpdate}
-                                  isAdmin={isAdmin}
+                                  onUpdate={(isEmployeeMode || isManagerRole || isMonthLocked) ? (async () => {}) : handleCellUpdate}
+                                  isAdmin={isAdmin && !isMonthLocked}
                                   openShiftHour={openShiftHour}
                                   middleShiftHour={middleShiftHour}
                                   closeShiftHour={closeShiftHour}
@@ -2386,14 +2441,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           initialMonth={currentMonth}
           onClose={() => setCalendarEmployee(null)}
           isAdmin={isAdmin}
-          onUpdate={handleCellUpdate}
-          onBulkSave={async (items) => {
+          isLocked={isMonthLocked}
+          onUpdate={isMonthLocked ? undefined : handleCellUpdate}
+          onBulkSave={isMonthLocked ? undefined : async (items) => {
             try {
               await axios.post("/api/schedules/batch", {
                 items: items.map(item => ({ employeeId: calendarEmployee.id, ...item })),
               });
               showNotification(`${calendarEmployee.name}님의 ${items.length}일 일괄 스케줄이 반영되었습니다.`);
-              // Include saved dates so the modal calendar refreshes even if it's on a different month
               const savedDates = items.map(i => i.date);
               const allDates = Array.from(new Set([...dateList, ...savedDates]));
               await fetchScheduleData(allDates);
@@ -2408,7 +2463,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           middleShiftHour={middleShiftHour}
           closeShiftHour={closeShiftHour}
           logisticsZoneProps={calendarLogisticsZoneProps}
-          onViewEmployeeInfo={isSuperAdmin ? () => { const emp = calendarEmployee; setCalendarEmployee(null); if (emp) openEditEmployeeModal(emp); } : undefined}
+          onEditEmployee={isAdmin ? () => { const emp = calendarEmployee; setCalendarEmployee(null); if (emp) openEditEmployeeModal(emp); } : undefined}
         />
       )}
     </div>
