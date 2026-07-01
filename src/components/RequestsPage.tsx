@@ -107,8 +107,10 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   // 발주요청
   const [orderReqs, setOrderReqs] = useState<OrderRequest[]>([]);
   const [orderLoading, setOrderLoading] = useState(false);
+  const [orderError, setOrderError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Set<string>>(new Set());
   const [requestingOrder, setRequestingOrder] = useState<Set<string>>(new Set());
+  const [orderRequestError, setOrderRequestError] = useState<string | null>(null);
 
   // 발주 필요 상품
   const [products, setProducts] = useState<ProductInfo[]>([]);
@@ -189,8 +191,18 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
   const loadOrderReqs = useCallback(async () => {
     setOrderLoading(true);
-    try { const res = await fetch("/api/order-requests"); setOrderReqs(res.ok ? await res.json() : []); }
-    catch { setOrderReqs([]); } finally { setOrderLoading(false); }
+    setOrderError(null);
+    try {
+      const res = await fetch("/api/order-requests");
+      if (res.ok) {
+        setOrderReqs(await res.json());
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setOrderError(body.error ?? `서버 오류 (${res.status})`);
+        setOrderReqs([]);
+      }
+    } catch { setOrderError("네트워크 오류"); setOrderReqs([]); }
+    finally { setOrderLoading(false); }
   }, []);
 
   const loadMismatches = useCallback(async () => {
@@ -236,7 +248,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     finally { setInventoryLoading(false); }
   }, []);
 
-  useEffect(() => { loadDisplayReqs(); loadMismatches(); loadLunch(); loadInventoryChecks(); }, []);
+  useEffect(() => { loadDisplayReqs(); loadOrderReqs(); loadMismatches(); loadLunch(); loadInventoryChecks(); }, []);
   useEffect(() => {
     if (tab === "order") { loadOrderReqs(); loadProducts(); }
   }, [tab]);
@@ -274,6 +286,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
   const handleRequestOrder = async (p: ProductInfo) => {
     setRequestingOrder(prev => new Set([...prev, p.code]));
+    setOrderRequestError(null);
     try {
       const res = await fetch("/api/order-requests", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -281,8 +294,14 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
           current_stock: p.current_stock != null ? Number(p.current_stock) : null,
           optimal_stock: p.optimal_stock != null ? Number(p.optimal_stock) : null, note: "" }),
       });
-      if (res.ok) await loadOrderReqs();
-    } finally { setRequestingOrder(prev => { const s = new Set(prev); s.delete(p.code); return s; }); }
+      if (res.ok) {
+        await loadOrderReqs();
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setOrderRequestError(body.error ?? `발주 요청 실패 (${res.status})`);
+      }
+    } catch { setOrderRequestError("네트워크 오류 — 다시 시도해주세요"); }
+    finally { setRequestingOrder(prev => { const s = new Set(prev); s.delete(p.code); return s; }); }
   };
 
   // 선택 토글 헬퍼
@@ -460,11 +479,17 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 onDeleteAll={() => { if (confirm(`발주요청 전체 ${orderReqs.length}건을 삭제할까요?`)) deleteOrder(orderReqs.map(r => r.id)); }}
                 onRefresh={loadOrderReqs} loading={orderLoading} accentColor="text-red-600"
               />
+              {orderError && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[11px] text-red-600 font-bold">
+                  <span>⚠ {orderError}</span>
+                  <button onClick={loadOrderReqs} className="ml-auto text-red-500 underline cursor-pointer">재시도</button>
+                </div>
+              )}
               {orderLoading ? (
                 <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-red-400 border-t-transparent rounded-full animate-spin" /></div>
-              ) : orderReqs.length === 0 ? (
+              ) : orderReqs.length === 0 && !orderError ? (
                 <p className="text-xs text-gray-400 py-6 text-center">발주 요청 내역이 없습니다</p>
-              ) : (
+              ) : !orderLoading && (
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
                   {orderReqs.map(r => {
                     const short = (r.optimal_stock ?? 0) - (r.current_stock ?? 0);
@@ -489,6 +514,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">
                 발주 필요 상품 <span className="normal-case font-normal">(현재고 &lt; 적정재고)</span>
               </p>
+              {orderRequestError && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[11px] text-red-600 font-bold">
+                  ⚠ {orderRequestError}
+                </div>
+              )}
               {productsLoading ? (
                 <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" /></div>
               ) : lowStock.length === 0 ? (
