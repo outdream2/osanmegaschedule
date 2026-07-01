@@ -1,20 +1,50 @@
 import React, { useState } from "react";
-import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2 } from "lucide-react";
+import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck } from "lucide-react";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
 
 interface ProductInfoCardProps {
   product: ProductInfo;
   onRealMapUpdate: (newValue: string) => void;
+  checkedBy?: string;
 }
 
-export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRealMapUpdate }) => {
+export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRealMapUpdate, checkedBy }) => {
   const [mapSelectorOpen, setMapSelectorOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   type OrderStatus = "idle" | "loading" | "done" | "error";
   const [orderStatus, setOrderStatus] = useState<OrderStatus>("idle");
+
+  // 실재고 입력
+  const [warehouseStock, setWarehouseStock] = useState<number | "">("");
+  const [storeStock, setStoreStock] = useState<number | "">("");
+  type InvStatus = "idle" | "loading" | "done" | "error";
+  const [invStatus, setInvStatus] = useState<InvStatus>("idle");
+
+  const handleInventorySubmit = async () => {
+    if (warehouseStock === "" && storeStock === "") return;
+    setInvStatus("loading");
+    try {
+      const res = await fetch("/api/inventory-checks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_code:    product.code,
+          product_name:    product.name,
+          warehouse_stock: warehouseStock !== "" ? Number(warehouseStock) : null,
+          store_stock:     storeStock     !== "" ? Number(storeStock)     : null,
+          system_stock:    product.current_stock != null ? Number(product.current_stock) : null,
+          optimal_stock:   product.optimal_stock != null ? Number(product.optimal_stock) : null,
+          checked_by:      checkedBy ?? "",
+        }),
+      });
+      setInvStatus(res.ok ? "done" : "error");
+    } catch {
+      setInvStatus("error");
+    }
+  };
 
   const handleOrderRequest = async () => {
     setOrderStatus("loading");
@@ -190,6 +220,68 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
             </div>
           )}
         </div>
+
+        {/* ── 실재고 입력 (창고 / 매장) ── */}
+        {(() => {
+          const hasInput = warehouseStock !== "" || storeStock !== "";
+          const totalActual = Number(warehouseStock || 0) + Number(storeStock || 0);
+          const diff = hasInput && cur != null ? totalActual - cur : null;
+          return (
+            <div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 mb-4">
+              <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wide mb-2.5">실재고 입력</p>
+              <div className="flex items-end gap-2 mb-2">
+                <div className="flex-1">
+                  <p className="text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1"><Warehouse size={9} />창고</p>
+                  <input
+                    type="number" min="0"
+                    value={warehouseStock}
+                    onChange={e => { setWarehouseStock(e.target.value === "" ? "" : Number(e.target.value)); setInvStatus("idle"); }}
+                    className="w-full text-2xl font-black text-center bg-white border border-purple-200 rounded-xl px-2 py-2 outline-none focus:border-purple-400 transition"
+                    placeholder="—"
+                  />
+                </div>
+                <span className="text-lg font-bold text-purple-300 pb-2">+</span>
+                <div className="flex-1">
+                  <p className="text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1"><Store size={9} />매장</p>
+                  <input
+                    type="number" min="0"
+                    value={storeStock}
+                    onChange={e => { setStoreStock(e.target.value === "" ? "" : Number(e.target.value)); setInvStatus("idle"); }}
+                    className="w-full text-2xl font-black text-center bg-white border border-purple-200 rounded-xl px-2 py-2 outline-none focus:border-purple-400 transition"
+                    placeholder="—"
+                  />
+                </div>
+              </div>
+              {hasInput && (
+                <div className="flex items-center justify-between text-[11px] font-bold mb-2.5 px-1">
+                  <span className="text-purple-700">합계: {totalActual}개</span>
+                  {diff != null && (
+                    <span className={diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-600" : "text-gray-500"}>
+                      현재고 대비 {diff > 0 ? "+" : ""}{diff}개
+                    </span>
+                  )}
+                </div>
+              )}
+              {invStatus === "done" ? (
+                <div className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
+                  <CheckCircle2 size={13} />실재고 차이 목록에 등록되었습니다
+                </div>
+              ) : (
+                <button
+                  onClick={handleInventorySubmit}
+                  disabled={invStatus === "loading" || (!hasInput)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition cursor-pointer disabled:opacity-50 bg-purple-500 hover:bg-purple-600 text-white shadow-sm"
+                >
+                  {invStatus === "loading" ? <Loader2 size={14} className="animate-spin" /> : <ClipboardCheck size={14} />}
+                  {invStatus === "loading" ? "등록 중..." : invStatus === "error" ? "재시도" : "확인 제출"}
+                </button>
+              )}
+              {invStatus === "error" && (
+                <p className="text-[10px] text-red-500 text-center mt-1">등록 실패 — 다시 시도해주세요</p>
+              )}
+            </div>
+          );
+        })()}
 
         {/* ── 발주요청 버튼 ── */}
         <div className="mb-4">

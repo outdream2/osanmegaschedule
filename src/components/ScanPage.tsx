@@ -263,6 +263,14 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavig
               </button>
             </div>
 
+            {/* ── 다른 상품 스캔 버튼 (발주요청 위, 항상 노출) ── */}
+            <button
+              onClick={() => setScannerOpen(true)}
+              className="flex items-center justify-center gap-2 w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl shadow-md transition cursor-pointer text-sm"
+            >
+              <ScanLine size={16} /> 다른 상품 스캔
+            </button>
+
             {/* ── 상품 정보 카드 ── */}
             {mapLoading ? (
               <div className="flex items-center justify-center gap-2 py-8 text-gray-400">
@@ -278,7 +286,11 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavig
                 </div>
               </div>
             ) : product ? (
-              <ProductInfoCard product={product} onRealMapUpdate={handleRealMapUpdate} />
+              <ProductInfoCard
+                product={product}
+                onRealMapUpdate={handleRealMapUpdate}
+                checkedBy={authSession?.employeeName ?? ""}
+              />
             ) : null}
 
             {/* ── 매칭 구역 ── */}
@@ -348,12 +360,6 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavig
                         </div>
                       );
                     })}
-                    <button
-                      onClick={() => setScannerOpen(true)}
-                      className="flex items-center justify-center gap-2 w-full py-3 border-2 border-dashed border-gray-200 hover:border-teal-400 text-gray-400 hover:text-teal-600 text-sm font-bold rounded-2xl transition cursor-pointer mt-1"
-                    >
-                      <ScanLine size={14} /> 다른 상품 스캔
-                    </button>
                   </div>
                 )}
               </>

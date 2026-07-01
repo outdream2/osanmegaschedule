@@ -33,7 +33,14 @@ interface LunchRequest {
   id: number; employee_id: number; employee_name: string;
   date: string; eating: boolean; memo: string | null; updated_at: string;
 }
-type Tab = "display" | "order" | "mismatch" | "lunch";
+interface InventoryCheck {
+  id: string; product_code: string; product_name: string;
+  warehouse_stock: number | null; store_stock: number | null;
+  system_stock: number | null; optimal_stock: number | null;
+  checked_by: string; note: string; status: string;
+  checked_at: string;
+}
+type Tab = "display" | "order" | "mismatch" | "lunch" | "inventory";
 
 function fmtDate(iso: string) {
   try {
@@ -113,6 +120,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   // 점심신청
   const [lunchRequests, setLunchRequests] = useState<LunchRequest[]>([]);
   const [lunchLoading, setLunchLoading] = useState(false);
+
+  // 실재고 점검
+  const [inventoryChecks, setInventoryChecks] = useState<InventoryCheck[]>([]);
+  const [inventoryLoading, setInventoryLoading] = useState(false);
+  const [selectedInventory, setSelectedInventory] = useState<Set<string>>(new Set());
 
 
   // 진열요청 알림 전송
@@ -208,7 +220,16 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     finally { setLunchLoading(false); }
   }, []);
 
-  useEffect(() => { loadDisplayReqs(); loadMismatches(); loadLunch(); }, []);
+  const loadInventoryChecks = useCallback(async () => {
+    setInventoryLoading(true);
+    try {
+      const res = await fetch("/api/inventory-checks");
+      setInventoryChecks(res.ok ? await res.json() : []);
+    } catch { setInventoryChecks([]); }
+    finally { setInventoryLoading(false); }
+  }, []);
+
+  useEffect(() => { loadDisplayReqs(); loadMismatches(); loadLunch(); loadInventoryChecks(); }, []);
   useEffect(() => {
     if (tab === "order") { loadOrderReqs(); loadProducts(); }
   }, [tab]);
@@ -235,6 +256,13 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     await Promise.all(ids.map(id => deleteOne(`/api/zone-mismatches/${id}`)));
     setMismatches(prev => prev.filter(r => !ids.includes(r.id)));
     setSelectedMismatch(new Set());
+  };
+
+  // ── 실재고 삭제 ──
+  const deleteInventory = async (ids: string[]) => {
+    await Promise.all(ids.map(id => deleteOne(`/api/inventory-checks/${id}`)));
+    setInventoryChecks(prev => prev.filter(r => !ids.includes(r.id)));
+    setSelectedInventory(new Set());
   };
 
   const handleRequestOrder = async (p: ProductInfo) => {
@@ -271,10 +299,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const noEatCount = lunchRequests.filter(r => !r.eating).length;
 
   const TABS: [Tab, string, number, string, string][] = [
-    ["display",  "진열요청",   pending.length,         "text-blue-600",   "border-blue-500"],
-    ["order",    "발주요청",   orderReqs.length,       "text-red-600",    "border-red-500"],
-    ["mismatch", "구역불일치", mismatches.length,      "text-orange-600", "border-orange-500"],
-    ["lunch",    "점심신청",   lunchRequests.length,   "text-emerald-600","border-emerald-500"],
+    ["display",   "진열요청",   pending.length,           "text-blue-600",   "border-blue-500"],
+    ["order",     "발주요청",   orderReqs.length,         "text-red-600",    "border-red-500"],
+    ["mismatch",  "구역불일치", mismatches.length,        "text-orange-600", "border-orange-500"],
+    ["inventory", "실재고차이", inventoryChecks.length,   "text-purple-600", "border-purple-500"],
+    ["lunch",     "점심신청",   lunchRequests.length,     "text-emerald-600","border-emerald-500"],
   ];
 
   // 공통 체크박스
@@ -502,6 +531,67 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(m.registered_at)}</span>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── 실재고 차이 ── */}
+        {tab === "inventory" && (
+          <div className="flex flex-col gap-2">
+            <ListToolbar
+              total={inventoryChecks.length} selected={selectedInventory.size}
+              allChecked={selectedInventory.size === inventoryChecks.length && inventoryChecks.length > 0}
+              onToggleAll={() => toggleAll(inventoryChecks, selectedInventory, setSelectedInventory)}
+              onDeleteSelected={() => deleteInventory([...selectedInventory])}
+              onDeleteAll={() => { if (confirm(`실재고 점검 내역 전체 ${inventoryChecks.length}건을 삭제할까요?`)) deleteInventory(inventoryChecks.map(r => r.id)); }}
+              onRefresh={loadInventoryChecks} loading={inventoryLoading} accentColor="text-purple-600"
+            />
+            {inventoryLoading ? (
+              <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" /></div>
+            ) : inventoryChecks.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-gray-300">
+                <Package size={32} className="mb-2" />
+                <p className="text-sm font-bold text-gray-400">실재고 점검 내역이 없습니다</p>
+                <p className="text-xs text-gray-400 mt-1 text-center">바코드 스캔 후 창고·매장 실재고를 입력하면 자동 등록됩니다</p>
+              </div>
+            ) : (
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
+                {inventoryChecks.map(r => {
+                  const totalActual = (r.warehouse_stock ?? 0) + (r.store_stock ?? 0);
+                  const diff = r.system_stock != null ? totalActual - r.system_stock : null;
+                  const isShort = diff != null && diff < 0;
+                  const isOver  = diff != null && diff > 0;
+                  return (
+                    <div key={r.id} className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition ${selectedInventory.has(r.id) ? "bg-purple-50/40" : ""}`}>
+                      <Checkbox checked={selectedInventory.has(r.id)} onChange={() => toggleOne(selectedInventory, r.id, setSelectedInventory)} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate">{r.product_name}</p>
+                        <p className="text-[10px] text-gray-400 font-mono mb-1">{r.product_code}</p>
+                        <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                          <span className="flex items-center gap-1 text-gray-600 font-semibold">
+                            창고 <span className="font-black text-gray-800">{r.warehouse_stock ?? "—"}</span>
+                          </span>
+                          <span className="text-gray-300">+</span>
+                          <span className="flex items-center gap-1 text-gray-600 font-semibold">
+                            매장 <span className="font-black text-gray-800">{r.store_stock ?? "—"}</span>
+                          </span>
+                          <span className="text-gray-300">=</span>
+                          <span className="font-black text-purple-700">{totalActual}개</span>
+                          <span className="text-gray-300">·</span>
+                          <span className="text-gray-500">현재고 {r.system_stock ?? "—"}</span>
+                          {diff != null && (
+                            <span className={`font-black px-1.5 py-0.5 rounded-lg ${isShort ? "bg-red-50 text-red-600 border border-red-200" : isOver ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-gray-100 text-gray-500"}`}>
+                              {diff > 0 ? "+" : ""}{diff}
+                            </span>
+                          )}
+                        </div>
+                        {r.checked_by && <p className="text-[10px] text-gray-400 mt-0.5">점검자: {r.checked_by}</p>}
+                      </div>
+                      <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(r.checked_at)}</span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
