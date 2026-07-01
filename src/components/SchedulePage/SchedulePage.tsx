@@ -63,19 +63,25 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const isManagerRole = userLevel >= 2 && userLevel < 9;  // 관리자 badge
   const isEmployeeMode = userLevel === 1;          // 직원 read-only mode
   const sessionEmployeeId = authSession?.employeeId ?? null;
-  // Settings hook (positions, workplaces, scheduleTypes, shift hours)
+  // Settings hook (positions, workplaces, scheduleTypes)
   const {
     positions: PRESET_POSITIONS,
     employmentTypes: PRESET_EMPLOYMENT_TYPES,
     workplaces: settingsWorkplaces,
     scheduleTypes: settingsScheduleTypes,
-    openShiftHour: settingsOpenShiftHour,
-    middleShiftHour: settingsMiddleShiftHour,
-    closeShiftHour: settingsCloseShiftHour,
     wageRates: settingsWageRates,
     employeeWageOverrides: settingsEmployeeWageOverrides,
     update: updateSettings,
   } = useSettings();
+
+  // Build a Record<string, string> from scheduleTypes for a given isPharmacist flag
+  const getTypeHoursMap = (isPharm: boolean): Record<string, string> => {
+    const map: Record<string, string> = {};
+    for (const entry of settingsScheduleTypes) {
+      map[entry.type] = (isPharm && entry.pharmHours) ? entry.pharmHours : entry.hours;
+    }
+    return map;
+  };
   // Navigation states
   const [currentYear, setCurrentYear] = useState<number>(() => new Date().getFullYear());
   const [currentMonth, setCurrentMonth] = useState<number>(() => new Date().getMonth() + 1);
@@ -512,14 +518,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   // Settings modal state
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const applyShiftHoursToAll = async (open: string, middle: string, close: string) => {
-    const typeMap: Record<string, string> = { "오픈": open, "미들": middle, "마감": close };
+  const applyShiftHoursToAll = async () => {
     const monthStr = String(currentMonth).padStart(2, "0");
     const items: Array<{ employeeId: number; date: string; type: string; workingHours: string; actualHours: string; memo: string }> = [];
     for (const emp of employees) {
+      const hoursMap = getTypeHoursMap(emp.position === "약사");
       for (const sc of emp.schedules) {
         if (!sc.date.startsWith(`${currentYear}-${monthStr}`)) continue;
-        const wh = typeMap[sc.type];
+        const wh = hoursMap[sc.type];
         if (!wh) continue;
         items.push({ employeeId: emp.id, date: sc.date, type: sc.type, workingHours: wh, actualHours: sc.actualHours || "", memo: sc.memo || "" });
       }
@@ -528,11 +534,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     await fetchScheduleData();
     showNotification("기본 근무시간이 현재 월 전체에 적용되었습니다.", "success");
   };
-
-  // Shift hours derived from settings (kept as local aliases for compatibility)
-  const openShiftHour = settingsOpenShiftHour;
-  const middleShiftHour = settingsMiddleShiftHour;
-  const closeShiftHour = settingsCloseShiftHour;
 
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
@@ -717,9 +718,26 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
   // Re-fetch whenever year or month changes
   useEffect(() => {
-    fetchScheduleData(dateList);
+    fetchScheduleData(isMobile ? mobileDates : dateList);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentYear, currentMonth]);
+
+  // Mobile: sync currentYear/currentMonth when week offset crosses a month boundary
+  useEffect(() => {
+    if (!isMobile) return;
+    const centerDate = mobileDates[3]; // today + offset weeks (center of 7-day window)
+    const newYear = parseInt(centerDate.substring(0, 4));
+    const newMonth = parseInt(centerDate.substring(5, 7));
+    if (newYear !== currentYear || newMonth !== currentMonth) {
+      // Month changed — state update triggers the main fetch effect above
+      setCurrentYear(newYear);
+      setCurrentMonth(newMonth);
+    } else {
+      // Offset changed within same month (e.g., first load or minor shift), fetch fresh
+      fetchScheduleData(mobileDates);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mobileWeekOffset, isMobile]);
 
   // Load month lock state when month changes
   useEffect(() => {
@@ -1079,10 +1097,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     const empOverrides = settingsEmployeeWageOverrides ?? {};
     const empRate = empOverrides[emp.id] ?? wageRates[emp.position] ?? null;
 
-    const shiftHourFallback: Record<string, string> = {
-      "오픈": openShiftHour, "미들": middleShiftHour, "마감": closeShiftHour,
-      "오전반차": openShiftHour, "오후반차": closeShiftHour,
-    };
+    const shiftHourFallback = getTypeHoursMap(emp.position === "약사");
 
     for (const s of visibleSchedules) {
       if (!s.type || OFF_TYPES_SET.has(s.type)) continue;
@@ -1647,9 +1662,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             employmentTypes: PRESET_EMPLOYMENT_TYPES,
             workplaces: settingsWorkplaces,
             scheduleTypes: settingsScheduleTypes,
-            openShiftHour,
-            middleShiftHour,
-            closeShiftHour,
             wageRates: settingsWageRates,
             employeeWageOverrides: settingsEmployeeWageOverrides,
           }}
@@ -2073,10 +2085,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   employeeId={emp.id}
                                   onUpdate={(isEmployeeMode || isManagerRole || isMonthLocked) ? (async () => {}) : handleCellUpdate}
                                   isAdmin={isAdmin && !isMonthLocked}
-                                  openShiftHour={openShiftHour}
-                                  middleShiftHour={middleShiftHour}
-                                  closeShiftHour={closeShiftHour}
-                                  scheduleTypes={settingsScheduleTypes.map((v) => ({ value: v, label: v }))}
+                                  isPharmacist={emp.position === "약사"}
+                                  typeHoursMap={getTypeHoursMap(emp.position === "약사")}
+                                  scheduleTypes={settingsScheduleTypes.map((e) => ({ value: e.type, label: e.type }))}
                                 />
                               </td>
                             );
@@ -2419,9 +2430,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         <DayTimelineModal
           date={timelineDate}
           employees={employees}
-          openShiftHour={openShiftHour}
-          middleShiftHour={middleShiftHour}
-          closeShiftHour={closeShiftHour}
+          typeHoursMap={getTypeHoursMap(false)}
+          pharmTypeHoursMap={getTypeHoursMap(true)}
           onClose={() => setTimelineDate(null)}
           onEditEmployee={isAdmin ? openEditEmployeeModal : undefined}
           onScheduleUpdate={() => fetchScheduleData()}
@@ -2452,10 +2462,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               throw err;
             }
           }}
-          scheduleTypes={settingsScheduleTypes.map(v => ({ value: v, label: v }))}
-          openShiftHour={openShiftHour}
-          middleShiftHour={middleShiftHour}
-          closeShiftHour={closeShiftHour}
+          scheduleTypes={settingsScheduleTypes.map(e => ({ value: e.type, label: e.type }))}
+          typeHoursMap={calendarEmployee ? getTypeHoursMap(calendarEmployee.position === "약사") : undefined}
           logisticsZoneProps={calendarLogisticsZoneProps}
           onEditEmployee={isAdmin ? () => { const emp = calendarEmployee; setCalendarEmployee(null); if (emp) openEditEmployeeModal(emp); } : undefined}
         />

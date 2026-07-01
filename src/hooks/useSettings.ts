@@ -2,6 +2,12 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { DEFAULT_SCHEDULE_TYPES } from "../constants";
 
+export interface ScheduleTypeEntry {
+  type: string;
+  hours: string;      // regular staff default hours (empty = no auto-fill)
+  pharmHours: string; // pharmacist override hours (empty = use `hours`)
+}
+
 export interface WageRate {
   weekday: number;
   weekend: number;
@@ -11,10 +17,7 @@ export interface AppSettings {
   positions: string[];
   employmentTypes: string[];
   workplaces: string[];
-  scheduleTypes: string[];
-  openShiftHour: string;
-  middleShiftHour: string;
-  closeShiftHour: string;
+  scheduleTypes: ScheduleTypeEntry[];
   wageRates: Record<string, WageRate>;
   employeeWageOverrides: Record<number, WageRate>;
 }
@@ -27,9 +30,6 @@ const DEFAULT_SETTINGS: AppSettings = {
   employmentTypes: ["정직원", "계약직", "알바"],
   workplaces: ["매장", "창고"],
   scheduleTypes: DEFAULT_SCHEDULE_TYPES,
-  openShiftHour: "10:00-18:00",
-  middleShiftHour: "11:00-18:00",
-  closeShiftHour: "12:00-20:00",
   wageRates: {},
   employeeWageOverrides: {},
 };
@@ -62,6 +62,26 @@ function sanitizeEmployeeOverrides(input: unknown): Record<number, WageRate> {
   return out;
 }
 
+function migrateScheduleTypes(raw: any, parsed: Partial<any>): ScheduleTypeEntry[] {
+  if (!Array.isArray(raw) || raw.length === 0) return DEFAULT_SCHEDULE_TYPES;
+  if (typeof raw[0] === "string") {
+    // Old string[] format — migrate
+    const hoursByType: Record<string, { hours: string; pharmHours: string }> = {
+      "오픈":     { hours: (parsed as any).openShiftHour || "10:00-18:00",     pharmHours: (parsed as any).openShiftHourPharm || "" },
+      "미들":     { hours: (parsed as any).middleShiftHour || "11:00-18:00",   pharmHours: (parsed as any).middleShiftHourPharm || "" },
+      "마감":     { hours: (parsed as any).closeShiftHour || "12:00-20:00",    pharmHours: (parsed as any).closeShiftHourPharm || "" },
+      "오픈마감": { hours: (parsed as any).openCloseShiftHour || "10:00-22:00", pharmHours: (parsed as any).openCloseShiftHourPharm || "" },
+    };
+    return (raw as string[]).map(s => ({ type: s, hours: hoursByType[s]?.hours ?? "", pharmHours: hoursByType[s]?.pharmHours ?? "" }));
+  }
+  // Already ScheduleTypeEntry[]
+  return (raw as ScheduleTypeEntry[]).map(e => ({
+    type: e.type || "",
+    hours: e.hours || "",
+    pharmHours: e.pharmHours || "",
+  })).filter(e => e.type);
+}
+
 function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
   return {
     positions: Array.isArray(parsed.positions) && parsed.positions.length > 0
@@ -70,11 +90,7 @@ function mergeWithDefaults(parsed: Partial<AppSettings>): AppSettings {
       ? parsed.employmentTypes : DEFAULT_SETTINGS.employmentTypes,
     workplaces: Array.isArray(parsed.workplaces) && parsed.workplaces.length > 0
       ? parsed.workplaces : DEFAULT_SETTINGS.workplaces,
-    scheduleTypes: Array.isArray(parsed.scheduleTypes) && parsed.scheduleTypes.length > 0
-      ? parsed.scheduleTypes : DEFAULT_SETTINGS.scheduleTypes,
-    openShiftHour: parsed.openShiftHour || DEFAULT_SETTINGS.openShiftHour,
-    middleShiftHour: parsed.middleShiftHour || DEFAULT_SETTINGS.middleShiftHour,
-    closeShiftHour: parsed.closeShiftHour || DEFAULT_SETTINGS.closeShiftHour,
+    scheduleTypes: migrateScheduleTypes((parsed as any).scheduleTypes, parsed),
     wageRates: sanitizeWageRates(parsed.wageRates),
     employeeWageOverrides: sanitizeEmployeeOverrides(parsed.employeeWageOverrides),
   };
@@ -146,9 +162,6 @@ export function useSettings() {
     employmentTypes: settings.employmentTypes,
     workplaces: settings.workplaces,
     scheduleTypes: settings.scheduleTypes,
-    openShiftHour: settings.openShiftHour,
-    middleShiftHour: settings.middleShiftHour,
-    closeShiftHour: settings.closeShiftHour,
     wageRates: settings.wageRates,
     employeeWageOverrides: settings.employeeWageOverrides,
     update,

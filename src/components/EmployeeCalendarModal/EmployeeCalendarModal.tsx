@@ -33,9 +33,7 @@ interface Props {
   }) => Promise<void>;
   onBulkSave?: (items: BulkItem[]) => Promise<void>;
   scheduleTypes?: { value: string; label: string }[];
-  openShiftHour?: string;
-  middleShiftHour?: string;
-  closeShiftHour?: string;
+  typeHoursMap?: Record<string, string>;
   logisticsZoneProps?: LogisticsZoneProps;
   onEditEmployee?: () => void;
   isLocked?: boolean;
@@ -52,9 +50,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   onUpdate,
   onBulkSave,
   scheduleTypes: scheduleTypesProp,
-  openShiftHour = "09:30-18:30",
-  middleShiftHour = "11:00-20:00",
-  closeShiftHour = "13:00-22:00",
+  typeHoursMap,
   logisticsZoneProps,
   onEditEmployee,
   isLocked = false,
@@ -79,7 +75,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   // ── Bulk tab state ──────────────────────────────────────────────
   const [bulkSelectedDates, setBulkSelectedDates] = useState<string[]>([]);
   const [bulkType, setBulkType] = useState("오픈");
-  const [bulkWorkingHours, setBulkWorkingHours] = useState(openShiftHour);
+  const [bulkWorkingHours, setBulkWorkingHours] = useState(typeHoursMap?.["오픈"] ?? "");
   const [bulkActualHours, setBulkActualHours] = useState("");
   const [bulkMemo, setBulkMemo] = useState("");
   const [isBulkSaving, setIsBulkSaving] = useState(false);
@@ -155,10 +151,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
     const cur = sc?.type || "";
     const idx = CYCLE.indexOf(cur);
     const nextType = CYCLE[(idx + 1) % CYCLE.length];
-    let nextWh = "";
-    if (nextType === "오픈") nextWh = openShiftHour;
-    else if (nextType === "미들") nextWh = middleShiftHour;
-    else if (nextType === "마감") nextWh = closeShiftHour;
+    const nextWh = typeHoursMap?.[nextType] ?? "";
     const dayStr = String(day).padStart(2, "0");
     setEditType(nextType);
     setEditWorkingHours(nextWh);
@@ -204,11 +197,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   };
 
   const quickApplyType = async (presetType: string) => {
-    let wh = editWorkingHours;
-    if (presetType === "오픈") wh = openShiftHour;
-    else if (presetType === "미들") wh = middleShiftHour;
-    else if (presetType === "마감") wh = closeShiftHour;
-    else if (["휴무", "월차", "지정휴무"].includes(presetType)) wh = "";
+    let wh = typeHoursMap?.[presetType] ?? editWorkingHours;
+    if (["휴무", "월차", "지정휴무"].includes(presetType)) wh = "";
     setEditType(presetType);
     setEditWorkingHours(wh);
     await saveWith({ type: presetType, workingHours: wh });
@@ -217,10 +207,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   // ── Bulk tab handlers ───────────────────────────────────────────
   const handleBulkTypeChange = (newType: string) => {
     setBulkType(newType);
-    if (newType === "오픈") setBulkWorkingHours(openShiftHour);
-    else if (newType === "마감") setBulkWorkingHours(closeShiftHour);
-    else if (newType === "미들") setBulkWorkingHours(middleShiftHour);
-    else setBulkWorkingHours("");
+    setBulkWorkingHours(typeHoursMap?.[newType] ?? "");
   };
 
   const selectAll = () => setBulkSelectedDates(daysList.map(d => getDayDetails(d).fullDate));
@@ -638,7 +625,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 <label className="block text-[10px] font-black text-blue-800">⚡ 일괄 근태 빠른 지정</label>
                 <div className="flex flex-wrap gap-1.5">
                   <button type="button" onClick={() => setBulkActualHours("")} className="px-2 py-1 text-[10px] font-extrabold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded cursor-pointer transition">초기화</button>
-                  <button type="button" onClick={() => { setBulkActualHours("지각"); setBulkWorkingHours(openShiftHour); }} className="px-2 py-1 text-[10px] font-extrabold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-200 rounded cursor-pointer transition">⚠️ 지각</button>
+                  <button type="button" onClick={() => { setBulkActualHours("지각"); setBulkWorkingHours(typeHoursMap?.["오픈"] ?? ""); }} className="px-2 py-1 text-[10px] font-extrabold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-200 rounded cursor-pointer transition">⚠️ 지각</button>
                   <button type="button" onClick={() => setBulkActualHours("조퇴")} className="px-2 py-1 text-[10px] font-extrabold bg-purple-100 hover:bg-purple-200 text-purple-900 border border-purple-200 rounded cursor-pointer transition">🏃 조퇴</button>
                   <button type="button" onClick={() => { setBulkActualHours("결근"); setBulkType("결근"); setBulkWorkingHours(""); }} className="px-2 py-1 text-[10px] font-extrabold bg-rose-100 hover:bg-rose-200 text-rose-900 border border-rose-200 rounded cursor-pointer transition">🚨 결근</button>
                 </div>
@@ -649,9 +636,9 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">근무 패턴 템플릿:</label>
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { label: `오픈 (${openShiftHour})`, val: "오픈" },
-                    { label: `미들 (${middleShiftHour})`, val: "미들" },
-                    { label: `마감 (${closeShiftHour})`, val: "마감" },
+                    { label: typeHoursMap?.["오픈"] ? `오픈 (${typeHoursMap["오픈"]})` : "오픈", val: "오픈" },
+                    { label: typeHoursMap?.["미들"] ? `미들 (${typeHoursMap["미들"]})` : "미들", val: "미들" },
+                    { label: typeHoursMap?.["마감"] ? `마감 (${typeHoursMap["마감"]})` : "마감", val: "마감" },
                     { label: "휴무", val: "휴무" },
                     { label: "월차", val: "월차" },
                     { label: "지정휴무", val: "지정휴무" },

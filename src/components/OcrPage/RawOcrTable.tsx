@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { Download, Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, FileSpreadsheet, Upload as UploadIcon, BookmarkPlus } from "lucide-react";
+import { Download, Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, FileSpreadsheet, Upload as UploadIcon, BookmarkPlus, BookOpen } from "lucide-react";
 
 interface RawPage {
   page: number;
@@ -120,19 +120,49 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const amtIdx  = dispHeaders.indexOf("금액");
   const nameIdx = dispHeaders.indexOf("품명");
 
-  // 공급처 편집 상태 — supplierTotals 계산보다 먼저 선언해야 참조 가능
+  // ── 공급처 편집 상태 — supplierTotals 계산보다 먼저 선언해야 참조 가능
   const [rawSupplierByPage, setRawSupplierByPage] = useState<Record<number, string>>({});
   const [editingRawSuppRow, setEditingRawSuppRow] = useState<number | null>(null);
   const [editingRawSuppVal, setEditingRawSuppVal] = useState("");
-  const [supplierConfirm,   setSupplierConfirm  ] = useState<{ pageNum: number; newVal: string; rowCount: number } | null>(null);
+  const [supplierConfirm,   setSupplierConfirm  ] = useState<{ pageNum: number; newVal: string; rowCount: number; addSynonyms: boolean } | null>(null);
+
+  // ── Feature 1: 금액 자동보정 ──────────────────────────────────────────────
+  const [amountCorrections, setAmountCorrections] = useState<Record<number, number>>({});
+
+  // ── Feature 2: 공급사 변경 시 동의어 일괄 추가 ───────────────────────────
+  const [addSynonymsOnChange, setAddSynonymsOnChange] = useState(true);
+  const [synonymAddStatus, setSynonymAddStatus] = useState<{ pageNum: number; status: 'loading' | 'done' | 'error'; count: number } | null>(null);
+
+  // ── Feature 3: OCR 추출 후 자동 동의어 1차 보정 ──────────────────────────
+  const [autoSynonymMatches, setAutoSynonymMatches] = useState<Record<number, { code: string; name: string }>>({});
+  const [autoSynonymLoading, setAutoSynonymLoading] = useState(false);
+
+  // effectiveDispRows: 금액 자동보정 결과를 반영한 행
+  const effectiveDispRows = amtIdx >= 0
+    ? dispRows.map((row, ri) => {
+        if (amountCorrections[ri] === undefined) return row;
+        const nr = [...row];
+        nr[amtIdx] = amountCorrections[ri];
+        return nr;
+      })
+    : dispRows;
+
+  // 보정 반영된 페이지별 합계
+  const effectivePageTotals = new Map<number, number>();
+  if (amtIdx >= 0) {
+    effectiveDispRows.forEach((row, ri) => {
+      const pn = pageNums[ri];
+      effectivePageTotals.set(pn, (effectivePageTotals.get(pn) ?? 0) + parseNumber(row[amtIdx]));
+    });
+  }
 
   const total = amtIdx >= 0
-    ? dispRows.reduce((s, r) => s + parseNumber(r[amtIdx]), 0)
+    ? effectiveDispRows.reduce((s, r) => s + parseNumber(r[amtIdx]), 0)
     : 0;
 
   const meta = pages.map(p => p.meta).find(m => m.date || m.supplier) ?? {};
 
-  // ── 이미지(페이지)별 합계 ─────────────────────────────────────────────────
+  // ── 이미지(페이지)별 합계 (원본, mismatch 감지용) ─────────────────────────
   const pageTotals = new Map<number, number>();
   if (amtIdx >= 0) {
     dispRows.forEach((row, ri) => {
@@ -142,19 +172,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   }
   const uniquePageNums = [...new Set(pageNums)].sort((a, b) => a - b);
 
-  // ── 공급처별 합계 ─────────────────────────────────────────────────────────
+  // ── 공급처별 합계 (보정 반영) ─────────────────────────────────────────────
   const dispSupplierIdx = dispHeaders.indexOf("공급처");
   const supplierTotals: { supplier: string; total: number; count: number }[] = amtIdx >= 0
     ? (() => {
         const map = new Map<string, { total: number; count: number }>();
-        dispRows.forEach((row, ri) => {
+        effectiveDispRows.forEach((row, ri) => {
           const pn = pageNums[ri];
           const supp = (
             rawSupplierByPage[pn] !== undefined
               ? rawSupplierByPage[pn]
               : String(
-                  dispSupplierIdx >= 0 && row[dispSupplierIdx] != null
-                    ? row[dispSupplierIdx]
+                  dispSupplierIdx >= 0 && dispRows[ri][dispSupplierIdx] != null
+                    ? dispRows[ri][dispSupplierIdx]
                     : (structuredPages[pn - 1]?.meta.supplier ?? meta.supplier ?? "미상")
                 )
           ).trim() || "미상";
@@ -166,7 +196,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       })()
     : [];
 
-  // ── 명세서 소계 불일치 감지 ──────────────────────────────────────────────
+  // ── 명세서 소계 불일치 감지 (원본 기준) ──────────────────────────────────
   const pageMismatches: { pageNum: number; computed: number; stated: number }[] = [];
   if (amtIdx >= 0) {
     for (const pn of uniquePageNums) {
@@ -180,6 +210,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       }
     }
   }
+
+  // 보정 후 아직 불일치인 페이지
+  const isPageResolved = (pn: number) => {
+    const stated = structuredPages.find(p => p.page === pn)?.meta?.total ?? 0;
+    const effective = effectivePageTotals.get(pn) ?? 0;
+    return stated > 0 && Math.abs(stated - effective) <= 1;
+  };
 
   // ── 이미지 모달 + 줌/패닝 ────────────────────────────────────────────────
   const [modalImg,   setModalImg  ] = useState<string | null>(null);
@@ -271,6 +308,121 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [openCandRow,      setOpenCandRow     ] = useState<number | null>(null);
   const [selectedCands,    setSelectedCands   ] = useState<Record<number, CandidateInfo>>({});
 
+  const ocrQtyIdx  = dispHeaders.indexOf("수량");
+  const ocrPriIdx  = dispHeaders.indexOf("단가");
+  const ocrSpecIdx = dispHeaders.indexOf("규격");
+  const ocrSuppIdx = dispHeaders.indexOf("공급처");
+  const globalSupplier = pages.map(p => p.meta.supplier).find(Boolean) ?? null;
+
+  // ── Feature 1: 금액 자동보정 콜백 ────────────────────────────────────────
+  const autoCorrectAmounts = useCallback((pageNum: number) => {
+    if (ocrQtyIdx < 0 || ocrPriIdx < 0 || amtIdx < 0) return;
+    const corrections: Record<number, number> = {};
+    dispRows.forEach((row, ri) => {
+      if (pageNums[ri] !== pageNum) return;
+      const qty = parseNumber(row[ocrQtyIdx]);
+      const pri = parseNumber(row[ocrPriIdx]);
+      const amt = parseNumber(row[amtIdx]);
+      if (qty > 0 && pri > 0) {
+        const expected = Math.round(qty * pri);
+        if (Math.abs(expected - amt) > 1) {
+          corrections[ri] = expected;
+        }
+      }
+    });
+    if (Object.keys(corrections).length > 0) {
+      setAmountCorrections(prev => ({ ...prev, ...corrections }));
+    }
+  }, [ocrQtyIdx, ocrPriIdx, amtIdx, dispRows, pageNums]);
+
+  // ── Feature 2: 공급사 변경 + 동의어 일괄 추가 ───────────────────────────
+  const handleSynonymBulkAdd = useCallback(async (pageNum: number, newSupplier: string) => {
+    if (nameIdx < 0) return;
+    const pageRowIndices: number[] = [];
+    pageNums.forEach((pn, ri) => { if (pn === pageNum) pageRowIndices.push(ri); });
+    const names = pageRowIndices.map(ri => String(dispRows[ri][nameIdx] ?? "").trim()).filter(Boolean);
+    if (names.length === 0) return;
+    const suppliers = names.map(() => newSupplier);
+    setSynonymAddStatus({ pageNum, status: 'loading', count: 0 });
+    try {
+      const res = await fetch("/api/ocr-match", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ names, suppliers }),
+      });
+      const data = await res.json();
+      const matches: MatchedItem[] = data.matches ?? [];
+      let count = 0;
+      for (let i = 0; i < pageRowIndices.length; i++) {
+        const m = matches[i]?.matched;
+        if (m && names[i]) {
+          await fetch("/api/ocr-synonyms", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ alias: names[i].toLowerCase(), product_code: m.code, supply: newSupplier }),
+          });
+          count++;
+        }
+      }
+      setSynonymAddStatus({ pageNum, status: 'done', count });
+    } catch {
+      setSynonymAddStatus({ pageNum, status: 'error', count: 0 });
+    }
+  }, [nameIdx, pageNums, dispRows]);
+
+  // ── Feature 3: OCR 추출 후 동의어 사전 1차 자동보정 ─────────────────────
+  const prevPagesRef = useRef<RawPage[] | null>(null);
+  useEffect(() => {
+    if (pages === prevPagesRef.current) return;
+    prevPagesRef.current = pages;
+    if (!pages?.length) { setAutoSynonymMatches({}); return; }
+
+    // pages에서 직접 이름/공급처 추출 (dispRows 의존성 없이)
+    const structPages = pages.filter(p => !(p.headers.length <= 1 &&
+      (p.headers[0] === "원문 텍스트" || p.headers[0] === "원문 응답")));
+    if (structPages.length === 0) return;
+    const mHeaders = buildMasterHeaders(structPages);
+    const localNameIdx = mHeaders.indexOf("품명");
+    const localSuppIdx = mHeaders.indexOf("공급처");
+    if (localNameIdx < 0) return;
+
+    const localRows: { name: string; supplier: string }[] = structPages.flatMap(p =>
+      p.rows.map(row => {
+        const nameI = p.headers.indexOf("품명");
+        const suppMeta = p.meta.supplier ?? "";
+        const name = nameI >= 0 ? String(row[nameI] ?? "").trim() : "";
+        let supplier = suppMeta;
+        if (localSuppIdx >= 0) {
+          const colVal = String(row[localSuppIdx] ?? "").trim();
+          if (colVal) supplier = colVal;
+        }
+        return { name, supplier };
+      })
+    );
+
+    const names = localRows.map(r => r.name);
+    const suppliers = localRows.map(r => r.supplier);
+    if (names.every(n => !n)) return;
+
+    setAutoSynonymLoading(true);
+    setAutoSynonymMatches({});
+    fetch("/api/ocr-match", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ names, suppliers }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        const matches: MatchedItem[] = data.matches ?? [];
+        const result: Record<number, { code: string; name: string }> = {};
+        matches.forEach((m, ri) => {
+          if (m.matched && (m.matched.score ?? 0) === 100) {
+            result[ri] = { code: m.matched.code, name: m.matched.name };
+          }
+        });
+        setAutoSynonymMatches(result);
+      })
+      .catch(() => {})
+      .finally(() => setAutoSynonymLoading(false));
+  });
+
   const saveSynonym = useCallback(async (ri: number, alias: string, productCode: string, supplier?: string) => {
     try {
       await fetch("/api/ocr-synonyms", {
@@ -306,17 +458,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     setOpenCandRow(null);
   }, []);
 
-  // 유사상품 후보 선택: 동의어 자동 저장 + 선택 적용
   const handleSelectCandidate = useCallback((ri: number, cand: CandidateInfo, inputName: string, supplier: string) => {
     selectCandidate(ri, cand);
     saveSynonym(ri, inputName, cand.code, supplier || undefined);
   }, [selectCandidate, saveSynonym]);
-
-  const ocrQtyIdx  = dispHeaders.indexOf("수량");
-  const ocrPriIdx  = dispHeaders.indexOf("단가");
-  const ocrSpecIdx = dispHeaders.indexOf("규격");
-  const ocrSuppIdx = dispHeaders.indexOf("공급처");
-  const globalSupplier = pages.map(p => p.meta.supplier).find(Boolean) ?? null;
 
   const handleMatch = useCallback(async () => {
     if (nameIdx < 0) return;
@@ -348,7 +493,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   ];
   const CONF_NUM = new Set(["마스터 매입단가","전표 매입단가","매입수량","매입총계","판매단가","이익률"]);
 
-  // 템플릿 → 내부 키 매핑
   const COL_ALIAS: Record<string, string> = {
     "품명":"상품명","품목명":"상품명","상품명":"상품명",
     "코드":"상품코드","품목코드":"상품코드","상품코드":"상품코드",
@@ -364,14 +508,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     "거래일":"거래일","일자":"거래일","날짜":"거래일","거래일자":"거래일","거래날짜":"거래일",
   };
 
-  // 엑셀 서식 파일 상태
   const [xlsTemplate,    setXlsTemplate   ] = useState<ArrayBuffer | null>(null);
   const [xlsTemplateName,setXlsTemplateName] = useState<string | null>(null);
   const [xlsTemplateHdrs,setXlsTemplateHdrs] = useState<string[] | null>(null);
   const xlsInputRef = useRef<HTMLInputElement | null>(null);
 
   const confRows: (string | number | null)[][] = matchItems
-    ? dispRows.map((row, ri) => {
+    ? effectiveDispRows.map((row, ri) => {
         const m        = selectedCands[ri] ?? matchItems[ri]?.matched ?? null;
         const corrName = overrides[ri] ?? m?.name ?? null;
         const qty  = ocrQtyIdx  >= 0 ? row[ocrQtyIdx]  : null;
@@ -458,14 +601,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     };
 
     if (xlsTemplate && xlsTemplateHdrs) {
-      // ── 서식 파일 기반 내보내기 ──────────────────────────────────────────
       const wb = XLSX.read(xlsTemplate, { type: "array" });
       const wsName = wb.SheetNames[0];
       const ws = wb.Sheets[wsName];
       const templateRange = XLSX.utils.decode_range(ws["!ref"] ?? "A1");
       const dataStartRow = templateRange.s.r + 1;
 
-      // 템플릿 헤더 → 내부 키 매핑
       const colMap: (string | null)[] = xlsTemplateHdrs.map(th => {
         const t = th.trim();
         return COL_ALIAS[t] ?? (CONF_HEADERS.includes(t) ? t : null);
@@ -487,7 +628,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       ws["!ref"] = XLSX.utils.encode_range(newRange);
       XLSX.writeFile(wb, `거래명세서_${meta.date?.replace(/-/g, "") ?? "OCR"}_확정.xlsx`);
     } else {
-      // ── 기본 엑셀 내보내기 ───────────────────────────────────────────────
       const wsData: (string | number | null)[][] = [CONF_HEADERS];
       confRows.forEach((row, ri) => {
         wsData.push(row.slice());
@@ -522,6 +662,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   if (pages.length === 0) return null;
 
+  const autoSynonymCount = Object.keys(autoSynonymMatches).length;
+
   return (
     <>
     {/* ── 이미지 모달 (줌·드래그) ── */}
@@ -532,7 +674,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
           style={{ maxWidth: "min(900px, 95vw)", height: "90vh" }}
           onClick={e => e.stopPropagation()}>
 
-          {/* 헤더 */}
           <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200 shrink-0">
             <span className="text-xs font-bold text-gray-700 truncate max-w-[220px]">{modalLabel}</span>
             <div className="flex items-center gap-2">
@@ -555,7 +696,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             </div>
           </div>
 
-          {/* 뷰포트 — flex-1 + min-h-0 로 남은 공간 전부 차지 */}
           <div ref={viewportCbRef}
             className="relative flex-1 min-h-0 overflow-hidden select-none flex items-center justify-center"
             style={{ cursor: isDragging ? "grabbing" : zoom > 1 ? "grab" : "zoom-in" }}
@@ -599,6 +739,22 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
               이후 모든 프로세스(보정 결과, 확정 표)에 즉시 반영됩니다.
             </p>
           </div>
+          {/* 동의어 일괄 추가 옵션 */}
+          {nameIdx >= 0 && (
+            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={supplierConfirm.addSynonyms}
+                onChange={e => setSupplierConfirm(prev => prev ? { ...prev, addSynonyms: e.target.checked } : null)}
+                className="mt-0.5 accent-indigo-500"
+              />
+              <span className="text-xs text-gray-600 leading-snug">
+                <span className="font-bold text-indigo-700">동의어 일괄 추가</span> — 이 페이지 상품명을{" "}
+                <span className="font-semibold text-sky-700">"{supplierConfirm.newVal}"</span> 공급사로 동의어 사전에 등록
+                <span className="block text-[10px] text-gray-400 mt-0.5">(DB 매칭 후 상품코드 포함 자동 등록)</span>
+              </span>
+            </label>
+          )}
           <div className="flex gap-2">
             <button
               onClick={() => setSupplierConfirm(null)}
@@ -607,9 +763,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
               취소
             </button>
             <button
-              onClick={() => {
-                setRawSupplierByPage(prev => ({ ...prev, [supplierConfirm.pageNum]: supplierConfirm.newVal }));
+              onClick={async () => {
+                const { pageNum, newVal, addSynonyms } = supplierConfirm;
+                setRawSupplierByPage(prev => ({ ...prev, [pageNum]: newVal }));
                 setSupplierConfirm(null);
+                if (addSynonyms) {
+                  await handleSynonymBulkAdd(pageNum, newVal);
+                }
               }}
               className="flex-1 py-2 text-xs font-bold text-white bg-sky-500 hover:bg-sky-600 rounded-xl transition cursor-pointer"
             >
@@ -633,6 +793,33 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
               </span>
               {meta.date      && <span className="text-[10px] text-gray-400">{meta.date}</span>}
               {meta.supplier  && <span className="text-[10px] text-gray-400">공급: {meta.supplier}</span>}
+              {/* Feature 3: 동의어 자동보정 뱃지 */}
+              {autoSynonymLoading && (
+                <span className="text-[10px] text-indigo-500 font-bold flex items-center gap-1">
+                  <Loader2 size={10} className="animate-spin" />동의어 검색 중...
+                </span>
+              )}
+              {!autoSynonymLoading && autoSynonymCount > 0 && (
+                <span className="text-[10px] bg-indigo-50 border border-indigo-200 text-indigo-600 px-1.5 py-0.5 rounded font-bold flex items-center gap-1">
+                  <BookOpen size={9} />{autoSynonymCount}건 동의어 보정
+                </span>
+              )}
+              {/* Feature 2: 동의어 추가 완료 상태 */}
+              {synonymAddStatus?.status === 'loading' && (
+                <span className="text-[10px] text-sky-500 font-bold flex items-center gap-1">
+                  <Loader2 size={10} className="animate-spin" />동의어 추가 중...
+                </span>
+              )}
+              {synonymAddStatus?.status === 'done' && (
+                <span className="text-[10px] bg-emerald-50 border border-emerald-200 text-emerald-600 px-1.5 py-0.5 rounded font-bold flex items-center gap-1">
+                  <CheckCircle size={9} />{synonymAddStatus.count}건 동의어 추가 완료
+                </span>
+              )}
+              {synonymAddStatus?.status === 'error' && (
+                <span className="text-[10px] bg-rose-50 border border-rose-200 text-rose-600 px-1.5 py-0.5 rounded font-bold">
+                  동의어 추가 실패
+                </span>
+              )}
               {pageImages?.length ? (
                 <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-semibold">
                   📄 행 클릭 → 이미지 보기
@@ -645,21 +832,48 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             </button>
           </div>
 
+          {/* ── 소계 불일치 경고 ── */}
           {pageMismatches.length > 0 && (
             <div className="px-4 py-2 bg-rose-50 border-b border-rose-200 flex flex-col gap-1.5">
               {pageMismatches.map(({ pageNum, computed, stated }) => {
                 const pageData = structuredPages.find(p => p.page === pageNum);
                 const rawText  = pageData ? pages.find(p => p.page === pageNum)?.rawText : undefined;
                 const isExpanded = expandedRawPages.has(pageNum);
+                const resolved = isPageResolved(pageNum);
+                const effectiveComputed = effectivePageTotals.get(pageNum) ?? computed;
+                const correctionCount = dispRows.filter((_, ri) => pageNums[ri] === pageNum && amountCorrections[ri] !== undefined).length;
+
+                if (resolved) {
+                  return (
+                    <div key={pageNum} className="flex items-center gap-2 text-[11px] font-semibold text-emerald-700">
+                      <CheckCircle size={12} className="shrink-0 text-emerald-500" />
+                      <span>
+                        {pageNum}번 명세서 금액 자동보정 완료 — {correctionCount}개 항목 보정 →{" "}
+                        <span className="font-black">{fmt(effectiveComputed)}원</span>
+                        {" "}(명세서: {fmt(stated)}원)
+                      </span>
+                    </div>
+                  );
+                }
+
                 return (
                   <div key={pageNum} className="flex flex-col gap-1">
                     <div className="flex items-center gap-2 text-[11px] font-semibold text-rose-700">
                       <AlertTriangle size={12} className="shrink-0 text-rose-500" />
                       <span className="flex-1">
                         {pageNum}번 명세서 소계 불일치 — 명세서: <span className="font-black">{fmt(stated)}원</span>
-                        {" / "}수량×단가 합계: <span className="font-black">{fmt(computed)}원</span>
-                        {" "}(<span className={stated > computed ? "text-rose-600" : "text-emerald-600"}>{stated > computed ? "+" : ""}{fmt(stated - computed)}원</span>)
+                        {" / "}수량×단가 합계: <span className="font-black">{fmt(effectiveComputed)}원</span>
+                        {" "}(<span className={stated > effectiveComputed ? "text-rose-600" : "text-emerald-600"}>{stated > effectiveComputed ? "+" : ""}{fmt(stated - effectiveComputed)}원</span>)
                       </span>
+                      {/* Feature 1: 자동보정 버튼 */}
+                      {ocrQtyIdx >= 0 && ocrPriIdx >= 0 && (
+                        <button
+                          onClick={() => autoCorrectAmounts(pageNum)}
+                          className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-white bg-rose-500 hover:bg-rose-600 rounded px-2 py-0.5 transition cursor-pointer"
+                        >
+                          <Wand2 size={9} />자동보정
+                        </button>
+                      )}
                       {rawText && (
                         <button
                           onClick={() => toggleRawPage(pageNum)}
@@ -679,6 +893,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
               })}
             </div>
           )}
+
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
@@ -691,8 +906,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                 </tr>
               </thead>
               <tbody>
-                {dispRows.map((row, ri) => {
-                  const isLastInPage = ri === dispRows.length - 1 || pageNums[ri] !== pageNums[ri + 1];
+                {effectiveDispRows.map((row, ri) => {
+                  const isLastInPage = ri === effectiveDispRows.length - 1 || pageNums[ri] !== pageNums[ri + 1];
                   const pn = pageNums[ri];
                   return (
                     <React.Fragment key={ri}>
@@ -711,6 +926,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           const isEditingThis = isSupplier && editingRawSuppRow === ri;
                           const isNum = typeof cell === "number";
                           const isAmt = h === "금액";
+                          const isName = h === "품명";
+                          const isCorrectedAmt = isAmt && amountCorrections[ri] !== undefined;
+                          const autoMatch = isName ? autoSynonymMatches[ri] : undefined;
+                          const origCell = isName ? dispRows[ri]?.[ci] : null;
 
                           if (isEditingThis) {
                             return (
@@ -729,7 +948,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     const current = String(cell ?? "");
                                     if (trimmed && trimmed !== current) {
                                       const rowCount = pageNums.filter(p => p === pn).length;
-                                      setSupplierConfirm({ pageNum: pn, newVal: trimmed, rowCount });
+                                      setSupplierConfirm({ pageNum: pn, newVal: trimmed, rowCount, addSynonyms: addSynonymsOnChange });
                                     }
                                     setEditingRawSuppRow(null);
                                   }}
@@ -757,6 +976,33 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             );
                           }
 
+                          // Feature 1: 보정된 금액 표시
+                          if (isCorrectedAmt) {
+                            return (
+                              <td key={ci} className="px-3 py-2 whitespace-nowrap text-right">
+                                <span className="flex items-center justify-end gap-1">
+                                  <span className="font-bold text-emerald-700">{fmt(parseNumber(cell))}</span>
+                                  <span className="text-[9px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>
+                                </span>
+                              </td>
+                            );
+                          }
+
+                          // Feature 3: 동의어 사전 1차 보정된 품명 표시
+                          if (isName && autoMatch && !matchItems) {
+                            return (
+                              <td key={ci} className="px-3 py-2 max-w-[220px]">
+                                <div className="flex flex-col gap-0">
+                                  <span className="flex items-center gap-1">
+                                    <BookOpen size={9} className="text-indigo-400 shrink-0" />
+                                    <span className="font-semibold text-indigo-700 truncate text-[11px]">{autoMatch.name}</span>
+                                  </span>
+                                  <span className="text-gray-300 text-[10px] line-through truncate">{String(origCell ?? "")}</span>
+                                </div>
+                              </td>
+                            );
+                          }
+
                           return (
                             <td key={ci}
                               className={`px-3 py-2 whitespace-nowrap ${
@@ -778,7 +1024,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               {pageSupplier && <span className="text-amber-600 mr-1.5">{pageSupplier}</span>}{pn}번 명세서 소계
                             </td>
                             <td className="px-3 py-1.5 text-right font-black text-amber-700 text-xs whitespace-nowrap">
-                              {fmt(pageTotals.get(pn) ?? 0)}원
+                              {fmt(effectivePageTotals.get(pn) ?? 0)}원
                             </td>
                             {dispHeaders.slice(amtIdx + 1).map((_, i) => <td key={i} />)}
                           </tr>
@@ -819,13 +1065,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer">
               {matching
                 ? <><Loader2 size={13} className="animate-spin" />상품명 매칭 중...</>
-                : <><Wand2 size={13} />상품명 자동보정</>}
+                : <><Wand2 size={13} />상품명 자동보정{autoSynonymCount > 0 ? ` (동의어 ${autoSynonymCount}건 포함)` : ""}</>}
             </button>
           )}
 
           {matchItems && (
             <div className="w-full bg-white border border-indigo-200 rounded-2xl overflow-hidden shadow-sm">
-              {/* ── 섹션 헤더: 보정 결과 ── */}
               <div className="px-4 py-2.5 border-b border-indigo-100 bg-indigo-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Wand2 size={13} className="text-indigo-600" />
@@ -842,7 +1087,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                 </div>
               </div>
 
-              {/* 보정 미리보기 */}
               <div className="px-4 py-2 border-b border-indigo-50 flex flex-col gap-0.5">
                 {matchItems.map((item, ri) => {
                   const effMatch = selectedCands[ri] ?? item.matched ?? null;
@@ -858,7 +1102,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   const isCandSelected = !!selectedCands[ri];
                   return (
                     <div key={ri} className={`flex flex-col gap-0.5 py-1 border-b last:border-0 ${isCandSelected ? "bg-emerald-50 border-emerald-100" : "border-gray-50"}`}>
-                      {/* 메인 행 */}
                       <div className="flex items-start gap-2 text-[11px]">
                         <ScoreIcon score={effMatch ? score : 0} />
                         <span
@@ -893,7 +1136,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             onChange={e => setOverrides(prev => ({ ...prev, [ri]: e.target.value }))} />
                         )}
                       </div>
-                      {/* 공급사 편집 */}
                       <div className="flex items-center gap-1.5 text-[10px] pl-5">
                         <span className="text-gray-300 shrink-0">공급사</span>
                         <input
@@ -917,7 +1159,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           </span>
                         )}
                       </div>
-                      {/* 유사 상품 찾기 버튼 + 후보 목록 (70% 미만 시 자동 표시, 모두 수동 가능) */}
                       {needsRetry && (
                         <div className="pl-5 flex flex-col gap-1 mt-0.5">
                           <button
@@ -971,10 +1212,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             </div>
           )}
 
-          {/* ── 확정 결과표 섹션 (별도 카드) ── */}
+          {/* ── 확정 결과표 섹션 ── */}
           {matchItems && confirmed && (
             <div className="w-full bg-white border border-emerald-200 rounded-2xl overflow-hidden shadow-sm">
-              {/* 확정 섹션 헤더 */}
               <div className="px-4 py-2.5 border-b border-emerald-100 bg-emerald-50 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <CheckCircle size={13} className="text-emerald-600" />
@@ -984,7 +1224,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* 서식 파일 업로드 */}
                   <input ref={xlsInputRef} type="file" accept=".xlsx,.xls" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) { handleTemplateUpload(f); e.target.value = ""; } }} />
                   <button

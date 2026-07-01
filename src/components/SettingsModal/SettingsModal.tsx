@@ -1,23 +1,22 @@
 // src/components/SettingsModal.tsx
 import React, { useState } from "react";
 import { X, Plus, Trash2, GripVertical } from "lucide-react";
-import { AppSettings, WageRate } from "../../hooks/useSettings";
+import { AppSettings, WageRate, ScheduleTypeEntry } from "../../hooks/useSettings";
 
 interface SettingsModalProps {
   settings: AppSettings;
   onUpdate: (partial: Partial<AppSettings>) => void;
-  onApplyShiftHours: (open: string, middle: string, close: string) => Promise<void>;
+  onApplyShiftHours: () => Promise<void>;
   onClose: () => void;
   employees: Array<{ id: number; name: string; position: string }>;
 }
 
-type TabId = "positions" | "workplaces" | "scheduleTypes" | "shiftHours" | "wages";
+type TabId = "positions" | "workplaces" | "scheduleTypes" | "wages";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "positions", label: "직급 종류" },
   { id: "workplaces", label: "근무지 종류" },
   { id: "scheduleTypes", label: "근무 유형" },
-  { id: "shiftHours", label: "기본 근무시간" },
   { id: "wages", label: "시급 설정" },
 ];
 
@@ -31,12 +30,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
   const [workplaces, setWorkplaces] = useState<string[]>([...settings.workplaces]);
   const [newWorkplace, setNewWorkplace] = useState("");
 
-  const [scheduleTypes, setScheduleTypes] = useState<string[]>([...settings.scheduleTypes]);
+  const [scheduleTypes, setScheduleTypes] = useState<ScheduleTypeEntry[]>([...settings.scheduleTypes]);
   const [newScheduleType, setNewScheduleType] = useState("");
-
-  const [openShiftHour, setOpenShiftHour] = useState(settings.openShiftHour);
-  const [middleShiftHour, setMiddleShiftHour] = useState(settings.middleShiftHour);
-  const [closeShiftHour, setCloseShiftHour] = useState(settings.closeShiftHour);
   const [applying, setApplying] = useState(false);
 
   // Wage settings local drafts (committed immediately)
@@ -60,7 +55,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
     onUpdate({ workplaces: next });
   };
 
-  const saveScheduleTypes = (next: string[]) => {
+  const saveScheduleTypes = (next: ScheduleTypeEntry[]) => {
     setScheduleTypes(next);
     onUpdate({ scheduleTypes: next });
   };
@@ -122,8 +117,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
 
   const addScheduleType = () => {
     const trimmed = newScheduleType.trim();
-    if (!trimmed || scheduleTypes.includes(trimmed)) return;
-    saveScheduleTypes([...scheduleTypes, trimmed]);
+    if (!trimmed || scheduleTypes.some(e => e.type === trimmed)) return;
+    saveScheduleTypes([...scheduleTypes, { type: trimmed, hours: "", pharmHours: "" }]);
     setNewScheduleType("");
   };
 
@@ -131,24 +126,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
     saveScheduleTypes(scheduleTypes.filter((_, i) => i !== idx));
   };
 
-  // ── shift hours ───────────────────────────────────────────────────────────
-
-  const saveShiftHours = (
-    open: string = openShiftHour,
-    middle: string = middleShiftHour,
-    close: string = closeShiftHour,
-  ) => {
-    onUpdate({ openShiftHour: open, middleShiftHour: middle, closeShiftHour: close });
-  };
-
-  const resetShiftHours = () => {
-    const open = "09:30-18:30";
-    const middle = "11:00-20:00";
-    const close = "13:00-22:00";
-    setOpenShiftHour(open);
-    setMiddleShiftHour(middle);
-    setCloseShiftHour(close);
-    saveShiftHours(open, middle, close);
+  const updateScheduleTypeEntry = (idx: number, field: keyof ScheduleTypeEntry, value: string) => {
+    const next = scheduleTypes.map((e, i) => i === idx ? { ...e, [field]: value } : e);
+    saveScheduleTypes(next);
   };
 
   // ── wages ─────────────────────────────────────────────────────────────────
@@ -352,15 +332,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
           {activeTab === "scheduleTypes" && (
             <div className="space-y-4">
               <p className="text-xs text-slate-500 font-semibold">
-                스케줄 셀 및 일괄 등록에서 사용할 근무 유형 목록을 관리합니다.
+                스케줄 셀 및 일괄 등록에서 사용할 근무 유형과 기본 근무시간을 관리합니다. (약) 칸은 약사 전용 시간으로, 비워두면 기본 시간이 사용됩니다.
               </p>
               <div className="space-y-1.5">
+                {/* Column headers */}
+                <div className="grid grid-cols-[1fr,1fr,1fr,28px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                  <span>유형명</span>
+                  <span>기본 시간</span>
+                  <span>약사 시간 (약)</span>
+                  <span></span>
+                </div>
                 {scheduleTypes.map((st, idx) => (
                   <div
-                    key={st}
-                    className="flex items-center gap-2 bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition"
+                    key={idx}
+                    className="grid grid-cols-[1fr,1fr,1fr,28px] gap-2 items-center bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-1.5 transition"
                   >
-                    <span className="flex-1 text-xs font-semibold text-slate-800">{st}</span>
+                    <span className="text-xs font-semibold text-slate-800 truncate">{st.type}</span>
+                    <input
+                      type="text"
+                      value={st.hours}
+                      onChange={(e) => updateScheduleTypeEntry(idx, "hours", e.target.value)}
+                      placeholder="예: 10:00-18:00"
+                      className="w-full text-xs rounded border border-slate-200 focus:border-[#2563eb] p-1.5 font-mono bg-white focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={st.pharmHours}
+                      onChange={(e) => updateScheduleTypeEntry(idx, "pharmHours", e.target.value)}
+                      placeholder="비워두면 기본값"
+                      className="w-full text-xs rounded border border-slate-200 focus:border-[#2563eb] p-1.5 font-mono bg-white focus:outline-none"
+                    />
                     <button
                       type="button"
                       onClick={() => removeScheduleType(idx)}
@@ -390,86 +391,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                   추가
                 </button>
               </div>
-            </div>
-          )}
-
-          {/* ─── Shift Hours Tab ───────────────────────────────────────── */}
-          {activeTab === "shiftHours" && (
-            <div className="space-y-4">
-              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                오픈, 미들, 마감의 글로벌 기준 근무 시간을 설정합니다. 빠른 채우기 Preset, 일괄 입력 도구, 실시간 맵배치도에 일관 적용됩니다.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Open */}
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-amber-500 shrink-0"></span>
-                    <label className="text-[11px] font-bold text-slate-700">오픈 근무시간 ☀️</label>
-                  </div>
-                  <input
-                    type="text"
-                    value={openShiftHour}
-                    onChange={(e) => {
-                      setOpenShiftHour(e.target.value);
-                      saveShiftHours(e.target.value, middleShiftHour, closeShiftHour);
-                    }}
-                    placeholder="예: 09:30-18:30"
-                    className="w-full text-xs rounded-lg border border-slate-200 focus:border-blue-500 p-2 font-mono bg-white focus:outline-none"
-                  />
-                </div>
-
-                {/* Middle */}
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-sky-400 border border-sky-500 shrink-0"></span>
-                    <label className="text-[11px] font-bold text-slate-700">미들 근무시간 ⛅</label>
-                  </div>
-                  <input
-                    type="text"
-                    value={middleShiftHour}
-                    onChange={(e) => {
-                      setMiddleShiftHour(e.target.value);
-                      saveShiftHours(openShiftHour, e.target.value, closeShiftHour);
-                    }}
-                    placeholder="예: 11:00-20:00"
-                    className="w-full text-xs rounded-lg border border-slate-200 focus:border-blue-500 p-2 font-mono bg-white focus:outline-none"
-                  />
-                </div>
-
-                {/* Close */}
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <div className="flex items-center gap-1.5 mb-1.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 border border-emerald-500 shrink-0"></span>
-                    <label className="text-[11px] font-bold text-slate-700">마감 근무시간 🌙</label>
-                  </div>
-                  <input
-                    type="text"
-                    value={closeShiftHour}
-                    onChange={(e) => {
-                      setCloseShiftHour(e.target.value);
-                      saveShiftHours(openShiftHour, middleShiftHour, e.target.value);
-                    }}
-                    placeholder="예: 13:00-22:00"
-                    className="w-full text-xs rounded-lg border border-slate-200 focus:border-blue-500 p-2 font-mono bg-white focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={resetShiftHours}
-                  className="px-3 py-1.5 text-[10px] font-bold text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition cursor-pointer"
-                >
-                  기본값 복원 (Reset)
-                </button>
+              <div className="flex justify-end pt-2">
                 <button
                   type="button"
                   disabled={applying}
                   onClick={async () => {
                     setApplying(true);
                     try {
-                      await onApplyShiftHours(openShiftHour, middleShiftHour, closeShiftHour);
+                      await onApplyShiftHours();
                     } finally {
                       setApplying(false);
                     }
@@ -481,7 +410,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       <span className="animate-spin inline-block w-3 h-3 border-2 border-white/40 border-t-white rounded-full" />
                       적용 중...
                     </>
-                  ) : "📋 현재 스케쥴에 전체적용"}
+                  ) : "📋 현재 스케줄에 전체적용"}
                 </button>
               </div>
             </div>

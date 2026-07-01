@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Utensils, X, CheckCircle, Clock, RefreshCw, Users } from "lucide-react";
+import { X, CheckCircle, Clock, RefreshCw, Users } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession } from "../../types";
 
@@ -110,7 +110,6 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
     }
   };
 
-  const eatCount  = allRequests.filter(r => r.eating).length;
   const noEatCount = allRequests.filter(r => !r.eating).length;
 
   return (
@@ -155,20 +154,12 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
             <div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : myRequest ? (
-          /* 이미 신청한 상태 */
-          <div className={`rounded-2xl border-2 p-5 flex flex-col gap-3 shadow-sm transition-colors ${
-            myRequest.eating
-              ? "bg-emerald-50 border-emerald-300"
-              : "bg-gray-50 border-gray-300"
-          }`}>
+          /* 불참 신청 완료 */
+          <div className="rounded-2xl border-2 bg-gray-50 border-gray-300 p-5 flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                {myRequest.eating
-                  ? <CheckCircle size={22} className="text-emerald-500" />
-                  : <X size={22} className="text-gray-400" />}
-                <span className={`font-black text-xl ${myRequest.eating ? "text-emerald-700" : "text-gray-500"}`}>
-                  {myRequest.eating ? "식사합니다 🍱" : "안 합니다"}
-                </span>
+                <X size={22} className="text-gray-400" />
+                <span className="font-black text-xl text-gray-600">오늘 점심 불참</span>
               </div>
               <button
                 onClick={cancel}
@@ -185,29 +176,12 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
             {myRequest.memo && (
               <p className="text-xs text-gray-600 bg-white rounded-xl px-3 py-2 border border-gray-100">{myRequest.memo}</p>
             )}
-            {/* 변경 버튼 */}
-            <div className="flex gap-2 pt-2 border-t border-black/10">
-              <span className="text-[11px] text-gray-400 font-semibold self-center shrink-0">변경:</span>
-              <button
-                onClick={() => submit(true)}
-                disabled={submitting || myRequest.eating}
-                className="flex-1 py-2 rounded-xl text-xs font-bold bg-emerald-500 text-white hover:bg-emerald-600 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
-              >
-                🍱 식사
-              </button>
-              <button
-                onClick={() => submit(false)}
-                disabled={submitting || !myRequest.eating}
-                className="flex-1 py-2 rounded-xl text-xs font-bold bg-gray-200 text-gray-600 hover:bg-gray-300 disabled:opacity-30 disabled:cursor-not-allowed transition cursor-pointer"
-              >
-                ✕ 불참
-              </button>
-            </div>
           </div>
         ) : (
-          /* 신청 전 */
+          /* 신청 전 — 불참인 경우만 신청 */
           <div className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col gap-4 shadow-sm">
-            <p className="text-center text-base font-bold text-gray-700">오늘 점심 드실 건가요?</p>
+            <p className="text-center text-base font-bold text-gray-700">오늘 점심 드시나요?</p>
+            <p className="text-center text-[11px] text-gray-400">식사하시면 그냥 두시면 됩니다. 불참일 때만 신청해주세요.</p>
             <textarea
               value={memo}
               onChange={e => setMemo(e.target.value)}
@@ -215,22 +189,13 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               rows={2}
               className="w-full text-xs border border-gray-200 rounded-xl px-3 py-2 resize-none outline-none focus:border-indigo-300 text-gray-600 placeholder-gray-300"
             />
-            <div className="flex gap-3">
-              <button
-                onClick={() => submit(true)}
-                disabled={submitting}
-                className="flex-1 flex items-center justify-center gap-2 py-5 rounded-2xl text-base font-black bg-emerald-500 hover:bg-emerald-600 active:scale-[0.97] text-white shadow-md transition cursor-pointer disabled:opacity-50"
-              >
-                <Utensils size={18} /> 식사합니다
-              </button>
-              <button
-                onClick={() => submit(false)}
-                disabled={submitting}
-                className="flex-1 flex items-center justify-center gap-2 py-5 rounded-2xl text-base font-black bg-gray-100 hover:bg-gray-200 active:scale-[0.97] text-gray-600 shadow-sm transition cursor-pointer disabled:opacity-50"
-              >
-                <X size={18} /> 안 합니다
-              </button>
-            </div>
+            <button
+              onClick={() => submit(false)}
+              disabled={submitting}
+              className="w-full flex items-center justify-center gap-2 py-5 rounded-2xl text-base font-black bg-gray-100 hover:bg-gray-200 active:scale-[0.97] text-gray-700 shadow-sm transition cursor-pointer disabled:opacity-50"
+            >
+              <X size={18} /> 오늘 점심 안 먹습니다
+            </button>
           </div>
         )}
 
@@ -243,33 +208,24 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                 <span className="text-xs font-bold text-gray-700">직원 신청 현황</span>
                 <span className="text-[10px] text-gray-400">({allRequests.length}명 응답)</span>
               </div>
-              <div className="flex items-center gap-1.5 text-[11px] font-bold">
-                <span className="bg-emerald-50 text-emerald-600 border border-emerald-200 px-2 py-0.5 rounded-full">
-                  🍱 {eatCount}명
-                </span>
-                <span className="bg-gray-100 text-gray-500 border border-gray-200 px-2 py-0.5 rounded-full">
-                  ✕ {noEatCount}명
-                </span>
-              </div>
+              <span className="bg-gray-100 text-gray-600 border border-gray-200 text-[11px] font-bold px-2 py-0.5 rounded-full">
+                불참 {noEatCount}명
+              </span>
             </div>
-            {allRequests.length === 0 ? (
+            {noEatCount === 0 ? (
               <div className="px-4 py-8 text-center text-xs text-gray-400">
-                아직 신청자가 없습니다
+                오늘 불참 신청자가 없습니다
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
-                {allRequests.map(r => (
+                {allRequests.filter(r => !r.eating).map(r => (
                   <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${r.eating ? "bg-emerald-500" : "bg-gray-300"}`} />
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-gray-300" />
                     <span className="text-sm font-semibold text-gray-800 flex-1">{r.employee_name}</span>
                     {r.memo && (
                       <span className="text-[10px] text-gray-400 max-w-[130px] truncate">{r.memo}</span>
                     )}
-                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
-                      r.eating ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500"
-                    }`}>
-                      {r.eating ? "식사" : "불참"}
-                    </span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 bg-gray-100 text-gray-500">불참</span>
                     <span className="text-[10px] text-gray-300 shrink-0">{fmtTime(r.updated_at)}</span>
                   </div>
                 ))}

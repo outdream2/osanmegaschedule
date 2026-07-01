@@ -17,9 +17,8 @@ interface ScheduleCellProps {
     memo?: string;
   }) => Promise<void>;
   isAdmin?: boolean;
-  openShiftHour?: string;
-  middleShiftHour?: string;
-  closeShiftHour?: string;
+  isPharmacist?: boolean;
+  typeHoursMap?: Record<string, string>;
   /** Optional override for schedule type list (from settings). Falls back to SCHEDULE_TYPES. */
   scheduleTypes?: { value: string; label: string }[];
 }
@@ -30,9 +29,8 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
   employeeId,
   onUpdate,
   isAdmin = false,
-  openShiftHour = "09:30-18:30",
-  middleShiftHour = "11:00-20:00",
-  closeShiftHour = "13:00-22:00",
+  isPharmacist = false,
+  typeHoursMap,
   scheduleTypes: scheduleTypesProp,
 }) => {
   const activeScheduleTypes = scheduleTypesProp ?? SCHEDULE_TYPES;
@@ -97,10 +95,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
     const cur = schedule?.type || "";
     const idx = CYCLE.indexOf(cur);
     const nextType = CYCLE[(idx + 1) % CYCLE.length];
-    let nextWh = "";
-    if (nextType === "오픈") nextWh = openShiftHour;
-    else if (nextType === "미들") nextWh = middleShiftHour;
-    else if (nextType === "마감") nextWh = closeShiftHour;
+    const nextWh = typeHoursMap?.[nextType] ?? "";
     try {
       await onUpdate({
         employeeId, date: dateStr,
@@ -116,15 +111,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
   // Handle preset clicks for fast logging
   const applyPreset = (presetType: string) => {
     setType(presetType);
-    if (presetType === "오픈") {
-      setWorkingHours(openShiftHour);
-    } else if (presetType === "마감") {
-      setWorkingHours(closeShiftHour);
-    } else if (presetType === "미들") {
-      setWorkingHours(middleShiftHour);
-    } else {
-      setWorkingHours("");
-    }
+    setWorkingHours(typeHoursMap?.[presetType] ?? "");
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -269,7 +256,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setActualHours("지각"); setWorkingHours(openShiftHour); }}
+                  onClick={() => { setActualHours("지각"); setWorkingHours(typeHoursMap?.["오픈"] ?? ""); }}
                   className="px-2 py-1 text-[10px] font-extrabold bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-250 rounded transition cursor-pointer"
                 >
                   ⚠️ 지각

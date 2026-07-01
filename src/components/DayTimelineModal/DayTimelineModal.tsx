@@ -5,7 +5,7 @@ import axios from "axios";
 import { DragBar } from "./DragBar";
 
 const DISPLAY_START = 10 * 60;
-const DISPLAY_END = 20 * 60;
+const DISPLAY_END = 22 * 60;
 const TOTAL = DISPLAY_END - DISPLAY_START;
 const SNAP = 15;
 
@@ -67,21 +67,20 @@ function clamp(v: number, lo: number, hi: number): number {
 interface Range { start: number; end: number }
 interface EmpBreak { lunch: Range; rest: Range }
 
-type DragKind = "work" | "lunch" | "rest";
+type DragKind = "lunch" | "rest";
 
 interface Props {
   date: string;
   employees: Employee[];
-  openShiftHour: string;
-  middleShiftHour: string;
-  closeShiftHour: string;
+  typeHoursMap?: Record<string, string>;
+  pharmTypeHoursMap?: Record<string, string>;
   onClose: () => void;
   onEditEmployee?: (emp: Employee) => void;
   onScheduleUpdate?: () => void;
 }
 
 export const DayTimelineModal: React.FC<Props> = ({
-  date, employees, openShiftHour, middleShiftHour, closeShiftHour, onClose, onEditEmployee, onScheduleUpdate,
+  date, employees, typeHoursMap, pharmTypeHoursMap, onClose, onEditEmployee, onScheduleUpdate,
 }) => {
   const [activeTab, setActiveTab] = useState<"사원" | "약사">("사원");
 
@@ -109,12 +108,8 @@ export const DayTimelineModal: React.FC<Props> = ({
     .map(emp => {
       const s = emp.schedules.find(sc => sc.date === date);
       if (!s || SKIP_TYPES.has(s.type)) return null;
-      let wh = s.workingHours;
-      if (!wh) {
-        if (s.type === "오픈")    wh = openShiftHour;
-        else if (s.type === "미들") wh = middleShiftHour;
-        else if (s.type === "마감") wh = closeShiftHour;
-      }
+      const hoursMap = emp.position === "약사" ? (pharmTypeHoursMap ?? typeHoursMap) : typeHoursMap;
+      let wh = s.workingHours || hoursMap?.[s.type] || "";
       return { emp, schedule: s, wh };
     })
     .filter(Boolean)
@@ -288,9 +283,7 @@ export const DayTimelineModal: React.FC<Props> = ({
         curEnd = curStart + duration;
       }
 
-      if (kind === "work" && empId !== undefined) {
-        setWorkRanges(prev => ({ ...prev, [empId]: { start: curStart, end: curEnd } }));
-      } else if (kind === "lunch") {
+      if (kind === "lunch") {
         if (empId !== undefined) {
           setEmpBreaks(prev => ({
             ...prev,
@@ -319,22 +312,7 @@ export const DayTimelineModal: React.FC<Props> = ({
       document.body.style.cursor = "";
       setActiveEmpId(null);
 
-      if (kind === "work" && empId !== undefined) {
-        const worker = workers.find(w => w.emp.id === empId);
-        try {
-          await axios.put("/api/schedules", {
-            employeeId: empId,
-            date,
-            type: worker?.schedule.type ?? "",
-            workingHours: `${minToStr(curStart)}-${minToStr(curEnd)}`,
-            actualHours: worker?.schedule.actualHours ?? "",
-            memo: worker?.schedule.memo ?? "",
-          });
-          onScheduleUpdate?.();
-        } catch (err) {
-          console.error("Failed to save working hours", err);
-        }
-      } else if (kind === "lunch") {
+      if (kind === "lunch") {
         if (empId !== undefined) {
           const warning = checkBreakOverlap(empId, "lunch", curStart, curEnd);
           if (warning) { setOverlapWarning(warning); setTimeout(() => setOverlapWarning(null), 4000); }
@@ -469,7 +447,7 @@ export const DayTimelineModal: React.FC<Props> = ({
 
         <div className="px-5 py-1.5 bg-slate-50 border-b border-slate-200 flex-shrink-0 flex items-center justify-between gap-3 flex-wrap">
           <span className="text-[10px] text-slate-400 font-medium">
-            양 끝/가운데 드래그·터치 → 시간조정 (15분 단위) &nbsp;|&nbsp; 터치 시 행 확대
+            점심·휴게 드래그 → 시간조정 (15분 단위) &nbsp;|&nbsp; 근무시간은 스케줄표 고정
           </span>
           <button
             onClick={applyGlobalToAll}
@@ -591,34 +569,17 @@ export const DayTimelineModal: React.FC<Props> = ({
                           onDrop={handleRowDrop}
                           onDragEnd={handleRowDragEnd}
                         >
-                          {/* Layer 1: working hours bar — faint background */}
+                          {/* Layer 1: working hours bar — fixed, from schedule data */}
                           {workRange && (
                             <div
-                              className={`absolute top-1 bottom-1 rounded-md touch-none ${colorCls}`}
+                              className={`absolute top-1 bottom-1 rounded-md pointer-events-none ${colorCls} opacity-70`}
                               style={{ left: `${pct(workRange.start)}%`, width: `${Math.max(widthPct(workRange.start, workRange.end), 0.5)}%` }}
                             >
-                              {/* left resize handle */}
-                              <div
-                                className="absolute left-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-black/10 active:bg-black/25 rounded-l-md touch-none"
-                                onMouseDown={e => startDrag(e, "work", "start", workRange.start, workRange.end, emp.id)}
-                                onTouchStart={e => startDrag(e, "work", "start", workRange.start, workRange.end, emp.id)}
-                              />
-                              {/* body */}
-                              <div
-                                className="absolute inset-0 mx-4 cursor-grab active:cursor-grabbing flex items-center justify-center touch-none"
-                                onMouseDown={e => startDrag(e, "work", "body", workRange.start, workRange.end, emp.id)}
-                                onTouchStart={e => startDrag(e, "work", "body", workRange.start, workRange.end, emp.id)}
-                              >
-                                <span className={`text-[9px] font-medium select-none truncate text-slate-400`}>
+                              <div className="flex items-center justify-center h-full">
+                                <span className="text-[9px] font-semibold select-none truncate text-slate-600 px-1">
                                   {minToStr(workRange.start)}~{minToStr(workRange.end)}
                                 </span>
                               </div>
-                              {/* right resize handle */}
-                              <div
-                                className="absolute right-0 top-0 bottom-0 w-4 cursor-ew-resize hover:bg-black/10 active:bg-black/25 rounded-r-md touch-none"
-                                onMouseDown={e => startDrag(e, "work", "end", workRange.start, workRange.end, emp.id)}
-                                onTouchStart={e => startDrag(e, "work", "end", workRange.start, workRange.end, emp.id)}
-                              />
                             </div>
                           )}
 

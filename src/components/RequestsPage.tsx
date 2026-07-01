@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import {
   Bell, Package, MapPin,
   CheckCircle2, Clock, RefreshCw, ShoppingCart, Square, CheckSquare,
-  Send, Loader2, Utensils, X,
+  Send, Loader2, Utensils, X, ChevronDown, ChevronUp, ScrollText,
 } from "lucide-react";
 import { getProductsMap, type ProductInfo } from "../lib/productsCache";
 import type { AuthSession } from "../types";
@@ -51,13 +51,14 @@ function fmtDate(iso: string) {
 
 /* ── 공통 툴바 ── */
 function ListToolbar({
-  total, selected, allChecked, onToggleAll, onDeleteSelected, onDeleteAll, onRefresh, loading, accentColor, extraActions,
+  total, selected, allChecked, onToggleAll, onDeleteSelected, onDeleteAll, onRefresh, loading, accentColor, extraActions, hideDeleteAll,
 }: {
   total: number; selected: number; allChecked: boolean;
   onToggleAll: () => void; onDeleteSelected: () => void;
   onDeleteAll: () => void; onRefresh: () => void;
   loading: boolean; accentColor: string;
   extraActions?: React.ReactNode;
+  hideDeleteAll?: boolean;
 }) {
   return (
     <div className="flex items-center gap-2 mb-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5 shadow-sm">
@@ -78,13 +79,15 @@ function ListToolbar({
         </button>
       )}
       {extraActions}
-      <button
-        onClick={onDeleteAll}
-        disabled={total === 0}
-        className="text-[11px] font-bold text-gray-500 bg-gray-50 border border-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition cursor-pointer disabled:opacity-40"
-      >
-        전체삭제
-      </button>
+      {!hideDeleteAll && (
+        <button
+          onClick={onDeleteAll}
+          disabled={total === 0}
+          className="text-[11px] font-bold text-gray-500 bg-gray-50 border border-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition cursor-pointer disabled:opacity-40"
+        >
+          전체삭제
+        </button>
+      )}
       <button onClick={onRefresh} className="p-1 text-gray-400 hover:text-gray-600 transition cursor-pointer">
         <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
       </button>
@@ -125,7 +128,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [inventoryChecks, setInventoryChecks] = useState<InventoryCheck[]>([]);
   const [inventoryLoading, setInventoryLoading] = useState(false);
   const [selectedInventory, setSelectedInventory] = useState<Set<string>>(new Set());
+  const [invLogOpen, setInvLogOpen] = useState(false);
 
+
+  // 진열요청 완료 확인
+  const [displayConfirmDelete, setDisplayConfirmDelete] = useState(false);
 
   // 진열요청 알림 전송
   const [notifying, setNotifying] = useState(false);
@@ -353,17 +360,41 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               allChecked={selectedDisplay.size === displayReqs.length && displayReqs.length > 0}
               onToggleAll={() => toggleAll(displayReqs, selectedDisplay, setSelectedDisplay)}
               onDeleteSelected={() => deleteDisplay([...selectedDisplay])}
-              onDeleteAll={() => { if (confirm(`진열요청 전체 ${displayReqs.length}건을 삭제할까요?`)) deleteDisplay(displayReqs.map(r => r.id)); }}
+              onDeleteAll={() => {}}
               onRefresh={loadDisplayReqs} loading={displayLoading} accentColor="text-blue-600"
+              hideDeleteAll
               extraActions={
-                <button
-                  onClick={handleNotifyAll}
-                  disabled={notifying || displayReqs.filter(r => r.status === "pending").length === 0}
-                  className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-blue-500 hover:bg-blue-600 border border-blue-400 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                >
-                  {notifying ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
-                  진열요청
-                </button>
+                <>
+                  <button
+                    onClick={handleNotifyAll}
+                    disabled={notifying || displayReqs.filter(r => r.status === "pending").length === 0}
+                    className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-blue-500 hover:bg-blue-600 border border-blue-400 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  >
+                    {notifying ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                    진열요청
+                  </button>
+                  {displayConfirmDelete ? (
+                    <div className="flex items-center gap-1 shrink-0">
+                      <span className="text-[10px] text-gray-500 font-bold whitespace-nowrap">삭제할까요?</span>
+                      <button
+                        onClick={() => { setDisplayConfirmDelete(false); deleteDisplay(displayReqs.map(r => r.id)); }}
+                        className="text-[11px] font-bold text-white bg-rose-500 hover:bg-rose-600 border border-rose-400 px-2 py-1.5 rounded-lg transition cursor-pointer"
+                      >예</button>
+                      <button
+                        onClick={() => setDisplayConfirmDelete(false)}
+                        className="text-[11px] font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-300 px-2 py-1.5 rounded-lg transition cursor-pointer"
+                      >아니오</button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setDisplayConfirmDelete(true)}
+                      disabled={displayReqs.length === 0}
+                      className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2.5 py-1.5 rounded-lg hover:bg-emerald-100 transition cursor-pointer disabled:opacity-40 shrink-0"
+                    >
+                      완료
+                    </button>
+                  )}
+                </>
               }
             />
 
@@ -592,6 +623,72 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* ── 점검 이력 로그 ── */}
+            {inventoryChecks.length > 0 && (
+              <div className="mt-2">
+                <button
+                  onClick={() => setInvLogOpen(p => !p)}
+                  className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-[11px] font-bold text-gray-500 hover:bg-gray-100 transition cursor-pointer"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <ScrollText size={12} className="text-purple-400" />
+                    점검 이력 로그 ({inventoryChecks.length}건)
+                  </span>
+                  {invLogOpen ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
+                </button>
+
+                {invLogOpen && (() => {
+                  // 날짜별 그룹핑
+                  const groups = new Map<string, InventoryCheck[]>();
+                  for (const r of inventoryChecks) {
+                    const d = new Date(r.checked_at);
+                    const key = `${d.getFullYear()}.${String(d.getMonth()+1).padStart(2,"0")}.${String(d.getDate()).padStart(2,"0")} (${["일","월","화","수","목","금","토"][d.getDay()]})`;
+                    if (!groups.has(key)) groups.set(key, []);
+                    groups.get(key)!.push(r);
+                  }
+                  return (
+                    <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm mt-1">
+                      {[...groups.entries()].map(([date, rows]) => (
+                        <div key={date}>
+                          <div className="px-4 py-1.5 bg-gray-50 border-b border-gray-100">
+                            <span className="text-[10px] font-black text-gray-400 uppercase tracking-wide">{date}</span>
+                          </div>
+                          {rows.map(r => {
+                            const totalActual = (r.warehouse_stock ?? 0) + (r.store_stock ?? 0);
+                            const diff = r.system_stock != null ? totalActual - r.system_stock : null;
+                            const d = new Date(r.checked_at);
+                            const time = `${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+                            return (
+                              <div key={r.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 last:border-0 hover:bg-purple-50/30 transition">
+                                <span className="text-[10px] text-gray-400 font-mono shrink-0 w-10">{time}</span>
+                                <div className="flex-1 min-w-0">
+                                  <span className="text-[12px] font-bold text-gray-800 truncate block">{r.product_name}</span>
+                                  <span className="text-[10px] text-gray-400">
+                                    창고 {r.warehouse_stock ?? "—"} + 매장 {r.store_stock ?? "—"} = <strong className="text-purple-700">{totalActual}</strong>
+                                    {r.system_stock != null && <> · 현재고 {r.system_stock}</>}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  {diff != null && (
+                                    <span className={`text-[11px] font-black px-1.5 py-0.5 rounded ${diff < 0 ? "bg-red-50 text-red-600" : diff > 0 ? "bg-emerald-50 text-emerald-600" : "bg-gray-100 text-gray-500"}`}>
+                                      {diff > 0 ? "+" : ""}{diff}
+                                    </span>
+                                  )}
+                                  {r.checked_by && (
+                                    <span className="text-[10px] text-gray-400 max-w-[48px] truncate">{r.checked_by}</span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
