@@ -168,44 +168,33 @@ export class ScheduleService {
   }
 
   async updateEmployee(id: number, data: { name: string; position: string; employmentType?: string; hireDate: string; description: string; workplace?: string; rank?: string | null; gender?: string | null; annual_leave_days?: number; level?: number; contract_file_url?: string | null }) {
-    const basePayload: Record<string, any> = {
+    // 핵심 필드 + 존재하는 선택 필드로 페이로드 구성
+    const payload: Record<string, any> = {
       name: data.name,
       position: data.position,
       employmentType: data.employmentType ?? "정직원",
       hireDate: data.hireDate,
       description: data.description,
       workplace: data.workplace ?? "매장",
-      rank: data.rank,
-      gender: data.gender,
     };
-    if (data.annual_leave_days !== undefined) basePayload.annual_leave_days = data.annual_leave_days;
-    if (data.level !== undefined) basePayload.level = data.level;
-    if (data.contract_file_url !== undefined) basePayload.contract_file_url = data.contract_file_url;
+    for (const k of ["rank", "gender", "annual_leave_days", "level", "contract_file_url"] as const) {
+      if ((data as any)[k] !== undefined) payload[k] = (data as any)[k];
+    }
 
-    const { data: rows, error } = await supabase
-      .from("employees")
-      .update(basePayload)
-      .eq("id", id)
-      .select();
+    // 컬럼 없음 오류 시 해당 컬럼 제거하고 최대 6회 재시도
+    for (let attempt = 0; attempt <= 6; attempt++) {
+      const { data: rows, error } = await supabase
+        .from("employees").update(payload).eq("id", id).select();
+      if (!error) return rows?.[0] ?? { id };
 
-    if (error) {
-      // 컬럼 미존재 시 선택적 컬럼 제외하고 재시도
-      if (/column.*does not exist/i.test(error.message)) {
-        const safePayload: Record<string, any> = {
-          name: data.name, position: data.position,
-          employmentType: data.employmentType ?? "정직원",
-          hireDate: data.hireDate, description: data.description,
-          workplace: data.workplace ?? "매장",
-          rank: data.rank, gender: data.gender,
-        };
-        const { data: rows2, error: err2 } = await supabase
-          .from("employees").update(safePayload).eq("id", id).select();
-        if (err2) throw new Error(err2.message);
-        return rows2?.[0] ?? { id };
+      const missing = error.message.match(/column "?(\w+)"? of relation/)?.[1];
+      if (missing && missing in payload) {
+        delete payload[missing];
+        continue;
       }
       throw new Error(error.message);
     }
-    return rows?.[0] ?? { id };
+    throw new Error("수정 실패: DB 컬럼 불일치");
   }
 
   async deleteEmployee(id: number) {
