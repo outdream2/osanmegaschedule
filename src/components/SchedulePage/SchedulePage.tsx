@@ -2011,14 +2011,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium break-keep shrink-0 leading-tight">
                                     {emp.position}
                                   </span>
-                                  {emp.description && (
-                                    <span
-                                      className="text-indigo-300 hover:text-indigo-500 transition cursor-default shrink-0"
-                                      title={emp.description}
-                                    >
-                                      <MessageSquare size={8} />
-                                    </span>
-                                  )}
                                 </div>
                                 {/* Row 2 & 3: 월차 + 계약상태 */}
                                 <div className="flex flex-col gap-0 leading-tight">
