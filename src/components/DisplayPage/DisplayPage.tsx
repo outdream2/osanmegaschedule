@@ -1,7 +1,7 @@
 // src/components/DisplayPage/DisplayPage.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ZONE_DEFS, ZONES_STORAGE_KEY, type ZoneSection } from "../../constants/displayZones";
-import { getProductsMap } from "../../lib/productsCache";
+import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import {
   Bell,
   Boxes,
@@ -276,7 +276,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const [scannerMode, setScannerMode] = useState<ScannerMode>(null);
 
   // Product DB search (약찾기)
-  const [productsMap, setProductsMap] = useState<Record<string, any>>({});
+  const [productsMap, setProductsMap] = useState<Record<string, ProductInfo>>({});
   const [productMatchZoneId, setProductMatchZoneId] = useState<string | null>(null);
 
   // Requests panel
@@ -695,7 +695,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     if (q.length < 1) return [];
     const seen = new Set<string>();
     const results: Array<{ code: string; name: string; spec: string; realMap: string | null }> = [];
-    for (const p of Object.values(productsMap)) {
+    for (const p of Object.values(productsMap) as ProductInfo[]) {
       const code = String(p.code ?? p.product_code ?? "");
       if (seen.has(code)) continue;
       seen.add(code);

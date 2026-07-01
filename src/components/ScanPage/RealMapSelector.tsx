@@ -14,6 +14,7 @@ function ZoneBtn({
   onSelect,
   onClose,
 }: {
+  key?: number | string;
   num: number;
   current: string | null | undefined;
   onSelect: (v: string) => void;

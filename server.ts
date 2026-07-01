@@ -885,7 +885,7 @@ async function startServer() {
       .eq("product_code", id);
     if (error) return res.status(500).json({ error: error.message });
     // Also clean up legacy zone_mismatches table
-    await supabase.from("zone_mismatches").delete().eq("product_code", id).catch(() => {});
+    try { await supabase.from("zone_mismatches").delete().eq("product_code", id); } catch {}
     res.json({ ok: true });
   });
 
