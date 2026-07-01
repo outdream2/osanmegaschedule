@@ -42,7 +42,7 @@ const SELECT_CLS = "w-full text-xs rounded border border-slate-200 focus:border-
 const LABEL_CLS = "block text-[11px] font-bold text-slate-500 uppercase tracking-wide mb-1";
 
 const POSITIONS = ["약사", "캐셔", "진열", "물류", "기타"];
-const RANKS     = ["", "대표", "이사", "부장", "팀장", "과장", "사원", "알바"];
+const RANKS     = ["", "대표", "이사", "부장", "팀장", "과장", "약사", "사원", "알바"];
 const WORKPLACES = ["매장", "창고", "본사", "기타"];
 const GENDERS   = [{ v: "", label: "미지정" }, { v: "남", label: "남자" }, { v: "여", label: "여자" }];
 const LEVELS    = [
