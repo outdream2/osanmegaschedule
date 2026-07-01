@@ -101,15 +101,30 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavig
     })();
   }, []);
 
-  // 규격 기반 구역 매칭: 규격의 숫자 앞부분으로 zone.num 매핑
+  // 구역 매칭: realMap(수동등록) 우선, 없으면 spec 파싱
   const matchedZones: Zone[] = (() => {
     if (!product) return [];
-    const nums = extractZoneNums(product.spec);
+
+    // 실제 배정구역이 등록된 경우 → 해당 구역 하나만 표시
+    const rm: string | null = product.realMap ?? product.real_map ?? null;
+    if (rm) {
+      const m = rm.match(/^(\d+)번/);
+      if (m) {
+        const zoneNum = parseInt(m[1]);
+        const found = zones.filter(z => z.num === zoneNum);
+        if (found.length > 0) return found;
+      }
+    }
+
+    // realMap 없으면 spec으로 매칭
+    const spec: string = product.spec ?? "";
+    const nums = extractZoneNums(spec);
     if (nums.length > 0) {
       return zones.filter((z) => nums.includes(z.num));
     }
     // 숫자가 없으면 spec 텍스트로 zone products 검색
-    const q = product.spec.toLowerCase();
+    const q = spec.toLowerCase();
+    if (!q) return [];
     return zones.filter((z) =>
       z.products.toLowerCase().includes(q) ||
       z.category.toLowerCase().includes(q)
