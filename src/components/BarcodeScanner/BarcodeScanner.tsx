@@ -3,8 +3,15 @@ import { useZxing } from "react-zxing";
 import { X, ScanLine, Zap, ImageIcon } from "lucide-react";
 
 const isAndroid = /android/i.test(navigator.userAgent);
+const isDesktop = !/android|iphone|ipad|ipod/i.test(navigator.userAgent);
 import type { BarcodeScannerProps } from "./types";
 import { FORMATS, VIDEO_CONSTRAINTS } from "./types";
+
+// PC 웹캠용 — facingMode 없이 요청 (데스크탑 카메라는 facing 개념이 없음)
+const DESKTOP_VIDEO_CONSTRAINTS: MediaTrackConstraints = {
+  width:  { ideal: 1280 },
+  height: { ideal: 720 },
+};
 import { useEngineState } from "./hooks/useEngineState";
 import { useCameraControls } from "./hooks/useCameraControls";
 import { useZBarLoop } from "./hooks/useZBarLoop";
@@ -21,8 +28,10 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
 
   // Android: 이전 세션에서 선택한 최적 카메라 ID가 있으면 바로 사용 — 전환 지연 제거.
   // ideal 사용 시 ID가 유효하지 않아도 graceful fallback.
+  // Desktop: facingMode 없이 기본 웹캠 사용.
   const [videoConstraints, setVideoConstraints] = useState<MediaTrackConstraints>(() => {
-    if (!isAndroid) return VIDEO_CONSTRAINTS;
+    if (isDesktop) return DESKTOP_VIDEO_CONSTRAINTS;
+    if (!isAndroid) return VIDEO_CONSTRAINTS; // iOS: unchanged
     try {
       const saved = localStorage.getItem("android_best_camera_id");
       if (saved) return { ...VIDEO_CONSTRAINTS, deviceId: { ideal: saved } };
