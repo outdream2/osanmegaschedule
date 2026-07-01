@@ -2009,7 +2009,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                     {emp.name}
                                   </span>
                                   <span className="text-[8px] sm:text-[9px] text-slate-500 font-medium break-keep shrink-0 leading-tight">
-                                    {emp.position}{emp.rank ? ` ${emp.rank}` : ""}
+                                    {emp.position}
                                   </span>
                                   {emp.description && (
                                     <span
@@ -2031,7 +2031,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                     const leaveRemaining = Math.max(0, leaveTotal - leaveUsed);
                                     return (
                                       <span className={`text-[8px] font-bold leading-tight ${leaveRemaining === 0 ? "text-rose-500" : "text-amber-500"}`}>
-                                        월차{leaveRemaining}
+                                        {leaveRemaining}
                                       </span>
                                     );
                                   })()}
