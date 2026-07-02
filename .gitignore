@@ -11,3 +11,8 @@ coverage/
 *.traineddata
 !public/tessdata/kor.traineddata
 !public/tessdata/eng.traineddata
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
