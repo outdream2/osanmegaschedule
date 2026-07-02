@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   Bell, Package, MapPin,
   CheckCircle2, Clock, RefreshCw, ShoppingCart, Square, CheckSquare,
@@ -265,6 +265,28 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   useEffect(() => {
     if (tab === "order") { loadOrderReqs(); loadProducts(); }
   }, [tab]);
+
+  // 자동 갱신: 30초마다 pending-counts 폴링, 현재 탭 건수 변화 시 목록 재로드
+  const prevCountsRef = useRef<typeof tabCounts>(null);
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch("/api/requests/pending-counts");
+        if (!res.ok) return;
+        const counts = await res.json();
+        const prev = prevCountsRef.current;
+        setTabCounts(counts);
+        prevCountsRef.current = counts;
+        if (!prev) return;
+        if (tab === "display"   && counts.display   !== prev.display)   loadDisplayReqs();
+        if (tab === "order"     && counts.order     !== prev.order)     loadOrderReqs();
+        if (tab === "mismatch"  && counts.mismatch  !== prev.mismatch)  loadMismatches();
+        if (tab === "inventory" && counts.inventory !== prev.inventory) loadInventoryChecks();
+        if (tab === "lunch"     && counts.lunch     !== prev.lunch)     loadLunch();
+      } catch {}
+    }, 30_000);
+    return () => clearInterval(interval);
+  }, [tab, loadDisplayReqs, loadOrderReqs, loadMismatches, loadInventoryChecks, loadLunch]);
 
   // ── 단건 삭제 헬퍼 ──
   async function deleteOne(url: string) { await fetch(url, { method: "DELETE" }); }
