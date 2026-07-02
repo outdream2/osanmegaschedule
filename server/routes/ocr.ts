@@ -6,9 +6,6 @@ import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiSta
 import { ensureOcrServer, callEasyOcrServer } from "../ocr/easyocr";
 import { invoiceMatchScore, makeMatchResult, norm, bigramSim } from "../ocr/match";
 import type { GeminiResult } from "../ocr/schema";
-import { scanBarcodesFromB64 } from "../ocr/barcode";
-import { lookupBarcodes, buildBarcodeHint } from "../ocr/barcodeService";
-import type { BarcodeProduct } from "../ocr/barcodeService";
 
 function buildTemplatePrompt(supplierName: string, headers: string[]): string {
   return `[공급처 템플릿 — 최우선 적용]\n이 명세서는 "${supplierName}" 공급처 양식입니다.\n표의 컬럼 순서를 정확히 다음과 같이 지정합니다:\n${headers.map((h, i) => `  ${i + 1}번 컬럼 → "${h}"`).join("\n")}\n이 매핑 외의 추론·재배열은 절대 하지 마세요.`;
@@ -248,9 +245,6 @@ router.post("/api/ocr", async (req, res) => {
 
   try {
     const pages: any[] = [];
-    // 페이지별 바코드 스캔 결과 누적
-    const allBarcodeMatches: BarcodeProduct[] = [];
-    const allBarcodeRaw: Record<number, string[]> = {}; // page(1-based) → raw barcodes
 
     if (engine === "gemini") {
       const keys = getGeminiKeys();
@@ -260,32 +254,9 @@ router.post("/api/ocr", async (req, res) => {
         const startIdx = keys.length > 0 ? geminiState.roundRobinIdx % keys.length : 0;
         console.log(`[OCR/Gemini] page ${i + 1}/${images.length} — 키 ${startIdx + 1}번부터 순환 (총 ${keys.length}개)`);
 
-        // ── 바코드 선스캔 ─────────────────────────────────────────────────
-        let barcodeCodes: string[] = [];
-        let barcodeHint = "";
-        try {
-          barcodeCodes = await Promise.race([
-            scanBarcodesFromB64(b64, mimeType),
-            new Promise<string[]>(resolve => setTimeout(() => resolve([]), 5000)),
-          ]);
-          if (barcodeCodes.length > 0) {
-            console.log(`[OCR/Barcode] page ${i + 1}: 바코드 ${barcodeCodes.length}개 발견 — ${barcodeCodes.join(", ")}`);
-            allBarcodeRaw[i + 1] = barcodeCodes;
-            const matched = await lookupBarcodes(barcodeCodes);
-            matched.forEach(m => { if (!allBarcodeMatches.find(x => x.code === m.code)) allBarcodeMatches.push(m); });
-            barcodeHint = buildBarcodeHint(barcodeCodes, matched);
-          }
-        } catch (be: any) {
-          console.warn(`[OCR/Barcode] page ${i + 1} 오류 무시:`, be?.message);
-        }
-        // ────────────────────────────────────────────────────────────────────
-
         const hint = supplierHints[i] ?? "";
         const tmplHeaders = hint ? templateMap.get(hint) : undefined;
-        const templatePrompt = [
-          tmplHeaders ? buildTemplatePrompt(hint, tmplHeaders) : "",
-          barcodeHint,
-        ].filter(Boolean).join("\n\n") || undefined;
+        const templatePrompt = tmplHeaders ? buildTemplatePrompt(hint, tmplHeaders) : undefined;
         if (templatePrompt) console.log(`[OCR/Template] page ${i + 1}: 프롬프트 힌트 적용`);
 
         let rawText = "";
@@ -346,12 +317,7 @@ router.post("/api/ocr", async (req, res) => {
       }
     }
 
-    return res.json({
-      pages,
-      engine,
-      ...(allBarcodeMatches.length > 0 ? { barcodeMatches: allBarcodeMatches } : {}),
-      ...(Object.keys(allBarcodeRaw).length > 0 ? { barcodeRaw: allBarcodeRaw } : {}),
-    });
+    return res.json({ pages, engine });
   } catch (err: any) {
     console.error("[OCR] error:", err?.message);
     res.status(500).json({ error: err?.message ?? "OCR 처리 중 오류" });
