@@ -80,14 +80,14 @@ export async function getSynonymMap(): Promise<Map<string, string>> {
   if (synonymMapCache) return synonymMapCache;
   if (synonymMapPromise) return synonymMapPromise;
   synonymMapPromise = (async () => {
-    const { data, error } = await supabase.from("ocr_synonyms").select("alias,product_code,supply");
+    const { data, error } = await supabase.from("ocr_synonyms").select("prod_name_old,product_code,supplier_new");
     if (error) { synonymMapPromise = null; return new Map(); }
     const map = new Map<string, string>();
     for (const row of (data ?? [])) {
-      const alias = String(row.alias).trim().toLowerCase();
+      const alias = String(row.prod_name_old).trim().toLowerCase();
       const code  = String(row.product_code).trim();
-      if (row.supply) {
-        map.set(`${normSupplier(String(row.supply))}|${alias}`, code);
+      if (row.supplier_new) {
+        map.set(`${normSupplier(String(row.supplier_new))}|${alias}`, code);
       }
       if (!map.has(alias)) map.set(alias, code);
     }

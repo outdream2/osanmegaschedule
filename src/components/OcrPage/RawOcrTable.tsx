@@ -377,6 +377,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [nameSearchOpenRow,setNameSearchOpenRow] = useState<number | null>(null);
   const nameSearchDebounce = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const [restoredRows,     setRestoredRows     ] = useState<Set<number>>(new Set());
+  const [cancelledAutoSyn, setCancelledAutoSyn ] = useState<Set<number>>(new Set());
+  const [rawEditValues,    setRawEditValues    ] = useState<Record<number, string>>({});
+  const rawSearchDebounce = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
 
   const ocrQtyIdx  = dispHeaders.indexOf("수량");
   const ocrPriIdx  = dispHeaders.indexOf("단가");
@@ -431,7 +434,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         if (!m) continue;
         const sr = await fetch("/api/ocr-synonyms", {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ alias: entries[i].name.toLowerCase(), product_code: m.code, supply: newSupplier }),
+          body: JSON.stringify({ prod_name_old: entries[i].name, prod_name_new: m.name, product_code: m.code, supplier_new: newSupplier }),
         });
         if (sr.ok) count++;
       }
@@ -537,12 +540,25 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     await handleSynonymBulkAdd(pageNum, supplierName);
   }, [structuredPages, handleSynonymBulkAdd]);
 
-  const saveSynonym = useCallback(async (ri: number, alias: string, productCode: string, supplier?: string) => {
+  const saveSynonym = useCallback(async (
+    ri: number,
+    nameOld: string,
+    productCode: string,
+    supplierNew?: string,
+    nameNew?: string,
+    supplierOld?: string,
+  ) => {
     try {
       const res = await fetch("/api/ocr-synonyms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ alias, product_code: productCode, supply: supplier?.trim() || null }),
+        body: JSON.stringify({
+          prod_name_old: nameOld,
+          prod_name_new: nameNew ?? null,
+          product_code: productCode,
+          supplier_new: supplierNew?.trim() || null,
+          supplier_old: supplierOld?.trim() || null,
+        }),
       });
       if (res.ok) {
         setSavedSynonyms(prev => new Set([...prev, ri]));
@@ -613,7 +629,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   const handleSelectCandidate = useCallback((ri: number, cand: CandidateInfo, inputName: string, supplier: string) => {
     selectCandidate(ri, cand);
-    saveSynonym(ri, inputName, cand.code, supplier || undefined);
+    saveSynonym(ri, inputName, cand.code, supplier || undefined, cand.name);
   }, [selectCandidate, saveSynonym]);
 
   const handleMatch = useCallback(async () => {
@@ -1304,12 +1320,68 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
                           // Feature 3: 동의어 사전 1차 보정된 품명 표시
                           if (isName && autoMatch && !matchItems) {
+                            const isCancelled = cancelledAutoSyn.has(ri);
+                            const rawSupplierForRow = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? globalSupplier ?? "";
+                            if (isCancelled) {
+                              return (
+                                <td key={ci} className="px-2 py-1.5 max-w-[240px]" onClick={e => e.stopPropagation()}>
+                                  <div className="relative flex flex-col gap-0.5">
+                                    <input
+                                      autoFocus
+                                      className="w-full text-[11px] font-semibold text-gray-800 bg-gray-50 border border-indigo-200 rounded px-2 py-0.5 outline-none"
+                                      value={rawEditValues[ri] ?? String(origCell ?? "")}
+                                      onChange={e => {
+                                        const v = e.target.value;
+                                        setRawEditValues(prev => ({ ...prev, [ri]: v }));
+                                        clearTimeout(rawSearchDebounce.current[ri]);
+                                        if (v.trim().length < 2) { setNameSearchOpenRow(null); return; }
+                                        rawSearchDebounce.current[ri] = setTimeout(async () => {
+                                          const params = new URLSearchParams({ q: v.trim() });
+                                          if (rawSupplierForRow) params.set("supplier", rawSupplierForRow);
+                                          try {
+                                            const res = await fetch(`/api/products-search?${params}`);
+                                            const data: any[] = await res.json();
+                                            setNameSearchResults(prev => ({ ...prev, [ri]: Array.isArray(data) ? data : [] }));
+                                            setNameSearchOpenRow(data.length > 0 ? ri : null);
+                                          } catch { /* silent */ }
+                                        }, 280);
+                                      }}
+                                      onBlur={() => setTimeout(() => setNameSearchOpenRow(r => r === ri ? null : r), 150)}
+                                      placeholder={String(origCell ?? "")}
+                                    />
+                                    {nameSearchOpenRow === ri && (nameSearchResults[ri]?.length ?? 0) > 0 && (
+                                      <div className="absolute top-full left-0 z-30 mt-0.5 bg-white border border-indigo-200 rounded-xl shadow-xl max-h-48 overflow-y-auto min-w-[200px] w-full">
+                                        {nameSearchResults[ri].map((p, pi) => (
+                                          <button key={pi} onMouseDown={e => e.preventDefault()}
+                                            onClick={() => {
+                                              setAutoSynonymMatches(prev => ({ ...prev, [ri]: { code: p.product_code, name: p.product_name } }));
+                                              setCancelledAutoSyn(prev => { const s = new Set(prev); s.delete(ri); return s; });
+                                              setRawEditValues(prev => { const n = { ...prev }; delete n[ri]; return n; });
+                                              setNameSearchOpenRow(null);
+                                            }}
+                                            className="flex items-center gap-2 w-full text-left px-3 py-1.5 hover:bg-indigo-50 text-[11px] border-b border-gray-50 last:border-0">
+                                            <span className="flex-1 font-semibold text-gray-800 truncate">{p.product_name}</span>
+                                            {p.spec && <span className="text-gray-400 truncate max-w-[60px] shrink-0">{p.spec}</span>}
+                                            {p.supplier && <span className="text-sky-500 shrink-0 truncate max-w-[60px]">{p.supplier}</span>}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                              );
+                            }
                             return (
                               <td key={ci} className="px-3 py-2 max-w-[220px]">
                                 <div className="flex flex-col gap-0">
                                   <span className="flex items-center gap-1">
                                     <BookOpen size={9} className="text-indigo-400 shrink-0" />
                                     <span className="font-semibold text-indigo-700 truncate text-[11px]">{autoMatch.name}</span>
+                                    <button
+                                      onClick={e => { e.stopPropagation(); setCancelledAutoSyn(prev => new Set([...prev, ri])); }}
+                                      title="동의어 보정 취소 후 직접 입력"
+                                      className="shrink-0 ml-0.5 text-[9px] font-bold text-indigo-300 hover:text-rose-500 hover:bg-rose-50 rounded px-1 py-0.5 transition cursor-pointer leading-none"
+                                    >취소</button>
                                   </span>
                                   <span className="text-gray-300 text-[10px] line-through truncate">{String(origCell ?? "")}</span>
                                 </div>
@@ -1462,15 +1534,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 const currentVal = (overrides[ri] ?? effMatch.name).trim();
                                 if (!currentVal || !effMatch?.code) return;
                                 if (restoredRows.has(ri)) {
-                                  // 복원 후 재입력: 확인 후 등록
+                                  // 복원 후 재입력: name_old=item.input, name_new=currentVal
                                   setTimeout(() => {
                                     if (window.confirm(`"${currentVal}" → 동의어 DB에 등록하시겠습니까?`)) {
-                                      saveSynonym(ri, currentVal, effMatch.code, currentSupp || undefined);
+                                      saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined, currentVal);
                                       setRestoredRows(prev => { const s = new Set(prev); s.delete(ri); return s; });
                                     }
                                   }, 160);
                                 } else if (!savedSynonyms.has(ri) && item.input) {
-                                  saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined);
+                                  saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined, effMatch.name);
                                 }
                               }} />
                             {!bcMatch && score < 100 && <span className={`shrink-0 font-bold ${scoreColor(score)}`}>{score}%</span>}
@@ -1486,7 +1558,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     setSelectedCands(prev => { const s = { ...prev }; delete s[ri]; return s; });
                                     setRestoredRows(prev => new Set([...prev, ri]));
                                   } else {
-                                    saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined);
+                                    saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined, effMatch.name);
                                   }
                                 }}
                                 className={`shrink-0 transition-colors ${savedSynonyms.has(ri) ? "text-emerald-500 hover:text-rose-400" : "text-gray-300 hover:text-indigo-500"}`}

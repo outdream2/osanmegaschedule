@@ -154,19 +154,21 @@ router.get("/api/ocr-synonyms", async (_req, res) => {
 
 router.post("/api/ocr-synonyms", async (req, res) => {
   try {
-    const { alias, product_code, supply } = req.body ?? {};
-    if (!alias?.trim() || !product_code?.trim()) return res.status(400).json({ error: "alias, product_code 필요" });
-    const aliasNorm  = alias.trim().toLowerCase();
-    const codeNorm   = product_code.trim();
-    const supplyNorm = supply?.trim() ? normSupplier(supply.trim()) : null;
+    const { prod_name_old, prod_name_new, supplier_old, supplier_new, product_code } = req.body ?? {};
+    if (!prod_name_old?.trim() || !product_code?.trim()) return res.status(400).json({ error: "prod_name_old, product_code 필요" });
+    const nameOldNorm     = prod_name_old.trim().toLowerCase();
+    const codeNorm        = product_code.trim();
+    const supplierNewNorm = supplier_new?.trim() ? normSupplier(supplier_new.trim()) : null;
+    const supplierOldNorm = supplier_old?.trim() || null;
+    const nameNewVal      = prod_name_new?.trim() || null;
 
-    // alias 기준 기존 행 조회 (unique 제약 불필요)
-    const { data: existByAlias } = await supabase
-      .from("ocr_synonyms").select("id").eq("alias", aliasNorm).limit(1);
-    if (existByAlias?.[0]) {
+    // prod_name_old 기준 기존 행 조회
+    const { data: existing } = await supabase
+      .from("ocr_synonyms").select("id").eq("prod_name_old", nameOldNorm).limit(1);
+    if (existing?.[0]) {
       const { data, error } = await supabase.from("ocr_synonyms")
-        .update({ product_code: codeNorm, supply: supplyNorm })
-        .eq("id", existByAlias[0].id)
+        .update({ product_code: codeNorm, supplier_new: supplierNewNorm, prod_name_new: nameNewVal, supplier_old: supplierOldNorm })
+        .eq("id", existing[0].id)
         .select().single();
       if (error) throw new Error(error.message);
       resetSynonymCache();
@@ -175,7 +177,7 @@ router.post("/api/ocr-synonyms", async (req, res) => {
 
     // 새로 삽입
     const { data, error } = await supabase.from("ocr_synonyms")
-      .insert({ alias: aliasNorm, product_code: codeNorm, supply: supplyNorm })
+      .insert({ prod_name_old: nameOldNorm, prod_name_new: nameNewVal, product_code: codeNorm, supplier_new: supplierNewNorm, supplier_old: supplierOldNorm })
       .select().single();
     if (error) throw new Error(error.message);
     resetSynonymCache();
