@@ -250,8 +250,9 @@ export function repairColumnShift(
 }
 
 /**
- * 소계 기반 금액 보정: 명세서에 기재된 소계(statedTotal)와 행 합계가 다를 때
- * 각 행의 수량×단가로 역산하거나 자릿수 오독을 수정해 합계를 맞춥니다.
+ * 합계금액 기반 보정 (1순위 보정 수단):
+ * 명세서 합계(statedTotal)를 절대 기준으로 삼아 행 금액을 보정합니다.
+ * 전략 순서: ① 수량×단가 역산 ② 단일 행 자릿수 ③ 두 행 조합 자릿수
  */
 export function fixAmountsBySubtotal(
   headers: string[],
@@ -267,14 +268,29 @@ export function fixAmountsBySubtotal(
 
   const getAmt = (row: (string | number | null)[]) =>
     typeof row[aI] === "number" ? (row[aI] as number) : 0;
-
   const sumRows = (r: (string | number | null)[][]) => r.reduce((s, row) => s + getAmt(row), 0);
 
-  let currentTotal = sumRows(rows);
+  const currentTotal = sumRows(rows);
   if (Math.abs(currentTotal - statedTotal) <= 1) return rows;
 
-  // 전략 2: 단일 행 자릿수 오독 보정 (×10, ×100, /10, /100)
-  const scales = [10, 100, 0.1, 0.01];
+  // 전략 1: 수량×단가로 금액 역산 (합계가 맞아지는 행만 교체)
+  if (qI >= 0 && pI >= 0) {
+    const candidate = rows.map(row => {
+      const q = safeParseNumber(row[qI]);
+      const p = safeParseNumber(row[pI]);
+      const a = getAmt(row);
+      if (q == null || p == null || q <= 0 || p <= 0) return row;
+      const calc = Math.round(q * p);
+      if (calc > 0 && Math.abs(calc - a) > Math.max(1, a * 0.01)) {
+        const r = [...row]; r[aI] = calc; return r;
+      }
+      return row;
+    });
+    if (Math.abs(sumRows(candidate) - statedTotal) <= 1) return candidate;
+  }
+
+  // 전략 2: 단일 행 자릿수 오독 보정 (×10, ×100, ×1000, ÷10, ÷100, ÷1000)
+  const scales = [10, 100, 1000, 0.1, 0.01, 0.001];
   for (let ri = 0; ri < rows.length; ri++) {
     const a = getAmt(rows[ri]);
     if (a <= 0) continue;
@@ -289,17 +305,18 @@ export function fixAmountsBySubtotal(
   }
 
   // 전략 3: 두 행 조합 자릿수 보정
+  const scales2 = [10, 100, 0.1, 0.01];
   for (let ri = 0; ri < rows.length; ri++) {
     const a1 = getAmt(rows[ri]);
     if (a1 <= 0) continue;
-    for (const s1 of scales) {
+    for (const s1 of scales2) {
       const na1 = Math.round(a1 * s1);
       if (na1 <= 0) continue;
       const partial = currentTotal - a1 + na1;
       for (let rj = ri + 1; rj < rows.length; rj++) {
         const a2 = getAmt(rows[rj]);
         if (a2 <= 0) continue;
-        for (const s2 of scales) {
+        for (const s2 of scales2) {
           const na2 = Math.round(a2 * s2);
           if (na2 <= 0) continue;
           if (Math.abs(partial - a2 + na2 - statedTotal) <= 1) {
