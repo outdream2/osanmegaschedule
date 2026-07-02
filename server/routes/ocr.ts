@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { supabase } from "../../src/supabase/client";
-import { getProductMap, getSynonymMap, resetSynonymCache } from "../productCache";
+import { getProductMap, getSynonymMap, resetSynonymCache, getSupplierAliasMap, resetSupplierAliasCache } from "../productCache";
 import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta } from "../ocr/parse";
 import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiState, extractSupplierFromImage } from "../ocr/llm";
 import { preprocessImageForOcr } from "../ocr/preprocess";
@@ -34,11 +34,20 @@ router.post("/api/ocr-match", async (req, res) => {
     const map = await getProductMap();
     const products = Object.values(map);
     const synonymMap = await getSynonymMap();
+    const supplierAliasMap = await getSupplierAliasMap();
+
+    // 공급사 별칭 보정 헬퍼
+    const resolveSupplier = (hint: string): string => {
+      if (!hint) return hint;
+      const aliased = supplierAliasMap.get(normSupplier(hint));
+      return aliased ?? hint;
+    };
 
     if (isCandidateMode) {
       const name = req.body.name as string;
       const topN = Math.min(Number(req.body.topN) || 10, 30);
-      const supplierHint = (req.body.supplier as string | undefined)?.trim() ?? "";
+      const rawHint = (req.body.supplier as string | undefined)?.trim() ?? "";
+      const supplierHint = resolveSupplier(rawHint);
 
       const nameLC = name.trim().toLowerCase();
       const synKeyCompound = supplierHint ? `${normSupplier(supplierHint)}|${nameLC}` : null;
@@ -81,7 +90,7 @@ router.post("/api/ocr-match", async (req, res) => {
     const matches = names.map((name: string, i: number) => {
       if (!name?.trim()) return { input: name, matched: null };
 
-      const supplierHint = (supplierHints[i] ?? "").trim();
+      const supplierHint = resolveSupplier((supplierHints[i] ?? "").trim());
       const nameLC = name.trim().toLowerCase();
       const synKeyCompound = supplierHint ? `${normSupplier(supplierHint)}|${nameLC}` : null;
       const synCode = (synKeyCompound && synonymMap.get(synKeyCompound)) ?? synonymMap.get(nameLC);
@@ -151,23 +160,22 @@ router.post("/api/ocr-synonyms", async (req, res) => {
     const codeNorm   = product_code.trim();
     const supplyNorm = supply?.trim() ? normSupplier(supply.trim()) : null;
 
-    // 상품코드 기준: 같은 product_code로 이미 등록된 행이 있으면 alias + supply 업데이트
-    const { data: existRows } = await supabase
-      .from("ocr_synonyms").select("id").eq("product_code", codeNorm).limit(1);
-    const existById = existRows?.[0] ?? null;
-    if (existById) {
+    // alias 기준 기존 행 조회 (unique 제약 불필요)
+    const { data: existByAlias } = await supabase
+      .from("ocr_synonyms").select("id").eq("alias", aliasNorm).limit(1);
+    if (existByAlias?.[0]) {
       const { data, error } = await supabase.from("ocr_synonyms")
-        .update({ alias: aliasNorm, supply: supplyNorm })
-        .eq("id", existById.id)
+        .update({ product_code: codeNorm, supply: supplyNorm })
+        .eq("id", existByAlias[0].id)
         .select().single();
       if (error) throw new Error(error.message);
       resetSynonymCache();
       return res.json({ synonym: data });
     }
 
-    // 없으면 alias 기준 upsert (동일 alias → product_code 덮어쓰기)
+    // 새로 삽입
     const { data, error } = await supabase.from("ocr_synonyms")
-      .upsert({ alias: aliasNorm, product_code: codeNorm, supply: supplyNorm }, { onConflict: "alias" })
+      .insert({ alias: aliasNorm, product_code: codeNorm, supply: supplyNorm })
       .select().single();
     if (error) throw new Error(error.message);
     resetSynonymCache();
@@ -180,6 +188,51 @@ router.delete("/api/ocr-synonyms/:id", async (req, res) => {
     const { error } = await supabase.from("ocr_synonyms").delete().eq("id", Number(req.params.id));
     if (error) throw new Error(error.message);
     resetSynonymCache();
+    res.json({ ok: true });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+// ── 공급사 별칭 CRUD ──────────────────────────────────────────────────────────
+router.get("/api/ocr-supplier-aliases", async (_req, res) => {
+  try {
+    const { data, error } = await supabase.from("ocr_supplier_aliases").select("*").order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    res.json({ aliases: data ?? [] });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+router.post("/api/ocr-supplier-aliases", async (req, res) => {
+  try {
+    const { alias, supplier_name } = req.body ?? {};
+    if (!alias?.trim() || !supplier_name?.trim()) return res.status(400).json({ error: "alias, supplier_name 필요" });
+    const aliasNorm = alias.trim();
+    const nameNorm  = supplier_name.trim();
+
+    const { data: existing } = await supabase
+      .from("ocr_supplier_aliases").select("id").eq("alias", aliasNorm).limit(1);
+    let result;
+    if (existing?.[0]) {
+      const { data, error } = await supabase.from("ocr_supplier_aliases")
+        .update({ supplier_name: nameNorm })
+        .eq("id", existing[0].id).select().single();
+      if (error) throw new Error(error.message);
+      result = data;
+    } else {
+      const { data, error } = await supabase.from("ocr_supplier_aliases")
+        .insert({ alias: aliasNorm, supplier_name: nameNorm }).select().single();
+      if (error) throw new Error(error.message);
+      result = data;
+    }
+    resetSupplierAliasCache();
+    res.json({ alias: result });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete("/api/ocr-supplier-aliases/:id", async (req, res) => {
+  try {
+    const { error } = await supabase.from("ocr_supplier_aliases").delete().eq("id", Number(req.params.id));
+    if (error) throw new Error(error.message);
+    resetSupplierAliasCache();
     res.json({ ok: true });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });

@@ -12,6 +12,8 @@ let productMapCache: Record<string, ProductInfo> | null = null;
 let productMapPromise: Promise<Record<string, ProductInfo>> | null = null;
 let synonymMapCache: Map<string, string> | null = null;
 let synonymMapPromise: Promise<Map<string, string>> | null = null;
+let supplierAliasCache: Map<string, string> | null = null;
+let supplierAliasPromise: Promise<Map<string, string>> | null = null;
 
 export function resetProductCache(): void {
   productMapCache = null;
@@ -21,6 +23,11 @@ export function resetProductCache(): void {
 export function resetSynonymCache(): void {
   synonymMapCache = null;
   synonymMapPromise = null;
+}
+
+export function resetSupplierAliasCache(): void {
+  supplierAliasCache = null;
+  supplierAliasPromise = null;
 }
 
 export async function getProductMap(): Promise<Record<string, ProductInfo>> {
@@ -49,6 +56,24 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
     return map;
   })();
   return productMapPromise;
+}
+
+export async function getSupplierAliasMap(): Promise<Map<string, string>> {
+  if (supplierAliasCache) return supplierAliasCache;
+  if (supplierAliasPromise) return supplierAliasPromise;
+  supplierAliasPromise = (async () => {
+    const { data, error } = await supabase.from("ocr_supplier_aliases").select("alias,supplier_name");
+    if (error) { supplierAliasPromise = null; return new Map(); }
+    const map = new Map<string, string>();
+    for (const row of (data ?? [])) {
+      const alias = normSupplier(String(row.alias ?? "").trim());
+      const name  = String(row.supplier_name ?? "").trim();
+      if (alias && name) map.set(alias, name);
+    }
+    supplierAliasCache = map;
+    return map;
+  })();
+  return supplierAliasPromise;
 }
 
 export async function getSynonymMap(): Promise<Map<string, string>> {
