@@ -158,13 +158,6 @@ function safeParseNumber(val: any): number | null {
   return isNaN(num) ? null : num;
 }
 
-export function fixAmounts(
-  _headers: string[],
-  rows: (string | number | null)[][]
-): (string | number | null)[][] {
-  return rows;
-}
-
 /**
  * 컬럼 시프트 복원: 수량 × 단가 ≠ 금액인 행의 숫자 컬럼 값을 재배치합니다.
  *
