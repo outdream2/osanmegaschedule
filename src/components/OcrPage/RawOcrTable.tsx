@@ -376,6 +376,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [nameSearchResults,setNameSearchResults] = useState<Record<number, any[]>>({});
   const [nameSearchOpenRow,setNameSearchOpenRow] = useState<number | null>(null);
   const nameSearchDebounce = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
+  const [restoredRows,     setRestoredRows     ] = useState<Set<number>>(new Set());
 
   const ocrQtyIdx  = dispHeaders.indexOf("수량");
   const ocrPriIdx  = dispHeaders.indexOf("단가");
@@ -1458,7 +1459,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               }}
                               onBlur={() => {
                                 setTimeout(() => setNameSearchOpenRow(r => r === ri ? null : r), 150);
-                                if (!savedSynonyms.has(ri) && effMatch?.code && item.input) {
+                                const currentVal = (overrides[ri] ?? effMatch.name).trim();
+                                if (!currentVal || !effMatch?.code) return;
+                                if (restoredRows.has(ri)) {
+                                  // 복원 후 재입력: 확인 후 등록
+                                  setTimeout(() => {
+                                    if (window.confirm(`"${currentVal}" → 동의어 DB에 등록하시겠습니까?`)) {
+                                      saveSynonym(ri, currentVal, effMatch.code, currentSupp || undefined);
+                                      setRestoredRows(prev => { const s = new Set(prev); s.delete(ri); return s; });
+                                    }
+                                  }, 160);
+                                } else if (!savedSynonyms.has(ri) && item.input) {
                                   saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined);
                                 }
                               }} />
@@ -1469,10 +1480,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 title={savedSynonyms.has(ri) ? "한번 더 클릭하면 복원" : `"${item.input}" → 동의어로 저장`}
                                 onClick={() => {
                                   if (savedSynonyms.has(ri)) {
-                                    // 북마크 취소 → 원본으로 복원
+                                    // 북마크 취소 → 원본으로 복원 후 재입력 대기
                                     setSavedSynonyms(prev => { const s = new Set(prev); s.delete(ri); return s; });
                                     setOverrides(prev => ({ ...prev, [ri]: item.input }));
                                     setSelectedCands(prev => { const s = { ...prev }; delete s[ri]; return s; });
+                                    setRestoredRows(prev => new Set([...prev, ri]));
                                   } else {
                                     saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined);
                                   }
