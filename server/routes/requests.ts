@@ -74,9 +74,10 @@ router.delete("/api/display-requests/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
-router.get("/api/order-requests", async (_req, res) => {
-  const { data, error } = await supabase
-    .from("order_requests").select("*").order("requested_at", { ascending: false });
+router.get("/api/order-requests", async (req, res) => {
+  let q = supabase.from("order_requests").select("*").order("requested_at", { ascending: false });
+  if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
+  const { data, error } = await q;
   if (error) return res.status(500).json({ error: error.message });
   res.json(data ?? []);
 });
@@ -114,9 +115,10 @@ router.delete("/api/order-requests/:id", async (req, res) => {
 
 // ── 실재고 점검 ──────────────────────────────────────────────────────────────
 
-router.get("/api/inventory-checks", async (_req, res) => {
-  const { data, error } = await supabase
-    .from("inventory_checks").select("*").order("checked_at", { ascending: false });
+router.get("/api/inventory-checks", async (req, res) => {
+  let q = supabase.from("inventory_checks").select("*").order("checked_at", { ascending: false });
+  if (req.query.product_code) q = q.eq("product_code", String(req.query.product_code));
+  const { data, error } = await q;
   if (error) return res.status(500).json({ error: error.message });
   res.json(data ?? []);
 });

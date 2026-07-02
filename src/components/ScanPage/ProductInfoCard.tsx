@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck } from "lucide-react";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
@@ -16,6 +16,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
 
   type OrderStatus = "idle" | "loading" | "done" | "error";
   const [orderStatus, setOrderStatus] = useState<OrderStatus>("idle");
+  const [existingOrder, setExistingOrder] = useState<{ current_stock: number | null; requested_at: string } | null>(null);
+  const [orderConfirm, setOrderConfirm] = useState(false);
 
   // 실재고 입력
   const [warehouseStock, setWarehouseStock] = useState<number | "">("");
@@ -23,8 +25,37 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
   type InvStatus = "idle" | "loading" | "done" | "error";
   const [invStatus, setInvStatus] = useState<InvStatus>("idle");
   const [invError, setInvError] = useState<string | null>(null);
-
   const [invUpdated, setInvUpdated] = useState(false);
+
+  // 바코드 스캔 시 기존 실재고·발주요청 데이터 자동 로드
+  useEffect(() => {
+    setWarehouseStock("");
+    setStoreStock("");
+    setInvStatus("idle");
+    setInvError(null);
+    setInvUpdated(false);
+    setOrderStatus("idle");
+    setExistingOrder(null);
+    setOrderConfirm(false);
+
+    if (!product.code) return;
+    // 기존 실재고 데이터 로드
+    fetch(`/api/inventory-checks?product_code=${encodeURIComponent(product.code)}`)
+      .then(r => r.ok ? r.json() : [])
+      .then((list: any[]) => {
+        const last = list[0];
+        if (last) {
+          if (last.warehouse_stock != null) setWarehouseStock(Number(last.warehouse_stock));
+          if (last.store_stock != null) setStoreStock(Number(last.store_stock));
+        }
+      }).catch(() => {});
+    // 기존 발주요청 로드
+    fetch(`/api/order-requests?product_code=${encodeURIComponent(product.code)}`)
+      .then(r => r.ok ? r.json() : [])
+      .then((list: any[]) => {
+        if (list[0]) setExistingOrder({ current_stock: list[0].current_stock, requested_at: list[0].requested_at });
+      }).catch(() => {});
+  }, [product.code]);
 
   const handleInventorySubmit = async () => {
     if (warehouseStock === "" && storeStock === "") return;
@@ -59,8 +90,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
     }
   };
 
-  const handleOrderRequest = async () => {
+  const submitOrderRequest = async () => {
     setOrderStatus("loading");
+    setOrderConfirm(false);
     try {
       const res = await fetch("/api/order-requests", {
         method: "POST",
@@ -73,10 +105,20 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
           note: "",
         }),
       });
-      setOrderStatus(res.ok ? "done" : "error");
+      if (res.ok) {
+        setOrderStatus("done");
+        setExistingOrder({ current_stock: product.current_stock != null ? Number(product.current_stock) : null, requested_at: new Date().toISOString() });
+      } else {
+        setOrderStatus("error");
+      }
     } catch {
       setOrderStatus("error");
     }
+  };
+
+  const handleOrderRequest = () => {
+    if (existingOrder) { setOrderConfirm(true); return; }
+    submitOrderRequest();
   };
 
   const handleRealMapSelect = async (zoneLabel: string) => {
@@ -283,10 +325,14 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
                 <button
                   onClick={handleInventorySubmit}
                   disabled={invStatus === "loading" || (!hasInput)}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition cursor-pointer disabled:opacity-50 bg-purple-500 hover:bg-purple-600 text-white shadow-sm"
+                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition cursor-pointer disabled:opacity-50 shadow-sm ${
+                    diff !== null && diff !== 0
+                      ? "bg-red-500 hover:bg-red-600 text-white"
+                      : "bg-purple-500 hover:bg-purple-600 text-white"
+                  }`}
                 >
                   {invStatus === "loading" ? <Loader2 size={14} className="animate-spin" /> : <ClipboardCheck size={14} />}
-                  {invStatus === "loading" ? "등록 중..." : invStatus === "error" ? "재시도" : "확인 제출"}
+                  {invStatus === "loading" ? "등록 중..." : invStatus === "error" ? "재시도" : diff !== null && diff !== 0 ? "실차이 확인 제출" : "확인 제출"}
                 </button>
               )}
               {invStatus === "error" && (
@@ -298,7 +344,19 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
 
         {/* ── 발주요청 버튼 ── */}
         <div className="mb-4">
-          {orderStatus === "done" ? (
+          {existingOrder && orderStatus !== "done" && (
+            <div className="flex items-center gap-2 px-3 py-2 mb-2 bg-orange-50 border border-orange-200 rounded-xl text-[11px] text-orange-700 font-bold">
+              <ShoppingCart size={11} className="shrink-0" />
+              <span>기존 발주요청 있음 — 현재고 {existingOrder.current_stock ?? "—"} ({new Date(existingOrder.requested_at).toLocaleDateString("ko-KR")} 요청)</span>
+            </div>
+          )}
+          {orderConfirm ? (
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-gray-600 font-bold flex-1">기존 요청을 덮어쓸까요?</span>
+              <button onClick={submitOrderRequest} className="text-[11px] font-bold text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg transition cursor-pointer">덮어쓰기</button>
+              <button onClick={() => setOrderConfirm(false)} className="text-[11px] font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition cursor-pointer">취소</button>
+            </div>
+          ) : orderStatus === "done" ? (
             <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold">
               <CheckCircle2 size={15} />
               발주 요청이 등록되었습니다
@@ -316,7 +374,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
               {orderStatus === "loading"
                 ? <Loader2 size={15} className="animate-spin" />
                 : <ShoppingCart size={15} />}
-              {orderStatus === "loading" ? "요청 중..." : orderStatus === "error" ? "재시도" : "발주 요청"}
+              {orderStatus === "loading" ? "요청 중..." : orderStatus === "error" ? "재시도" : existingOrder ? "발주 요청 업데이트" : "발주 요청"}
             </button>
           )}
           {orderStatus === "error" && (
