@@ -1403,11 +1403,31 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                         {bcMatch
                           ? <span className="text-[9px] bg-emerald-100 text-emerald-700 font-black px-1 rounded shrink-0 self-center">BC</span>
                           : <ScoreIcon score={effMatch ? score : 0} />}
-                        <span
-                          onClick={pageImages?.length ? () => openModal(ri) : undefined}
-                          className={`text-gray-400 min-w-0 truncate max-w-[160px] ${pageImages?.length ? "cursor-pointer hover:text-amber-600 hover:underline" : ""}`}
-                          title={pageImages?.length ? `클릭하면 이미지 보기 — ${item.input}` : item.input}
-                        >{item.input}</span>
+                        {(() => {
+                          const isOverridden = overrides[ri] !== undefined || !!selectedCands[ri];
+                          return (
+                            <span
+                              onClick={() => {
+                                if (isOverridden) {
+                                  if (window.confirm(`'${item.input}'으로 복원하시겠습니까?`)) {
+                                    setOverrides(prev => ({ ...prev, [ri]: item.input }));
+                                    setSelectedCands(prev => { const s = { ...prev }; delete s[ri]; return s; });
+                                    setSavedSynonyms(prev => { const n = new Set(prev); n.delete(ri); return n; });
+                                    setNameSearchOpenRow(null);
+                                  }
+                                } else if (pageImages?.length) {
+                                  openModal(ri);
+                                }
+                              }}
+                              className={`min-w-0 truncate max-w-[160px] cursor-pointer select-none ${
+                                isOverridden
+                                  ? "text-gray-300 line-through hover:text-rose-400"
+                                  : `text-gray-400 ${pageImages?.length ? "hover:text-amber-600 hover:underline" : ""}`
+                              }`}
+                              title={isOverridden ? `클릭하여 원본 복원 — ${item.input}` : (pageImages?.length ? `클릭하면 이미지 보기 — ${item.input}` : item.input)}
+                            >{item.input}</span>
+                          );
+                        })()}
                         <span className="text-gray-300 shrink-0">→</span>
                         {effMatch ? (
                           <div className="flex items-center gap-1.5 min-w-0 flex-1 relative">
