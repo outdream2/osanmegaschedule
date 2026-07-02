@@ -368,7 +368,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [overrides,        setOverrides       ] = useState<Record<number, string>>({});
   const [supplierOverrides,setSupplierOverrides] = useState<Record<number, string>>({});
   const [confirmed,        setConfirmed       ] = useState(false);
-  const [savedSynonyms,    setSavedSynonyms   ] = useState<Set<number>>(new Set());
+  const [savedSynonyms,      setSavedSynonyms      ] = useState<Set<number>>(new Set());
+  const [savedSupplierAliases, setSavedSupplierAliases] = useState<Set<number>>(new Set());
   const [retryingRows,     setRetryingRows    ] = useState<Set<number>>(new Set());
   const [candidatesMap,    setCandidatesMap   ] = useState<Record<number, CandidateInfo[]>>({});
   const [openCandRow,      setOpenCandRow     ] = useState<number | null>(null);
@@ -571,6 +572,28 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     }
   }, []);
 
+  // 공급사 이름 보정: OCR 오인식 공급사명 → 정확한 공급사명 저장 (ocr_supplier_aliases)
+  const saveSupplierAlias = useCallback(async (ri: number, aliasOld: string, supplierNew: string) => {
+    const alias = aliasOld.trim();
+    const name  = supplierNew.trim();
+    if (!alias || !name || alias === name) return;
+    try {
+      const res = await fetch("/api/ocr-supplier-aliases", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ alias, supplier_name: name }),
+      });
+      if (res.ok) {
+        setSavedSupplierAliases(prev => new Set([...prev, ri]));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        console.warn("[ocr-supplier-aliases] 저장 실패:", err?.error ?? res.status);
+      }
+    } catch (e) {
+      console.warn("[ocr-supplier-aliases] 네트워크 오류:", e);
+    }
+  }, []);
+
   const commitCellEdit = useCallback((ri: number, ci: number, rawVal: string) => {
     const cleaned = rawVal.replace(/[^0-9.-]/g, "");
     const numVal = cleaned === "" ? null : (parseFloat(cleaned) || null);
@@ -644,7 +667,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       }
       return structuredPages.find(p => p.page === pn)?.meta.supplier ?? globalSupplier ?? "";
     });
-    setMatching(true); setMatchItems(null); setOverrides({}); setSupplierOverrides({}); setConfirmed(false); setSavedSynonyms(new Set());
+    setMatching(true); setMatchItems(null); setOverrides({}); setSupplierOverrides({}); setConfirmed(false); setSavedSynonyms(new Set()); setSavedSupplierAliases(new Set());
     setRetryingRows(new Set()); setCandidatesMap({}); setOpenCandRow(null); setSelectedCands({});
     try {
       const res  = await fetch("/api/ocr-match", { method: "POST",
@@ -1629,18 +1652,23 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           onChange={e => setSupplierOverrides(prev => ({ ...prev, [ri]: e.target.value }))}
                           placeholder="공급사명 입력..."
                         />
-                        {supplierOverrides[ri] !== undefined && effMatch && !savedSynonyms.has(ri) && (
-                          <button
-                            title={`"${item.input}" → 공급사 "${supplierOverrides[ri]}"로 동의어 추가`}
-                            onClick={() => saveSynonym(ri, item.input, effMatch.code, supplierOverrides[ri] || undefined)}
-                            className="shrink-0 flex items-center gap-0.5 text-[9px] font-bold text-indigo-500 hover:text-indigo-700 border border-indigo-200 hover:bg-indigo-50 rounded px-1 py-0.5 transition cursor-pointer"
-                          >
-                            <BookmarkPlus size={9} /> 동의어 추가
-                          </button>
-                        )}
-                        {supplierOverrides[ri] !== undefined && savedSynonyms.has(ri) && (
-                          <span className="shrink-0 text-[9px] text-emerald-500 font-bold flex items-center gap-0.5">
-                            <BookmarkCheck size={9} /> 저장됨
+                        {supplierOverrides[ri] !== undefined && !savedSupplierAliases.has(ri) && (() => {
+                          const origSupp = rawSupp ?? pageSupp;
+                          const newSupp  = supplierOverrides[ri].trim();
+                          if (!origSupp || !newSupp || origSupp === newSupp) return null;
+                          return (
+                            <button
+                              title={`공급사 오인식 보정: "${origSupp}" → "${newSupp}" 별칭 저장`}
+                              onClick={() => saveSupplierAlias(ri, origSupp, newSupp)}
+                              className="shrink-0 flex items-center gap-0.5 text-[9px] font-bold text-sky-500 hover:text-sky-700 border border-sky-200 hover:bg-sky-50 rounded px-1 py-0.5 transition cursor-pointer"
+                            >
+                              <BookmarkPlus size={9} /> 공급사 보정
+                            </button>
+                          );
+                        })()}
+                        {supplierOverrides[ri] !== undefined && savedSupplierAliases.has(ri) && (
+                          <span className="shrink-0 text-[9px] text-sky-500 font-bold flex items-center gap-0.5">
+                            <BookmarkCheck size={9} /> 공급사 저장됨
                           </span>
                         )}
                       </div>
