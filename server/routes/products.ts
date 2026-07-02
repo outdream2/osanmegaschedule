@@ -28,6 +28,23 @@ router.get("/api/products-map", async (_req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
+router.get("/api/products-search", async (req, res) => {
+  const q        = String(req.query.q        ?? "").trim();
+  const supplier = String(req.query.supplier ?? "").trim();
+  if (q.length < 1) return res.json([]);
+  try {
+    let query = supabase
+      .from("products")
+      .select("product_code,product_name,spec,supplier,purchase_price,sale_price,profit_rate,expiry_date,real_map,current_stock,sale_status")
+      .or(`product_name.ilike.%${q}%,search_keywords.ilike.%${q}%`);
+    if (supplier.length >= 2) query = query.ilike("supplier", `%${supplier}%`);
+    const { data, error } = await query.limit(40);
+    if (error) throw new Error(error.message);
+    res.setHeader("Cache-Control", "no-store");
+    res.json(data ?? []);
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
 router.post("/api/upload-products", express.raw({ type: "application/octet-stream", limit: "100mb" }), async (req, res) => {
   const { adminKey, managerId } = req.query as Record<string, string>;
   if (!req.body || !Buffer.isBuffer(req.body) || req.body.length === 0) {

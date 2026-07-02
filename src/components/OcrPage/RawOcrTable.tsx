@@ -373,6 +373,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [candidatesMap,    setCandidatesMap   ] = useState<Record<number, CandidateInfo[]>>({});
   const [openCandRow,      setOpenCandRow     ] = useState<number | null>(null);
   const [selectedCands,    setSelectedCands   ] = useState<Record<number, CandidateInfo>>({});
+  const [nameSearchResults,setNameSearchResults] = useState<Record<number, any[]>>({});
+  const [nameSearchOpenRow,setNameSearchOpenRow] = useState<number | null>(null);
+  const nameSearchDebounce = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
 
   const ocrQtyIdx  = dispHeaders.indexOf("수량");
   const ocrPriIdx  = dispHeaders.indexOf("단가");
@@ -583,10 +586,26 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     }
   }, [retryingRows, openCandRow]);
 
+  const searchByName = useCallback((ri: number, name: string, supplierHint?: string) => {
+    clearTimeout(nameSearchDebounce.current[ri]);
+    if (name.trim().length < 2) { setNameSearchOpenRow(null); return; }
+    nameSearchDebounce.current[ri] = setTimeout(async () => {
+      const params = new URLSearchParams({ q: name.trim() });
+      if (supplierHint?.trim()) params.set("supplier", supplierHint.trim());
+      try {
+        const res = await fetch(`/api/products-search?${params}`);
+        const data: any[] = await res.json();
+        setNameSearchResults(prev => ({ ...prev, [ri]: Array.isArray(data) ? data : [] }));
+        setNameSearchOpenRow(data.length > 0 ? ri : null);
+      } catch { /* silent */ }
+    }, 280);
+  }, []);
+
   const selectCandidate = useCallback((ri: number, cand: CandidateInfo) => {
     setSelectedCands(prev => ({ ...prev, [ri]: cand }));
     setOverrides(prev => ({ ...prev, [ri]: cand.name }));
     setOpenCandRow(null);
+    setNameSearchOpenRow(null);
   }, []);
 
   const handleSelectCandidate = useCallback((ri: number, cand: CandidateInfo, inputName: string, supplier: string) => {
@@ -1391,12 +1410,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                         >{item.input}</span>
                         <span className="text-gray-300 shrink-0">→</span>
                         {effMatch ? (
-                          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 min-w-0 flex-1 relative">
                             <input
                               className={`flex-1 font-semibold bg-transparent border-b border-transparent hover:border-indigo-200 focus:border-indigo-400 outline-none truncate min-w-0 ${bcMatch ? "text-emerald-700" : "text-gray-800"}`}
                               value={overrides[ri] ?? effMatch.name}
-                              onChange={e => setOverrides(prev => ({ ...prev, [ri]: e.target.value }))}
+                              onChange={e => {
+                                setOverrides(prev => ({ ...prev, [ri]: e.target.value }));
+                                searchByName(ri, e.target.value, currentSupp || undefined);
+                              }}
                               onBlur={() => {
+                                setTimeout(() => setNameSearchOpenRow(r => r === ri ? null : r), 150);
                                 if (!savedSynonyms.has(ri) && effMatch?.code && item.input) {
                                   saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined);
                                 }
@@ -1413,12 +1436,58 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 {savedSynonyms.has(ri) ? <BookmarkCheck size={12} /> : <Bookmark size={12} />}
                               </button>
                             )}
+                            {nameSearchOpenRow === ri && (nameSearchResults[ri]?.length ?? 0) > 0 && (
+                              <div className="absolute top-full left-0 z-30 mt-0.5 bg-white border border-indigo-200 rounded-xl shadow-xl max-h-48 overflow-y-auto min-w-[220px] w-full">
+                                {nameSearchResults[ri].map((p, pi) => (
+                                  <button key={pi} onMouseDown={e => e.preventDefault()}
+                                    onClick={() => handleSelectCandidate(ri, {
+                                      code: p.product_code ?? "", name: p.product_name ?? "",
+                                      spec: p.spec ?? "", score: 100,
+                                      masterPrice: p.purchase_price ?? null, salePrice: p.sale_price ?? null,
+                                      profitRate: p.profit_rate ?? null, expiryDate: p.expiry_date ?? null,
+                                      supplier: p.supplier ?? null,
+                                    }, item.input, currentSupp)}
+                                    className="flex items-center gap-2 w-full text-left px-3 py-1.5 hover:bg-indigo-50 transition text-[11px] border-b border-gray-50 last:border-0">
+                                    <span className="flex-1 font-semibold text-gray-800 truncate">{p.product_name}</span>
+                                    {p.spec && <span className="text-gray-400 truncate max-w-[60px] shrink-0">{p.spec}</span>}
+                                    {p.supplier && <span className="text-sky-500 shrink-0 truncate max-w-[60px]">{p.supplier}</span>}
+                                    <span className="text-gray-300 font-mono shrink-0 text-[10px]">{p.product_code}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         ) : (
-                          <input
-                            className="flex-1 font-semibold text-rose-500 bg-transparent border-b border-rose-200 hover:border-rose-300 focus:border-rose-400 outline-none truncate min-w-0 placeholder-rose-300 italic"
-                            value={overrides[ri] ?? ""} placeholder="직접 입력..."
-                            onChange={e => setOverrides(prev => ({ ...prev, [ri]: e.target.value }))} />
+                          <div className="flex-1 relative">
+                            <input
+                              className="w-full font-semibold text-rose-500 bg-transparent border-b border-rose-200 hover:border-rose-300 focus:border-rose-400 outline-none truncate placeholder-rose-300 italic"
+                              value={overrides[ri] ?? ""} placeholder="직접 입력..."
+                              onChange={e => {
+                                setOverrides(prev => ({ ...prev, [ri]: e.target.value }));
+                                searchByName(ri, e.target.value, currentSupp || undefined);
+                              }}
+                              onBlur={() => setTimeout(() => setNameSearchOpenRow(r => r === ri ? null : r), 150)} />
+                            {nameSearchOpenRow === ri && (nameSearchResults[ri]?.length ?? 0) > 0 && (
+                              <div className="absolute top-full left-0 z-30 mt-0.5 bg-white border border-indigo-200 rounded-xl shadow-xl max-h-48 overflow-y-auto min-w-[220px] w-full">
+                                {nameSearchResults[ri].map((p, pi) => (
+                                  <button key={pi} onMouseDown={e => e.preventDefault()}
+                                    onClick={() => handleSelectCandidate(ri, {
+                                      code: p.product_code ?? "", name: p.product_name ?? "",
+                                      spec: p.spec ?? "", score: 100,
+                                      masterPrice: p.purchase_price ?? null, salePrice: p.sale_price ?? null,
+                                      profitRate: p.profit_rate ?? null, expiryDate: p.expiry_date ?? null,
+                                      supplier: p.supplier ?? null,
+                                    }, item.input, currentSupp)}
+                                    className="flex items-center gap-2 w-full text-left px-3 py-1.5 hover:bg-indigo-50 transition text-[11px] border-b border-gray-50 last:border-0">
+                                    <span className="flex-1 font-semibold text-gray-800 truncate">{p.product_name}</span>
+                                    {p.spec && <span className="text-gray-400 truncate max-w-[60px] shrink-0">{p.spec}</span>}
+                                    {p.supplier && <span className="text-sky-500 shrink-0 truncate max-w-[60px]">{p.supplier}</span>}
+                                    <span className="text-gray-300 font-mono shrink-0 text-[10px]">{p.product_code}</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
                       <div className="flex items-center gap-1.5 text-[10px] pl-5">
@@ -1642,37 +1711,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                       <tfoot>
                         {confSupplierTotals.length >= 1 && confSupplierTotals.map(({ supplier, total: sTotal, count }) => (
                           <tr key={supplier} className="border-t border-emerald-100 bg-emerald-50/40">
-                            {CONF_HEADERS.slice(0, confAmtIdx).map((h, i) => {
-                              if (collapsedConfCols.has(h)) return <td key={i} className="px-0 py-2 w-1 max-w-[4px] bg-emerald-50/30" />;
-                              const isLastVisible = !CONF_HEADERS.slice(i + 1, confAmtIdx).some(hh => !collapsedConfCols.has(hh));
-                              return isLastVisible
-                                ? <td key={i} className="px-3 py-2 text-right text-[11px] font-semibold text-gray-500">
-                                    {supplier} <span className="text-gray-400">({count}건)</span>
-                                  </td>
-                                : <td key={i} />;
-                            })}
-                            {!collapsedConfCols.has("매입총계") && (
-                              <td className="px-3 py-2 text-right font-bold text-emerald-600 text-xs whitespace-nowrap">{fmt(sTotal)}원</td>
-                            )}
-                            {CONF_HEADERS.slice(confAmtIdx + 1).map((h, i) =>
-                              collapsedConfCols.has(h) ? <td key={i} className="px-0 py-2 w-1 max-w-[4px] bg-emerald-50/30" /> : <td key={i} />
-                            )}
+                            <td colSpan={confAmtIdx} className="px-3 py-2 text-right text-[11px] font-semibold text-gray-500">
+                              {supplier} <span className="text-gray-400">({count}건)</span>
+                            </td>
+                            <td className="px-3 py-2 text-right font-bold text-emerald-600 text-xs whitespace-nowrap">{fmt(sTotal)}원</td>
+                            <td colSpan={CONF_HEADERS.length - confAmtIdx - 1} />
                           </tr>
                         ))}
                         <tr className="bg-emerald-50 border-t-2 border-emerald-300">
-                          {CONF_HEADERS.slice(0, confAmtIdx).map((h, i) => {
-                            if (collapsedConfCols.has(h)) return <td key={i} className="px-0 py-2.5 w-1 max-w-[4px] bg-emerald-50/30" />;
-                            const isLastVisible = !CONF_HEADERS.slice(i + 1, confAmtIdx).some(hh => !collapsedConfCols.has(hh));
-                            return isLastVisible
-                              ? <td key={i} className="px-3 py-2.5 text-right font-black text-gray-700 text-xs">합 계</td>
-                              : <td key={i} />;
-                          })}
-                          {!collapsedConfCols.has("매입총계") && (
-                            <td className="px-3 py-2.5 text-right font-black text-emerald-700 text-sm whitespace-nowrap">{fmt(confTotal)}원</td>
-                          )}
-                          {CONF_HEADERS.slice(confAmtIdx + 1).map((h, i) =>
-                            collapsedConfCols.has(h) ? <td key={i} className="px-0 py-2.5 w-1 max-w-[4px] bg-emerald-50/30" /> : <td key={i} />
-                          )}
+                          <td colSpan={confAmtIdx} className="px-3 py-2.5 text-right font-black text-gray-700 text-xs">합 계</td>
+                          <td className="px-3 py-2.5 text-right font-black text-emerald-700 text-sm whitespace-nowrap">{fmt(confTotal)}원</td>
+                          <td colSpan={CONF_HEADERS.length - confAmtIdx - 1} />
                         </tr>
                       </tfoot>
                     )}
