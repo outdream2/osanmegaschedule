@@ -1416,6 +1416,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               value={overrides[ri] ?? effMatch.name}
                               onChange={e => {
                                 setOverrides(prev => ({ ...prev, [ri]: e.target.value }));
+                                setSavedSynonyms(prev => { const s = new Set(prev); s.delete(ri); return s; });
                                 searchByName(ri, e.target.value, currentSupp || undefined);
                               }}
                               onBlur={() => {
@@ -1464,6 +1465,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               value={overrides[ri] ?? ""} placeholder="직접 입력..."
                               onChange={e => {
                                 setOverrides(prev => ({ ...prev, [ri]: e.target.value }));
+                                setSavedSynonyms(prev => { const s = new Set(prev); s.delete(ri); return s; });
                                 searchByName(ri, e.target.value, currentSupp || undefined);
                               }}
                               onBlur={() => setTimeout(() => setNameSearchOpenRow(r => r === ri ? null : r), 150)} />
