@@ -10,6 +10,20 @@ export function sanitizeOcrMeta(meta: any): any {
   return isRecipient ? { ...meta, supplier: null } : meta;
 }
 
+export function cleanCellValues(
+  headers: string[],
+  rows: (string | number | null)[][]
+): { headers: string[]; rows: (string | number | null)[][] } {
+  const clean = (v: string | number | null): string | number | null => {
+    if (typeof v !== "string") return v;
+    return v.replace(/[\x00-\x1F\x7F]+/g, "").trim() || null;
+  };
+  return {
+    headers: headers.map(h => h.replace(/[\x00-\x1F\x7F]+/g, "").trim()),
+    rows: rows.map(row => row.map(clean)),
+  };
+}
+
 export function mergeAdjacentHeaders(
   headers: string[],
   rows: (string | number | null)[][]

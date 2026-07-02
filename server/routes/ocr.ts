@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { supabase } from "../../src/supabase/client";
 import { getProductMap, getSynonymMap, resetSynonymCache } from "../productCache";
-import { mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta } from "../ocr/parse";
+import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta } from "../ocr/parse";
 import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiState } from "../ocr/llm";
 import { ensureOcrServer, callEasyOcrServer } from "../ocr/easyocr";
 import { invoiceMatchScore, makeMatchResult, norm, bigramSim } from "../ocr/match";
@@ -231,7 +231,8 @@ router.post("/api/ocr", async (req, res) => {
         (images as { data: string; mimeType: string }[]).map(async ({ data: b64, mimeType }, i) => {
           console.log(`[OCR/EasyOCR] page ${i + 1}/${images.length}`);
           const raw = await callEasyOcrServer(b64, mimeType);
-          const pre  = mergeAdjacentHeaders(raw.headers ?? [], raw.rows ?? []);
+          const cleaned = cleanCellValues(raw.headers ?? [], raw.rows ?? []);
+          const pre  = mergeAdjacentHeaders(cleaned.headers, cleaned.rows);
           const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
           const spec = extractSpecFromName(normalized.headers, normalized.rows);
           const cleanMeta = sanitizeOcrMeta(raw.meta ?? {});
@@ -311,7 +312,8 @@ router.post("/api/ocr", async (req, res) => {
           continue;
         }
 
-        const pre  = mergeAdjacentHeaders(parsed.headers ?? [], parsed.rows ?? []);
+        const cleaned = cleanCellValues(parsed.headers ?? [], parsed.rows ?? []);
+        const pre  = mergeAdjacentHeaders(cleaned.headers, cleaned.rows);
         const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
         const spec = extractSpecFromName(normalized.headers, normalized.rows);
         const cleanMeta = sanitizeOcrMeta(parsed.meta ?? {});
