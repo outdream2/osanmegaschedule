@@ -377,6 +377,15 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     setter(selected.size === items.length && items.length > 0 ? new Set() : new Set(items.map(r => r.id)));
   }
 
+  // 상품코드 → 최신 실재고 (창고+매장 합계) 맵
+  const invStockMap = new Map<string, { warehouse: number | null; store: number | null; total: number }>();
+  for (const inv of inventoryChecks) {
+    if (!invStockMap.has(inv.product_code)) {
+      const total = (inv.warehouse_stock ?? 0) + (inv.store_stock ?? 0);
+      invStockMap.set(inv.product_code, { warehouse: inv.warehouse_stock, store: inv.store_stock, total });
+    }
+  }
+
   const requestedCodes = new Set(orderReqs.map(r => r.product_code));
   const lowStock = products.filter(p => {
     const cur = p.current_stock != null ? Number(p.current_stock) : NaN;
@@ -565,12 +574,18 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
                   {orderReqs.map(r => {
                     const short = (r.optimal_stock ?? 0) - (r.current_stock ?? 0);
+                    const inv = invStockMap.get(r.product_code);
                     return (
                       <div key={r.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition ${selectedOrder.has(r.id) ? "bg-rose-50/40" : ""}`}>
                         <Checkbox checked={selectedOrder.has(r.id)} onChange={() => toggleOne(selectedOrder, r.id, setSelectedOrder)} />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-gray-900 truncate">{r.product_name}</p>
                           <p className="text-[10px] text-gray-400 font-mono">{r.product_code} · 현재 {r.current_stock ?? "-"} / 적정 {r.optimal_stock ?? "-"}</p>
+                          {inv && (
+                            <p className="text-[10px] text-purple-600 font-bold mt-0.5">
+                              실재고 {inv.total}개 <span className="font-normal text-gray-400">(창고 {inv.warehouse ?? "-"} + 매장 {inv.store ?? "-"})</span>
+                            </p>
+                          )}
                         </div>
                         <span className="text-[11px] font-black text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-lg shrink-0">-{short}개</span>
                         <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(r.requested_at)}</span>

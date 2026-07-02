@@ -56,6 +56,9 @@ export interface PagePermissions {
   leave: PagePermission;
   ocr: PagePermission;
   upload: PagePermission;
+  reservation: PagePermission;
+  lunch: PagePermission;
+  stockcheck: PagePermission;
 }
 
 export const DEFAULT_PERMISSIONS: PagePermissions = {
@@ -66,6 +69,9 @@ export const DEFAULT_PERMISSIONS: PagePermissions = {
   leave:     { read: 1, write: 1 },
   ocr:       { read: 2, write: 2 },
   upload:    { read: 2, write: 2 },
+  reservation: { read: 1, write: 1 },
+  lunch:     { read: 1, write: 1 },
+  stockcheck: { read: 1, write: 1 },
 };
 
 export interface MonthlySummary {
