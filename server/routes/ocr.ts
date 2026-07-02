@@ -4,7 +4,7 @@ import { getProductMap, getSynonymMap, resetSynonymCache } from "../productCache
 import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta } from "../ocr/parse";
 import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiState } from "../ocr/llm";
 import { ensureOcrServer, callEasyOcrServer } from "../ocr/easyocr";
-import { invoiceMatchScore, makeMatchResult, norm, bigramSim } from "../ocr/match";
+import { invoiceMatchScore, makeMatchResult, norm, normSupplier, bigramSim } from "../ocr/match";
 import type { GeminiResult } from "../ocr/schema";
 
 function buildTemplatePrompt(supplierName: string, headers: string[]): string {
@@ -37,7 +37,7 @@ router.post("/api/ocr-match", async (req, res) => {
       const supplierHint = (req.body.supplier as string | undefined)?.trim() ?? "";
 
       const nameLC = name.trim().toLowerCase();
-      const synKeyCompound = supplierHint ? `${supplierHint.toLowerCase()}|${nameLC}` : null;
+      const synKeyCompound = supplierHint ? `${normSupplier(supplierHint)}|${nameLC}` : null;
       const synCode = (synKeyCompound && synonymMap.get(synKeyCompound)) ?? synonymMap.get(nameLC);
       if (synCode) {
         const sp = map[synCode] ?? products.find(p => p.code === synCode);
@@ -46,7 +46,7 @@ router.post("/api/ocr-match", async (req, res) => {
 
       const pool = (() => {
         if (!supplierHint) return products;
-        const sh = norm(supplierHint);
+        const sh = normSupplier(supplierHint);
         const filtered = products.filter(p => {
           if (!p.supplier) return false;
           const sp = norm(String(p.supplier));
@@ -79,7 +79,7 @@ router.post("/api/ocr-match", async (req, res) => {
 
       const supplierHint = (supplierHints[i] ?? "").trim();
       const nameLC = name.trim().toLowerCase();
-      const synKeyCompound = supplierHint ? `${supplierHint.toLowerCase()}|${nameLC}` : null;
+      const synKeyCompound = supplierHint ? `${normSupplier(supplierHint)}|${nameLC}` : null;
       const synCode = (synKeyCompound && synonymMap.get(synKeyCompound)) ?? synonymMap.get(nameLC);
       if (synCode) {
         const sp = map[synCode] ?? products.find(p => p.code === synCode);
@@ -88,7 +88,7 @@ router.post("/api/ocr-match", async (req, res) => {
 
       const pool = (() => {
         if (!supplierHint) return products;
-        const sh = norm(supplierHint);
+        const sh = normSupplier(supplierHint);
         const filtered = products.filter(p => {
           if (!p.supplier) return false;
           const sp = norm(String(p.supplier));
@@ -145,7 +145,7 @@ router.post("/api/ocr-synonyms", async (req, res) => {
     if (!alias?.trim() || !product_code?.trim()) return res.status(400).json({ error: "alias, product_code 필요" });
     const aliasNorm  = alias.trim().toLowerCase();
     const codeNorm   = product_code.trim();
-    const supplyNorm = supply?.trim() ?? null;
+    const supplyNorm = supply?.trim() ? normSupplier(supply.trim()) : null;
 
     // 상품코드 기준: 같은 product_code로 이미 등록된 행이 있으면 alias + supply 업데이트
     const { data: existRows } = await supabase

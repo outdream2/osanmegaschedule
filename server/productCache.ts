@@ -1,4 +1,5 @@
 import { supabase } from "../src/supabase/client";
+import { normSupplier } from "./ocr/match";
 
 export interface ProductInfo {
   code: string;
@@ -61,7 +62,7 @@ export async function getSynonymMap(): Promise<Map<string, string>> {
       const alias = String(row.alias).trim().toLowerCase();
       const code  = String(row.product_code).trim();
       if (row.supply) {
-        map.set(`${String(row.supply).trim().toLowerCase()}|${alias}`, code);
+        map.set(`${normSupplier(String(row.supply))}|${alias}`, code);
       }
       if (!map.has(alias)) map.set(alias, code);
     }

@@ -46,6 +46,11 @@ export function jamoSim(a: string, b: string): number {
 export const norm = (s: string) =>
   s.toLowerCase().replace(/[\s\-_()（）,·./[\]{}「」『』]/g, "");
 
+// 공급사명 정규화: (주)·㈜·주식회사·유한회사 제거 후 공백·특수문자 제거
+// OCR 오독("광동 제 약(주)" → "광동제약")이나 법인 표기 차이를 흡수
+export const normSupplier = (s: string): string =>
+  norm(s.replace(/주식회사|유한회사|합자회사|합명회사|농업회사법인|㈜|\(주\)|\(유\)|\(합\)|\(재\)/gi, ""));
+
 const DOSE_FORM = /정|캡슐|연질캡슐|경질캡슐|서방정|필름코팅정|당의정|시럽|건조시럽|주사|주|앰풀|바이알|좌약|크림|겔|젤|로션|패취|패치|점안|점이|흡입|분말|과립|환|액|현탁액|산/g;
 const SPEC_PAT  = /\d+(?:[./×x]\d+)?(?:mg|mcg|μg|ug|g|kg|ml|mL|L|IU|mEq|%|t|c|tab|cap|ea)/gi;
 export const stripMed = (s: string) => norm(s).replace(SPEC_PAT, "").replace(DOSE_FORM, "").replace(/\d+/g, "");
