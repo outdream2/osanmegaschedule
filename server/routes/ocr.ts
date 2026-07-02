@@ -258,8 +258,9 @@ router.post("/api/ocr", async (req, res) => {
       const failedKeys = new Set<string>();
       for (let i = 0; i < images.length; i++) {
         const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
-        const startIdx = keys.length > 0 ? geminiState.roundRobinIdx % keys.length : 0;
-        console.log(`[OCR/Gemini] page ${i + 1}/${images.length} — 키 ${startIdx + 1}번부터 순환 (총 ${keys.length}개)`);
+        // sticky 방식: 현재 키부터 시작, 실패 시에만 다음 키로 이동
+        const startIdx = keys.length > 0 ? geminiState.currentKeyIdx % keys.length : 0;
+        console.log(`[OCR/Gemini] page ${i + 1}/${images.length} — 키 ${startIdx + 1} 사용 (총 ${keys.length}개)`);
 
         const hint = supplierHints[i] ?? "";
         const tmplHeaders = hint ? templateMap.get(hint) : undefined;
@@ -277,15 +278,17 @@ router.post("/api/ocr", async (req, res) => {
           const r = await callGeminiOcr(b64, mimeType, apiKey, undefined, templatePrompt);
           if (r.ok) {
             rawText = r.text;
-            geminiState.roundRobinIdx = ki;
+            geminiState.currentKeyIdx = ki; // 성공한 키를 다음에도 계속 사용
             console.log(`[OCR/Gemini] page ${i + 1}: 키 ${ki + 1} 성공`);
             break;
           }
           const fail = r as Extract<GeminiResult, { ok: false }>;
           lastError = fail.error;
           if (fail.quota) quotaCount++;
-          if (fail.quota || fail.error.includes("API_KEY_INVALID") || fail.error.includes("not valid")) {
+          if (fail.quota || fail.error.includes("API_KEY_INVALID") || fail.error.includes("not valid") || fail.error.includes("UNAUTHENTICATED")) {
             failedKeys.add(apiKey);
+            // 실패한 키 다음으로 currentKeyIdx 이동
+            geminiState.currentKeyIdx = (ki + 1) % keys.length;
           }
           console.warn(`[OCR/Gemini] 키 ${ki + 1}/${keys.length} 실패: ${fail.error}`);
         }

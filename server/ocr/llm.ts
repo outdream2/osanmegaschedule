@@ -3,7 +3,8 @@ import { type GeminiResult, GEMINI_OCR_PROMPT } from "./schema";
 
 export const GEMINI_MODEL = "gemini-2.5-flash";
 
-export const geminiState = { roundRobinIdx: 0 };
+// 현재 사용 중인 키 인덱스 (sticky: 성공한 키를 계속 사용, 실패 시에만 다음으로)
+export const geminiState = { currentKeyIdx: 0 };
 
 export function getGeminiKeys(): string[] {
   const seen = new Set<string>();

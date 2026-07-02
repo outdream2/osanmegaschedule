@@ -128,7 +128,7 @@ async function resizeImageForOcr(
   return new Promise(resolve => {
     const img = new Image();
     img.onload = () => {
-      const MAX = 1500;
+      const MAX = 2400;
       const scale = Math.min(1, MAX / Math.max(img.width, img.height));
       const w = Math.round(img.width * scale);
       const h = Math.round(img.height * scale);
@@ -136,7 +136,7 @@ async function resizeImageForOcr(
       canvas.width = w; canvas.height = h;
       const ctx = canvas.getContext("2d")!;
       ctx.drawImage(img, 0, 0, w, h);
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
       resolve({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
     };
     img.onerror = () => resolve({ data: b64, mimeType });
@@ -178,14 +178,14 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
     setPageCount(pdf.numPages);
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
-      const vp = page.getViewport({ scale: 1.5 });
+      const vp = page.getViewport({ scale: 2.0 });
       const canvas = document.createElement("canvas");
       canvas.width = Math.floor(vp.width);
       canvas.height = Math.floor(vp.height);
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error(`페이지 ${i} Canvas를 초기화할 수 없습니다.`);
       await page.render({ canvasContext: ctx as any, viewport: vp, canvas } as any).promise;
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
       setPageImages(prev => [...prev, dataUrl]);
       imgs.push({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
     }
