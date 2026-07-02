@@ -131,6 +131,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [inventoryLoading, setInventoryLoading] = useState(false);
   const [selectedInventory, setSelectedInventory] = useState<Set<string>>(new Set());
   const [invLogOpen, setInvLogOpen] = useState(false);
+  const [requestingInvOrder, setRequestingInvOrder] = useState<Set<string>>(new Set());
 
   // 빠른 탭 갯수 (pending-counts 엔드포인트)
   const [tabCounts, setTabCounts] = useState<{display:number; order:number; mismatch:number; lunch:number; inventory:number} | null>(null);
@@ -347,6 +348,25 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       return;
     }
     doSubmitOrderRequest(p);
+  };
+
+  const handleOrderFromInventory = async (r: InventoryCheck) => {
+    const existing = orderReqs.find(o => o.product_code === r.product_code);
+    if (existing) {
+      const fakeProduct = { code: r.product_code, name: r.product_name, spec: "", current_stock: r.system_stock, optimal_stock: r.optimal_stock } as ProductInfo;
+      setDupOrderModal({ existing, product: fakeProduct, editStock: r.system_stock ?? "" });
+      return;
+    }
+    setRequestingInvOrder(prev => new Set([...prev, r.product_code]));
+    try {
+      const res = await fetch("/api/order-requests", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product_code: r.product_code, product_name: r.product_name, current_stock: r.system_stock, optimal_stock: r.optimal_stock, note: "" }),
+      });
+      if (res.ok) { await loadOrderReqs(); }
+    } finally {
+      setRequestingInvOrder(prev => { const s = new Set(prev); s.delete(r.product_code); return s; });
+    }
   };
 
   // 선택 토글 헬퍼
@@ -701,7 +721,21 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                         </div>
                         {r.checked_by && <p className="text-[10px] text-gray-400 mt-0.5">점검자: {r.checked_by}</p>}
                       </div>
-                      <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(r.checked_at)}</span>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className="text-[10px] text-gray-400">{fmtDate(r.checked_at)}</span>
+                        <button
+                          onClick={() => handleOrderFromInventory(r)}
+                          disabled={requestingInvOrder.has(r.product_code)}
+                          className={`text-[10px] font-bold px-2 py-1 rounded-lg transition cursor-pointer disabled:opacity-50 flex items-center gap-1 ${
+                            requestedCodes.has(r.product_code)
+                              ? "bg-emerald-50 text-emerald-600 border border-emerald-200"
+                              : "bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                          }`}
+                        >
+                          <ShoppingCart size={9} />
+                          {requestingInvOrder.has(r.product_code) ? "..." : requestedCodes.has(r.product_code) ? "요청됨" : "발주요청"}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
