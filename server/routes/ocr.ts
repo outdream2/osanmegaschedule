@@ -3,6 +3,7 @@ import { supabase } from "../../src/supabase/client";
 import { getProductMap, getSynonymMap, resetSynonymCache } from "../productCache";
 import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta } from "../ocr/parse";
 import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiState } from "../ocr/llm";
+import { callUpstageOcr } from "../ocr/upstage";
 import { ensureOcrServer, callEasyOcrServer } from "../ocr/easyocr";
 import { invoiceMatchScore, makeMatchResult, norm, normSupplier, bigramSim } from "../ocr/match";
 import type { GeminiResult } from "../ocr/schema";
@@ -12,6 +13,9 @@ function buildTemplatePrompt(supplierName: string, headers: string[]): string {
 }
 
 const router = Router();
+
+// Gemini 키 중 이번 서버 세션에서 영구 제외된 키 (할당량 초과 or 인증 실패)
+const sessionDeadKeys = new Set<string>();
 
 router.get("/api/health", (_req, res) => res.json({ ok: true }));
 
@@ -255,44 +259,68 @@ router.post("/api/ocr", async (req, res) => {
 
     if (engine === "gemini") {
       const keys = getGeminiKeys();
-      const failedKeys = new Set<string>();
+      const upstageKey = process.env.UPSTAGE_API_KEY;
+
       for (let i = 0; i < images.length; i++) {
         const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
-        // sticky 방식: 현재 키부터 시작, 실패 시에만 다음 키로 이동
-        const startIdx = keys.length > 0 ? geminiState.currentKeyIdx % keys.length : 0;
-        console.log(`[OCR/Gemini] page ${i + 1}/${images.length} — 키 ${startIdx + 1} 사용 (총 ${keys.length}개)`);
 
         const hint = supplierHints[i] ?? "";
         const tmplHeaders = hint ? templateMap.get(hint) : undefined;
         const templatePrompt = tmplHeaders ? buildTemplatePrompt(hint, tmplHeaders) : undefined;
         if (templatePrompt) console.log(`[OCR/Template] page ${i + 1}: 프롬프트 힌트 적용`);
 
+        // ── 1순위: Upstage Document Parse ───────────────────────────────────
+        if (upstageKey) {
+          console.log(`[OCR/Upstage] page ${i + 1}/${images.length} 시도`);
+          const ur = await callUpstageOcr(b64, mimeType);
+          if (ur.ok) {
+            const cleaned = cleanCellValues(ur.headers, ur.rows);
+            const pre  = mergeAdjacentHeaders(cleaned.headers, cleaned.rows);
+            const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
+            const spec = extractSpecFromName(normalized.headers, normalized.rows);
+            const cleanMeta = sanitizeOcrMeta({ ...ur.meta });
+            const rows0 = repairColumnShift(spec.headers, spec.rows);
+            const rows1 = fixAmountsBySubtotal(spec.headers, rows0, cleanMeta.total ?? null);
+            const rows  = crossValidateIntraPage(spec.headers, rows1);
+            process.stdout.write(`\n[OCR 결과/Upstage] page ${i + 1}\n  헤더: ${JSON.stringify(spec.headers)}\n  행 수: ${rows.length}\n  메타: ${JSON.stringify(cleanMeta)}\n`);
+            pages.push({ page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText: ur.rawText, engine: "upstage" });
+            continue;
+          }
+          console.warn(`[OCR/Upstage] page ${i + 1} 실패: ${ur.error} — Gemini로 대체`);
+        }
+
+        // ── 2순위: Gemini (sticky key, 세션 내 dead key 제외) ───────────────
         let rawText = "";
-        let quotaCount = 0;
         let lastError = "";
+
+        const startIdx = keys.length > 0 ? geminiState.currentKeyIdx % keys.length : 0;
+        console.log(`[OCR/Gemini] page ${i + 1}/${images.length} — 키 ${startIdx + 1}번부터 (총 ${keys.length}개)`);
 
         for (let k = 0; k < keys.length; k++) {
           const ki = (startIdx + k) % keys.length;
           const apiKey = keys[ki];
-          if (failedKeys.has(apiKey)) { quotaCount++; continue; }
+          if (sessionDeadKeys.has(apiKey)) continue;
+
           const r = await callGeminiOcr(b64, mimeType, apiKey, undefined, templatePrompt);
           if (r.ok) {
             rawText = r.text;
-            geminiState.currentKeyIdx = ki; // 성공한 키를 다음에도 계속 사용
+            geminiState.currentKeyIdx = ki;
             console.log(`[OCR/Gemini] page ${i + 1}: 키 ${ki + 1} 성공`);
             break;
           }
           const fail = r as Extract<GeminiResult, { ok: false }>;
           lastError = fail.error;
-          if (fail.quota) quotaCount++;
-          if (fail.quota || fail.error.includes("API_KEY_INVALID") || fail.error.includes("not valid") || fail.error.includes("UNAUTHENTICATED")) {
-            failedKeys.add(apiKey);
-            // 실패한 키 다음으로 currentKeyIdx 이동
+          if (fail.quota || fail.error.includes("UNAUTHENTICATED") || fail.error.includes("API_KEY_INVALID") || fail.error.includes("not valid")) {
+            sessionDeadKeys.add(apiKey);
             geminiState.currentKeyIdx = (ki + 1) % keys.length;
+            console.warn(`[OCR/Gemini] 키 ${ki + 1} 세션 제외 (할당량 초과 또는 인증 실패)`);
+          } else {
+            geminiState.currentKeyIdx = (ki + 1) % keys.length;
+            console.warn(`[OCR/Gemini] 키 ${ki + 1}/${keys.length} 실패: ${fail.error}`);
           }
-          console.warn(`[OCR/Gemini] 키 ${ki + 1}/${keys.length} 실패: ${fail.error}`);
         }
 
+        // ── 3순위: Mistral fallback ──────────────────────────────────────────
         if (!rawText) {
           const mistralKeys = getMistralKeys();
           for (const mKey of mistralKeys) {
@@ -300,12 +328,14 @@ router.post("/api/ocr", async (req, res) => {
             if (r.ok) { rawText = r.text; console.log(`[OCR/Mistral] page ${i + 1}: 성공`); break; }
             console.warn(`[OCR/Mistral] 실패: ${(r as Extract<GeminiResult, { ok: false }>).error}`);
           }
-          if (!rawText) {
-            const errMsg = quotaCount === keys.length
-              ? `Gemini 키 ${keys.length}개 모두 할당량 초과입니다. 내일 다시 시도하거나 새 키를 발급하세요.`
-              : `Gemini OCR 실패: ${lastError}`;
-            return res.status(500).json({ error: errMsg });
-          }
+        }
+
+        if (!rawText) {
+          const deadCount = keys.filter(k => sessionDeadKeys.has(k)).length;
+          const errMsg = deadCount === keys.length
+            ? `Gemini 키 ${keys.length}개 모두 할당량 초과 또는 인증 실패. 새 키를 추가하거나 내일 재시도하세요.`
+            : `OCR 실패: ${lastError}`;
+          return res.status(500).json({ error: errMsg });
         }
 
         let parsed: any;

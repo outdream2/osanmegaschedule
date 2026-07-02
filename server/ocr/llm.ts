@@ -81,11 +81,12 @@ export async function callGeminiOcr(b64: string, mimeType: string, apiKey: strin
         const msg = String(e?.message ?? e);
         const isQuota = isQuotaError(msg);
         lastResult = { ok: false, quota: isQuota, error: msg };
-        if (isQuota || msg.includes("503") || msg.includes("UNAVAILABLE")) {
-          console.log(`[OCR/Gemini] API 오류로 인해 ${attempt}/${attempts}차 재시도 대기 중...`);
+        if (msg.includes("503") || msg.includes("UNAVAILABLE")) {
+          console.log(`[OCR/Gemini] 서버 오류 ${attempt}/${attempts}차 재시도 대기 중...`);
           await new Promise(r => setTimeout(r, 2000 * attempt));
           continue;
         }
+        // quota(429), UNAUTHENTICATED 등은 재시도 불필요 — 즉시 반환
         break;
       }
     }
