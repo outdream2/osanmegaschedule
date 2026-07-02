@@ -25,6 +25,9 @@ import {
   EyeOff,
   Utensils,
   Package,
+  Bell,
+  BellOff,
+  Plus,
 } from "lucide-react";
 import type { AuthSession, AuthRole } from "../../types";
 import { NotificationBell } from "../NotificationBell";
@@ -49,6 +52,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [importLog, setImportLog] = useState<{ timestamp: string; count: number }[]>([]);
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
+  // Stock arrivals
+  const [stockArrivals, setStockArrivals] = useState<Array<{id: number; title: string; body?: string | null; created_at: string}>>([]);
+  const [arrivalsLoading, setArrivalsLoading] = useState(true);
+  const [pushSubscribed, setPushSubscribed] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+  const [showCreateArrival, setShowCreateArrival] = useState(false);
+  const [newArrivalTitle, setNewArrivalTitle] = useState("");
+  const [newArrivalBody, setNewArrivalBody] = useState("");
+  const [createLoading, setCreateLoading] = useState(false);
+
   const [empNumber, setEmpNumber] = useState(() => localStorage.getItem("megatown_remembered_phone") ?? "");
   const [empPassword, setEmpPassword] = useState("");
   const [empError, setEmpError] = useState<string | null>(null);
@@ -65,6 +78,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [vendorLoading, setVendorLoading] = useState(false);
   const [showVendorPassword, setShowVendorPassword] = useState(false);
   const vendorPhoneRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch("/api/stock-arrivals")
+      .then(r => r.ok ? r.json() : [])
+      .then(setStockArrivals)
+      .catch(() => {})
+      .finally(() => setArrivalsLoading(false));
+    setPushSubscribed(localStorage.getItem("anon_push_subscribed") === "1");
+  }, []);
 
   useEffect(() => {
     if (pendingPage) {
@@ -237,6 +259,61 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       .catch(() => {});
   }, [isManagerOrAdmin]);
 
+  const handleAnonSubscribe = async () => {
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) {
+      alert("이 브라우저는 알림을 지원하지 않습니다.");
+      return;
+    }
+    setPushLoading(true);
+    try {
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") {
+        alert("알림 권한이 거부되었습니다. 브라우저 설정에서 알림을 허용해 주세요.");
+        return;
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY,
+      });
+      await fetch("/api/anon-push-subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: sub.toJSON() }),
+      });
+      localStorage.setItem("anon_push_subscribed", "1");
+      setPushSubscribed(true);
+    } catch (err: any) {
+      console.error("Push subscribe error:", err);
+      alert("알림 구독에 실패했습니다.");
+    } finally {
+      setPushLoading(false);
+    }
+  };
+
+  const handleCreateArrival = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newArrivalTitle.trim() || !authSession) return;
+    setCreateLoading(true);
+    try {
+      const res = await fetch("/api/stock-arrivals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newArrivalTitle.trim(), body: newArrivalBody.trim() || undefined, employeeId: authSession.employeeId }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error);
+      const arrival = await res.json();
+      setStockArrivals(prev => [arrival, ...prev]);
+      setNewArrivalTitle("");
+      setNewArrivalBody("");
+      setShowCreateArrival(false);
+    } catch (err: any) {
+      alert("입고 알림 작성 실패: " + err.message);
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
   const roleLabel = isSuperAdmin ? "최고관리자" : isManagerRole ? "관리자" : (authSession?.employeeName ?? "직원");
 
   // Permission check per menu
@@ -323,6 +400,104 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <span className="opacity-70 ml-1">{authSession.employeeRank}</span>
                   )}
                 </span>
+              </div>
+            )}
+          </div>
+
+          {/* ── 입고 알림 섹션 (항상 표시) ── */}
+          <div className="w-full mb-7">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0369a1, #0ea5e9)" }}>
+                <Package size={10} className="text-white" />
+              </div>
+              <span className="text-[11px] font-bold text-sky-600 uppercase tracking-widest">입고 알림</span>
+              <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #bae6fd, transparent)" }} />
+              {/* 알림 받기 버튼 */}
+              <button
+                onClick={handleAnonSubscribe}
+                disabled={pushLoading || pushSubscribed}
+                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all cursor-pointer disabled:cursor-default"
+                style={pushSubscribed
+                  ? { background: "#f0fdf4", borderColor: "#86efac", color: "#166534" }
+                  : { background: "#eff6ff", borderColor: "#93c5fd", color: "#1e40af" }
+                }
+              >
+                {pushLoading ? (
+                  <div className="w-3 h-3 rounded-full border-2 border-blue-300 border-t-blue-600 animate-spin" />
+                ) : pushSubscribed ? (
+                  <BellOff size={10} />
+                ) : (
+                  <Bell size={10} />
+                )}
+                {pushSubscribed ? "알림 설정됨" : "알림 받기"}
+              </button>
+              {/* 입고 알림 작성 (level 3+) */}
+              {userLevel >= 3 && (
+                <button
+                  onClick={() => setShowCreateArrival(v => !v)}
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 transition cursor-pointer"
+                >
+                  <Plus size={10} />
+                  작성
+                </button>
+              )}
+            </div>
+
+            {/* 작성 폼 */}
+            {showCreateArrival && userLevel >= 3 && (
+              <form onSubmit={handleCreateArrival} className="mb-3 bg-white border border-sky-200 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
+                <input
+                  type="text"
+                  value={newArrivalTitle}
+                  onChange={e => setNewArrivalTitle(e.target.value)}
+                  placeholder="입고 제목 (예: 광동제약 입고 완료)"
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-sky-400"
+                  maxLength={80}
+                  required
+                />
+                <textarea
+                  value={newArrivalBody}
+                  onChange={e => setNewArrivalBody(e.target.value)}
+                  placeholder="상세 내용 (선택)"
+                  rows={2}
+                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-sky-400 resize-none"
+                  maxLength={200}
+                />
+                <div className="flex gap-2 justify-end">
+                  <button type="button" onClick={() => setShowCreateArrival(false)} className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 transition cursor-pointer">취소</button>
+                  <button
+                    type="submit"
+                    disabled={createLoading || !newArrivalTitle.trim()}
+                    className="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 disabled:bg-sky-200 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1"
+                  >
+                    {createLoading ? <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : null}
+                    알림 발송
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* 알림 목록 */}
+            {arrivalsLoading ? (
+              <div className="text-xs text-slate-400 py-4 text-center">불러오는 중...</div>
+            ) : stockArrivals.length === 0 ? (
+              <div className="text-xs text-slate-400 py-4 text-center">등록된 입고 알림이 없습니다.</div>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {stockArrivals.slice(0, 5).map(a => (
+                  <div key={a.id} className="bg-white border border-slate-200/80 rounded-xl px-4 py-3 shadow-sm flex items-start gap-3">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #7dd3fc" }}>
+                      <Package size={13} className="text-sky-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-slate-800 font-semibold text-sm leading-snug truncate">{a.title}</div>
+                      {a.body && <div className="text-slate-500 text-xs mt-0.5 leading-relaxed line-clamp-2">{a.body}</div>}
+                      <div className="text-slate-400 text-[11px] mt-1">
+                        {new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

@@ -331,6 +331,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     if (img) { setModalImg(img); setModalLabel(label); setZoom(1); setPan({ x: 0, y: 0 }); }
   }, [pageImages, pageNums, dispRows, nameIdx]);
 
+  const openPageModal = useCallback((pageNum: number) => {
+    if (!pageImages?.length) return;
+    const pNum = Math.max(1, Math.min(pageNum, pageImages.length));
+    const img = pageImages[pNum - 1] ?? pageImages[0];
+    if (img) { setModalImg(img); setModalLabel(`${pageNum}번 명세서`); setZoom(1); setPan({ x: 0, y: 0 }); }
+  }, [pageImages]);
+
   const onMouseDown = (e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
@@ -989,7 +996,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                     <div key={pageNum} className="flex items-center gap-2 flex-wrap text-[11px] font-semibold text-emerald-700">
                       <CheckCircle size={12} className="shrink-0 text-emerald-500" />
                       <span className="flex items-center gap-1 flex-wrap">
-                        <span>{pageNum}번 소계 확정: <span className="font-black">{fmt(chosenVal)}원</span></span>
+                        <button
+                          onClick={() => openPageModal(pageNum)}
+                          disabled={!pageImages?.length}
+                          className="disabled:cursor-default enabled:hover:underline enabled:cursor-pointer"
+                          title={pageImages?.length ? `${pageNum}번 명세서 이미지 보기` : undefined}
+                        >{pageNum}번 소계 확정: <span className="font-black">{fmt(chosenVal)}원</span></button>
                         {choice && (
                           <span className="text-emerald-500 font-normal">
                             ({choice === "stated" ? "명세서 소계" : "인식된 합계"} 기준)
@@ -1029,9 +1041,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                 return (
                   <div key={pageNum} className="flex items-center gap-2 flex-wrap">
                     <AlertTriangle size={12} className="shrink-0 text-rose-500" />
-                    <span className="text-[11px] font-semibold text-rose-700 shrink-0">
+                    <button
+                      onClick={() => openPageModal(pageNum)}
+                      disabled={!pageImages?.length}
+                      className="text-[11px] font-semibold text-rose-700 shrink-0 disabled:cursor-default enabled:hover:underline enabled:cursor-pointer"
+                      title={pageImages?.length ? `${pageNum}번 명세서 이미지 보기` : undefined}
+                    >
                       {pageNum}번 소계 불일치
-                    </span>
+                    </button>
                     <span className="text-[10px] text-rose-400 shrink-0">어느 값이 맞나요?</span>
                     <button
                       onClick={() => setPageSubtotalChoices(prev => ({ ...prev, [pageNum]: "stated" }))}

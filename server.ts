@@ -23,6 +23,7 @@ import reservationsRouter from "./server/routes/reservations";
 import vendorsRouter     from "./server/routes/vendors";
 import ocrRouter         from "./server/routes/ocr";
 import stockCountRouter  from "./server/routes/stockCount";
+import stockArrivalsRouter from "./server/routes/stockArrivals";
 import { loadStockCountModel } from "./server/stockCounter";
 
 async function startServer() {
@@ -65,6 +66,7 @@ async function startServer() {
   app.use(vendorsRouter);
   app.use(ocrRouter);
   app.use(stockCountRouter);
+  app.use(stockArrivalsRouter);
 
   // /products.json — 항상 DB에서 동적으로 제공 (브라우저 캐시 없음, 서버 메모리 캐시만 사용)
   app.get("/products.json", async (_req, res) => {
