@@ -23,7 +23,7 @@ const PAGE_LABELS: { key: keyof PagePermissions; label: string; desc: string }[]
   { key: "stockcheck",  label: "재고 점검",       desc: "매장 내 의약품 재고 점검" },
 ];
 
-const LEVELS = [1,2,3,4,5,6,7,8,9];
+const LEVELS = [0,1,2,3,4,5,6,7,8,9];
 
 export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, onBack, onLogout }) => {
   const [perms, setPerms] = useState<PagePermissions>(DEFAULT_PERMISSIONS);
