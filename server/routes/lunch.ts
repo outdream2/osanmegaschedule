@@ -3,6 +3,34 @@ import { supabase } from "../../src/supabase/client";
 
 const router = Router();
 
+// 특정 날짜 출근 현황: 당일 schedule type이 휴무/공휴일/연차/경조사가 아닌 직원
+router.get("/api/lunch-attendance", async (req, res) => {
+  const date = (req.query.date as string) || new Date().toISOString().split("T")[0];
+  const [year, monthStr] = date.split("-");
+  const OFF_TYPES = ["휴무", "공휴일", "연차", "반차(오전)", "반차(오후)", "경조사", "병가"];
+
+  const { data: employees, error: empErr } = await supabase
+    .from("employees").select("id, name, position").order("id");
+  if (empErr) return res.status(500).json({ error: empErr.message });
+
+  const { data: schedules, error: schErr } = await supabase
+    .from("schedules").select("employeeId, type, date")
+    .eq("date", date);
+  if (schErr) return res.status(500).json({ error: schErr.message });
+
+  const schedMap = new Map<number, string>();
+  for (const s of (schedules ?? [])) schedMap.set(s.employeeId, s.type);
+
+  const working = (employees ?? []).filter(e => {
+    const t = schedMap.get(e.id);
+    return t && !OFF_TYPES.includes(t);
+  });
+
+  const pharmacistCount = working.filter(e => e.position === "약사").length;
+  const staffCount = working.filter(e => e.position !== "약사").length;
+  return res.json({ working, pharmacistCount, staffCount, totalCount: working.length });
+});
+
 router.get("/api/lunch-requests", async (req, res) => {
   const date = (req.query.date as string) || new Date().toISOString().split("T")[0];
   const { data, error } = await supabase

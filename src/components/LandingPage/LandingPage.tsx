@@ -581,7 +581,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 >
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)" }} />
                   <Lock size={14} className="relative text-indigo-600" />
-                  <span className="relative text-indigo-700 font-bold text-sm">직원 로그인</span>
+                  <span className="relative text-indigo-700 font-bold text-sm">로그인</span>
                 </button>
                 <button
                   onClick={() => setVendorLoginOpen(true)}
@@ -596,8 +596,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
-          {/* ── 거래처용 (거래처 로그인 시에만 표시) ── */}
-          {isLoggedIn && isVendor && (
+          {/* ── 거래처용 (거래처 로그인 시 또는 최고관리자도 표시) ── */}
+          {isLoggedIn && (isVendor || isSuperAdminLevel9) && (
             <div className="w-full">
               <div className="flex items-center gap-2 mb-3.5">
                 <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}>

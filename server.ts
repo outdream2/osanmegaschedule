@@ -22,6 +22,8 @@ import lunchRouter       from "./server/routes/lunch";
 import reservationsRouter from "./server/routes/reservations";
 import vendorsRouter     from "./server/routes/vendors";
 import ocrRouter         from "./server/routes/ocr";
+import stockCountRouter  from "./server/routes/stockCount";
+import { loadStockCountModel } from "./server/stockCounter";
 
 async function startServer() {
   const app = express();
@@ -62,6 +64,19 @@ async function startServer() {
   app.use(reservationsRouter);
   app.use(vendorsRouter);
   app.use(ocrRouter);
+  app.use(stockCountRouter);
+
+  // /products.json — 항상 DB에서 동적으로 제공 (브라우저 캐시 없음, 서버 메모리 캐시만 사용)
+  app.get("/products.json", async (_req, res) => {
+    try {
+      const map = await getProductMap();
+      res.setHeader("Cache-Control", "no-cache");
+      res.json(map);
+    } catch (err: any) {
+      console.error("[products.json] error:", err.message);
+      res.status(500).json({ error: err.message });
+    }
+  });
 
   const httpServer = http.createServer(app);
 
@@ -73,21 +88,13 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), "dist");
-    app.get("/products.json", async (_req, res) => {
-      try {
-        const map = await getProductMap();
-        res.setHeader("Cache-Control", "public, max-age=3600");
-        res.json(map);
-      } catch {
-        res.setHeader("Cache-Control", "public, max-age=3600");
-        res.sendFile(path.join(distPath, "products.json"));
-      }
-    });
     app.use(express.static(distPath));
     app.get("*", (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+
+  loadStockCountModel();
 
   httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`[Server] Megatown schedule service running on http://localhost:${PORT}`);

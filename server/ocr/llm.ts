@@ -95,50 +95,31 @@ export async function callGeminiOcr(b64: string, mimeType: string, apiKey: strin
   return Promise.race([callPromise, timeoutPromise]);
 }
 
-export async function structureWithGemini(rawText: string, apiKey: string): Promise<GeminiResult> {
-  const prompt = `당신은 한국 거래명세서·납품서·세금계산서 전문 데이터 추출 엔진입니다.
-아래 OCR 텍스트에서 품목 표를 찾아 JSON으로 반환하세요.
+const SUPPLIER_EXTRACT_PROMPT = `이 이미지는 한국 거래명세서입니다.
+이미지에서 "공급자" 또는 "납품자"의 회사 상호명만 추출하세요. 수신처(약국, 병원 등 구매처)는 제외합니다.
+JSON 형식으로만 응답: {"supplier": "회사명"}`;
 
-[추출 규칙]
-1. 표의 헤더 행을 정확히 찾아 실제 컬럼명을 그대로 headers에 넣으세요
-2. 헤더 아래 품목 행만 rows로 추출 (합계·소계·총계 행 제외)
-3. 숫자 쉼표 제거 후 숫자형 반환 (예: "1,500" → 1500)
-4. 비어있거나 없는 셀은 null
-5. meta: date(YYYY-MM-DD), supplier(공급자/납품자/도매상 — 약국·병원 등 구매처 제외, 위치 무관), recipient(수신자/구매처), total(합계숫자)
-
-마크다운·설명 없이 JSON만:
-{"headers":["번호","품명","규격","단위","수량","단가","금액","세액"],"rows":[[1,"상품A","500ml","EA",10,1500,15000,1500]],"meta":{"supplier":"(주)공급사","recipient":"수신사","date":"2024-01-15","total":16500}}
-
-[OCR 텍스트]
-${rawText}`;
-
-  const attempts = 3;
-  let lastResult: GeminiResult = { ok: false, quota: false, error: "알 수 없는 에러" };
-
-  for (let attempt = 1; attempt <= attempts; attempt++) {
-    try {
-      const ai = makeGeminiClient(apiKey);
-      const result = await ai.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: [{ parts: [{ text: prompt }] }],
-        config: { temperature: 0 },
-      });
-      const raw = result.text ?? "";
-      if (!raw) { lastResult = { ok: false, quota: false, error: "Gemini 빈 응답" }; continue; }
-      return { ok: true, text: parseGeminiText(raw) };
-    } catch (e: any) {
-      const msg = String(e?.message ?? e);
-      const isQuota = isQuotaError(msg);
-      lastResult = { ok: false, quota: isQuota, error: msg };
-      if (isQuota || msg.includes("503") || msg.includes("UNAVAILABLE")) {
-        console.log(`[OCR/Gemini] 구조화 API 오류로 인해 ${attempt}/${attempts}차 재시도 대기 중...`);
-        await new Promise(r => setTimeout(r, 2000 * attempt));
-        continue;
-      }
-      break;
-    }
+export async function extractSupplierFromImage(b64: string, mimeType: string, apiKey: string): Promise<string | null> {
+  try {
+    const ai = makeGeminiClient(apiKey);
+    const result = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: [{
+        parts: [
+          { inlineData: { mimeType: mimeType ?? "image/jpeg", data: b64 } },
+          { text: SUPPLIER_EXTRACT_PROMPT },
+        ],
+      }],
+      config: { temperature: 0, responseMimeType: "application/json", thinkingConfig: { thinkingBudget: 0 } },
+    });
+    const raw = result.text ?? "";
+    const cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+    const obj = JSON.parse(cleaned);
+    const supplier = (obj?.supplier ?? "").trim();
+    return supplier || null;
+  } catch {
+    return null;
   }
-  return lastResult;
 }
 
 export async function callMistralOcr(b64: string, mimeType: string, apiKey: string, templatePrompt?: string): Promise<GeminiResult> {

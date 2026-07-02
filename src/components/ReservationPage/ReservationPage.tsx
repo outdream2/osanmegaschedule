@@ -2,6 +2,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import {
   Calendar,
+  Home,
   ChevronLeft,
   ChevronRight,
   Phone,
@@ -321,7 +322,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
     <div className="min-h-screen bg-gray-50 flex flex-col">
 
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm">
+      <header className="bg-white border-b border-[#e2e8f0] h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm">
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={onBack}
@@ -331,11 +332,11 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
             <span className="hidden sm:inline">메인</span>
           </button>
           <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
-            <Calendar size={14} className="text-white" />
+            <Home size={14} className="text-white" />
           </div>
           <span className="font-black tracking-tight leading-none">
             <span className="text-red-500 text-xl">OSAN</span>
-            <span className="text-gray-900 text-base"> MEGATOWN</span>
+            <span className="text-gray-900 text-base hidden sm:inline"> MEGATOWN</span>
           </span>
         </div>
         <div className="flex items-center gap-2">

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { UtensilsCrossed, CheckCircle, Clock, RefreshCw, Users } from "lucide-react";
+import { UtensilsCrossed, Clock, RefreshCw, Users, ChevronLeft, ChevronRight, Stethoscope, UserRound } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession } from "../../types";
 
@@ -13,6 +13,12 @@ interface LunchRequest {
   updated_at: string;
 }
 
+interface AttendanceInfo {
+  pharmacistCount: number;
+  staffCount: number;
+  totalCount: number;
+}
+
 interface LunchPageProps {
   onBack: () => void;
   authSession?: AuthSession | null;
@@ -24,10 +30,20 @@ function todayString() {
   return new Date().toISOString().split("T")[0];
 }
 
-function todayLabel() {
-  const d = new Date();
+function dateLabel(ymd: string) {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
   const days = ["일", "월", "화", "수", "목", "금", "토"];
-  return `${d.getMonth() + 1}월 ${d.getDate()}일 (${days[d.getDay()]})`;
+  const today = todayString();
+  const prefix = ymd === today ? "오늘 " : "";
+  return `${prefix}${m}월 ${d}일 (${days[dt.getDay()]})`;
+}
+
+function addDays(ymd: string, n: number) {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + n);
+  return dt.toISOString().split("T")[0];
 }
 
 function fmtTime(iso: string) {
@@ -37,13 +53,16 @@ function fmtTime(iso: string) {
 export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const today = todayString();
   const userLevel = authSession?.level ?? 0;
-  const isManager = userLevel >= 2;
   const isLoggedIn = !!authSession?.employeeId;
   const employeeId = authSession?.employeeId;
   const employeeName = authSession?.employeeName ?? "직원";
 
+  const [selectedDate, setSelectedDate] = useState(today);
+  const isToday = selectedDate === today;
+
   const [allRequests, setAllRequests] = useState<LunchRequest[]>([]);
   const [myRequest, setMyRequest] = useState<LunchRequest | null | undefined>(undefined);
+  const [attendance, setAttendance] = useState<AttendanceInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [memo, setMemo] = useState("");
@@ -59,19 +78,27 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/lunch-requests?date=${today}`);
-      const data = await safeJson(res);
-      if (!res.ok) throw new Error(data.error ?? "서버 오류");
-      const requests: LunchRequest[] = data.requests ?? [];
+      const [lunchRes, attRes] = await Promise.all([
+        fetch(`/api/lunch-requests?date=${selectedDate}`),
+        fetch(`/api/lunch-attendance?date=${selectedDate}`),
+      ]);
+      const lunchData = await safeJson(lunchRes);
+      if (!lunchRes.ok) throw new Error(lunchData.error ?? "서버 오류");
+      const requests: LunchRequest[] = lunchData.requests ?? [];
       setAllRequests(requests);
       setMyRequest(employeeId ? (requests.find(r => r.employee_id === employeeId) ?? null) : null);
+
+      if (attRes.ok) {
+        const attData = await attRes.json();
+        setAttendance({ pharmacistCount: attData.pharmacistCount, staffCount: attData.staffCount, totalCount: attData.totalCount });
+      }
     } catch (e: any) {
       setError(e.message);
       setMyRequest(null);
     } finally {
       setLoading(false);
     }
-  }, [today, employeeId]);
+  }, [selectedDate, employeeId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -83,7 +110,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
       const res = await fetch("/api/lunch-requests", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ employee_id: employeeId, employee_name: employeeName, date: today, eating, memo }),
+        body: JSON.stringify({ employee_id: employeeId, employee_name: employeeName, date: selectedDate, eating, memo }),
       });
       const d = await safeJson(res);
       if (!res.ok) throw new Error(d.error ?? "신청 실패");
@@ -100,7 +127,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
     if (!employeeId || !myRequest || submitting) return;
     setSubmitting(true);
     try {
-      const res = await fetch(`/api/lunch-requests?employee_id=${employeeId}&date=${today}`, { method: "DELETE" });
+      const res = await fetch(`/api/lunch-requests?employee_id=${employeeId}&date=${selectedDate}`, { method: "DELETE" });
       if (!res.ok) { const d = await safeJson(res); throw new Error(d.error ?? "취소 실패"); }
       await load();
     } catch (e: any) {
@@ -124,18 +151,43 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
 
       <main className="flex-1 max-w-xl mx-auto w-full px-4 py-6 flex flex-col gap-5">
 
-        {/* 날짜 헤더 */}
+        {/* 날짜 네비게이션 */}
         <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wide">오늘의 점심</p>
-            <h1 className="text-2xl font-black text-gray-900">{todayLabel()}</h1>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSelectedDate(d => addDays(d, -1))}
+              className="p-1.5 rounded-lg bg-white border border-gray-200 text-gray-400 hover:text-gray-700 transition cursor-pointer shadow-sm"
+            >
+              <ChevronLeft size={15} />
+            </button>
+            <div>
+              <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wide">점심 안먹기</p>
+              <h1 className="text-xl font-black text-gray-900">{dateLabel(selectedDate)}</h1>
+            </div>
+            <button
+              onClick={() => setSelectedDate(d => addDays(d, 1))}
+              disabled={isToday}
+              className="p-1.5 rounded-lg bg-white border border-gray-200 text-gray-400 hover:text-gray-700 transition cursor-pointer shadow-sm disabled:opacity-30 disabled:cursor-default"
+            >
+              <ChevronRight size={15} />
+            </button>
           </div>
-          <button
-            onClick={load}
-            className="p-2 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-gray-700 transition cursor-pointer shadow-sm"
-          >
-            <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
-          </button>
+          <div className="flex items-center gap-2">
+            {!isToday && (
+              <button
+                onClick={() => setSelectedDate(today)}
+                className="text-[11px] text-indigo-600 font-bold border border-indigo-200 rounded-lg px-2.5 py-1.5 hover:bg-indigo-50 transition cursor-pointer"
+              >
+                오늘
+              </button>
+            )}
+            <button
+              onClick={load}
+              className="p-2 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-gray-700 transition cursor-pointer shadow-sm"
+            >
+              <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+            </button>
+          </div>
         </div>
 
         {error && (
@@ -144,7 +196,31 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
           </div>
         )}
 
-        {/* 내 신청 카드 */}
+        {/* 출근인원 현황 */}
+        {isLoggedIn && attendance !== null && (
+          <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-sm flex items-center gap-4">
+            <Users size={15} className="text-gray-400 shrink-0" />
+            <div className="flex items-center gap-4 flex-1 text-sm">
+              <div className="flex items-center gap-1.5">
+                <Stethoscope size={13} className="text-indigo-400" />
+                <span className="text-gray-500 font-medium">약사</span>
+                <span className="font-black text-indigo-700">{attendance.pharmacistCount}명</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <UserRound size={13} className="text-amber-400" />
+                <span className="text-gray-500 font-medium">직원</span>
+                <span className="font-black text-amber-700">{attendance.staffCount}명</span>
+              </div>
+              <div className="ml-auto flex items-center gap-1">
+                <span className="text-[11px] text-gray-400 font-medium">총</span>
+                <span className="font-black text-gray-800 text-base">{attendance.totalCount}명</span>
+                <span className="text-[11px] text-gray-400 font-medium">출근</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* 내 신청 카드 (오늘만 신청 가능) */}
         {!employeeId ? (
           <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center text-amber-700 text-sm font-semibold">
             로그인 후 이용할 수 있습니다.
@@ -153,7 +229,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
           <div className="bg-white border border-gray-200 rounded-2xl p-10 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
           </div>
-        ) : myRequest && !myRequest.eating ? (
+        ) : isToday && myRequest && !myRequest.eating ? (
           /* 불참 신청 완료 */
           <div className="rounded-2xl border-2 bg-gray-50 border-gray-300 p-5 flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">
@@ -177,7 +253,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               <p className="text-xs text-gray-600 bg-white rounded-xl px-3 py-2 border border-gray-100">{myRequest.memo}</p>
             )}
           </div>
-        ) : (
+        ) : isToday ? (
           /* 신청 전 — 불참인 경우만 신청 */
           <div className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col gap-4 shadow-sm">
             <p className="text-center text-base font-bold text-gray-700">오늘 점심 드시나요?</p>
@@ -194,18 +270,18 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               disabled={submitting}
               className="w-full flex items-center justify-center gap-2 py-5 rounded-2xl text-base font-black bg-gray-100 hover:bg-gray-200 active:scale-[0.97] text-gray-700 shadow-sm transition cursor-pointer disabled:opacity-50"
             >
-              <UtensilsCrossed size={18} className="text-rose-400" /> 오늘 점심 안 먹습니다
+              <UtensilsCrossed size={18} className="text-rose-400" /> 점심 안먹기
             </button>
           </div>
-        )}
+        ) : null}
 
-        {/* 전체 신청 현황 (로그인한 직원 모두 볼 수 있음) */}
+        {/* 불참 현황 */}
         {isLoggedIn && (
           <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
             <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Users size={13} className="text-gray-500" />
-                <span className="text-xs font-bold text-gray-700">직원 신청 현황</span>
+                <UtensilsCrossed size={13} className="text-gray-400" />
+                <span className="text-xs font-bold text-gray-700">점심 불참 현황</span>
                 <span className="text-[10px] text-gray-400">({allRequests.length}명 응답)</span>
               </div>
               <span className="bg-gray-100 text-gray-600 border border-gray-200 text-[11px] font-bold px-2 py-0.5 rounded-full">
@@ -214,7 +290,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
             </div>
             {noEatCount === 0 ? (
               <div className="px-4 py-8 text-center text-xs text-gray-400">
-                오늘 불참 신청자가 없습니다
+                불참 신청자가 없습니다
               </div>
             ) : (
               <div className="divide-y divide-gray-50">
@@ -225,7 +301,6 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                     {r.memo && (
                       <span className="text-[10px] text-gray-400 max-w-[130px] truncate">{r.memo}</span>
                     )}
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 bg-gray-100 text-gray-500">불참</span>
                     <span className="text-[10px] text-gray-300 shrink-0">{fmtTime(r.updated_at)}</span>
                   </div>
                 ))}

@@ -142,6 +142,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   // ── Feature 1: 금액 자동보정 ──────────────────────────────────────────────
   const [amountCorrections, setAmountCorrections] = useState<Record<number, number>>({});
+  // 소계 불일치 시 사용자 선택: "stated" = 명세서 소계, "computed" = 인식된 합계
+  const [pageSubtotalChoices, setPageSubtotalChoices] = useState<Record<number, "stated" | "computed">>({});
 
   // ── 셀 인라인 편집 (수량/단가/금액) ───────────────────────────────────────
   const [cellEdits,      setCellEdits     ] = useState<Record<number, Record<number, number | null>>>({});
@@ -181,6 +183,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       effectivePageTotals.set(pn, (effectivePageTotals.get(pn) ?? 0) + parseNumber(row[amtIdx]));
     });
   }
+
+  // 사용자 선택 반영한 페이지 표시 합계
+  const getPageDisplayTotal = (pn: number): number => {
+    if (pageSubtotalChoices[pn] === "stated") {
+      return structuredPages.find(p => p.page === pn)?.meta?.total ?? effectivePageTotals.get(pn) ?? 0;
+    }
+    return effectivePageTotals.get(pn) ?? 0;
+  };
 
   const total = amtIdx >= 0
     ? effectiveDispRows.reduce((s, r) => s + parseNumber(r[amtIdx]), 0)
@@ -239,6 +249,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   // 보정 후 아직 불일치인 페이지
   const isPageResolved = (pn: number) => {
+    if (pageSubtotalChoices[pn]) return true;
     const stated = structuredPages.find(p => p.page === pn)?.meta?.total ?? 0;
     const effective = effectivePageTotals.get(pn) ?? 0;
     return stated > 0 && Math.abs(stated - effective) <= 1;
@@ -316,11 +327,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       setZoom(newZ);
     }
   };
-
-  // ── 소계 불일치 원문 확인 토글 ─────────────────────────────────────────────
-  const [expandedRawPages, setExpandedRawPages] = useState<Set<number>>(new Set());
-  const toggleRawPage = (pn: number) =>
-    setExpandedRawPages(prev => { const s = new Set(prev); s.has(pn) ? s.delete(pn) : s.add(pn); return s; });
 
   // ── 상품명 보정 ──────────────────────────────────────────────────────────
   const [matching,         setMatching        ] = useState(false);
@@ -928,59 +934,53 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
           {pageMismatches.length > 0 && (
             <div className="px-4 py-2 bg-rose-50 border-b border-rose-200 flex flex-col gap-1.5">
               {pageMismatches.map(({ pageNum, computed, stated }) => {
-                const pageData = structuredPages.find(p => p.page === pageNum);
-                const rawText  = pageData ? pages.find(p => p.page === pageNum)?.rawText : undefined;
-                const isExpanded = expandedRawPages.has(pageNum);
                 const resolved = isPageResolved(pageNum);
                 const effectiveComputed = effectivePageTotals.get(pageNum) ?? computed;
-                const correctionCount = dispRows.filter((_, ri) => pageNums[ri] === pageNum && amountCorrections[ri] !== undefined).length;
 
                 if (resolved) {
+                  const choice = pageSubtotalChoices[pageNum];
+                  const chosenVal = choice === "stated" ? stated : effectiveComputed;
                   return (
                     <div key={pageNum} className="flex items-center gap-2 text-[11px] font-semibold text-emerald-700">
                       <CheckCircle size={12} className="shrink-0 text-emerald-500" />
                       <span>
-                        {pageNum}번 명세서 금액 보정 완료 — {correctionCount}개 항목 →{" "}
-                        <span className="font-black">{fmt(effectiveComputed)}원</span>
-                        {" "}(명세서 소계: {fmt(stated)}원)
+                        {pageNum}번 소계 확정:{" "}
+                        <span className="font-black">{fmt(chosenVal)}원</span>
+                        {choice && (
+                          <span className="text-emerald-500 font-normal ml-1">
+                            ({choice === "stated" ? "명세서 소계" : "인식된 합계"} 기준)
+                          </span>
+                        )}
+                        <button
+                          onClick={() => setPageSubtotalChoices(prev => { const n = { ...prev }; delete n[pageNum]; return n; })}
+                          className="ml-2 text-[10px] text-emerald-600 hover:text-emerald-800 underline cursor-pointer"
+                        >
+                          취소
+                        </button>
                       </span>
                     </div>
                   );
                 }
 
                 return (
-                  <div key={pageNum} className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2 text-[11px] font-semibold text-rose-700">
-                      <AlertTriangle size={12} className="shrink-0 text-rose-500" />
-                      <span className="flex-1">
-                        {pageNum}번 명세서 소계 불일치 — 명세서 소계: <span className="font-black">{fmt(stated)}원</span>
-                        {" / "}인식된 금액 합계: <span className="font-black">{fmt(effectiveComputed)}원</span>
-                        {" "}(<span className={stated > effectiveComputed ? "text-rose-600" : "text-emerald-600"}>{stated > effectiveComputed ? "+" : "-"}{fmt(Math.abs(stated - effectiveComputed))}원 차이</span>)
-                        {" — "}데이터 확인 후 수동으로 수정하거나 아래 버튼을 사용하세요.
-                      </span>
-                      {ocrQtyIdx >= 0 && ocrPriIdx >= 0 && (
-                        <button
-                          onClick={() => autoCorrectAmounts(pageNum)}
-                          className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-white bg-rose-500 hover:bg-rose-600 rounded px-2 py-0.5 transition cursor-pointer"
-                          title="수량×단가 계산값으로 금액 덮어쓰기 (원본과 다를 수 있음)"
-                        >
-                          <Wand2 size={9} />수량×단가로 보정
-                        </button>
-                      )}
-                      {rawText && (
-                        <button
-                          onClick={() => toggleRawPage(pageNum)}
-                          className="shrink-0 text-[10px] font-bold text-rose-500 hover:text-rose-700 border border-rose-200 hover:bg-rose-100 rounded px-1.5 py-0.5 transition cursor-pointer"
-                        >
-                          {isExpanded ? "원문 닫기" : "원문 확인"}
-                        </button>
-                      )}
-                    </div>
-                    {isExpanded && rawText && (
-                      <pre className="ml-5 px-3 py-2 bg-white border border-rose-100 rounded-lg text-[10px] text-gray-600 whitespace-pre-wrap leading-relaxed max-h-52 overflow-y-auto font-mono">
-                        {rawText}
-                      </pre>
-                    )}
+                  <div key={pageNum} className="flex items-center gap-2 flex-wrap">
+                    <AlertTriangle size={12} className="shrink-0 text-rose-500" />
+                    <span className="text-[11px] font-semibold text-rose-700 shrink-0">
+                      {pageNum}번 소계 불일치
+                    </span>
+                    <span className="text-[10px] text-rose-400 shrink-0">어느 값이 맞나요?</span>
+                    <button
+                      onClick={() => setPageSubtotalChoices(prev => ({ ...prev, [pageNum]: "stated" }))}
+                      className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition cursor-pointer"
+                    >
+                      명세서 소계 {fmt(stated)}원
+                    </button>
+                    <button
+                      onClick={() => setPageSubtotalChoices(prev => ({ ...prev, [pageNum]: "computed" }))}
+                      className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-white border border-rose-300 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                    >
+                      인식된 합계 {fmt(effectiveComputed)}원
+                    </button>
                   </div>
                 );
               })}
@@ -1220,7 +1220,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               {pageSupplier && <span className="text-amber-600 mr-1.5">{pageSupplier}</span>}{pn}번 명세서 소계
                             </td>
                             <td className="px-3 py-1.5 text-right font-black text-amber-700 text-xs whitespace-nowrap">
-                              {fmt(effectivePageTotals.get(pn) ?? 0)}원
+                              {fmt(getPageDisplayTotal(pn))}원
                             </td>
                             {dispHeaders.slice(amtIdx + 1).map((_, i) => <td key={i} />)}
                           </tr>
@@ -1314,7 +1314,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             <input
                               className={`flex-1 font-semibold bg-transparent border-b border-transparent hover:border-indigo-200 focus:border-indigo-400 outline-none truncate min-w-0 ${bcMatch ? "text-emerald-700" : "text-gray-800"}`}
                               value={overrides[ri] ?? effMatch.name}
-                              onChange={e => setOverrides(prev => ({ ...prev, [ri]: e.target.value }))} />
+                              onChange={e => setOverrides(prev => ({ ...prev, [ri]: e.target.value }))}
+                              onBlur={() => {
+                                if (!savedSynonyms.has(ri) && effMatch?.code && item.input) {
+                                  saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined);
+                                }
+                              }} />
                             {!bcMatch && <span className={`shrink-0 font-bold ${scoreColor(score)}`}>{score}%</span>}
                             {effMatch.code && <span className="text-gray-300 shrink-0 text-[10px]">{effMatch.code}</span>}
                             {!bcMatch && score < 100 && (

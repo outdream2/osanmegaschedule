@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck } from "lucide-react";
+import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine } from "lucide-react";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
+import { StockCounterModal } from "../StockCounterModal";
 
 interface ProductInfoCardProps {
   product: ProductInfo;
@@ -11,6 +12,7 @@ interface ProductInfoCardProps {
 
 export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRealMapUpdate, checkedBy }) => {
   const [mapSelectorOpen, setMapSelectorOpen] = useState(false);
+  const [stockCounterOpen, setStockCounterOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -283,7 +285,16 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
           const diff = hasInput && cur != null ? totalActual - cur : null;
           return (
             <div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 mb-4">
-              <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wide mb-2.5">실재고 입력</p>
+              <div className="flex items-center justify-between mb-2.5">
+                <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wide">실재고 입력</p>
+                <button
+                  onClick={() => setStockCounterOpen(true)}
+                  className="flex items-center gap-1 px-2.5 py-1 bg-green-500 hover:bg-green-600 text-white text-[10px] font-bold rounded-lg transition cursor-pointer shadow-sm"
+                >
+                  <ScanLine size={11} />
+                  재고 세기
+                </button>
+              </div>
               <div className="flex items-end gap-2 mb-2">
                 <div className="flex-1">
                   <p className="text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1"><Warehouse size={9} />창고</p>
@@ -403,6 +414,13 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
           current={realMap}
           onSelect={handleRealMapSelect}
           onClose={() => setMapSelectorOpen(false)}
+        />
+      )}
+      {stockCounterOpen && (
+        <StockCounterModal
+          onApplyWarehouse={count => { setWarehouseStock(count); setInvStatus("idle"); setStockCounterOpen(false); }}
+          onApplyStore={count => { setStoreStock(count); setInvStatus("idle"); setStockCounterOpen(false); }}
+          onClose={() => setStockCounterOpen(false)}
         />
       )}
     </>

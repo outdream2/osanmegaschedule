@@ -14,6 +14,7 @@ import { BreakModal } from "../BreakModal";
 import { useSettings } from "../../hooks/useSettings";
 import {
   Calendar,
+  Home,
   UserPlus,
   ChevronLeft,
   ChevronRight,
@@ -1333,7 +1334,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       )}
 
       {/* 1. App Header */}
-      <header className="bg-white border-b border-gray-200 shrink-0 shadow-sm">
+      <header className="bg-white border-b border-[#e2e8f0] shrink-0 shadow-sm">
 
         {/* ── Row 1: Brand + Role badge + Logout ── */}
         <div className="h-14 flex items-center justify-between px-4 sm:px-6">
@@ -1351,11 +1352,11 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               </button>
             )}
             <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm shrink-0">
-              <Calendar size={14} className="text-white" />
+              <Home size={14} className="text-white" />
             </div>
             <span className="font-black tracking-tight leading-none shrink-0">
               <span className="text-red-500 text-xl">OSAN</span>
-              <span className="text-gray-900 text-base"> MEGATOWN</span>
+              <span className="text-gray-900 text-base hidden sm:inline"> MEGATOWN</span>
             </span>
 
             {/* Desktop nav tabs */}

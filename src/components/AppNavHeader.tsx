@@ -44,7 +44,7 @@ interface TabDef {
 
 const TABS: TabDef[] = [
   { key: "schedule", label: "스케줄관리", mobileLabel: "스케줄",  icon: Calendar,      managerOnly: false },
-  { key: "lunch",    label: "점심신청",   mobileLabel: "점심",    icon: Utensils,      managerOnly: false },
+  { key: "lunch",    label: "점심안먹기", mobileLabel: "점심",    icon: Utensils,      managerOnly: false },
   { key: "display",  label: "매장관리",   mobileLabel: "매장",    icon: LayoutGrid,    managerOnly: true  },
   { key: "requests", label: "요청목록",   mobileLabel: "요청",    icon: MessageSquare, managerOnly: true  },
   { key: "leave",    label: "연차승인",   mobileLabel: "연차",    icon: CheckCircle,   managerOnly: true  },

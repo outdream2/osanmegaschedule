@@ -2,7 +2,8 @@ import { Router } from "express";
 import { supabase } from "../../src/supabase/client";
 import { getProductMap, getSynonymMap, resetSynonymCache } from "../productCache";
 import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta } from "../ocr/parse";
-import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiState } from "../ocr/llm";
+import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiState, extractSupplierFromImage } from "../ocr/llm";
+import { preprocessImageForOcr } from "../ocr/preprocess";
 import { ensureOcrServer, callEasyOcrServer } from "../ocr/easyocr";
 import { invoiceMatchScore, makeMatchResult, norm, normSupplier, bigramSim } from "../ocr/match";
 import type { GeminiResult } from "../ocr/schema";
@@ -260,12 +261,31 @@ router.post("/api/ocr", async (req, res) => {
       const keys = getGeminiKeys();
 
       for (let i = 0; i < images.length; i++) {
-        const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
+        const { data: rawB64, mimeType: rawMime } = images[i] as { data: string; mimeType: string };
 
-        const hint = supplierHints[i] ?? "";
+        // 이미지 전처리: 업스케일 + 도장 제거 + 그레이스케일 정규화
+        const { b64, mimeType } = await preprocessImageForOcr(rawB64, rawMime);
+
+        // 공급처 힌트가 없으면 1차 경량 추출 → 템플릿 조회
+        let hint = supplierHints[i] ?? "";
+        if (!hint && keys.length > 0) {
+          const extractKey = keys[geminiState.currentKeyIdx % keys.length];
+          if (!sessionDeadKeys.has(extractKey)) {
+            const extracted = await extractSupplierFromImage(b64, mimeType, extractKey);
+            if (extracted) {
+              hint = extracted;
+              console.log(`[OCR/2pass] page ${i + 1}: 공급처 1차 추출 → "${extracted}"`);
+              // 추출된 공급처로 템플릿 조회
+              const cleanedName = extracted.replace(/\(주\)|\(株\)|주식회사|（주）/g, "").trim();
+              const { data: tmplData } = await supabase.from("ocr_templates")
+                .select("supplier_name, headers").ilike("supplier_name", `%${cleanedName}%`).limit(1);
+              if (tmplData?.[0]) templateMap.set(hint, tmplData[0].headers);
+            }
+          }
+        }
         const tmplHeaders = hint ? templateMap.get(hint) : undefined;
         const templatePrompt = tmplHeaders ? buildTemplatePrompt(hint, tmplHeaders) : undefined;
-        if (templatePrompt) console.log(`[OCR/Template] page ${i + 1}: 프롬프트 힌트 적용`);
+        if (templatePrompt) console.log(`[OCR/Template] page ${i + 1}: 템플릿 "${hint}" 적용`);
 
         // ── Gemini (sticky key, 세션 내 dead key 제외) ──────────────────────
         let rawText = "";
@@ -340,8 +360,10 @@ router.post("/api/ocr", async (req, res) => {
             console.warn(`[OCR/합계불일치] page ${i + 1} — 합계 ${cleanMeta.total} vs 행합 ${finalSum} (차이 ${finalSum - cleanMeta.total})`);
           }
         }
+        // 1차 추출된 공급처가 있고 meta.supplier가 비어있으면 채워줌
+        if (hint && !cleanMeta.supplier) cleanMeta.supplier = hint;
         process.stdout.write(`\n[OCR 결과] page ${i + 1}\n  헤더: ${JSON.stringify(spec.headers)}\n  행 수: ${rows.length}\n  메타: ${JSON.stringify(cleanMeta)}\n`);
-        pages.push({ page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText });
+        pages.push({ page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText, supplierHintUsed: hint || undefined });
       }
     }
 

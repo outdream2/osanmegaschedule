@@ -91,21 +91,26 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack }) => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3 sticky top-0 z-10 shadow-sm">
+      <header className="bg-white border-b border-[#e2e8f0] h-14 px-4 sm:px-6 flex items-center gap-3 sticky top-0 z-10 shadow-sm">
         <button
           onClick={onBack}
-          className="w-9 h-9 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition cursor-pointer"
+          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 hover:text-gray-900 transition cursor-pointer text-xs font-semibold shrink-0"
         >
-          <ArrowLeft size={18} />
+          <ArrowLeft size={13} />
+          <span className="hidden sm:inline">메인</span>
         </button>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
-            <Package size={15} className="text-white" />
+          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
+            <Package size={14} className="text-white" />
           </div>
           <div>
-            <div className="font-black text-slate-800 text-sm leading-tight">오산 메가타운 약국</div>
-            <div className="text-[11px] text-slate-400 font-medium leading-tight">재고 확인</div>
+            <span className="font-black text-slate-800 text-xl leading-tight" style={{ color: "#ef4444" }}>OSAN</span>
+            <span className="font-black text-gray-900 text-base leading-tight hidden sm:inline"> MEGATOWN</span>
           </div>
+        </div>
+        <div className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] font-bold">
+          <Package size={11} />
+          <span>재고 확인</span>
         </div>
       </header>
 

@@ -11,3 +11,8 @@ coverage/
 *.traineddata
 !public/tessdata/kor.traineddata
 !public/tessdata/eng.traineddata
+
+# AI 모델 파일 (용량 큼 — 로컬에만 보관)
+server/models/*.pt
+server/models/*.onnx
+server/models/*.weights

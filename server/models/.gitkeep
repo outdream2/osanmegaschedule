@@ -1,0 +1,4 @@
+# 이 폴더에 best.pt 파일을 넣어주세요.
+# 서버 시작 시 자동으로 best.onnx로 변환됩니다.
+# 변환 조건: Python + ultralytics 설치 필요
+#   pip install ultralytics
