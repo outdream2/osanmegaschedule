@@ -264,6 +264,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       alert("이 브라우저는 알림을 지원하지 않습니다.");
       return;
     }
+    if (!import.meta.env.VITE_VAPID_PUBLIC_KEY) {
+      alert("서버 설정 오류: VAPID 공개키가 없습니다. 관리자에게 문의하세요.");
+      return;
+    }
     setPushLoading(true);
     try {
       const permission = await Notification.requestPermission();
@@ -276,16 +280,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         userVisibleOnly: true,
         applicationServerKey: import.meta.env.VITE_VAPID_PUBLIC_KEY,
       });
-      await fetch("/api/anon-push-subscribe", {
+      const res = await fetch("/api/anon-push-subscribe", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subscription: sub.toJSON() }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? `서버 오류 (${res.status})`);
+      }
       localStorage.setItem("anon_push_subscribed", "1");
       setPushSubscribed(true);
     } catch (err: any) {
       console.error("Push subscribe error:", err);
-      alert("알림 구독에 실패했습니다.");
+      alert("알림 구독 실패: " + (err.message ?? err));
     } finally {
       setPushLoading(false);
     }

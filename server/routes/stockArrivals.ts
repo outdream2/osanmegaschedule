@@ -45,27 +45,38 @@ router.post("/api/stock-arrivals", async (req, res) => {
       tag: `stock-arrival-${arrival.id}`,
     });
     (async () => {
-      const [{ data: emps }, { data: anons }] = await Promise.all([
+      if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+        console.warn("[stock-arrivals] VAPID 키 미설정 — 푸시 브로드캐스트 건너뜀");
+        return;
+      }
+      const [empRes, anonRes] = await Promise.all([
         supabase.from("employees").select("push_subscription").not("push_subscription", "is", null),
         supabase.from("anon_push_subscriptions").select("id, subscription"),
       ]);
+      if (empRes.error) console.warn("[stock-arrivals] 직원 구독 조회 실패:", empRes.error.message);
+      if (anonRes.error) console.warn("[stock-arrivals] 비로그인 구독 조회 실패:", anonRes.error.message);
+
+      let sent = 0;
       const expiredAnonIds: number[] = [];
-      for (const e of emps ?? []) {
+      for (const e of empRes.data ?? []) {
         if (!e.push_subscription) continue;
-        try { await webpush.sendNotification(e.push_subscription as webpush.PushSubscription, payload); } catch (_) {}
+        try { await webpush.sendNotification(e.push_subscription as webpush.PushSubscription, payload); sent++; }
+        catch (err: any) { console.warn("[stock-arrivals] 직원 푸시 실패:", err.statusCode ?? err.message); }
       }
-      for (const a of anons ?? []) {
+      for (const a of anonRes.data ?? []) {
         if (!a.subscription) continue;
         try {
-          await webpush.sendNotification(a.subscription as webpush.PushSubscription, payload);
+          await webpush.sendNotification(a.subscription as webpush.PushSubscription, payload); sent++;
         } catch (err: any) {
+          console.warn("[stock-arrivals] 비로그인 푸시 실패:", err.statusCode ?? err.message);
           if (err.statusCode === 410 || err.statusCode === 404) expiredAnonIds.push(a.id);
         }
       }
+      console.log(`[stock-arrivals] 브로드캐스트 완료: ${sent}명 전송`);
       if (expiredAnonIds.length > 0) {
         await supabase.from("anon_push_subscriptions").delete().in("id", expiredAnonIds);
       }
-    })().catch(() => {});
+    })().catch((err) => console.error("[stock-arrivals] 브로드캐스트 오류:", err));
 
     return res.status(201).json(arrival);
   } catch (err: any) {
