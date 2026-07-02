@@ -1466,10 +1466,18 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             {effMatch.code && <span className="text-gray-300 shrink-0 text-[10px]">{effMatch.code}</span>}
                             {!bcMatch && score < 100 && (
                               <button
-                                title={savedSynonyms.has(ri) ? "동의어 저장됨" : `"${item.input}" → 동의어로 저장`}
-                                onClick={() => saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined)}
-                                disabled={savedSynonyms.has(ri)}
-                                className={`shrink-0 transition-colors ${savedSynonyms.has(ri) ? "text-emerald-500" : "text-gray-300 hover:text-indigo-500"}`}
+                                title={savedSynonyms.has(ri) ? "한번 더 클릭하면 복원" : `"${item.input}" → 동의어로 저장`}
+                                onClick={() => {
+                                  if (savedSynonyms.has(ri)) {
+                                    // 북마크 취소 → 원본으로 복원
+                                    setSavedSynonyms(prev => { const s = new Set(prev); s.delete(ri); return s; });
+                                    setOverrides(prev => ({ ...prev, [ri]: item.input }));
+                                    setSelectedCands(prev => { const s = { ...prev }; delete s[ri]; return s; });
+                                  } else {
+                                    saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined);
+                                  }
+                                }}
+                                className={`shrink-0 transition-colors ${savedSynonyms.has(ri) ? "text-emerald-500 hover:text-rose-400" : "text-gray-300 hover:text-indigo-500"}`}
                               >
                                 {savedSynonyms.has(ri) ? <BookmarkCheck size={12} /> : <Bookmark size={12} />}
                               </button>
