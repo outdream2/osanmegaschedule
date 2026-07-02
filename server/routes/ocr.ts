@@ -3,7 +3,6 @@ import { supabase } from "../../src/supabase/client";
 import { getProductMap, getSynonymMap, resetSynonymCache } from "../productCache";
 import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta } from "../ocr/parse";
 import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiState } from "../ocr/llm";
-import { callUpstageOcr } from "../ocr/upstage";
 import { ensureOcrServer, callEasyOcrServer } from "../ocr/easyocr";
 import { invoiceMatchScore, makeMatchResult, norm, normSupplier, bigramSim } from "../ocr/match";
 import type { GeminiResult } from "../ocr/schema";
@@ -259,7 +258,6 @@ router.post("/api/ocr", async (req, res) => {
 
     if (engine === "gemini") {
       const keys = getGeminiKeys();
-      const upstageKey = process.env.UPSTAGE_API_KEY;
 
       for (let i = 0; i < images.length; i++) {
         const { data: b64, mimeType } = images[i] as { data: string; mimeType: string };
@@ -269,27 +267,7 @@ router.post("/api/ocr", async (req, res) => {
         const templatePrompt = tmplHeaders ? buildTemplatePrompt(hint, tmplHeaders) : undefined;
         if (templatePrompt) console.log(`[OCR/Template] page ${i + 1}: 프롬프트 힌트 적용`);
 
-        // ── 1순위: Upstage Document Parse ───────────────────────────────────
-        if (upstageKey) {
-          console.log(`[OCR/Upstage] page ${i + 1}/${images.length} 시도`);
-          const ur = await callUpstageOcr(b64, mimeType);
-          if (ur.ok) {
-            const cleaned = cleanCellValues(ur.headers, ur.rows);
-            const pre  = mergeAdjacentHeaders(cleaned.headers, cleaned.rows);
-            const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
-            const spec = extractSpecFromName(normalized.headers, normalized.rows);
-            const cleanMeta = sanitizeOcrMeta({ ...ur.meta });
-            const rows0 = repairColumnShift(spec.headers, spec.rows);
-            const rows1 = fixAmountsBySubtotal(spec.headers, rows0, cleanMeta.total ?? null);
-            const rows  = crossValidateIntraPage(spec.headers, rows1);
-            process.stdout.write(`\n[OCR 결과/Upstage] page ${i + 1}\n  헤더: ${JSON.stringify(spec.headers)}\n  행 수: ${rows.length}\n  메타: ${JSON.stringify(cleanMeta)}\n`);
-            pages.push({ page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText: ur.rawText, engine: "upstage" });
-            continue;
-          }
-          console.warn(`[OCR/Upstage] page ${i + 1} 실패: ${ur.error} — Gemini로 대체`);
-        }
-
-        // ── 2순위: Gemini (sticky key, 세션 내 dead key 제외) ───────────────
+        // ── Gemini (sticky key, 세션 내 dead key 제외) ──────────────────────
         let rawText = "";
         let lastError = "";
 
