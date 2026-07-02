@@ -103,7 +103,13 @@ router.post("/api/ocr-match", async (req, res) => {
         const s = invoiceMatchScore(name, p);
         if (s > bestScore) { bestScore = s; best = p; }
       }
-      if (!best || bestScore < 25) return { input: name, matched: null, score: bestScore };
+      if (!best || bestScore < 25) {
+        console.log(`[MATCH-MISS] score=${bestScore ?? 0} ocr="${name}" best="${best?.name ?? "-"}"`);
+        return { input: name, matched: null, score: bestScore };
+      }
+      if (bestScore < 70) {
+        console.log(`[MATCH-LOW] score=${bestScore} ocr="${name}" → db="${best.name}"`);
+      }
       return {
         input: name,
         matched: {
