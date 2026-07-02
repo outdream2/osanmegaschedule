@@ -37,7 +37,7 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
       for (const row of data) {
         const code = String(row.product_code ?? "").trim();
         if (!code) continue;
-        const info: ProductInfo = { code, name: row.product_name ?? "", spec: row.spec ?? "", ...row };
+        const info: ProductInfo = { code, name: row.product_name ?? "", spec: row.spec ?? "", ...row, realMap: row.real_map ?? null };
         map[code] = info;
         const stripped = code.replace(/^0+/, "");
         if (stripped && stripped !== code && !map[stripped]) map[stripped] = info;
