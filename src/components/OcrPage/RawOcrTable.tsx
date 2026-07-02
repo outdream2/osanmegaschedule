@@ -532,7 +532,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       if (!res.ok) throw new Error(await res.text());
       setReparseStatus(prev => ({ ...prev, [pageNum]: 'saved' }));
     } catch { /* silent */ }
-  }, [structuredPages]);
+    // 이 페이지 상품명을 해당 공급사의 동의어로 일괄 저장
+    await handleSynonymBulkAdd(pageNum, supplierName);
+  }, [structuredPages, handleSynonymBulkAdd]);
 
   const saveSynonym = useCallback(async (ri: number, alias: string, productCode: string, supplier?: string) => {
     try {
@@ -661,7 +663,22 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [xlsTemplate,    setXlsTemplate   ] = useState<ArrayBuffer | null>(null);
   const [xlsTemplateName,setXlsTemplateName] = useState<string | null>(null);
   const [xlsTemplateHdrs,setXlsTemplateHdrs] = useState<string[] | null>(null);
+  const [xlsTemplateSaved,setXlsTemplateSaved] = useState(false);
   const xlsInputRef = useRef<HTMLInputElement | null>(null);
+
+  // localStorage에서 서식 파일 자동 복원
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("ocr_xls_template");
+      if (!raw) return;
+      const { name, hdrs, data } = JSON.parse(raw);
+      const buf = Uint8Array.from(atob(data), c => c.charCodeAt(0)).buffer;
+      setXlsTemplate(buf);
+      setXlsTemplateName(name);
+      setXlsTemplateHdrs(hdrs);
+      setXlsTemplateSaved(true);
+    } catch { /* 손상된 캐시 무시 */ }
+  }, []);
 
   const confRows: (string | number | null)[][] = matchItems
     ? effectiveDispRows.map((row, ri) => {
@@ -1601,7 +1618,30 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                 </div>
                 <div className="flex items-center gap-2">
                   <input ref={xlsInputRef} type="file" accept=".xlsx,.xls" className="hidden"
-                    onChange={e => { const f = e.target.files?.[0]; if (f) { handleTemplateUpload(f); e.target.value = ""; } }} />
+                    onChange={e => { const f = e.target.files?.[0]; if (f) { handleTemplateUpload(f); setXlsTemplateSaved(false); e.target.value = ""; } }} />
+                  {/* 서식 파일 저장 버튼 */}
+                  {xlsTemplate && (
+                    <button
+                      onClick={() => {
+                        if (!xlsTemplate || !xlsTemplateName || !xlsTemplateHdrs) return;
+                        try {
+                          const bytes = new Uint8Array(xlsTemplate);
+                          const b64 = btoa(String.fromCharCode(...bytes));
+                          localStorage.setItem("ocr_xls_template", JSON.stringify({ name: xlsTemplateName, hdrs: xlsTemplateHdrs, data: b64 }));
+                          setXlsTemplateSaved(true);
+                        } catch { /* silent */ }
+                      }}
+                      title="서식 파일을 브라우저에 저장 (다음 방문 시 자동 복원)"
+                      className={`flex items-center gap-1 text-[11px] font-bold px-2 py-1 rounded-lg transition cursor-pointer shrink-0 border ${
+                        xlsTemplateSaved
+                          ? "text-emerald-600 bg-emerald-50 border-emerald-200"
+                          : "text-indigo-600 bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
+                      }`}
+                    >
+                      <Bookmark size={11} />
+                      {xlsTemplateSaved ? "저장됨" : "저장"}
+                    </button>
+                  )}
                   <button
                     onClick={() => xlsInputRef.current?.click()}
                     title={xlsTemplateName ?? "엑셀 서식 파일 업로드"}
