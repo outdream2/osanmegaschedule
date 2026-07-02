@@ -22,10 +22,14 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
   const [storeStock, setStoreStock] = useState<number | "">("");
   type InvStatus = "idle" | "loading" | "done" | "error";
   const [invStatus, setInvStatus] = useState<InvStatus>("idle");
+  const [invError, setInvError] = useState<string | null>(null);
+
+  const [invUpdated, setInvUpdated] = useState(false);
 
   const handleInventorySubmit = async () => {
     if (warehouseStock === "" && storeStock === "") return;
     setInvStatus("loading");
+    setInvError(null);
     try {
       const res = await fetch("/api/inventory-checks", {
         method: "POST",
@@ -40,8 +44,17 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
           checked_by:      checkedBy ?? "",
         }),
       });
-      setInvStatus(res.ok ? "done" : "error");
-    } catch {
+      if (res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setInvUpdated(!!body.updated);
+        setInvStatus("done");
+      } else {
+        const body = await res.json().catch(() => ({}));
+        setInvError(body.error ?? `서버 오류 (${res.status})`);
+        setInvStatus("error");
+      }
+    } catch (e: any) {
+      setInvError(e?.message ?? "네트워크 오류");
       setInvStatus("error");
     }
   };
@@ -264,7 +277,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
               )}
               {invStatus === "done" ? (
                 <div className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
-                  <CheckCircle2 size={13} />실재고 차이 목록에 등록되었습니다
+                  <CheckCircle2 size={13} />{invUpdated ? "기존 실재고 기록이 업데이트되었습니다" : "실재고 차이 목록에 등록되었습니다"}
                 </div>
               ) : (
                 <button
@@ -277,7 +290,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
                 </button>
               )}
               {invStatus === "error" && (
-                <p className="text-[10px] text-red-500 text-center mt-1">등록 실패 — 다시 시도해주세요</p>
+                <p className="text-[10px] text-red-500 text-center mt-1">{invError ?? "등록 실패 — 다시 시도해주세요"}</p>
               )}
             </div>
           );

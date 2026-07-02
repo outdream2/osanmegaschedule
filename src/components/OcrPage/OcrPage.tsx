@@ -120,6 +120,30 @@ async function physicallyRotate(
   });
 }
 
+/** OCR 전송 전 이미지 리사이징: 최대 1500px, JPEG 82% — 5MB→~250KB */
+async function resizeImageForOcr(
+  b64: string,
+  mimeType: string,
+): Promise<{ data: string; mimeType: string }> {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 1500;
+      const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d")!;
+      ctx.drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
+      resolve({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
+    };
+    img.onerror = () => resolve({ data: b64, mimeType });
+    img.src = `data:${mimeType};base64,${b64}`;
+  });
+}
+
 export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -134,6 +158,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   const [extracting, setExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pages, setPages] = useState<OcrPageResult[]>([]);
+  const [barcodeMatches, setBarcodeMatches] = useState<any[]>([]);
   const [pageImages, setPageImages] = useState<string[]>([]);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
   const [pingStatus, setPingStatus] = useState<{ ok: boolean; gemini: boolean; geminiKeyCount: number } | null>(null);
@@ -153,14 +178,14 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
     setPageCount(pdf.numPages);
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
-      const vp = page.getViewport({ scale: 2.0 });
+      const vp = page.getViewport({ scale: 1.5 });
       const canvas = document.createElement("canvas");
       canvas.width = Math.floor(vp.width);
       canvas.height = Math.floor(vp.height);
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error(`페이지 ${i} Canvas를 초기화할 수 없습니다.`);
       await page.render({ canvasContext: ctx as any, viewport: vp, canvas } as any).promise;
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.82);
       setPageImages(prev => [...prev, dataUrl]);
       imgs.push({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
     }
@@ -193,8 +218,12 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
             reader.onload = () => res(reader.result as string);
             reader.readAsDataURL(file);
           });
-          setPageImages(prev => [...prev, dataUrl]);
-          imgs.push({ data: dataUrl.split(",")[1], mimeType: file.type || "image/jpeg" });
+          const rawB64 = dataUrl.split(",")[1];
+          const rawMime = file.type || "image/jpeg";
+          const resized = await resizeImageForOcr(rawB64, rawMime);
+          const previewUrl = `data:${resized.mimeType};base64,${resized.data}`;
+          setPageImages(prev => [...prev, previewUrl]);
+          imgs.push(resized);
         }
       }
       imagesDataRef.current = imgs;
@@ -220,39 +249,76 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   const handleExtract = useCallback(async () => {
     const images = imagesDataRef.current;
     if (images.length === 0 || extracting) return;
-    setExtracting(true); setPages([]); setProcessed(0); setError(null); setStatusMsg("");
+    setExtracting(true); setPages([]); setBarcodeMatches([]); setProcessed(0); setError(null);
+    setStatusMsg(images.length > 1 ? `${images.length}장 동시 처리 중...` : "처리 중...");
     try {
       const rotatedImages = rotation === 0
         ? images
         : await Promise.all(images.map(img => physicallyRotate(img.data, img.mimeType, rotation)));
 
+      const accumBarcodes: any[] = [];
+
+      // 모든 페이지 병렬 처리 — 4장이어도 가장 느린 1장 시간에 완료
+      const settled = await Promise.allSettled(
+        rotatedImages.map(async (img, i) => {
+          const res = await axios.post("/api/ocr", { images: [img], engine: "gemini" });
+          setProcessed(prev => prev + 1);
+          return { index: i, data: res.data };
+        })
+      );
+
       const all: OcrPageResult[] = [];
-      for (let i = 0; i < rotatedImages.length; i++) {
-        try {
-          const res = await axios.post("/api/ocr", { images: [rotatedImages[i]], engine: "gemini" });
-          const page = res.data.pages?.[0];
+      const pageErrors: string[] = [];
+
+      settled.forEach((result, i) => {
+        if (result.status === "fulfilled") {
+          const page = result.value.data.pages?.[0];
           if (page) all.push({ ...page, page: i + 1 });
-        } catch (e: any) {
-          const msg = e?.response?.data?.error ?? e?.message ?? "OCR 실패";
-          if (all.length === 0 && i === rotatedImages.length - 1) throw new Error(msg);
-          setError(`페이지 ${i + 1} 실패: ${msg}`);
+          if (Array.isArray(result.value.data.barcodeMatches)) {
+            result.value.data.barcodeMatches.forEach((m: any) => {
+              if (!accumBarcodes.find((x: any) => x.code === m.code)) accumBarcodes.push(m);
+            });
+          }
+        } else {
+          const msg = (result.reason as any)?.response?.data?.error
+            ?? (result.reason as any)?.message ?? "OCR 실패";
+          pageErrors.push(`${i + 1}페이지: ${msg}`);
         }
-        setProcessed(i + 1);
-        setStatusMsg(`페이지 ${i + 1}/${rotatedImages.length} 처리 중...`);
-      }
+      });
+
+      if (all.length === 0 && pageErrors.length > 0) throw new Error(pageErrors.join(" / "));
+      if (pageErrors.length > 0) setError(pageErrors.join(" / "));
       setPages(all);
+      setBarcodeMatches(accumBarcodes);
     } catch (err: any) {
-  setError(err?.response?.data?.error ?? err?.message ?? "OCR 처리 중 오류가 발생했습니다.");
-} finally {
-  setExtracting(false);
-  setStatusMsg("");
-}
+      setError(err?.response?.data?.error ?? err?.message ?? "OCR 처리 중 오류가 발생했습니다.");
+    } finally {
+      setExtracting(false);
+      setStatusMsg("");
+    }
   }, [extracting, rotation]);
+
+const handleReparsePage = useCallback(async (pageNum: number, supplierHint: string): Promise<any> => {
+  const images = imagesDataRef.current;
+  const img = images[pageNum - 1];
+  if (!img) return null;
+  const rotImg = rotation !== 0 ? await physicallyRotate(img.data, img.mimeType, rotation) : img;
+  const res = await axios.post("/api/ocr", {
+    images: [rotImg],
+    engine: "gemini",
+    supplierHints: [supplierHint],
+  });
+  const newPage = res.data.pages?.[0];
+  if (newPage) {
+    setPages(prev => prev.map(p => p.page === pageNum ? { ...newPage, page: pageNum } : p));
+  }
+  return newPage ?? null;
+}, [rotation]);
 
 const rotDeg = ((rotation % 360) + 360) % 360;
 
 const clearFiles = () => {
-  setFileName(null); setPages([]); setPageImages([]);
+  setFileName(null); setPages([]); setBarcodeMatches([]); setPageImages([]);
   setCurrentPageIdx(0); imagesDataRef.current = [];
   setPageCount(0); setError(null); setRotation(0);
 };
@@ -424,7 +490,7 @@ return (
         </div>
       )}
 
-      {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} rotation={rotation} />}
+      {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} rotation={rotation} onReparsePage={handleReparsePage} barcodeMatches={barcodeMatches} />}
     </div>
   </div>
 );

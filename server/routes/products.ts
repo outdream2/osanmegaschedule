@@ -7,6 +7,19 @@ import { COL_KEYS, xlsxToRows } from "../xlsx";
 
 const router = Router();
 
+// 공개 재고확인 API — 로그인 불필요
+router.get("/api/stock-check", async (req, res) => {
+  const raw = String(req.query.q ?? "").trim().slice(0, 60);
+  if (raw.length < 1) return res.json([]);
+  const { data, error } = await supabase
+    .from("products")
+    .select("product_name, spec, current_stock, sale_status, category, real_map, display_location, supplier")
+    .ilike("product_name", `%${raw}%`)
+    .limit(25);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data ?? []);
+});
+
 router.get("/api/products-map", async (_req, res) => {
   try {
     const map = await getProductMap();
@@ -25,8 +38,8 @@ router.post("/api/upload-products", express.raw({ type: "application/octet-strea
     if (adminKey && adminKey === (process.env.ADMIN_PIN ?? "1234")) {
       authorized = true;
     } else if (managerId) {
-      const { data: emp } = await supabase.from("employees").select("is_manager").eq("id", Number(managerId)).maybeSingle();
-      authorized = !!emp?.is_manager;
+      const { data: emp } = await supabase.from("employees").select("level").eq("id", Number(managerId)).maybeSingle();
+      authorized = (emp?.level ?? 0) >= 9;
     }
     if (!authorized) return res.status(403).json({ error: "관리자만 가능합니다" });
     const buf = req.body as Buffer;

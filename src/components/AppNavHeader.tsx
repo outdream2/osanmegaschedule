@@ -142,6 +142,15 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
 
           {/* Desktop nav tabs — all tabs, hidden on mobile */}
           <div className="hidden sm:flex items-center gap-1 ml-3 bg-gray-100 rounded-xl p-1">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
+                title="메인으로"
+              >
+                <Home size={11} /> MAIN
+              </button>
+            )}
             {visibleTabs.map(renderDesktopTab)}
           </div>
         </div>
@@ -196,6 +205,15 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       {visibleTabs.length > 1 && (
         <div className="sm:hidden px-3 pb-2">
           <div className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1 overflow-x-auto scrollbar-none">
+            {onBack && (
+              <button
+                onClick={onBack}
+                className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition text-gray-500 hover:text-gray-800 hover:bg-white cursor-pointer"
+              >
+                <Home size={12} />
+                <span>홈</span>
+              </button>
+            )}
             {visibleTabs.map(renderMobileTab)}
           </div>
         </div>

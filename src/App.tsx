@@ -14,12 +14,13 @@ import { RequestsPage } from "./components/RequestsPage";
 import { LeavePage } from "./components/LeavePage/LeavePage";
 import { PermissionsPage } from "./components/PermissionsPage";
 import { LunchPage } from "./components/LunchPage/LunchPage";
+import { StockCheckPage } from "./components/StockCheckPage/StockCheckPage";
 import { SessionTimeoutWarning } from "./components/SessionTimeoutWarning";
 import { useAuth } from "./hooks/useAuth";
 import type { AuthSession } from "./types";
 import { prefetchProducts } from "./lib/productsCache";
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck";
 
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
@@ -61,7 +62,7 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch", auth?: AuthSession) => {
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck", auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
     navigate(next);
   };
@@ -168,6 +169,8 @@ export default function App() {
         onLogout={handleLogout}
       />
     );
+  } else if (page === "stockcheck") {
+    pageContent = <StockCheckPage onBack={goBack} />;
   } else if (page === "permissions") {
     pageContent = (
       <PermissionsPage

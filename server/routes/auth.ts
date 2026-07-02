@@ -30,6 +30,35 @@ router.post("/api/auth/login", async (req, res) => {
   }
 });
 
+router.post("/api/auth/vendor-login", async (req, res) => {
+  const { phone, password } = req.body ?? {};
+  const cleanPhone = String(phone ?? "").replace(/[^0-9]/g, "");
+  if (!cleanPhone || !password) {
+    return res.status(400).json({ error: "전화번호와 비밀번호를 입력해주세요" });
+  }
+  try {
+    const { data: vendor, error } = await supabase
+      .from("vendors")
+      .select("id, company_name, contact_name, password_hash")
+      .eq("phone", cleanPhone)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!vendor) return res.status(401).json({ error: "등록된 거래처를 찾을 수 없습니다" });
+    if (!vendor.password_hash) return res.status(401).json({ error: "비밀번호가 설정되지 않았습니다. 관리자에게 문의하세요." });
+    const ok = await bcrypt.compare(password, vendor.password_hash);
+    if (!ok) return res.status(401).json({ error: "전화번호 또는 비밀번호가 올바르지 않습니다" });
+    return res.status(200).json({
+      id: vendor.id,
+      name: vendor.company_name,
+      contactName: vendor.contact_name ?? "",
+      role: "vendor",
+      level: 0,
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 router.post("/api/auth/set-password", async (req, res) => {
   const { employeeId, password } = req.body ?? {};
   const idNum = typeof employeeId === "string" ? parseInt(employeeId) : employeeId;

@@ -20,6 +20,7 @@ import notificationsRouter from "./server/routes/notifications";
 import leaveRouter       from "./server/routes/leave";
 import lunchRouter       from "./server/routes/lunch";
 import reservationsRouter from "./server/routes/reservations";
+import vendorsRouter     from "./server/routes/vendors";
 import ocrRouter         from "./server/routes/ocr";
 
 async function startServer() {
@@ -59,6 +60,7 @@ async function startServer() {
   app.use(leaveRouter);
   app.use(lunchRouter);
   app.use(reservationsRouter);
+  app.use(vendorsRouter);
   app.use(ocrRouter);
 
   const httpServer = http.createServer(app);

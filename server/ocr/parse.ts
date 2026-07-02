@@ -134,6 +134,16 @@ export function extractSpecFromName(
   return { headers: outHeaders, rows: outRows };
 }
 
+function permutations<T>(arr: T[]): T[][] {
+  if (arr.length <= 1) return [arr.slice()];
+  const result: T[][] = [];
+  for (let i = 0; i < arr.length; i++) {
+    const rest = arr.filter((_, j) => j !== i);
+    for (const p of permutations(rest)) result.push([arr[i], ...p]);
+  }
+  return result;
+}
+
 function safeParseNumber(val: any): number | null {
   if (val == null || val === "") return null;
   if (typeof val === "number") return isNaN(val) ? null : val;
@@ -149,6 +159,164 @@ function safeParseNumber(val: any): number | null {
 }
 
 export function fixAmounts(
+  _headers: string[],
+  rows: (string | number | null)[][]
+): (string | number | null)[][] {
+  return rows;
+}
+
+/**
+ * 컬럼 시프트 복원: 수량 × 단가 ≠ 금액인 행의 숫자 컬럼 값을 재배치합니다.
+ *
+ * 같은 이미지(페이지) 내에서 다른 행의 배치 패턴을 참고해 올바른 순서를 먼저 시도하고,
+ * 그래도 실패하면 순열 탐색으로 수식이 맞는 배치를 찾아 반환합니다.
+ */
+export function repairColumnShift(
+  headers: string[],
+  rows: (string | number | null)[][]
+): (string | number | null)[][] {
+  const qI = headers.indexOf("수량");
+  const pI = headers.indexOf("단가");
+  const aI = headers.indexOf("금액");
+  const tI = headers.indexOf("세액");
+  if (qI < 0 || pI < 0 || aI < 0) return rows;
+
+  const numCols = [qI, pI, aI, ...(tI >= 0 ? [tI] : [])];
+
+  const mathOk = (row: (string | number | null)[]): boolean => {
+    const q = safeParseNumber(row[qI]);
+    const p = safeParseNumber(row[pI]);
+    const a = safeParseNumber(row[aI]);
+    if (q == null || p == null || a == null) return true;
+    if (q <= 0 || p <= 0 || a <= 0) return true;
+    const exp = Math.round(q * p);
+    return Math.abs(exp - a) <= Math.max(1, exp * 0.01);
+  };
+
+  const numericVal = (row: (string | number | null)[], ci: number): number | null =>
+    safeParseNumber(row[ci]);
+
+  // 같은 이미지 내 유효 행들의 숫자 크기 순위 패턴 집계
+  // (예: 금액이 가장 크고 단가가 그다음, 수량이 가장 작은 경우 → 순위=[2,1,0,...])
+  const patternCounts = new Map<string, number>();
+  for (const row of rows) {
+    if (!mathOk(row)) continue;
+    const vals = numCols.map(ci => numericVal(row, ci));
+    const nonNull = vals.filter(v => v !== null) as number[];
+    if (nonNull.length < 3) continue;
+    const sorted = [...nonNull].sort((a, b) => b - a);
+    const pattern = vals.map(v => (v === null ? -1 : sorted.indexOf(v))).join(",");
+    patternCounts.set(pattern, (patternCounts.get(pattern) ?? 0) + 1);
+  }
+  const bestPattern: number[] | null =
+    patternCounts.size > 0
+      ? [...patternCounts.entries()].sort((a, b) => b[1] - a[1])[0][0].split(",").map(Number)
+      : null;
+
+  return rows.map(row => {
+    if (mathOk(row)) return row;
+
+    const vals = numCols.map(ci => numericVal(row, ci));
+    const nonNull = vals.filter(v => v !== null) as number[];
+    if (nonNull.length < 3) return row;
+
+    // 1순위: 같은 이미지의 다른 유효 행 패턴으로 재배치
+    if (bestPattern && bestPattern.length === numCols.length) {
+      const sortedDesc = [...nonNull].sort((a, b) => b - a);
+      const testRow = [...row];
+      numCols.forEach((ci, j) => {
+        if (bestPattern![j] >= 0 && bestPattern![j] < sortedDesc.length)
+          testRow[ci] = sortedDesc[bestPattern![j]];
+      });
+      if (mathOk(testRow)) return testRow;
+    }
+
+    // 2순위: 순열 탐색 (최대 4개 숫자 = 최대 24가지)
+    for (const perm of permutations(nonNull.slice(0, numCols.length))) {
+      const testRow = [...row];
+      numCols.slice(0, perm.length).forEach((ci, j) => { testRow[ci] = perm[j]; });
+      if (mathOk(testRow)) return testRow;
+    }
+
+    return row;
+  });
+}
+
+/**
+ * 소계 기반 금액 보정: 명세서에 기재된 소계(statedTotal)와 행 합계가 다를 때
+ * 각 행의 수량×단가로 역산하거나 자릿수 오독을 수정해 합계를 맞춥니다.
+ */
+export function fixAmountsBySubtotal(
+  headers: string[],
+  rows: (string | number | null)[][],
+  statedTotal: number | null
+): (string | number | null)[][] {
+  if (statedTotal == null || statedTotal <= 0) return rows;
+
+  const qI = headers.indexOf("수량");
+  const pI = headers.indexOf("단가");
+  const aI = headers.indexOf("금액");
+  if (aI < 0) return rows;
+
+  const getAmt = (row: (string | number | null)[]) =>
+    typeof row[aI] === "number" ? (row[aI] as number) : 0;
+
+  const sumRows = (r: (string | number | null)[][]) => r.reduce((s, row) => s + getAmt(row), 0);
+
+  let currentTotal = sumRows(rows);
+  if (Math.abs(currentTotal - statedTotal) <= 1) return rows;
+
+  // 전략 2: 단일 행 자릿수 오독 보정 (×10, ×100, /10, /100)
+  const scales = [10, 100, 0.1, 0.01];
+  for (let ri = 0; ri < rows.length; ri++) {
+    const a = getAmt(rows[ri]);
+    if (a <= 0) continue;
+    for (const scale of scales) {
+      const na = Math.round(a * scale);
+      if (na <= 0) continue;
+      if (Math.abs(currentTotal - a + na - statedTotal) <= 1) {
+        const r = [...rows[ri]]; r[aI] = na;
+        return [...rows.slice(0, ri), r, ...rows.slice(ri + 1)];
+      }
+    }
+  }
+
+  // 전략 3: 두 행 조합 자릿수 보정
+  for (let ri = 0; ri < rows.length; ri++) {
+    const a1 = getAmt(rows[ri]);
+    if (a1 <= 0) continue;
+    for (const s1 of scales) {
+      const na1 = Math.round(a1 * s1);
+      if (na1 <= 0) continue;
+      const partial = currentTotal - a1 + na1;
+      for (let rj = ri + 1; rj < rows.length; rj++) {
+        const a2 = getAmt(rows[rj]);
+        if (a2 <= 0) continue;
+        for (const s2 of scales) {
+          const na2 = Math.round(a2 * s2);
+          if (na2 <= 0) continue;
+          if (Math.abs(partial - a2 + na2 - statedTotal) <= 1) {
+            const r1 = [...rows[ri]]; r1[aI] = na1;
+            const r2 = [...rows[rj]]; r2[aI] = na2;
+            return rows.map((row, i) => i === ri ? r1 : i === rj ? r2 : row);
+          }
+        }
+      }
+    }
+  }
+
+  return rows;
+}
+
+/**
+ * 페이지 내 교차 검증 (intra-page cross-validation):
+ * 같은 이미지 내에서 수량×단가=금액이 성립하는 "신뢰 행"들의 자릿수 분포를 기준으로
+ * 나머지 행의 수치 이상 여부를 감지하고 자동 보정합니다.
+ *
+ * 거래명세서 한 장은 같은 공급사·같은 일자이므로 수량/단가/금액의 자릿수 범위가
+ * 행마다 유사하다는 특성을 활용합니다.
+ */
+export function crossValidateIntraPage(
   headers: string[],
   rows: (string | number | null)[][]
 ): (string | number | null)[][] {
@@ -157,41 +325,87 @@ export function fixAmounts(
   const aI = headers.indexOf("금액");
   if (qI < 0 || pI < 0 || aI < 0) return rows;
 
-  return rows.map(row => {
-    const q = safeParseNumber(row[qI]);
-    const p = safeParseNumber(row[pI]);
-    const a = safeParseNumber(row[aI]);
+  const pos = (row: (string | number | null)[], i: number): number | null => {
+    const v = row[i];
+    return typeof v === "number" && v > 0 ? v : null;
+  };
 
-    // 금액 누락 시에만 수량×단가로 채움 (유효한 금액은 절대 덮어쓰지 않음)
-    if (a == null && q != null && p != null && q > 0 && p > 0) {
-      const r = [...row];
-      r[aI] = Math.round(q * p);
-      return r;
+  const mathOk = (q: number, p: number, a: number) => {
+    const exp = Math.round(q * p);
+    return Math.abs(exp - a) <= Math.max(1, exp * 0.01);
+  };
+
+  // 신뢰 행: 수량×단가=금액이 성립하는 행
+  const trusted = rows.filter(row => {
+    const q = pos(row, qI), p = pos(row, pI), a = pos(row, aI);
+    return q != null && p != null && a != null && mathOk(q, p, a);
+  });
+
+  if (trusted.length < 2) return rows; // 기준 행 부족
+
+  // 자릿수(order of magnitude) 계산
+  const magOf = (v: number) => (v > 0 ? Math.floor(Math.log10(v)) : 0);
+
+  // 최빈 자릿수 반환
+  const magMode = (vals: number[]): number => {
+    const cnt = new Map<number, number>();
+    for (const v of vals) { const m = magOf(v); cnt.set(m, (cnt.get(m) ?? 0) + 1); }
+    return [...cnt.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? 0;
+  };
+
+  const qMag = magMode(trusted.map(r => pos(r, qI)!));
+  const pMag = magMode(trusted.map(r => pos(r, pI)!));
+  const aMag = magMode(trusted.map(r => pos(r, aI)!));
+
+  // 허용 자릿수 범위: 최빈값 ±1 자릿수
+  const inRange = (v: number, mag: number) => Math.abs(magOf(v) - mag) <= 1;
+
+  const scales = [10, 100, 0.1, 0.01];
+
+  return rows.map(row => {
+    const q = pos(row, qI), p = pos(row, pI), a = pos(row, aI);
+    if (q == null || p == null || a == null) return row;
+    if (mathOk(q, p, a)) return row; // 이미 유효
+
+    const qBad = !inRange(q, qMag);
+    const pBad = !inRange(p, pMag);
+    const aBad = !inRange(a, aMag);
+
+    // 전략 A: 자릿수 이상 컬럼만 스케일 보정 시도
+    for (const [ci, bad, mag] of [
+      [qI, qBad, qMag], [pI, pBad, pMag], [aI, aBad, aMag],
+    ] as [number, boolean, number][]) {
+      if (!bad) continue;
+      const orig = row[ci] as number;
+      for (const s of scales) {
+        const nv = Math.round(orig * s);
+        if (!inRange(nv, mag)) continue;
+        const nq = ci === qI ? nv : q;
+        const np = ci === pI ? nv : p;
+        const na = ci === aI ? nv : a;
+        if (nq > 0 && np > 0 && na > 0 && mathOk(nq, np, na)) {
+          const r = [...row]; r[ci] = nv; return r;
+        }
+      }
     }
 
-    // 삼각 교차 검증: 세 값 모두 존재할 때 불일치 시 오독된 컬럼 역산 복원
-    if (q != null && p != null && a != null && q > 0 && p > 0 && a > 0) {
-      if (Math.abs(Math.round(q * p) - a) <= 1) return row; // 일치, 보정 불필요
-
-      // 수량 역산: a / p → 정수이면 수량이 오독된 것
-      const qRecov = a / p;
-      const qRecovInt = Math.round(qRecov);
-      if (qRecovInt > 0 && Math.abs(qRecovInt * p - a) <= 1 && Math.abs(qRecovInt - q) > 0.5) {
-        const r = [...row];
-        r[qI] = qRecovInt;
-        return r;
+    // 전략 B: 자릿수는 정상이나 수식이 안 맞는 경우 → 각 컬럼 스케일 후 범위+수식 이중 검증
+    if (!qBad && !pBad && !aBad) {
+      for (const [ci, orig] of [[qI, q], [pI, p], [aI, a]] as [number, number][]) {
+        for (const s of scales) {
+          const nv = Math.round(orig * s);
+          const nq = ci === qI ? nv : q;
+          const np = ci === pI ? nv : p;
+          const na = ci === aI ? nv : a;
+          if (
+            nq > 0 && np > 0 && na > 0 &&
+            inRange(nq, qMag) && inRange(np, pMag) && inRange(na, aMag) &&
+            mathOk(nq, np, na)
+          ) {
+            const r = [...row]; r[ci] = nv; return r;
+          }
+        }
       }
-
-      // 단가 역산: a / q → 정수이면 단가가 오독된 것
-      const pRecov = a / q;
-      const pRecovInt = Math.round(pRecov);
-      if (pRecovInt > 0 && Math.abs(pRecovInt * q - a) <= 1 && Math.abs(pRecovInt - p) > 0.5) {
-        const r = [...row];
-        r[pI] = pRecovInt;
-        return r;
-      }
-
-      // 판별 불가(두 개 이상 오독 추정) → 금액 건드리지 않고 원본 반환
     }
 
     return row;

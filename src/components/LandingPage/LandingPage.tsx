@@ -24,13 +24,14 @@ import {
   Eye,
   EyeOff,
   Utensils,
+  Package,
 } from "lucide-react";
 import type { AuthSession, AuthRole } from "../../types";
 import { NotificationBell } from "../NotificationBell";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
-  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch", auth?: AuthSession) => void;
+  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck", auth?: AuthSession) => void;
   onLogout: () => void;
   onAuthOnly?: (auth: AuthSession) => void;
 }
@@ -56,6 +57,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem("megatown_remembered_phone"));
   const empNumberRef = useRef<HTMLInputElement>(null);
 
+  // 거래처 로그인
+  const [vendorLoginOpen, setVendorLoginOpen] = useState(false);
+  const [vendorPhone, setVendorPhone] = useState("");
+  const [vendorPassword, setVendorPassword] = useState("");
+  const [vendorError, setVendorError] = useState<string | null>(null);
+  const [vendorLoading, setVendorLoading] = useState(false);
+  const [showVendorPassword, setShowVendorPassword] = useState(false);
+  const vendorPhoneRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (pendingPage) {
       setEmpNumber(localStorage.getItem("megatown_remembered_phone") ?? "");
@@ -66,6 +76,43 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
       setTimeout(() => empNumberRef.current?.focus(), 50);
     }
   }, [pendingPage]);
+
+  useEffect(() => {
+    if (vendorLoginOpen) {
+      setVendorPhone("");
+      setVendorPassword("");
+      setVendorError(null);
+      setVendorLoading(false);
+      setShowVendorPassword(false);
+      setTimeout(() => vendorPhoneRef.current?.focus(), 50);
+    }
+  }, [vendorLoginOpen]);
+
+  const handleVendorSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const phone = vendorPhone.trim().replace(/[^0-9]/g, "");
+    if (!phone || !vendorPassword) {
+      setVendorError("전화번호와 비밀번호를 모두 입력해 주세요.");
+      return;
+    }
+    setVendorLoading(true);
+    setVendorError(null);
+    try {
+      const res = await axios.post("/api/auth/vendor-login", { phone, password: vendorPassword });
+      const { id, name, contactName, role, level } = res.data ?? {};
+      if (!id) { setVendorError("로그인에 실패했습니다."); setVendorLoading(false); return; }
+      setVendorLoginOpen(false);
+      setVendorPassword("");
+      const auth: AuthSession = { role: "vendor", employeeId: id, employeeName: name, employeeRank: contactName || undefined, level: level ?? 0 };
+      onAuthOnly?.(auth);
+    } catch (err: any) {
+      const status = err?.response?.status;
+      setVendorError(status === 401 || status === 400 ? (err.response?.data?.error ?? "전화번호 또는 비밀번호가 올바르지 않습니다") : "로그인 중 오류가 발생했습니다.");
+      setVendorPassword("");
+    } finally {
+      setVendorLoading(false);
+    }
+  };
 
   const closeModal = () => setPendingPage(null);
 
@@ -107,7 +154,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         localStorage.removeItem("megatown_remembered_phone");
         setEmpNumber("");
       }
-      const validRoles = ["superadmin", "admin", "manager", "employee"] as const;
+      const validRoles = ["superadmin", "admin", "manager", "employee", "vendor"] as const;
       const authRole: AuthRole = (validRoles as readonly string[]).includes(role) ? (role as AuthRole) : "employee";
       const auth: AuthSession = { role: authRole, employeeId: id, employeeName: name, level: level ?? 1, employeeRank: rank ?? undefined, rememberMe: rememberMe || undefined };
       onAuthOnly?.(auth);
@@ -168,9 +215,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const isManagerRole = userLevel >= 2 && userLevel < 9;
   const isAdmin = isSuperAdmin;
   const isEmployee = userLevel === 1;
+  const isVendor = authSession?.role === "vendor";
   const isLoggedIn = !!authSession;
-  const isManagerOrAdmin = userLevel >= 2;
-  const isSuperAdminLevel9 = userLevel >= 9;
+  const isManagerOrAdmin = !isVendor && userLevel >= 2;
+  const isSuperAdminLevel9 = !isVendor && userLevel >= 9;
 
   // Load pending counts for managers
   useEffect(() => {
@@ -220,7 +268,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               {isManagerOrAdmin ? <Shield size={11} /> : <User size={11} />}
               <span className="max-w-[80px] truncate">{roleLabel}</span>
             </div>
-            <NotificationBell authSession={authSession} />
+            {!isVendor && <NotificationBell authSession={authSession} />}
             <button
               onClick={onLogout}
               className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all duration-150 cursor-pointer"
@@ -353,23 +401,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 </button>
 
-                {/* 상품 목록 관리 — orange */}
-                <button
-                  onClick={() => { setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog(); }}
-                  className="group relative bg-white border border-slate-200/80 hover:border-orange-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
-                  <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffedd5, #fed7aa)", border: "1px solid #fdba74" }}>
-                      <FileSpreadsheet size={16} className="text-orange-500 sm:hidden" /><FileSpreadsheet size={20} className="text-orange-500 hidden sm:block" />
+                {/* 상품 목록 관리 — orange (level 9 전용) */}
+                {isSuperAdminLevel9 && (
+                  <button
+                    onClick={() => { setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog(); }}
+                    className="group relative bg-white border border-slate-200/80 hover:border-orange-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
+                    <div className="relative">
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffedd5, #fed7aa)", border: "1px solid #fdba74" }}>
+                        <FileSpreadsheet size={16} className="text-orange-500 sm:hidden" /><FileSpreadsheet size={20} className="text-orange-500 hidden sm:block" />
+                      </div>
+                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품 목록 관리</div>
+                      <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">xlsx 파일 업로드로 상품 DB 갱신</div>
+                      <div className="flex items-center gap-1 mt-2 text-orange-500 text-xs font-bold">
+                        <span className="text-[11px] sm:text-xs">업로드하기</span>
+                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                      </div>
                     </div>
-                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품 목록 관리</div>
-                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">xlsx 파일 업로드로 상품 DB 갱신</div>
-                    <div className="flex items-center gap-1 mt-2 text-orange-500 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">업로드하기</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  </div>
-                </button>
+                  </button>
+                )}
 
                 {/* 거래명세서 OCR — amber */}
                 <button onClick={() => onNavigate("ocr", authSession!)}
@@ -411,8 +461,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
-          {/* ── 직원용 (로그인 시에만 표시) ── */}
-          {isLoggedIn && (
+          {/* ── 직원용 (직원/관리자 로그인 시에만 표시) ── */}
+          {isLoggedIn && !isVendor && (
             <div className="w-full mb-7">
               <div className="flex items-center gap-2 mb-3.5">
                 <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}>
@@ -495,59 +545,86 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
-          {/* ── 비로그인 안내 ── */}
+          {/* ── 비로그인: 재고확인 (메인) + 로그인 버튼 (보조) ── */}
           {!isLoggedIn && (
-            <div className="w-full mb-7">
+            <div className="w-full mb-7 flex flex-col gap-3">
+              {/* 재고확인 — 메인 CTA */}
               <button
-                onClick={() => setPendingPage("schedule")}
-                className="w-full group relative overflow-hidden flex items-center justify-between rounded-2xl px-5 py-4 transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 cursor-pointer border border-indigo-200/80 shadow-sm"
-                style={{ background: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)" }}
+                onClick={() => onNavigate("stockcheck")}
+                className="w-full group relative overflow-hidden rounded-3xl cursor-pointer transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+                style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 60%, #3b82f6 100%)" }}
               >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-2xl" style={{ background: "linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%)" }} />
-                <div className="relative flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}>
-                    <Lock size={16} className="text-white" />
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl" style={{ background: "linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #60a5fa 100%)" }} />
+                <div className="relative px-6 py-6 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0" style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)" }}>
+                      <Package size={26} className="text-white" />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-white/70 text-[11px] font-bold tracking-widest uppercase mb-0.5">오산 메가타운 약국</div>
+                      <div className="text-white font-black text-xl sm:text-2xl tracking-tight leading-tight">재고 확인</div>
+                      <div className="text-blue-200 text-xs sm:text-sm mt-1 font-medium">원하는 약품·제품의 재고를 바로 확인하세요</div>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <div className="text-indigo-800 font-bold text-sm tracking-tight">직원 로그인</div>
-                    <div className="text-indigo-500 text-xs mt-0.5">스케줄표·연차신청·스캔 등 이용 가능</div>
+                  <div className="relative shrink-0 flex flex-col items-center gap-1 text-blue-200 group-hover:text-white transition-colors mr-1">
+                    <ChevronRight size={22} className="group-hover:translate-x-1 transition-transform" />
                   </div>
-                </div>
-                <div className="relative flex items-center gap-1 text-indigo-500 group-hover:text-indigo-700 transition-colors">
-                  <span className="text-xs font-bold hidden sm:inline">시작하기</span>
-                  <ChevronRight size={16} className="group-hover:translate-x-0.5 transition-transform" />
                 </div>
               </button>
+
+              {/* 직원·거래처 로그인 — 보조 */}
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setPendingPage("schedule")}
+                  className="flex-1 group relative overflow-hidden flex items-center justify-center gap-2 rounded-2xl px-4 py-3 transition-all duration-200 hover:shadow-md cursor-pointer border border-indigo-200/80"
+                  style={{ background: "linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%)" }}
+                >
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)" }} />
+                  <Lock size={14} className="relative text-indigo-600" />
+                  <span className="relative text-indigo-700 font-bold text-sm">직원 로그인</span>
+                </button>
+                <button
+                  onClick={() => setVendorLoginOpen(true)}
+                  className="flex-1 group relative overflow-hidden flex items-center justify-center gap-2 rounded-2xl px-4 py-3 transition-all duration-200 hover:shadow-md cursor-pointer border border-emerald-200/80"
+                  style={{ background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)" }}
+                >
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" style={{ background: "linear-gradient(135deg, #dcfce7, #bbf7d0)" }} />
+                  <CalendarCheck size={14} className="relative text-emerald-600" />
+                  <span className="relative text-emerald-700 font-bold text-sm">거래처 로그인</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* ── 외부용 ── */}
-          <div className="w-full">
-            <div className="flex items-center gap-2 mb-3.5">
-              <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}>
-                <CalendarCheck size={10} className="text-white" />
-              </div>
-              <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">외부용</span>
-              <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #a7f3d0, transparent)" }} />
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <button onClick={() => onNavigate("reservation")}
-                className="group relative bg-white border border-slate-200/80 hover:border-emerald-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(209,250,229,0.6) 0%, transparent 60%)" }} />
-                <div className="relative">
-                  <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #d1fae5, #a7f3d0)", border: "1px solid #6ee7b7" }}>
-                    <CalendarCheck size={16} className="text-emerald-600 sm:hidden" /><CalendarCheck size={20} className="text-emerald-600 hidden sm:block" />
-                  </div>
-                  <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">방문예약</div>
-                  <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">상담 및 방문 일정을 간편하게 예약</div>
-                  <div className="flex items-center gap-1 mt-2 text-emerald-600 text-xs font-bold">
-                    <span className="text-[11px] sm:text-xs">예약하기</span>
-                    <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                  </div>
+          {/* ── 거래처용 (거래처 로그인 시에만 표시) ── */}
+          {isLoggedIn && isVendor && (
+            <div className="w-full">
+              <div className="flex items-center gap-2 mb-3.5">
+                <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}>
+                  <CalendarCheck size={10} className="text-white" />
                 </div>
-              </button>
+                <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">거래처용</span>
+                <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #a7f3d0, transparent)" }} />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <button onClick={() => onNavigate("reservation", authSession!)}
+                  className="group relative bg-white border border-slate-200/80 hover:border-emerald-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(209,250,229,0.6) 0%, transparent 60%)" }} />
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #d1fae5, #a7f3d0)", border: "1px solid #6ee7b7" }}>
+                      <CalendarCheck size={16} className="text-emerald-600 sm:hidden" /><CalendarCheck size={20} className="text-emerald-600 hidden sm:block" />
+                    </div>
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">방문예약</div>
+                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">상담 및 방문 일정을 간편하게 예약</div>
+                    <div className="flex items-center gap-1 mt-2 text-emerald-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">예약하기</span>
+                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Footer */}
           <div className="flex items-center gap-4 mt-10 pt-6 border-t border-slate-200/60 w-full justify-center text-slate-400 text-[11px] font-medium">
@@ -638,6 +715,91 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── 거래처 로그인 모달 ── */}
+      {vendorLoginOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: "rgba(15, 23, 42, 0.72)", backdropFilter: "blur(12px)" }}
+          onClick={() => setVendorLoginOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-md rounded-3xl overflow-hidden shadow-2xl"
+            style={{ background: "rgba(255,255,255,0.98)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="relative px-7 pt-8 pb-6 overflow-hidden" style={{ background: "linear-gradient(135deg, #064e3b 0%, #059669 50%, #10b981 100%)" }}>
+              <div className="absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-20" style={{ background: "radial-gradient(circle, #6ee7b7, transparent)" }} />
+              <div className="absolute -bottom-6 -left-6 w-28 h-28 rounded-full opacity-15" style={{ background: "radial-gradient(circle, #a7f3d0, transparent)" }} />
+              <button onClick={() => setVendorLoginOpen(false)} aria-label="닫기" className="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-emerald-200 hover:text-white transition cursor-pointer">
+                <X size={14} />
+              </button>
+              <div className="relative flex items-center gap-4 mb-3">
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0" style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)" }}>
+                  <CalendarCheck size={28} className="text-white" />
+                </div>
+                <div>
+                  <div className="text-white/60 text-[10px] font-semibold tracking-widest uppercase mb-0.5">Vendor Portal</div>
+                  <div className="text-white font-black text-2xl leading-tight tracking-tight">거래처 로그인</div>
+                  <div className="text-emerald-200 text-[11px] font-medium tracking-wide mt-0.5">방문예약 이용</div>
+                </div>
+              </div>
+            </div>
+            {/* Form */}
+            <div className="px-7 pt-5 pb-7">
+              <form onSubmit={handleVendorSubmit} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-600 text-xs font-semibold pl-1">전화번호</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none"><User size={14} className="text-slate-400" /></div>
+                    <input
+                      ref={vendorPhoneRef}
+                      type="tel" inputMode="numeric"
+                      value={vendorPhone}
+                      onChange={(e) => { setVendorPhone(e.target.value); setVendorError(null); }}
+                      placeholder="01012345678"
+                      className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-slate-900 text-sm font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-slate-200 bg-slate-50 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"}`}
+                      autoComplete="username" disabled={vendorLoading}
+                    />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-600 text-xs font-semibold pl-1">비밀번호</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none"><Lock size={14} className="text-slate-400" /></div>
+                    <input
+                      type={showVendorPassword ? "text" : "password"}
+                      value={vendorPassword}
+                      onChange={(e) => { setVendorPassword(e.target.value); setVendorError(null); }}
+                      placeholder="비밀번호 입력"
+                      className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-slate-900 text-sm font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-slate-200 bg-slate-50 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"}`}
+                      autoComplete="current-password" disabled={vendorLoading}
+                    />
+                    <button type="button" onClick={() => setShowVendorPassword((v) => !v)} className="absolute inset-y-0 right-4 flex items-center text-slate-400 hover:text-slate-600 transition cursor-pointer">
+                      {showVendorPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+                {vendorError && (
+                  <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
+                    <AlertCircle size={13} className="text-rose-500 mt-0.5 shrink-0" />
+                    <p className="text-rose-600 text-xs font-semibold leading-relaxed">{vendorError}</p>
+                  </div>
+                )}
+                <button
+                  type="submit" disabled={vendorLoading}
+                  className="w-full py-3.5 rounded-2xl text-white font-bold text-sm mt-1 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-emerald-200"
+                  style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}
+                >
+                  {vendorLoading ? <><div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" /><span>로그인 중...</span></> : <span>거래처로 입장하기</span>}
+                </button>
+                <p className="text-[11px] text-slate-400 text-center leading-relaxed">비밀번호 분실 시 관리자에게 문의하세요</p>
+              </form>
+            </div>
           </div>
         </div>
       )}

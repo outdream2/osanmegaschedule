@@ -25,10 +25,24 @@ interface MatchedItem {
 
 type CandidateInfo = NonNullable<MatchedItem["matched"]>;
 
+interface BarcodeProduct {
+  barcode: string;
+  code: string;
+  name: string;
+  spec: string | null;
+  supplier: string | null;
+  masterPrice: number | null;
+  salePrice: number | null;
+  profitRate: number | null;
+  expiryDate: string | null;
+}
+
 interface RawOcrTableProps {
   pages: RawPage[];
   pageImages?: string[]; // dataURL per page (index = page-1)
   rotation?: number;     // CSS rotation applied in PageImageViewer (degrees)
+  onReparsePage?: (pageNum: number, supplier: string) => Promise<any>;
+  barcodeMatches?: BarcodeProduct[];
 }
 
 const SCHEMA_ORDER = ["공급처","일자","품명","수량","단가","금액","세액","규격","단위","비고"];
@@ -93,7 +107,7 @@ const parseNumber = (val: any): number => {
   return isNaN(num) ? 0 : num;
 };
 
-export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rotation = -90 }) => {
+export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rotation = -90, onReparsePage, barcodeMatches }) => {
   const structuredPages = pages.filter(p => !isFallback(p.headers) && p.rows.length > 0);
   const fallbackPages   = pages.filter(p => isFallback(p.headers) || p.rows.length === 0);
 
@@ -129,23 +143,35 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // ── Feature 1: 금액 자동보정 ──────────────────────────────────────────────
   const [amountCorrections, setAmountCorrections] = useState<Record<number, number>>({});
 
+  // ── 셀 인라인 편집 (수량/단가/금액) ───────────────────────────────────────
+  const [cellEdits,      setCellEdits     ] = useState<Record<number, Record<number, number | null>>>({});
+  const [editingCell,    setEditingCell   ] = useState<{ ri: number; ci: number } | null>(null);
+  const [editingCellVal, setEditingCellVal] = useState("");
+
   // ── Feature 2: 공급사 변경 시 동의어 일괄 추가 ───────────────────────────
   const [addSynonymsOnChange, setAddSynonymsOnChange] = useState(true);
   const [synonymAddStatus, setSynonymAddStatus] = useState<{ pageNum: number; status: 'loading' | 'done' | 'error'; count: number } | null>(null);
 
+  // ── 공급처 변경 재파싱 + 템플릿 저장 ──────────────────────────────────────
+  type ReparseStatus = 'loading' | 'done' | 'error' | 'saved';
+  const [reparseStatus,   setReparseStatus  ] = useState<Record<number, ReparseStatus>>({});
+  const [reparseSupplier, setReparseSupplier] = useState<Record<number, string>>({});
+
   // ── Feature 3: OCR 추출 후 자동 동의어 1차 보정 ──────────────────────────
   const [autoSynonymMatches, setAutoSynonymMatches] = useState<Record<number, { code: string; name: string }>>({});
   const [autoSynonymLoading, setAutoSynonymLoading] = useState(false);
+  const [barcodeAutoMap, setBarcodeAutoMap] = useState<Record<number, CandidateInfo>>({});
 
-  // effectiveDispRows: 금액 자동보정 결과를 반영한 행
-  const effectiveDispRows = amtIdx >= 0
-    ? dispRows.map((row, ri) => {
-        if (amountCorrections[ri] === undefined) return row;
-        const nr = [...row];
-        nr[amtIdx] = amountCorrections[ri];
-        return nr;
-      })
-    : dispRows;
+  // effectiveDispRows: 자동보정 + 셀 인라인 편집 결과를 반영한 행 (cellEdits 우선)
+  const effectiveDispRows = dispRows.map((row, ri) => {
+    const hasAmtCorr = amtIdx >= 0 && amountCorrections[ri] !== undefined;
+    const edits = cellEdits[ri];
+    if (!hasAmtCorr && !edits) return row;
+    const nr = [...row];
+    if (hasAmtCorr) nr[amtIdx] = amountCorrections[ri];
+    if (edits) for (const [ciStr, val] of Object.entries(edits)) nr[Number(ciStr)] = val as string | number;
+    return nr;
+  });
 
   // 보정 반영된 페이지별 합계
   const effectivePageTotals = new Map<number, number>();
@@ -338,41 +364,69 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // ── Feature 2: 공급사 변경 + 동의어 일괄 추가 ───────────────────────────
   const handleSynonymBulkAdd = useCallback(async (pageNum: number, newSupplier: string) => {
     if (nameIdx < 0) return;
-    const pageRowIndices: number[] = [];
-    pageNums.forEach((pn, ri) => { if (pn === pageNum) pageRowIndices.push(ri); });
-    const names = pageRowIndices.map(ri => String(dispRows[ri][nameIdx] ?? "").trim()).filter(Boolean);
-    if (names.length === 0) return;
-    const suppliers = names.map(() => newSupplier);
+    // 빈 이름 제외하되 인덱스 유지
+    const entries: { ri: number; name: string }[] = [];
+    pageNums.forEach((pn, ri) => {
+      if (pn !== pageNum) return;
+      const n = String(dispRows[ri][nameIdx] ?? "").trim();
+      if (n) entries.push({ ri, name: n });
+    });
+    if (entries.length === 0) return;
     setSynonymAddStatus({ pageNum, status: 'loading', count: 0 });
     try {
       const res = await fetch("/api/ocr-match", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names, suppliers }),
+        body: JSON.stringify({ names: entries.map(e => e.name), suppliers: entries.map(() => newSupplier) }),
       });
+      if (!res.ok) throw new Error(await res.text());
       const data = await res.json();
       const matches: MatchedItem[] = data.matches ?? [];
       let count = 0;
-      for (let i = 0; i < pageRowIndices.length; i++) {
+      for (let i = 0; i < entries.length; i++) {
         const m = matches[i]?.matched;
-        if (m && names[i]) {
-          await fetch("/api/ocr-synonyms", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ alias: names[i].toLowerCase(), product_code: m.code, supply: newSupplier }),
-          });
-          count++;
-        }
+        if (!m) continue;
+        const sr = await fetch("/api/ocr-synonyms", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ alias: entries[i].name.toLowerCase(), product_code: m.code, supply: newSupplier }),
+        });
+        if (sr.ok) count++;
       }
-      setSynonymAddStatus({ pageNum, status: 'done', count });
+      setSynonymAddStatus({ pageNum, status: count > 0 ? 'done' : 'error', count });
     } catch {
       setSynonymAddStatus({ pageNum, status: 'error', count: 0 });
     }
   }, [nameIdx, pageNums, dispRows]);
 
-  // ── Feature 3: OCR 추출 후 동의어 사전 1차 자동보정 ─────────────────────
-  const prevPagesRef = useRef<RawPage[] | null>(null);
+  // ── 바코드 DB 매칭 결과를 행에 자동 바인딩 ─────────────────────────────
   useEffect(() => {
-    if (pages === prevPagesRef.current) return;
-    prevPagesRef.current = pages;
+    if (!barcodeMatches?.length || nameIdx < 0) { setBarcodeAutoMap({}); return; }
+    const normName = (s: string) => s.toLowerCase().replace(/[\s\-\(\)·]/g, "");
+    const result: Record<number, CandidateInfo> = {};
+    dispRows.forEach((row, ri) => {
+      if (result[ri]) return;
+      const rowName = normName(String(row[nameIdx] ?? ""));
+      if (!rowName || rowName.length < 2) return;
+      for (const bc of barcodeMatches) {
+        const bcName = normName(bc.name);
+        if (!bcName) continue;
+        const shorter = rowName.length < bcName.length ? rowName : bcName;
+        const longer  = rowName.length < bcName.length ? bcName  : rowName;
+        if (shorter.length >= 4 && longer.includes(shorter)) {
+          result[ri] = {
+            code: bc.code, name: bc.name, spec: bc.spec ?? "", score: 100,
+            masterPrice: bc.masterPrice, salePrice: bc.salePrice,
+            profitRate: bc.profitRate, expiryDate: bc.expiryDate,
+            supplier: bc.supplier,
+          };
+          break;
+        }
+      }
+    });
+    setBarcodeAutoMap(result);
+  }, [barcodeMatches, dispRows, nameIdx]);
+
+  // ── Feature 3: OCR 추출 후 동의어 사전 1차 자동보정 ─────────────────────
+  useEffect(() => {
     if (!pages?.length) { setAutoSynonymMatches({}); return; }
 
     // pages에서 직접 이름/공급처 추출 (dispRows 의존성 없이)
@@ -421,18 +475,48 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       })
       .catch(() => {})
       .finally(() => setAutoSynonymLoading(false));
-  });
+  }, [pages]);
+
+  const saveTemplate = useCallback(async (pageNum: number, supplierName: string) => {
+    const pageHdrs = structuredPages.find(p => p.page === pageNum)?.headers;
+    if (!pageHdrs?.length) return;
+    try {
+      const res = await fetch("/api/ocr-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ supplier_name: supplierName, headers: pageHdrs }),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      setReparseStatus(prev => ({ ...prev, [pageNum]: 'saved' }));
+    } catch { /* silent */ }
+  }, [structuredPages]);
 
   const saveSynonym = useCallback(async (ri: number, alias: string, productCode: string, supplier?: string) => {
     try {
-      await fetch("/api/ocr-synonyms", {
+      const res = await fetch("/api/ocr-synonyms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ alias, product_code: productCode, supply: supplier?.trim() || null }),
       });
-      setSavedSynonyms(prev => new Set([...prev, ri]));
+      if (res.ok) setSavedSynonyms(prev => new Set([...prev, ri]));
     } catch { /* silent */ }
   }, []);
+
+  const commitCellEdit = useCallback((ri: number, ci: number, rawVal: string) => {
+    const cleaned = rawVal.replace(/[^0-9.-]/g, "");
+    const numVal = cleaned === "" ? null : (parseFloat(cleaned) || null);
+    setCellEdits(prev => {
+      const rowEdits = { ...(prev[ri] ?? {}) };
+      rowEdits[ci] = numVal;
+      if ((ci === ocrQtyIdx || ci === ocrPriIdx) && amtIdx >= 0 && ocrQtyIdx >= 0 && ocrPriIdx >= 0) {
+        const qtyVal = ci === ocrQtyIdx ? (numVal ?? 0) : parseNumber(prev[ri]?.[ocrQtyIdx] ?? dispRows[ri]?.[ocrQtyIdx]);
+        const priVal = ci === ocrPriIdx ? (numVal ?? 0) : parseNumber(prev[ri]?.[ocrPriIdx] ?? dispRows[ri]?.[ocrPriIdx]);
+        if (qtyVal > 0 && priVal > 0) rowEdits[amtIdx] = Math.round(qtyVal * priVal);
+      }
+      return { ...prev, [ri]: rowEdits };
+    });
+    setEditingCell(null);
+  }, [ocrQtyIdx, ocrPriIdx, amtIdx, dispRows]);
 
   const handleRetry = useCallback(async (ri: number, inputName: string, supplierHint?: string) => {
     if (retryingRows.has(ri)) return;
@@ -767,8 +851,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                 const { pageNum, newVal, addSynonyms } = supplierConfirm;
                 setRawSupplierByPage(prev => ({ ...prev, [pageNum]: newVal }));
                 setSupplierConfirm(null);
-                if (addSynonyms) {
-                  await handleSynonymBulkAdd(pageNum, newVal);
+                if (addSynonyms) await handleSynonymBulkAdd(pageNum, newVal);
+                if (onReparsePage) {
+                  setReparseStatus(prev => ({ ...prev, [pageNum]: 'loading' }));
+                  setReparseSupplier(prev => ({ ...prev, [pageNum]: newVal }));
+                  try {
+                    await onReparsePage(pageNum, newVal);
+                    setReparseStatus(prev => ({ ...prev, [pageNum]: 'done' }));
+                  } catch {
+                    setReparseStatus(prev => ({ ...prev, [pageNum]: 'error' }));
+                  }
                 }
               }}
               className="flex-1 py-2 text-xs font-bold text-white bg-sky-500 hover:bg-sky-600 rounded-xl transition cursor-pointer"
@@ -848,9 +940,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                     <div key={pageNum} className="flex items-center gap-2 text-[11px] font-semibold text-emerald-700">
                       <CheckCircle size={12} className="shrink-0 text-emerald-500" />
                       <span>
-                        {pageNum}번 명세서 금액 자동보정 완료 — {correctionCount}개 항목 보정 →{" "}
+                        {pageNum}번 명세서 금액 보정 완료 — {correctionCount}개 항목 →{" "}
                         <span className="font-black">{fmt(effectiveComputed)}원</span>
-                        {" "}(명세서: {fmt(stated)}원)
+                        {" "}(명세서 소계: {fmt(stated)}원)
                       </span>
                     </div>
                   );
@@ -861,17 +953,18 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                     <div className="flex items-center gap-2 text-[11px] font-semibold text-rose-700">
                       <AlertTriangle size={12} className="shrink-0 text-rose-500" />
                       <span className="flex-1">
-                        {pageNum}번 명세서 소계 불일치 — 명세서: <span className="font-black">{fmt(stated)}원</span>
-                        {" / "}수량×단가 합계: <span className="font-black">{fmt(effectiveComputed)}원</span>
-                        {" "}(<span className={stated > effectiveComputed ? "text-rose-600" : "text-emerald-600"}>{stated > effectiveComputed ? "+" : ""}{fmt(stated - effectiveComputed)}원</span>)
+                        {pageNum}번 명세서 소계 불일치 — 명세서 소계: <span className="font-black">{fmt(stated)}원</span>
+                        {" / "}인식된 금액 합계: <span className="font-black">{fmt(effectiveComputed)}원</span>
+                        {" "}(<span className={stated > effectiveComputed ? "text-rose-600" : "text-emerald-600"}>{stated > effectiveComputed ? "+" : "-"}{fmt(Math.abs(stated - effectiveComputed))}원 차이</span>)
+                        {" — "}데이터 확인 후 수동으로 수정하거나 아래 버튼을 사용하세요.
                       </span>
-                      {/* Feature 1: 자동보정 버튼 */}
                       {ocrQtyIdx >= 0 && ocrPriIdx >= 0 && (
                         <button
                           onClick={() => autoCorrectAmounts(pageNum)}
                           className="shrink-0 flex items-center gap-1 text-[10px] font-bold text-white bg-rose-500 hover:bg-rose-600 rounded px-2 py-0.5 transition cursor-pointer"
+                          title="수량×단가 계산값으로 금액 덮어쓰기 (원본과 다를 수 있음)"
                         >
-                          <Wand2 size={9} />자동보정
+                          <Wand2 size={9} />수량×단가로 보정
                         </button>
                       )}
                       {rawText && (
@@ -894,6 +987,45 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             </div>
           )}
 
+          {/* ── 공급처 변경 재파싱 상태 ── */}
+          {Object.entries(reparseStatus).map(([pnStr, status]) => {
+            const pn = Number(pnStr);
+            const supplier = reparseSupplier[pn] ?? "";
+            if (!supplier) return null;
+            if (status === 'loading') return (
+              <div key={pn} className="px-4 py-2 bg-indigo-50 border-b border-indigo-200 flex items-center gap-2 text-[11px] font-semibold text-indigo-700">
+                <Loader2 size={12} className="animate-spin shrink-0" />
+                {pn}번 명세서 "{supplier}" 공급처 템플릿으로 재파싱 중...
+              </div>
+            );
+            if (status === 'error') return (
+              <div key={pn} className="px-4 py-2 bg-rose-50 border-b border-rose-200 flex items-center gap-2 text-[11px] font-semibold text-rose-700">
+                <XCircle size={12} className="shrink-0" />{pn}번 명세서 재파싱 실패 — 원본 결과를 유지합니다
+              </div>
+            );
+            if (status === 'done') return (
+              <div key={pn} className="px-4 py-2 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2 flex-wrap text-[11px] font-semibold text-emerald-700">
+                <CheckCircle size={12} className="shrink-0" />
+                <span>{pn}번 명세서 재파싱 완료</span>
+                <span className="text-gray-500 font-normal">이 결과를 <span className="font-bold text-sky-700">"{supplier}"</span> 공급처 템플릿으로 저장하면 다음부터 자동 적용됩니다.</span>
+                <button onClick={() => saveTemplate(pn, supplier)}
+                  className="ml-auto text-[10px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 px-2 py-0.5 rounded transition cursor-pointer shrink-0">
+                  템플릿 저장
+                </button>
+                <button onClick={() => setReparseStatus(prev => { const s = { ...prev }; delete s[pn]; return s; })}
+                  className="text-gray-400 hover:text-gray-600 cursor-pointer shrink-0">
+                  <X size={10} />
+                </button>
+              </div>
+            );
+            if (status === 'saved') return (
+              <div key={pn} className="px-4 py-2 bg-emerald-50 border-b border-emerald-200 flex items-center gap-2 text-[11px] font-semibold text-emerald-700">
+                <BookmarkCheck size={12} className="shrink-0" /><span className="font-bold text-sky-700">"{supplier}"</span> 공급처 템플릿 저장 완료 — 다음 스캔부터 자동 적용됩니다
+              </div>
+            );
+            return null;
+          })}
+
           <div className="overflow-x-auto">
             <table className="w-full text-xs border-collapse">
               <thead>
@@ -909,13 +1041,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                 {effectiveDispRows.map((row, ri) => {
                   const isLastInPage = ri === effectiveDispRows.length - 1 || pageNums[ri] !== pageNums[ri + 1];
                   const pn = pageNums[ri];
+                  const isMismatch = ocrQtyIdx >= 0 && ocrPriIdx >= 0 && amtIdx >= 0 && (() => {
+                    const qty = parseNumber(row[ocrQtyIdx]);
+                    const pri = parseNumber(row[ocrPriIdx]);
+                    const amt = parseNumber(row[amtIdx]);
+                    return qty > 0 && pri > 0 && amt > 0 && Math.abs(Math.round(qty * pri) - amt) > 1;
+                  })();
                   return (
                     <React.Fragment key={ri}>
                       <tr
                         onClick={pageImages?.length ? () => openModal(ri) : undefined}
                         className={`border-t border-gray-100 transition-colors ${
-                          pageImages?.length ? "cursor-pointer hover:bg-amber-100/70" : "hover:bg-amber-50/50"
-                        } ${ri % 2 !== 0 ? "bg-gray-50/40" : ""}`}
+                          isMismatch ? "bg-rose-50/60" : ri % 2 !== 0 ? "bg-gray-50/40" : ""
+                        } ${pageImages?.length ? "cursor-pointer hover:bg-amber-100/70" : "hover:bg-amber-50/50"}`}
                       >
                         {dispHeaders.map((h, ci) => {
                           const isSupplier = h === "공급처";
@@ -923,15 +1061,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           const cell = isSupplier && rawSupplierByPage[pn] !== undefined
                             ? rawSupplierByPage[pn]
                             : rawCell;
-                          const isEditingThis = isSupplier && editingRawSuppRow === ri;
+                          const isEditingThisSupp = isSupplier && editingRawSuppRow === ri;
                           const isNum = typeof cell === "number";
                           const isAmt = h === "금액";
                           const isName = h === "품명";
-                          const isCorrectedAmt = isAmt && amountCorrections[ri] !== undefined;
+                          const isEditableNum = h === "수량" || h === "단가" || h === "금액";
+                          const hasDirectEdit = isEditableNum && cellEdits[ri]?.[ci] !== undefined;
+                          const isCorrectedAmt = isAmt && amountCorrections[ri] !== undefined && !hasDirectEdit;
+                          const isEditingThisNum = isEditableNum && editingCell?.ri === ri && editingCell?.ci === ci;
+                          const barcodeMatch = isName ? barcodeAutoMap[ri] : undefined;
                           const autoMatch = isName ? autoSynonymMatches[ri] : undefined;
                           const origCell = isName ? dispRows[ri]?.[ci] : null;
 
-                          if (isEditingThis) {
+                          if (isEditingThisSupp) {
                             return (
                               <td key={ci} className="px-1 py-1" onClick={e => e.stopPropagation()}>
                                 <input
@@ -976,14 +1118,68 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             );
                           }
 
-                          // Feature 1: 보정된 금액 표시
-                          if (isCorrectedAmt) {
+                          // 수량/단가/금액 인라인 편집 — 입력 중
+                          if (isEditingThisNum) {
                             return (
-                              <td key={ci} className="px-3 py-2 whitespace-nowrap text-right">
+                              <td key={ci} className="px-1 py-1" onClick={e => e.stopPropagation()}>
+                                <input
+                                  autoFocus
+                                  type="text"
+                                  inputMode="numeric"
+                                  className="text-xs font-bold text-right text-indigo-700 bg-indigo-50 border border-indigo-300 rounded px-2 py-0.5 outline-none w-full min-w-[60px]"
+                                  value={editingCellVal}
+                                  onChange={e => setEditingCellVal(e.target.value)}
+                                  onKeyDown={e => {
+                                    if (e.key === "Enter") e.currentTarget.blur();
+                                    if (e.key === "Escape") setEditingCell(null);
+                                  }}
+                                  onBlur={() => commitCellEdit(ri, ci, editingCellVal)}
+                                />
+                              </td>
+                            );
+                          }
+
+                          // 수량/단가/금액 인라인 편집 — 클릭 가능 셀
+                          if (isEditableNum) {
+                            return (
+                              <td key={ci}
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setEditingCell({ ri, ci });
+                                  const rawNum = cell != null ? String(parseNumber(cell) || "") : "";
+                                  setEditingCellVal(rawNum);
+                                }}
+                                className={`px-3 py-2 whitespace-nowrap text-right cursor-pointer hover:bg-indigo-50/60 group ${
+                                  isMismatch && isAmt ? "text-rose-700 font-bold" : "font-bold text-amber-800"
+                                }`}
+                                title="클릭하여 수정"
+                              >
                                 <span className="flex items-center justify-end gap-1">
-                                  <span className="font-bold text-emerald-700">{fmt(parseNumber(cell))}</span>
-                                  <span className="text-[9px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>
+                                  {isMismatch && isAmt && <AlertTriangle size={9} className="text-rose-400 shrink-0" />}
+                                  <span className={hasDirectEdit ? "text-indigo-700" : isCorrectedAmt ? "text-emerald-700" : ""}>
+                                    {cell == null
+                                      ? <span className="text-gray-300">—</span>
+                                      : typeof cell === "number" ? fmt(cell) : String(cell)}
+                                  </span>
+                                  {hasDirectEdit && <span className="text-[9px] bg-indigo-100 text-indigo-600 px-1 rounded font-bold">수정</span>}
+                                  {isCorrectedAmt && <span className="text-[9px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>}
+                                  <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                 </span>
+                              </td>
+                            );
+                          }
+
+                          // 바코드 100% 확정 매칭
+                          if (isName && barcodeMatch && !matchItems) {
+                            return (
+                              <td key={ci} className="px-3 py-2 max-w-[220px]">
+                                <div className="flex flex-col gap-0">
+                                  <span className="flex items-center gap-1">
+                                    <span className="text-[9px] bg-emerald-100 text-emerald-700 font-black px-1 rounded shrink-0">BC</span>
+                                    <span className="font-semibold text-emerald-700 truncate text-[11px]">{barcodeMatch.name}</span>
+                                  </span>
+                                  <span className="text-gray-300 text-[10px] line-through truncate">{String(origCell ?? "")}</span>
+                                </div>
                               </td>
                             );
                           }
@@ -1089,7 +1285,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
               <div className="px-4 py-2 border-b border-indigo-50 flex flex-col gap-0.5">
                 {matchItems.map((item, ri) => {
-                  const effMatch = selectedCands[ri] ?? item.matched ?? null;
+                  const bcMatch    = barcodeAutoMap[ri] ?? null;
+                  const effMatch = selectedCands[ri] ?? (bcMatch ? { ...bcMatch, score: 100 } : null) ?? item.matched ?? null;
                   const score    = effMatch?.score ?? item.score ?? 0;
                   const pn = pageNums[ri];
                   const rawSupp  = rawSupplierByPage[pn] !== undefined
@@ -1097,13 +1294,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                     : (ocrSuppIdx >= 0 ? (String(dispRows[ri]?.[ocrSuppIdx] ?? "").trim() || null) : null);
                   const pageSupp   = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? globalSupplier ?? "";
                   const currentSupp = supplierOverrides[ri] !== undefined ? supplierOverrides[ri] : (rawSupp ?? pageSupp);
-                  const needsRetry  = score < 70;
+                  const needsRetry  = !bcMatch && score < 70;
                   const isCandOpen  = openCandRow === ri;
-                  const isCandSelected = !!selectedCands[ri];
+                  const isCandSelected = !!selectedCands[ri] || !!bcMatch;
                   return (
                     <div key={ri} className={`flex flex-col gap-0.5 py-1 border-b last:border-0 ${isCandSelected ? "bg-emerald-50 border-emerald-100" : "border-gray-50"}`}>
                       <div className="flex items-start gap-2 text-[11px]">
-                        <ScoreIcon score={effMatch ? score : 0} />
+                        {bcMatch
+                          ? <span className="text-[9px] bg-emerald-100 text-emerald-700 font-black px-1 rounded shrink-0 self-center">BC</span>
+                          : <ScoreIcon score={effMatch ? score : 0} />}
                         <span
                           onClick={pageImages?.length ? () => openModal(ri) : undefined}
                           className={`text-gray-400 min-w-0 truncate max-w-[160px] ${pageImages?.length ? "cursor-pointer hover:text-amber-600 hover:underline" : ""}`}
@@ -1113,12 +1312,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                         {effMatch ? (
                           <div className="flex items-center gap-1.5 min-w-0 flex-1">
                             <input
-                              className="flex-1 font-semibold text-gray-800 bg-transparent border-b border-transparent hover:border-indigo-200 focus:border-indigo-400 outline-none truncate min-w-0"
+                              className={`flex-1 font-semibold bg-transparent border-b border-transparent hover:border-indigo-200 focus:border-indigo-400 outline-none truncate min-w-0 ${bcMatch ? "text-emerald-700" : "text-gray-800"}`}
                               value={overrides[ri] ?? effMatch.name}
                               onChange={e => setOverrides(prev => ({ ...prev, [ri]: e.target.value }))} />
-                            <span className={`shrink-0 font-bold ${scoreColor(score)}`}>{score}%</span>
+                            {!bcMatch && <span className={`shrink-0 font-bold ${scoreColor(score)}`}>{score}%</span>}
                             {effMatch.code && <span className="text-gray-300 shrink-0 text-[10px]">{effMatch.code}</span>}
-                            {score < 100 && (
+                            {!bcMatch && score < 100 && (
                               <button
                                 title={savedSynonyms.has(ri) ? "동의어 저장됨" : `"${item.input}" → 동의어로 저장`}
                                 onClick={() => saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined)}

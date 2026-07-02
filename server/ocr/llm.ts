@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { type GeminiResult, GEMINI_OCR_PROMPT } from "./schema";
 
-export const GEMINI_MODEL = "gemini-2.5-flash-lite";
+export const GEMINI_MODEL = "gemini-2.5-flash";
 
 export const geminiState = { roundRobinIdx: 0 };
 
@@ -45,7 +45,7 @@ function makeGeminiClient(apiKey: string): GoogleGenAI {
   });
 }
 
-export async function callGeminiOcr(b64: string, mimeType: string, apiKey: string, timeoutMs = 20_000): Promise<GeminiResult> {
+export async function callGeminiOcr(b64: string, mimeType: string, apiKey: string, timeoutMs = 20_000, templatePrompt?: string): Promise<GeminiResult> {
   const timeoutPromise: Promise<GeminiResult> = new Promise(resolve =>
     setTimeout(() => resolve({ ok: false, quota: false, error: `Gemini 응답 없음 (${timeoutMs / 1000}s 초과)` }), timeoutMs)
   );
@@ -61,7 +61,7 @@ export async function callGeminiOcr(b64: string, mimeType: string, apiKey: strin
           contents: [{
             parts: [
               { inlineData: { mimeType: mimeType ?? "image/jpeg", data: b64 } },
-              { text: GEMINI_OCR_PROMPT },
+              { text: templatePrompt ? `${templatePrompt}\n\n${GEMINI_OCR_PROMPT}` : GEMINI_OCR_PROMPT },
             ],
           }],
           config: { temperature: 0, responseMimeType: "application/json" },
@@ -139,7 +139,7 @@ ${rawText}`;
   return lastResult;
 }
 
-export async function callMistralOcr(b64: string, mimeType: string, apiKey: string): Promise<GeminiResult> {
+export async function callMistralOcr(b64: string, mimeType: string, apiKey: string, templatePrompt?: string): Promise<GeminiResult> {
   try {
     const resp = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
@@ -150,7 +150,7 @@ export async function callMistralOcr(b64: string, mimeType: string, apiKey: stri
           role: "user",
           content: [
             { type: "image_url", image_url: `data:${mimeType};base64,${b64}` },
-            { type: "text", text: GEMINI_OCR_PROMPT },
+            { type: "text", text: templatePrompt ? `${templatePrompt}\n\n${GEMINI_OCR_PROMPT}` : GEMINI_OCR_PROMPT },
           ],
         }],
         max_tokens: 4096,

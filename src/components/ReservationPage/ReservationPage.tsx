@@ -77,8 +77,9 @@ const getTargetFromNote = (noteStr: string): string => {
 const STAFF_NAMES = ["대표", "이사", "부장"];
 
 export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSession }) => {
+  const isVendor = authSession?.role === "vendor";
   // Internal staff (level >= 2) can block/unblock time slots
-  const isInternalStaff = (authSession?.level ?? 0) >= 2;
+  const isInternalStaff = !isVendor && (authSession?.level ?? 0) >= 2;
   const now = new Date();
   const todayYMD = formatYMD(now);
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -109,14 +110,22 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
   const [modalTarget, setModalTarget] = useState<string>("대표");
   const [submitted, setSubmitted] = useState(false);
 
-  // Form state
-  const [company, setCompany] = useState("");
-  const [contactName, setContactName] = useState("");
+  // Form state — vendor 로그인 시 거래처명·담당자 자동 입력
+  const [company, setCompany] = useState(() => isVendor ? (authSession?.employeeName ?? "") : "");
+  const [contactName, setContactName] = useState(() => isVendor ? (authSession?.employeeRank ?? "") : "");
   const [phone, setPhone] = useState("");
   const [purpose, setPurpose] = useState("");
   const [note, setNote] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // vendor authSession 변경 시 거래처명·담당자 동기화
+  useEffect(() => {
+    if (isVendor) {
+      setCompany(authSession?.employeeName ?? "");
+      setContactName(authSession?.employeeRank ?? "");
+    }
+  }, [isVendor, authSession?.employeeName, authSession?.employeeRank]);
 
   const monthCells = buildMonthGrid(viewYear, viewMonth);
   const isPrevMonthDisabled = viewYear === now.getFullYear() && viewMonth === now.getMonth();
@@ -254,7 +263,9 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
     setModalTime(time);
     setModalTarget(target);
     setError("");
-    setCompany(""); setContactName(""); setPhone("");
+    setCompany(isVendor ? (authSession?.employeeName ?? "") : "");
+    setContactName(isVendor ? (authSession?.employeeRank ?? "") : "");
+    setPhone("");
     setPurpose(""); setNote("");
   };
 
@@ -287,7 +298,7 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
       const res = await fetch("/api/reservations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ date: selectedDate, time: modalTime, company, contactName, phone, purpose, note: finalNote }),
+        body: JSON.stringify({ date: selectedDate, time: modalTime, company, contactName, phone, purpose, note: finalNote, ...(isVendor && authSession?.employeeId ? { vendorId: authSession.employeeId } : {}) }),
       });
       const json = await res.json();
       if (!res.ok) {

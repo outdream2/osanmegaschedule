@@ -132,6 +132,12 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [selectedInventory, setSelectedInventory] = useState<Set<string>>(new Set());
   const [invLogOpen, setInvLogOpen] = useState(false);
 
+  // 빠른 탭 갯수 (pending-counts 엔드포인트)
+  const [tabCounts, setTabCounts] = useState<{display:number; order:number; mismatch:number; lunch:number; inventory:number} | null>(null);
+
+  // 발주요청 중복 확인 모달
+  const [dupOrderModal, setDupOrderModal] = useState<{existing: OrderRequest; product: ProductInfo; editStock: number | ""} | null>(null);
+
 
   // 진열요청 완료 확인
   const [displayConfirmDelete, setDisplayConfirmDelete] = useState(false);
@@ -248,7 +254,14 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     finally { setInventoryLoading(false); }
   }, []);
 
-  useEffect(() => { loadDisplayReqs(); loadOrderReqs(); loadMismatches(); loadLunch(); loadInventoryChecks(); }, []);
+  const loadTabCounts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/requests/pending-counts");
+      if (res.ok) setTabCounts(await res.json());
+    } catch {}
+  }, []);
+
+  useEffect(() => { loadTabCounts(); loadDisplayReqs(); loadOrderReqs(); loadMismatches(); loadLunch(); loadInventoryChecks(); }, []);
   useEffect(() => {
     if (tab === "order") { loadOrderReqs(); loadProducts(); }
   }, [tab]);
@@ -284,14 +297,15 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     setSelectedInventory(new Set());
   };
 
-  const handleRequestOrder = async (p: ProductInfo) => {
+  const doSubmitOrderRequest = async (p: ProductInfo, stockOverride?: number | null) => {
     setRequestingOrder(prev => new Set([...prev, p.code]));
     setOrderRequestError(null);
+    const currentStock = stockOverride !== undefined ? stockOverride : (p.current_stock != null ? Number(p.current_stock) : null);
     try {
       const res = await fetch("/api/order-requests", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ product_code: p.code, product_name: p.name,
-          current_stock: p.current_stock != null ? Number(p.current_stock) : null,
+          current_stock: currentStock,
           optimal_stock: p.optimal_stock != null ? Number(p.optimal_stock) : null, note: "" }),
       });
       if (res.ok) {
@@ -302,6 +316,15 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       }
     } catch { setOrderRequestError("네트워크 오류 — 다시 시도해주세요"); }
     finally { setRequestingOrder(prev => { const s = new Set(prev); s.delete(p.code); return s; }); }
+  };
+
+  const handleRequestOrder = (p: ProductInfo) => {
+    const existing = orderReqs.find(r => r.product_code === p.code);
+    if (existing) {
+      setDupOrderModal({ existing, product: p, editStock: p.current_stock != null ? Number(p.current_stock) : "" });
+      return;
+    }
+    doSubmitOrderRequest(p);
   };
 
   // 선택 토글 헬퍼
@@ -321,15 +344,22 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
   const pending = displayReqs.filter(r => r.status === "pending");
 
+  // 탭 갯수: 로딩 중이면 pending-counts 값을, 로딩 완료 후엔 실제 데이터 값을 사용
+  const displayTabCount   = displayLoading   ? (tabCounts?.display   ?? 0) : pending.length;
+  const orderTabCount     = orderLoading     ? (tabCounts?.order     ?? 0) : orderReqs.length;
+  const mismatchTabCount  = mismatchLoading  ? (tabCounts?.mismatch  ?? 0) : mismatches.length;
+  const inventoryTabCount = inventoryLoading ? (tabCounts?.inventory ?? 0) : inventoryChecks.length;
+  const lunchTabCount     = lunchLoading     ? (tabCounts?.lunch     ?? 0) : lunchRequests.filter(r => !r.eating).length;
+
   const eatCount = lunchRequests.filter(r => r.eating).length;
   const noEatCount = lunchRequests.filter(r => !r.eating).length;
 
   const TABS: [Tab, string, number, string, string][] = [
-    ["display",   "진열요청",   pending.length,           "text-blue-600",   "border-blue-500"],
-    ["order",     "발주요청",   orderReqs.length,         "text-red-600",    "border-red-500"],
-    ["mismatch",  "구역불일치", mismatches.length,        "text-orange-600", "border-orange-500"],
-    ["inventory", "실재고차이", inventoryChecks.length,   "text-purple-600", "border-purple-500"],
-    ["lunch",     "점심신청",   lunchRequests.length,     "text-emerald-600","border-emerald-500"],
+    ["display",   "진열요청",   displayTabCount,   "text-blue-600",   "border-blue-500"],
+    ["order",     "발주요청",   orderTabCount,     "text-red-600",    "border-red-500"],
+    ["mismatch",  "구역불일치", mismatchTabCount,  "text-orange-600", "border-orange-500"],
+    ["inventory", "실재고차이", inventoryTabCount, "text-purple-600", "border-purple-500"],
+    ["lunch",     "점심신청",   lunchTabCount,     "text-emerald-600","border-emerald-500"],
   ];
 
   // 공통 체크박스
@@ -531,14 +561,14 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     const cur = Number(p.current_stock), opt = Number(p.optimal_stock);
                     const alreadyRequested = requestedCodes.has(p.code);
                     return (
-                      <div key={p.code} className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition ${alreadyRequested ? "opacity-50" : ""}`}>
+                      <div key={p.code} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition">
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-bold text-gray-900 truncate">{p.name}</p>
                           <p className="text-[10px] text-gray-400 font-mono">{p.code} · {cur}/{opt}</p>
                         </div>
                         <span className="text-[11px] font-black text-red-600 shrink-0">-{opt - cur}개</span>
                         {alreadyRequested ? (
-                          <span className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg shrink-0">요청됨</span>
+                          <button onClick={() => handleRequestOrder(p)} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg shrink-0 cursor-pointer hover:bg-emerald-100 transition">요청됨</button>
                         ) : (
                           <button onClick={() => handleRequestOrder(p)} disabled={requestingOrder.has(p.code)}
                             className="text-[11px] font-bold text-white bg-red-500 hover:bg-red-600 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-1">
@@ -773,6 +803,65 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         )}
 
       </main>
+
+      {/* 발주요청 중복 확인 모달 */}
+      {dupOrderModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-2xl shadow-xl p-5 max-w-sm w-full flex flex-col gap-4">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
+                <ShoppingCart size={18} className="text-orange-600" />
+              </div>
+              <div>
+                <p className="font-black text-gray-900 text-sm">이미 발주요청이 있습니다</p>
+                <p className="text-[11px] text-gray-500 mt-0.5">실재고를 확인 후 업데이트하세요.</p>
+              </div>
+            </div>
+
+            <div className="bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 flex flex-col gap-1.5">
+              <p className="text-[10px] font-black text-orange-600 uppercase tracking-wide">기존 발주요청</p>
+              <p className="text-sm font-bold text-gray-900">{dupOrderModal.existing.product_name}</p>
+              <p className="text-[11px] text-gray-500 font-mono">{dupOrderModal.existing.product_code}</p>
+              <div className="flex gap-3 mt-0.5">
+                <span className="text-[11px] text-gray-500">기록 현재고: <strong className="text-gray-800">{dupOrderModal.existing.current_stock ?? "—"}</strong></span>
+                <span className="text-[11px] text-gray-500">적정재고: <strong className="text-gray-800">{dupOrderModal.existing.optimal_stock ?? "—"}</strong></span>
+              </div>
+              <p className="text-[10px] text-gray-400">{fmtDate(dupOrderModal.existing.requested_at)} 요청됨</p>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-black text-gray-500 uppercase tracking-wide">실재고 (현재)</label>
+              <input
+                type="number" min="0"
+                value={dupOrderModal.editStock}
+                onChange={e => setDupOrderModal(prev => prev ? { ...prev, editStock: e.target.value === "" ? "" : Number(e.target.value) } : null)}
+                className="w-full text-xl font-black text-center bg-gray-50 border border-gray-300 rounded-xl px-3 py-2.5 outline-none focus:border-orange-400 transition"
+                placeholder="실재고 입력"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDupOrderModal(null)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-bold text-gray-600 bg-gray-50 hover:bg-gray-100 transition cursor-pointer"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  const p = dupOrderModal.product;
+                  const stock = dupOrderModal.editStock === "" ? null : dupOrderModal.editStock;
+                  setDupOrderModal(null);
+                  doSubmitOrderRequest(p, stock);
+                }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-black text-white bg-orange-500 hover:bg-orange-600 transition cursor-pointer"
+              >
+                업데이트
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

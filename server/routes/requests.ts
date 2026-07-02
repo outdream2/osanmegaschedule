@@ -11,7 +11,7 @@ router.get("/api/requests/pending-counts", async (_req, res) => {
     supabase.from("products").select("product_code, spec, real_map").not("real_map", "is", null).neq("real_map", ""),
     supabase.from("zone_mismatches").select("product_code"),
     supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
-    supabase.from("lunch_requests").select("id", { count: "exact", head: true }).eq("date", today).eq("eating", true),
+    supabase.from("lunch_requests").select("id", { count: "exact", head: true }).eq("date", today).eq("eating", false),
     supabase.from("inventory_checks").select("id", { count: "exact", head: true }).eq("status", "pending"),
   ]);
   const computedCodes = new Set(
@@ -62,7 +62,7 @@ router.post("/api/display-requests", async (req, res) => {
 
 router.patch("/api/display-requests/:id", async (req, res) => {
   const { status } = req.body ?? {};
-  if (!status) return res.status(400).json({ error: "status required" });
+  if (!["pending", "done"].includes(status)) return res.status(400).json({ error: "invalid status" });
   const { error } = await supabase.from("display_requests").update({ status }).eq("id", req.params.id);
   if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true });
@@ -83,15 +83,27 @@ router.get("/api/order-requests", async (_req, res) => {
 
 router.post("/api/order-requests", async (req, res) => {
   const b = req.body ?? {};
-  const { error } = await supabase.from("order_requests").insert([{
-    product_code: String(b.product_code ?? ""),
-    product_name: String(b.product_name ?? ""),
+  const code = String(b.product_code ?? "");
+  const now = new Date().toISOString();
+  const payload = {
     current_stock: b.current_stock != null ? Number(b.current_stock) : null,
     optimal_stock: b.optimal_stock != null ? Number(b.optimal_stock) : null,
     note: String(b.note ?? ""),
-  }]);
+    requested_at: now,
+  };
+  const { data: existing } = await supabase.from("order_requests").select("id").eq("product_code", code).maybeSingle();
+  if (existing) {
+    const { error } = await supabase.from("order_requests").update(payload).eq("id", existing.id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true, updated: true, id: existing.id });
+  }
+  const { data, error } = await supabase.from("order_requests").insert([{
+    product_code: code,
+    product_name: String(b.product_name ?? ""),
+    ...payload,
+  }]).select("id").single();
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ ok: true });
+  res.json({ ok: true, updated: false, id: data?.id });
 });
 
 router.delete("/api/order-requests/:id", async (req, res) => {
@@ -111,8 +123,9 @@ router.get("/api/inventory-checks", async (_req, res) => {
 
 router.post("/api/inventory-checks", async (req, res) => {
   const b = req.body ?? {};
-  const { error } = await supabase.from("inventory_checks").insert([{
-    product_code:    String(b.product_code ?? ""),
+  const code = String(b.product_code ?? "");
+  const now = new Date().toISOString();
+  const payload = {
     product_name:    String(b.product_name ?? ""),
     warehouse_stock: b.warehouse_stock != null ? Number(b.warehouse_stock) : null,
     store_stock:     b.store_stock     != null ? Number(b.store_stock)     : null,
@@ -120,15 +133,25 @@ router.post("/api/inventory-checks", async (req, res) => {
     optimal_stock:   b.optimal_stock   != null ? Number(b.optimal_stock)   : null,
     checked_by:      String(b.checked_by ?? ""),
     note:            String(b.note ?? ""),
+    checked_at:      now,
     status:          "pending",
-  }]);
+  };
+  // product_code 기준으로 가장 최근 레코드 조회 (order+limit은 maybeSingle과 함께 쓰지 않음)
+  const { data: existingList } = await supabase.from("inventory_checks").select("id").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
+  const existing = existingList?.[0] ?? null;
+  if (existing) {
+    const { error } = await supabase.from("inventory_checks").update(payload).eq("id", existing.id);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ ok: true, updated: true });
+  }
+  const { error } = await supabase.from("inventory_checks").insert([{ product_code: code, ...payload }]);
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ ok: true });
+  res.json({ ok: true, updated: false });
 });
 
 router.patch("/api/inventory-checks/:id", async (req, res) => {
   const { status } = req.body ?? {};
-  if (!status) return res.status(400).json({ error: "status required" });
+  if (!["pending", "done"].includes(status)) return res.status(400).json({ error: "invalid status" });
   const { error } = await supabase.from("inventory_checks").update({ status }).eq("id", req.params.id);
   if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true });

@@ -1,11 +1,18 @@
 import { Router } from "express";
 import { supabase } from "../../src/supabase/client";
 import { getProductMap, getSynonymMap, resetSynonymCache } from "../productCache";
-import { mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, fixAmounts, sanitizeOcrMeta } from "../ocr/parse";
+import { mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta } from "../ocr/parse";
 import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiState } from "../ocr/llm";
 import { ensureOcrServer, callEasyOcrServer } from "../ocr/easyocr";
 import { invoiceMatchScore, makeMatchResult, norm, bigramSim } from "../ocr/match";
 import type { GeminiResult } from "../ocr/schema";
+import { scanBarcodesFromB64 } from "../ocr/barcode";
+import { lookupBarcodes, buildBarcodeHint } from "../ocr/barcodeService";
+import type { BarcodeProduct } from "../ocr/barcodeService";
+
+function buildTemplatePrompt(supplierName: string, headers: string[]): string {
+  return `[공급처 템플릿 — 최우선 적용]\n이 명세서는 "${supplierName}" 공급처 양식입니다.\n표의 컬럼 순서를 정확히 다음과 같이 지정합니다:\n${headers.map((h, i) => `  ${i + 1}번 컬럼 → "${h}"`).join("\n")}\n이 매핑 외의 추론·재배열은 절대 하지 마세요.`;
+}
 
 const router = Router();
 
@@ -133,11 +140,27 @@ router.post("/api/ocr-synonyms", async (req, res) => {
   try {
     const { alias, product_code, supply } = req.body ?? {};
     if (!alias?.trim() || !product_code?.trim()) return res.status(400).json({ error: "alias, product_code 필요" });
+    const aliasNorm  = alias.trim().toLowerCase();
+    const codeNorm   = product_code.trim();
+    const supplyNorm = supply?.trim() ?? null;
+
+    // 상품코드 기준: 같은 product_code로 이미 등록된 행이 있으면 alias + supply 업데이트
+    const { data: existRows } = await supabase
+      .from("ocr_synonyms").select("id").eq("product_code", codeNorm).limit(1);
+    const existById = existRows?.[0] ?? null;
+    if (existById) {
+      const { data, error } = await supabase.from("ocr_synonyms")
+        .update({ alias: aliasNorm, supply: supplyNorm })
+        .eq("id", existById.id)
+        .select().single();
+      if (error) throw new Error(error.message);
+      resetSynonymCache();
+      return res.json({ synonym: data });
+    }
+
+    // 없으면 alias 기준 upsert (동일 alias → product_code 덮어쓰기)
     const { data, error } = await supabase.from("ocr_synonyms")
-      .upsert(
-        { alias: alias.trim().toLowerCase(), product_code: product_code.trim(), supply: supply?.trim() ?? null },
-        { onConflict: "alias" }
-      )
+      .upsert({ alias: aliasNorm, product_code: codeNorm, supply: supplyNorm }, { onConflict: "alias" })
       .select().single();
     if (error) throw new Error(error.message);
     resetSynonymCache();
@@ -154,9 +177,44 @@ router.delete("/api/ocr-synonyms/:id", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
+router.get("/api/ocr-templates", async (_req, res) => {
+  try {
+    const { data, error } = await supabase.from("ocr_templates").select("*").order("supplier_name");
+    if (error) throw new Error(error.message);
+    res.json({ templates: data ?? [] });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+router.post("/api/ocr-templates", async (req, res) => {
+  try {
+    const { supplier_name, headers } = req.body ?? {};
+    if (!supplier_name?.trim() || !Array.isArray(headers)) return res.status(400).json({ error: "supplier_name, headers 필요" });
+    const { data, error } = await supabase.from("ocr_templates")
+      .upsert({ supplier_name: supplier_name.trim(), headers, updated_at: new Date().toISOString() }, { onConflict: "supplier_name" })
+      .select().single();
+    if (error) throw new Error(error.message);
+    res.json({ template: data });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete("/api/ocr-templates/:supplier_name", async (req, res) => {
+  try {
+    const { error } = await supabase.from("ocr_templates").delete().eq("supplier_name", req.params.supplier_name);
+    if (error) throw new Error(error.message);
+    res.json({ ok: true });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
 router.post("/api/ocr", async (req, res) => {
   const { images, engine: reqEngine = "gemini" } = req.body ?? {};
   const engine = reqEngine as string;
+  const supplierHints: string[] = Array.isArray(req.body?.supplierHints) ? req.body.supplierHints : [];
+  const templateMap = new Map<string, string[]>();
+  const uniqueHints = [...new Set(supplierHints.filter(Boolean))];
+  if (uniqueHints.length > 0) {
+    const { data: tmpls } = await supabase.from("ocr_templates").select("supplier_name, headers").in("supplier_name", uniqueHints);
+    (tmpls ?? []).forEach((t: any) => templateMap.set(t.supplier_name, t.headers));
+  }
 
   if (!Array.isArray(images) || images.length === 0)
     return res.status(400).json({ error: "images 배열이 필요합니다." });
@@ -173,9 +231,12 @@ router.post("/api/ocr", async (req, res) => {
           const pre  = mergeAdjacentHeaders(raw.headers ?? [], raw.rows ?? []);
           const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
           const spec = extractSpecFromName(normalized.headers, normalized.rows);
-          const rows = fixAmounts(spec.headers, spec.rows);
+          const cleanMeta = sanitizeOcrMeta(raw.meta ?? {});
+          const rows0 = repairColumnShift(spec.headers, spec.rows);
+          const rows1 = fixAmountsBySubtotal(spec.headers, rows0, cleanMeta.total ?? null);
+          const rows  = crossValidateIntraPage(spec.headers, rows1);
           console.log(`[OCR/EasyOCR] page ${i + 1}: 헤더=${JSON.stringify(spec.headers)}, 행=${rows.length}`);
-          return { page: i + 1, headers: spec.headers, rows, meta: sanitizeOcrMeta(raw.meta ?? {}), rawText: raw.rawText ?? "" };
+          return { page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText: raw.rawText ?? "" };
         })
       );
       return res.json({ pages, engine });
@@ -187,6 +248,9 @@ router.post("/api/ocr", async (req, res) => {
 
   try {
     const pages: any[] = [];
+    // 페이지별 바코드 스캔 결과 누적
+    const allBarcodeMatches: BarcodeProduct[] = [];
+    const allBarcodeRaw: Record<number, string[]> = {}; // page(1-based) → raw barcodes
 
     if (engine === "gemini") {
       const keys = getGeminiKeys();
@@ -196,6 +260,34 @@ router.post("/api/ocr", async (req, res) => {
         const startIdx = keys.length > 0 ? geminiState.roundRobinIdx % keys.length : 0;
         console.log(`[OCR/Gemini] page ${i + 1}/${images.length} — 키 ${startIdx + 1}번부터 순환 (총 ${keys.length}개)`);
 
+        // ── 바코드 선스캔 ─────────────────────────────────────────────────
+        let barcodeCodes: string[] = [];
+        let barcodeHint = "";
+        try {
+          barcodeCodes = await Promise.race([
+            scanBarcodesFromB64(b64, mimeType),
+            new Promise<string[]>(resolve => setTimeout(() => resolve([]), 5000)),
+          ]);
+          if (barcodeCodes.length > 0) {
+            console.log(`[OCR/Barcode] page ${i + 1}: 바코드 ${barcodeCodes.length}개 발견 — ${barcodeCodes.join(", ")}`);
+            allBarcodeRaw[i + 1] = barcodeCodes;
+            const matched = await lookupBarcodes(barcodeCodes);
+            matched.forEach(m => { if (!allBarcodeMatches.find(x => x.code === m.code)) allBarcodeMatches.push(m); });
+            barcodeHint = buildBarcodeHint(barcodeCodes, matched);
+          }
+        } catch (be: any) {
+          console.warn(`[OCR/Barcode] page ${i + 1} 오류 무시:`, be?.message);
+        }
+        // ────────────────────────────────────────────────────────────────────
+
+        const hint = supplierHints[i] ?? "";
+        const tmplHeaders = hint ? templateMap.get(hint) : undefined;
+        const templatePrompt = [
+          tmplHeaders ? buildTemplatePrompt(hint, tmplHeaders) : "",
+          barcodeHint,
+        ].filter(Boolean).join("\n\n") || undefined;
+        if (templatePrompt) console.log(`[OCR/Template] page ${i + 1}: 프롬프트 힌트 적용`);
+
         let rawText = "";
         let quotaCount = 0;
         let lastError = "";
@@ -204,7 +296,7 @@ router.post("/api/ocr", async (req, res) => {
           const ki = (startIdx + k) % keys.length;
           const apiKey = keys[ki];
           if (failedKeys.has(apiKey)) { quotaCount++; continue; }
-          const r = await callGeminiOcr(b64, mimeType, apiKey);
+          const r = await callGeminiOcr(b64, mimeType, apiKey, undefined, templatePrompt);
           if (r.ok) {
             rawText = r.text;
             geminiState.roundRobinIdx = ki;
@@ -223,7 +315,7 @@ router.post("/api/ocr", async (req, res) => {
         if (!rawText) {
           const mistralKeys = getMistralKeys();
           for (const mKey of mistralKeys) {
-            const r = await callMistralOcr(b64, mimeType, mKey);
+            const r = await callMistralOcr(b64, mimeType, mKey, templatePrompt);
             if (r.ok) { rawText = r.text; console.log(`[OCR/Mistral] page ${i + 1}: 성공`); break; }
             console.warn(`[OCR/Mistral] 실패: ${(r as Extract<GeminiResult, { ok: false }>).error}`);
           }
@@ -245,14 +337,21 @@ router.post("/api/ocr", async (req, res) => {
         const pre  = mergeAdjacentHeaders(parsed.headers ?? [], parsed.rows ?? []);
         const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
         const spec = extractSpecFromName(normalized.headers, normalized.rows);
-        const rows = fixAmounts(spec.headers, spec.rows);
         const cleanMeta = sanitizeOcrMeta(parsed.meta ?? {});
+        const rows0 = repairColumnShift(spec.headers, spec.rows);
+        const rows1 = fixAmountsBySubtotal(spec.headers, rows0, cleanMeta.total ?? null);
+        const rows  = crossValidateIntraPage(spec.headers, rows1);
         process.stdout.write(`\n[OCR 결과] page ${i + 1}\n  헤더: ${JSON.stringify(spec.headers)}\n  행 수: ${rows.length}\n  메타: ${JSON.stringify(cleanMeta)}\n`);
         pages.push({ page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText });
       }
     }
 
-    return res.json({ pages, engine });
+    return res.json({
+      pages,
+      engine,
+      ...(allBarcodeMatches.length > 0 ? { barcodeMatches: allBarcodeMatches } : {}),
+      ...(Object.keys(allBarcodeRaw).length > 0 ? { barcodeRaw: allBarcodeRaw } : {}),
+    });
   } catch (err: any) {
     console.error("[OCR] error:", err?.message);
     res.status(500).json({ error: err?.message ?? "OCR 처리 중 오류" });

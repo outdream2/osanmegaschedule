@@ -137,6 +137,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
   const [mobileWeekOffset, setMobileWeekOffset] = useState(0);
   const mobileTouchStartX = React.useRef<number | null>(null);
+  const mobileTouchStartY = React.useRef<number | null>(null);
 
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < 768);
@@ -739,6 +740,41 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mobileWeekOffset, isMobile]);
 
+  // Mobile swipe: need non-passive touchmove to prevent horizontal scroll
+  useEffect(() => {
+    if (!isMobile) return;
+    const el = scrollTableRef.current;
+    if (!el) return;
+
+    const onStart = (e: TouchEvent) => {
+      mobileTouchStartX.current = e.touches[0].clientX;
+      mobileTouchStartY.current = e.touches[0].clientY;
+    };
+    const onMove = (e: TouchEvent) => {
+      if (mobileTouchStartX.current === null || mobileTouchStartY.current === null) return;
+      const dx = e.touches[0].clientX - mobileTouchStartX.current;
+      const dy = e.touches[0].clientY - mobileTouchStartY.current;
+      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) e.preventDefault();
+    };
+    const onEnd = (e: TouchEvent) => {
+      if (mobileTouchStartX.current === null) return;
+      const dx = e.changedTouches[0].clientX - mobileTouchStartX.current;
+      mobileTouchStartX.current = null;
+      mobileTouchStartY.current = null;
+      if (Math.abs(dx) < 50) return;
+      setMobileWeekOffset(o => dx < 0 ? o + 1 : o - 1);
+    };
+
+    el.addEventListener("touchstart", onStart, { passive: true });
+    el.addEventListener("touchmove", onMove, { passive: false });
+    el.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onStart);
+      el.removeEventListener("touchmove", onMove);
+      el.removeEventListener("touchend", onEnd);
+    };
+  }, [isMobile]);
+
   // Load month lock state when month changes
   useEffect(() => {
     const key = `schedule_lock_${currentYear}-${String(currentMonth).padStart(2, "0")}`;
@@ -960,6 +996,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       };
 
       if (empModalMode === "edit" && selectedEmpForEdit) {
+        if (!window.confirm(`${empName} 직원의 정보를 수정하시겠습니까?`)) return;
         await axios.put(`/api/employees/${selectedEmpForEdit.id}`, {
           name: empName,
           position: finalPosition,
@@ -1857,14 +1894,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               ref={scrollTableRef}
               className="relative overflow-x-auto overflow-y-auto flex-1 min-w-0"
               style={{ maxHeight: "calc(100vh - 220px)" }}
-              onTouchStart={isMobile ? (e) => { mobileTouchStartX.current = e.touches[0].clientX; } : undefined}
-              onTouchEnd={isMobile ? (e) => {
-                if (mobileTouchStartX.current === null) return;
-                const dx = e.changedTouches[0].clientX - mobileTouchStartX.current;
-                mobileTouchStartX.current = null;
-                if (Math.abs(dx) < 50) return;
-                setMobileWeekOffset(o => dx < 0 ? o + 1 : o - 1);
-              } : undefined}
             >
               {isLoading ? (
                 <div className="w-full py-32 flex flex-col items-center justify-center bg-slate-50/50">
@@ -2037,6 +2066,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                     </span>
                                   )}
                                 </div>
+                                {/* 비고 */}
+                                {emp.description && (
+                                  <div className="text-[8px] text-amber-700 font-medium truncate leading-none" title={emp.description}>
+                                    {emp.description}
+                                  </div>
+                                )}
                                 {/* Bottom: edit / delete (admin) */}
                                 {isAdmin && (
                                   <div className="flex items-center gap-0.5 opacity-20 group-hover:opacity-100 transition duration-150">
@@ -2465,7 +2500,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           scheduleTypes={settingsScheduleTypes.map(e => ({ value: e.type, label: e.type }))}
           typeHoursMap={calendarEmployee ? getTypeHoursMap(calendarEmployee.position === "약사") : undefined}
           logisticsZoneProps={calendarLogisticsZoneProps}
-          onEditEmployee={isAdmin ? () => { const emp = calendarEmployee; setCalendarEmployee(null); if (emp) openEditEmployeeModal(emp); } : undefined}
+          onEditEmployee={isAdmin ? () => { const emp = calendarEmployee; setCalendarEmployee(null); if (emp) setTimeout(() => openEditEmployeeModal(emp), 0); } : undefined}
         />
       )}
     </div>
