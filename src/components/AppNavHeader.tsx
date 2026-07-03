@@ -77,12 +77,12 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   const renderDesktopTab = (tab: TabDef) => {
     const Icon = tab.icon;
     const isActive = tab.key === activePage;
-    const base = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold";
+    const base = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all";
     const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key);
     if (isActive) {
       return (
-        <span key={tab.key} className={`${base} bg-white text-indigo-700 shadow-sm border border-indigo-100 font-black`}>
-          <Icon size={11} className={tab.iconClassName} /> {tab.label}
+        <span key={tab.key} className={`${base} bg-indigo-600 text-white border-indigo-600 shadow-sm font-black`}>
+          <Icon size={11} /> {tab.label}
         </span>
       );
     }
@@ -91,7 +91,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         key={tab.key}
         onClick={onClick}
         disabled={!onNavigate && !onBack}
-        className={`${base} text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer disabled:opacity-40`}
+        className={`${base} bg-white text-gray-500 border-gray-200 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 cursor-pointer disabled:opacity-40`}
       >
         <Icon size={11} className={tab.iconClassName} /> {tab.label}
       </button>
@@ -141,7 +141,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           </div>
 
           {/* Desktop nav tabs — all tabs, hidden on mobile */}
-          <div className="hidden sm:flex items-center gap-1 ml-2 bg-gray-100 rounded-xl p-1">
+          <div className="hidden sm:flex items-center gap-1 ml-3">
             {visibleTabs.map(renderDesktopTab)}
           </div>
         </div>
