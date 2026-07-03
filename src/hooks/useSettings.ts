@@ -4,8 +4,10 @@ import { DEFAULT_SCHEDULE_TYPES } from "../constants";
 
 export interface ScheduleTypeEntry {
   type: string;
-  hours: string;      // regular staff default hours (empty = no auto-fill)
-  pharmHours: string; // pharmacist override hours (empty = use `hours`)
+  hours: string;           // 기타/default hours
+  pharmHours: string;      // 약사 override hours
+  logisticsHours: string;  // 물류 override hours
+  partTimeHours: string;   // 알바 override hours
 }
 
 export interface WageRate {
@@ -72,13 +74,15 @@ function migrateScheduleTypes(raw: any, parsed: Partial<any>): ScheduleTypeEntry
       "마감":     { hours: (parsed as any).closeShiftHour || "12:00-20:00",    pharmHours: (parsed as any).closeShiftHourPharm || "" },
       "오픈마감": { hours: (parsed as any).openCloseShiftHour || "10:00-22:00", pharmHours: (parsed as any).openCloseShiftHourPharm || "" },
     };
-    return (raw as string[]).map(s => ({ type: s, hours: hoursByType[s]?.hours ?? "", pharmHours: hoursByType[s]?.pharmHours ?? "" }));
+    return (raw as string[]).map(s => ({ type: s, hours: hoursByType[s]?.hours ?? "", pharmHours: hoursByType[s]?.pharmHours ?? "", logisticsHours: "", partTimeHours: "" }));
   }
   // Already ScheduleTypeEntry[]
   return (raw as ScheduleTypeEntry[]).map(e => ({
     type: e.type || "",
     hours: e.hours || "",
     pharmHours: e.pharmHours || "",
+    logisticsHours: e.logisticsHours || "",
+    partTimeHours: e.partTimeHours || "",
   })).filter(e => e.type);
 }
 

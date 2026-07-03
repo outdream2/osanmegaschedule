@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   X, ChevronLeft, ChevronRight, Save, Clock, MessageSquare,
   Calendar, CheckCircle, MapPin, User, Lock, Edit2, FileText,
@@ -58,11 +58,40 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   const activeTypes = scheduleTypesProp ?? SCHEDULE_TYPES;
   const isLogistics = employee.position === "물류";
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   const [year, setYear] = useState(initialYear);
   const [month, setMonth] = useState(initialMonth);
   const [activeTab, setActiveTab] = useState<"calendar" | "bulk" | "zone" | "info">(
     isLogistics && logisticsZoneProps ? "zone" : "calendar"
   );
+
+  // Schedules for the currently displayed month (may differ from initialYear/initialMonth)
+  const [monthSchedules, setMonthSchedules] = useState<Schedule[]>(employee.schedules);
+
+  useEffect(() => {
+    const ym = `${year}-${String(month).padStart(2, "0")}`;
+    const alreadyLoaded = employee.schedules.some(s => s.date.startsWith(ym));
+    if (year === initialYear && month === initialMonth) {
+      setMonthSchedules(employee.schedules);
+      return;
+    }
+    if (alreadyLoaded) {
+      setMonthSchedules(employee.schedules.filter(s => s.date.startsWith(ym)));
+      return;
+    }
+    fetch(`/api/schedules?year=${year}&month=${month}`)
+      .then(r => r.json())
+      .then((data: { employees?: Array<{ id: number; schedules: Schedule[] }> }) => {
+        const found = data.employees?.find(e => e.id === employee.id);
+        setMonthSchedules(found?.schedules ?? []);
+      })
+      .catch(() => setMonthSchedules([]));
+  }, [year, month, initialYear, initialMonth, employee.id, employee.schedules]);
 
   // ── Calendar tab state ──────────────────────────────────────────
   const [editingDay, setEditingDay] = useState<number | null>(null);
@@ -109,7 +138,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   const daysList = Array.from({ length: totalDays }, (_, i) => i + 1);
 
   const schedMap: Record<number, { type: string; workingHours: string; actualHours: string; memo: string }> = {};
-  for (const sc of employee.schedules) {
+  for (const sc of monthSchedules) {
     if (sc.date.startsWith(`${year}-${monthStr}-`)) {
       const day = parseInt(sc.date.slice(8));
       schedMap[day] = { type: sc.type, workingHours: sc.workingHours, actualHours: sc.actualHours, memo: sc.memo || "" };
@@ -547,6 +576,13 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
         {activeTab === "bulk" && (
           <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4 text-slate-800 text-xs">
 
+            {isLocked && (
+              <div className="flex items-center gap-2 px-3 py-2.5 bg-amber-50 border border-amber-300 rounded-lg">
+                <Lock size={13} className="text-amber-500 shrink-0" />
+                <span className="text-xs font-semibold text-amber-700">이달 스케줄이 확정된 상태입니다. 메인 화면에서 확정해제 후 사용하세요.</span>
+              </div>
+            )}
+
             {employee.description && (
               <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
                 <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider shrink-0">비고</span>
@@ -726,8 +762,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={handleBulkSave}
-                disabled={isBulkSaving || bulkSelectedDates.length === 0}
-                className="px-5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                disabled={isBulkSaving || bulkSelectedDates.length === 0 || isLocked}
+                className="px-5 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded transition cursor-pointer flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isBulkSaving ? (
                   <>

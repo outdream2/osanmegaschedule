@@ -90,7 +90,7 @@ export default function App() {
 
   // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
   // The user is already authenticated here, so no AuthSession is required.
-  const navigateInner = (next: "schedule" | "display" | "requests" | "leave" | "scan" | "ocr" | "lunch") => navigate(next);
+  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "ocr" | "lunch") => navigate(next);
 
   let pageContent: React.ReactElement;
 
@@ -99,12 +99,7 @@ export default function App() {
       <SchedulePage
         onBack={goBack}
         onLogout={handleLogout}
-        onNavigateToDisplay={() => navigate("display")}
-        onNavigateToRequests={() => navigate("requests")}
-        onNavigateToLeave={() => navigate("leave")}
-        onNavigateToScan={() => navigate("scan")}
-        onNavigateToOcr={() => navigate("ocr")}
-        onNavigateToLunch={() => navigate("lunch")}
+        onNavigate={navigateInner}
         initialEditEmployeeId={pendingEditEmpId}
         onEditEmployeeHandled={() => setPendingEditEmpId(null)}
         authSession={authSession}
@@ -155,7 +150,6 @@ export default function App() {
         authSession={authSession}
         onNavigate={navigateInner}
         onLogout={handleLogout}
-        onNavigateToSchedule={() => navigate("schedule")}
         onOpenEmployeeEdit={(id) => {
           setPendingEditEmpId(id);
           navigate("schedule");

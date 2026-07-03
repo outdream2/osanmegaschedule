@@ -1,5 +1,5 @@
 // src/components/BreakModal.tsx
-import React from "react";
+import React, { useEffect } from "react";
 import { X, Clock } from "lucide-react";
 
 export interface BreakModalState {
@@ -24,6 +24,12 @@ interface BreakModalProps {
 }
 
 export const BreakModal: React.FC<BreakModalProps> = ({ breakModal, setBreakModal, isSavingBreak, onSave }) => {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setBreakModal(null); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [setBreakModal]);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 flex flex-col gap-4 animate-in zoom-in-95 duration-200">

@@ -4,19 +4,21 @@ export interface ScheduleTypeEntry {
   type: string;
   hours: string;
   pharmHours: string;
+  logisticsHours: string;
+  partTimeHours: string;
 }
 
 export const DEFAULT_SCHEDULE_TYPES: ScheduleTypeEntry[] = [
-  { type: "오픈",     hours: "10:00-18:00", pharmHours: "" },
-  { type: "미들",     hours: "11:00-18:00", pharmHours: "" },
-  { type: "마감",     hours: "12:00-20:00", pharmHours: "" },
-  { type: "오픈마감", hours: "10:00-22:00", pharmHours: "" },
-  { type: "오전반차", hours: "",             pharmHours: "" },
-  { type: "오후반차", hours: "",             pharmHours: "" },
-  { type: "휴무",     hours: "",             pharmHours: "" },
-  { type: "월차",     hours: "",             pharmHours: "" },
-  { type: "지정휴무", hours: "",             pharmHours: "" },
-  { type: "결근",     hours: "",             pharmHours: "" },
+  { type: "오픈",     hours: "10:00-18:00", pharmHours: "", logisticsHours: "", partTimeHours: "" },
+  { type: "미들",     hours: "11:00-18:00", pharmHours: "", logisticsHours: "", partTimeHours: "" },
+  { type: "마감",     hours: "12:00-20:00", pharmHours: "", logisticsHours: "", partTimeHours: "" },
+  { type: "오픈마감", hours: "10:00-22:00", pharmHours: "", logisticsHours: "", partTimeHours: "" },
+  { type: "오전반차", hours: "",             pharmHours: "", logisticsHours: "", partTimeHours: "" },
+  { type: "오후반차", hours: "",             pharmHours: "", logisticsHours: "", partTimeHours: "" },
+  { type: "휴무",     hours: "",             pharmHours: "", logisticsHours: "", partTimeHours: "" },
+  { type: "월차",     hours: "",             pharmHours: "", logisticsHours: "", partTimeHours: "" },
+  { type: "지정휴무", hours: "",             pharmHours: "", logisticsHours: "", partTimeHours: "" },
+  { type: "결근",     hours: "",             pharmHours: "", logisticsHours: "", partTimeHours: "" },
 ];
 
 export const SCHEDULE_TYPES = DEFAULT_SCHEDULE_TYPES.map((e) => ({ value: e.type, label: e.type }));

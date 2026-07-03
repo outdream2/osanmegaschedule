@@ -23,7 +23,7 @@ import {
   List,
   Eye,
   EyeOff,
-  Utensils,
+  UtensilsCrossed,
   Package,
   Bell,
   BellOff,
@@ -638,7 +638,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffedd5, #fed7aa)", border: "1px solid #fdba74" }}>
-                      <Utensils size={16} className="text-orange-500 sm:hidden" /><Utensils size={20} className="text-orange-500 hidden sm:block" />
+                      <UtensilsCrossed size={16} className="text-red-500 sm:hidden" /><UtensilsCrossed size={20} className="text-red-500 hidden sm:block" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">점심 불참</div>
                     <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">오늘의 점심 불참 신청</div>

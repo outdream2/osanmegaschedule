@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { X, MapPin } from "lucide-react";
 import { ZONE_DEFS } from "../../constants/displayZones";
 
@@ -45,6 +45,12 @@ function ZoneBtn({
 }
 
 export const RealMapSelector: React.FC<RealMapSelectorProps> = ({ current, onSelect, onClose }) => {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   // Zones by section
   const topWall    = ZONE_DEFS.filter((z) => z.section === "top_wall");    // 24-35
   const aisles     = ZONE_DEFS.filter((z) => z.section === "aisle");       // 1-9

@@ -1,5 +1,5 @@
 // src/components/SettingsModal.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, Plus, Trash2, GripVertical } from "lucide-react";
 import { AppSettings, WageRate, ScheduleTypeEntry } from "../../hooks/useSettings";
 
@@ -9,6 +9,8 @@ interface SettingsModalProps {
   onApplyShiftHours: () => Promise<void>;
   onClose: () => void;
   employees: Array<{ id: number; name: string; position: string }>;
+  editMode?: boolean;
+  onEnableEditMode?: () => void;
 }
 
 type TabId = "positions" | "workplaces" | "scheduleTypes" | "wages";
@@ -20,8 +22,23 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "wages", label: "시급 설정" },
 ];
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onApplyShiftHours, onClose, employees }) => {
+type ScheduleHourTab = "hours" | "pharmHours" | "logisticsHours" | "partTimeHours";
+
+const HOUR_TABS: { id: ScheduleHourTab; label: string }[] = [
+  { id: "hours",          label: "기본(기타)" },
+  { id: "pharmHours",     label: "약사" },
+  { id: "logisticsHours", label: "물류" },
+  { id: "partTimeHours",  label: "알바" },
+];
+
+export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onApplyShiftHours, onClose, employees, editMode, onEnableEditMode }) => {
   const [activeTab, setActiveTab] = useState<TabId>("positions");
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   // Local draft states — committed immediately on each action
   const [positions, setPositions] = useState<string[]>([...settings.positions]);
@@ -33,6 +50,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
   const [scheduleTypes, setScheduleTypes] = useState<ScheduleTypeEntry[]>([...settings.scheduleTypes]);
   const [newScheduleType, setNewScheduleType] = useState("");
   const [applying, setApplying] = useState(false);
+  const [scheduleHourTab, setScheduleHourTab] = useState<ScheduleHourTab>("hours");
+  const [showEditConfirm, setShowEditConfirm] = useState(false);
 
   // Wage settings local drafts (committed immediately)
   const [wageRates, setWageRates] = useState<Record<string, WageRate>>({ ...(settings.wageRates ?? {}) });
@@ -118,7 +137,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
   const addScheduleType = () => {
     const trimmed = newScheduleType.trim();
     if (!trimmed || scheduleTypes.some(e => e.type === trimmed)) return;
-    saveScheduleTypes([...scheduleTypes, { type: trimmed, hours: "", pharmHours: "" }]);
+    saveScheduleTypes([...scheduleTypes, { type: trimmed, hours: "", pharmHours: "", logisticsHours: "", partTimeHours: "" }]);
     setNewScheduleType("");
   };
 
@@ -332,34 +351,44 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
           {activeTab === "scheduleTypes" && (
             <div className="space-y-4">
               <p className="text-xs text-slate-500 font-semibold">
-                스케줄 셀 및 일괄 등록에서 사용할 근무 유형과 기본 근무시간을 관리합니다. (약) 칸은 약사 전용 시간으로, 비워두면 기본 시간이 사용됩니다.
+                근무 유형과 직원 유형별 기본 근무시간을 관리합니다. 비워두면 상위(기본) 시간이 사용됩니다.
               </p>
+
+              {/* Hour type sub-tabs */}
+              <div className="flex gap-0 border border-slate-200 rounded-lg overflow-hidden">
+                {HOUR_TABS.map(t => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setScheduleHourTab(t.id)}
+                    className={`flex-1 py-1.5 text-[11px] font-bold transition cursor-pointer ${
+                      scheduleHourTab === t.id
+                        ? "bg-[#2563eb] text-white"
+                        : "bg-white text-slate-500 hover:bg-slate-50"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+
               <div className="space-y-1.5">
-                {/* Column headers */}
-                <div className="grid grid-cols-[1fr,1fr,1fr,28px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                <div className="grid grid-cols-[1fr,1fr,28px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
                   <span>유형명</span>
-                  <span>기본 시간</span>
-                  <span>약사 시간 (약)</span>
+                  <span>{HOUR_TABS.find(t => t.id === scheduleHourTab)?.label} 시간</span>
                   <span></span>
                 </div>
                 {scheduleTypes.map((st, idx) => (
                   <div
                     key={idx}
-                    className="grid grid-cols-[1fr,1fr,1fr,28px] gap-2 items-center bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-1.5 transition"
+                    className="grid grid-cols-[1fr,1fr,28px] gap-2 items-center bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-1.5 transition"
                   >
                     <span className="text-xs font-semibold text-slate-800 truncate">{st.type}</span>
                     <input
                       type="text"
-                      value={st.hours}
-                      onChange={(e) => updateScheduleTypeEntry(idx, "hours", e.target.value)}
-                      placeholder="예: 10:00-18:00"
-                      className="w-full text-xs rounded border border-slate-200 focus:border-[#2563eb] p-1.5 font-mono bg-white focus:outline-none"
-                    />
-                    <input
-                      type="text"
-                      value={st.pharmHours}
-                      onChange={(e) => updateScheduleTypeEntry(idx, "pharmHours", e.target.value)}
-                      placeholder="비워두면 기본값"
+                      value={st[scheduleHourTab]}
+                      onChange={(e) => updateScheduleTypeEntry(idx, scheduleHourTab, e.target.value)}
+                      placeholder={scheduleHourTab === "hours" ? "예: 10:00-18:00" : "비워두면 기본값"}
                       className="w-full text-xs rounded border border-slate-200 focus:border-[#2563eb] p-1.5 font-mono bg-white focus:outline-none"
                     />
                     <button
@@ -395,12 +424,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                 <button
                   type="button"
                   disabled={applying}
-                  onClick={async () => {
-                    setApplying(true);
-                    try {
-                      await onApplyShiftHours();
-                    } finally {
-                      setApplying(false);
+                  onClick={() => {
+                    if (editMode === false) {
+                      setShowEditConfirm(true);
+                    } else {
+                      setApplying(true);
+                      onApplyShiftHours().finally(() => setApplying(false));
                     }
                   }}
                   className="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-300 text-white rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-sm"
@@ -574,6 +603,38 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
           </button>
         </div>
       </div>
+
+      {/* Edit mode confirm dialog */}
+      {showEditConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 p-6 w-full max-w-xs animate-in zoom-in-95 duration-150 space-y-4">
+            <p className="text-sm font-bold text-slate-800 text-center">편집 모드를 켜겠습니까?</p>
+            <p className="text-xs text-slate-500 text-center">켜면 전체 스케줄에 수정사항이 반영되고, 이후 편집 모드가 유지됩니다.</p>
+            <div className="flex gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => { setShowEditConfirm(false); onClose(); }}
+                className="flex-1 px-4 py-2 text-xs font-bold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 transition cursor-pointer"
+              >
+                아니오
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setShowEditConfirm(false);
+                  onEnableEditMode?.();
+                  setApplying(true);
+                  try { await onApplyShiftHours(); } finally { setApplying(false); }
+                  onClose();
+                }}
+                className="flex-1 px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg transition cursor-pointer"
+              >
+                켜기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

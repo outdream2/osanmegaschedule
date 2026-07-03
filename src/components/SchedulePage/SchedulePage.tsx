@@ -12,6 +12,7 @@ import { EmployeeFormModal } from "../EmployeeFormModal";
 import { ScheduleFilterBar } from "../ScheduleFilterBar";
 import { BreakModal } from "../BreakModal";
 import { useSettings } from "../../hooks/useSettings";
+import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import {
   Calendar,
   Home,
@@ -34,27 +35,18 @@ import {
   Edit,
   GripVertical,
   Settings,
-  LayoutGrid,
-  FileText,
-  Package,
-  Utensils,
 } from "lucide-react";
 
 interface SchedulePageProps {
   onBack?: () => void;
   onLogout?: () => void;
-  onNavigateToDisplay?: () => void;
-  onNavigateToRequests?: () => void;
-  onNavigateToLeave?: () => void;
-  onNavigateToScan?: () => void;
-  onNavigateToOcr?: () => void;
-  onNavigateToLunch?: () => void;
+  onNavigate?: (page: AppNavPage) => void;
   initialEditEmployeeId?: number | null;
   onEditEmployeeHandled?: () => void;
   authSession?: AuthSession | null;
 }
 
-export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, onNavigateToDisplay, onNavigateToRequests, onNavigateToLeave, onNavigateToScan, onNavigateToOcr, onNavigateToLunch, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
+export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, onNavigate, initialEditEmployeeId, onEditEmployeeHandled, authSession }) => {
   // ── Auth-derived flags (level-based, with role fallback for old sessions) ───
   const userLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
@@ -75,11 +67,16 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     update: updateSettings,
   } = useSettings();
 
-  // Build a Record<string, string> from scheduleTypes for a given isPharmacist flag
-  const getTypeHoursMap = (isPharm: boolean): Record<string, string> => {
+  // Build a Record<string, string> from scheduleTypes for a specific employee
+  // Priority: 약사→pharmHours, 물류→logisticsHours, 알바→partTimeHours, else→hours
+  const getTypeHoursMap = (position: string, employmentType: string = ""): Record<string, string> => {
     const map: Record<string, string> = {};
     for (const entry of settingsScheduleTypes) {
-      map[entry.type] = (isPharm && entry.pharmHours) ? entry.pharmHours : entry.hours;
+      let h = entry.hours;
+      if (position === "약사" && entry.pharmHours) h = entry.pharmHours;
+      else if (position === "물류" && entry.logisticsHours) h = entry.logisticsHours;
+      else if (employmentType === "알바" && entry.partTimeHours) h = entry.partTimeHours;
+      map[entry.type] = h;
     }
     return map;
   };
@@ -138,6 +135,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const pendingScrollDateRef = useRef<string | null>(null); // date to scroll to after re-render
   const suppressScrollRef = useRef(false);                  // suppress listener during programmatic scroll
   const isInitialLoadRef = useRef(true);
+  const isInitialFetchRef = useRef(true);                   // true only for the first data fetch
 
 
 
@@ -189,6 +187,11 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       onBack?.();
     }
   };
+
+  const handleNavPage = useCallback((p: AppNavPage) => {
+    if (p === "landing") { onBack?.(); return; }
+    onNavigate?.(p);
+  }, [onNavigate, onBack]);
 
   // Modal / Form states for adding/editing employee
   const [isEmpModalOpen, setIsEmpModalOpen] = useState(false);
@@ -507,7 +510,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     const monthStr = String(currentMonth).padStart(2, "0");
     const items: Array<{ employeeId: number; date: string; type: string; workingHours: string; actualHours: string; memo: string }> = [];
     for (const emp of employees) {
-      const hoursMap = getTypeHoursMap(emp.position === "약사");
+      const hoursMap = getTypeHoursMap(emp.position, emp.employmentType);
       for (const sc of emp.schedules) {
         if (!sc.date.startsWith(`${currentYear}-${monthStr}`)) continue;
         const wh = hoursMap[sc.type];
@@ -516,7 +519,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       }
     }
     if (items.length > 0) await axios.post("/api/schedules/batch", { items });
-    await fetchScheduleData();
+    await fetchScheduleData(undefined, true);
     showNotification("기본 근무시간이 현재 월 전체에 적용되었습니다.", "success");
   };
 
@@ -547,7 +550,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         targetMonth: currentMonth,
       });
       showNotification(`이전 달의 스케줄 ${response.data.count || 0}건이 성공적으로 복사되었습니다!`);
-      await fetchScheduleData();
+      await fetchScheduleData(undefined, true);
     } catch (err: any) {
       console.error("Failed to copy schedules:", err);
       showNotification("이전 달 스케줄을 가져오는 도중 오류가 발생했습니다.", "error");
@@ -635,16 +638,23 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     requestAnimationFrame(() => {
       const el = scrollTableRef.current;
       if (!el) return;
-      const NAME_COL = 96;
-      const DATE_COL = el.clientWidth < 640 ? 40 : 44;
+      const DATE_COL = 44;
+      const MONTH_TOTAL_COL = el.clientWidth < 640 ? 44 : 52;
       if (pendingScrollDateRef.current) {
         const targetDate = pendingScrollDateRef.current;
         pendingScrollDateRef.current = null;
         const idx = dateList.indexOf(targetDate);
         if (idx >= 0) {
           suppressScrollRef.current = true;
-          el.scrollLeft = Math.max(0, NAME_COL + idx * DATE_COL - el.clientWidth / 2);
-          requestAnimationFrame(() => { suppressScrollRef.current = false; });
+          // Count months that end before the target date — each adds a monthly total column
+          const targetMonth = targetDate.substring(0, 7);
+          const seenMonths = new Set<string>();
+          for (const d of dateList) {
+            if (d.substring(0, 7) === targetMonth) break;
+            seenMonths.add(d.substring(0, 7));
+          }
+          el.scrollLeft = Math.max(0, idx * DATE_COL + seenMonths.size * MONTH_TOTAL_COL);
+          setTimeout(() => { suppressScrollRef.current = false; }, 300);
         }
       } else if (isInitialLoadRef.current) {
         isInitialLoadRef.current = false;
@@ -655,7 +665,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           const colCenter = colR.left - cr.left + el.scrollLeft + col.offsetWidth / 2;
           suppressScrollRef.current = true;
           el.scrollLeft = Math.max(0, colCenter - el.clientWidth / 2);
-          requestAnimationFrame(() => { suppressScrollRef.current = false; });
+          setTimeout(() => { suppressScrollRef.current = false; }, 300);
         }
       }
     });
@@ -663,9 +673,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
   // Trigger loading schedule — supports a multi-month date range by fetching each month
   // in parallel and merging employee schedule arrays.
-  const fetchScheduleData = async (dates?: string[]) => {
+  const fetchScheduleData = async (dates?: string[], silent = false) => {
     const targetDates = dates ?? dateList;
-    setIsLoading(true);
+    if (!silent) setIsLoading(true);
     setError(null);
     try {
       // Unique YYYY-MM month keys present in the target date range
@@ -741,38 +751,16 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
   // Re-fetch 3-month window whenever center month changes
   useEffect(() => {
-    fetchScheduleData(dateList);
+    const silent = !isInitialFetchRef.current;
+    isInitialFetchRef.current = false;
+    fetchScheduleData(dateList, silent);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentYear, currentMonth]);
 
-  // Scroll listener: update center month based on visible date
-  useEffect(() => {
-    const el = scrollTableRef.current;
-    if (!el) return;
-    let debounce: number | null = null;
-    const onScroll = () => {
-      if (suppressScrollRef.current) return;
-      if (debounce) clearTimeout(debounce);
-      debounce = window.setTimeout(() => {
-        const NAME_COL = 96;
-        const DATE_COL = el.clientWidth < 640 ? 40 : 44;
-        const center = el.scrollLeft + el.clientWidth / 2;
-        const idx = Math.max(0, Math.min(Math.floor((center - NAME_COL) / DATE_COL), dateList.length - 1));
-        const centerDate = dateList[idx];
-        if (!centerDate) return;
-        const newYear = parseInt(centerDate.substring(0, 4));
-        const newMonth = parseInt(centerDate.substring(5, 7));
-        if (newYear !== currentYear || newMonth !== currentMonth) {
-          pendingScrollDateRef.current = centerDate;
-          setCurrentYear(newYear);
-          setCurrentMonth(newMonth);
-        }
-      }, 80);
-    };
-    el.addEventListener("scroll", onScroll, { passive: true });
-    return () => { el.removeEventListener("scroll", onScroll); if (debounce) clearTimeout(debounce); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateList, currentYear, currentMonth]);
+  // Scroll listener removed: auto-detecting month from scroll position caused the
+  // dateList to shift mid-scroll, resetting scrollLeft and jumping to the wrong month.
+  // Month navigation is now arrow-button only; adjacent months are still visible
+  // by scrolling left/right in the 3-month dateList.
 
   // Load month lock state when month changes
   useEffect(() => {
@@ -1048,7 +1036,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       setEmpContractUrl(null);
       setSelectedEmpForEdit(null);
       setEmpModalMode("create");
-      fetchScheduleData(); // refresh roster
+      fetchScheduleData(undefined, true); // refresh roster silently
     } catch (err: any) {
       console.error("Failed to solve employee form request:", err);
       const serverMsg = err?.response?.data?.error;
@@ -1066,7 +1054,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     try {
       await axios.delete(`/api/employees/${id}`);
       showNotification(`${name} 직원이 삭제되었습니다.`);
-      fetchScheduleData(); // refresh roster
+      setEmployees(prev => prev.filter(e => e.id !== id));
     } catch (err) {
       console.error("Failed to delete employee:", err);
       showNotification("직원 삭제 도중 오류가 발생했습니다.", "error");
@@ -1121,20 +1109,18 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
   const OFF_TYPES_SET = new Set(["휴무", "월차", "지정휴무", "결근"]);
 
-  const getEmpMonthStats = (emp: Employee) => {
-    const currentMonthPrefix = `${currentYear}-${monthStr}`;
-    const dateSet = new Set(emp.schedules.map(s => s.date).filter(d => d.startsWith(currentMonthPrefix)));
-    const visibleSchedules = emp.schedules.filter(s => dateSet.has(s.date));
+  // monthKey: "YYYY-MM". Defaults to currentYear/currentMonth when not provided.
+  const getEmpMonthStats = (emp: Employee, monthKey?: string) => {
+    const prefix = monthKey ?? `${currentYear}-${monthStr}`;
+    const visibleSchedules = emp.schedules.filter(s => s.date.startsWith(prefix));
     const workDays = visibleSchedules.filter(s => s.type && !OFF_TYPES_SET.has(s.type)).length;
     let totalHours = 0;
     let laborCost = 0;
 
-    // Resolve wage rate: individual override takes precedence over position rate.
     const wageRates = settingsWageRates ?? {};
     const empOverrides = settingsEmployeeWageOverrides ?? {};
     const empRate = empOverrides[emp.id] ?? wageRates[emp.position] ?? null;
-
-    const shiftHourFallback = getTypeHoursMap(emp.position === "약사");
+    const shiftHourFallback = getTypeHoursMap(emp.position, emp.employmentType);
 
     for (const s of visibleSchedules) {
       if (!s.type || OFF_TYPES_SET.has(s.type)) continue;
@@ -1333,103 +1319,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       )}
 
       {/* 1. App Header */}
-      <header className="bg-white border-b border-[#e2e8f0] shrink-0 shadow-sm">
-
-        {/* ── Row 1: Brand + Role badge + Logout ── */}
-        <div className="h-14 flex items-center justify-between px-4 sm:px-6">
-
-          {/* Left: back button + logo + desktop nav */}
-          <div className="flex items-center gap-2 min-w-0">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 hover:text-gray-900 transition cursor-pointer text-xs font-semibold shrink-0"
-                title="메인으로 돌아가기"
-              >
-                <ChevronLeft size={13} />
-                <span className="hidden sm:inline">메인</span>
-              </button>
-            )}
-            <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm shrink-0">
-              <Home size={14} className="text-white" />
-            </div>
-            <span className="font-black tracking-tight leading-none shrink-0">
-              <span className="text-red-500 text-xl">OSAN</span>
-              <span className="text-gray-900 text-base hidden sm:inline"> MEGATOWN</span>
-            </span>
-
-            {/* Desktop nav tabs */}
-            <div className="hidden sm:flex items-center gap-1 ml-3 bg-gray-100 rounded-xl p-1">
-              <span className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-black bg-white text-indigo-700 shadow-sm border border-indigo-100">
-                <Calendar size={11} /> 스케줄관리
-              </span>
-              {(isAdmin || isManagerRole) && onNavigateToDisplay && (
-                <button
-                  onClick={onNavigateToDisplay}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
-                >
-                  <LayoutGrid size={11} /> 매장관리
-                </button>
-              )}
-              {(isAdmin || isManagerRole) && onNavigateToRequests && (
-                <button
-                  onClick={onNavigateToRequests}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
-                >
-                  <MessageSquare size={11} /> 요청목록
-                </button>
-              )}
-              {(isAdmin || isManagerRole) && onNavigateToLeave && (
-                <button
-                  onClick={onNavigateToLeave}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
-                >
-                  <CheckCircle size={11} /> 연차승인
-                </button>
-              )}
-              {(isAdmin || isManagerRole) && onNavigateToScan && (
-                <button
-                  onClick={onNavigateToScan}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
-                >
-                  <Package size={11} /> 상품관리
-                </button>
-              )}
-              {(isAdmin || isManagerRole) && onNavigateToOcr && (
-                <button
-                  onClick={onNavigateToOcr}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
-                >
-                  <FileText size={11} /> 거래명세서
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Right: role badge + actions */}
-          <div className="flex items-center gap-1.5">
-            {/* Role badge — desktop only */}
-            {isSuperAdmin ? (
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <span>최고관리자</span>
-              </div>
-            ) : isManagerRole ? (
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200 text-[11px] font-bold">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
-                <span>관리자</span>
-                {authSession?.employeeName && (
-                  <span className="text-sky-600 font-semibold border-l border-sky-300 pl-1.5 ml-0.5 truncate max-w-[60px]">{authSession.employeeName}</span>
-                )}
-              </div>
-            ) : isEmployeeMode ? (
-              <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                <span className="truncate max-w-[80px]">{authSession?.employeeName ?? "직원 모드"}</span>
-              </div>
-            ) : null}
-
-            {/* Settings gear — superadmin only, icon only */}
+      <AppNavHeader
+        activePage="schedule"
+        authSession={authSession ?? null}
+        onBack={onBack}
+        onNavigate={handleNavPage}
+        onLogout={handleLogout}
+        rightSlot={
+          <div className="flex items-center gap-1">
             {isAdmin && (
               <button
                 onClick={() => setIsSettingsOpen(true)}
@@ -1439,8 +1336,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 <Settings size={14} />
               </button>
             )}
-
-            {/* Undo — desktop only */}
             {isAdmin && undoStack.length > 0 && (
               <button
                 onClick={handleUndo}
@@ -1450,8 +1345,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 ↩ <span className="text-[10px] bg-amber-200 px-1 rounded">{undoStack.length}</span>
               </button>
             )}
-
-            {/* Refresh */}
             <button
               onClick={() => fetchScheduleData()}
               className="p-2 border border-gray-200 bg-white hover:bg-gray-50 rounded-lg text-gray-600 transition cursor-pointer"
@@ -1459,8 +1352,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             >
               <span className="text-sm leading-none">↺</span>
             </button>
-
-            {/* 직원 등록 — desktop + superadmin */}
             {isAdmin && (
               <button
                 onClick={() => openCreateEmployeeModal()}
@@ -1470,17 +1361,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 <span>직원 등록</span>
               </button>
             )}
-
-            {/* Logout / Login */}
-            {userLevel >= 1 ? (
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-gray-200 hover:border-rose-300 rounded-lg transition cursor-pointer"
-              >
-                <LogOut size={13} />
-                <span className="hidden sm:inline">로그아웃</span>
-              </button>
-            ) : (
+            {userLevel < 1 && (
               <button
                 onClick={() => { setLoginError(""); setIsLoginModalOpen(true); }}
                 title="관리자 로그인"
@@ -1490,71 +1371,29 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 <span className="hidden sm:inline">관리자 로그인</span>
               </button>
             )}
+            {/* Mobile: undo + add employee */}
+            <div className="flex sm:hidden items-center gap-1">
+              {isAdmin && undoStack.length > 0 && (
+                <button
+                  onClick={handleUndo}
+                  className="flex items-center gap-0.5 px-2 py-1.5 text-[11px] font-semibold border border-amber-300 bg-amber-50 rounded-lg text-amber-700 cursor-pointer"
+                >
+                  ↩<span className="text-[10px] bg-amber-200 px-1 rounded">{undoStack.length}</span>
+                </button>
+              )}
+              {isAdmin && (
+                <button
+                  onClick={() => openCreateEmployeeModal()}
+                  className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition cursor-pointer"
+                  title="직원 등록"
+                >
+                  <UserPlus size={13} />
+                </button>
+              )}
+            </div>
           </div>
-        </div>
-
-        {/* ── Row 2: Mobile only — nav tabs + action buttons ── */}
-        <div className="sm:hidden px-3 pb-2 flex items-end gap-1.5">
-          {/* Nav tabs — scrollable, matches AppNavHeader mobile style */}
-          <div className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1 overflow-x-auto scrollbar-none flex-1">
-            <span className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-black bg-white text-indigo-700 shadow-sm border border-indigo-100">
-              <Calendar size={12} /><span>스케줄</span>
-            </span>
-            {(isAdmin || isManagerRole) && onNavigateToDisplay && (
-              <button onClick={onNavigateToDisplay} className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer">
-                <LayoutGrid size={12} /><span>매장</span>
-              </button>
-            )}
-            {(isAdmin || isManagerRole) && onNavigateToRequests && (
-              <button onClick={onNavigateToRequests} className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer">
-                <MessageSquare size={12} /><span>요청</span>
-              </button>
-            )}
-            {(isAdmin || isManagerRole) && onNavigateToLeave && (
-              <button onClick={onNavigateToLeave} className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer">
-                <CheckCircle size={12} /><span>연차</span>
-              </button>
-            )}
-            {(isAdmin || isManagerRole) && onNavigateToScan && (
-              <button onClick={onNavigateToScan} className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer">
-                <Package size={12} /><span>상품</span>
-              </button>
-            )}
-            {(isAdmin || isManagerRole) && onNavigateToOcr && (
-              <button onClick={onNavigateToOcr} className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer">
-                <FileText size={12} /><span>OCR</span>
-              </button>
-            )}
-            {onNavigateToLunch && (
-              <button onClick={onNavigateToLunch} className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer">
-                <Utensils size={12} /><span>점심</span>
-              </button>
-            )}
-          </div>
-
-          {/* Mobile action buttons */}
-          <div className="flex items-center gap-1 shrink-0 pb-1">
-            {isAdmin && undoStack.length > 0 && (
-              <button
-                onClick={handleUndo}
-                className="flex items-center gap-0.5 px-2 py-1.5 text-[11px] font-semibold border border-amber-300 bg-amber-50 rounded-lg text-amber-700 cursor-pointer"
-              >
-                ↩<span className="text-[10px] bg-amber-200 px-1 rounded">{undoStack.length}</span>
-              </button>
-            )}
-            {isAdmin && (
-              <button
-                onClick={() => openCreateEmployeeModal()}
-                className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition cursor-pointer"
-                title="직원 등록"
-              >
-                <UserPlus size={13} />
-              </button>
-            )}
-          </div>
-        </div>
-
-      </header>
+        }
+      />
 
       {/* 1.5 Sub-Header Control Bar for Workplace Tabs, Employee Sorting & Search */}
       <ScheduleFilterBar
@@ -1573,7 +1412,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         setTodayFirst={setTodayFirst}
         onResetCustomOrder={async () => {
           localStorage.removeItem("megatown_employee_order");
-          await fetchScheduleData();
+          await fetchScheduleData(undefined, true);
           showNotification("정렬 순서가 기본값으로 초기화되었습니다.");
         }}
       />
@@ -1706,13 +1545,15 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           onUpdate={updateSettings}
           onApplyShiftHours={applyShiftHoursToAll}
           onClose={() => setIsSettingsOpen(false)}
+          editMode={editMode}
+          onEnableEditMode={() => setEditMode(true)}
         />
       )}
 
       {/* 2. Grid Container Block */}
       <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-gray-100 gap-0">
         {/* Month Navigation Toolbar */}
-        <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl h-11 sm:h-12 flex items-center justify-between px-2.5 sm:px-5 shrink-0 shadow-sm">
+        <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl min-h-11 sm:min-h-12 h-auto py-1.5 sm:py-0 flex items-center justify-between px-2.5 sm:px-5 shrink-0 shadow-sm">
           {/* Left: Month navigation */}
           <div className="flex items-center gap-1">
             <button
@@ -1732,6 +1573,21 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             >
               <ChevronRight size={16} />
             </button>
+            <button
+              onClick={() => {
+                const today = new Date();
+                const newYear = today.getFullYear();
+                const newMonth = today.getMonth() + 1;
+                pendingScrollDateRef.current = todayStr;
+                setCurrentYear(newYear);
+                setCurrentMonth(newMonth);
+                setEditMode(false);
+              }}
+              className="ml-1 px-2 h-7 flex items-center text-[10px] font-bold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition cursor-pointer"
+              title="오늘 날짜로 이동"
+            >
+              오늘
+            </button>
           </div>
 
           {/* Center: Quick Legend indicators */}
@@ -1750,76 +1606,82 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             ))}
           </div>
 
-          {/* Right: Year/Month selectors + 전월 복사 */}
-          <div className="flex items-center gap-1.5">
-            <select
-              value={currentYear}
-              onChange={(e) => setCurrentYear(parseInt(e.target.value))}
-              className="hidden sm:block bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
-            >
-              {[2024, 2025, 2026, 2027, 2028].map((y) => (
-                <option key={y} value={y}>{y}년</option>
-              ))}
-            </select>
-
-            <select
-              value={currentMonth}
-              onChange={(e) => setCurrentMonth(parseInt(e.target.value))}
-              className="bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
-            >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                <option key={m} value={m}>{m}월</option>
-              ))}
-            </select>
-
-            {isAdmin && !isMonthLocked && (
-              <button
-                onClick={() => setEditMode(m => !m)}
-                title={editMode ? "편집 모드 종료" : "편집 모드 활성화 — 셀 클릭으로 스케줄 변경 가능"}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-                  editMode
-                    ? "border-emerald-400 bg-emerald-500 text-white shadow-sm"
-                    : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500"
-                }`}
+          {/* Right: Year/Month selectors + admin buttons */}
+          <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-1.5">
+            {/* Row 1: selectors */}
+            <div className="flex items-center gap-1.5">
+              <select
+                value={currentYear}
+                onChange={(e) => setCurrentYear(parseInt(e.target.value))}
+                className="hidden sm:block bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
               >
-                {editMode
-                  ? <><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /><span>편집중</span></>
-                  : <><Edit size={12} /><span>편집</span></>
-                }
-              </button>
-            )}
+                {[2024, 2025, 2026, 2027, 2028].map((y) => (
+                  <option key={y} value={y}>{y}년</option>
+                ))}
+              </select>
 
+              <select
+                value={currentMonth}
+                onChange={(e) => setCurrentMonth(parseInt(e.target.value))}
+                className="bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                  <option key={m} value={m}>{m}월</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Row 2 on mobile (same row on sm+): admin action buttons */}
             {isAdmin && (
-              <button
-                onClick={handleToggleMonthLock}
-                disabled={isLockLoading}
-                title={isMonthLocked ? `${currentMonth}월 확정 해제` : `${currentMonth}월 스케줄 확정 (이후 수정 불가)`}
-                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                  isMonthLocked
-                    ? "border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700"
-                    : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600"
-                }`}
-              >
-                {isLockLoading
-                  ? <div className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
-                  : <Lock size={12} />
-                }
-                <span>{isMonthLocked ? "확정해제" : "확정"}</span>
-              </button>
-            )}
+              <div className="flex items-center gap-1">
+                {!isMonthLocked && (
+                  <button
+                    onClick={() => setEditMode(m => !m)}
+                    title={editMode ? "편집 모드 종료" : "편집 모드 활성화 — 셀 클릭으로 스케줄 변경 가능"}
+                    className={`flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                      editMode
+                        ? "border-emerald-400 bg-emerald-500 text-white shadow-sm"
+                        : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500"
+                    }`}
+                  >
+                    {editMode
+                      ? <><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /><span>편집중</span></>
+                      : <><Edit size={12} /><span>편집</span></>
+                    }
+                  </button>
+                )}
 
-            {isAdmin && !isMonthLocked && (
-              <button
-                onClick={handleCopyFromPreviousMonth}
-                disabled={isCopying}
-                title={`${currentMonth === 1 ? 12 : currentMonth - 1}월 스케줄을 ${currentMonth}월로 복사`}
-                className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-600 hover:text-violet-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                {isCopying
-                  ? <><div className="w-3 h-3 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" /><span>복사 중</span></>
-                  : <><Layers size={12} /><span>전월복사</span></>
-                }
-              </button>
+                <button
+                  onClick={handleToggleMonthLock}
+                  disabled={isLockLoading}
+                  title={isMonthLocked ? `${currentMonth}월 확정 해제` : `${currentMonth}월 스케줄 확정 (이후 수정 불가)`}
+                  className={`flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-lg border transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
+                    isMonthLocked
+                      ? "border-amber-300 bg-amber-50 hover:bg-amber-100 text-amber-700"
+                      : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-600"
+                  }`}
+                >
+                  {isLockLoading
+                    ? <div className="w-3 h-3 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                    : <Lock size={12} />
+                  }
+                  <span>{isMonthLocked ? "확정해제" : "확정"}</span>
+                </button>
+
+                {!isMonthLocked && (
+                  <button
+                    onClick={handleCopyFromPreviousMonth}
+                    disabled={isCopying}
+                    title={`${currentMonth === 1 ? 12 : currentMonth - 1}월 스케줄을 ${currentMonth}월로 복사`}
+                    className="flex items-center gap-1 px-2 py-1 text-xs font-bold rounded-lg border border-violet-200 bg-violet-50 hover:bg-violet-100 text-violet-600 hover:text-violet-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    {isCopying
+                      ? <><div className="w-3 h-3 rounded-full border-2 border-violet-400 border-t-transparent animate-spin" /><span>복사 중</span></>
+                      : <><Layers size={12} /><span>전월복사</span></>
+                    }
+                  </button>
+                )}
+              </div>
             )}
           </div>
         </div>
@@ -1867,28 +1729,93 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             )}
 
             {/* Admin quick-edit hint bar */}
-            {isAdmin && (
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50/70 border-b border-indigo-100 shrink-0">
-                <span className="text-indigo-500 text-[10px]">💡</span>
-                <span className="text-[10px] text-indigo-700 font-semibold">
-                  셀 <strong>클릭</strong>: 오픈 → 미들 → 마감 → 휴무 순환 변경
-                </span>
-                <span className="text-indigo-300 text-[10px] mx-0.5">|</span>
-                <span className="text-[10px] text-indigo-500">
-                  <strong>⚙️</strong> 호버 후 톱니바퀴: 시간·메모 상세 편집
-                </span>
+            {isAdmin && !isMonthLocked && (
+              <div className={`flex items-center gap-2 px-3 py-1.5 border-b shrink-0 ${editMode ? "bg-emerald-50/70 border-emerald-100" : "bg-slate-50/80 border-slate-100"}`}>
+                {editMode ? (
+                  <>
+                    <span className="text-emerald-500 text-[10px]">✏️</span>
+                    <span className="text-[10px] text-emerald-700 font-semibold">
+                      편집 모드 ON — 셀 <strong>클릭</strong>: 오픈 → 미들 → 마감 → 휴무 순환 | <strong>⚙️</strong> 버튼: 상세 편집
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-slate-400 text-[10px]">💡</span>
+                    <span className="text-[10px] text-slate-500">
+                      셀을 직접 수정하려면 상단 <strong className="text-slate-700">편집</strong> 버튼을 눌러 편집 모드를 켜세요
+                    </span>
+                  </>
+                )}
               </div>
             )}
 
-            {/* Schedule table + Dashboard: side-by-side on desktop, stacked on mobile */}
-            <div className="flex flex-col lg:flex-row flex-1 min-h-0">
+            {/* Attendance strip — compact horizontal band above schedule */}
+            {(() => {
+              const today = new Date();
+              const isThisMonth = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth;
+              const todaySummary = isThisMonth ? currentSummaryList.find(s => s.day === today.getDate()) : null;
+              const totalWorkdays = currentSummaryList.filter(s => s.totalCount > 0).length;
+              const avgPerDay = totalWorkdays > 0
+                ? (currentSummaryList.reduce((acc, s) => acc + s.totalCount, 0) / dateList.length).toFixed(1)
+                : "0";
+              return (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50/80 border-b border-slate-100 shrink-0 overflow-x-auto">
+                  {todaySummary && (
+                    <div className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-full px-2.5 py-1 shrink-0">
+                      <Clock size={9} className="text-indigo-500" />
+                      <span className="text-[10px] font-bold text-indigo-600 whitespace-nowrap">오늘</span>
+                      <span className="text-indigo-300 text-[9px] mx-0.5">|</span>
+                      <span className="text-[10px] font-black text-violet-700">{todaySummary.pharmacistCount}약</span>
+                      <span className="text-slate-300 text-[9px]">·</span>
+                      <span className="text-[10px] font-black text-sky-700">{todaySummary.staffCount}원</span>
+                      <span className="text-slate-300 text-[9px]">·</span>
+                      <span className="text-[10px] font-black text-indigo-700">{todaySummary.totalCount}명</span>
+                    </div>
+                  )}
+                  <span className="text-[10px] text-slate-400 whitespace-nowrap shrink-0">
+                    <span className="font-bold text-slate-600">{totalWorkdays}일</span> 근무 · 평균 <span className="font-bold text-slate-600">{avgPerDay}명</span>
+                  </span>
+                  {(attSummary.totalLates > 0 || attSummary.totalEarlyLeaves > 0 || attSummary.totalAbsences > 0) && (
+                    <div className="w-px h-3.5 bg-slate-200 shrink-0" />
+                  )}
+                  {attSummary.totalLates > 0 && (
+                    <span className="text-[10px] font-black bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200 whitespace-nowrap shrink-0">⚠️ {attSummary.totalLates}</span>
+                  )}
+                  {attSummary.totalEarlyLeaves > 0 && (
+                    <span className="text-[10px] font-black bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200 whitespace-nowrap shrink-0">🏃 {attSummary.totalEarlyLeaves}</span>
+                  )}
+                  {attSummary.totalAbsences > 0 && (
+                    <span className="text-[10px] font-black bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full border border-rose-200 whitespace-nowrap shrink-0">🚨 {attSummary.totalAbsences}</span>
+                  )}
+                  {attSummary.employeeRecords.length > 0 && (
+                    <>
+                      <div className="w-px h-3.5 bg-slate-200 shrink-0" />
+                      {attSummary.employeeRecords.map(rec => (
+                        <div key={`strip-${rec.employee.id}`} className="flex items-center gap-0.5 shrink-0">
+                          <span className="text-[10px] font-bold text-slate-600 whitespace-nowrap">{rec.employee.name}</span>
+                          {rec.lates.length > 0 && <span className="text-[9px] font-black bg-amber-100 text-amber-700 px-1 py-0.5 rounded">⚠️{rec.lates.length}</span>}
+                          {rec.earlyLeaves.length > 0 && <span className="text-[9px] font-black bg-purple-100 text-purple-700 px-1 py-0.5 rounded">🏃{rec.earlyLeaves.length}</span>}
+                          {rec.absences.length > 0 && <span className="text-[9px] font-black bg-rose-100 text-rose-700 px-1 py-0.5 rounded">🚨{rec.absences.length}</span>}
+                        </div>
+                      ))}
+                    </>
+                  )}
+                  {attSummary.employeeRecords.length === 0 && (
+                    <span className="text-[10px] text-emerald-600 font-bold whitespace-nowrap shrink-0">🎉 전원 정상</span>
+                  )}
+                </div>
+              );
+            })()}
 
+            {/* Schedule table — expands to content height, horizontal scroll only */}
             <div
               ref={scrollTableRef}
-              className="relative overflow-x-auto overflow-y-auto flex-1 min-w-0"
-              style={{ maxHeight: "calc(100vh - 220px)" }}
+              className="relative overflow-x-auto w-full"
             >
-              {isLoading ? (
+              {/* Full spinner ONLY on initial load (no employees yet). Once data is loaded
+                  all subsequent fetches are invisible so the table stays mounted and
+                  scrollLeft is never reset (prevents the month-jumping bug). */}
+              {isLoading && employees.length === 0 ? (
                 <div className="w-full py-32 flex flex-col items-center justify-center bg-slate-50/50">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#2563eb]"></div>
                   <p className="text-[#64748b] text-[11px] font-bold mt-4 tracking-wider">메가타운 스케줄 데이터 분석 중...</p>
@@ -1938,7 +1865,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                           <span className="sm:hidden">성명</span>
                         </th>
 
-                        {displayDates.map((dateStr) => {
+                        {displayDates.map((dateStr, dateIdx) => {
                           const { fullDate, isToday } = getDayDetails(dateStr);
                           const dayNum = parseInt(dateStr.split('-')[2]);
                           const dayIndex = new Date(dateStr + 'T00:00:00').getDay();
@@ -1947,22 +1874,27 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             : dayIndex === 0
                               ? "text-rose-600 bg-rose-50"
                               : "text-gray-700 bg-gray-100";
+                          const nextDate = displayDates[dateIdx + 1];
+                          const isMonthEnd = !nextDate || nextDate.substring(0, 7) !== dateStr.substring(0, 7);
+                          const monthLabel = parseInt(dateStr.substring(5, 7));
                           return (
-                            <th
-                              key={`day-num-${dateStr}`}
-                              ref={isToday ? todayColRef : undefined}
-                              onClick={() => setTimelineDate(fullDate)}
-                              className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-gray-200 w-[40px] sm:w-[44px] cursor-pointer hover:bg-indigo-100 hover:text-indigo-700 transition-colors ${headerClass} ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-40 relative" : ""}`}
-                              title={`${fullDate} 타임라인 보기`}
-                            >
-                              {dayNum}
-                            </th>
+                            <React.Fragment key={`day-num-${dateStr}`}>
+                              <th
+                                ref={isToday ? todayColRef : undefined}
+                                onClick={() => setTimelineDate(fullDate)}
+                                className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-gray-200 w-[44px] cursor-pointer hover:bg-indigo-100 hover:text-indigo-700 transition-colors ${headerClass} ${isToday ? "ring-2 ring-inset ring-red-500 z-40 relative" : ""}`}
+                                title={`${fullDate} 타임라인 보기`}
+                              >
+                                {dayNum}
+                              </th>
+                              {isMonthEnd && (
+                                <th className="p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-b border-gray-200 bg-indigo-50 text-indigo-600 whitespace-nowrap border-l-2 border-l-gray-200 w-[44px] sm:w-[52px]">
+                                  {monthLabel}월합
+                                </th>
+                              )}
+                            </React.Fragment>
                           );
                         })}
-                        {/* Total column header */}
-                        <th className="p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-b border-gray-200 bg-indigo-50 text-indigo-600 whitespace-nowrap border-l-2 border-l-gray-200 w-[44px] sm:w-[52px] lg:w-[64px]">
-                          합계
-                        </th>
                       </tr>
 
                       {/* Header Row 2: Day of Week Characters */}
@@ -1970,7 +1902,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                         {/* Left spacing header matching Name column */}
                         <th className="border-r border-b border-gray-200 sticky left-0 bg-gray-50 z-40 h-5 sm:h-6" style={{ minWidth: "96px" }}></th>
 
-                        {displayDates.map((dateStr) => {
+                        {displayDates.map((dateStr, dateIdx) => {
                           const { dayWord, isToday } = getDayDetails(dateStr);
                           const dayIndex = new Date(dateStr + 'T00:00:00').getDay();
                           const wordClass = dayIndex === 6
@@ -1978,25 +1910,29 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             : dayIndex === 0
                               ? "text-rose-500 font-bold"
                               : "text-gray-400";
+                          const nextDate = displayDates[dateIdx + 1];
+                          const isMonthEnd = !nextDate || nextDate.substring(0, 7) !== dateStr.substring(0, 7);
                           return (
-                            <th
-                              key={`day-name-${dateStr}`}
-                              className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-gray-200 w-[40px] sm:w-[44px] bg-gray-50 ${wordClass} ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-40 relative" : ""}`}
-                            >
-                              {dayWord}
-                            </th>
+                            <React.Fragment key={`day-name-${dateStr}`}>
+                              <th
+                                className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-gray-200 w-[44px] bg-gray-50 ${wordClass} ${isToday ? "ring-2 ring-inset ring-red-500 z-40 relative" : ""}`}
+                              >
+                                {dayWord}
+                              </th>
+                              {isMonthEnd && (
+                                <th className="p-0.5 text-center text-[8px] sm:text-[9px] border-b border-gray-200 bg-indigo-50 text-indigo-500 border-l-2 border-l-gray-200 w-[44px] sm:w-[52px]">
+                                  일·시간
+                                </th>
+                              )}
+                            </React.Fragment>
                           );
                         })}
-                        {/* Total column sub-header */}
-                        <th className="p-0.5 text-center text-[8px] sm:text-[9px] border-b border-gray-200 bg-indigo-50 text-indigo-500 border-l-2 border-l-gray-200 w-[44px] sm:w-[52px] lg:w-[64px]">
-                          일·시간
-                        </th>
                       </tr>
                     </thead>
 
                     {/* Table Body */}
                     <tbody className="divide-y divide-slate-100">
-                      {filteredEmployees.map((emp) => (
+                      {filteredEmployees.map((emp, empIdx) => (
                         <tr
                           key={emp.id}
                           draggable={isAdmin}
@@ -2015,6 +1951,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                           {/* Column 1: Sticky Employee Name */}
                           <td className="border-r border-slate-100 bg-white sticky left-0 z-[29] group-hover:bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] min-w-[96px] sm:min-w-[112px] h-auto min-h-[54px] sm:min-h-[58px] p-0" style={{ willChange: "transform" }}>
                             <div className="flex items-stretch h-full">
+                              {/* Row number — updates when drag-drop reorders */}
+                              <div className="flex items-center justify-center w-4 sm:w-5 shrink-0 text-[8px] sm:text-[9px] font-bold text-slate-300 select-none">
+                                {empIdx + 1}
+                              </div>
                               {/* Drag handle — desktop only */}
                               {isAdmin && (
                                 <div
@@ -2025,7 +1965,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                 </div>
                               )}
                               {/* Name / position / actions — 2 lines */}
-                              <div className="flex-1 flex flex-col justify-center py-1 pl-2 pr-1 min-w-0 gap-0">
+                              <div className="flex-1 flex flex-col justify-center py-1 pl-1 pr-1 min-w-0 gap-0">
                                 {/* 1줄: 성별 + 이름 */}
                                 <div className="flex items-center gap-0.5 min-w-0">
                                   {emp.gender === "남" && (
@@ -2092,18 +2032,20 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             </div>
                           </td>
 
-                          {/* Schedule Cells */}
-                          {displayDates.map((dateStr) => {
+                          {/* Schedule Cells — with per-month total column after each month's last day */}
+                          {displayDates.map((dateStr, dateIdx) => {
                             const { fullDate, isToday } = getDayDetails(dateStr);
                             const currentSched = emp.schedules.find((s) => s.date === fullDate);
                             const isOwnRow = isEmployeeMode && sessionEmployeeId === emp.id;
-                            // 관리자 can open break modal for any row; 직원 only own row
-                            const canOpenBreak = isManagerRole || isOwnRow;
+                            // 관리자: editMode 켜야 break modal 열림 / 직원: 본인 row는 항상 가능
+                            const canOpenBreak = (isManagerRole && editMode) || isOwnRow;
+                            const nextDate = displayDates[dateIdx + 1];
+                            const isMonthEnd = !nextDate || nextDate.substring(0, 7) !== dateStr.substring(0, 7);
 
-                            return (
+                            const cell = (
                               <td
                                 key={`${emp.id}-${dateStr}`}
-                                className={`p-0 border-r border-[#e2e8f0] ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-25 relative" : ""} ${canOpenBreak ? "cursor-pointer hover:bg-amber-50/50" : ""}`}
+                                className={`p-0 border-r border-[#e2e8f0] ${isToday ? "ring-2 ring-inset ring-red-500 z-[25] relative" : ""} ${canOpenBreak ? "cursor-pointer hover:bg-amber-50/50" : ""}`}
                                 onClick={canOpenBreak ? () => openBreakModalForCell(emp.id, fullDate) : undefined}
                                 title={canOpenBreak ? "클릭하여 점심/휴게 시간 설정" : undefined}
                               >
@@ -2114,33 +2056,33 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   onUpdate={(isEmployeeMode || isManagerRole || isMonthLocked) ? (async () => {}) : handleCellUpdate}
                                   isAdmin={isAdmin && !isMonthLocked && editMode}
                                   isPharmacist={emp.position === "약사"}
-                                  typeHoursMap={getTypeHoursMap(emp.position === "약사")}
+                                  typeHoursMap={getTypeHoursMap(emp.position, emp.employmentType)}
                                   scheduleTypes={settingsScheduleTypes.map((e) => ({ value: e.type, label: e.type }))}
                                 />
                               </td>
                             );
-                          })}
 
-                          {/* Total column: work days + hours + labor cost + 월차 remaining */}
-                          {(() => {
-                            const { workDays, totalHours, laborCost } = getEmpMonthStats(emp);
+                            if (!isMonthEnd) return cell;
+
+                            const mk = dateStr.substring(0, 7);
+                            const { workDays, totalHours, laborCost } = getEmpMonthStats(emp, mk);
                             const h = Math.floor(totalHours);
-                            const m = Math.round((totalHours - h) * 60);
-                            const hoursLabel = h > 0 ? (m > 0 ? `${h}h${m}m` : `${h}h`) : "";
-                            // Format: ≥10,000원 → "123만", else raw "1,234"
+                            const min = Math.round((totalHours - h) * 60);
+                            const hoursLabel = h > 0 ? (min > 0 ? `${h}h${min}m` : `${h}h`) : "";
                             const costLabel = laborCost > 0
-                              ? laborCost >= 10000
-                                ? `${Math.round(laborCost / 10000)}만`
-                                : `${Math.round(laborCost).toLocaleString()}`
+                              ? laborCost >= 10000 ? `${Math.round(laborCost / 10000)}만` : `${Math.round(laborCost).toLocaleString()}`
                               : "";
                             return (
-                              <td className="border-l-2 border-slate-200 bg-indigo-50/50 text-center align-middle p-1">
-                                <div className="text-[11px] sm:text-xs font-black text-indigo-700 leading-tight">{workDays}일</div>
-                                {hoursLabel && <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium leading-tight">{hoursLabel}</div>}
-                                {isSuperAdmin && costLabel && <div className="text-[9px] sm:text-[10px] text-emerald-600 font-bold leading-tight">{costLabel}원</div>}
-                              </td>
+                              <React.Fragment key={`${emp.id}-${dateStr}`}>
+                                {cell}
+                                <td className="border-l-2 border-slate-200 bg-indigo-50/50 text-center align-middle p-1">
+                                  <div className="text-[11px] sm:text-xs font-black text-indigo-700 leading-tight">{workDays}일</div>
+                                  {hoursLabel && <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium leading-tight">{hoursLabel}</div>}
+                                  {isSuperAdmin && costLabel && <div className="text-[9px] sm:text-[10px] text-emerald-600 font-bold leading-tight">{costLabel}원</div>}
+                                </td>
+                              </React.Fragment>
                             );
-                          })()}
+                          })}
                         </tr>
                       ))}
 
@@ -2178,129 +2120,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               })()}
             </div>
 
-            {/* Attendance Dashboard — sidebar on desktop, below on mobile */}
-            {(() => {
-              const today = new Date();
-              const isThisMonth = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth;
-              const todaySummary = isThisMonth ? currentSummaryList.find(s => s.day === today.getDate()) : null;
-              const totalWorkdays = currentSummaryList.filter(s => s.totalCount > 0).length;
-              const avgPerDay = totalWorkdays > 0
-                ? (currentSummaryList.reduce((acc, s) => acc + s.totalCount, 0) / dateList.length).toFixed(1)
-                : "0";
-              return (
-                <div id="attendance-dashboard" className="m-2 sm:m-4 p-3 lg:m-0 lg:p-4 lg:w-64 xl:w-72 lg:shrink-0 lg:border-l lg:border-slate-200 lg:overflow-y-auto bg-white border border-slate-200 lg:border-y-0 lg:border-r-0 rounded-2xl lg:rounded-none shadow-sm lg:shadow-none flex flex-col gap-3">
-
-                  {/* Header */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="p-1.5 bg-slate-100 text-slate-600 rounded-lg">
-                        <Award size={14} />
-                      </div>
-                      <span className="text-xs font-bold text-slate-800">{currentMonth}월 근태 현황</span>
-                    </div>
-                    <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded-full font-semibold flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block animate-pulse"></span>
-                      실시간
-                    </span>
-                  </div>
-
-                  {/* Today's attendance */}
-                  {todaySummary && (
-                    <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-3">
-                      <div className="text-[10px] font-bold text-indigo-500 uppercase tracking-wide mb-2 flex items-center gap-1">
-                        <Clock size={10} />
-                        오늘 ({today.getMonth() + 1}/{today.getDate()}) 근무 현황
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 text-center bg-white/70 rounded-lg py-1.5 border border-indigo-100">
-                          <div className="text-xs font-black text-violet-700">{todaySummary.pharmacistCount}</div>
-                          <div className="text-[9px] text-slate-500 font-medium">약사</div>
-                        </div>
-                        <div className="flex-1 text-center bg-white/70 rounded-lg py-1.5 border border-indigo-100">
-                          <div className="text-xs font-black text-sky-700">{todaySummary.staffCount}</div>
-                          <div className="text-[9px] text-slate-500 font-medium">사원</div>
-                        </div>
-                        <div className="flex-1 text-center bg-indigo-600 rounded-lg py-1.5">
-                          <div className="text-xs font-black text-white">{todaySummary.totalCount}</div>
-                          <div className="text-[9px] text-indigo-200 font-medium">전체</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Monthly quick stats */}
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center">
-                      <div className="text-sm font-black text-slate-800">{totalWorkdays}일</div>
-                      <div className="text-[10px] text-slate-500 font-medium">근무 있는 날</div>
-                    </div>
-                    <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-center">
-                      <div className="text-sm font-black text-slate-800">{avgPerDay}명</div>
-                      <div className="text-[10px] text-slate-500 font-medium">일평균 근무자</div>
-                    </div>
-                  </div>
-
-                  {/* Absence/late/early counters */}
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <div className={`rounded-xl p-2 text-center border ${attSummary.totalLates > 0 ? "bg-amber-50 border-amber-200" : "bg-slate-50 border-slate-200"}`}>
-                      <div className={`text-sm font-black ${attSummary.totalLates > 0 ? "text-amber-700" : "text-slate-400"}`}>{attSummary.totalLates}</div>
-                      <div className="text-[9px] text-slate-500 font-medium">⚠️ 지각</div>
-                    </div>
-                    <div className={`rounded-xl p-2 text-center border ${attSummary.totalEarlyLeaves > 0 ? "bg-purple-50 border-purple-200" : "bg-slate-50 border-slate-200"}`}>
-                      <div className={`text-sm font-black ${attSummary.totalEarlyLeaves > 0 ? "text-purple-700" : "text-slate-400"}`}>{attSummary.totalEarlyLeaves}</div>
-                      <div className="text-[9px] text-slate-500 font-medium">🏃 조퇴</div>
-                    </div>
-                    <div className={`rounded-xl p-2 text-center border ${attSummary.totalAbsences > 0 ? "bg-rose-50 border-rose-200" : "bg-slate-50 border-slate-200"}`}>
-                      <div className={`text-sm font-black ${attSummary.totalAbsences > 0 ? "text-rose-700" : "text-slate-400"}`}>{attSummary.totalAbsences}</div>
-                      <div className="text-[9px] text-slate-500 font-medium">🚨 결근</div>
-                    </div>
-                  </div>
-
-                  {/* Issue employee list */}
-                  <div>
-                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1.5">이달 근태 이상자</div>
-                    {attSummary.employeeRecords.length === 0 ? (
-                      <div className="bg-emerald-50 border border-emerald-100 rounded-xl py-4 text-center">
-                        <div className="text-base mb-0.5">🎉</div>
-                        <div className="text-[11px] text-emerald-700 font-bold">이상 없음</div>
-                        <div className="text-[10px] text-emerald-600">전원 성실 근무 중</div>
-                      </div>
-                    ) : (
-                      <div className="space-y-1.5 max-h-64 overflow-y-auto">
-                        {attSummary.employeeRecords.map((rec) => (
-                          <div key={`att-${rec.employee.id}`} className="flex items-center gap-2 px-2.5 py-2 bg-slate-50 hover:bg-slate-100 rounded-xl border border-slate-200 transition">
-                            <div className="flex-1 min-w-0">
-                              <div className="text-[11px] font-bold text-slate-800 break-keep">{rec.employee.name}</div>
-                              <div className="text-[9px] text-slate-400">{rec.employee.position}</div>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              {rec.lates.length > 0 && (
-                                <span className="text-[10px] font-black bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-lg border border-amber-200" title={rec.lates.map(l => `${parseInt(l.date.split("-")[2])}일`).join(", ")}>
-                                  ⚠️{rec.lates.length}
-                                </span>
-                              )}
-                              {rec.earlyLeaves.length > 0 && (
-                                <span className="text-[10px] font-black bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded-lg border border-purple-200" title={rec.earlyLeaves.map(e => `${parseInt(e.date.split("-")[2])}일`).join(", ")}>
-                                  🏃{rec.earlyLeaves.length}
-                                </span>
-                              )}
-                              {rec.absences.length > 0 && (
-                                <span className="text-[10px] font-black bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded-lg border border-rose-200" title={rec.absences.map(a => `${parseInt(a.date.split("-")[2])}일`).join(", ")}>
-                                  🚨{rec.absences.length}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-
-                </div>
-              );
-            })()}
-
-            </div>{/* end flex row wrapper */}
           </div>
       </div>
 
@@ -2458,11 +2277,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         <DayTimelineModal
           date={timelineDate}
           employees={employees}
-          typeHoursMap={getTypeHoursMap(false)}
-          pharmTypeHoursMap={getTypeHoursMap(true)}
+          typeHoursMap={getTypeHoursMap("", "")}
+          pharmTypeHoursMap={getTypeHoursMap("약사", "")}
           onClose={() => setTimelineDate(null)}
           onEditEmployee={isAdmin ? openEditEmployeeModal : undefined}
-          onScheduleUpdate={() => fetchScheduleData()}
+          onScheduleUpdate={() => fetchScheduleData(undefined, true)}
+          onUpdateSchedule={isAdmin ? handleCellUpdate : undefined}
         />
       )}
 
@@ -2483,7 +2303,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               showNotification(`${calendarEmployee.name}님의 ${items.length}일 일괄 스케줄이 반영되었습니다.`);
               const savedDates = items.map(i => i.date);
               const allDates = Array.from(new Set([...dateList, ...savedDates]));
-              await fetchScheduleData(allDates);
+              await fetchScheduleData(allDates, true);
             } catch (err) {
               console.error("Bulk save failed:", err);
               showNotification("일괄 저장 중 오류가 발생했습니다.", "error");
@@ -2491,7 +2311,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             }
           }}
           scheduleTypes={settingsScheduleTypes.map(e => ({ value: e.type, label: e.type }))}
-          typeHoursMap={calendarEmployee ? getTypeHoursMap(calendarEmployee.position === "약사") : undefined}
+          typeHoursMap={calendarEmployee ? getTypeHoursMap(calendarEmployee.position, calendarEmployee.employmentType) : undefined}
           logisticsZoneProps={calendarLogisticsZoneProps}
           onEditEmployee={isAdmin ? () => { const emp = calendarEmployee; setCalendarEmployee(null); if (emp) setTimeout(() => openEditEmployeeModal(emp), 0); } : undefined}
         />

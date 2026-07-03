@@ -5,10 +5,10 @@ import { MonthlySummary } from "../types";
 interface SummaryRowProps {
   summaries: MonthlySummary[];
   label: "약사" | "사원" | "근무인원";
-  totalCell?: React.ReactNode;
+  totalCell?: React.ReactNode; // kept for backward compat, no longer rendered
 }
 
-export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, totalCell }) => {
+export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label }) => {
   const isPharmacist = label === "약사";
   const isStaff = label === "사원";
   const isTotal = label === "근무인원";
@@ -31,34 +31,34 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, totalC
     ? "bg-sky-50/30 text-slate-300"
     : "bg-indigo-50/30 text-slate-300";
 
-  const totalCls = isPharmacist
-    ? "bg-violet-100 text-violet-800"
+  const monthTotalCls = isPharmacist
+    ? "bg-violet-100 text-violet-800 border-l-2 border-violet-200"
     : isStaff
-    ? "bg-sky-100 text-sky-800"
-    : "bg-indigo-100 text-indigo-800";
+    ? "bg-sky-100 text-sky-800 border-l-2 border-sky-200"
+    : "bg-indigo-100 text-indigo-800 border-l-2 border-indigo-200";
 
   const todayStr = (() => {
     const d = new Date();
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
   })();
+
+  const getVal = (sum: MonthlySummary) =>
+    isPharmacist ? sum.pharmacistCount : isStaff ? sum.staffCount : sum.totalCount;
 
   return (
     <tr className={isTotal ? "border-t-2 border-indigo-200" : "border-t border-slate-100"}>
-      <td
-        className={`px-2 py-2 sticky left-0 z-20 text-center text-[11px] font-bold tracking-wide shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] ${labelCls}`}
-      >
+      <td className={`px-2 py-2 sticky left-0 z-20 text-center text-[11px] font-bold tracking-wide shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] ${labelCls}`}>
         {label}
       </td>
 
-      {summaries.map((sum) => {
-        const val = isPharmacist ? sum.pharmacistCount : isStaff ? sum.staffCount : sum.totalCount;
+      {summaries.map((sum, idx) => {
+        const val = getVal(sum);
         const isToday = sum.date === todayStr;
-        return (
+        const nextSum = summaries[idx + 1];
+        const isMonthEnd = !nextSum || nextSum.date.substring(0, 7) !== sum.date.substring(0, 7);
+
+        const cell = (
           <td
-            key={sum.day}
             className={`p-1.5 text-center text-xs border-r border-slate-100 w-[30px] sm:w-[44px] transition-colors ${
               val > 0 ? valActiveCls : valEmptyCls
             } ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-20 relative" : ""}`}
@@ -66,13 +66,23 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, totalC
             {val > 0 ? val : <span className="opacity-30">·</span>}
           </td>
         );
-      })}
 
-      {totalCell !== undefined && (
-        <td className={`p-1.5 text-center text-[10px] font-black border-l-2 border-slate-200 ${totalCls}`}>
-          {totalCell}
-        </td>
-      )}
+        if (!isMonthEnd) return <React.Fragment key={sum.day}>{cell}</React.Fragment>;
+
+        const mk = sum.date.substring(0, 7);
+        const monthTotal = summaries
+          .filter(s => s.date.substring(0, 7) === mk)
+          .reduce((acc, s) => acc + getVal(s), 0);
+
+        return (
+          <React.Fragment key={sum.day}>
+            {cell}
+            <td className={`p-1.5 text-center text-[10px] font-black ${monthTotalCls}`}>
+              {monthTotal > 0 ? `${monthTotal}인일` : <span className="opacity-30">-</span>}
+            </td>
+          </React.Fragment>
+        );
+      })}
     </tr>
   );
 };

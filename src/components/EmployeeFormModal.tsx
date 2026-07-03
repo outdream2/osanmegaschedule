@@ -1,5 +1,5 @@
 // src/components/EmployeeFormModal.tsx
-import React, { useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { X, Users, Calendar, MapPin, FileText, ExternalLink, Upload } from "lucide-react";
 import { ZONE_DEFS, SECTION_LABEL } from "../constants/displayZones";
 
@@ -79,6 +79,12 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const isCustomPosition = !["약사", "캐셔", "진열", "물류", ""].includes(empPosition);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
 
   return (
     <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">

@@ -1,5 +1,7 @@
 import { Router } from "express";
+import webpush from "web-push";
 import { supabase } from "../../src/supabase/client";
+import { notificationsService } from "../../src/services/notificationsService";
 
 const router = Router();
 
@@ -61,10 +63,31 @@ router.post("/api/display-requests", async (req, res) => {
 });
 
 router.patch("/api/display-requests/:id", async (req, res) => {
-  const { status } = req.body ?? {};
+  const { status, zone_label, assigned_staff_name } = req.body ?? {};
   if (!["pending", "done"].includes(status)) return res.status(400).json({ error: "invalid status" });
   const { error } = await supabase.from("display_requests").update({ status }).eq("id", req.params.id);
   if (error) return res.status(500).json({ error: error.message });
+
+  if (status === "done") {
+    const { data: admins } = await supabase
+      .from("employees").select("id, push_subscription").eq("auth_level", 9);
+    if (admins?.length) {
+      const title = "✅ 진열 완료";
+      const body = zone_label
+        ? `${assigned_staff_name || "담당자"}가 "${zone_label}" 진열을 완료했습니다`
+        : "진열 요청이 완료되었습니다";
+      await Promise.allSettled([
+        ...admins.map(a => notificationsService.create({ employee_id: a.id, title, body, type: "alert" as const })),
+        ...admins.filter(a => a.push_subscription).map(a =>
+          webpush.sendNotification(
+            a.push_subscription as webpush.PushSubscription,
+            JSON.stringify({ title, body, url: "/", tag: `disp-done-${req.params.id}` })
+          ).catch(() => null)
+        ),
+      ]);
+    }
+  }
+
   res.json({ ok: true });
 });
 

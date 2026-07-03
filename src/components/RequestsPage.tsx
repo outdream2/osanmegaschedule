@@ -140,12 +140,32 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const [dupOrderModal, setDupOrderModal] = useState<{existing: OrderRequest; product: ProductInfo; editStock: number | ""} | null>(null);
 
 
-  // 진열요청 완료 확인
+  // 진열요청 개별 완료 처리 중인 id
+  const [completingDisplay, setCompletingDisplay] = useState<Set<string>>(new Set());
+
+  // 진열요청 완료 확인 (전체삭제)
   const [displayConfirmDelete, setDisplayConfirmDelete] = useState(false);
 
   // 진열요청 알림 전송
   const [notifying, setNotifying] = useState(false);
   const [notifyToast, setNotifyToast] = useState<string | null>(null);
+
+  const handleCompleteDisplay = useCallback(async (req: DisplayRequest) => {
+    setCompletingDisplay(prev => new Set([...prev, req.id]));
+    try {
+      const res = await fetch(`/api/display-requests/${req.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "done", zone_label: req.zone_label, assigned_staff_name: req.assigned_staff_name }),
+      });
+      if (res.ok) {
+        setDisplayReqs(prev => prev.map(r => r.id === req.id ? { ...r, status: "done" } : r));
+      }
+    } catch { /* ignore */ }
+    finally {
+      setCompletingDisplay(prev => { const s = new Set(prev); s.delete(req.id); return s; });
+    }
+  }, []);
 
   const handleNotifyAll = useCallback(async () => {
     const pending = displayReqs.filter(r => r.status === "pending" && r.assigned_staff_id);
@@ -266,6 +286,12 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   useEffect(() => {
     if (tab === "order") { loadOrderReqs(); loadProducts(); }
   }, [tab]);
+  useEffect(() => {
+    if (!dupOrderModal) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setDupOrderModal(null); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [dupOrderModal]);
 
   // 자동 갱신: 30초마다 pending-counts 폴링, 현재 탭 건수 변화 시 목록 재로드
   const prevCountsRef = useRef<typeof tabCounts>(null);
@@ -460,41 +486,17 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               allChecked={selectedDisplay.size === displayReqs.length && displayReqs.length > 0}
               onToggleAll={() => toggleAll(displayReqs, selectedDisplay, setSelectedDisplay)}
               onDeleteSelected={() => deleteDisplay([...selectedDisplay])}
-              onDeleteAll={() => {}}
+              onDeleteAll={() => { if (confirm(`진열요청 전체 ${displayReqs.length}건을 삭제할까요?`)) deleteDisplay(displayReqs.map(r => r.id)); }}
               onRefresh={loadDisplayReqs} loading={displayLoading} accentColor="text-blue-600"
-              hideDeleteAll
               extraActions={
-                <>
-                  <button
-                    onClick={handleNotifyAll}
-                    disabled={notifying || displayReqs.filter(r => r.status === "pending").length === 0}
-                    className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-blue-500 hover:bg-blue-600 border border-blue-400 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                  >
-                    {notifying ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
-                    진열요청
-                  </button>
-                  {displayConfirmDelete ? (
-                    <div className="flex items-center gap-1 shrink-0">
-                      <span className="text-[10px] text-gray-500 font-bold whitespace-nowrap">삭제할까요?</span>
-                      <button
-                        onClick={() => { setDisplayConfirmDelete(false); deleteDisplay(displayReqs.map(r => r.id)); }}
-                        className="text-[11px] font-bold text-white bg-rose-500 hover:bg-rose-600 border border-rose-400 px-2 py-1.5 rounded-lg transition cursor-pointer"
-                      >예</button>
-                      <button
-                        onClick={() => setDisplayConfirmDelete(false)}
-                        className="text-[11px] font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 border border-gray-300 px-2 py-1.5 rounded-lg transition cursor-pointer"
-                      >아니오</button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => setDisplayConfirmDelete(true)}
-                      disabled={displayReqs.length === 0}
-                      className="text-[11px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2.5 py-1.5 rounded-lg hover:bg-emerald-100 transition cursor-pointer disabled:opacity-40 shrink-0"
-                    >
-                      완료
-                    </button>
-                  )}
-                </>
+                <button
+                  onClick={handleNotifyAll}
+                  disabled={notifying || displayReqs.filter(r => r.status === "pending").length === 0}
+                  className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-blue-500 hover:bg-blue-600 border border-blue-400 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                >
+                  {notifying ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                  알림전송
+                </button>
               }
             />
 
@@ -506,41 +508,55 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               </div>
             ) : (
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
-                {displayReqs.map(r => (
-                  <div key={r.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition ${selectedDisplay.has(r.id) ? "bg-rose-50/40" : ""}`}>
-                    <Checkbox checked={selectedDisplay.has(r.id)} onChange={() => toggleOne(selectedDisplay, r.id, setSelectedDisplay)} />
-                    <div className="flex-1 min-w-0">
-                      {/* 담당자 · 구역 · 카테고리 */}
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {r.assigned_staff_name ? (
-                          <span className="text-[12px] font-black text-indigo-700">{r.assigned_staff_name}</span>
-                        ) : (
-                          <span className="text-[11px] text-gray-300">미지정</span>
+                {displayReqs.map(r => {
+                  const isDone = r.status === "done";
+                  const completing = completingDisplay.has(r.id);
+                  return (
+                    <div key={r.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition ${selectedDisplay.has(r.id) ? "bg-rose-50/40" : ""} ${isDone ? "opacity-60" : ""}`}>
+                      <Checkbox checked={selectedDisplay.has(r.id)} onChange={() => toggleOne(selectedDisplay, r.id, setSelectedDisplay)} />
+                      <div className="flex-1 min-w-0">
+                        {/* 담당자 · 구역 · 카테고리 */}
+                        <div className={`flex items-center gap-1.5 flex-wrap ${isDone ? "line-through text-gray-400" : ""}`}>
+                          {r.assigned_staff_name ? (
+                            <span className="text-[12px] font-black text-indigo-700">{r.assigned_staff_name}</span>
+                          ) : (
+                            <span className="text-[11px] text-gray-300">미지정</span>
+                          )}
+                          {r.zone_label && (
+                            <><span className="text-gray-300 text-[10px]">·</span>
+                            <span className="text-[12px] font-bold text-gray-800 truncate">{r.zone_label}</span></>
+                          )}
+                          {r.category && (
+                            <><span className="text-gray-300 text-[10px]">·</span>
+                            <span className="text-[11px] text-gray-500 truncate">{r.category}</span></>
+                          )}
+                          {r.note && (
+                            <><span className="text-gray-300 text-[10px]">·</span>
+                            <span className="text-[11px] text-indigo-500 truncate">{r.note}</span></>
+                          )}
+                        </div>
+                      </div>
+                      {/* 완료 버튼 + 상태 + 날짜 */}
+                      <div className="shrink-0 flex items-center gap-1.5">
+                        {!isDone && (
+                          <button
+                            onClick={() => handleCompleteDisplay(r)}
+                            disabled={completing}
+                            className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-1 rounded-lg hover:bg-emerald-100 transition cursor-pointer disabled:opacity-40 flex items-center gap-0.5"
+                          >
+                            {completing ? <Loader2 size={9} className="animate-spin" /> : <CheckCircle2 size={9} />}
+                            완료
+                          </button>
                         )}
-                        {r.zone_label && (
-                          <><span className="text-gray-300 text-[10px]">·</span>
-                          <span className="text-[12px] font-bold text-gray-800 truncate">{r.zone_label}</span></>
-                        )}
-                        {r.category && (
-                          <><span className="text-gray-300 text-[10px]">·</span>
-                          <span className="text-[11px] text-gray-500 truncate">{r.category}</span></>
-                        )}
-                        {r.note && (
-                          <><span className="text-gray-300 text-[10px]">·</span>
-                          <span className="text-[11px] text-indigo-500 truncate">{r.note}</span></>
-                        )}
+                        <span className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${isDone ? "text-emerald-600 bg-emerald-50 border-emerald-200" : "text-blue-600 bg-blue-50 border-blue-200"}`}>
+                          {isDone ? <CheckCircle2 size={8} /> : <Clock size={8} />}
+                          {isDone ? "완료" : "대기"}
+                        </span>
+                        <span className="text-[10px] text-gray-400">{fmtDate(r.requested_at)}</span>
                       </div>
                     </div>
-                    {/* 상태 + 날짜 한 줄 */}
-                    <div className="shrink-0 flex items-center gap-1.5">
-                      <span className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${r.status === "pending" ? "text-blue-600 bg-blue-50 border-blue-200" : "text-emerald-600 bg-emerald-50 border-emerald-200"}`}>
-                        {r.status === "pending" ? <Clock size={8} /> : <CheckCircle2 size={8} />}
-                        {r.status === "pending" ? "대기" : "완료"}
-                      </span>
-                      <span className="text-[10px] text-gray-400">{fmtDate(r.requested_at)}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

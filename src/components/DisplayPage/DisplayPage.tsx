@@ -39,7 +39,6 @@ import type { AuthSession } from "../../types";
 interface DisplayPageProps {
   onBack: () => void;
   onOpenEmployeeEdit?: (employeeId: number) => void;
-  onNavigateToSchedule?: () => void;
   authSession?: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
@@ -237,7 +236,7 @@ const fetchRequestsFromDB = async (): Promise<DisplayRequest[] | null> => {
 };
 
 // ─── Main component ────────────────────────────────────────────────────────────
-export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit, onNavigateToSchedule, authSession, onNavigate, onLogout }) => {
+export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit, authSession, onNavigate, onLogout }) => {
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
   const [zonesLoaded, setZonesLoaded] = useState(false);
   const [requests, setRequests] = useState<DisplayRequest[]>(() => loadRequests());
@@ -835,10 +834,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         activePage="display"
         authSession={authSession ?? null}
         onBack={onBack}
-        onNavigate={(page) => {
-          if (page === "schedule" && onNavigateToSchedule) onNavigateToSchedule();
-          else onNavigate?.(page);
-        }}
+        onNavigate={onNavigate}
         onLogout={onLogout}
         rightSlot={
           <div className="flex items-center gap-3">

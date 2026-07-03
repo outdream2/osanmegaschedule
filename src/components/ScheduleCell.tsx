@@ -152,14 +152,15 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
         onClick={handleQuickCycle}
         title={isAdmin ? `클릭: 오픈→미들→마감→휴무 순환 변경\n⚙️ 상세 편집은 호버 후 톱니바퀴 클릭` : undefined}
       >
-        {/* Detail edit button — top-right corner on hover */}
-        {isAdmin && isHovered && (
+        {/* Detail edit button — top-left, always visible, touch-friendly */}
+        {isAdmin && (
           <button
             onClick={e => { e.stopPropagation(); setIsOpen(true); }}
-            className="absolute top-0.5 right-0.5 z-10 p-0.5 rounded bg-black/10 hover:bg-black/25 transition-colors"
+            className="absolute top-0.5 left-0.5 z-10 flex items-center gap-0.5 px-1 py-0.5 rounded bg-white/80 hover:bg-white border border-slate-200/60 hover:border-indigo-300 shadow-sm text-slate-400 hover:text-indigo-600 active:scale-95 transition-all cursor-pointer"
             title="상세 편집"
           >
-            <Settings2 size={8} />
+            <Settings2 size={9} />
+            <span className="text-[8px] font-bold leading-none">편집</span>
           </button>
         )}
         {/* Row 1: Type (오픈, 마감, 휴무 등) */}
@@ -174,7 +175,12 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
           </div>
         )}
 
-        {/* Row 2: Working Hours — hidden in cell, visible in timeline modal */}
+        {/* Row 2: Working Hours */}
+        {displayWorkingHours && !displayActualHours && (
+          <div className="text-[8px] text-slate-400 leading-none font-medium tabular-nums mt-0.5">
+            {displayWorkingHours}
+          </div>
+        )}
 
         {/* Row 3: Actual Notes (실근무/특이사항) */}
         {displayActualHours && (
@@ -219,11 +225,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
       {isOpen && (
         <div
           ref={popoverRef}
-          className={`fixed z-[200] inset-x-4 top-[5vh] max-h-[90dvh] overflow-y-auto md:absolute md:inset-x-auto md:top-full md:max-h-none md:overflow-y-visible md:mt-1 w-auto md:w-72 bg-white rounded shadow-xl p-4 border border-[#e2e8f0] text-slate-800 text-left animate-in fade-in duration-100 ${
-            popoverAlign === "right"
-              ? "md:right-0 md:left-auto"
-              : "md:left-0 md:right-auto"
-          }`}
+          className="fixed z-[200] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[92vw] sm:w-96 max-h-[90dvh] overflow-y-auto bg-white rounded-xl shadow-2xl p-4 border border-[#e2e8f0] text-slate-800 text-left animate-in fade-in duration-100"
         >
           <div className="flex items-center justify-between border-b border-[#e2e8f0] pb-2 mb-3">
             <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
@@ -333,7 +335,14 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
               </label>
               <select
                 value={type}
-                onChange={(e) => setType(e.target.value)}
+                onChange={(e) => {
+                  const newType = e.target.value;
+                  const oldAutoHours = typeHoursMap?.[type] ?? "";
+                  setType(newType);
+                  if (!workingHours || workingHours === oldAutoHours) {
+                    setWorkingHours(typeHoursMap?.[newType] ?? "");
+                  }
+                }}
                 className="w-full text-xs rounded border border-[#e2e8f0] focus:border-[#2563eb] p-2 bg-white cursor-pointer focus:outline-none"
               >
                 <option value="">-- 없음 --</option>

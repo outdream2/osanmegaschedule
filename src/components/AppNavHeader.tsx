@@ -10,7 +10,7 @@ import {
   LogOut,
   MessageSquare,
   Package,
-  Utensils,
+  UtensilsCrossed,
 } from "lucide-react";
 import type { AuthSession } from "../types";
 import { NotificationBell } from "./NotificationBell";
@@ -41,11 +41,13 @@ interface TabDef {
   mobileLabel: string;
   icon: React.ComponentType<{ size?: number; className?: string }>;
   managerOnly: boolean;
+  iconClassName?: string;
 }
 
 const TABS: TabDef[] = [
+  { key: "landing",  label: "홈",         mobileLabel: "홈",     icon: Home,          managerOnly: false },
   { key: "schedule", label: "스케줄관리", mobileLabel: "스케줄",  icon: Calendar,      managerOnly: false },
-  { key: "lunch",    label: "점심불참",   mobileLabel: "불참",   icon: Utensils,      managerOnly: false },
+  { key: "lunch",    label: "점심불참",   mobileLabel: "불참",    icon: UtensilsCrossed, managerOnly: false, iconClassName: "text-red-500" },
   { key: "display",  label: "매장관리",   mobileLabel: "매장",    icon: LayoutGrid,    managerOnly: true  },
   { key: "requests", label: "요청목록",   mobileLabel: "요청",    icon: MessageSquare, managerOnly: true  },
   { key: "leave",    label: "연차승인",   mobileLabel: "연차",    icon: CheckCircle,   managerOnly: true  },
@@ -76,21 +78,22 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const Icon = tab.icon;
     const isActive = tab.key === activePage;
     const base = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold";
+    const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key);
     if (isActive) {
       return (
         <span key={tab.key} className={`${base} bg-white text-indigo-700 shadow-sm border border-indigo-100 font-black`}>
-          <Icon size={11} /> {tab.label}
+          <Icon size={11} className={tab.iconClassName} /> {tab.label}
         </span>
       );
     }
     return (
       <button
         key={tab.key}
-        onClick={() => onNavigate?.(tab.key)}
-        disabled={!onNavigate}
+        onClick={onClick}
+        disabled={!onNavigate && !onBack}
         className={`${base} text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer disabled:opacity-40`}
       >
-        <Icon size={11} /> {tab.label}
+        <Icon size={11} className={tab.iconClassName} /> {tab.label}
       </button>
     );
   };
@@ -99,10 +102,11 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const Icon = tab.icon;
     const isActive = tab.key === activePage;
     const base = "shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition";
+    const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key);
     if (isActive) {
       return (
         <span key={tab.key} className={`${base} bg-white text-indigo-700 shadow-sm border border-indigo-100 font-black`}>
-          <Icon size={12} />
+          <Icon size={12} className={tab.iconClassName} />
           <span>{tab.mobileLabel}</span>
         </span>
       );
@@ -110,11 +114,11 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     return (
       <button
         key={tab.key}
-        onClick={() => onNavigate?.(tab.key)}
-        disabled={!onNavigate}
+        onClick={onClick}
+        disabled={!onNavigate && !onBack}
         className={`${base} text-gray-500 hover:text-gray-800 hover:bg-white cursor-pointer disabled:opacity-40`}
       >
-        <Icon size={12} />
+        <Icon size={12} className={tab.iconClassName} />
         <span>{tab.mobileLabel}</span>
       </button>
     );
@@ -136,22 +140,13 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
               <Home size={14} className="text-white" />
             </div>
             <span className="font-black tracking-tight leading-none">
-              <span className="text-red-500 text-xl">OSAN</span>
-              <span className="text-gray-900 text-base hidden sm:inline"> MEGATOWN</span>
+              <span className="text-red-500 text-lg sm:text-xl">OSAN</span>
+              <span className="text-gray-900 text-sm sm:text-base"> MEGATOWN</span>
             </span>
           </button>
 
           {/* Desktop nav tabs — all tabs, hidden on mobile */}
           <div className="hidden sm:flex items-center gap-1 ml-3 bg-gray-100 rounded-xl p-1">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-500 hover:text-gray-800 hover:bg-white transition cursor-pointer"
-                title="메인으로"
-              >
-                <Home size={11} /> MAIN
-              </button>
-            )}
             {visibleTabs.map(renderDesktopTab)}
           </div>
         </div>
@@ -159,24 +154,24 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         {/* Right: role badge + rightSlot + logout */}
         <div className="flex items-center gap-1.5 shrink-0">
           {isAdmin ? (
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>최고관리자</span>
+            <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] sm:text-[11px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span className="hidden sm:inline">최고관리자</span>
             </div>
           ) : isManager ? (
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200 text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse" />
-              <span>관리자</span>
+            <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200 text-[10px] sm:text-[11px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse shrink-0" />
+              <span className="hidden sm:inline">관리자</span>
               {authSession?.employeeName && (
-                <span className="text-sky-600 font-semibold border-l border-sky-300 pl-1.5 ml-0.5 truncate max-w-[60px]">
+                <span className="text-sky-600 font-semibold hidden sm:inline border-l border-sky-300 pl-1.5 ml-0.5 truncate max-w-[60px]">
                   {authSession.employeeName}
                 </span>
               )}
             </div>
           ) : isEmployee ? (
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              <span className="truncate max-w-[80px]">{authSession?.employeeName ?? "직원 모드"}</span>
+            <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] sm:text-[11px] font-bold">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
+              <span className="hidden sm:inline truncate max-w-[80px]">{authSession?.employeeName ?? "직원 모드"}</span>
             </div>
           ) : null}
 
@@ -206,15 +201,6 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       {visibleTabs.length > 1 && (
         <div className="sm:hidden px-3 pb-2">
           <div className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1 overflow-x-auto scrollbar-none">
-            {onBack && (
-              <button
-                onClick={onBack}
-                className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-lg text-[10px] font-bold transition text-gray-500 hover:text-gray-800 hover:bg-white cursor-pointer"
-              >
-                <Home size={12} />
-                <span>홈</span>
-              </button>
-            )}
             {visibleTabs.map(renderMobileTab)}
           </div>
         </div>
