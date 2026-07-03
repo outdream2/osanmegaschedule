@@ -1553,25 +1553,28 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       {/* 2. Grid Container Block */}
       <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-gray-100 gap-0">
         {/* Month Navigation Toolbar */}
-        <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl min-h-11 sm:min-h-12 h-auto py-1.5 sm:py-0 flex items-center justify-between px-2.5 sm:px-5 shrink-0 shadow-sm">
+        <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl min-h-12 sm:min-h-12 h-auto py-1.5 sm:py-0 flex items-center justify-between px-2.5 sm:px-5 shrink-0 shadow-sm">
           {/* Left: Month navigation */}
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
             <button
               onClick={handlePrevMonth}
-              className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+              className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all cursor-pointer"
               title="이전 달"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={18} />
             </button>
-            <span className="font-bold tracking-tight text-slate-900 text-sm px-1 min-w-[90px] text-center">
+            <span
+              key={`${currentYear}-${currentMonth}`}
+              className="font-black tracking-tight text-slate-900 text-base sm:text-sm px-1 min-w-[100px] sm:min-w-[90px] text-center animate-in fade-in zoom-in-95 duration-200"
+            >
               {currentYear}년 {String(currentMonth).padStart(2, "0")}월
             </span>
             <button
               onClick={handleNextMonth}
-              className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-lg text-slate-500 hover:text-slate-800 transition-all cursor-pointer"
+              className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all cursor-pointer"
               title="다음 달"
             >
-              <ChevronRight size={16} />
+              <ChevronRight size={18} />
             </button>
             <button
               onClick={() => {
@@ -1583,7 +1586,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 setCurrentMonth(newMonth);
                 setEditMode(false);
               }}
-              className="ml-1 px-2 h-7 flex items-center text-[10px] font-bold text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition cursor-pointer"
+              className="ml-1 px-2.5 h-8 sm:h-7 flex items-center text-[11px] sm:text-[10px] font-black text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition cursor-pointer"
               title="오늘 날짜로 이동"
             >
               오늘
