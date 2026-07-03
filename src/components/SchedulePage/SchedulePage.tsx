@@ -134,31 +134,11 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     }
   };
 
-  // Mobile 7-day window state
-  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 768);
-  const [mobileWeekOffset, setMobileWeekOffset] = useState(0);
-  const mobileTouchStartX = React.useRef<number | null>(null);
-  const mobileTouchStartY = React.useRef<number | null>(null);
+  // Scroll position management
+  const pendingScrollDateRef = useRef<string | null>(null); // date to scroll to after re-render
+  const suppressScrollRef = useRef(false);                  // suppress listener during programmatic scroll
+  const isInitialLoadRef = useRef(true);
 
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  // Scroll today's column to center on data load (desktop only)
-  useEffect(() => {
-    if (employees.length === 0 || isMobile) return;
-    requestAnimationFrame(() => {
-      if (!scrollTableRef.current || !todayColRef.current) return;
-      const container = scrollTableRef.current;
-      const col = todayColRef.current;
-      const containerRect = container.getBoundingClientRect();
-      const colRect = col.getBoundingClientRect();
-      const colCenter = colRect.left - containerRect.left + container.scrollLeft + col.offsetWidth / 2;
-      container.scrollLeft = Math.max(0, colCenter - container.clientWidth / 2);
-    });
-  }, [employees, isMobile]);
 
 
   // isAdmin = full edit access (schedule editing, employee management, labor costs)
@@ -594,6 +574,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     let year = currentYear;
     let month = currentMonth - 1;
     if (month < 1) { month = 12; year--; }
+    pendingScrollDateRef.current = `${year}-${String(month).padStart(2, '0')}-01`;
     setCurrentYear(year);
     setCurrentMonth(month);
   };
@@ -602,6 +583,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     let year = currentYear;
     let month = currentMonth + 1;
     if (month > 12) { month = 1; year++; }
+    pendingScrollDateRef.current = `${year}-${String(month).padStart(2, '0')}-01`;
     setCurrentYear(year);
     setCurrentMonth(month);
   };
@@ -622,23 +604,57 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     return { dayWord, colorClass, fullDate: dateStr, isToday };
   };
 
-  const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
   const monthStr = String(currentMonth).padStart(2, '0');
-  const dateList: string[] = Array.from({ length: daysInMonth }, (_, i) => {
-    const day = String(i + 1).padStart(2, '0');
-    return `${currentYear}-${monthStr}-${day}`;
-  });
 
-  // Mobile: 7-day window centered on today (±3 days) + week offset
-  const mobileDates = React.useMemo(() => {
-    return Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(todayStr + "T00:00:00");
-      d.setDate(d.getDate() + i - 3 + mobileWeekOffset * 7);
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  // 3-month date list: prev + current + next month — enables continuous scroll
+  const dateList: string[] = React.useMemo(() => {
+    const result: string[] = [];
+    for (let offset = -1; offset <= 1; offset++) {
+      let y = currentYear, m = currentMonth + offset;
+      if (m <= 0) { m += 12; y--; }
+      if (m > 12) { m -= 12; y++; }
+      const days = new Date(y, m, 0).getDate();
+      for (let d = 1; d <= days; d++) {
+        result.push(`${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+      }
+    }
+    return result;
+  }, [currentYear, currentMonth]);
+
+  const displayDates = dateList;
+
+  // Scroll to pending date (or today on first load) after data loads
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (employees.length === 0) return;
+    requestAnimationFrame(() => {
+      const el = scrollTableRef.current;
+      if (!el) return;
+      const NAME_COL = 96;
+      const DATE_COL = el.clientWidth < 640 ? 40 : 44;
+      if (pendingScrollDateRef.current) {
+        const targetDate = pendingScrollDateRef.current;
+        pendingScrollDateRef.current = null;
+        const idx = dateList.indexOf(targetDate);
+        if (idx >= 0) {
+          suppressScrollRef.current = true;
+          el.scrollLeft = Math.max(0, NAME_COL + idx * DATE_COL - el.clientWidth / 2);
+          requestAnimationFrame(() => { suppressScrollRef.current = false; });
+        }
+      } else if (isInitialLoadRef.current) {
+        isInitialLoadRef.current = false;
+        if (todayColRef.current) {
+          const col = todayColRef.current;
+          const cr = el.getBoundingClientRect();
+          const colR = col.getBoundingClientRect();
+          const colCenter = colR.left - cr.left + el.scrollLeft + col.offsetWidth / 2;
+          suppressScrollRef.current = true;
+          el.scrollLeft = Math.max(0, colCenter - el.clientWidth / 2);
+          requestAnimationFrame(() => { suppressScrollRef.current = false; });
+        }
+      }
     });
-  }, [todayStr, mobileWeekOffset]);
-
-  const displayDates = isMobile ? mobileDates : dateList;
+  }, [employees, dateList]);
 
   // Trigger loading schedule — supports a multi-month date range by fetching each month
   // in parallel and merging employee schedule arrays.
@@ -718,63 +734,40 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     }
   };
 
-  // Re-fetch whenever year or month changes
+  // Re-fetch 3-month window whenever center month changes
   useEffect(() => {
-    fetchScheduleData(isMobile ? mobileDates : dateList);
+    fetchScheduleData(dateList);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentYear, currentMonth]);
 
-  // Mobile: sync currentYear/currentMonth when week offset crosses a month boundary
+  // Scroll listener: update center month based on visible date
   useEffect(() => {
-    if (!isMobile) return;
-    const centerDate = mobileDates[3]; // today + offset weeks (center of 7-day window)
-    const newYear = parseInt(centerDate.substring(0, 4));
-    const newMonth = parseInt(centerDate.substring(5, 7));
-    if (newYear !== currentYear || newMonth !== currentMonth) {
-      // Month changed — state update triggers the main fetch effect above
-      setCurrentYear(newYear);
-      setCurrentMonth(newMonth);
-    } else {
-      // Offset changed within same month (e.g., first load or minor shift), fetch fresh
-      fetchScheduleData(mobileDates);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mobileWeekOffset, isMobile]);
-
-  // Mobile swipe: need non-passive touchmove to prevent horizontal scroll
-  useEffect(() => {
-    if (!isMobile) return;
     const el = scrollTableRef.current;
     if (!el) return;
-
-    const onStart = (e: TouchEvent) => {
-      mobileTouchStartX.current = e.touches[0].clientX;
-      mobileTouchStartY.current = e.touches[0].clientY;
+    let debounce: number | null = null;
+    const onScroll = () => {
+      if (suppressScrollRef.current) return;
+      if (debounce) clearTimeout(debounce);
+      debounce = window.setTimeout(() => {
+        const NAME_COL = 96;
+        const DATE_COL = el.clientWidth < 640 ? 40 : 44;
+        const center = el.scrollLeft + el.clientWidth / 2;
+        const idx = Math.max(0, Math.min(Math.floor((center - NAME_COL) / DATE_COL), dateList.length - 1));
+        const centerDate = dateList[idx];
+        if (!centerDate) return;
+        const newYear = parseInt(centerDate.substring(0, 4));
+        const newMonth = parseInt(centerDate.substring(5, 7));
+        if (newYear !== currentYear || newMonth !== currentMonth) {
+          pendingScrollDateRef.current = centerDate;
+          setCurrentYear(newYear);
+          setCurrentMonth(newMonth);
+        }
+      }, 80);
     };
-    const onMove = (e: TouchEvent) => {
-      if (mobileTouchStartX.current === null || mobileTouchStartY.current === null) return;
-      const dx = e.touches[0].clientX - mobileTouchStartX.current;
-      const dy = e.touches[0].clientY - mobileTouchStartY.current;
-      if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 10) e.preventDefault();
-    };
-    const onEnd = (e: TouchEvent) => {
-      if (mobileTouchStartX.current === null) return;
-      const dx = e.changedTouches[0].clientX - mobileTouchStartX.current;
-      mobileTouchStartX.current = null;
-      mobileTouchStartY.current = null;
-      if (Math.abs(dx) < 50) return;
-      setMobileWeekOffset(o => dx < 0 ? o + 1 : o - 1);
-    };
-
-    el.addEventListener("touchstart", onStart, { passive: true });
-    el.addEventListener("touchmove", onMove, { passive: false });
-    el.addEventListener("touchend", onEnd, { passive: true });
-    return () => {
-      el.removeEventListener("touchstart", onStart);
-      el.removeEventListener("touchmove", onMove);
-      el.removeEventListener("touchend", onEnd);
-    };
-  }, [isMobile]);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => { el.removeEventListener("scroll", onScroll); if (debounce) clearTimeout(debounce); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateList, currentYear, currentMonth]);
 
   // Load month lock state when month changes
   useEffect(() => {
@@ -1124,7 +1117,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const OFF_TYPES_SET = new Set(["휴무", "월차", "지정휴무", "결근"]);
 
   const getEmpMonthStats = (emp: Employee) => {
-    const dateSet = new Set(dateList);
+    const currentMonthPrefix = `${currentYear}-${monthStr}`;
+    const dateSet = new Set(emp.schedules.map(s => s.date).filter(d => d.startsWith(currentMonthPrefix)));
     const visibleSchedules = emp.schedules.filter(s => dateSet.has(s.date));
     const workDays = visibleSchedules.filter(s => s.type && !OFF_TYPES_SET.has(s.type)).length;
     let totalHours = 0;
@@ -1850,30 +1844,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               </div>
             )}
 
-            {/* Mobile 7-day week navigation */}
-            <div className="sm:hidden flex items-center gap-2 px-3 py-1.5 bg-indigo-50/60 border-b border-indigo-100 shrink-0">
-              <button
-                onClick={() => setMobileWeekOffset(o => o - 1)}
-                className="w-8 h-7 flex items-center justify-center bg-white border border-indigo-200 hover:bg-indigo-100 active:bg-indigo-200 rounded-lg text-indigo-600 transition cursor-pointer shrink-0 shadow-sm"
-                aria-label="이전 주"
-              >
-                <ChevronLeft size={15} />
-              </button>
-              <button
-                onClick={() => setMobileWeekOffset(0)}
-                className="flex-1 text-center text-[11px] text-indigo-600 font-bold py-1 hover:bg-indigo-100 rounded-lg transition cursor-pointer"
-              >
-                {mobileWeekOffset === 0 ? "오늘 기준 7일" : `${mobileDates[0].slice(5).replace("-", "/")} – ${mobileDates[6].slice(5).replace("-", "/")}`}
-              </button>
-              <button
-                onClick={() => setMobileWeekOffset(o => o + 1)}
-                className="w-8 h-7 flex items-center justify-center bg-white border border-indigo-200 hover:bg-indigo-100 active:bg-indigo-200 rounded-lg text-indigo-600 transition cursor-pointer shrink-0 shadow-sm"
-                aria-label="7일 이후"
-              >
-                <ChevronRight size={15} />
-              </button>
-            </div>
-
             {/* Admin quick-edit hint bar */}
             {isAdmin && (
               <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50/70 border-b border-indigo-100 shrink-0">
@@ -1940,7 +1910,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                         <th
                           ref={nameThRef}
                           className="text-center text-[10px] sm:text-[11px] font-bold border-r border-gray-200 border-b border-b-gray-200 sticky left-0 bg-gray-100 z-40 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1.5 sm:px-3"
-                          style={{ width: "80px", minWidth: "80px" }}
+                          style={{ width: "96px", minWidth: "96px" }}
                         >
                           <span className="hidden sm:inline">직원 성명</span>
                           <span className="sm:hidden">성명</span>
@@ -1960,7 +1930,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                               key={`day-num-${dateStr}`}
                               ref={isToday ? todayColRef : undefined}
                               onClick={() => setTimelineDate(fullDate)}
-                              className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-gray-200 w-[30px] sm:w-[44px] cursor-pointer hover:bg-indigo-100 hover:text-indigo-700 transition-colors ${headerClass} ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-40 relative" : ""}`}
+                              className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-gray-200 w-[40px] sm:w-[44px] cursor-pointer hover:bg-indigo-100 hover:text-indigo-700 transition-colors ${headerClass} ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-40 relative" : ""}`}
                               title={`${fullDate} 타임라인 보기`}
                             >
                               {dayNum}
@@ -1976,7 +1946,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       {/* Header Row 2: Day of Week Characters */}
                       <tr className="bg-gray-50 text-gray-500 select-none">
                         {/* Left spacing header matching Name column */}
-                        <th className="border-r border-b border-gray-200 sticky left-0 bg-gray-50 z-40 h-5 sm:h-6" style={{ minWidth: "80px" }}></th>
+                        <th className="border-r border-b border-gray-200 sticky left-0 bg-gray-50 z-40 h-5 sm:h-6" style={{ minWidth: "96px" }}></th>
 
                         {displayDates.map((dateStr) => {
                           const { dayWord, isToday } = getDayDetails(dateStr);
@@ -1989,7 +1959,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                           return (
                             <th
                               key={`day-name-${dateStr}`}
-                              className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-gray-200 w-[30px] sm:w-[44px] bg-gray-50 ${wordClass} ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-40 relative" : ""}`}
+                              className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-gray-200 w-[40px] sm:w-[44px] bg-gray-50 ${wordClass} ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-40 relative" : ""}`}
                             >
                               {dayWord}
                             </th>
@@ -2021,7 +1991,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                         >
 
                           {/* Column 1: Sticky Employee Name */}
-                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[25] group-hover:bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] min-w-[96px] sm:min-w-[112px] h-auto min-h-[54px] sm:min-h-[58px] p-0">
+                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[29] group-hover:bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] min-w-[96px] sm:min-w-[112px] h-auto min-h-[54px] sm:min-h-[58px] p-0" style={{ willChange: "transform" }}>
                             <div className="flex items-stretch h-full">
                               {/* Drag handle — desktop only */}
                               {isAdmin && (

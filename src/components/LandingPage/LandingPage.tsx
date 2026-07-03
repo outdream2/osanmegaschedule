@@ -69,7 +69,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [empError, setEmpError] = useState<string | null>(null);
   const [empLoading, setEmpLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(() => !!localStorage.getItem("megatown_remembered_phone"));
+  const [rememberMe, setRememberMe] = useState(true);
   const empNumberRef = useRef<HTMLInputElement>(null);
 
   // 거래처 로그인
@@ -412,104 +412,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             )}
           </div>
 
-          {/* ── 입고 알림 섹션 (항상 표시) ── */}
-          <div className="w-full mb-7">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0369a1, #0ea5e9)" }}>
-                <Package size={10} className="text-white" />
-              </div>
-              <span className="text-[11px] font-bold text-sky-600 uppercase tracking-widest">입고 알림</span>
-              <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #bae6fd, transparent)" }} />
-              {/* 알림 받기 버튼 */}
-              <button
-                onClick={handleAnonSubscribe}
-                disabled={pushLoading || pushSubscribed}
-                className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border transition-all cursor-pointer disabled:cursor-default"
-                style={pushSubscribed
-                  ? { background: "#f0fdf4", borderColor: "#86efac", color: "#166534" }
-                  : { background: "#eff6ff", borderColor: "#93c5fd", color: "#1e40af" }
-                }
-              >
-                {pushLoading ? (
-                  <div className="w-3 h-3 rounded-full border-2 border-blue-300 border-t-blue-600 animate-spin" />
-                ) : pushSubscribed ? (
-                  <BellOff size={10} />
-                ) : (
-                  <Bell size={10} />
-                )}
-                {pushSubscribed ? "알림 설정됨" : "알림 받기"}
-              </button>
-              {/* 입고 알림 작성 (level 3+) */}
-              {userLevel >= 3 && (
-                <button
-                  onClick={() => setShowCreateArrival(v => !v)}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border border-sky-200 bg-sky-50 text-sky-700 hover:bg-sky-100 transition cursor-pointer"
-                >
-                  <Plus size={10} />
-                  작성
-                </button>
-              )}
-            </div>
-
-            {/* 작성 폼 */}
-            {showCreateArrival && userLevel >= 3 && (
-              <form onSubmit={handleCreateArrival} className="mb-3 bg-white border border-sky-200 rounded-2xl p-4 shadow-sm flex flex-col gap-2">
-                <input
-                  type="text"
-                  value={newArrivalTitle}
-                  onChange={e => setNewArrivalTitle(e.target.value)}
-                  placeholder="입고 제목 (예: 광동제약 입고 완료)"
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-sky-400"
-                  maxLength={80}
-                  required
-                />
-                <textarea
-                  value={newArrivalBody}
-                  onChange={e => setNewArrivalBody(e.target.value)}
-                  placeholder="상세 내용 (선택)"
-                  rows={2}
-                  className="w-full border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 placeholder:text-slate-300 focus:outline-none focus:border-sky-400 resize-none"
-                  maxLength={200}
-                />
-                <div className="flex gap-2 justify-end">
-                  <button type="button" onClick={() => setShowCreateArrival(false)} className="px-3 py-1.5 text-xs text-slate-500 hover:text-slate-700 transition cursor-pointer">취소</button>
-                  <button
-                    type="submit"
-                    disabled={createLoading || !newArrivalTitle.trim()}
-                    className="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 disabled:bg-sky-200 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1"
-                  >
-                    {createLoading ? <div className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" /> : null}
-                    알림 발송
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* 알림 목록 */}
-            {arrivalsLoading ? (
-              <div className="text-xs text-slate-400 py-4 text-center">불러오는 중...</div>
-            ) : stockArrivals.length === 0 ? (
-              <div className="text-xs text-slate-400 py-4 text-center">등록된 입고 알림이 없습니다.</div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {stockArrivals.slice(0, 5).map(a => (
-                  <div key={a.id} className="bg-white border border-slate-200/80 rounded-xl px-4 py-3 shadow-sm flex items-start gap-3">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #7dd3fc" }}>
-                      <Package size={13} className="text-sky-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-slate-800 font-semibold text-sm leading-snug truncate">{a.title}</div>
-                      {a.body && <div className="text-slate-500 text-xs mt-0.5 leading-relaxed line-clamp-2">{a.body}</div>}
-                      <div className="text-slate-400 text-[11px] mt-1">
-                        {new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* ── 관리자 도구 (관리자 로그인 시에만 표시) ── */}
           {isManagerOrAdmin && (
             <div className="w-full mb-7">
@@ -846,6 +748,49 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
+          {/* ── 입고 알림 ── */}
+          <div className="w-full mb-6 mt-2">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0ea5e9, #38bdf8)" }}>
+                <Package size={10} className="text-white" />
+              </div>
+              <span className="text-[11px] font-bold text-sky-600 uppercase tracking-widest">입고 알림</span>
+              <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #bae6fd, transparent)" }} />
+              {!pushSubscribed && (
+                <button
+                  onClick={handleAnonSubscribe}
+                  disabled={pushLoading}
+                  className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold text-sky-600 border border-sky-200 bg-sky-50 hover:bg-sky-100 transition disabled:opacity-50 cursor-pointer"
+                >
+                  <Bell size={10} />
+                  알림 받기
+                </button>
+              )}
+              {pushSubscribed && (
+                <span className="flex items-center gap-1 text-[10px] text-emerald-500 font-semibold">
+                  <Bell size={10} /> 구독 중
+                </span>
+              )}
+            </div>
+            {arrivalsLoading ? (
+              <div className="text-slate-400 text-xs text-center py-3">불러오는 중...</div>
+            ) : stockArrivals.length === 0 ? (
+              <div className="text-slate-400 text-xs text-center py-3">입고 알림이 없습니다</div>
+            ) : (
+              <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden divide-y divide-slate-100 shadow-sm">
+                {stockArrivals.slice(0, 5).map(a => (
+                  <div key={a.id} className="flex items-center gap-2.5 px-3.5 py-2.5">
+                    <Package size={12} className="text-sky-500 shrink-0" />
+                    <span className="flex-1 text-sm font-medium text-slate-700 truncate">{a.title}</span>
+                    <span className="text-[11px] text-slate-400 shrink-0 whitespace-nowrap">
+                      {new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Footer */}
           <div className="flex items-center gap-4 mt-10 pt-6 border-t border-slate-200/60 w-full justify-center text-slate-400 text-[11px] font-medium">
             <span className="flex items-center gap-1.5"><MapPin size={11} />경기도 오산시 메가타운</span>
@@ -982,7 +927,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       value={vendorPhone}
                       onChange={(e) => { setVendorPhone(e.target.value); setVendorError(null); }}
                       placeholder="01012345678"
-                      className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-slate-900 text-sm font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-slate-200 bg-slate-50 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"}`}
+                      style={{ fontSize: "16px" }}
+                      className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-slate-900 font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-slate-200 bg-slate-50 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"}`}
                       autoComplete="username" disabled={vendorLoading}
                     />
                   </div>
@@ -996,7 +942,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       value={vendorPassword}
                       onChange={(e) => { setVendorPassword(e.target.value); setVendorError(null); }}
                       placeholder="비밀번호 입력"
-                      className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-slate-900 text-sm font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-slate-200 bg-slate-50 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"}`}
+                      style={{ fontSize: "16px" }}
+                      className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-slate-900 font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${vendorError ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100" : "border-2 border-slate-200 bg-slate-50 focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100"}`}
                       autoComplete="current-password" disabled={vendorLoading}
                     />
                     <button type="button" onClick={() => setShowVendorPassword((v) => !v)} className="absolute inset-y-0 right-4 flex items-center text-slate-400 hover:text-slate-600 transition cursor-pointer">
@@ -1111,7 +1058,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         value={empNumber}
                         onChange={(e) => { setEmpNumber(e.target.value); setEmpError(null); }}
                         placeholder="01012345678"
-                        className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-slate-900 text-sm font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${
+                        style={{ fontSize: "16px" }}
+                        className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-slate-900 font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${
                           empError
                             ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
                             : "border-2 border-slate-200 bg-slate-50 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
@@ -1136,7 +1084,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         value={empPassword}
                         onChange={(e) => { setEmpPassword(e.target.value); setEmpError(null); }}
                         placeholder="비밀번호 입력"
-                        className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-slate-900 text-sm font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${
+                        style={{ fontSize: "16px" }}
+                        className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-slate-900 font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${
                           empError
                             ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
                             : "border-2 border-slate-200 bg-slate-50 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"

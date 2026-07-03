@@ -185,6 +185,26 @@ router.post("/api/ocr-synonyms", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
+router.patch("/api/ocr-synonyms/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { prod_name_old, prod_name_new, product_code, supplier_old, supplier_new } = req.body ?? {};
+    if (!prod_name_old?.trim() || !product_code?.trim()) return res.status(400).json({ error: "prod_name_old, product_code 필요" });
+    const { data, error } = await supabase.from("ocr_synonyms")
+      .update({
+        prod_name_old: prod_name_old.trim().toLowerCase(),
+        prod_name_new: prod_name_new?.trim() || null,
+        product_code: product_code.trim(),
+        supplier_new: supplier_new?.trim() ? normSupplier(supplier_new.trim()) : null,
+        supplier_old: supplier_old?.trim() || null,
+      })
+      .eq("id", id).select().single();
+    if (error) throw new Error(error.message);
+    resetSynonymCache();
+    res.json({ synonym: data });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
 router.delete("/api/ocr-synonyms/:id", async (req, res) => {
   try {
     const { error } = await supabase.from("ocr_synonyms").delete().eq("id", Number(req.params.id));
@@ -227,6 +247,20 @@ router.post("/api/ocr-supplier-aliases", async (req, res) => {
     }
     resetSupplierAliasCache();
     res.json({ alias: result });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+router.patch("/api/ocr-supplier-aliases/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { alias, supplier_name } = req.body ?? {};
+    if (!alias?.trim() || !supplier_name?.trim()) return res.status(400).json({ error: "alias, supplier_name 필요" });
+    const { data, error } = await supabase.from("ocr_supplier_aliases")
+      .update({ alias: alias.trim(), supplier_name: supplier_name.trim() })
+      .eq("id", id).select().single();
+    if (error) throw new Error(error.message);
+    resetSupplierAliasCache();
+    res.json({ alias: data });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
