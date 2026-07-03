@@ -9,6 +9,8 @@ import sharp from "sharp";
  *
  * 실패 시 원본 반환 (오류가 OCR 자체를 막지 않도록)
  */
+const MAX_SHORT_SIDE = 1400; // px — Gemini vision이 인식하기에 충분하고 메모리 안전한 상한
+
 export async function preprocessImageForOcr(
   b64: string,
   _mimeType: string,
@@ -20,36 +22,28 @@ export async function preprocessImageForOcr(
     const w = meta.width  ?? 640;
     const h = meta.height ?? 480;
 
-    // 1. 업스케일: 최단 변이 1000px 미만이면 확대
-    const scale = Math.min(w, h) < 1000
-      ? Math.min(2.5, 1000 / Math.min(w, h))
+    // 업스케일: 최단 변이 900px 미만이면 확대. 단 MAX_SHORT_SIDE 이하로 제한
+    const shortSide = Math.min(w, h);
+    const scale = shortSide < 900
+      ? Math.min(1.5, Math.min(MAX_SHORT_SIDE, 900) / shortSide)
       : 1.0;
 
-    let base = sharp(inputBuf);
+    let pipeline = sharp(inputBuf, { sequentialRead: true });
     if (scale > 1.05) {
-      base = base.resize(Math.round(w * scale), Math.round(h * scale), { fit: "fill" });
+      pipeline = pipeline.resize(Math.round(w * scale), Math.round(h * scale), { fit: "fill" });
+    } else if (Math.max(w, h) > MAX_SHORT_SIDE * 2) {
+      // 이미 충분히 크면 오히려 축소해 메모리 절약
+      const ratio = (MAX_SHORT_SIDE * 2) / Math.max(w, h);
+      pipeline = pipeline.resize(Math.round(w * ratio), Math.round(h * ratio), { fit: "fill" });
     }
 
-    // 2. RGBA 픽셀 버퍼 취득 후 도장 제거
-    const { data, info } = await base.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
-
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i], g = data[i + 1], b = data[i + 2];
-      // 붉은 도장 판별: R이 G·B의 1.5배 이상이고 G·B < 110
-      if (r > 150 && g < 110 && b < 110 && r > g * 1.5 && r > b * 1.5) {
-        data[i] = data[i + 1] = data[i + 2] = 255; // 흰색으로 교체
-      }
-    }
-
-    // 3. 그레이스케일 → normalize → sharpen → JPEG 출력
-    const processed = await sharp(Buffer.from(data), {
-      raw: { width: info.width, height: info.height, channels: 4 },
-    })
-      .removeAlpha()
+    // raw 픽셀 조작 없이 Sharp 파이프라인만으로 처리 (메모리 절약)
+    // 그레이스케일 → normalize → sharpen → JPEG
+    const processed = await pipeline
       .grayscale()
       .normalize()
       .sharpen({ sigma: 1.0, m1: 1.2, m2: 0.5 })
-      .jpeg({ quality: 92 })
+      .jpeg({ quality: 88 })
       .toBuffer();
 
     return { b64: processed.toString("base64"), mimeType: "image/jpeg" };

@@ -32,7 +32,7 @@ import {
   Megaphone,
 } from "lucide-react";
 import type { AuthSession, AuthRole } from "../../types";
-import { NotificationBell } from "../NotificationBell";
+import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
@@ -64,6 +64,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [newArrivalBody, setNewArrivalBody] = useState("");
   const [createLoading, setCreateLoading] = useState(false);
 
+  const [unauthorizedToast, setUnauthorizedToast] = useState(false);
+
   const [empNumber, setEmpNumber] = useState(() => localStorage.getItem("megatown_remembered_phone") ?? "");
   const [empPassword, setEmpPassword] = useState("");
   const [empError, setEmpError] = useState<string | null>(null);
@@ -84,7 +86,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   useEffect(() => {
     fetch("/api/stock-arrivals")
       .then(r => r.ok ? r.json() : [])
-      .then(setStockArrivals)
+      .then((data: Array<{id: number; title: string; body?: string | null; created_at: string}>) =>
+        setStockArrivals([...data].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
+      )
       .catch(() => {})
       .finally(() => setArrivalsLoading(false));
     setPushSubscribed(localStorage.getItem("anon_push_subscribed") === "1");
@@ -324,6 +328,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     }
   };
 
+  const handleNavNavigate = (page: AppNavPage) => {
+    if (page === "landing") return;
+    const requiresManager = ["display", "requests", "leave", "scan", "ocr"].includes(page);
+    if (!authSession) {
+      setPendingPage("schedule");
+      return;
+    }
+    if (requiresManager && !isManagerOrAdmin) {
+      setUnauthorizedToast(true);
+      setTimeout(() => setUnauthorizedToast(false), 2500);
+      return;
+    }
+    onNavigate(page, authSession);
+  };
+
   const roleLabel = isSuperAdmin ? "최고관리자" : isManagerRole ? "관리자" : (authSession?.employeeName ?? "직원");
 
   // Permission check per menu
@@ -338,39 +357,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #f8faff 0%, #f1f5ff 40%, #f0fdf4 100%)" }}>
 
       {/* ── Header ── */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/70 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 sticky top-0 z-30" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.06), 0 2px 8px 0 rgba(15,23,42,0.04)" }}>
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center shadow-sm" style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}>
-            <Calendar size={14} className="text-white" />
-          </div>
-          <span className="font-black tracking-tight leading-none">
-            <span className="text-red-500 text-xl">OSAN</span>
-            <span className="text-slate-800 text-base"> MEGATOWN</span>
-          </span>
-        </div>
-
-        {isLoggedIn ? (
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border" style={{ background: "linear-gradient(135deg, #eef2ff, #e0e7ff)", borderColor: "#c7d2fe", color: "#4338ca" }}>
-              {isManagerOrAdmin ? <Shield size={11} /> : <User size={11} />}
-              <span className="max-w-[80px] truncate">{roleLabel}</span>
-            </div>
-            {!isVendor && <NotificationBell authSession={authSession} />}
+      <div className="sticky top-0 z-30">
+        <AppNavHeader
+          activePage="landing"
+          authSession={authSession}
+          onLogout={onLogout}
+          onNavigate={isVendor ? undefined : handleNavNavigate}
+          rightSlot={isVendor ? (
             <button
               onClick={onLogout}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 transition-all duration-150 cursor-pointer"
+              className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-gray-200 hover:border-rose-300 rounded-lg transition cursor-pointer"
             >
-              <LogOut size={11} />
+              <LogOut size={13} />
               <span className="hidden sm:inline">로그아웃</span>
             </button>
-          </div>
-        ) : (
-          <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-            <Lock size={11} />
-            <span className="hidden sm:inline">로그인 필요</span>
-          </div>
-        )}
-      </header>
+          ) : undefined}
+        />
+      </div>
 
       {/* ── Main content ── */}
       <div className="flex-1 flex flex-col items-center px-4 sm:px-6 relative overflow-hidden pt-8 pb-12">
@@ -542,24 +545,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </button>
                 )}
 
-                {/* 동의어 관리 — indigo (level 3+) */}
-                {userLevel >= 3 && (
-                  <button onClick={() => onNavigate("synonyms", authSession!)}
-                    className="group relative bg-white border border-slate-200/80 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,231,255,0.7) 0%, transparent 60%)" }} />
-                    <div className="relative">
-                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)", border: "1px solid #a5b4fc" }}>
-                        <BookOpen size={16} className="text-indigo-600 sm:hidden" /><BookOpen size={20} className="text-indigo-600 hidden sm:block" />
-                      </div>
-                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">동의어 관리</div>
-                      <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">OCR 상품명·공급사 보정 사전 관리</div>
-                      <div className="flex items-center gap-1 mt-2 text-indigo-600 text-xs font-bold">
-                        <span className="text-[11px] sm:text-xs">관리하기</span>
-                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                      </div>
-                    </div>
-                  </button>
-                )}
 
                 {/* 입고 알림 관리 — sky (level 3+) */}
                 {userLevel >= 3 && (
@@ -647,7 +632,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 </button>
 
-                {/* 점심 신청 — orange */}
+                {/* 점심 불참 — orange */}
                 <button onClick={() => onNavigate("lunch", authSession!)}
                   className="group relative bg-white border border-slate-200/80 hover:border-orange-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
@@ -655,8 +640,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffedd5, #fed7aa)", border: "1px solid #fdba74" }}>
                       <Utensils size={16} className="text-orange-500 sm:hidden" /><Utensils size={20} className="text-orange-500 hidden sm:block" />
                     </div>
-                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">점심 신청</div>
-                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">오늘의 점심 식사 신청</div>
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">점심 불참</div>
+                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">오늘의 점심 불참 신청</div>
                     <div className="flex items-center gap-1 mt-2 text-orange-500 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">신청하기</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
@@ -971,6 +956,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         </div>
       )}
 
+      {/* ── Unauthorized toast ── */}
+      {unauthorizedToast && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] px-5 py-2.5 bg-rose-600 text-white text-sm font-bold rounded-2xl shadow-xl pointer-events-none animate-in fade-in duration-150">
+          권한이 없습니다
+        </div>
+      )}
+
       {/* ── Auth modal ── */}
       {pendingPage && (
         <div
@@ -1026,14 +1018,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </svg>
                 </div>
                 <div>
-                  <div className="text-white/60 text-[10px] font-semibold tracking-widest uppercase mb-0.5">Osan Megatown</div>
-                  <div className="text-white font-black text-2xl leading-tight tracking-tight">오산메가타운</div>
-                  <div className="text-indigo-200 text-[11px] font-medium tracking-wide mt-0.5">약국 통합 관리 시스템</div>
+                  <div className="text-white font-black text-2xl leading-tight tracking-tight">오산 메가타운</div>
                 </div>
               </div>
-              <p className="relative text-indigo-200/70 text-xs font-medium">
-                직원 전용 · 로그인이 필요합니다
-              </p>
             </div>
 
             {/* ── Form area ── */}

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { Download, Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, FileSpreadsheet, Upload as UploadIcon, BookmarkPlus, BookOpen } from "lucide-react";
+import { Download, Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, FileSpreadsheet, Upload as UploadIcon, BookmarkPlus, BookOpen, Check } from "lucide-react";
 
 interface RawPage {
   page: number;
@@ -378,6 +378,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [nameSearchOpenRow,setNameSearchOpenRow] = useState<number | null>(null);
   const nameSearchDebounce = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
   const [restoredRows,     setRestoredRows     ] = useState<Set<number>>(new Set());
+  const [pendingSyn,       setPendingSyn        ] = useState<Record<number, { inputName: string; code: string; supplier?: string; name: string }>>({});
+  const [savedSynonymIds,  setSavedSynonymIds   ] = useState<Record<number, number>>({});
   const [cancelledAutoSyn, setCancelledAutoSyn ] = useState<Set<number>>(new Set());
   const [rawEditValues,    setRawEditValues    ] = useState<Record<number, string>>({});
   const rawSearchDebounce = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
@@ -562,7 +564,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         }),
       });
       if (res.ok) {
+        const json = await res.json().catch(() => ({}));
         setSavedSynonyms(prev => new Set([...prev, ri]));
+        if (json?.synonym?.id) setSavedSynonymIds(prev => ({ ...prev, [ri]: json.synonym.id }));
       } else {
         const err = await res.json().catch(() => ({}));
         console.warn("[ocr-synonyms] 저장 실패:", err?.error ?? res.status);
@@ -571,6 +575,21 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       console.warn("[ocr-synonyms] 네트워크 오류:", e);
     }
   }, []);
+
+  const deleteSynonymForRow = useCallback(async (ri: number) => {
+    const id = savedSynonymIds[ri];
+    if (!id) return;
+    try {
+      await fetch(`/api/ocr-synonyms/${id}`, { method: "DELETE" });
+    } catch (e) {
+      console.warn("[ocr-synonyms] 삭제 오류:", e);
+    }
+    setSavedSynonyms(prev => { const s = new Set(prev); s.delete(ri); return s; });
+    setSavedSynonymIds(prev => { const s = { ...prev }; delete s[ri]; return s; });
+    setOverrides(prev => ({ ...prev, [ri]: undefined as unknown as string }));
+    setSelectedCands(prev => { const s = { ...prev }; delete s[ri]; return s; });
+    setPendingSyn(prev => { const s = { ...prev }; delete s[ri]; return s; });
+  }, [savedSynonymIds]);
 
   // 공급사 이름 보정: OCR 오인식 공급사명 → 정확한 공급사명 저장 (ocr_supplier_aliases)
   const saveSupplierAlias = useCallback(async (ri: number, aliasOld: string, supplierNew: string) => {
@@ -1550,56 +1569,66 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               onChange={e => {
                                 setOverrides(prev => ({ ...prev, [ri]: e.target.value }));
                                 setSavedSynonyms(prev => { const s = new Set(prev); s.delete(ri); return s; });
+                                setPendingSyn(prev => { const s = { ...prev }; delete s[ri]; return s; });
                                 searchByName(ri, e.target.value, currentSupp || undefined);
                               }}
-                              onBlur={() => {
-                                setTimeout(() => setNameSearchOpenRow(r => r === ri ? null : r), 150);
-                                const currentVal = (overrides[ri] ?? effMatch.name).trim();
-                                if (!currentVal || !effMatch?.code) return;
-                                if (restoredRows.has(ri)) {
-                                  // 복원 후 재입력: name_old=item.input, name_new=currentVal
-                                  setTimeout(() => {
-                                    if (window.confirm(`"${currentVal}" → 동의어 DB에 등록하시겠습니까?`)) {
-                                      saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined, currentVal);
-                                      setRestoredRows(prev => { const s = new Set(prev); s.delete(ri); return s; });
-                                    }
-                                  }, 160);
-                                } else if (!savedSynonyms.has(ri) && item.input) {
-                                  saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined, effMatch.name);
-                                }
-                              }} />
+                              onBlur={() => setTimeout(() => setNameSearchOpenRow(r => r === ri ? null : r), 150)}
+                            />
                             {!bcMatch && score < 100 && <span className={`shrink-0 font-bold ${scoreColor(score)}`}>{score}%</span>}
                             {effMatch.code && <span className="text-gray-300 shrink-0 text-[10px]">{effMatch.code}</span>}
-                            {!bcMatch && score < 100 && (
+                            {/* 확인 버튼: 드롭다운에서 선택 후 동의어 저장 */}
+                            {pendingSyn[ri] && (
                               <button
-                                title={savedSynonyms.has(ri) ? "한번 더 클릭하면 복원" : `"${item.input}" → 동의어로 저장`}
+                                onMouseDown={e => e.preventDefault()}
                                 onClick={() => {
-                                  if (savedSynonyms.has(ri)) {
-                                    // 북마크 취소 → 원본으로 복원 후 재입력 대기
-                                    setSavedSynonyms(prev => { const s = new Set(prev); s.delete(ri); return s; });
-                                    setOverrides(prev => ({ ...prev, [ri]: item.input }));
-                                    setSelectedCands(prev => { const s = { ...prev }; delete s[ri]; return s; });
-                                    setRestoredRows(prev => new Set([...prev, ri]));
-                                  } else {
-                                    saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined, effMatch.name);
-                                  }
+                                  const p = pendingSyn[ri];
+                                  saveSynonym(ri, p.inputName, p.code, p.supplier, p.name);
+                                  setPendingSyn(prev => { const s = { ...prev }; delete s[ri]; return s; });
+                                  setRestoredRows(prev => { const s = new Set(prev); s.delete(ri); return s; });
                                 }}
-                                className={`shrink-0 transition-colors ${savedSynonyms.has(ri) ? "text-emerald-500 hover:text-rose-400" : "text-gray-300 hover:text-indigo-500"}`}
+                                className="shrink-0 flex items-center gap-0.5 text-[10px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded px-1.5 py-0.5 transition cursor-pointer"
+                                title="동의어 DB에 저장"
                               >
-                                {savedSynonyms.has(ri) ? <BookmarkCheck size={12} /> : <Bookmark size={12} />}
+                                <Check size={10} /> 확인
                               </button>
+                            )}
+                            {/* 북마크: 저장됨 표시 + X(DB 삭제) */}
+                            {!bcMatch && score < 100 && !pendingSyn[ri] && (
+                              savedSynonyms.has(ri) ? (
+                                <span className="shrink-0 flex items-center gap-0.5">
+                                  <BookmarkCheck size={12} className="text-emerald-500" />
+                                  <button
+                                    title="동의어 DB에서 삭제"
+                                    onClick={() => deleteSynonymForRow(ri)}
+                                    className="text-gray-300 hover:text-rose-500 transition-colors cursor-pointer"
+                                  >
+                                    <X size={11} />
+                                  </button>
+                                </span>
+                              ) : (
+                                <button
+                                  title={`"${item.input}" → 동의어로 저장`}
+                                  onClick={() => saveSynonym(ri, item.input, effMatch.code, currentSupp || undefined, effMatch.name)}
+                                  className="shrink-0 text-gray-300 hover:text-indigo-500 transition-colors cursor-pointer"
+                                >
+                                  <Bookmark size={12} />
+                                </button>
+                              )
                             )}
                             {nameSearchOpenRow === ri && (nameSearchResults[ri]?.length ?? 0) > 0 && (
                               <div className="absolute top-full left-0 z-30 mt-0.5 bg-white border border-indigo-200 rounded-xl shadow-xl max-h-48 overflow-y-auto min-w-[220px] w-full">
                                 {nameSearchResults[ri].map((p, pi) => (
                                   <button key={pi} onMouseDown={e => e.preventDefault()}
-                                    onClick={() => handleSelectCandidate(ri, {
-                                      code: p.product_code ?? "", name: p.product_name ?? "",
-                                      spec: p.spec ?? "", score: 100,
-                                      masterPrice: p.purchase_price ?? null, salePrice: p.sale_price ?? null,
-                                      profitRate: p.profit_rate ?? null, expiryDate: p.expiry_date ?? null,
-                                      supplier: p.supplier ?? null,
-                                    }, item.input, currentSupp)}
+                                    onClick={() => {
+                                      setOverrides(prev => ({ ...prev, [ri]: p.product_name ?? "" }));
+                                      setNameSearchOpenRow(null);
+                                      setPendingSyn(prev => ({ ...prev, [ri]: {
+                                        inputName: item.input,
+                                        code: p.product_code ?? "",
+                                        supplier: currentSupp || undefined,
+                                        name: p.product_name ?? "",
+                                      }}));
+                                    }}
                                     className="flex items-center gap-2 w-full text-left px-3 py-1.5 hover:bg-indigo-50 transition text-[11px] border-b border-gray-50 last:border-0">
                                     <span className="flex-1 font-semibold text-gray-800 truncate">{p.product_name}</span>
                                     {p.spec && <span className="text-gray-400 truncate max-w-[60px] shrink-0">{p.spec}</span>}
@@ -1611,27 +1640,46 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             )}
                           </div>
                         ) : (
-                          <div className="flex-1 relative">
+                          <div className="flex items-center gap-1.5 flex-1 relative">
                             <input
-                              className="w-full font-semibold text-rose-500 bg-transparent border-b border-rose-200 hover:border-rose-300 focus:border-rose-400 outline-none truncate placeholder-rose-300 italic"
+                              className="flex-1 font-semibold text-rose-500 bg-transparent border-b border-rose-200 hover:border-rose-300 focus:border-rose-400 outline-none truncate placeholder-rose-300 italic"
                               value={overrides[ri] ?? ""} placeholder="직접 입력..."
                               onChange={e => {
                                 setOverrides(prev => ({ ...prev, [ri]: e.target.value }));
                                 setSavedSynonyms(prev => { const s = new Set(prev); s.delete(ri); return s; });
+                                setPendingSyn(prev => { const s = { ...prev }; delete s[ri]; return s; });
                                 searchByName(ri, e.target.value, currentSupp || undefined);
                               }}
-                              onBlur={() => setTimeout(() => setNameSearchOpenRow(r => r === ri ? null : r), 150)} />
+                              onBlur={() => setTimeout(() => setNameSearchOpenRow(r => r === ri ? null : r), 150)}
+                            />
+                            {pendingSyn[ri] && (
+                              <button
+                                onMouseDown={e => e.preventDefault()}
+                                onClick={() => {
+                                  const p = pendingSyn[ri];
+                                  saveSynonym(ri, p.inputName, p.code, p.supplier, p.name);
+                                  setPendingSyn(prev => { const s = { ...prev }; delete s[ri]; return s; });
+                                }}
+                                className="shrink-0 flex items-center gap-0.5 text-[10px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded px-1.5 py-0.5 transition cursor-pointer"
+                                title="동의어 DB에 저장"
+                              >
+                                <Check size={10} /> 확인
+                              </button>
+                            )}
                             {nameSearchOpenRow === ri && (nameSearchResults[ri]?.length ?? 0) > 0 && (
                               <div className="absolute top-full left-0 z-30 mt-0.5 bg-white border border-indigo-200 rounded-xl shadow-xl max-h-48 overflow-y-auto min-w-[220px] w-full">
                                 {nameSearchResults[ri].map((p, pi) => (
                                   <button key={pi} onMouseDown={e => e.preventDefault()}
-                                    onClick={() => handleSelectCandidate(ri, {
-                                      code: p.product_code ?? "", name: p.product_name ?? "",
-                                      spec: p.spec ?? "", score: 100,
-                                      masterPrice: p.purchase_price ?? null, salePrice: p.sale_price ?? null,
-                                      profitRate: p.profit_rate ?? null, expiryDate: p.expiry_date ?? null,
-                                      supplier: p.supplier ?? null,
-                                    }, item.input, currentSupp)}
+                                    onClick={() => {
+                                      setOverrides(prev => ({ ...prev, [ri]: p.product_name ?? "" }));
+                                      setNameSearchOpenRow(null);
+                                      setPendingSyn(prev => ({ ...prev, [ri]: {
+                                        inputName: item.input,
+                                        code: p.product_code ?? "",
+                                        supplier: currentSupp || undefined,
+                                        name: p.product_name ?? "",
+                                      }}));
+                                    }}
                                     className="flex items-center gap-2 w-full text-left px-3 py-1.5 hover:bg-indigo-50 transition text-[11px] border-b border-gray-50 last:border-0">
                                     <span className="flex-1 font-semibold text-gray-800 truncate">{p.product_name}</span>
                                     {p.spec && <span className="text-gray-400 truncate max-w-[60px] shrink-0">{p.spec}</span>}

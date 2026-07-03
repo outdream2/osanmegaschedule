@@ -161,7 +161,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               <ChevronLeft size={15} />
             </button>
             <div>
-              <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wide">점심 안먹기</p>
+              <p className="text-[11px] text-gray-400 font-semibold uppercase tracking-wide">점심 불참</p>
               <h1 className="text-xl font-black text-gray-900">{dateLabel(selectedDate)}</h1>
             </div>
             <button
@@ -270,7 +270,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               disabled={submitting}
               className="w-full flex items-center justify-center gap-2 py-5 rounded-2xl text-base font-black bg-gray-100 hover:bg-gray-200 active:scale-[0.97] text-gray-700 shadow-sm transition cursor-pointer disabled:opacity-50"
             >
-              <UtensilsCrossed size={18} className="text-rose-400" /> 점심 안먹기
+              <UtensilsCrossed size={18} className="text-rose-400" /> 점심 불참 신청
             </button>
           </div>
         ) : null}

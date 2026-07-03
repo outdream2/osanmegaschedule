@@ -19,7 +19,7 @@ const PAGE_LABELS: { key: keyof PagePermissions; label: string; desc: string }[]
   { key: "ocr",         label: "거래명세서 OCR",  desc: "PDF 거래명세서 자동 추출" },
   { key: "upload",      label: "상품 목록 관리",  desc: "xlsx 파일 업로드" },
   { key: "reservation", label: "방문예약",        desc: "상담 및 방문 일정 예약" },
-  { key: "lunch",       label: "점심 신청",       desc: "오늘의 점심 식사 신청" },
+  { key: "lunch",       label: "점심 불참",       desc: "오늘의 점심 불참 신청" },
   { key: "stockcheck",  label: "재고 점검",       desc: "매장 내 의약품 재고 점검" },
 ];
 

@@ -156,6 +156,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     if (lvl >= 2) setIsAdmin(true);
     else if (lvl === 1) setIsAdmin(false);
   }, [authSession?.level]);
+
+  // Edit mode — must be explicitly activated to prevent accidental cell changes
+  const [editMode, setEditMode] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [loginId, setLoginId] = useState("");
   const [loginPw, setLoginPw] = useState("");
@@ -577,6 +580,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     pendingScrollDateRef.current = `${year}-${String(month).padStart(2, '0')}-01`;
     setCurrentYear(year);
     setCurrentMonth(month);
+    setEditMode(false);
   };
 
   const handleNextMonth = () => {
@@ -586,6 +590,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     pendingScrollDateRef.current = `${year}-${String(month).padStart(2, '0')}-01`;
     setCurrentYear(year);
     setCurrentMonth(month);
+    setEditMode(false);
   };
 
   const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
@@ -1767,6 +1772,23 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               ))}
             </select>
 
+            {isAdmin && !isMonthLocked && (
+              <button
+                onClick={() => setEditMode(m => !m)}
+                title={editMode ? "편집 모드 종료" : "편집 모드 활성화 — 셀 클릭으로 스케줄 변경 가능"}
+                className={`flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
+                  editMode
+                    ? "border-emerald-400 bg-emerald-500 text-white shadow-sm"
+                    : "border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-500"
+                }`}
+              >
+                {editMode
+                  ? <><span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" /><span>편집중</span></>
+                  : <><Edit size={12} /><span>편집</span></>
+                }
+              </button>
+            )}
+
             {isAdmin && (
               <button
                 onClick={handleToggleMonthLock}
@@ -2090,7 +2112,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   dateStr={fullDate}
                                   employeeId={emp.id}
                                   onUpdate={(isEmployeeMode || isManagerRole || isMonthLocked) ? (async () => {}) : handleCellUpdate}
-                                  isAdmin={isAdmin && !isMonthLocked}
+                                  isAdmin={isAdmin && !isMonthLocked && editMode}
                                   isPharmacist={emp.position === "약사"}
                                   typeHoursMap={getTypeHoursMap(emp.position === "약사")}
                                   scheduleTypes={settingsScheduleTypes.map((e) => ({ value: e.type, label: e.type }))}

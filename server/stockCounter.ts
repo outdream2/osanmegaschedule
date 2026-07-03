@@ -1,4 +1,5 @@
-import * as ort from "onnxruntime-node";
+// onnxruntime-node는 top-level import 하지 않음.
+// 모델 파일이 실제로 존재할 때만 동적 import해서 메모리 낭비를 막는다.
 import sharp from "sharp";
 import path from "path";
 import fs from "fs";
@@ -14,7 +15,10 @@ const INPUT_SIZE  = 640;
 const CONF_THRESHOLD = 0.25;
 const IOU_THRESHOLD  = 0.45;
 
-let session: ort.InferenceSession | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let ort: any = null; // onnxruntime-node — loaded lazily
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let session: any = null; // ort.InferenceSession
 let loadAttempted = false;
 
 async function convertPtToOnnx(): Promise<boolean> {
@@ -54,11 +58,16 @@ export async function loadStockCountModel(): Promise<boolean> {
   }
 
   if (!fs.existsSync(ONNX_PATH)) {
+    // 모델 파일 없음 — onnxruntime-node 로드 자체를 건너뜀 (메모리 절약)
     console.log("[StockCounter] 모델 없음 — server/models/에 best.pt 또는 best.onnx를 넣어주세요");
     return false;
   }
 
   try {
+    // 모델 파일이 실제로 있을 때만 onnxruntime-node를 동적 import
+    if (!ort) {
+      ort = await import("onnxruntime-node");
+    }
     session = await ort.InferenceSession.create(ONNX_PATH);
     console.log("[StockCounter] ONNX 모델 로드 완료:", ONNX_PATH);
     return true;
@@ -124,7 +133,7 @@ export async function countObjectsInImage(b64: string): Promise<DetectionResult>
 
   const inputData = await preprocessBase64(b64);
   const tensor = new ort.Tensor("float32", inputData, [1, 3, INPUT_SIZE, INPUT_SIZE]);
-  const feeds: Record<string, ort.Tensor> = { [session.inputNames[0]]: tensor };
+  const feeds: Record<string, unknown> = { [session.inputNames[0]]: tensor };
   const out = await session.run(feeds);
 
   // YOLOv8 export 포맷: output0 shape [1, 4+numClasses, numAnchors]

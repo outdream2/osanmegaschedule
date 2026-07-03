@@ -410,7 +410,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
     ["order",     "발주요청",   orderTabCount,     "text-red-600",    "border-red-500"],
     ["mismatch",  "구역불일치", mismatchTabCount,  "text-orange-600", "border-orange-500"],
     ["inventory", "실재고차이", inventoryTabCount, "text-purple-600", "border-purple-500"],
-    ["lunch",     "점심신청",   lunchTabCount,     "text-emerald-600","border-emerald-500"],
+    ["lunch",     "점심불참",   lunchTabCount,     "text-emerald-600","border-emerald-500"],
   ];
 
   // 공통 체크박스
@@ -825,14 +825,14 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
           </div>
         )}
 
-        {/* ── 점심신청 ── */}
+        {/* ── 점심불참 ── */}
         {tab === "lunch" && (
           <div className="flex flex-col gap-3">
             {/* 요약 뱃지 */}
             <div className="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-3 shadow-sm">
               <div className="flex items-center gap-2">
                 <Utensils size={14} className="text-emerald-500" />
-                <span className="text-xs font-bold text-gray-700">오늘의 점심 신청 현황</span>
+                <span className="text-xs font-bold text-gray-700">오늘의 점심 불참 현황</span>
                 <span className="text-[10px] text-gray-400">({lunchRequests.length}명 응답)</span>
               </div>
               <div className="flex items-center gap-2">

@@ -199,6 +199,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
 
   // Synonym management state
   const [synTab, setSynTab] = useState<"product" | "supplier">("product");
+  const [prodListView, setProdListView] = useState<"prodname" | "supplier">("prodname");
   const [productSynonyms, setProductSynonyms] = useState<ProductSynonym[]>([]);
   const [supplierAliases, setSupplierAliases] = useState<SupplierAlias[]>([]);
   const [synLoading, setSynLoading] = useState(false);
@@ -512,11 +513,11 @@ return (
               {/* 추가 폼 */}
               <p className="text-xs font-bold text-indigo-700 flex items-center gap-1.5"><Plus size={12} /> 상품명 동의어 추가</p>
               <div className="grid grid-cols-2 gap-2">
-                <input className="col-span-2 border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400" placeholder="OCR 오인식 상품명 (필수)" value={addProdOld} onChange={e => setAddProdOld(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400" placeholder="보정 상품명" value={addProdNew} onChange={e => setAddProdNew(e.target.value)} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400" placeholder="상품코드 (필수)" value={addProdCode} onChange={e => setAddProdCode(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400" placeholder="공급사명 (보정 후)" value={addProdSuppNew} onChange={e => setAddProdSuppNew(e.target.value)} />
-                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400" placeholder="공급사명 (OCR 인식)" value={addProdSuppOld} onChange={e => setAddProdSuppOld(e.target.value)} />
+                <input className="col-span-2 border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400 font-mono" placeholder="상품코드 (필수)" value={addProdCode} onChange={e => setAddProdCode(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
+                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400" placeholder="상품명(OCR) — 필수" value={addProdOld} onChange={e => setAddProdOld(e.target.value)} />
+                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-indigo-400" placeholder="상품명(보정후)" value={addProdNew} onChange={e => setAddProdNew(e.target.value)} />
+                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-sky-400" placeholder="공급사명(OCR)" value={addProdSuppOld} onChange={e => setAddProdSuppOld(e.target.value)} />
+                <input className="border border-gray-200 rounded-lg px-3 py-1.5 text-xs outline-none focus:border-sky-400" placeholder="공급사명(보정후)" value={addProdSuppNew} onChange={e => setAddProdSuppNew(e.target.value)} onKeyDown={e => e.key === "Enter" && addProductSynonym()} />
               </div>
               <button onClick={addProductSynonym} disabled={!addProdOld.trim() || !addProdCode.trim() || synSaving} className="self-end px-4 py-1.5 text-xs font-bold bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg transition disabled:opacity-40 cursor-pointer">추가</button>
             </div>
@@ -535,50 +536,94 @@ return (
         {/* 리스트 테이블 */}
         {synTab === "product" ? (
           <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+            {/* 상품명 / 공급사명 뷰 토글 */}
+            <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-100 bg-gray-50">
+              <button
+                onClick={() => setProdListView("prodname")}
+                className={`px-3 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${prodListView === "prodname" ? "bg-indigo-100 text-indigo-700" : "text-gray-400 hover:text-gray-700"}`}
+              >
+                상품명
+              </button>
+              <button
+                onClick={() => setProdListView("supplier")}
+                className={`px-3 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${prodListView === "supplier" ? "bg-sky-100 text-sky-700" : "text-gray-400 hover:text-gray-700"}`}
+              >
+                공급사명
+              </button>
+              <span className="ml-auto text-[11px] text-gray-400">{productSynonyms.length}건</span>
+            </div>
             <table className="w-full text-xs border-collapse">
               <thead>
-                <tr className="bg-indigo-50 border-b border-indigo-100">
-                  <th className="px-3 py-2 text-left font-bold text-indigo-800">OCR 상품명</th>
-                  <th className="px-3 py-2 text-left font-bold text-indigo-800">보정 상품명</th>
-                  <th className="px-3 py-2 text-left font-bold text-indigo-800">상품코드</th>
-                  <th className="px-3 py-2 text-left font-bold text-indigo-800">공급사</th>
-                  <th className="px-2 py-2 w-16" />
-                </tr>
+                {prodListView === "prodname" ? (
+                  <tr className="bg-indigo-50 border-b border-indigo-100">
+                    <th className="px-3 py-2 text-left font-bold text-indigo-800 font-mono w-28">상품코드</th>
+                    <th className="px-3 py-2 text-left font-bold text-indigo-800">상품명(OCR)</th>
+                    <th className="px-3 py-2 text-left font-bold text-indigo-800">상품명(보정후)</th>
+                    <th className="px-2 py-2 w-14" />
+                  </tr>
+                ) : (
+                  <tr className="bg-sky-50 border-b border-sky-100">
+                    <th className="px-3 py-2 text-left font-bold text-sky-800 font-mono w-28">상품코드</th>
+                    <th className="px-3 py-2 text-left font-bold text-sky-800">공급사명(OCR)</th>
+                    <th className="px-3 py-2 text-left font-bold text-sky-800">공급사명(보정후)</th>
+                    <th className="px-2 py-2 w-14" />
+                  </tr>
+                )}
               </thead>
               <tbody>
-                {productSynonyms.length === 0 && <tr><td colSpan={5} className="px-3 py-8 text-center text-gray-400">{synLoading ? "불러오는 중..." : "등록된 상품명 동의어 없음"}</td></tr>}
+                {productSynonyms.length === 0 && (
+                  <tr><td colSpan={4} className="px-3 py-8 text-center text-gray-400">{synLoading ? "불러오는 중..." : "등록된 상품명 동의어 없음"}</td></tr>
+                )}
                 {productSynonyms.map(s => {
                   const isEditing = editingProdId === s.id && editingProd;
                   return (
                     <tr key={s.id} className={`border-t border-gray-50 ${isEditing ? "bg-indigo-50/40" : "hover:bg-gray-50"}`}>
                       {isEditing ? (
+                        prodListView === "prodname" ? (
+                          <>
+                            <td className="px-2 py-1.5"><input className={`${cellCls} font-mono`} value={editingProd.product_code} onChange={e => setEditingProd(p => p && ({ ...p, product_code: e.target.value }))} /></td>
+                            <td className="px-2 py-1.5"><input className={cellCls} value={editingProd.prod_name_old} onChange={e => setEditingProd(p => p && ({ ...p, prod_name_old: e.target.value }))} /></td>
+                            <td className="px-2 py-1.5"><input className={cellCls} value={editingProd.prod_name_new} onChange={e => setEditingProd(p => p && ({ ...p, prod_name_new: e.target.value }))} placeholder="(없음)" /></td>
+                            <td className="px-2 py-1.5">
+                              <div className="flex items-center gap-1">
+                                <button onClick={saveEditProd} disabled={editSaving || !editingProd.prod_name_old.trim() || !editingProd.product_code.trim()} className="p-1 text-indigo-500 hover:text-indigo-700 cursor-pointer disabled:opacity-40"><Check size={13} /></button>
+                                <button onClick={cancelEditProd} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer"><X size={13} /></button>
+                              </div>
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="px-2 py-1.5"><input className={`${cellClsSky} font-mono`} value={editingProd.product_code} onChange={e => setEditingProd(p => p && ({ ...p, product_code: e.target.value }))} /></td>
+                            <td className="px-2 py-1.5"><input className={cellClsSky} value={editingProd.supplier_old} onChange={e => setEditingProd(p => p && ({ ...p, supplier_old: e.target.value }))} placeholder="(없음)" /></td>
+                            <td className="px-2 py-1.5"><input className={cellClsSky} value={editingProd.supplier_new} onChange={e => setEditingProd(p => p && ({ ...p, supplier_new: e.target.value }))} placeholder="(없음)" /></td>
+                            <td className="px-2 py-1.5">
+                              <div className="flex items-center gap-1">
+                                <button onClick={saveEditProd} disabled={editSaving || !editingProd.prod_name_old.trim() || !editingProd.product_code.trim()} className="p-1 text-sky-500 hover:text-sky-700 cursor-pointer disabled:opacity-40"><Check size={13} /></button>
+                                <button onClick={cancelEditProd} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer"><X size={13} /></button>
+                              </div>
+                            </td>
+                          </>
+                        )
+                      ) : prodListView === "prodname" ? (
                         <>
-                          <td className="px-2 py-1.5"><input className={cellCls} value={editingProd.prod_name_old} onChange={e => setEditingProd(p => p && ({ ...p, prod_name_old: e.target.value }))} /></td>
-                          <td className="px-2 py-1.5"><input className={cellCls} value={editingProd.prod_name_new} onChange={e => setEditingProd(p => p && ({ ...p, prod_name_new: e.target.value }))} placeholder="(없음)" /></td>
-                          <td className="px-2 py-1.5"><input className={cellCls} value={editingProd.product_code} onChange={e => setEditingProd(p => p && ({ ...p, product_code: e.target.value }))} /></td>
-                          <td className="px-2 py-1.5">
-                            <input className={`${cellCls} mb-1`} value={editingProd.supplier_new} onChange={e => setEditingProd(p => p && ({ ...p, supplier_new: e.target.value }))} placeholder="보정 공급사" />
-                            <input className={cellCls} value={editingProd.supplier_old} onChange={e => setEditingProd(p => p && ({ ...p, supplier_old: e.target.value }))} placeholder="OCR 공급사" />
-                          </td>
-                          <td className="px-2 py-1.5">
-                            <div className="flex items-center gap-1">
-                              <button onClick={saveEditProd} disabled={editSaving || !editingProd.prod_name_old.trim() || !editingProd.product_code.trim()} className="p-1 text-indigo-500 hover:text-indigo-700 cursor-pointer disabled:opacity-40"><Check size={13} /></button>
-                              <button onClick={cancelEditProd} className="p-1 text-gray-400 hover:text-gray-600 cursor-pointer"><X size={13} /></button>
+                          <td className="px-3 py-2.5 text-gray-500 font-mono text-[11px] leading-snug">{s.product_code}</td>
+                          <td className="px-3 py-2.5 font-semibold text-gray-700 leading-snug">{s.prod_name_old}</td>
+                          <td className="px-3 py-2.5 text-indigo-700 leading-snug">{s.prod_name_new ?? <span className="text-gray-300">—</span>}</td>
+                          <td className="px-2 py-2.5">
+                            <div className="flex items-center gap-0.5">
+                              <button onClick={() => startEditProd(s)} className="p-1 text-gray-300 hover:text-indigo-500 cursor-pointer"><Pencil size={13} /></button>
+                              <button onClick={() => deleteProductSynonym(s.id)} className="p-1 text-gray-300 hover:text-rose-500 cursor-pointer"><Trash2 size={13} /></button>
                             </div>
                           </td>
                         </>
                       ) : (
                         <>
-                          <td className="px-3 py-2 font-semibold text-gray-700">{s.prod_name_old}</td>
-                          <td className="px-3 py-2 text-indigo-700">{s.prod_name_new ?? <span className="text-gray-300">—</span>}</td>
-                          <td className="px-3 py-2 text-gray-500 font-mono text-[11px]">{s.product_code}</td>
-                          <td className="px-3 py-2 text-[11px]">
-                            {s.supplier_new ? <span className="text-sky-600 font-semibold">{s.supplier_new}</span> : <span className="text-gray-300">—</span>}
-                            {s.supplier_old && <span className="text-gray-300 ml-1">← {s.supplier_old}</span>}
-                          </td>
-                          <td className="px-2 py-2">
+                          <td className="px-3 py-2.5 text-gray-500 font-mono text-[11px] leading-snug">{s.product_code}</td>
+                          <td className="px-3 py-2.5 text-gray-500 leading-snug">{s.supplier_old ?? <span className="text-gray-300">—</span>}</td>
+                          <td className="px-3 py-2.5 text-sky-700 font-semibold leading-snug">{s.supplier_new ?? <span className="text-gray-300">—</span>}</td>
+                          <td className="px-2 py-2.5">
                             <div className="flex items-center gap-0.5">
-                              <button onClick={() => startEditProd(s)} className="p-1 text-gray-300 hover:text-indigo-500 cursor-pointer"><Pencil size={13} /></button>
+                              <button onClick={() => startEditProd(s)} className="p-1 text-gray-300 hover:text-sky-500 cursor-pointer"><Pencil size={13} /></button>
                               <button onClick={() => deleteProductSynonym(s.id)} className="p-1 text-gray-300 hover:text-rose-500 cursor-pointer"><Trash2 size={13} /></button>
                             </div>
                           </td>
