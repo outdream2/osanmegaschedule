@@ -128,25 +128,20 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     <header className="bg-white border-b border-[#e2e8f0] shrink-0 shadow-sm">
       {/* ── Top row: logo + desktop tabs + right actions ── */}
       <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
-        {/* Left: logo (clickable → landing) + desktop nav tabs */}
+        {/* Left: logo (non-clickable) + desktop nav tabs */}
         <div className="flex items-center gap-2 min-w-0">
-          <button
-            onClick={onBack ?? undefined}
-            disabled={!onBack}
-            className={`flex items-center gap-1.5 shrink-0 rounded-lg px-1 py-0.5 transition ${onBack ? "cursor-pointer hover:bg-indigo-50" : "cursor-default"}`}
-            title={onBack ? "랜딩페이지로 이동" : undefined}
-          >
+          <div className="flex items-center gap-1.5 shrink-0 px-1 py-0.5">
             <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
               <Home size={14} className="text-white" />
             </div>
-            <span className="font-black tracking-tight leading-none">
+            <span className="font-black tracking-tight leading-none select-none">
               <span className="text-red-500 text-lg sm:text-xl">OSAN</span>
               <span className="text-gray-900 text-sm sm:text-base"> MEGATOWN</span>
             </span>
-          </button>
+          </div>
 
           {/* Desktop nav tabs — all tabs, hidden on mobile */}
-          <div className="hidden sm:flex items-center gap-1 ml-3 bg-gray-100 rounded-xl p-1">
+          <div className="hidden sm:flex items-center gap-1 ml-2 bg-gray-100 rounded-xl p-1">
             {visibleTabs.map(renderDesktopTab)}
           </div>
         </div>
