@@ -84,6 +84,23 @@ router.post("/api/stock-arrivals", async (req, res) => {
   }
 });
 
+router.delete("/api/stock-arrivals/:id", async (req, res) => {
+  const { employeeId } = req.body ?? {};
+  const id = Number(req.params.id);
+  if (!id) return res.status(400).json({ error: "id required" });
+  try {
+    if (employeeId) {
+      const { data: emp } = await supabase.from("employees").select("level").eq("id", employeeId).maybeSingle();
+      if ((emp?.level ?? 0) < 3) return res.status(403).json({ error: "Level 3+ required" });
+    }
+    const { error } = await supabase.from("stock_arrivals").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    return res.json({ ok: true });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 router.post("/api/anon-push-subscribe", async (req, res) => {
   const { subscription } = req.body ?? {};
   if (!subscription?.endpoint) return res.status(400).json({ error: "subscription with endpoint required" });

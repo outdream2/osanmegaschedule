@@ -28,13 +28,15 @@ import {
   Bell,
   BellOff,
   Plus,
+  BookOpen,
+  Megaphone,
 } from "lucide-react";
 import type { AuthSession, AuthRole } from "../../types";
 import { NotificationBell } from "../NotificationBell";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
-  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck", auth?: AuthSession) => void;
+  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals", auth?: AuthSession) => void;
   onLogout: () => void;
   onAuthOnly?: (auth: AuthSession) => void;
 }
@@ -381,8 +383,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
           {/* ── Hero brand area ── */}
           <div className="w-full mb-7 px-1">
-            <p className="text-[11px] text-slate-400 font-medium mb-0.5">오산 메가타운 약국</p>
-            <h1 className="text-slate-900 font-black text-xl sm:text-2xl tracking-tight leading-none">통합 관리 시스템</h1>
             {isLoggedIn && authSession?.employeeName && (
               <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border"
                 style={
@@ -640,6 +640,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </button>
                 )}
 
+                {/* 동의어 관리 — indigo (level 3+) */}
+                {userLevel >= 3 && (
+                  <button onClick={() => onNavigate("synonyms", authSession!)}
+                    className="group relative bg-white border border-slate-200/80 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,231,255,0.7) 0%, transparent 60%)" }} />
+                    <div className="relative">
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)", border: "1px solid #a5b4fc" }}>
+                        <BookOpen size={16} className="text-indigo-600 sm:hidden" /><BookOpen size={20} className="text-indigo-600 hidden sm:block" />
+                      </div>
+                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">동의어 관리</div>
+                      <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">OCR 상품명·공급사 보정 사전 관리</div>
+                      <div className="flex items-center gap-1 mt-2 text-indigo-600 text-xs font-bold">
+                        <span className="text-[11px] sm:text-xs">관리하기</span>
+                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </div>
+                  </button>
+                )}
+
+                {/* 입고 알림 관리 — sky (level 3+) */}
+                {userLevel >= 3 && (
+                  <button onClick={() => onNavigate("stockarrivals", authSession!)}
+                    className="group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,242,254,0.7) 0%, transparent 60%)" }} />
+                    <div className="relative">
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #7dd3fc" }}>
+                        <Megaphone size={16} className="text-sky-600 sm:hidden" /><Megaphone size={20} className="text-sky-600 hidden sm:block" />
+                      </div>
+                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">입고 알림 관리</div>
+                      <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">입고 알림 작성·삭제 및 전체 목록</div>
+                      <div className="flex items-center gap-1 mt-2 text-sky-600 text-xs font-bold">
+                        <span className="text-[11px] sm:text-xs">관리하기</span>
+                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </div>
+                  </button>
+                )}
+
               </div>
             </div>
           )}
@@ -744,7 +782,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <Package size={26} className="text-white" />
                     </div>
                     <div className="text-left">
-                      <div className="text-white/70 text-[11px] font-bold tracking-widest uppercase mb-0.5">오산 메가타운 약국</div>
                       <div className="text-white font-black text-xl sm:text-2xl tracking-tight leading-tight">재고 확인</div>
                       <div className="text-blue-200 text-xs sm:text-sm mt-1 font-medium">원하는 약품·제품의 재고를 바로 확인하세요</div>
                     </div>
