@@ -17,7 +17,7 @@ for (let h = 10; h <= 22; h++) HOUR_SLOTS.push(`${String(h).padStart(2, "0")}:00
 const LUNCH_SLOTS = ["11:00", "11:30", "12:00", "12:30", "13:00", "13:30"]; // 11:00~14:00
 const REST_SLOTS  = ["15:30", "16:00", "16:30", "17:00", "17:30"];           // 15:30~18:00
 
-const ZONE_ROWS = ["매장", "카운터"] as const;
+const ZONE_ROWS = ["카운터", "매장"] as const;
 type ZoneRow = typeof ZONE_ROWS[number];
 
 const TYPE_ORDER: Record<string, number> = { "오픈": 0, "오전반차": 1, "미들": 2, "오후반차": 3, "마감": 4 };
@@ -381,16 +381,22 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             ))}
           </div>
           {/* Zone rows */}
-          {ZONE_ROWS.map(zone => (
+          {ZONE_ROWS.map(zone => {
+            const isCounter = zone === "카운터";
+            return (
             <div key={zone} className="flex items-stretch mb-0.5">
               <div className="w-12 shrink-0 flex items-center">
-                <span className="text-[9px] font-black text-sky-700 uppercase tracking-wide">{zone}</span>
+                <span className={`text-[9px] font-black uppercase tracking-wide ${isCounter ? "text-rose-600" : "text-sky-700"}`}>{zone}</span>
               </div>
               {ZONE_SLOTS.map(slot => {
                 const assignedHere = (zoneMap[zone] ?? {})[slot] ?? [];
                 return (
                   <div key={slot}
-                    className="flex-1 border border-sky-200 min-h-[26px] p-0.5 bg-white/60 hover:bg-sky-100 transition cursor-default flex flex-wrap gap-0.5 items-start"
+                    className={`flex-1 border min-h-[26px] p-0.5 bg-white/60 transition cursor-default flex flex-wrap gap-0.5 items-start ${
+                      isCounter
+                        ? "border-rose-200 hover:bg-rose-50"
+                        : "border-sky-200 hover:bg-sky-100"
+                    }`}
                     onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
                     onDrop={e => { e.preventDefault(); if (draggingId !== null) tryDropToZone(zone, slot, draggingId); }}
                   >
@@ -411,7 +417,8 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                 );
               })}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
