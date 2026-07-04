@@ -291,21 +291,44 @@ BreakTimeline.displayName = "BreakTimeline";
 // ─── Sub-component: ZoneSection ──────────────────────────────────────────────
 interface ZoneSectionProps {
   zoneMap: ZoneMap;
-  workers: WorkerEntry[];       // drag-source chips (tab-filtered)
-  allWorkers: WorkerEntry[];    // all workers for slot display lookup
+  workers: WorkerEntry[];
+  allWorkers: WorkerEntry[];
   onDropToZone: (zone: ZoneRow, slot: string, empId: number) => void;
   onRemoveFromZone: (zone: ZoneRow, slot: string, empId: number) => void;
   onApplyMonth: () => void;
   typeTones: Record<string, TypeTone>;
   workRanges: Record<number, { start: number; end: number } | null>;
-  lunchSlotMap: SlotMap; // to block zone assignment during lunch time
+  // lunch
+  lunchSlotMap: SlotMap;
+  shiftedLunchSlots: string[];
+  lunchOffset: number;
+  onShiftLunchOffset: (delta: number) => void;
+  onDropToLunch: (slot: string, empId: number) => void;
+  onRemoveFromLunch: (slot: string, empId: number) => void;
+  onApplyLunchMonth: () => void;
+  // rest
+  restSlotMap: SlotMap;
+  shiftedRestSlots: string[];
+  restOffset: number;
+  onShiftRestOffset: (delta: number) => void;
+  onDropToRest: (slot: string, empId: number) => void;
+  onRemoveFromRest: (slot: string, empId: number) => void;
+  onApplyRestMonth: () => void;
 }
 
 // Zone section uses HOUR_SLOTS as column keys (slice off the last end-boundary slot)
 const ZONE_SLOTS = HOUR_SLOTS.slice(0, -1); // 10:00~21:00 = 12 columns
 
+/** Returns the shifted slot string for a given hour and minute offset within that hour (0 or 30). */
+function subSlotKey(hourSlot: string, minuteOffset: 0 | 30): string {
+  const h = parseInt(hourSlot.split(":")[0], 10);
+  return `${String(h).padStart(2, "0")}:${minuteOffset === 0 ? "00" : "30"}`;
+}
+
 const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
-  zoneMap, workers, allWorkers, onDropToZone, onRemoveFromZone, onApplyMonth, typeTones, workRanges, lunchSlotMap,
+  zoneMap, workers, allWorkers, onDropToZone, onRemoveFromZone, onApplyMonth, typeTones, workRanges,
+  lunchSlotMap, shiftedLunchSlots, lunchOffset, onShiftLunchOffset, onDropToLunch, onRemoveFromLunch, onApplyLunchMonth,
+  restSlotMap,  shiftedRestSlots,  restOffset,  onShiftRestOffset,  onDropToRest,  onRemoveFromRest,  onApplyRestMonth,
 }) => {
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [confirmMonth, setConfirmMonth] = useState(false);
@@ -314,35 +337,28 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
     const slotHour = parseInt(slot.split(":")[0], 10);
     const slotStart = slotHour * 60;
     const slotEnd = slotStart + 60;
-
-    // 출근시간 체크
     const range = workRanges[empId];
     if (range && (slotEnd <= range.start || slotStart >= range.end)) {
       alert("출근 시간이 아니어서 배정할 수 없습니다.");
       return;
     }
-
-    // 점심시간 체크: 해당 직원이 이 시간대에 점심 배정돼 있으면 차단
-    const lunchConflict = Object.entries(lunchSlotMap).some(([lunchSlot, ids]) => {
+    const lunchConflict = Object.entries(lunchSlotMap).some(([ls, ids]) => {
       if (!ids.includes(empId)) return false;
-      const [lh, lm] = lunchSlot.split(":").map(Number);
-      const lunchStart = lh * 60 + lm;
-      const lunchEnd = lunchStart + 30;
-      return lunchStart < slotEnd && lunchEnd > slotStart;
+      const [lh, lm] = ls.split(":").map(Number);
+      const ls0 = lh * 60 + lm;
+      return ls0 < slotEnd && ls0 + 30 > slotStart;
     });
-    if (lunchConflict) {
-      alert("점심시간이 배정된 시간대입니다.");
-      return;
-    }
-
+    if (lunchConflict) { alert("점심시간이 배정된 시간대입니다."); return; }
     onDropToZone(zone, slot, empId);
   }, [workRanges, lunchSlotMap, onDropToZone]);
 
   const assignedIds = useMemo(() => {
     const ids = new Set<number>();
     ZONE_ROWS.forEach(z => (Object.values(zoneMap[z] ?? {}) as number[][]).forEach(arr => arr.forEach(id => ids.add(id))));
+    (Object.values(lunchSlotMap) as number[][]).forEach(arr => arr.forEach(id => ids.add(id)));
+    (Object.values(restSlotMap) as number[][]).forEach(arr => arr.forEach(id => ids.add(id)));
     return ids;
-  }, [zoneMap]);
+  }, [zoneMap, lunchSlotMap, restSlotMap]);
 
   const handleDragStart = useCallback((e: React.DragEvent, id: number) => {
     e.dataTransfer.effectAllowed = "move";
@@ -350,13 +366,54 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
   }, []);
   const handleDragEnd = useCallback(() => setDraggingId(null), []);
 
+  // Render a half-hour sub-cell for break rows (점심/휴게)
+  const renderBreakSubCell = (
+    slotKey: string,
+    isActive: boolean,
+    slotMap: SlotMap,
+    theme: { border: string; bg: string; hover: string; label: string },
+    onDrop: (slot: string, id: number) => void,
+    onRemove: (slot: string, id: number) => void,
+  ) => {
+    if (!isActive) return <div className={`flex-1 bg-slate-50/20 border-r last:border-r-0 ${theme.border}`} />;
+    const assigned = slotMap[slotKey] ?? [];
+    const minLabel = slotKey.slice(3); // "00" or "30"
+    return (
+      <div
+        className={`flex-1 flex flex-col gap-0.5 p-0.5 border-r last:border-r-0 ${theme.border} ${theme.bg} ${theme.hover} transition min-h-[26px]`}
+        onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+        onDrop={e => { e.preventDefault(); if (draggingId !== null) onDrop(slotKey, draggingId); }}
+      >
+        <span className={`text-[7px] font-bold text-center leading-none ${theme.label}`}>:{minLabel}</span>
+        {assigned.map(empId => {
+          const w = allWorkers.find(ww => ww.emp.id === empId);
+          if (!w) return null;
+          const c = typeTones[w.schedule.type] ?? DEFAULT_TONE;
+          return (
+            <button key={empId} onClick={() => onRemove(slotKey, empId)}
+              title="클릭하여 제거"
+              style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }}
+              className="px-0.5 py-px rounded text-[7px] font-bold cursor-pointer border hover:opacity-60 transition leading-none">
+              {w.emp.name}
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const lunchTheme = { border: "border-yellow-200", bg: "bg-yellow-50/60", hover: "hover:bg-yellow-100", label: "text-yellow-500" };
+  const restTheme  = { border: "border-violet-200", bg: "bg-violet-50/60", hover: "hover:bg-violet-100", label: "text-violet-400" };
+
+  const offsetLabel = (off: number) => off === 0 ? "기본" : `${off > 0 ? "+" : ""}${off}분`;
+
   return (
     <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
       {/* Header */}
       <div className="flex items-center justify-between mb-2.5">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-sky-400" />
-          <span className="text-[11px] font-black text-sky-800">매장구역 배정</span>
+          <span className="text-[11px] font-black text-sky-800">구역 · 점심 · 휴게 배정</span>
           {assignedIds.size > 0 && (
             <span className="text-[10px] font-semibold text-sky-700 opacity-70">{assignedIds.size}명 배정됨</span>
           )}
@@ -364,7 +421,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
         {confirmMonth ? (
           <div className="flex items-center gap-1">
             <span className="text-[10px] text-slate-500">이 달 전체에 적용?</span>
-            <button onClick={() => { onApplyMonth(); setConfirmMonth(false); }}
+            <button onClick={() => { onApplyMonth(); onApplyLunchMonth(); onApplyRestMonth(); setConfirmMonth(false); }}
               className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500 text-white hover:bg-indigo-600 cursor-pointer">예</button>
             <button onClick={() => setConfirmMonth(false)}
               className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer">취소</button>
@@ -377,57 +434,111 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
         )}
       </div>
 
-      {/* Zone grid */}
+      {/* Unified grid */}
       <div className="overflow-x-auto">
-        <div style={{ minWidth: "560px" }}>
+        <div style={{ minWidth: "600px" }}>
           {/* Hour header */}
           <div className="flex mb-0.5">
-            <div className="w-12 shrink-0" />
+            <div className="w-14 shrink-0" />
             {ZONE_SLOTS.map(slot => (
               <div key={slot} className="flex-1 text-center">
                 <span className="text-[8px] font-bold text-sky-600">{slot}</span>
               </div>
             ))}
           </div>
-          {/* Zone rows */}
+
+          {/* Zone rows: 카운터 / 매장 */}
           {ZONE_ROWS.map(zone => {
             const isCounter = zone === "카운터";
             return (
-            <div key={zone} className="flex items-stretch mb-0.5">
-              <div className="w-12 shrink-0 flex items-center">
-                <span className={`text-[9px] font-black uppercase tracking-wide ${isCounter ? "text-rose-600" : "text-sky-700"}`}>{zone}</span>
+              <div key={zone} className="flex items-stretch mb-0.5">
+                <div className="w-14 shrink-0 flex items-center">
+                  <span className={`text-[9px] font-black tracking-wide ${isCounter ? "text-rose-600" : "text-sky-700"}`}>{zone}</span>
+                </div>
+                {ZONE_SLOTS.map(slot => {
+                  const assignedHere = (zoneMap[zone] ?? {})[slot] ?? [];
+                  return (
+                    <div key={slot}
+                      className={`flex-1 border min-h-[26px] p-0.5 bg-white/60 transition cursor-default flex flex-wrap gap-0.5 items-start ${
+                        isCounter ? "border-rose-200 hover:bg-rose-50" : "border-sky-200 hover:bg-sky-100"
+                      }`}
+                      onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                      onDrop={e => { e.preventDefault(); if (draggingId !== null) tryDropToZone(zone, slot, draggingId); }}
+                    >
+                      {assignedHere.map(empId => {
+                        const w = allWorkers.find(ww => ww.emp.id === empId);
+                        if (!w) return null;
+                        const c = typeTones[w.schedule.type] ?? DEFAULT_TONE;
+                        return (
+                          <button key={empId} onClick={() => onRemoveFromZone(zone, slot, empId)}
+                            title="클릭하여 제거"
+                            style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }}
+                            className="px-1 py-px rounded text-[8px] font-bold cursor-pointer border hover:opacity-60 transition">
+                            {w.emp.name}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
               </div>
-              {ZONE_SLOTS.map(slot => {
-                const assignedHere = (zoneMap[zone] ?? {})[slot] ?? [];
-                return (
-                  <div key={slot}
-                    className={`flex-1 border min-h-[26px] p-0.5 bg-white/60 transition cursor-default flex flex-wrap gap-0.5 items-start ${
-                      isCounter
-                        ? "border-rose-200 hover:bg-rose-50"
-                        : "border-sky-200 hover:bg-sky-100"
-                    }`}
-                    onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
-                    onDrop={e => { e.preventDefault(); if (draggingId !== null) tryDropToZone(zone, slot, draggingId); }}
-                  >
-                    {assignedHere.map(empId => {
-                      const w = allWorkers.find(ww => ww.emp.id === empId);
-                      if (!w) return null;
-                      const c = typeTones[w.schedule.type] ?? DEFAULT_TONE;
-                      return (
-                        <button key={empId} onClick={() => onRemoveFromZone(zone, slot, empId)}
-                          title="클릭하여 제거"
-                          style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }}
-                          className="px-1 py-px rounded text-[8px] font-bold cursor-pointer border hover:opacity-60 transition">
-                          {w.emp.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
             );
           })}
+
+          {/* Divider */}
+          <div className="h-px bg-sky-200/60 my-1" />
+
+          {/* 점심 row */}
+          <div className="flex items-stretch mb-0.5">
+            <div className="w-14 shrink-0 flex flex-col justify-center gap-0.5">
+              <span className="text-[9px] font-black text-yellow-700">점심</span>
+              <div className="flex items-center gap-0.5">
+                <button type="button" onClick={() => onShiftLunchOffset(-30)} disabled={lunchOffset <= -60}
+                  className="w-4 h-4 flex items-center justify-center text-[9px] font-bold rounded bg-white border border-slate-200 text-slate-500 disabled:opacity-30 cursor-pointer">−</button>
+                <span className="text-[8px] font-mono text-slate-400 leading-none">{offsetLabel(lunchOffset)}</span>
+                <button type="button" onClick={() => onShiftLunchOffset(30)} disabled={lunchOffset >= 60}
+                  className="w-4 h-4 flex items-center justify-center text-[9px] font-bold rounded bg-white border border-slate-200 text-slate-500 disabled:opacity-30 cursor-pointer">+</button>
+              </div>
+            </div>
+            {ZONE_SLOTS.map(slot => {
+              const k0 = subSlotKey(slot, 0);
+              const k30 = subSlotKey(slot, 30);
+              const hasAny = shiftedLunchSlots.includes(k0) || shiftedLunchSlots.includes(k30);
+              if (!hasAny) return <div key={slot} className="flex-1 border border-transparent min-h-[26px]" />;
+              return (
+                <div key={slot} className="flex-1 flex border border-yellow-200 min-h-[26px]">
+                  {renderBreakSubCell(k0,  shiftedLunchSlots.includes(k0),  lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch)}
+                  {renderBreakSubCell(k30, shiftedLunchSlots.includes(k30), lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch)}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* 휴게 row */}
+          <div className="flex items-stretch">
+            <div className="w-14 shrink-0 flex flex-col justify-center gap-0.5">
+              <span className="text-[9px] font-black text-violet-700">휴게</span>
+              <div className="flex items-center gap-0.5">
+                <button type="button" onClick={() => onShiftRestOffset(-30)} disabled={restOffset <= -60}
+                  className="w-4 h-4 flex items-center justify-center text-[9px] font-bold rounded bg-white border border-slate-200 text-slate-500 disabled:opacity-30 cursor-pointer">−</button>
+                <span className="text-[8px] font-mono text-slate-400 leading-none">{offsetLabel(restOffset)}</span>
+                <button type="button" onClick={() => onShiftRestOffset(30)} disabled={restOffset >= 60}
+                  className="w-4 h-4 flex items-center justify-center text-[9px] font-bold rounded bg-white border border-slate-200 text-slate-500 disabled:opacity-30 cursor-pointer">+</button>
+              </div>
+            </div>
+            {ZONE_SLOTS.map(slot => {
+              const k0 = subSlotKey(slot, 0);
+              const k30 = subSlotKey(slot, 30);
+              const hasAny = shiftedRestSlots.includes(k0) || shiftedRestSlots.includes(k30);
+              if (!hasAny) return <div key={slot} className="flex-1 border border-transparent min-h-[26px]" />;
+              return (
+                <div key={slot} className="flex-1 flex border border-violet-200 min-h-[26px]">
+                  {renderBreakSubCell(k0,  shiftedRestSlots.includes(k0),  restSlotMap, restTheme, onDropToRest, onRemoveFromRest)}
+                  {renderBreakSubCell(k30, shiftedRestSlots.includes(k30), restSlotMap, restTheme, onDropToRest, onRemoveFromRest)}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -877,8 +988,8 @@ export const DayTimelineModal: React.FC<Props> = ({
 
           <div className="mx-4 h-px bg-slate-100" />
 
-          {/* ── 매장구역 배정 섹션 ── */}
-          <div className="px-4 py-3">
+          {/* ── 구역 · 점심 · 휴게 배정 섹션 ── */}
+          <div className="px-4 py-3 pb-5">
             <ZoneSection
               zoneMap={zoneSlots}
               workers={tabWorkers}
@@ -889,44 +1000,19 @@ export const DayTimelineModal: React.FC<Props> = ({
               typeTones={typeTones}
               workRanges={workRanges}
               lunchSlotMap={lunchSlots}
-            />
-          </div>
-
-          <div className="mx-4 h-px bg-slate-100" />
-
-          {/* ── 점심시간 섹션 ── */}
-          <div className="px-4 py-3">
-            <BreakTimeline
-              kind="lunch"
-              slots={shiftedLunchSlots}
-              slotMap={lunchSlots}
-              workers={tabWorkers}
-              allWorkers={workers}
-              onApplyMonth={applyLunchToMonth}
-              onDropToSlot={dropToLunchSlot}
-              onRemoveFromSlot={removeFromLunchSlot}
-              typeTones={typeTones}
-              offset={lunchOffset}
-              onShiftOffset={handleLunchShiftOffset}
-            />
-          </div>
-
-          <div className="mx-4 h-px bg-slate-100" />
-
-          {/* ── 휴게시간 섹션 ── */}
-          <div className="px-4 py-3 pb-5">
-            <BreakTimeline
-              kind="rest"
-              slots={shiftedRestSlots}
-              slotMap={restSlots}
-              workers={tabWorkers}
-              allWorkers={workers}
-              onApplyMonth={applyRestToMonth}
-              onDropToSlot={dropToRestSlot}
-              onRemoveFromSlot={removeFromRestSlot}
-              typeTones={typeTones}
-              offset={restOffset}
-              onShiftOffset={handleRestShiftOffset}
+              shiftedLunchSlots={shiftedLunchSlots}
+              lunchOffset={lunchOffset}
+              onShiftLunchOffset={handleLunchShiftOffset}
+              onDropToLunch={dropToLunchSlot}
+              onRemoveFromLunch={removeFromLunchSlot}
+              onApplyLunchMonth={applyLunchToMonth}
+              restSlotMap={restSlots}
+              shiftedRestSlots={shiftedRestSlots}
+              restOffset={restOffset}
+              onShiftRestOffset={handleRestShiftOffset}
+              onDropToRest={dropToRestSlot}
+              onRemoveFromRest={removeFromRestSlot}
+              onApplyRestMonth={applyRestToMonth}
             />
           </div>
 

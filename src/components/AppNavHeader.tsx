@@ -72,7 +72,12 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   const isEmployee = userLevel === 1;
   const isPrivileged = userLevel >= 2;
 
-  const visibleTabs = TABS.filter((t) => !t.managerOnly || isPrivileged);
+  const visibleTabs = TABS.filter((t) => {
+    if (t.key === "landing") return true;
+    if (!authSession) return false;
+    if (t.managerOnly) return isPrivileged;
+    return true;
+  });
 
   const renderDesktopTab = (tab: TabDef) => {
     const Icon = tab.icon;
