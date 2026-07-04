@@ -391,6 +391,11 @@ function subSlotKey(hourSlot: string, minuteOffset: 0 | 30): string {
 
 const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
+type CellPicker =
+  | { type: "zone"; zone: ZoneRow; slot: string }
+  | { type: "lunch"; slot: string }
+  | { type: "rest"; slot: string };
+
 const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
   zoneMap, workers, allWorkers, onDropToZone, onRemoveFromZone, typeTones, workRanges,
   currentDow, onSaveToDow,
@@ -401,6 +406,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
   const [touchDraggingId, setTouchDraggingId] = useState<number | null>(null);
   const [selectedDows, setSelectedDows] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
+  const [cellPicker, setCellPicker] = useState<CellPicker | null>(null);
 
   const tryDropToZone = useCallback((zone: ZoneRow, slot: string, empId: number) => {
     const slotHour = parseInt(slot.split(":")[0], 10);
@@ -490,9 +496,10 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
     return (
       <div
         {...dataAttr}
-        className={`flex-1 flex flex-col gap-0.5 p-0.5 border-r last:border-r-0 ${theme.border} ${theme.bg} ${theme.hover} transition min-h-[36px]`}
+        className={`flex-1 flex flex-col gap-0.5 p-0.5 border-r last:border-r-0 ${theme.border} ${theme.bg} ${theme.hover} transition min-h-[36px] cursor-pointer`}
         onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
         onDrop={e => { e.preventDefault(); if (draggingId !== null) onDrop(slotKey, draggingId); }}
+        onClick={() => setCellPicker({ type: dropKind, slot: slotKey })}
       >
         <span className={`text-[10px] font-bold text-center leading-none ${theme.label}`}>:{minLabel}</span>
         {assigned.map(empId => {
@@ -594,18 +601,20 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                     <div key={slot}
                       data-drop-zone={zone}
                       data-drop-slot={slot}
-                      className={`flex-1 border min-h-[36px] p-0.5 bg-white/60 transition cursor-default flex flex-wrap gap-0.5 items-start ${
+                      className={`flex-1 border min-h-[36px] p-0.5 bg-white/60 transition cursor-pointer flex flex-wrap gap-0.5 items-start ${
                         isCounter ? "border-rose-200 hover:bg-rose-50" : "border-sky-200 hover:bg-sky-100"
                       }`}
                       onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
                       onDrop={e => { e.preventDefault(); if (draggingId !== null) tryDropToZone(zone, slot, draggingId); }}
+                      onClick={() => setCellPicker({ type: "zone", zone, slot })}
                     >
                       {assignedHere.map(empId => {
                         const w = allWorkers.find(ww => ww.emp.id === empId);
                         if (!w) return null;
                         const c = typeTones[w.schedule.type] ?? DEFAULT_TONE;
                         return (
-                          <button key={empId} onClick={() => onRemoveFromZone(zone, slot, empId)}
+                          <button key={empId}
+                            onClick={e => { e.stopPropagation(); onRemoveFromZone(zone, slot, empId); }}
                             title="클릭하여 제거"
                             style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }}
                             className="px-1 py-px rounded text-[11px] font-bold cursor-pointer border hover:opacity-60 transition">
@@ -691,6 +700,103 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           onTouchDragEnd={handleTouchDragEnd}
         />
       </div>
+
+      {/* ── 셀 탭 팝업 (바텀시트) ── */}
+      {cellPicker && (() => {
+        const isZone   = cellPicker.type === "zone";
+        const isLunch  = cellPicker.type === "lunch";
+        const slot     = cellPicker.slot;
+        const zone     = isZone ? (cellPicker as { type: "zone"; zone: ZoneRow; slot: string }).zone : undefined;
+
+        const title = isZone
+          ? `${zone} · ${slot}`
+          : isLunch
+          ? `점심 · ${slot}`
+          : `휴게 · ${slot}`;
+
+        const isAssigned = (empId: number) => {
+          if (isZone && zone) return ((zoneMap[zone] ?? {})[slot] ?? []).includes(empId);
+          if (isLunch)        return (lunchSlotMap[slot] ?? []).includes(empId);
+          return               (restSlotMap[slot] ?? []).includes(empId);
+        };
+
+        const toggle = (empId: number) => {
+          if (isAssigned(empId)) {
+            if (isZone && zone)  onRemoveFromZone(zone, slot, empId);
+            else if (isLunch)    onRemoveFromLunch(slot, empId);
+            else                 onRemoveFromRest(slot, empId);
+          } else {
+            if (isZone && zone)  tryDropToZone(zone, slot, empId);
+            else if (isLunch)    onDropToLunch(slot, empId);
+            else                 onDropToRest(slot, empId);
+          }
+        };
+
+        return (
+          <>
+            <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setCellPicker(null)} />
+            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl flex flex-col"
+              style={{ maxHeight: "65vh" }}>
+              {/* Header */}
+              <div className={`flex items-center justify-between px-4 py-3 border-b ${
+                isZone && zone === "카운터" ? "bg-rose-50 border-rose-200" :
+                isZone ? "bg-sky-50 border-sky-200" :
+                isLunch ? "bg-yellow-50 border-yellow-200" :
+                "bg-violet-50 border-violet-200"
+              }`}>
+                <span className={`font-black text-base ${
+                  isZone && zone === "카운터" ? "text-rose-700" :
+                  isZone ? "text-sky-700" :
+                  isLunch ? "text-yellow-700" : "text-violet-700"
+                }`}>{title}</span>
+                <button onClick={() => setCellPicker(null)}
+                  className="text-slate-400 hover:text-slate-600 text-xl font-bold cursor-pointer px-1">✕</button>
+              </div>
+              {/* Worker list */}
+              <div className="overflow-y-auto flex-1">
+                {allWorkers.length === 0 && (
+                  <div className="text-center text-slate-400 text-sm py-8">근무자 없음</div>
+                )}
+                {allWorkers.map(({ emp, schedule }) => {
+                  const assigned = isAssigned(emp.id);
+                  const c = typeTones[schedule.type] ?? DEFAULT_TONE;
+                  return (
+                    <button key={emp.id}
+                      onClick={() => toggle(emp.id)}
+                      className={`w-full flex items-center gap-3 px-5 py-3.5 border-b border-slate-100 transition active:bg-slate-100 cursor-pointer ${
+                        assigned ? "bg-indigo-50" : "bg-white hover:bg-slate-50"
+                      }`}
+                    >
+                      {/* Check indicator */}
+                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                        assigned ? "bg-indigo-500 border-indigo-500" : "border-slate-300"
+                      }`}>
+                        {assigned && <span className="text-white text-xs font-black">✓</span>}
+                      </div>
+                      {/* Name + type */}
+                      <div className="flex flex-col items-start gap-0.5 min-w-0">
+                        <span className="font-bold text-sm text-slate-800">{emp.name}</span>
+                        <span className="text-xs px-1.5 py-px rounded-full font-semibold"
+                          style={{ backgroundColor: c.chipBg, color: c.chipText }}>{schedule.type}</span>
+                      </div>
+                      {assigned && (
+                        <span className="ml-auto text-[11px] font-bold text-rose-400">탭해서 제거</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {/* Footer */}
+              <div className="px-4 py-3 border-t border-slate-100">
+                <button onClick={() => setCellPicker(null)}
+                  className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-xl cursor-pointer transition">
+                  완료
+                </button>
+              </div>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 });
