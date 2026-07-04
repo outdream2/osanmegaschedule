@@ -1082,6 +1082,19 @@ export const DayTimelineModal: React.FC<Props> = ({
 
   // ── 요일별 템플릿 DB 저장 ─────────────────────────────────────────────────
   const saveTemplateToDow = useCallback(async (saveDow: number) => {
+    // Pre-write FIRST so navigating to another date immediately shows data
+    const cur = new Date();
+    cur.setHours(0, 0, 0, 0);
+    while (cur.getDay() !== saveDow) cur.setDate(cur.getDate() + 1);
+    for (let i = 0; i < 4; i++) {
+      const d = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
+      localStorage.setItem(`tl_zone_slots_${d}`,  JSON.stringify(zoneSlots));
+      localStorage.setItem(`tl_lunch_slots_${d}`, JSON.stringify(lunchSlots));
+      localStorage.setItem(`tl_rest_slots_${d}`,  JSON.stringify(restSlots));
+      localStorage.setItem(`tl_lunch_offset_${d}`, String(lunchOffset));
+      localStorage.setItem(`tl_rest_offset_${d}`,  String(restOffset));
+      cur.setDate(cur.getDate() + 7);
+    }
     try {
       await fetch(`/api/zone-assignments/${saveDow}`, {
         method: "PUT",
@@ -1094,19 +1107,6 @@ export const DayTimelineModal: React.FC<Props> = ({
           rest_offset: restOffset,
         }),
       });
-      // Pre-write to localStorage for next 4 occurrences so they load instantly
-      const cur = new Date();
-      cur.setHours(0, 0, 0, 0);
-      while (cur.getDay() !== saveDow) cur.setDate(cur.getDate() + 1);
-      for (let i = 0; i < 4; i++) {
-        const d = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
-        localStorage.setItem(`tl_zone_slots_${d}`,  JSON.stringify(zoneSlots));
-        localStorage.setItem(`tl_lunch_slots_${d}`, JSON.stringify(lunchSlots));
-        localStorage.setItem(`tl_rest_slots_${d}`,  JSON.stringify(restSlots));
-        localStorage.setItem(`tl_lunch_offset_${d}`, String(lunchOffset));
-        localStorage.setItem(`tl_rest_offset_${d}`,  String(restOffset));
-        cur.setDate(cur.getDate() + 7);
-      }
     } catch (e) {
       alert("저장 실패: " + (e as Error).message);
     }
