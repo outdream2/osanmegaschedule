@@ -246,6 +246,36 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     if (result.length > 0) pageBalanceCandidates.set(pn, result);
   }
 
+  // balanceConfig에 지정된 컬럼의 마지막 유효값 = 잔고
+  const pageBalanceFromConfig = new Map<number, number>();
+  for (const pn of uniquePageNums) {
+    const pageData = structuredPages.find(p => p.page === pn);
+    if (!pageData) continue;
+    const pageSupplier = (rawSupplierByPage[pn] ?? pageData.meta.supplier ?? "").trim();
+    const configuredLabel = pageSupplier ? balanceConfig[pageSupplier] : undefined;
+    if (!configuredLabel || configuredLabel === "(없음)") continue;
+    const colIdx = pageData.headers.indexOf(configuredLabel);
+    if (colIdx < 0) continue;
+    let lastVal: number | null = null;
+    for (const row of pageData.rows) {
+      if (!Array.isArray(row)) continue;
+      const v = row[colIdx];
+      if (v != null) {
+        const n = typeof v === "number" ? v : parseNumber(v as any);
+        if (n > 0) lastVal = n;
+      }
+    }
+    if (lastVal != null) pageBalanceFromConfig.set(pn, lastVal);
+  }
+
+  // 공급사별 OCR 잔고 합산
+  const supplierOcrBalance = new Map<string, number>();
+  for (const [pn, balance] of pageBalanceFromConfig) {
+    const pageData = structuredPages.find(p => p.page === pn);
+    const pageSupplier = (rawSupplierByPage[pn] ?? pageData?.meta.supplier ?? "").trim() || "미상";
+    supplierOcrBalance.set(pageSupplier, (supplierOcrBalance.get(pageSupplier) ?? 0) + balance);
+  }
+
   // ── 공급처별 합계 — 명세서 소계(getPageDisplayTotal) 기준 ───────────────
   const supplierTotals: { supplier: string; total: number; count: number }[] = amtIdx >= 0
     ? (() => {
@@ -2252,6 +2282,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                       <tfoot>
                         {confSupplierTotals.length >= 1 && confSupplierTotals.map(({ supplier, total: sTotal, count }) => {
                           const latestBalance = supplierBalanceRecords.find(b => b.supplier_name === supplier);
+                          const ocrBalance = supplierOcrBalance.get(supplier);
                           const invoiceDateForSupplier = (() => {
                             const pageNums_ = [...new Set(pageNums)];
                             for (const pn of pageNums_) {
@@ -2266,10 +2297,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               <td colSpan={confAmtIdx} className="px-3 py-2 text-right text-[11px] font-semibold text-gray-500">
                                 <span className="flex items-center justify-end gap-2 flex-wrap">
                                   <span>{supplier} <span className="text-gray-400">({count}건)</span></span>
+                                  {ocrBalance != null && ocrBalance > 0 && (
+                                    <span className="text-rose-600 font-black text-xs whitespace-nowrap bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
+                                      잔고 {fmt(ocrBalance)}원
+                                    </span>
+                                  )}
                                   {latestBalance && (
-                                    <span className="text-rose-600 font-bold whitespace-nowrap">
-                                      잔고 {fmt(latestBalance.balance)}원
-                                      {latestBalance.invoice_date && <span className="text-rose-400 font-normal ml-1">{latestBalance.invoice_date}</span>}
+                                    <span className="text-rose-500 font-bold whitespace-nowrap text-[10px]">
+                                      (DB: {fmt(latestBalance.balance)}원
+                                      {latestBalance.invoice_date && <span className="text-rose-400 font-normal ml-1">{latestBalance.invoice_date}</span>})
                                     </span>
                                   )}
                                   <button

@@ -1,9 +1,7 @@
-// onnxruntime-node는 top-level import 하지 않음.
-// 모델 파일이 실제로 존재할 때만 동적 import해서 메모리 낭비를 막는다.
 import sharp from "sharp";
 import path from "path";
 import fs from "fs";
-import { execFile } from "child_process";
+import { execFile, spawn } from "child_process";
 import { promisify } from "util";
 
 const execFileAsync = promisify(execFile);
@@ -11,86 +9,155 @@ const execFileAsync = promisify(execFile);
 const MODELS_DIR  = path.join(process.cwd(), "server", "models");
 const ONNX_PATH   = path.join(MODELS_DIR, "best.onnx");
 const PT_PATH     = path.join(MODELS_DIR, "best.pt");
+const YOLO_SERVER_URL = "http://localhost:8002";
 const INPUT_SIZE  = 640;
 const CONF_THRESHOLD = 0.25;
 const IOU_THRESHOLD  = 0.45;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let ort: any = null; // onnxruntime-node — loaded lazily
+let ort: any = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-let session: any = null; // ort.InferenceSession
+let session: any = null;
+let useYoloServer = false;   // Python YOLO 서버 사용 여부
+let yoloServerProc: ReturnType<typeof spawn> | null = null;
 let loadAttempted = false;
 
-async function convertPtToOnnx(): Promise<boolean> {
-  console.log("[StockCounter] best.pt 발견 — Python으로 ONNX 변환 시작...");
+// ── Python YOLO 서버 ─────────────────────────────────────────────────────────
+
+const PYTHON_BINS = ["python3", "py", "python"];
+
+async function findPythonBin(): Promise<string | null> {
+  for (const bin of PYTHON_BINS) {
+    try {
+      await execFileAsync(bin, ["-c", "import ultralytics"], { timeout: 10_000 });
+      return bin;
+    } catch {
+      // 다음 시도
+    }
+  }
+  return null;
+}
+
+async function startYoloServer(pythonBin: string): Promise<boolean> {
+  if (yoloServerProc) return true;
+  const scriptPath = path.join(process.cwd(), "scripts", "yolo_server.py");
+  if (!fs.existsSync(scriptPath)) return false;
+
+  console.log("[StockCounter] Python YOLO 서버 시작 중...");
+  yoloServerProc = spawn(pythonBin, [scriptPath], {
+    env: { ...process.env, PYTHONIOENCODING: "utf-8", YOLO_VERBOSE: "False" },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  yoloServerProc.stdout?.on("data", (d: Buffer) => process.stdout.write(`[YOLO Server] ${d}`));
+  yoloServerProc.stderr?.on("data", (d: Buffer) => process.stderr.write(`[YOLO Server ERR] ${d}`));
+  yoloServerProc.on("exit", code => {
+    console.log(`[YOLO Server] 종료됨 (code=${code})`);
+    yoloServerProc = null;
+  });
+
+  // 최대 30초 대기
+  for (let i = 0; i < 30; i++) {
+    await new Promise(r => setTimeout(r, 1000));
+    try {
+      const r = await fetch(`${YOLO_SERVER_URL}/health`, { signal: AbortSignal.timeout(2000) });
+      if (r.ok) { console.log("[StockCounter] Python YOLO 서버 준비 완료"); return true; }
+    } catch {}
+  }
+  console.error("[StockCounter] Python YOLO 서버 시작 실패");
+  yoloServerProc?.kill();
+  yoloServerProc = null;
+  return false;
+}
+
+// ── ONNX 경로 ────────────────────────────────────────────────────────────────
+
+async function convertPtToOnnx(pythonBin: string): Promise<boolean> {
+  console.log("[StockCounter] best.pt → ONNX 변환 중...");
   const script = [
     "from ultralytics import YOLO",
     `YOLO(r'${PT_PATH.replace(/\\/g, "\\\\")}').export(format='onnx', imgsz=640, simplify=True)`,
   ].join("; ");
 
-  // python3 우선, 없으면 python
-  for (const bin of ["python3", "python"]) {
-    try {
-      const { stdout, stderr } = await execFileAsync(bin, ["-c", script], { timeout: 180_000 });
-      if (stdout) console.log("[StockCounter] python stdout:", stdout.trim());
-      if (stderr) console.log("[StockCounter] python stderr:", stderr.trim());
-      if (fs.existsSync(ONNX_PATH)) {
-        console.log("[StockCounter] ONNX 변환 완료:", ONNX_PATH);
-        return true;
-      }
-    } catch (_) {
-      // 다음 bin 시도
+  try {
+    const { stdout, stderr } = await execFileAsync(pythonBin, ["-c", script], { timeout: 180_000 });
+    if (stdout) console.log("[StockCounter] python stdout:", stdout.trim());
+    if (stderr) console.log("[StockCounter] python stderr:", stderr.trim());
+    if (fs.existsSync(ONNX_PATH)) {
+      console.log("[StockCounter] ONNX 변환 완료:", ONNX_PATH);
+      return true;
     }
+  } catch (e: any) {
+    console.warn("[StockCounter] ONNX 변환 실패:", e.message);
   }
-  console.error("[StockCounter] ONNX 변환 실패 — Python + ultralytics가 설치되어 있는지 확인하세요");
-  console.error("  pip install ultralytics");
   return false;
 }
 
 export async function loadStockCountModel(): Promise<boolean> {
-  if (loadAttempted) return session !== null;
+  if (loadAttempted) return session !== null || useYoloServer;
   loadAttempted = true;
 
-  // 1) best.onnx 없고 best.pt 있으면 자동 변환
-  if (!fs.existsSync(ONNX_PATH) && fs.existsSync(PT_PATH)) {
-    const ok = await convertPtToOnnx();
-    if (!ok) return false;
-  }
-
-  if (!fs.existsSync(ONNX_PATH)) {
-    // 모델 파일 없음 — onnxruntime-node 로드 자체를 건너뜀 (메모리 절약)
-    console.log("[StockCounter] 모델 없음 — server/models/에 best.pt 또는 best.onnx를 넣어주세요");
-    return false;
-  }
-
-  try {
-    // 모델 파일이 실제로 있을 때만 onnxruntime-node를 동적 import
-    if (!ort) {
-      ort = await import("onnxruntime-node");
+  // 1) best.onnx가 있으면 onnxruntime-node로 직접 로드
+  if (fs.existsSync(ONNX_PATH)) {
+    try {
+      if (!ort) ort = await import("onnxruntime-node");
+      session = await ort.InferenceSession.create(ONNX_PATH);
+      console.log("[StockCounter] ONNX 모델 로드 완료:", ONNX_PATH);
+      return true;
+    } catch (e: any) {
+      console.error("[StockCounter] ONNX 로드 실패:", e.message);
     }
-    session = await ort.InferenceSession.create(ONNX_PATH);
-    console.log("[StockCounter] ONNX 모델 로드 완료:", ONNX_PATH);
-    return true;
-  } catch (e: any) {
-    console.error("[StockCounter] 모델 로드 실패:", e.message);
-    return false;
   }
+
+  // 2) best.pt가 있으면 Python 경로 시도
+  if (fs.existsSync(PT_PATH)) {
+    const pythonBin = await findPythonBin();
+
+    if (pythonBin) {
+      // 2a) Python YOLO 서버 방식 (우선, 변환 불필요)
+      const ok = await startYoloServer(pythonBin);
+      if (ok) { useYoloServer = true; return true; }
+
+      // 2b) ONNX 변환 후 onnxruntime-node 방식
+      const converted = await convertPtToOnnx(pythonBin);
+      if (converted) {
+        try {
+          if (!ort) ort = await import("onnxruntime-node");
+          session = await ort.InferenceSession.create(ONNX_PATH);
+          console.log("[StockCounter] ONNX 모델 로드 완료 (변환 후)");
+          return true;
+        } catch (e: any) {
+          console.error("[StockCounter] 변환 후 ONNX 로드 실패:", e.message);
+        }
+      }
+    } else {
+      console.warn("[StockCounter] Python + ultralytics 없음. 설치 안내:");
+      console.warn("  pip install ultralytics fastapi uvicorn pillow");
+      console.warn("  서버를 재시작하세요.");
+    }
+  } else {
+    console.log("[StockCounter] 모델 없음 — server/models/best.pt를 넣어주세요");
+  }
+
+  return false;
 }
 
 export function isStockCountModelLoaded(): boolean {
-  return session !== null;
+  return session !== null || useYoloServer;
 }
 
 export async function reloadStockCountModel(): Promise<boolean> {
   loadAttempted = false;
   session = null;
+  useYoloServer = false;
+  if (yoloServerProc) { yoloServerProc.kill(); yoloServerProc = null; }
   return loadStockCountModel();
 }
 
-// base64 → Buffer → 640×640 CHW float32
+// ── 이미지 전처리 (ONNX 경로 전용) ─────────────────────────────────────────
+
 async function preprocessBase64(b64: string): Promise<Float32Array> {
   const buf = Buffer.from(b64, "base64");
-  const { data, info } = await sharp(buf)
+  const { data } = await sharp(buf)
     .resize(INPUT_SIZE, INPUT_SIZE, { fit: "fill" })
     .removeAlpha()
     .raw()
@@ -99,9 +166,9 @@ async function preprocessBase64(b64: string): Promise<Float32Array> {
   const n = INPUT_SIZE * INPUT_SIZE;
   const floats = new Float32Array(3 * n);
   for (let i = 0; i < n; i++) {
-    floats[i]         = data[i * 3]     / 255.0; // R
-    floats[n + i]     = data[i * 3 + 1] / 255.0; // G
-    floats[2 * n + i] = data[i * 3 + 2] / 255.0; // B
+    floats[i]         = data[i * 3]     / 255.0;
+    floats[n + i]     = data[i * 3 + 1] / 255.0;
+    floats[2 * n + i] = data[i * 3 + 2] / 255.0;
   }
   return floats;
 }
@@ -135,14 +202,27 @@ export interface DetectionResult {
 }
 
 export async function countObjectsInImage(b64: string): Promise<DetectionResult> {
-  if (!session) throw new Error("모델 미로드 — server/models/best.onnx를 추가하세요");
+  // Python YOLO 서버 방식
+  if (useYoloServer) {
+    const res = await fetch(`${YOLO_SERVER_URL}/detect`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data: b64, mimeType: "image/jpeg", conf: CONF_THRESHOLD, iou: IOU_THRESHOLD }),
+      signal: AbortSignal.timeout(30_000),
+    });
+    const json: any = await res.json();
+    if (!json.success) throw new Error(json.error ?? "YOLO 서버 오류");
+    return { count: json.count, boxes: json.boxes };
+  }
+
+  // ONNX 방식
+  if (!session) throw new Error("모델 미로드 — server/models/best.pt를 추가하고 서버를 재시작하세요");
 
   const inputData = await preprocessBase64(b64);
   const tensor = new ort.Tensor("float32", inputData, [1, 3, INPUT_SIZE, INPUT_SIZE]);
   const feeds: Record<string, unknown> = { [session.inputNames[0]]: tensor };
   const out = await session.run(feeds);
 
-  // YOLOv8 export 포맷: output0 shape [1, 4+numClasses, numAnchors]
   const rawOut = out[session.outputNames[0]];
   const [, rowCount, anchors] = rawOut.dims as number[];
   const data = rawOut.data as Float32Array;
@@ -156,7 +236,6 @@ export async function countObjectsInImage(b64: string): Promise<DetectionResult>
     const w  = data[2 * anchors + a];
     const h  = data[3 * anchors + a];
 
-    // 클래스 점수 최대값
     let maxScore = 0;
     for (let c = 4; c < rowCount; c++) {
       const s = data[c * anchors + a];

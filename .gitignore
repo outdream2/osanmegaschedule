@@ -12,8 +12,9 @@ coverage/
 !public/tessdata/kor.traineddata
 !public/tessdata/eng.traineddata
 
-# AI 모델 파일 (용량 큼 — 로컬에만 보관, git 미포함)
-server/models/*.pt
+# AI 모델 파일 — best.pt/best.onnx는 git에 포함 (Render 배포용)
 server/models/*.weights
-server/models/*.onnx
 server/models/*.onnx.data
+# 변환 중간 파일 제외
+server/models/best_*.pt
+server/models/*_temp.*

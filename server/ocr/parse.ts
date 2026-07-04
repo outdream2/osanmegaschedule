@@ -52,7 +52,7 @@ export function mergeAdjacentHeaders(
   const keep = headers.map((_, i) => i).filter(i => !mergeAt.has(i));
   const pairs = new Map<number, number>();
   for (const mi of mergeAt) pairs.set(mi - 1, mi);
-  const outRows = rows.map(row => {
+  const outRows = rows.filter(row => Array.isArray(row)).map(row => {
     const r = [...row];
     for (const [ai, bi] of pairs) {
       if (bi < row.length && row[bi] != null && String(row[bi]).trim()) {
@@ -76,7 +76,7 @@ export function normalizeInvoiceCols(
   const extra = headers.map((h, i) => ({ h, i })).filter(({ i }) => !usedIdx.has(i));
 
   const outHeaders = [...mapping.map(m => m.std), ...extra.map(e => e.h)];
-  const outRows    = rows.map(row => [
+  const outRows    = rows.filter(row => Array.isArray(row)).map(row => [
     ...mapping.map(m => row[m.oi]),
     ...extra.map(e => row[e.i]),
   ]);
@@ -127,7 +127,7 @@ export function extractSpecFromName(
     specI = nameI + 1;
   }
 
-  const outRows = rows.map(row => {
+  const outRows = rows.filter(row => Array.isArray(row)).map(row => {
     const r = [...row];
     // 규격 컬럼이 새로 추가된 경우 모든 행에 null을 삽입해 컬럼 정렬 유지
     if (specWasAdded && r.length < outHeaders.length) {
@@ -210,7 +210,7 @@ export function repairColumnShift(
   // (예: 금액이 가장 크고 단가가 그다음, 수량이 가장 작은 경우 → 순위=[2,1,0,...])
   const patternCounts = new Map<string, number>();
   for (const row of rows) {
-    if (!mathOk(row)) continue;
+    if (!Array.isArray(row) || !mathOk(row)) continue;
     const vals = numCols.map(ci => numericVal(row, ci));
     const nonNull = vals.filter(v => v !== null) as number[];
     if (nonNull.length < 3) continue;
@@ -223,7 +223,7 @@ export function repairColumnShift(
       ? [...patternCounts.entries()].sort((a, b) => b[1] - a[1])[0][0].split(",").map(Number)
       : null;
 
-  return rows.map(row => {
+  return rows.filter(row => Array.isArray(row)).map(row => {
     if (mathOk(row)) return row;
 
     const vals = numCols.map(ci => numericVal(row, ci));
@@ -268,6 +268,8 @@ export function fixAmountsBySubtotal(
   const pI = headers.indexOf("단가");
   const aI = headers.indexOf("금액");
   if (aI < 0) return rows;
+
+  rows = rows.filter(row => Array.isArray(row));
 
   const getAmt = (row: (string | number | null)[]) =>
     typeof row[aI] === "number" ? (row[aI] as number) : 0;
@@ -351,6 +353,8 @@ export function crossValidateIntraPage(
   const pI = headers.indexOf("단가");
   const aI = headers.indexOf("금액");
   if (qI < 0 || pI < 0 || aI < 0) return rows;
+
+  rows = rows.filter(row => Array.isArray(row));
 
   const pos = (row: (string | number | null)[], i: number): number | null => {
     const v = row[i];

@@ -445,30 +445,34 @@ router.post("/api/ocr", async (req, res) => {
           continue;
         }
 
-        const cleaned = cleanCellValues(
-          Array.isArray(parsed.headers) ? parsed.headers : [],
-          Array.isArray(parsed.rows)    ? parsed.rows    : [],
-        );
-        const pre  = mergeAdjacentHeaders(cleaned.headers, cleaned.rows);
-        const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
-        const spec = extractSpecFromName(normalized.headers, normalized.rows);
-        const cleanMeta = sanitizeOcrMeta(parsed.meta ?? {});
-        // 합계금액 우선 보정 → 컬럼 시프트 복원 → 자릿수 교차검증
-        const rows0 = fixAmountsBySubtotal(spec.headers, spec.rows, cleanMeta.total ?? null);
-        const rows1 = repairColumnShift(spec.headers, rows0);
-        const rows  = crossValidateIntraPage(spec.headers, rows1);
-        // 최종 합계 검증 로그
-        const aI = spec.headers.indexOf("금액");
-        if (aI >= 0 && cleanMeta.total) {
-          const finalSum = rows.reduce((s, r) => s + (typeof r[aI] === "number" ? (r[aI] as number) : 0), 0);
-          if (Math.abs(finalSum - cleanMeta.total) > 1) {
-            console.warn(`[OCR/합계불일치] page ${i + 1} — 합계 ${cleanMeta.total} vs 행합 ${finalSum} (차이 ${finalSum - cleanMeta.total})`);
+        let pageData: any;
+        try {
+          const cleaned = cleanCellValues(
+            Array.isArray(parsed.headers) ? parsed.headers : [],
+            Array.isArray(parsed.rows)    ? parsed.rows    : [],
+          );
+          const pre        = mergeAdjacentHeaders(cleaned.headers, cleaned.rows);
+          const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
+          const spec       = extractSpecFromName(normalized.headers, normalized.rows);
+          const cleanMeta  = sanitizeOcrMeta(parsed.meta ?? {});
+          const rows0 = fixAmountsBySubtotal(spec.headers, spec.rows, cleanMeta.total ?? null);
+          const rows1 = repairColumnShift(spec.headers, rows0);
+          const rows  = crossValidateIntraPage(spec.headers, rows1);
+          const aI = spec.headers.indexOf("금액");
+          if (aI >= 0 && cleanMeta.total) {
+            const finalSum = rows.reduce((s, r) => s + (typeof r[aI] === "number" ? (r[aI] as number) : 0), 0);
+            if (Math.abs(finalSum - cleanMeta.total) > 1) {
+              console.warn(`[OCR/합계불일치] page ${i + 1} — 합계 ${cleanMeta.total} vs 행합 ${finalSum}`);
+            }
           }
+          if (hint && !cleanMeta.supplier) cleanMeta.supplier = hint;
+          process.stdout.write(`\n[OCR 결과] page ${i + 1}\n  헤더: ${JSON.stringify(spec.headers)}\n  행 수: ${rows.length}\n  메타: ${JSON.stringify(cleanMeta)}\n`);
+          pageData = { page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText, supplierHintUsed: hint || undefined };
+        } catch (parseErr: any) {
+          console.error(`[OCR/parse-error] page ${i + 1}:`, parseErr?.stack ?? parseErr?.message);
+          pageData = { page: i + 1, headers: ["원문 응답"], rows: [[rawText]], meta: {}, rawText };
         }
-        // 1차 추출된 공급처가 있고 meta.supplier가 비어있으면 채워줌
-        if (hint && !cleanMeta.supplier) cleanMeta.supplier = hint;
-        process.stdout.write(`\n[OCR 결과] page ${i + 1}\n  헤더: ${JSON.stringify(spec.headers)}\n  행 수: ${rows.length}\n  메타: ${JSON.stringify(cleanMeta)}\n`);
-        pages.push({ page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText, supplierHintUsed: hint || undefined });
+        pages.push(pageData);
       }
     }
 
