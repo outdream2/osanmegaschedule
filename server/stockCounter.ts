@@ -7,8 +7,8 @@ import { promisify } from "util";
 const execFileAsync = promisify(execFile);
 
 const MODELS_DIR  = path.join(process.cwd(), "server", "models");
-const ONNX_PATH   = path.join(MODELS_DIR, "best.onnx");
-const PT_PATH     = path.join(MODELS_DIR, "best.pt");
+const ONNX_PATH   = path.join(MODELS_DIR, "sku110k-yolo11-n640.onnx");
+const PT_PATH     = path.join(MODELS_DIR, "sku110k-yolo11-n640.pt");
 const YOLO_SERVER_URL = "http://localhost:8002";
 const INPUT_SIZE  = 640;
 const CONF_THRESHOLD = 0.25;

@@ -430,6 +430,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [nameDropdownRect, setNameDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const [deleteSynConfirm, setDeleteSynConfirm] = useState<{ ri: number; origName: string } | null>(null);
 
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (modalImg) { closeModal(); return; }
+      if (deleteSynConfirm) { setDeleteSynConfirm(null); return; }
+      if (supplierConfirm) { setSupplierConfirm(null); return; }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [modalImg, deleteSynConfirm, supplierConfirm, closeModal]);
+
   // ── 이름 기반 동의어 삭제 ────────────────────────────────────────────────
   const deleteSynonymByName = useCallback(async (origName: string) => {
     const name = origName.trim();
@@ -541,8 +552,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     if (!pages?.length) { setAutoSynonymMatches({}); return; }
 
     // pages에서 직접 이름/공급처 추출 (dispRows 의존성 없이)
-    const structPages = pages.filter(p => !(p.headers.length <= 1 &&
-      (p.headers[0] === "원문 텍스트" || p.headers[0] === "원문 응답")));
+    const structPages = pages.filter(p =>
+      !(p.headers.length <= 1 && (p.headers[0] === "원문 텍스트" || p.headers[0] === "원문 응답"))
+      && Array.isArray(p.rows)
+    );
     if (structPages.length === 0) return;
     const mHeaders = buildMasterHeaders(structPages);
     const localNameIdx = mHeaders.indexOf("품명");

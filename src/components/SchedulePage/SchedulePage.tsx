@@ -638,7 +638,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const displayDates = dateList;
 
   // Scroll to pending date (or today on first load) after data loads
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (employees.length === 0) return;
     requestAnimationFrame(() => {
@@ -666,7 +665,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               if (d.substring(0, 7) === targetMonth) break;
               seenMonths.add(d.substring(0, 7));
             }
-            el.scrollLeft = Math.max(0, idx * DATE_COL + seenMonths.size * MONTH_TOTAL_COL);
+            const monthTotalWidth = showSummary !== "hidden" ? seenMonths.size * MONTH_TOTAL_COL : 0;
+            el.scrollLeft = Math.max(0, idx * DATE_COL + monthTotalWidth);
           }
         }
         setTimeout(() => { suppressScrollRef.current = false; }, 300);
@@ -683,7 +683,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         }
       }
     });
-  }, [employees, dateList]);
+  }, [employees, dateList, showSummary]);
 
   // Trigger loading schedule — supports a multi-month date range by fetching each month
   // in parallel and merging employee schedule arrays.
