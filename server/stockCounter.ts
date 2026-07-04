@@ -81,6 +81,12 @@ export function isStockCountModelLoaded(): boolean {
   return session !== null;
 }
 
+export async function reloadStockCountModel(): Promise<boolean> {
+  loadAttempted = false;
+  session = null;
+  return loadStockCountModel();
+}
+
 // base64 → Buffer → 640×640 CHW float32
 async function preprocessBase64(b64: string): Promise<Float32Array> {
   const buf = Buffer.from(b64, "base64");

@@ -649,19 +649,27 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       if (pendingScrollDateRef.current) {
         const targetDate = pendingScrollDateRef.current;
         pendingScrollDateRef.current = null;
-        const idx = dateList.indexOf(targetDate);
-        if (idx >= 0) {
-          suppressScrollRef.current = true;
-          // Count months that end before the target date — each adds a monthly total column
-          const targetMonth = targetDate.substring(0, 7);
-          const seenMonths = new Set<string>();
-          for (const d of dateList) {
-            if (d.substring(0, 7) === targetMonth) break;
-            seenMonths.add(d.substring(0, 7));
+        // Use actual DOM position for reliability
+        const targetEl = el.querySelector<HTMLElement>(`[title="${targetDate} 타임라인 보기"]`);
+        suppressScrollRef.current = true;
+        if (targetEl) {
+          const elRect = el.getBoundingClientRect();
+          const targetRect = targetEl.getBoundingClientRect();
+          const nameWidth = nameThRef.current?.getBoundingClientRect().width ?? 96;
+          el.scrollLeft = Math.max(0, el.scrollLeft + (targetRect.left - elRect.left) - nameWidth);
+        } else {
+          const idx = dateList.indexOf(targetDate);
+          if (idx >= 0) {
+            const targetMonth = targetDate.substring(0, 7);
+            const seenMonths = new Set<string>();
+            for (const d of dateList) {
+              if (d.substring(0, 7) === targetMonth) break;
+              seenMonths.add(d.substring(0, 7));
+            }
+            el.scrollLeft = Math.max(0, idx * DATE_COL + seenMonths.size * MONTH_TOTAL_COL);
           }
-          el.scrollLeft = Math.max(0, idx * DATE_COL + seenMonths.size * MONTH_TOTAL_COL);
-          setTimeout(() => { suppressScrollRef.current = false; }, 300);
         }
+        setTimeout(() => { suppressScrollRef.current = false; }, 300);
       } else if (isInitialLoadRef.current) {
         isInitialLoadRef.current = false;
         if (todayColRef.current) {
@@ -1570,12 +1578,30 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               >
                 <ChevronLeft size={18} />
               </button>
-              <span
+              <button
                 key={`${currentYear}-${currentMonth}`}
-                className="font-black tracking-tight text-slate-900 text-base sm:text-sm px-1 min-w-[100px] sm:min-w-[90px] text-center animate-in fade-in zoom-in-95 duration-200"
+                title="1일로 이동"
+                onClick={() => {
+                  const firstOfMonth = `${currentYear}-${String(currentMonth).padStart(2, "0")}-01`;
+                  pendingScrollDateRef.current = firstOfMonth;
+                  // Trigger scroll directly without waiting for useEffect
+                  requestAnimationFrame(() => {
+                    const el = scrollTableRef.current;
+                    if (!el) return;
+                    const targetEl = el.querySelector<HTMLElement>(`[title="${firstOfMonth} 타임라인 보기"]`);
+                    if (!targetEl) return;
+                    const elRect = el.getBoundingClientRect();
+                    const targetRect = targetEl.getBoundingClientRect();
+                    const nameWidth = nameThRef.current?.getBoundingClientRect().width ?? 96;
+                    suppressScrollRef.current = true;
+                    el.scrollLeft = Math.max(0, el.scrollLeft + (targetRect.left - elRect.left) - nameWidth);
+                    setTimeout(() => { suppressScrollRef.current = false; }, 300);
+                  });
+                }}
+                className="font-black tracking-tight text-slate-900 text-base sm:text-sm px-1 min-w-[100px] sm:min-w-[90px] text-center animate-in fade-in zoom-in-95 duration-200 hover:text-indigo-600 cursor-pointer rounded-lg hover:bg-indigo-50 transition-colors"
               >
                 {currentYear}년 {String(currentMonth).padStart(2, "0")}월
-              </span>
+              </button>
               <button
                 onClick={handleNextMonth}
                 className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all cursor-pointer"
@@ -2292,6 +2318,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           typeHoursMap={getTypeHoursMap("", "")}
           pharmTypeHoursMap={getTypeHoursMap("약사", "")}
           onClose={() => setTimelineDate(null)}
+          onDateChange={setTimelineDate}
           onEditEmployee={isAdmin ? openEditEmployeeModal : undefined}
           onScheduleUpdate={() => fetchScheduleData(undefined, true)}
           onUpdateSchedule={isAdmin ? handleCellUpdate : undefined}

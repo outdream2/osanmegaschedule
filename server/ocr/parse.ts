@@ -14,13 +14,15 @@ export function cleanCellValues(
   headers: string[],
   rows: (string | number | null)[][]
 ): { headers: string[]; rows: (string | number | null)[][] } {
+  const safeHeaders = Array.isArray(headers) ? headers : [];
+  const safeRows    = Array.isArray(rows) ? rows : [];
   const clean = (v: string | number | null): string | number | null => {
     if (typeof v !== "string") return v;
     return v.replace(/[\x00-\x1F\x7F]+/g, "").trim() || null;
   };
   return {
-    headers: headers.map(h => h.replace(/[\x00-\x1F\x7F]+/g, "").trim()),
-    rows: rows.filter(row => Array.isArray(row)).map(row => row.map(clean)),
+    headers: safeHeaders.map(h => String(h ?? "").replace(/[\x00-\x1F\x7F]+/g, "").trim()),
+    rows: safeRows.filter(row => Array.isArray(row)).map(row => row.map(clean)),
   };
 }
 

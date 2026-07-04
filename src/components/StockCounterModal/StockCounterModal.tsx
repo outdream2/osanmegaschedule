@@ -34,6 +34,7 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
   const [error, setError] = useState<string | null>(null);
   const [modelReady, setModelReady] = useState<boolean | null>(null);
   const [applied, setApplied] = useState<"warehouse" | "store" | null>(null);
+  const [reloading, setReloading] = useState(false);
 
   // 카메라 스트림 시작
   useEffect(() => {
@@ -135,6 +136,20 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
     setPhase("camera");
   };
 
+  const handleReloadModel = async () => {
+    setReloading(true);
+    setError(null);
+    try {
+      const r = await fetch("/api/stock-count/reload", { method: "POST" });
+      const d = await r.json();
+      setModelReady(!!d.ready);
+      if (!d.ready) setError("모델 로드 실패 — server/models/best.pt 또는 best.onnx를 확인하세요");
+    } catch (e: any) {
+      setError("재로드 실패: " + e.message);
+    }
+    setReloading(false);
+  };
+
   const handleApply = (target: "warehouse" | "store") => {
     if (!result) return;
     setApplied(target);
@@ -164,7 +179,7 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
       {/* 본문 */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 pb-4 gap-4 min-h-0">
         {/* 카메라 / 결과 뷰 */}
-        <div className="relative w-full max-w-md aspect-video bg-black rounded-2xl overflow-hidden shadow-2xl">
+        <div className="relative w-full max-w-3xl aspect-[4/3] bg-black rounded-2xl overflow-hidden shadow-2xl">
           {/* 카메라 프리뷰 */}
           <video
             ref={videoRef}
@@ -214,7 +229,7 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
 
         {/* 결과 카운트 */}
         {phase === "result" && result && (
-          <div className="w-full max-w-md bg-white/10 border border-white/20 rounded-2xl px-5 py-4 text-center">
+          <div className="w-full max-w-3xl bg-white/10 border border-white/20 rounded-2xl px-5 py-4 text-center">
             <p className="text-white/60 text-[11px] font-bold uppercase tracking-wide mb-1">감지된 수량</p>
             <p className="text-5xl font-black text-green-400 leading-none mb-1">{result.count}</p>
             <p className="text-white/50 text-xs">개 ({result.boxes.length}개 박스 검출)</p>
@@ -223,14 +238,20 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
 
         {/* 모델 미로드 안내 */}
         {modelReady === false && phase === "camera" && (
-          <div className="w-full max-w-md bg-orange-900/50 border border-orange-500 rounded-xl px-4 py-3 text-orange-300 text-xs font-bold">
-            server/models/best.onnx 파일을 추가한 후 서버를 재시작하세요
+          <div className="w-full max-w-3xl bg-orange-900/50 border border-orange-500 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+            <span className="text-orange-300 text-xs font-bold">server/models/best.pt 파일을 추가 후 재로드하세요</span>
+            <button
+              onClick={handleReloadModel}
+              disabled={reloading}
+              className="shrink-0 text-[11px] font-bold px-3 py-1 bg-orange-500 hover:bg-orange-400 disabled:opacity-50 text-white rounded-lg cursor-pointer transition">
+              {reloading ? "로드중…" : "모델 재로드"}
+            </button>
           </div>
         )}
       </div>
 
       {/* 하단 버튼 */}
-      <div className="px-4 pb-6 flex flex-col gap-3 max-w-md mx-auto w-full">
+      <div className="px-4 pb-6 flex flex-col gap-3 max-w-3xl mx-auto w-full">
         {phase === "camera" && (
           <button
             onClick={handleCapture}

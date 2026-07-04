@@ -43,6 +43,7 @@ interface RawOcrTableProps {
   rotation?: number;     // CSS rotation applied in PageImageViewer (degrees)
   onReparsePage?: (pageNum: number, supplier: string) => Promise<any>;
   barcodeMatches?: BarcodeProduct[];
+  balanceConfig?: Record<string, string>;
 }
 
 const SCHEMA_ORDER = ["공급처","일자","품명","수량","단가","금액","세액","규격","단위","비고"];
@@ -107,9 +108,9 @@ const parseNumber = (val: any): number => {
   return isNaN(num) ? 0 : num;
 };
 
-export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rotation = -90, onReparsePage, barcodeMatches }) => {
-  const structuredPages = pages.filter(p => !isFallback(p.headers) && p.rows.length > 0);
-  const fallbackPages   = pages.filter(p => isFallback(p.headers) || p.rows.length === 0);
+export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp }) => {
+  const structuredPages = pages.filter(p => !isFallback(p.headers) && Array.isArray(p.rows) && p.rows.length > 0);
+  const fallbackPages   = pages.filter(p => isFallback(p.headers) || !Array.isArray(p.rows) || p.rows.length === 0);
 
   const masterH     = buildMasterHeaders(structuredPages);
   const supplierIdx = masterH.indexOf("공급처");
@@ -209,6 +210,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   const meta = pages.map(p => p.meta).find(m => m.date || m.supplier) ?? {};
 
+  const balanceConfig: Record<string, string> = balanceConfigProp ?? {};
+
   // ── 이미지(페이지)별 합계 (원본, mismatch 감지용) ─────────────────────────
   const pageTotals = new Map<number, number>();
   if (amtIdx >= 0) {
@@ -227,6 +230,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     const seen = new Set<number>();
     const result: { label: string; amount: number }[] = [];
     for (const row of pageData.rows) {
+      if (!Array.isArray(row)) continue;
       const isSummaryRow = row.some(cell => cell != null && /합계|잔고|잔액|전잔|미수/.test(String(cell)));
       if (!isSummaryRow) continue;
       let label = "";
@@ -242,26 +246,20 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     if (result.length > 0) pageBalanceCandidates.set(pn, result);
   }
 
-  // ── 공급처별 합계 (보정 반영) ─────────────────────────────────────────────
-  const dispSupplierIdx = dispHeaders.indexOf("공급처");
+  // ── 공급처별 합계 — 명세서 소계(getPageDisplayTotal) 기준 ───────────────
   const supplierTotals: { supplier: string; total: number; count: number }[] = amtIdx >= 0
     ? (() => {
         const map = new Map<string, { total: number; count: number }>();
-        effectiveDispRows.forEach((row, ri) => {
-          const pn = pageNums[ri];
+        for (const pn of uniquePageNums) {
           const supp = (
             rawSupplierByPage[pn] !== undefined
               ? rawSupplierByPage[pn]
-              : String(
-                  dispSupplierIdx >= 0 && dispRows[ri][dispSupplierIdx] != null
-                    ? dispRows[ri][dispSupplierIdx]
-                    : (structuredPages[pn - 1]?.meta.supplier ?? meta.supplier ?? "미상")
-                )
+              : (structuredPages.find(p => p.page === pn)?.meta.supplier ?? "미상")
           ).trim() || "미상";
-          const amt = parseNumber(row[amtIdx]);
+          const subtotal = getPageDisplayTotal(pn);
           const prev = map.get(supp) ?? { total: 0, count: 0 };
-          map.set(supp, { total: prev.total + amt, count: prev.count + 1 });
-        });
+          map.set(supp, { total: prev.total + subtotal, count: prev.count + 1 });
+        }
         return [...map.entries()].map(([supplier, v]) => ({ supplier, ...v }));
       })()
     : [];
@@ -388,6 +386,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [pendingSyn,       setPendingSyn        ] = useState<Record<number, { inputName: string; code: string; supplier?: string; name: string }>>({});
   const [savedSynonymIds,  setSavedSynonymIds   ] = useState<Record<number, number>>({});
   const [cancelledAutoSyn, setCancelledAutoSyn ] = useState<Set<number>>(new Set());
+  const [cancelledRows,    setCancelledRows    ] = useState<Set<number>>(new Set());
   const [rawEditValues,    setRawEditValues    ] = useState<Record<number, string>>({});
   const rawSearchDebounce = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
 
@@ -633,6 +632,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     setOverrides(prev => ({ ...prev, [ri]: undefined as unknown as string }));
     setSelectedCands(prev => { const s = { ...prev }; delete s[ri]; return s; });
     setPendingSyn(prev => { const s = { ...prev }; delete s[ri]; return s; });
+    setCancelledRows(prev => { const s = new Set(prev); s.delete(ri); return s; });
   }, [savedSynonymIds]);
 
   // 공급사 이름 보정: OCR 오인식 공급사명 → 정확한 공급사명 저장 (ocr_supplier_aliases)
@@ -723,6 +723,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const selectCandidate = useCallback((ri: number, cand: CandidateInfo) => {
     setSelectedCands(prev => ({ ...prev, [ri]: cand }));
     setOverrides(prev => ({ ...prev, [ri]: cand.name }));
+    setCancelledRows(prev => { const s = new Set(prev); s.delete(ri); return s; });
     setOpenCandRow(null);
     setNameSearchOpenRow(null);
   }, []);
@@ -745,7 +746,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       return structuredPages.find(p => p.page === pn)?.meta.supplier ?? globalSupplier ?? "";
     });
     setMatching(true); setMatchItems(null); setOverrides({}); setSupplierOverrides({}); setConfirmed(false); setSavedSynonyms(new Set()); setSavedSupplierAliases(new Set());
-    setRetryingRows(new Set()); setCandidatesMap({}); setOpenCandRow(null); setSelectedCands({});
+    setRetryingRows(new Set()); setCandidatesMap({}); setOpenCandRow(null); setSelectedCands({}); setCancelledRows(new Set());
     try {
       const res  = await fetch("/api/ocr-match", { method: "POST",
         headers: { "Content-Type": "application/json" }, body: JSON.stringify({ names, suppliers }) });
@@ -806,20 +807,28 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   const confRows: (string | number | null)[][] = matchItems
     ? effectiveDispRows.map((row, ri) => {
-        const m        = selectedCands[ri] ?? matchItems[ri]?.matched ?? null;
-        const corrName = overrides[ri] ?? m?.name ?? null;
+        const m        = cancelledRows.has(ri) ? null : (selectedCands[ri] ?? matchItems[ri]?.matched ?? null);
+        const autoSyn  = autoSynonymMatches[ri];
+        const bc       = barcodeAutoMap[ri] ?? null;
+        const origOcrName = nameIdx >= 0 ? String(row[nameIdx] ?? "").trim() || null : null;
+        const corrName = cancelledAutoSyn.has(ri)
+          ? (overrides[ri] ?? origOcrName)
+          : (overrides[ri] ?? m?.name ?? autoSyn?.name ?? bc?.name ?? origOcrName);
+        const corrCode = m?.code ?? autoSyn?.code ?? bc?.code ?? null;
         const qty  = ocrQtyIdx  >= 0 ? row[ocrQtyIdx]  : null;
         const amt  = amtIdx >= 0 && row[amtIdx] != null ? parseNumber(row[amtIdx]) : null;
         const pri  = ocrPriIdx  >= 0 ? row[ocrPriIdx]  : null;
-        const spec = ocrSpecIdx >= 0 ? (row[ocrSpecIdx] ?? m?.spec ?? null) : (m?.spec ?? null);
+        const spec = ocrSpecIdx >= 0 ? (row[ocrSpecIdx] ?? m?.spec ?? bc?.spec ?? null) : (m?.spec ?? bc?.spec ?? null);
         const pn = pageNums[ri];
         const rawSupp = rawSupplierByPage[pn] !== undefined
           ? rawSupplierByPage[pn]
           : (ocrSuppIdx >= 0 ? (row[ocrSuppIdx] ?? globalSupplier) : (structuredPages.find(p => p.page === pn)?.meta.supplier ?? globalSupplier));
         const supp    = supplierOverrides[ri] !== undefined ? supplierOverrides[ri] : rawSupp;
         const dateVal = structuredPages.find(p => p.page === pn)?.meta.date ?? null;
-        return [dateVal, m?.code ?? null, corrName, m?.masterPrice ?? null, pri, supp, qty, amt,
-                m?.salePrice ?? null, m?.profitRate != null ? m.profitRate : null, m?.expiryDate ?? null, spec, null];
+        return [dateVal, corrCode, corrName, m?.masterPrice ?? bc?.masterPrice ?? null, pri, supp, qty, amt,
+                m?.salePrice ?? bc?.salePrice ?? null,
+                m?.profitRate != null ? m.profitRate : (bc?.profitRate ?? null),
+                m?.expiryDate ?? bc?.expiryDate ?? null, spec, null];
       })
     : [];
 
@@ -1660,16 +1669,32 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                       </tr>
                       {isLastInPage && uniquePageNums.length > 1 && amtIdx >= 0 && (() => {
                         const pageSupplier = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
+                        const configuredLabel = pageSupplier ? balanceConfig[pageSupplier] : undefined;
+                        const balanceCands = pageBalanceCandidates.get(pn) ?? [];
+                        const balanceAmount = configuredLabel
+                          ? (balanceCands.find(c => c.label === configuredLabel)?.amount
+                             ?? (configuredLabel && ["합계", "합계액", "총합계"].includes(configuredLabel) ? (structuredPages.find(p => p.page === pn)?.meta.total ?? null) : null))
+                          : null;
+                        const totalColSpan = dispHeaders.length;
                         return (
-                          <tr className="bg-amber-100/70 border-t-2 border-amber-300">
-                            <td colSpan={Math.max(1, amtIdx)} className="px-3 py-1.5 text-right text-[11px] font-bold text-amber-800">
-                              {pageSupplier && <span className="text-amber-600 mr-1.5">{pageSupplier}</span>}{pn}번 명세서 소계
-                            </td>
-                            <td className="px-3 py-1.5 text-right font-black text-amber-700 text-xs whitespace-nowrap">
-                              {fmt(getPageDisplayTotal(pn))}원
-                            </td>
-                            {dispHeaders.slice(amtIdx + 1).map((_, i) => <td key={i} />)}
-                          </tr>
+                          <>
+                            <tr className="bg-amber-100/70 border-t-2 border-amber-300">
+                              <td colSpan={Math.max(1, amtIdx)} className="px-3 py-1.5 text-right text-[11px] font-bold text-amber-800">
+                                {pageSupplier && <span className="text-amber-600 mr-1.5">{pageSupplier}</span>}{pn}번 명세서 소계
+                              </td>
+                              <td className="px-3 py-1.5 text-right font-black text-amber-700 text-xs whitespace-nowrap">
+                                {fmt(getPageDisplayTotal(pn))}원
+                              </td>
+                              {dispHeaders.slice(amtIdx + 1).map((_, i) => <td key={i} />)}
+                            </tr>
+                            {balanceAmount != null && (
+                              <tr className="bg-orange-50 border-b border-orange-100">
+                                <td colSpan={totalColSpan} className="px-3 py-1 text-right text-[11px] font-bold text-orange-600 whitespace-nowrap">
+                                  잔고: {fmt(balanceAmount)}원
+                                </td>
+                              </tr>
+                            )}
+                          </>
                         );
                       })()}
                     </React.Fragment>
@@ -1681,7 +1706,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   {supplierTotals.length >= 1 && supplierTotals.map(({ supplier, total: sTotal, count }) => (
                     <tr key={supplier} className="border-t border-amber-100 bg-amber-50/40">
                       <td colSpan={Math.max(1, amtIdx)} className="px-3 py-2 text-right text-[11px] font-semibold text-gray-500">
-                        {supplier} <span className="text-gray-400">({count}건)</span>
+                        {supplier} <span className="text-gray-400">({count}매)</span>
                       </td>
                       <td className="px-3 py-2 text-right font-bold text-amber-600 text-xs whitespace-nowrap">{fmt(sTotal)}원</td>
                       {dispHeaders.slice(amtIdx + 1).map((_, i) => <td key={i} />)}
@@ -1766,6 +1791,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     setOverrides(prev => ({ ...prev, [ri]: item.input }));
                                     setSelectedCands(prev => { const s = { ...prev }; delete s[ri]; return s; });
                                     setSavedSynonyms(prev => { const n = new Set(prev); n.delete(ri); return n; });
+                                    setCancelledRows(prev => new Set([...prev, ri]));
                                     setNameSearchOpenRow(null);
                                   }
                                 } else if (pageImages?.length) {
@@ -1791,6 +1817,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 setOverrides(prev => ({ ...prev, [ri]: e.target.value }));
                                 setSavedSynonyms(prev => { const s = new Set(prev); s.delete(ri); return s; });
                                 setPendingSyn(prev => { const s = { ...prev }; delete s[ri]; return s; });
+                                setCancelledRows(prev => { const s = new Set(prev); s.delete(ri); return s; });
                                 searchByName(ri, e.target.value, currentSupp || undefined);
                               }}
                               onBlur={() => setTimeout(() => setNameSearchOpenRow(r => r === ri ? null : r), 150)}
@@ -2088,7 +2115,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   </thead>
                     <tbody>
                       {confRows.map((row, ri) => {
-                        const m        = selectedCands[ri] ?? matchItems![ri]?.matched ?? null;
+                        const m        = cancelledRows.has(ri) ? null : (selectedCands[ri] ?? matchItems![ri]?.matched ?? null);
                         const score    = m?.score ?? 0;
                         const masterP  = m?.masterPrice ?? null;
                         const invoiceP = row[CONF_HEADERS.indexOf("전표 매입단가")];
@@ -2116,7 +2143,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 const isSpec = h === "규격";
                                 return (
                                   <td key={ci}
-                                    className={`px-3 py-2 ${isSpec ? "whitespace-normal max-w-[80px]" : "whitespace-nowrap"} ${
+                                    className={`px-3 py-2 ${isSpec || isName ? "whitespace-normal max-w-[200px]" : "whitespace-nowrap"} ${
                                       h === "매입총계"                       ? "text-right font-bold text-emerald-700" :
                                       isMasterPrice                          ? `text-right font-bold ${priceDiff ? "text-blue-600" : "text-blue-400"}` :
                                       isInvoiceP && priceDiff === "high"     ? "text-right font-bold text-rose-600" :
@@ -2138,6 +2165,28 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                         : <span className="text-gray-300">—</span>
                                       : isProfitRate && isNum ? `${cell}%`
                                       : isNum ? fmt(cell)
+                                      : isName ? (() => {
+                                          const origOcr = nameIdx >= 0 ? String(effectiveDispRows[ri]?.[nameIdx] ?? "").trim() : null;
+                                          const hasCorrected = origOcr && String(cell) !== origOcr;
+                                          const isCancelled = cancelledAutoSyn.has(ri);
+                                          return (
+                                            <div className="flex items-start gap-1">
+                                              <span className="block break-words line-clamp-2 flex-1">{String(cell)}</span>
+                                              {hasCorrected && !isCancelled && (
+                                                <button
+                                                  onClick={e => { e.stopPropagation(); setCancelledAutoSyn(prev => new Set([...prev, ri])); }}
+                                                  title={`취소 → 원본: ${origOcr}`}
+                                                  className="text-[9px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0 mt-0.5">✕</button>
+                                              )}
+                                              {hasCorrected && isCancelled && (
+                                                <button
+                                                  onClick={e => { e.stopPropagation(); setCancelledAutoSyn(prev => { const n = new Set(prev); n.delete(ri); return n; }); }}
+                                                  title="보정 복원"
+                                                  className="text-[9px] px-1 py-px rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 cursor-pointer shrink-0 mt-0.5">↩</button>
+                                              )}
+                                            </div>
+                                          );
+                                        })()
                                       : isSpec ? <span className="block break-words line-clamp-2">{String(cell)}</span>
                                       : String(cell)}
                                   </td>
@@ -2147,37 +2196,52 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             {isLastInPage && uniquePageNums.length > 1 && confAmtIdx >= 0 && (() => {
                               const pageSupplier = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
                               const pageBalance  = pageSupplierBalances[pn];
+                              const configuredLabel = pageSupplier ? balanceConfig[pageSupplier] : undefined;
+                              const balanceCands = pageBalanceCandidates.get(pn) ?? [];
+                              const confBalanceAmount = configuredLabel
+                                ? (balanceCands.find(c => c.label === configuredLabel)?.amount
+                                   ?? (configuredLabel && ["합계", "합계액", "총합계"].includes(configuredLabel) ? (structuredPages.find(p => p.page === pn)?.meta.total ?? null) : null))
+                                : null;
                               return (
-                                <tr className="bg-emerald-100/60 border-t-2 border-emerald-300">
-                                  {CONF_HEADERS.slice(0, confAmtIdx).map((h, i) => {
-                                    if (collapsedConfCols.has(h)) return <td key={i} className="px-0 py-1.5 w-1 max-w-[4px] bg-emerald-50/30" />;
-                                    if (h === "공급처") return (
-                                      <td key={i} className="px-3 py-1.5 text-left text-[11px] font-bold text-emerald-500 whitespace-nowrap">
-                                        {pageSupplier}
-                                      </td>
-                                    );
-                                    const isLastVisible = !CONF_HEADERS.slice(i + 1, confAmtIdx).some(hh => !collapsedConfCols.has(hh));
-                                    return isLastVisible
-                                      ? <td key={i} className="px-3 py-1.5 text-right text-[11px] font-bold text-emerald-700">
-                                          {pn}번 소계
+                                <>
+                                  <tr className="bg-emerald-100/60 border-t-2 border-emerald-300">
+                                    {CONF_HEADERS.slice(0, confAmtIdx).map((h, i) => {
+                                      if (collapsedConfCols.has(h)) return <td key={i} className="px-0 py-1.5 w-1 max-w-[4px] bg-emerald-50/30" />;
+                                      if (h === "공급처") return (
+                                        <td key={i} className="px-3 py-1.5 text-left text-[11px] font-bold text-emerald-500 whitespace-nowrap">
+                                          {pageSupplier}
                                         </td>
-                                      : <td key={i} />;
-                                  })}
-                                  {!collapsedConfCols.has("매입총계") && (
-                                    <td className="px-3 py-1.5 text-right font-black text-emerald-600 text-xs whitespace-nowrap">
-                                      {fmt(confPageTotals.get(pn) ?? 0)}원
-                                    </td>
-                                  )}
-                                  {CONF_HEADERS.slice(confAmtIdx + 1).map((h, i) =>
-                                    collapsedConfCols.has(h)
-                                      ? <td key={i} className="px-0 py-1.5 w-1 max-w-[4px] bg-emerald-50/30" />
-                                      : h === "공급사잔고" && pageBalance != null
-                                        ? <td key={i} className="px-3 py-1.5 text-right font-black text-indigo-600 text-xs whitespace-nowrap">
-                                            {fmt(pageBalance)}원
+                                      );
+                                      const isLastVisible = !CONF_HEADERS.slice(i + 1, confAmtIdx).some(hh => !collapsedConfCols.has(hh));
+                                      return isLastVisible
+                                        ? <td key={i} className="px-3 py-1.5 text-right text-[11px] font-bold text-emerald-700">
+                                            {pn}번 소계
                                           </td>
-                                        : <td key={i} />
+                                        : <td key={i} />;
+                                    })}
+                                    {!collapsedConfCols.has("매입총계") && (
+                                      <td className="px-3 py-1.5 text-right font-black text-emerald-600 text-xs whitespace-nowrap">
+                                        {fmt(confPageTotals.get(pn) ?? 0)}원
+                                      </td>
+                                    )}
+                                    {CONF_HEADERS.slice(confAmtIdx + 1).map((h, i) =>
+                                      collapsedConfCols.has(h)
+                                        ? <td key={i} className="px-0 py-1.5 w-1 max-w-[4px] bg-emerald-50/30" />
+                                        : h === "공급사잔고" && pageBalance != null
+                                          ? <td key={i} className="px-3 py-1.5 text-right font-black text-indigo-600 text-xs whitespace-nowrap">
+                                              {fmt(pageBalance)}원
+                                            </td>
+                                          : <td key={i} />
+                                    )}
+                                  </tr>
+                                  {confBalanceAmount != null && (
+                                    <tr className="bg-orange-50 border-b border-orange-100">
+                                      <td colSpan={CONF_HEADERS.length} className="px-3 py-1 text-right text-[11px] font-bold text-orange-600 whitespace-nowrap">
+                                        잔고: {fmt(confBalanceAmount)}원
+                                      </td>
+                                    </tr>
                                   )}
-                                </tr>
+                                </>
                               );
                             })()}
                           </React.Fragment>

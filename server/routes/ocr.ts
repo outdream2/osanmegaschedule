@@ -445,7 +445,10 @@ router.post("/api/ocr", async (req, res) => {
           continue;
         }
 
-        const cleaned = cleanCellValues(parsed.headers ?? [], parsed.rows ?? []);
+        const cleaned = cleanCellValues(
+          Array.isArray(parsed.headers) ? parsed.headers : [],
+          Array.isArray(parsed.rows)    ? parsed.rows    : [],
+        );
         const pre  = mergeAdjacentHeaders(cleaned.headers, cleaned.rows);
         const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
         const spec = extractSpecFromName(normalized.headers, normalized.rows);

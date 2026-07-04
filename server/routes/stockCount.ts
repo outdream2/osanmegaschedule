@@ -1,10 +1,15 @@
 import { Router } from "express";
-import { countObjectsInImage, isStockCountModelLoaded } from "../stockCounter";
+import { countObjectsInImage, isStockCountModelLoaded, reloadStockCountModel } from "../stockCounter";
 
 const router = Router();
 
 router.get("/api/stock-count/status", (_req, res) => {
   res.json({ ready: isStockCountModelLoaded() });
+});
+
+router.post("/api/stock-count/reload", async (_req, res) => {
+  const ok = await reloadStockCountModel();
+  res.json({ ready: ok });
 });
 
 router.post("/api/stock-count", async (req, res) => {

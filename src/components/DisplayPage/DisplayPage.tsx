@@ -235,6 +235,9 @@ const fetchRequestsFromDB = async (): Promise<DisplayRequest[] | null> => {
   } catch { return null; }
 };
 
+// Zones that allow multiple staff assignments (comma-separated names)
+const MULTI_ASSIGN_ZONE_NUMS = new Set([36, 42]);
+
 // ─── Main component ────────────────────────────────────────────────────────────
 export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit, authSession, onNavigate, onLogout }) => {
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
@@ -455,6 +458,28 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     });
   }, []); // eslint-disable-line
 
+  // ── Validate zone assignments against current employees after both load ──────
+  // Clears stale assignments for employees no longer in the system
+  useEffect(() => {
+    if (!zonesLoaded || staffLoading || employees.length === 0) return;
+    let changed = false;
+    const validated = zones.map(z => {
+      if (!z.assignedStaffName) return z;
+      const names = z.assignedStaffName.split(",").map((s: string) => s.trim()).filter(Boolean);
+      const validNames = names.filter((name: string) => employees.some(e => e.name === name));
+      if (validNames.length === names.length) return z;
+      changed = true;
+      const validName = validNames.join(",");
+      const firstEmp = validNames.length > 0 ? employees.find(e => e.name === validNames[0]) : null;
+      return { ...z, assignedStaffName: validName, assignedStaffId: firstEmp?.id ?? null };
+    });
+    if (changed) {
+      setZones(validated);
+      saveZones(validated);
+      saveZonesToDB(validated);
+    }
+  }, [zonesLoaded, staffLoading, employees.length]); // eslint-disable-line
+
   // ── Load requests from DB on mount ──────────────────────────────────────────
   useEffect(() => {
     fetchRequestsFromDB().then((dbReqs) => {
@@ -568,11 +593,16 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     if (!popoverAnchor) return;
     const zoneId = popoverAnchor.zoneId;
     setZones((prev) =>
-      prev.map((z) =>
-        z.id === zoneId
-          ? { ...z, assignedStaffId: staffId, assignedStaffName: staffName }
-          : z,
-      ),
+      prev.map((z) => {
+        if (z.id !== zoneId) return z;
+        if (MULTI_ASSIGN_ZONE_NUMS.has(z.num)) {
+          const existing = z.assignedStaffName ? z.assignedStaffName.split(",").map(s => s.trim()).filter(Boolean) : [];
+          if (existing.includes(staffName)) return z;
+          const next = [...existing, staffName];
+          return { ...z, assignedStaffId: staffId, assignedStaffName: next.join(",") };
+        }
+        return { ...z, assignedStaffId: staffId, assignedStaffName: staffName };
+      }),
     );
     setPopoverAnchor(null);
   }, [popoverAnchor]);
@@ -590,6 +620,18 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     setPopoverAnchor(null);
   }, [popoverAnchor]);
 
+  // Remove one person from a multi-assign zone
+  const handleMultiUnassignOne = useCallback((zoneId: string, nameToRemove: string) => {
+    setZones((prev) =>
+      prev.map((z) => {
+        if (z.id !== zoneId) return z;
+        const remaining = z.assignedStaffName.split(",").map(s => s.trim()).filter(n => n && n !== nameToRemove);
+        const firstEmp = remaining.length > 0 ? employees.find(e => e.name === remaining[0]) : null;
+        return { ...z, assignedStaffName: remaining.join(","), assignedStaffId: firstEmp?.id ?? null };
+      }),
+    );
+  }, [employees]);
+
   // ── Drag-and-drop assignment ─────────────────────────────────────────────────
   const handleDragOver = useCallback((e: React.DragEvent, _zone: DisplayZone) => {
     if (!dragStaffRef.current) return;
@@ -604,11 +646,16 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     const staff = dragStaffRef.current;
     if (!staff) return;
     setZones((prev) =>
-      prev.map((z) =>
-        z.id === zone.id
-          ? { ...z, assignedStaffId: staff.employee.id, assignedStaffName: staff.employee.name }
-          : z,
-      ),
+      prev.map((z) => {
+        if (z.id !== zone.id) return z;
+        if (MULTI_ASSIGN_ZONE_NUMS.has(z.num)) {
+          const existing = z.assignedStaffName ? z.assignedStaffName.split(",").map(s => s.trim()).filter(Boolean) : [];
+          if (existing.includes(staff.employee.name)) return z;
+          const next = [...existing, staff.employee.name];
+          return { ...z, assignedStaffId: staff.employee.id, assignedStaffName: next.join(",") };
+        }
+        return { ...z, assignedStaffId: staff.employee.id, assignedStaffName: staff.employee.name };
+      }),
     );
     dragStaffRef.current = null;
     setDragStaff(null);

@@ -173,6 +173,76 @@ interface SuppEditState {
   supplier_name: string;
 }
 
+const BALANCE_LABEL_OPTIONS = ["(없음)", "합계", "합계액", "잔고", "잔액", "총합계", "미수금"];
+
+interface BalanceConfigTabProps {
+  pages: OcrPageResult[];
+  config: Record<string, string>;
+  onConfigChange: (vendor: string, label: string) => void;
+}
+
+const BalanceConfigTab: React.FC<BalanceConfigTabProps> = ({ pages, config, onConfigChange }) => {
+  const [dbVendors, setDbVendors] = React.useState<string[]>([]);
+
+  React.useEffect(() => {
+    axios.get("/api/supplier-balance-configs")
+      .then(r => {
+        const names = (r.data as { supplier_name: string }[]).map(x => x.supplier_name);
+        setDbVendors(names);
+      })
+      .catch(() => {});
+  }, []);
+
+  const knownVendors = React.useMemo(() => {
+    const fromPages = pages.map(p => p.meta.supplier).filter(Boolean) as string[];
+    const all = new Set([...dbVendors, ...fromPages]);
+    return [...all].sort();
+  }, [pages, dbVendors]);
+
+  return (
+    <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 flex flex-col gap-4">
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 bg-orange-50 flex items-center gap-2">
+          <span className="text-xs font-bold text-orange-800">잔고항목 지정</span>
+          <span className="text-[11px] text-orange-500">공급처별로 잔고로 표시할 항목을 지정하세요. 확정표에 주황색으로 표시됩니다.</span>
+        </div>
+        {knownVendors.length === 0 ? (
+          <div className="px-4 py-8 text-center text-gray-400 text-xs">
+            OCR을 실행하면 공급처가 자동으로 등록됩니다.
+          </div>
+        ) : (
+          <table className="w-full text-xs border-collapse">
+            <thead>
+              <tr className="bg-orange-50 border-b border-orange-100">
+                <th className="px-4 py-2 text-left font-bold text-orange-900">공급처</th>
+                <th className="px-4 py-2 text-left font-bold text-orange-900">잔고 항목</th>
+              </tr>
+            </thead>
+            <tbody>
+              {knownVendors.map(vendor => (
+                <tr key={vendor} className="border-t border-gray-50 hover:bg-orange-50/30">
+                  <td className="px-4 py-2 font-semibold text-gray-700">{vendor}</td>
+                  <td className="px-4 py-2">
+                    <select
+                      className="border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-orange-400 bg-white"
+                      value={config[vendor] ?? "(없음)"}
+                      onChange={e => onConfigChange(vendor, e.target.value)}
+                    >
+                      {BALANCE_LABEL_OPTIONS.map(opt => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -194,8 +264,37 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   const [rotation, setRotation] = useState(0);
   const [detectingOrient, setDetectingOrient] = useState(false);
 
+  // Balance config (per-vendor balance field, stored in DB)
+  const [balanceConfig, setBalanceConfig] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    axios.get("/api/supplier-balance-configs")
+      .then(r => {
+        const cfg: Record<string, string> = {};
+        for (const row of r.data as { supplier_name: string; balance_field: string }[]) {
+          if (row.balance_field) cfg[row.supplier_name] = row.balance_field;
+        }
+        setBalanceConfig(cfg);
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleBalanceConfigChange = useCallback((vendor: string, label: string) => {
+    setBalanceConfig(prev => {
+      const next = { ...prev };
+      if (label === "(없음)") {
+        delete next[vendor];
+      } else {
+        next[vendor] = label;
+      }
+      return next;
+    });
+    axios.put("/api/supplier-balance-configs", { supplier_name: vendor, balance_field: label === "(없음)" ? "" : label })
+      .catch(console.error);
+  }, []);
+
   // Tab state
-  const [mainTab, setMainTab] = useState<"ocr" | "synonyms">("ocr");
+  const [mainTab, setMainTab] = useState<"ocr" | "synonyms" | "balance">("ocr");
 
   // Synonym management state
   const [synTab, setSynTab] = useState<"product" | "supplier">("product");
@@ -488,10 +587,19 @@ return (
         >
           <BookOpen size={12} /> 동의어 관리
         </button>
+        <button
+          onClick={() => setMainTab("balance")}
+          className={`flex items-center gap-1.5 px-5 py-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${mainTab === "balance" ? "border-orange-500 text-orange-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+        >
+          잔고항목 지정
+        </button>
       </div>
     </div>
 
-    {mainTab === "synonyms" ? (
+    {mainTab === "balance" ? (
+      /* ── 잔고항목 지정 탭 ── */
+      <BalanceConfigTab pages={pages} config={balanceConfig} onConfigChange={handleBalanceConfigChange} />
+    ) : mainTab === "synonyms" ? (
       /* ── 동의어 관리 탭 ── */
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 flex flex-col gap-4">
         {/* 동의어 서브 탭 */}
@@ -830,7 +938,7 @@ return (
         </div>
       )}
 
-      {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} rotation={rotation} onReparsePage={handleReparsePage} barcodeMatches={barcodeMatches} />}
+      {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} rotation={rotation} onReparsePage={handleReparsePage} barcodeMatches={barcodeMatches} balanceConfig={balanceConfig} />}
     </div>
     )}
   </div>

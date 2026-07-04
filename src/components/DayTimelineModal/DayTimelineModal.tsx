@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { X, Pencil } from "lucide-react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { X, Pencil, ChevronLeft, ChevronRight } from "lucide-react";
 import { Employee } from "../../types";
 import { getTypeHex, derivePresetTones, type ScheduleTypeEntry } from "../../constants";
 
@@ -295,9 +295,10 @@ interface ZoneSectionProps {
   allWorkers: WorkerEntry[];
   onDropToZone: (zone: ZoneRow, slot: string, empId: number) => void;
   onRemoveFromZone: (zone: ZoneRow, slot: string, empId: number) => void;
-  onApplyMonth: () => void;
   typeTones: Record<string, TypeTone>;
   workRanges: Record<number, { start: number; end: number } | null>;
+  currentDow: number; // 0=일 ~ 6=토 (highlights current day's button)
+  onSaveToDow: (dow: number) => Promise<void>;
   // lunch
   lunchSlotMap: SlotMap;
   shiftedLunchSlots: string[];
@@ -305,7 +306,6 @@ interface ZoneSectionProps {
   onShiftLunchOffset: (delta: number) => void;
   onDropToLunch: (slot: string, empId: number) => void;
   onRemoveFromLunch: (slot: string, empId: number) => void;
-  onApplyLunchMonth: () => void;
   // rest
   restSlotMap: SlotMap;
   shiftedRestSlots: string[];
@@ -313,7 +313,6 @@ interface ZoneSectionProps {
   onShiftRestOffset: (delta: number) => void;
   onDropToRest: (slot: string, empId: number) => void;
   onRemoveFromRest: (slot: string, empId: number) => void;
-  onApplyRestMonth: () => void;
 }
 
 // Zone section uses HOUR_SLOTS as column keys (slice off the last end-boundary slot)
@@ -325,13 +324,17 @@ function subSlotKey(hourSlot: string, minuteOffset: 0 | 30): string {
   return `${String(h).padStart(2, "0")}:${minuteOffset === 0 ? "00" : "30"}`;
 }
 
+const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"] as const;
+
 const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
-  zoneMap, workers, allWorkers, onDropToZone, onRemoveFromZone, onApplyMonth, typeTones, workRanges,
-  lunchSlotMap, shiftedLunchSlots, lunchOffset, onShiftLunchOffset, onDropToLunch, onRemoveFromLunch, onApplyLunchMonth,
-  restSlotMap,  shiftedRestSlots,  restOffset,  onShiftRestOffset,  onDropToRest,  onRemoveFromRest,  onApplyRestMonth,
+  zoneMap, workers, allWorkers, onDropToZone, onRemoveFromZone, typeTones, workRanges,
+  currentDow, onSaveToDow,
+  lunchSlotMap, shiftedLunchSlots, lunchOffset, onShiftLunchOffset, onDropToLunch, onRemoveFromLunch,
+  restSlotMap,  shiftedRestSlots,  restOffset,  onShiftRestOffset,  onDropToRest,  onRemoveFromRest,
 }) => {
   const [draggingId, setDraggingId] = useState<number | null>(null);
-  const [confirmMonth, setConfirmMonth] = useState(false);
+  const [selectedDows, setSelectedDows] = useState<Set<number>>(new Set());
+  const [saving, setSaving] = useState(false);
 
   const tryDropToZone = useCallback((zone: ZoneRow, slot: string, empId: number) => {
     const slotHour = parseInt(slot.split(":")[0], 10);
@@ -342,15 +345,27 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
       alert("출근 시간이 아니어서 배정할 수 없습니다.");
       return;
     }
+    const otherZone: ZoneRow = zone === "카운터" ? "매장" : "카운터";
+    if (((zoneMap[otherZone] ?? {})[slot] ?? []).includes(empId)) {
+      alert(`이미 ${otherZone}에 배정된 시간대입니다.`);
+      return;
+    }
     const lunchConflict = Object.entries(lunchSlotMap).some(([ls, ids]) => {
-      if (!ids.includes(empId)) return false;
+      if (!(ids as number[]).includes(empId)) return false;
       const [lh, lm] = ls.split(":").map(Number);
       const ls0 = lh * 60 + lm;
       return ls0 < slotEnd && ls0 + 30 > slotStart;
     });
     if (lunchConflict) { alert("점심시간이 배정된 시간대입니다."); return; }
+    const restConflict = Object.entries(restSlotMap).some(([rs, ids]) => {
+      if (!(ids as number[]).includes(empId)) return false;
+      const [rh, rm] = rs.split(":").map(Number);
+      const rs0 = rh * 60 + rm;
+      return rs0 < slotEnd && rs0 + 30 > slotStart;
+    });
+    if (restConflict) { alert("휴게시간이 배정된 시간대입니다."); return; }
     onDropToZone(zone, slot, empId);
-  }, [workRanges, lunchSlotMap, onDropToZone]);
+  }, [workRanges, zoneMap, lunchSlotMap, restSlotMap, onDropToZone]);
 
   const assignedIds = useMemo(() => {
     const ids = new Set<number>();
@@ -410,7 +425,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
   return (
     <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
       {/* Header */}
-      <div className="flex items-center justify-between mb-2.5">
+      <div className="flex items-center justify-between mb-2.5 flex-wrap gap-1.5">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-sky-400" />
           <span className="text-[11px] font-black text-sky-800">구역 · 점심 · 휴게 배정</span>
@@ -418,20 +433,43 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             <span className="text-[10px] font-semibold text-sky-700 opacity-70">{assignedIds.size}명 배정됨</span>
           )}
         </div>
-        {confirmMonth ? (
-          <div className="flex items-center gap-1">
-            <span className="text-[10px] text-slate-500">이 달 전체에 적용?</span>
-            <button onClick={() => { onApplyMonth(); onApplyLunchMonth(); onApplyRestMonth(); setConfirmMonth(false); }}
-              className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500 text-white hover:bg-indigo-600 cursor-pointer">예</button>
-            <button onClick={() => setConfirmMonth(false)}
-              className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer">취소</button>
-          </div>
-        ) : (
-          <button onClick={() => setConfirmMonth(true)}
-            className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-500 hover:border-slate-400 transition cursor-pointer">
-            전월 적용
-          </button>
-        )}
+        <div className="flex items-center gap-1">
+          <span className="text-[9px] text-slate-400 mr-0.5">요일저장</span>
+          {DOW_LABELS.map((label, dow) => (
+            <button key={dow}
+              onClick={() => setSelectedDows(prev => {
+                const next = new Set(prev);
+                if (next.has(dow)) next.delete(dow); else next.add(dow);
+                return next;
+              })}
+              className={`w-6 h-6 text-[9px] font-black rounded transition cursor-pointer ${
+                selectedDows.has(dow)
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : dow === currentDow
+                    ? "bg-indigo-200 text-indigo-700 border border-indigo-300"
+                    : "bg-white border border-slate-200 text-slate-600 hover:border-indigo-400 hover:text-indigo-600"
+              }`}>
+              {label}
+            </button>
+          ))}
+          {selectedDows.size > 0 && (
+            <>
+              <button
+                disabled={saving}
+                onClick={async () => {
+                  setSaving(true);
+                  await Promise.all([...selectedDows].map(d => onSaveToDow(d)));
+                  setSaving(false);
+                  setSelectedDows(new Set());
+                }}
+                className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500 text-white hover:bg-indigo-600 cursor-pointer disabled:opacity-50 ml-0.5">
+                {saving ? "저장중…" : `저장(${selectedDows.size})`}
+              </button>
+              <button onClick={() => setSelectedDows(new Set())}
+                className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer">✕</button>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Unified grid */}
@@ -566,6 +604,7 @@ interface Props {
   typeHoursMap?: Record<string, string>;
   pharmTypeHoursMap?: Record<string, string>;
   onClose: () => void;
+  onDateChange?: (newDate: string) => void;
   onEditEmployee?: (emp: Employee) => void;
   onScheduleUpdate?: () => void;
   onUpdateSchedule?: (data: {
@@ -579,7 +618,7 @@ interface Props {
 type TabKey = "전체" | "사원" | "약사" | "기타";
 
 export const DayTimelineModal: React.FC<Props> = ({
-  date, employees, typeHoursMap, pharmTypeHoursMap, onClose, onEditEmployee, onUpdateSchedule, scheduleTypeEntries,
+  date, employees, typeHoursMap, pharmTypeHoursMap, onClose, onDateChange, onEditEmployee, onUpdateSchedule, scheduleTypeEntries,
 }) => {
   // Build per-type tone map from user settings (hex-based). Rebuilds only when settings change.
   const typeTones = useMemo(() => buildTypeTones(scheduleTypeEntries), [scheduleTypeEntries]);
@@ -623,6 +662,58 @@ export const DayTimelineModal: React.FC<Props> = ({
     const ro = parseInt(localStorage.getItem(`tl_rest_offset_${date}`) || "0", 10);
     setRestOffset(Number.isFinite(ro) ? Math.max(-60, Math.min(60, ro)) : 0);
   }, [date]);
+
+  // ── Day-of-week template auto-load ────────────────────────────────────────
+  // If this date has no locally-stored slot data, fetch the DOW template from DB.
+  const dow = useMemo(() => new Date(date + "T00:00:00").getDay(), [date]);
+  const templateLoadedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (templateLoadedRef.current === date) return;
+    templateLoadedRef.current = date;
+
+    // Check localStorage directly so we don't race with the state reload effect above
+    const hasData = (() => {
+      try {
+        const ls = JSON.parse(localStorage.getItem(`tl_lunch_slots_${date}`) || "{}");
+        const rs = JSON.parse(localStorage.getItem(`tl_rest_slots_${date}`) || "{}");
+        const zs = JSON.parse(localStorage.getItem(`tl_zone_slots_${date}`) || "{}");
+        return (
+          Object.values(ls).some((a: unknown) => (a as number[]).length > 0) ||
+          Object.values(rs).some((a: unknown) => (a as number[]).length > 0) ||
+          Object.values(zs).some((sm: unknown) => Object.values(sm as Record<string, number[]>).some(a => a.length > 0))
+        );
+      } catch { return false; }
+    })();
+    if (hasData) return;
+
+    fetch(`/api/zone-assignments/${dow}`)
+      .then(r => r.ok ? r.json() : null)
+      .then((data: { zone_slots?: ZoneMap; lunch_slots?: SlotMap; rest_slots?: SlotMap; lunch_offset?: number; rest_offset?: number } | null) => {
+        if (!data) return;
+        if (data.zone_slots && Object.keys(data.zone_slots).length > 0) {
+          setZoneSlots(data.zone_slots);
+          localStorage.setItem(`tl_zone_slots_${date}`, JSON.stringify(data.zone_slots));
+        }
+        if (data.lunch_slots && Object.keys(data.lunch_slots).length > 0) {
+          setLunchSlots(data.lunch_slots);
+          localStorage.setItem(`tl_lunch_slots_${date}`, JSON.stringify(data.lunch_slots));
+        }
+        if (data.rest_slots && Object.keys(data.rest_slots).length > 0) {
+          setRestSlots(data.rest_slots);
+          localStorage.setItem(`tl_rest_slots_${date}`, JSON.stringify(data.rest_slots));
+        }
+        if (data.lunch_offset) {
+          setLunchOffset(data.lunch_offset);
+          localStorage.setItem(`tl_lunch_offset_${date}`, String(data.lunch_offset));
+        }
+        if (data.rest_offset) {
+          setRestOffset(data.rest_offset);
+          localStorage.setItem(`tl_rest_offset_${date}`, String(data.rest_offset));
+        }
+      })
+      .catch(() => {});
+  }, [date, dow]);
 
   // ── Workers ───────────────────────────────────────────────────────────────
   const workers = useMemo(() => employees
@@ -697,12 +788,30 @@ export const DayTimelineModal: React.FC<Props> = ({
 
   // ── Slot handlers ─────────────────────────────────────────────────────────
   const dropToLunchSlot = useCallback((slot: string, empId: number) => {
+    const [lh, lm] = slot.split(":").map(Number);
+    const lStart = lh * 60 + lm;
+    const lEnd = lStart + 30;
+    const zoneConflict = ZONE_ROWS.some(zone =>
+      Object.entries(zoneSlots[zone] ?? {}).some(([zSlot, ids]) => {
+        if (!(ids as number[]).includes(empId)) return false;
+        const zh = parseInt(zSlot.split(":")[0], 10) * 60;
+        return zh < lEnd && zh + 60 > lStart;
+      })
+    );
+    if (zoneConflict) { alert("구역 배정된 시간대입니다."); return; }
+    const restConflict = Object.entries(restSlots).some(([rs, ids]) => {
+      if (!(ids as number[]).includes(empId)) return false;
+      const [rh, rm] = rs.split(":").map(Number);
+      const rStart = rh * 60 + rm;
+      return rStart < lEnd && rStart + 30 > lStart;
+    });
+    if (restConflict) { alert("휴게시간이 배정된 시간대입니다."); return; }
     setLunchSlots(prev => {
       const next = { ...prev, [slot]: [...(prev[slot] ?? []).filter(id => id !== empId), empId] };
       localStorage.setItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
       return next;
     });
-  }, [date]);
+  }, [date, zoneSlots, restSlots]);
 
   const removeFromLunchSlot = useCallback((slot: string, empId: number) => {
     setLunchSlots(prev => {
@@ -713,12 +822,30 @@ export const DayTimelineModal: React.FC<Props> = ({
   }, [date]);
 
   const dropToRestSlot = useCallback((slot: string, empId: number) => {
+    const [rh, rm] = slot.split(":").map(Number);
+    const rStart = rh * 60 + rm;
+    const rEnd = rStart + 30;
+    const zoneConflict = ZONE_ROWS.some(zone =>
+      Object.entries(zoneSlots[zone] ?? {}).some(([zSlot, ids]) => {
+        if (!(ids as number[]).includes(empId)) return false;
+        const zh = parseInt(zSlot.split(":")[0], 10) * 60;
+        return zh < rEnd && zh + 60 > rStart;
+      })
+    );
+    if (zoneConflict) { alert("구역 배정된 시간대입니다."); return; }
+    const lunchConflict = Object.entries(lunchSlots).some(([ls, ids]) => {
+      if (!(ids as number[]).includes(empId)) return false;
+      const [lh, lm] = ls.split(":").map(Number);
+      const lStart = lh * 60 + lm;
+      return lStart < rEnd && lStart + 30 > rStart;
+    });
+    if (lunchConflict) { alert("점심시간이 배정된 시간대입니다."); return; }
     setRestSlots(prev => {
       const next = { ...prev, [slot]: [...(prev[slot] ?? []).filter(id => id !== empId), empId] };
       localStorage.setItem(`tl_rest_slots_${date}`, JSON.stringify(next));
       return next;
     });
-  }, [date]);
+  }, [date, zoneSlots, lunchSlots]);
 
   const removeFromRestSlot = useCallback((slot: string, empId: number) => {
     setRestSlots(prev => {
@@ -748,21 +875,37 @@ export const DayTimelineModal: React.FC<Props> = ({
     });
   }, [date]);
 
-  // ── "전월 적용" ───────────────────────────────────────────────────────────
-  const applyLunchToMonth = useCallback(() => {
-    const snap = lunchSlots;
-    datesInMonth(date).forEach(d => { if (d !== date) localStorage.setItem(`tl_lunch_slots_${d}`, JSON.stringify(snap)); });
-  }, [date, lunchSlots]);
-
-  const applyRestToMonth = useCallback(() => {
-    const snap = restSlots;
-    datesInMonth(date).forEach(d => { if (d !== date) localStorage.setItem(`tl_rest_slots_${d}`, JSON.stringify(snap)); });
-  }, [date, restSlots]);
-
-  const applyZoneToMonth = useCallback(() => {
-    const snap = zoneSlots;
-    datesInMonth(date).forEach(d => { if (d !== date) localStorage.setItem(`tl_zone_slots_${d}`, JSON.stringify(snap)); });
-  }, [date, zoneSlots]);
+  // ── 요일별 템플릿 DB 저장 ─────────────────────────────────────────────────
+  const saveTemplateToDow = useCallback(async (saveDow: number) => {
+    try {
+      await fetch(`/api/zone-assignments/${saveDow}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          zone_slots: zoneSlots,
+          lunch_slots: lunchSlots,
+          rest_slots: restSlots,
+          lunch_offset: lunchOffset,
+          rest_offset: restOffset,
+        }),
+      });
+      // Pre-write to localStorage for next 4 occurrences so they load instantly
+      const cur = new Date();
+      cur.setHours(0, 0, 0, 0);
+      while (cur.getDay() !== saveDow) cur.setDate(cur.getDate() + 1);
+      for (let i = 0; i < 4; i++) {
+        const d = `${cur.getFullYear()}-${String(cur.getMonth() + 1).padStart(2, "0")}-${String(cur.getDate()).padStart(2, "0")}`;
+        localStorage.setItem(`tl_zone_slots_${d}`,  JSON.stringify(zoneSlots));
+        localStorage.setItem(`tl_lunch_slots_${d}`, JSON.stringify(lunchSlots));
+        localStorage.setItem(`tl_rest_slots_${d}`,  JSON.stringify(restSlots));
+        localStorage.setItem(`tl_lunch_offset_${d}`, String(lunchOffset));
+        localStorage.setItem(`tl_rest_offset_${d}`,  String(restOffset));
+        cur.setDate(cur.getDate() + 7);
+      }
+    } catch (e) {
+      alert("저장 실패: " + (e as Error).message);
+    }
+  }, [zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset]);
 
   const handleLunchShiftOffset = useCallback((delta: number) => {
     setLunchOffset(prev => {
@@ -787,6 +930,11 @@ export const DayTimelineModal: React.FC<Props> = ({
   const d = new Date(date + "T00:00:00");
   const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
   const title = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${dayNames[d.getDay()]})`;
+  const offsetDate = useCallback((delta: number) => {
+    const nd = new Date(date + "T00:00:00");
+    nd.setDate(nd.getDate() + delta);
+    return `${nd.getFullYear()}-${String(nd.getMonth() + 1).padStart(2, "0")}-${String(nd.getDate()).padStart(2, "0")}`;
+  }, [date]);
 
   const tabs = useMemo(() => [
     { key: "전체" as TabKey, count: workers.length },
@@ -804,9 +952,21 @@ export const DayTimelineModal: React.FC<Props> = ({
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 bg-slate-900 text-white flex-shrink-0">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            {onDateChange && (
+              <button onClick={() => onDateChange(offsetDate(-1))}
+                className="p-1 rounded hover:bg-slate-700 transition-colors text-slate-400 hover:text-white cursor-pointer">
+                <ChevronLeft size={16} />
+              </button>
+            )}
             <span className="text-base font-bold tracking-tight">{title}</span>
-            <span className="bg-slate-700 text-slate-300 text-[11px] px-2.5 py-0.5 rounded-full font-semibold">
+            {onDateChange && (
+              <button onClick={() => onDateChange(offsetDate(1))}
+                className="p-1 rounded hover:bg-slate-700 transition-colors text-slate-400 hover:text-white cursor-pointer">
+                <ChevronRight size={16} />
+              </button>
+            )}
+            <span className="bg-slate-700 text-slate-300 text-[11px] px-2.5 py-0.5 rounded-full font-semibold ml-1">
               근무 {workers.length}명 (사원 {staffWorkers.length} / 약사 {pharmacistWorkers.length}
               {otherWorkers.length > 0 ? ` / 기타 ${otherWorkers.length}` : ""})
             </span>
@@ -996,23 +1156,22 @@ export const DayTimelineModal: React.FC<Props> = ({
               allWorkers={workers}
               onDropToZone={dropToZone}
               onRemoveFromZone={removeFromZone}
-              onApplyMonth={applyZoneToMonth}
               typeTones={typeTones}
               workRanges={workRanges}
+              currentDow={dow}
+              onSaveToDow={saveTemplateToDow}
               lunchSlotMap={lunchSlots}
               shiftedLunchSlots={shiftedLunchSlots}
               lunchOffset={lunchOffset}
               onShiftLunchOffset={handleLunchShiftOffset}
               onDropToLunch={dropToLunchSlot}
               onRemoveFromLunch={removeFromLunchSlot}
-              onApplyLunchMonth={applyLunchToMonth}
               restSlotMap={restSlots}
               shiftedRestSlots={shiftedRestSlots}
               restOffset={restOffset}
               onShiftRestOffset={handleRestShiftOffset}
               onDropToRest={dropToRestSlot}
               onRemoveFromRest={removeFromRestSlot}
-              onApplyRestMonth={applyRestToMonth}
             />
           </div>
 
