@@ -37,27 +37,25 @@ const DEFAULT_TONE: TypeTone = {
 /** Build the tone lookup from the settings entries, falling back to built-in defaults for known types. */
 function buildTypeTones(entries?: ScheduleTypeEntry[]): Record<string, TypeTone> {
   const out: Record<string, TypeTone> = {};
-  // Seed known types so the legend always renders even before the user customizes.
   const knownTypes = ["오픈", "미들", "마감", "오픈마감", "오전반차", "오후반차"];
   for (const t of knownTypes) {
     const hex = getTypeHex(t, entries);
     const tones = derivePresetTones(hex);
     out[t] = {
-      bg: tones.chip,       // main timeline bar (a bit more saturated so text is legible)
+      bg: hex,            // use the direct color hex so each type is visually distinct
       text: tones.text,
       dot: tones.dot,
-      chipBg: tones.bg,     // chip background (lighter than the bar)
+      chipBg: tones.bg,
       chipText: tones.text,
       chipBorder: tones.chip,
     };
   }
-  // Also index every user-defined type (custom ones added in SettingsModal).
   for (const e of entries ?? []) {
     if (!e.type || out[e.type]) continue;
     const hex = getTypeHex(e.type, entries);
     const tones = derivePresetTones(hex);
     out[e.type] = {
-      bg: tones.chip,
+      bg: hex,
       text: tones.text,
       dot: tones.dot,
       chipBg: tones.bg,
@@ -160,7 +158,8 @@ interface BreakTimelineProps {
   kind: "lunch" | "rest";
   slots: string[];
   slotMap: SlotMap;
-  workers: WorkerEntry[];
+  workers: WorkerEntry[];       // drag-source chips (tab-filtered)
+  allWorkers: WorkerEntry[];    // all workers for slot display lookup
   onApplyMonth: () => void;
   onDropToSlot: (slot: string, empId: number) => void;
   onRemoveFromSlot: (slot: string, empId: number) => void;
@@ -170,7 +169,7 @@ interface BreakTimelineProps {
 }
 
 const BreakTimeline: React.FC<BreakTimelineProps> = React.memo(({
-  kind, slots, slotMap, workers, onApplyMonth, onDropToSlot, onRemoveFromSlot, typeTones, offset, onShiftOffset,
+  kind, slots, slotMap, workers, allWorkers, onApplyMonth, onDropToSlot, onRemoveFromSlot, typeTones, offset, onShiftOffset,
 }) => {
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [confirmMonth, setConfirmMonth] = useState(false);
@@ -251,7 +250,7 @@ const BreakTimeline: React.FC<BreakTimelineProps> = React.memo(({
                 <div className={`text-center text-[9px] font-bold py-0.5 border-b ${theme.slotHdr}`}>{slot}</div>
                 <div className="p-1 min-h-[30px] flex flex-wrap gap-0.5 items-start">
                   {assignedHere.map(empId => {
-                    const w = workers.find(ww => ww.emp.id === empId);
+                    const w = allWorkers.find(ww => ww.emp.id === empId);
                     if (!w) return null;
                     const c = typeTones[w.schedule.type] ?? DEFAULT_TONE;
                     return (
@@ -292,7 +291,8 @@ BreakTimeline.displayName = "BreakTimeline";
 // ─── Sub-component: ZoneSection ──────────────────────────────────────────────
 interface ZoneSectionProps {
   zoneMap: ZoneMap;
-  workers: WorkerEntry[];
+  workers: WorkerEntry[];       // drag-source chips (tab-filtered)
+  allWorkers: WorkerEntry[];    // all workers for slot display lookup
   onDropToZone: (zone: ZoneRow, slot: string, empId: number) => void;
   onRemoveFromZone: (zone: ZoneRow, slot: string, empId: number) => void;
   onApplyMonth: () => void;
@@ -304,7 +304,7 @@ interface ZoneSectionProps {
 const ZONE_SLOTS = HOUR_SLOTS.slice(0, -1); // 10:00~21:00 = 12 columns
 
 const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
-  zoneMap, workers, onDropToZone, onRemoveFromZone, onApplyMonth, typeTones, workRanges,
+  zoneMap, workers, allWorkers, onDropToZone, onRemoveFromZone, onApplyMonth, typeTones, workRanges,
 }) => {
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [confirmMonth, setConfirmMonth] = useState(false);
@@ -395,7 +395,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                     onDrop={e => { e.preventDefault(); if (draggingId !== null) tryDropToZone(zone, slot, draggingId); }}
                   >
                     {assignedHere.map(empId => {
-                      const w = workers.find(ww => ww.emp.id === empId);
+                      const w = allWorkers.find(ww => ww.emp.id === empId);
                       if (!w) return null;
                       const c = typeTones[w.schedule.type] ?? DEFAULT_TONE;
                       return (
@@ -669,9 +669,9 @@ export const DayTimelineModal: React.FC<Props> = ({
   ], [workers, staffWorkers, pharmacistWorkers, otherWorkers]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col"
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-5xl overflow-hidden flex flex-col"
         style={{ maxHeight: "92vh" }}
         onClick={e => e.stopPropagation()}
       >
@@ -711,12 +711,15 @@ export const DayTimelineModal: React.FC<Props> = ({
           <div className="px-4 pt-3 pb-2">
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">근무시간</span>
-              {(Object.entries(typeTones) as [string, TypeTone][]).map(([type, colors]) => (
-                <div key={type} className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.dot }} />
-                  <span className="text-[9px] font-semibold text-slate-500">{type}</span>
-                </div>
-              ))}
+              {[...new Set(workers.map(w => w.schedule.type))].map(type => {
+                const colors = typeTones[type] ?? DEFAULT_TONE;
+                return (
+                  <div key={type} className="flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.dot }} />
+                    <span className="text-[9px] font-semibold text-slate-500">{type}</span>
+                  </div>
+                );
+              })}
             </div>
 
             {displayWorkers.length === 0 ? (
@@ -863,6 +866,7 @@ export const DayTimelineModal: React.FC<Props> = ({
             <ZoneSection
               zoneMap={zoneSlots}
               workers={tabWorkers}
+              allWorkers={workers}
               onDropToZone={dropToZone}
               onRemoveFromZone={removeFromZone}
               onApplyMonth={applyZoneToMonth}
@@ -880,6 +884,7 @@ export const DayTimelineModal: React.FC<Props> = ({
               slots={shiftedLunchSlots}
               slotMap={lunchSlots}
               workers={tabWorkers}
+              allWorkers={workers}
               onApplyMonth={applyLunchToMonth}
               onDropToSlot={dropToLunchSlot}
               onRemoveFromSlot={removeFromLunchSlot}
@@ -898,6 +903,7 @@ export const DayTimelineModal: React.FC<Props> = ({
               slots={shiftedRestSlots}
               slotMap={restSlots}
               workers={tabWorkers}
+              allWorkers={workers}
               onApplyMonth={applyRestToMonth}
               onDropToSlot={dropToRestSlot}
               onRemoveFromSlot={removeFromRestSlot}
