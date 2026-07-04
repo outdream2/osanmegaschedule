@@ -1,20 +1,21 @@
 import { Router } from "express";
-import { countObjectsInImage, isStockCountModelLoaded, reloadStockCountModel } from "../stockCounter";
+import { countObjectsInImage, isStockCountModelLoaded, reloadStockCountModel, getLoadStatusReason } from "../stockCounter";
 
 const router = Router();
 
 router.get("/api/stock-count/status", (_req, res) => {
-  res.json({ ready: isStockCountModelLoaded() });
+  const ready = isStockCountModelLoaded();
+  res.json({ ready, reason: getLoadStatusReason() });
 });
 
 router.post("/api/stock-count/reload", async (_req, res) => {
   const ok = await reloadStockCountModel();
-  res.json({ ready: ok });
+  res.json({ ready: ok, reason: getLoadStatusReason() });
 });
 
 router.post("/api/stock-count", async (req, res) => {
   if (!isStockCountModelLoaded()) {
-    return res.status(503).json({ error: "모델 미로드 — server/models/best.onnx를 추가 후 서버를 재시작하세요" });
+    return res.status(503).json({ error: getLoadStatusReason() || "모델 미로드" });
   }
   const { image } = req.body ?? {};
   if (!image || typeof image !== "string") {

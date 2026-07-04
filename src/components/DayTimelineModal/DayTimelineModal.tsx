@@ -111,6 +111,21 @@ function datesInMonth(dateStr: string): string[] {
   });
 }
 
+// ─── Ghost element helpers (module-level, imperative DOM) ─────────────────────
+let ghostEl: HTMLDivElement | null = null;
+function createGhost(name: string) {
+  ghostEl = document.createElement("div");
+  ghostEl.style.cssText = "position:fixed;z-index:9999;pointer-events:none;background:#4f46e5;color:white;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700;transform:translate(-50%,-50%);white-space:nowrap;";
+  ghostEl.textContent = name;
+  document.body.appendChild(ghostEl);
+}
+function moveGhost(x: number, y: number) {
+  if (ghostEl) { ghostEl.style.left = x + "px"; ghostEl.style.top = y + "px"; }
+}
+function removeGhost() {
+  ghostEl?.remove(); ghostEl = null;
+}
+
 // ─── Sub-component: WorkerChips ──────────────────────────────────────────────
 interface WorkerChipsProps {
   workers: WorkerEntry[];
@@ -120,13 +135,16 @@ interface WorkerChipsProps {
   onDragEnd: () => void;
   compact?: boolean;
   typeTones: Record<string, TypeTone>;
+  onTouchDragStart?: (empId: number) => void;
+  onTouchDragEnd?: (x: number, y: number) => void;
 }
 
 const WorkerChips: React.FC<WorkerChipsProps> = React.memo(({
   workers, assignedIds, draggingId, onDragStart, onDragEnd, compact, typeTones,
+  onTouchDragStart, onTouchDragEnd,
 }) => (
   <div className="flex flex-wrap gap-1">
-    {workers.length === 0 && <span className="text-[10px] text-slate-300 italic">근무자 없음</span>}
+    {workers.length === 0 && <span className="text-[12px] text-slate-300 italic">근무자 없음</span>}
     {workers.map(({ emp, schedule }) => {
       const c = typeTones[schedule.type] ?? DEFAULT_TONE;
       const assigned = assignedIds.has(emp.id);
@@ -134,10 +152,35 @@ const WorkerChips: React.FC<WorkerChipsProps> = React.memo(({
         <div key={emp.id} draggable
           onDragStart={e => onDragStart(e, emp.id)}
           onDragEnd={onDragEnd}
-          style={assigned
-            ? { backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }
-            : undefined}
-          className={`flex items-center gap-1 ${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[10px]"} rounded-full font-bold border cursor-grab active:cursor-grabbing select-none transition ${
+          onTouchStart={e => {
+            if (!onTouchDragStart) return;
+            e.preventDefault();
+            onTouchDragStart(emp.id);
+            createGhost(emp.name);
+            const touch = e.touches[0];
+            moveGhost(touch.clientX, touch.clientY);
+            const onMove = (ev: TouchEvent) => {
+              ev.preventDefault();
+              const t = ev.touches[0];
+              moveGhost(t.clientX, t.clientY);
+            };
+            const onEnd = (ev: TouchEvent) => {
+              document.removeEventListener("touchmove", onMove);
+              document.removeEventListener("touchend", onEnd);
+              const t = ev.changedTouches[0];
+              removeGhost();
+              onTouchDragEnd?.(t.clientX, t.clientY);
+            };
+            document.addEventListener("touchmove", onMove, { passive: false });
+            document.addEventListener("touchend", onEnd);
+          }}
+          style={{
+            touchAction: "none",
+            ...(assigned
+              ? { backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }
+              : undefined),
+          }}
+          className={`flex items-center gap-1 ${compact ? "px-2 py-1 text-[11px]" : "px-2 py-1 text-[12px]"} rounded-full font-bold border cursor-grab active:cursor-grabbing select-none transition ${
             assigned ? "opacity-70" : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
           } ${draggingId === emp.id ? "opacity-20" : ""}`}
         >
@@ -172,6 +215,7 @@ const BreakTimeline: React.FC<BreakTimelineProps> = React.memo(({
   kind, slots, slotMap, workers, allWorkers, onApplyMonth, onDropToSlot, onRemoveFromSlot, typeTones, offset, onShiftOffset,
 }) => {
   const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [touchDraggingId, setTouchDraggingId] = useState<number | null>(null);
   const [confirmMonth, setConfirmMonth] = useState(false);
 
   const theme = kind === "lunch"
@@ -189,6 +233,24 @@ const BreakTimeline: React.FC<BreakTimelineProps> = React.memo(({
     setDraggingId(id);
   }, []);
   const handleDragEnd = useCallback(() => setDraggingId(null), []);
+
+  const handleTouchDragStart = useCallback((empId: number) => {
+    setTouchDraggingId(empId);
+  }, []);
+
+  const handleTouchDragEnd = useCallback((x: number, y: number) => {
+    if (touchDraggingId === null) return;
+    const empId = touchDraggingId;
+    setTouchDraggingId(null);
+    let el = document.elementFromPoint(x, y) as HTMLElement | null;
+    while (el) {
+      if (el.dataset.dropSlot) {
+        onDropToSlot(el.dataset.dropSlot, empId);
+        return;
+      }
+      el = el.parentElement;
+    }
+  }, [touchDraggingId, onDropToSlot]);
 
   return (
     <div className={`rounded-xl border ${theme.border} ${theme.bg} p-3`}>
@@ -243,12 +305,13 @@ const BreakTimeline: React.FC<BreakTimelineProps> = React.memo(({
             const assignedHere = slotMap[slot] ?? [];
             return (
               <div key={slot}
+                data-drop-slot={slot}
                 className={`flex-1 flex flex-col border-r border-slate-200 last:border-r-0 transition ${theme.cellHover}`}
                 onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
                 onDrop={e => { e.preventDefault(); if (draggingId !== null) onDropToSlot(slot, draggingId); }}
               >
-                <div className={`text-center text-[9px] font-bold py-0.5 border-b ${theme.slotHdr}`}>{slot}</div>
-                <div className="p-1 min-h-[30px] flex flex-wrap gap-0.5 items-start">
+                <div className={`text-center text-[11px] font-bold py-0.5 border-b ${theme.slotHdr}`}>{slot}</div>
+                <div className="p-1 min-h-[40px] flex flex-wrap gap-0.5 items-start">
                   {assignedHere.map(empId => {
                     const w = allWorkers.find(ww => ww.emp.id === empId);
                     if (!w) return null;
@@ -257,13 +320,13 @@ const BreakTimeline: React.FC<BreakTimelineProps> = React.memo(({
                       <button key={empId} onClick={() => onRemoveFromSlot(slot, empId)}
                         title="클릭하여 제거"
                         style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }}
-                        className="px-1.5 py-px rounded text-[9px] font-bold cursor-pointer border hover:opacity-60 transition">
+                        className="px-1.5 py-px rounded text-[11px] font-bold cursor-pointer border hover:opacity-60 transition">
                         {w.emp.name}
                       </button>
                     );
                   })}
                   {assignedHere.length === 0 && (
-                    <span className="text-[8px] text-slate-300 italic w-full text-center mt-1.5">드롭</span>
+                    <span className="text-[11px] text-slate-300 italic w-full text-center mt-1.5">드롭</span>
                   )}
                 </div>
               </div>
@@ -281,6 +344,8 @@ const BreakTimeline: React.FC<BreakTimelineProps> = React.memo(({
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
           typeTones={typeTones}
+          onTouchDragStart={handleTouchDragStart}
+          onTouchDragEnd={handleTouchDragEnd}
         />
       </div>
     </div>
@@ -333,6 +398,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
   restSlotMap,  shiftedRestSlots,  restOffset,  onShiftRestOffset,  onDropToRest,  onRemoveFromRest,
 }) => {
   const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [touchDraggingId, setTouchDraggingId] = useState<number | null>(null);
   const [selectedDows, setSelectedDows] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
 
@@ -381,6 +447,32 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
   }, []);
   const handleDragEnd = useCallback(() => setDraggingId(null), []);
 
+  const handleTouchDragStart = useCallback((empId: number) => {
+    setTouchDraggingId(empId);
+  }, []);
+
+  const handleTouchDragEnd = useCallback((x: number, y: number) => {
+    if (touchDraggingId === null) return;
+    const empId = touchDraggingId;
+    setTouchDraggingId(null);
+    let el = document.elementFromPoint(x, y) as HTMLElement | null;
+    while (el) {
+      if (el.dataset.dropZone && el.dataset.dropSlot) {
+        tryDropToZone(el.dataset.dropZone as ZoneRow, el.dataset.dropSlot, empId);
+        return;
+      }
+      if (el.dataset.dropLunch) {
+        onDropToLunch(el.dataset.dropLunch, empId);
+        return;
+      }
+      if (el.dataset.dropRest) {
+        onDropToRest(el.dataset.dropRest, empId);
+        return;
+      }
+      el = el.parentElement;
+    }
+  }, [touchDraggingId, tryDropToZone, onDropToLunch, onDropToRest]);
+
   // Render a half-hour sub-cell for break rows (점심/휴게)
   const renderBreakSubCell = (
     slotKey: string,
@@ -389,17 +481,20 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
     theme: { border: string; bg: string; hover: string; label: string },
     onDrop: (slot: string, id: number) => void,
     onRemove: (slot: string, id: number) => void,
+    dropKind: "lunch" | "rest",
   ) => {
     if (!isActive) return <div className={`flex-1 bg-slate-50/20 border-r last:border-r-0 ${theme.border}`} />;
     const assigned = slotMap[slotKey] ?? [];
     const minLabel = slotKey.slice(3); // "00" or "30"
+    const dataAttr = dropKind === "lunch" ? { "data-drop-lunch": slotKey } : { "data-drop-rest": slotKey };
     return (
       <div
-        className={`flex-1 flex flex-col gap-0.5 p-0.5 border-r last:border-r-0 ${theme.border} ${theme.bg} ${theme.hover} transition min-h-[26px]`}
+        {...dataAttr}
+        className={`flex-1 flex flex-col gap-0.5 p-0.5 border-r last:border-r-0 ${theme.border} ${theme.bg} ${theme.hover} transition min-h-[36px]`}
         onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
         onDrop={e => { e.preventDefault(); if (draggingId !== null) onDrop(slotKey, draggingId); }}
       >
-        <span className={`text-[7px] font-bold text-center leading-none ${theme.label}`}>:{minLabel}</span>
+        <span className={`text-[10px] font-bold text-center leading-none ${theme.label}`}>:{minLabel}</span>
         {assigned.map(empId => {
           const w = allWorkers.find(ww => ww.emp.id === empId);
           if (!w) return null;
@@ -408,7 +503,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             <button key={empId} onClick={() => onRemove(slotKey, empId)}
               title="클릭하여 제거"
               style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }}
-              className="px-0.5 py-px rounded text-[7px] font-bold cursor-pointer border hover:opacity-60 transition leading-none">
+              className="px-0.5 py-px rounded text-[10px] font-bold cursor-pointer border hover:opacity-60 transition leading-none">
               {w.emp.name}
             </button>
           );
@@ -480,7 +575,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             <div className="w-14 shrink-0" />
             {ZONE_SLOTS.map(slot => (
               <div key={slot} className="flex-1 text-center">
-                <span className="text-[8px] font-bold text-sky-600">{slot}</span>
+                <span className="text-[11px] font-bold text-sky-600">{slot}</span>
               </div>
             ))}
           </div>
@@ -491,13 +586,15 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             return (
               <div key={zone} className="flex items-stretch mb-0.5">
                 <div className="w-14 shrink-0 flex items-center">
-                  <span className={`text-[9px] font-black tracking-wide ${isCounter ? "text-rose-600" : "text-sky-700"}`}>{zone}</span>
+                  <span className={`text-[12px] font-black tracking-wide ${isCounter ? "text-rose-600" : "text-sky-700"}`}>{zone}</span>
                 </div>
                 {ZONE_SLOTS.map(slot => {
                   const assignedHere = (zoneMap[zone] ?? {})[slot] ?? [];
                   return (
                     <div key={slot}
-                      className={`flex-1 border min-h-[26px] p-0.5 bg-white/60 transition cursor-default flex flex-wrap gap-0.5 items-start ${
+                      data-drop-zone={zone}
+                      data-drop-slot={slot}
+                      className={`flex-1 border min-h-[36px] p-0.5 bg-white/60 transition cursor-default flex flex-wrap gap-0.5 items-start ${
                         isCounter ? "border-rose-200 hover:bg-rose-50" : "border-sky-200 hover:bg-sky-100"
                       }`}
                       onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
@@ -511,7 +608,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                           <button key={empId} onClick={() => onRemoveFromZone(zone, slot, empId)}
                             title="클릭하여 제거"
                             style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }}
-                            className="px-1 py-px rounded text-[8px] font-bold cursor-pointer border hover:opacity-60 transition">
+                            className="px-1 py-px rounded text-[11px] font-bold cursor-pointer border hover:opacity-60 transition">
                             {w.emp.name}
                           </button>
                         );
@@ -529,11 +626,11 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           {/* 점심 row */}
           <div className="flex items-stretch mb-0.5">
             <div className="w-14 shrink-0 flex flex-col justify-center gap-0.5">
-              <span className="text-[9px] font-black text-yellow-700">점심</span>
+              <span className="text-[12px] font-black text-yellow-700">점심</span>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftLunchOffset(-30)} disabled={lunchOffset <= -60}
                   className="w-4 h-4 flex items-center justify-center text-[9px] font-bold rounded bg-white border border-slate-200 text-slate-500 disabled:opacity-30 cursor-pointer">−</button>
-                <span className="text-[8px] font-mono text-slate-400 leading-none">{offsetLabel(lunchOffset)}</span>
+                <span className="text-[10px] font-mono text-slate-400 leading-none">{offsetLabel(lunchOffset)}</span>
                 <button type="button" onClick={() => onShiftLunchOffset(30)} disabled={lunchOffset >= 60}
                   className="w-4 h-4 flex items-center justify-center text-[9px] font-bold rounded bg-white border border-slate-200 text-slate-500 disabled:opacity-30 cursor-pointer">+</button>
               </div>
@@ -542,11 +639,11 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               const k0 = subSlotKey(slot, 0);
               const k30 = subSlotKey(slot, 30);
               const hasAny = shiftedLunchSlots.includes(k0) || shiftedLunchSlots.includes(k30);
-              if (!hasAny) return <div key={slot} className="flex-1 border border-transparent min-h-[26px]" />;
+              if (!hasAny) return <div key={slot} className="flex-1 border border-transparent min-h-[36px]" />;
               return (
-                <div key={slot} className="flex-1 flex border border-yellow-200 min-h-[26px]">
-                  {renderBreakSubCell(k0,  shiftedLunchSlots.includes(k0),  lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch)}
-                  {renderBreakSubCell(k30, shiftedLunchSlots.includes(k30), lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch)}
+                <div key={slot} className="flex-1 flex border border-yellow-200 min-h-[36px]">
+                  {renderBreakSubCell(k0,  shiftedLunchSlots.includes(k0),  lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch")}
+                  {renderBreakSubCell(k30, shiftedLunchSlots.includes(k30), lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch")}
                 </div>
               );
             })}
@@ -555,11 +652,11 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           {/* 휴게 row */}
           <div className="flex items-stretch">
             <div className="w-14 shrink-0 flex flex-col justify-center gap-0.5">
-              <span className="text-[9px] font-black text-violet-700">휴게</span>
+              <span className="text-[12px] font-black text-violet-700">휴게</span>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftRestOffset(-30)} disabled={restOffset <= -60}
                   className="w-4 h-4 flex items-center justify-center text-[9px] font-bold rounded bg-white border border-slate-200 text-slate-500 disabled:opacity-30 cursor-pointer">−</button>
-                <span className="text-[8px] font-mono text-slate-400 leading-none">{offsetLabel(restOffset)}</span>
+                <span className="text-[10px] font-mono text-slate-400 leading-none">{offsetLabel(restOffset)}</span>
                 <button type="button" onClick={() => onShiftRestOffset(30)} disabled={restOffset >= 60}
                   className="w-4 h-4 flex items-center justify-center text-[9px] font-bold rounded bg-white border border-slate-200 text-slate-500 disabled:opacity-30 cursor-pointer">+</button>
               </div>
@@ -568,11 +665,11 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               const k0 = subSlotKey(slot, 0);
               const k30 = subSlotKey(slot, 30);
               const hasAny = shiftedRestSlots.includes(k0) || shiftedRestSlots.includes(k30);
-              if (!hasAny) return <div key={slot} className="flex-1 border border-transparent min-h-[26px]" />;
+              if (!hasAny) return <div key={slot} className="flex-1 border border-transparent min-h-[36px]" />;
               return (
-                <div key={slot} className="flex-1 flex border border-violet-200 min-h-[26px]">
-                  {renderBreakSubCell(k0,  shiftedRestSlots.includes(k0),  restSlotMap, restTheme, onDropToRest, onRemoveFromRest)}
-                  {renderBreakSubCell(k30, shiftedRestSlots.includes(k30), restSlotMap, restTheme, onDropToRest, onRemoveFromRest)}
+                <div key={slot} className="flex-1 flex border border-violet-200 min-h-[36px]">
+                  {renderBreakSubCell(k0,  shiftedRestSlots.includes(k0),  restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest")}
+                  {renderBreakSubCell(k30, shiftedRestSlots.includes(k30), restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest")}
                 </div>
               );
             })}
@@ -590,6 +687,8 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           onDragEnd={handleDragEnd}
           compact
           typeTones={typeTones}
+          onTouchDragStart={handleTouchDragStart}
+          onTouchDragEnd={handleTouchDragEnd}
         />
       </div>
     </div>

@@ -33,6 +33,7 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
   const [result, setResult] = useState<DetectionResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [modelReady, setModelReady] = useState<boolean | null>(null);
+  const [modelReason, setModelReason] = useState<string>("");
   const [applied, setApplied] = useState<"warehouse" | "store" | null>(null);
   const [reloading, setReloading] = useState(false);
 
@@ -56,7 +57,7 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
     // 모델 준비 상태 확인
     fetch("/api/stock-count/status")
       .then(r => r.json())
-      .then(d => { if (active) setModelReady(!!d.ready); })
+      .then(d => { if (active) { setModelReady(!!d.ready); setModelReason(d.reason ?? ""); } })
       .catch(() => { if (active) setModelReady(false); });
 
     return () => {
@@ -143,7 +144,8 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
       const r = await fetch("/api/stock-count/reload", { method: "POST" });
       const d = await r.json();
       setModelReady(!!d.ready);
-      if (!d.ready) setError("모델 로드 실패 — server/models/best.pt 또는 best.onnx를 확인하세요");
+      setModelReason(d.reason ?? "");
+      if (!d.ready) setError(d.reason || "모델 로드 실패 — server/models/best.pt를 확인하세요");
     } catch (e: any) {
       setError("재로드 실패: " + e.message);
     }
@@ -239,7 +241,7 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
         {/* 모델 미로드 안내 */}
         {modelReady === false && phase === "camera" && (
           <div className="w-full max-w-3xl bg-orange-900/50 border border-orange-500 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
-            <span className="text-orange-300 text-xs font-bold">server/models/best.pt 파일을 추가 후 재로드하세요</span>
+            <span className="text-orange-300 text-xs font-bold">{modelReason || "모델 미로드 — 재로드를 눌러주세요"}</span>
             <button
               onClick={handleReloadModel}
               disabled={reloading}

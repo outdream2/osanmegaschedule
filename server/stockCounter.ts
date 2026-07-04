@@ -21,6 +21,7 @@ let session: any = null;
 let useYoloServer = false;   // Python YOLO 서버 사용 여부
 let yoloServerProc: ReturnType<typeof spawn> | null = null;
 let loadAttempted = false;
+let loadStatusReason = "";
 
 // ── Python YOLO 서버 ─────────────────────────────────────────────────────────
 
@@ -102,9 +103,11 @@ export async function loadStockCountModel(): Promise<boolean> {
       if (!ort) ort = await import("onnxruntime-node");
       session = await ort.InferenceSession.create(ONNX_PATH);
       console.log("[StockCounter] ONNX 모델 로드 완료:", ONNX_PATH);
+      loadStatusReason = "ONNX 모델 로드 완료";
       return true;
     } catch (e: any) {
       console.error("[StockCounter] ONNX 로드 실패:", e.message);
+      loadStatusReason = `ONNX 로드 실패: ${e.message}`;
     }
   }
 
@@ -115,7 +118,12 @@ export async function loadStockCountModel(): Promise<boolean> {
     if (pythonBin) {
       // 2a) Python YOLO 서버 방식 (우선, 변환 불필요)
       const ok = await startYoloServer(pythonBin);
-      if (ok) { useYoloServer = true; return true; }
+      if (ok) {
+        useYoloServer = true;
+        loadStatusReason = "Python YOLO 서버 실행 중";
+        return true;
+      }
+      loadStatusReason = "Python YOLO 서버 시작 실패";
 
       // 2b) ONNX 변환 후 onnxruntime-node 방식
       const converted = await convertPtToOnnx(pythonBin);
@@ -124,17 +132,23 @@ export async function loadStockCountModel(): Promise<boolean> {
           if (!ort) ort = await import("onnxruntime-node");
           session = await ort.InferenceSession.create(ONNX_PATH);
           console.log("[StockCounter] ONNX 모델 로드 완료 (변환 후)");
+          loadStatusReason = "ONNX 변환 후 로드 완료";
           return true;
         } catch (e: any) {
           console.error("[StockCounter] 변환 후 ONNX 로드 실패:", e.message);
+          loadStatusReason = `ONNX 변환 후 로드 실패: ${e.message}`;
         }
+      } else {
+        loadStatusReason = "ONNX 변환 실패 (ultralytics 오류)";
       }
     } else {
+      loadStatusReason = "Python + ultralytics 미설치 — pip install ultralytics fastapi uvicorn 후 재로드";
       console.warn("[StockCounter] Python + ultralytics 없음. 설치 안내:");
       console.warn("  pip install ultralytics fastapi uvicorn pillow");
       console.warn("  서버를 재시작하세요.");
     }
   } else {
+    loadStatusReason = "모델 파일 없음 — server/models/best.pt를 추가하세요";
     console.log("[StockCounter] 모델 없음 — server/models/best.pt를 넣어주세요");
   }
 
@@ -143,6 +157,10 @@ export async function loadStockCountModel(): Promise<boolean> {
 
 export function isStockCountModelLoaded(): boolean {
   return session !== null || useYoloServer;
+}
+
+export function getLoadStatusReason(): string {
+  return loadStatusReason;
 }
 
 export async function reloadStockCountModel(): Promise<boolean> {
