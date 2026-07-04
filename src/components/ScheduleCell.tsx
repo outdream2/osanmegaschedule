@@ -1,7 +1,8 @@
 // src/components/ScheduleCell.tsx
 import React, { useState, useRef, useEffect } from "react";
 import { Schedule } from "../types";
-import { SCHEDULE_COLORS, SCHEDULE_TYPES, DEFAULT_COLOR } from "../constants";
+import { SCHEDULE_TYPES, getTypeHex, isLightHex } from "../constants";
+import type { ScheduleTypeEntry } from "../constants";
 import { Clock, MessageSquare, Save, X, ToggleLeft, Settings2 } from "lucide-react";
 
 interface ScheduleCellProps {
@@ -21,6 +22,8 @@ interface ScheduleCellProps {
   typeHoursMap?: Record<string, string>;
   /** Optional override for schedule type list (from settings). Falls back to SCHEDULE_TYPES. */
   scheduleTypes?: { value: string; label: string }[];
+  /** Full schedule type entries for dynamic color resolution. */
+  scheduleTypeEntries?: ScheduleTypeEntry[];
 }
 
 export const ScheduleCell: React.FC<ScheduleCellProps> = ({
@@ -32,6 +35,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
   isPharmacist = false,
   typeHoursMap,
   scheduleTypes: scheduleTypesProp,
+  scheduleTypeEntries,
 }) => {
   const activeScheduleTypes = scheduleTypesProp ?? SCHEDULE_TYPES;
   const [isOpen, setIsOpen] = useState(false);
@@ -86,7 +90,8 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
   const displayType = schedule?.type || "";
   const displayWorkingHours = schedule?.workingHours || "";
   const displayActualHours = schedule?.actualHours || "";
-  const colorConfig = displayType ? (SCHEDULE_COLORS[displayType] || DEFAULT_COLOR) : null;
+  const cellBgHex = displayType ? getTypeHex(displayType, scheduleTypeEntries) : null;
+  const cellIsLight = cellBgHex ? isLightHex(cellBgHex) : true;
 
   const CYCLE = ["오픈", "미들", "마감", "휴무"];
 
@@ -145,10 +150,11 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
       <div
         id={`cell-${employeeId}-${dateStr}`}
         className={`w-full h-full rounded-sm flex flex-col justify-center items-center p-0.5 relative transition-all ${
-          isAdmin ? "cursor-pointer hover:bg-slate-50/80 hover:scale-[1.02] shadow-xs" : "cursor-default text-slate-400"
+          isAdmin ? "cursor-pointer hover:bg-slate-50/80 hover:scale-[1.02] shadow-xs" : "cursor-default"
         } ${
-          colorConfig ? `${colorConfig.bg} ${colorConfig.text}` : "bg-white text-slate-400"
+          cellBgHex ? (cellIsLight ? "text-slate-900 font-bold" : "text-white font-bold") : "bg-white text-slate-400"
         }`}
+        style={cellBgHex ? { backgroundColor: cellBgHex } : undefined}
         onClick={handleQuickCycle}
         title={isAdmin ? `클릭: 오픈→미들→마감→휴무 순환 변경\n⚙️ 상세 편집은 호버 후 톱니바퀴 클릭` : undefined}
       >
@@ -289,19 +295,22 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
               const offTypes = activeScheduleTypes.filter(t => OFF_TYPES.has(t.value));
               const otherTypes = activeScheduleTypes.filter(t => !WORK_TYPES.has(t.value) && !OFF_TYPES.has(t.value));
               const renderBtn = (t: { value: string; label: string }, dimmed: boolean) => {
-                const sColor = SCHEDULE_COLORS[t.value] || DEFAULT_COLOR;
+                const btnHex = getTypeHex(t.value, scheduleTypeEntries);
+                const btnLight = isLightHex(btnHex);
+                const isSelected = type === t.value;
                 return (
                   <button
                     key={t.value}
                     type="button"
                     onClick={() => applyPreset(t.value)}
                     className={`px-2 py-1 text-[10px] sm:text-xs rounded border transition cursor-pointer ${
-                      type === t.value
-                        ? `${sColor.bg} ${sColor.text} !border-[#2563eb] ring-1 ring-blue-500/20`
+                      isSelected
+                        ? `${btnLight ? "text-slate-900" : "text-white"} !border-[#2563eb] ring-1 ring-blue-500/20`
                         : dimmed
                           ? "bg-slate-50 text-slate-300 border-slate-100 hover:text-slate-600 hover:border-slate-200"
                           : "bg-slate-50 text-slate-700 border-[#e2e8f0] hover:bg-slate-100"
                     }`}
+                    style={isSelected ? { backgroundColor: btnHex } : undefined}
                   >
                     {t.label}
                   </button>

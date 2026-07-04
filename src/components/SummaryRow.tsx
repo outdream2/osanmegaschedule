@@ -6,9 +6,10 @@ interface SummaryRowProps {
   summaries: MonthlySummary[];
   label: "약사" | "사원" | "근무인원";
   totalCell?: React.ReactNode; // kept for backward compat, no longer rendered
+  showMonthTotal?: boolean;    // 월별 합계 열 표시 여부 (기본 true)
 }
 
-export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label }) => {
+export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMonthTotal = true }) => {
   const isPharmacist = label === "약사";
   const isStaff = label === "사원";
   const isTotal = label === "근무인원";
@@ -67,7 +68,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label }) => {
           </td>
         );
 
-        if (!isMonthEnd) return <React.Fragment key={sum.day}>{cell}</React.Fragment>;
+        if (!isMonthEnd || !showMonthTotal) return <React.Fragment key={sum.date}>{cell}</React.Fragment>;
 
         const mk = sum.date.substring(0, 7);
         const monthTotal = summaries
@@ -75,7 +76,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label }) => {
           .reduce((acc, s) => acc + getVal(s), 0);
 
         return (
-          <React.Fragment key={sum.day}>
+          <React.Fragment key={sum.date}>
             {cell}
             <td className={`p-1.5 text-center text-[10px] font-black ${monthTotalCls}`}>
               {monthTotal > 0 ? `${monthTotal}인일` : <span className="opacity-30">-</span>}

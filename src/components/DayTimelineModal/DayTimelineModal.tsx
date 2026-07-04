@@ -1,59 +1,89 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { X, Pencil, Clock } from "lucide-react";
+import { X, Pencil } from "lucide-react";
 import { Employee } from "../../types";
+import { getTypeHex, derivePresetTones, type ScheduleTypeEntry } from "../../constants";
 
+// ─── Constants ───────────────────────────────────────────────────────────────
 const DISPLAY_START = 10 * 60;
-const DISPLAY_END = 22 * 60;
+const DISPLAY_END   = 22 * 60;
 const TOTAL = DISPLAY_END - DISPLAY_START;
-const BREAK_MIN = 11 * 60; // earliest selectable break start (11:00)
-const STEP = 30;            // 30-minute increment for break time
-
 const SKIP_TYPES = new Set(["휴무", "월차", "지정휴무"]);
 
-const TYPE_COLORS: Record<string, {
-  bg: string; text: string; dot: string;
-  chipBg: string; chipText: string; chipBorder: string;
-  tabBg: string; tabText: string;
-}> = {
-  "오픈":    { bg: "bg-emerald-200", text: "text-emerald-700", dot: "bg-emerald-500", chipBg: "bg-emerald-100", chipText: "text-emerald-800", chipBorder: "border-emerald-300", tabBg: "bg-emerald-100", tabText: "text-emerald-800" },
-  "미들":    { bg: "bg-blue-200",    text: "text-blue-700",    dot: "bg-blue-500",    chipBg: "bg-blue-100",    chipText: "text-blue-800",    chipBorder: "border-blue-300",    tabBg: "bg-blue-100",    tabText: "text-blue-800"    },
-  "마감":    { bg: "bg-rose-200",    text: "text-rose-700",    dot: "bg-rose-500",    chipBg: "bg-rose-100",    chipText: "text-rose-800",    chipBorder: "border-rose-300",    tabBg: "bg-rose-100",    tabText: "text-rose-800"    },
-  "오전반차": { bg: "bg-lime-200",   text: "text-lime-700",   dot: "bg-lime-500",   chipBg: "bg-lime-100",   chipText: "text-lime-800",   chipBorder: "border-lime-300",   tabBg: "bg-lime-100",   tabText: "text-lime-800"   },
-  "오후반차": { bg: "bg-amber-200",  text: "text-amber-700",  dot: "bg-amber-500",  chipBg: "bg-amber-100",  chipText: "text-amber-800",  chipBorder: "border-amber-300",  tabBg: "bg-amber-100",  tabText: "text-amber-800"  },
+// 1-hour slots for main work timeline (10:00 ~ 22:00)
+const HOUR_SLOTS: string[] = [];
+for (let h = 10; h <= 22; h++) HOUR_SLOTS.push(`${String(h).padStart(2, "0")}:00`);
+
+// 30-min break time slots
+const LUNCH_SLOTS = ["11:00", "11:30", "12:00", "12:30", "13:00", "13:30"]; // 11:00~14:00
+const REST_SLOTS  = ["15:30", "16:00", "16:30", "17:00", "17:30"];           // 15:30~18:00
+
+const ZONE_ROWS = ["매장", "카운터"] as const;
+type ZoneRow = typeof ZONE_ROWS[number];
+
+const TYPE_ORDER: Record<string, number> = { "오픈": 0, "오전반차": 1, "미들": 2, "오후반차": 3, "마감": 4 };
+
+/**
+ * Runtime hex-based color tone used across the modal.
+ * Built once per render via useMemo from the user's schedule type entries so
+ * SettingsModal color changes flow through automatically.
+ */
+type TypeTone = { bg: string; text: string; dot: string; chipBg: string; chipText: string; chipBorder: string };
+
+const DEFAULT_TONE: TypeTone = {
+  bg: "#e2e8f0", text: "#334155", dot: "#94a3b8",
+  chipBg: "#f1f5f9", chipText: "#334155", chipBorder: "#e2e8f0",
 };
-const DEFAULT_COLOR = {
-  bg: "bg-slate-200", text: "text-slate-700", dot: "bg-slate-400",
-  chipBg: "bg-slate-100", chipText: "text-slate-700", chipBorder: "border-slate-300",
-  tabBg: "bg-slate-100", tabText: "text-slate-700",
+
+/** Build the tone lookup from the settings entries, falling back to built-in defaults for known types. */
+function buildTypeTones(entries?: ScheduleTypeEntry[]): Record<string, TypeTone> {
+  const out: Record<string, TypeTone> = {};
+  // Seed known types so the legend always renders even before the user customizes.
+  const knownTypes = ["오픈", "미들", "마감", "오픈마감", "오전반차", "오후반차"];
+  for (const t of knownTypes) {
+    const hex = getTypeHex(t, entries);
+    const tones = derivePresetTones(hex);
+    out[t] = {
+      bg: tones.chip,       // main timeline bar (a bit more saturated so text is legible)
+      text: tones.text,
+      dot: tones.dot,
+      chipBg: tones.bg,     // chip background (lighter than the bar)
+      chipText: tones.text,
+      chipBorder: tones.chip,
+    };
+  }
+  // Also index every user-defined type (custom ones added in SettingsModal).
+  for (const e of entries ?? []) {
+    if (!e.type || out[e.type]) continue;
+    const hex = getTypeHex(e.type, entries);
+    const tones = derivePresetTones(hex);
+    out[e.type] = {
+      bg: tones.chip,
+      text: tones.text,
+      dot: tones.dot,
+      chipBg: tones.bg,
+      chipText: tones.text,
+      chipBorder: tones.chip,
+    };
+  }
+  return out;
+}
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+type WorkerEntry = {
+  emp: Employee;
+  schedule: { type: string; date: string; workingHours?: string; actualHours?: string; memo?: string };
+  wh: string;
 };
+type SlotMap = Record<string, number[]>;  // timeSlot → empId[]
+type ZoneMap = Record<string, SlotMap>;   // zoneName → SlotMap
 
-const SLOTS: string[] = [];
-for (let m = DISPLAY_START; m <= DISPLAY_END; m += 30) {
-  const h = Math.floor(m / 60);
-  const min = m % 60;
-  SLOTS.push(`${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`);
-}
-
-function toMin(time: string): number {
-  const [h, m] = time.split(":").map(Number);
-  return h * 60 + (m || 0);
-}
-
-function minToStr(min: number): string {
-  const h = Math.floor(min / 60);
-  const m = min % 60;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-}
-
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 function parseRange(wh: string): { start: number; end: number } | null {
   if (!wh) return null;
   const m = wh.match(/^(\d{1,2})(?::(\d{2}))?\s*[-~]\s*(\d{1,2})(?::(\d{2}))?$/);
   if (!m) return null;
-  const start = parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0);
-  const end   = parseInt(m[3]) * 60 + (m[4] ? parseInt(m[4]) : 0);
-  return { start, end };
+  return { start: parseInt(m[1]) * 60 + (m[2] ? parseInt(m[2]) : 0), end: parseInt(m[3]) * 60 + (m[4] ? parseInt(m[4]) : 0) };
 }
-
 function pct(min: number): number {
   return ((Math.max(DISPLAY_START, Math.min(DISPLAY_END, min)) - DISPLAY_START) / TOTAL) * 100;
 }
@@ -62,153 +92,347 @@ function widthPct(start: number, end: number): number {
   const e = Math.min(DISPLAY_END, end);
   return e <= s ? 0 : ((e - s) / TOTAL) * 100;
 }
-function clamp(v: number, lo: number, hi: number): number {
-  return Math.max(lo, Math.min(hi, v));
+function minToStr(min: number): string {
+  return `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
 }
-function safeRange(start: number, end: number, fallbackStart: number, fallbackEnd: number): { start: number; end: number } {
-  if (
-    Number.isFinite(start) && Number.isFinite(end) &&
-    end - start >= STEP &&
-    start >= BREAK_MIN && end <= DISPLAY_END
-  ) return { start, end };
-  return { start: fallbackStart, end: fallbackEnd };
+/** Shift a "HH:MM" slot by N minutes, returning a new "HH:MM" string. */
+function shiftSlot(base: string, offsetMin: number): string {
+  const [h, m] = base.split(":").map(Number);
+  const total = h * 60 + m + offsetMin;
+  const nh = Math.floor(total / 60);
+  const nm = ((total % 60) + 60) % 60;
+  return `${String(nh).padStart(2, "0")}:${String(nm).padStart(2, "0")}`;
 }
-
-interface Range { start: number; end: number }
-
-// ── Sub-components defined outside to prevent remount on parent re-render ──
-
-interface TimeAdjusterProps {
-  kind: "lunch" | "rest";
-  range: Range;
-  theme: {
-    sectionBg: string; border: string;
-    headerText: string; btnBg: string; btnText: string; timeText: string;
-  };
-  onAdjust: (kind: "lunch" | "rest", part: "start" | "end", delta: number) => void;
+function datesInMonth(dateStr: string): string[] {
+  const d = new Date(dateStr + "T00:00:00");
+  const y = d.getFullYear(), mo = d.getMonth();
+  const count = new Date(y, mo + 1, 0).getDate();
+  return Array.from({ length: count }, (_, i) => {
+    const day = i + 1;
+    return `${y}-${String(mo + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  });
 }
 
-const TimeAdjuster: React.FC<TimeAdjusterProps> = React.memo(({ kind, range, theme, onAdjust }) => {
-  const label = kind === "lunch" ? "점심" : "휴게";
-  const duration = range.end - range.start;
-  return (
-    <div className={`flex flex-col items-center gap-2 p-3 rounded-xl border ${theme.sectionBg} ${theme.border} min-w-[110px] shrink-0`}>
-      <div className={`flex items-center gap-1 text-[10px] font-black ${theme.headerText}`}>
-        <Clock size={10} />{label}시간
-      </div>
-      {/* Start */}
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="text-[8px] font-semibold text-slate-400">시작</span>
-        <div className="flex items-center gap-1">
-          <button className={`w-5 h-5 rounded text-[11px] font-black ${theme.btnBg} ${theme.btnText} transition cursor-pointer flex items-center justify-center`}
-            onClick={() => onAdjust(kind, "start", -STEP)}>−</button>
-          <span className={`text-sm font-black ${theme.timeText} tabular-nums w-10 text-center`}>{minToStr(range.start)}</span>
-          <button className={`w-5 h-5 rounded text-[11px] font-black ${theme.btnBg} ${theme.btnText} transition cursor-pointer flex items-center justify-center`}
-            onClick={() => onAdjust(kind, "start", +STEP)}>+</button>
+// ─── Sub-component: WorkerChips ──────────────────────────────────────────────
+interface WorkerChipsProps {
+  workers: WorkerEntry[];
+  assignedIds: Set<number>;
+  draggingId: number | null;
+  onDragStart: (e: React.DragEvent, empId: number) => void;
+  onDragEnd: () => void;
+  compact?: boolean;
+  typeTones: Record<string, TypeTone>;
+}
+
+const WorkerChips: React.FC<WorkerChipsProps> = React.memo(({
+  workers, assignedIds, draggingId, onDragStart, onDragEnd, compact, typeTones,
+}) => (
+  <div className="flex flex-wrap gap-1">
+    {workers.length === 0 && <span className="text-[10px] text-slate-300 italic">근무자 없음</span>}
+    {workers.map(({ emp, schedule }) => {
+      const c = typeTones[schedule.type] ?? DEFAULT_TONE;
+      const assigned = assignedIds.has(emp.id);
+      return (
+        <div key={emp.id} draggable
+          onDragStart={e => onDragStart(e, emp.id)}
+          onDragEnd={onDragEnd}
+          style={assigned
+            ? { backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }
+            : undefined}
+          className={`flex items-center gap-1 ${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[10px]"} rounded-full font-bold border cursor-grab active:cursor-grabbing select-none transition ${
+            assigned ? "opacity-70" : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+          } ${draggingId === emp.id ? "opacity-20" : ""}`}
+        >
+          <span
+            className="w-1.5 h-1.5 rounded-full shrink-0"
+            style={{ backgroundColor: assigned ? c.dot : "#cbd5e1" }}
+          />
+          {emp.name}
         </div>
-      </div>
-      <div className="w-6 h-px bg-current opacity-20" />
-      {/* End */}
-      <div className="flex flex-col items-center gap-0.5">
-        <span className="text-[8px] font-semibold text-slate-400">종료</span>
-        <div className="flex items-center gap-1">
-          <button className={`w-5 h-5 rounded text-[11px] font-black ${theme.btnBg} ${theme.btnText} transition cursor-pointer flex items-center justify-center`}
-            onClick={() => onAdjust(kind, "end", -STEP)}>−</button>
-          <span className={`text-sm font-black ${theme.timeText} tabular-nums w-10 text-center`}>{minToStr(range.end)}</span>
-          <button className={`w-5 h-5 rounded text-[11px] font-black ${theme.btnBg} ${theme.btnText} transition cursor-pointer flex items-center justify-center`}
-            onClick={() => onAdjust(kind, "end", +STEP)}>+</button>
-        </div>
-      </div>
-      <span className={`text-[9px] font-bold ${theme.timeText} opacity-60`}>{duration}분</span>
-    </div>
-  );
-});
-TimeAdjuster.displayName = "TimeAdjuster";
+      );
+    })}
+  </div>
+));
+WorkerChips.displayName = "WorkerChips";
 
-type WorkerEntry = { emp: Employee; schedule: { type: string; date: string; workingHours?: string } };
-
-interface EmployeeChipsProps {
+// ─── Sub-component: BreakTimeline ─────────────────────────────────────────────
+interface BreakTimelineProps {
   kind: "lunch" | "rest";
-  assignees: Set<number>;
-  allWorkers: WorkerEntry[];
-  activeTypeTab: string;
-  onTypeTabChange: (tab: string) => void;
-  onToggle: (kind: "lunch" | "rest", empId: number) => void;
+  slots: string[];
+  slotMap: SlotMap;
+  workers: WorkerEntry[];
+  onApplyMonth: () => void;
+  onDropToSlot: (slot: string, empId: number) => void;
+  onRemoveFromSlot: (slot: string, empId: number) => void;
+  typeTones: Record<string, TypeTone>;
+  offset: number;
+  onShiftOffset: (delta: number) => void;
 }
 
-const EmployeeChips: React.FC<EmployeeChipsProps> = React.memo(({
-  kind, assignees, allWorkers, activeTypeTab, onTypeTabChange, onToggle,
+const BreakTimeline: React.FC<BreakTimelineProps> = React.memo(({
+  kind, slots, slotMap, workers, onApplyMonth, onDropToSlot, onRemoveFromSlot, typeTones, offset, onShiftOffset,
 }) => {
-  const shiftTypes = useMemo(() => {
-    const types = [...new Set(allWorkers.map(w => w.schedule.type))];
-    return ["전체", ...types];
-  }, [allWorkers]);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [confirmMonth, setConfirmMonth] = useState(false);
 
-  const filtered = activeTypeTab === "전체"
-    ? allWorkers
-    : allWorkers.filter(w => w.schedule.type === activeTypeTab);
+  const theme = kind === "lunch"
+    ? { label: "점심시간", dot: "bg-yellow-400", hdr: "text-yellow-800", border: "border-yellow-200", bg: "bg-yellow-50", slotHdr: "bg-yellow-100 text-yellow-700 border-yellow-200", cellHover: "hover:bg-yellow-50" }
+    : { label: "휴게시간", dot: "bg-violet-400", hdr: "text-violet-800", border: "border-violet-200", bg: "bg-violet-50", slotHdr: "bg-violet-100 text-violet-700 border-violet-200", cellHover: "hover:bg-violet-50" };
+
+  const assignedIds = useMemo(() => {
+    const ids = new Set<number>();
+    (Object.values(slotMap) as number[][]).forEach(arr => arr.forEach(id => ids.add(id)));
+    return ids;
+  }, [slotMap]);
+
+  const handleDragStart = useCallback((e: React.DragEvent, id: number) => {
+    e.dataTransfer.effectAllowed = "move";
+    setDraggingId(id);
+  }, []);
+  const handleDragEnd = useCallback(() => setDraggingId(null), []);
 
   return (
-    <div className="flex flex-col gap-2 flex-1 min-w-0">
-      {/* Type tabs */}
-      <div className="flex items-center gap-0.5 flex-wrap">
-        {shiftTypes.map(type => {
-          const colors = TYPE_COLORS[type] ?? DEFAULT_COLOR;
-          const isActive = activeTypeTab === type;
-          const count = (type === "전체" ? allWorkers : allWorkers.filter(w => w.schedule.type === type))
-            .filter(w => assignees.has(w.emp.id)).length;
-          return (
+    <div className={`rounded-xl border ${theme.border} ${theme.bg} p-3`}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-1.5">
+          <span className={`w-2 h-2 rounded-full ${theme.dot}`} />
+          <span className={`text-[11px] font-black ${theme.hdr}`}>{theme.label}</span>
+          <div className="flex items-center gap-0.5 ml-1">
             <button
-              key={type}
-              onClick={() => onTypeTabChange(type)}
-              className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold transition border cursor-pointer ${
-                isActive
-                  ? `${colors.tabBg} ${colors.tabText} border-current shadow-sm`
-                  : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
-              }`}
-            >
-              {type !== "전체" && (
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isActive ? (TYPE_COLORS[type]?.dot ?? DEFAULT_COLOR.dot) : "bg-slate-300"}`} />
-              )}
-              {type}
-              {count > 0 && (
-                <span className={`text-[9px] font-black ${isActive ? "" : "text-slate-400"}`}>({count})</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-      {/* Chips */}
-      <div className="flex flex-wrap gap-1.5">
-        {filtered.map(({ emp, schedule }) => {
-          const colors = TYPE_COLORS[schedule.type] ?? DEFAULT_COLOR;
-          const isSelected = assignees.has(emp.id);
-          return (
+              type="button"
+              onClick={() => onShiftOffset(-30)}
+              disabled={offset <= -60}
+              className="w-5 h-5 flex items-center justify-center text-[11px] font-bold rounded bg-white border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              title="30분 앞으로"
+            >-</button>
+            <span className="text-[9px] font-mono text-slate-500 min-w-[36px] text-center">
+              {offset === 0 ? "기본" : `${offset > 0 ? "+" : ""}${offset}분`}
+            </span>
             <button
-              key={emp.id}
-              onClick={() => onToggle(kind, emp.id)}
-              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-bold transition border cursor-pointer select-none ${
-                isSelected
-                  ? `${colors.chipBg} ${colors.chipText} ${colors.chipBorder} shadow-sm`
-                  : "bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200"
-              }`}
-            >
-              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSelected ? colors.dot : "bg-gray-300"}`} />
-              {emp.name}
-            </button>
-          );
-        })}
-        {filtered.length === 0 && (
-          <span className="text-[11px] text-slate-300 italic">해당 유형 없음</span>
+              type="button"
+              onClick={() => onShiftOffset(30)}
+              disabled={offset >= 60}
+              className="w-5 h-5 flex items-center justify-center text-[11px] font-bold rounded bg-white border border-slate-200 text-slate-500 hover:border-slate-400 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              title="30분 뒤로"
+            >+</button>
+          </div>
+          {assignedIds.size > 0 && (
+            <span className={`text-[10px] font-semibold ${theme.hdr} opacity-70`}>{assignedIds.size}명 배정됨</span>
+          )}
+        </div>
+        {confirmMonth ? (
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-slate-500">이 달 전체에 적용?</span>
+            <button onClick={() => { onApplyMonth(); setConfirmMonth(false); }}
+              className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500 text-white hover:bg-indigo-600 cursor-pointer">예</button>
+            <button onClick={() => setConfirmMonth(false)}
+              className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer">취소</button>
+          </div>
+        ) : (
+          <button onClick={() => setConfirmMonth(true)}
+            className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-500 hover:border-slate-400 transition cursor-pointer">
+            전월 적용
+          </button>
         )}
       </div>
+
+      {/* Slot timeline grid */}
+      <div className="overflow-x-auto">
+        <div className="flex rounded-lg border border-slate-200 overflow-hidden" style={{ minWidth: `${slots.length * 68}px` }}>
+          {slots.map(slot => {
+            const assignedHere = slotMap[slot] ?? [];
+            return (
+              <div key={slot}
+                className={`flex-1 flex flex-col border-r border-slate-200 last:border-r-0 transition ${theme.cellHover}`}
+                onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                onDrop={e => { e.preventDefault(); if (draggingId !== null) onDropToSlot(slot, draggingId); }}
+              >
+                <div className={`text-center text-[9px] font-bold py-0.5 border-b ${theme.slotHdr}`}>{slot}</div>
+                <div className="p-1 min-h-[30px] flex flex-wrap gap-0.5 items-start">
+                  {assignedHere.map(empId => {
+                    const w = workers.find(ww => ww.emp.id === empId);
+                    if (!w) return null;
+                    const c = typeTones[w.schedule.type] ?? DEFAULT_TONE;
+                    return (
+                      <button key={empId} onClick={() => onRemoveFromSlot(slot, empId)}
+                        title="클릭하여 제거"
+                        style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }}
+                        className="px-1.5 py-px rounded text-[9px] font-bold cursor-pointer border hover:opacity-60 transition">
+                        {w.emp.name}
+                      </button>
+                    );
+                  })}
+                  {assignedHere.length === 0 && (
+                    <span className="text-[8px] text-slate-300 italic w-full text-center mt-1.5">드롭</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Drag-source chips */}
+      <div className="mt-2 pt-2 border-t border-slate-200/70">
+        <WorkerChips
+          workers={workers}
+          assignedIds={assignedIds}
+          draggingId={draggingId}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          typeTones={typeTones}
+        />
+      </div>
     </div>
   );
 });
-EmployeeChips.displayName = "EmployeeChips";
+BreakTimeline.displayName = "BreakTimeline";
 
-// ── Main component ──
+// ─── Sub-component: ZoneSection ──────────────────────────────────────────────
+interface ZoneSectionProps {
+  zoneMap: ZoneMap;
+  workers: WorkerEntry[];
+  onDropToZone: (zone: ZoneRow, slot: string, empId: number) => void;
+  onRemoveFromZone: (zone: ZoneRow, slot: string, empId: number) => void;
+  onApplyMonth: () => void;
+  typeTones: Record<string, TypeTone>;
+  workRanges: Record<number, { start: number; end: number } | null>;
+}
 
+// Zone section uses HOUR_SLOTS as column keys (slice off the last end-boundary slot)
+const ZONE_SLOTS = HOUR_SLOTS.slice(0, -1); // 10:00~21:00 = 12 columns
+
+const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
+  zoneMap, workers, onDropToZone, onRemoveFromZone, onApplyMonth, typeTones, workRanges,
+}) => {
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [confirmMonth, setConfirmMonth] = useState(false);
+
+  /**
+   * Guarded drop: only allows assignment when the dragged employee is actually
+   * scheduled to work during the target hour slot. Otherwise shows an alert and aborts.
+   */
+  const tryDropToZone = useCallback((zone: ZoneRow, slot: string, empId: number) => {
+    const range = workRanges[empId];
+    if (range) {
+      // slot is "HH:00" — extract the hour and compare against the employee's work range (minutes).
+      const slotHour = parseInt(slot.split(":")[0], 10);
+      const slotStart = slotHour * 60;
+      const slotEnd = slotStart + 60;
+      // Not working if the 1-hour slot lies entirely outside the work range.
+      if (slotEnd <= range.start || slotStart >= range.end) {
+        alert("출근 시간이 아니어서 배정할 수 없습니다.");
+        return;
+      }
+    }
+    onDropToZone(zone, slot, empId);
+  }, [workRanges, onDropToZone]);
+
+  const assignedIds = useMemo(() => {
+    const ids = new Set<number>();
+    ZONE_ROWS.forEach(z => (Object.values(zoneMap[z] ?? {}) as number[][]).forEach(arr => arr.forEach(id => ids.add(id))));
+    return ids;
+  }, [zoneMap]);
+
+  const handleDragStart = useCallback((e: React.DragEvent, id: number) => {
+    e.dataTransfer.effectAllowed = "move";
+    setDraggingId(id);
+  }, []);
+  const handleDragEnd = useCallback(() => setDraggingId(null), []);
+
+  return (
+    <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-2.5">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-sky-400" />
+          <span className="text-[11px] font-black text-sky-800">매장구역 배정</span>
+          {assignedIds.size > 0 && (
+            <span className="text-[10px] font-semibold text-sky-700 opacity-70">{assignedIds.size}명 배정됨</span>
+          )}
+        </div>
+        {confirmMonth ? (
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] text-slate-500">이 달 전체에 적용?</span>
+            <button onClick={() => { onApplyMonth(); setConfirmMonth(false); }}
+              className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-500 text-white hover:bg-indigo-600 cursor-pointer">예</button>
+            <button onClick={() => setConfirmMonth(false)}
+              className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600 hover:bg-slate-200 cursor-pointer">취소</button>
+          </div>
+        ) : (
+          <button onClick={() => setConfirmMonth(true)}
+            className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white border border-slate-200 text-slate-500 hover:border-slate-400 transition cursor-pointer">
+            전월 적용
+          </button>
+        )}
+      </div>
+
+      {/* Zone grid */}
+      <div className="overflow-x-auto">
+        <div style={{ minWidth: "560px" }}>
+          {/* Hour header */}
+          <div className="flex mb-0.5">
+            <div className="w-12 shrink-0" />
+            {ZONE_SLOTS.map(slot => (
+              <div key={slot} className="flex-1 text-center">
+                <span className="text-[8px] font-bold text-sky-600">{slot}</span>
+              </div>
+            ))}
+          </div>
+          {/* Zone rows */}
+          {ZONE_ROWS.map(zone => (
+            <div key={zone} className="flex items-stretch mb-0.5">
+              <div className="w-12 shrink-0 flex items-center">
+                <span className="text-[9px] font-black text-sky-700 uppercase tracking-wide">{zone}</span>
+              </div>
+              {ZONE_SLOTS.map(slot => {
+                const assignedHere = (zoneMap[zone] ?? {})[slot] ?? [];
+                return (
+                  <div key={slot}
+                    className="flex-1 border border-sky-200 min-h-[26px] p-0.5 bg-white/60 hover:bg-sky-100 transition cursor-default flex flex-wrap gap-0.5 items-start"
+                    onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
+                    onDrop={e => { e.preventDefault(); if (draggingId !== null) tryDropToZone(zone, slot, draggingId); }}
+                  >
+                    {assignedHere.map(empId => {
+                      const w = workers.find(ww => ww.emp.id === empId);
+                      if (!w) return null;
+                      const c = typeTones[w.schedule.type] ?? DEFAULT_TONE;
+                      return (
+                        <button key={empId} onClick={() => onRemoveFromZone(zone, slot, empId)}
+                          title="클릭하여 제거"
+                          style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }}
+                          className="px-1 py-px rounded text-[8px] font-bold cursor-pointer border hover:opacity-60 transition">
+                          {w.emp.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Drag-source chips */}
+      <div className="mt-2 pt-2 border-t border-sky-200/60">
+        <WorkerChips
+          workers={workers}
+          assignedIds={assignedIds}
+          draggingId={draggingId}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          compact
+          typeTones={typeTones}
+        />
+      </div>
+    </div>
+  );
+});
+ZoneSection.displayName = "ZoneSection";
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 interface Props {
   date: string;
   employees: Employee[];
@@ -218,20 +442,22 @@ interface Props {
   onEditEmployee?: (emp: Employee) => void;
   onScheduleUpdate?: () => void;
   onUpdateSchedule?: (data: {
-    employeeId: number;
-    date: string;
-    type: string;
-    workingHours: string;
-    actualHours: string;
-    memo?: string;
+    employeeId: number; date: string; type: string;
+    workingHours: string; actualHours: string; memo?: string;
   }) => Promise<void>;
+  /** Optional: user-customized schedule type entries. Used to resolve per-type colors. */
+  scheduleTypeEntries?: ScheduleTypeEntry[];
 }
 
+type TabKey = "전체" | "사원" | "약사" | "기타";
+
 export const DayTimelineModal: React.FC<Props> = ({
-  date, employees, typeHoursMap, pharmTypeHoursMap, onClose, onEditEmployee, onUpdateSchedule,
+  date, employees, typeHoursMap, pharmTypeHoursMap, onClose, onEditEmployee, onUpdateSchedule, scheduleTypeEntries,
 }) => {
+  // Build per-type tone map from user settings (hex-based). Rebuilds only when settings change.
+  const typeTones = useMemo(() => buildTypeTones(scheduleTypeEntries), [scheduleTypeEntries]);
   const [editingWork, setEditingWork] = useState<{ empId: number; value: string } | null>(null);
-  const [activeTab, setActiveTab] = useState<"전체" | "사원" | "약사">("전체");
+  const [activeTab, setActiveTab] = useState<TabKey>("전체");
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -239,80 +465,63 @@ export const DayTimelineModal: React.FC<Props> = ({
     return () => document.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  const [lunchTime, setLunchTime] = useState<Range>(() => {
-    try {
-      const s = JSON.parse(localStorage.getItem("tl_lunch") || "");
-      return safeRange(toMin(s.start), toMin(s.end), 12 * 60, 12 * 60 + 30);
-    } catch { return { start: 12 * 60, end: 12 * 60 + 30 }; }
+  // ── Slot state ────────────────────────────────────────────────────────────
+  const [lunchSlots, setLunchSlots] = useState<SlotMap>(() => {
+    try { return JSON.parse(localStorage.getItem(`tl_lunch_slots_${date}`) || "{}"); } catch { return {}; }
   });
-  const [restTime, setRestTime] = useState<Range>(() => {
-    try {
-      const s = JSON.parse(localStorage.getItem("tl_rest") || "");
-      return safeRange(toMin(s.start), toMin(s.end), 15 * 60, 15 * 60 + 30);
-    } catch { return { start: 15 * 60, end: 15 * 60 + 30 }; }
+  const [restSlots, setRestSlots] = useState<SlotMap>(() => {
+    try { return JSON.parse(localStorage.getItem(`tl_rest_slots_${date}`) || "{}"); } catch { return {}; }
+  });
+  const [zoneSlots, setZoneSlots] = useState<ZoneMap>(() => {
+    try { return JSON.parse(localStorage.getItem(`tl_zone_slots_${date}`) || "{}"); } catch { return {}; }
   });
 
-  const [lunchAssignees, setLunchAssignees] = useState<Set<number>>(new Set());
-  const [restAssignees,  setRestAssignees]  = useState<Set<number>>(new Set());
+  // Slot window offsets (in minutes). Clamped to [-60, +60].
+  const [lunchOffset, setLunchOffset] = useState<number>(() => {
+    const v = parseInt(localStorage.getItem(`tl_lunch_offset_${date}`) || "0", 10);
+    return Number.isFinite(v) ? Math.max(-60, Math.min(60, v)) : 0;
+  });
+  const [restOffset, setRestOffset] = useState<number>(() => {
+    const v = parseInt(localStorage.getItem(`tl_rest_offset_${date}`) || "0", 10);
+    return Number.isFinite(v) ? Math.max(-60, Math.min(60, v)) : 0;
+  });
 
-  // Reload assignees when date changes (fixes stale-date bug)
+  // Reload on date change
   useEffect(() => {
-    try { setLunchAssignees(new Set(JSON.parse(localStorage.getItem(`tl_lunch_assignees_${date}`) || "[]"))); } catch { setLunchAssignees(new Set()); }
-    try { setRestAssignees(new Set(JSON.parse(localStorage.getItem(`tl_rest_assignees_${date}`) || "[]"))); } catch { setRestAssignees(new Set()); }
+    try { setLunchSlots(JSON.parse(localStorage.getItem(`tl_lunch_slots_${date}`) || "{}")); } catch { setLunchSlots({}); }
+    try { setRestSlots(JSON.parse(localStorage.getItem(`tl_rest_slots_${date}`) || "{}")); } catch { setRestSlots({}); }
+    try { setZoneSlots(JSON.parse(localStorage.getItem(`tl_zone_slots_${date}`) || "{}")); } catch { setZoneSlots({}); }
+    const lo = parseInt(localStorage.getItem(`tl_lunch_offset_${date}`) || "0", 10);
+    setLunchOffset(Number.isFinite(lo) ? Math.max(-60, Math.min(60, lo)) : 0);
+    const ro = parseInt(localStorage.getItem(`tl_rest_offset_${date}`) || "0", 10);
+    setRestOffset(Number.isFinite(ro) ? Math.max(-60, Math.min(60, ro)) : 0);
   }, [date]);
 
-  const [lunchTypeTab, setLunchTypeTab] = useState("전체");
-  const [restTypeTab,  setRestTypeTab]  = useState("전체");
-
-  const adjustTime = useCallback((kind: "lunch" | "rest", part: "start" | "end", delta: number) => {
-    const setter = kind === "lunch" ? setLunchTime : setRestTime;
-    const key    = kind === "lunch" ? "tl_lunch"  : "tl_rest";
-    setter(prev => {
-      const next = { ...prev };
-      if (part === "start") {
-        next.start = clamp(prev.start + delta, BREAK_MIN, prev.end - STEP);
-      } else {
-        next.end = clamp(prev.end + delta, prev.start + STEP, DISPLAY_END);
-      }
-      localStorage.setItem(key, JSON.stringify({ start: minToStr(next.start), end: minToStr(next.end) }));
-      return next;
-    });
-  }, []);
-
-  const toggleAssignee = useCallback((kind: "lunch" | "rest", empId: number) => {
-    const setter = kind === "lunch" ? setLunchAssignees : setRestAssignees;
-    const keyFn  = (d: string) => `tl_${kind}_assignees_${d}`;
-    setter(prev => {
-      const next = new Set(prev);
-      if (next.has(empId)) next.delete(empId); else next.add(empId);
-      localStorage.setItem(keyFn(date), JSON.stringify([...next]));
-      return next;
-    });
-  }, [date]);
-
-  const d = new Date(date + "T00:00:00");
-  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
-  const title = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${dayNames[d.getDay()]})`;
-
-  const TYPE_ORDER: Record<string, number> = { "오픈": 0, "오전반차": 1, "미들": 2, "오후반차": 3, "마감": 4 };
-
+  // ── Workers ───────────────────────────────────────────────────────────────
   const workers = useMemo(() => employees
     .map(emp => {
       const s = emp.schedules.find(sc => sc.date === date);
       if (!s || SKIP_TYPES.has(s.type)) return null;
       const hoursMap = emp.position === "약사" ? (pharmTypeHoursMap ?? typeHoursMap) : typeHoursMap;
       const wh = s.workingHours || hoursMap?.[s.type] || "";
-      return { emp, schedule: s, wh };
+      return { emp, schedule: s, wh } as WorkerEntry;
     })
-    .filter(Boolean)
-    .sort((a, b) => (TYPE_ORDER[a!.schedule.type] ?? 99) - (TYPE_ORDER[b!.schedule.type] ?? 99)) as WorkerEntry[],
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    .filter((w): w is WorkerEntry => w !== null)
+    .sort((a, b) => (TYPE_ORDER[a.schedule.type] ?? 99) - (TYPE_ORDER[b.schedule.type] ?? 99)),
   [employees, date, typeHoursMap, pharmTypeHoursMap]);
 
   const pharmacistWorkers = useMemo(() => workers.filter(w => w.emp.position === "약사"), [workers]);
-  const staffWorkers      = useMemo(() => workers.filter(w => w.emp.position !== "약사"), [workers]);
-  const tabWorkers        = activeTab === "약사" ? pharmacistWorkers : activeTab === "사원" ? staffWorkers : workers;
+  const staffWorkers      = useMemo(() => workers.filter(w => w.emp.position !== "약사" && w.emp.employmentType !== "알바"), [workers]);
+  const otherWorkers      = useMemo(() => workers.filter(w => w.emp.position !== "약사" && w.emp.employmentType === "알바"), [workers]);
 
+  const tabWorkers = useMemo(() => {
+    if (activeTab === "약사") return pharmacistWorkers;
+    if (activeTab === "사원") return staffWorkers;
+    if (activeTab === "기타") return otherWorkers;
+    return workers;
+  }, [activeTab, workers, pharmacistWorkers, staffWorkers, otherWorkers]);
+
+  // ── Row ordering ──────────────────────────────────────────────────────────
   const [dragRowId, setDragRowId] = useState<number | null>(null);
   const [orderedIds, setOrderedIds] = useState<number[]>(() => tabWorkers.map(w => w.emp.id));
 
@@ -335,11 +544,12 @@ export const DayTimelineModal: React.FC<Props> = ({
   }, [orderedIds, tabWorkers]);
 
   const workRanges = useMemo(() => {
-    const r: Record<number, Range | null> = {};
+    const r: Record<number, { start: number; end: number } | null> = {};
     workers.forEach(w => { r[w.emp.id] = parseRange(w.wh); });
     return r;
   }, [workers]);
 
+  // ── Row drag handlers ─────────────────────────────────────────────────────
   const handleRowDragStart = useCallback((e: React.DragEvent, empId: number) => {
     e.dataTransfer.effectAllowed = "move";
     setDragRowId(empId);
@@ -358,13 +568,110 @@ export const DayTimelineModal: React.FC<Props> = ({
   const handleRowDrop    = useCallback((e: React.DragEvent) => { e.preventDefault(); setDragRowId(null); }, []);
   const handleRowDragEnd = useCallback(() => setDragRowId(null), []);
 
-  const lunchTheme = { sectionBg: "bg-yellow-50", border: "border-yellow-200", headerText: "text-yellow-800", btnBg: "bg-yellow-200", btnText: "text-yellow-900", timeText: "text-yellow-900" };
-  const restTheme  = { sectionBg: "bg-violet-50", border: "border-violet-200", headerText: "text-violet-800", btnBg: "bg-violet-200", btnText: "text-violet-900", timeText: "text-violet-900" };
+  // ── Slot handlers ─────────────────────────────────────────────────────────
+  const dropToLunchSlot = useCallback((slot: string, empId: number) => {
+    setLunchSlots(prev => {
+      const next = { ...prev, [slot]: [...(prev[slot] ?? []).filter(id => id !== empId), empId] };
+      localStorage.setItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
+      return next;
+    });
+  }, [date]);
+
+  const removeFromLunchSlot = useCallback((slot: string, empId: number) => {
+    setLunchSlots(prev => {
+      const next = { ...prev, [slot]: (prev[slot] ?? []).filter(id => id !== empId) };
+      localStorage.setItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
+      return next;
+    });
+  }, [date]);
+
+  const dropToRestSlot = useCallback((slot: string, empId: number) => {
+    setRestSlots(prev => {
+      const next = { ...prev, [slot]: [...(prev[slot] ?? []).filter(id => id !== empId), empId] };
+      localStorage.setItem(`tl_rest_slots_${date}`, JSON.stringify(next));
+      return next;
+    });
+  }, [date]);
+
+  const removeFromRestSlot = useCallback((slot: string, empId: number) => {
+    setRestSlots(prev => {
+      const next = { ...prev, [slot]: (prev[slot] ?? []).filter(id => id !== empId) };
+      localStorage.setItem(`tl_rest_slots_${date}`, JSON.stringify(next));
+      return next;
+    });
+  }, [date]);
+
+  const dropToZone = useCallback((zone: ZoneRow, slot: string, empId: number) => {
+    setZoneSlots(prev => {
+      const z = { ...(prev[zone] ?? {}) };
+      z[slot] = [...(z[slot] ?? []).filter(id => id !== empId), empId];
+      const next = { ...prev, [zone]: z };
+      localStorage.setItem(`tl_zone_slots_${date}`, JSON.stringify(next));
+      return next;
+    });
+  }, [date]);
+
+  const removeFromZone = useCallback((zone: ZoneRow, slot: string, empId: number) => {
+    setZoneSlots(prev => {
+      const z = { ...(prev[zone] ?? {}) };
+      z[slot] = (z[slot] ?? []).filter(id => id !== empId);
+      const next = { ...prev, [zone]: z };
+      localStorage.setItem(`tl_zone_slots_${date}`, JSON.stringify(next));
+      return next;
+    });
+  }, [date]);
+
+  // ── "전월 적용" ───────────────────────────────────────────────────────────
+  const applyLunchToMonth = useCallback(() => {
+    const snap = lunchSlots;
+    datesInMonth(date).forEach(d => { if (d !== date) localStorage.setItem(`tl_lunch_slots_${d}`, JSON.stringify(snap)); });
+  }, [date, lunchSlots]);
+
+  const applyRestToMonth = useCallback(() => {
+    const snap = restSlots;
+    datesInMonth(date).forEach(d => { if (d !== date) localStorage.setItem(`tl_rest_slots_${d}`, JSON.stringify(snap)); });
+  }, [date, restSlots]);
+
+  const applyZoneToMonth = useCallback(() => {
+    const snap = zoneSlots;
+    datesInMonth(date).forEach(d => { if (d !== date) localStorage.setItem(`tl_zone_slots_${d}`, JSON.stringify(snap)); });
+  }, [date, zoneSlots]);
+
+  const handleLunchShiftOffset = useCallback((delta: number) => {
+    setLunchOffset(prev => {
+      const next = Math.max(-60, Math.min(60, prev + delta));
+      localStorage.setItem(`tl_lunch_offset_${date}`, String(next));
+      return next;
+    });
+  }, [date]);
+
+  const handleRestShiftOffset = useCallback((delta: number) => {
+    setRestOffset(prev => {
+      const next = Math.max(-60, Math.min(60, prev + delta));
+      localStorage.setItem(`tl_rest_offset_${date}`, String(next));
+      return next;
+    });
+  }, [date]);
+
+  const shiftedLunchSlots = useMemo(() => LUNCH_SLOTS.map(s => shiftSlot(s, lunchOffset)), [lunchOffset]);
+  const shiftedRestSlots  = useMemo(() => REST_SLOTS.map(s => shiftSlot(s, restOffset)),  [restOffset]);
+
+  // ── Date title ────────────────────────────────────────────────────────────
+  const d = new Date(date + "T00:00:00");
+  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+  const title = `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일 (${dayNames[d.getDay()]})`;
+
+  const tabs = useMemo(() => [
+    { key: "전체" as TabKey, count: workers.length },
+    { key: "사원" as TabKey, count: staffWorkers.length },
+    { key: "약사" as TabKey, count: pharmacistWorkers.length },
+    ...(otherWorkers.length > 0 ? [{ key: "기타" as TabKey, count: otherWorkers.length }] : []),
+  ], [workers, staffWorkers, pharmacistWorkers, otherWorkers]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-5xl overflow-hidden flex flex-col"
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl overflow-hidden flex flex-col"
         style={{ maxHeight: "92vh" }}
         onClick={e => e.stopPropagation()}
       >
@@ -373,7 +680,8 @@ export const DayTimelineModal: React.FC<Props> = ({
           <div className="flex items-center gap-3">
             <span className="text-base font-bold tracking-tight">{title}</span>
             <span className="bg-slate-700 text-slate-300 text-[11px] px-2.5 py-0.5 rounded-full font-semibold">
-              근무 {workers.length}명 (사원 {staffWorkers.length} / 약사 {pharmacistWorkers.length})
+              근무 {workers.length}명 (사원 {staffWorkers.length} / 약사 {pharmacistWorkers.length}
+              {otherWorkers.length > 0 ? ` / 기타 ${otherWorkers.length}` : ""})
             </span>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-700 transition-colors text-slate-400 hover:text-white">
@@ -381,22 +689,19 @@ export const DayTimelineModal: React.FC<Props> = ({
           </button>
         </div>
 
-        {/* Tabs */}
+        {/* Position filter tabs */}
         <div className="flex items-center gap-1 px-5 pt-2 pb-0 bg-white border-b border-slate-200 flex-shrink-0">
-          {(["전체", "사원", "약사"] as const).map(tab => {
-            const count = tab === "전체" ? workers.length : tab === "약사" ? pharmacistWorkers.length : staffWorkers.length;
-            return (
-              <button key={tab} onClick={() => setActiveTab(tab)}
-                className={`px-4 py-1.5 text-xs font-bold rounded-t-lg border border-b-0 transition-colors cursor-pointer ${
-                  activeTab === tab
-                    ? "bg-white border-slate-200 text-slate-800 -mb-px z-10"
-                    : "bg-slate-50 border-transparent text-slate-400 hover:text-slate-600"
-                }`}>
-                {tab}
-                <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === tab ? "bg-indigo-100 text-indigo-700" : "bg-slate-200 text-slate-500"}`}>{count}</span>
-              </button>
-            );
-          })}
+          {tabs.map(({ key, count }) => (
+            <button key={key} onClick={() => setActiveTab(key)}
+              className={`px-4 py-1.5 text-xs font-bold rounded-t-lg border border-b-0 transition-colors cursor-pointer ${
+                activeTab === key
+                  ? "bg-white border-slate-200 text-slate-800 -mb-px z-10"
+                  : "bg-slate-50 border-transparent text-slate-400 hover:text-slate-600"
+              }`}>
+              {key}
+              <span className={`ml-1.5 text-[10px] px-1.5 py-0.5 rounded-full ${activeTab === key ? "bg-indigo-100 text-indigo-700" : "bg-slate-200 text-slate-500"}`}>{count}</span>
+            </button>
+          ))}
         </div>
 
         {/* Scrollable body */}
@@ -404,12 +709,11 @@ export const DayTimelineModal: React.FC<Props> = ({
 
           {/* ── 근무시간 섹션 ── */}
           <div className="px-4 pt-3 pb-2">
-            {/* Legend above timeline */}
             <div className="flex items-center gap-2 mb-2 flex-wrap">
               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">근무시간</span>
-              {Object.entries(TYPE_COLORS).map(([type, colors]) => (
+              {(Object.entries(typeTones) as [string, TypeTone][]).map(([type, colors]) => (
                 <div key={type} className="flex items-center gap-1">
-                  <span className={`w-2 h-2 rounded-full ${colors.dot}`} />
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: colors.dot }} />
                   <span className="text-[9px] font-semibold text-slate-500">{type}</span>
                 </div>
               ))}
@@ -426,7 +730,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                 <div className="flex-shrink-0 w-[88px]">
                   <div className="h-7" />
                   {displayWorkers.map(({ emp, schedule }) => {
-                    const colors = TYPE_COLORS[schedule.type] ?? DEFAULT_COLOR;
+                    const colors = typeTones[schedule.type] ?? DEFAULT_TONE;
                     return (
                       <div key={emp.id}
                         className={`mb-1 h-9 flex flex-col justify-center gap-0 group cursor-grab active:cursor-grabbing transition-opacity ${dragRowId === emp.id ? "opacity-40" : "opacity-100"}`}
@@ -437,7 +741,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                         onDragEnd={handleRowDragEnd}
                       >
                         <div className="flex items-center gap-1 min-w-0">
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${colors.dot}`} />
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: colors.dot }} />
                           <span className="text-[11px] font-bold text-slate-800 truncate">{emp.name}</span>
                           {onEditEmployee && (
                             <button onClick={() => onEditEmployee(emp)}
@@ -446,7 +750,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                             </button>
                           )}
                         </div>
-                        <span className={`text-[9px] font-semibold ${colors.text} leading-tight`}>{schedule.type}</span>
+                        <span className="text-[9px] font-semibold leading-tight" style={{ color: colors.text }}>{schedule.type}</span>
                         {/* Editable work hours */}
                         {(() => {
                           const hoursMap = emp.position === "약사" ? (pharmTypeHoursMap ?? typeHoursMap) : typeHoursMap;
@@ -460,13 +764,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                                   onChange={e => setEditingWork({ empId: emp.id, value: e.target.value })}
                                   onKeyDown={async e => {
                                     if (e.key === "Enter") {
-                                      await onUpdateSchedule?.({
-                                        employeeId: emp.id, date,
-                                        type: schedule.type,
-                                        workingHours: editingWork.value,
-                                        actualHours: (schedule as any).actualHours || "",
-                                        memo: (schedule as any).memo || "",
-                                      });
+                                      await onUpdateSchedule?.({ employeeId: emp.id, date, type: schedule.type, workingHours: editingWork.value, actualHours: schedule.actualHours || "", memo: schedule.memo || "" });
                                       setEditingWork(null);
                                     }
                                     if (e.key === "Escape") setEditingWork(null);
@@ -474,47 +772,23 @@ export const DayTimelineModal: React.FC<Props> = ({
                                   placeholder="09:00-18:00"
                                   className="text-[9px] font-mono border border-indigo-300 rounded px-1 py-0 w-[70px] bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
                                 />
-                                <button
-                                  className="text-[8px] text-indigo-500 hover:text-indigo-700 cursor-pointer font-bold"
-                                  onClick={async e => {
-                                    e.stopPropagation();
-                                    await onUpdateSchedule?.({
-                                      employeeId: emp.id, date,
-                                      type: schedule.type,
-                                      workingHours: editingWork.value,
-                                      actualHours: (schedule as any).actualHours || "",
-                                      memo: (schedule as any).memo || "",
-                                    });
-                                    setEditingWork(null);
-                                  }}
-                                >✓</button>
-                                <button
-                                  className="text-[8px] text-slate-400 hover:text-slate-600 cursor-pointer"
-                                  onClick={e => { e.stopPropagation(); setEditingWork(null); }}
-                                >✕</button>
+                                <button className="text-[8px] text-indigo-500 hover:text-indigo-700 cursor-pointer font-bold"
+                                  onClick={async e => { e.stopPropagation(); await onUpdateSchedule?.({ employeeId: emp.id, date, type: schedule.type, workingHours: editingWork.value, actualHours: schedule.actualHours || "", memo: schedule.memo || "" }); setEditingWork(null); }}>✓</button>
+                                <button className="text-[8px] text-slate-400 hover:text-slate-600 cursor-pointer"
+                                  onClick={e => { e.stopPropagation(); setEditingWork(null); }}>✕</button>
                               </div>
                             );
                           }
                           return displayHours ? (
                             <span
                               className={`text-[9px] font-mono leading-none cursor-pointer hover:text-indigo-600 hover:underline ${onUpdateSchedule ? "text-slate-400" : "text-slate-300"}`}
-                              onClick={e => {
-                                if (!onUpdateSchedule) return;
-                                e.stopPropagation();
-                                setEditingWork({ empId: emp.id, value: displayHours });
-                              }}
+                              onClick={e => { if (!onUpdateSchedule) return; e.stopPropagation(); setEditingWork({ empId: emp.id, value: displayHours }); }}
                               title={onUpdateSchedule ? "클릭해서 근무시간 편집" : undefined}
-                            >
-                              {displayHours}
-                            </span>
+                            >{displayHours}</span>
                           ) : (
                             onUpdateSchedule ? (
-                              <span
-                                className="text-[9px] text-slate-300 leading-none cursor-pointer hover:text-indigo-400"
-                                onClick={e => { e.stopPropagation(); setEditingWork({ empId: emp.id, value: "" }); }}
-                              >
-                                + 시간
-                              </span>
+                              <span className="text-[9px] text-slate-300 leading-none cursor-pointer hover:text-indigo-400"
+                                onClick={e => { e.stopPropagation(); setEditingWork({ empId: emp.id, value: "" }); }}>+ 시간</span>
                             ) : null
                           );
                         })()}
@@ -523,42 +797,46 @@ export const DayTimelineModal: React.FC<Props> = ({
                   })}
                 </div>
 
-                {/* Grid — draggable only from name column; grid is display-only */}
+                {/* Timeline grid */}
                 <div className="flex-1 min-w-0 overflow-x-auto">
                   <div style={{ minWidth: "560px" }}>
-                    {/* Time axis */}
+                    {/* 1-hour time axis */}
                     <div className="relative h-7 mb-0.5">
                       <div className="absolute top-0 bottom-0 bg-orange-100 rounded pointer-events-none flex items-end justify-center pb-0.5"
                         style={{ left: `${pct(14 * 60)}%`, width: `${widthPct(14 * 60, 17 * 60)}%` }}>
                         <span className="text-[8px] font-black text-orange-500 tracking-tight">피크타임</span>
                       </div>
-                      {SLOTS.map((slot, i) => (
+                      {HOUR_SLOTS.map((slot, i) => (
                         <div key={slot} className="absolute top-0 flex flex-col items-center"
-                          style={{ left: `${(i / (SLOTS.length - 1)) * 100}%`, transform: "translateX(-50%)" }}>
-                          <span className={`text-[9px] whitespace-nowrap font-medium ${i >= 8 && i <= 14 ? "text-orange-500 font-bold" : "text-slate-400"}`}>{slot}</span>
-                          <span className={`mt-0.5 block w-px h-1.5 ${i >= 8 && i <= 14 ? "bg-orange-300" : "bg-slate-300"}`} />
+                          style={{ left: `${(i / (HOUR_SLOTS.length - 1)) * 100}%`, transform: "translateX(-50%)" }}>
+                          <span className={`text-[9px] whitespace-nowrap font-medium ${parseInt(slot) >= 14 && parseInt(slot) <= 17 ? "text-orange-500 font-bold" : "text-slate-400"}`}>{slot}</span>
+                          <span className={`mt-0.5 block w-px h-1.5 ${parseInt(slot) >= 14 && parseInt(slot) <= 17 ? "bg-orange-300" : "bg-slate-300"}`} />
                         </div>
                       ))}
                     </div>
-                    {/* Bars */}
+                    {/* Work bars */}
                     <div className="relative">
                       <div className="absolute top-0 bottom-0 bg-orange-50 border-l-2 border-r-2 border-orange-200/70 pointer-events-none"
                         style={{ left: `${pct(14 * 60)}%`, width: `${widthPct(14 * 60, 17 * 60)}%` }} />
-                      {SLOTS.map((slot, i) => (
+                      {HOUR_SLOTS.map((slot, i) => (
                         <div key={`g-${slot}`} className="absolute top-0 bottom-0 border-l pointer-events-none"
-                          style={{ left: `${(i / (SLOTS.length - 1)) * 100}%`, borderColor: i % 2 === 0 ? "#e2e8f0" : "#f8fafc" }} />
+                          style={{ left: `${(i / (HOUR_SLOTS.length - 1)) * 100}%`, borderColor: "#e2e8f0" }} />
                       ))}
                       {displayWorkers.map(({ emp, schedule }) => {
-                        const colors = TYPE_COLORS[schedule.type] ?? DEFAULT_COLOR;
+                        const colors = typeTones[schedule.type] ?? DEFAULT_TONE;
                         const workRange = workRanges[emp.id];
                         return (
                           <div key={emp.id}
                             className={`relative mb-1 h-9 bg-slate-50 rounded-lg border border-slate-100 transition-opacity ${dragRowId === emp.id ? "opacity-40" : "opacity-100"}`}>
                             {workRange ? (
-                              <div className={`absolute top-1 bottom-1 rounded-md ${colors.bg} opacity-80`}
-                                style={{ left: `${pct(workRange.start)}%`, width: `${Math.max(widthPct(workRange.start, workRange.end), 0.5)}%` }}>
+                              <div className="absolute top-1 bottom-1 rounded-md opacity-90"
+                                style={{
+                                  left: `${pct(workRange.start)}%`,
+                                  width: `${Math.max(widthPct(workRange.start, workRange.end), 0.5)}%`,
+                                  backgroundColor: colors.bg,
+                                }}>
                                 <div className="flex items-center justify-center h-full">
-                                  <span className={`text-[9px] font-bold select-none truncate px-1 ${colors.text}`}>
+                                  <span className="text-[9px] font-bold select-none truncate px-1" style={{ color: colors.text }}>
                                     {minToStr(workRange.start)}~{minToStr(workRange.end)}
                                   </span>
                                 </div>
@@ -580,50 +858,53 @@ export const DayTimelineModal: React.FC<Props> = ({
 
           <div className="mx-4 h-px bg-slate-100" />
 
+          {/* ── 매장구역 배정 섹션 ── */}
+          <div className="px-4 py-3">
+            <ZoneSection
+              zoneMap={zoneSlots}
+              workers={tabWorkers}
+              onDropToZone={dropToZone}
+              onRemoveFromZone={removeFromZone}
+              onApplyMonth={applyZoneToMonth}
+              typeTones={typeTones}
+              workRanges={workRanges}
+            />
+          </div>
+
+          <div className="mx-4 h-px bg-slate-100" />
+
           {/* ── 점심시간 섹션 ── */}
           <div className="px-4 py-3">
-            <div className="flex items-center gap-1.5 mb-2">
-              <span className="w-2 h-2 rounded-full bg-yellow-400" />
-              <span className="text-[11px] font-black text-yellow-800">점심시간</span>
-              {lunchAssignees.size > 0 && (
-                <span className="text-[10px] text-yellow-600 font-semibold">{lunchAssignees.size}명 배정됨</span>
-              )}
-            </div>
-            <div className="flex gap-3 items-start">
-              <TimeAdjuster kind="lunch" range={lunchTime} theme={lunchTheme} onAdjust={adjustTime} />
-              <EmployeeChips
-                kind="lunch"
-                assignees={lunchAssignees}
-                allWorkers={workers}
-                activeTypeTab={lunchTypeTab}
-                onTypeTabChange={setLunchTypeTab}
-                onToggle={toggleAssignee}
-              />
-            </div>
+            <BreakTimeline
+              kind="lunch"
+              slots={shiftedLunchSlots}
+              slotMap={lunchSlots}
+              workers={tabWorkers}
+              onApplyMonth={applyLunchToMonth}
+              onDropToSlot={dropToLunchSlot}
+              onRemoveFromSlot={removeFromLunchSlot}
+              typeTones={typeTones}
+              offset={lunchOffset}
+              onShiftOffset={handleLunchShiftOffset}
+            />
           </div>
 
           <div className="mx-4 h-px bg-slate-100" />
 
           {/* ── 휴게시간 섹션 ── */}
           <div className="px-4 py-3 pb-5">
-            <div className="flex items-center gap-1.5 mb-2">
-              <span className="w-2 h-2 rounded-full bg-violet-400" />
-              <span className="text-[11px] font-black text-violet-800">휴게시간</span>
-              {restAssignees.size > 0 && (
-                <span className="text-[10px] text-violet-600 font-semibold">{restAssignees.size}명 배정됨</span>
-              )}
-            </div>
-            <div className="flex gap-3 items-start">
-              <TimeAdjuster kind="rest" range={restTime} theme={restTheme} onAdjust={adjustTime} />
-              <EmployeeChips
-                kind="rest"
-                assignees={restAssignees}
-                allWorkers={workers}
-                activeTypeTab={restTypeTab}
-                onTypeTabChange={setRestTypeTab}
-                onToggle={toggleAssignee}
-              />
-            </div>
+            <BreakTimeline
+              kind="rest"
+              slots={shiftedRestSlots}
+              slotMap={restSlots}
+              workers={tabWorkers}
+              onApplyMonth={applyRestToMonth}
+              onDropToSlot={dropToRestSlot}
+              onRemoveFromSlot={removeFromRestSlot}
+              typeTones={typeTones}
+              offset={restOffset}
+              onShiftOffset={handleRestShiftOffset}
+            />
           </div>
 
         </div>

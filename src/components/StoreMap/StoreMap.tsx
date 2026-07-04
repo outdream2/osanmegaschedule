@@ -209,6 +209,9 @@ export const StoreMap: React.FC<StoreMapProps> = ({
     }
   });
 
+  // Multi-assignment 대상 zone (여러명 배정 가능)
+  const MULTI_ASSIGN_ZONES = new Set<number>([36, 42]);
+
   // Load display zone assignments from localStorage (ZONES_STORAGE_KEY)
   const loadDisplayZones = (): DisplayZoneSlim[] => {
     try {
@@ -223,21 +226,130 @@ export const StoreMap: React.FC<StoreMapProps> = ({
     } catch { return []; }
   };
 
+  // Zone에 배정된 staff 목록 파싱 helper (multi-assign 대응 comma-separated name 목록 지원)
+  // 이름 → employees prop에서 id 조회. 다중 배정 zone에서만 사용.
+  const parseZoneStaffList = (dz: DisplayZoneSlim | undefined): { id: number | null; name: string }[] => {
+    if (!dz) return [];
+    const names = (dz.assignedStaffName || "").split(",").map(s => s.trim()).filter(Boolean);
+    return names.map((name) => {
+      const found = employees.find(e => e.name === name);
+      return { id: found ? found.id : null, name };
+    });
+  };
+
+  // DB에서 zone 정보 fetch → localStorage 및 state 동기화
+  const fetchZonesFromDB = async () => {
+    try {
+      const res = await fetch("/api/zones");
+      if (!res.ok) return;
+      const rows: Array<{ zone_id: string; employee_id: number | null; employee_name: string; status: string; products: string }> = await res.json();
+      if (!Array.isArray(rows)) return;
+      const merged: DisplayZoneSlim[] = ZONE_DEFS.map((def) => {
+        const row = rows.find((r) => r.zone_id === String(def.num));
+        if (!row || !row.employee_name) {
+          return {
+            id: String(def.num), num: def.num, label: def.label,
+            category: def.category, section: def.section,
+            assignedStaffId: null, assignedStaffName: "",
+            status: "normal", products: row?.products ?? "",
+          };
+        }
+        // 다중 배정(comma-separated) 또는 단일 배정 검증
+        const names = row.employee_name.split(",").map((s: string) => s.trim()).filter(Boolean);
+        const validNames = names.filter((name: string) => employees.some(e => e.name === name));
+        const validName = validNames.join(",");
+        const firstEmployee = validNames.length > 0 ? employees.find(e => e.name === validNames[0]) : null;
+        return {
+          id: String(def.num), num: def.num, label: def.label,
+          category: def.category, section: def.section,
+          assignedStaffId: validNames.length > 0 ? (firstEmployee?.id ?? null) : null,
+          assignedStaffName: validName,
+          status: row.status ?? "normal",
+          products: row.products ?? "",
+        };
+      });
+      localStorage.setItem(ZONES_STORAGE_KEY, JSON.stringify(merged));
+      setDisplayZones(merged);
+    } catch {
+      setDisplayZones(loadDisplayZones());
+    }
+  };
+
+  const persistZones = (updated: DisplayZoneSlim[]) => {
+    localStorage.setItem(ZONES_STORAGE_KEY, JSON.stringify(updated));
+    setDisplayZones(updated);
+    // DB와 동기화 (DisplayPage 마운트 시 localStorage 덮어쓰기 방지)
+    fetch("/api/zones", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        zones: updated.map(z => ({
+          zone_id: z.id,
+          employee_id: z.assignedStaffId,
+          employee_name: z.assignedStaffName,
+          status: z.status,
+          products: z.products,
+        })),
+      }),
+    }).catch(() => {});
+  };
+
   const saveZoneAssignment = (zoneNum: number, empId: number | null, empName: string) => {
     const current = loadDisplayZones();
-    const updated = current.map(z =>
-      z.num === zoneNum
-        ? { ...z, assignedStaffId: empId, assignedStaffName: empName }
-        : z
-    );
-    localStorage.setItem(ZONES_STORAGE_KEY, JSON.stringify(updated));
+    const isMulti = MULTI_ASSIGN_ZONES.has(zoneNum);
+    const updated = current.map(z => {
+      if (z.num !== zoneNum) return z;
+      if (!isMulti) {
+        return { ...z, assignedStaffId: empId, assignedStaffName: empName };
+      }
+      // 다중 배정: 기존 목록에 append (중복 제거)
+      if (empId == null || !empName) {
+        return { ...z, assignedStaffId: null, assignedStaffName: "" };
+      }
+      const existing = parseZoneStaffList(z);
+      if (existing.some(e => e.id === empId || e.name === empName)) return z;
+      const nextList = [...existing, { id: empId, name: empName }];
+      return {
+        ...z,
+        // 다중 배정 zone은 이름을 comma-separated로 저장 (id 조회는 employees prop에서)
+        assignedStaffId: nextList[0]?.id ?? null,
+        assignedStaffName: nextList.map(e => e.name).join(","),
+      };
+    });
+    persistZones(updated);
     setZoneVer(v => v + 1);
   };
 
-  // Sync displayZones state whenever zoneVer changes
+  // Multi-assign zone에서 특정 인원만 해제
+  const removeZoneStaffMember = (zoneNum: number, empId: number) => {
+    const current = loadDisplayZones();
+    const updated = current.map(z => {
+      if (z.num !== zoneNum) return z;
+      const existing = parseZoneStaffList(z).filter(e => e.id !== empId);
+      if (existing.length === 0) {
+        return { ...z, assignedStaffId: null, assignedStaffName: "" };
+      }
+      return {
+        ...z,
+        assignedStaffId: existing[0].id,
+        assignedStaffName: existing.map(e => e.name).join(","),
+      };
+    });
+    persistZones(updated);
+    setZoneVer(v => v + 1);
+  };
+
+  // Sync displayZones state whenever zoneVer changes (fallback to localStorage)
   useEffect(() => {
+    if (zoneVer === 0) return; // 초기값은 fetchZonesFromDB에서 처리
     setDisplayZones(loadDisplayZones());
   }, [zoneVer]);
+
+  // 마운트 시 & selectedDate / employees 변경 시 DB에서 zone 정보 재조회
+  // (매장 관리 메뉴 로딩 시 과거 배정직원 이름이 남는 문제 해결)
+  useEffect(() => {
+    fetchZonesFromDB();
+  }, [selectedDate, employees.length]);
 
   // Zone drag-and-drop handlers (담당직원 배정용, 시뮬레이터 핸들러와는 별개)
   const handleZoneDragOver = (e: React.DragEvent, num: number) => {
@@ -1062,8 +1174,9 @@ export const StoreMap: React.FC<StoreMapProps> = ({
 
                   {/* 구역별 담당직원 배정 타일 (ZONE_DEFS 기반, ZONES_STORAGE_KEY 연동) */}
                   <div className="space-y-2 mb-2">
-                    {(["top_wall", "aisle", "bottom_wall"] as const).map((section) => {
+                    {(["top_wall", "aisle", "bottom_wall", "wing", "event"] as const).map((section) => {
                       const sectionZones = ZONE_DEFS.filter(z => z.section === section);
+                      if (sectionZones.length === 0) return null;
                       const sectionLabel = SECTION_LABEL[section];
                       return (
                         <div key={section}>
@@ -1073,42 +1186,87 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                           <div className="flex flex-wrap gap-1">
                             {sectionZones.map((zoneDef) => {
                               const dz = displayZones.find(z => z.num === zoneDef.num);
-                              const isAssigned = !!(dz?.assignedStaffId);
+                              const isMulti = MULTI_ASSIGN_ZONES.has(zoneDef.num);
+                              const staffList = isMulti ? parseZoneStaffList(dz) : [];
+                              const isAssigned = isMulti ? staffList.length > 0 : !!(dz?.assignedStaffId);
                               const isDragTarget = dragOverZoneNum === zoneDef.num;
+
+                              // 42(이벤트존)/36(프로모션) 은 카운터/정면약진열과 폭을 맞추기 위해 flex-1 basis 확장
+                              const wideClass = isMulti ? "flex-1 basis-full min-w-full min-h-[60px]" : "min-w-[36px]";
+
                               return (
                                 <div
                                   key={zoneDef.num}
                                   onDragOver={(e) => handleZoneDragOver(e, zoneDef.num)}
                                   onDragLeave={handleZoneDragLeave}
                                   onDrop={(e) => handleZoneDrop(e, zoneDef.num)}
-                                  className={`relative flex flex-col items-center justify-between rounded border p-1 min-w-[36px] transition-all ${
+                                  className={`relative flex ${isMulti ? "flex-row items-center gap-1.5 p-1.5" : "flex-col items-center justify-between p-1"} rounded border transition-all ${wideClass} ${
                                     isDragTarget
-                                      ? "bg-violet-100 border-violet-500 scale-[1.04] z-10 shadow-sm"
+                                      ? "bg-violet-100 border-violet-500 scale-[1.02] z-10 shadow-sm"
                                       : isAssigned
                                         ? "bg-violet-50 border-violet-300"
                                         : "bg-white border-slate-200 hover:border-violet-300 hover:bg-violet-50/40"
                                   }`}
-                                  title={`${zoneDef.num}번 - ${zoneDef.category}`}
+                                  title={`${zoneDef.num}번 - ${zoneDef.category}${isMulti ? " (다중배정 가능)" : ""}`}
                                 >
-                                  <span className={`text-[9px] font-black leading-none ${isAssigned ? "text-violet-700" : "text-slate-500"}`}>
-                                    {zoneDef.num}
-                                  </span>
-                                  <span className={`text-[7px] leading-none mt-0.5 text-center ${isAssigned ? "text-violet-600" : "text-slate-300"}`}>
-                                    {dz?.assignedStaffName
-                                      ? dz.assignedStaffName.length > 3
-                                        ? dz.assignedStaffName.slice(0, 3)
-                                        : dz.assignedStaffName
-                                      : "·"}
-                                  </span>
-                                  {isAssigned && (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleZoneUnassign(zoneDef.num)}
-                                      className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-400 hover:bg-rose-600 text-white rounded-full text-[7px] font-black flex items-center justify-center transition cursor-pointer z-10"
-                                      title="담당 해제"
-                                    >
-                                      ✕
-                                    </button>
+                                  {isMulti ? (
+                                    <>
+                                      <div className="flex flex-col items-center shrink-0 border-r border-slate-200 pr-1.5 min-w-[42px]">
+                                        <span className={`text-[9px] font-black leading-none ${isAssigned ? "text-violet-700" : "text-slate-500"}`}>
+                                          {zoneDef.num}
+                                        </span>
+                                        <span className={`text-[7px] leading-none mt-0.5 text-center ${isAssigned ? "text-violet-600" : "text-slate-400"}`}>
+                                          {zoneDef.label}
+                                        </span>
+                                      </div>
+                                      <div className="flex-1 flex flex-wrap items-center gap-1">
+                                        {staffList.length > 0 ? (
+                                          staffList.map((s, idx) => (
+                                            <div
+                                              key={`multi-${zoneDef.num}-${s.id ?? idx}-${s.name}`}
+                                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-white border border-violet-300 rounded text-[9px] font-black text-violet-700 shadow-3xs"
+                                            >
+                                              <span>{s.name}</span>
+                                              {s.id != null && (
+                                                <button
+                                                  type="button"
+                                                  onClick={(e) => { e.stopPropagation(); removeZoneStaffMember(zoneDef.num, s.id!); }}
+                                                  className="text-[8px] font-black text-rose-500 hover:text-rose-700 ml-0.5 cursor-pointer"
+                                                  title={`${s.name} 담당 해제`}
+                                                >
+                                                  ✕
+                                                </button>
+                                              )}
+                                            </div>
+                                          ))
+                                        ) : (
+                                          <span className="text-[8px] text-slate-400 italic">여기에 드래그하여 여러 명 배정 가능</span>
+                                        )}
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className={`text-[9px] font-black leading-none ${isAssigned ? "text-violet-700" : "text-slate-500"}`}>
+                                        {zoneDef.num}
+                                      </span>
+                                      <span className={`text-[7px] leading-none mt-0.5 text-center ${isAssigned ? "text-violet-600" : "text-slate-300"}`}>
+                                        {dz?.assignedStaffName
+                                          ? dz.assignedStaffName.length > 3
+                                            ? dz.assignedStaffName.slice(0, 3)
+                                            : dz.assignedStaffName
+                                          : "·"}
+                                      </span>
+                                      {isAssigned && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleZoneUnassign(zoneDef.num)}
+                                          className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-rose-400 hover:bg-rose-600 text-white rounded-full text-[7px] font-black flex items-center justify-center transition cursor-pointer z-10"
+                                          title="담당 해제"
+                                        >
+                                          ✕
+                                        </button>
+                                      )}
+                                    </>
                                   )}
                                 </div>
                               );

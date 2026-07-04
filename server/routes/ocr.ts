@@ -205,6 +205,19 @@ router.patch("/api/ocr-synonyms/:id", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
+// DELETE by prod_name_old (for pre-existing synonyms without a known ID) — must be before /:id
+router.delete("/api/ocr-synonyms/by-name", async (req, res) => {
+  try {
+    const { prod_name_old } = req.body ?? {};
+    if (!prod_name_old?.trim()) return res.status(400).json({ error: "prod_name_old 필요" });
+    const nameOldNorm = prod_name_old.trim().toLowerCase();
+    const { error } = await supabase.from("ocr_synonyms").delete().eq("prod_name_old", nameOldNorm);
+    if (error) throw new Error(error.message);
+    resetSynonymCache();
+    res.json({ ok: true });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
 router.delete("/api/ocr-synonyms/:id", async (req, res) => {
   try {
     const { error } = await supabase.from("ocr_synonyms").delete().eq("id", Number(req.params.id));
@@ -461,6 +474,39 @@ router.post("/api/ocr", async (req, res) => {
     console.error("[OCR] error:", err?.message);
     res.status(500).json({ error: err?.message ?? "OCR 처리 중 오류" });
   }
+});
+
+// ── 공급사 잔고 기록 ──────────────────────────────────────────────────────────
+router.get("/api/supplier-balances", async (_req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from("supplier_balances")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) throw new Error(error.message);
+    res.json({ balances: data ?? [] });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+router.post("/api/supplier-balances", async (req, res) => {
+  try {
+    const { supplier_name, invoice_date, balance } = req.body ?? {};
+    if (!supplier_name?.trim() || balance == null) return res.status(400).json({ error: "supplier_name, balance 필요" });
+    const { data, error } = await supabase
+      .from("supplier_balances")
+      .insert({ supplier_name: supplier_name.trim(), invoice_date: invoice_date ?? null, balance: Number(balance) })
+      .select().single();
+    if (error) throw new Error(error.message);
+    res.json({ balance: data });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+router.delete("/api/supplier-balances/:id", async (req, res) => {
+  try {
+    const { error } = await supabase.from("supplier_balances").delete().eq("id", Number(req.params.id));
+    if (error) throw new Error(error.message);
+    res.json({ ok: true });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
 export default router;

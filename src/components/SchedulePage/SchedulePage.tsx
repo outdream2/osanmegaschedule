@@ -532,6 +532,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const [isMonthLocked, setIsMonthLocked] = useState(false);
   const [isLockLoading, setIsLockLoading] = useState(false);
 
+  // Monthly summary column visibility (hidden | summary | labor)
+  // - hidden: 월합/월별합계 열 숨김
+  // - summary: 월합 열만 표시 (인건비 제외)
+  // - labor: 월합 열 + 인건비 항목 모두 표시
+  const [showSummary, setShowSummary] = useState<"hidden" | "summary" | "labor">("hidden");
+
   const handleCopyFromPreviousMonth = async () => {
     const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
     const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
@@ -1107,7 +1113,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     return Math.max(0, (end - start) / 60);
   };
 
-  const OFF_TYPES_SET = new Set(["휴무", "월차", "지정휴무", "결근"]);
+  const OFF_TYPES_SET = new Set(["휴무", "월차", "결근"]);
 
   // monthKey: "YYYY-MM". Defaults to currentYear/currentMonth when not provided.
   const getEmpMonthStats = (emp: Employee, monthKey?: string) => {
@@ -1214,7 +1220,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           }
 
           // Count active workers (not on leave/off)
-          const isOffType = ["휴무", "월차", "지정휴무", "결근"].includes(type);
+          const isOffType = ["휴무", "월차", "결근"].includes(type);
           if (!isOffType && type.trim() !== "") {
             totalCount++;
             if (emp.position === "약사") pharmacistCount++;
@@ -1451,7 +1457,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 emp.schedules.forEach((s) => {
                   if (s.date.startsWith(`${currentYear}-${monthStr}-`)) {
                     const type = s.type;
-                    if (["휴무", "월차", "지정휴무", "결근"].includes(type)) {
+                    if (["휴무", "월차", "결근"].includes(type)) {
                       offDaysCount++;
                     } else if (type.trim() !== "") {
                       workDaysCount++;
@@ -1552,89 +1558,86 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
       {/* 2. Grid Container Block */}
       <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-gray-100 gap-0">
-        {/* Month Navigation Toolbar */}
-        <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl min-h-12 sm:min-h-12 h-auto py-1.5 sm:py-0 flex items-center justify-between px-2.5 sm:px-5 shrink-0 shadow-sm">
-          {/* Left: Month navigation */}
-          <div className="flex items-center gap-0.5 sm:gap-1">
-            <button
-              onClick={handlePrevMonth}
-              className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all cursor-pointer"
-              title="이전 달"
-            >
-              <ChevronLeft size={18} />
-            </button>
-            <span
-              key={`${currentYear}-${currentMonth}`}
-              className="font-black tracking-tight text-slate-900 text-base sm:text-sm px-1 min-w-[100px] sm:min-w-[90px] text-center animate-in fade-in zoom-in-95 duration-200"
-            >
-              {currentYear}년 {String(currentMonth).padStart(2, "0")}월
-            </span>
-            <button
-              onClick={handleNextMonth}
-              className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all cursor-pointer"
-              title="다음 달"
-            >
-              <ChevronRight size={18} />
-            </button>
-            <button
-              onClick={() => {
-                const today = new Date();
-                const newYear = today.getFullYear();
-                const newMonth = today.getMonth() + 1;
-                pendingScrollDateRef.current = todayStr;
-                setCurrentYear(newYear);
-                setCurrentMonth(newMonth);
-                setEditMode(false);
-              }}
-              className="ml-1 px-2.5 h-8 sm:h-7 flex items-center text-[11px] sm:text-[10px] font-black text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition cursor-pointer"
-              title="오늘 날짜로 이동"
-            >
-              오늘
-            </button>
+        {/* Month Navigation Toolbar — responsive two-row layout */}
+        <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl py-1.5 sm:py-2 flex flex-col gap-1.5 px-2.5 sm:px-5 shrink-0 shadow-sm">
+          {/* 1행: 월 네비게이션 + 오늘 + 범례 */}
+          <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
+            <div className="flex items-center gap-0.5 sm:gap-1">
+              <button
+                onClick={handlePrevMonth}
+                className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all cursor-pointer"
+                title="이전 달"
+              >
+                <ChevronLeft size={18} />
+              </button>
+              <span
+                key={`${currentYear}-${currentMonth}`}
+                className="font-black tracking-tight text-slate-900 text-base sm:text-sm px-1 min-w-[100px] sm:min-w-[90px] text-center animate-in fade-in zoom-in-95 duration-200"
+              >
+                {currentYear}년 {String(currentMonth).padStart(2, "0")}월
+              </span>
+              <button
+                onClick={handleNextMonth}
+                className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all cursor-pointer"
+                title="다음 달"
+              >
+                <ChevronRight size={18} />
+              </button>
+              <button
+                onClick={() => {
+                  const today = new Date();
+                  const newYear = today.getFullYear();
+                  const newMonth = today.getMonth() + 1;
+                  pendingScrollDateRef.current = todayStr;
+                  setCurrentYear(newYear);
+                  setCurrentMonth(newMonth);
+                  setEditMode(false);
+                }}
+                className="ml-1 px-2.5 h-8 sm:h-7 flex items-center text-[11px] sm:text-[10px] font-black text-rose-600 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-lg transition cursor-pointer"
+                title="오늘 날짜로 이동"
+              >
+                오늘
+              </button>
+            </div>
+            {/* Legend indicators (항상 표시) */}
+            <div className="flex items-center gap-3 text-[10px] font-semibold">
+              {[
+                { color: "bg-yellow-100 border-yellow-300", label: "오픈" },
+                { color: "bg-emerald-100 border-emerald-300", label: "마감" },
+                { color: "bg-rose-100 border-rose-300", label: "휴무" },
+                { color: "bg-amber-300 border-amber-400", label: "월차" },
+              ].map(({ color, label }) => (
+                <div key={label} className="flex items-center gap-1.5">
+                  <span className={`w-2.5 h-2.5 rounded border ${color} inline-block`}></span>
+                  <span className="text-slate-500">{label}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Center: Quick Legend indicators */}
-          <div className="hidden lg:flex items-center gap-3 text-[10px] font-semibold">
-            {[
-              { color: "bg-yellow-100 border-yellow-300", label: "오픈" },
-              { color: "bg-emerald-100 border-emerald-300", label: "마감" },
-              { color: "bg-rose-100 border-rose-300", label: "휴무" },
-              { color: "bg-amber-300 border-amber-400", label: "월차" },
-              { color: "bg-sky-100 border-sky-300", label: "지정휴무" },
-            ].map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <span className={`w-2.5 h-2.5 rounded border ${color} inline-block`}></span>
-                <span className="text-slate-500">{label}</span>
-              </div>
-            ))}
-          </div>
-
-          {/* Right: Year/Month selectors + admin buttons */}
-          <div className="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-1.5">
-            {/* Row 1: selectors */}
+          {/* 2행: 합계/인건비 버튼 + 관리자 버튼 */}
+          <div className="flex items-center gap-x-3 gap-y-1 flex-wrap justify-between">
+            {/* 합계보기 / 인건비보기 토글 버튼 */}
             <div className="flex items-center gap-1.5">
-              <select
-                value={currentYear}
-                onChange={(e) => setCurrentYear(parseInt(e.target.value))}
-                className="hidden sm:block bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
+              <button
+                onClick={() => setShowSummary(v => v === "summary" ? "hidden" : "summary")}
+                title="월별 합계(근무일수/시간) 열 표시 토글"
+                className={`px-2 py-1 text-xs rounded font-bold border transition cursor-pointer ${showSummary === "summary" ? "bg-indigo-500 text-white border-indigo-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
               >
-                {[2024, 2025, 2026, 2027, 2028].map((y) => (
-                  <option key={y} value={y}>{y}년</option>
-                ))}
-              </select>
-
-              <select
-                value={currentMonth}
-                onChange={(e) => setCurrentMonth(parseInt(e.target.value))}
-                className="bg-slate-50 border border-slate-200 text-slate-700 font-semibold px-2 py-1 text-xs rounded-lg focus:outline-none focus:border-indigo-400 cursor-pointer transition-colors"
-              >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                  <option key={m} value={m}>{m}월</option>
-                ))}
-              </select>
+                합계보기
+              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setShowSummary(v => v === "labor" ? "hidden" : "labor")}
+                  title="월별 합계 + 인건비 표시 토글"
+                  className={`px-2 py-1 text-xs rounded font-bold border transition cursor-pointer ${showSummary === "labor" ? "bg-amber-500 text-white border-amber-500" : "bg-white text-slate-600 border-slate-300 hover:border-slate-400"}`}
+                >
+                  인건비보기
+                </button>
+              )}
             </div>
 
-            {/* Row 2 on mobile (same row on sm+): admin action buttons */}
+            {/* 관리자 액션 버튼: 편집 / 확정 / 전월복사 */}
             {isAdmin && (
               <div className="flex items-center gap-1">
                 {!isMonthLocked && (
@@ -1890,7 +1893,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                               >
                                 {dayNum}
                               </th>
-                              {isMonthEnd && (
+                              {isMonthEnd && showSummary !== "hidden" && (
                                 <th className="p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-b border-gray-200 bg-indigo-50 text-indigo-600 whitespace-nowrap border-l-2 border-l-gray-200 w-[44px] sm:w-[52px]">
                                   {monthLabel}월합
                                 </th>
@@ -1922,7 +1925,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                               >
                                 {dayWord}
                               </th>
-                              {isMonthEnd && (
+                              {isMonthEnd && showSummary !== "hidden" && (
                                 <th className="p-0.5 text-center text-[8px] sm:text-[9px] border-b border-gray-200 bg-indigo-50 text-indigo-500 border-l-2 border-l-gray-200 w-[44px] sm:w-[52px]">
                                   일·시간
                                 </th>
@@ -2061,11 +2064,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   isPharmacist={emp.position === "약사"}
                                   typeHoursMap={getTypeHoursMap(emp.position, emp.employmentType)}
                                   scheduleTypes={settingsScheduleTypes.map((e) => ({ value: e.type, label: e.type }))}
+                                  scheduleTypeEntries={settingsScheduleTypes}
                                 />
                               </td>
                             );
 
-                            if (!isMonthEnd) return cell;
+                            if (!isMonthEnd || showSummary === "hidden") return cell;
 
                             const mk = dateStr.substring(0, 7);
                             const { workDays, totalHours, laborCost } = getEmpMonthStats(emp, mk);
@@ -2081,7 +2085,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                 <td className="border-l-2 border-slate-200 bg-indigo-50/50 text-center align-middle p-1">
                                   <div className="text-[11px] sm:text-xs font-black text-indigo-700 leading-tight">{workDays}일</div>
                                   {hoursLabel && <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium leading-tight">{hoursLabel}</div>}
-                                  {isSuperAdmin && costLabel && <div className="text-[9px] sm:text-[10px] text-emerald-600 font-bold leading-tight">{costLabel}원</div>}
+                                  {isSuperAdmin && showSummary === "labor" && costLabel && <div className="text-[9px] sm:text-[10px] text-emerald-600 font-bold leading-tight">{costLabel}원</div>}
                                 </td>
                               </React.Fragment>
                             );
@@ -2100,19 +2104,24 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                           .filter(e => e.position !== "약사")
                           .reduce((sum, e) => sum + getEmpMonthStats(e).laborCost, 0);
                         const totalCost = pharmacistCost + staffCost;
+                        const showMonthTotal = showSummary !== "hidden";
+                        const showLabor = showSummary === "labor";
                         return (
                           <>
                             <SummaryRow
                               summaries={totalSummaryList} label="약사"
-                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.pharmacistCount, 0)}인일</div>{isSuperAdmin && pharmacistCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(pharmacistCost)}</div>}</div>}
+                              showMonthTotal={showMonthTotal}
+                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.pharmacistCount, 0)}인일</div>{isSuperAdmin && showLabor && pharmacistCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(pharmacistCost)}</div>}</div>}
                             />
                             <SummaryRow
                               summaries={totalSummaryList} label="사원"
-                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.staffCount, 0)}인일</div>{isSuperAdmin && staffCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(staffCost)}</div>}</div>}
+                              showMonthTotal={showMonthTotal}
+                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.staffCount, 0)}인일</div>{isSuperAdmin && showLabor && staffCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(staffCost)}</div>}</div>}
                             />
                             <SummaryRow
                               summaries={totalSummaryList} label="근무인원"
-                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.totalCount, 0)}인일</div>{isSuperAdmin && totalCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(totalCost)}</div>}</div>}
+                              showMonthTotal={showMonthTotal}
+                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.totalCount, 0)}인일</div>{isSuperAdmin && showLabor && totalCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(totalCost)}</div>}</div>}
                             />
                           </>
                         );
@@ -2286,6 +2295,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           onEditEmployee={isAdmin ? openEditEmployeeModal : undefined}
           onScheduleUpdate={() => fetchScheduleData(undefined, true)}
           onUpdateSchedule={isAdmin ? handleCellUpdate : undefined}
+          scheduleTypeEntries={settingsScheduleTypes}
         />
       )}
 
@@ -2314,6 +2324,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
             }
           }}
           scheduleTypes={settingsScheduleTypes.map(e => ({ value: e.type, label: e.type }))}
+          scheduleTypeEntries={settingsScheduleTypes}
           typeHoursMap={calendarEmployee ? getTypeHoursMap(calendarEmployee.position, calendarEmployee.employmentType) : undefined}
           logisticsZoneProps={calendarLogisticsZoneProps}
           onEditEmployee={isAdmin ? () => { const emp = calendarEmployee; setCalendarEmployee(null); if (emp) setTimeout(() => openEditEmployeeModal(emp), 0); } : undefined}

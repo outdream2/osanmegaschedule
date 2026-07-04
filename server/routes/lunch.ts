@@ -7,7 +7,7 @@ const router = Router();
 router.get("/api/lunch-attendance", async (req, res) => {
   const date = (req.query.date as string) || new Date().toISOString().split("T")[0];
   const [year, monthStr] = date.split("-");
-  const OFF_TYPES = ["휴무", "공휴일", "연차", "반차(오전)", "반차(오후)", "경조사", "병가"];
+  const OFF_TYPES = ["휴무", "월차", "지정휴무", "결근", "오전반차", "오후반차"];
 
   const { data: employees, error: empErr } = await supabase
     .from("employees").select("id, name, position").order("id");

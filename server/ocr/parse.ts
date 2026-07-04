@@ -20,7 +20,7 @@ export function cleanCellValues(
   };
   return {
     headers: headers.map(h => h.replace(/[\x00-\x1F\x7F]+/g, "").trim()),
-    rows: rows.map(row => row.map(clean)),
+    rows: rows.filter(row => Array.isArray(row)).map(row => row.map(clean)),
   };
 }
 
@@ -36,6 +36,7 @@ export function mergeAdjacentHeaders(
     ["발행", "일자", "발행일자"], ["전표", "일자", "전표일자"], ["월", "일", "월일"],
     ["거래", "일자", "거래일자"], ["발행", "일", "발행일"],
     ["총매출", "액", "총매출액"],
+    ["유통", "기한", "유통기한"], ["소비", "기한", "소비기한"], ["유효", "기한", "유효기한"],
   ];
   const mergeAt = new Set<number>();
   const merged = [...headers];

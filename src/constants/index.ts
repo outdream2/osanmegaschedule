@@ -13,7 +13,6 @@ export const DEFAULT_SCHEDULE_TYPES: ScheduleTypeEntry[] = [
   { type: "오후반차", hours: "",             pharmHours: "" },
   { type: "휴무",     hours: "",             pharmHours: "" },
   { type: "월차",     hours: "",             pharmHours: "" },
-  { type: "지정휴무", hours: "",             pharmHours: "" },
   { type: "결근",     hours: "",             pharmHours: "" },
 ];
 
@@ -32,7 +31,6 @@ export const SCHEDULE_COLORS: Record<string, ScheduleColor> = {
   오후반차: { bg: "bg-emerald-50",  text: "text-emerald-700" },
   휴무:     { bg: "bg-rose-100",    text: "text-rose-700" },
   월차:     { bg: "bg-amber-200",   text: "text-amber-900" },
-  지정휴무: { bg: "bg-sky-100",     text: "text-sky-700" },
   결근:     { bg: "bg-red-200",     text: "text-red-900" },
 };
 

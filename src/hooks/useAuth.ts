@@ -23,7 +23,7 @@ const ACTIVITY_EVENTS: (keyof WindowEventMap)[] = [
   "wheel",
 ];
 
-const VALID_ROLES: string[] = ["superadmin", "admin", "manager", "employee"];
+const VALID_ROLES: string[] = ["superadmin", "admin", "manager", "employee", "vendor"];
 
 function readSession(): AuthSession | null {
   try {

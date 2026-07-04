@@ -8,6 +8,7 @@ export interface ScheduleTypeEntry {
   pharmHours: string;      // 약사 override hours
   logisticsHours: string;  // 물류 override hours
   partTimeHours: string;   // 알바 override hours
+  color?: string;          // hex background color
 }
 
 export interface WageRate {
@@ -76,13 +77,17 @@ function migrateScheduleTypes(raw: any, parsed: Partial<any>): ScheduleTypeEntry
     };
     return (raw as string[]).map(s => ({ type: s, hours: hoursByType[s]?.hours ?? "", pharmHours: hoursByType[s]?.pharmHours ?? "", logisticsHours: "", partTimeHours: "" }));
   }
-  // Already ScheduleTypeEntry[]
+  // Already ScheduleTypeEntry[] — backfill color from defaults if missing
+  const defaultColorMap: Record<string, string> = Object.fromEntries(
+    DEFAULT_SCHEDULE_TYPES.filter(d => d.color).map(d => [d.type, d.color!])
+  );
   return (raw as ScheduleTypeEntry[]).map(e => ({
     type: e.type || "",
     hours: e.hours || "",
     pharmHours: e.pharmHours || "",
     logisticsHours: e.logisticsHours || "",
     partTimeHours: e.partTimeHours || "",
+    color: e.color || defaultColorMap[e.type] || "#e2e8f0",
   })).filter(e => e.type);
 }
 

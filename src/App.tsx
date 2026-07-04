@@ -58,7 +58,7 @@ export default function App() {
   const navigate = (next: Page) => {
     setPage(next);
     if (next === "landing") {
-      history.back(); // let browser pop back to the landing entry
+      history.replaceState({ page: "landing" }, "");
     } else {
       history.pushState({ page: next }, "");
     }

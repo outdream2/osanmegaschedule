@@ -4,7 +4,8 @@ import {
   Calendar, CheckCircle, MapPin, User, Lock, Edit2, FileText,
 } from "lucide-react";
 import { Employee, Schedule } from "../../types";
-import { SCHEDULE_COLORS, SCHEDULE_TYPES, DEFAULT_COLOR } from "../../constants";
+import { SCHEDULE_TYPES, getTypeHex, isLightHex } from "../../constants";
+import type { ScheduleTypeEntry } from "../../constants";
 import { ZoneAssignTab, type LogisticsZoneProps } from "./ZoneAssignTab";
 
 export type { LogisticsZoneProps };
@@ -33,6 +34,7 @@ interface Props {
   }) => Promise<void>;
   onBulkSave?: (items: BulkItem[]) => Promise<void>;
   scheduleTypes?: { value: string; label: string }[];
+  scheduleTypeEntries?: ScheduleTypeEntry[];
   typeHoursMap?: Record<string, string>;
   logisticsZoneProps?: LogisticsZoneProps;
   onEditEmployee?: () => void;
@@ -50,6 +52,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   onUpdate,
   onBulkSave,
   scheduleTypes: scheduleTypesProp,
+  scheduleTypeEntries,
   typeHoursMap,
   logisticsZoneProps,
   onEditEmployee,
@@ -392,7 +395,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     {week.map((day, di) => {
                       if (!day) return <div key={di} />;
                       const sc = schedMap[day];
-                      const color = sc?.type ? (SCHEDULE_COLORS[sc.type] || DEFAULT_COLOR) : null;
+                      const dayBgHex = sc?.type ? getTypeHex(sc.type, scheduleTypeEntries) : null;
+                      const dayIsLight = dayBgHex ? isLightHex(dayBgHex) : true;
                       const isToday = (
                         new Date().getFullYear() === year &&
                         new Date().getMonth() + 1 === month &&
@@ -405,10 +409,11 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                           key={di}
                           onClick={() => handleDayQuickCycle(day)}
                           className={`rounded-lg p-1 flex flex-col items-center min-h-[52px] border transition-all ${
-                            color ? `${color.bg} border-transparent` : "bg-white border-slate-100"
+                            dayBgHex ? "border-transparent" : "bg-white border-slate-100"
                           } ${isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""} ${
                             isEditing ? "ring-2 ring-blue-500 scale-105 z-10 shadow-md" : ""
                           } ${isAdmin && onUpdate ? "cursor-pointer hover:shadow-sm hover:scale-[1.02]" : ""}`}
+                          style={dayBgHex ? { backgroundColor: dayBgHex } : undefined}
                         >
                           <span className={`text-[10px] font-bold leading-none mb-0.5 ${
                             dow === 0 ? "text-rose-500" : dow === 6 ? "text-sky-500" : "text-slate-600"
@@ -417,7 +422,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                           </span>
                           {sc?.type ? (
                             <>
-                              <span className={`text-[9px] font-extrabold leading-tight ${color?.text ?? ""}`}>
+                              <span className={`text-[9px] font-extrabold leading-tight ${dayIsLight ? "text-slate-900" : "text-white"}`}>
                                 {sc.type}
                               </span>
                               {sc.workingHours && (
@@ -456,7 +461,8 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
 
                 <div className="flex flex-wrap gap-1">
                   {activeTypes.map((t) => {
-                    const c = SCHEDULE_COLORS[t.value] || DEFAULT_COLOR;
+                    const btnHex = getTypeHex(t.value, scheduleTypeEntries);
+                    const btnLight = isLightHex(btnHex);
                     const isActive = editType === t.value;
                     return (
                       <button
@@ -466,9 +472,10 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                         onClick={() => quickApplyType(t.value)}
                         className={`px-2.5 py-1.5 text-[10px] font-extrabold rounded-lg border transition cursor-pointer disabled:opacity-50 ${
                           isActive
-                            ? `${c.bg} ${c.text} border-blue-400 ring-2 ring-blue-400/30 shadow-sm`
+                            ? `${btnLight ? "text-slate-900" : "text-white"} border-blue-400 ring-2 ring-blue-400/30 shadow-sm`
                             : "bg-white text-slate-700 border-slate-200 hover:bg-slate-100"
                         }`}
+                        style={isActive ? { backgroundColor: btnHex } : undefined}
                       >
                         {isActive && isSaving ? "저장중..." : t.label}
                       </button>
@@ -551,9 +558,14 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
             <div className="px-4 py-2.5 bg-slate-50 border-t border-slate-100 flex-shrink-0 flex items-center gap-3 flex-wrap">
               <span className="text-[10px] font-bold text-slate-500">이달 근무 {workDays}일</span>
               {Object.entries(stats).map(([type, count]) => {
-                const c = SCHEDULE_COLORS[type] || DEFAULT_COLOR;
+                const statHex = getTypeHex(type, scheduleTypeEntries);
+                const statLight = isLightHex(statHex);
                 return (
-                  <div key={type} className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${c.bg} ${c.text}`}>
+                  <div
+                    key={type}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold ${statLight ? "text-slate-900" : "text-white"}`}
+                    style={{ backgroundColor: statHex }}
+                  >
                     {type} {count}
                   </div>
                 );
@@ -682,29 +694,23 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
               <div className="p-2 border border-slate-100 bg-slate-50/50 rounded-xl space-y-1.5">
                 <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider">근무 패턴 템플릿:</label>
                 <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { label: typeHoursMap?.["오픈"] ? `오픈 (${typeHoursMap["오픈"]})` : "오픈", val: "오픈" },
-                    { label: typeHoursMap?.["미들"] ? `미들 (${typeHoursMap["미들"]})` : "미들", val: "미들" },
-                    { label: typeHoursMap?.["마감"] ? `마감 (${typeHoursMap["마감"]})` : "마감", val: "마감" },
-                    { label: "휴무", val: "휴무" },
-                    { label: "월차", val: "월차" },
-                    { label: "지정휴무", val: "지정휴무" },
-                    { label: "오전반차", val: "오전반차" },
-                    { label: "오후반차", val: "오후반차" },
-                  ].map((ps) => (
-                    <button
-                      key={ps.val}
-                      type="button"
-                      onClick={() => handleBulkTypeChange(ps.val)}
-                      className={`px-2.5 py-1 text-[10px] rounded border transition cursor-pointer font-semibold ${
-                        bulkType === ps.val
-                          ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-                          : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
-                      }`}
-                    >
-                      {ps.label}
-                    </button>
-                  ))}
+                  {activeTypes.map((t) => {
+                    const hours = typeHoursMap?.[t.value];
+                    return (
+                      <button
+                        key={t.value}
+                        type="button"
+                        onClick={() => handleBulkTypeChange(t.value)}
+                        className={`px-2.5 py-1 text-[10px] rounded border transition cursor-pointer font-semibold ${
+                          bulkType === t.value
+                            ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                            : "bg-white text-slate-700 border-slate-200 hover:bg-slate-50"
+                        }`}
+                      >
+                        {hours ? `${t.label} (${hours})` : t.label}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

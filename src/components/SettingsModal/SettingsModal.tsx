@@ -1,7 +1,8 @@
 // src/components/SettingsModal.tsx
-import React, { useState, useEffect } from "react";
-import { X, Plus, Trash2, GripVertical } from "lucide-react";
+import React, { useState, useEffect, useRef } from "react";
+import { X, Plus, Trash2, GripVertical, Check } from "lucide-react";
 import { AppSettings, WageRate, ScheduleTypeEntry } from "../../hooks/useSettings";
+import { COLOR_PRESETS, findPresetByBg } from "../../constants";
 
 interface SettingsModalProps {
   settings: AppSettings;
@@ -30,6 +31,84 @@ const HOUR_TABS: { id: ScheduleHourTab; label: string }[] = [
   { id: "logisticsHours", label: "물류" },
   { id: "partTimeHours",  label: "알바" },
 ];
+
+// ─── ColorPicker ──────────────────────────────────────────────────────────────
+// A compact popover picker: click the swatch to open a palette of preset colors,
+// or use the "직접" native color input for a custom hex.
+interface ColorPickerProps {
+  value: string;
+  onChange: (hex: string) => void;
+}
+
+const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  const currentPreset = findPresetByBg(value);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-6 h-6 rounded-md border border-slate-300 shadow-sm hover:ring-2 hover:ring-slate-300 transition cursor-pointer"
+        style={{ backgroundColor: value }}
+        title={currentPreset ? `색상: ${currentPreset.label}` : "색상 선택"}
+        aria-label="색상 선택"
+      />
+      {open && (
+        <div
+          className="absolute z-20 top-full right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl p-2 w-[196px] animate-in fade-in zoom-in-95 duration-100"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="grid grid-cols-6 gap-1.5 mb-2">
+            {COLOR_PRESETS.map((p) => {
+              const selected = p.bg.toLowerCase() === value.toLowerCase();
+              return (
+                <button
+                  key={p.label}
+                  type="button"
+                  onClick={() => { onChange(p.bg); setOpen(false); }}
+                  className={`relative w-7 h-7 rounded-md border cursor-pointer transition hover:scale-110 ${
+                    selected ? "border-slate-800 ring-2 ring-slate-400" : "border-slate-200"
+                  }`}
+                  style={{ backgroundColor: p.bg }}
+                  title={p.label}
+                  aria-label={p.label}
+                  aria-pressed={selected}
+                >
+                  {selected && (
+                    <Check size={12} className="absolute inset-0 m-auto text-slate-800" strokeWidth={3} />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-100">
+            <span className="text-[10px] font-bold text-slate-500">직접</span>
+            <input
+              type="color"
+              value={value}
+              onChange={(e) => onChange(e.target.value)}
+              className="w-6 h-6 rounded cursor-pointer border border-slate-200 p-0.5 bg-white"
+              title="직접 색상 선택"
+            />
+            <span className="text-[10px] font-mono text-slate-400 uppercase">{value}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onApplyShiftHours, onClose, employees, editMode, onEnableEditMode }) => {
   const [activeTab, setActiveTab] = useState<TabId>("positions");
@@ -137,7 +216,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
   const addScheduleType = () => {
     const trimmed = newScheduleType.trim();
     if (!trimmed || scheduleTypes.some(e => e.type === trimmed)) return;
-    saveScheduleTypes([...scheduleTypes, { type: trimmed, hours: "", pharmHours: "", logisticsHours: "", partTimeHours: "" }]);
+    // Default new types to the first preset (파랑) so they're visible immediately.
+    const defaultColor = COLOR_PRESETS[0]?.bg ?? "#dbeafe";
+    saveScheduleTypes([...scheduleTypes, { type: trimmed, hours: "", pharmHours: "", logisticsHours: "", partTimeHours: "", color: defaultColor }]);
     setNewScheduleType("");
   };
 
@@ -373,17 +454,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
               </div>
 
               <div className="space-y-1.5">
-                <div className="grid grid-cols-[1fr,1fr,28px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                <div className="grid grid-cols-[1fr_28px_1fr_28px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
                   <span>유형명</span>
+                  <span>색</span>
                   <span>{HOUR_TABS.find(t => t.id === scheduleHourTab)?.label} 시간</span>
                   <span></span>
                 </div>
                 {scheduleTypes.map((st, idx) => (
                   <div
                     key={idx}
-                    className="grid grid-cols-[1fr,1fr,28px] gap-2 items-center bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-1.5 transition"
+                    className="grid grid-cols-[1fr_28px_1fr_28px] gap-2 items-center bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-1.5 transition"
                   >
-                    <span className="text-xs font-semibold text-slate-800 truncate">{st.type}</span>
+                    <span
+                      className="text-xs font-semibold text-slate-800 truncate px-1.5 py-0.5 rounded"
+                      style={{ backgroundColor: st.color ?? "#e2e8f0" }}
+                    >
+                      {st.type}
+                    </span>
+                    <ColorPicker
+                      value={st.color ?? "#e2e8f0"}
+                      onChange={(hex) => updateScheduleTypeEntry(idx, "color", hex)}
+                    />
                     <input
                       type="text"
                       value={st[scheduleHourTab]}

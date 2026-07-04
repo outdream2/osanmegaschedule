@@ -87,8 +87,8 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-black/50 sm:p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full sm:max-w-md bg-white sm:rounded-2xl rounded-t-2xl shadow-2xl border border-slate-200 transform scale-100 transition animate-in zoom-in-95 duration-100 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+      <div className="relative w-full sm:max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 transform scale-100 transition animate-in zoom-in-95 duration-100 max-h-[92vh] overflow-y-auto">
         {/* 헤더 */}
         <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-5 py-3.5 flex items-center justify-between rounded-t-2xl">
           <div className="flex items-center gap-2">
