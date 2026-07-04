@@ -298,36 +298,45 @@ interface ZoneSectionProps {
   onApplyMonth: () => void;
   typeTones: Record<string, TypeTone>;
   workRanges: Record<number, { start: number; end: number } | null>;
+  lunchSlotMap: SlotMap; // to block zone assignment during lunch time
 }
 
 // Zone section uses HOUR_SLOTS as column keys (slice off the last end-boundary slot)
 const ZONE_SLOTS = HOUR_SLOTS.slice(0, -1); // 10:00~21:00 = 12 columns
 
 const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
-  zoneMap, workers, allWorkers, onDropToZone, onRemoveFromZone, onApplyMonth, typeTones, workRanges,
+  zoneMap, workers, allWorkers, onDropToZone, onRemoveFromZone, onApplyMonth, typeTones, workRanges, lunchSlotMap,
 }) => {
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [confirmMonth, setConfirmMonth] = useState(false);
 
-  /**
-   * Guarded drop: only allows assignment when the dragged employee is actually
-   * scheduled to work during the target hour slot. Otherwise shows an alert and aborts.
-   */
   const tryDropToZone = useCallback((zone: ZoneRow, slot: string, empId: number) => {
+    const slotHour = parseInt(slot.split(":")[0], 10);
+    const slotStart = slotHour * 60;
+    const slotEnd = slotStart + 60;
+
+    // 출근시간 체크
     const range = workRanges[empId];
-    if (range) {
-      // slot is "HH:00" — extract the hour and compare against the employee's work range (minutes).
-      const slotHour = parseInt(slot.split(":")[0], 10);
-      const slotStart = slotHour * 60;
-      const slotEnd = slotStart + 60;
-      // Not working if the 1-hour slot lies entirely outside the work range.
-      if (slotEnd <= range.start || slotStart >= range.end) {
-        alert("출근 시간이 아니어서 배정할 수 없습니다.");
-        return;
-      }
+    if (range && (slotEnd <= range.start || slotStart >= range.end)) {
+      alert("출근 시간이 아니어서 배정할 수 없습니다.");
+      return;
     }
+
+    // 점심시간 체크: 해당 직원이 이 시간대에 점심 배정돼 있으면 차단
+    const lunchConflict = Object.entries(lunchSlotMap).some(([lunchSlot, ids]) => {
+      if (!ids.includes(empId)) return false;
+      const [lh, lm] = lunchSlot.split(":").map(Number);
+      const lunchStart = lh * 60 + lm;
+      const lunchEnd = lunchStart + 30;
+      return lunchStart < slotEnd && lunchEnd > slotStart;
+    });
+    if (lunchConflict) {
+      alert("점심시간이 배정된 시간대입니다.");
+      return;
+    }
+
     onDropToZone(zone, slot, empId);
-  }, [workRanges, onDropToZone]);
+  }, [workRanges, lunchSlotMap, onDropToZone]);
 
   const assignedIds = useMemo(() => {
     const ids = new Set<number>();
@@ -879,6 +888,7 @@ export const DayTimelineModal: React.FC<Props> = ({
               onApplyMonth={applyZoneToMonth}
               typeTones={typeTones}
               workRanges={workRanges}
+              lunchSlotMap={lunchSlots}
             />
           </div>
 
