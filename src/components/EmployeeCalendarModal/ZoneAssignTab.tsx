@@ -1,5 +1,5 @@
-import React from "react";
-import { MapPin } from "lucide-react";
+import React, { useState } from "react";
+import { MapPin, Save } from "lucide-react";
 import { Employee } from "../../types";
 import { ZONE_DEFS, SECTION_LABEL, type ZoneSection } from "../../constants/displayZones";
 
@@ -7,17 +7,43 @@ export interface LogisticsZoneProps {
   assignedZoneNums: number[];
   onToggle: (zoneNum: number) => void;
   onClearAll: () => void;
+  onSaveToDow?: (dow: number) => Promise<void>;
 }
 
 // ─── Zone assignment sub-component (logistics only) ───────────────────────────
 const SECTION_ORDER: ZoneSection[] = ["top_wall", "aisle", "left_wall", "bottom_wall", "wing"];
+const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
 export const ZoneAssignTab: React.FC<{
   employee: Employee;
   assignedZoneNums: number[];
   onToggle: (num: number) => void;
   onClearAll: () => void;
-}> = ({ employee, assignedZoneNums, onToggle, onClearAll }) => {
+  onSaveToDow?: (dow: number) => Promise<void>;
+}> = ({ employee, assignedZoneNums, onToggle, onClearAll, onSaveToDow }) => {
+  const [selectedDows, setSelectedDows] = useState<Set<number>>(new Set());
+  const [saving, setSaving] = useState(false);
+
+  const toggleDow = (dow: number) => {
+    setSelectedDows(prev => {
+      const next = new Set(prev);
+      if (next.has(dow)) next.delete(dow); else next.add(dow);
+      return next;
+    });
+  };
+
+  const handleSaveToDows = async () => {
+    if (!onSaveToDow || selectedDows.size === 0) return;
+    setSaving(true);
+    try {
+      for (const dow of selectedDows) {
+        await onSaveToDow(dow);
+      }
+      setSelectedDows(new Set());
+    } finally {
+      setSaving(false);
+    }
+  };
   const grouped = SECTION_ORDER.map((section) => ({
     section,
     label: SECTION_LABEL[section],
@@ -44,6 +70,53 @@ export const ZoneAssignTab: React.FC<{
           </button>
         )}
       </div>
+
+      {/* DOW template save bar */}
+      {onSaveToDow && (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-2 space-y-2">
+          <div className="flex items-center gap-1.5">
+            <Save size={11} className="text-indigo-600 shrink-0" />
+            <span className="text-[10px] font-black text-indigo-800">요일 템플릿 저장</span>
+            <span className="text-[9px] text-indigo-500 font-medium">— 현재 구역배정을 선택 요일의 기본값으로 저장</span>
+          </div>
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {DOW_LABELS.map((label, dow) => (
+              <button
+                key={dow}
+                type="button"
+                onClick={() => toggleDow(dow)}
+                className={`w-7 h-7 text-[10px] font-black rounded-lg border transition cursor-pointer ${
+                  selectedDows.has(dow)
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                    : "bg-white text-slate-600 border-slate-200 hover:border-indigo-400 hover:text-indigo-600"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+            {selectedDows.size > 0 && (
+              <>
+                <button
+                  type="button"
+                  disabled={saving}
+                  onClick={handleSaveToDows}
+                  className="ml-1 px-2.5 py-1 text-[10px] font-bold rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white transition cursor-pointer disabled:opacity-50 flex items-center gap-1"
+                >
+                  <Save size={10} />
+                  {saving ? "저장 중…" : `저장 (${selectedDows.size}요일)`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDows(new Set())}
+                  className="text-[10px] font-bold px-1.5 py-1 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 cursor-pointer transition"
+                >
+                  ✕
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Zone groups */}
       {grouped.map(({ section, label, zones }) => (

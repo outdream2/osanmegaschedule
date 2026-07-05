@@ -122,6 +122,22 @@ const parseNumber = (val: any): number => {
   return isNaN(num) ? 0 : num;
 };
 
+// 말줄임표(..., …)를 줄바꿈으로 렌더링
+function renderTextWithBreaks(text: string): React.ReactNode {
+  const parts = text.split(/\.{3}|…/);
+  if (parts.length <= 1) return text;
+  return (
+    <>
+      {parts.map((part, i) => (
+        <React.Fragment key={i}>
+          {part}
+          {i < parts.length - 1 && <br />}
+        </React.Fragment>
+      ))}
+    </>
+  );
+}
+
 export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp, onSaveConfirmed }) => {
   const structuredPages = pages.filter(p => !isFallback(p.headers) && Array.isArray(p.rows) && p.rows.length > 0);
   const fallbackPages   = pages.filter(p => isFallback(p.headers) || !Array.isArray(p.rows) || p.rows.length === 0);
@@ -157,8 +173,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   // ── Feature 1: 금액 자동보정 ──────────────────────────────────────────────
   const [amountCorrections, setAmountCorrections] = useState<Record<number, number>>({});
-  // 소계 불일치 시 사용자 선택: "stated" = 명세서 소계, "computed" = 인식된 합계
-  const [pageSubtotalChoices, setPageSubtotalChoices] = useState<Record<number, "stated" | "computed">>({});
+  // 소계 불일치 시 사용자 선택: "stated" = 명세서 소계, "computed" = 인식된 합계, "custom" = 직접 선택
+  const [pageSubtotalChoices, setPageSubtotalChoices] = useState<Record<number, "stated" | "computed" | "custom">>({});
+  // "둘 다 아님" 선택 시 사용자가 고른 커스텀 소계 값
+  const [pageSubtotalCustom, setPageSubtotalCustom] = useState<Record<number, number>>({});
+  // "둘 다 아님" 드롭다운 열림 상태
+  const [pageSubtotalDropdownOpen, setPageSubtotalDropdownOpen] = useState<Set<number>>(new Set());
   // 공급사 잔고 (페이지별)
   const [pageSupplierBalances, setPageSupplierBalances] = useState<Record<number, number>>({});
   // 공급사 잔고 DB 기록
@@ -170,6 +190,38 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // ── 컬럼 너비 조정 ────────────────────────────────────────────────────────────
   const [colWidths, setColWidths] = useState<Record<number, number>>({});
   const resizeRef = useRef<{ ci: number; startX: number; startW: number } | null>(null);
+
+  // ── 컬럼 순서(드래그) ────────────────────────────────────────────────────────
+  // 원본표 (dispHeaders 기준, localStorage 저장)
+  const [colOrder, setColOrder] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem("ocr_raw_col_order");
+      if (saved) {
+        const arr = JSON.parse(saved);
+        if (Array.isArray(arr) && arr.every((v: unknown) => typeof v === "number")) return arr as number[];
+      }
+    } catch { /* ignore */ }
+    return [];
+  });
+  const [dragColIdx, setDragColIdx] = useState<number | null>(null);
+  // ── 2차 보정 뷰 전환 (검토 목록 / 명세서 뷰) ─────────────────────────────
+  const [erpViewTab, setErpViewTab] = useState<'list' | 'table'>('list');
+  // 명세서 뷰 셀 수동 편집 (컬럼명 기반)
+  const [erpCellEdits, setErpCellEdits] = useState<Record<number, Record<string, string>>>({});
+  const [editingErpCell, setEditingErpCell] = useState<{ ri: number; col: string } | null>(null);
+  const [editingErpCellVal, setEditingErpCellVal] = useState("");
+  // 확정표 (CONF_HEADERS 기준, localStorage 저장)
+  const [confColOrder, setConfColOrder] = useState<number[]>(() => {
+    try {
+      const saved = localStorage.getItem("ocr_conf_col_order");
+      if (saved) {
+        const arr = JSON.parse(saved);
+        if (Array.isArray(arr) && arr.every((v: unknown) => typeof v === "number")) return arr as number[];
+      }
+    } catch { /* ignore */ }
+    return [];
+  });
+  const [confDragColIdx, setConfDragColIdx] = useState<number | null>(null);
 
   // ── 셀 인라인 편집 (수량/단가/금액) ───────────────────────────────────────
   const [cellEdits,      setCellEdits     ] = useState<Record<number, Record<number, number | null>>>({});
@@ -221,6 +273,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     const choice = pageSubtotalChoices[pn];
     if (choice === "stated") return stated ?? computed;
     if (choice === "computed") return computed;
+    if (choice === "custom") return pageSubtotalCustom[pn] ?? computed;
     // 기본: 명세서 소계가 있고 mismatch가 아닐 때는 명세서 소계 우선
     if (stated != null && stated > 0 && Math.abs(stated - computed) <= 1) return stated;
     return computed;
@@ -338,6 +391,31 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     const effective = effectivePageTotals.get(pn) ?? 0;
     return stated > 0 && Math.abs(stated - effective) <= 1;
   };
+
+  // "둘 다 아님" 드롭다운용 금액 후보 — 페이지의 OCR 행에서 큰 숫자들을 추출
+  const pageAmountCandidates = new Map<number, number[]>();
+  if (amtIdx >= 0) {
+    for (const pn of uniquePageNums) {
+      const pageData = structuredPages.find(p => p.page === pn);
+      if (!pageData) continue;
+      const seen = new Set<number>();
+      const candidates: number[] = [];
+      for (const row of pageData.rows) {
+        if (!Array.isArray(row)) continue;
+        for (const cell of row) {
+          if (cell == null) continue;
+          const n = typeof cell === "number" ? cell : parseNumber(cell);
+          if (n >= 1000 && !seen.has(n)) { seen.add(n); candidates.push(n); }
+        }
+      }
+      const stated = pageData.meta?.total;
+      if (stated != null && stated >= 1000 && !seen.has(stated)) { seen.add(stated); candidates.push(stated); }
+      const computed = pageTotals.get(pn) ?? 0;
+      if (computed >= 1000 && !seen.has(computed)) candidates.push(computed);
+      candidates.sort((a, b) => b - a);
+      pageAmountCandidates.set(pn, candidates.slice(0, 10));
+    }
+  }
 
   // ── 이미지 모달 + 줌/패닝 ────────────────────────────────────────────────
   const [modalImg,   setModalImg  ] = useState<string | null>(null);
@@ -952,6 +1030,40 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       .catch(() => {});
   }, []);
 
+  // dispHeaders 길이 변경 시 colOrder 초기화 (저장된 값이 유효하면 유지, 아니면 리셋)
+  useEffect(() => {
+    setColOrder(prev => {
+      if (prev.length === dispHeaders.length &&
+          prev.every(i => i >= 0 && i < dispHeaders.length) &&
+          new Set(prev).size === prev.length) return prev;
+      return Array.from({ length: dispHeaders.length }, (_, i) => i);
+    });
+  }, [dispHeaders.length]);
+
+  // colOrder 변경 시 localStorage 저장
+  useEffect(() => {
+    if (colOrder.length > 0) {
+      try { localStorage.setItem("ocr_raw_col_order", JSON.stringify(colOrder)); } catch { /* ignore */ }
+    }
+  }, [colOrder]);
+
+  // CONF_HEADERS 길이 변경 시 confColOrder 초기화 (localStorage 저장값 유효성 검사)
+  useEffect(() => {
+    setConfColOrder(prev => {
+      if (prev.length === CONF_HEADERS.length &&
+          prev.every(i => i >= 0 && i < CONF_HEADERS.length) &&
+          new Set(prev).size === prev.length) return prev;
+      return Array.from({ length: CONF_HEADERS.length }, (_, i) => i);
+    });
+  }, [CONF_HEADERS.length]);
+
+  // confColOrder 변경 시 localStorage 저장
+  useEffect(() => {
+    if (confColOrder.length > 0) {
+      try { localStorage.setItem("ocr_conf_col_order", JSON.stringify(confColOrder)); } catch { /* ignore */ }
+    }
+  }, [confColOrder]);
+
   const confRows: (string | number | null)[][] = matchItems
     ? effectiveDispRows.map((row, ri) => {
         const m        = cancelledRows.has(ri) ? null : (selectedCands[ri] ?? matchItems[ri]?.matched ?? null);
@@ -1154,8 +1266,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             }}
             className="flex items-center gap-2 w-full text-left px-3 py-1.5 hover:bg-indigo-50 text-[11px] border-b border-gray-50 last:border-0">
             <span className="flex-1 font-semibold text-gray-800 break-words">{p.product_name}</span>
-            {p.spec && <span className="text-gray-400 shrink-0 max-w-[60px] truncate">{p.spec}</span>}
-            {p.supplier && <span className="text-sky-500 shrink-0 max-w-[60px] truncate">{p.supplier}</span>}
+            {p.spec && <span className="text-gray-400 shrink-0 max-w-[60px] break-words">{p.spec}</span>}
+            {p.supplier && <span className="text-sky-500 shrink-0 max-w-[60px] break-words">{p.supplier}</span>}
           </button>
         ))}
       </div>
@@ -1362,10 +1474,25 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                 </span>
               ) : null}
             </div>
-            <button onClick={() => handleExport(dispHeaders, dispRows, "원본")}
-              className="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 px-2 py-1 rounded-lg transition cursor-pointer shrink-0">
-              <Download size={11} />CSV
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              {colOrder.length > 0 && colOrder.some((v, i) => v !== i) && (
+                <button
+                  onClick={() => {
+                    const reset = Array.from({ length: dispHeaders.length }, (_, i) => i);
+                    setColOrder(reset);
+                    try { localStorage.setItem("ocr_raw_col_order", JSON.stringify(reset)); } catch { /* ignore */ }
+                  }}
+                  className="flex items-center gap-1 text-[11px] font-bold text-gray-500 bg-white border border-gray-200 hover:bg-gray-50 px-2 py-1 rounded-lg transition cursor-pointer"
+                  title="열 순서 초기화"
+                >
+                  열순서 리셋
+                </button>
+              )}
+              <button onClick={() => handleExport(dispHeaders, dispRows, "원본")}
+                className="flex items-center gap-1 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 px-2 py-1 rounded-lg transition cursor-pointer">
+                <Download size={11} />CSV
+              </button>
+            </div>
           </div>
 
           {/* ── 소계 불일치 경고 ── */}
@@ -1377,7 +1504,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
                 if (resolved) {
                   const choice = pageSubtotalChoices[pageNum];
-                  const chosenVal = choice === "stated" ? stated : effectiveComputed;
+                  const chosenVal = choice === "stated" ? stated
+                    : choice === "custom" ? (pageSubtotalCustom[pageNum] ?? effectiveComputed)
+                    : effectiveComputed;
+                  const choiceLabel = choice === "stated" ? "명세서 소계"
+                    : choice === "custom" ? "직접 선택"
+                    : "인식된 합계";
                   const balanceCands = pageBalanceCandidates.get(pageNum) ?? [];
                   const selectedBalance = pageSupplierBalances[pageNum];
                   return (
@@ -1392,11 +1524,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                         >{pageNum}번 소계 확정: <span className="font-black">{fmt(chosenVal)}원</span></button>
                         {choice && (
                           <span className="text-emerald-500 font-normal">
-                            ({choice === "stated" ? "명세서 소계" : "인식된 합계"} 기준)
+                            ({choiceLabel} 기준)
                           </span>
                         )}
                         <button
-                          onClick={() => setPageSubtotalChoices(prev => { const n = { ...prev }; delete n[pageNum]; return n; })}
+                          onClick={() => {
+                            setPageSubtotalChoices(prev => { const n = { ...prev }; delete n[pageNum]; return n; });
+                            setPageSubtotalCustom(prev => { const n = { ...prev }; delete n[pageNum]; return n; });
+                            setPageSubtotalDropdownOpen(prev => { const s = new Set(prev); s.delete(pageNum); return s; });
+                          }}
                           className="text-[10px] text-emerald-600 hover:text-emerald-800 underline cursor-pointer"
                         >
                           취소
@@ -1426,30 +1562,75 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   );
                 }
 
+                const isDropdownOpen = pageSubtotalDropdownOpen.has(pageNum);
+                const amtCandidates = pageAmountCandidates.get(pageNum) ?? [];
                 return (
-                  <div key={pageNum} className="flex items-center gap-2 flex-wrap">
-                    <AlertTriangle size={12} className="shrink-0 text-rose-500" />
-                    <button
-                      onClick={() => openPageModal(pageNum)}
-                      disabled={!pageImages?.length}
-                      className="text-[11px] font-semibold text-rose-700 shrink-0 disabled:cursor-default enabled:hover:underline enabled:cursor-pointer"
-                      title={pageImages?.length ? `${pageNum}번 명세서 이미지 보기` : undefined}
-                    >
-                      {pageNum}번 소계 불일치
-                    </button>
-                    <span className="text-[10px] text-rose-400 shrink-0">어느 값이 맞나요?</span>
-                    <button
-                      onClick={() => setPageSubtotalChoices(prev => ({ ...prev, [pageNum]: "stated" }))}
-                      className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition cursor-pointer"
-                    >
-                      명세서 소계 {fmt(stated)}원
-                    </button>
-                    <button
-                      onClick={() => setPageSubtotalChoices(prev => ({ ...prev, [pageNum]: "computed" }))}
-                      className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-white border border-rose-300 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
-                    >
-                      인식된 합계 {fmt(effectiveComputed)}원
-                    </button>
+                  <div key={pageNum} className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <AlertTriangle size={12} className="shrink-0 text-rose-500" />
+                      <button
+                        onClick={() => openPageModal(pageNum)}
+                        disabled={!pageImages?.length}
+                        className="text-[11px] font-semibold text-rose-700 shrink-0 disabled:cursor-default enabled:hover:underline enabled:cursor-pointer"
+                        title={pageImages?.length ? `${pageNum}번 명세서 이미지 보기` : undefined}
+                      >
+                        {pageNum}번 소계 불일치
+                      </button>
+                      <span className="text-[10px] text-rose-400 shrink-0">어느 값이 맞나요?</span>
+                      <button
+                        onClick={() => setPageSubtotalChoices(prev => ({ ...prev, [pageNum]: "stated" }))}
+                        className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-rose-500 hover:bg-rose-600 text-white rounded-lg transition cursor-pointer"
+                      >
+                        명세서 소계 {fmt(stated)}원
+                      </button>
+                      <button
+                        onClick={() => setPageSubtotalChoices(prev => ({ ...prev, [pageNum]: "computed" }))}
+                        className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-white border border-rose-300 text-rose-600 hover:bg-rose-50 rounded-lg transition cursor-pointer"
+                      >
+                        인식된 합계 {fmt(effectiveComputed)}원
+                      </button>
+                      <button
+                        onClick={() => setPageSubtotalDropdownOpen(prev => {
+                          const s = new Set(prev);
+                          if (s.has(pageNum)) s.delete(pageNum); else s.add(pageNum);
+                          return s;
+                        })}
+                        className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-bold bg-white border border-gray-300 text-gray-600 hover:bg-gray-50 rounded-lg transition cursor-pointer"
+                      >
+                        둘 다 아님 ▾
+                      </button>
+                    </div>
+                    {isDropdownOpen && (
+                      <div className="flex items-center gap-2 flex-wrap pl-5 pb-1">
+                        <span className="text-[10px] text-gray-500 shrink-0">직접 선택:</span>
+                        {amtCandidates.length > 0 ? (
+                          <select
+                            className="border border-gray-300 rounded px-2 py-0.5 text-[11px] outline-none focus:border-rose-400 bg-white cursor-pointer"
+                            defaultValue=""
+                            onChange={e => {
+                              const val = Number(e.target.value);
+                              if (!val) return;
+                              setPageSubtotalCustom(prev => ({ ...prev, [pageNum]: val }));
+                              setPageSubtotalChoices(prev => ({ ...prev, [pageNum]: "custom" }));
+                              setPageSubtotalDropdownOpen(prev => { const s = new Set(prev); s.delete(pageNum); return s; });
+                            }}
+                          >
+                            <option value="" disabled>-- 금액 선택 --</option>
+                            {amtCandidates.map(v => (
+                              <option key={v} value={v}>{fmt(v)}원</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="text-[10px] text-gray-400">후보 금액이 없습니다</span>
+                        )}
+                        <button
+                          onClick={() => setPageSubtotalDropdownOpen(prev => { const s = new Set(prev); s.delete(pageNum); return s; })}
+                          className="text-[10px] text-gray-400 hover:text-gray-600 underline cursor-pointer"
+                        >
+                          취소
+                        </button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -1499,22 +1680,44 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-amber-50 border-b-2 border-amber-200">
-                  {dispHeaders.map((h, ci) => (
-                    <th key={ci}
-                      style={{ width: colWidths[ci] ?? 'auto', minWidth: 40, position: 'relative' }}
-                      className={`px-3 py-2.5 font-bold text-amber-900 whitespace-nowrap text-[11px] ${NUM_COLS.has(h) ? "text-right" : "text-left"}`}>
-                      {h}
-                      <div
-                        style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 5, cursor: 'col-resize', zIndex: 1 }}
-                        onMouseDown={e => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const th = (e.currentTarget as HTMLElement).parentElement as HTMLTableCellElement;
-                          resizeRef.current = { ci, startX: e.clientX, startW: th.offsetWidth };
+                  {(colOrder.length === dispHeaders.length ? colOrder : dispHeaders.map((_, i) => i)).map((origIdx, orderIdx) => {
+                    const h = dispHeaders[origIdx];
+                    const ci = origIdx;
+                    return (
+                      <th key={origIdx}
+                        draggable
+                        onDragStart={() => setDragColIdx(orderIdx)}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={() => {
+                          if (dragColIdx === null || dragColIdx === orderIdx) { setDragColIdx(null); return; }
+                          setColOrder(prev => {
+                            const base = prev.length === dispHeaders.length ? prev : dispHeaders.map((_, i) => i);
+                            const next = [...base];
+                            const [removed] = next.splice(dragColIdx, 1);
+                            next.splice(orderIdx, 0, removed);
+                            return next;
+                          });
+                          setDragColIdx(null);
                         }}
-                      />
-                    </th>
-                  ))}
+                        onDragEnd={() => setDragColIdx(null)}
+                        style={{ width: colWidths[ci] ?? 'auto', minWidth: 40, position: 'relative', cursor: 'grab' }}
+                        className={`px-3 py-2.5 font-bold text-amber-900 whitespace-nowrap text-[11px] select-none ${NUM_COLS.has(h) ? "text-right" : "text-left"} ${dragColIdx === orderIdx ? 'opacity-50' : ''}`}
+                        title="드래그하여 열 순서 변경">
+                        {h}
+                        <div
+                          style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 5, cursor: 'col-resize', zIndex: 1 }}
+                          draggable={false}
+                          onDragStart={e => { e.preventDefault(); e.stopPropagation(); }}
+                          onMouseDown={e => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const th = (e.currentTarget as HTMLElement).parentElement as HTMLTableCellElement;
+                            resizeRef.current = { ci, startX: e.clientX, startW: th.offsetWidth };
+                          }}
+                        />
+                      </th>
+                    );
+                  })}
                 </tr>
               </thead>
               <tbody>
@@ -1535,7 +1738,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           isMismatch ? "bg-rose-50/60" : ri % 2 !== 0 ? "bg-gray-50/40" : ""
                         } ${pageImages?.length ? "cursor-pointer hover:bg-amber-100/70" : "hover:bg-amber-50/50"}`}
                       >
-                        {dispHeaders.map((h, ci) => {
+                        {(colOrder.length === dispHeaders.length ? colOrder : dispHeaders.map((_, i) => i)).map(origIdx => {
+                          const h = dispHeaders[origIdx];
+                          const ci = origIdx;
                           const isSupplier = h === "공급처";
                           const rawCell = row[ci];
                           const cell = isSupplier && rawSupplierByPage[pn] !== undefined
@@ -1591,7 +1796,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 title={`클릭하여 공급처 변경${cell != null ? ` (${String(cell)})` : ""}`}
                               >
                                 <span className="flex items-center gap-1">
-                                  <span className="truncate block">
+                                  <span className="break-words">
                                     {cell == null ? <span className="text-gray-300">—</span> : String(cell)}
                                   </span>
                                   <Pencil size={9} className="text-sky-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
@@ -1675,7 +1880,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 <div className="flex flex-col gap-0">
                                   <span className="flex items-center gap-1">
                                     <span className="text-[9px] bg-emerald-100 text-emerald-700 font-black px-1 rounded shrink-0">BC</span>
-                                    <span className="font-semibold text-emerald-700 break-words whitespace-normal text-[11px]">{barcodeMatch.name}</span>
+                                    <span className="font-semibold text-emerald-700 break-words whitespace-normal text-[11px]">{renderTextWithBreaks(barcodeMatch.name)}</span>
                                     <button
                                       type="button"
                                       title="ERP 자동보정 취소 → 원본 이름으로 복원"
@@ -1683,7 +1888,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       className="text-[9px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0"
                                     >✕</button>
                                   </span>
-                                  <span className="text-gray-300 text-[10px] line-through break-words whitespace-normal">{String(origCell ?? "")}</span>
+                                  <span className="text-gray-300 text-[10px] line-through break-words whitespace-normal">{renderTextWithBreaks(String(origCell ?? ""))}</span>
                                 </div>
                               </td>
                             );
@@ -1771,7 +1976,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   <div className="flex flex-col gap-0">
                                     <span className="flex items-center gap-1">
                                       <BookOpen size={9} className="text-indigo-400 shrink-0" />
-                                      <span className="font-semibold text-indigo-700 break-words line-clamp-2 text-[11px]">{autoMatch.name}</span>
+                                      <span className="font-semibold text-indigo-700 break-words whitespace-normal text-[11px]">{renderTextWithBreaks(autoMatch.name)}</span>
                                       <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                       <button
                                         type="button"
@@ -1783,10 +1988,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     <button
                                       type="button"
                                       onClick={e => { e.stopPropagation(); setDeleteSynConfirm({ ri, origName: String(origCell ?? "") }); }}
-                                      className="text-gray-300 text-[10px] line-through break-words line-clamp-2 hover:text-rose-400 cursor-pointer text-left"
+                                      className="text-gray-300 text-[10px] line-through break-words whitespace-normal hover:text-rose-400 cursor-pointer text-left"
                                       title="클릭하여 동의어 삭제"
                                     >
-                                      {String(origCell ?? "")}
+                                      {renderTextWithBreaks(String(origCell ?? ""))}
                                     </button>
                                   </div>
                                 </td>
@@ -1809,7 +2014,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 title="클릭하여 상품명 수정">
                                 <span className="flex items-center gap-1">
                                   <span className="font-semibold text-gray-900 break-words whitespace-normal">
-                                    {cell == null ? <span className="text-gray-300">—</span> : String(cell)}
+                                    {cell == null ? <span className="text-gray-300">—</span> : renderTextWithBreaks(String(cell))}
                                   </span>
                                   <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                   {isCancelledAutoMap && (
@@ -1839,17 +2044,22 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             );
                           }
 
-                          return (
-                            <td key={ci}
-                              className={`px-3 py-2 ${
-                                isAmt ? "text-right font-bold text-amber-800 whitespace-nowrap" :
-                                isNum ? "text-right text-gray-700 whitespace-nowrap" :
-                                h === "품명" ? "font-semibold text-gray-900 break-words whitespace-normal max-w-[200px]" :
-                                              "text-gray-600 whitespace-nowrap"
-                              }`}>
-                              {cell == null ? <span className="text-gray-300">—</span> : isNum ? fmt(cell) : String(cell)}
-                            </td>
-                          );
+                          {
+                            const cellStr = cell == null ? "" : String(cell);
+                            const hasEllipsis = !isNum && /\.{3}|…/.test(cellStr);
+                            return (
+                              <td key={ci}
+                                className={`px-3 py-2 ${
+                                  isAmt ? "text-right font-bold text-amber-800 whitespace-nowrap" :
+                                  isNum ? "text-right text-gray-700 whitespace-nowrap" :
+                                  h === "품명" ? "font-semibold text-gray-900 break-words whitespace-normal max-w-[200px]" :
+                                  hasEllipsis ? "text-gray-600 break-words whitespace-normal" :
+                                                "text-gray-600 whitespace-nowrap"
+                                }`}>
+                                {cell == null ? <span className="text-gray-300">—</span> : isNum ? fmt(cell) : renderTextWithBreaks(cellStr)}
+                              </td>
+                            );
+                          }
                         })}
                       </tr>
                       {isLastInPage && uniquePageNums.length > 1 && amtIdx >= 0 && (() => {
@@ -1861,16 +2071,20 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                              ?? (configuredLabel && ["합계", "합계액", "총합계"].includes(configuredLabel) ? (structuredPages.find(p => p.page === pn)?.meta.total ?? null) : null))
                           : null;
                         const totalColSpan = dispHeaders.length;
+                        const orderNow = colOrder.length === dispHeaders.length ? colOrder : dispHeaders.map((_, i) => i);
+                        const amtOrderIdx = orderNow.indexOf(amtIdx);
                         return (
                           <>
                             <tr className="bg-amber-100/70 border-t-2 border-amber-300">
-                              <td colSpan={Math.max(1, amtIdx)} className="px-3 py-1.5 text-right text-[11px] font-bold text-amber-800">
-                                {pageSupplier && <span className="text-amber-600 mr-1.5">{pageSupplier}</span>}{pn}번 명세서 소계
-                              </td>
+                              {amtOrderIdx > 0 && (
+                                <td colSpan={Math.max(1, amtOrderIdx)} className="px-3 py-1.5 text-right text-[11px] font-bold text-amber-800">
+                                  {pageSupplier && <span className="text-amber-600 mr-1.5">{pageSupplier}</span>}{pn}번 명세서 소계
+                                </td>
+                              )}
                               <td className="px-3 py-1.5 text-right font-black text-amber-700 text-xs whitespace-nowrap">
                                 {fmt(getPageDisplayTotal(pn))}원
                               </td>
-                              {dispHeaders.slice(amtIdx + 1).map((_, i) => <td key={i} />)}
+                              {orderNow.slice(amtOrderIdx + 1).map((_, i) => <td key={i} />)}
                             </tr>
                             {balanceAmount != null && (
                               <tr className="bg-orange-50 border-b border-orange-100">
@@ -1886,24 +2100,30 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   );
                 })}
               </tbody>
-              {total > 0 && (
+              {total > 0 && (() => {
+                const orderNow = colOrder.length === dispHeaders.length ? colOrder : dispHeaders.map((_, i) => i);
+                const amtOrderIdx = orderNow.indexOf(amtIdx);
+                return (
                 <tfoot>
                   {supplierTotals.length >= 1 && supplierTotals.map(({ supplier, total: sTotal, count }) => (
                     <tr key={supplier} className="border-t border-amber-100 bg-amber-50/40">
-                      <td colSpan={Math.max(1, amtIdx)} className="px-3 py-2 text-right text-[11px] font-semibold text-gray-500">
-                        {supplier} <span className="text-gray-400">({count}매)</span>
-                      </td>
+                      {amtOrderIdx > 0 && (
+                        <td colSpan={Math.max(1, amtOrderIdx)} className="px-3 py-2 text-right text-[11px] font-semibold text-gray-500">
+                          {supplier} <span className="text-gray-400">({count}매)</span>
+                        </td>
+                      )}
                       <td className="px-3 py-2 text-right font-bold text-amber-600 text-xs whitespace-nowrap">{fmt(sTotal)}원</td>
-                      {dispHeaders.slice(amtIdx + 1).map((_, i) => <td key={i} />)}
+                      {orderNow.slice(amtOrderIdx + 1).map((_, i) => <td key={i} />)}
                     </tr>
                   ))}
                   <tr className="bg-amber-50 border-t-2 border-amber-300">
-                    <td colSpan={Math.max(1, amtIdx)} className="px-3 py-2.5 text-right font-black text-gray-700 text-xs">합 계</td>
+                    {amtOrderIdx > 0 && <td colSpan={Math.max(1, amtOrderIdx)} className="px-3 py-2.5 text-right font-black text-gray-700 text-xs">합 계</td>}
                     <td className="px-3 py-2.5 text-right font-black text-amber-700 text-sm whitespace-nowrap">{fmt(total)}원</td>
-                    {dispHeaders.slice(amtIdx + 1).map((_, i) => <td key={i} />)}
+                    {orderNow.slice(amtOrderIdx + 1).map((_, i) => <td key={i} />)}
                   </tr>
                 </tfoot>
-              )}
+                );
+              })()}
             </table>
           </div>
         </div>
@@ -1938,7 +2158,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
           {matchItems && (
             <div className="w-full bg-white border border-indigo-200 rounded-2xl overflow-hidden shadow-sm">
-              <div className="px-4 py-2.5 border-b border-indigo-100 bg-indigo-50 flex items-center justify-between">
+              <div className="px-4 py-2.5 border-b border-indigo-100 bg-indigo-50 flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   <Wand2 size={13} className="text-indigo-600" />
                   <span className="text-xs font-bold text-indigo-800">거래명세서 ↔ ERP 상품 매칭 보정</span>
@@ -1952,6 +2172,31 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
+                  {/* 뷰 전환 탭 */}
+                  <div className="flex items-center gap-0 bg-white border border-indigo-200 rounded-lg overflow-hidden">
+                    <button
+                      type="button"
+                      onClick={() => setErpViewTab('list')}
+                      className={`text-[11px] font-bold px-2.5 py-1 transition cursor-pointer ${
+                        erpViewTab === 'list'
+                          ? 'bg-indigo-500 text-white'
+                          : 'text-indigo-500 hover:bg-indigo-50'
+                      }`}
+                    >
+                      검토 목록
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setErpViewTab('table')}
+                      className={`text-[11px] font-bold px-2.5 py-1 transition cursor-pointer ${
+                        erpViewTab === 'table'
+                          ? 'bg-indigo-500 text-white'
+                          : 'text-indigo-500 hover:bg-indigo-50'
+                      }`}
+                    >
+                      명세서 뷰
+                    </button>
+                  </div>
                   <button onClick={handleMatch} disabled={matching}
                     className="text-[11px] text-indigo-500 hover:text-indigo-700 font-bold cursor-pointer">재실행</button>
                   <button onClick={() => setConfirmed(true)}
@@ -1959,6 +2204,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                 </div>
               </div>
 
+              {erpViewTab === 'list' && (
               <div className="px-4 py-2 border-b border-indigo-50 flex flex-col gap-0.5">
                 {matchItems.map((item, ri) => {
                   const bcMatch    = barcodeAutoMap[ri] ?? null;
@@ -2078,9 +2324,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       }}));
                                     }}
                                     className="flex items-center gap-2 w-full text-left px-3 py-1.5 hover:bg-indigo-50 transition text-[11px] border-b border-gray-50 last:border-0">
-                                    <span className="flex-1 font-semibold text-gray-800 truncate">{p.product_name}</span>
-                                    {p.spec && <span className="text-gray-400 truncate max-w-[60px] shrink-0">{p.spec}</span>}
-                                    {p.supplier && <span className="text-sky-500 shrink-0 truncate max-w-[60px]">{p.supplier}</span>}
+                                    <span className="flex-1 font-semibold text-gray-800 break-words">{p.product_name}</span>
+                                    {p.spec && <span className="text-gray-400 break-words max-w-[60px] shrink-0">{p.spec}</span>}
+                                    {p.supplier && <span className="text-sky-500 shrink-0 break-words max-w-[60px]">{p.supplier}</span>}
                                     <span className="text-gray-300 font-mono shrink-0 text-[10px]">{p.product_code}</span>
                                   </button>
                                 ))}
@@ -2145,9 +2391,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       }}));
                                     }}
                                     className="flex items-center gap-2 w-full text-left px-3 py-1.5 hover:bg-indigo-50 transition text-[11px] border-b border-gray-50 last:border-0">
-                                    <span className="flex-1 font-semibold text-gray-800 truncate">{p.product_name}</span>
-                                    {p.spec && <span className="text-gray-400 truncate max-w-[60px] shrink-0">{p.spec}</span>}
-                                    {p.supplier && <span className="text-sky-500 shrink-0 truncate max-w-[60px]">{p.supplier}</span>}
+                                    <span className="flex-1 font-semibold text-gray-800 break-words">{p.product_name}</span>
+                                    {p.spec && <span className="text-gray-400 break-words max-w-[60px] shrink-0">{p.spec}</span>}
+                                    {p.supplier && <span className="text-sky-500 shrink-0 break-words max-w-[60px]">{p.supplier}</span>}
                                     <span className="text-gray-300 font-mono shrink-0 text-[10px]">{p.product_code}</span>
                                   </button>
                                 ))}
@@ -2228,6 +2474,376 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   );
                 })}
               </div>
+              )}
+
+              {/* ── 명세서 뷰 (2차 보정 결과 — 명세표 형식, 전체 셀 편집 가능) ── */}
+              {erpViewTab === 'table' && (() => {
+                // 고정 컬럼 정의: OCR 원본명 | → | ERP 매칭명 | ERP 코드 | (기타 OCR 컬럼) | 수량 | 단가 | 금액 | 잔고
+                const ERP_NUM_COLS_SET = new Set(["수량", "단가", "금액", "잔고"]);
+                const extraCols = dispHeaders.filter(h =>
+                  h !== "품명" && h !== "수량" && h !== "단가" && h !== "금액"
+                );
+                const allErpCols = ["OCR 품명", "→", "ERP 품명", "ERP 코드", ...extraCols, "수량", "단가", "금액", "잔고"];
+
+                // 임의 컬럼 표시값 헬퍼
+                const getErpCellDisplayVal = (ri: number, col: string, row: (string | number | null)[]): string | number | null => {
+                  const editVal = erpCellEdits[ri]?.[col];
+                  if (editVal !== undefined) return ERP_NUM_COLS_SET.has(col) ? parseNumber(editVal) : editVal;
+                  const ci = dispHeaders.indexOf(col);
+                  if (ci >= 0) {
+                    const pn2 = pageNums[ri];
+                    if (col === "공급처" && rawSupplierByPage[pn2] !== undefined) return rawSupplierByPage[pn2];
+                    return row[ci];
+                  }
+                  return null;
+                };
+
+                // 인라인 편집 input 공통 렌더러
+                const renderEditInput = (
+                  ri: number, col: string,
+                  inputMode: "text" | "numeric",
+                  cls: string,
+                ) => (
+                  <input
+                    autoFocus
+                    type="text"
+                    inputMode={inputMode}
+                    className={cls}
+                    value={editingErpCellVal}
+                    onChange={e => setEditingErpCellVal(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                      if (e.key === "Escape") setEditingErpCell(null);
+                    }}
+                    onBlur={() => {
+                      const trimmed = editingErpCellVal.trim();
+                      setErpCellEdits(prev => {
+                        const rowEdits = { ...(prev[ri] ?? {}) };
+                        if (trimmed === "") delete rowEdits[col];
+                        else rowEdits[col] = trimmed;
+                        return { ...prev, [ri]: rowEdits };
+                      });
+                      setEditingErpCell(null);
+                    }}
+                  />
+                );
+
+                // X(취소) 버튼 공통
+                const renderCancelBtn = (ri: number, col: string) => (
+                  <button
+                    type="button"
+                    onClick={e => {
+                      e.stopPropagation();
+                      setErpCellEdits(prev => {
+                        const r2 = { ...(prev[ri] ?? {}) };
+                        delete r2[col];
+                        return { ...prev, [ri]: r2 };
+                      });
+                    }}
+                    className="text-[9px] px-0.5 py-px rounded bg-blue-100 text-blue-600 hover:bg-blue-200 cursor-pointer shrink-0"
+                    title="수정 취소"
+                  >✕</button>
+                );
+
+                return (
+                <div className="overflow-x-auto border-b border-indigo-50">
+                  <table className="w-full text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-indigo-50/60 border-b-2 border-indigo-200">
+                        {allErpCols.map(col => (
+                          <th key={col}
+                            className={`px-2 py-2 font-bold whitespace-nowrap text-[11px] ${
+                              col === "→" ? "text-center text-indigo-200 w-4 px-0" :
+                              col === "잔고" ? "text-right text-orange-700" :
+                              col === "OCR 품명" ? "text-left text-gray-500" :
+                              col === "ERP 품명" ? "text-left text-indigo-800" :
+                              col === "ERP 코드" ? "text-right text-indigo-600" :
+                              (ERP_NUM_COLS_SET.has(col) || col === "ERP 코드") ? "text-right text-indigo-800" :
+                              "text-left text-indigo-800"
+                            }`}>
+                            {col === "→" ? "" : col}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {effectiveDispRows.map((row, ri) => {
+                        const pn = pageNums[ri];
+                        const isLastInPage = ri === effectiveDispRows.length - 1 || pageNums[ri] !== pageNums[ri + 1];
+                        const origName = nameIdx >= 0 ? String(row[nameIdx] ?? "").trim() : "";
+
+                        // ERP 매칭 결과 결정
+                        const baseMatch = cancelledAutoMap.has(ri) ? null
+                          : (selectedCands[ri] ?? matchItems![ri]?.matched ?? null);
+                        const autoSyn = cancelledAutoMap.has(ri) ? undefined : autoSynonymMatches[ri];
+                        const bcMatch = cancelledAutoMap.has(ri) ? null : (barcodeAutoMap[ri] ?? null);
+                        const matchedName = baseMatch?.name ?? autoSyn?.name ?? bcMatch?.name ?? null;
+                        const matchedCode = baseMatch?.code ?? autoSyn?.code ?? bcMatch?.code ?? null;
+
+                        const corrName = (cancelledAutoSyn.has(ri) || cancelledAutoMap.has(ri))
+                          ? (erpCellEdits[ri]?.["ERP 품명"] ?? overrides[ri] ?? origName)
+                          : (erpCellEdits[ri]?.["ERP 품명"] ?? overrides[ri] ?? matchedName ?? origName);
+                        const corrCode = erpCellEdits[ri]?.["ERP 코드"] ?? matchedCode;
+                        const isCorrected = corrName && origName && corrName !== origName;
+
+                        // 수량/단가/금액 계산 (erpCellEdits 우선)
+                        const qtyEdit = erpCellEdits[ri]?.["수량"];
+                        const priEdit = erpCellEdits[ri]?.["단가"];
+                        const amtEdit = erpCellEdits[ri]?.["금액"];
+                        const qtyVal: number | null = qtyEdit !== undefined
+                          ? parseNumber(qtyEdit)
+                          : (ocrQtyIdx >= 0 ? (parseNumber(row[ocrQtyIdx]) || null) : null);
+                        const priVal: number | null = priEdit !== undefined
+                          ? parseNumber(priEdit)
+                          : (ocrPriIdx >= 0 ? (parseNumber(row[ocrPriIdx]) || null) : null);
+                        let amtVal: number | null;
+                        if (amtEdit !== undefined) {
+                          amtVal = parseNumber(amtEdit);
+                        } else if ((qtyEdit !== undefined || priEdit !== undefined) && qtyVal && priVal) {
+                          amtVal = Math.round(qtyVal * priVal);
+                        } else {
+                          amtVal = amtIdx >= 0 ? (parseNumber(row[amtIdx]) || null) : null;
+                        }
+
+                        // 잔고: 페이지 마지막 행에만 표시 + 편집값 우선
+                        const balEdit = erpCellEdits[ri]?.["잔고"];
+                        const pageBalVal = pageBalanceFromConfig.get(pn) ?? null;
+                        const balanceVal: number | null = balEdit !== undefined
+                          ? parseNumber(balEdit)
+                          : (isLastInPage ? pageBalVal : null);
+
+                        return (
+                          <React.Fragment key={ri}>
+                            <tr className={`border-t border-gray-100 hover:bg-indigo-50/30 ${ri % 2 !== 0 ? "bg-gray-50/20" : ""}`}>
+                              {allErpCols.map(col => {
+                                const isEditingThis = editingErpCell?.ri === ri && editingErpCell?.col === col;
+                                const hasEdit = erpCellEdits[ri]?.[col] !== undefined;
+
+                                // 구분자 →
+                                if (col === "→") {
+                                  return <td key={col} className="px-0 py-2 text-center text-gray-300 text-[10px] select-none w-4">→</td>;
+                                }
+
+                                // OCR 품명 (읽기 전용)
+                                if (col === "OCR 품명") {
+                                  return (
+                                    <td key={col} className="px-2 py-2 max-w-[160px]">
+                                      <span className={`break-words whitespace-normal text-[11px] ${isCorrected ? "text-gray-400 line-through" : "font-semibold text-gray-700"}`}>
+                                        {origName || <span className="text-gray-300">—</span>}
+                                      </span>
+                                    </td>
+                                  );
+                                }
+
+                                // ERP 품명 (편집 가능)
+                                if (col === "ERP 품명") {
+                                  if (isEditingThis) {
+                                    return (
+                                      <td key={col} className="px-1 py-1 max-w-[200px]" onClick={e => e.stopPropagation()}>
+                                        {renderEditInput(ri, col, "text", "w-full text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-400 rounded px-2 py-0.5 outline-none")}
+                                      </td>
+                                    );
+                                  }
+                                  return (
+                                    <td key={col}
+                                      onClick={() => { setEditingErpCell({ ri, col }); setEditingErpCellVal(corrName); }}
+                                      className="px-2 py-2 max-w-[200px] cursor-pointer hover:bg-indigo-50/70 group"
+                                      title="클릭하여 ERP 품명 수정">
+                                      <span className="flex items-center gap-1">
+                                        <span className={`break-words whitespace-normal text-[11px] font-bold flex-1 ${
+                                          hasEdit ? "text-blue-700" : isCorrected ? "text-indigo-700" : "text-gray-800"
+                                        }`}>
+                                          {corrName || <span className="text-gray-300">—</span>}
+                                        </span>
+                                        {hasEdit && renderCancelBtn(ri, col)}
+                                        <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
+                                      </span>
+                                    </td>
+                                  );
+                                }
+
+                                // ERP 코드 (편집 가능)
+                                if (col === "ERP 코드") {
+                                  const displayCode = hasEdit ? erpCellEdits[ri]![col] : (corrCode ?? null);
+                                  if (isEditingThis) {
+                                    return (
+                                      <td key={col} className="px-1 py-1" onClick={e => e.stopPropagation()}>
+                                        {renderEditInput(ri, col, "text", "w-full text-[11px] font-mono text-gray-600 bg-indigo-50 border border-indigo-400 rounded px-2 py-0.5 outline-none min-w-[80px]")}
+                                      </td>
+                                    );
+                                  }
+                                  return (
+                                    <td key={col}
+                                      onClick={() => { setEditingErpCell({ ri, col }); setEditingErpCellVal(displayCode ?? ""); }}
+                                      className="px-2 py-2 text-right cursor-pointer hover:bg-indigo-50/60 group"
+                                      title="클릭하여 ERP 코드 수정">
+                                      <span className={`font-mono text-[10px] ${hasEdit ? "text-blue-600" : "text-gray-400"}`}>
+                                        {displayCode ?? <span className="text-gray-200">—</span>}
+                                      </span>
+                                      {hasEdit && renderCancelBtn(ri, col)}
+                                    </td>
+                                  );
+                                }
+
+                                // 수량
+                                if (col === "수량") {
+                                  if (isEditingThis) {
+                                    return (
+                                      <td key={col} className="px-1 py-1" onClick={e => e.stopPropagation()}>
+                                        {renderEditInput(ri, col, "numeric", "text-xs font-bold text-right text-indigo-700 bg-indigo-50 border border-indigo-400 rounded px-2 py-0.5 outline-none w-full min-w-[50px]")}
+                                      </td>
+                                    );
+                                  }
+                                  return (
+                                    <td key={col}
+                                      onClick={() => { setEditingErpCell({ ri, col }); setEditingErpCellVal(qtyVal != null ? String(qtyVal) : ""); }}
+                                      className={`px-2 py-2 text-right font-bold whitespace-nowrap cursor-pointer hover:bg-indigo-50 ${hasEdit ? "text-blue-700" : "text-gray-700"}`}
+                                      title="클릭하여 수정">
+                                      {qtyVal != null ? fmt(qtyVal) : <span className="text-gray-300">—</span>}
+                                      {hasEdit && <span className="text-[9px] bg-blue-100 text-blue-600 px-0.5 rounded font-bold ml-0.5">수정</span>}
+                                    </td>
+                                  );
+                                }
+
+                                // 단가
+                                if (col === "단가") {
+                                  if (isEditingThis) {
+                                    return (
+                                      <td key={col} className="px-1 py-1" onClick={e => e.stopPropagation()}>
+                                        {renderEditInput(ri, col, "numeric", "text-xs font-bold text-right text-indigo-700 bg-indigo-50 border border-indigo-400 rounded px-2 py-0.5 outline-none w-full min-w-[60px]")}
+                                      </td>
+                                    );
+                                  }
+                                  return (
+                                    <td key={col}
+                                      onClick={() => { setEditingErpCell({ ri, col }); setEditingErpCellVal(priVal != null ? String(priVal) : ""); }}
+                                      className={`px-2 py-2 text-right font-bold whitespace-nowrap cursor-pointer hover:bg-indigo-50 ${hasEdit ? "text-blue-700" : "text-gray-700"}`}
+                                      title="클릭하여 수정">
+                                      {priVal != null ? fmt(priVal) : <span className="text-gray-300">—</span>}
+                                      {hasEdit && <span className="text-[9px] bg-blue-100 text-blue-600 px-0.5 rounded font-bold ml-0.5">수정</span>}
+                                    </td>
+                                  );
+                                }
+
+                                // 금액
+                                if (col === "금액") {
+                                  if (isEditingThis) {
+                                    return (
+                                      <td key={col} className="px-1 py-1" onClick={e => e.stopPropagation()}>
+                                        {renderEditInput(ri, col, "numeric", "text-xs font-bold text-right text-indigo-700 bg-indigo-50 border border-indigo-400 rounded px-2 py-0.5 outline-none w-full min-w-[70px]")}
+                                      </td>
+                                    );
+                                  }
+                                  return (
+                                    <td key={col}
+                                      onClick={() => { setEditingErpCell({ ri, col }); setEditingErpCellVal(amtVal != null ? String(amtVal) : ""); }}
+                                      className={`px-2 py-2 text-right font-bold whitespace-nowrap cursor-pointer hover:bg-indigo-50 ${hasEdit ? "text-blue-700" : "text-amber-800"}`}
+                                      title="클릭하여 수정">
+                                      {amtVal != null ? fmt(amtVal) : <span className="text-gray-300">—</span>}
+                                      {hasEdit && <span className="text-[9px] bg-blue-100 text-blue-600 px-0.5 rounded font-bold ml-0.5">수정</span>}
+                                    </td>
+                                  );
+                                }
+
+                                // 잔고 (페이지 마지막 행 또는 직접 편집된 경우 표시)
+                                if (col === "잔고") {
+                                  if (isEditingThis) {
+                                    return (
+                                      <td key={col} className="px-1 py-1" onClick={e => e.stopPropagation()}>
+                                        {renderEditInput(ri, col, "numeric", "text-xs font-bold text-right text-orange-700 bg-orange-50 border border-orange-400 rounded px-2 py-0.5 outline-none w-full min-w-[70px]")}
+                                      </td>
+                                    );
+                                  }
+                                  return (
+                                    <td key={col}
+                                      onClick={() => { setEditingErpCell({ ri, col }); setEditingErpCellVal(balanceVal != null ? String(balanceVal) : ""); }}
+                                      className={`px-2 py-2 text-right font-bold whitespace-nowrap cursor-pointer hover:bg-orange-50 ${
+                                        hasEdit ? "text-blue-700" : balanceVal != null ? "text-orange-600" : "text-gray-200 hover:text-gray-300"
+                                      }`}
+                                      title="클릭하여 잔고 수정">
+                                      {balanceVal != null ? fmt(balanceVal) : <span className="text-gray-200">—</span>}
+                                      {hasEdit && <span className="text-[9px] bg-blue-100 text-blue-600 px-0.5 rounded font-bold ml-0.5">수정</span>}
+                                    </td>
+                                  );
+                                }
+
+                                // 그 외 컬럼 (공급처, 규격, 일자 등) — 전체 편집 가능
+                                const displayVal = getErpCellDisplayVal(ri, col, row);
+                                const isSupplierCol = col === "공급처";
+                                const isNumCol = typeof displayVal === "number";
+                                const cellStr = displayVal == null ? null : isNumCol ? fmt(displayVal as number) : String(displayVal);
+
+                                if (isEditingThis) {
+                                  return (
+                                    <td key={col} className="px-1 py-1" onClick={e => e.stopPropagation()}>
+                                      {renderEditInput(ri, col, "text", `w-full text-[11px] ${isSupplierCol ? "font-semibold text-sky-700" : "text-gray-700"} bg-indigo-50 border border-indigo-400 rounded px-2 py-0.5 outline-none`)}
+                                    </td>
+                                  );
+                                }
+                                return (
+                                  <td key={col}
+                                    onClick={() => { setEditingErpCell({ ri, col }); setEditingErpCellVal(cellStr ?? ""); }}
+                                    className={`px-2 py-2 cursor-pointer hover:bg-indigo-50/60 group ${
+                                      isSupplierCol ? "text-sky-700 font-semibold whitespace-nowrap max-w-[120px]" :
+                                      col === "규격" ? "text-gray-500 text-[10px] max-w-[80px]" :
+                                      isNumCol ? "text-right text-gray-700 whitespace-nowrap" :
+                                      "text-gray-600 whitespace-nowrap"
+                                    } ${hasEdit ? "ring-1 ring-blue-300 ring-inset" : ""}`}
+                                    title="클릭하여 수정">
+                                    <span className={`flex items-center gap-1 ${isNumCol ? "justify-end" : ""}`}>
+                                      <span className={col === "규격" ? "block line-clamp-2 break-words" : "break-words"}>
+                                        {cellStr ?? <span className="text-gray-200">—</span>}
+                                      </span>
+                                      {hasEdit && renderCancelBtn(ri, col)}
+                                      <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
+                                    </span>
+                                  </td>
+                                );
+                              })}
+                            </tr>
+                            {/* 페이지별 소계 행 (다중 페이지일 때) */}
+                            {isLastInPage && uniquePageNums.length > 1 && (() => {
+                              const pageSupplier = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
+                              const pageTotalEdited = (() => {
+                                let sum = 0;
+                                effectiveDispRows.forEach((r, rii) => {
+                                  if (pageNums[rii] !== pn) return;
+                                  const ea = erpCellEdits[rii]?.["금액"];
+                                  const qe = erpCellEdits[rii]?.["수량"];
+                                  const pe = erpCellEdits[rii]?.["단가"];
+                                  if (ea !== undefined) { sum += parseNumber(ea); return; }
+                                  if ((qe !== undefined || pe !== undefined) && amtIdx >= 0) {
+                                    const q2 = qe !== undefined ? parseNumber(qe) : parseNumber(ocrQtyIdx >= 0 ? r[ocrQtyIdx] : null);
+                                    const p2 = pe !== undefined ? parseNumber(pe) : parseNumber(ocrPriIdx >= 0 ? r[ocrPriIdx] : null);
+                                    if (q2 > 0 && p2 > 0) { sum += Math.round(q2 * p2); return; }
+                                  }
+                                  if (amtIdx >= 0) sum += parseNumber(r[amtIdx]);
+                                });
+                                return sum;
+                              })();
+                              const amtColIdx2 = allErpCols.indexOf("금액");
+                              return (
+                                <tr className="bg-indigo-100/70 border-t-2 border-indigo-300">
+                                  {amtColIdx2 > 0 && (
+                                    <td colSpan={amtColIdx2} className="px-2 py-1.5 text-right text-[11px] font-bold text-indigo-800">
+                                      {pageSupplier && <span className="text-indigo-600 mr-1.5">{pageSupplier}</span>}{pn}번 소계
+                                    </td>
+                                  )}
+                                  <td className="px-2 py-1.5 text-right font-black text-indigo-700 text-xs whitespace-nowrap">
+                                    {fmt(pageTotalEdited)}원
+                                  </td>
+                                  {allErpCols.slice(amtColIdx2 + 1).map((_, i) => <td key={i} />)}
+                                </tr>
+                              );
+                            })()}
+                          </React.Fragment>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+                );
+              })()}
 
               {!confirmed && (
                 <div className="px-4 py-3 text-center text-[11px] text-indigo-400 font-semibold">
@@ -2251,6 +2867,20 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                 <div className="flex items-center gap-2">
                   <input ref={xlsInputRef} type="file" accept=".xlsx,.xls" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) { handleTemplateUpload(f); setXlsTemplateSaved(false); e.target.value = ""; } }} />
+                  {/* 확정표 열 순서 리셋 버튼 */}
+                  {confColOrder.length > 0 && confColOrder.some((v, i) => v !== i) && (
+                    <button
+                      onClick={() => {
+                        const reset = Array.from({ length: CONF_HEADERS.length }, (_, i) => i);
+                        setConfColOrder(reset);
+                        try { localStorage.setItem("ocr_conf_col_order", JSON.stringify(reset)); } catch { /* ignore */ }
+                      }}
+                      className="flex items-center gap-1 text-[11px] font-bold text-gray-500 bg-white border border-gray-200 hover:bg-gray-50 px-2 py-1 rounded-lg transition cursor-pointer shrink-0"
+                      title="확정표 열 순서 초기화"
+                    >
+                      열순서 리셋
+                    </button>
+                  )}
                   {/* 서식 파일 저장 버튼 */}
                   {xlsTemplate && (
                     <button
@@ -2310,16 +2940,33 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                 <table className="w-full text-xs border-collapse">
                   <thead>
                     <tr className="bg-emerald-50/60 border-b-2 border-emerald-200">
-                      {CONF_HEADERS.map((h, ci) => {
+                      {(confColOrder.length === CONF_HEADERS.length ? confColOrder : CONF_HEADERS.map((_, i) => i)).map((origIdx, orderIdx) => {
+                        const h = CONF_HEADERS[origIdx];
                         const collapsed = collapsedConfCols.has(h);
                         return (
-                          <th key={ci}
+                          <th key={origIdx}
+                            draggable
+                            onDragStart={() => setConfDragColIdx(orderIdx)}
+                            onDragOver={e => e.preventDefault()}
+                            onDrop={() => {
+                              if (confDragColIdx === null || confDragColIdx === orderIdx) { setConfDragColIdx(null); return; }
+                              setConfColOrder(prev => {
+                                const base = prev.length === CONF_HEADERS.length ? prev : CONF_HEADERS.map((_, i) => i);
+                                const next = [...base];
+                                const [removed] = next.splice(confDragColIdx, 1);
+                                next.splice(orderIdx, 0, removed);
+                                return next;
+                              });
+                              setConfDragColIdx(null);
+                            }}
+                            onDragEnd={() => setConfDragColIdx(null)}
                             onClick={() => setCollapsedConfCols(prev => { const s = new Set(prev); s.has(h) ? s.delete(h) : s.add(h); return s; })}
-                            title={collapsed ? `${h} (클릭해서 펼치기)` : "클릭해서 접기"}
-                            className={`py-2.5 font-bold whitespace-nowrap text-[11px] cursor-pointer select-none transition-colors hover:bg-emerald-100/60 ${
+                            title={collapsed ? `${h} (클릭해서 펼치기 · 드래그로 순서 변경)` : "클릭해서 접기 · 드래그로 순서 변경"}
+                            style={{ cursor: 'grab' }}
+                            className={`py-2.5 font-bold whitespace-nowrap text-[11px] select-none transition-colors hover:bg-emerald-100/60 ${
                               collapsed ? "px-1 text-center text-emerald-300 w-4 max-w-[16px]" :
                               CONF_NUM.has(h) ? "px-3 text-right text-emerald-900" : "px-3 text-left text-emerald-900"
-                            }`}>
+                            } ${confDragColIdx === orderIdx ? 'opacity-50' : ''}`}>
                             {collapsed ? "·" : h}
                           </th>
                         );
@@ -2344,8 +2991,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 pageImages?.length ? "cursor-pointer hover:bg-indigo-100/60" : "hover:bg-indigo-50/40"
                               } ${ri % 2 !== 0 ? "bg-gray-50/30" : ""}`}
                             >
-                              {CONF_HEADERS.map((h, ci) => {
-                                if (collapsedConfCols.has(h)) return <td key={ci} className="px-0 py-2 w-1 max-w-[4px] bg-emerald-50/30" />;
+                              {(confColOrder.length === CONF_HEADERS.length ? confColOrder : CONF_HEADERS.map((_, i) => i)).map(origIdx => {
+                                const h = CONF_HEADERS[origIdx];
+                                const ci = origIdx;
+                                if (collapsedConfCols.has(h)) return <td key={origIdx} className="px-0 py-2 w-1 max-w-[4px] bg-emerald-50/30" />;
                                 const cell          = row[ci];
                                 const isNum         = typeof cell === "number";
                                 const isName        = h === "상품명";
@@ -2415,37 +3064,49 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 ? (balanceCands.find(c => c.label === configuredLabel)?.amount
                                    ?? (configuredLabel && ["합계", "합계액", "총합계"].includes(configuredLabel) ? (structuredPages.find(p => p.page === pn)?.meta.total ?? null) : null))
                                 : null;
+                              // confColOrder 반영: 렌더 순서대로 subtotal 셀 배치
+                              const confOrderNow = confColOrder.length === CONF_HEADERS.length
+                                ? confColOrder
+                                : CONF_HEADERS.map((_, i) => i);
+                              // "매입총계" 이전(원본 인덱스 < confAmtIdx) 중 마지막으로 화면에 표시되는 열 찾기
+                              const subtotalLabelOrderIdx = (() => {
+                                for (let k = confOrderNow.length - 1; k >= 0; k--) {
+                                  const origIdx = confOrderNow[k];
+                                  const h = CONF_HEADERS[origIdx];
+                                  if (origIdx < confAmtIdx && origIdx !== CONF_HEADERS.indexOf("공급처") && !collapsedConfCols.has(h)) {
+                                    return k;
+                                  }
+                                }
+                                return -1;
+                              })();
                               return (
                                 <>
                                   <tr className="bg-emerald-100/60 border-t-2 border-emerald-300">
-                                    {CONF_HEADERS.slice(0, confAmtIdx).map((h, i) => {
-                                      if (collapsedConfCols.has(h)) return <td key={i} className="px-0 py-1.5 w-1 max-w-[4px] bg-emerald-50/30" />;
+                                    {confOrderNow.map((origIdx, orderIdx) => {
+                                      const h = CONF_HEADERS[origIdx];
+                                      if (collapsedConfCols.has(h)) return <td key={origIdx} className="px-0 py-1.5 w-1 max-w-[4px] bg-emerald-50/30" />;
                                       if (h === "공급처") return (
-                                        <td key={i} className="px-3 py-1.5 text-left text-[11px] font-bold text-emerald-500 whitespace-nowrap">
+                                        <td key={origIdx} className="px-3 py-1.5 text-left text-[11px] font-bold text-emerald-500 whitespace-nowrap">
                                           {pageSupplier}
                                         </td>
                                       );
-                                      const isLastVisible = !CONF_HEADERS.slice(i + 1, confAmtIdx).some(hh => !collapsedConfCols.has(hh));
-                                      return isLastVisible
-                                        ? <td key={i} className="px-3 py-1.5 text-right text-[11px] font-bold text-emerald-700">
-                                            {pn}번 소계
-                                          </td>
-                                        : <td key={i} />;
+                                      if (h === "매입총계") return (
+                                        <td key={origIdx} className="px-3 py-1.5 text-right font-black text-emerald-600 text-xs whitespace-nowrap">
+                                          {fmt(confPageTotals.get(pn) ?? 0)}원
+                                        </td>
+                                      );
+                                      if (h === "공급사잔고" && pageBalance != null) return (
+                                        <td key={origIdx} className="px-3 py-1.5 text-right font-black text-indigo-600 text-xs whitespace-nowrap">
+                                          {fmt(pageBalance)}원
+                                        </td>
+                                      );
+                                      if (orderIdx === subtotalLabelOrderIdx) return (
+                                        <td key={origIdx} className="px-3 py-1.5 text-right text-[11px] font-bold text-emerald-700">
+                                          {pn}번 소계
+                                        </td>
+                                      );
+                                      return <td key={origIdx} />;
                                     })}
-                                    {!collapsedConfCols.has("매입총계") && (
-                                      <td className="px-3 py-1.5 text-right font-black text-emerald-600 text-xs whitespace-nowrap">
-                                        {fmt(confPageTotals.get(pn) ?? 0)}원
-                                      </td>
-                                    )}
-                                    {CONF_HEADERS.slice(confAmtIdx + 1).map((h, i) =>
-                                      collapsedConfCols.has(h)
-                                        ? <td key={i} className="px-0 py-1.5 w-1 max-w-[4px] bg-emerald-50/30" />
-                                        : h === "공급사잔고" && pageBalance != null
-                                          ? <td key={i} className="px-3 py-1.5 text-right font-black text-indigo-600 text-xs whitespace-nowrap">
-                                              {fmt(pageBalance)}원
-                                            </td>
-                                          : <td key={i} />
-                                    )}
                                   </tr>
                                   {confBalanceAmount != null && (
                                     <tr className="bg-orange-50 border-b border-orange-100">
@@ -2461,7 +3122,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                         );
                       })}
                     </tbody>
-                    {confTotal > 0 && (
+                    {confTotal > 0 && (() => {
+                      const confOrderNow = confColOrder.length === CONF_HEADERS.length
+                        ? confColOrder
+                        : CONF_HEADERS.map((_, i) => i);
+                      const amtOrderIdx = confOrderNow.indexOf(confAmtIdx);
+                      return (
                       <tfoot>
                         {confSupplierTotals.length >= 1 && confSupplierTotals.map(({ supplier, total: sTotal, count }) => {
                           const latestBalance = supplierBalanceRecords.find(b => b.supplier_name === supplier);
@@ -2477,42 +3143,47 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           const isSaving = savingBalance[supplier] ?? false;
                           return (
                             <tr key={supplier} className="border-t border-emerald-100 bg-emerald-50/40">
-                              <td colSpan={confAmtIdx} className="px-3 py-2 text-right text-[11px] font-semibold text-gray-500">
-                                <span className="flex items-center justify-end gap-2 flex-wrap">
-                                  <span>{supplier} <span className="text-gray-400">({count}건)</span></span>
-                                  {ocrBalance != null && ocrBalance > 0 && (
-                                    <span className="text-rose-600 font-black text-xs whitespace-nowrap bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
-                                      잔고 {fmt(ocrBalance)}원
-                                    </span>
-                                  )}
-                                  {latestBalance && (
-                                    <span className="text-rose-500 font-bold whitespace-nowrap text-[10px]">
-                                      (DB: {fmt(latestBalance.balance)}원
-                                      {latestBalance.invoice_date && <span className="text-rose-400 font-normal ml-1">{latestBalance.invoice_date}</span>})
-                                    </span>
-                                  )}
-                                  <button
-                                    onClick={() => saveSupplierBalance(supplier, sTotal, invoiceDateForSupplier)}
-                                    disabled={isSaving}
-                                    className="text-[10px] font-bold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-50 px-1.5 py-0.5 rounded transition cursor-pointer shrink-0"
-                                    title="이 총액을 잔고로 DB에 기록"
-                                  >
-                                    {isSaving ? "..." : "잔고기록"}
-                                  </button>
-                                </span>
-                              </td>
+                              {amtOrderIdx > 0 && (
+                                <td colSpan={amtOrderIdx} className="px-3 py-2 text-right text-[11px] font-semibold text-gray-500">
+                                  <span className="flex items-center justify-end gap-2 flex-wrap">
+                                    <span>{supplier} <span className="text-gray-400">({count}건)</span></span>
+                                    {ocrBalance != null && ocrBalance > 0 && (
+                                      <span className="text-rose-600 font-black text-xs whitespace-nowrap bg-rose-50 border border-rose-200 px-1.5 py-0.5 rounded">
+                                        잔고 {fmt(ocrBalance)}원
+                                      </span>
+                                    )}
+                                    {latestBalance && (
+                                      <span className="text-rose-500 font-bold whitespace-nowrap text-[10px]">
+                                        (DB: {fmt(latestBalance.balance)}원
+                                        {latestBalance.invoice_date && <span className="text-rose-400 font-normal ml-1">{latestBalance.invoice_date}</span>})
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={() => saveSupplierBalance(supplier, sTotal, invoiceDateForSupplier)}
+                                      disabled={isSaving}
+                                      className="text-[10px] font-bold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-50 px-1.5 py-0.5 rounded transition cursor-pointer shrink-0"
+                                      title="이 총액을 잔고로 DB에 기록"
+                                    >
+                                      {isSaving ? "..." : "잔고기록"}
+                                    </button>
+                                  </span>
+                                </td>
+                              )}
                               <td className="px-3 py-2 text-right font-bold text-emerald-600 text-xs whitespace-nowrap">{fmt(sTotal)}원</td>
-                              <td colSpan={CONF_HEADERS.length - confAmtIdx - 1} />
+                              {(confOrderNow.length - amtOrderIdx - 1) > 0 && (
+                                <td colSpan={confOrderNow.length - amtOrderIdx - 1} />
+                              )}
                             </tr>
                           );
                         })}
                         <tr className="bg-emerald-50 border-t-2 border-emerald-300">
-                          <td colSpan={confAmtIdx} className="px-3 py-2.5 text-right font-black text-gray-700 text-xs">합 계</td>
+                          {amtOrderIdx > 0 && <td colSpan={amtOrderIdx} className="px-3 py-2.5 text-right font-black text-gray-700 text-xs">합 계</td>}
                           <td className="px-3 py-2.5 text-right font-black text-emerald-700 text-sm whitespace-nowrap">{fmt(confTotal)}원</td>
-                          <td colSpan={CONF_HEADERS.length - confAmtIdx - 1} />
+                          {(confOrderNow.length - amtOrderIdx - 1) > 0 && <td colSpan={confOrderNow.length - amtOrderIdx - 1} />}
                         </tr>
                       </tfoot>
-                    )}
+                      );
+                    })()}
                   </table>
                 </div>
             </div>

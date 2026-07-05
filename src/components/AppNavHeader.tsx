@@ -23,7 +23,10 @@ export type AppNavPage =
   | "leave"
   | "scan"
   | "ocr"
-  | "lunch";
+  | "lunch"
+  | "permissions"
+  | "stockarrivals"
+  | "synonyms";
 
 interface AppNavHeaderProps {
   activePage: AppNavPage;

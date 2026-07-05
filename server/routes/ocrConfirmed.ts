@@ -100,10 +100,11 @@ router.post("/api/ocr-confirmed-items", async (req, res) => {
   return res.json({ ok: true, inserted: data?.length ?? rows.length, items: data ?? [] });
 });
 
-// GET /api/ocr-confirmed-items?date=YYYY-MM-DD&supplier=xxx
+// GET /api/ocr-confirmed-items?date=YYYY-MM-DD&supplier=xxx&hasBalance=true
 router.get("/api/ocr-confirmed-items", async (req, res) => {
   const dateParam = typeof req.query.date === "string" ? req.query.date.trim() : "";
   const supplierParam = typeof req.query.supplier === "string" ? req.query.supplier.trim() : "";
+  const hasBalanceParam = typeof req.query.hasBalance === "string" && req.query.hasBalance === "true";
 
   let query = supabase
     .from(TABLE)
@@ -113,8 +114,8 @@ router.get("/api/ocr-confirmed-items", async (req, res) => {
 
   if (dateParam) {
     query = query.eq("saved_at", dateParam);
-  } else {
-    // 최근 30일 (오늘 포함)
+  } else if (!hasBalanceParam) {
+    // 최근 30일 (오늘 포함) — hasBalance 조회 시에는 날짜 제한 없이 전체 히스토리 반환
     const now = new Date();
     const from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 29);
     const fromStr = from.toISOString().slice(0, 10);
@@ -123,6 +124,10 @@ router.get("/api/ocr-confirmed-items", async (req, res) => {
 
   if (supplierParam) {
     query = query.ilike("supplier", `%${supplierParam}%`);
+  }
+
+  if (hasBalanceParam) {
+    query = query.not("balance", "is", null).gt("balance", 0);
   }
 
   const { data, error } = await query;

@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import { Shield, Check, Loader2, AlertCircle, ChevronLeft, LogOut } from "lucide-react";
+import { Shield, Check, Loader2, AlertCircle } from "lucide-react";
 import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
+import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 
 interface PermissionsPageProps {
   authSession: AuthSession | null;
   onBack: () => void;
   onLogout: () => void;
+  onNavigate?: (page: AppNavPage) => void;
 }
 
 const PAGE_LABELS: { key: keyof PagePermissions; label: string; desc: string }[] = [
@@ -25,7 +27,7 @@ const PAGE_LABELS: { key: keyof PagePermissions; label: string; desc: string }[]
 
 const LEVELS = [0,1,2,3,4,5,6,7,8,9];
 
-export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, onBack, onLogout }) => {
+export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, onBack, onLogout, onNavigate }) => {
   const [perms, setPerms] = useState<PagePermissions>(DEFAULT_PERMISSIONS);
   const [saving, setSaving] = useState<string | null>(null); // key being saved
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
@@ -79,27 +81,13 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
-      {/* Minimal header — permissions page has no nav tabs */}
-      <header className="bg-white border-b border-slate-200 h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm">
-        <div className="flex items-center gap-2">
-          <button onClick={onBack} className="flex items-center gap-1 px-2 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-500 hover:text-slate-900 transition text-xs font-semibold cursor-pointer">
-            <ChevronLeft size={13} /><span className="hidden sm:inline">메인</span>
-          </button>
-          <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center">
-            <Shield size={14} className="text-white" />
-          </div>
-          <span className="font-black text-slate-800 tracking-tight text-sm">권한 조정</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-violet-50 text-violet-700 border border-violet-200 text-[11px] font-bold">
-            <span className="w-1.5 h-1.5 rounded-full bg-violet-500 animate-pulse" />
-            <span>최고관리자</span>
-          </div>
-          <button onClick={onLogout} className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 rounded-lg transition cursor-pointer">
-            <LogOut size={13} /><span className="hidden sm:inline">로그아웃</span>
-          </button>
-        </div>
-      </header>
+      <AppNavHeader
+        activePage="permissions"
+        authSession={authSession}
+        onBack={onBack}
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+      />
 
       <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
         {/* Header */}

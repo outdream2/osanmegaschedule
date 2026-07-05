@@ -273,10 +273,14 @@ const toNum = (v: number | string | null | undefined): number => {
 const ConfirmedRecordsTab: React.FC = () => {
   const [dateFilter, setDateFilter] = React.useState<string>("");
   const [supplierFilter, setSupplierFilter] = React.useState<string>("");
+  const [showBalanceOnly, setShowBalanceOnly] = React.useState<boolean>(false);
   const [items, setItems] = React.useState<ConfirmedRecord[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
   const [deletingId, setDeletingId] = React.useState<number | null>(null);
+  // 공급처 잔고 히스토리 팝업 상태
+  const [balanceHistory, setBalanceHistory] = React.useState<{ supplier: string; items: ConfirmedRecord[] } | null>(null);
+  const [balanceHistoryLoading, setBalanceHistoryLoading] = React.useState(false);
 
   const fetchItems = React.useCallback(async () => {
     setLoading(true); setErr(null);
@@ -284,6 +288,7 @@ const ConfirmedRecordsTab: React.FC = () => {
       const params = new URLSearchParams();
       if (dateFilter) params.set("date", dateFilter);
       if (supplierFilter.trim()) params.set("supplier", supplierFilter.trim());
+      if (showBalanceOnly) params.set("hasBalance", "true");
       const res = await axios.get(`/api/ocr-confirmed-items?${params.toString()}`);
       setItems(Array.isArray(res.data?.items) ? res.data.items : []);
     } catch (e: any) {
@@ -291,7 +296,26 @@ const ConfirmedRecordsTab: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [dateFilter, supplierFilter]);
+  }, [dateFilter, supplierFilter, showBalanceOnly]);
+
+  const openBalanceHistory = React.useCallback(async (supplier: string) => {
+    if (!supplier) return;
+    setBalanceHistory({ supplier, items: [] });
+    setBalanceHistoryLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.set("supplier", supplier);
+      params.set("hasBalance", "true");
+      const res = await axios.get(`/api/ocr-confirmed-items?${params.toString()}`);
+      const list: ConfirmedRecord[] = Array.isArray(res.data?.items) ? res.data.items : [];
+      setBalanceHistory({ supplier, items: list });
+    } catch (e: any) {
+      // 조회 실패해도 팝업은 유지 (빈 목록)
+      setBalanceHistory({ supplier, items: [] });
+    } finally {
+      setBalanceHistoryLoading(false);
+    }
+  }, []);
 
   React.useEffect(() => { fetchItems(); }, [fetchItems]);
 
@@ -367,6 +391,15 @@ const ConfirmedRecordsTab: React.FC = () => {
               className="text-[10px] text-gray-400 hover:text-gray-600 underline cursor-pointer"
             >공급처 해제</button>
           )}
+          <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-600 cursor-pointer select-none ml-2">
+            <input
+              type="checkbox"
+              checked={showBalanceOnly}
+              onChange={e => setShowBalanceOnly(e.target.checked)}
+              className="accent-orange-500"
+            />
+            <span className={showBalanceOnly ? "text-orange-700" : ""}>잔고만 보기</span>
+          </label>
           <span className="ml-auto text-[11px] text-gray-500 font-bold">
             {items.length}건{grandTotal > 0 && <span className="ml-2 text-rose-600">총 {fmtNum(grandTotal)}원</span>}
           </span>
@@ -416,7 +449,18 @@ const ConfirmedRecordsTab: React.FC = () => {
                     <td className="px-2 py-1.5 text-right text-gray-700 whitespace-nowrap tabular-nums">{fmtNum(x.quantity)}</td>
                     <td className="px-2 py-1.5 text-right text-gray-700 whitespace-nowrap tabular-nums">{fmtNum(x.unit_price)}</td>
                     <td className="px-2 py-1.5 text-right font-bold text-amber-700 whitespace-nowrap tabular-nums">{fmtNum(x.amount)}</td>
-                    <td className="px-2 py-1.5 text-right font-bold text-orange-600 whitespace-nowrap tabular-nums hidden sm:table-cell">{fmtNum(x.balance)}</td>
+                    <td className="px-2 py-1.5 text-right font-bold text-orange-600 whitespace-nowrap tabular-nums hidden sm:table-cell">
+                      {toNum(x.balance) > 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => openBalanceHistory(x.supplier)}
+                          className="hover:underline hover:text-orange-800 cursor-pointer"
+                          title={`${x.supplier} 잔고 히스토리 보기`}
+                        >
+                          {fmtNum(x.balance)}
+                        </button>
+                      ) : fmtNum(x.balance)}
+                    </td>
                     <td className="px-2 py-1.5 text-gray-500 whitespace-nowrap text-[10px] hidden md:table-cell">{x.expiry_date ?? ""}</td>
                     <td className="px-2 py-1.5 text-right">
                       <button
@@ -437,6 +481,72 @@ const ConfirmedRecordsTab: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* ── 공급처 잔고 히스토리 모달 ── */}
+      {balanceHistory && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          onClick={() => setBalanceHistory(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="px-4 py-3 border-b border-gray-100 bg-orange-50 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <FileText size={13} className="text-orange-600 shrink-0" />
+                <span className="text-xs font-bold text-orange-800 truncate">
+                  {balanceHistory.supplier} 잔고 히스토리
+                </span>
+                <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-bold shrink-0">
+                  {balanceHistory.items.length}건
+                </span>
+              </div>
+              <button
+                onClick={() => setBalanceHistory(null)}
+                className="p-1 rounded-lg hover:bg-orange-100 cursor-pointer shrink-0"
+                title="닫기"
+              >
+                <X size={14} className="text-gray-500" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              {balanceHistoryLoading ? (
+                <div className="px-4 py-8 flex items-center justify-center text-gray-400 text-xs gap-2">
+                  <Loader2 size={13} className="animate-spin" />불러오는 중...
+                </div>
+              ) : balanceHistory.items.length === 0 ? (
+                <div className="px-4 py-8 text-center text-gray-400 text-xs">
+                  잔고가 기록된 항목이 없습니다.
+                </div>
+              ) : (
+                <table className="w-full text-xs border-collapse">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="bg-orange-50/60 border-b border-orange-100">
+                      <th className="px-3 py-2 text-left font-bold text-orange-900 whitespace-nowrap">저장일</th>
+                      <th className="px-3 py-2 text-left font-bold text-orange-900">품명</th>
+                      <th className="px-3 py-2 text-right font-bold text-orange-900 whitespace-nowrap">잔고</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {balanceHistory.items.map(it => (
+                      <tr key={it.id} className="border-t border-gray-50 hover:bg-orange-50/30">
+                        <td className="px-3 py-1.5 text-gray-500 whitespace-nowrap text-[11px]">{it.saved_at}</td>
+                        <td className="px-3 py-1.5 font-semibold text-gray-700 text-[11px]">
+                          <span className="break-words">{it.product_name}</span>
+                        </td>
+                        <td className="px-3 py-1.5 text-right font-bold text-orange-600 whitespace-nowrap tabular-nums text-[11px]">
+                          {fmtNum(it.balance)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

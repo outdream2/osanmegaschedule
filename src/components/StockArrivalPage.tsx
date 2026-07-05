@@ -1,13 +1,16 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ArrowLeft, Bell, BellOff, Calendar, Check, Clock,
+  Bell, BellOff, Calendar, Check, Clock,
   Package, Pencil, RefreshCw, Send, Trash2, X,
 } from "lucide-react";
 import type { AuthSession } from "../types";
+import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
 
 interface StockArrivalPageProps {
   authSession: AuthSession | null;
   onBack: () => void;
+  onNavigate?: (page: AppNavPage) => void;
+  onLogout?: () => void;
 }
 
 interface StockArrival {
@@ -34,7 +37,7 @@ function fmtDT(iso: string) {
   return new Date(iso).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
-export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession, onBack }) => {
+export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession, onBack, onNavigate, onLogout }) => {
   const [arrivals, setArrivals] = useState<StockArrival[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -215,19 +218,14 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-gray-100 cursor-pointer">
-            <ArrowLeft size={18} className="text-gray-600" />
-          </button>
+      <AppNavHeader
+        activePage="stockarrivals"
+        authSession={authSession}
+        onBack={onBack}
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+        rightSlot={
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "linear-gradient(135deg,#0369a1,#0ea5e9)" }}>
-              <Package size={12} className="text-white" />
-            </div>
-            <h1 className="text-base font-bold text-gray-900">입고 알림 관리</h1>
-          </div>
-          <div className="ml-auto flex items-center gap-2">
             <button
               onClick={handleSubscribe} disabled={pushLoading}
               className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border transition cursor-pointer disabled:cursor-default"
@@ -244,8 +242,8 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
               <RefreshCw size={14} className={`text-gray-400 ${loading ? "animate-spin" : ""}`} />
             </button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <div className="max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3">
 

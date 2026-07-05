@@ -1,10 +1,13 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { ArrowLeft, Trash2, Plus, BookOpen, Building2, RefreshCw, Pencil, Check, X } from "lucide-react";
+import { Trash2, Plus, BookOpen, Building2, RefreshCw, Pencil, Check, X } from "lucide-react";
 import type { AuthSession } from "../types";
+import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
 
 interface SynonymPageProps {
   authSession: AuthSession | null;
   onBack: () => void;
+  onNavigate?: (page: AppNavPage) => void;
+  onLogout?: () => void;
 }
 
 interface ProductSynonym {
@@ -37,7 +40,7 @@ interface SuppEditState {
   supplier_name: string;
 }
 
-export const SynonymPage: React.FC<SynonymPageProps> = ({ onBack }) => {
+export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, onNavigate, onLogout }) => {
   const [tab, setTab] = useState<"product" | "supplier">("product");
   const [productSynonyms, setProductSynonyms] = useState<ProductSynonym[]>([]);
   const [supplierAliases, setSupplierAliases] = useState<SupplierAlias[]>([]);
@@ -193,18 +196,21 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ onBack }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <button onClick={onBack} className="p-1.5 rounded-lg hover:bg-gray-100 cursor-pointer">
-            <ArrowLeft size={18} className="text-gray-600" />
-          </button>
-          <h1 className="text-base font-bold text-gray-900">동의어 관리</h1>
-          <button onClick={fetchAll} className="ml-auto p-1.5 rounded-lg hover:bg-gray-100 cursor-pointer">
+      <AppNavHeader
+        activePage="synonyms"
+        authSession={authSession}
+        onBack={onBack}
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+        rightSlot={
+          <button onClick={fetchAll} className="p-1.5 rounded-lg hover:bg-gray-100 cursor-pointer">
             <RefreshCw size={14} className={`text-gray-400 ${loading ? "animate-spin" : ""}`} />
           </button>
-        </div>
-        <div className="max-w-3xl mx-auto px-4 flex gap-0 border-t border-gray-100">
+        }
+      />
+      {/* Sub-tabs */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-3xl mx-auto px-4 flex gap-0">
           <button
             onClick={() => setTab("product")}
             className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 transition-colors cursor-pointer ${tab === "product" ? "border-indigo-500 text-indigo-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}

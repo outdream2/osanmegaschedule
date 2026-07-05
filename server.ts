@@ -27,6 +27,7 @@ import stockArrivalsRouter from "./server/routes/stockArrivals";
 import zoneAssignmentsRouter from "./server/routes/zoneAssignments";
 import supplierBalanceConfigRouter from "./server/routes/supplierBalanceConfig";
 import ocrConfirmedRouter from "./server/routes/ocrConfirmed";
+import aiDetectorRouter from "./server/routes/aiDetector";
 import { loadStockCountModel } from "./server/stockCounter";
 
 async function startServer() {
@@ -73,6 +74,7 @@ async function startServer() {
   app.use(zoneAssignmentsRouter);
   app.use(supplierBalanceConfigRouter);
   app.use(ocrConfirmedRouter);
+  app.use(aiDetectorRouter);
 
   // /products.json — 항상 DB에서 동적으로 제공 (브라우저 캐시 없음, 서버 메모리 캐시만 사용)
   app.get("/products.json", async (_req, res) => {

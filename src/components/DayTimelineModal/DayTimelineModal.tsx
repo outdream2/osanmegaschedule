@@ -14,8 +14,11 @@ const HOUR_SLOTS: string[] = [];
 for (let h = 10; h <= 22; h++) HOUR_SLOTS.push(`${String(h).padStart(2, "0")}:00`);
 
 // 30-min break time slots
-const LUNCH_SLOTS = ["11:00", "11:30", "12:00", "12:30", "13:00", "13:30"]; // 11:00~14:00
-const REST_SLOTS  = ["15:30", "16:00", "16:30", "17:00", "17:30"];           // 15:30~18:00
+const LUNCH_SLOTS = ["11:30", "12:00", "12:30", "13:00", "13:30", "14:00"]; // 11:30~14:30
+const REST_SLOTS  = ["16:00", "16:30", "17:00", "17:30", "18:00"];           // 16:00~18:30
+
+type BreakInterval = 30 | 60 | 90;
+type BreakCount = 1 | 2 | 3 | 4 | 5;
 
 const ZONE_ROWS = ["카운터", "매장"] as const;
 type ZoneRow = typeof ZONE_ROWS[number];
@@ -378,6 +381,16 @@ interface ZoneSectionProps {
   onShiftRestOffset: (delta: number) => void;
   onDropToRest: (slot: string, empId: number) => void;
   onRemoveFromRest: (slot: string, empId: number) => void;
+  // interval
+  lunchInterval: BreakInterval;
+  restInterval: BreakInterval;
+  onSetLunchInterval: (v: BreakInterval) => void;
+  onSetRestInterval: (v: BreakInterval) => void;
+  // count (몇 명이 교대로 식사/휴게할지 — 슬롯 행 수)
+  lunchCount: BreakCount;
+  restCount: BreakCount;
+  onSetLunchCount: (v: BreakCount) => void;
+  onSetRestCount: (v: BreakCount) => void;
 }
 
 // Zone section uses HOUR_SLOTS as column keys (slice off the last end-boundary slot)
@@ -401,12 +414,15 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
   currentDow, onSaveToDow,
   lunchSlotMap, shiftedLunchSlots, lunchOffset, onShiftLunchOffset, onDropToLunch, onRemoveFromLunch,
   restSlotMap,  shiftedRestSlots,  restOffset,  onShiftRestOffset,  onDropToRest,  onRemoveFromRest,
+  lunchInterval, restInterval, onSetLunchInterval, onSetRestInterval,
+  lunchCount, restCount, onSetLunchCount, onSetRestCount,
 }) => {
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [touchDraggingId, setTouchDraggingId] = useState<number | null>(null);
   const [selectedDows, setSelectedDows] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
   const [cellPicker, setCellPicker] = useState<CellPicker | null>(null);
+  const [draggingZoneSource, setDraggingZoneSource] = useState<{ zone: ZoneRow; slot: string } | null>(null);
 
   const tryDropToZone = useCallback((zone: ZoneRow, slot: string, empId: number) => {
     const slotHour = parseInt(slot.split(":")[0], 10);
@@ -460,26 +476,32 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
   const handleTouchDragEnd = useCallback((x: number, y: number) => {
     if (touchDraggingId === null) return;
     const empId = touchDraggingId;
+    const src = draggingZoneSource;
     setTouchDraggingId(null);
+    setDraggingZoneSource(null);
     let el = document.elementFromPoint(x, y) as HTMLElement | null;
     while (el) {
       if (el.dataset.dropZone && el.dataset.dropSlot) {
-        tryDropToZone(el.dataset.dropZone as ZoneRow, el.dataset.dropSlot, empId);
+        const dZone = el.dataset.dropZone as ZoneRow;
+        const dSlot = el.dataset.dropSlot;
+        if (src) {
+          if (src.zone !== dZone || src.slot !== dSlot) {
+            onRemoveFromZone(src.zone, src.slot, empId);
+            tryDropToZone(dZone, dSlot, empId);
+          }
+        } else {
+          tryDropToZone(dZone, dSlot, empId);
+        }
         return;
       }
-      if (el.dataset.dropLunch) {
-        onDropToLunch(el.dataset.dropLunch, empId);
-        return;
-      }
-      if (el.dataset.dropRest) {
-        onDropToRest(el.dataset.dropRest, empId);
-        return;
-      }
+      if (el.dataset.dropLunch) { onDropToLunch(el.dataset.dropLunch, empId); return; }
+      if (el.dataset.dropRest) { onDropToRest(el.dataset.dropRest, empId); return; }
       el = el.parentElement;
     }
-  }, [touchDraggingId, tryDropToZone, onDropToLunch, onDropToRest]);
+  }, [touchDraggingId, draggingZoneSource, tryDropToZone, onDropToLunch, onDropToRest, onRemoveFromZone]);
 
   // Render a half-hour sub-cell for break rows (점심/휴게)
+  // count: 인원 수 → 슬롯 내에 행(row) 수를 나타냄 (각 행에 1명씩 배정)
   const renderBreakSubCell = (
     slotKey: string,
     isActive: boolean,
@@ -488,6 +510,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
     onDrop: (slot: string, id: number) => void,
     onRemove: (slot: string, id: number) => void,
     dropKind: "lunch" | "rest",
+    count: BreakCount,
   ) => {
     if (!isActive) return <div className={`flex-1 bg-slate-50/20 border-r last:border-r-0 ${theme.border}`} />;
     const assigned = slotMap[slotKey] ?? [];
@@ -496,23 +519,35 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
     return (
       <div
         {...dataAttr}
-        className={`flex-1 flex flex-col gap-0.5 p-0.5 border-r last:border-r-0 ${theme.border} ${theme.bg} ${theme.hover} transition min-h-[36px] cursor-pointer`}
+        className={`flex-1 flex flex-col border-r last:border-r-0 ${theme.border} ${theme.bg} ${theme.hover} transition cursor-pointer`}
         onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
         onDrop={e => { e.preventDefault(); if (draggingId !== null) onDrop(slotKey, draggingId); }}
         onClick={() => setCellPicker({ type: dropKind, slot: slotKey })}
       >
-        <span className={`text-[10px] font-bold text-center leading-none ${theme.label}`}>:{minLabel}</span>
-        {assigned.map(empId => {
-          const w = allWorkers.find(ww => ww.emp.id === empId);
-          if (!w) return null;
-          const c = typeTones[w.schedule.type] ?? DEFAULT_TONE;
+        <span className={`text-[10px] font-bold text-center leading-none py-0.5 ${theme.label}`}>:{minLabel}</span>
+        {/* 인원 수만큼 행(row) 표시 */}
+        {Array.from({ length: count }, (_, rowIdx) => {
+          const empId = assigned[rowIdx];
+          const w = empId !== undefined ? allWorkers.find(ww => ww.emp.id === empId) : undefined;
+          const c = w ? (typeTones[w.schedule.type] ?? DEFAULT_TONE) : null;
           return (
-            <button key={empId} onClick={() => onRemove(slotKey, empId)}
-              title="클릭하여 제거"
-              style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }}
-              className="px-0.5 py-px rounded text-[10px] font-bold cursor-pointer border hover:opacity-60 transition leading-none">
-              {w.emp.name}
-            </button>
+            <div
+              key={rowIdx}
+              className={`flex items-center min-h-[20px] border-t px-0.5 ${theme.border} ${rowIdx === 0 ? "border-t" : ""}`}
+            >
+              {w && c ? (
+                <button
+                  onClick={e => { e.stopPropagation(); onRemove(slotKey, empId!); }}
+                  title="클릭하여 제거"
+                  style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }}
+                  className="w-full text-center rounded text-[10px] font-bold cursor-pointer border hover:opacity-60 transition leading-none py-px"
+                >
+                  {w.emp.name}
+                </button>
+              ) : (
+                <span className="w-full text-center text-[9px] text-slate-300 leading-none">–</span>
+              )}
+            </div>
           );
         })}
       </div>
@@ -605,7 +640,19 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                         isCounter ? "border-rose-200 hover:bg-rose-50" : "border-sky-200 hover:bg-sky-100"
                       }`}
                       onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
-                      onDrop={e => { e.preventDefault(); if (draggingId !== null) tryDropToZone(zone, slot, draggingId); }}
+                      onDrop={e => {
+                        e.preventDefault();
+                        if (draggingId === null) return;
+                        if (draggingZoneSource) {
+                          const src = draggingZoneSource;
+                          setDraggingZoneSource(null);
+                          if (src.zone === zone && src.slot === slot) return; // 같은 셀
+                          onRemoveFromZone(src.zone, src.slot, draggingId);
+                          tryDropToZone(zone, slot, draggingId);
+                        } else {
+                          tryDropToZone(zone, slot, draggingId);
+                        }
+                      }}
                       onClick={() => setCellPicker({ type: "zone", zone, slot })}
                     >
                       {assignedHere.map(empId => {
@@ -613,13 +660,44 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                         if (!w) return null;
                         const c = typeTones[w.schedule.type] ?? DEFAULT_TONE;
                         return (
-                          <button key={empId}
+                          <div key={empId}
+                            draggable
+                            onDragStart={e => {
+                              e.stopPropagation();
+                              e.dataTransfer.effectAllowed = "move";
+                              setDraggingId(empId);
+                              setDraggingZoneSource({ zone, slot });
+                            }}
+                            onDragEnd={() => { setDraggingId(null); setDraggingZoneSource(null); }}
                             onClick={e => { e.stopPropagation(); onRemoveFromZone(zone, slot, empId); }}
-                            title="클릭하여 제거"
-                            style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder }}
-                            className="px-1 py-px rounded text-[11px] font-bold cursor-pointer border hover:opacity-60 transition">
+                            onTouchStart={e => {
+                              e.stopPropagation();
+                              setTouchDraggingId(empId);
+                              setDraggingZoneSource({ zone, slot });
+                              createGhost(w.emp.name);
+                              const touch = e.touches[0];
+                              moveGhost(touch.clientX, touch.clientY);
+                              const onMove = (ev: TouchEvent) => {
+                                ev.preventDefault();
+                                const t = ev.touches[0];
+                                moveGhost(t.clientX, t.clientY);
+                              };
+                              const onEnd = (ev: TouchEvent) => {
+                                document.removeEventListener("touchmove", onMove);
+                                document.removeEventListener("touchend", onEnd);
+                                const t = ev.changedTouches[0];
+                                removeGhost();
+                                handleTouchDragEnd(t.clientX, t.clientY);
+                              };
+                              document.addEventListener("touchmove", onMove, { passive: false });
+                              document.addEventListener("touchend", onEnd);
+                            }}
+                            title="드래그: 다른 구역으로 이동 | 클릭: 제거"
+                            style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder, touchAction: "none" }}
+                            className="px-1 py-px rounded text-[11px] font-bold cursor-grab border hover:opacity-70 transition select-none"
+                          >
                             {w.emp.name}
-                          </button>
+                          </div>
                         );
                       })}
                     </div>
@@ -635,13 +713,37 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           {/* 점심 row */}
           <div className="flex items-stretch mb-0.5">
             <div className="w-14 shrink-0 flex flex-col justify-center gap-0.5">
-              <span className="text-[12px] font-black text-yellow-700">점심</span>
+              <div className="flex items-center gap-0.5">
+                <span className="text-[12px] font-black text-yellow-700">점심</span>
+                {/* 인원 수 선택 */}
+                <select
+                  value={lunchCount}
+                  onChange={e => onSetLunchCount(parseInt(e.target.value, 10) as BreakCount)}
+                  className="ml-0.5 text-[9px] font-bold border border-yellow-300 rounded bg-white text-yellow-700 px-0.5 py-px cursor-pointer appearance-none text-center"
+                  style={{ width: "26px" }}
+                  title="점심 인원 수"
+                >
+                  {([1,2,3,4,5] as BreakCount[]).map(n => (
+                    <option key={n} value={n}>{n}명</option>
+                  ))}
+                </select>
+              </div>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftLunchOffset(-30)} disabled={lunchOffset <= -60}
                   className="w-4 h-4 flex items-center justify-center text-[9px] font-bold rounded bg-white border border-slate-200 text-slate-500 disabled:opacity-30 cursor-pointer">−</button>
                 <span className="text-[10px] font-mono text-slate-400 leading-none">{offsetLabel(lunchOffset)}</span>
                 <button type="button" onClick={() => onShiftLunchOffset(30)} disabled={lunchOffset >= 60}
                   className="w-4 h-4 flex items-center justify-center text-[9px] font-bold rounded bg-white border border-slate-200 text-slate-500 disabled:opacity-30 cursor-pointer">+</button>
+              </div>
+              <div className="flex gap-0.5 mt-0.5">
+                {([30, 60, 90] as BreakInterval[]).map(v => (
+                  <button key={v} type="button" onClick={() => onSetLunchInterval(v)}
+                    className={`text-[8px] px-0.5 py-px rounded font-bold border transition cursor-pointer ${
+                      lunchInterval === v ? "bg-yellow-500 text-white border-yellow-500" : "bg-white text-slate-400 border-slate-200 hover:border-yellow-300"
+                    }`}>
+                    {v === 30 ? "30분" : v === 60 ? "1h" : "1.5h"}
+                  </button>
+                ))}
               </div>
             </div>
             {ZONE_SLOTS.map(slot => {
@@ -650,9 +752,9 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               const hasAny = shiftedLunchSlots.includes(k0) || shiftedLunchSlots.includes(k30);
               if (!hasAny) return <div key={slot} className="flex-1 border border-transparent min-h-[36px]" />;
               return (
-                <div key={slot} className="flex-1 flex border border-yellow-200 min-h-[36px]">
-                  {renderBreakSubCell(k0,  shiftedLunchSlots.includes(k0),  lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch")}
-                  {renderBreakSubCell(k30, shiftedLunchSlots.includes(k30), lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch")}
+                <div key={slot} className="flex-1 flex border border-yellow-200">
+                  {renderBreakSubCell(k0,  shiftedLunchSlots.includes(k0),  lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch", lunchCount)}
+                  {renderBreakSubCell(k30, shiftedLunchSlots.includes(k30), lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch", lunchCount)}
                 </div>
               );
             })}
@@ -661,13 +763,37 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           {/* 휴게 row */}
           <div className="flex items-stretch">
             <div className="w-14 shrink-0 flex flex-col justify-center gap-0.5">
-              <span className="text-[12px] font-black text-violet-700">휴게</span>
+              <div className="flex items-center gap-0.5">
+                <span className="text-[12px] font-black text-violet-700">휴게</span>
+                {/* 인원 수 선택 */}
+                <select
+                  value={restCount}
+                  onChange={e => onSetRestCount(parseInt(e.target.value, 10) as BreakCount)}
+                  className="ml-0.5 text-[9px] font-bold border border-violet-300 rounded bg-white text-violet-700 px-0.5 py-px cursor-pointer appearance-none text-center"
+                  style={{ width: "26px" }}
+                  title="휴게 인원 수"
+                >
+                  {([1,2,3,4,5] as BreakCount[]).map(n => (
+                    <option key={n} value={n}>{n}명</option>
+                  ))}
+                </select>
+              </div>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftRestOffset(-30)} disabled={restOffset <= -60}
                   className="w-4 h-4 flex items-center justify-center text-[9px] font-bold rounded bg-white border border-slate-200 text-slate-500 disabled:opacity-30 cursor-pointer">−</button>
                 <span className="text-[10px] font-mono text-slate-400 leading-none">{offsetLabel(restOffset)}</span>
                 <button type="button" onClick={() => onShiftRestOffset(30)} disabled={restOffset >= 60}
                   className="w-4 h-4 flex items-center justify-center text-[9px] font-bold rounded bg-white border border-slate-200 text-slate-500 disabled:opacity-30 cursor-pointer">+</button>
+              </div>
+              <div className="flex gap-0.5 mt-0.5">
+                {([30, 60, 90] as BreakInterval[]).map(v => (
+                  <button key={v} type="button" onClick={() => onSetRestInterval(v)}
+                    className={`text-[8px] px-0.5 py-px rounded font-bold border transition cursor-pointer ${
+                      restInterval === v ? "bg-violet-500 text-white border-violet-500" : "bg-white text-slate-400 border-slate-200 hover:border-violet-300"
+                    }`}>
+                    {v === 30 ? "30분" : v === 60 ? "1h" : "1.5h"}
+                  </button>
+                ))}
               </div>
             </div>
             {ZONE_SLOTS.map(slot => {
@@ -676,9 +802,9 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               const hasAny = shiftedRestSlots.includes(k0) || shiftedRestSlots.includes(k30);
               if (!hasAny) return <div key={slot} className="flex-1 border border-transparent min-h-[36px]" />;
               return (
-                <div key={slot} className="flex-1 flex border border-violet-200 min-h-[36px]">
-                  {renderBreakSubCell(k0,  shiftedRestSlots.includes(k0),  restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest")}
-                  {renderBreakSubCell(k30, shiftedRestSlots.includes(k30), restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest")}
+                <div key={slot} className="flex-1 flex border border-violet-200">
+                  {renderBreakSubCell(k0,  shiftedRestSlots.includes(k0),  restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest", restCount)}
+                  {renderBreakSubCell(k30, shiftedRestSlots.includes(k30), restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest", restCount)}
                 </div>
               );
             })}
@@ -856,6 +982,22 @@ export const DayTimelineModal: React.FC<Props> = ({
     const v = parseInt(localStorage.getItem(`tl_rest_offset_${date}`) || "0", 10);
     return Number.isFinite(v) ? Math.max(-60, Math.min(60, v)) : 0;
   });
+  const [lunchInterval, setLunchInterval] = useState<BreakInterval>(() => {
+    const v = localStorage.getItem(`tl_lunch_interval_${date}`);
+    return v === "60" ? 60 : v === "90" ? 90 : 30;
+  });
+  const [restInterval, setRestInterval] = useState<BreakInterval>(() => {
+    const v = localStorage.getItem(`tl_rest_interval_${date}`);
+    return v === "60" ? 60 : v === "90" ? 90 : 30;
+  });
+  const [lunchCount, setLunchCount] = useState<BreakCount>(() => {
+    const v = parseInt(localStorage.getItem(`tl_lunch_count_${date}`) || "1", 10);
+    return ([1,2,3,4,5] as BreakCount[]).includes(v as BreakCount) ? (v as BreakCount) : 1;
+  });
+  const [restCount, setRestCount] = useState<BreakCount>(() => {
+    const v = parseInt(localStorage.getItem(`tl_rest_count_${date}`) || "1", 10);
+    return ([1,2,3,4,5] as BreakCount[]).includes(v as BreakCount) ? (v as BreakCount) : 1;
+  });
 
   // Reload on date change
   useEffect(() => {
@@ -866,6 +1008,14 @@ export const DayTimelineModal: React.FC<Props> = ({
     setLunchOffset(Number.isFinite(lo) ? Math.max(-60, Math.min(60, lo)) : 0);
     const ro = parseInt(localStorage.getItem(`tl_rest_offset_${date}`) || "0", 10);
     setRestOffset(Number.isFinite(ro) ? Math.max(-60, Math.min(60, ro)) : 0);
+    const li = localStorage.getItem(`tl_lunch_interval_${date}`);
+    setLunchInterval(li === "60" ? 60 : li === "90" ? 90 : 30);
+    const ri2 = localStorage.getItem(`tl_rest_interval_${date}`);
+    setRestInterval(ri2 === "60" ? 60 : ri2 === "90" ? 90 : 30);
+    const lc = parseInt(localStorage.getItem(`tl_lunch_count_${date}`) || "1", 10);
+    setLunchCount(([1,2,3,4,5] as BreakCount[]).includes(lc as BreakCount) ? (lc as BreakCount) : 1);
+    const rc = parseInt(localStorage.getItem(`tl_rest_count_${date}`) || "1", 10);
+    setRestCount(([1,2,3,4,5] as BreakCount[]).includes(rc as BreakCount) ? (rc as BreakCount) : 1);
   }, [date]);
 
   // ── Day-of-week template auto-load ────────────────────────────────────────
@@ -894,7 +1044,7 @@ export const DayTimelineModal: React.FC<Props> = ({
 
     fetch(`/api/zone-assignments/${dow}`)
       .then(r => r.ok ? r.json() : null)
-      .then((data: { zone_slots?: ZoneMap; lunch_slots?: SlotMap; rest_slots?: SlotMap; lunch_offset?: number; rest_offset?: number } | null) => {
+      .then((data: { zone_slots?: ZoneMap; lunch_slots?: SlotMap; rest_slots?: SlotMap; lunch_offset?: number; rest_offset?: number; lunch_interval?: number; rest_interval?: number; lunch_count?: number; rest_count?: number } | null) => {
         if (!data) return;
         if (data.zone_slots && Object.keys(data.zone_slots).length > 0) {
           setZoneSlots(data.zone_slots);
@@ -915,6 +1065,22 @@ export const DayTimelineModal: React.FC<Props> = ({
         if (data.rest_offset != null) {
           setRestOffset(data.rest_offset);
           localStorage.setItem(`tl_rest_offset_${date}`, String(data.rest_offset));
+        }
+        if (data.lunch_interval === 30 || data.lunch_interval === 60 || data.lunch_interval === 90) {
+          setLunchInterval(data.lunch_interval as BreakInterval);
+          localStorage.setItem(`tl_lunch_interval_${date}`, String(data.lunch_interval));
+        }
+        if (data.rest_interval === 30 || data.rest_interval === 60 || data.rest_interval === 90) {
+          setRestInterval(data.rest_interval as BreakInterval);
+          localStorage.setItem(`tl_rest_interval_${date}`, String(data.rest_interval));
+        }
+        if (data.lunch_count && [1,2,3,4,5].includes(data.lunch_count)) {
+          setLunchCount(data.lunch_count as BreakCount);
+          localStorage.setItem(`tl_lunch_count_${date}`, String(data.lunch_count));
+        }
+        if (data.rest_count && [1,2,3,4,5].includes(data.rest_count)) {
+          setRestCount(data.rest_count as BreakCount);
+          localStorage.setItem(`tl_rest_count_${date}`, String(data.rest_count));
         }
       })
       .catch(() => {});
@@ -1093,6 +1259,10 @@ export const DayTimelineModal: React.FC<Props> = ({
       localStorage.setItem(`tl_rest_slots_${d}`,  JSON.stringify(restSlots));
       localStorage.setItem(`tl_lunch_offset_${d}`, String(lunchOffset));
       localStorage.setItem(`tl_rest_offset_${d}`,  String(restOffset));
+      localStorage.setItem(`tl_lunch_interval_${d}`, String(lunchInterval));
+      localStorage.setItem(`tl_rest_interval_${d}`, String(restInterval));
+      localStorage.setItem(`tl_lunch_count_${d}`, String(lunchCount));
+      localStorage.setItem(`tl_rest_count_${d}`, String(restCount));
       cur.setDate(cur.getDate() + 7);
     }
     try {
@@ -1105,12 +1275,16 @@ export const DayTimelineModal: React.FC<Props> = ({
           rest_slots: restSlots,
           lunch_offset: lunchOffset,
           rest_offset: restOffset,
+          lunch_interval: lunchInterval,
+          rest_interval: restInterval,
+          lunch_count: lunchCount,
+          rest_count: restCount,
         }),
       });
     } catch (e) {
       alert("저장 실패: " + (e as Error).message);
     }
-  }, [zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset]);
+  }, [zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount]);
 
   const handleLunchShiftOffset = useCallback((delta: number) => {
     setLunchOffset(prev => {
@@ -1128,8 +1302,36 @@ export const DayTimelineModal: React.FC<Props> = ({
     });
   }, [date]);
 
-  const shiftedLunchSlots = useMemo(() => LUNCH_SLOTS.map(s => shiftSlot(s, lunchOffset)), [lunchOffset]);
-  const shiftedRestSlots  = useMemo(() => REST_SLOTS.map(s => shiftSlot(s, restOffset)),  [restOffset]);
+  const handleSetLunchInterval = useCallback((v: BreakInterval) => {
+    setLunchInterval(v);
+    localStorage.setItem(`tl_lunch_interval_${date}`, String(v));
+  }, [date]);
+  const handleSetRestInterval = useCallback((v: BreakInterval) => {
+    setRestInterval(v);
+    localStorage.setItem(`tl_rest_interval_${date}`, String(v));
+  }, [date]);
+
+  const handleSetLunchCount = useCallback((v: BreakCount) => {
+    setLunchCount(v);
+    localStorage.setItem(`tl_lunch_count_${date}`, String(v));
+  }, [date]);
+  const handleSetRestCount = useCallback((v: BreakCount) => {
+    setRestCount(v);
+    localStorage.setItem(`tl_rest_count_${date}`, String(v));
+  }, [date]);
+
+  const shiftedLunchSlots = useMemo(() => {
+    const all = LUNCH_SLOTS.map(s => shiftSlot(s, lunchOffset));
+    if (lunchInterval === 90) return all.filter((_, i) => i % 3 === 0);
+    if (lunchInterval === 60) return all.filter((_, i) => i % 2 === 0);
+    return all;
+  }, [lunchOffset, lunchInterval]);
+  const shiftedRestSlots = useMemo(() => {
+    const all = REST_SLOTS.map(s => shiftSlot(s, restOffset));
+    if (restInterval === 90) return all.filter((_, i) => i % 3 === 0);
+    if (restInterval === 60) return all.filter((_, i) => i % 2 === 0);
+    return all;
+  }, [restOffset, restInterval]);
 
   // ── Date title ────────────────────────────────────────────────────────────
   const d = new Date(date + "T00:00:00");
@@ -1377,6 +1579,14 @@ export const DayTimelineModal: React.FC<Props> = ({
               onShiftRestOffset={handleRestShiftOffset}
               onDropToRest={dropToRestSlot}
               onRemoveFromRest={removeFromRestSlot}
+              lunchInterval={lunchInterval}
+              restInterval={restInterval}
+              onSetLunchInterval={handleSetLunchInterval}
+              onSetRestInterval={handleSetRestInterval}
+              lunchCount={lunchCount}
+              restCount={restCount}
+              onSetLunchCount={handleSetLunchCount}
+              onSetRestCount={handleSetRestCount}
             />
           </div>
 

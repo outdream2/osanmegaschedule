@@ -31,6 +31,8 @@ interface EmployeeFormModalProps {
   setEmpZoneNums: React.Dispatch<React.SetStateAction<number[]>>;
   employmentTypes: string[];
   // 근로계약서
+  empPhone: string;
+  setEmpPhone: React.Dispatch<React.SetStateAction<string>>;
   empContractFile: File | null;
   setEmpContractFile: React.Dispatch<React.SetStateAction<File | null>>;
   empContractUrl: string | null;
@@ -73,6 +75,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   empLevel, setEmpLevel,
   empZoneNums, setEmpZoneNums,
   employmentTypes,
+  empPhone, setEmpPhone,
   empContractFile, setEmpContractFile,
   empContractUrl,
   onSubmit, onClose,
@@ -119,7 +122,31 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             />
           </div>
 
-          {/* ── 2. 구분 | 직급 ── */}
+          {/* ── 2. 핸드폰번호 ── */}
+          <div>
+            <label className={LABEL_CLS}>
+              핸드폰번호 <span className="text-[10px] font-normal text-slate-400 normal-case">(로그인 ID — 숫자만, 예: 01012345678)</span>
+            </label>
+            <input
+              type="tel"
+              placeholder="01012345678"
+              value={empPhone}
+              onChange={e => setEmpPhone(e.target.value)}
+              className="w-full text-sm rounded-lg border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 px-3 py-2.5 bg-white text-slate-900 placeholder:text-slate-300 focus:outline-none transition-all"
+            />
+            {empPhone && !/^01[0-9]{8,9}$/.test(empPhone.replace(/[^0-9]/g, "")) && (
+              <p className="mt-1 text-[11px] text-rose-500 font-semibold">
+                올바른 핸드폰번호 형식이 아닙니다 (예: 01012345678)
+              </p>
+            )}
+            {!empPhone && empModalMode === "create" && (
+              <p className="mt-1 text-[11px] text-amber-500 font-semibold">
+                핸드폰번호가 없으면 해당 직원은 로그인할 수 없습니다.
+              </p>
+            )}
+          </div>
+
+          {/* ── 3. 구분 | 직급 ── */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={LABEL_CLS}>
@@ -160,7 +187,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </div>
           </div>
 
-          {/* ── 3. 레벨 ── */}
+          {/* ── 4. 레벨 ── */}
           <div>
             <label className={LABEL_CLS}>
               레벨
@@ -175,7 +202,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </select>
           </div>
 
-          {/* ── 4. 입사일 | 연간월차 ── */}
+          {/* ── 5. 입사일 | 연간월차 ── */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className={`${LABEL_CLS} flex items-center gap-1`}>
@@ -204,7 +231,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </div>
           </div>
 
-          {/* ── 5. 근무형태 | 성별 | 근무지 ── */}
+          {/* ── 6. 근무형태 | 성별 | 근무지 ── */}
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className={LABEL_CLS}>
@@ -244,7 +271,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </div>
           </div>
 
-          {/* ── 6. 구역 배정 (물류 전용) ── */}
+          {/* ── 7. 구역 배정 (물류 전용) ── */}
           {empPosition === "물류" && (
             <div className="border border-violet-200 bg-violet-50/40 rounded-xl p-3 space-y-2.5">
               <div className="flex items-center justify-between">
@@ -297,7 +324,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </div>
           )}
 
-          {/* ── 7. 상세사항 ── */}
+          {/* ── 8. 상세사항 ── */}
           <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
             <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1">
               상세사항
@@ -321,7 +348,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </div>
           </div>
 
-          {/* ── 8. 근로계약서 첨부 ── */}
+          {/* ── 9. 근로계약서 첨부 ── */}
           <div className="border border-slate-200 rounded-xl p-3">
             <label className="block text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
               <FileText size={13} className="text-slate-500" />

@@ -209,6 +209,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const [empAnnualLeave, setEmpAnnualLeave] = useState<number>(0);
   const [empLevel, setEmpLevel] = useState<number>(1);
   const [empZoneNums, setEmpZoneNums] = useState<number[]>([]);
+  const [empPhone, setEmpPhone] = useState<string>("");
   const [empContractFile, setEmpContractFile] = useState<File | null>(null);
   const [empContractUrl, setEmpContractUrl] = useState<string | null>(null);
   const [yearLeaveStats, setYearLeaveStats] = useState<Record<number, number>>({});
@@ -309,21 +310,29 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       ? (() => {
           const zones = loadDisplayZones();
           const assignedZoneNums = zones.filter(z => z.assignedStaffId === calendarEmployee.id).map(z => z.num);
+          const empId = calendarEmployee.id;
+          const empName = calendarEmployee.name;
           return {
             assignedZoneNums,
             onToggle: (zoneNum: number) => {
               const current = loadDisplayZones();
               saveDisplayZones(current.map(z => {
                 if (z.num !== zoneNum) return z;
-                return z.assignedStaffId === calendarEmployee.id
+                return z.assignedStaffId === empId
                   ? { ...z, assignedStaffId: null, assignedStaffName: "" }
-                  : { ...z, assignedStaffId: calendarEmployee.id, assignedStaffName: calendarEmployee.name };
+                  : { ...z, assignedStaffId: empId, assignedStaffName: empName };
               }));
             },
             onClearAll: () => {
               saveDisplayZones(loadDisplayZones().map(z =>
-                z.assignedStaffId === calendarEmployee.id ? { ...z, assignedStaffId: null, assignedStaffName: "" } : z
+                z.assignedStaffId === empId ? { ...z, assignedStaffId: null, assignedStaffName: "" } : z
               ));
+            },
+            onSaveToDow: async (dow: number) => {
+              const currentZones = loadDisplayZones();
+              const currentNums = currentZones.filter(z => z.assignedStaffId === empId).map(z => z.num);
+              const key = `megatown_zone_template_emp${empId}_dow${dow}`;
+              localStorage.setItem(key, JSON.stringify(currentNums));
             },
           };
         })()
@@ -343,6 +352,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     setEmpRank("");
     setEmpLevel(1);
     setEmpZoneNums([]);
+    setEmpPhone("");
     setEmpContractFile(null);
     setEmpContractUrl(null);
     setIsEmpModalOpen(true);
@@ -375,6 +385,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     } else {
       setEmpZoneNums([]);
     }
+    setEmpPhone(emp.phone ?? "");
     setEmpContractFile(null);
     setEmpContractUrl((emp as any).contract_file_url ?? null);
     // Reset inline password set form
@@ -1007,6 +1018,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           description: empDescription,
           workplace: empWorkplace,
           gender: empGender || null,
+          phone: empPhone.trim() || null,
           annual_leave_days: empAnnualLeave > 0 ? empAnnualLeave : null,
           level: empLevel,
         });
@@ -1023,6 +1035,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           description: empDescription,
           workplace: empWorkplace,
           gender: empGender || null,
+          phone: empPhone.trim() || null,
           annual_leave_days: empAnnualLeave > 0 ? empAnnualLeave : null,
           level: empLevel,
         });
@@ -1046,6 +1059,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       setEmpAnnualLeave(0);
       setEmpLevel(1);
       setEmpZoneNums([]);
+      setEmpPhone("");
       setEmpContractFile(null);
       setEmpContractUrl(null);
       setSelectedEmpForEdit(null);
@@ -1191,11 +1205,24 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           : b.name.localeCompare(a.name, "ko");
       }
 
-      // sortBy === "none": todayFirst as secondary sort only
+      // sortBy === "none": todayFirst — 오픈→마감→기타근무→휴무류→없음 순
       if (todayFirst) {
-        const aToday = a.schedules.some(s => s.date === todayStr && s.type && !OFF_TYPES_SET.has(s.type));
-        const bToday = b.schedules.some(s => s.date === todayStr && s.type && !OFF_TYPES_SET.has(s.type));
-        if (aToday !== bToday) return aToday ? -1 : 1;
+        // 휴무로 취급할 타입 (반차 포함)
+        const TODAY_OFF_TYPES = new Set(["휴무", "월차", "지정휴무", "결근", "오전반차", "오후반차"]);
+        // 출근 타입별 우선순위 (0=오픈, 1=마감, 2=기타근무)
+        const TODAY_TYPE_ORDER: Record<string, number> = {
+          "오픈": 0, "마감": 1,
+        };
+        const getOrder = (type: string): number => {
+          if (!type) return 4;                    // 스케줄 없음
+          if (TODAY_OFF_TYPES.has(type)) return 3; // 휴무류
+          return TODAY_TYPE_ORDER[type] ?? 2;      // 오픈(0), 마감(1), 기타근무(2)
+        };
+        const aType = a.schedules.find(s => s.date === todayStr)?.type ?? "";
+        const bType = b.schedules.find(s => s.date === todayStr)?.type ?? "";
+        const aOrd = getOrder(aType);
+        const bOrd = getOrder(bType);
+        if (aOrd !== bOrd) return aOrd - bOrd;
       }
 
       return 0;
@@ -2204,6 +2231,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           empZoneNums={empZoneNums}
           setEmpZoneNums={setEmpZoneNums}
           employmentTypes={PRESET_EMPLOYMENT_TYPES}
+          empPhone={empPhone}
+          setEmpPhone={setEmpPhone}
           empContractFile={empContractFile}
           setEmpContractFile={setEmpContractFile}
           empContractUrl={empContractUrl}
