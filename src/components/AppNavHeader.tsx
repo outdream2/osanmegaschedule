@@ -26,7 +26,8 @@ export type AppNavPage =
   | "lunch"
   | "permissions"
   | "stockarrivals"
-  | "synonyms";
+  | "synonyms"
+  | "stockcheck";
 
 interface AppNavHeaderProps {
   activePage: AppNavPage;

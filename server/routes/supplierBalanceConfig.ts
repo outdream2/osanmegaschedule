@@ -21,28 +21,43 @@ CREATE TABLE IF NOT EXISTS supplier_balance_configs (
   }
 })();
 
-// GET /api/supplier-balance-configs  →  [{ supplier_name, balance_field }]
+// GET /api/supplier-balance-configs  →  [{ supplier_name, balance_field, column_layout? }]
 router.get("/api/supplier-balance-configs", async (_req, res) => {
-  const { data, error } = await supabase.from(TABLE).select("supplier_name, balance_field");
-  if (error) {
-    if (/relation|does not exist/i.test(error.message)) {
-      return res.json([]);
+  // column_layout 컬럼 포함 조회, 없으면 fallback
+  let data: any[] | null = null;
+  const first = await supabase.from(TABLE).select("supplier_name, balance_field, column_layout");
+  if (first.error) {
+    const fb = await supabase.from(TABLE).select("supplier_name, balance_field");
+    if (fb.error) {
+      if (/relation|does not exist/i.test(fb.error.message)) return res.json([]);
+      return res.status(500).json({ error: fb.error.message });
     }
-    return res.status(500).json({ error: error.message });
+    data = fb.data;
+  } else {
+    data = first.data;
   }
   return res.json(data ?? []);
 });
 
-// PUT /api/supplier-balance-configs  →  upsert { supplier_name, balance_field }
+// PUT /api/supplier-balance-configs  →  upsert { supplier_name, balance_field, column_layout? }
 router.put("/api/supplier-balance-configs", async (req, res) => {
-  const { supplier_name, balance_field } = req.body ?? {};
+  const { supplier_name, balance_field, column_layout } = req.body ?? {};
   if (!supplier_name) return res.status(400).json({ error: "supplier_name 필수" });
 
-  const { error } = await supabase.from(TABLE).upsert(
-    { supplier_name, balance_field: balance_field ?? "", updated_at: new Date().toISOString() },
-    { onConflict: "supplier_name" }
-  );
+  const payload: Record<string, unknown> = {
+    supplier_name,
+    balance_field: balance_field ?? "",
+    updated_at: new Date().toISOString(),
+  };
+  if (column_layout !== undefined) payload.column_layout = column_layout;
 
+  let { error } = await supabase.from(TABLE).upsert(payload, { onConflict: "supplier_name" });
+  if (error && /column|does not exist/i.test(error.message)) {
+    // column_layout 컬럼 없으면 제외하고 재시도
+    delete payload.column_layout;
+    const fb = await supabase.from(TABLE).upsert(payload, { onConflict: "supplier_name" });
+    error = fb.error;
+  }
   if (error) {
     if (/relation|does not exist/i.test(error.message)) {
       return res.status(503).json({ error: `${TABLE} 테이블이 없습니다.\n${CREATE_SQL}` });

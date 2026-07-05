@@ -81,7 +81,6 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   onSubmit, onClose,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const isCustomPosition = !["약사", "캐셔", "진열", "물류", ""].includes(empPosition);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -122,16 +121,18 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             />
           </div>
 
-          {/* ── 2. 핸드폰번호 ── */}
+          {/* ── 2. 핸드폰번호 (로그인 ID — 필수) ── */}
           <div>
             <label className={LABEL_CLS}>
-              핸드폰번호 <span className="text-[10px] font-normal text-slate-400 normal-case">(로그인 ID — 숫자만, 예: 01012345678)</span>
+              핸드폰번호 <span className="text-rose-500 normal-case">*</span>
+              <span className="text-[10px] font-normal text-slate-400 normal-case ml-1">(로그인 ID — 숫자만, 예: 01012345678)</span>
             </label>
             <input
               type="tel"
               placeholder="01012345678"
               value={empPhone}
               onChange={e => setEmpPhone(e.target.value)}
+              required={empModalMode === "create"}
               className="w-full text-sm rounded-lg border border-slate-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 px-3 py-2.5 bg-white text-slate-900 placeholder:text-slate-300 focus:outline-none transition-all"
             />
             {empPhone && !/^01[0-9]{8,9}$/.test(empPhone.replace(/[^0-9]/g, "")) && (
@@ -140,8 +141,8 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               </p>
             )}
             {!empPhone && empModalMode === "create" && (
-              <p className="mt-1 text-[11px] text-amber-500 font-semibold">
-                핸드폰번호가 없으면 해당 직원은 로그인할 수 없습니다.
+              <p className="mt-1 text-[11px] text-rose-500 font-semibold">
+                * 핸드폰번호는 로그인 ID로 필수입니다.
               </p>
             )}
           </div>
@@ -152,28 +153,56 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
               <label className={LABEL_CLS}>
                 구분 <span className="text-rose-500 normal-case">*</span>
               </label>
-              <select
-                value={isCustomPosition ? "기타" : empPosition}
-                onChange={e => {
-                  const v = e.target.value;
-                  setEmpPosition(v);
-                  if (v !== "기타") setEmpCustomPosition("");
-                  if (v !== "물류") setEmpZoneNums([]);
-                }}
-                className={SELECT_CLS}
-              >
-                <option value="">선택</option>
-                {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
-              </select>
-              {(empPosition === "기타" || isCustomPosition) && (
-                <input
-                  type="text"
-                  placeholder="직종 직접 입력"
-                  value={empCustomPosition}
-                  onChange={e => setEmpCustomPosition(e.target.value)}
-                  className="mt-1.5 w-full text-xs rounded border border-slate-200 focus:border-blue-400 px-2 py-1.5 bg-white focus:outline-none"
-                />
-              )}
+              {(() => {
+                // 겸직 지원: position 문자열이 "물류/캐셔" 같이 슬래시로 구성되어 있을 수 있음
+                const primary = (empPosition.includes("/") ? empPosition.split("/")[0] : empPosition).trim();
+                const hasCashierFlag = empPosition.includes("캐셔") && primary !== "캐셔";
+                const isCustom = !["약사", "캐셔", "진열", "물류", ""].includes(primary);
+                const selectValue = isCustom ? "기타" : primary;
+                return (
+                  <>
+                    <select
+                      value={selectValue}
+                      onChange={e => {
+                        const v = e.target.value;
+                        // 새 primary 위치에 기존 캐셔 겸직 flag 유지 (단 primary=="캐셔"이면 flag 무의미)
+                        const newPos = (v === "물류" && hasCashierFlag) ? "물류/캐셔" : v;
+                        setEmpPosition(newPos);
+                        if (v !== "기타") setEmpCustomPosition("");
+                        if (v !== "물류") setEmpZoneNums([]);
+                      }}
+                      className={SELECT_CLS}
+                    >
+                      <option value="">선택</option>
+                      {POSITIONS.map(p => <option key={p} value={p}>{p}</option>)}
+                    </select>
+                    {(primary === "기타" || isCustom) && (
+                      <input
+                        type="text"
+                        placeholder="직종 직접 입력"
+                        value={empCustomPosition}
+                        onChange={e => setEmpCustomPosition(e.target.value)}
+                        className="mt-1.5 w-full text-xs rounded border border-slate-200 focus:border-blue-400 px-2 py-1.5 bg-white focus:outline-none"
+                      />
+                    )}
+                    {/* 물류 선택시 캐셔 겸직 체크박스 */}
+                    {primary === "물류" && (
+                      <label className="mt-1.5 flex items-center gap-1.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={hasCashierFlag}
+                          onChange={e => {
+                            setEmpPosition(e.target.checked ? "물류/캐셔" : "물류");
+                          }}
+                          className="w-3.5 h-3.5 accent-blue-500 cursor-pointer"
+                        />
+                        <span className="text-[11px] font-bold text-blue-700">캐셔 겸직</span>
+                        <span className="text-[10px] text-slate-400">(구역배정 표시)</span>
+                      </label>
+                    )}
+                  </>
+                );
+              })()}
             </div>
             <div>
               <label className={LABEL_CLS}>직급</label>
@@ -271,8 +300,8 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </div>
           </div>
 
-          {/* ── 7. 구역 배정 (물류 전용) ── */}
-          {empPosition === "물류" && (
+          {/* ── 7. 구역 배정 (물류 및 물류/캐셔 겸직) ── */}
+          {(empPosition === "물류" || empPosition.startsWith("물류/") || empPosition.includes("/물류")) && (
             <div className="border border-violet-200 bg-violet-50/40 rounded-xl p-3 space-y-2.5">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-extrabold text-violet-800 flex items-center gap-1.5">

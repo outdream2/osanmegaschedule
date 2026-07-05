@@ -442,3 +442,27 @@ export function crossValidateIntraPage(
     return row;
   });
 }
+
+/**
+ * 상품코드로 보이는 좁은 패턴만 제거 (예: A200893, A201913, 1234567).
+ * 영문 상품명(IBUPROFEN 400 등)은 제외하지 않도록 매우 좁게 매칭.
+ */
+export function filterCodeOnlyRows(
+  headers: string[],
+  rows: (string | number | null)[][]
+): (string | number | null)[][] {
+  const nI = headers.indexOf("품명");
+  if (nI < 0) return rows;
+  return rows.filter(row => {
+    if (!Array.isArray(row)) return false;
+    const raw = row[nI];
+    if (raw == null) return true;
+    const name = String(raw).trim();
+    if (name.length === 0) return true;
+    // 1글자 대문자 + 5~7자리 숫자 (A200893, B12345 등)
+    if (/^[A-Z]\d{5,7}$/.test(name)) return false;
+    // 순수 숫자 7자리 이상 (SKU/바코드)
+    if (/^\d{7,}$/.test(name)) return false;
+    return true;
+  });
+}

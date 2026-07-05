@@ -1725,45 +1725,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                   <div className="text-[7px] text-indigo-600 font-extrabold text-right">하역대</div>
                 </div>
 
-                {/* 3B. 휴게실 */}
-                <div
-                  onDragOver={(e) => handleDragOver(e, "slot_breakroom")}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, "slot_breakroom")}
-                  className={`col-span-12 md:col-span-4 bg-emerald-50/30 border border-emerald-200 rounded-xl p-2.5 flex flex-col justify-between transition min-h-[100px] ${
-                    dragOverZone === "slot_breakroom" ? "bg-emerald-100/60 border-emerald-400" : ""
-                  }`}
-                >
-                  <span className="text-[9px] font-black text-emerald-950 block border-b border-emerald-100 pb-0.5">☕ 휴게실</span>
-                  <p className="text-[7px] text-slate-400 leading-tight">교대 휴식</p>
-                  <div className="flex-1 py-0.5 flex flex-col justify-center">
-                    {breakroomStaff.length > 0 ? (
-                      renderPlacedStaffTags(breakroomStaff)
-                    ) : (
-                      <span className="text-[8px] text-slate-400 italic text-center block">대기 직원 없음</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* 3C. 사물함 & 수도시설 */}
-                <div
-                  onDragOver={(e) => handleDragOver(e, "slot_lockers")}
-                  onDragLeave={handleDragLeave}
-                  onDrop={(e) => handleDrop(e, "slot_lockers")}
-                  className={`col-span-12 md:col-span-4 bg-slate-50 border border-slate-200 rounded-xl p-2 flex flex-col justify-between text-center transition min-h-[100px] ${
-                    dragOverZone === "slot_lockers" ? "bg-slate-200 border-slate-400" : ""
-                  }`}
-                >
-                  <span className="text-[8px] font-extrabold text-slate-600 border-b pb-0.5">🗄️ 사물함 | 🚰 수도</span>
-                  <span className="text-sm">🚰 🛗</span>
-                  <div className="py-0.5">
-                    {lockerStaff.length > 0 ? (
-                      renderPlacedStaffTags(lockerStaff)
-                    ) : (
-                      <span className="text-[8px] text-slate-400">청위 유지</span>
-                    )}
-                  </div>
-                </div>
+                {/* 휴게실 / 사물함 / 정수기 / 화장실 제거됨 (사용자 요청) */}
 
               </div>
 

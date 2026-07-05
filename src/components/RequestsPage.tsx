@@ -703,6 +703,32 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         {/* ── 실재고 차이 ── */}
         {tab === "inventory" && (
           <div className="flex flex-col gap-2">
+            {/* 재고 모니터링 요약 지표 */}
+            {(() => {
+              const totalChecks = inventoryChecks.length;
+              let mismatchCount = 0;
+              for (const r of inventoryChecks) {
+                const totalActual = (r.warehouse_stock ?? 0) + (r.store_stock ?? 0);
+                if (r.system_stock != null && totalActual !== r.system_stock) mismatchCount++;
+              }
+              const metrics = [
+                { label: "점검 상품", value: totalChecks, color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-200" },
+                { label: "시스템↔실재고 오차", value: mismatchCount, color: "text-rose-600", bg: "bg-rose-50", border: "border-rose-200" },
+                { label: "진열요청", value: displayReqs.length, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-200" },
+                { label: "발주요청", value: orderReqs.length, color: "text-emerald-600", bg: "bg-emerald-50", border: "border-emerald-200" },
+                { label: "실재고 차이", value: inventoryChecks.length, color: "text-purple-600", bg: "bg-purple-50", border: "border-purple-200" },
+              ];
+              return (
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  {metrics.map(m => (
+                    <div key={m.label} className={`${m.bg} border ${m.border} rounded-xl px-3 py-2 shadow-sm`}>
+                      <p className={`text-[10px] font-bold ${m.color} opacity-80`}>{m.label}</p>
+                      <p className={`text-lg font-black ${m.color} leading-tight`}>{m.value}</p>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
             <ListToolbar
               total={inventoryChecks.length} selected={selectedInventory.size}
               allChecked={selectedInventory.size === inventoryChecks.length && inventoryChecks.length > 0}

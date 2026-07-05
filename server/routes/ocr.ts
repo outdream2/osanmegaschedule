@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { supabase } from "../../src/supabase/client";
 import { getProductMap, getSynonymMap, resetSynonymCache, getSupplierAliasMap, resetSupplierAliasCache } from "../productCache";
-import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta } from "../ocr/parse";
+import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta, filterCodeOnlyRows } from "../ocr/parse";
 import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiState, extractSupplierFromImage } from "../ocr/llm";
 import { preprocessImageForOcr } from "../ocr/preprocess";
 import { ensureOcrServer, callEasyOcrServer } from "../ocr/easyocr";
@@ -218,6 +218,63 @@ router.delete("/api/ocr-synonyms/by-name", async (req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
+// 2차 보정 ✕ 취소: 삭제 대신 cancelled=true 마킹 (재적용 방지 + 관리 가능)
+// 마이그레이션(20260705_ocr_synonyms_cancelled.sql)이 적용되어야 정상 동작.
+// 미적용 시에는 400 응답 대신 delete로 폴백.
+router.post("/api/ocr-synonyms/cancel-by-name", async (req, res) => {
+  try {
+    const { prod_name_old, product_code } = req.body ?? {};
+    if (!prod_name_old?.trim()) return res.status(400).json({ error: "prod_name_old 필요" });
+    const nameOldNorm = prod_name_old.trim().toLowerCase();
+    // 존재하면 cancelled=true로 업데이트, 없으면 새 레코드 삽입 (cancelled=true)
+    const { data: exist, error: findErr } = await supabase
+      .from("ocr_synonyms").select("id").eq("prod_name_old", nameOldNorm).limit(1);
+    if (findErr) {
+      // cancelled 컬럼 미존재 등 스키마 오류 시 delete로 폴백
+      await supabase.from("ocr_synonyms").delete().eq("prod_name_old", nameOldNorm);
+      resetSynonymCache();
+      return res.json({ ok: true, fallback: "delete" });
+    }
+    if (exist && exist.length > 0) {
+      const { error } = await supabase.from("ocr_synonyms")
+        .update({ cancelled: true, cancelled_at: new Date().toISOString() })
+        .eq("id", exist[0].id);
+      if (error) {
+        await supabase.from("ocr_synonyms").delete().eq("prod_name_old", nameOldNorm);
+        resetSynonymCache();
+        return res.json({ ok: true, fallback: "delete" });
+      }
+    } else {
+      const codeToUse = String(product_code ?? "").trim() || "__cancelled__";
+      const { error } = await supabase.from("ocr_synonyms").insert([{
+        prod_name_old: nameOldNorm,
+        product_code: codeToUse,
+        cancelled: true,
+        cancelled_at: new Date().toISOString(),
+      }]);
+      if (error) {
+        // 마이그레이션 미적용 시 조용히 성공 처리 (기록 실패해도 UX는 유지)
+        resetSynonymCache();
+        return res.json({ ok: true, fallback: "insert_failed" });
+      }
+    }
+    resetSynonymCache();
+    res.json({ ok: true });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
+// 취소 항목 복원 (cancelled=false)
+router.post("/api/ocr-synonyms/restore/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const { error } = await supabase.from("ocr_synonyms")
+      .update({ cancelled: false, cancelled_at: null }).eq("id", id);
+    if (error) throw new Error(error.message);
+    resetSynonymCache();
+    res.json({ ok: true });
+  } catch (err: any) { res.status(500).json({ error: err.message }); }
+});
+
 router.delete("/api/ocr-synonyms/:id", async (req, res) => {
   try {
     const { error } = await supabase.from("ocr_synonyms").delete().eq("id", Number(req.params.id));
@@ -344,7 +401,8 @@ router.post("/api/ocr", async (req, res) => {
           const cleanMeta = sanitizeOcrMeta(raw.meta ?? {});
           const rows0 = fixAmountsBySubtotal(spec.headers, spec.rows, cleanMeta.total ?? null);
           const rows1 = repairColumnShift(spec.headers, rows0);
-          const rows  = crossValidateIntraPage(spec.headers, rows1);
+          const rows2 = crossValidateIntraPage(spec.headers, rows1);
+          const rows  = filterCodeOnlyRows(spec.headers, rows2);
           console.log(`[OCR/EasyOCR] page ${i + 1}: 헤더=${JSON.stringify(spec.headers)}, 행=${rows.length}`);
           return { page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText: raw.rawText ?? "" };
         })
@@ -457,7 +515,8 @@ router.post("/api/ocr", async (req, res) => {
           const cleanMeta  = sanitizeOcrMeta(parsed.meta ?? {});
           const rows0 = fixAmountsBySubtotal(spec.headers, spec.rows, cleanMeta.total ?? null);
           const rows1 = repairColumnShift(spec.headers, rows0);
-          const rows  = crossValidateIntraPage(spec.headers, rows1);
+          const rows2 = crossValidateIntraPage(spec.headers, rows1);
+          const rows  = filterCodeOnlyRows(spec.headers, rows2);
           const aI = spec.headers.indexOf("금액");
           if (aI >= 0 && cleanMeta.total) {
             const finalSum = rows.reduce((s, r) => s + (typeof r[aI] === "number" ? (r[aI] as number) : 0), 0);
@@ -467,6 +526,28 @@ router.post("/api/ocr", async (req, res) => {
           }
           if (hint && !cleanMeta.supplier) cleanMeta.supplier = hint;
           process.stdout.write(`\n[OCR 결과] page ${i + 1}\n  헤더: ${JSON.stringify(spec.headers)}\n  행 수: ${rows.length}\n  메타: ${JSON.stringify(cleanMeta)}\n`);
+          // 잔고 후보 진단 로그 — "합계액/총합계/잔고" 등 키워드 발견 시 어디에 있는지 표시
+          try {
+            const BAL_KW = /합\s*계\s*액|총\s*합\s*계|합\s*계|잔\s*고|잔\s*액|미\s*수|공\s*급\s*가|매\s*입\s*총\s*계/;
+            const hdrHits: string[] = [];
+            spec.headers.forEach((h: string, hi: number) => {
+              if (BAL_KW.test(String(h ?? ""))) hdrHits.push(`컬럼[${hi}]="${h}"`);
+            });
+            const rowHits: string[] = [];
+            rows.forEach((r: any[], ri: number) => {
+              r.forEach((c: any, ci: number) => {
+                if (typeof c === "string" && BAL_KW.test(c)) {
+                  const near = r.slice(Math.max(0, ci - 1), ci + 3).map(v => JSON.stringify(v)).join(", ");
+                  rowHits.push(`행[${ri}][${ci}]="${c}" 인접={${near}}`);
+                }
+              });
+            });
+            if (hdrHits.length || rowHits.length) {
+              console.log(`[OCR/잔고진단] page ${i + 1} (공급사=${cleanMeta.supplier ?? "-"})`);
+              hdrHits.forEach(h => console.log(`  헤더: ${h}`));
+              rowHits.forEach(h => console.log(`  ${h}`));
+            }
+          } catch (_diagErr) { /* ignore */ }
           pageData = { page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText, supplierHintUsed: hint || undefined };
         } catch (parseErr: any) {
           console.error(`[OCR/parse-error] page ${i + 1}:`, parseErr?.stack ?? parseErr?.message);
@@ -476,11 +557,79 @@ router.post("/api/ocr", async (req, res) => {
       }
     }
 
+    // 최신 OCR 결과를 파일로 저장 (진단용) — logs/ocr-last.json + logs/ocr-<timestamp>.json
+    try {
+      const fs = await import("fs");
+      const path = await import("path");
+      const logsDir = path.join(process.cwd(), "logs");
+      if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const payload = JSON.stringify({ ts: new Date().toISOString(), engine, pages }, null, 2);
+      fs.writeFileSync(path.join(logsDir, "ocr-last.json"), payload);
+      fs.writeFileSync(path.join(logsDir, `ocr-${timestamp}.json`), payload);
+      // 최대 20개 유지 (오래된 것 삭제)
+      const files = fs.readdirSync(logsDir).filter(f => /^ocr-\d/.test(f)).sort();
+      while (files.length > 20) {
+        const f = files.shift();
+        if (f) fs.unlinkSync(path.join(logsDir, f));
+      }
+    } catch (logErr: any) {
+      console.warn("[OCR/log-save]", logErr?.message);
+    }
     return res.json({ pages, engine });
   } catch (err: any) {
     console.error("[OCR] error:", err?.message);
     res.status(500).json({ error: err?.message ?? "OCR 처리 중 오류" });
   }
+});
+
+// 최신 OCR 결과 조회 (진단용) — logs/ocr-last.json 반환
+router.get("/api/ocr/last-log", async (_req, res) => {
+  try {
+    const fs = await import("fs");
+    const path = await import("path");
+    const p = path.join(process.cwd(), "logs", "ocr-last.json");
+    if (!fs.existsSync(p)) return res.status(404).json({ error: "저장된 OCR 로그 없음" });
+    const data = fs.readFileSync(p, "utf-8");
+    res.type("application/json").send(data);
+  } catch (err: any) { res.status(500).json({ error: err?.message }); }
+});
+
+// 공급사명 + 금액으로 OCR 결과에서 항목 검색 (진단용)
+router.get("/api/ocr/search-balance", async (req, res) => {
+  try {
+    const supplier = String(req.query.supplier ?? "").trim();
+    const amount = req.query.amount ? Number(req.query.amount) : null;
+    const fs = await import("fs");
+    const path = await import("path");
+    const p = path.join(process.cwd(), "logs", "ocr-last.json");
+    if (!fs.existsSync(p)) return res.status(404).json({ error: "저장된 OCR 로그 없음. OCR을 한 번 실행하세요." });
+    const data = JSON.parse(fs.readFileSync(p, "utf-8"));
+    const matches: any[] = [];
+    for (const page of data.pages ?? []) {
+      const supp = page.meta?.supplier ?? "";
+      if (supplier && !String(supp).includes(supplier)) continue;
+      const hits: any = { page: page.page, supplier: supp, hits: [] as any[] };
+      (page.headers ?? []).forEach((h: string, hi: number) => {
+        if (/합\s*계\s*액|총\s*합\s*계|합\s*계|잔\s*고|잔\s*액|미\s*수|공\s*급\s*가|매\s*입\s*총\s*계/.test(String(h ?? ""))) {
+          const values = (page.rows ?? []).map((r: any[]) => r?.[hi]).filter((v: any) => v != null);
+          hits.hits.push({ type: "header", col: hi, label: h, values });
+        }
+      });
+      (page.rows ?? []).forEach((r: any[], ri: number) => {
+        r?.forEach((c: any, ci: number) => {
+          if (typeof c === "string" && /합\s*계\s*액|총\s*합\s*계|합\s*계|잔\s*고|잔\s*액|미\s*수|공\s*급\s*가|매\s*입\s*총\s*계/.test(c)) {
+            hits.hits.push({ type: "cell", row: ri, col: ci, label: c, rowFull: r });
+          }
+          if (amount != null && typeof c === "number" && Math.abs(c - amount) < 1) {
+            hits.hits.push({ type: "amount-match", row: ri, col: ci, value: c, rowFull: r });
+          }
+        });
+      });
+      if (hits.hits.length) matches.push(hits);
+    }
+    res.json({ query: { supplier, amount }, matches });
+  } catch (err: any) { res.status(500).json({ error: err?.message }); }
 });
 
 // ── 공급사 잔고 기록 ──────────────────────────────────────────────────────────

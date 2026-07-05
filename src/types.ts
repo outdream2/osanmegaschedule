@@ -83,5 +83,6 @@ export interface MonthlySummary {
   closeCount: number;
   totalCount: number;
   pharmacistCount: number;
-  staffCount: number;
+  staffCount: number;  // 약사·알바 제외 사원
+  otherCount: number;  // 알바(기타)
 }

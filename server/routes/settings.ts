@@ -104,10 +104,20 @@ router.post("/api/blocked-slots", async (req, res) => {
 
 router.get("/api/zones", async (_req, res) => {
   try {
-    const { data, error } = await supabase
+    // dow_map 컬럼이 있으면 함께 조회, 없으면 (마이그레이션 미적용) 기존 컬럼만
+    let data: any[] | null = null;
+    const first = await supabase
       .from("zone_assignments")
-      .select("zone_id, employee_id, employee_name, status, products");
-    if (error) throw new Error(error.message);
+      .select("zone_id, employee_id, employee_name, status, products, dow_map");
+    if (first.error) {
+      const fb = await supabase
+        .from("zone_assignments")
+        .select("zone_id, employee_id, employee_name, status, products");
+      if (fb.error) throw new Error(fb.error.message);
+      data = fb.data;
+    } else {
+      data = first.data;
+    }
     res.json(data ?? []);
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
@@ -116,17 +126,23 @@ router.post("/api/zones", async (req, res) => {
   const { zones } = req.body ?? {};
   if (!Array.isArray(zones)) return res.status(400).json({ error: "zones array required" });
   try {
-    const rows = zones.map((z: any) => ({
+    const rowsWithDow = zones.map((z: any) => ({
       zone_id: String(z.zone_id),
       employee_id: z.employee_id ?? null,
       employee_name: z.employee_name ?? "",
       status: z.status ?? "normal",
       products: z.products ?? "",
+      dow_map: z.dow_map ?? null,
     }));
-    const { error } = await supabase
+    let { error } = await supabase
       .from("zone_assignments")
-      .upsert(rows, { onConflict: "zone_id" });
-    if (error) throw new Error(error.message);
+      .upsert(rowsWithDow, { onConflict: "zone_id" });
+    if (error) {
+      // 마이그레이션 미적용 시 dow_map 없이 재시도 (하위 호환)
+      const rowsNoDow = rowsWithDow.map(({ dow_map: _dm, ...rest }) => rest);
+      const fb = await supabase.from("zone_assignments").upsert(rowsNoDow, { onConflict: "zone_id" });
+      if (fb.error) throw new Error(fb.error.message);
+    }
     res.json({ ok: true });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });

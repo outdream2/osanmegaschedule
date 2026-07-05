@@ -22,3 +22,4 @@ server/models/*_temp.*
 _test_in.json
 metadata.json
 server/models/best.onnx
+logs/

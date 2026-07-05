@@ -74,7 +74,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     for (const entry of settingsScheduleTypes) {
       let h = entry.hours;
       if (position === "약사" && entry.pharmHours) h = entry.pharmHours;
-      else if (position === "물류" && entry.logisticsHours) h = entry.logisticsHours;
+      else if (position.includes("물류") && entry.logisticsHours) h = entry.logisticsHours;
       else if (employmentType === "알바" && entry.partTimeHours) h = entry.partTimeHours;
       map[entry.type] = h;
     }
@@ -306,7 +306,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   };
 
   const calendarLogisticsZoneProps: LogisticsZoneProps | undefined =
-    calendarEmployee?.position === "물류"
+    calendarEmployee?.position.includes("물류")
       ? (() => {
           const zones = loadDisplayZones();
           const assignedZoneNums = zones.filter(z => z.assignedStaffId === calendarEmployee.id).map(z => z.num);
@@ -379,7 +379,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     setEmpDescription(emp.description || "");
     setEmpWorkplace(emp.workplace || "매장");
     setEmpGender((emp.gender as "남" | "여") || "");
-    if (emp.position === "물류") {
+    if (emp.position.includes("물류")) {
       const zones = loadDisplayZones();
       setEmpZoneNums(zones.filter(z => z.assignedStaffId === emp.id).map(z => z.num));
     } else {
@@ -538,6 +538,12 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
   // Copy Previous Month state
   const [isCopying, setIsCopying] = useState(false);
+  // 전월복사 모달 상태
+  const [copyModal, setCopyModal] = useState<{
+    open: boolean;
+    copySchedules: boolean;
+    copyDayAssignments: boolean;
+  }>({ open: false, copySchedules: true, copyDayAssignments: true });
 
   // Month lock state
   const [isMonthLocked, setIsMonthLocked] = useState(false);
@@ -549,28 +555,78 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   // - labor: 월합 열 + 인건비 항목 모두 표시
   const [showSummary, setShowSummary] = useState<"hidden" | "summary" | "labor">("hidden");
 
-  const handleCopyFromPreviousMonth = async () => {
+  // 전월복사 버튼 → 모달 열기 (선택 후 실제 실행)
+  const handleCopyFromPreviousMonth = () => {
+    setCopyModal(prev => ({ ...prev, open: true }));
+  };
+
+  const executeCopyFromPreviousMonth = async () => {
+    const { copySchedules, copyDayAssignments } = copyModal;
+    if (!copySchedules && !copyDayAssignments) {
+      showNotification("복사할 항목을 하나 이상 선택하세요.", "error");
+      return;
+    }
     const prevMonth = currentMonth === 1 ? 12 : currentMonth - 1;
     const prevYear = currentMonth === 1 ? currentYear - 1 : currentYear;
     const monthPrefix = `${currentYear}-${String(currentMonth).padStart(2, "0")}`;
-    const currentMonthHasData = employees.some(emp =>
+
+    // 스케줄 기존 데이터 확인
+    const currentMonthHasSchedules = employees.some(emp =>
       emp.schedules && emp.schedules.some(s => s.date.startsWith(monthPrefix) && s.type.trim() !== "")
     );
-    if (currentMonthHasData) {
-      if (!confirm(`${currentMonth}월에 이미 스케줄 데이터가 있습니다.\n${prevYear}년 ${prevMonth}월 데이터로 덮어쓰시겠습니까?`)) return;
-      if (!confirm(`정말 덮어쓰시겠습니까?\n현재 ${currentMonth}월 스케줄 전체가 삭제되고 ${prevMonth}월 데이터로 교체됩니다.`)) return;
+
+    // 일별 근무설정 기존 데이터 확인 (있는지만 체크)
+    let curDayHasData = false;
+    if (copyDayAssignments) {
+      try {
+        const daysInCur = new Date(currentYear, currentMonth, 0).getDate();
+        for (let d = 1; d <= daysInCur; d++) {
+          const dateStr = `${monthPrefix}-${String(d).padStart(2, "0")}`;
+          const r = await axios.get(`/api/zone-day/${dateStr}`);
+          if (r.data && !r.data._empty && (
+            Object.keys(r.data.zone_slots ?? {}).length > 0 ||
+            Object.keys(r.data.lunch_slots ?? {}).length > 0 ||
+            Object.keys(r.data.rest_slots ?? {}).length > 0
+          )) { curDayHasData = true; break; }
+        }
+      } catch { /* skip */ }
     }
+
+    // 덮어쓰기 확인
+    const needsScheduleOverwrite = copySchedules && currentMonthHasSchedules;
+    const needsDayOverwrite = copyDayAssignments && curDayHasData;
+    if (needsScheduleOverwrite || needsDayOverwrite) {
+      const parts: string[] = [];
+      if (needsScheduleOverwrite) parts.push("월별 스케쥴");
+      if (needsDayOverwrite)      parts.push("일별 근무설정");
+      if (!confirm(`${currentMonth}월에 이미 ${parts.join(" / ")} 데이터가 있습니다.\n${prevYear}년 ${prevMonth}월 데이터로 덮어쓰시겠습니까?`)) return;
+      if (!confirm(`정말 덮어쓰시겠습니까?\n현재 ${currentMonth}월 ${parts.join(" / ")}이(가) 교체됩니다.`)) return;
+    }
+
     setIsCopying(true);
+    setCopyModal(prev => ({ ...prev, open: false }));
     try {
-      const response = await axios.post("/api/schedules/copy", {
-        targetYear: currentYear,
-        targetMonth: currentMonth,
-      });
-      showNotification(`이전 달의 스케줄 ${response.data.count || 0}건이 성공적으로 복사되었습니다!`);
+      const msgs: string[] = [];
+      if (copySchedules) {
+        const response = await axios.post("/api/schedules/copy", {
+          targetYear: currentYear,
+          targetMonth: currentMonth,
+        });
+        msgs.push(`월별 스케쥴 ${response.data.count || 0}건`);
+      }
+      if (copyDayAssignments) {
+        const r = await axios.post("/api/zone-day/copy-month", {
+          targetYear: currentYear,
+          targetMonth: currentMonth,
+          overwrite: needsDayOverwrite || true, // 이미 확인 완료
+        });
+        msgs.push(`일별 근무설정 ${r.data.count || 0}건`);
+      }
+      showNotification(`복사 완료 — ${msgs.join(" · ")}`);
       await fetchScheduleData(undefined, true);
     } catch (err: any) {
-      console.error("Failed to copy schedules:", err);
-      showNotification("이전 달 스케줄을 가져오는 도중 오류가 발생했습니다.", "error");
+      console.error("Failed to copy:", err);
+      showNotification("전월 복사 도중 오류가 발생했습니다.", "error");
     } finally {
       setIsCopying(false);
     }
@@ -1223,6 +1279,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         const aOrd = getOrder(aType);
         const bOrd = getOrder(bType);
         if (aOrd !== bOrd) return aOrd - bOrd;
+        // 같은 카테고리(오픈/마감/휴무 등) 내에서는 이름 오름차순
+        return a.name.localeCompare(b.name, "ko");
       }
 
       return 0;
@@ -1237,9 +1295,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       let openCount = 0;
       let middleCount = 0;
       let closeCount = 0;
-      let totalCount = 0;
       let pharmacistCount = 0;
       let staffCount = 0;
+      let otherCount = 0;
 
       for (const emp of sourceEmployees) {
         const sched = emp.schedules.find((s) => s.date === currentDate);
@@ -1257,12 +1315,17 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           // Count active workers (not on leave/off)
           const isOffType = ["휴무", "월차", "결근"].includes(type);
           if (!isOffType && type.trim() !== "") {
-            totalCount++;
+            // 기타 = 직종 "기타"/"알바" 이거나 고용형태 "알바"
+            const isOther = emp.position === "기타" || emp.position === "알바" || emp.employmentType === "알바";
             if (emp.position === "약사") pharmacistCount++;
+            else if (isOther) otherCount++;
             else staffCount++;
           }
         }
       }
+
+      // totalCount는 3개 카테고리 합으로 계산 → 불일치 방지
+      const totalCount = pharmacistCount + staffCount + otherCount;
 
       result.push({
         day,
@@ -1273,6 +1336,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         totalCount,
         pharmacistCount,
         staffCount,
+        otherCount,
       });
     });
 
@@ -1588,6 +1652,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           onClose={() => setIsSettingsOpen(false)}
           editMode={editMode}
           onEnableEditMode={() => setEditMode(true)}
+          sessionEmployeeId={sessionEmployeeId}
         />
       )}
 
@@ -1652,8 +1717,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 오늘
               </button>
             </div>
-            {/* Legend indicators (항상 표시) */}
-            <div className="flex items-center gap-3 text-[10px] font-semibold">
+            {/* Legend indicators + 오늘 근무 서머리 */}
+            <div className="flex items-center gap-3 text-[10px] font-semibold flex-wrap">
               {[
                 { color: "bg-yellow-100 border-yellow-300", label: "오픈" },
                 { color: "bg-emerald-100 border-emerald-300", label: "마감" },
@@ -1665,6 +1730,26 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                   <span className="text-slate-500">{label}</span>
                 </div>
               ))}
+              {(() => {
+                const today = new Date();
+                const isThisMonth = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth;
+                const todaySummary = isThisMonth ? currentSummaryList.find(s => s.day === today.getDate()) : null;
+                if (!todaySummary) return null;
+                return (
+                  <div className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
+                    <Clock size={9} className="text-indigo-500" />
+                    <span className="text-[10px] font-bold text-indigo-600">오늘</span>
+                    <span className="text-indigo-300 text-[9px]">|</span>
+                    <span className="text-[10px] font-black text-violet-700">약사 {todaySummary.pharmacistCount}</span>
+                    <span className="text-slate-300 text-[9px]">·</span>
+                    <span className="text-[10px] font-black text-sky-700">사원 {todaySummary.staffCount}</span>
+                    <span className="text-slate-300 text-[9px]">·</span>
+                    <span className="text-[10px] font-black text-slate-700">기타 {todaySummary.otherCount}</span>
+                    <span className="text-slate-300 text-[9px]">·</span>
+                    <span className="text-[10px] font-black text-indigo-700">총 {todaySummary.totalCount}명</span>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 
@@ -1807,64 +1892,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 )}
               </div>
             )}
-
-            {/* Attendance strip — compact horizontal band above schedule */}
-            {(() => {
-              const today = new Date();
-              const isThisMonth = today.getFullYear() === currentYear && today.getMonth() + 1 === currentMonth;
-              const todaySummary = isThisMonth ? currentSummaryList.find(s => s.day === today.getDate()) : null;
-              const totalWorkdays = currentSummaryList.filter(s => s.totalCount > 0).length;
-              const avgPerDay = totalWorkdays > 0
-                ? (currentSummaryList.reduce((acc, s) => acc + s.totalCount, 0) / dateList.length).toFixed(1)
-                : "0";
-              return (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50/80 border-b border-slate-100 shrink-0 overflow-x-auto">
-                  {todaySummary && (
-                    <div className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-full px-2.5 py-1 shrink-0">
-                      <Clock size={9} className="text-indigo-500" />
-                      <span className="text-[10px] font-bold text-indigo-600 whitespace-nowrap">오늘</span>
-                      <span className="text-indigo-300 text-[9px] mx-0.5">|</span>
-                      <span className="text-[10px] font-black text-violet-700">{todaySummary.pharmacistCount}약</span>
-                      <span className="text-slate-300 text-[9px]">·</span>
-                      <span className="text-[10px] font-black text-sky-700">{todaySummary.staffCount}원</span>
-                      <span className="text-slate-300 text-[9px]">·</span>
-                      <span className="text-[10px] font-black text-indigo-700">{todaySummary.totalCount}명</span>
-                    </div>
-                  )}
-                  <span className="text-[10px] text-slate-400 whitespace-nowrap shrink-0">
-                    <span className="font-bold text-slate-600">{totalWorkdays}일</span> 근무 · 평균 <span className="font-bold text-slate-600">{avgPerDay}명</span>
-                  </span>
-                  {(attSummary.totalLates > 0 || attSummary.totalEarlyLeaves > 0 || attSummary.totalAbsences > 0) && (
-                    <div className="w-px h-3.5 bg-slate-200 shrink-0" />
-                  )}
-                  {attSummary.totalLates > 0 && (
-                    <span className="text-[10px] font-black bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full border border-amber-200 whitespace-nowrap shrink-0">⚠️ {attSummary.totalLates}</span>
-                  )}
-                  {attSummary.totalEarlyLeaves > 0 && (
-                    <span className="text-[10px] font-black bg-purple-50 text-purple-700 px-2 py-0.5 rounded-full border border-purple-200 whitespace-nowrap shrink-0">🏃 {attSummary.totalEarlyLeaves}</span>
-                  )}
-                  {attSummary.totalAbsences > 0 && (
-                    <span className="text-[10px] font-black bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full border border-rose-200 whitespace-nowrap shrink-0">🚨 {attSummary.totalAbsences}</span>
-                  )}
-                  {attSummary.employeeRecords.length > 0 && (
-                    <>
-                      <div className="w-px h-3.5 bg-slate-200 shrink-0" />
-                      {attSummary.employeeRecords.map(rec => (
-                        <div key={`strip-${rec.employee.id}`} className="flex items-center gap-0.5 shrink-0">
-                          <span className="text-[10px] font-bold text-slate-600 whitespace-nowrap">{rec.employee.name}</span>
-                          {rec.lates.length > 0 && <span className="text-[9px] font-black bg-amber-100 text-amber-700 px-1 py-0.5 rounded">⚠️{rec.lates.length}</span>}
-                          {rec.earlyLeaves.length > 0 && <span className="text-[9px] font-black bg-purple-100 text-purple-700 px-1 py-0.5 rounded">🏃{rec.earlyLeaves.length}</span>}
-                          {rec.absences.length > 0 && <span className="text-[9px] font-black bg-rose-100 text-rose-700 px-1 py-0.5 rounded">🚨{rec.absences.length}</span>}
-                        </div>
-                      ))}
-                    </>
-                  )}
-                  {attSummary.employeeRecords.length === 0 && (
-                    <span className="text-[10px] text-emerald-600 font-bold whitespace-nowrap shrink-0">🎉 전원 정상</span>
-                  )}
-                </div>
-              );
-            })()}
 
             {/* Schedule table — expands to content height, horizontal scroll only */}
             <div
@@ -2150,13 +2177,17 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       {(() => {
                         const fmtCost = (cost: number) => cost <= 0 ? "" :
                           cost >= 10000 ? `${Math.round(cost / 10000)}만원` : `${Math.round(cost).toLocaleString()}원`;
+                        const isOtherE = (e: typeof employees[number]) => e.position === "기타" || e.position === "알바" || e.employmentType === "알바";
                         const pharmacistCost = employees
                           .filter(e => e.position === "약사")
                           .reduce((sum, e) => sum + getEmpMonthStats(e).laborCost, 0);
                         const staffCost = employees
-                          .filter(e => e.position !== "약사")
+                          .filter(e => e.position !== "약사" && !isOtherE(e))
                           .reduce((sum, e) => sum + getEmpMonthStats(e).laborCost, 0);
-                        const totalCost = pharmacistCost + staffCost;
+                        const otherCost = employees
+                          .filter(e => e.position !== "약사" && isOtherE(e))
+                          .reduce((sum, e) => sum + getEmpMonthStats(e).laborCost, 0);
+                        const totalCost = pharmacistCost + staffCost + otherCost;
                         const showMonthTotal = showSummary !== "hidden";
                         const showLabor = showSummary === "labor";
                         return (
@@ -2170,6 +2201,11 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                               summaries={totalSummaryList} label="사원"
                               showMonthTotal={showMonthTotal}
                               totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.staffCount, 0)}인일</div>{isAdmin && showLabor && staffCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(staffCost)}</div>}</div>}
+                            />
+                            <SummaryRow
+                              summaries={totalSummaryList} label="기타"
+                              showMonthTotal={showMonthTotal}
+                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.otherCount, 0)}인일</div>{isAdmin && showLabor && otherCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(otherCost)}</div>}</div>}
                             />
                             <SummaryRow
                               summaries={totalSummaryList} label="근무인원"
@@ -2188,18 +2224,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           </div>
       </div>
 
-      {/* Footer */}
-      <footer className="h-9 bg-white border-t border-gray-200 shrink-0 px-4 sm:px-6 flex items-center justify-between text-[10px] text-gray-400 font-medium">
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400">Connected to</span>
-          <span className="font-mono text-gray-500 bg-gray-100 border border-gray-200 rounded px-1.5 py-0.5">
-            sqlite://mega_town.db
-          </span>
-        </div>
-        <div className="hidden sm:flex items-center gap-4">
-          <span>Latency: 12ms</span>
-          <span>Sync: Just now</span>
-        </div>
+      {/* Footer — 저작권 표시 (가운데 정렬) */}
+      <footer className="h-9 bg-white border-t border-gray-200 shrink-0 px-4 sm:px-6 flex items-center justify-center text-xs font-bold text-slate-600 tracking-wide">
+        <span>© (주)이룸</span>
       </footer>
 
       {/* Roster Add Modal Popup Backdrop */}
@@ -2385,6 +2412,65 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           logisticsZoneProps={calendarLogisticsZoneProps}
           onEditEmployee={isAdmin ? () => { const emp = calendarEmployee; setCalendarEmployee(null); if (emp) setTimeout(() => openEditEmployeeModal(emp), 0); } : undefined}
         />
+      )}
+
+      {/* 전월복사 항목 선택 모달 */}
+      {copyModal.open && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4"
+          onClick={() => setCopyModal(prev => ({ ...prev, open: false }))}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-start gap-3 mb-4">
+              <div className="p-2 bg-violet-100 text-violet-600 rounded-lg shrink-0">
+                <Layers size={18} />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-slate-800">전월 데이터 복사</h3>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  {currentMonth === 1 ? currentYear - 1 : currentYear}년 {currentMonth === 1 ? 12 : currentMonth - 1}월 → {currentYear}년 {currentMonth}월
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-2 mb-5">
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="checkbox" className="mt-0.5 w-4 h-4 accent-indigo-500"
+                  checked={copyModal.copySchedules}
+                  onChange={e => setCopyModal(prev => ({ ...prev, copySchedules: e.target.checked }))} />
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-slate-700">전체 월별 스케쥴</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">직원별 오픈/마감/휴무 등 근무 유형 스케줄</div>
+                </div>
+              </label>
+              <label className="flex items-start gap-3 p-3 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <input type="checkbox" className="mt-0.5 w-4 h-4 accent-indigo-500"
+                  checked={copyModal.copyDayAssignments}
+                  onChange={e => setCopyModal(prev => ({ ...prev, copyDayAssignments: e.target.checked }))} />
+                <div className="flex-1">
+                  <div className="text-sm font-bold text-slate-700">일별 근무설정</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">일자별 구역/점심/휴게 배정 (같은 일자 기준으로 복사)</div>
+                </div>
+              </label>
+            </div>
+
+            <div className="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-4">
+              ⚠️ 이번 달에 이미 데이터가 있으면 덮어쓸지 확인창이 뜹니다.
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCopyModal(prev => ({ ...prev, open: false }))}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-xs font-bold hover:bg-slate-50 cursor-pointer">
+                취소
+              </button>
+              <button
+                onClick={executeCopyFromPreviousMonth}
+                disabled={!copyModal.copySchedules && !copyModal.copyDayAssignments}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-bold shadow-sm cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                복사 시작
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -237,9 +237,13 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
 
   // ── Tab filtering ────────────────────────────────────────
   const tabEmployees = dayEmployees.filter(emp => {
-    if (breakTab === "약사") return emp.position === "약사";
-    if (breakTab === "사원") return emp.position !== "약사" && emp.employmentType !== "알바";
-    return emp.position !== "약사" && emp.employmentType === "알바";
+    const pos = (emp.position ?? "").trim();
+    const emp_type = (emp.employmentType ?? "").trim();
+    const isPharm = pos === "약사" || pos.startsWith("약사");
+    const isPart  = emp_type === "알바" || emp_type.includes("알바");
+    if (breakTab === "약사") return isPharm;
+    if (breakTab === "사원") return !isPharm && !isPart;
+    return !isPharm && isPart;
   });
 
   const unassigned = tabEmployees.filter(emp => !assignments.some(a => a.employeeId === emp.id));

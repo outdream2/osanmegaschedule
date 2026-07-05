@@ -166,7 +166,7 @@ export default function App() {
       />
     );
   } else if (page === "stockcheck") {
-    pageContent = <StockCheckPage onBack={goBack} />;
+    pageContent = <StockCheckPage onBack={goBack} authSession={authSession} onNavigate={navigateInner as any} onLogout={handleLogout} />;
   } else if (page === "synonyms") {
     pageContent = <SynonymPage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />;
   } else if (page === "stockarrivals") {

@@ -12,15 +12,17 @@ interface SettingsModalProps {
   employees: Array<{ id: number; name: string; position: string }>;
   editMode?: boolean;
   onEnableEditMode?: () => void;
+  sessionEmployeeId?: number | null;
 }
 
-type TabId = "positions" | "workplaces" | "scheduleTypes" | "wages";
+type TabId = "positions" | "workplaces" | "scheduleTypes" | "wages" | "account";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "positions", label: "직급 종류" },
   { id: "workplaces", label: "근무지 종류" },
   { id: "scheduleTypes", label: "근무 유형" },
   { id: "wages", label: "시급 설정" },
+  { id: "account", label: "비밀번호 변경" },
 ];
 
 type ScheduleHourTab = "hours" | "pharmHours" | "logisticsHours" | "partTimeHours";
@@ -110,8 +112,46 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
   );
 };
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onApplyShiftHours, onClose, employees, editMode, onEnableEditMode }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onApplyShiftHours, onClose, employees, editMode, onEnableEditMode, sessionEmployeeId }) => {
   const [activeTab, setActiveTab] = useState<TabId>("positions");
+
+  // ─── 비밀번호 변경 상태 ─────────────────────────────────────
+  const [pwCurrent, setPwCurrent] = useState("");
+  const [pwNew, setPwNew] = useState("");
+  const [pwConfirm, setPwConfirm] = useState("");
+  const [pwSubmitting, setPwSubmitting] = useState(false);
+  const [pwMsg, setPwMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  const submitPasswordChange = async () => {
+    setPwMsg(null);
+    if (!sessionEmployeeId) {
+      setPwMsg({ type: "err", text: "로그인 정보가 없습니다. 다시 로그인해주세요." });
+      return;
+    }
+    if (!pwCurrent) { setPwMsg({ type: "err", text: "현재 비밀번호를 입력해주세요" }); return; }
+    if (pwNew.length < 4) { setPwMsg({ type: "err", text: "새 비밀번호는 최소 4자 이상이어야 합니다" }); return; }
+    if (pwNew !== pwConfirm) { setPwMsg({ type: "err", text: "새 비밀번호가 서로 일치하지 않습니다" }); return; }
+    if (pwNew === pwCurrent) { setPwMsg({ type: "err", text: "새 비밀번호가 현재 비밀번호와 동일합니다" }); return; }
+    setPwSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ employeeId: sessionEmployeeId, currentPassword: pwCurrent, newPassword: pwNew }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setPwMsg({ type: "err", text: data?.error ?? "비밀번호 변경 실패" });
+      } else {
+        setPwMsg({ type: "ok", text: "비밀번호가 변경되었습니다" });
+        setPwCurrent(""); setPwNew(""); setPwConfirm("");
+      }
+    } catch (e: any) {
+      setPwMsg({ type: "err", text: e?.message ?? "네트워크 오류" });
+    } finally {
+      setPwSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -679,6 +719,76 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ─── Account Tab (비밀번호 변경) ─────────────────────── */}
+          {activeTab === "account" && (
+            <div className="space-y-4 max-w-md">
+              <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                로그인 중인 계정의 비밀번호를 변경합니다. 변경 후에도 세션은 유지됩니다.
+              </p>
+              {!sessionEmployeeId ? (
+                <div className="text-xs text-rose-600 font-semibold bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+                  로그인 세션 정보를 찾을 수 없습니다. 다시 로그인해주세요.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">현재 비밀번호</label>
+                    <input
+                      type="password"
+                      value={pwCurrent}
+                      onChange={(e) => setPwCurrent(e.target.value)}
+                      autoComplete="current-password"
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      placeholder="현재 비밀번호"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">새 비밀번호 (4자 이상)</label>
+                    <input
+                      type="password"
+                      value={pwNew}
+                      onChange={(e) => setPwNew(e.target.value)}
+                      autoComplete="new-password"
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      placeholder="새 비밀번호"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-600 mb-1">새 비밀번호 확인</label>
+                    <input
+                      type="password"
+                      value={pwConfirm}
+                      onChange={(e) => setPwConfirm(e.target.value)}
+                      autoComplete="new-password"
+                      className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
+                      placeholder="새 비밀번호 확인"
+                      onKeyDown={(e) => { if (e.key === "Enter" && !pwSubmitting) submitPasswordChange(); }}
+                    />
+                  </div>
+                  {pwMsg && (
+                    <div className={`text-xs font-semibold rounded-lg px-3 py-2 ${
+                      pwMsg.type === "ok"
+                        ? "bg-emerald-50 border border-emerald-200 text-emerald-700"
+                        : "bg-rose-50 border border-rose-200 text-rose-600"
+                    }`}>
+                      {pwMsg.text}
+                    </div>
+                  )}
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={submitPasswordChange}
+                      disabled={pwSubmitting}
+                      className="px-4 py-2 text-xs font-bold text-white bg-[#2563eb] hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg shadow-sm transition cursor-pointer"
+                    >
+                      {pwSubmitting ? "변경 중..." : "비밀번호 변경"}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

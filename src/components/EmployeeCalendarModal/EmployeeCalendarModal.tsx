@@ -59,7 +59,7 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
   isLocked = false,
 }) => {
   const activeTypes = scheduleTypesProp ?? SCHEDULE_TYPES;
-  const isLogistics = employee.position === "물류";
+  const isLogistics = employee.position.includes("물류");
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -806,16 +806,14 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">성별</div>
                 <div className="text-xs font-bold text-slate-800">{employee.gender ?? "—"}</div>
               </div>
-              {isAdmin && (
-                <div className="col-span-2 bg-blue-50 rounded-xl p-2.5 space-y-0.5 border border-blue-100">
-                  <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">핸드폰번호 (로그인 ID)</div>
-                  <div className="text-xs font-bold text-blue-800">
-                    {employee.phone
-                      ? employee.phone.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3")
-                      : <span className="text-slate-400 font-normal">미등록 — 로그인 불가</span>}
-                  </div>
+              <div className="col-span-2 bg-blue-50 rounded-xl p-2.5 space-y-0.5 border border-blue-100">
+                <div className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">핸드폰번호 (로그인 ID)</div>
+                <div className="text-xs font-bold text-blue-800">
+                  {employee.phone
+                    ? employee.phone.replace(/^(\d{3})(\d{3,4})(\d{4})$/, "$1-$2-$3")
+                    : <span className="text-slate-400 font-normal">{isAdmin ? "미등록 — 로그인 불가" : "미등록"}</span>}
                 </div>
-              )}
+              </div>
               <div className="bg-slate-50 rounded-xl p-2.5 space-y-0.5">
                 <div className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">구분</div>
                 <div className="text-xs font-bold text-slate-800">{employee.position}</div>

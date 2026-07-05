@@ -36,6 +36,10 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
   const [modelReason, setModelReason] = useState<string>("");
   const [applied, setApplied] = useState<"warehouse" | "store" | null>(null);
   const [reloading, setReloading] = useState(false);
+  // 모델 스위칭
+  const [availableModels, setAvailableModels] = useState<{ file: string; size: number }[]>([]);
+  const [currentModel, setCurrentModel] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState<string>("");
 
   // 카메라 스트림 시작
   useEffect(() => {
@@ -59,6 +63,17 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
       .then(r => r.json())
       .then(d => { if (active) { setModelReady(!!d.ready); setModelReason(d.reason ?? ""); } })
       .catch(() => { if (active) setModelReady(false); });
+
+    // 사용 가능한 모델 목록 조회
+    fetch("/api/stock-count/models")
+      .then(r => r.json())
+      .then(d => {
+        if (!active) return;
+        setAvailableModels(d.models ?? []);
+        setCurrentModel(d.current ?? null);
+        if (d.current) setSelectedModel(d.current);
+      })
+      .catch(() => {});
 
     return () => {
       active = false;
@@ -117,7 +132,7 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
       const res = await fetch("/api/stock-count", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: dataUrl }),
+        body: JSON.stringify({ image: dataUrl, model: selectedModel || undefined }),
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.error ?? `서버 오류 (${res.status})`);
@@ -163,7 +178,7 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
     <div className="fixed inset-0 z-50 flex flex-col bg-black/80 backdrop-blur-sm">
       {/* 헤더 */}
       <div className="flex items-center justify-between px-4 py-3 bg-black/60">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Scan size={18} className="text-green-400" />
           <span className="text-white font-bold text-base">AI 재고 세기</span>
           {modelReady === false && (
@@ -171,6 +186,28 @@ export const StockCounterModal: React.FC<Props> = ({ onApplyWarehouse, onApplySt
           )}
           {modelReady === true && (
             <span className="text-[10px] text-green-400 font-bold ml-1">모델 준비됨</span>
+          )}
+          {/* 모델 선택 셀렉트박스 */}
+          {availableModels.length > 0 && (
+            <div className="ml-2 flex items-center gap-1.5">
+              <span className="text-[10px] text-white/60 font-semibold">모델</span>
+              <select
+                value={selectedModel}
+                onChange={e => setSelectedModel(e.target.value)}
+                disabled={phase === "detecting" || reloading}
+                className="text-[11px] font-bold text-white bg-white/10 border border-white/20 hover:bg-white/20 rounded-lg px-2 py-1 focus:outline-none focus:border-green-400 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                title="탐지에 사용할 모델 선택. 최초 스위칭 시 로딩에 시간이 걸릴 수 있습니다."
+              >
+                {availableModels.map(m => (
+                  <option key={m.file} value={m.file} className="text-black">
+                    {m.file} · {(m.size / (1024 * 1024)).toFixed(1)}MB
+                  </option>
+                ))}
+              </select>
+              {currentModel && selectedModel !== currentModel && (
+                <span className="text-[9px] text-amber-300 font-bold" title={`현재 로드된 모델: ${currentModel}`}>스위칭 필요</span>
+              )}
+            </div>
           )}
         </div>
         <button onClick={onClose} className="text-white/70 hover:text-white transition cursor-pointer">

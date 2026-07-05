@@ -163,12 +163,45 @@ export function getLoadStatusReason(): string {
   return loadStatusReason;
 }
 
+// 현재 사용 중인 추론 백엔드 (Render 배포 진단용)
+export function getStockCountBackend(): "python-yolo" | "onnx-node" | "none" {
+  if (useYoloServer) return "python-yolo";
+  if (session !== null) return "onnx-node";
+  return "none";
+}
+
 export async function reloadStockCountModel(): Promise<boolean> {
   loadAttempted = false;
   session = null;
   useYoloServer = false;
   if (yoloServerProc) { yoloServerProc.kill(); yoloServerProc = null; }
   return loadStockCountModel();
+}
+
+// server/models 폴더의 .pt / .onnx 파일 목록 (프론트 모델 선택용)
+export function listAvailableModels(): { file: string; size: number }[] {
+  try {
+    if (!fs.existsSync(MODELS_DIR)) return [];
+    const files = fs.readdirSync(MODELS_DIR)
+      .filter(f => /\.(pt|onnx)$/i.test(f))
+      .map(f => {
+        const stat = fs.statSync(path.join(MODELS_DIR, f));
+        return { file: f, size: stat.size };
+      });
+    files.sort((a, b) => a.file.localeCompare(b.file));
+    return files;
+  } catch { return []; }
+}
+
+// Python YOLO 서버에서 현재 로드된 모델 조회
+export async function getCurrentYoloModel(): Promise<string | null> {
+  if (!useYoloServer) return null;
+  try {
+    const r = await fetch(`${YOLO_SERVER_URL}/models`, { signal: AbortSignal.timeout(3000) });
+    if (!r.ok) return null;
+    const j: any = await r.json();
+    return j.current ?? null;
+  } catch { return null; }
 }
 
 // ── 이미지 전처리 (ONNX 경로 전용) ─────────────────────────────────────────
@@ -219,18 +252,20 @@ export interface DetectionResult {
   boxes: Array<{ x1: number; y1: number; x2: number; y2: number; score: number }>;
 }
 
-export async function countObjectsInImage(b64: string): Promise<DetectionResult> {
+export async function countObjectsInImage(b64: string, modelFile?: string): Promise<DetectionResult & { model?: string }> {
   // Python YOLO 서버 방식
   if (useYoloServer) {
+    const body: Record<string, unknown> = { data: b64, mimeType: "image/jpeg", conf: CONF_THRESHOLD, iou: IOU_THRESHOLD };
+    if (modelFile) body.model = modelFile;
     const res = await fetch(`${YOLO_SERVER_URL}/detect`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data: b64, mimeType: "image/jpeg", conf: CONF_THRESHOLD, iou: IOU_THRESHOLD }),
-      signal: AbortSignal.timeout(30_000),
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(60_000),
     });
     const json: any = await res.json();
     if (!json.success) throw new Error(json.error ?? "YOLO 서버 오류");
-    return { count: json.count, boxes: json.boxes };
+    return { count: json.count, boxes: json.boxes, model: json.model };
   }
 
   // ONNX 방식

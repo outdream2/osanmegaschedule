@@ -72,11 +72,11 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
             {([
               { key: "전체", label: "전체", icon: <Layers size={12} />, color: "text-indigo-600", count: employees.length, sub: false },
               { key: "약사", label: "약사", icon: null, color: "text-violet-600", count: employees.filter(e => e.position === "약사").length, sub: false },
-              { key: "물류", label: "물류", icon: null, color: "text-sky-600", count: employees.filter(e => ["물류","캐셔","진열"].includes(e.position)).length, sub: false },
-              { key: "캐셔", label: "└ 캐셔", icon: null, color: "text-amber-600", count: employees.filter(e => e.position === "캐셔").length, sub: true },
+              { key: "물류", label: "물류", icon: null, color: "text-sky-600", count: employees.filter(e => e.position.includes("물류") || e.position === "캐셔" || e.position === "진열").length, sub: false },
+              { key: "캐셔", label: "└ 캐셔", icon: null, color: "text-amber-600", count: employees.filter(e => e.position.includes("캐셔")).length, sub: true },
               { key: "진열", label: "└ 진열", icon: null, color: "text-teal-600", count: employees.filter(e => e.position === "진열").length, sub: true },
               { key: "알바", label: "알바", icon: null, color: "text-rose-600", count: employees.filter(e => e.rank === "알바" || e.position === "알바").length, sub: false },
-              { key: "기타", label: "기타", icon: null, color: "text-slate-600", count: employees.filter(e => !["약사","캐셔","물류","진열"].includes(e.position) && e.rank !== "알바" && e.position !== "알바").length, sub: false },
+              { key: "기타", label: "기타", icon: null, color: "text-slate-600", count: employees.filter(e => !e.position.includes("물류") && !["약사","캐셔","진열"].includes(e.position) && e.rank !== "알바" && e.position !== "알바").length, sub: false },
             ] as const).map(({ key, label, icon, color, count, sub }) => (
               <button
                 key={key}

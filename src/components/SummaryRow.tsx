@@ -4,7 +4,7 @@ import { MonthlySummary } from "../types";
 
 interface SummaryRowProps {
   summaries: MonthlySummary[];
-  label: "약사" | "사원" | "근무인원";
+  label: "약사" | "사원" | "기타" | "근무인원";
   totalCell?: React.ReactNode; // kept for backward compat, no longer rendered
   showMonthTotal?: boolean;    // 월별 합계 열 표시 여부 (기본 true)
 }
@@ -12,30 +12,39 @@ interface SummaryRowProps {
 export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMonthTotal = true }) => {
   const isPharmacist = label === "약사";
   const isStaff = label === "사원";
+  const isOther = label === "기타";
   const isTotal = label === "근무인원";
 
   const labelCls = isPharmacist
     ? "bg-violet-600 text-white border-r border-violet-500"
     : isStaff
     ? "bg-sky-600 text-white border-r border-sky-500"
+    : isOther
+    ? "bg-slate-500 text-white border-r border-slate-400"
     : "bg-indigo-600 text-white border-r border-indigo-500";
 
   const valActiveCls = isPharmacist
     ? "bg-violet-50 text-violet-700 font-extrabold"
     : isStaff
     ? "bg-sky-50 text-sky-700 font-extrabold"
+    : isOther
+    ? "bg-slate-50 text-slate-700 font-extrabold"
     : "bg-indigo-50 text-indigo-700 font-extrabold";
 
   const valEmptyCls = isPharmacist
     ? "bg-violet-50/30 text-slate-300"
     : isStaff
     ? "bg-sky-50/30 text-slate-300"
+    : isOther
+    ? "bg-slate-50/30 text-slate-300"
     : "bg-indigo-50/30 text-slate-300";
 
   const monthTotalCls = isPharmacist
     ? "bg-violet-100 text-violet-800 border-l-2 border-violet-200"
     : isStaff
     ? "bg-sky-100 text-sky-800 border-l-2 border-sky-200"
+    : isOther
+    ? "bg-slate-100 text-slate-800 border-l-2 border-slate-200"
     : "bg-indigo-100 text-indigo-800 border-l-2 border-indigo-200";
 
   const todayStr = (() => {
@@ -44,7 +53,7 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
   })();
 
   const getVal = (sum: MonthlySummary) =>
-    isPharmacist ? sum.pharmacistCount : isStaff ? sum.staffCount : sum.totalCount;
+    isPharmacist ? sum.pharmacistCount : isStaff ? sum.staffCount : isOther ? sum.otherCount : sum.totalCount;
 
   return (
     <tr className={isTotal ? "border-t-2 border-indigo-200" : "border-t border-slate-100"}>

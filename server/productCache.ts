@@ -80,12 +80,29 @@ export async function getSynonymMap(): Promise<Map<string, string>> {
   if (synonymMapCache) return synonymMapCache;
   if (synonymMapPromise) return synonymMapPromise;
   synonymMapPromise = (async () => {
-    const { data, error } = await supabase.from("ocr_synonyms").select("prod_name_old,product_code,supplier_new");
-    if (error) { synonymMapPromise = null; return new Map(); }
+    // 안전한 조회: 서버 필터 없이 전체 가져와서 코드에서 cancelled 걸러냄 (하위 호환).
+    // 이렇게 하면 마이그레이션 미적용 DB에서도 잘 동작.
+    let data: any[] | null = null;
+    const first = await supabase
+      .from("ocr_synonyms")
+      .select("prod_name_old,product_code,supplier_new,cancelled");
+    if (first.error) {
+      // cancelled 컬럼이 없는 구 DB
+      const fallback = await supabase.from("ocr_synonyms").select("prod_name_old,product_code,supplier_new");
+      if (fallback.error) { synonymMapPromise = null; return new Map(); }
+      data = fallback.data;
+    } else {
+      data = first.data;
+    }
     const map = new Map<string, string>();
     for (const row of (data ?? [])) {
-      const alias = String(row.prod_name_old).trim().toLowerCase();
-      const code  = String(row.product_code).trim();
+      const alias = String(row.prod_name_old ?? "").trim().toLowerCase();
+      const code  = String(row.product_code ?? "").trim();
+      if (!alias || !code) continue;
+      // 취소된 항목 스킵 (컬럼 없으면 undefined → 스킵 안 함)
+      if ((row as any).cancelled === true) continue;
+      // sentinel 코드 스킵
+      if (code === "__cancelled__") continue;
       if (row.supplier_new) {
         map.set(`${normSupplier(String(row.supplier_new))}|${alias}`, code);
       }

@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowLeft, Package, Search, X } from "lucide-react";
+import { Package, Search, X } from "lucide-react";
+import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import type { AuthSession } from "../../types";
 
 interface StockItem {
   product_name: string;
@@ -14,6 +16,9 @@ interface StockItem {
 
 interface StockCheckPageProps {
   onBack: () => void;
+  authSession?: AuthSession | null;
+  onNavigate?: (page: AppNavPage) => void;
+  onLogout?: () => void;
 }
 
 type StockState = "in" | "out" | "selling";
@@ -34,7 +39,8 @@ const STATE_META: Record<StockState, { label: string; bg: string; text: string; 
   out:     { label: "재고없음",  bg: "bg-red-100",     text: "text-red-600",     dot: "bg-red-400"     },
 };
 
-export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack }) => {
+export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
+  const isLoggedIn = !!(authSession && (authSession.role === "employee" || authSession.role === "manager" || authSession.role === "admin" || authSession.role === "superadmin"));
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<StockItem[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -90,29 +96,19 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack }) => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b border-[#e2e8f0] h-14 px-4 sm:px-6 flex items-center gap-3 sticky top-0 z-10 shadow-sm">
-        <button
-          onClick={onBack}
-          className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 hover:text-gray-900 transition cursor-pointer text-xs font-semibold shrink-0"
-        >
-          <ArrowLeft size={13} />
-          <span className="hidden sm:inline">메인</span>
-        </button>
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
-            <Package size={14} className="text-white" />
+      <AppNavHeader
+        activePage="stockcheck"
+        authSession={authSession ?? null}
+        onBack={onBack}
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+        rightSlot={
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] font-bold">
+            <Package size={11} />
+            <span className="hidden sm:inline">재고 확인</span>
           </div>
-          <div>
-            <span className="font-black text-slate-800 text-xl leading-tight" style={{ color: "#ef4444" }}>OSAN</span>
-            <span className="font-black text-gray-900 text-base leading-tight hidden sm:inline"> MEGATOWN</span>
-          </div>
-        </div>
-        <div className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-[11px] font-bold">
-          <Package size={11} />
-          <span>재고 확인</span>
-        </div>
-      </header>
+        }
+      />
 
       <div className="flex-1 flex flex-col max-w-xl mx-auto w-full px-4 pt-6 pb-20">
         {/* Search bar */}
@@ -137,12 +133,14 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack }) => {
 
         {/* Status legend */}
         <div className="flex items-center gap-3 mb-4 px-1">
-          {(Object.entries(STATE_META) as [StockState, typeof STATE_META[StockState]][]).map(([, m]) => (
-            <span key={m.label} className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
-              <span className={`w-2 h-2 rounded-full ${m.dot}`} />
-              {m.label}
-            </span>
-          ))}
+          {(Object.entries(STATE_META) as [StockState, typeof STATE_META[StockState]][])
+            .filter(([state]) => isLoggedIn || state !== "out")
+            .map(([, m]) => (
+              <span key={m.label} className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
+                <span className={`w-2 h-2 rounded-full ${m.dot}`} />
+                {m.label}
+              </span>
+            ))}
         </div>
 
         {/* Loading */}
@@ -176,35 +174,49 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack }) => {
               <span className="text-[11px] font-bold text-slate-500">검색 결과 {results.length}건</span>
             </div>
             <div className="divide-y divide-slate-50">
-              {results.map((item, i) => {
-                const state = getStockState(item);
-                const meta = STATE_META[state];
-                const location = item.real_map || item.display_location || null;
-                return (
-                  <div key={`${item.product_name}-${item.spec ?? ""}-${i}`}
-                    className="px-4 py-3 flex items-center gap-3">
-                    {/* Status badge */}
-                    <span className={`shrink-0 text-[11px] font-black px-2.5 py-1 rounded-lg ${meta.bg} ${meta.text} whitespace-nowrap`}>
-                      {meta.label}
-                    </span>
-
-                    {/* Name + spec */}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-bold text-slate-800 truncate">{item.product_name}</div>
-                      {item.spec && (
-                        <div className="text-[11px] text-slate-400 truncate mt-0.5">{item.spec}</div>
-                      )}
-                    </div>
-
-                    {/* Location tag */}
-                    {location && (
-                      <span className="shrink-0 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md whitespace-nowrap">
-                        {location}
+              {results
+                .filter(item => isLoggedIn || getStockState(item) !== "out")
+                .map((item, i) => {
+                  const state = getStockState(item);
+                  const meta = STATE_META[state];
+                  return (
+                    <div key={`${item.product_name}-${item.spec ?? ""}-${i}`}
+                      className="px-4 py-3 flex items-center gap-3">
+                      {/* Status badge */}
+                      <span className={`shrink-0 text-[11px] font-black px-2.5 py-1 rounded-lg ${meta.bg} ${meta.text} whitespace-nowrap`}>
+                        {meta.label}
                       </span>
-                    )}
-                  </div>
-                );
-              })}
+
+                      {/* Name + spec */}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-slate-800 break-words">{item.product_name}</div>
+                        {item.spec && (
+                          <div className="text-[11px] text-slate-400 break-words mt-0.5">{item.spec}</div>
+                        )}
+                        {/* 직원 로그인 시에만 실제 위치·진열 위치·공급처 표시 */}
+                        {isLoggedIn && (item.real_map || item.display_location || item.supplier) && (
+                          <div className="flex items-center gap-1 flex-wrap mt-1">
+                            {item.real_map && (
+                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md whitespace-nowrap">
+                                실제 {item.real_map}
+                              </span>
+                            )}
+                            {item.display_location && (
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md whitespace-nowrap">
+                                진열 {item.display_location}
+                              </span>
+                            )}
+                            {item.supplier && (
+                              <span className="text-[10px] font-bold text-sky-700 bg-sky-50 border border-sky-200 px-1.5 py-0.5 rounded-md whitespace-nowrap">
+                                {item.supplier}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
             </div>
             <div className="px-4 py-2 border-t border-slate-50 text-[10px] text-slate-300 text-center">
               재고 정보는 실시간이 아닐 수 있습니다 · 정확한 재고는 약국에 직접 문의해 주세요

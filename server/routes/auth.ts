@@ -74,4 +74,39 @@ router.post("/api/auth/set-password", async (req, res) => {
   }
 });
 
+// 로그인한 직원 본인이 비밀번호 변경
+router.post("/api/auth/change-password", async (req, res) => {
+  const { employeeId, currentPassword, newPassword } = req.body ?? {};
+  const idNum = typeof employeeId === "string" ? parseInt(employeeId) : employeeId;
+  if (!idNum || isNaN(idNum)) return res.status(400).json({ error: "유효한 직원 ID가 필요합니다" });
+  if (!currentPassword || typeof currentPassword !== "string")
+    return res.status(400).json({ error: "현재 비밀번호를 입력해주세요" });
+  if (!newPassword || typeof newPassword !== "string" || newPassword.length < 4)
+    return res.status(400).json({ error: "새 비밀번호는 최소 4자 이상이어야 합니다" });
+  if (currentPassword === newPassword)
+    return res.status(400).json({ error: "새 비밀번호가 현재 비밀번호와 동일합니다" });
+  try {
+    const { data: emp, error } = await supabase
+      .from("employees")
+      .select("id, password_hash")
+      .eq("id", idNum)
+      .maybeSingle();
+    if (error) throw new Error(error.message);
+    if (!emp) return res.status(404).json({ error: "직원을 찾을 수 없습니다" });
+    if (!emp.password_hash)
+      return res.status(400).json({ error: "비밀번호가 설정되어 있지 않습니다. 관리자에게 문의하세요." });
+    const ok = await bcrypt.compare(currentPassword, emp.password_hash);
+    if (!ok) return res.status(401).json({ error: "현재 비밀번호가 올바르지 않습니다" });
+    const password_hash = await bcrypt.hash(newPassword, 10);
+    const { error: updErr } = await supabase
+      .from("employees")
+      .update({ password_hash })
+      .eq("id", idNum);
+    if (updErr) throw new Error(updErr.message);
+    return res.status(200).json({ ok: true });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

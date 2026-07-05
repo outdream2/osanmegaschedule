@@ -72,8 +72,14 @@ export function parseKoreanInvoice(text: string): {
   const recM = text.match(/공\s*급\s*받\s*는\s*자?\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,20})/);
   if (recM) meta.recipient = recM[1].trim().replace(/\s{2,}.*$/, "");
 
+  // 총금액은 쉼표(천단위 구분자)가 있는 데이터만 추출 — 코드/일련번호 오인식 방지
   const totals: number[] = [];
-  for (const pat of [/합\s*계[^\d]*(\d[\d,]+)/, /총\s*금\s*액[^\d]*(\d[\d,]+)/, /공\s*급\s*가\s*액[^\d]*(\d[\d,]+)/]) {
+  const commaNum = /(\d{1,3}(?:,\d{3})+)/;
+  for (const pat of [
+    new RegExp(`합\\s*계[^\\d]*${commaNum.source}`),
+    new RegExp(`총\\s*금\\s*액[^\\d]*${commaNum.source}`),
+    new RegExp(`공\\s*급\\s*가\\s*액[^\\d]*${commaNum.source}`),
+  ]) {
     const m = text.match(pat);
     if (m) totals.push(parseInt(m[1].replace(/,/g, "")));
   }

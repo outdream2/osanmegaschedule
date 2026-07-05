@@ -47,6 +47,14 @@ interface DisplayPageProps {
 // ─── Types ───────────────────────────────────────────────────────────────────
 type ZoneStatus = "normal" | "low" | "empty";
 
+// ─── DOW(요일) 마스크 유틸 ───────────────────────────────────────────
+// 비트: 일(1) 월(2) 화(4) 수(8) 목(16) 금(32) 토(64) → 모든요일=127
+export const DOW_ALL = 127;
+export const DOW_LABELS = ["일", "월", "화", "수", "목", "금", "토"] as const;
+export type DowMap = { [nameKey: string]: number } | null; // {"*":mask} 단일, {"이름":mask,...} 다중
+export const isDowActive = (mask: number | undefined | null, dow: number): boolean =>
+  mask == null ? true : ((mask >> dow) & 1) === 1;
+
 interface DisplayZone {
   id: string;
   num: number;
@@ -57,6 +65,7 @@ interface DisplayZone {
   assignedStaffName: string;
   status: ZoneStatus;
   products: string;
+  dowMap: DowMap; // 요일별 다중선택 마스크. null이면 모든 요일 적용 (하위호환)
 }
 
 interface DisplayRequest {
@@ -92,6 +101,7 @@ const buildDefaultZones = (): DisplayZone[] =>
     assignedStaffName: "",
     status: "normal",
     products: "",
+    dowMap: null,
   }));
 
 // ─── localStorage helpers ─────────────────────────────────────────────────────
@@ -114,6 +124,7 @@ const loadZones = (): DisplayZone[] => {
         assignedStaffName: saved?.assignedStaffName ?? "",
         status: saved?.status ?? "normal",
         products: saved?.products ?? "",
+        dowMap: (saved as any)?.dowMap ?? null,
       };
     });
   } catch { return buildDefaultZones(); }
@@ -182,7 +193,7 @@ const fetchZonesFromDB = async (): Promise<DisplayZone[] | null> => {
   try {
     const res = await fetch("/api/zones");
     if (!res.ok) return null;
-    const rows: Array<{ zone_id: string; employee_id: number | null; employee_name: string; status: string; products: string }> = await res.json();
+    const rows: Array<{ zone_id: string; employee_id: number | null; employee_name: string; status: string; products: string; dow_map?: DowMap }> = await res.json();
     if (!Array.isArray(rows) || rows.length === 0) return null;
     return ZONE_DEFS.map((def) => {
       const row = rows.find((r) => r.zone_id === String(def.num));
@@ -193,6 +204,7 @@ const fetchZonesFromDB = async (): Promise<DisplayZone[] | null> => {
         assignedStaffName: row?.employee_name ?? "",
         status: (row?.status as ZoneStatus) ?? "normal",
         products: row?.products ?? "",
+        dowMap: (row?.dow_map ?? null) as DowMap,
       };
     });
   } catch { return null; }
@@ -210,6 +222,7 @@ const saveZonesToDB = async (zones: DisplayZone[]) => {
           employee_name: z.assignedStaffName,
           status: z.status,
           products: z.products,
+          dow_map: z.dowMap ?? null,
         })),
       }),
     });
@@ -530,7 +543,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
   // ── Logistics staff (today only) ────────────────────────────────────────────
   const logisticsStaff = useMemo(
-    () => todayStaff.filter((s) => s.employee.position === "물류"),
+    () => todayStaff.filter((s) => s.employee.position.includes("물류")),
     [todayStaff],
   );
 
@@ -599,9 +612,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           const existing = z.assignedStaffName ? z.assignedStaffName.split(",").map(s => s.trim()).filter(Boolean) : [];
           if (existing.includes(staffName)) return z;
           const next = [...existing, staffName];
-          return { ...z, assignedStaffId: staffId, assignedStaffName: next.join(",") };
+          const nextDow: DowMap = { ...(z.dowMap ?? {}), [staffName]: DOW_ALL };
+          return { ...z, assignedStaffId: staffId, assignedStaffName: next.join(","), dowMap: nextDow };
         }
-        return { ...z, assignedStaffId: staffId, assignedStaffName: staffName };
+        return { ...z, assignedStaffId: staffId, assignedStaffName: staffName, dowMap: { [staffName]: DOW_ALL } };
       }),
     );
     setPopoverAnchor(null);
@@ -613,7 +627,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     setZones((prev) =>
       prev.map((z) =>
         z.id === zoneId
-          ? { ...z, assignedStaffId: null, assignedStaffName: "" }
+          ? { ...z, assignedStaffId: null, assignedStaffName: "", dowMap: null }
           : z,
       ),
     );
@@ -627,10 +641,28 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         if (z.id !== zoneId) return z;
         const remaining = z.assignedStaffName.split(",").map(s => s.trim()).filter(n => n && n !== nameToRemove);
         const firstEmp = remaining.length > 0 ? employees.find(e => e.name === remaining[0]) : null;
-        return { ...z, assignedStaffName: remaining.join(","), assignedStaffId: firstEmp?.id ?? null };
+        // dowMap에서 해당 이름 키 제거
+        let nextDow: DowMap = null;
+        if (z.dowMap) {
+          const copy = { ...z.dowMap };
+          delete copy[nameToRemove];
+          nextDow = Object.keys(copy).length > 0 ? copy : null;
+        }
+        return { ...z, assignedStaffName: remaining.join(","), assignedStaffId: firstEmp?.id ?? null, dowMap: nextDow };
       }),
     );
   }, [employees]);
+
+  // 요일별 마스크 토글 (특정 사람의 특정 요일 on/off)
+  const toggleZoneDow = useCallback((zoneId: string, nameKey: string, dow: number) => {
+    setZones((prev) => prev.map((z) => {
+      if (z.id !== zoneId) return z;
+      const current = z.dowMap?.[nameKey] ?? DOW_ALL;
+      const nextMask = current ^ (1 << dow);
+      const nextDow: DowMap = { ...(z.dowMap ?? {}), [nameKey]: nextMask };
+      return { ...z, dowMap: nextDow };
+    }));
+  }, []);
 
   // ── Drag-and-drop assignment ─────────────────────────────────────────────────
   const handleDragOver = useCallback((e: React.DragEvent, _zone: DisplayZone) => {
@@ -652,9 +684,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           const existing = z.assignedStaffName ? z.assignedStaffName.split(",").map(s => s.trim()).filter(Boolean) : [];
           if (existing.includes(staff.employee.name)) return z;
           const next = [...existing, staff.employee.name];
-          return { ...z, assignedStaffId: staff.employee.id, assignedStaffName: next.join(",") };
+          const nextDow: DowMap = { ...(z.dowMap ?? {}), [staff.employee.name]: DOW_ALL };
+          return { ...z, assignedStaffId: staff.employee.id, assignedStaffName: next.join(","), dowMap: nextDow };
         }
-        return { ...z, assignedStaffId: staff.employee.id, assignedStaffName: staff.employee.name };
+        return { ...z, assignedStaffId: staff.employee.id, assignedStaffName: staff.employee.name, dowMap: { [staff.employee.name]: DOW_ALL } };
       }),
     );
     dragStaffRef.current = null;
@@ -665,10 +698,18 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const handleSave = useCallback(() => {
     if (!activeZone) return;
     const staff = employees.find((e) => e.id === draftStaffId) ?? null;
-    setZones((prev) => prev.map((z) => z.id !== activeZone.id ? z : {
-      ...z, category: draftCategory, products: draftProducts,
-      assignedStaffId: staff?.id ?? null, assignedStaffName: staff?.name ?? "",
-      status: draftStatus,
+    setZones((prev) => prev.map((z) => {
+      if (z.id !== activeZone.id) return z;
+      // 새로 배정된 사람이 있으면 dowMap에 기본값(모든 요일) 추가
+      let nextDow: DowMap = z.dowMap;
+      if (staff && !(z.dowMap?.[staff.name])) {
+        nextDow = { ...(z.dowMap ?? {}), [staff.name]: DOW_ALL };
+      }
+      return {
+        ...z, category: draftCategory, products: draftProducts,
+        assignedStaffId: staff?.id ?? null, assignedStaffName: staff?.name ?? "",
+        status: draftStatus, dowMap: nextDow,
+      };
     }));
     setSavedFlash(true);
     setTimeout(() => setSavedFlash(false), 1500);
@@ -709,14 +750,6 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     setRequestFlash(true);
     setTimeout(() => setRequestFlash(false), 1500);
   }, [activeZone, canRequest, draftCategory, draftProducts, draftStaffId, draftStatus, requestNote, employees]);
-
-  // ── Stats ────────────────────────────────────────────────────────────────────
-  const stats = useMemo(() => ({
-    total: zones.length,
-    empty: zones.filter((z) => z.status === "empty").length,
-    low:   zones.filter((z) => z.status === "low").length,
-    pending: requests.filter((r) => r.status === "pending").length,
-  }), [zones, requests]);
 
   // ── Filtered Zones for Sidebar & Highlights ────────────────────────────────
   const searchedZones = useMemo(() => {
@@ -806,8 +839,15 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
   // Helper to render Zone Cell on Blueprint
   const renderZoneCell = (num: number, classes = "", wrapperClass = "") => {
-    const z = getZone(num);
-    if (!z) return null;
+    const zRaw = getZone(num);
+    if (!zRaw) return null;
+    // 요일별 담당 필터링 — 선택된 날짜의 요일에 활성 인원만 표시
+    const currentDow = selectedDateObj.getDay();
+    const allNames = zRaw.assignedStaffName ? zRaw.assignedStaffName.split(",").map(s => s.trim()).filter(Boolean) : [];
+    const activeNames = allNames.filter(n => isDowActive(zRaw.dowMap?.[n] ?? DOW_ALL, currentDow));
+    const z: DisplayZone = allNames.length !== activeNames.length
+      ? { ...zRaw, assignedStaffName: activeNames.join(","), assignedStaffId: activeNames.length === 0 ? null : zRaw.assignedStaffId }
+      : zRaw;
     const group = getZoneGroup(z.id);
     const inSelectedGroup = !!(activeGroup && activeGroup.areaIds.includes(z.id));
     return (
@@ -883,25 +923,6 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         onBack={onBack}
         onNavigate={onNavigate}
         onLogout={onLogout}
-        rightSlot={
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 text-[11px] font-bold">
-              <span className="bg-white border border-gray-200 px-2.5 py-1 rounded-lg flex items-center gap-1 text-gray-600 shadow-sm">
-                전체 <span className="text-indigo-600 font-black">{stats.total}</span>
-              </span>
-              <span className="bg-white border border-rose-200 px-2.5 py-1 rounded-lg flex items-center gap-1 text-gray-600 shadow-sm">
-                품절 <span className="text-rose-600 font-black">{stats.empty}</span>
-              </span>
-              <span className="bg-white border border-amber-200 px-2.5 py-1 rounded-lg flex items-center gap-1 text-gray-600 shadow-sm">
-                부족 <span className="text-amber-600 font-black">{stats.low}</span>
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 border border-gray-200 text-xs font-semibold shadow-sm">
-              <MapPin size={11} className="text-rose-500" />
-              <span>현위치: 36번 매대 앞</span>
-            </div>
-          </div>
-        }
       />
 
       {/* Main Content Grid */}
@@ -1063,7 +1084,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     const ORDER: Record<string, number> = { "오픈": 0, "미들": 1, "마감": 2 };
                     return (ORDER[a.scheduleType] ?? 3) - (ORDER[b.scheduleType] ?? 3);
                   }).map(({ employee, scheduleType, workingHours }) => {
-                    const isLogistics = employee.position === "물류";
+                    const isLogistics = employee.position.includes("물류");
                     const assignedZones = getAssignedZones(employee.id);
                     const colorIdx = staffColorMap.get(employee.id) ?? 0;
                     const avatarBg = isLogistics
@@ -1381,9 +1402,16 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                   <span className="text-[9px] text-slate-400 font-medium shrink-0">· {z.category}</span>
                                 )}
                               </div>
-                              {z.assignedStaffName && (
-                                <span className="text-[9px] font-semibold text-slate-500 truncate block">👤 {z.assignedStaffName}</span>
-                              )}
+                              {(() => {
+                                if (!z.assignedStaffName) return null;
+                                const dow = selectedDateObj.getDay();
+                                const allNames = z.assignedStaffName.split(",").map(s => s.trim()).filter(Boolean);
+                                const active = allNames.filter(n => isDowActive(z.dowMap?.[n] ?? DOW_ALL, dow));
+                                if (active.length === 0) return null;
+                                return (
+                                  <span className="text-[9px] font-semibold text-slate-500 truncate block">👤 {active.join(", ")}</span>
+                                );
+                              })()}
                             </div>
                             <ChevronRight size={10} className="text-gray-400 shrink-0 ml-1" />
                           </div>
@@ -1610,7 +1638,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 </label>
                 {(() => {
                   const assignedStaff = employees.find((e) => e.id === draftStaffId) ?? null;
-                  const isLogistics = assignedStaff?.position === "물류";
+                  const isLogistics = assignedStaff?.position.includes("물류");
                   const colorIdx = assignedStaff ? (staffColorMap.get(assignedStaff.id) ?? 0) : 0;
                   return assignedStaff ? (
                     <div className="flex items-center gap-3 px-3 py-3 rounded-xl border-2 border-indigo-200 bg-indigo-50">
@@ -1642,6 +1670,46 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   );
                 })()}
               </div>
+
+              {/* 요일별 담당 (다중 요일 선택) */}
+              {activeZone.assignedStaffName && (
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 mb-2 flex items-center gap-1">
+                    적용 요일
+                    <span className="text-[10px] font-normal text-slate-400">체크된 요일에만 이 담당이 표시됩니다</span>
+                  </label>
+                  <div className="space-y-2">
+                    {activeZone.assignedStaffName.split(",").map(s => s.trim()).filter(Boolean).map((name) => {
+                      const mask = activeZone.dowMap?.[name] ?? DOW_ALL;
+                      return (
+                        <div key={name} className="flex items-center gap-2 flex-wrap px-2 py-1.5 bg-slate-50 rounded-lg border border-slate-200">
+                          <span className="text-xs font-bold text-slate-700 shrink-0 min-w-[3rem]">{name}</span>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {DOW_LABELS.map((lb, dow) => {
+                              const active = ((mask >> dow) & 1) === 1;
+                              return (
+                                <button
+                                  key={dow}
+                                  type="button"
+                                  onClick={() => toggleZoneDow(activeZone.id, name, dow)}
+                                  className={`w-7 h-7 text-[11px] font-bold rounded-md border transition cursor-pointer ${
+                                    active
+                                      ? (dow === 0 ? "bg-rose-500 text-white border-rose-500"
+                                        : dow === 6 ? "bg-sky-500 text-white border-sky-500"
+                                        : "bg-indigo-500 text-white border-indigo-500")
+                                      : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
+                                  }`}
+                                  title={`${lb}요일 ${active ? "제외" : "포함"}`}
+                                >{lb}</button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Status */}
               <div>
@@ -1729,7 +1797,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             {/* Header */}
             {(() => {
               const colorIdx = staffColorMap.get(activeStaffInfo.employee.id) ?? 0;
-              const isLogistics = activeStaffInfo.employee.position === "물류";
+              const isLogistics = activeStaffInfo.employee.position.includes("물류");
               return (
                 <div className={`px-5 py-5 bg-gradient-to-br ${isLogistics ? "from-indigo-600 to-indigo-700" : "from-slate-700 to-slate-800"}`}>
                   <div className="flex items-start justify-between gap-3">
@@ -1762,7 +1830,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             })()}
 
             {/* Zone assignment (logistics only) */}
-            {activeStaffInfo.employee.position === "물류" ? (
+            {activeStaffInfo.employee.position.includes("물류") ? (
               <div className="px-5 pt-3 pb-2 max-h-[60vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
