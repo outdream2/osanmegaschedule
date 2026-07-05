@@ -1,6 +1,19 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { Download, Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, FileSpreadsheet, Upload as UploadIcon, BookmarkPlus, BookOpen, Check } from "lucide-react";
+import { Download, Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, FileSpreadsheet, Upload as UploadIcon, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
+
+export interface ConfirmedItem {
+  supplier: string;
+  product_name: string;
+  product_code?: string;
+  quantity?: number;
+  unit_price?: number;
+  amount?: number;
+  balance?: number;
+  expiry_date?: string;
+  memo?: string;
+  raw_json?: Record<string, unknown>;
+}
 
 interface RawPage {
   page: number;
@@ -44,6 +57,7 @@ interface RawOcrTableProps {
   onReparsePage?: (pageNum: number, supplier: string) => Promise<any>;
   barcodeMatches?: BarcodeProduct[];
   balanceConfig?: Record<string, string>;
+  onSaveConfirmed?: (items: ConfirmedItem[]) => Promise<void>;
 }
 
 const SCHEMA_ORDER = ["공급처","일자","품명","수량","단가","금액","세액","규격","단위","비고"];
@@ -108,7 +122,7 @@ const parseNumber = (val: any): number => {
   return isNaN(num) ? 0 : num;
 };
 
-export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp }) => {
+export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp, onSaveConfirmed }) => {
   const structuredPages = pages.filter(p => !isFallback(p.headers) && Array.isArray(p.rows) && p.rows.length > 0);
   const fallbackPages   = pages.filter(p => isFallback(p.headers) || !Array.isArray(p.rows) || p.rows.length === 0);
 
@@ -197,11 +211,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   }
 
   // 사용자 선택 반영한 페이지 표시 합계
+  // 우선순위:
+  //   1) 사용자가 명시적으로 선택 → 그 값
+  //   2) 명세서 소계(stated)와 인식 합계(computed)가 일치하거나 stated가 있으면 → stated (명세서 우선)
+  //   3) 그 외 → computed
   const getPageDisplayTotal = (pn: number): number => {
-    if (pageSubtotalChoices[pn] === "stated") {
-      return structuredPages.find(p => p.page === pn)?.meta?.total ?? effectivePageTotals.get(pn) ?? 0;
-    }
-    return effectivePageTotals.get(pn) ?? 0;
+    const stated = structuredPages.find(p => p.page === pn)?.meta?.total;
+    const computed = effectivePageTotals.get(pn) ?? 0;
+    const choice = pageSubtotalChoices[pn];
+    if (choice === "stated") return stated ?? computed;
+    if (choice === "computed") return computed;
+    // 기본: 명세서 소계가 있고 mismatch가 아닐 때는 명세서 소계 우선
+    if (stated != null && stated > 0 && Math.abs(stated - computed) <= 1) return stated;
+    return computed;
   };
 
   const total = amtIdx >= 0
@@ -416,7 +438,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [pendingSyn,       setPendingSyn        ] = useState<Record<number, { inputName: string; code: string; supplier?: string; name: string }>>({});
   const [savedSynonymIds,  setSavedSynonymIds   ] = useState<Record<number, number>>({});
   const [cancelledAutoSyn, setCancelledAutoSyn ] = useState<Set<number>>(new Set());
+  const [cancelledAutoMap, setCancelledAutoMap ] = useState<Set<number>>(new Set());
   const [cancelledRows,    setCancelledRows    ] = useState<Set<number>>(new Set());
+  const [savingConfirmed,  setSavingConfirmed  ] = useState(false);
+  const [saveConfirmedToast, setSaveConfirmedToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
   const [rawEditValues,    setRawEditValues    ] = useState<Record<number, string>>({});
   const rawSearchDebounce = useRef<Record<number, ReturnType<typeof setTimeout>>>({});
 
@@ -776,6 +801,85 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     saveSynonym(ri, inputName, cand.code, supplier || undefined, cand.name);
   }, [selectCandidate, saveSynonym]);
 
+  // ── 확정표에 저장 (외부 콜백에 ConfirmedItem[] 전달) ──────────────────────
+  const handleSaveConfirmed = useCallback(async () => {
+    if (!onSaveConfirmed || nameIdx < 0) return;
+    const expiryIdx = dispHeaders.indexOf("유통기한");
+    const items: ConfirmedItem[] = [];
+    effectiveDispRows.forEach((row, ri) => {
+      const pn = pageNums[ri];
+      const pageData = structuredPages.find(p => p.page === pn);
+      // 공급처
+      const rowSupp = ocrSuppIdx >= 0 ? String(row[ocrSuppIdx] ?? "").trim() : "";
+      const supplier = (
+        rawSupplierByPage[pn] !== undefined ? rawSupplierByPage[pn] :
+        supplierOverrides[ri] !== undefined ? supplierOverrides[ri] :
+        rowSupp || pageData?.meta.supplier || globalSupplier || ""
+      ).trim();
+      // 품명 (매칭 우선, 취소 상태 반영)
+      const origName = String(row[nameIdx] ?? "").trim();
+      const m = matchItems ? (cancelledRows.has(ri) ? null : (selectedCands[ri] ?? matchItems[ri]?.matched ?? null)) : null;
+      const autoSyn = cancelledAutoMap.has(ri) ? undefined : autoSynonymMatches[ri];
+      const bc = cancelledAutoMap.has(ri) ? null : (barcodeAutoMap[ri] ?? null);
+      const productName = (cancelledAutoSyn.has(ri) || cancelledAutoMap.has(ri))
+        ? (overrides[ri] ?? origName)
+        : (overrides[ri] ?? m?.name ?? autoSyn?.name ?? bc?.name ?? origName);
+      if (!supplier || !productName) return;
+      const productCode = m?.code ?? autoSyn?.code ?? bc?.code ?? undefined;
+      // 수량/단가/금액
+      const numOrUndef = (n: number): number | undefined => Number.isFinite(n) && n !== 0 ? n : undefined;
+      const qty = ocrQtyIdx >= 0 ? numOrUndef(parseNumber(row[ocrQtyIdx])) : undefined;
+      const pri = ocrPriIdx >= 0 ? numOrUndef(parseNumber(row[ocrPriIdx])) : undefined;
+      const amt = amtIdx    >= 0 ? numOrUndef(parseNumber(row[amtIdx]))    : undefined;
+      // 유통기한
+      const expiry = expiryIdx >= 0 && row[expiryIdx] != null && String(row[expiryIdx]).trim()
+        ? String(row[expiryIdx]).trim()
+        : (m?.expiryDate ?? bc?.expiryDate ?? undefined);
+      // 잔고 — 설정된 balance 컬럼의 페이지 마지막 값
+      const bal = pageBalanceFromConfig.get(pn);
+      // raw
+      const rawObj: Record<string, unknown> = {};
+      dispHeaders.forEach((h, ci) => { rawObj[h] = row[ci] ?? null; });
+      rawObj.__page = pn;
+      if (pageData?.meta.date) rawObj.__date = pageData.meta.date;
+
+      items.push({
+        supplier,
+        product_name: String(productName),
+        product_code: productCode ? String(productCode) : undefined,
+        quantity: qty,
+        unit_price: pri,
+        amount: amt,
+        balance: bal != null && Number.isFinite(bal) ? bal : undefined,
+        expiry_date: expiry ? String(expiry) : undefined,
+        memo: undefined,
+        raw_json: rawObj,
+      });
+    });
+
+    if (items.length === 0) {
+      setSaveConfirmedToast({ type: "error", msg: "저장할 항목이 없습니다." });
+      setTimeout(() => setSaveConfirmedToast(null), 2500);
+      return;
+    }
+
+    setSavingConfirmed(true);
+    try {
+      await onSaveConfirmed(items);
+      setSaveConfirmedToast({ type: "success", msg: `저장 완료! (${items.length}건)` });
+    } catch (e: any) {
+      setSaveConfirmedToast({ type: "error", msg: e?.message ?? "저장 실패" });
+    } finally {
+      setSavingConfirmed(false);
+      setTimeout(() => setSaveConfirmedToast(null), 2500);
+    }
+  }, [
+    onSaveConfirmed, nameIdx, dispHeaders, effectiveDispRows, pageNums, structuredPages,
+    ocrSuppIdx, rawSupplierByPage, supplierOverrides, globalSupplier, matchItems, cancelledRows,
+    selectedCands, cancelledAutoMap, autoSynonymMatches, barcodeAutoMap, cancelledAutoSyn,
+    overrides, ocrQtyIdx, ocrPriIdx, amtIdx, pageBalanceFromConfig,
+  ]);
+
   const handleMatch = useCallback(async () => {
     if (nameIdx < 0) return;
     const names = dispRows.map(r => String(r[nameIdx] ?? ""));
@@ -851,10 +955,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const confRows: (string | number | null)[][] = matchItems
     ? effectiveDispRows.map((row, ri) => {
         const m        = cancelledRows.has(ri) ? null : (selectedCands[ri] ?? matchItems[ri]?.matched ?? null);
-        const autoSyn  = autoSynonymMatches[ri];
-        const bc       = barcodeAutoMap[ri] ?? null;
+        const autoSyn  = cancelledAutoMap.has(ri) ? undefined : autoSynonymMatches[ri];
+        const bc       = cancelledAutoMap.has(ri) ? null : (barcodeAutoMap[ri] ?? null);
         const origOcrName = nameIdx >= 0 ? String(row[nameIdx] ?? "").trim() || null : null;
-        const corrName = cancelledAutoSyn.has(ri)
+        const corrName = (cancelledAutoSyn.has(ri) || cancelledAutoMap.has(ri))
           ? (overrides[ri] ?? origOcrName)
           : (overrides[ri] ?? m?.name ?? autoSyn?.name ?? bc?.name ?? origOcrName);
         const corrCode = m?.code ?? autoSyn?.code ?? bc?.code ?? null;
@@ -1009,6 +1113,18 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   return (
     <>
+    {/* ── 저장 완료 토스트 ── */}
+    {saveConfirmedToast && (
+      <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 rounded-xl shadow-2xl text-xs font-bold flex items-center gap-2 pointer-events-none"
+        style={{
+          background: saveConfirmedToast.type === "success" ? "#059669" : "#e11d48",
+          color: "white",
+        }}
+      >
+        {saveConfirmedToast.type === "success" ? <CheckCircle size={13} /> : <XCircle size={13} />}
+        {saveConfirmedToast.msg}
+      </div>
+    )}
     {/* ── 품명 검색 드롭다운 (position:fixed — overflow 클리핑 우회) ── */}
     {nameDropdownRect && (nameEditResults.length > 0 || nameEditSearchDone) && (
       <div
@@ -1433,8 +1549,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           const hasDirectEdit = isEditableNum && cellEdits[ri]?.[ci] !== undefined;
                           const isCorrectedAmt = isAmt && amountCorrections[ri] !== undefined && !hasDirectEdit;
                           const isEditingThisNum = isEditableNum && editingCell?.ri === ri && editingCell?.ci === ci;
-                          const barcodeMatch = isName ? barcodeAutoMap[ri] : undefined;
-                          const autoMatch = isName ? autoSynonymMatches[ri] : undefined;
+                          const barcodeMatch = isName && !cancelledAutoMap.has(ri) ? barcodeAutoMap[ri] : undefined;
+                          const autoMatch = isName && !cancelledAutoMap.has(ri) ? autoSynonymMatches[ri] : undefined;
                           const origCell = isName ? dispRows[ri]?.[ci] : null;
 
                           if (isEditingThisSupp) {
@@ -1471,11 +1587,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   setEditingRawSuppRow(ri);
                                   setEditingRawSuppVal(String(cell ?? ""));
                                 }}
-                                className="px-3 py-2 whitespace-nowrap text-sky-700 font-semibold cursor-pointer hover:bg-sky-50 group"
-                                title="클릭하여 공급처 변경"
+                                className="px-2 sm:px-3 py-2 text-sky-700 font-semibold cursor-pointer hover:bg-sky-50 group max-w-[60px] sm:max-w-[120px]"
+                                title={`클릭하여 공급처 변경${cell != null ? ` (${String(cell)})` : ""}`}
                               >
                                 <span className="flex items-center gap-1">
-                                  <span>{cell == null ? <span className="text-gray-300">—</span> : String(cell)}</span>
+                                  <span className="truncate block">
+                                    {cell == null ? <span className="text-gray-300">—</span> : String(cell)}
+                                  </span>
                                   <Pencil size={9} className="text-sky-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                 </span>
                               </td>
@@ -1558,6 +1676,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   <span className="flex items-center gap-1">
                                     <span className="text-[9px] bg-emerald-100 text-emerald-700 font-black px-1 rounded shrink-0">BC</span>
                                     <span className="font-semibold text-emerald-700 break-words whitespace-normal text-[11px]">{barcodeMatch.name}</span>
+                                    <button
+                                      type="button"
+                                      title="ERP 자동보정 취소 → 원본 이름으로 복원"
+                                      onClick={e => { e.stopPropagation(); setCancelledAutoMap(prev => new Set([...prev, ri])); }}
+                                      className="text-[9px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0"
+                                    >✕</button>
                                   </span>
                                   <span className="text-gray-300 text-[10px] line-through break-words whitespace-normal">{String(origCell ?? "")}</span>
                                 </div>
@@ -1649,6 +1773,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       <BookOpen size={9} className="text-indigo-400 shrink-0" />
                                       <span className="font-semibold text-indigo-700 break-words line-clamp-2 text-[11px]">{autoMatch.name}</span>
                                       <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
+                                      <button
+                                        type="button"
+                                        title="ERP 자동보정 취소 → 원본 이름으로 복원"
+                                        onClick={e => { e.stopPropagation(); setCancelledAutoMap(prev => new Set([...prev, ri])); }}
+                                        className="text-[9px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0"
+                                      >✕</button>
                                     </span>
                                     <button
                                       type="button"
@@ -1664,6 +1794,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             }
 
                             // 일반 품명 (autoMatch 없음, barcodeMatch도 없음) → 클릭 편집
+                            const isCancelledAutoMap = cancelledAutoMap.has(ri);
                             return (
                               <td key={ci}
                                 onClick={e => {
@@ -1681,6 +1812,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     {cell == null ? <span className="text-gray-300">—</span> : String(cell)}
                                   </span>
                                   <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
+                                  {isCancelledAutoMap && (
+                                    <button
+                                      type="button"
+                                      title="ERP 자동보정 복원"
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        setCancelledAutoMap(prev => { const s = new Set(prev); s.delete(ri); return s; });
+                                      }}
+                                      className="text-[9px] px-1 py-px rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 cursor-pointer shrink-0"
+                                    >↩ 복원</button>
+                                  )}
                                 </span>
                               </td>
                             );
@@ -1771,12 +1913,27 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       {structuredPages.length > 0 && nameIdx >= 0 && (
         <>
           {!matchItems && (
-            <button onClick={handleMatch} disabled={matching}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer">
-              {matching
-                ? <><Loader2 size={13} className="animate-spin" />상품명 매칭 중...</>
-                : <><Wand2 size={13} />상품명 자동보정{autoSynonymCount > 0 ? ` (동의어 ${autoSynonymCount}건 포함)` : ""}</>}
-            </button>
+            <div className="w-full flex flex-col sm:flex-row gap-2">
+              <button onClick={handleMatch} disabled={matching}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer">
+                {matching
+                  ? <><Loader2 size={13} className="animate-spin" />상품명 매칭 중...</>
+                  : <><Wand2 size={13} />상품명 자동보정{autoSynonymCount > 0 ? ` (동의어 ${autoSynonymCount}건 포함)` : ""}</>}
+              </button>
+              {onSaveConfirmed && (
+                <button
+                  type="button"
+                  onClick={handleSaveConfirmed}
+                  disabled={savingConfirmed}
+                  className="flex items-center justify-center gap-2 py-2.5 px-4 rounded-2xl text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shrink-0"
+                  title="현재 표시된 항목들을 확정표(DB)에 저장합니다"
+                >
+                  {savingConfirmed
+                    ? <><Loader2 size={13} className="animate-spin" />저장 중...</>
+                    : <><Save size={13} />확정표에 저장</>}
+                </button>
+              )}
+            </div>
           )}
 
           {matchItems && (
@@ -2133,6 +2290,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                     className="flex items-center gap-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0">
                     <FileSpreadsheet size={11} />엑셀 다운로드
                   </button>
+                  {onSaveConfirmed && (
+                    <button
+                      type="button"
+                      onClick={handleSaveConfirmed}
+                      disabled={savingConfirmed}
+                      className="flex items-center gap-1 text-[11px] font-bold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0"
+                      title="현재 표시된 항목들을 확정표(DB)에 저장합니다"
+                    >
+                      {savingConfirmed
+                        ? <><Loader2 size={11} className="animate-spin" />저장 중</>
+                        : <><Save size={11} />확정표 저장</>}
+                    </button>
+                  )}
                 </div>
               </div>
 

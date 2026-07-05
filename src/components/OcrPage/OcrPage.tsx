@@ -1,9 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import axios from "axios";
-import { Upload, Loader2, X, Zap, AlertCircle, Images, BookOpen, Building2, Plus, Trash2, Pencil, Check, RefreshCw } from "lucide-react";
+import { Upload, Loader2, X, Zap, AlertCircle, Images, BookOpen, Building2, Plus, Trash2, Pencil, Check, RefreshCw, FileText } from "lucide-react";
 import * as pdfjsLib from "pdfjs-dist";
 import { PageImageViewer } from "./PageImageViewer";
-import { RawOcrTable } from "./RawOcrTable";
+import { RawOcrTable, type ConfirmedItem } from "./RawOcrTable";
 import type { OcrPageResult } from "./paddleEngine";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession } from "../../types";
@@ -243,6 +243,204 @@ const BalanceConfigTab: React.FC<BalanceConfigTabProps> = ({ pages, config, onCo
   );
 };
 
+interface ConfirmedRecord {
+  id: number;
+  saved_at: string;
+  supplier: string;
+  product_name: string;
+  product_code: string | null;
+  quantity: number | string | null;
+  unit_price: number | string | null;
+  amount: number | string | null;
+  balance: number | string | null;
+  expiry_date: string | null;
+  memo: string | null;
+  created_at: string;
+}
+
+const fmtNum = (v: number | string | null | undefined) => {
+  if (v == null || v === "") return "";
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isFinite(n)) return "";
+  return n.toLocaleString("ko-KR");
+};
+const toNum = (v: number | string | null | undefined): number => {
+  if (v == null || v === "") return 0;
+  const n = typeof v === "number" ? v : Number(v);
+  return Number.isFinite(n) ? n : 0;
+};
+
+const ConfirmedRecordsTab: React.FC = () => {
+  const [dateFilter, setDateFilter] = React.useState<string>("");
+  const [supplierFilter, setSupplierFilter] = React.useState<string>("");
+  const [items, setItems] = React.useState<ConfirmedRecord[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [err, setErr] = React.useState<string | null>(null);
+  const [deletingId, setDeletingId] = React.useState<number | null>(null);
+
+  const fetchItems = React.useCallback(async () => {
+    setLoading(true); setErr(null);
+    try {
+      const params = new URLSearchParams();
+      if (dateFilter) params.set("date", dateFilter);
+      if (supplierFilter.trim()) params.set("supplier", supplierFilter.trim());
+      const res = await axios.get(`/api/ocr-confirmed-items?${params.toString()}`);
+      setItems(Array.isArray(res.data?.items) ? res.data.items : []);
+    } catch (e: any) {
+      setErr(e?.response?.data?.error ?? e?.message ?? "조회 실패");
+    } finally {
+      setLoading(false);
+    }
+  }, [dateFilter, supplierFilter]);
+
+  React.useEffect(() => { fetchItems(); }, [fetchItems]);
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("이 항목을 삭제하시겠습니까?")) return;
+    setDeletingId(id);
+    try {
+      await axios.delete(`/api/ocr-confirmed-items/${id}`);
+      setItems(prev => prev.filter(x => x.id !== id));
+    } catch (e: any) {
+      alert(e?.response?.data?.error ?? e?.message ?? "삭제 실패");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const supplierOptions = React.useMemo(
+    () => [...new Set(items.map(x => x.supplier).filter(Boolean))].sort(),
+    [items],
+  );
+  const grandTotal = items.reduce((s, x) => s + toNum(x.amount), 0);
+
+  return (
+    <div className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 py-4 flex flex-col gap-3">
+      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="px-4 py-3 border-b border-gray-100 bg-rose-50 flex items-center gap-2 flex-wrap">
+          <FileText size={13} className="text-rose-600" />
+          <span className="text-xs font-bold text-rose-800">거래명세서 조회</span>
+          <span className="text-[11px] text-rose-500">저장된 확정 항목을 조회·삭제합니다{dateFilter ? "" : " (기본: 최근 30일)"}</span>
+          <button
+            onClick={fetchItems}
+            disabled={loading}
+            className="ml-auto p-1 rounded-lg hover:bg-rose-100 cursor-pointer disabled:opacity-40"
+            title="새로고침"
+          >
+            <RefreshCw size={13} className={`text-rose-400 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
+
+        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex flex-wrap gap-2 items-center">
+          <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-600">
+            날짜
+            <input
+              type="date"
+              value={dateFilter}
+              onChange={e => setDateFilter(e.target.value)}
+              className="border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-rose-400 bg-white"
+            />
+          </label>
+          {dateFilter && (
+            <button
+              onClick={() => setDateFilter("")}
+              className="text-[10px] text-gray-400 hover:text-gray-600 underline cursor-pointer"
+            >날짜 해제</button>
+          )}
+          <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-600">
+            공급처
+            <input
+              type="text"
+              list="ocr-conf-supplier-list"
+              value={supplierFilter}
+              onChange={e => setSupplierFilter(e.target.value)}
+              placeholder="공급처명 검색"
+              className="border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-rose-400 bg-white min-w-[160px]"
+            />
+            <datalist id="ocr-conf-supplier-list">
+              {supplierOptions.map(s => <option key={s} value={s} />)}
+            </datalist>
+          </label>
+          {supplierFilter && (
+            <button
+              onClick={() => setSupplierFilter("")}
+              className="text-[10px] text-gray-400 hover:text-gray-600 underline cursor-pointer"
+            >공급처 해제</button>
+          )}
+          <span className="ml-auto text-[11px] text-gray-500 font-bold">
+            {items.length}건{grandTotal > 0 && <span className="ml-2 text-rose-600">총 {fmtNum(grandTotal)}원</span>}
+          </span>
+        </div>
+
+        {err && (
+          <div className="px-4 py-2 text-[11px] text-rose-700 bg-rose-50 border-b border-rose-100 font-semibold">
+            {err}
+          </div>
+        )}
+
+        {loading ? (
+          <div className="px-4 py-10 flex items-center justify-center text-gray-400 text-xs gap-2">
+            <Loader2 size={14} className="animate-spin" />불러오는 중...
+          </div>
+        ) : items.length === 0 ? (
+          <div className="px-4 py-10 text-center text-gray-400 text-xs">
+            저장된 항목이 없습니다.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-rose-50 border-b border-rose-100">
+                  <th className="px-2 py-2 text-left font-bold text-rose-900 whitespace-nowrap">저장일</th>
+                  <th className="px-2 py-2 text-left font-bold text-rose-900 whitespace-nowrap">공급처</th>
+                  <th className="px-2 py-2 text-left font-bold text-rose-900">품명</th>
+                  <th className="px-2 py-2 text-right font-bold text-rose-900 whitespace-nowrap">수량</th>
+                  <th className="px-2 py-2 text-right font-bold text-rose-900 whitespace-nowrap">단가</th>
+                  <th className="px-2 py-2 text-right font-bold text-rose-900 whitespace-nowrap">금액</th>
+                  <th className="px-2 py-2 text-right font-bold text-rose-900 whitespace-nowrap hidden sm:table-cell">잔고</th>
+                  <th className="px-2 py-2 text-left font-bold text-rose-900 whitespace-nowrap hidden md:table-cell">유통기한</th>
+                  <th className="px-2 py-2 w-10" />
+                </tr>
+              </thead>
+              <tbody>
+                {items.map(x => (
+                  <tr key={x.id} className="border-t border-gray-50 hover:bg-rose-50/30">
+                    <td className="px-2 py-1.5 text-gray-500 whitespace-nowrap text-[11px]">{x.saved_at}</td>
+                    <td className="px-2 py-1.5 text-sky-700 font-semibold whitespace-nowrap text-[11px]">{x.supplier}</td>
+                    <td className="px-2 py-1.5 font-semibold text-gray-800">
+                      <div className="flex flex-col">
+                        <span className="break-words">{x.product_name}</span>
+                        {x.product_code && <span className="text-[10px] text-gray-400 font-mono">{x.product_code}</span>}
+                      </div>
+                    </td>
+                    <td className="px-2 py-1.5 text-right text-gray-700 whitespace-nowrap tabular-nums">{fmtNum(x.quantity)}</td>
+                    <td className="px-2 py-1.5 text-right text-gray-700 whitespace-nowrap tabular-nums">{fmtNum(x.unit_price)}</td>
+                    <td className="px-2 py-1.5 text-right font-bold text-amber-700 whitespace-nowrap tabular-nums">{fmtNum(x.amount)}</td>
+                    <td className="px-2 py-1.5 text-right font-bold text-orange-600 whitespace-nowrap tabular-nums hidden sm:table-cell">{fmtNum(x.balance)}</td>
+                    <td className="px-2 py-1.5 text-gray-500 whitespace-nowrap text-[10px] hidden md:table-cell">{x.expiry_date ?? ""}</td>
+                    <td className="px-2 py-1.5 text-right">
+                      <button
+                        onClick={() => handleDelete(x.id)}
+                        disabled={deletingId === x.id}
+                        className="p-1 text-gray-300 hover:text-rose-500 cursor-pointer disabled:opacity-40"
+                        title="삭제"
+                      >
+                        {deletingId === x.id
+                          ? <Loader2 size={13} className="animate-spin" />
+                          : <Trash2 size={13} />}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -279,6 +477,11 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
       .catch(() => {});
   }, []);
 
+  const handleSaveConfirmed = useCallback(async (items: ConfirmedItem[]) => {
+    const today = new Date().toISOString().slice(0, 10);
+    await axios.post("/api/ocr-confirmed-items", { items, saved_at: today });
+  }, []);
+
   const handleBalanceConfigChange = useCallback((vendor: string, label: string) => {
     setBalanceConfig(prev => {
       const next = { ...prev };
@@ -294,7 +497,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   }, []);
 
   // Tab state
-  const [mainTab, setMainTab] = useState<"ocr" | "synonyms" | "balance">("ocr");
+  const [mainTab, setMainTab] = useState<"ocr" | "synonyms" | "balance" | "records">("ocr");
 
   // Synonym management state
   const [synTab, setSynTab] = useState<"product" | "supplier">("product");
@@ -574,29 +777,38 @@ return (
 
     {/* Tab bar */}
     <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-      <div className="max-w-5xl mx-auto px-4 flex gap-0">
+      <div className="max-w-5xl mx-auto px-2 sm:px-4 flex gap-0 overflow-x-auto whitespace-nowrap">
         <button
           onClick={() => setMainTab("ocr")}
-          className={`flex items-center gap-1.5 px-5 py-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${mainTab === "ocr" ? "border-amber-500 text-amber-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+          className={`flex items-center gap-1.5 px-3 sm:px-5 py-3 text-xs font-bold border-b-2 shrink-0 transition-colors cursor-pointer ${mainTab === "ocr" ? "border-amber-500 text-amber-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}
         >
           <Upload size={12} /> OCR 추출
         </button>
         <button
           onClick={() => setMainTab("synonyms")}
-          className={`flex items-center gap-1.5 px-5 py-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${mainTab === "synonyms" ? "border-indigo-500 text-indigo-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+          className={`flex items-center gap-1.5 px-3 sm:px-5 py-3 text-xs font-bold border-b-2 shrink-0 transition-colors cursor-pointer ${mainTab === "synonyms" ? "border-indigo-500 text-indigo-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}
         >
           <BookOpen size={12} /> 동의어 관리
         </button>
         <button
           onClick={() => setMainTab("balance")}
-          className={`flex items-center gap-1.5 px-5 py-3 text-xs font-bold border-b-2 transition-colors cursor-pointer ${mainTab === "balance" ? "border-orange-500 text-orange-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+          className={`flex items-center gap-1.5 px-3 sm:px-5 py-3 text-xs font-bold border-b-2 shrink-0 transition-colors cursor-pointer ${mainTab === "balance" ? "border-orange-500 text-orange-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}
         >
           잔고항목 지정
+        </button>
+        <button
+          onClick={() => setMainTab("records")}
+          className={`flex items-center gap-1.5 px-3 sm:px-5 py-3 text-xs font-bold border-b-2 shrink-0 transition-colors cursor-pointer ${mainTab === "records" ? "border-rose-500 text-rose-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}
+        >
+          <FileText size={12} /> 거래명세서 조회
         </button>
       </div>
     </div>
 
-    {mainTab === "balance" ? (
+    {mainTab === "records" ? (
+      /* ── 거래명세서 조회 탭 ── */
+      <ConfirmedRecordsTab />
+    ) : mainTab === "balance" ? (
       /* ── 잔고항목 지정 탭 ── */
       <BalanceConfigTab pages={pages} config={balanceConfig} onConfigChange={handleBalanceConfigChange} />
     ) : mainTab === "synonyms" ? (
@@ -938,7 +1150,7 @@ return (
         </div>
       )}
 
-      {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} rotation={rotation} onReparsePage={handleReparsePage} barcodeMatches={barcodeMatches} balanceConfig={balanceConfig} />}
+      {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} rotation={rotation} onReparsePage={handleReparsePage} barcodeMatches={barcodeMatches} balanceConfig={balanceConfig} onSaveConfirmed={handleSaveConfirmed} />}
     </div>
     )}
   </div>
