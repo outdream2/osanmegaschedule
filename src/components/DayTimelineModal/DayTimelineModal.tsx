@@ -908,11 +908,11 @@ export const DayTimelineModal: React.FC<Props> = ({
           setRestSlots(data.rest_slots);
           localStorage.setItem(`tl_rest_slots_${date}`, JSON.stringify(data.rest_slots));
         }
-        if (data.lunch_offset) {
+        if (data.lunch_offset != null) {
           setLunchOffset(data.lunch_offset);
           localStorage.setItem(`tl_lunch_offset_${date}`, String(data.lunch_offset));
         }
-        if (data.rest_offset) {
+        if (data.rest_offset != null) {
           setRestOffset(data.rest_offset);
           localStorage.setItem(`tl_rest_offset_${date}`, String(data.rest_offset));
         }

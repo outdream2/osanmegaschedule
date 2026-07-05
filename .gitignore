@@ -18,3 +18,7 @@ server/models/*.onnx.data
 # 변환 중간 파일 제외
 server/models/best_*.pt
 server/models/*_temp.*
+.history/
+_test_in.json
+metadata.json
+server/models/best.onnx
