@@ -202,6 +202,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
   const [empCustomPosition, setEmpCustomPosition] = useState("");
   const [empEmploymentType, setEmpEmploymentType] = useState<string>("정직원");
   const [empHireDate, setEmpHireDate] = useState("");
+  const [empRetireDate, setEmpRetireDate] = useState("");
   const [empDescription, setEmpDescription] = useState("");
   const [empWorkplace, setEmpWorkplace] = useState<string>("매장");
   const [empGender, setEmpGender] = useState<"남" | "여" | "">("");
@@ -346,6 +347,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     setEmpCustomPosition("");
     setEmpEmploymentType("정직원");
     setEmpHireDate("");
+    setEmpRetireDate("");
     setEmpDescription("");
     setEmpWorkplace("매장");
     setEmpGender("");
@@ -376,6 +378,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     setEmpLevel(emp.level ?? 1);
     setEmpEmploymentType(emp.employmentType || "정직원");
     setEmpHireDate(emp.hireDate || "");
+    setEmpRetireDate(emp.retireDate || "");
     setEmpDescription(emp.description || "");
     setEmpWorkplace(emp.workplace || "매장");
     setEmpGender((emp.gender as "남" | "여") || "");
@@ -1071,6 +1074,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           rank: empRank.trim() || null,
           employmentType: empEmploymentType,
           hireDate: empHireDate || new Date().toISOString().split("T")[0],
+          retireDate: empRetireDate || null,
           description: empDescription,
           workplace: empWorkplace,
           gender: empGender || null,
@@ -1088,6 +1092,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           rank: empRank.trim() || null,
           employmentType: empEmploymentType,
           hireDate: empHireDate || new Date().toISOString().split("T")[0],
+          retireDate: empRetireDate || null,
           description: empDescription,
           workplace: empWorkplace,
           gender: empGender || null,
@@ -1108,6 +1113,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       setEmpCustomPosition("");
       setEmpEmploymentType("정직원");
       setEmpHireDate("");
+      setEmpRetireDate("");
       setEmpDescription("");
       setEmpWorkplace("매장");
       setEmpGender("");
@@ -2123,29 +2129,39 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             const { fullDate, isToday } = getDayDetails(dateStr);
                             const currentSched = emp.schedules.find((s) => s.date === fullDate);
                             const isOwnRow = isEmployeeMode && sessionEmployeeId === emp.id;
-                            // 관리자: editMode 켜야 break modal 열림 / 직원: 본인 row는 항상 가능
-                            const canOpenBreak = (isManagerRole && editMode) || isOwnRow;
+                            // 재직 기간 체크: 입사일 이전 · 퇴사일 이후 → 근무 불가 (회색 처리 + 클릭 차단)
+                            const beforeHire = !!emp.hireDate && fullDate < emp.hireDate;
+                            const afterRetire = !!emp.retireDate && fullDate > emp.retireDate;
+                            const outOfEmployment = beforeHire || afterRetire;
+                            // 관리자: editMode 켜야 break modal 열림 / 직원: 본인 row는 항상 가능. 재직 기간 밖이면 불가.
+                            const canOpenBreak = !outOfEmployment && ((isManagerRole && editMode) || isOwnRow);
                             const nextDate = displayDates[dateIdx + 1];
                             const isMonthEnd = !nextDate || nextDate.substring(0, 7) !== dateStr.substring(0, 7);
 
                             const cell = (
                               <td
                                 key={`${emp.id}-${dateStr}`}
-                                className={`p-0 border-r border-[#e2e8f0] ${isToday ? "ring-2 ring-inset ring-red-500 z-[25] relative" : ""} ${canOpenBreak ? "cursor-pointer hover:bg-amber-50/50" : ""}`}
+                                className={`p-0 border-r border-[#e2e8f0] ${isToday ? "ring-2 ring-inset ring-red-500 z-[25] relative" : ""} ${outOfEmployment ? "bg-slate-100/80 cursor-not-allowed" : (canOpenBreak ? "cursor-pointer hover:bg-amber-50/50" : "")}`}
                                 onClick={canOpenBreak ? () => openBreakModalForCell(emp.id, fullDate) : undefined}
-                                title={canOpenBreak ? "클릭하여 점심/휴게 시간 설정" : undefined}
+                                title={outOfEmployment ? (beforeHire ? "입사일 이전 — 근무 불가" : "퇴사일 이후 — 근무 불가") : (canOpenBreak ? "클릭하여 점심/휴게 시간 설정" : undefined)}
                               >
-                                <ScheduleCell
-                                  schedule={currentSched}
-                                  dateStr={fullDate}
-                                  employeeId={emp.id}
-                                  onUpdate={(isEmployeeMode || isManagerRole || isMonthLocked) ? (async () => {}) : handleCellUpdate}
-                                  isAdmin={isAdmin && !isMonthLocked && editMode}
-                                  isPharmacist={emp.position === "약사"}
-                                  typeHoursMap={getTypeHoursMap(emp.position, emp.employmentType)}
-                                  scheduleTypes={settingsScheduleTypes.map((e) => ({ value: e.type, label: e.type }))}
-                                  scheduleTypeEntries={settingsScheduleTypes}
-                                />
+                                {outOfEmployment ? (
+                                  <div className="w-full h-full min-h-[24px] flex items-center justify-center text-[10px] text-slate-400 font-medium select-none">
+                                    <span className="opacity-40">─</span>
+                                  </div>
+                                ) : (
+                                  <ScheduleCell
+                                    schedule={currentSched}
+                                    dateStr={fullDate}
+                                    employeeId={emp.id}
+                                    onUpdate={(isEmployeeMode || isManagerRole || isMonthLocked) ? (async () => {}) : handleCellUpdate}
+                                    isAdmin={isAdmin && !isMonthLocked && editMode}
+                                    isPharmacist={emp.position === "약사"}
+                                    typeHoursMap={getTypeHoursMap(emp.position, emp.employmentType)}
+                                    scheduleTypes={settingsScheduleTypes.map((e) => ({ value: e.type, label: e.type }))}
+                                    scheduleTypeEntries={settingsScheduleTypes}
+                                  />
+                                )}
                               </td>
                             );
 
@@ -2243,6 +2259,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           setEmpEmploymentType={setEmpEmploymentType}
           empHireDate={empHireDate}
           setEmpHireDate={setEmpHireDate}
+          empRetireDate={empRetireDate}
+          setEmpRetireDate={setEmpRetireDate}
           empDescription={empDescription}
           setEmpDescription={setEmpDescription}
           empWorkplace={empWorkplace}

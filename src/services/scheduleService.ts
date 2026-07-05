@@ -157,17 +157,20 @@ export class ScheduleService {
     return { count: saved?.length ?? rows.length };
   }
 
-  async createEmployee(data: { name: string; position: string; employmentType?: string; hireDate: string; description: string; workplace?: string; rank?: string | null; gender?: string | null; phone?: string | null; annual_leave_days?: number; level?: number; contract_file_url?: string | null }) {
-    const { data: result, error } = await supabase
-      .from("employees")
-      .insert({ ...data, workplace: data.workplace ?? "매장", employmentType: data.employmentType ?? "정직원", level: data.level ?? 1 })
-      .select()
-      .single();
+  async createEmployee(data: { name: string; position: string; employmentType?: string; hireDate: string; retireDate?: string | null; description: string; workplace?: string; rank?: string | null; gender?: string | null; phone?: string | null; annual_leave_days?: number; level?: number; contract_file_url?: string | null }) {
+    // retireDate가 없는 스키마의 경우를 대비해 fallback 시도
+    const base = { ...data, workplace: data.workplace ?? "매장", employmentType: data.employmentType ?? "정직원", level: data.level ?? 1 };
+    let { data: result, error } = await supabase.from("employees").insert(base).select().single();
+    if (error && /column .*retireDate.* does not exist/i.test(error.message)) {
+      const { retireDate: _rd, ...noRetire } = base;
+      void _rd;
+      ({ data: result, error } = await supabase.from("employees").insert(noRetire).select().single());
+    }
     if (error) throw new Error(error.message);
     return result;
   }
 
-  async updateEmployee(id: number, data: { name: string; position: string; employmentType?: string; hireDate: string; description: string; workplace?: string; rank?: string | null; gender?: string | null; phone?: string | null; annual_leave_days?: number; level?: number; contract_file_url?: string | null }) {
+  async updateEmployee(id: number, data: { name: string; position: string; employmentType?: string; hireDate: string; retireDate?: string | null; description: string; workplace?: string; rank?: string | null; gender?: string | null; phone?: string | null; annual_leave_days?: number; level?: number; contract_file_url?: string | null }) {
     // 핵심 필드 + 존재하는 선택 필드로 페이로드 구성
     const payload: Record<string, any> = {
       name: data.name,
@@ -177,6 +180,7 @@ export class ScheduleService {
       description: data.description,
       workplace: data.workplace ?? "매장",
     };
+    if (data.retireDate !== undefined) payload.retireDate = data.retireDate;
     for (const k of ["rank", "gender", "phone", "annual_leave_days", "level", "contract_file_url"] as const) {
       if ((data as any)[k] !== undefined) payload[k] = (data as any)[k];
     }

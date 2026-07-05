@@ -213,7 +213,11 @@ router.put("/api/zone-day/:date", async (req, res) => {
   let { error } = await supabase.from(DAY_TABLE).upsert(payload, { onConflict: "date" });
 
   // 구 스키마 fallback: is_confirmed / interval / count 컬럼이 없으면 제외하고 재시도
-  if (error && /column .*(is_confirmed|lunch_interval|rest_interval|lunch_count|rest_count).* does not exist/i.test(error.message)) {
+  // Supabase 에러 메시지는 "does not exist" 또는 "Could not find the '...' column" 형태 모두 가능
+  const missingColRe = /(is_confirmed|lunch_interval|rest_interval|lunch_count|rest_count)/i;
+  const schemaColMissing = error && missingColRe.test(error.message) &&
+    /(does not exist|Could not find|schema cache)/i.test(error.message);
+  if (schemaColMissing) {
     const {
       is_confirmed: _ic,
       lunch_interval: _li,

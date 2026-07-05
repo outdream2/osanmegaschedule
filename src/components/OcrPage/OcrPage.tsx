@@ -660,7 +660,8 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
     if (files.length === 0) return;
     setError(null); setPages([]); setProcessed(0); setPageCount(0); setStatusMsg("");
     setPageImages([]); setCurrentPageIdx(0);
-    setLoading(true); setRotation(-90);
+    // 자동 회전 감지 결과가 도착하기 전까지는 원본 그대로 (0) 표시
+    setLoading(true); setRotation(0);
     imagesDataRef.current = [];
 
     const isPdf = files.length === 1 &&

@@ -15,6 +15,8 @@ interface EmployeeFormModalProps {
   setEmpEmploymentType: React.Dispatch<React.SetStateAction<string>>;
   empHireDate: string;
   setEmpHireDate: React.Dispatch<React.SetStateAction<string>>;
+  empRetireDate: string;
+  setEmpRetireDate: React.Dispatch<React.SetStateAction<string>>;
   empDescription: string;
   setEmpDescription: React.Dispatch<React.SetStateAction<string>>;
   empWorkplace: string;
@@ -67,6 +69,7 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
   empCustomPosition, setEmpCustomPosition,
   empEmploymentType, setEmpEmploymentType,
   empHireDate, setEmpHireDate,
+  empRetireDate, setEmpRetireDate,
   empDescription, setEmpDescription,
   empWorkplace, setEmpWorkplace,
   empGender, setEmpGender,
@@ -231,8 +234,8 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
             </select>
           </div>
 
-          {/* ── 5. 입사일 | 연간월차 ── */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* ── 5. 입사일 | 퇴사일 | 연간월차 ── */}
+          <div className="grid grid-cols-3 gap-2">
             <div>
               <label className={`${LABEL_CLS} flex items-center gap-1`}>
                 <Calendar size={11} /> 입사일
@@ -242,6 +245,19 @@ export const EmployeeFormModal: React.FC<EmployeeFormModalProps> = ({
                 value={empHireDate}
                 onChange={e => setEmpHireDate(e.target.value)}
                 className={SELECT_CLS}
+              />
+            </div>
+            <div>
+              <label className={`${LABEL_CLS} flex items-center gap-1`}>
+                <Calendar size={11} /> 퇴사일
+                <span className="text-slate-400 font-normal normal-case ml-0.5">선택</span>
+              </label>
+              <input
+                type="date"
+                value={empRetireDate}
+                onChange={e => setEmpRetireDate(e.target.value)}
+                className={SELECT_CLS}
+                title="퇴사일 이후에는 근무를 지정할 수 없습니다"
               />
             </div>
             <div>

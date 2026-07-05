@@ -33,6 +33,24 @@ function getStockState(item: StockItem): StockState {
   return "selling";
 }
 
+// 재고와 판매 두 축을 독립적으로 표시 (같은 상품이 재고있음+판매중 모두 참일 수 있음)
+type StockAxis   = "in-stock" | "out-of-stock";
+type SellingAxis = "selling"  | "not-selling";
+
+function getStockAxis(item: StockItem): StockAxis {
+  const n = Number(item.current_stock);
+  if (item.current_stock !== null && item.current_stock !== "" && !Number.isNaN(n)) {
+    return n > 0 ? "in-stock" : "out-of-stock";
+  }
+  return "in-stock"; // 재고 정보 없으면 기본 재고있음으로 표시 (판매중 상태와 별개)
+}
+
+function getSellingAxis(item: StockItem): SellingAxis {
+  const status = item.sale_status ?? "";
+  if (/단종|판매중지|판매불가/.test(status)) return "not-selling";
+  return "selling";
+}
+
 const STATE_META: Record<StockState, { label: string; bg: string; text: string; dot: string }> = {
   in:      { label: "재고있음",  bg: "bg-emerald-100", text: "text-emerald-700", dot: "bg-emerald-500" },
   selling: { label: "판매중",    bg: "bg-sky-100",     text: "text-sky-700",     dot: "bg-sky-400"     },
@@ -177,15 +195,28 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
               {results
                 .filter(item => isLoggedIn || getStockState(item) !== "out")
                 .map((item, i) => {
-                  const state = getStockState(item);
-                  const meta = STATE_META[state];
+                  const stockAxis   = getStockAxis(item);
+                  const sellingAxis = getSellingAxis(item);
                   return (
                     <div key={`${item.product_name}-${item.spec ?? ""}-${i}`}
                       className="px-4 py-3 flex items-center gap-3">
-                      {/* Status badge */}
-                      <span className={`shrink-0 text-[11px] font-black px-2.5 py-1 rounded-lg ${meta.bg} ${meta.text} whitespace-nowrap`}>
-                        {meta.label}
-                      </span>
+                      {/* Status badges (재고 · 판매 나란히) */}
+                      <div className="shrink-0 flex flex-col gap-0.5">
+                        <span className={`text-[11px] font-black px-2 py-0.5 rounded-lg whitespace-nowrap ${
+                          stockAxis === "in-stock"
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-red-100 text-red-600"
+                        }`}>
+                          {stockAxis === "in-stock" ? "재고있음" : "재고없음"}
+                        </span>
+                        <span className={`text-[11px] font-black px-2 py-0.5 rounded-lg whitespace-nowrap ${
+                          sellingAxis === "selling"
+                            ? "bg-sky-100 text-sky-700"
+                            : "bg-slate-200 text-slate-500"
+                        }`}>
+                          {sellingAxis === "selling" ? "판매중" : "판매중지"}
+                        </span>
+                      </div>
 
                       {/* Name + spec */}
                       <div className="flex-1 min-w-0">
@@ -193,7 +224,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                         {item.spec && (
                           <div className="text-[11px] text-slate-400 break-words mt-0.5">{item.spec}</div>
                         )}
-                        {/* 직원 로그인 시에만 실제 위치·진열 위치·공급처 표시 */}
+                        {/* 로그인 시: 구역(실제·진열·공급처) 표시 */}
                         {isLoggedIn && (item.real_map || item.display_location || item.supplier) && (
                           <div className="flex items-center gap-1 flex-wrap mt-1">
                             {item.real_map && (

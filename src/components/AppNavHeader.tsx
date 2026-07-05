@@ -183,18 +183,18 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
 
           {rightSlot}
 
-          {userLevel >= 1 ? (
-            onLogout && (
-              <button
-                onClick={onLogout}
-                className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-gray-200 hover:border-rose-300 rounded-lg transition cursor-pointer"
-              >
-                <LogOut size={13} />
-                <span className="hidden sm:inline">로그아웃</span>
-              </button>
-            )
+          {/* 로그아웃 버튼: 로그인 상태(authSession 존재)면 role/level 무관하게 항상 노출 */}
+          {authSession && onLogout ? (
+            <button
+              onClick={onLogout}
+              className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-gray-200 hover:border-rose-300 rounded-lg transition cursor-pointer"
+              title="로그아웃"
+            >
+              <LogOut size={13} />
+              <span className="hidden sm:inline">로그아웃</span>
+            </button>
           ) : (
-            <div className="flex items-center gap-1 px-2 py-1.5 text-xs font-semibold bg-gray-50 text-gray-400 border border-gray-200 rounded-lg">
+            <div className="flex items-center gap-1 px-2 py-1.5 text-xs font-semibold bg-gray-50 text-gray-400 border border-gray-200 rounded-lg" title="비로그인">
               <Lock size={12} />
             </div>
           )}

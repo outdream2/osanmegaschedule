@@ -33,6 +33,7 @@ export interface Employee {
   rank?: string;        // 직급: 대표 | 부장 | 팀장 | 과장 | 사원 | ...
   employmentType: string; // 정직원 | 계약직 | 알바
   hireDate: string;
+  retireDate?: string | null; // 퇴사일 (YYYY-MM-DD). null이면 현직.
   description: string;
   workplace: string; // "매장" or "창고"
   gender?: "남" | "여";
