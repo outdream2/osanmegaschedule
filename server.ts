@@ -27,7 +27,6 @@ import stockArrivalsRouter from "./server/routes/stockArrivals";
 import zoneAssignmentsRouter from "./server/routes/zoneAssignments";
 import supplierBalanceConfigRouter from "./server/routes/supplierBalanceConfig";
 import ocrConfirmedRouter from "./server/routes/ocrConfirmed";
-import { loadStockCountModel } from "./server/stockCounter";
 
 async function startServer() {
   const app = express();
@@ -101,8 +100,6 @@ async function startServer() {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
-
-  loadStockCountModel();
 
   httpServer.listen(PORT, "0.0.0.0", () => {
     console.log(`[Server] Megatown schedule service running on http://localhost:${PORT}`);

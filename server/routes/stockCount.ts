@@ -1,9 +1,19 @@
 import { Router } from "express";
-import { countObjectsInImage, isStockCountModelLoaded, reloadStockCountModel, getLoadStatusReason } from "../stockCounter";
+import { countObjectsInImage, isStockCountModelLoaded, loadStockCountModel, reloadStockCountModel, getLoadStatusReason } from "../stockCounter";
 
 const router = Router();
 
+let modelLoadPromise: Promise<boolean> | null = null;
+
+function ensureModelLoaded(): Promise<boolean> {
+  if (isStockCountModelLoaded()) return Promise.resolve(true);
+  if (!modelLoadPromise) modelLoadPromise = loadStockCountModel().finally(() => { modelLoadPromise = null; });
+  return modelLoadPromise;
+}
+
 router.get("/api/stock-count/status", (_req, res) => {
+  // Trigger lazy load in background without waiting
+  if (!isStockCountModelLoaded()) ensureModelLoaded();
   const ready = isStockCountModelLoaded();
   res.json({ ready, reason: getLoadStatusReason() });
 });
