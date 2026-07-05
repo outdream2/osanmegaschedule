@@ -149,10 +149,10 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
           )}
         </div>
 
-        {/* Status legend */}
+        {/* Status legend — 비로그인: 재고있음·판매중 / 로그인: 재고있음·판매중·재고없음 */}
         <div className="flex items-center gap-3 mb-4 px-1">
           {(Object.entries(STATE_META) as [StockState, typeof STATE_META[StockState]][])
-            .filter(([state]) => isLoggedIn || state !== "out")
+            .filter(([state]) => isLoggedIn ? true : state !== "out")
             .map(([, m]) => (
               <span key={m.label} className="flex items-center gap-1 text-[11px] font-bold text-slate-500">
                 <span className={`w-2 h-2 rounded-full ${m.dot}`} />
@@ -193,14 +193,18 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
             </div>
             <div className="divide-y divide-slate-50">
               {results
-                .filter(item => isLoggedIn || getStockState(item) !== "out")
+                // 비로그인: 재고있음 & 판매중 상품만 노출
+                .filter(item => {
+                  if (isLoggedIn) return true;
+                  return getStockAxis(item) === "in-stock" && getSellingAxis(item) === "selling";
+                })
                 .map((item, i) => {
                   const stockAxis   = getStockAxis(item);
                   const sellingAxis = getSellingAxis(item);
                   return (
                     <div key={`${item.product_name}-${item.spec ?? ""}-${i}`}
                       className="px-4 py-3 flex items-center gap-3">
-                      {/* Status badges (재고 · 판매 나란히) */}
+                      {/* Status badges — 재고 · 판매 두 축 나란히 (로그인 무관) */}
                       <div className="shrink-0 flex flex-col gap-0.5">
                         <span className={`text-[11px] font-black px-2 py-0.5 rounded-lg whitespace-nowrap ${
                           stockAxis === "in-stock"
