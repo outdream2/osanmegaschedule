@@ -1191,8 +1191,8 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                               const isAssigned = isMulti ? staffList.length > 0 : !!(dz?.assignedStaffId);
                               const isDragTarget = dragOverZoneNum === zoneDef.num;
 
-                              // 42(이벤트존)/36(프로모션) 은 카운터/정면약진열과 세로 길이를 맞추기 위해 세로로 확장
-                              const wideClass = isMulti ? "flex-1 basis-full min-w-full min-h-[180px]" : "min-w-[36px]";
+                              // 42(이벤트존)/36(프로모션) 은 카운터(메인 POS)와 세로 길이를 맞춰 확장
+                              const wideClass = isMulti ? "flex-1 basis-full min-w-full min-h-[280px]" : "min-w-[36px]";
 
                               return (
                                 <div
@@ -1583,7 +1583,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                     </div>
                   </div>
 
-                  {/* 2-2. 메인 POS 카운터 (Blue) — the dominant tall blue zone in the middle of the wing in map.png */}
+                  {/* 2-2. 메인 POS 카운터 (Blue) — 3개 창구로 분할, 창구 사이 spacing */}
                   <div
                     onDragOver={(e) => handleDragOver(e, "slot_counter")}
                     onDragLeave={handleDragLeave}
@@ -1592,7 +1592,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                       dragOverZone === "slot_counter" ? "bg-blue-100 border-blue-600 z-20 scale-[1.01] shadow-xs" : ""
                     }`}
                   >
-                    {/* Vertical title label (rotated) — matches the blue strip text in map.png */}
+                    {/* Vertical title label (rotated) */}
                     <div className="flex items-center justify-center shrink-0 w-5 mr-2 border-r border-blue-300/60">
                       <span
                         className="text-[10px] font-black text-blue-900 whitespace-nowrap"
@@ -1601,24 +1601,37 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                         💳 메인 카운터 (Checkout)
                       </span>
                     </div>
-                    {/* Content */}
-                    <div className="flex-1 flex flex-col justify-between">
-                      {/* Stool seats */}
-                      <div className="py-1 flex flex-col items-center gap-1">
-                        <span className="text-[7px] text-slate-500 font-bold">고객 체어 8석</span>
-                        <div className="flex flex-wrap justify-center gap-1">
-                          {Array.from({ length: 8 }).map((_, seatI) => (
-                            <div key={`stool-ui-${seatI}`} className="w-2.5 h-2.5 rounded-full border border-slate-300 bg-white shadow-3xs" title={`seats-${seatI}`}></div>
-                          ))}
-                        </div>
-                      </div>
-                      <div className="flex-1 flex flex-col justify-center">
-                        {renderPlacedStaffTags(cashiers)}
-                        {cashiers.length === 0 && (
-                          <span className="text-[8px] text-slate-400 italic block text-center py-1">셀프 결제 단말 가동</span>
-                        )}
-                      </div>
-                      <div className="text-[7px] text-blue-700 font-extrabold text-right border-t border-blue-200/50 pt-0.5">POS 결제 라인</div>
+                    {/* Content — 3개 창구 (카운터1·2·3) 세로로 나눔, gap으로 사이 공간 */}
+                    <div className="flex-1 flex flex-col gap-2">
+                      {[1, 2, 3].map(deskNum => {
+                        // 담당자를 3개 창구에 라운드로빈으로 배분
+                        const deskStaff = cashiers.filter((_, i) => (i % 3) + 1 === deskNum);
+                        return (
+                          <div
+                            key={`counter-desk-${deskNum}`}
+                            className="flex-1 bg-white/80 border border-blue-300 rounded-md px-1.5 py-1 flex items-center gap-1.5 shadow-sm"
+                          >
+                            {/* 창구 번호 배지 */}
+                            <div className="flex flex-col items-center justify-center shrink-0 w-6">
+                              <span className="text-[8px] font-black text-blue-700 leading-none">창구</span>
+                              <span className="text-sm font-black text-blue-800 leading-none">{deskNum}</span>
+                            </div>
+                            {/* 고객 체어 아이콘 (3석) */}
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              {[0, 1, 2].map(s => (
+                                <div key={`stool-${deskNum}-${s}`} className="w-1.5 h-1.5 rounded-full border border-slate-300 bg-slate-50" />
+                              ))}
+                            </div>
+                            {/* 배정된 직원 태그 */}
+                            <div className="flex-1 min-w-0 flex flex-wrap items-center gap-0.5">
+                              {deskStaff.length > 0 ? renderPlacedStaffTags(deskStaff) : (
+                                <span className="text-[8px] text-slate-400 italic">셀프결제</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="text-[7px] text-blue-700 font-extrabold text-right border-t border-blue-200/50 pt-0.5">POS 결제 라인 · 3창구 운영</div>
                     </div>
                   </div>
 

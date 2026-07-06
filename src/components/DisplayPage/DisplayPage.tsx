@@ -1340,46 +1340,94 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             <div className="overflow-x-auto">
             <div className="p-4 bg-slate-200 rounded-2xl flex flex-col justify-between border-4 border-emerald-500 shadow-inner gap-4 min-w-[780px] min-h-[550px]">
 
-              {/* SECTION 1: TOP HORIZONTAL BAND (Shelves 24-35 + corner cart/elevator) */}
+              {/* SECTION 1: TOP HORIZONTAL BAND — 신규 배치 (2026 개편) */}
+              {/* 상단: 21→9 (좌→우 감소, 13개)  ·  중앙: 22 + 8-1 각 B|A  ·  하단: 23→34 (좌→우 증가, 12개) */}
               <div className="flex justify-between items-stretch gap-3 w-full shrink-0">
 
-                {/* Left corner mini-wall shelves: 23, 22 */}
-                <div className="flex flex-col gap-1.5 bg-gray-300 p-1.5 rounded-lg w-[72px] justify-center shadow-3xs">
-                  <div className="text-[6px] font-black text-gray-500 text-center uppercase tracking-wider">좌측벽</div>
-                  {renderZoneCell(23, "h-16 text-[9px] justify-center")}
-                  {renderZoneCell(22, "h-16 text-[9px] justify-center")}
-                </div>
-
-                {/* Main Horizontal Shelving Wing: includes Top Wall, Aisle Shelves, and Bottom Wall */}
+                {/* Main Horizontal Shelving Wing: Top Wall, Aisle Shelves, Bottom Wall */}
                 <div className="flex-1 bg-white border-2 border-emerald-600 rounded-xl p-3 flex flex-col shadow-sm relative">
 
-                  {/* Outer Top Wall Shelves: 24 to 35 */}
+                  {/* 상단 벽면: 21→9 좌→우 (13개) — 각 구역 아래 카테고리 라벨 */}
                   <div className="w-full">
-                    <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">상단 외곽 매대 (24~35)</div>
-                    <div className="grid grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
-                      {[24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35].map((num) =>
-                        renderZoneCell(num, "h-10 text-[9px] p-0.5 justify-center")
-                      )}
+                    <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">상단 벽면 (21→9)</div>
+                    <div className="grid gap-1 bg-slate-100 p-1 rounded" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
+                      {[21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9].map((num) => {
+                        const zd = ZONE_DEFS.find(z => z.num === num);
+                        return (
+                          <div key={`top-${num}`} className="flex flex-col gap-0.5">
+                            {renderZoneCell(num, "h-10 text-[9px] p-0.5 justify-center")}
+                            <div className="text-[8px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded px-0.5 py-0.5 leading-tight text-center min-h-[24px] flex items-center justify-center">
+                              {zd?.category ?? ""}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Inner Aisle Shelves: 9 to 1 (Vertical shelves spaced inside top wing) */}
+                  {/* 중앙 진열대: 22 + 진열대 8→1 (각 진열대 zone 위 B 카테고리, 아래 A 카테고리) */}
                   <div className="my-3 w-full">
-                    <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-1">중앙 수직 진열대 (9~1)</div>
-                    <div className="flex justify-around items-center px-4 bg-slate-50 border border-slate-200 py-2 rounded-lg gap-3">
-                      {[9, 8, 7, 6, 5, 4, 3, 2, 1].map((num) =>
-                        renderZoneCell(num, "w-9 h-20 flex flex-col justify-between items-center py-1.5 px-0.5 text-[9px]")
-                      )}
+                    <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-1">중앙 진열대 (22 · 8→1)</div>
+                    <div className="flex items-start px-2 bg-slate-50 border border-slate-200 py-2 rounded-lg gap-2">
+                      {/* 진열대 22 (단독, 카테고리 아래) */}
+                      <div className="flex flex-col items-center gap-1 flex-1 min-w-[52px]">
+                        {/* placeholder 위 여백 (다른 aisle의 B 라벨 높이와 맞춤) */}
+                        <div className="w-full min-h-[36px]" />
+                        {renderZoneCell(22, "w-full h-20 flex flex-col justify-between items-center py-1.5 px-0.5 text-[9px]")}
+                        <div className="w-full text-[9px] font-bold text-slate-700 bg-white border border-slate-300 rounded px-1 py-0.5 leading-tight text-center min-h-[36px] flex items-center justify-center">
+                          {ZONE_DEFS.find(z => z.num === 22)?.category ?? ""}
+                        </div>
+                      </div>
+                      {/* 진열대 8→1 (색상 category.jpg 반영 · B 위 · A 아래) */}
+                      {[8, 7, 6, 5, 4, 3, 2, 1].map((num) => {
+                        const zoneDef = ZONE_DEFS.find(z => z.num === num);
+                        // category.jpg 참고 색상 매핑
+                        const colorMap: Record<number, { bg: string; border: string; text: string }> = {
+                          1: { bg: "bg-blue-100",   border: "border-blue-500",   text: "text-blue-900" },
+                          2: { bg: "bg-yellow-100", border: "border-yellow-500", text: "text-yellow-900" },
+                          3: { bg: "bg-red-100",    border: "border-red-500",    text: "text-red-900" },
+                          4: { bg: "bg-pink-100",   border: "border-pink-500",   text: "text-pink-900" },
+                          5: { bg: "bg-lime-100",   border: "border-lime-600",   text: "text-lime-900" },
+                          6: { bg: "bg-sky-100",    border: "border-sky-500",    text: "text-sky-900" },
+                          7: { bg: "bg-indigo-100", border: "border-indigo-500", text: "text-indigo-900" },
+                          8: { bg: "bg-purple-100", border: "border-purple-500", text: "text-purple-900" },
+                        };
+                        const c = colorMap[num];
+                        return (
+                          <div key={`aisle-${num}`} className="flex flex-col items-center gap-1 flex-1 min-w-[62px]">
+                            {/* B 카테고리 (구역 위) */}
+                            <div className={`w-full text-[9px] font-bold ${c.text} ${c.bg} border ${c.border} rounded px-1 py-0.5 leading-tight text-center min-h-[36px] flex flex-col items-center justify-center`}>
+                              <span className="text-[8px] font-black">{num}B</span>
+                              <span className="text-[9px] leading-tight">{zoneDef?.subB ?? ""}</span>
+                            </div>
+                            {/* 드래그드롭 zone (진열대 전체) */}
+                            {renderZoneCell(num, "w-full h-20 flex flex-col justify-between items-center py-1.5 px-0.5 text-[9px]")}
+                            {/* A 카테고리 (구역 아래) */}
+                            <div className={`w-full text-[9px] font-bold ${c.text} ${c.bg} border ${c.border} rounded px-1 py-0.5 leading-tight text-center min-h-[36px] flex flex-col items-center justify-center`}>
+                              <span className="text-[8px] font-black">{num}A</span>
+                              <span className="text-[9px] leading-tight">{zoneDef?.subA ?? ""}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Outer Bottom Wall Shelves of Horizontal Wing: 21 to 10 */}
+                  {/* 하단 벽면: 23→34 좌→우 (12개) — 각 구역 아래 카테고리 라벨 */}
                   <div className="w-full">
-                    <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">하단 외곽 매대 (21~10)</div>
+                    <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">하단 벽면 (23→34)</div>
                     <div className="grid grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
-                      {[21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10].map((num) =>
-                        renderZoneCell(num, "h-10 text-[9px] p-0.5 justify-center")
-                      )}
+                      {[23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34].map((num) => {
+                        const zd = ZONE_DEFS.find(z => z.num === num);
+                        return (
+                          <div key={`bot-${num}`} className="flex flex-col gap-0.5">
+                            {renderZoneCell(num, "h-10 text-[9px] p-0.5 justify-center")}
+                            <div className="text-[8px] font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 rounded px-0.5 py-0.5 leading-tight text-center min-h-[24px] flex items-center justify-center">
+                              {zd?.category ?? ""}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 

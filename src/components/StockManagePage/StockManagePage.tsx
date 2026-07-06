@@ -59,7 +59,7 @@ interface StockFlowRow {
   total_amount: number;
   optimal_stock: number;
 }
-type SortKey = "sale" | "purchase" | "amount" | "closing";
+type SortKey = "sale" | "purchase" | "amount" | "closing" | "loss";
 type SortDir = "asc" | "desc";
 
 function fmt(n: number): string {
@@ -492,7 +492,7 @@ export const StockManagePage: React.FC = () => {
   }, [infoSearchQuery, infoSelected, runInfoSearch]);
 
   const openProductInfoModal = useCallback(async () => {
-    // 선택된 게 없으면: 검색 결과 첫번째 사용, 그것도 없으면 현재 검색어로 즉시 검색해서 첫 결과 사용
+    // 상단 검색 → 정보확인 클릭 시: 적정재고이하 상품명 클릭과 동일한 모달(ProductInfoCard) 사용
     let target = infoSelected;
     if (!target && infoSearchResults.length > 0) target = infoSearchResults[0];
     if (!target && infoSearchQuery.trim()) {
@@ -509,6 +509,12 @@ export const StockManagePage: React.FC = () => {
       } catch { /* ignore */ }
     }
     if (!target) return;
+    // 적정재고이하와 동일하게 ProductInfoCard 모달 오픈
+    openScanProductModal(target);
+    return; // 아래 legacy dashboard 모달 로직 미실행
+
+    // ── (사용 안 함, 참조용) 통합대시보드 모달 원래 로직 ──
+    // eslint-disable-next-line no-unreachable
     setInfoModal({ code: target.product_code, name: target.product_name });
     setInfoModalData(null);
     setInfoModalLoading(true);
@@ -516,7 +522,6 @@ export const StockManagePage: React.FC = () => {
       const res = await fetch(`/api/stock-manage/product-info?code=${encodeURIComponent(target.product_code)}`);
       if (res.ok) {
         const data = await res.json();
-        // 방어적 파싱: 배열 필드 보장
         setInfoModalData({
           product: data?.product ?? null,
           stock_history: Array.isArray(data?.stock_history) ? data.stock_history : [],
@@ -525,7 +530,6 @@ export const StockManagePage: React.FC = () => {
       } else {
         const body = await res.text().catch(() => "");
         console.error("[product-info] failed:", res.status, body);
-        // 백엔드 엔드포인트 없거나 500이어도 최소한 상품 정보만 표시
         setInfoModalData({ product: target, stock_history: [], inventory_checks: [] });
       }
     } catch (e) {
@@ -711,13 +715,20 @@ export const StockManagePage: React.FC = () => {
   const filteredFlow = useMemo(() => {
     const minN = salesQtyMin.trim() === "" ? null : parseInt(salesQtyMin, 10);
     const maxN = salesQtyMax.trim() === "" ? null : parseInt(salesQtyMax, 10);
-    return stockFlow.filter(p => {
+    const filtered = stockFlow.filter(p => {
       const qty = p.sale_qty;
       if (minN != null && Number.isFinite(minN) && qty < minN) return false;
       if (maxN != null && Number.isFinite(maxN) && qty > maxN) return false;
       return true;
     });
-  }, [stockFlow, salesQtyMin, salesQtyMax]);
+    // 손실은 파생값이라 서버 정렬 불가 → 클라이언트에서 처리
+    if (flowSort === "loss") {
+      const sign = flowDir === "asc" ? 1 : -1;
+      const lossOf = (p: any) => Number(p.opening_stock) - Number(p.closing_stock) - Number(p.sale_qty);
+      return [...filtered].sort((a, b) => sign * (lossOf(a) - lossOf(b)));
+    }
+    return filtered;
+  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir]);
 
   // 상품 이력을 일자별 매입 수량으로 집계 → 차트 데이터
   const chartData = useMemo(() => {
@@ -1158,49 +1169,61 @@ export const StockManagePage: React.FC = () => {
                           };
                           return (
                             <>
-                              <th className="text-left px-1 py-1.5 w-8">#</th>
-                              <th className="text-left px-1 py-1.5">상품명</th>
-                              <th className="text-right px-1 py-1.5 w-14 text-slate-500">시작재고</th>
+                              <th className="text-left px-0.5 py-1.5 w-7">#</th>
+                              <th className="text-left px-1 py-1.5 min-w-[100px]">상품명</th>
+                              <th className="text-right px-0.5 py-1.5 w-12 text-slate-500">시작</th>
                               <th
                                 onClick={() => toggleFlowSort("closing")}
-                                className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "closing" ? "text-slate-800 font-black" : "text-slate-500"}`}
+                                className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "closing" ? "text-slate-800 font-black" : "text-slate-500"}`}
                                 title="클릭: 종료재고 기준 정렬 (재클릭 시 방향 반전)"
-                              >종료재고{arrowFor("closing")}</th>
+                              >종료{arrowFor("closing")}</th>
                               <th
                                 onClick={() => toggleFlowSort("purchase")}
-                                className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "purchase" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
+                                className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "purchase" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
                                 title="클릭: 매입 기준 정렬 (재클릭 시 방향 반전)"
                               >매입{arrowFor("purchase")}</th>
                               <th
                                 onClick={() => toggleFlowSort("sale")}
-                                className={`text-right px-1 py-1.5 w-20 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
+                                className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
                                 title="클릭: 판매출고계 기준 정렬 (재클릭 시 방향 반전)"
-                              >판매출고계{arrowFor("sale")}</th>
+                              >판매{arrowFor("sale")}</th>
                               <th
                                 onClick={() => toggleFlowSort("amount")}
-                                className={`text-right px-1 py-1.5 w-20 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "amount" ? "text-indigo-700 font-black" : "text-indigo-500"}`}
+                                className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "amount" ? "text-indigo-700 font-black" : "text-indigo-500"}`}
                                 title="클릭: 제품판매가 기준 정렬 (재클릭 시 방향 반전)"
-                              >제품판매가{arrowFor("amount")}</th>
+                              >판매가{arrowFor("amount")}</th>
+                              <th
+                                onClick={() => toggleFlowSort("loss")}
+                                className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "loss" ? "text-rose-700 font-black" : "text-rose-500"}`}
+                                title="클릭: 손실 기준 정렬 (재클릭 시 방향 반전). 손실 = 시작재고 − 종료재고 − 판매출고계"
+                              >손실{arrowFor("loss")}</th>
                             </>
                           );
                         })()}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {filteredFlow.map((p, i) => (
+                      {filteredFlow.map((p, i) => {
+                        const loss = Number(p.opening_stock) - Number(p.closing_stock) - Number(p.sale_qty);
+                        return (
                         <tr key={`flow-${p.product_code}-${i}`} className="hover:bg-orange-50/30 transition">
-                          <td className="px-1 py-1.5 text-[10px] font-black text-orange-600">{i + 1}</td>
+                          <td className="px-0.5 py-1.5 text-[10px] font-black text-orange-600">{i + 1}</td>
                           <td className="px-1 py-1.5">
-                            <div className="font-bold text-slate-700 truncate max-w-[180px]" title={p.product_name}>{p.product_name}</div>
-                            {p.supplier && <div className="text-[9px] text-slate-400 truncate max-w-[180px]">{p.supplier}</div>}
+                            <div className="font-bold text-slate-700 truncate max-w-[160px]" title={p.product_name}>{p.product_name}</div>
+                            {p.supplier && <div className="text-[9px] text-slate-400 truncate max-w-[160px]">{p.supplier}</div>}
                           </td>
-                          <td className="text-right px-1 py-1.5 font-mono text-slate-500 text-[11px]">{fmt(p.opening_stock)}</td>
-                          <td className={`text-right px-1 py-1.5 font-mono text-[11px] ${p.closing_stock < 0 ? "text-rose-500 font-bold" : "text-slate-600"}`}>{fmt(p.closing_stock)}</td>
-                          <td className="text-right px-1 py-1.5 font-mono text-emerald-600 text-[11px]">{fmt(p.purchase_qty)}</td>
-                          <td className="text-right px-1 py-1.5 font-mono font-bold text-orange-700">{fmt(p.sale_qty)}</td>
-                          <td className="text-right px-1 py-1.5 font-mono text-[11px] text-indigo-700 font-bold">{p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</td>
+                          <td className="text-right px-0.5 py-1.5 font-mono text-slate-500 text-[11px]">{fmt(p.opening_stock)}</td>
+                          <td className={`text-right px-0.5 py-1.5 font-mono text-[11px] ${p.closing_stock < 0 ? "text-rose-500 font-bold" : "text-slate-600"}`}>{fmt(p.closing_stock)}</td>
+                          <td className="text-right px-0.5 py-1.5 font-mono text-emerald-600 text-[11px]">{fmt(p.purchase_qty)}</td>
+                          <td className="text-right px-0.5 py-1.5 font-mono font-bold text-orange-700 text-[11px]">{fmt(p.sale_qty)}</td>
+                          <td className="text-right px-0.5 py-1.5 font-mono text-[10px] text-indigo-700 font-bold">{p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</td>
+                          <td
+                            className={`text-right px-0.5 py-1.5 font-mono text-[11px] ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
+                            title={`손실 = ${fmt(p.opening_stock)} − ${fmt(p.closing_stock)} − ${fmt(p.sale_qty)} = ${fmt(loss)}`}
+                          >{loss === 0 ? "0" : loss > 0 ? `+${fmt(loss)}` : fmt(loss)}</td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 )
