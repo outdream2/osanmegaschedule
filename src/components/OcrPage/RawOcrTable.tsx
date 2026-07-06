@@ -359,38 +359,45 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     });
   }
 
-  // 사용자 선택 반영한 페이지 표시 합계
-  // 우선순위:
-  //   1) 사용자가 명시적으로 선택 → 그 값
-  //   2) 공급사 저장 formula (총합계 - 에누리 = 합계액 등) → 계산값
-  //   3) 명세서 소계(stated)와 인식 합계(computed)가 일치하거나 stated가 있으면 → stated
-  //   4) 그 외 → computed
+  // 페이지의 에누리/차액 금액 감지 (summary_rows에서 라벨 매칭)
+  const getPageDiscount = (pn: number): { amount: number; label: string } | null => {
+    const pageData = structuredPages.find(p => p.page === pn);
+    const summary = pageData?.meta?.summary_rows ?? [];
+    // "에누리액", "에누리", "할인액", "할인", "차액", "차감" 등 라벨 매칭
+    const discRe = /에누리|할인|차액|차감|DC|D\.C/i;
+    const hit = summary.find(s => {
+      const norm = String(s.label ?? "").replace(/\s+/g, "");
+      return discRe.test(norm);
+    });
+    if (hit && Math.abs(hit.amount) > 0) {
+      return { amount: Math.abs(hit.amount), label: String(hit.label ?? "에누리").trim() };
+    }
+    return null;
+  };
+
+  // 페이지의 소계 계산
+  // - 기본: 명세서의 합계(stated) 반영
+  // - 에누리/차액이 있으면: stated + 에누리 (에누리 적용 전 금액)
+  // - 사용자가 직접 입력했으면 그 값 우선
   const getPageDisplayTotal = (pn: number): number => {
     const stated = structuredPages.find(p => p.page === pn)?.meta?.total;
     const computed = effectivePageTotals.get(pn) ?? 0;
-    const choice = pageSubtotalChoices[pn];
-    if (choice === "stated") return stated ?? computed;
-    if (choice === "computed") return computed;
-    if (choice === "custom") return pageSubtotalCustom[pn] ?? computed;
 
-    // 공급사 formula 반영: 예 대웅제약 = "총합계액 - 에누리액 = 합계액"
-    // supplierFormulaCache는 아래에 정의 (컴포넌트 변수로 접근)
-    try {
-      const pageSupp = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta?.supplier ?? "";
-      const formula = (supplierFormulaCache ?? {})[String(pageSupp)];
-      if (formula && formula.subtotal) {
-        // formula.subtotal = { positive: ["총합계액"], negative: ["에누리액"] }
-        const cands = pageBalanceCandidatesForFormula.get(pn) ?? new Map<string, number>();
-        let sum = 0;
-        for (const p of formula.subtotal.positive ?? []) sum += (cands.get(p) ?? 0);
-        for (const n of formula.subtotal.negative ?? []) sum -= (cands.get(n) ?? 0);
-        if (sum > 0) return sum;
-      }
-    } catch { /* fallback */ }
+    // 1) 사용자 직접 입력
+    if (pageSubtotalChoices[pn] === "custom") {
+      return pageSubtotalCustom[pn] ?? stated ?? computed;
+    }
 
-    // 기본: 명세서 소계가 있고 mismatch가 아닐 때는 명세서 소계 우선
-    if (stated != null && stated > 0 && Math.abs(stated - computed) <= 1) return stated;
-    return computed;
+    // 2) 명세서 합계 기본값
+    const base = stated ?? computed;
+    if (base <= 0) return computed;
+
+    // 3) 에누리/차액이 있으면 그 금액 만큼 되돌린 값 (에누리 적용 전)
+    const disc = getPageDiscount(pn);
+    if (disc) return base + disc.amount;
+
+    // 4) 명세서 합계 그대로
+    return base;
   };
 
   const total = amtIdx >= 0
@@ -2608,126 +2615,69 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     )}
                                   </div>
 
-                                  {/* 중앙: 소계 금액 — 수량×단가 합과 비교, 차액이 있으면 OCR에서 할인/에누리 항목 찾아 코멘트 */}
+                                  {/* 중앙: 소계 금액 — 명세서 합계 기준, 에누리 있으면 적용 전 금액 표시. 직접 입력 가능. */}
                                   <div className="flex items-center justify-center flex-1 min-w-[120px]">
                                     {(() => {
                                       const displayTotal = getPageDisplayTotal(pn);
                                       const pageData = structuredPages.find(p => p.page === pn);
-                                      const summary = pageData?.meta?.summary_rows ?? [];
-                                      const statedFromSummary = summary.find(s => {
-                                        const norm = String(s.label).replace(/\s+/g, "");
-                                        return /합계액|총합계액|총합계|합계|소계/.test(norm);
-                                      })?.amount;
-                                      const stated = statedFromSummary ?? pageData?.meta?.total ?? null;
-                                      let sumQtyPrice = 0;
-                                      if (_qtyIdxEarly >= 0 && _priIdxEarly >= 0) {
-                                        effectiveDispRows.forEach((r, rii) => {
-                                          if (pageNums[rii] !== pn) return;
-                                          const q = parseNumber(r[_qtyIdxEarly]);
-                                          const p = parseNumber(r[_priIdxEarly]);
-                                          if (q > 0 && p > 0) sumQtyPrice += Math.round(q * p);
-                                        });
-                                      }
-                                      const diff = stated != null && sumQtyPrice > 0 ? sumQtyPrice - stated : null;
-                                      const mismatch = diff != null && Math.abs(diff) > 1;
-                                      // 차액을 OCR 추출 항목에서만 검색 — 하드코딩 없음, 라벨 무관 순수 금액 매칭
-                                      const searchDiff = mismatch ? Math.abs(diff!) : null;
-                                      let matchedLabel: string | null = null;
-                                      let matchedAmount: number | null = null;
-                                      if (searchDiff != null) {
-                                        // 1) summary_rows(요약 라인) 전체에서 amount 매칭 (라벨 원문 그대로)
-                                        const hitInSummary = summary.find(s => Math.abs(s.amount - searchDiff) <= 1);
-                                        if (hitInSummary) {
-                                          matchedLabel = String(hitInSummary.label ?? "").trim() || "요약";
-                                          matchedAmount = hitInSummary.amount;
-                                        } else {
-                                          // 2) pageAmountCandidates(페이지의 모든 OCR 추출 금액) 검색
-                                          const allAmts = pageAmountCandidates.get(pn) ?? [];
-                                          const hitInAll = allAmts.find(a => Math.abs(a - searchDiff) <= 1);
-                                          if (hitInAll != null) {
-                                            matchedLabel = "OCR 금액";
-                                            matchedAmount = hitInAll;
-                                          }
-                                        }
-                                      }
-                                      const explained = mismatch && matchedLabel != null;
+                                      const stated = pageData?.meta?.total ?? null;
+                                      const disc = getPageDiscount(pn);
+                                      const isCustom = pageSubtotalChoices[pn] === "custom";
                                       return (
-                                        <div className="flex flex-col items-center gap-0.5">
-                                          <span
-                                            className={`font-black text-base tracking-tight whitespace-nowrap ${
-                                              !mismatch ? "text-amber-900" : explained ? "text-emerald-700" : "text-rose-600 underline decoration-wavy decoration-rose-400 underline-offset-2"
-                                            }`}
-                                            title={!mismatch
-                                              ? "수량×단가 합과 명세서 소계가 일치"
-                                              : explained
-                                                ? `차액 ${fmt(Math.abs(diff!))}원 = OCR '${matchedLabel} ${fmt(matchedAmount!)}원'`
-                                                : `수량×단가 합(${fmt(sumQtyPrice)}원)이 명세서 소계(${fmt(stated!)}원)와 다름. OCR에서 차액 항목 못찾음`}
-                                          >
-                                            {fmt(displayTotal)}원
-                                          </span>
-                                          {mismatch && (() => {
-                                            // 수식 검증
-                                            const op = diff! > 0 ? "−" : "+";
-                                            const formulaCalc = explained
-                                              ? (diff! > 0 ? sumQtyPrice - matchedAmount! : sumQtyPrice + matchedAmount!)
-                                              : null;
-                                            const verified = explained && Math.abs((formulaCalc as number) - stated!) <= 1;
-                                            const currentChoice = pageSubtotalChoices[pn] ?? "";
-                                            return (
-                                              <div className="flex flex-col items-center gap-0.5">
-                                                {/* 검증 코멘트 */}
-                                                {explained ? (
-                                                  <span className={`text-[9px] font-bold whitespace-nowrap px-1.5 py-0.5 rounded border ${
-                                                    verified ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-amber-50 text-amber-700 border-amber-300"
-                                                  }`}
-                                                    title={`검증: 수량×단가 ${op} ${matchedLabel} = ${fmt(formulaCalc as number)}${verified ? " ✓ 소계와 일치" : ` ≠ 소계 ${fmt(stated!)}`}`}>
-                                                    {verified ? "✓" : "≈"} {fmt(sumQtyPrice)} {op} {matchedLabel}({fmt(matchedAmount!)}) = {fmt(stated!)}
-                                                  </span>
-                                                ) : (
-                                                  <span className="text-[9px] font-bold whitespace-nowrap px-1.5 py-0.5 rounded border bg-rose-50 text-rose-700 border-rose-300">
-                                                    ⚠ 수량×단가 {fmt(sumQtyPrice)} ≠ 소계 {fmt(stated!)} — OCR에 차액({fmt(Math.abs(diff!))}원) 항목 없음
-                                                  </span>
-                                                )}
-                                                {/* 사용자 선택: 어떤 값을 합계로 사용? */}
-                                                <div className="flex items-center gap-1 flex-wrap justify-center">
-                                                  <span className="text-[9px] text-rose-500 font-semibold">합계 선택:</span>
-                                                  <select
-                                                    value={currentChoice}
-                                                    onChange={e => {
-                                                      const v = e.target.value;
-                                                      if (v === "") setPageSubtotalChoices(prev => { const n = { ...prev }; delete n[pn]; return n; });
-                                                      else if (v === "custom") setPageSubtotalChoices(prev => ({ ...prev, [pn]: "custom" }));
-                                                      else if (v === "computed") setPageSubtotalChoices(prev => ({ ...prev, [pn]: "computed" }));
-                                                      else if (v === "stated") setPageSubtotalChoices(prev => ({ ...prev, [pn]: "stated" }));
-                                                    }}
-                                                    className="text-[9px] font-bold text-rose-700 bg-white border border-rose-300 rounded px-1 py-0.5 focus:outline-none focus:border-rose-500 cursor-pointer"
-                                                  >
-                                                    <option value="">자동</option>
-                                                    <option value="computed">수량×단가 합 · {fmt(sumQtyPrice)}원</option>
-                                                    <option value="stated">명세서 소계 · {fmt(stated!)}원</option>
-                                                    <option value="custom">직접 입력</option>
-                                                  </select>
-                                                  {currentChoice === "custom" && (
-                                                    <input
-                                                      type="text"
-                                                      inputMode="numeric"
-                                                      value={(() => {
-                                                        const raw = String(pageSubtotalCustom[pn] ?? "");
-                                                        const n = parseNumber(raw);
-                                                        return n > 0 ? fmt(n) : raw;
-                                                      })()}
-                                                      onChange={e => {
-                                                        const raw = e.target.value.replace(/[^\d-]/g, "");
-                                                        setPageSubtotalCustom(prev => ({ ...prev, [pn]: parseNumber(raw) }));
-                                                      }}
-                                                      placeholder="금액"
-                                                      className="w-[90px] text-[9px] font-bold text-rose-700 bg-white border border-rose-300 rounded px-1 py-0.5 focus:outline-none focus:border-rose-500 text-right"
-                                                    />
-                                                  )}
-                                                </div>
-                                              </div>
-                                            );
-                                          })()}
+                                        <div className="flex items-center gap-2">
+                                          {isCustom ? (
+                                            <>
+                                              <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={(() => {
+                                                  const raw = String(pageSubtotalCustom[pn] ?? "");
+                                                  const n = parseNumber(raw);
+                                                  return n > 0 ? fmt(n) : raw;
+                                                })()}
+                                                onChange={e => {
+                                                  const raw = e.target.value.replace(/[^\d-]/g, "");
+                                                  setPageSubtotalCustom(prev => ({ ...prev, [pn]: parseNumber(raw) }));
+                                                }}
+                                                placeholder="금액"
+                                                className="w-[120px] text-base font-black text-amber-900 bg-white border-2 border-amber-400 rounded px-2 py-0.5 focus:outline-none focus:border-amber-600 text-right"
+                                                autoFocus
+                                              />
+                                              <span className="font-black text-base text-amber-900">원</span>
+                                              <button
+                                                type="button"
+                                                onClick={() => setPageSubtotalChoices(prev => { const n = { ...prev }; delete n[pn]; return n; })}
+                                                className="text-[9px] font-bold text-slate-500 hover:text-slate-700 bg-white/70 border border-slate-300 rounded px-1.5 py-0.5 cursor-pointer"
+                                                title="자동값으로 되돌리기"
+                                              >취소</button>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <span
+                                                className="font-black text-base tracking-tight whitespace-nowrap text-amber-900"
+                                                title={disc
+                                                  ? `명세서 합계 ${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원 (에누리 적용 전 금액)`
+                                                  : `명세서 합계 ${fmt(displayTotal)}원`}
+                                              >
+                                                {fmt(displayTotal)}원
+                                              </span>
+                                              {disc && (
+                                                <span className="text-[9px] font-bold text-amber-700 bg-white/70 border border-amber-300 rounded px-1.5 py-0.5 whitespace-nowrap"
+                                                  title={`합계 ${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원 = ${fmt(displayTotal)}원`}>
+                                                  {disc.label} {fmt(disc.amount)}원 적용 전
+                                                </span>
+                                              )}
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  setPageSubtotalChoices(prev => ({ ...prev, [pn]: "custom" }));
+                                                  setPageSubtotalCustom(prev => ({ ...prev, [pn]: displayTotal }));
+                                                }}
+                                                className="text-[9px] font-bold text-amber-700 hover:text-amber-900 bg-white/70 border border-amber-300 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap"
+                                                title="소계 금액 직접 입력"
+                                              >✎ 수정</button>
+                                            </>
+                                          )}
                                         </div>
                                       );
                                     })()}

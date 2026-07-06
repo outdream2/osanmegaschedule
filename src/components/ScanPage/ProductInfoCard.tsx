@@ -21,21 +21,23 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
   const [existingOrder, setExistingOrder] = useState<{ current_stock: number | null; requested_at: string } | null>(null);
   const [orderConfirm, setOrderConfirm] = useState(false);
 
-  // 실재고 입력
+  // 실재고 입력 (창고/매장 독립 저장)
   const [warehouseStock, setWarehouseStock] = useState<number | "">("");
   const [storeStock, setStoreStock] = useState<number | "">("");
   type InvStatus = "idle" | "loading" | "done" | "error";
-  const [invStatus, setInvStatus] = useState<InvStatus>("idle");
-  const [invError, setInvError] = useState<string | null>(null);
-  const [invUpdated, setInvUpdated] = useState(false);
+  const [whStatus, setWhStatus] = useState<InvStatus>("idle");
+  const [stStatus, setStStatus] = useState<InvStatus>("idle");
+  const [whError, setWhError] = useState<string | null>(null);
+  const [stError, setStError] = useState<string | null>(null);
 
   // 바코드 스캔 시 기존 실재고·발주요청 데이터 자동 로드
   useEffect(() => {
     setWarehouseStock("");
     setStoreStock("");
-    setInvStatus("idle");
-    setInvError(null);
-    setInvUpdated(false);
+    setWhStatus("idle");
+    setStStatus("idle");
+    setWhError(null);
+    setStError(null);
     setOrderStatus("idle");
     setExistingOrder(null);
     setOrderConfirm(false);
@@ -59,10 +61,13 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
       }).catch(() => {});
   }, [product.code]);
 
-  const handleInventorySubmit = async () => {
-    if (warehouseStock === "" && storeStock === "") return;
-    setInvStatus("loading");
-    setInvError(null);
+  // 창고/매장 각각 독립 저장: 다른 필드는 서버에서 기존값 유지
+  const submitStockField = async (field: "warehouse_stock" | "store_stock", value: number | "") => {
+    if (value === "") return;
+    const setStatus = field === "warehouse_stock" ? setWhStatus : setStStatus;
+    const setError  = field === "warehouse_stock" ? setWhError  : setStError;
+    setStatus("loading");
+    setError(null);
     try {
       const res = await fetch("/api/inventory-checks", {
         method: "POST",
@@ -70,27 +75,30 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
         body: JSON.stringify({
           product_code:    product.code,
           product_name:    product.name,
-          warehouse_stock: warehouseStock !== "" ? Number(warehouseStock) : null,
-          store_stock:     storeStock     !== "" ? Number(storeStock)     : null,
+          [field]:         Number(value),
           system_stock:    product.current_stock != null ? Number(product.current_stock) : null,
           optimal_stock:   product.optimal_stock != null ? Number(product.optimal_stock) : null,
           checked_by:      checkedBy ?? "",
         }),
       });
       if (res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setInvUpdated(!!body.updated);
-        setInvStatus("done");
+        setStatus("done");
+        // 재고 관련 리스트가 자동 갱신되도록 이벤트 발행
+        window.dispatchEvent(new CustomEvent("inventory-checks-updated", {
+          detail: { product_code: product.code, field, value: Number(value) },
+        }));
       } else {
         const body = await res.json().catch(() => ({}));
-        setInvError(body.error ?? `서버 오류 (${res.status})`);
-        setInvStatus("error");
+        setError(body.error ?? `서버 오류 (${res.status})`);
+        setStatus("error");
       }
     } catch (e: any) {
-      setInvError(e?.message ?? "네트워크 오류");
-      setInvStatus("error");
+      setError(e?.message ?? "네트워크 오류");
+      setStatus("error");
     }
   };
+  const handleWarehouseSubmit = () => submitStockField("warehouse_stock", warehouseStock);
+  const handleStoreSubmit     = () => submitStockField("store_stock",     storeStock);
 
   const submitOrderRequest = async () => {
     setOrderStatus("loading");
@@ -278,7 +286,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
           )}
         </div>
 
-        {/* ── 실재고 입력 (창고 / 매장) ── */}
+        {/* ── 실재고 입력 (창고 / 매장 — 각각 독립 저장) ── */}
         {(() => {
           const hasInput = warehouseStock !== "" || storeStock !== "";
           const totalActual = Number(warehouseStock || 0) + Number(storeStock || 0);
@@ -286,7 +294,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
           return (
             <div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 mb-4">
               <div className="flex items-center justify-between mb-2.5">
-                <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wide">실재고 입력</p>
+                <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wide">실재고 입력 <span className="text-purple-400">(창고·매장 독립 저장)</span></p>
                 <button
                   onClick={() => setStockCounterOpen(true)}
                   className="flex items-center gap-1 px-2.5 py-1 bg-green-500 hover:bg-green-600 text-white text-[10px] font-bold rounded-lg transition cursor-pointer shadow-sm"
@@ -295,31 +303,69 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
                   재고 세기
                 </button>
               </div>
-              <div className="flex items-end gap-2 mb-2">
-                <div className="flex-1">
-                  <p className="text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1"><Warehouse size={9} />창고</p>
+
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                {/* 창고 */}
+                <div className="bg-white rounded-xl border border-cyan-200 p-2.5">
+                  <p className="text-[10px] font-bold text-cyan-600 mb-1 flex items-center gap-1"><Warehouse size={10} />창고</p>
                   <input
                     type="number" min="0"
                     value={warehouseStock}
-                    onChange={e => { setWarehouseStock(e.target.value === "" ? "" : Number(e.target.value)); setInvStatus("idle"); }}
-                    className="w-full text-2xl font-black text-center bg-white border border-purple-200 rounded-xl px-2 py-2 outline-none focus:border-purple-400 transition"
+                    onChange={e => { setWarehouseStock(e.target.value === "" ? "" : Number(e.target.value)); setWhStatus("idle"); }}
+                    className="w-full text-2xl font-black text-center bg-cyan-50/50 border border-cyan-200 rounded-lg px-2 py-1.5 outline-none focus:border-cyan-400 transition"
                     placeholder="—"
                   />
+                  {whStatus === "done" ? (
+                    <div className="mt-1.5 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
+                      <CheckCircle2 size={11} /> 창고 저장됨
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleWarehouseSubmit}
+                      disabled={whStatus === "loading" || warehouseStock === ""}
+                      className="mt-1.5 w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-black transition cursor-pointer disabled:opacity-40 shadow-sm bg-cyan-500 hover:bg-cyan-600 text-white"
+                    >
+                      {whStatus === "loading" ? <Loader2 size={11} className="animate-spin" /> : <ClipboardCheck size={11} />}
+                      {whStatus === "loading" ? "저장 중..." : whStatus === "error" ? "재시도" : "창고 저장"}
+                    </button>
+                  )}
+                  {whStatus === "error" && whError && (
+                    <p className="text-[10px] text-red-500 text-center mt-0.5">{whError}</p>
+                  )}
                 </div>
-                <span className="text-lg font-bold text-purple-300 pb-2">+</span>
-                <div className="flex-1">
-                  <p className="text-[10px] font-bold text-gray-500 mb-1 flex items-center gap-1"><Store size={9} />매장</p>
+
+                {/* 매장 */}
+                <div className="bg-white rounded-xl border border-violet-200 p-2.5">
+                  <p className="text-[10px] font-bold text-violet-600 mb-1 flex items-center gap-1"><Store size={10} />매장</p>
                   <input
                     type="number" min="0"
                     value={storeStock}
-                    onChange={e => { setStoreStock(e.target.value === "" ? "" : Number(e.target.value)); setInvStatus("idle"); }}
-                    className="w-full text-2xl font-black text-center bg-white border border-purple-200 rounded-xl px-2 py-2 outline-none focus:border-purple-400 transition"
+                    onChange={e => { setStoreStock(e.target.value === "" ? "" : Number(e.target.value)); setStStatus("idle"); }}
+                    className="w-full text-2xl font-black text-center bg-violet-50/50 border border-violet-200 rounded-lg px-2 py-1.5 outline-none focus:border-violet-400 transition"
                     placeholder="—"
                   />
+                  {stStatus === "done" ? (
+                    <div className="mt-1.5 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
+                      <CheckCircle2 size={11} /> 매장 저장됨
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleStoreSubmit}
+                      disabled={stStatus === "loading" || storeStock === ""}
+                      className="mt-1.5 w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-black transition cursor-pointer disabled:opacity-40 shadow-sm bg-violet-500 hover:bg-violet-600 text-white"
+                    >
+                      {stStatus === "loading" ? <Loader2 size={11} className="animate-spin" /> : <ClipboardCheck size={11} />}
+                      {stStatus === "loading" ? "저장 중..." : stStatus === "error" ? "재시도" : "매장 저장"}
+                    </button>
+                  )}
+                  {stStatus === "error" && stError && (
+                    <p className="text-[10px] text-red-500 text-center mt-0.5">{stError}</p>
+                  )}
                 </div>
               </div>
+
               {hasInput && (
-                <div className="flex items-center justify-between text-[11px] font-bold mb-2.5 px-1">
+                <div className="flex items-center justify-between text-[11px] font-bold px-1">
                   <span className="text-purple-700">합계: {totalActual}개</span>
                   {diff != null && (
                     <span className={diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-600" : "text-gray-500"}>
@@ -327,27 +373,6 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
                     </span>
                   )}
                 </div>
-              )}
-              {invStatus === "done" ? (
-                <div className="flex items-center justify-center gap-1.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold">
-                  <CheckCircle2 size={13} />{invUpdated ? "기존 실재고 기록이 업데이트되었습니다" : "실재고 차이 목록에 등록되었습니다"}
-                </div>
-              ) : (
-                <button
-                  onClick={handleInventorySubmit}
-                  disabled={invStatus === "loading" || (!hasInput)}
-                  className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition cursor-pointer disabled:opacity-50 shadow-sm ${
-                    diff !== null && diff !== 0
-                      ? "bg-red-500 hover:bg-red-600 text-white"
-                      : "bg-purple-500 hover:bg-purple-600 text-white"
-                  }`}
-                >
-                  {invStatus === "loading" ? <Loader2 size={14} className="animate-spin" /> : <ClipboardCheck size={14} />}
-                  {invStatus === "loading" ? "등록 중..." : invStatus === "error" ? "재시도" : diff !== null && diff !== 0 ? "실차이 확인 제출" : "확인 제출"}
-                </button>
-              )}
-              {invStatus === "error" && (
-                <p className="text-[10px] text-red-500 text-center mt-1">{invError ?? "등록 실패 — 다시 시도해주세요"}</p>
               )}
             </div>
           );
@@ -418,8 +443,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
       )}
       {stockCounterOpen && (
         <StockCounterModal
-          onApplyWarehouse={count => { setWarehouseStock(count); setInvStatus("idle"); setStockCounterOpen(false); }}
-          onApplyStore={count => { setStoreStock(count); setInvStatus("idle"); setStockCounterOpen(false); }}
+          onApplyWarehouse={count => { setWarehouseStock(count); setWhStatus("idle"); setStockCounterOpen(false); }}
+          onApplyStore={count => { setStoreStock(count); setStStatus("idle"); setStockCounterOpen(false); }}
           onClose={() => setStockCounterOpen(false)}
         />
       )}

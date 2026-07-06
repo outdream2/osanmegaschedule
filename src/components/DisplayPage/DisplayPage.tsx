@@ -34,6 +34,8 @@ import { ZoneCell } from "./ZoneCell";
 import { ZoneAssignPopover } from "./ZoneAssignPopover";
 import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { StockManagePage } from "../StockManagePage";
+import { StockArrivalPage } from "../StockArrivalPage";
 import type { AuthSession } from "../../types";
 
 interface DisplayPageProps {
@@ -253,6 +255,13 @@ const MULTI_ASSIGN_ZONE_NUMS = new Set([36, 42]);
 
 // ─── Main component ────────────────────────────────────────────────────────────
 export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit, authSession, onNavigate, onLogout }) => {
+  // 서브탭: 매장관리(기본) · 재고관리(level 9 전용)
+  const dpUserLevel = authSession?.level ??
+    (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9 :
+     authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
+  const dpCanSeeStockManage = dpUserLevel >= 9;
+  const dpCanSeeStockArrivals = dpUserLevel >= 3;
+  const [dpSubTab, setDpSubTab] = useState<"store" | "stock-manage" | "stock-arrivals">("store");
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
   const [zonesLoaded, setZonesLoaded] = useState(false);
   const [requests, setRequests] = useState<DisplayRequest[]>(() => loadRequests());
@@ -925,7 +934,58 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         onLogout={onLogout}
       />
 
-      {/* Main Content Grid */}
+      {/* 서브탭: 매장관리(기본) / 재고관리(level 9) / 입고알림관리(level 3+) */}
+      {(dpCanSeeStockManage || dpCanSeeStockArrivals) && (
+        <div className="bg-gradient-to-b from-white to-slate-50/50 border-b border-slate-200 px-4">
+          <div className="max-w-[1700px] mx-auto flex items-center gap-1.5 py-2">
+            <button onClick={() => setDpSubTab("store")}
+              className={`relative px-4 py-2 text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                dpSubTab === "store"
+                  ? "text-white bg-gradient-to-br from-sky-500 to-sky-600 shadow-md shadow-sky-500/30"
+                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
+              }`}>
+              매장관리
+            </button>
+            {dpCanSeeStockManage && (
+              <button onClick={() => setDpSubTab("stock-manage")}
+                className={`relative px-4 py-2 text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                  dpSubTab === "stock-manage"
+                    ? "text-white bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-md shadow-indigo-500/30"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
+                }`}>
+                재고관리
+              </button>
+            )}
+            {dpCanSeeStockArrivals && (
+              <button onClick={() => setDpSubTab("stock-arrivals")}
+                className={`relative px-4 py-2 text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                  dpSubTab === "stock-arrivals"
+                    ? "text-white bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md shadow-emerald-500/30"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
+                }`}>
+                입고알림관리
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {dpSubTab === "stock-manage" && dpCanSeeStockManage ? (
+        <main className="flex-1 flex flex-col min-h-0">
+          <StockManagePage />
+        </main>
+      ) : dpSubTab === "stock-arrivals" && dpCanSeeStockArrivals ? (
+        <main className="flex-1 flex flex-col min-h-0">
+          <StockArrivalPage
+            authSession={authSession}
+            onBack={onBack}
+            onNavigate={onNavigate as any}
+            onLogout={onLogout}
+            embedded
+          />
+        </main>
+      ) : (
+      /* Main Content Grid */
       <main className="max-w-[1700px] w-full mx-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
 
         {/* LEFT COLUMN: Search & Directory (Stacked) */}
@@ -1586,6 +1646,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         </section>
 
       </main>
+      )}
 
       {/* Footer */}
       <footer className="bg-white text-center p-4 mt-8 text-xs text-gray-400 border-t border-gray-200">

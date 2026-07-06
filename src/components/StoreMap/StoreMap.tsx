@@ -1191,8 +1191,8 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                               const isAssigned = isMulti ? staffList.length > 0 : !!(dz?.assignedStaffId);
                               const isDragTarget = dragOverZoneNum === zoneDef.num;
 
-                              // 42(이벤트존)/36(프로모션) 은 카운터/정면약진열과 폭을 맞추기 위해 flex-1 basis 확장
-                              const wideClass = isMulti ? "flex-1 basis-full min-w-full min-h-[60px]" : "min-w-[36px]";
+                              // 42(이벤트존)/36(프로모션) 은 카운터/정면약진열과 세로 길이를 맞추기 위해 세로로 확장
+                              const wideClass = isMulti ? "flex-1 basis-full min-w-full min-h-[180px]" : "min-w-[36px]";
 
                               return (
                                 <div

@@ -70,13 +70,16 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
           {/* Group 2: Position */}
           <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
             {([
+              // 우선순위 partition: 전체 = 약사 + 알바 + 물류 + 기타 (상호 배타)
+              // 물류는 캐셔·진열·물류/캐셔 겸직 포함 (캐셔는 물류의 소분류)
               { key: "전체", label: "전체", icon: <Layers size={12} />, color: "text-indigo-600", count: employees.length, sub: false },
               { key: "약사", label: "약사", icon: null, color: "text-violet-600", count: employees.filter(e => e.position === "약사").length, sub: false },
-              { key: "물류", label: "물류", icon: null, color: "text-sky-600", count: employees.filter(e => e.position.includes("물류") || e.position === "캐셔" || e.position === "진열").length, sub: false },
-              { key: "캐셔", label: "└ 캐셔", icon: null, color: "text-amber-600", count: employees.filter(e => e.position.includes("캐셔")).length, sub: true },
-              { key: "진열", label: "└ 진열", icon: null, color: "text-teal-600", count: employees.filter(e => e.position === "진열").length, sub: true },
-              { key: "알바", label: "알바", icon: null, color: "text-rose-600", count: employees.filter(e => e.rank === "알바" || e.position === "알바").length, sub: false },
-              { key: "기타", label: "기타", icon: null, color: "text-slate-600", count: employees.filter(e => !e.position.includes("물류") && !["약사","캐셔","진열"].includes(e.position) && e.rank !== "알바" && e.position !== "알바").length, sub: false },
+              { key: "물류", label: "물류", icon: null, color: "text-sky-600", count: employees.filter(e => e.position !== "약사" && e.rank !== "알바" && e.position !== "알바" && (e.position.includes("물류") || e.position === "캐셔" || e.position === "진열")).length, sub: false },
+              // sub 카운트: 물류 count 안의 세부 (물류·물류/캐셔 겸직) — 캐셔는 물류의 하위 분류
+              { key: "캐셔", label: "└ 캐셔", icon: null, color: "text-amber-600", count: employees.filter(e => e.position !== "약사" && e.rank !== "알바" && e.position !== "알바" && e.position.includes("캐셔")).length, sub: true },
+              { key: "진열", label: "└ 진열", icon: null, color: "text-teal-600", count: employees.filter(e => e.position !== "약사" && e.rank !== "알바" && e.position !== "알바" && e.position === "진열").length, sub: true },
+              { key: "알바", label: "알바", icon: null, color: "text-rose-600", count: employees.filter(e => e.position !== "약사" && (e.rank === "알바" || e.position === "알바")).length, sub: false },
+              { key: "기타", label: "기타", icon: null, color: "text-slate-600", count: employees.filter(e => e.position !== "약사" && e.rank !== "알바" && e.position !== "알바" && !e.position.includes("물류") && !["캐셔","진열"].includes(e.position)).length, sub: false },
             ] as const).map(({ key, label, icon, color, count, sub }) => (
               <button
                 key={key}

@@ -150,26 +150,34 @@ router.post("/api/inventory-checks", async (req, res) => {
   const b = req.body ?? {};
   const code = String(b.product_code ?? "");
   const now = new Date().toISOString();
-  const payload = {
-    product_name:    String(b.product_name ?? ""),
-    warehouse_stock: b.warehouse_stock != null ? Number(b.warehouse_stock) : null,
-    store_stock:     b.store_stock     != null ? Number(b.store_stock)     : null,
-    system_stock:    b.system_stock    != null ? Number(b.system_stock)    : null,
-    optimal_stock:   b.optimal_stock   != null ? Number(b.optimal_stock)   : null,
-    checked_by:      String(b.checked_by ?? ""),
-    note:            String(b.note ?? ""),
-    checked_at:      now,
-    status:          "pending",
+  // 부분 업데이트: 요청에 포함된 필드만 업데이트 (창고/매장 각각 독립 저장 지원)
+  const hasWarehouse = Object.prototype.hasOwnProperty.call(b, "warehouse_stock");
+  const hasStore     = Object.prototype.hasOwnProperty.call(b, "store_stock");
+  const payload: Record<string, any> = {
+    product_name:  String(b.product_name ?? ""),
+    system_stock:  b.system_stock  != null ? Number(b.system_stock)  : null,
+    optimal_stock: b.optimal_stock != null ? Number(b.optimal_stock) : null,
+    checked_by:    String(b.checked_by ?? ""),
+    note:          String(b.note ?? ""),
+    checked_at:    now,
+    status:        "pending",
   };
-  // product_code 기준으로 가장 최근 레코드 조회 (order+limit은 maybeSingle과 함께 쓰지 않음)
-  const { data: existingList } = await supabase.from("inventory_checks").select("id").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
+  if (hasWarehouse) payload.warehouse_stock = b.warehouse_stock != null && b.warehouse_stock !== "" ? Number(b.warehouse_stock) : null;
+  if (hasStore)     payload.store_stock     = b.store_stock     != null && b.store_stock     !== "" ? Number(b.store_stock)     : null;
+
+  const { data: existingList } = await supabase.from("inventory_checks").select("id, warehouse_stock, store_stock").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
   const existing = existingList?.[0] ?? null;
   if (existing) {
+    // 요청에 없는 필드는 기존값 유지
     const { error } = await supabase.from("inventory_checks").update(payload).eq("id", existing.id);
     if (error) return res.status(500).json({ error: error.message });
     return res.json({ ok: true, updated: true });
   }
-  const { error } = await supabase.from("inventory_checks").insert([{ product_code: code, ...payload }]);
+  // 신규 삽입: 요청에 없는 창고/매장은 null 로 시작
+  const insertPayload: Record<string, any> = { ...payload, product_code: code };
+  if (!hasWarehouse) insertPayload.warehouse_stock = null;
+  if (!hasStore)     insertPayload.store_stock     = null;
+  const { error } = await supabase.from("inventory_checks").insert([insertPayload]);
   if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true, updated: false });
 });

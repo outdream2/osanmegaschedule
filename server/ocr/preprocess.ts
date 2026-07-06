@@ -9,7 +9,8 @@ import sharp from "sharp";
  *
  * 실패 시 원본 반환 (오류가 OCR 자체를 막지 않도록)
  */
-const MAX_SHORT_SIDE = 1400; // px — Gemini vision이 인식하기에 충분하고 메모리 안전한 상한
+const MAX_SHORT_SIDE = 1400;  // 최단변 상한 (업스케일 목표)
+const MAX_LONG_SIDE  = 1800;  // 최장변 하드캡 — Gemini payload/처리시간 억제
 
 export async function preprocessImageForOcr(
   b64: string,
@@ -22,19 +23,22 @@ export async function preprocessImageForOcr(
     const w = meta.width  ?? 640;
     const h = meta.height ?? 480;
 
-    // 업스케일: 최단 변이 900px 미만이면 확대. 단 MAX_SHORT_SIDE 이하로 제한
     const shortSide = Math.min(w, h);
-    const scale = shortSide < 900
-      ? Math.min(1.5, Math.min(MAX_SHORT_SIDE, 900) / shortSide)
-      : 1.0;
+    const longSide  = Math.max(w, h);
 
+    // 리사이즈 결정 우선순위:
+    //   A) 최장변이 MAX_LONG_SIDE 초과 → 하드캡으로 축소 (payload/시간 절감)
+    //   B) 최단변이 900 미만 → 업스케일 (단 MAX_SHORT_SIDE 이내)
+    //   C) 그 외 → 리사이즈 없음
     let pipeline = sharp(inputBuf, { sequentialRead: true });
-    if (scale > 1.05) {
-      pipeline = pipeline.resize(Math.round(w * scale), Math.round(h * scale), { fit: "fill" });
-    } else if (Math.max(w, h) > MAX_SHORT_SIDE * 2) {
-      // 이미 충분히 크면 오히려 축소해 메모리 절약
-      const ratio = (MAX_SHORT_SIDE * 2) / Math.max(w, h);
+    if (longSide > MAX_LONG_SIDE) {
+      const ratio = MAX_LONG_SIDE / longSide;
       pipeline = pipeline.resize(Math.round(w * ratio), Math.round(h * ratio), { fit: "fill" });
+    } else if (shortSide < 900) {
+      const scale = Math.min(1.5, Math.min(MAX_SHORT_SIDE, 900) / shortSide);
+      if (scale > 1.05) {
+        pipeline = pipeline.resize(Math.round(w * scale), Math.round(h * scale), { fit: "fill" });
+      }
     }
 
     // raw 픽셀 조작 없이 Sharp 파이프라인만으로 처리 (메모리 절약)

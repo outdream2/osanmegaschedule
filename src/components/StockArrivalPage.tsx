@@ -11,6 +11,7 @@ interface StockArrivalPageProps {
   onBack: () => void;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  embedded?: boolean;
 }
 
 interface StockArrival {
@@ -37,7 +38,7 @@ function fmtDT(iso: string) {
   return new Date(iso).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
-export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession, onBack, onNavigate, onLogout }) => {
+export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
   const [arrivals, setArrivals] = useState<StockArrival[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -216,8 +217,29 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
   const actionBtn = (color: string) =>
     `flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer shrink-0 ${color}`;
 
+  const embeddedToolbar = (
+    <div className="flex items-center gap-2 justify-end px-4 py-2 bg-white border-b border-gray-200">
+      <button
+        onClick={handleSubscribe} disabled={pushLoading}
+        className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border transition cursor-pointer disabled:cursor-default"
+        style={pushSubscribed
+          ? { background:"#f0fdf4", borderColor:"#86efac", color:"#166534" }
+          : { background:"#eff6ff", borderColor:"#93c5fd", color:"#1e40af" }}
+      >
+        {pushLoading
+          ? <div className="w-3 h-3 rounded-full border-2 border-blue-300 border-t-blue-600 animate-spin" />
+          : pushSubscribed ? <BellOff size={10} /> : <Bell size={10} />}
+        {pushSubscribed ? "알림 설정됨" : "알림 받기"}
+      </button>
+      <button onClick={fetchArrivals} className="p-1.5 rounded-lg hover:bg-gray-100 cursor-pointer">
+        <RefreshCw size={14} className={`text-gray-400 ${loading ? "animate-spin" : ""}`} />
+      </button>
+    </div>
+  );
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={embedded ? "flex-1 bg-gray-50" : "min-h-screen bg-gray-50"}>
+      {embedded ? embeddedToolbar : (
       <AppNavHeader
         activePage="stockarrivals"
         authSession={authSession}
@@ -244,6 +266,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
           </div>
         }
       />
+      )}
 
       <div className="max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3">
 

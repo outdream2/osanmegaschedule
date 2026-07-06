@@ -6,6 +6,21 @@
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
+/* ── 전역 폰트 확대 ────────────────────────────────────────
+ * html base font-size 를 올려서 Tailwind 의 rem 기반 사이즈
+ * (text-xs, text-sm, text-base, text-lg, ...) 전체를 한번에 확대.
+ * 16px → 17.5px : 약 9% 크게. */
+html { font-size: 17.5px; }
+
+/* Tailwind 임의값(arbitrary) 픽셀 사이즈는 rem 스케일 대상이 아님.
+ * 자주 쓰이는 초소형 사이즈들을 안전한 값으로 상향. */
+[class*="text-\\[8px\\]"]  { font-size: 10px !important; }
+[class*="text-\\[9px\\]"]  { font-size: 11px !important; }
+[class*="text-\\[10px\\]"] { font-size: 12px !important; }
+[class*="text-\\[11px\\]"] { font-size: 13px !important; }
+[class*="text-\\[12px\\]"] { font-size: 13px !important; }
+[class*="text-\\[13px\\]"] { font-size: 14px !important; }
+
 /* Custom scrolling classes to styled tables nicely */
 ::-webkit-scrollbar {
   width: 8px;

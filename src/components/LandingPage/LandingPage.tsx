@@ -52,6 +52,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadResult, setUploadResult] = useState<{ ok: boolean; count?: number; msg?: string } | null>(null);
   const [importLog, setImportLog] = useState<{ timestamp: string; count: number }[]>([]);
+  // 데이터 업로드 통합 모달 서브탭: products(기본) / stock
+  const [uploadTab, setUploadTab] = useState<"products" | "stock">("products");
+  // 재고 리스트 업로드
+  const [stockUploadFile, setStockUploadFile] = useState<File | null>(null);
+  const [stockUploadLoading, setStockUploadLoading] = useState(false);
+  const [stockUploadResult, setStockUploadResult] = useState<{ ok: boolean; updated?: number; total?: number; history?: number; snapshot_date?: string; msg?: string } | null>(null);
+  const [stockImportLog, setStockImportLog] = useState<{ timestamp: string; count: number; total?: number }[]>([]);
+  const stockUploadInputRef = useRef<HTMLInputElement>(null);
+  // 재고 업로드: 시작일재고 기간 구분 (초순 1-10 / 중순 11-20 / 하순 21-말일)
+  const [stockPeriodType, setStockPeriodType] = useState<"early" | "mid" | "late">("early");
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   // Stock arrivals
@@ -211,6 +221,50 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     if (!confirm("임포트 이력을 모두 삭제할까요?")) return;
     await axios.delete("/api/product-import-log");
     setImportLog([]);
+  };
+
+  const fetchStockImportLog = async () => {
+    try {
+      const res = await axios.get("/api/stock-import-log");
+      setStockImportLog(Array.isArray(res.data) ? res.data : []);
+    } catch { setStockImportLog([]); }
+  };
+
+  const handleClearStockImportLog = async () => {
+    if (!confirm("재고 임포트 이력을 모두 삭제할까요?")) return;
+    await axios.delete("/api/stock-import-log");
+    setStockImportLog([]);
+  };
+
+  const handleStockUpload = async () => {
+    if (!stockUploadFile) return;
+    if (!authSession?.employeeId) return;
+    setStockUploadLoading(true);
+    setStockUploadResult(null);
+    try {
+      // 종료일 = 파일 업로드일 (오늘). 파일명에 YYYY-MM-DD 있으면 우선 사용
+      const dateMatch = stockUploadFile.name.match(/(\d{4}-\d{2}-\d{2})/);
+      const snapshotDate = dateMatch ? dateMatch[1] : new Date().toISOString().slice(0, 10);
+      const params = new URLSearchParams({ managerId: String(authSession.employeeId) });
+      params.set("snapshot_date", snapshotDate);
+      params.set("period_type", stockPeriodType);
+      const buf = await stockUploadFile.arrayBuffer();
+      const res = await axios.post(`/api/upload-stock?${params}`, buf, {
+        headers: { "Content-Type": "application/octet-stream" },
+      });
+      setStockUploadResult({
+        ok: true,
+        updated: res.data.updated ?? 0,
+        total: res.data.total ?? 0,
+        history: res.data.history ?? 0,
+        snapshot_date: res.data.snapshot_date,
+      });
+      await fetchStockImportLog();
+    } catch (err: any) {
+      setStockUploadResult({ ok: false, msg: err?.response?.data?.error ?? "업로드 실패" });
+    } finally {
+      setStockUploadLoading(false);
+    }
   };
 
   const handleUpload = async () => {
@@ -427,7 +481,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </div>
               <div className="grid grid-cols-3 gap-3">
 
-                {/* 매장진열 관리 — sky */}
+                {/* 매장관리 · 재고관리 — sky */}
                 <button onClick={() => onNavigate("display", authSession!)}
                   className="group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,242,254,0.7) 0%, transparent 60%)" }} />
@@ -435,8 +489,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #7dd3fc" }}>
                       <LayoutGrid size={16} className="text-sky-600 sm:hidden" /><LayoutGrid size={20} className="text-sky-600 hidden sm:block" />
                     </div>
-                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">매장진열 관리</div>
-                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">진열대 상태 점검 및 보충 요청 관리</div>
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">
+                      관리메뉴
+                    </div>
+                    <div className="text-slate-400 text-[10px] leading-tight hidden sm:block">
+                      매장관리 · 재고관리 · 입고알림관리
+                    </div>
                     <div className="flex items-center gap-1 mt-2 text-sky-600 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">관리하기</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
@@ -467,18 +525,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 </button>
 
-                {/* 상품 목록 관리 — orange (level 9 전용) */}
+                {/* 데이터 업로드 (통합) — orange (level 9 전용) — 상품목록 · 재고리스트 서브탭 */}
                 {isSuperAdminLevel9 && (
                   <button
-                    onClick={() => { setUploadOpen(true); setUploadResult(null); setUploadFile(null); fetchImportLog(); }}
+                    onClick={() => { setUploadOpen(true); setUploadTab("products"); setUploadResult(null); setUploadFile(null); setStockUploadResult(null); setStockUploadFile(null); fetchImportLog(); fetchStockImportLog(); }}
                     className="group relative bg-white border border-slate-200/80 hover:border-orange-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
                     <div className="relative">
                       <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffedd5, #fed7aa)", border: "1px solid #fdba74" }}>
                         <FileSpreadsheet size={16} className="text-orange-500 sm:hidden" /><FileSpreadsheet size={20} className="text-orange-500 hidden sm:block" />
                       </div>
-                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품 목록 관리</div>
-                      <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">xlsx 파일 업로드로 상품 DB 갱신</div>
+                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">데이터 업로드</div>
+                      <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">상품목록 · 재고리스트 xlsx 업로드</div>
                       <div className="flex items-center gap-1 mt-2 text-orange-500 text-xs font-bold">
                         <span className="text-[11px] sm:text-xs">업로드하기</span>
                         <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
@@ -503,25 +561,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     </div>
                   </div>
                 </button>
-
-                {/* 입고 알림 관리 — sky (level 3+) */}
-                {userLevel >= 3 && (
-                  <button onClick={() => onNavigate("stockarrivals", authSession!)}
-                    className="group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,242,254,0.7) 0%, transparent 60%)" }} />
-                    <div className="relative">
-                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #7dd3fc" }}>
-                        <Megaphone size={16} className="text-sky-600 sm:hidden" /><Megaphone size={20} className="text-sky-600 hidden sm:block" />
-                      </div>
-                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">입고 알림 관리</div>
-                      <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">입고 알림 작성·삭제 및 전체 목록</div>
-                      <div className="flex items-center gap-1 mt-2 text-sky-600 text-xs font-bold">
-                        <span className="text-[11px] sm:text-xs">관리하기</span>
-                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                      </div>
-                    </div>
-                  </button>
-                )}
 
                 {/* 연차 승인 — teal */}
                 <button onClick={() => onNavigate("leave", authSession!)}
@@ -784,85 +823,216 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         </div>
       </div>
 
-      {/* ── Product upload modal ── */}
+      {/* ── 데이터 업로드 통합 모달 (상품목록 · 재고리스트 서브탭) ── */}
       {uploadOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4" onClick={() => setUploadOpen(false)}>
           <div className="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
                   <FileSpreadsheet size={15} className="text-orange-600" />
                 </div>
-                <span className="text-gray-900 font-bold text-sm">상품 목록 업로드</span>
+                <span className="text-gray-900 font-bold text-sm">데이터 업로드</span>
               </div>
               <button onClick={() => setUploadOpen(false)} className="text-gray-400 hover:text-gray-700 transition cursor-pointer"><X size={18} /></button>
             </div>
-            <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-              xlsx 파일을 업로드하면 전체 상품 데이터가 DB에 임포트됩니다.<br />
-              <span className="text-gray-400">기존 데이터는 모두 덮어씁니다.</span>
-            </p>
-            {uploadResult?.ok ? (
-              <div className="flex flex-col items-center gap-3 py-4">
-                <CheckCircle2 size={36} className="text-emerald-500" />
-                <p className="text-sm font-bold text-emerald-700">업로드 완료</p>
-                <p className="text-xs text-gray-500">{uploadResult.count?.toLocaleString()}개 상품 등록됨</p>
-                <button onClick={() => setUploadOpen(false)} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">닫기</button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                <input ref={uploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => {
-                  const file = e.target.files?.[0] ?? null;
-                  if (!file) { setUploadFile(null); return; }
-                  const ext = file.name.split(".").pop()?.toLowerCase();
-                  const validMime = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "application/octet-stream"];
-                  if ((ext !== "xlsx" && ext !== "xls") || (!!file.type && !validMime.includes(file.type))) {
-                    alert("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
-                    e.target.value = ""; return;
-                  }
-                  setUploadResult(null);
-                  setUploadFile(file);
-                }} />
-                <button
-                  type="button"
-                  onClick={() => uploadInputRef.current?.click()}
-                  className="w-full py-3 border-2 border-dashed border-gray-300 hover:border-orange-400 text-gray-500 hover:text-orange-600 text-sm font-semibold rounded-xl transition cursor-pointer flex items-center justify-center gap-2"
-                >
-                  <Upload size={16} />
-                  {uploadFile ? uploadFile.name : "파일 선택 (.xlsx)"}
-                </button>
-                {uploadResult?.ok === false && (
-                  <p className="text-xs text-rose-500 font-semibold text-center">{uploadResult.msg}</p>
+
+            {/* 서브탭: 상품목록 (기본) · 재고리스트 */}
+            <div className="flex items-center gap-1 mb-4 border-b border-gray-100">
+              <button
+                onClick={() => setUploadTab("products")}
+                className={`px-3 py-2 text-xs font-bold border-b-2 transition cursor-pointer ${
+                  uploadTab === "products" ? "border-orange-500 text-orange-600" : "border-transparent text-gray-400 hover:text-gray-600"
+                }`}>
+                상품목록
+              </button>
+              <button
+                onClick={() => setUploadTab("stock")}
+                className={`px-3 py-2 text-xs font-bold border-b-2 transition cursor-pointer ${
+                  uploadTab === "stock" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"
+                }`}>
+                재고리스트
+              </button>
+            </div>
+
+            {uploadTab === "products" ? (
+              <>
+                <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+                  xlsx 파일을 업로드하면 전체 상품 데이터가 DB에 임포트됩니다.<br />
+                  <span className="text-gray-400">기존 데이터는 모두 덮어씁니다.</span>
+                </p>
+                {uploadResult?.ok ? (
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <CheckCircle2 size={36} className="text-emerald-500" />
+                    <p className="text-sm font-bold text-emerald-700">업로드 완료</p>
+                    <p className="text-xs text-gray-500">{uploadResult.count?.toLocaleString()}개 상품 등록됨</p>
+                    <button onClick={() => setUploadOpen(false)} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">닫기</button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <input ref={uploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => {
+                      const file = e.target.files?.[0] ?? null;
+                      if (!file) { setUploadFile(null); return; }
+                      const ext = file.name.split(".").pop()?.toLowerCase();
+                      const validMime = ["application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel", "application/octet-stream"];
+                      if ((ext !== "xlsx" && ext !== "xls") || (!!file.type && !validMime.includes(file.type))) {
+                        alert("형식이 다른 파일입니다. 상품리스트를 업로드해주세요.");
+                        e.target.value = ""; return;
+                      }
+                      setUploadResult(null);
+                      setUploadFile(file);
+                    }} />
+                    <button
+                      type="button"
+                      onClick={() => uploadInputRef.current?.click()}
+                      className="w-full py-3 border-2 border-dashed border-gray-300 hover:border-orange-400 text-gray-500 hover:text-orange-600 text-sm font-semibold rounded-xl transition cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <Upload size={16} />
+                      {uploadFile ? uploadFile.name : "파일 선택 (.xlsx)"}
+                    </button>
+                    {uploadResult?.ok === false && (
+                      <p className="text-xs text-rose-500 font-semibold text-center">{uploadResult.msg}</p>
+                    )}
+                    <button
+                      type="button"
+                      disabled={!uploadFile || uploadLoading}
+                      onClick={handleUpload}
+                      className="w-full py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-sm flex items-center justify-center gap-2"
+                    >
+                      {uploadLoading ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>임포트 중...</span></> : <><Upload size={14} /><span>DB 임포트</span></>}
+                    </button>
+                  </div>
                 )}
-                <button
-                  type="button"
-                  disabled={!uploadFile || uploadLoading}
-                  onClick={handleUpload}
-                  className="w-full py-3 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-sm flex items-center justify-center gap-2"
-                >
-                  {uploadLoading ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>임포트 중...</span></> : <><Upload size={14} /><span>DB 임포트</span></>}
-                </button>
-              </div>
-            )}
-            {/* Import log */}
-            {importLog.length > 0 && (
-              <div className="mt-4 pt-4 border-t border-gray-100">
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">임포트 이력</p>
-                  <button onClick={handleClearImportLog} className="text-[10px] text-gray-400 hover:text-rose-500 transition cursor-pointer">clear</button>
-                </div>
-                <div className="flex flex-col gap-1 max-h-[220px] overflow-y-auto">
-                  {importLog.map((entry, i) => (
-                    <div key={i} className="flex items-center justify-between text-[11px]">
-                      <span className="text-gray-500">
-                        {new Date(entry.timestamp).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                      <span className={`font-semibold ${i === 0 ? "text-orange-600" : "text-gray-400"}`}>
-                        {entry.count.toLocaleString()}개
-                      </span>
+                {/* 상품 임포트 이력 */}
+                {importLog.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">상품 임포트 이력</p>
+                      <button onClick={handleClearImportLog} className="text-[10px] text-gray-400 hover:text-rose-500 transition cursor-pointer">clear</button>
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div className="flex flex-col gap-1 max-h-[180px] overflow-y-auto">
+                      {importLog.map((entry, i) => (
+                        <div key={i} className="flex items-center justify-between text-[11px]">
+                          <span className="text-gray-500">
+                            {new Date(entry.timestamp).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                          <span className={`font-semibold ${i === 0 ? "text-orange-600" : "text-gray-400"}`}>
+                            {entry.count.toLocaleString()}개
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+                  재고현황 xlsx (초순/중순/하순 스냅샷)를 <strong>stock_history</strong> 테이블에 임포트합니다.<br />
+                  <span className="text-gray-400">같은 날짜+상품코드는 덮어쓰기. 매칭되는 상품 정보(공급사·규격 등)도 함께 저장.</span>
+                </p>
+                {stockUploadResult?.ok ? (
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <CheckCircle2 size={36} className="text-emerald-500" />
+                    <p className="text-sm font-bold text-emerald-700">임포트 완료</p>
+                    <p className="text-sm text-gray-700">
+                      <span className="font-black text-emerald-700">{(stockUploadResult.history ?? 0).toLocaleString()}</span>
+                      <span className="text-gray-500 mx-1">/</span>
+                      <span className="font-bold">{(stockUploadResult.total ?? 0).toLocaleString()}</span>
+                      건 스냅샷 저장됨
+                    </p>
+                    {stockUploadResult.snapshot_date && (
+                      <p className="text-[11px] text-gray-500">스냅샷일: <span className="font-mono font-bold text-gray-700">{stockUploadResult.snapshot_date}</span></p>
+                    )}
+                    {(stockUploadResult.history ?? 0) < (stockUploadResult.total ?? 0) && (
+                      <p className="text-[10px] text-amber-600">일부 행 저장 실패 (서버 로그 확인 필요)</p>
+                    )}
+                    <button onClick={() => setUploadOpen(false)} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">닫기</button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {/* 시작일재고 기간 선택 (초순/중순/하순). 종료일은 업로드일 자동 */}
+                    <div>
+                      <div className="text-[11px] font-bold text-gray-500 mb-1.5">시작일재고 기간</div>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {([
+                          { v: "early", label: "초순",  desc: "1 - 10일" },
+                          { v: "mid",   label: "중순",  desc: "11 - 20일" },
+                          { v: "late",  label: "하순",  desc: "21 - 말일" },
+                        ] as const).map(o => (
+                          <button
+                            key={o.v}
+                            type="button"
+                            onClick={() => setStockPeriodType(o.v)}
+                            className={`px-2 py-2 text-center rounded-lg border-2 transition cursor-pointer ${
+                              stockPeriodType === o.v
+                                ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                                : "border-gray-200 bg-white text-gray-500 hover:border-indigo-200"
+                            }`}
+                          >
+                            <div className="text-xs font-black">{o.label}</div>
+                            <div className="text-[9px] font-mono opacity-70">{o.desc}</div>
+                          </button>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-1">종료일 = 업로드일 (오늘)</p>
+                    </div>
+
+                    <input ref={stockUploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => {
+                      const file = e.target.files?.[0] ?? null;
+                      if (!file) { setStockUploadFile(null); return; }
+                      const ext = file.name.split(".").pop()?.toLowerCase();
+                      if (ext !== "xlsx" && ext !== "xls") {
+                        alert("xlsx 또는 xls 파일만 가능합니다.");
+                        e.target.value = ""; return;
+                      }
+                      setStockUploadResult(null);
+                      setStockUploadFile(file);
+                    }} />
+                    <button
+                      type="button"
+                      onClick={() => stockUploadInputRef.current?.click()}
+                      className="w-full py-3 border-2 border-dashed border-gray-300 hover:border-indigo-400 text-gray-500 hover:text-indigo-600 text-sm font-semibold rounded-xl transition cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <Upload size={16} />
+                      {stockUploadFile ? stockUploadFile.name : "파일 선택 (.xlsx)"}
+                    </button>
+                    {stockUploadResult?.ok === false && (
+                      <p className="text-xs text-rose-500 font-semibold text-center">{stockUploadResult.msg}</p>
+                    )}
+                    <button
+                      type="button"
+                      disabled={!stockUploadFile || stockUploadLoading}
+                      onClick={handleStockUpload}
+                      className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-sm flex items-center justify-center gap-2"
+                    >
+                      {stockUploadLoading ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>임포트 중...</span></> : <><Upload size={14} /><span>재고 임포트</span></>}
+                    </button>
+                  </div>
+                )}
+                {/* 재고 임포트 이력 */}
+                {stockImportLog.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">재고 임포트 이력</p>
+                      <button onClick={handleClearStockImportLog} className="text-[10px] text-gray-400 hover:text-rose-500 transition cursor-pointer">clear</button>
+                    </div>
+                    <div className="flex flex-col gap-1 max-h-[180px] overflow-y-auto">
+                      {stockImportLog.map((entry, i) => (
+                        <div key={i} className="flex items-center justify-between text-[11px]">
+                          <span className="text-gray-500">
+                            {new Date(entry.timestamp).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          </span>
+                          <span className={`font-semibold ${i === 0 ? "text-indigo-600" : "text-gray-400"}`}>
+                            {entry.count.toLocaleString()}개
+                            {entry.total && entry.total !== entry.count && <span className="text-gray-300"> / {entry.total.toLocaleString()}</span>}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -1235,16 +1235,19 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         if ((emp.workplace || "매장") !== workplaceTab) return false;
       }
       if (positionTab !== "전체") {
-        if (positionTab === "알바") {
-          if (emp.rank !== "알바" && emp.position !== "알바") return false;
-        } else if (positionTab === "물류") {
-          if (!["물류", "캐셔", "진열"].includes(emp.position)) return false;
-        } else if (positionTab === "기타") {
-          const LOGISTICS = new Set(["물류", "캐셔", "진열"]);
-          if (LOGISTICS.has(emp.position) || emp.position === "약사" || emp.rank === "알바" || emp.position === "알바") return false;
-        } else {
-          if (emp.position !== positionTab) return false;
-        }
+        // Partition (mutually exclusive): 약사 > 알바 > 물류(캐셔·진열 포함) > 기타
+        const isPharm  = emp.position === "약사";
+        const isAlba   = !isPharm && (emp.rank === "알바" || emp.position === "알바");
+        const isLogist = !isPharm && !isAlba &&
+          (emp.position.includes("물류") || emp.position === "캐셔" || emp.position === "진열");
+        const isEtc    = !isPharm && !isAlba && !isLogist;
+
+        if (positionTab === "약사")      { if (!isPharm)  return false; }
+        else if (positionTab === "알바") { if (!isAlba)   return false; }
+        else if (positionTab === "물류") { if (!isLogist) return false; }
+        else if (positionTab === "기타") { if (!isEtc)    return false; }
+        else if (positionTab === "캐셔") { if (!isLogist || !emp.position.includes("캐셔")) return false; }
+        else if (positionTab === "진열") { if (!isLogist || emp.position !== "진열") return false; }
       }
       if (searchQuery.trim() !== "") {
         return emp.name.toLowerCase().includes(searchQuery.toLowerCase().trim());
@@ -1306,6 +1309,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       let otherCount = 0;
 
       for (const emp of sourceEmployees) {
+        // 입사일 이전 · 퇴사일 이후는 합계에서 제외 (전체·일별 스케쥴 회색처리와 연동)
+        if (emp.hireDate && currentDate < emp.hireDate) continue;
+        if (emp.retireDate && currentDate > emp.retireDate) continue;
         const sched = emp.schedules.find((s) => s.date === currentDate);
         if (sched && sched.type) {
           const type = sched.type;
@@ -2133,6 +2139,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             const beforeHire = !!emp.hireDate && fullDate < emp.hireDate;
                             const afterRetire = !!emp.retireDate && fullDate > emp.retireDate;
                             const outOfEmployment = beforeHire || afterRetire;
+                            const isHireDay   = !!emp.hireDate   && fullDate === emp.hireDate;
+                            const isRetireDay = !!emp.retireDate && fullDate === emp.retireDate;
                             // 관리자: editMode 켜야 break modal 열림 / 직원: 본인 row는 항상 가능. 재직 기간 밖이면 불가.
                             const canOpenBreak = !outOfEmployment && ((isManagerRole && editMode) || isOwnRow);
                             const nextDate = displayDates[dateIdx + 1];
@@ -2141,10 +2149,22 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             const cell = (
                               <td
                                 key={`${emp.id}-${dateStr}`}
-                                className={`p-0 border-r border-[#e2e8f0] ${isToday ? "ring-2 ring-inset ring-red-500 z-[25] relative" : ""} ${outOfEmployment ? "bg-slate-100/80 cursor-not-allowed" : (canOpenBreak ? "cursor-pointer hover:bg-amber-50/50" : "")}`}
+                                className={`relative p-0 border-r border-[#e2e8f0] ${isToday ? "ring-2 ring-inset ring-red-500 z-[25] relative" : ""} ${isHireDay ? "ring-2 ring-inset ring-emerald-500 z-[24] relative" : ""} ${isRetireDay ? "ring-2 ring-inset ring-rose-500 z-[24] relative" : ""} ${outOfEmployment ? "bg-slate-100/80 cursor-not-allowed" : (canOpenBreak ? "cursor-pointer hover:bg-amber-50/50" : "")}`}
                                 onClick={canOpenBreak ? () => openBreakModalForCell(emp.id, fullDate) : undefined}
-                                title={outOfEmployment ? (beforeHire ? "입사일 이전 — 근무 불가" : "퇴사일 이후 — 근무 불가") : (canOpenBreak ? "클릭하여 점심/휴게 시간 설정" : undefined)}
+                                title={
+                                  isHireDay ? `입사일 (${emp.hireDate})` :
+                                  isRetireDay ? `퇴사일 (${emp.retireDate})` :
+                                  outOfEmployment ? (beforeHire ? "입사일 이전 — 근무 불가" : "퇴사일 이후 — 근무 불가") :
+                                  (canOpenBreak ? "클릭하여 점심/휴게 시간 설정" : undefined)
+                                }
                               >
+                                {/* 입사일/퇴사일 배지 (우상단 오버레이) */}
+                                {isHireDay && (
+                                  <span className="absolute top-0 right-0 z-30 text-[8px] font-black px-1 py-px rounded-bl bg-emerald-500 text-white leading-none shadow-sm pointer-events-none">입사</span>
+                                )}
+                                {isRetireDay && (
+                                  <span className="absolute top-0 right-0 z-30 text-[8px] font-black px-1 py-px rounded-bl bg-rose-500 text-white leading-none shadow-sm pointer-events-none">퇴사</span>
+                                )}
                                 {outOfEmployment ? (
                                   <div className="w-full h-full min-h-[24px] flex items-center justify-center text-[10px] text-slate-400 font-medium select-none">
                                     <span className="opacity-40">─</span>

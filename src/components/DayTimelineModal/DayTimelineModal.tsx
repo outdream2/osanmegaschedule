@@ -209,7 +209,7 @@ function renderSingleChip(
           ? { backgroundColor: "#eef2ff", color: "#3730a3", borderColor: "#a5b4fc" }
           : undefined),
       }}
-      className={`flex items-center gap-1 ${compact ? "px-2 py-1 text-[11px]" : "px-2 py-1 text-[12px]"} rounded-full font-bold border cursor-grab active:cursor-grabbing select-none transition ${
+      className={`relative flex items-center gap-1 whitespace-nowrap ${compact ? "px-2 py-1 text-[11px]" : "px-2 py-1 text-[12px]"} rounded-full font-bold border cursor-grab active:cursor-grabbing select-none transition ${
         // 약사는 항상 emerald ring 테두리 (배정 여부 관계없이 시각적으로 두드러지게)
         isPharmacist ? "ring-2 ring-emerald-500 ring-offset-1 ring-offset-white" : ""
       } ${
@@ -224,12 +224,26 @@ function renderSingleChip(
         className="w-1.5 h-1.5 rounded-full shrink-0"
         style={{ backgroundColor: assigned ? c.dot : isPharmacist ? "#6366f1" : "#cbd5e1" }}
       />
-      {emp.name}
+      <span>{emp.name}</span>
+      {/* 캐셔 겸직 배지 — 오른쪽 위 코너에 오버레이 (인라인 공간 안 잡음) */}
       {emp.position.includes("캐셔") && emp.position.includes("물류") && (
-        <span className="text-[8px] font-black px-1 py-px rounded bg-blue-500 text-white leading-none shrink-0" title="캐셔 겸직">C</span>
+        <span
+          className="absolute -top-1.5 -right-1 w-3.5 h-3.5 rounded-full bg-blue-500 border border-white text-white text-[8px] font-black leading-none flex items-center justify-center shadow-sm pointer-events-none"
+          title="캐셔 겸직"
+          aria-label="캐셔 겸직"
+        >
+          C
+        </span>
       )}
+      {/* 점심 배정 배지 — 왼쪽 위 코너에 오버레이 (캐셔 배지와 위치 분리) */}
       {hasLunchAssigned && (
-        <span className="text-[8px] font-black px-1 py-px rounded bg-yellow-400 text-yellow-900 leading-none shrink-0" title="점심 배정됨">점심</span>
+        <span
+          className="absolute -top-1.5 -left-1 w-3.5 h-3.5 rounded-full bg-yellow-400 border border-white text-yellow-900 text-[8px] font-black leading-none flex items-center justify-center shadow-sm pointer-events-none"
+          title="점심 배정됨"
+          aria-label="점심"
+        >
+          점
+        </span>
       )}
     </div>
   );
@@ -473,6 +487,7 @@ interface ZoneSectionProps {
   onShiftLunchOffset: (delta: number) => void;
   onDropToLunch: (slot: string, empId: number, source?: { type: "zone" | "lunch" | "rest"; zone?: ZoneRow; slot: string }) => void;
   onRemoveFromLunch: (slot: string, empId: number) => void;
+  onReorderLunch?: (slot: string, empId: number, toIndex: number) => void;
   // rest
   restSlotMap: SlotMap;
   shiftedRestSlots: string[];
@@ -480,6 +495,7 @@ interface ZoneSectionProps {
   onShiftRestOffset: (delta: number) => void;
   onDropToRest: (slot: string, empId: number, source?: { type: "zone" | "lunch" | "rest"; zone?: ZoneRow; slot: string }) => void;
   onRemoveFromRest: (slot: string, empId: number) => void;
+  onReorderRest?: (slot: string, empId: number, toIndex: number) => void;
   // interval
   lunchInterval: BreakInterval;
   restInterval: BreakInterval;
@@ -519,8 +535,8 @@ type CellPicker =
 const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
   zoneMap, workers, allWorkers, onDropToZone, onRemoveFromZone, typeTones, workRanges,
   currentDow, onSaveToDow,
-  lunchSlotMap, shiftedLunchSlots, lunchOffset, onShiftLunchOffset, onDropToLunch, onRemoveFromLunch,
-  restSlotMap,  shiftedRestSlots,  restOffset,  onShiftRestOffset,  onDropToRest,  onRemoveFromRest,
+  lunchSlotMap, shiftedLunchSlots, lunchOffset, onShiftLunchOffset, onDropToLunch, onRemoveFromLunch, onReorderLunch,
+  restSlotMap,  shiftedRestSlots,  restOffset,  onShiftRestOffset,  onDropToRest,  onRemoveFromRest,  onReorderRest,
   lunchInterval, restInterval, onSetLunchInterval, onSetRestInterval,
   lunchCount, restCount, onSetLunchCount, onSetRestCount,
   tabWorkerIds, isTabAll, onUserInteract, onAutoSuggest,
@@ -589,7 +605,12 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
   }, [zoneMap, lunchSlotMap, restSlotMap]);
   const lunchAssignedIds = useMemo(() => {
     const ids = new Set<number>();
-    (Object.values(lunchSlotMap) as number[][]).forEach(arr => arr.forEach(id => ids.add(id)));
+    for (const arr of Object.values(lunchSlotMap ?? {})) {
+      if (!Array.isArray(arr)) continue;
+      for (const id of arr) {
+        if (typeof id === "number" && Number.isFinite(id)) ids.add(id);
+      }
+    }
     return ids;
   }, [lunchSlotMap]);
 
@@ -648,6 +669,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
     onRemove: (slot: string, id: number) => void,
     dropKind: "lunch" | "rest",
     count: BreakCount,
+    onReorder?: (slot: string, empId: number, toIndex: number) => void,
   ) => {
     // 비활성 슬롯도 드롭 타겟으로 허용 (드롭 시 assign은 되지만 offset이 안 맞으면 화면에는 안 보일 수 있음)
     if (!isActive) {
@@ -701,6 +723,23 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             <div
               key={rowIdx}
               className={`flex items-center min-h-[20px] border-t px-0.5 ${theme.border} ${rowIdx === 0 ? "border-t" : ""}`}
+              onDragOver={e => {
+                // 같은 슬롯 내부 재정렬 지원 시에만 drop 허용
+                if (draggingSource?.type === dropKind && draggingSource.slot === slotKey && onReorder) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  e.dataTransfer.dropEffect = "move";
+                }
+              }}
+              onDrop={e => {
+                if (draggingId === null) return;
+                if (draggingSource?.type === dropKind && draggingSource.slot === slotKey && onReorder) {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onReorder(slotKey, draggingId, rowIdx);
+                  setDraggingSource(null);
+                }
+              }}
             >
               {shouldRender ? (
                 <button
@@ -716,11 +755,14 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                   onClick={e => { e.stopPropagation(); onRemove(slotKey, empId!); }}
                   title={w!.emp.position.includes("캐셔") && w!.emp.position.includes("물류") ? "캐셔 겸직 · 드래그하여 이동 · 클릭하여 제거" : "드래그하여 이동 · 클릭하여 제거"}
                   style={{ backgroundColor: c!.chipBg, color: c!.chipText, borderColor: c!.chipBorder }}
-                  className="w-full text-center rounded text-[10px] font-bold border transition leading-none py-px cursor-grab active:cursor-grabbing hover:opacity-60 inline-flex items-center justify-center gap-0.5"
+                  className="relative w-full text-center rounded text-[10px] font-bold border transition leading-none py-px cursor-grab active:cursor-grabbing hover:opacity-60 inline-flex items-center justify-center gap-0.5 whitespace-nowrap overflow-hidden"
                 >
-                  {w!.emp.name}
+                  <span className="truncate">{w!.emp.name}</span>
                   {w!.emp.position.includes("캐셔") && w!.emp.position.includes("물류") && (
-                    <span className="text-[7px] font-black px-0.5 rounded bg-blue-500 text-white leading-none">C</span>
+                    <span
+                      className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-blue-500 border border-white text-white text-[7px] font-black leading-none flex items-center justify-center shadow-sm pointer-events-none"
+                      title="캐셔 겸직"
+                    >C</span>
                   )}
                 </button>
               ) : (
@@ -800,7 +842,8 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
 
       {/* Unified grid */}
       <div className="overflow-x-auto">
-        <div style={{ minWidth: "600px" }}>
+        {/* pr-6: 20시 라벨 오른쪽에 여백 확보 — 셀 오른쪽 경계가 화면 끝에 붙지 않도록 */}
+        <div className="pr-6" style={{ minWidth: "600px" }}>
           {/* Hour header — 왼쪽 정렬, 21시 제거됨 + 종료시간(20:00) 라벨 + 피크타임(14~17) 표시 */}
           <div className="flex mb-0.5 relative">
             <div className="w-14 shrink-0" />
@@ -897,11 +940,14 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                             }}
                             title={w.emp.position.includes("캐셔") && w.emp.position.includes("물류") ? "캐셔 겸직 · 드래그로 이동 · 클릭으로 제거" : "드래그: 다른 구역으로 이동 | 클릭: 제거"}
                             style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder, touchAction: "none" }}
-                            className="px-1 py-px rounded text-[11px] font-bold border transition select-none cursor-grab hover:opacity-70 inline-flex items-center gap-0.5"
+                            className="relative px-1 py-px rounded text-[11px] font-bold border transition select-none cursor-grab hover:opacity-70 inline-flex items-center gap-0.5 whitespace-nowrap"
                           >
                             {w.emp.name}
                             {w.emp.position.includes("캐셔") && w.emp.position.includes("물류") && (
-                              <span className="text-[7px] font-black px-0.5 rounded bg-blue-500 text-white leading-none">C</span>
+                              <span
+                                className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-blue-500 border border-white text-white text-[7px] font-black leading-none flex items-center justify-center shadow-sm pointer-events-none"
+                                title="캐셔 겸직"
+                              >C</span>
                             )}
                           </div>
                         );
@@ -916,16 +962,16 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           {/* Divider */}
           <div className="h-px bg-sky-200/60 my-1" />
 
-          {/* 점심 위 시간 라벨 (컴팩트) */}
+          {/* 점심 위 시간 라벨 (컴팩트) — 시각(hour)만 표기: 10, 11, ... */}
           <div className="flex mb-0.5 relative">
             <div className="w-14 shrink-0" />
             <div className="flex-1 flex relative">
               {ZONE_SLOTS.map(slot => (
                 <div key={slot} className="flex-1 text-left pl-0.5">
-                  <span className="text-[10px] font-bold text-yellow-700/70">{slot}</span>
+                  <span className="text-[10px] font-bold text-yellow-700/70">{parseInt(slot, 10)}</span>
                 </div>
               ))}
-              <span className="text-[10px] font-bold text-yellow-700/70 absolute right-0 top-0 pr-0.5">20:00</span>
+              <span className="text-[10px] font-bold text-yellow-700/70 absolute right-0 top-0 pr-0.5">20</span>
             </div>
           </div>
 
@@ -974,7 +1020,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               if (!activeK0 && !activeK30) {
                 return (
                   <div key={slot} className="flex-1 flex border border-transparent">
-                    {renderBreakSubCell(k0, false, lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch", lunchCount)}
+                    {renderBreakSubCell(k0, false, lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch", lunchCount, onReorderLunch)}
                   </div>
                 );
               }
@@ -983,30 +1029,30 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                 const activeKey = activeK0 ? k0 : k30;
                 return (
                   <div key={slot} className="flex-1 flex border border-yellow-200">
-                    {renderBreakSubCell(activeKey, true, lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch", lunchCount)}
+                    {renderBreakSubCell(activeKey, true, lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch", lunchCount, onReorderLunch)}
                   </div>
                 );
               }
               // 30분 인터벌: 2개 sub-cell
               return (
                 <div key={slot} className="flex-1 flex border border-yellow-200">
-                  {renderBreakSubCell(k0,  activeK0,  lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch", lunchCount)}
-                  {renderBreakSubCell(k30, activeK30, lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch", lunchCount)}
+                  {renderBreakSubCell(k0,  activeK0,  lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch", lunchCount, onReorderLunch)}
+                  {renderBreakSubCell(k30, activeK30, lunchSlotMap, lunchTheme, onDropToLunch, onRemoveFromLunch, "lunch", lunchCount, onReorderLunch)}
                 </div>
               );
             })}
           </div>
 
-          {/* 휴게 위 시간 라벨 (컴팩트) */}
+          {/* 휴게 위 시간 라벨 (컴팩트) — 시각(hour)만 표기 */}
           <div className="flex mb-0.5 mt-0.5 relative">
             <div className="w-14 shrink-0" />
             <div className="flex-1 flex relative">
               {ZONE_SLOTS.map(slot => (
                 <div key={slot} className="flex-1 text-left pl-0.5">
-                  <span className="text-[10px] font-bold text-violet-700/70">{slot}</span>
+                  <span className="text-[10px] font-bold text-violet-700/70">{parseInt(slot, 10)}</span>
                 </div>
               ))}
-              <span className="text-[10px] font-bold text-violet-700/70 absolute right-0 top-0 pr-0.5">20:00</span>
+              <span className="text-[10px] font-bold text-violet-700/70 absolute right-0 top-0 pr-0.5">20</span>
             </div>
           </div>
 
@@ -1054,7 +1100,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               if (!activeK0 && !activeK30) {
                 return (
                   <div key={slot} className="flex-1 flex border border-transparent">
-                    {renderBreakSubCell(k0, false, restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest", restCount)}
+                    {renderBreakSubCell(k0, false, restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest", restCount, onReorderRest)}
                   </div>
                 );
               }
@@ -1062,14 +1108,14 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                 const activeKey = activeK0 ? k0 : k30;
                 return (
                   <div key={slot} className="flex-1 flex border border-violet-200">
-                    {renderBreakSubCell(activeKey, true, restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest", restCount)}
+                    {renderBreakSubCell(activeKey, true, restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest", restCount, onReorderRest)}
                   </div>
                 );
               }
               return (
                 <div key={slot} className="flex-1 flex border border-violet-200">
-                  {renderBreakSubCell(k0,  activeK0,  restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest", restCount)}
-                  {renderBreakSubCell(k30, activeK30, restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest", restCount)}
+                  {renderBreakSubCell(k0,  activeK0,  restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest", restCount, onReorderRest)}
+                  {renderBreakSubCell(k30, activeK30, restSlotMap, restTheme, onDropToRest, onRemoveFromRest, "rest", restCount, onReorderRest)}
                 </div>
               );
             })}
@@ -1458,8 +1504,11 @@ export const DayTimelineModal: React.FC<Props> = ({
   }, [date]);
 
   // ── Workers ───────────────────────────────────────────────────────────────
+  // 입사일 이전 · 퇴사일 이후 직원은 자동 제외 (전체스케쥴 회색처리와 연동)
   const workers = useMemo(() => employees
     .map(emp => {
+      if (emp.hireDate && date < emp.hireDate) return null;
+      if (emp.retireDate && date > emp.retireDate) return null;
       const s = emp.schedules.find(sc => sc.date === date);
       if (!s || SKIP_TYPES.has(s.type)) return null;
       const hoursMap = emp.position === "약사" ? (pharmTypeHoursMap ?? typeHoursMap) : typeHoursMap;
@@ -2046,8 +2095,8 @@ export const DayTimelineModal: React.FC<Props> = ({
                     ...g.items.map(({ emp, schedule }) => {
                     const colors = typeTones[schedule.type] ?? DEFAULT_TONE;
                     const isPharmacist = emp.position === "약사";
-                    const hasLunch = Object.values(lunchSlots).some(ids => (ids as number[]).includes(emp.id));
-                    const hasRest  = Object.values(restSlots).some(ids => (ids as number[]).includes(emp.id));
+                    const hasLunch = Object.values(lunchSlots ?? {}).some(ids => Array.isArray(ids) && (ids as number[]).includes(emp.id));
+                    const hasRest  = Object.values(restSlots ?? {}).some(ids => Array.isArray(ids) && (ids as number[]).includes(emp.id));
 
                     // 물류 담당 구역 (물류 또는 캐셔+물류 겸직인 경우 표시)
                     const isLogistics = emp.position.includes("물류");
@@ -2068,6 +2117,13 @@ export const DayTimelineModal: React.FC<Props> = ({
                             : <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: colors.dot }} />
                           }
                           <span className={`text-[11px] font-bold whitespace-nowrap ${isPharmacist ? "text-indigo-800 ring-1 ring-emerald-400 rounded px-1 bg-emerald-50/50" : "text-slate-800"}`}>{emp.name}</span>
+                          {/* 입사일/퇴사일 배지 — 오늘 보고 있는 날짜가 그날인 경우 표시 */}
+                          {!!emp.hireDate && date === emp.hireDate && (
+                            <span className="text-[8px] font-black px-1 py-px rounded bg-emerald-500 text-white leading-none shrink-0" title={`입사일 (${emp.hireDate})`}>입사</span>
+                          )}
+                          {!!emp.retireDate && date === emp.retireDate && (
+                            <span className="text-[8px] font-black px-1 py-px rounded bg-rose-500 text-white leading-none shrink-0" title={`퇴사일 (${emp.retireDate})`}>퇴사</span>
+                          )}
                           {/* 오픈/마감 등 근무유형을 이름 옆에 배지로 인라인 표시 (기존 별도 줄 제거) */}
                           <span className="text-[9px] font-bold leading-none shrink-0" style={{ color: colors.text }}>{schedule.type}</span>
                           {/* 캐셔 겸직 배지 — 이름 옆에 작게 표시 */}
@@ -2228,12 +2284,40 @@ export const DayTimelineModal: React.FC<Props> = ({
               onShiftLunchOffset={handleLunchShiftOffset}
               onDropToLunch={dropToLunchSlot}
               onRemoveFromLunch={removeFromLunchSlot}
+              onReorderLunch={(slot, empId, toIndex) => {
+                setLunchSlots(prev => {
+                  const arr = [...(prev[slot] ?? [])];
+                  const from = arr.indexOf(empId);
+                  if (from < 0) return prev;
+                  arr.splice(from, 1);
+                  const idx = Math.max(0, Math.min(toIndex, arr.length));
+                  arr.splice(idx, 0, empId);
+                  const next = { ...prev, [slot]: arr };
+                  localStorage.setItem(`tl_lunch_slots_${date}`, JSON.stringify(next));
+                  scheduleAutoSave(zoneSlots, next, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
+                  return next;
+                });
+              }}
               restSlotMap={restSlots}
               shiftedRestSlots={shiftedRestSlots}
               restOffset={restOffset}
               onShiftRestOffset={handleRestShiftOffset}
               onDropToRest={dropToRestSlot}
               onRemoveFromRest={removeFromRestSlot}
+              onReorderRest={(slot, empId, toIndex) => {
+                setRestSlots(prev => {
+                  const arr = [...(prev[slot] ?? [])];
+                  const from = arr.indexOf(empId);
+                  if (from < 0) return prev;
+                  arr.splice(from, 1);
+                  const idx = Math.max(0, Math.min(toIndex, arr.length));
+                  arr.splice(idx, 0, empId);
+                  const next = { ...prev, [slot]: arr };
+                  localStorage.setItem(`tl_rest_slots_${date}`, JSON.stringify(next));
+                  scheduleAutoSave(zoneSlots, lunchSlots, next, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
+                  return next;
+                });
+              }}
               lunchInterval={lunchInterval}
               restInterval={restInterval}
               onSetLunchInterval={handleSetLunchInterval}

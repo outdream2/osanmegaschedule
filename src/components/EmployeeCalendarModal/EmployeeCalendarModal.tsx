@@ -395,7 +395,14 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                     {week.map((day, di) => {
                       if (!day) return <div key={di} />;
                       const sc = schedMap[day];
-                      const dayBgHex = sc?.type ? getTypeHex(sc.type, scheduleTypeEntries) : null;
+                      const dayStr = `${year}-${monthStr}-${String(day).padStart(2, "0")}`;
+                      // 입사일 · 퇴사일 · 재직기간 밖 여부
+                      const isHireDay   = !!employee.hireDate   && dayStr === employee.hireDate;
+                      const isRetireDay = !!employee.retireDate && dayStr === employee.retireDate;
+                      const beforeHire  = !!employee.hireDate   && dayStr < employee.hireDate;
+                      const afterRetire = !!employee.retireDate && dayStr > employee.retireDate;
+                      const outOfEmployment = beforeHire || afterRetire;
+                      const dayBgHex = !outOfEmployment && sc?.type ? getTypeHex(sc.type, scheduleTypeEntries) : null;
                       const dayIsLight = dayBgHex ? isLightHex(dayBgHex) : true;
                       const isToday = (
                         new Date().getFullYear() === year &&
@@ -404,23 +411,43 @@ export const EmployeeCalendarModal: React.FC<Props> = ({
                       );
                       const isEditing = editingDay === day;
                       const dow = (firstDow + day - 1) % 7;
+                      const canClick = !outOfEmployment && isAdmin && onUpdate;
                       return (
                         <div
                           key={di}
-                          onClick={() => handleDayQuickCycle(day)}
-                          className={`rounded-lg p-1 flex flex-col items-center min-h-[52px] border transition-all ${
-                            dayBgHex ? "border-transparent" : "bg-white border-slate-100"
-                          } ${isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""} ${
+                          onClick={canClick ? () => handleDayQuickCycle(day) : undefined}
+                          title={
+                            isHireDay ? `입사일 (${employee.hireDate})` :
+                            isRetireDay ? `퇴사일 (${employee.retireDate})` :
+                            outOfEmployment ? (beforeHire ? "입사일 이전 — 근무 불가" : "퇴사일 이후 — 근무 불가") : undefined
+                          }
+                          className={`relative rounded-lg p-1 flex flex-col items-center min-h-[52px] border transition-all ${
+                            outOfEmployment ? "bg-slate-100 border-slate-200 cursor-not-allowed opacity-70" :
+                            (dayBgHex ? "border-transparent" : "bg-white border-slate-100")
+                          } ${isHireDay ? "ring-2 ring-emerald-500" : ""} ${isRetireDay ? "ring-2 ring-rose-500" : ""} ${isToday ? "ring-2 ring-indigo-400 ring-offset-1" : ""} ${
                             isEditing ? "ring-2 ring-blue-500 scale-105 z-10 shadow-md" : ""
-                          } ${isAdmin && onUpdate ? "cursor-pointer hover:shadow-sm hover:scale-[1.02]" : ""}`}
+                          } ${canClick ? "cursor-pointer hover:shadow-sm hover:scale-[1.02]" : ""}`}
                           style={dayBgHex ? { backgroundColor: dayBgHex } : undefined}
                         >
+                          {/* 입사일/퇴사일 배지 (셀 우상단) */}
+                          {isHireDay && (
+                            <span className="absolute -top-1.5 -right-1 text-[8px] font-black px-1 py-px rounded bg-emerald-500 text-white leading-none shadow-sm z-10">
+                              입사
+                            </span>
+                          )}
+                          {isRetireDay && (
+                            <span className="absolute -top-1.5 -right-1 text-[8px] font-black px-1 py-px rounded bg-rose-500 text-white leading-none shadow-sm z-10">
+                              퇴사
+                            </span>
+                          )}
                           <span className={`text-[10px] font-bold leading-none mb-0.5 ${
                             dow === 0 ? "text-rose-500" : dow === 6 ? "text-sky-500" : "text-slate-600"
                           }`}>
                             {day}
                           </span>
-                          {sc?.type ? (
+                          {outOfEmployment ? (
+                            <span className="text-[8px] text-slate-400 font-medium">─</span>
+                          ) : sc?.type ? (
                             <>
                               <span className={`text-[9px] font-extrabold leading-tight ${dayIsLight ? "text-slate-900" : "text-white"}`}>
                                 {sc.type}

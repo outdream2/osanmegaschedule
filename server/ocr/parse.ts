@@ -248,6 +248,36 @@ export function repairColumnShift(
       if (mathOk(testRow)) return testRow;
     }
 
+    // 3순위: 다른 컬럼(단위·박스수·개수·포장·순번 등)의 숫자 값도 후보로 포함
+    // 예: 광동제약 명세서에서 "단위" 컬럼(1000, 2000)이 실제 수량이고 라벨된 "수량"(25044)이 로트번호
+    // → 다른 컬럼 값 중 (X × 단가 ≈ 금액) 을 만족하는 값을 수량으로 사용
+    const currentPrice = safeParseNumber(row[pI]);
+    const currentAmount = safeParseNumber(row[aI]);
+    if (currentPrice && currentAmount && currentPrice > 0 && currentAmount > 0) {
+      const targetQty = currentAmount / currentPrice;
+      if (Number.isFinite(targetQty) && targetQty > 0) {
+        // 모든 셀을 훑어서 targetQty와 근접한 값을 찾음 (허용오차 1%)
+        for (let ci = 0; ci < row.length; ci++) {
+          if (ci === qI || ci === pI || ci === aI || ci === tI) continue;  // 이미 시도된 컬럼 제외
+          const v = safeParseNumber(row[ci]);
+          if (v == null || v <= 0) continue;
+          if (Math.abs(v - targetQty) <= Math.max(1, targetQty * 0.01)) {
+            const testRow = [...row];
+            testRow[qI] = v;
+            if (mathOk(testRow)) {
+              // 원래 수량 위치에 있던 값(로트번호 등)은 비고로 이동 시도
+              const bI = headers.indexOf("비고");
+              const origQty = row[qI];
+              if (bI >= 0 && (row[bI] == null || row[bI] === "") && origQty != null) {
+                testRow[bI] = String(origQty);
+              }
+              return testRow;
+            }
+          }
+        }
+      }
+    }
+
     return row;
   });
 }

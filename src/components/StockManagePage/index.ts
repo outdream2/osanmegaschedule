@@ -1,0 +1,1 @@
+export { StockManagePage } from "./StockManagePage";

@@ -375,6 +375,10 @@ router.post("/api/ocr", async (req, res) => {
   const { images, engine: reqEngine = "gemini" } = req.body ?? {};
   const engine = reqEngine as string;
   const supplierHints: string[] = Array.isArray(req.body?.supplierHints) ? req.body.supplierHints : [];
+  // 요청 스코프 로컬 키 인덱스 — 동시 요청 간 race 방지
+  // 시작값만 전역 geminiState에서 읽고, 이후는 로컬에서만 관리
+  const keysAtStart = getGeminiKeys();
+  let reqLocalKeyIdx = keysAtStart.length > 0 ? geminiState.currentKeyIdx % keysAtStart.length : 0;
   const templateMap = new Map<string, string[]>();
   const uniqueHints = [...new Set(supplierHints.filter(Boolean))];
   if (uniqueHints.length > 0) {
@@ -416,22 +420,51 @@ router.post("/api/ocr", async (req, res) => {
 
   try {
     const pages: any[] = [];
+    // 페이지별 상세 처리 트레이스 (진단 로그용)
+    const pageTraces: any[] = [];
 
     if (engine === "gemini") {
       const keys = getGeminiKeys();
 
       for (let i = 0; i < images.length; i++) {
         const { data: rawB64, mimeType: rawMime } = images[i] as { data: string; mimeType: string };
+        const pageStartTs = Date.now();
+        const trace: any = {
+          page: i + 1,
+          startedAt: new Date(pageStartTs).toISOString(),
+          originalBytes: Math.round(rawB64.length * 0.75),  // base64 → byte 근사
+          preprocessing: null,
+          supplierExtract: null,
+          templateApplied: null,
+          keyAttempts: [],
+          rawTextLength: 0,
+          parsePipeline: null,
+          totalMs: 0,
+        };
 
         // 이미지 전처리: 업스케일 + 도장 제거 + 그레이스케일 정규화
+        const preT0 = Date.now();
         const { b64, mimeType } = await preprocessImageForOcr(rawB64, rawMime);
+        trace.preprocessing = {
+          timeMs: Date.now() - preT0,
+          originalMime: rawMime,
+          processedMime: mimeType,
+          processedBytes: Math.round(b64.length * 0.75),
+          sizeRatio: Number(((b64.length / rawB64.length) || 1).toFixed(3)),
+        };
 
         // 공급처 힌트가 없으면 1차 경량 추출 → 템플릿 조회
         let hint = supplierHints[i] ?? "";
+        const hintProvided = !!hint;
         if (!hint && keys.length > 0) {
-          const extractKey = keys[geminiState.currentKeyIdx % keys.length];
+          const extractKey = keys[reqLocalKeyIdx % keys.length];
           if (!sessionDeadKeys.has(extractKey)) {
+            const exT0 = Date.now();
             const extracted = await extractSupplierFromImage(b64, mimeType, extractKey);
+            trace.supplierExtract = {
+              tried: true, timeMs: Date.now() - exT0, result: extracted ?? null,
+              keyIdx: reqLocalKeyIdx % keys.length,
+            };
             if (extracted) {
               hint = extracted;
               console.log(`[OCR/2pass] page ${i + 1}: 공급처 1차 추출 → "${extracted}"`);
@@ -441,39 +474,55 @@ router.post("/api/ocr", async (req, res) => {
                 .select("supplier_name, headers").ilike("supplier_name", `%${cleanedName}%`).limit(1);
               if (tmplData?.[0]) templateMap.set(hint, tmplData[0].headers);
             }
+          } else {
+            trace.supplierExtract = { tried: false, reason: "key dead" };
           }
+        } else if (hintProvided) {
+          trace.supplierExtract = { tried: false, reason: "hint provided", hint };
         }
         const tmplHeaders = hint ? templateMap.get(hint) : undefined;
         const templatePrompt = tmplHeaders ? buildTemplatePrompt(hint, tmplHeaders) : undefined;
-        if (templatePrompt) console.log(`[OCR/Template] page ${i + 1}: 템플릿 "${hint}" 적용`);
+        if (templatePrompt) {
+          console.log(`[OCR/Template] page ${i + 1}: 템플릿 "${hint}" 적용`);
+          trace.templateApplied = { supplier: hint, headers: tmplHeaders };
+        }
 
-        // ── Gemini (sticky key, 세션 내 dead key 제외) ──────────────────────
+        // ── Gemini (sticky key, 세션 내 dead key 제외 · 요청 로컬 인덱스) ──
         let rawText = "";
         let lastError = "";
 
-        const startIdx = keys.length > 0 ? geminiState.currentKeyIdx % keys.length : 0;
+        const startIdx = keys.length > 0 ? reqLocalKeyIdx % keys.length : 0;
         console.log(`[OCR/Gemini] page ${i + 1}/${images.length} — 키 ${startIdx + 1}번부터 (총 ${keys.length}개)`);
 
         for (let k = 0; k < keys.length; k++) {
           const ki = (startIdx + k) % keys.length;
           const apiKey = keys[ki];
-          if (sessionDeadKeys.has(apiKey)) continue;
+          if (sessionDeadKeys.has(apiKey)) {
+            trace.keyAttempts.push({ keyIdx: ki, skipped: "dead" });
+            continue;
+          }
 
+          const attT0 = Date.now();
           const r = await callGeminiOcr(b64, mimeType, apiKey, undefined, templatePrompt);
+          const attMs = Date.now() - attT0;
           if (r.ok) {
             rawText = r.text;
+            reqLocalKeyIdx = ki;
             geminiState.currentKeyIdx = ki;
-            console.log(`[OCR/Gemini] page ${i + 1}: 키 ${ki + 1} 성공`);
+            trace.keyAttempts.push({ keyIdx: ki, ok: true, timeMs: attMs, textLen: r.text.length });
+            trace.rawTextLength = r.text.length;
+            console.log(`[OCR/Gemini] page ${i + 1}: 키 ${ki + 1} 성공 (${attMs}ms)`);
             break;
           }
           const fail = r as Extract<GeminiResult, { ok: false }>;
           lastError = fail.error;
+          trace.keyAttempts.push({ keyIdx: ki, ok: false, timeMs: attMs, quota: fail.quota, errorPreview: fail.error.slice(0, 100) });
           if (fail.quota || fail.error.includes("UNAUTHENTICATED") || fail.error.includes("API_KEY_INVALID") || fail.error.includes("not valid")) {
             sessionDeadKeys.add(apiKey);
-            geminiState.currentKeyIdx = (ki + 1) % keys.length;
+            reqLocalKeyIdx = (ki + 1) % keys.length;
             console.warn(`[OCR/Gemini] 키 ${ki + 1} 세션 제외 (할당량 초과 또는 인증 실패)`);
           } else {
-            geminiState.currentKeyIdx = (ki + 1) % keys.length;
+            reqLocalKeyIdx = (ki + 1) % keys.length;
             console.warn(`[OCR/Gemini] 키 ${ki + 1}/${keys.length} 실패: ${fail.error}`);
           }
         }
@@ -505,6 +554,8 @@ router.post("/api/ocr", async (req, res) => {
 
         let pageData: any;
         try {
+          const rawHeadersOrig = Array.isArray(parsed.headers) ? [...parsed.headers] : [];
+          const rawRowsCount = Array.isArray(parsed.rows) ? parsed.rows.length : 0;
           const cleaned = cleanCellValues(
             Array.isArray(parsed.headers) ? parsed.headers : [],
             Array.isArray(parsed.rows)    ? parsed.rows    : [],
@@ -517,6 +568,21 @@ router.post("/api/ocr", async (req, res) => {
           const rows1 = repairColumnShift(spec.headers, rows0);
           const rows2 = crossValidateIntraPage(spec.headers, rows1);
           const rows  = filterCodeOnlyRows(spec.headers, rows2);
+
+          // 파이프라인 각 단계 추적
+          trace.parsePipeline = {
+            rawHeadersFromGemini: rawHeadersOrig,
+            rawRowsCount,
+            afterClean: { headers: cleaned.headers, rowCount: cleaned.rows.length },
+            afterMergeHeaders: { headers: pre.headers, rowCount: pre.rows.length },
+            afterNormalize: { headers: normalized.headers, rowCount: normalized.rows.length },
+            afterSpec: { headers: spec.headers, rowCount: spec.rows.length },
+            afterFixAmounts: { rowCount: rows0.length, changed: rows0.length !== spec.rows.length },
+            afterRepairShift: { rowCount: rows1.length, changed: JSON.stringify(rows1) !== JSON.stringify(rows0) },
+            afterCrossValidate: { rowCount: rows2.length, changed: JSON.stringify(rows2) !== JSON.stringify(rows1) },
+            afterFilterCode: { rowCount: rows.length, filtered: rows2.length - rows.length },
+            finalMeta: cleanMeta,
+          };
           const aI = spec.headers.indexOf("금액");
           if (aI >= 0 && cleanMeta.total) {
             const finalSum = rows.reduce((s, r) => s + (typeof r[aI] === "number" ? (r[aI] as number) : 0), 0);
@@ -551,28 +617,183 @@ router.post("/api/ocr", async (req, res) => {
           pageData = { page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText, supplierHintUsed: hint || undefined };
         } catch (parseErr: any) {
           console.error(`[OCR/parse-error] page ${i + 1}:`, parseErr?.stack ?? parseErr?.message);
+          trace.parseError = String(parseErr?.message ?? parseErr);
           pageData = { page: i + 1, headers: ["원문 응답"], rows: [[rawText]], meta: {}, rawText };
         }
+        trace.totalMs = Date.now() - pageStartTs;
+        pageTraces.push(trace);
         pages.push(pageData);
       }
     }
 
+    // ── 상세 진단 로그: 페이지별·행별 품질 지표 계산 ─────────────────────────
+    // 목적: 추출이 실패했을 때 어느 단계·어느 셀에서 문제가 있었는지 즉시 파악.
+    const diagnostics = pages.map((pg: any) => {
+      const H: string[] = pg.headers ?? [];
+      const rows: any[][] = pg.rows ?? [];
+      // 표준 컬럼 인덱스
+      const idx = (re: RegExp) => H.findIndex(h => re.test(String(h).replace(/\s+/g, "")));
+      const iName  = idx(/품명|품목|상품명|제품명/);
+      const iSpec  = idx(/규격|사양/);
+      const iQty   = idx(/수량|매수/);
+      const iPrice = idx(/단가/);
+      const iAmt   = idx(/^금액$|공급가액|매출액/);
+      const iVat   = idx(/세액|부가세/);
+
+      let qtyPriceAmtMismatch = 0;
+      let missingName = 0;
+      let missingQty = 0;
+      let missingPrice = 0;
+      let missingAmount = 0;
+      let outlierAmount = 0;
+      let outlierQty = 0;
+      let outlierPrice = 0;
+      const rowIssues: Array<any> = [];
+
+      const toNum = (v: any): number => {
+        if (typeof v === "number") return v;
+        const s = String(v ?? "").replace(/,/g, "").trim();
+        if (!s) return 0;
+        // "1.000" → 1000 (콤마-점 오독)
+        if (/^\d{1,3}(\.\d{3})+$/.test(s)) return parseInt(s.replace(/\./g, ""), 10);
+        const n = parseFloat(s);
+        return isFinite(n) ? n : 0;
+      };
+
+      for (let ri = 0; ri < rows.length; ri++) {
+        const row = rows[ri];
+        if (!Array.isArray(row)) continue;
+        const name  = iName  >= 0 ? String(row[iName]  ?? "").trim() : "";
+        const qty   = iQty   >= 0 ? toNum(row[iQty])   : 0;
+        const price = iPrice >= 0 ? toNum(row[iPrice]) : 0;
+        const amt   = iAmt   >= 0 ? toNum(row[iAmt])   : 0;
+        const issues: string[] = [];
+
+        if (!name) { missingName++; issues.push("품명 없음"); }
+        if (iQty   >= 0 && qty   === 0) { missingQty++;    issues.push("수량 0/없음"); }
+        if (iPrice >= 0 && price === 0) { missingPrice++;  issues.push("단가 0/없음"); }
+        if (iAmt   >= 0 && amt   === 0) { missingAmount++; issues.push("금액 0/없음"); }
+
+        // 이상치 감지 (한국 거래명세서 통계적 범위)
+        if (qty   > 0 && qty   > 100000)      { outlierQty++;    issues.push(`수량 과대(${qty})`); }
+        if (price > 0 && price > 10_000_000)  { outlierPrice++;  issues.push(`단가 과대(${price})`); }
+        if (amt   > 0 && amt   > 100_000_000) { outlierAmount++; issues.push(`금액 과대(${amt})`); }
+
+        // 행의 모든 셀 값 (진단용) + 다른 수량 후보 (X × 단가 ≈ 금액 을 만족하는 값)
+        const allCells = row.map((v, ci) => ({ col: ci, header: H[ci] ?? `col${ci}`, value: v }));
+        let qtyCandidates: Array<{ col: number; header: string; value: number }> = [];
+        if (price > 0 && amt > 0) {
+          const targetQty = amt / price;
+          qtyCandidates = allCells
+            .map(c => ({ ...c, num: toNum(c.value) }))
+            .filter(c => c.col !== iQty && c.num > 0 && Math.abs(c.num - targetQty) <= Math.max(1, targetQty * 0.02))
+            .map(c => ({ col: c.col, header: c.header, value: c.num }));
+        }
+
+        // 수량 × 단가 ≠ 금액 검증
+        let mismatch = false;
+        let expected: number | undefined;
+        if (qty > 0 && price > 0 && amt > 0) {
+          expected = qty * price;
+          const drift = Math.abs(expected - amt) / Math.max(expected, amt);
+          if (drift > 0.02) {
+            mismatch = true;
+            qtyPriceAmtMismatch++;
+            issues.push(`수량×단가 불일치: ${qty}×${price}=${expected} vs 금액 ${amt}`);
+          }
+        }
+
+        if ((mismatch || issues.length > 0) && rowIssues.length < 30) {
+          rowIssues.push({
+            row: ri + 1,
+            product: name,
+            issues: [...issues],
+            qty, price, amount: amt, expected,
+            allCells,           // 진단: 이 행의 모든 셀 원본 값
+            qtyCandidates,      // 진단: (X × 단가 ≈ 금액)을 만족하는 다른 컬럼 후보 (자동 교정 후보)
+          });
+        }
+      }
+
+      // 페이지 합계 검증
+      const rowAmountSum = rows.reduce((s, r) => {
+        const a = iAmt >= 0 ? (typeof r[iAmt] === "number" ? r[iAmt] : parseFloat(String(r[iAmt] ?? "").replace(/,/g, "")) || 0) : 0;
+        return s + a;
+      }, 0);
+      const statedTotal = Number(pg.meta?.total ?? 0);
+      const totalMismatch = statedTotal > 0 && Math.abs(rowAmountSum - statedTotal) > 1;
+
+      return {
+        page: pg.page,
+        supplier: pg.meta?.supplier ?? null,
+        supplierHintUsed: pg.supplierHintUsed ?? null,
+        date: pg.meta?.date ?? null,
+        headers: H,
+        columnMap: {
+          품명: iName, 규격: iSpec, 수량: iQty, 단가: iPrice, 금액: iAmt, 세액: iVat,
+        },
+        stats: {
+          rowCount: rows.length,
+          statedTotal,
+          rowAmountSum,
+          totalMismatch,
+          totalDrift: statedTotal > 0 ? Math.round(((rowAmountSum - statedTotal) / statedTotal) * 10000) / 100 : null,
+          qtyPriceAmtMismatch,
+          missingName, missingQty, missingPrice, missingAmount,
+          outlierQty, outlierPrice, outlierAmount,
+        },
+        rowIssues,
+        rawTextPreview: pg.rawText ? String(pg.rawText).slice(0, 500) : null,
+      };
+    });
+
     // 최신 OCR 결과를 파일로 저장 (진단용) — logs/ocr-last.json + logs/ocr-<timestamp>.json
+    // 비동기 저장으로 이벤트 루프 블로킹 방지
     try {
-      const fs = await import("fs");
+      const fs = await import("fs/promises");
       const path = await import("path");
       const logsDir = path.join(process.cwd(), "logs");
-      if (!fs.existsSync(logsDir)) fs.mkdirSync(logsDir, { recursive: true });
+      await fs.mkdir(logsDir, { recursive: true });
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const payload = JSON.stringify({ ts: new Date().toISOString(), engine, pages }, null, 2);
-      fs.writeFileSync(path.join(logsDir, "ocr-last.json"), payload);
-      fs.writeFileSync(path.join(logsDir, `ocr-${timestamp}.json`), payload);
-      // 최대 20개 유지 (오래된 것 삭제)
-      const files = fs.readdirSync(logsDir).filter(f => /^ocr-\d/.test(f)).sort();
+      // 페이지 진단과 처리 트레이스를 병합
+      const diagnosticsMerged = diagnostics.map((d, di) => ({
+        ...d,
+        trace: pageTraces[di] ?? null,
+      }));
+      const summary = {
+        ts: new Date().toISOString(),
+        engine,
+        pageCount: pages.length,
+        totals: {
+          rowsExtracted: diagnostics.reduce((s, d) => s + d.stats.rowCount, 0),
+          totalMismatchPages: diagnostics.filter(d => d.stats.totalMismatch).length,
+          qtyPriceAmtMismatches: diagnostics.reduce((s, d) => s + d.stats.qtyPriceAmtMismatch, 0),
+          missingFieldTotal: diagnostics.reduce((s, d) => s + d.stats.missingName + d.stats.missingQty + d.stats.missingPrice + d.stats.missingAmount, 0),
+          totalTimeMs: pageTraces.reduce((s, t) => s + (t.totalMs ?? 0), 0),
+          keyRotationCount: pageTraces.reduce((s, t) => s + (t.keyAttempts?.filter((a: any) => a.ok === false).length ?? 0), 0),
+        },
+        diagnostics: diagnosticsMerged,
+      };
+      const detailedPayload = JSON.stringify({ ...summary, pages }, null, 2);
+      const summaryPayload  = JSON.stringify(summary, null, 2);
+      await Promise.all([
+        fs.writeFile(path.join(logsDir, "ocr-last.json"), detailedPayload),
+        fs.writeFile(path.join(logsDir, `ocr-${timestamp}.json`), detailedPayload),
+        fs.writeFile(path.join(logsDir, "ocr-last-summary.json"), summaryPayload),
+      ]);
+      // 최대 20개 유지
+      const files = (await fs.readdir(logsDir)).filter(f => /^ocr-\d/.test(f)).sort();
       while (files.length > 20) {
         const f = files.shift();
-        if (f) fs.unlinkSync(path.join(logsDir, f));
+        if (f) await fs.unlink(path.join(logsDir, f)).catch(() => {});
       }
+      // 콘솔 요약 출력 — 다음 개선 방안 착수 시 즉시 확인 가능
+      console.log(`[OCR/diag] ${pages.length}페이지 처리 완료:
+  - 추출 행 수: ${summary.totals.rowsExtracted}
+  - 소계 불일치 페이지: ${summary.totals.totalMismatchPages}/${pages.length}
+  - 수량×단가≠금액 행: ${summary.totals.qtyPriceAmtMismatches}
+  - 필드 누락 총계: ${summary.totals.missingFieldTotal}
+  → 자세한 분석: logs/ocr-last-summary.json`);
     } catch (logErr: any) {
       console.warn("[OCR/log-save]", logErr?.message);
     }

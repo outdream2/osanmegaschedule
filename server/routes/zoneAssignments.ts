@@ -120,25 +120,33 @@ router.put("/api/zone-assignments/:dow", async (req, res) => {
     updated_at: new Date().toISOString(),
   };
 
-  let { error } = await supabase.from(TABLE).upsert(fullPayload, { onConflict: "dow" });
-
-  // 컬럼이 아직 없는 경우 (구 스키마) 신규 필드 제외하고 재시도
-  if (error && /column .*(lunch_interval|rest_interval|lunch_count|rest_count).* does not exist/i.test(error.message)) {
-    const {
-      lunch_interval: _li,
-      rest_interval: _ri,
-      lunch_count: _lc,
-      rest_count: _rc,
-      ...legacyPayload
-    } = fullPayload;
-    void _li; void _ri; void _lc; void _rc;
-    ({ error } = await supabase.from(TABLE).upsert(legacyPayload, { onConflict: "dow" }));
+  // 구 스키마 대응: 누락 컬럼 자동 제외 재시도
+  const CORE_DOW = new Set(["dow", "zone_slots", "lunch_slots", "rest_slots"]);
+  let currentDow: Record<string, any> = { ...fullPayload };
+  let error: { message: string } | null = null;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const result = await supabase.from(TABLE).upsert(currentDow, { onConflict: "dow" });
+    error = result.error ?? null;
+    if (!error) break;
+    const m1 = /Could not find the '([^']+)' column/i.exec(error.message);
+    const m2 = /column "?([A-Za-z0-9_]+)"? (?:of relation "?[A-Za-z0-9_]+"? )?does not exist/i.exec(error.message);
+    const missing = (m1 && m1[1]) || (m2 && m2[1]) || null;
+    if (missing && !CORE_DOW.has(missing) && missing in currentDow) {
+      const { [missing]: _d, ...rest } = currentDow;
+      void _d;
+      currentDow = rest;
+      console.warn(`[zone-dow PUT] 컬럼 '${missing}' 없음 → 제외하고 재시도`);
+      continue;
+    }
+    if (/relation|table.*does not exist/i.test(error.message)) break;
+    break;
   }
 
   if (error) {
-    if (/relation|does not exist/i.test(error.message)) {
+    if (/relation|table.*does not exist/i.test(error.message)) {
       return res.status(503).json({ error: `zone_dow_templates 테이블이 없습니다.\n${CREATE_SQL}` });
     }
+    console.error("[zone-dow PUT] error:", error);
     return res.status(500).json({ error: error.message });
   }
   return res.json({ ok: true });
@@ -210,28 +218,37 @@ router.put("/api/zone-day/:date", async (req, res) => {
     updated_at:     new Date().toISOString(),
   };
 
-  let { error } = await supabase.from(DAY_TABLE).upsert(payload, { onConflict: "date" });
-
-  // 구 스키마 fallback: is_confirmed / interval / count 컬럼이 없으면 제외하고 재시도
-  // Supabase 에러 메시지는 "does not exist" 또는 "Could not find the '...' column" 형태 모두 가능
-  const missingColRe = /(is_confirmed|lunch_interval|rest_interval|lunch_count|rest_count)/i;
-  const schemaColMissing = error && missingColRe.test(error.message) &&
-    /(does not exist|Could not find|schema cache)/i.test(error.message);
-  if (schemaColMissing) {
-    const {
-      is_confirmed: _ic,
-      lunch_interval: _li,
-      rest_interval: _ri,
-      lunch_count: _lc,
-      rest_count: _rc,
-      ...legacyPayload
-    } = payload;
-    void _ic; void _li; void _ri; void _lc; void _rc;
-    ({ error } = await supabase.from(DAY_TABLE).upsert(legacyPayload, { onConflict: "date" }));
+  // 구 스키마 대응: 임의 컬럼이 없으면 그 컬럼만 제외하고 재시도 (최대 8회 반복)
+  // date / zone_slots / lunch_slots / rest_slots 는 핵심이라 제외 안 함
+  const CORE_COLS = new Set(["date", "zone_slots", "lunch_slots", "rest_slots"]);
+  let currentPayload: Record<string, any> = { ...payload };
+  let error: { message: string } | null = null;
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const result = await supabase.from(DAY_TABLE).upsert(currentPayload, { onConflict: "date" });
+    error = result.error ?? null;
+    if (!error) break;
+    // 에러 메시지에서 누락 컬럼명 추출 (여러 포맷 지원)
+    // "Could not find the 'xxx' column"
+    // "column \"xxx\" of relation \"yyy\" does not exist"
+    // "column xxx does not exist"
+    const m1 = /Could not find the '([^']+)' column/i.exec(error.message);
+    const m2 = /column "?([A-Za-z0-9_]+)"? (?:of relation "?[A-Za-z0-9_]+"? )?does not exist/i.exec(error.message);
+    const missingCol = (m1 && m1[1]) || (m2 && m2[1]) || null;
+    if (missingCol && !CORE_COLS.has(missingCol) && missingCol in currentPayload) {
+      const { [missingCol]: _drop, ...rest } = currentPayload;
+      void _drop;
+      currentPayload = rest;
+      console.warn(`[zone-day PUT] 컬럼 '${missingCol}' 없음 → 제외하고 재시도 (attempt=${attempt + 1})`);
+      continue;
+    }
+    // 관계(테이블) 자체가 없는 경우
+    if (/relation|table.*does not exist|schema.*does not exist/i.test(error.message)) break;
+    // 이외의 에러는 재시도 무의미
+    break;
   }
 
   if (error) {
-    if (/relation|does not exist/i.test(error.message)) {
+    if (/relation|table.*does not exist/i.test(error.message)) {
       return res.status(503).json({ error: `zone_day_assignments 테이블이 없습니다.\n${CREATE_DAY_SQL}` });
     }
     console.error("[zone-day PUT] error:", error);

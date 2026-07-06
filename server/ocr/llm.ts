@@ -42,19 +42,30 @@ function isQuotaError(msg: string): boolean {
 function makeGeminiClient(apiKey: string): GoogleGenAI {
   return new GoogleGenAI({
     apiKey,
-    httpOptions: { headers: { "User-Agent": "aistudio-build" }, timeout: 25_000 },
+    httpOptions: { headers: { "User-Agent": "aistudio-build" }, timeout: 55_000 },
   });
 }
 
-export async function callGeminiOcr(b64: string, mimeType: string, apiKey: string, timeoutMs = 20_000, templatePrompt?: string): Promise<GeminiResult> {
-  const timeoutPromise: Promise<GeminiResult> = new Promise(resolve =>
-    setTimeout(() => resolve({ ok: false, quota: false, error: `Gemini 응답 없음 (${timeoutMs / 1000}s 초과)` }), timeoutMs)
-  );
+export async function callGeminiOcr(b64: string, mimeType: string, apiKey: string, timeoutMs = 45_000, templatePrompt?: string): Promise<GeminiResult> {
+  // AbortController — timeout 발동 시 SDK 요청도 실제로 중단
+  const abortController = new AbortController();
+  let aborted = false;
+  const timeoutHandle = setTimeout(() => {
+    aborted = true;
+    try { abortController.abort(); } catch { /* ignore */ }
+  }, timeoutMs);
+
+  const timeoutPromise: Promise<GeminiResult> = new Promise(resolve => {
+    // 별도 타이머로 race용 결과 준비 (SDK 응답 대기 없이 즉시 반환)
+    setTimeout(() => resolve({ ok: false, quota: false, error: `Gemini 응답 없음 (${timeoutMs / 1000}s 초과)` }), timeoutMs);
+  });
+
   const callPromise: Promise<GeminiResult> = (async () => {
     const attempts = 3;
     let lastResult: GeminiResult = { ok: false, quota: false, error: "알 수 없는 에러" };
 
     for (let attempt = 1; attempt <= attempts; attempt++) {
+      if (aborted) return lastResult;  // timeout 후 재시도 방지
       try {
         const ai = makeGeminiClient(apiKey);
         const result = await ai.models.generateContent({
@@ -65,8 +76,14 @@ export async function callGeminiOcr(b64: string, mimeType: string, apiKey: strin
               { text: templatePrompt ? `${templatePrompt}\n\n${GEMINI_OCR_PROMPT}` : GEMINI_OCR_PROMPT },
             ],
           }],
-          config: { temperature: 0, responseMimeType: "application/json" },
+          config: {
+            temperature: 0,
+            responseMimeType: "application/json",
+            abortSignal: abortController.signal,
+          } as any,
         });
+
+        if (aborted) return lastResult;
 
         const finishReason = result.candidates?.[0]?.finishReason ?? "STOP";
         if (finishReason !== "STOP" && finishReason !== "MAX_TOKENS") {
@@ -79,6 +96,9 @@ export async function callGeminiOcr(b64: string, mimeType: string, apiKey: strin
         return { ok: true, text: parseGeminiText(raw) };
       } catch (e: any) {
         const msg = String(e?.message ?? e);
+        if (aborted || /aborted|abortSignal|user aborted/i.test(msg)) {
+          return { ok: false, quota: false, error: `Gemini 응답 없음 (${timeoutMs / 1000}s 초과)` };
+        }
         const isQuota = isQuotaError(msg);
         lastResult = { ok: false, quota: isQuota, error: msg };
         if (msg.includes("503") || msg.includes("UNAVAILABLE")) {
@@ -92,7 +112,12 @@ export async function callGeminiOcr(b64: string, mimeType: string, apiKey: strin
     }
     return lastResult;
   })();
-  return Promise.race([callPromise, timeoutPromise]);
+
+  try {
+    return await Promise.race([callPromise, timeoutPromise]);
+  } finally {
+    clearTimeout(timeoutHandle);
+  }
 }
 
 const SUPPLIER_EXTRACT_PROMPT = `이 이미지는 한국 거래명세서입니다.
