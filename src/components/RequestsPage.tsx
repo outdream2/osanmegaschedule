@@ -263,7 +263,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       }
     }
     finally { setProductsLoading(false); }
-  }, [products.length]);
+  }, []);
 
   const loadLunch = useCallback(async () => {
     setLunchLoading(true);
@@ -472,21 +472,23 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         onLogout={onLogout}
       />
 
-      {/* 탭 바 */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/70 flex sticky top-14 z-20" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.06)" }}>
-        {TABS.map(([key, label, count, color, border]) => (
-          <button key={key} onClick={() => setTab(key)}
-            className={`flex-1 py-3 flex flex-col items-center gap-0.5 border-b-2 transition cursor-pointer ${tab === key ? `${color} ${border}` : "text-slate-400 border-transparent hover:text-slate-600"}`}>
-            <span className="text-[11px] font-black tracking-tight">{label}</span>
-            {count > 0
-              ? <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${tab === key ? color.replace("text-", "bg-").replace("-600", "-100") + " " + color : "bg-slate-100 text-slate-400"}`}>{count}</span>
-              : <span className="text-[10px] text-slate-300">0</span>
-            }
-          </button>
-        ))}
+      {/* 탭 바 — 콘텐츠와 동일한 max-width 정렬 · 좁은 pill 스타일 */}
+      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/70 sticky top-14 z-20" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.06)" }}>
+        <div className="max-w-[1360px] mx-auto w-full px-2 sm:px-4 flex gap-1 sm:gap-1.5 flex-wrap py-2">
+          {TABS.map(([key, label, count, color, border]) => (
+            <button key={key} onClick={() => setTab(key)}
+              className={`px-2.5 sm:px-4 py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2 rounded-lg border-2 text-[11px] sm:text-[12px] font-black transition cursor-pointer ${tab === key ? `${color} ${border} bg-white shadow-sm` : "text-slate-400 border-transparent hover:bg-slate-100/70 hover:text-slate-600"}`}>
+              <span>{label}</span>
+              {count > 0
+                ? <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${tab === key ? color.replace("text-", "bg-").replace("-600", "-100") + " " + color : "bg-slate-100 text-slate-400"}`}>{count}</span>
+                : <span className="text-[10px] text-slate-300">0</span>
+              }
+            </button>
+          ))}
+        </div>
       </div>
 
-      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-4">
+      <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4">
 
         {/* ── 진열요청 ── */}
         {tab === "display" && (

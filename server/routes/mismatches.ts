@@ -7,6 +7,7 @@ router.get("/api/zone-mismatches", async (_req, res) => {
   const { data: productRows, error: prodErr } = await supabase
     .from("products")
     .select("product_code, product_name, spec, real_map, last_modified_at")
+    .eq("hidden", false)
     .not("real_map", "is", null)
     .neq("real_map", "");
 

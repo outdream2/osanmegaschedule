@@ -4,7 +4,7 @@
 // 우측: 공급사별 매입 · Top 100 · 적정재고 이하
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Search, Package, TrendingUp, AlertTriangle, Building2, Info } from "lucide-react";
+import { Search, Package, TrendingUp, AlertTriangle, Building2, Info, EyeOff, Eye, Loader2 as LoaderIcon } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import type { ProductInfo } from "../../lib/productsCache";
 
@@ -60,7 +60,7 @@ interface StockFlowRow {
   optimal_stock: number;
   last_purchase_date?: string | null;
 }
-type SortKey = "sale" | "purchase" | "amount" | "closing" | "loss";
+type SortKey = "name" | "opening" | "sale" | "purchase" | "amount" | "closing" | "current" | "loss";
 type SortDir = "asc" | "desc";
 
 function fmt(n: number): string {
@@ -394,10 +394,16 @@ export const StockManagePage: React.FC = () => {
     }
   };
   const [flowLimit, setFlowLimit]       = useState<number>(100);
+  // 기간 aggregation: 0=단일 스냅샷 · N=최근 N개월 aggregation
+  const [flowMonths, setFlowMonths]     = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
   const [availableSnapshots, setAvailableSnapshots] = useState<string[]>([]);
   const [snapshotPeriods, setSnapshotPeriods] = useState<Record<string, string | null>>({});
   const [flowPeriodType, setFlowPeriodType] = useState<string | null>(null);
+  const [lastImportAt, setLastImportAt] = useState<string | null>(null);
   const [supplierCardCollapsed, setSupplierCardCollapsed] = useState(false);
+  const [lowStockCollapsed, setLowStockCollapsed] = useState(false);
+  const [stockDiffCollapsed, setStockDiffCollapsed] = useState(false);
+  const [flowCollapsedTop, setFlowCollapsedTop] = useState(false);
   // 재고 흐름 카드 접기 (모바일에서만 노출)
   const [flowCardCollapsed, setFlowCardCollapsed] = useState(false);
   // 좌우 컬럼 폭 조절 (좌측 공급사 재고자산 카드 폭 · localStorage 저장)
@@ -415,11 +421,11 @@ export const StockManagePage: React.FC = () => {
     const onUp = () => {
       window.removeEventListener("mousemove", onMove);
       window.removeEventListener("mouseup", onUp);
-      try { localStorage.setItem("megatown_stock_supplier_w", String(supplierColWidth)); } catch { /* silent */ }
+      // localStorage 저장은 아래 useEffect 가 담당 (state 변경 반영 후 자동 저장)
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
-  }, [supplierColWidth]);
+  }, []);
   // 리사이즈 후 저장 (state가 최종 업데이트되면 저장)
   useEffect(() => {
     try { localStorage.setItem("megatown_stock_supplier_w", String(supplierColWidth)); } catch { /* silent */ }
@@ -458,12 +464,12 @@ export const StockManagePage: React.FC = () => {
              : flowPeriodType === "중순" ? "mid"
              : flowPeriodType === "하순" ? "late"
              : flowPeriodType;
-    if (pt === "early") return `early-${mm}/1~${endLabel}`;
-    if (pt === "mid")   return `mid-${mm}/11~${endLabel}`;
+    if (pt === "early") return `${mm}월 초순 : ${mm}/1 ~ ${endLabel}`;
+    if (pt === "mid")   return `${mm}월 중순 : ${mm}/11 ~ ${endLabel}`;
     if (pt === "late") {
       const lastDay = new Date(yyyy, mm, 0).getDate();
       const lastLabel = isTodaySnap && dd === lastDay ? "오늘" : `${mm}/${lastDay}`;
-      return `late-${mm}/21~${lastLabel}`;
+      return `${mm}월 하순 : ${mm}/21 ~ ${lastLabel}`;
     }
     return `${mm}/${dd}`;
   }, [flowSnapshot, flowPeriodType]);
@@ -510,30 +516,104 @@ export const StockManagePage: React.FC = () => {
   const [infoModalTab, setInfoModalTab] = useState<"product" | "stock">("product");
   useEffect(() => { if (infoModal) setInfoModalTab("product"); }, [infoModal]);
 
+  // 적정재고 이하 리스트 · 적정재고 인라인 편집
+  const [optimalEditCode, setOptimalEditCode] = useState<string | null>(null);
+  const [optimalEditValue, setOptimalEditValue] = useState<string>("");
+  const [optimalEditSaving, setOptimalEditSaving] = useState(false);
+  const startOptimalEdit = (code: string, current: number) => {
+    setOptimalEditCode(code);
+    setOptimalEditValue(current > 0 ? String(current) : "");
+  };
+  const cancelOptimalEdit = () => { setOptimalEditCode(null); setOptimalEditValue(""); };
+  const commitOptimalEdit = useCallback(async () => {
+    if (!optimalEditCode) return;
+    const val = optimalEditValue.trim();
+    const num = val === "" ? null : Number(val);
+    if (val !== "" && (!Number.isFinite(num) || (num as number) < 0)) {
+      alert("숫자만 입력 (0 이상)");
+      return;
+    }
+    setOptimalEditSaving(true);
+    try {
+      const res = await fetch(`/api/products/${encodeURIComponent(optimalEditCode)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ optimal_stock: num }),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        alert(b.error ?? `저장 실패 (${res.status})`);
+        return;
+      }
+      // 로컬 리스트 업데이트
+      setLowStock(prev => prev.map(p =>
+        String(p.product_code) === optimalEditCode
+          ? { ...p, optimal_stock: num as any }
+          : p
+      ));
+      setOptimalEditCode(null);
+      setOptimalEditValue("");
+      // 다른 리스트 재조회 트리거
+      try { window.dispatchEvent(new CustomEvent("products-hidden-changed")); } catch { /* ignore */ }
+    } catch (e: any) {
+      alert(e?.message ?? "네트워크 오류");
+    } finally { setOptimalEditSaving(false); }
+  }, [optimalEditCode, optimalEditValue]);
+
+  // 숨김 항목 관리 모달
+  const [hiddenModalOpen, setHiddenModalOpen] = useState(false);
+  const [hiddenList, setHiddenList] = useState<any[]>([]);
+  const [hiddenLoading, setHiddenLoading] = useState(false);
+  const [hiddenUnhideBusyCode, setHiddenUnhideBusyCode] = useState<string | null>(null);
+  const loadHiddenList = useCallback(async () => {
+    setHiddenLoading(true);
+    try {
+      const res = await fetch("/api/products/hidden");
+      const list = res.ok ? await res.json() : [];
+      setHiddenList(Array.isArray(list) ? list : []);
+    } catch { setHiddenList([]); }
+    finally { setHiddenLoading(false); }
+  }, []);
+  const openHiddenManagerModal = useCallback(() => {
+    setHiddenModalOpen(true);
+    loadHiddenList();
+  }, [loadHiddenList]);
+  const unhideProduct = useCallback(async (code: string) => {
+    if (!code) return;
+    setHiddenUnhideBusyCode(code);
+    try {
+      const res = await fetch(`/api/products/${encodeURIComponent(code)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hidden: false }),
+      });
+      if (res.ok) setHiddenList(prev => prev.filter(p => String(p.product_code) !== code));
+    } catch { /* ignore */ }
+    finally { setHiddenUnhideBusyCode(null); }
+  }, []);
+
   const runInfoSearch = useCallback(async () => {
     const q = infoSearchQuery.trim();
-    if (!q) return;
+    if (!q) { setInfoSearchResults([]); return; }
     try {
       const res = await fetch(`/api/products-search?q=${encodeURIComponent(q)}`);
       if (res.ok) {
         const list = await res.json();
         setInfoSearchResults(Array.isArray(list) ? list : []);
-        if (Array.isArray(list) && list.length === 1) {
-          setInfoSelected(list[0]);
-          setInfoSearchResults([]);
-        }
+      } else {
+        setInfoSearchResults([]);
       }
-    } catch { /* ignore */ }
+    } catch { setInfoSearchResults([]); }
   }, [infoSearchQuery]);
-  // 자동 검색 (300ms debounce)
+  // 자동 검색 (250ms debounce) — 자동 선택 로직 제거 (사용자가 클릭으로 명시 선택)
   useEffect(() => {
-    if (!infoSearchQuery.trim() || infoSelected?.product_name === infoSearchQuery) {
-      setInfoSearchResults([]);
-      return;
-    }
-    const t = setTimeout(runInfoSearch, 300);
+    const q = infoSearchQuery.trim();
+    if (!q) { setInfoSearchResults([]); return; }
+    // 검색어가 이미 선택된 상품명과 동일하면 재검색 안 함 (하지만 이전에 결과 안 지움)
+    if (infoSelected?.product_name === q) return;
+    const t = setTimeout(runInfoSearch, 250);
     return () => clearTimeout(t);
-  }, [infoSearchQuery, infoSelected, runInfoSearch]);
+  }, [infoSearchQuery, infoSelected?.product_name, runInfoSearch]);
 
   const openProductInfoModal = useCallback(async () => {
     // 상단 검색 → 정보확인 클릭 시: 적정재고이하 상품명 클릭과 동일한 모달(ProductInfoCard) 사용
@@ -581,17 +661,42 @@ export const StockManagePage: React.FC = () => {
       setInfoModalData({ product: target, stock_history: [], inventory_checks: [] });
     } finally { setInfoModalLoading(false); }
   }, [infoSelected, infoSearchResults, infoSearchQuery]);
-  type ModalSortKey = "opening_stock" | "closing_stock" | "purchase_qty" | "sale_qty";
+  // 공급사 상세 모달 · 상품명 컬럼 폭 조절 (localStorage 저장)
+  const [supplierModalNameWidth, setSupplierModalNameWidth] = useState<number>(() => {
+    try { const v = Number(localStorage.getItem("megatown_supmodal_name_w")); return Number.isFinite(v) && v >= 120 && v <= 500 ? v : 220; } catch { return 220; }
+  });
+  useEffect(() => { try { localStorage.setItem("megatown_supmodal_name_w", String(supplierModalNameWidth)); } catch { /* ignore */ } }, [supplierModalNameWidth]);
+  const nameColResizeRef = useRef<{ startX: number; startW: number } | null>(null);
+  const onNameColResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault(); e.stopPropagation();
+    nameColResizeRef.current = { startX: e.clientX, startW: supplierModalNameWidth };
+    const move = (ev: MouseEvent) => {
+      const r = nameColResizeRef.current;
+      if (!r) return;
+      const next = Math.min(500, Math.max(120, r.startW + (ev.clientX - r.startX)));
+      setSupplierModalNameWidth(next);
+    };
+    const up = () => {
+      nameColResizeRef.current = null;
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+  };
+
+  type ModalSortKey = "product_name" | "opening_stock" | "closing_stock" | "purchase_qty" | "sale_qty" | "current_stock" | "loss" | "sale_price";
   const [modalSortKey, setModalSortKey] = useState<ModalSortKey>("sale_qty");
   const [modalSortDir, setModalSortDir] = useState<"asc" | "desc">("desc");
   const toggleModalSort = (key: ModalSortKey) => {
     if (modalSortKey === key) setModalSortDir(modalSortDir === "desc" ? "asc" : "desc");
-    else { setModalSortKey(key); setModalSortDir("desc"); }
+    else { setModalSortKey(key); setModalSortDir(key === "product_name" ? "asc" : "desc"); }
   };
-  // 모달 내 조회수량(판매출고계) 범위 검색
+  // 모달 내 조회수량(판매출고계) 범위 검색 — 숫자 필드만 허용
+  type ModalQtyKey = "opening_stock" | "closing_stock" | "purchase_qty" | "sale_qty" | "current_stock" | "sale_price";
   const [modalQtyMin, setModalQtyMin] = useState<string>("");
   const [modalQtyMax, setModalQtyMax] = useState<string>("");
-  const [modalQtyField, setModalQtyField] = useState<ModalSortKey>("sale_qty");
+  const [modalQtyField, setModalQtyField] = useState<ModalQtyKey>("sale_qty");
   const modalDisplayRows = useMemo(() => {
     if (!supplierModalRows) return [];
     const min = modalQtyMin === "" ? -Infinity : Number(modalQtyMin);
@@ -601,7 +706,17 @@ export const StockManagePage: React.FC = () => {
       return v >= min && v <= max;
     });
     const sign = modalSortDir === "asc" ? 1 : -1;
-    return [...filtered].sort((a, b) => sign * (Number(a[modalSortKey] ?? 0) - Number(b[modalSortKey] ?? 0)));
+    return [...filtered].sort((a, b) => {
+      if (modalSortKey === "product_name") {
+        return sign * String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko");
+      }
+      if (modalSortKey === "loss") {
+        const la = Number(a.closing_stock ?? 0) - Number((a as any).current_stock ?? 0);
+        const lb = Number(b.closing_stock ?? 0) - Number((b as any).current_stock ?? 0);
+        return sign * (la - lb);
+      }
+      return sign * (Number((a as any)[modalSortKey] ?? 0) - Number((b as any)[modalSortKey] ?? 0));
+    });
   }, [supplierModalRows, modalSortKey, modalSortDir, modalQtyMin, modalQtyMax, modalQtyField]);
   useEffect(() => {
     if (!supplierModal) {
@@ -701,11 +816,17 @@ export const StockManagePage: React.FC = () => {
     return () => window.removeEventListener("inventory-checks-updated", handler);
   }, [fetchAggregates]);
 
-  // 재고 흐름 조회 (스냅샷·정렬·limit 변경 시)
+  // 재고 흐름 조회 (스냅샷·정렬·limit·flowMonths 변경 시 자동 재조회)
   const fetchStockFlow = useCallback(async () => {
     try {
-      const params = new URLSearchParams({ sort: flowSort, dir: flowDir, limit: String(flowLimit) });
-      if (flowSnapshot) params.set("snapshot_date", flowSnapshot);
+      // 서버가 지원하는 정렬 key 만 전달 (나머지는 클라이언트에서 정렬)
+      const serverSort = (["sale","purchase","amount","closing"] as SortKey[]).includes(flowSort) ? flowSort : "sale";
+      const params = new URLSearchParams({ sort: serverSort, dir: flowDir, limit: String(flowLimit) });
+      if (flowMonths > 0) {
+        params.set("months", String(flowMonths));
+      } else if (flowSnapshot) {
+        params.set("snapshot_date", flowSnapshot);
+      }
       const res = await fetch(`/api/stock-manage/top-sales?${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -717,12 +838,23 @@ export const StockManagePage: React.FC = () => {
           for (const d of data.dates_with_period) map[d.snapshot_date] = d.period_type ?? null;
           setSnapshotPeriods(map);
         }
-        // 첫 로드 시 서버가 반환한 최신 스냅샷을 자동 선택
-        if (!flowSnapshot && data.snapshot_date) setFlowSnapshot(data.snapshot_date);
+        // 첫 로드 시 서버가 반환한 최신 스냅샷을 자동 선택 (단일 모드일 때만)
+        if (flowMonths === 0 && !flowSnapshot && data.snapshot_date) setFlowSnapshot(data.snapshot_date);
       }
     } catch { /* ignore */ }
-  }, [flowSnapshot, flowSort, flowDir, flowLimit]);
+  }, [flowSnapshot, flowSort, flowDir, flowLimit, flowMonths]);
   useEffect(() => { fetchStockFlow(); }, [fetchStockFlow]);
+
+  // 상품 숨김 상태 변경 시: 적정재고 이하 · 재고흐름 · 실재고차이 리스트 자동 갱신
+  useEffect(() => {
+    const handler = () => {
+      fetchAggregates();
+      fetchStockFlow();
+      if (hiddenModalOpen) loadHiddenList();
+    };
+    window.addEventListener("products-hidden-changed", handler);
+    return () => window.removeEventListener("products-hidden-changed", handler);
+  }, [fetchAggregates, fetchStockFlow, hiddenModalOpen, loadHiddenList]);
 
   // 스냅샷 전체 통계 조회
   useEffect(() => {
@@ -755,6 +887,21 @@ export const StockManagePage: React.FC = () => {
     })();
   }, [flowSnapshot]);
 
+  // 상품 DB 임포트 최신 이력 조회 (상단 배지에 표시)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/settings?key=product_import_log");
+        if (res.ok) {
+          const j = await res.json();
+          const logs = Array.isArray(j?.value) ? j.value : [];
+          const latest = logs[0]?.timestamp ?? null;
+          setLastImportAt(latest);
+        }
+      } catch { /* ignore */ }
+    })();
+  }, []);
+
   // 판매수량 범위 필터링 (판매 X개 ~ Y개)
   const filteredFlow = useMemo(() => {
     const minN = salesQtyMin.trim() === "" ? null : parseInt(salesQtyMin, 10);
@@ -765,11 +912,21 @@ export const StockManagePage: React.FC = () => {
       if (maxN != null && Number.isFinite(maxN) && qty > maxN) return false;
       return true;
     });
-    // 손실은 파생값 (종료재고 − 현재고) → 클라이언트에서 정렬
+    // 클라이언트 정렬: name/opening/current/loss 는 서버가 지원하지 않으므로 여기서 처리
+    // sale/purchase/amount/closing 은 서버 정렬을 유지 (필터링만)
+    const sign = flowDir === "asc" ? 1 : -1;
     if (flowSort === "loss") {
-      const sign = flowDir === "asc" ? 1 : -1;
       const lossOf = (p: any) => Number(p.closing_stock) - Number(p.current_stock ?? 0);
       return [...filtered].sort((a, b) => sign * (lossOf(a) - lossOf(b)));
+    }
+    if (flowSort === "name") {
+      return [...filtered].sort((a, b) => sign * String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko"));
+    }
+    if (flowSort === "opening") {
+      return [...filtered].sort((a, b) => sign * (Number(a.opening_stock ?? 0) - Number(b.opening_stock ?? 0)));
+    }
+    if (flowSort === "current") {
+      return [...filtered].sort((a, b) => sign * (Number((a as any).current_stock ?? 0) - Number((b as any).current_stock ?? 0)));
     }
     return filtered;
   }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir]);
@@ -795,7 +952,7 @@ export const StockManagePage: React.FC = () => {
   const totalPurchase = supplierAggs.reduce((s, x) => s + (x.purchaseAmount || 0), 0);
 
   return (
-    <div className="flex-1 flex flex-col p-4 gap-4 max-w-[1600px] mx-auto w-full">
+    <div className="flex-1 flex flex-col max-w-[1360px] mx-auto w-full px-2 sm:px-4 py-2 sm:py-4 gap-2 sm:gap-4">
       {/* 페이지 상단 탭: 대시보드 / 원본 데이터 */}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex items-center gap-2 flex-wrap">
@@ -812,10 +969,8 @@ export const StockManagePage: React.FC = () => {
               {flowDateRange}
             </span>
           )}
-        </div>
-        <div className="flex items-center gap-2">
-          {/* 페이지 내 서브탭 — 프리미엄 pill 스타일 */}
-          <div className="inline-flex bg-slate-100/80 backdrop-blur border border-slate-200/60 rounded-xl p-1 shadow-inner">
+          {/* 페이지 서브탭 pill — 제목 옆 고정 위치 (오른쪽 컨텐츠 유무에 따라 흔들리지 않도록) */}
+          <div className="inline-flex bg-slate-100/80 backdrop-blur border border-slate-200/60 rounded-xl p-1 shadow-inner ml-1">
             <button onClick={() => setPageTab("dashboard")}
               className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
                 pageTab === "dashboard"
@@ -829,6 +984,25 @@ export const StockManagePage: React.FC = () => {
                   : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
               }`}>원본 데이터</button>
           </div>
+          {lastImportAt && (() => {
+            const d = new Date(lastImportAt);
+            if (isNaN(d.getTime())) return null;
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            const hh = String(d.getHours()).padStart(2, "0");
+            const mm = String(d.getMinutes()).padStart(2, "0");
+            return (
+              <span
+                className="text-[11px] font-black rounded-full px-2.5 py-1 border font-mono text-emerald-700 bg-emerald-50 border-emerald-300"
+                title={`상품 DB 최근 임포트 시각: ${d.toLocaleString()}`}
+              >
+                DB Import : {y}/{m}/{day} {hh}:{mm}
+              </span>
+            );
+          })()}
+        </div>
+        <div className="flex items-center gap-2">
           {pageTab === "dashboard" && (
             <div className="inline-flex bg-slate-100/80 backdrop-blur border border-slate-200/60 rounded-xl p-1 shadow-inner">
               {(["week", "month", "3month"] as Range[]).map(r => (
@@ -844,18 +1018,18 @@ export const StockManagePage: React.FC = () => {
           )}
           {/* 상품명·코드 검색 + 정보확인 — 대시보드 탭 옆으로 이동 */}
           {pageTab === "dashboard" && (
-            <div className="flex items-center gap-1.5 bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 rounded-xl px-2 py-1 shadow-sm">
-              <div className="relative">
+            <div className="flex items-center gap-1.5 flex-wrap bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 rounded-xl px-2 py-1 shadow-sm">
+              <div className="relative flex-1 min-w-0 sm:flex-initial">
                 <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   value={infoSearchQuery}
                   onChange={(e) => setInfoSearchQuery(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") runInfoSearch(); }}
                   placeholder="상품명 · 코드 검색"
-                  className="w-56 pl-7 pr-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-sky-400 bg-white"
+                  className="w-full sm:w-96 pl-7 pr-2 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-sky-400 bg-white"
                 />
                 {infoSearchResults.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full mt-1 max-h-64 overflow-y-auto border border-slate-200 bg-white rounded-lg shadow-lg z-30 divide-y divide-slate-100">
+                  <div className="absolute left-0 top-full mt-1 max-h-64 overflow-y-auto border border-slate-200 bg-white rounded-lg shadow-lg z-30 divide-y divide-slate-100 min-w-full sm:min-w-[500px]">
                     {infoSearchResults.map((p, i) => (
                       <button
                         key={`info-sr-${p.product_code}-${i}`}
@@ -863,8 +1037,8 @@ export const StockManagePage: React.FC = () => {
                         className="w-full text-left px-2.5 py-1.5 hover:bg-sky-50 transition text-xs flex items-center justify-between gap-2"
                       >
                         <div className="min-w-0">
-                          <div className="font-bold text-slate-800 truncate">{p.product_name}</div>
-                          <div className="text-[9px] font-mono text-slate-400 truncate">#{p.product_code} · {p.supplier ?? "-"}</div>
+                          <div className="font-bold text-slate-800 whitespace-nowrap">{p.product_name}</div>
+                          <div className="text-[9px] font-mono text-slate-400 whitespace-nowrap">#{p.product_code} · {p.supplier ?? "-"}</div>
                         </div>
                         <span className="text-[9px] text-slate-400 shrink-0">재고 {p.current_stock ?? "-"}</span>
                       </button>
@@ -880,6 +1054,13 @@ export const StockManagePage: React.FC = () => {
               >
                 <Info size={11} /> 정보확인
               </button>
+              <button
+                onClick={() => openHiddenManagerModal()}
+                className="flex items-center gap-1 text-[10px] font-black text-amber-700 bg-white border border-amber-300 hover:bg-amber-50 rounded-lg px-2 py-1.5 cursor-pointer transition shadow-sm shrink-0"
+                title="숨김 처리된 상품을 확인/해제 · 검색·발주 리스트 노출 여부 관리"
+              >
+                <EyeOff size={11} /> 숨김 관리
+              </button>
             </div>
           )}
         </div>
@@ -891,7 +1072,7 @@ export const StockManagePage: React.FC = () => {
       <div className="flex flex-col lg:flex-row gap-2 flex-1 min-h-0">
         {/* 좌측: 공급사별 재고자산 + 적정재고 이하 (드래그 리사이즈) */}
         <div
-          className="flex flex-col gap-3 min-h-0 order-2 lg:order-1 shrink-0"
+          className="flex flex-col gap-3 min-h-0 order-2 lg:order-1 shrink-0 w-full lg:w-auto"
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? `${supplierColWidth}px` : undefined }}
         >
           {/* 공급사별 재고자산 (종료일 시점, xlsx 합계 컬럼 합산) — 최상위 공급사 하이라이트 + 순위 리스트 */}
@@ -952,7 +1133,10 @@ export const StockManagePage: React.FC = () => {
                           <span className="text-[11px] font-black text-emerald-700 shrink-0">{fmtWon(sup.totalStockAmount)}</span>
                         </div>
                         <div className="flex items-center justify-end">
-                          <span className="text-[10px] text-slate-400 shrink-0 text-right">{fmt(sup.purchaseQty)}개 · {sup.itemCount}품</span>
+                          <span
+                            className="text-[10px] text-slate-400 shrink-0 text-right"
+                            title={`매입 ${fmt(sup.purchaseQty)}개 · 취급 상품 ${sup.itemCount}종`}
+                          >매입 {fmt(sup.purchaseQty)}개 · <span className="text-slate-500 font-semibold">상품 {sup.itemCount}종</span></span>
                         </div>
                       </div>
                     );
@@ -963,29 +1147,37 @@ export const StockManagePage: React.FC = () => {
             </>)}
           </div>
 
-          {/* 적정재고 이하 리스트 — 테이블 형태 (현재고 / 적정재고 / 필요재고) */}
-          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex-1 min-h-0 flex flex-col">
-            <div className="flex items-center justify-between mb-2">
+          {/* 적정재고 이하 리스트 — 접이식 (세로 스크롤 최대 높이 제한) */}
+          <div className={`bg-white rounded-xl border border-slate-200 p-4 shadow-sm ${lowStockCollapsed ? "" : "flex flex-col"}`}>
+            <button
+              onClick={() => setLowStockCollapsed(!lowStockCollapsed)}
+              className="flex items-center justify-between w-full mb-2 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-1 py-0.5 transition"
+              title={lowStockCollapsed ? "펼치기" : "접기"}
+            >
               <div className="flex items-center gap-1.5">
+                <span className={`text-slate-400 text-xs transition-transform ${lowStockCollapsed ? "" : "rotate-90"}`}>▶</span>
                 <AlertTriangle size={14} className="text-rose-500" />
                 <span className="text-sm font-black text-slate-700">적정재고 이하</span>
                 <span className="text-[10px] text-slate-400 font-semibold">현재고 &lt; 적정재고</span>
               </div>
               <span className="text-[11px] font-bold bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full">{lowStock.length}개</span>
-            </div>
-            <div className="flex-1 overflow-y-auto -mx-1">
+            </button>
+            {!lowStockCollapsed && (
+            <div className="overflow-y-auto -mx-1 max-h-[420px]">
               {lowStock.length === 0 ? (
                 <div className="text-center text-[11px] text-slate-300 py-6">해당 상품 없음</div>
               ) : (
-                <table className="w-full text-xs">
+                <div className="overflow-x-auto">
+                <table className="w-full text-xs min-w-[480px]">
                   <thead className="sticky top-0 bg-white z-10">
                     <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
                       <th className="text-left px-1 py-1.5">상품명</th>
-                      <th className="text-right px-2 py-1.5 w-14 text-amber-500">현재고</th>
+                      <th className="text-right px-2 py-1.5 w-14 text-amber-500" title="ERP 현재고 (products.current_stock)">ERP</th>
                       <th className="text-right px-2 py-1.5 w-16 bg-cyan-50 text-cyan-600 font-black" title="실재고 · 바코드스캔 창고">창고</th>
                       <th className="text-right px-2 py-1.5 w-16 bg-violet-50 text-violet-600 font-black" title="실재고 · 바코드스캔 매장">매장</th>
-                      <th className="text-right px-2 py-1.5 w-14 text-slate-500">적정재고</th>
-                      <th className="text-right px-2 py-1.5 w-14 text-rose-500">필요재고</th>
+                      <th className="text-right px-2 py-1.5 w-14 text-emerald-500 font-black" title="실재고 합계 (창고+매장)">실재고</th>
+                      <th className="text-right px-2 py-1.5 w-14 text-slate-500">적정</th>
+                      <th className="text-right px-2 py-1.5 w-14 text-rose-500">필요</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
@@ -1008,22 +1200,137 @@ export const StockManagePage: React.FC = () => {
                             </button>
                             {p.supplier && <div className="text-[9px] text-slate-400 truncate max-w-[200px]">{p.supplier}</div>}
                           </td>
-                          <td className={`text-right px-2 py-1.5 font-mono font-black text-[11px] ${cur <= 0 ? "text-red-600" : "text-amber-700"}`}>{fmt(cur)}</td>
+                          <td className={`text-right px-2 py-1.5 font-mono font-black text-[11px] ${cur <= 0 ? "text-red-600" : "text-amber-700"}`} title="ERP 현재고 (products.current_stock)">{fmt(cur)}</td>
                           <td className={`text-right px-2 py-1.5 font-mono font-black text-[12px] bg-cyan-50/50 ${wh != null ? "text-cyan-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 창고 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "창고 실재고 미입력"}>
                             {wh != null ? fmt(Number(wh)) : "—"}
                           </td>
                           <td className={`text-right px-2 py-1.5 font-mono font-black text-[12px] bg-violet-50/50 ${st != null ? "text-violet-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 매장 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "매장 실재고 미입력"}>
                             {st != null ? fmt(Number(st)) : "—"}
                           </td>
-                          <td className="text-right px-2 py-1.5 font-mono text-[11px] text-slate-600">{opt > 0 ? fmt(opt) : "-"}</td>
+                          {(() => {
+                            const whN = wh != null ? Number(wh) : null;
+                            const stN = st != null ? Number(st) : null;
+                            const realTotal = whN != null || stN != null ? (whN ?? 0) + (stN ?? 0) : null;
+                            const mismatch = realTotal != null && realTotal !== cur;
+                            return (
+                              <td
+                                className={`text-right px-2 py-1.5 font-mono font-black text-[11px] ${realTotal == null ? "text-slate-300" : mismatch ? "text-red-600" : "text-emerald-700"}`}
+                                title={realTotal == null ? "실재고 미입력" : mismatch ? `실재고 ${realTotal} ≠ ERP ${cur} · 불일치` : "실재고 = 창고 + 매장"}
+                              >{realTotal != null ? fmt(realTotal) : "—"}</td>
+                            );
+                          })()}
+                          <td className="text-right px-2 py-1.5 font-mono text-[11px] text-slate-600">
+                            {optimalEditCode === String(p.product_code) ? (
+                              <input
+                                autoFocus
+                                type="number"
+                                min={0}
+                                inputMode="numeric"
+                                value={optimalEditValue}
+                                onChange={(e) => setOptimalEditValue(e.target.value)}
+                                onBlur={commitOptimalEdit}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") { e.preventDefault(); commitOptimalEdit(); }
+                                  else if (e.key === "Escape") { e.preventDefault(); cancelOptimalEdit(); }
+                                }}
+                                disabled={optimalEditSaving}
+                                className="w-14 text-right font-mono text-[11px] border border-indigo-300 rounded px-1 py-0.5 focus:outline-none focus:border-indigo-500 bg-white"
+                              />
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => startOptimalEdit(String(p.product_code), opt)}
+                                className="w-full text-right font-mono text-[11px] hover:bg-slate-100 rounded px-1 py-0.5 cursor-pointer transition"
+                                title="클릭하여 적정재고 편집 · 저장 시 백업 컬럼에도 동기화"
+                              >{opt > 0 ? fmt(opt) : "-"}</button>
+                            )}
+                          </td>
                           <td className="text-right px-2 py-1.5 font-mono font-bold text-[11px] text-rose-600">{need > 0 ? `+${fmt(need)}` : "-"}</td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
+            )}
+          </div>
+
+          {/* 실재고 vs ERP 차이 상품 리스트 (접이식) — 창고+매장 실재고와 ERP 현재고가 다른 상품 */}
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm mt-3">
+            {(() => {
+              const diffList = lowStock
+                .map(p => {
+                  const wh = p.warehouse_stock;
+                  const st = p.store_stock;
+                  if (wh == null && st == null) return null;
+                  const actual = (Number(wh) || 0) + (Number(st) || 0);
+                  const cur = Number(p.current_stock ?? 0);
+                  const diff = actual - cur;
+                  if (diff === 0) return null;
+                  return { ...p, actual, cur, diff };
+                })
+                .filter(Boolean) as Array<any>;
+              return (
+                <>
+                  <button
+                    onClick={() => setStockDiffCollapsed(!stockDiffCollapsed)}
+                    className="flex items-center justify-between w-full mb-2 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-1 py-0.5 transition"
+                    title={stockDiffCollapsed ? "펼치기" : "접기"}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-slate-400 text-xs transition-transform ${stockDiffCollapsed ? "" : "rotate-90"}`}>▶</span>
+                      <AlertTriangle size={14} className="text-purple-500" />
+                      <span className="text-sm font-black text-slate-700">실재고 ↔ ERP 차이</span>
+                      <span className="text-[10px] text-slate-400 font-semibold">창고+매장 ≠ 현재고</span>
+                    </div>
+                    <span className="text-[11px] font-bold bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">{diffList.length}개</span>
+                  </button>
+                  {!stockDiffCollapsed && (
+                    <div className="max-h-64 overflow-y-auto -mx-1">
+                      {diffList.length === 0 ? (
+                        <div className="text-center text-[11px] text-slate-300 py-6">차이 있는 상품 없음</div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                        <table className="w-full text-xs min-w-[280px]">
+                          <thead className="sticky top-0 bg-white z-10">
+                            <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+                              <th className="text-left px-1 py-1.5">상품명</th>
+                              <th className="text-right px-2 py-1.5 w-14 text-amber-500">ERP</th>
+                              <th className="text-right px-2 py-1.5 w-16 bg-purple-50 text-purple-600 font-black">실재고</th>
+                              <th className="text-right px-2 py-1.5 w-14 text-rose-500">차이</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-50">
+                            {diffList.slice(0, 100).map((p: any, i: number) => (
+                              <tr key={`diff-${p.product_name}-${i}`} className="hover:bg-purple-50/30 transition">
+                                <td className="px-1 py-1.5">
+                                  <button
+                                    onClick={() => openScanProductModal(p)}
+                                    className="text-left font-bold text-indigo-700 truncate max-w-[200px] hover:text-indigo-900 cursor-pointer transition"
+                                    title={p.product_name}
+                                  >
+                                    <span className="underline decoration-dotted decoration-indigo-400 underline-offset-2 truncate">{p.product_name}</span>
+                                  </button>
+                                  {p.supplier && <div className="text-[9px] text-slate-400 truncate max-w-[200px]">{p.supplier}</div>}
+                                </td>
+                                <td className="text-right px-2 py-1.5 font-mono font-black text-[11px] text-amber-700">{fmt(p.cur)}</td>
+                                <td className="text-right px-2 py-1.5 font-mono font-black text-[12px] bg-purple-50/50 text-purple-700">{fmt(p.actual)}</td>
+                                <td className={`text-right px-2 py-1.5 font-mono font-black text-[11px] ${p.diff > 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                                  {p.diff > 0 ? `+${fmt(p.diff)}` : fmt(p.diff)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
 
@@ -1044,10 +1351,10 @@ export const StockManagePage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFlowCardCollapsed(!flowCardCollapsed)}
-                className="flex items-center gap-1.5 min-w-0 flex-1 lg:cursor-default lg:pointer-events-none group text-left"
+                className="flex items-center gap-1.5 min-w-0 flex-1 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-1 py-0.5 transition group text-left"
                 title={flowCardCollapsed ? "펼치기" : "접기"}
               >
-                <span className={`lg:hidden text-slate-400 text-xs transition-transform shrink-0 ${flowCardCollapsed ? "" : "rotate-90"}`}>▶</span>
+                <span className={`text-slate-400 text-xs transition-transform shrink-0 ${flowCardCollapsed ? "" : "rotate-90"}`}>▶</span>
                 <TrendingUp size={14} className="text-emerald-600 shrink-0" />
                 <span className="text-sm font-black text-slate-700 truncate">
                   {topTab === "sale" ? "재고 흐름 (xlsx 스냅샷)" : "공급사거래명세서"}
@@ -1072,7 +1379,7 @@ export const StockManagePage: React.FC = () => {
                 {topTab === "sale" ? `${filteredFlow.length}건` : `${topProducts.length}건`}
               </span>
             </div>
-            <div className={`flex-1 min-h-0 flex flex-col ${flowCardCollapsed ? "hidden lg:flex" : "flex"}`}>
+            <div className={`flex-1 min-h-0 flex flex-col ${flowCardCollapsed ? "hidden" : "flex"}`}>
             <div className="inline-flex bg-slate-100/80 border border-slate-200/60 rounded-xl p-1 mb-3 shadow-inner">
               <button
                 onClick={() => setTopTab("sale")}
@@ -1117,6 +1424,34 @@ export const StockManagePage: React.FC = () => {
                     ))}
                   </div>
                 </div>
+                {/* 기간 조회: 단일 스냅샷(10일) 또는 최근 N개월 aggregation */}
+                <div className="flex items-center gap-1.5 mb-2 flex-wrap text-[11px]">
+                  <span className="text-slate-500 font-black text-[11px] shrink-0">조회기간</span>
+                  <div className="inline-flex bg-slate-100/80 border border-slate-200/60 rounded-lg p-0.5 shadow-inner">
+                    <button onClick={() => setFlowMonths(0)}
+                      className={`px-2 py-1 text-[10px] font-black rounded transition cursor-pointer ${
+                        flowMonths === 0 ? "bg-white text-orange-700 shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-800"
+                      }`}>10일</button>
+                    {[1, 2, 3, 4, 5, 6].map(m => (
+                      <button key={m} onClick={() => setFlowMonths(m as any)}
+                        className={`px-2 py-1 text-[10px] font-black rounded transition cursor-pointer ${
+                          flowMonths === m ? "bg-white text-orange-700 shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-800"
+                        }`}>{m}개월</button>
+                    ))}
+                  </div>
+                  {/* 실제 조회 날짜 범위 표시 */}
+                  {flowMonths > 0 && (() => {
+                    const today = new Date();
+                    const start = new Date(today.getFullYear(), today.getMonth() - flowMonths, 1);
+                    const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
+                    const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                    return (
+                      <span className="text-[10px] font-mono font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+                        {s} ~ {e}
+                      </span>
+                    );
+                  })()}
+                </div>
                 {/* 판매수량 범위 필터 (모바일 최적화) */}
                 <div className="flex items-center gap-1.5 mb-2 flex-wrap text-[11px]">
                   <span className="text-slate-500 font-black text-[11px] shrink-0">판매출고계</span>
@@ -1150,7 +1485,8 @@ export const StockManagePage: React.FC = () => {
                         : "선택한 판매수량 범위에 해당하는 상품 없음"}
                   </div>
                 ) : (
-                  <table className="w-full text-xs">
+                  <div className="overflow-x-auto">
+                  <table className="w-full text-xs min-w-[540px]">
                     <thead className="sticky top-0 bg-white z-10">
                       <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
                         {(() => {
@@ -1161,8 +1497,16 @@ export const StockManagePage: React.FC = () => {
                           return (
                             <>
                               <th className="text-left px-0.5 py-1.5 w-7">#</th>
-                              <th className="text-left px-1 py-1.5 min-w-[100px]">상품명</th>
-                              <th className="text-right px-0.5 py-1.5 w-12 text-slate-500">시작</th>
+                              <th
+                                onClick={() => toggleFlowSort("name")}
+                                className={`text-left px-1 py-1.5 min-w-[100px] cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}
+                                title="클릭: 상품명 가나다순 정렬"
+                              >상품명{arrowFor("name")}</th>
+                              <th
+                                onClick={() => toggleFlowSort("opening")}
+                                className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "opening" ? "text-slate-800 font-black" : "text-slate-500"}`}
+                                title="클릭: 시작재고 기준 정렬"
+                              >시작{arrowFor("opening")}</th>
                               <th
                                 onClick={() => toggleFlowSort("purchase")}
                                 className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "purchase" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
@@ -1178,7 +1522,11 @@ export const StockManagePage: React.FC = () => {
                                 className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "closing" ? "text-slate-800 font-black" : "text-slate-500"}`}
                                 title="클릭: 종료재고 기준 정렬 (재클릭 시 방향 반전)"
                               >종료{arrowFor("closing")}</th>
-                              <th className="text-right px-0.5 py-1.5 w-12 text-amber-600 font-black" title="ERP 현재고 (products.current_stock)">현재고</th>
+                              <th
+                                onClick={() => toggleFlowSort("current")}
+                                className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "current" ? "text-amber-800 font-black" : "text-amber-600 font-black"}`}
+                                title="클릭: ERP 현재고 기준 정렬 · products.current_stock"
+                              >현재고{arrowFor("current")}</th>
                               <th
                                 onClick={() => toggleFlowSort("loss")}
                                 className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "loss" ? "text-rose-700 font-black" : "text-rose-500"}`}
@@ -1202,7 +1550,12 @@ export const StockManagePage: React.FC = () => {
                         <tr key={`flow-${p.product_code}-${i}`} className="hover:bg-orange-50/30 transition">
                           <td className="px-0.5 py-1.5 text-[10px] font-black text-orange-600">{i + 1}</td>
                           <td className="px-1 py-1.5">
-                            <div className="font-bold text-slate-700 truncate max-w-[160px]" title={p.product_name}>{p.product_name}</div>
+                            <button
+                              type="button"
+                              onClick={() => openScanProductModal(p)}
+                              className="text-left font-bold text-slate-700 hover:text-indigo-600 hover:underline truncate max-w-[160px] cursor-pointer transition"
+                              title={`${p.product_name} · 클릭하면 상세 정보`}
+                            >{p.product_name}</button>
                             {p.supplier && <div className="text-[9px] text-slate-400 truncate max-w-[160px]">{p.supplier}</div>}
                           </td>
                           <td className="text-right px-0.5 py-1.5 font-mono text-slate-500 text-[11px]">{fmt(p.opening_stock)}</td>
@@ -1214,18 +1567,33 @@ export const StockManagePage: React.FC = () => {
                             })()}
                           </td>
                           <td className="text-right px-0.5 py-1.5 font-mono font-bold text-orange-700 text-[11px]">{fmt(p.sale_qty)}</td>
-                          <td className={`text-right px-0.5 py-1.5 font-mono text-[11px] ${p.closing_stock < 0 ? "text-rose-500 font-bold" : "text-slate-600"}`}>{fmt(p.closing_stock)}</td>
-                          <td className={`text-right px-0.5 py-1.5 font-mono font-black text-[11px] ${cur <= 0 ? "text-red-600" : "text-amber-700"}`} title="ERP 현재고">{fmt(cur)}</td>
+                          {(() => {
+                            const close = Number(p.closing_stock ?? 0);
+                            const mismatch = close !== cur;
+                            return (
+                              <>
+                                <td
+                                  className={`text-right px-0.5 py-1.5 font-mono text-[11px] ${close < 0 ? "text-rose-500 font-bold" : mismatch ? "text-red-600 font-black" : "text-slate-600"}`}
+                                  title={mismatch ? `종료 ${fmt(close)} ≠ 현재고 ${fmt(cur)} · 불일치` : "종료재고 (스냅샷)"}
+                                >{fmt(close)}</td>
+                                <td
+                                  className={`text-right px-0.5 py-1.5 font-mono font-black text-[11px] ${cur <= 0 ? "text-red-600" : mismatch ? "text-red-600" : "text-amber-700"}`}
+                                  title={mismatch ? `현재고 ${fmt(cur)} ≠ 종료 ${fmt(close)} · 불일치` : "ERP 현재고"}
+                                >{fmt(cur)}</td>
+                              </>
+                            );
+                          })()}
                           <td
                             className={`text-right px-0.5 py-1.5 font-mono text-[11px] ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
-                            title={`손실 = 종료재고(${fmt(p.closing_stock)}) − 현재고(${fmt(cur)}) = ${fmt(loss)}`}
-                          >{loss === 0 ? "0" : loss > 0 ? `+${fmt(loss)}` : fmt(loss)}</td>
+                            title={`손실 = 종료재고(${fmt(p.closing_stock)}) − 현재고(${fmt(cur)}) = ${loss < 0 ? "-" + fmt(Math.abs(loss)) : loss > 0 ? "+" + fmt(loss) : "0"}`}
+                          >{loss === 0 ? "0" : loss > 0 ? `+${fmt(loss)}` : `-${fmt(Math.abs(loss))}`}</td>
                           <td className="text-right px-0.5 py-1.5 font-mono text-[10px] text-indigo-700 font-bold">{p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</td>
                         </tr>
                         );
                       })}
                     </tbody>
                   </table>
+                  </div>
                 )
               ) : (
                 topProducts.length === 0 ? (
@@ -1233,7 +1601,8 @@ export const StockManagePage: React.FC = () => {
                     {loading ? "불러오는 중..." : "OCR 매입 데이터 없음"}
                   </div>
                 ) : (
-                  <table className="w-full text-xs">
+                  <div className="overflow-x-auto">
+                  <table className="w-full text-xs min-w-[280px]">
                     <thead className="sticky top-0 bg-white z-10">
                       <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
                         <th className="text-left px-1 py-1.5 w-8">#</th>
@@ -1256,6 +1625,7 @@ export const StockManagePage: React.FC = () => {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 )
               )}
             </div>
@@ -1269,15 +1639,15 @@ export const StockManagePage: React.FC = () => {
       {/* ── 공급사별 상품 상세 모달 (판매출고계 내림차순) ── */}
       {supplierModal && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4"
           onClick={() => { setSupplierModal(null); setSupplierModalRows(null); }}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* 헤더 */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-sky-50 via-indigo-50 to-emerald-50">
+            <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 border-b border-slate-200 bg-gradient-to-r from-sky-50 via-indigo-50 to-emerald-50">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-500 flex items-center justify-center shrink-0 shadow-md">
                   <Building2 size={18} className="text-white" />
@@ -1311,13 +1681,15 @@ export const StockManagePage: React.FC = () => {
                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider">조회수량</span>
                 <select
                   value={modalQtyField}
-                  onChange={(e) => setModalQtyField(e.target.value as ModalSortKey)}
+                  onChange={(e) => setModalQtyField(e.target.value as ModalQtyKey)}
                   className="text-[10px] font-bold text-slate-700 bg-white border border-slate-300 rounded px-1.5 py-0.5 cursor-pointer focus:outline-none focus:border-sky-400"
                 >
                   <option value="sale_qty">판매출고계</option>
                   <option value="purchase_qty">매입</option>
                   <option value="opening_stock">시작재고</option>
                   <option value="closing_stock">종료재고</option>
+                  <option value="current_stock">현재고</option>
+                  <option value="sale_price">판매가</option>
                 </select>
                 <input
                   type="number"
@@ -1347,7 +1719,7 @@ export const StockManagePage: React.FC = () => {
             )}
 
             {/* 컨텐츠 (리스트, 세로 스크롤 하나만) */}
-            <div className="flex-1 overflow-y-auto bg-white">
+            <div className="flex-1 overflow-y-auto overflow-x-auto bg-white">
               {supplierModalLoading ? (
                 <div className="text-center text-sm text-slate-400 py-16 flex flex-col items-center gap-3">
                   <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-sky-500 animate-spin" />
@@ -1357,44 +1729,73 @@ export const StockManagePage: React.FC = () => {
                 <div className="text-center text-sm text-slate-400 py-16">이 공급사의 상품이 없습니다</div>
               ) : (
                 <>
-                  {/* 정렬 가능 헤더 */}
-                  <div className="sticky top-0 bg-white z-10 border-b border-slate-200 flex items-center gap-2 px-4 py-2 text-[10px] uppercase tracking-wider font-black text-slate-400">
+                  {/* 정렬 가능 헤더 — 상품명 폭 드래그 조절 */}
+                  <div className="sticky top-0 bg-white z-10 border-b border-slate-200 flex items-center gap-1 px-3 py-2 text-[10px] uppercase tracking-wider font-black text-slate-400 min-w-[500px]">
                     {(() => {
                       const arr = (k: ModalSortKey) => modalSortKey !== k ? " ⇅" : modalSortDir === "desc" ? " ▼" : " ▲";
                       const btn = (k: ModalSortKey, base: string) =>
                         `cursor-pointer select-none hover:text-slate-700 transition ${modalSortKey === k ? "text-slate-800" : base}`;
                       return (
                         <>
-                          <span className="w-6 shrink-0 text-right">#</span>
-                          <span className="flex-1">상품명</span>
-                          <button onClick={() => toggleModalSort("opening_stock")} className={`${btn("opening_stock", "text-slate-500")} w-16 text-right shrink-0`}>시작{arr("opening_stock")}</button>
-                          <button onClick={() => toggleModalSort("closing_stock")} className={`${btn("closing_stock", "text-slate-500")} w-16 text-right shrink-0`}>종료{arr("closing_stock")}</button>
-                          <button onClick={() => toggleModalSort("purchase_qty")}  className={`${btn("purchase_qty",  "text-emerald-500")} w-16 text-right shrink-0`}>매입{arr("purchase_qty")}</button>
-                          <button onClick={() => toggleModalSort("sale_qty")}      className={`${btn("sale_qty",      "text-orange-500")} w-20 text-right shrink-0`}>판매출고계{arr("sale_qty")}</button>
+                          <span className="w-5 shrink-0 text-right">#</span>
+                          <div className="relative shrink-0" style={{ width: supplierModalNameWidth }}>
+                            <button onClick={() => toggleModalSort("product_name")} className={`${btn("product_name", "text-slate-500")} w-full text-left pr-2 truncate`}>상품명{arr("product_name")}</button>
+                            <div
+                              onMouseDown={onNameColResizeStart}
+                              className="absolute top-0 right-0 h-full w-1.5 cursor-col-resize hover:bg-indigo-300/70 active:bg-indigo-400 transition"
+                              title="드래그하여 상품명 컬럼 폭 조절"
+                            />
+                          </div>
+                          <button onClick={() => toggleModalSort("opening_stock")} className={`${btn("opening_stock", "text-slate-500")} w-12 text-right shrink-0`}>시작{arr("opening_stock")}</button>
+                          <button onClick={() => toggleModalSort("purchase_qty")}  className={`${btn("purchase_qty",  "text-emerald-500")} w-16 text-right shrink-0`}>매입 <span className="text-[7px] font-normal text-slate-400">(M/D)</span>{arr("purchase_qty")}</button>
+                          <button onClick={() => toggleModalSort("sale_qty")}      className={`${btn("sale_qty",      "text-orange-500")} w-14 text-right shrink-0`}>판매{arr("sale_qty")}</button>
+                          <button onClick={() => toggleModalSort("closing_stock")} className={`${btn("closing_stock", "text-slate-500")} w-12 text-right shrink-0`}>종료{arr("closing_stock")}</button>
+                          <button onClick={() => toggleModalSort("current_stock")} className={`${btn("current_stock", "text-amber-500")} w-12 text-right shrink-0`}>현재고{arr("current_stock")}</button>
+                          <button onClick={() => toggleModalSort("loss")}          className={`${btn("loss", "text-rose-500")} w-12 text-right shrink-0`}>손실{arr("loss")}</button>
+                          <button onClick={() => toggleModalSort("sale_price")}    className={`${btn("sale_price", "text-indigo-500")} w-14 text-right shrink-0`}>판매가{arr("sale_price")}</button>
                         </>
                       );
                     })()}
                   </div>
-                  <ul className="divide-y divide-slate-100">
-                    {modalDisplayRows.map((p, i) => (
+                  <ul className="divide-y divide-slate-100 min-w-[500px]">
+                    {modalDisplayRows.map((p, i) => {
+                      const cur = Number((p as any).current_stock ?? 0);
+                      const loss = Number(p.closing_stock) - cur;
+                      return (
                       <li
                         key={`sup-modal-${p.product_code}-${i}`}
-                        className="flex items-center gap-2 px-4 py-2 hover:bg-orange-50/40 transition"
+                        className="flex items-center gap-1 px-3 py-1.5 hover:bg-orange-50/40 transition text-[11px]"
                       >
-                        <span className="text-[10px] font-black text-orange-600 w-6 shrink-0 text-right font-mono">{i + 1}</span>
-                        <span className="flex-1 text-sm font-bold text-slate-800 truncate" title={p.product_name}>{p.product_name}</span>
-                        <span className="text-[10px] font-mono text-slate-500 w-16 text-right shrink-0">{fmt(p.opening_stock)}</span>
-                        <span className="text-[10px] font-mono text-slate-600 w-16 text-right shrink-0">{fmt(p.closing_stock)}</span>
-                        <span className="text-[10px] font-mono text-emerald-700 w-20 text-right shrink-0" title={p.last_purchase_date ? `최근 매입: ${p.last_purchase_date}` : "매입 이력 없음"}>
+                        <span className="font-black text-orange-600 w-5 shrink-0 text-right font-mono">{i + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => openScanProductModal(p)}
+                          className="text-left font-bold text-slate-800 hover:text-indigo-600 hover:underline truncate cursor-pointer transition shrink-0"
+                          style={{ width: supplierModalNameWidth }}
+                          title={`${p.product_name} · 클릭하면 상세 정보`}
+                        >{p.product_name}</button>
+                        <span className="font-mono text-slate-500 w-12 text-right shrink-0">{fmt(p.opening_stock)}</span>
+                        <span className="font-mono text-emerald-700 w-16 text-right shrink-0" title={p.last_purchase_date ? `최근 매입: ${p.last_purchase_date}` : "매입 이력 없음"}>
                           {fmt(p.purchase_qty)}
                           {(() => {
                             const md = extractMonthDay(p.last_purchase_date);
                             return md ? <span className="text-[8px] text-slate-400 font-normal ml-0.5">({md})</span> : null;
                           })()}
                         </span>
-                        <span className="text-sm font-black text-orange-700 font-mono w-20 text-right shrink-0">{fmt(p.sale_qty)}</span>
+                        <span className="font-mono font-bold text-orange-700 w-14 text-right shrink-0">{fmt(p.sale_qty)}</span>
+                        <span className={`font-mono w-12 text-right shrink-0 ${p.closing_stock < 0 ? "text-rose-500 font-bold" : "text-slate-600"}`}>{fmt(p.closing_stock)}</span>
+                        <span
+                          className={`font-mono font-black w-12 text-right shrink-0 ${cur <= 0 ? "text-red-600" : cur !== Number(p.closing_stock ?? 0) ? "text-red-600" : "text-amber-700"}`}
+                          title={cur !== Number(p.closing_stock ?? 0) ? `현재고 ${fmt(cur)} ≠ 종료 ${fmt(p.closing_stock)} · 불일치` : "ERP 현재고"}
+                        >{fmt(cur)}</span>
+                        <span
+                          className={`font-mono w-12 text-right shrink-0 ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
+                          title={`손실 = 종료(${fmt(p.closing_stock)}) − 현재고(${fmt(cur)}) = ${loss < 0 ? "-" + fmt(Math.abs(loss)) : loss > 0 ? "+" + fmt(loss) : "0"}`}
+                        >{loss === 0 ? "0" : loss > 0 ? `+${fmt(loss)}` : `-${fmt(Math.abs(loss))}`}</span>
+                        <span className="font-mono text-indigo-700 font-bold w-14 text-right shrink-0 text-[10px]">{p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</span>
                       </li>
-                    ))}
+                      );
+                    })}
                     {modalDisplayRows.length === 0 && (
                       <li className="text-center text-xs text-slate-400 py-10">검색 조건에 맞는 상품 없음</li>
                     )}
@@ -1426,11 +1827,11 @@ export const StockManagePage: React.FC = () => {
       {/* ── 상품 판매현황 대시보드 (products + stock_history + inventory_checks 통합) ── */}
       {infoModal && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4"
           onClick={() => { setInfoModal(null); setInfoModalData(null); }}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[92vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[98vh] sm:max-h-[92vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* 헤더 */}
@@ -1458,7 +1859,7 @@ export const StockManagePage: React.FC = () => {
               >×</button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50">
+            <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 bg-slate-50">
               {infoModalLoading ? (
                 <div className="text-center text-sm text-slate-400 py-16 flex flex-col items-center gap-3">
                   <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-sky-500 animate-spin" />
@@ -1840,11 +2241,11 @@ export const StockManagePage: React.FC = () => {
       {/* ── 바코드 스캔과 동일한 상품 확인 모달 (적정재고이하 클릭 시) ── */}
       {scanProductModal && (
         <div
-          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4"
           onClick={() => setScanProductModal(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[92vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-sky-50 to-indigo-50">
@@ -1862,7 +2263,7 @@ export const StockManagePage: React.FC = () => {
                 className="text-slate-400 hover:text-slate-700 text-3xl leading-none font-black w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0"
               >×</button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
+            <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-slate-50">
               <ProductInfoCard
                 product={scanProductModal}
                 context="stock-manage"
@@ -1874,6 +2275,92 @@ export const StockManagePage: React.FC = () => {
                   setScanProductModal(prev => prev ? { ...prev, ...updates } : prev);
                 }}
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 숨김 항목 관리 모달 ── */}
+      {hiddenModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4"
+          onClick={() => setHiddenModalOpen(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-amber-50 to-orange-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
+                  <EyeOff size={18} className="text-white" />
+                </div>
+                <div>
+                  <div className="text-base font-black text-slate-800">숨김 항목 관리</div>
+                  <div className="text-[11px] font-semibold text-slate-500 mt-0.5">
+                    숨김 처리된 상품 · 검색·발주 리스트에서 노출되지 않음
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setHiddenModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700 text-3xl leading-none font-black w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0"
+              >×</button>
+            </div>
+            <div className="flex items-center justify-between px-5 py-2.5 border-b border-slate-100 bg-white">
+              <span className="text-[11px] font-bold text-slate-500">
+                총 <span className="text-amber-700 font-black">{hiddenList.length}</span>개 숨김
+              </span>
+              <button
+                onClick={loadHiddenList}
+                disabled={hiddenLoading}
+                className="text-[10px] font-bold text-slate-500 hover:text-slate-800 border border-slate-200 hover:border-slate-400 rounded-lg px-2 py-1 cursor-pointer transition"
+              >
+                {hiddenLoading ? "..." : "새로고침"}
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto bg-slate-50">
+              {hiddenLoading ? (
+                <div className="flex items-center justify-center py-12 text-slate-400 text-sm">
+                  <LoaderIcon size={14} className="animate-spin mr-2" />
+                  불러오는 중...
+                </div>
+              ) : hiddenList.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-2">
+                  <EyeOff size={28} className="opacity-40" />
+                  <div className="text-sm font-bold">숨김 처리된 상품이 없습니다</div>
+                  <div className="text-[11px]">정보확인 창에서 "숨기기"로 항목 추가 가능</div>
+                </div>
+              ) : (
+                <ul className="divide-y divide-slate-100 bg-white">
+                  {hiddenList.map((p) => {
+                    const code = String(p.product_code ?? "");
+                    const busy = hiddenUnhideBusyCode === code;
+                    return (
+                      <li key={`hidden-${code}`} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50/30 transition">
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-black text-slate-800 truncate" title={p.product_name}>{p.product_name}</div>
+                          <div className="text-[10px] font-mono text-slate-400 truncate">
+                            #{code}
+                            {p.supplier ? ` · ${p.supplier}` : ""}
+                            {p.real_map ? ` · ${p.real_map}` : ""}
+                            {p.current_stock != null ? ` · 재고 ${p.current_stock}` : ""}
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => unhideProduct(code)}
+                          disabled={busy}
+                          className="shrink-0 flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 disabled:opacity-50 disabled:cursor-wait rounded-lg px-2.5 py-1.5 cursor-pointer transition"
+                          title="숨김 해제 · 다시 검색·발주 리스트에 표시"
+                        >
+                          {busy ? <LoaderIcon size={11} className="animate-spin" /> : <Eye size={11} />}
+                          다시 표시
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
           </div>
         </div>

@@ -39,20 +39,92 @@ interface Employee {
   photo_url?: string | null;
   hire_date?: string | null;
   memo?: string | null;
-  // 이력서 확장 필드 (DB 없으면 undefined)
+  // ── 이력서 · 인사기록카드 확장 필드 (DB 없으면 undefined 처리) ──
+  // 인적사항
   birth_date?: string | null;
   gender?: string | null;
   address?: string | null;
+  emergency_contact_name?: string | null;
+  emergency_contact_phone?: string | null;
+  emergency_contact_rel?: string | null;
+  // 근무 정보
   schedule_type?: string | null; // 오픈/미들/마감/클로징/자유
   work_area?: string | null;     // 담당 구역
+  // 계약 정보
+  contract_type?: string | null;  // regular/fixed_term/part_time/daily/intern
+  contract_start?: string | null;
+  contract_end?: string | null;
+  probation_end_date?: string | null;
+  work_location?: string | null;
+  job_duties?: string | null;
+  // 근로조건
+  working_hours_per_week?: number | null;
+  break_time_minutes?: number | null;
+  weekly_holiday?: string | null;  // 일요일 등
+  annual_leave_days?: number | null;
+  // 임금
+  wage_calc_type?: string | null; // hourly/daily/monthly/annual
+  wage_amount?: number | null;
+  wage_pay_day?: string | null;   // 매월 10일 등
+  wage_pay_method?: string | null;
+  bank_name?: string | null;
+  bank_account_no?: string | null;
+  salary?: string | null; // 하위 호환 (레거시)
+  // 4대보험
+  insurance_nps_date?: string | null;   // 국민연금
+  insurance_nhis_date?: string | null;  // 건강보험
+  insurance_ei_date?: string | null;    // 고용보험
+  insurance_wcia_date?: string | null;  // 산재보험
+  insurance_excluded?: boolean | null;
+  // 자격 (약국 특수)
+  pharmacist_license_no?: string | null;
+  health_check_expiry?: string | null;
+  // 경력·학력·자격증 (배열)
   careers?: CareerItem[] | null;
   educations?: EducationItem[] | null;
   certifications?: CertItem[] | null;
-  salary?: string | null;        // 급여 (민감 - 표시만)
-  contract_start?: string | null;
-  contract_end?: string | null;
   [key: string]: unknown;
 }
+
+/**
+ * 인사기록카드 관련 DB 컬럼 추가 SQL (Supabase에서 한 번 실행):
+ *
+ * ALTER TABLE employees
+ *   ADD COLUMN IF NOT EXISTS birth_date date,
+ *   ADD COLUMN IF NOT EXISTS gender text,
+ *   ADD COLUMN IF NOT EXISTS address text,
+ *   ADD COLUMN IF NOT EXISTS emergency_contact_name text,
+ *   ADD COLUMN IF NOT EXISTS emergency_contact_phone text,
+ *   ADD COLUMN IF NOT EXISTS emergency_contact_rel text,
+ *   ADD COLUMN IF NOT EXISTS schedule_type text,
+ *   ADD COLUMN IF NOT EXISTS work_area text,
+ *   ADD COLUMN IF NOT EXISTS contract_type text,
+ *   ADD COLUMN IF NOT EXISTS contract_start date,
+ *   ADD COLUMN IF NOT EXISTS contract_end date,
+ *   ADD COLUMN IF NOT EXISTS probation_end_date date,
+ *   ADD COLUMN IF NOT EXISTS work_location text,
+ *   ADD COLUMN IF NOT EXISTS job_duties text,
+ *   ADD COLUMN IF NOT EXISTS working_hours_per_week numeric(4,1),
+ *   ADD COLUMN IF NOT EXISTS break_time_minutes integer,
+ *   ADD COLUMN IF NOT EXISTS weekly_holiday text DEFAULT '일요일',
+ *   ADD COLUMN IF NOT EXISTS annual_leave_days integer DEFAULT 15,
+ *   ADD COLUMN IF NOT EXISTS wage_calc_type text,
+ *   ADD COLUMN IF NOT EXISTS wage_amount integer,
+ *   ADD COLUMN IF NOT EXISTS wage_pay_day text,
+ *   ADD COLUMN IF NOT EXISTS wage_pay_method text DEFAULT '계좌이체',
+ *   ADD COLUMN IF NOT EXISTS bank_name text,
+ *   ADD COLUMN IF NOT EXISTS bank_account_no text,
+ *   ADD COLUMN IF NOT EXISTS insurance_nps_date date,
+ *   ADD COLUMN IF NOT EXISTS insurance_nhis_date date,
+ *   ADD COLUMN IF NOT EXISTS insurance_ei_date date,
+ *   ADD COLUMN IF NOT EXISTS insurance_wcia_date date,
+ *   ADD COLUMN IF NOT EXISTS insurance_excluded boolean DEFAULT false,
+ *   ADD COLUMN IF NOT EXISTS pharmacist_license_no text,
+ *   ADD COLUMN IF NOT EXISTS health_check_expiry date,
+ *   ADD COLUMN IF NOT EXISTS careers jsonb DEFAULT '[]'::jsonb,
+ *   ADD COLUMN IF NOT EXISTS educations jsonb DEFAULT '[]'::jsonb,
+ *   ADD COLUMN IF NOT EXISTS certifications jsonb DEFAULT '[]'::jsonb;
+ */
 
 interface CareerItem {
   id: string;
@@ -81,6 +153,13 @@ type EditDraft = Pick<
   | "hire_date" | "memo" | "contract_file_url" | "photo_url"
   | "birth_date" | "gender" | "address" | "schedule_type" | "work_area"
   | "salary" | "contract_start" | "contract_end"
+  // 신규 · 인사기록카드 확장
+  | "emergency_contact_name" | "emergency_contact_phone" | "emergency_contact_rel"
+  | "contract_type" | "probation_end_date" | "work_location" | "job_duties"
+  | "working_hours_per_week" | "break_time_minutes" | "weekly_holiday" | "annual_leave_days"
+  | "wage_calc_type" | "wage_amount" | "wage_pay_day" | "wage_pay_method" | "bank_name" | "bank_account_no"
+  | "insurance_nps_date" | "insurance_nhis_date" | "insurance_ei_date" | "insurance_wcia_date" | "insurance_excluded"
+  | "pharmacist_license_no" | "health_check_expiry"
 >;
 
 // ─── 상수 ───────────────────────────────────────────────────────────────────
@@ -596,11 +675,11 @@ const StaffManagePage: React.FC = () => {
 
       {/* 마스터-디테일 */}
       <div
-        className="flex flex-1 bg-white border border-slate-200 rounded-b-2xl shadow-sm overflow-hidden"
+        className="flex flex-col lg:flex-row flex-1 bg-white border border-slate-200 rounded-b-2xl shadow-sm overflow-hidden"
         style={{ minHeight: "calc(100vh - 160px)" }}
       >
         {/* ════ 좌측: 슬림 원라인 리스트 ════ */}
-        <aside className="w-72 shrink-0 border-r border-slate-200 flex flex-col bg-white">
+        <aside className="w-full lg:w-72 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col bg-white max-h-[40vh] lg:max-h-none">
           {/* 검색 + 필터 */}
           <div className="px-3 pt-3 pb-2 border-b border-slate-100 space-y-2">
             <div className="relative">
@@ -1017,7 +1096,171 @@ const StaffManagePage: React.FC = () => {
                   </div>
                 </SectionCard>
 
-                {/* §7 메모 */}
+                {/* §7 근로조건 (근기법 §17 서면교부 대상) */}
+                <SectionCard title="근로조건" icon={<Calendar size={12} />} defaultOpen={false}>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    <InlineField
+                      label="주 소정근로시간"
+                      value={editing ? String(draft?.working_hours_per_week ?? "") : String(displayEmp.working_hours_per_week ?? "")}
+                      editing={editing} type="number" placeholder="40"
+                      onChange={(v) => setField("working_hours_per_week", v === "" ? null : Number(v))}
+                    />
+                    <InlineField
+                      label="휴게시간 (분/일)"
+                      value={editing ? String(draft?.break_time_minutes ?? "") : String(displayEmp.break_time_minutes ?? "")}
+                      editing={editing} type="number" placeholder="60"
+                      onChange={(v) => setField("break_time_minutes", v === "" ? null : Number(v))}
+                    />
+                    <InlineField
+                      label="유급 주휴일"
+                      value={editing ? (draft?.weekly_holiday ?? "") : (displayEmp.weekly_holiday ?? "")}
+                      editing={editing} placeholder="일요일"
+                      onChange={(v) => setField("weekly_holiday", v)}
+                    />
+                    <InlineField
+                      label="연차유급휴가 (일)"
+                      value={editing ? String(draft?.annual_leave_days ?? "") : String(displayEmp.annual_leave_days ?? "")}
+                      editing={editing} type="number" placeholder="15"
+                      onChange={(v) => setField("annual_leave_days", v === "" ? null : Number(v))}
+                    />
+                    <InlineField
+                      label="근무 장소"
+                      value={editing ? (draft?.work_location ?? "") : (displayEmp.work_location ?? "")}
+                      editing={editing} placeholder="오산 메가타운 약국" wide
+                      onChange={(v) => setField("work_location", v)}
+                    />
+                    <InlineField
+                      label="종사 업무"
+                      value={editing ? (draft?.job_duties ?? "") : (displayEmp.job_duties ?? "")}
+                      editing={editing} placeholder="조제보조·POS·진열" wide
+                      onChange={(v) => setField("job_duties", v)}
+                    />
+                  </div>
+                </SectionCard>
+
+                {/* §8 임금 정보 (민감 - 관리자만 편집) */}
+                <SectionCard title="임금 정보" icon={<Briefcase size={12} />} defaultOpen={false}>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">임금 유형</span>
+                      {editing ? (
+                        <select
+                          value={draft?.wage_calc_type ?? ""}
+                          onChange={(e) => setField("wage_calc_type", e.target.value || null)}
+                          className="border border-indigo-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                        >
+                          <option value="">선택 안 함</option>
+                          <option value="hourly">시급</option>
+                          <option value="daily">일급</option>
+                          <option value="monthly">월급</option>
+                          <option value="annual">연봉</option>
+                        </select>
+                      ) : (
+                        <span className="text-sm text-slate-800 py-1">
+                          {({ hourly: "시급", daily: "일급", monthly: "월급", annual: "연봉" } as any)[displayEmp.wage_calc_type ?? ""] ?? <span className="text-slate-300 italic">(미지정)</span>}
+                        </span>
+                      )}
+                    </div>
+                    <InlineField
+                      label="임금액 (원)"
+                      value={editing ? String(draft?.wage_amount ?? "") : String(displayEmp.wage_amount ?? "")}
+                      editing={editing} type="number" placeholder="10030"
+                      monospace
+                      onChange={(v) => setField("wage_amount", v === "" ? null : Number(v))}
+                    />
+                    <InlineField
+                      label="지급일"
+                      value={editing ? (draft?.wage_pay_day ?? "") : (displayEmp.wage_pay_day ?? "")}
+                      editing={editing} placeholder="매월 10일"
+                      onChange={(v) => setField("wage_pay_day", v)}
+                    />
+                    <InlineField
+                      label="지급 방법"
+                      value={editing ? (draft?.wage_pay_method ?? "") : (displayEmp.wage_pay_method ?? "")}
+                      editing={editing} placeholder="계좌이체"
+                      onChange={(v) => setField("wage_pay_method", v)}
+                    />
+                    <InlineField
+                      label="은행"
+                      value={editing ? (draft?.bank_name ?? "") : (displayEmp.bank_name ?? "")}
+                      editing={editing} placeholder="국민은행"
+                      onChange={(v) => setField("bank_name", v)}
+                    />
+                    <InlineField
+                      label="계좌번호"
+                      value={editing ? (draft?.bank_account_no ?? "") : (displayEmp.bank_account_no ?? "")}
+                      editing={editing} placeholder="123-45-6789012"
+                      monospace
+                      onChange={(v) => setField("bank_account_no", v)}
+                    />
+                  </div>
+                </SectionCard>
+
+                {/* §9 4대보험 */}
+                <SectionCard title="4대보험" icon={<ClipboardList size={12} />} defaultOpen={false}>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    <InlineField
+                      label="국민연금 취득일"
+                      value={editing ? (draft?.insurance_nps_date ?? "") : (displayEmp.insurance_nps_date ?? "")}
+                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      onChange={(v) => setField("insurance_nps_date", v)}
+                    />
+                    <InlineField
+                      label="건강보험 취득일"
+                      value={editing ? (draft?.insurance_nhis_date ?? "") : (displayEmp.insurance_nhis_date ?? "")}
+                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      onChange={(v) => setField("insurance_nhis_date", v)}
+                    />
+                    <InlineField
+                      label="고용보험 취득일"
+                      value={editing ? (draft?.insurance_ei_date ?? "") : (displayEmp.insurance_ei_date ?? "")}
+                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      onChange={(v) => setField("insurance_ei_date", v)}
+                    />
+                    <InlineField
+                      label="산재보험 취득일"
+                      value={editing ? (draft?.insurance_wcia_date ?? "") : (displayEmp.insurance_wcia_date ?? "")}
+                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      onChange={(v) => setField("insurance_wcia_date", v)}
+                    />
+                    <div className="col-span-2 flex items-center gap-2 mt-1">
+                      {editing ? (
+                        <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!!draft?.insurance_excluded}
+                            onChange={(e) => setField("insurance_excluded", e.target.checked)}
+                            className="w-4 h-4 rounded"
+                          />
+                          4대보험 제외 대상
+                        </label>
+                      ) : displayEmp.insurance_excluded ? (
+                        <span className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-1 rounded-lg">⚠ 4대보험 제외 대상</span>
+                      ) : null}
+                    </div>
+                  </div>
+                </SectionCard>
+
+                {/* §10 약국 특수 자격 */}
+                <SectionCard title="약국 특수 자격" icon={<Award size={12} />} defaultOpen={false}>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    <InlineField
+                      label="약사 면허번호"
+                      value={editing ? (draft?.pharmacist_license_no ?? "") : (displayEmp.pharmacist_license_no ?? "")}
+                      editing={editing} placeholder="약사 면허번호"
+                      monospace
+                      onChange={(v) => setField("pharmacist_license_no", v)}
+                    />
+                    <InlineField
+                      label="보건증 만료일"
+                      value={editing ? (draft?.health_check_expiry ?? "") : (displayEmp.health_check_expiry ?? "")}
+                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      onChange={(v) => setField("health_check_expiry", v)}
+                    />
+                  </div>
+                </SectionCard>
+
+                {/* §11 메모 */}
                 <SectionCard title="메모" icon={<ClipboardList size={12} />} defaultOpen>
                   {editing ? (
                     <textarea

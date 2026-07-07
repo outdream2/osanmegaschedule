@@ -53,15 +53,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [uploadResult, setUploadResult] = useState<{ ok: boolean; count?: number; msg?: string } | null>(null);
   const [importLog, setImportLog] = useState<{ timestamp: string; count: number }[]>([]);
   // 데이터 업로드 통합 모달 서브탭: products(기본) / stock
-  const [uploadTab, setUploadTab] = useState<"products" | "stock">("products");
+  const [uploadTab, setUploadTab] = useState<"products" | "stock" | "log">("products");
   // 재고 리스트 업로드
   const [stockUploadFile, setStockUploadFile] = useState<File | null>(null);
   const [stockUploadLoading, setStockUploadLoading] = useState(false);
   const [stockUploadResult, setStockUploadResult] = useState<{ ok: boolean; updated?: number; total?: number; history?: number; snapshot_date?: string; msg?: string } | null>(null);
-  const [stockImportLog, setStockImportLog] = useState<{ timestamp: string; count: number; total?: number }[]>([]);
+  const [stockImportLog, setStockImportLog] = useState<{
+    timestamp: string;
+    count: number;
+    total?: number;
+    snapshot_date?: string;
+    start_date?: string | null;
+    period_type?: "early" | "mid" | "late" | null;
+    history?: number;
+  }[]>([]);
   const stockUploadInputRef = useRef<HTMLInputElement>(null);
-  // 재고 업로드: 시작일재고 기간 구분 (초순 1-10 / 중순 11-20 / 하순 21-말일)
-  const [stockPeriodType, setStockPeriodType] = useState<"early" | "mid" | "late">("early");
+  // 재고 업로드: 시작재고일 / 종료재고일 (사용자 명시 · 파일명 파싱 대체)
+  // period_type 은 종료일의 dd 로 자동 판정 (1-10=early, 11-20=mid, 21-말일=late)
+  const [stockStartDate, setStockStartDate] = useState<string>("");
+  const [stockEndDate, setStockEndDate] = useState<string>("");
+  const stockPeriodType: "early" | "mid" | "late" | null = (() => {
+    const m = /^\d{4}-\d{2}-(\d{2})$/.exec(stockEndDate);
+    if (!m) return null;
+    const dd = Number(m[1]);
+    if (dd >= 1 && dd <= 10) return "early";
+    if (dd >= 11 && dd <= 20) return "mid";
+    if (dd >= 21 && dd <= 31) return "late";
+    return null;
+  })();
   const uploadInputRef = useRef<HTMLInputElement>(null);
 
   // Stock arrivals
@@ -239,14 +258,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const handleStockUpload = async () => {
     if (!stockUploadFile) return;
     if (!authSession?.employeeId) return;
+    // 필수 검증: 시작재고일 · 종료재고일 명시
+    if (!stockStartDate || !stockEndDate) {
+      setStockUploadResult({ ok: false, msg: "시작재고일 · 종료재고일을 모두 입력하세요" });
+      return;
+    }
+    if (stockStartDate > stockEndDate) {
+      setStockUploadResult({ ok: false, msg: "시작재고일이 종료재고일보다 뒤에 있습니다" });
+      return;
+    }
+    if (!stockPeriodType) {
+      setStockUploadResult({ ok: false, msg: "종료재고일의 일(dd)로 초/중/하순 판정 실패" });
+      return;
+    }
     setStockUploadLoading(true);
     setStockUploadResult(null);
     try {
-      // 종료일 = 파일 업로드일 (오늘). 파일명에 YYYY-MM-DD 있으면 우선 사용
-      const dateMatch = stockUploadFile.name.match(/(\d{4}-\d{2}-\d{2})/);
-      const snapshotDate = dateMatch ? dateMatch[1] : new Date().toISOString().slice(0, 10);
       const params = new URLSearchParams({ managerId: String(authSession.employeeId) });
-      params.set("snapshot_date", snapshotDate);
+      params.set("snapshot_date", stockEndDate);
+      params.set("start_date", stockStartDate);
       params.set("period_type", stockPeriodType);
       const buf = await stockUploadFile.arrayBuffer();
       const res = await axios.post(`/api/upload-stock?${params}`, buf, {
@@ -825,8 +855,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
       {/* ── 데이터 업로드 통합 모달 (상품목록 · 재고리스트 서브탭) ── */}
       {uploadOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-4" onClick={() => setUploadOpen(false)}>
-          <div className="bg-white border border-gray-200 rounded-2xl p-6 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-900/50 backdrop-blur-sm p-2 sm:p-4" onClick={() => setUploadOpen(false)}>
+          <div className="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
@@ -837,7 +867,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               <button onClick={() => setUploadOpen(false)} className="text-gray-400 hover:text-gray-700 transition cursor-pointer"><X size={18} /></button>
             </div>
 
-            {/* 서브탭: 상품목록 (기본) · 재고리스트 */}
+            {/* 서브탭: 상품목록 · 재고리스트 · 임포트 목록 (통합 이력) */}
             <div className="flex items-center gap-1 mb-4 border-b border-gray-100">
               <button
                 onClick={() => setUploadTab("products")}
@@ -853,9 +883,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 }`}>
                 재고리스트
               </button>
+              <button
+                onClick={() => { setUploadTab("log"); fetchImportLog(); fetchStockImportLog(); }}
+                className={`px-3 py-2 text-xs font-bold border-b-2 transition cursor-pointer ${
+                  uploadTab === "log" ? "border-emerald-500 text-emerald-600" : "border-transparent text-gray-400 hover:text-gray-600"
+                }`}>
+                임포트 목록
+                {(importLog.length + stockImportLog.length) > 0 && (
+                  <span className="ml-1 text-[9px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full px-1.5 py-0.5">
+                    {importLog.length + stockImportLog.length}
+                  </span>
+                )}
+              </button>
             </div>
 
-            {uploadTab === "products" ? (
+            {uploadTab === "products" && (
               <>
                 <p className="text-xs text-gray-500 mb-4 leading-relaxed">
                   xlsx 파일을 업로드하면 전체 상품 데이터가 DB에 임포트됩니다.<br />
@@ -866,7 +908,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <CheckCircle2 size={36} className="text-emerald-500" />
                     <p className="text-sm font-bold text-emerald-700">업로드 완료</p>
                     <p className="text-xs text-gray-500">{uploadResult.count?.toLocaleString()}개 상품 등록됨</p>
-                    <button onClick={() => setUploadOpen(false)} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">닫기</button>
+                    <button onClick={() => { setUploadResult(null); setUploadFile(null); }} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">확인</button>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
@@ -925,7 +967,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 )}
               </>
-            ) : (
+            )}
+            {uploadTab === "stock" && (
               <>
                 <p className="text-xs text-gray-500 mb-4 leading-relaxed">
                   재고현황 xlsx (초순/중순/하순 스냅샷)를 <strong>stock_history</strong> 테이블에 임포트합니다.<br />
@@ -947,35 +990,51 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     {(stockUploadResult.history ?? 0) < (stockUploadResult.total ?? 0) && (
                       <p className="text-[10px] text-amber-600">일부 행 저장 실패 (서버 로그 확인 필요)</p>
                     )}
-                    <button onClick={() => setUploadOpen(false)} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">닫기</button>
+                    <button onClick={() => { setStockUploadResult(null); setStockUploadFile(null); }} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">확인</button>
                   </div>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    {/* 시작일재고 기간 선택 (초순/중순/하순). 종료일은 업로드일 자동 */}
+                    {/* 시작재고일 · 종료재고일 (사용자 명시) — period_type 은 종료일 dd 로 자동 판정 */}
                     <div>
-                      <div className="text-[11px] font-bold text-gray-500 mb-1.5">시작일재고 기간</div>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {([
-                          { v: "early", label: "초순",  desc: "1 - 10일" },
-                          { v: "mid",   label: "중순",  desc: "11 - 20일" },
-                          { v: "late",  label: "하순",  desc: "21 - 말일" },
-                        ] as const).map(o => (
-                          <button
-                            key={o.v}
-                            type="button"
-                            onClick={() => setStockPeriodType(o.v)}
-                            className={`px-2 py-2 text-center rounded-lg border-2 transition cursor-pointer ${
-                              stockPeriodType === o.v
-                                ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                                : "border-gray-200 bg-white text-gray-500 hover:border-indigo-200"
-                            }`}
-                          >
-                            <div className="text-xs font-black">{o.label}</div>
-                            <div className="text-[9px] font-mono opacity-70">{o.desc}</div>
-                          </button>
-                        ))}
+                      <div className="text-[11px] font-bold text-gray-500 mb-1.5">재고 기간 (필수)</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <label className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold text-gray-500">시작재고일</span>
+                          <input
+                            type="date"
+                            value={stockStartDate}
+                            onChange={(e) => setStockStartDate(e.target.value)}
+                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-400"
+                          />
+                        </label>
+                        <label className="flex flex-col gap-1">
+                          <span className="text-[10px] font-bold text-gray-500">종료재고일</span>
+                          <input
+                            type="date"
+                            value={stockEndDate}
+                            onChange={(e) => setStockEndDate(e.target.value)}
+                            className="w-full px-2 py-1.5 text-xs font-mono border-2 border-gray-200 rounded-lg focus:outline-none focus:border-indigo-400"
+                          />
+                        </label>
                       </div>
-                      <p className="text-[10px] text-gray-400 mt-1">종료일 = 업로드일 (오늘)</p>
+                      {/* 자동 판정 표시 */}
+                      <div className="mt-2 flex items-center gap-2 flex-wrap text-[10px]">
+                        {stockPeriodType ? (
+                          <span className={`font-black px-2 py-0.5 rounded-full border ${
+                            stockPeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
+                            stockPeriodType === "mid"   ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
+                                                          "text-purple-700 bg-purple-50 border-purple-300"
+                          }`}>
+                            자동판정: {stockPeriodType === "early" ? "초순 (1-10일)" : stockPeriodType === "mid" ? "중순 (11-20일)" : "하순 (21-말일)"}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">종료일 입력 시 초/중/하순 자동 판정</span>
+                        )}
+                        {stockStartDate && stockEndDate && stockStartDate > stockEndDate && (
+                          <span className="text-rose-600 font-bold">⚠ 시작일이 종료일보다 뒤</span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-gray-400 mt-1">예: 6월 초순 스냅샷 → 시작재고일 2026-06-01 · 종료재고일 2026-06-10</p>
                     </div>
 
                     <input ref={stockUploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => {
@@ -1002,7 +1061,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     )}
                     <button
                       type="button"
-                      disabled={!stockUploadFile || stockUploadLoading}
+                      disabled={
+                        !stockUploadFile ||
+                        stockUploadLoading ||
+                        !stockStartDate ||
+                        !stockEndDate ||
+                        !stockPeriodType ||
+                        stockStartDate > stockEndDate
+                      }
                       onClick={handleStockUpload}
                       className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-sm flex items-center justify-center gap-2"
                     >
@@ -1017,21 +1083,167 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">재고 임포트 이력</p>
                       <button onClick={handleClearStockImportLog} className="text-[10px] text-gray-400 hover:text-rose-500 transition cursor-pointer">clear</button>
                     </div>
-                    <div className="flex flex-col gap-1 max-h-[180px] overflow-y-auto">
-                      {stockImportLog.map((entry, i) => (
-                        <div key={i} className="flex items-center justify-between text-[11px]">
-                          <span className="text-gray-500">
-                            {new Date(entry.timestamp).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                          <span className={`font-semibold ${i === 0 ? "text-indigo-600" : "text-gray-400"}`}>
-                            {entry.count.toLocaleString()}개
-                            {entry.total && entry.total !== entry.count && <span className="text-gray-300"> / {entry.total.toLocaleString()}</span>}
-                          </span>
-                        </div>
-                      ))}
+                    <div className="flex flex-col gap-1 max-h-[220px] overflow-y-auto">
+                      {stockImportLog.map((entry, i) => {
+                        // 재고기간 라벨: "2026-06-01 ~ 2026-06-10 · 초순"
+                        const periodLabel = entry.period_type === "early" ? "초순"
+                                          : entry.period_type === "mid"   ? "중순"
+                                          : entry.period_type === "late"  ? "하순"
+                                          : null;
+                        // "4/20" 형식 (한자리 M/D)
+                        const shortDate = (d?: string | null): string | null => {
+                          if (!d) return null;
+                          const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(d);
+                          if (!m) return null;
+                          return `${Number(m[1])}/${Number(m[2])}`;
+                        };
+                        const rangeLabel = entry.start_date && entry.snapshot_date
+                          ? `${shortDate(entry.start_date)} ~ ${shortDate(entry.snapshot_date)}`
+                          : entry.snapshot_date
+                            ? `~ ${shortDate(entry.snapshot_date)}`
+                            : null;
+                        const periodChipClass = entry.period_type === "early"
+                          ? "text-sky-700 bg-sky-50 border-sky-200"
+                          : entry.period_type === "mid"
+                            ? "text-indigo-700 bg-indigo-50 border-indigo-200"
+                            : "text-purple-700 bg-purple-50 border-purple-200";
+                        const stored = entry.history ?? entry.count;
+                        return (
+                          <div key={i} className="flex items-center justify-between gap-2 text-[11px] py-0.5">
+                            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                              <span className="text-gray-500 font-mono shrink-0">
+                                {new Date(entry.timestamp).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                              {rangeLabel && (
+                                <span
+                                  className="text-emerald-700 font-mono font-bold shrink-0"
+                                  title={entry.start_date && entry.snapshot_date ? `재고기간 ${entry.start_date} ~ ${entry.snapshot_date}` : `스냅샷일 ${entry.snapshot_date}`}
+                                >{rangeLabel}</span>
+                              )}
+                              {periodLabel && (
+                                <span className={`text-[10px] font-black rounded-full px-1.5 py-0.5 border shrink-0 ${periodChipClass}`}>
+                                  {periodLabel}
+                                </span>
+                              )}
+                            </div>
+                            <span className={`font-semibold shrink-0 ${i === 0 ? "text-indigo-600" : "text-gray-400"}`}>
+                              {stored.toLocaleString()}개
+                              {entry.total && entry.total !== stored && <span className="text-gray-300"> / {entry.total.toLocaleString()}</span>}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
+              </>
+            )}
+            {uploadTab === "log" && (
+              <>
+                <p className="text-xs text-gray-500 mb-2 leading-relaxed">
+                  상품목록 · 재고리스트 임포트 이력을 시간순으로 표시합니다.
+                </p>
+                {stockImportLog.some(e => !e.start_date) && (
+                  <div className="text-[10px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1.5 mb-3">
+                    ℹ️ 시작재고일 저장 기능 이전에 임포트된 이력은 종료일만 표시됩니다. 이후 임포트부터는 <b>시작재고일 ~ 종료재고일</b> 이 함께 표시됩니다.
+                  </div>
+                )}
+                {(() => {
+                  const shortDate = (d?: string | null): string | null => {
+                    if (!d) return null;
+                    const m = /^\d{4}-(\d{2})-(\d{2})$/.exec(d);
+                    if (!m) return null;
+                    return `${Number(m[1])}/${Number(m[2])}`;
+                  };
+                  type LogEntry =
+                    | { kind: "products"; timestamp: string; count: number }
+                    | {
+                        kind: "stock";
+                        timestamp: string;
+                        count: number;
+                        total?: number;
+                        history?: number;
+                        snapshot_date?: string;
+                        start_date?: string | null;
+                        period_type?: "early" | "mid" | "late" | null;
+                      };
+                  const merged: LogEntry[] = [
+                    ...importLog.map(e => ({ kind: "products" as const, timestamp: e.timestamp, count: e.count })),
+                    ...stockImportLog.map(e => ({
+                      kind: "stock" as const,
+                      timestamp: e.timestamp,
+                      count: e.count,
+                      total: e.total,
+                      history: e.history,
+                      snapshot_date: e.snapshot_date,
+                      start_date: e.start_date,
+                      period_type: e.period_type,
+                    })),
+                  ].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+
+                  if (merged.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-2">
+                        <p className="text-sm">임포트 이력이 없습니다</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="max-h-[400px] overflow-y-auto border border-gray-200 rounded-xl bg-white">
+                      <table className="w-full text-[11px]">
+                        <thead>
+                          <tr className="text-[10px] uppercase tracking-wider text-gray-400 border-b border-gray-200 bg-gray-50/70">
+                            <th className="text-left py-2 pl-4 pr-3 font-black w-14">유형</th>
+                            <th className="text-left py-2 pr-3 font-black">시작재고일</th>
+                            <th className="text-left py-2 pr-3 font-black">종료재고일</th>
+                            <th className="text-right py-2 pr-3 font-black">임포트 시간</th>
+                            <th className="text-right py-2 pr-4 font-black">갯수</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {merged.map((entry, i) => {
+                            const when = new Date(entry.timestamp).toLocaleString("ko-KR", { year: "2-digit", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+                            if (entry.kind === "products") {
+                              return (
+                                <tr key={`p-${i}`} className="hover:bg-orange-50/40 transition">
+                                  <td className="py-1.5 pl-4 pr-3">
+                                    <span className="text-[10px] font-black rounded-full px-1.5 py-0.5 border text-orange-700 bg-white border-orange-300">상품</span>
+                                  </td>
+                                  <td className="py-1.5 pr-3 text-gray-300">—</td>
+                                  <td className="py-1.5 pr-3 text-gray-300">—</td>
+                                  <td className="py-1.5 pr-3 text-right text-gray-500 font-mono">{when}</td>
+                                  <td className={`py-1.5 pr-4 text-right font-semibold ${i === 0 ? "text-orange-600" : "text-gray-500"}`}>
+                                    {entry.count.toLocaleString()}개
+                                  </td>
+                                </tr>
+                              );
+                            }
+                            // stock
+                            const stored = entry.history ?? entry.count;
+                            return (
+                              <tr key={`s-${i}`} className="hover:bg-indigo-50/40 transition">
+                                <td className="py-1.5 pl-4 pr-3">
+                                  <span className="text-[10px] font-black rounded-full px-1.5 py-0.5 border text-indigo-700 bg-white border-indigo-300">재고</span>
+                                </td>
+                                <td className="py-1.5 pr-3 text-sky-700 font-mono font-bold" title={entry.start_date ?? "미입력"}>
+                                  {entry.start_date ?? <span className="text-gray-300">—</span>}
+                                </td>
+                                <td className="py-1.5 pr-3 text-emerald-700 font-mono font-bold" title={entry.snapshot_date ?? "미입력"}>
+                                  {entry.snapshot_date ?? <span className="text-gray-300">—</span>}
+                                </td>
+                                <td className="py-1.5 pr-3 text-right text-gray-500 font-mono">{when}</td>
+                                <td className={`py-1.5 pr-4 text-right font-semibold ${i === 0 ? "text-indigo-600" : "text-gray-500"}`}>
+                                  {stored.toLocaleString()}개
+                                  {entry.total && entry.total !== stored && <span className="text-gray-300"> / {entry.total.toLocaleString()}</span>}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
               </>
             )}
           </div>

@@ -175,15 +175,13 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
         />
       )}
 
-      {/* Row 1: A/B 뱃지만 (num은 상위 라벨에 이미 있음) + 상태 dot */}
+      {/* Row 1: 구역 번호 (A/B는 num+letter) + 상태 dot */}
       <div className="flex items-center justify-between px-1 pt-0.5 shrink-0">
-        {(zone.id.endsWith("A") || zone.id.endsWith("B")) ? (
-          <span className="text-[12px] font-black leading-none">
-            {zone.id.endsWith("A") ? "A" : "B"}
-          </span>
-        ) : (
-          <span />
-        )}
+        <span className="text-[11px] font-black leading-none">
+          {zone.num}
+          {zone.id.endsWith("A") && <span>A</span>}
+          {zone.id.endsWith("B") && <span>B</span>}
+        </span>
         {zone.status !== "normal" ? (
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot(zone.status)}`} />
         ) : (

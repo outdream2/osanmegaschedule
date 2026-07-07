@@ -35,6 +35,7 @@ import { ZoneAssignPopover } from "./ZoneAssignPopover";
 import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { StockManagePage } from "../StockManagePage";
+import { SalesTrendPage } from "../SalesTrendPage/SalesTrendPage";
 import { StockArrivalPage } from "../StockArrivalPage";
 import OrderManagePage from "../OrderManagePage/OrderManagePage";
 import StaffManagePage from "../StaffManagePage/StaffManagePage";
@@ -254,9 +255,9 @@ const fetchZonesFromDB = async (): Promise<DisplayZone[] | null> => {
   } catch { return null; }
 };
 
-const saveZonesToDB = async (zones: DisplayZone[]) => {
+const saveZonesToDB = async (zones: DisplayZone[]): Promise<{ ok: boolean; error?: string }> => {
   try {
-    await fetch("/api/zones", {
+    const res = await fetch("/api/zones", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -270,7 +271,16 @@ const saveZonesToDB = async (zones: DisplayZone[]) => {
         })),
       }),
     });
-  } catch {}
+    if (!res.ok) {
+      const msg = await res.text().catch(() => String(res.status));
+      console.error("[saveZonesToDB] failed:", res.status, msg);
+      return { ok: false, error: msg };
+    }
+    return { ok: true };
+  } catch (err: any) {
+    console.error("[saveZonesToDB] exception:", err?.message);
+    return { ok: false, error: err?.message };
+  }
 };
 
 const fetchRequestsFromDB = async (): Promise<DisplayRequest[] | null> => {
@@ -303,7 +313,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
      authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
-  const [dpSubTab, setDpSubTab] = useState<"store" | "stock-manage" | "stock-arrivals" | "order-manage" | "staff-manage">("store");
+  const [dpSubTab, setDpSubTab] = useState<"store" | "stock-manage" | "sales-trend" | "stock-arrivals" | "order-manage" | "staff-manage">("store");
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
   const [zonesLoaded, setZonesLoaded] = useState(false);
   const [requests, setRequests] = useState<DisplayRequest[]>(() => loadRequests());
@@ -549,18 +559,29 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     }
     // 간단 확인 — 미리보기만 적용 (DB 저장·알림 전송은 하지 않음)
     const proceed = window.confirm(
-      `물류 출근직원 ${logistics.length}명을 벽면·진열대 1-34 구역에 임의배치할까요?`
+      `물류 출근직원 ${logistics.length}명을 총 45구역 (수평윙 42 + 베스트존 3)에 근접성 세트 기반으로 임의배치할까요?`
     );
     if (!proceed) return;
 
-    // 물리적 이동 동선 순서 (좌→우 → 중앙 진열대 → 좌→우) — 근접 우선 배정용
-    const CANONICAL_ORDER: string[] = [
-      "21","20","19","18","17","16","15","14","13","12","11","10","9",
-      "22",
-      "8B","8A","7B","7A","6B","6A","5B","5A","4B","4A","3B","3A","2B","2A","1B","1A",
-      "23","24","25","26","27","28","29","30","31","32","33","34",
+    // ── 근접성 세트 (총 11개 세트 · 45구역) ─────────────────────────────
+    // 각 세트는 물리적으로 인접한 구역 묶음 → 사원별로 이동 최소화
+    // 진열대 A/B + 인접 벽면 = 자연스러운 담당 구역
+    const PROXIMITY_SETS: string[][] = [
+      ["1B", "1A", "2B", "2A", "9", "10"],   // 세트 1: 6구역 (진열대 1-2 + 벽면 9-10)
+      ["3B", "3A", "11", "12"],               // 세트 2: 4구역
+      ["4B", "4A", "13", "14"],               // 세트 3: 4구역
+      ["5B", "5A", "15", "16"],               // 세트 4: 4구역
+      ["6B", "6A", "17", "18"],               // 세트 5: 4구역
+      ["7B", "7A", "19", "20"],               // 세트 6: 4구역
+      ["8B", "8A", "21", "22"],               // 세트 7: 4구역
+      ["23", "24", "25", "26"],               // 세트 8: 하단 벽면 4구역
+      ["27", "28", "29", "30"],               // 세트 9: 하단 벽면 4구역
+      ["31", "32", "33", "34"],               // 세트 10: 하단 벽면 4구역
+      ["35", "36", "37"],                     // 세트 11: 베스트존 3구역
     ];
+    const CANONICAL_ORDER: string[] = PROXIMITY_SETS.flat();
     const TARGET_IDS = CANONICAL_ORDER;
+    const N_SETS = PROXIMITY_SETS.length; // 11
 
     const logisticsNames: Set<string> = new Set(logistics.map(ts => ts.employee.name));
     const logisticsIdByName = new Map<string, number>(
@@ -590,19 +611,38 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     // ── 빈 zone (오늘 출근자 배정 안 된 셀들) ──
     const emptyZones = CANONICAL_ORDER.filter(id => !newAssignment.has(id));
 
-    // ── 원칙 2: 최대한 근접한 지역으로 배정 ──
-    // 각 미배정 직원에게 emptyZones를 연속 블록으로 나눠 배정
-    // 근접성 극대화 위해 연속 블록(구간 분할) 사용
-    if (unplacedStaff.length > 0 && emptyZones.length > 0) {
+    // ── 원칙 2: 근접성 세트 기반 배정 ──
+    // PROXIMITY_SETS의 각 세트를 사원에게 순차 할당
+    // - 사원 수 == 11: 1인 1세트
+    // - 사원 수 < 11: 일부 사원은 여러 세트 담당 (인접 세트 우선)
+    // - 사원 수 > 11: 초과 사원은 배정 없음
+    if (unplacedStaff.length > 0) {
       // 미배정 직원 순서 셔플 (매번 다른 조합)
       const shuffledUnplaced = [...unplacedStaff].sort(() => Math.random() - 0.5);
       const U = shuffledUnplaced.length;
-      // emptyZones를 U개 블록으로 분할 → 각 직원이 연속된 구간 담당
-      for (let i = 0; i < emptyZones.length; i++) {
-        const staffIdx = Math.min(U - 1, Math.floor((i * U) / emptyZones.length));
-        const name = shuffledUnplaced[staffIdx];
-        const id = logisticsIdByName.get(name)!;
-        newAssignment.set(emptyZones[i], { name, id });
+
+      // 각 세트가 이미 완전히 배정됐는지 (기존 배정으로) 확인 → 비어있는 세트만 대상
+      const emptySetIndices: number[] = [];
+      for (let si = 0; si < PROXIMITY_SETS.length; si++) {
+        const setZones = PROXIMITY_SETS[si];
+        const allTaken = setZones.every(z => newAssignment.has(z));
+        if (!allTaken) emptySetIndices.push(si);
+      }
+
+      const K = emptySetIndices.length; // 비어있는 세트 개수
+      if (K > 0) {
+        // 비어있는 세트를 U명에게 순차 분배 (인접 세트 → 같은 사원)
+        for (let i = 0; i < K; i++) {
+          const staffIdx = Math.min(U - 1, Math.floor((i * U) / K));
+          const name = shuffledUnplaced[staffIdx];
+          const id = logisticsIdByName.get(name)!;
+          const setZones = PROXIMITY_SETS[emptySetIndices[i]];
+          for (const z of setZones) {
+            if (!newAssignment.has(z)) {
+              newAssignment.set(z, { name, id });
+            }
+          }
+        }
       }
     }
 
@@ -831,13 +871,49 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     return () => clearTimeout(t);
   }, [zoneGroups, zoneGroupsLoaded]);
 
+  // 좌우 폭 조절 (실시간 보충요청 폭 · localStorage 저장)
+  const [reqPanelWidth, setReqPanelWidth] = useState<number>(() => {
+    try { const v = Number(localStorage.getItem("megatown_req_panel_w")); return Number.isFinite(v) && v > 0 ? v : 380; } catch { return 380; }
+  });
+  const startReqPanelResize = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = reqPanelWidth;
+    const onMove = (ev: MouseEvent) => {
+      const next = Math.max(240, Math.min(720, startW + (ev.clientX - startX)));
+      setReqPanelWidth(next);
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [reqPanelWidth]);
+  useEffect(() => {
+    try { localStorage.setItem("megatown_req_panel_w", String(reqPanelWidth)); } catch { /* silent */ }
+  }, [reqPanelWidth]);
+
   // ── Persist: save to localStorage immediately; debounce DB save ──────────────
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [lastSaveError, setLastSaveError] = useState<string | null>(null);
   const dbSaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     saveZones(zones);
     if (!zonesLoaded) return;
     if (dbSaveTimer.current) clearTimeout(dbSaveTimer.current);
-    dbSaveTimer.current = setTimeout(() => saveZonesToDB(zones), 1500);
+    setSaveStatus("saving");
+    dbSaveTimer.current = setTimeout(async () => {
+      const result = await saveZonesToDB(zones);
+      if (result.ok) {
+        setSaveStatus("saved");
+        setLastSaveError(null);
+        setTimeout(() => setSaveStatus(prev => prev === "saved" ? "idle" : prev), 2500);
+      } else {
+        setSaveStatus("error");
+        setLastSaveError(result.error ?? "알 수 없는 오류");
+      }
+    }, 1500);
     return () => { if (dbSaveTimer.current) clearTimeout(dbSaveTimer.current); };
   }, [zones, zonesLoaded]);
   useEffect(() => { saveRequests(requests); }, [requests]);
@@ -1325,10 +1401,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* 서브탭: 매장관리(기본) / 재고관리(level 9) / 입고알림관리(level 3+) */}
       {(dpCanSeeStockManage || dpCanSeeStockArrivals) && (
-        <div className="bg-gradient-to-b from-white to-slate-50/50 border-b border-slate-200 px-4">
-          <div className="max-w-[1360px] mx-auto flex items-center gap-1.5 py-2">
+        <div className="bg-gradient-to-b from-white to-slate-50/50 border-b border-slate-200 px-2 sm:px-4">
+          <div className="max-w-[1360px] mx-auto flex items-center flex-wrap gap-1 sm:gap-1.5 py-1.5 sm:py-2">
             <button onClick={() => setDpSubTab("store")}
-              className={`relative px-4 py-2 text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
+              className={`relative px-2.5 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
                 dpSubTab === "store"
                   ? "text-white bg-gradient-to-br from-sky-500 to-sky-600 shadow-md shadow-sky-500/30"
                   : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
@@ -1337,7 +1413,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             </button>
             {dpCanSeeStockManage && (
               <button onClick={() => setDpSubTab("stock-manage")}
-                className={`relative px-4 py-2 text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                className={`relative px-2.5 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
                   dpSubTab === "stock-manage"
                     ? "text-white bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-md shadow-indigo-500/30"
                     : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
@@ -1345,19 +1421,29 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 재고관리
               </button>
             )}
+            {dpCanSeeStockManage && (
+              <button onClick={() => setDpSubTab("sales-trend")}
+                className={`relative px-2.5 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                  dpSubTab === "sales-trend"
+                    ? "text-white bg-gradient-to-br from-teal-500 to-teal-600 shadow-md shadow-teal-500/30"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
+                }`}>
+                판매추이
+              </button>
+            )}
             {dpCanSeeStockArrivals && (
               <button onClick={() => setDpSubTab("stock-arrivals")}
-                className={`relative px-4 py-2 text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                className={`relative px-2.5 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
                   dpSubTab === "stock-arrivals"
                     ? "text-white bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md shadow-emerald-500/30"
                     : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
                 }`}>
-                입고알림관리
+                입고알림
               </button>
             )}
             {dpCanSeeStockManage && (
               <button onClick={() => setDpSubTab("order-manage")}
-                className={`relative px-4 py-2 text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                className={`relative px-2.5 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
                   dpSubTab === "order-manage"
                     ? "text-white bg-gradient-to-br from-rose-500 to-red-600 shadow-md shadow-red-500/30"
                     : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
@@ -1366,7 +1452,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               </button>
             )}
             <button onClick={() => setDpSubTab("staff-manage")}
-              className={`relative px-4 py-2 text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
+              className={`relative px-2.5 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
                 dpSubTab === "staff-manage"
                   ? "text-white bg-gradient-to-br from-violet-500 to-purple-600 shadow-md shadow-violet-500/30"
                   : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
@@ -1380,6 +1466,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       {dpSubTab === "stock-manage" && dpCanSeeStockManage ? (
         <main className="flex-1 flex flex-col min-h-0">
           <StockManagePage />
+        </main>
+      ) : dpSubTab === "sales-trend" && dpCanSeeStockManage ? (
+        <main className="flex-1 flex flex-col min-h-0">
+          <SalesTrendPage />
         </main>
       ) : dpSubTab === "stock-arrivals" && dpCanSeeStockArrivals ? (
         <main className="flex-1 flex flex-col min-h-0">
@@ -1494,7 +1584,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             )}
 
             {/* Date navigation */}
-            <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 pb-3 border-b border-gray-100">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => navigateDate(-1)}
@@ -1502,8 +1592,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 >
                   <ChevronLeft size={18} />
                 </button>
-                <div className="text-center min-w-[160px]">
-                  <div className="text-3xl font-black text-gray-900 leading-tight tracking-tight">
+                <div className="text-center min-w-[140px] sm:min-w-[160px]">
+                  <div className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight tracking-tight">
                     {selectedDateObj.getMonth() + 1}월 {selectedDateObj.getDate()}일
                   </div>
                   <div className="flex items-center justify-center gap-1.5 mt-0.5">
@@ -1526,13 +1616,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   <ChevronRight size={18} />
                 </button>
               </div>
-              <div className="flex items-center gap-2 flex-wrap justify-end">
+              <div className="flex items-center gap-2 flex-wrap justify-start sm:justify-end">
                 <div className="flex items-center gap-1.5 shrink-0">
                   <span className="text-xl">🗺️</span>
                   <span className="text-sm font-bold text-gray-600">매장 배치도</span>
                 </div>
                 {/* 약찾기 검색 — 전체저장 옆에 배치 · 검색결과 드롭다운 아래로 노출 */}
-                <div className="relative flex-1 min-w-[200px] max-w-[360px]">
+                <div className="relative flex-1 min-w-[140px] sm:min-w-[200px] max-w-[360px]">
                   <input
                     type="text"
                     value={searchQuery}
@@ -1622,6 +1712,21 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   <Layers size={13} />
                   구역 설정
                 </button>
+                {/* DB 저장 상태 표시 */}
+                <span
+                  className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg border shrink-0 ${
+                    saveStatus === "saving" ? "bg-blue-50 border-blue-200 text-blue-700" :
+                    saveStatus === "saved"  ? "bg-emerald-50 border-emerald-200 text-emerald-700" :
+                    saveStatus === "error"  ? "bg-red-50 border-red-200 text-red-700 cursor-help" :
+                    "bg-slate-50 border-slate-200 text-slate-400"
+                  }`}
+                  title={saveStatus === "error" ? `DB 저장 실패: ${lastSaveError ?? "알 수 없는 오류"}` : "매장맵 자동저장 상태"}
+                >
+                  {saveStatus === "saving" && <><Loader2 size={10} className="animate-spin" />저장중</>}
+                  {saveStatus === "saved"  && <><CheckCircle2 size={10} />저장됨</>}
+                  {saveStatus === "error"  && <>❌ 저장 실패</>}
+                  {saveStatus === "idle"   && <>◎ 대기</>}
+                </span>
                 <button
                   onClick={handleApplyToWeekday}
                   title={`현재 배정을 매주 ${dayNames[selectedDateObj.getDay()]}에 적용 · DB 저장`}
@@ -1733,6 +1838,19 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
                 {/* Main Horizontal Shelving Wing: Top Wall, Aisle Shelves, Bottom Wall */}
                 <div className="flex-1 bg-white border-2 border-emerald-600 rounded-xl p-3 flex flex-col shadow-sm relative">
+
+                  {/* 미니 위치 다이어그램: 수평윙(현재 표시 영역) 강조 */}
+                  <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
+                    <svg width="36" height="28" viewBox="0 0 42 34" className="shrink-0" aria-label="수평윙 위치">
+                      {/* 메인 매장 (수평 윙 · 현재 영역 · 강조) */}
+                      <rect x="1" y="1" width="30" height="20" rx="1.5" fill="#10b981" stroke="#047857" strokeWidth="1" />
+                      {/* 수직 윙 (다른 영역 · 회색 아웃라인) */}
+                      <rect x="31" y="1" width="10" height="32" rx="1.5" fill="none" stroke="#cbd5e1" strokeWidth="1.2" />
+                      {/* 현재 위치 마커 (수평윙 중앙) */}
+                      <circle cx="16" cy="11" r="2" fill="#fbbf24" />
+                    </svg>
+                    <span className="text-[8px] font-bold text-slate-600 leading-none">수평 윙</span>
+                  </div>
 
                   {/* 상단 벽면: 21→9 좌→우 (13개) — 통합 카드 */}
                   <div className="w-full">
@@ -1863,10 +1981,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               </div>
 
               {/* SECTION 2 + 실시간 보충요청 (2열 배치 · 보충요청 왼쪽 · 윙 오른쪽 축소) */}
-              <div className="w-full flex gap-2 mt-2 items-stretch">
+              <div className="w-full flex flex-col lg:flex-row gap-2 mt-2 items-stretch">
 
-              {/* 실시간 진열 보충 요청 현황 — 폭 축소 (기존 절반) */}
-              <div className="w-[380px] bg-white p-3 rounded-2xl shadow-md shadow-slate-200/60 border border-slate-100 flex flex-col shrink-0">
+              {/* 실시간 진열 보충 요청 현황 — 드래그로 폭 조절 가능 */}
+              <div className="bg-white p-3 rounded-2xl shadow-md shadow-slate-200/60 border border-slate-100 flex flex-col shrink-0" style={{ width: `min(100%, ${reqPanelWidth}px)` }}>
                 <div className="border-b border-slate-100 pb-3 flex items-center justify-between flex-wrap gap-2">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
@@ -1947,8 +2065,17 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 </div>
               </div>
 
-              {/* SECTION 2: 우측 윙 (수직 → 오른쪽 90° 회전 후 가로) — 남는 공간 모두 사용 · 미니멀 세련 톤 */}
-              <div className="flex-1 min-w-[540px] bg-white border border-slate-200 rounded-2xl p-3 flex flex-col gap-3 shadow-md shadow-slate-200/60 relative">
+              {/* 리사이즈 핸들 — 좌우 폭 조절 · 데스크탑만 */}
+              <div
+                onMouseDown={startReqPanelResize}
+                className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-emerald-400 rounded-full cursor-col-resize transition-all shrink-0 relative group"
+                title="드래그하여 폭 조절"
+              >
+                <span className="text-[10px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+              </div>
+
+              {/* SECTION 2: 우측 윙 — 남는 공간 모두 사용 · 미니멀 세련 톤 */}
+              <div className="flex-1 min-w-0 lg:min-w-[400px] bg-white border border-slate-200 rounded-2xl p-3 flex flex-col gap-3 shadow-md shadow-slate-200/60 relative">
 
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <div className="flex items-center gap-2">
@@ -2059,7 +2186,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* Footer */}
       <footer className="bg-white text-center p-4 mt-8 text-xs text-gray-400 border-t border-gray-200">
-        &copy; 2026 오산메가타운 매장 내비게이션 및 진열 보충 관리 시스템. All Rights Reserved.
+        &copy; 2026 오산메가타운 매장 관리 시스템. All Rights Reserved. (주)이룸
       </footer>
 
       {/* ─── Zone Assignment Popover ────────────────────────────────────────── */}

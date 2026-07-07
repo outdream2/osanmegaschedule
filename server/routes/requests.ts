@@ -10,7 +10,7 @@ router.get("/api/requests/pending-counts", async (_req, res) => {
   const [display, order, productsWithRealMap, legacy, leave, lunch, inventory] = await Promise.all([
     supabase.from("display_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("order_requests").select("id", { count: "exact", head: true }),
-    supabase.from("products").select("product_code, spec, real_map").not("real_map", "is", null).neq("real_map", ""),
+    supabase.from("products").select("product_code, spec, real_map").eq("hidden", false).not("real_map", "is", null).neq("real_map", ""),
     supabase.from("zone_mismatches").select("product_code"),
     supabase.from("leave_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
     supabase.from("lunch_requests").select("id", { count: "exact", head: true }).eq("date", today).eq("eating", false),

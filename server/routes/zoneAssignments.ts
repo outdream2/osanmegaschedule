@@ -1,7 +1,85 @@
 import { Router } from "express";
+import webpush from "web-push";
 import { supabase } from "../../src/supabase/client";
+import { notificationsService } from "../../src/services/notificationsService";
 
 const router = Router();
+
+// ─── 배정구역 알림 헬퍼 ──────────────────────────────────────────────────────
+// zone_slots 구조: { zoneName: { timeSlot: [empId, ...] } }
+// 확정 저장(is_confirmed=true) 시 배정된 직원들에게 알림 발송.
+// - DB notifications 테이블 insert (인앱 알림)
+// - push_subscription 이 등록된 직원에게 웹푸시 발송 (best-effort)
+// - 실패해도 저장 응답은 성공 처리 (알림 실패가 저장을 막지 않음)
+async function notifyZoneAssignees(
+  zoneSlots: Record<string, Record<string, number[]>> | undefined,
+  ctx: { date?: string; dow?: number; title: string; body: (empName: string) => string; url: string }
+) {
+  try {
+    if (!zoneSlots || typeof zoneSlots !== "object") return;
+    // 배정된 empId 를 zone 별로 수집 (중복 제거)
+    const empToZones = new Map<number, Set<string>>();
+    for (const [zoneName, slotMap] of Object.entries(zoneSlots)) {
+      if (!slotMap || typeof slotMap !== "object") continue;
+      for (const empIds of Object.values(slotMap)) {
+        if (!Array.isArray(empIds)) continue;
+        for (const eid of empIds) {
+          const id = Number(eid);
+          if (!Number.isFinite(id) || id <= 0) continue;
+          if (!empToZones.has(id)) empToZones.set(id, new Set());
+          empToZones.get(id)!.add(String(zoneName));
+        }
+      }
+    }
+    if (empToZones.size === 0) return;
+
+    // 직원 정보 조회 (name, push_subscription)
+    const empIds = Array.from(empToZones.keys());
+    const { data: emps } = await supabase
+      .from("employees")
+      .select("id, name, push_subscription")
+      .in("id", empIds);
+    if (!emps || emps.length === 0) return;
+
+    // 병렬 발송 (DB insert + push send)
+    await Promise.allSettled(emps.map(async (emp: any) => {
+      const zones = Array.from(empToZones.get(emp.id) ?? []).sort();
+      const bodyText = ctx.body(emp.name ?? "직원") + (zones.length > 0 ? ` · 구역: ${zones.join(", ")}` : "");
+      // 1) DB 알림
+      try {
+        await notificationsService.create({
+          employee_id: emp.id,
+          title: ctx.title,
+          body: bodyText,
+          type: "info",
+        });
+      } catch (e: any) {
+        console.warn(`[zone-notify] DB insert 실패 · emp=${emp.id}:`, e?.message);
+      }
+      // 2) 웹푸시 (best-effort)
+      if (emp.push_subscription) {
+        const payload = JSON.stringify({
+          title: ctx.title,
+          body: bodyText,
+          url: ctx.url,
+          tag: `zone-${ctx.date ?? ctx.dow ?? "x"}-${emp.id}`,
+        });
+        try {
+          await webpush.sendNotification(emp.push_subscription as webpush.PushSubscription, payload);
+        } catch (err: any) {
+          if ((err as any).statusCode === 410) {
+            // 만료된 subscription 정리
+            await supabase.from("employees").update({ push_subscription: null }).eq("id", emp.id);
+          } else {
+            console.warn(`[zone-notify] push 실패 · emp=${emp.id}:`, err?.message);
+          }
+        }
+      }
+    }));
+  } catch (e: any) {
+    console.warn("[zone-notify] 예외 (무시):", e?.message);
+  }
+}
 // zone_assignments 테이블은 settings.ts에서 zone_id 기반 구역 배치 데이터로 사용 중.
 // 요일별 근무 배치 템플릿(dow + JSONB)은 별도 테이블 zone_dow_templates 에 저장한다.
 const TABLE = "zone_dow_templates";
@@ -253,6 +331,16 @@ router.put("/api/zone-day/:date", async (req, res) => {
     }
     console.error("[zone-day PUT] error:", error);
     return res.status(500).json({ error: error.message });
+  }
+  // 확정 저장 시 배정된 직원들에게 알림 발송 (실패해도 저장 성공 유지)
+  if (payload.is_confirmed === true) {
+    // fire-and-forget: 응답 지연 최소화
+    notifyZoneAssignees(zone_slots as any, {
+      date,
+      title: `${date} 배정구역 확정`,
+      body: (name) => `${name}님, ${date} 근무 배정이 확정됐습니다.`,
+      url: "/",
+    }).catch(() => { /* 이미 내부에서 로깅함 */ });
   }
   return res.json({ ok: true });
 });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info } from "lucide-react";
+import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info, EyeOff, Eye } from "lucide-react";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
 import { StockCounterModal } from "../StockCounterModal";
@@ -103,6 +103,37 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
   const [stockCounterOpen, setStockCounterOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // 상품 숨김 토글 (검색·발주 리스트 노출 X)
+  const [hideSaving, setHideSaving] = useState(false);
+  const [hideError, setHideError] = useState<string | null>(null);
+  const isHidden = product.hidden === true;
+  const toggleHidden = async () => {
+    if (hideSaving) return;
+    const next = !isHidden;
+    const confirmMsg = next
+      ? `"${product.name}" 상품을 숨김 처리할까요?\n\n검색·발주 리스트에서 노출되지 않으며, 나중에 [숨김 항목 관리]에서 다시 표시할 수 있습니다.`
+      : `"${product.name}" 상품의 숨김을 해제하고 다시 표시할까요?`;
+    if (!window.confirm(confirmMsg)) return;
+    setHideSaving(true); setHideError(null);
+    try {
+      const res = await fetch(`/api/products/${encodeURIComponent(product.code)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ hidden: next }),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        setHideError(b.error ?? `서버 오류 (${res.status})`);
+        return;
+      }
+      onProductUpdate?.({ hidden: next } as Partial<ProductInfo>);
+      // 하위 리스트들(적정재고 이하 · 재고흐름 · ERP 차이 등)이 refetch 하도록 이벤트 발행
+      try { window.dispatchEvent(new CustomEvent("products-hidden-changed", { detail: { code: product.code, hidden: next } })); } catch { /* ignore */ }
+    } catch (e: any) {
+      setHideError(e?.message ?? "네트워크 오류");
+    } finally { setHideSaving(false); }
+  };
 
   type OrderStatus = "idle" | "loading" | "done" | "error";
   const [orderStatus, setOrderStatus] = useState<OrderStatus>("idle");
@@ -343,8 +374,32 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
       <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
         {/* 상품명 */}
         {S.header && (<>
-          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1">상품 정보</p>
-          <p className="text-lg font-black text-gray-900 leading-tight mb-3">{product.name}</p>
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">상품 정보</p>
+            <button
+              type="button"
+              onClick={toggleHidden}
+              disabled={hideSaving}
+              title={isHidden ? "숨김 해제 · 검색·발주 리스트에 다시 표시" : "이 상품 숨김 · 검색·발주 리스트에서 제외"}
+              className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg border transition cursor-pointer ${
+                isHidden
+                  ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100"
+                  : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-700"
+              } ${hideSaving ? "opacity-60 cursor-wait" : ""}`}
+            >
+              {hideSaving ? <Loader2 size={11} className="animate-spin" /> : (isHidden ? <Eye size={11} /> : <EyeOff size={11} />)}
+              {isHidden ? "숨김 해제" : "숨기기"}
+            </button>
+          </div>
+          <div className="flex items-center gap-2 mb-3">
+            <p className="text-lg font-black text-gray-900 leading-tight">{product.name}</p>
+            {isHidden && (
+              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300 whitespace-nowrap">
+                숨김
+              </span>
+            )}
+          </div>
+          {hideError && <p className="text-[10px] text-rose-600 mb-2 -mt-2">{hideError}</p>}
         </>)}
 
         {/* ── 배정 구역: 전산 카드 | 실제 카드 나란히 ── */}

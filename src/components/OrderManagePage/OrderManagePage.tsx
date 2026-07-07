@@ -2,7 +2,7 @@
 // 발주관리 페이지 — 매장관리 · 재고관리 · 입고알림관리 옆의 서브탭으로 노출
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare } from "lucide-react";
+import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 
@@ -39,7 +39,33 @@ const fmtDate = (iso: string) => {
   return `${Math.floor(diff / (60 * 24))}일 전`;
 };
 
+interface GoodsReceipt {
+  id: string;
+  order_number: string;
+  supplier: string;
+  supplier_contact?: string | null;
+  status: "pending" | "partial" | "complete" | "over" | "returned";
+  dispatched_at: string;
+  received_at?: string | null;
+  item_count: number;
+  items?: Array<{
+    product_code: string;
+    product_name: string;
+    order_qty: number;
+    received_qty?: number | null;
+  }>;
+  note?: string | null;
+}
+
 const OrderManagePage: React.FC = () => {
+  // 상단 탭 (발주요청 / 입고확인)
+  const [topTab, setTopTab] = useState<"order" | "receipt">("order");
+
+  // 입고확인 상태
+  const [receipts, setReceipts] = useState<GoodsReceipt[]>([]);
+  const [receiptsLoading, setReceiptsLoading] = useState(false);
+  const [receiptFilter, setReceiptFilter] = useState<"all" | "pending" | "partial" | "complete">("all");
+
   const [orderReqs, setOrderReqs] = useState<OrderRequest[]>([]);
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState<string | null>(null);
@@ -50,6 +76,8 @@ const OrderManagePage: React.FC = () => {
   const [productsLoading, setProductsLoading] = useState(false);
   const [requestingOrder, setRequestingOrder] = useState<Set<string>>(new Set());
   const [lowStockSearch, setLowStockSearch] = useState("");
+  const [orderReqCollapsed, setOrderReqCollapsed] = useState(false);
+  const [lowStockCollapsed, setLowStockCollapsed] = useState(false);
   // 공급사 마스터 (vendors 테이블) — 담당자·이메일·전화 매핑
   const [vendors, setVendors] = useState<Array<{ id: number; company_name: string; contact_name: string | null; phone: string | null; email: string | null }>>([]);
   useEffect(() => {
@@ -158,6 +186,46 @@ const OrderManagePage: React.FC = () => {
 
   useEffect(() => { loadOrderReqs(); loadProducts(); }, [loadOrderReqs, loadProducts]);
 
+  // 입고확인 목록 로드 (order_dispatches → goods_receipts 통합 조회)
+  const loadReceipts = useCallback(async () => {
+    setReceiptsLoading(true);
+    try {
+      const res = await fetch("/api/goods-receipts");
+      if (res.ok) {
+        const data = await res.json();
+        setReceipts(Array.isArray(data) ? data : (data?.receipts ?? []));
+      }
+    } catch { /* silent · 서버 API 미구성일 수 있음 */ }
+    finally { setReceiptsLoading(false); }
+  }, []);
+  useEffect(() => { if (topTab === "receipt") loadReceipts(); }, [topTab, loadReceipts]);
+
+  // 입고 확정 (부분/완전)
+  const markReceived = async (receipt: GoodsReceipt, receivedQtyMap?: Record<string, number>) => {
+    const proceed = window.confirm(
+      receivedQtyMap
+        ? `${receipt.supplier} · #${receipt.order_number} 입고 확정할까요?\n(부분입고: 수량 조정됨)`
+        : `${receipt.supplier} · #${receipt.order_number} 완전 입고 확정할까요?`
+    );
+    if (!proceed) return;
+    try {
+      const res = await fetch(`/api/goods-receipts/${receipt.id}/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          received_at: new Date().toISOString(),
+          received_qty_map: receivedQtyMap ?? null,
+        }),
+      });
+      if (!res.ok) {
+        alert(`입고 확정 실패\n※ 서버 API (/api/goods-receipts) 미구성일 수 있습니다.\n\nSupabase 마이그레이션 SQL:\nCREATE TABLE goods_receipts (id UUID PRIMARY KEY, dispatch_id UUID, order_number TEXT, supplier TEXT, status TEXT, received_at TIMESTAMPTZ, ...);\nCREATE TABLE goods_receipt_items (...);`);
+        return;
+      }
+      alert(`✅ 입고 확정 완료\n#${receipt.order_number}`);
+      loadReceipts();
+    } catch (err: any) { alert(`오류: ${err?.message ?? err}`); }
+  };
+
   const getCode = (p: ProductInfo) => p.code ?? p.product_code ?? "";
   const getName = (p: ProductInfo) => p.name ?? p.product_name ?? "";
 
@@ -252,6 +320,7 @@ const OrderManagePage: React.FC = () => {
   }
   interface OrderModalSupplier {
     supplier: string;
+    order_number: string;  // 공급사별 고유 발주번호 (각각 별도 발주서)
     supplier_contact?: string | null;
     supplier_email?: string | null;
     supplier_phone?: string | null;
@@ -280,13 +349,17 @@ const OrderManagePage: React.FC = () => {
   // 발주 모달 열기
   const openOrderModal = (rows: OrderRequest[]) => {
     if (rows.length === 0) return;
-    // 공급사별 그룹핑
+    // 공급사별 그룹핑 (각 공급사마다 고유 발주번호)
+    const today = new Date();
+    const ymdNow = today.toISOString().slice(0, 10);
+    const genOrderNumber = () => `PO-${ymdNow.replace(/-/g, "")}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
     const bySupplier = new Map<string, OrderModalSupplier>();
     for (const r of rows) {
       const sup = r.supplier || "(공급사 미지정)";
       if (!bySupplier.has(sup)) {
         bySupplier.set(sup, {
           supplier: sup,
+          order_number: genOrderNumber(),
           supplier_contact: r.supplier_contact ?? null,
           supplier_email: r.supplier_email ?? null,
           supplier_phone: r.supplier_phone ?? null,
@@ -306,9 +379,8 @@ const OrderManagePage: React.FC = () => {
         memo: "",
       });
     }
-    const today = new Date();
-    const ymd = today.toISOString().slice(0, 10);
-    const orderNumber = `PO-${ymd.replace(/-/g, "")}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
+    // 대표 발주번호 (요약 표시용) · 실제 발주는 공급사별 개별 order_number 사용
+    const orderNumber = `PO-${ymdNow.replace(/-/g, "")}-BULK-${String(Math.floor(Math.random() * 900) + 100)}`;
     const arrival = new Date(today.getTime() + 3 * 86400000).toISOString().slice(0, 10);
     const suppliersList = [...bySupplier.values()].map(s => ({ ...s, ocr_loading: true, ocr_statements: [] as any[] }));
     // OCR 거래명세서 조회 (공급사별 · 비동기 병렬)
@@ -344,7 +416,7 @@ const OrderManagePage: React.FC = () => {
 
     setOrderModal({
       orderNumber,
-      orderDate: ymd,
+      orderDate: ymdNow,
       desiredArrival: arrival,
       memo: "",
       channels: { ...bulkChannels },
@@ -370,46 +442,51 @@ const OrderManagePage: React.FC = () => {
     if (!orderModal.channels.email && !orderModal.channels.sms) { alert("이메일 또는 문자 중 하나 이상 선택해주세요."); return; }
     const totalItems = orderModal.suppliers.reduce((n, s) => n + s.items.length, 0);
     const proceed = window.confirm(
-      `발주서 #${orderModal.orderNumber}\n` +
-      `${orderModal.suppliers.length}개 공급사 · ${totalItems}개 상품 발주 발송할까요?`
+      `${orderModal.suppliers.length}개 공급사 · ${totalItems}개 상품에 발주서 ${orderModal.suppliers.length}건을 각각 발송합니다.\n\n계속하시겠습니까?`
     );
     if (!proceed) return;
     setSendingBulk(true);
     try {
-      const res = await fetch("/api/order-requests/bulk-send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          order_number: orderModal.orderNumber,
-          order_date: orderModal.orderDate,
-          desired_arrival: orderModal.desiredArrival,
-          memo: orderModal.memo,
-          channels: orderModal.channels,
-          bySupplier: orderModal.suppliers.map(s => ({
-            supplier: s.supplier,
-            supplier_contact: s.supplier_contact,
-            supplier_email: s.supplier_email,
-            supplier_phone: s.supplier_phone,
-            items: s.items.map(it => ({
-              order_request_id: it.order_request_id,
-              product_code: it.product_code,
-              product_name: it.product_name,
-              current_stock: it.current_stock,
-              optimal_stock: it.optimal_stock,
-              needed_qty: (it.optimal_stock ?? 0) - (it.current_stock ?? 0),
-              order_qty: it.order_qty,
-              memo: it.memo,
-            })),
-          })),
-        }),
+      // 공급사별로 별도 발주서 (각각 고유 order_number) — 병렬 발송
+      const submissions = orderModal.suppliers.map(async (s) => {
+        const res = await fetch("/api/order-requests/bulk-send", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            order_number: s.order_number,     // ⭐ 공급사별 고유 발주번호
+            order_date: orderModal.orderDate,
+            desired_arrival: orderModal.desiredArrival,
+            memo: orderModal.memo,
+            channels: orderModal.channels,
+            bySupplier: [{
+              supplier: s.supplier,
+              supplier_contact: s.supplier_contact,
+              supplier_email: s.supplier_email,
+              supplier_phone: s.supplier_phone,
+              items: s.items.map(it => ({
+                order_request_id: it.order_request_id,
+                product_code: it.product_code,
+                product_name: it.product_name,
+                current_stock: it.current_stock,
+                optimal_stock: it.optimal_stock,
+                needed_qty: (it.optimal_stock ?? 0) - (it.current_stock ?? 0),
+                order_qty: it.order_qty,
+                memo: it.memo,
+              })),
+            }],
+          }),
+        });
+        return { supplier: s.supplier, order_number: s.order_number, ok: res.ok };
       });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        alert(`❌ 발주 발송 실패: ${body.error ?? res.statusText}\n\n※ 서버 API (/api/order-requests/bulk-send) 미구성`);
-        return;
-      }
-      const data = await res.json();
-      alert(`✅ 발주 발송 완료 (#${orderModal.orderNumber})\n\n${data.summary ?? ""}`);
+      const results = await Promise.all(submissions);
+      const succeeded = results.filter(r => r.ok).length;
+      const failed = results.filter(r => !r.ok);
+      const summaryLines = [
+        `✅ 성공: ${succeeded}건 / 실패: ${failed.length}건`,
+        ...results.filter(r => r.ok).map(r => `  · ${r.supplier} → #${r.order_number}`),
+        ...(failed.length > 0 ? [`\n❌ 실패 공급사:`, ...failed.map(r => `  · ${r.supplier} (#${r.order_number})`)] : []),
+      ].join("\n");
+      alert(`발주서 ${orderModal.suppliers.length}건 발송 완료\n\n${summaryLines}`);
       setOrderModal(null);
       setSelectedOrder(new Set());
       loadOrderReqs();
@@ -456,18 +533,152 @@ const OrderManagePage: React.FC = () => {
   });
 
   return (
-    <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-6">
+    <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-4">
+      {/* 상단 탭: 발주요청 / 입고확인 */}
+      <div className="flex items-center gap-1.5 flex-wrap border-b border-slate-200 pb-2">
+        <button
+          onClick={() => setTopTab("order")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-black transition cursor-pointer ${
+            topTab === "order"
+              ? "bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-md shadow-red-500/30"
+              : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+          }`}
+        >
+          <ShoppingCart size={14} /> 발주요청
+        </button>
+        <button
+          onClick={() => setTopTab("receipt")}
+          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-black transition cursor-pointer ${
+            topTab === "receipt"
+              ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/30"
+              : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+          }`}
+        >
+          <PackageCheck size={14} /> 입고확인
+          {receipts.filter(r => r.status === "pending" || r.status === "partial").length > 0 && (
+            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${topTab === "receipt" ? "bg-white/20" : "bg-emerald-100 text-emerald-700"}`}>
+              {receipts.filter(r => r.status === "pending" || r.status === "partial").length}
+            </span>
+          )}
+        </button>
+      </div>
+
+      {/* ── 입고확인 탭 ── */}
+      {topTab === "receipt" && (
+        <section className="flex flex-col gap-3 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Truck size={18} className="text-emerald-500" />
+              <h2 className="text-sm font-black text-slate-800">입고확인 목록</h2>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">{receipts.length}건</span>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {(["all", "pending", "partial", "complete"] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setReceiptFilter(f)}
+                  className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer ${
+                    receiptFilter === f
+                      ? "bg-slate-800 text-white border-slate-800"
+                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
+                  }`}
+                >
+                  {f === "all" ? "전체" : f === "pending" ? "미입고" : f === "partial" ? "부분입고" : "완전입고"}
+                </button>
+              ))}
+              <button onClick={loadReceipts} disabled={receiptsLoading} className="text-[11px] font-bold text-slate-500 border border-slate-200 rounded-lg px-2 py-1 hover:bg-slate-50 cursor-pointer flex items-center gap-1">
+                <RefreshCw size={12} className={receiptsLoading ? "animate-spin" : ""} />
+              </button>
+            </div>
+          </div>
+          {receiptsLoading ? (
+            <div className="flex justify-center py-10"><Loader2 size={20} className="animate-spin text-emerald-400" /></div>
+          ) : receipts.length === 0 ? (
+            <div className="flex flex-col items-center py-12 text-slate-300">
+              <PackageCheck size={32} className="mb-2" />
+              <p className="text-sm font-bold">입고 대기 중인 발주가 없습니다</p>
+              <p className="text-[11px] text-slate-400 mt-1">발주 발송 후 이 목록에 자동 표시됩니다 · OCR 거래명세서 등록 시 자동 매칭</p>
+              <div className="mt-3 text-[10px] text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 max-w-md">
+                <b>서버 API 구성 필요:</b> <code>/api/goods-receipts</code>, <code>/api/goods-receipts/:id/confirm</code><br/>
+                DB: <code>goods_receipts</code>, <code>goods_receipt_items</code> 테이블
+              </div>
+            </div>
+          ) : (
+            <div className="border-t border-b border-slate-200 overflow-x-auto">
+              <table className="w-full text-[11px]">
+                <thead>
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wide text-[10px]">
+                    <th className="text-left p-2 w-32">발주번호</th>
+                    <th className="text-left p-2 w-28">공급사</th>
+                    <th className="text-left p-2 w-24">담당자</th>
+                    <th className="text-right p-2 w-16">품목수</th>
+                    <th className="text-center p-2 w-24">상태</th>
+                    <th className="text-right p-2 w-24">발주일</th>
+                    <th className="text-right p-2 w-24">입고일</th>
+                    <th className="text-center p-2 w-32">액션</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {receipts
+                    .filter(r => receiptFilter === "all" || r.status === receiptFilter)
+                    .map(r => {
+                      const statusColor = r.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-300"
+                                       : r.status === "partial"  ? "bg-blue-50 text-blue-700 border-blue-300"
+                                       : r.status === "complete" ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                                       : r.status === "over"     ? "bg-purple-50 text-purple-700 border-purple-300"
+                                       : "bg-rose-50 text-rose-700 border-rose-300";
+                      const statusLabel = r.status === "pending" ? "미입고" : r.status === "partial" ? "부분입고" : r.status === "complete" ? "완전입고" : r.status === "over" ? "초과입고" : "반품";
+                      const overdue = r.status === "pending" && (Date.now() - new Date(r.dispatched_at).getTime()) > 7 * 86400000;
+                      return (
+                        <tr key={r.id} className={`hover:bg-slate-50/70 transition ${overdue ? "bg-rose-50/30" : ""}`}>
+                          <td className="p-2 font-mono text-[10px] text-slate-500">{r.order_number}</td>
+                          <td className="p-2 text-sky-600 font-semibold truncate">{r.supplier}</td>
+                          <td className="p-2 text-slate-600 truncate">{r.supplier_contact || "-"}</td>
+                          <td className="p-2 text-right font-bold text-slate-700 font-mono">{r.item_count}</td>
+                          <td className="p-2 text-center">
+                            <span className={`inline-flex items-center gap-1 text-[10px] font-black px-1.5 py-0.5 rounded border ${statusColor}`}>
+                              {statusLabel}
+                              {overdue && <AlertTriangle size={9} className="text-rose-500" />}
+                            </span>
+                          </td>
+                          <td className="p-2 text-right text-slate-500 text-[10px]">{fmtDate(r.dispatched_at)}</td>
+                          <td className="p-2 text-right text-slate-500 text-[10px]">{r.received_at ? fmtDate(r.received_at) : "-"}</td>
+                          <td className="p-2 text-center">
+                            {r.status === "pending" || r.status === "partial" ? (
+                              <button
+                                onClick={() => markReceived(r)}
+                                className="text-[10px] font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded px-2 py-1 cursor-pointer flex items-center gap-1 mx-auto"
+                              >
+                                <PackageCheck size={10} /> 입고확정
+                              </button>
+                            ) : (
+                              <span className="text-[10px] text-slate-300">-</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ── 발주요청 탭 (기존 내용) ── */}
+      {topTab === "order" && (<>
       {/* 발주 요청 목록 (일괄 발주 가능) */}
       <section className="flex flex-col gap-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
+          <button onClick={() => setOrderReqCollapsed(!orderReqCollapsed)} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-1 py-0.5 transition" title={orderReqCollapsed ? "펼치기" : "접기"}>
+            <span className={`text-slate-400 text-xs transition-transform ${orderReqCollapsed ? "" : "rotate-90"}`}>▶</span>
             <ShoppingCart size={16} className="text-red-500" />
             <h2 className="text-sm font-black text-slate-800">발주 요청 목록</h2>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">{orderReqs.length}건</span>
             {selectedOrder.size > 0 && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-300">선택 {selectedOrder.size}건</span>
             )}
-          </div>
+          </button>
           <div className="flex items-center gap-1.5 flex-wrap">
             <input
               type="text"
@@ -510,6 +721,7 @@ const OrderManagePage: React.FC = () => {
             </button>
           </div>
         </div>
+        {!orderReqCollapsed && (<>
         {orderError && (
           <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[11px] text-red-600 font-bold">
             ⚠ {orderError}
@@ -628,17 +840,19 @@ const OrderManagePage: React.FC = () => {
             </table>
           </div>
         )}
+        </>)}
       </section>
 
       {/* 발주 필요 상품 (테이블 헤더 · 검색) */}
       <section className="flex flex-col gap-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
+          <button onClick={() => setLowStockCollapsed(!lowStockCollapsed)} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-1 py-0.5 transition" title={lowStockCollapsed ? "펼치기" : "접기"}>
+            <span className={`text-slate-400 text-xs transition-transform ${lowStockCollapsed ? "" : "rotate-90"}`}>▶</span>
             <Package size={16} className="text-amber-500" />
             <h2 className="text-sm font-black text-slate-800">발주 필요 상품</h2>
             <span className="text-[10px] text-slate-500 font-normal">(현재고 &lt; 적정재고)</span>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">{lowStock.length}개</span>
-          </div>
+          </button>
           <div className="flex items-center gap-1.5">
             <input
               type="text"
@@ -652,6 +866,7 @@ const OrderManagePage: React.FC = () => {
             </button>
           </div>
         </div>
+        {!lowStockCollapsed && (<>
         {productsLoading ? (
           <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-amber-400" /></div>
         ) : lowStock.length === 0 ? (
@@ -753,7 +968,9 @@ const OrderManagePage: React.FC = () => {
             </table>
           </div>
         )}
+        </>)}
       </section>
+      </>)}
 
       {/* 발주서 (Purchase Order) 모달 — 표준 발주 포맷 */}
       {orderModal && (
@@ -772,8 +989,10 @@ const OrderManagePage: React.FC = () => {
                   <ShoppingCart size={18} className="text-white" />
                 </div>
                 <div>
-                  <div className="text-lg font-black text-slate-900">발주서 (Purchase Order)</div>
-                  <div className="text-[11px] font-mono text-slate-500 mt-0.5">#{orderModal.orderNumber}</div>
+                  <div className="text-lg font-black text-slate-900">
+                    발주서 {orderModal.suppliers.length > 1 && <span className="text-[11px] font-bold text-slate-500 ml-1">· 공급사별 {orderModal.suppliers.length}건 개별 발주</span>}
+                  </div>
+                  <div className="text-[11px] font-mono text-slate-500 mt-0.5">{orderModal.suppliers.length > 1 ? "일괄 발송 · 각 공급사별 고유 번호" : `#${orderModal.suppliers[0]?.order_number ?? orderModal.orderNumber}`}</div>
                 </div>
               </div>
               <button
@@ -808,11 +1027,12 @@ const OrderManagePage: React.FC = () => {
                 const totalAmount = s.items.reduce((n, it) => n + (it.order_qty * (it.unit_price ?? 0)), 0);
                 return (
                   <div key={`${s.supplier}-${sIdx}`} className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-                    {/* 공급사 정보 헤더 */}
+                    {/* 공급사 정보 헤더 (각 공급사별 고유 발주번호) */}
                     <div className="px-4 py-3 bg-gradient-to-r from-sky-50 to-indigo-50 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-[10px] font-black text-sky-600 bg-white border border-sky-200 rounded-full px-2 py-0.5 shrink-0">공급사</span>
+                        <span className="text-[10px] font-black text-sky-600 bg-white border border-sky-200 rounded-full px-2 py-0.5 shrink-0">발주서</span>
                         <span className="text-sm font-black text-slate-900 truncate">{s.supplier}</span>
+                        <span className="text-[10px] font-mono text-indigo-600 bg-white border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">#{s.order_number}</span>
                       </div>
                       <div className="flex items-center gap-3 text-[10px] font-semibold text-slate-500 flex-wrap">
                         {s.supplier_contact && <span>👤 {s.supplier_contact}</span>}

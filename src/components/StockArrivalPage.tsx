@@ -268,7 +268,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
       />
       )}
 
-      <div className="max-w-2xl mx-auto px-4 py-4 flex flex-col gap-3">
+      <div className="max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-3">
 
         {/* ── 작성 폼 ─────────────────────────────────────────────────────── */}
         {canWrite && (
