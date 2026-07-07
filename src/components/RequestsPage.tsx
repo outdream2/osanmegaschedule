@@ -474,11 +474,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
       {/* 탭 바 — 콘텐츠와 동일한 max-width 정렬 · 파스텔 pill 스타일 */}
       <div className="bg-white/90 backdrop-blur-sm border-b border-slate-200/70 sticky top-14 z-20" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.05)" }}>
-        <div className="max-w-[1360px] mx-auto w-full px-2 sm:px-4 flex gap-1 sm:gap-1.5 flex-wrap py-2">
-          <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5 flex-wrap">
+        <div className="max-w-[1360px] mx-auto w-full px-2 sm:px-4 py-2 overflow-x-auto scrollbar-none">
+          <div className="flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5 w-fit min-w-full sm:w-auto sm:min-w-0 sm:inline-flex">
             {TABS.map(([key, label, count, activeClass, _iconClass, badgeClass, inactiveClass]) => (
               <button key={key} onClick={() => setTab(key)}
-                className={`px-2.5 sm:px-4 py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-xl text-[11px] sm:text-[12px] font-black transition-all duration-200 cursor-pointer ${tab === key ? `${activeClass} ring-1 shadow-sm` : inactiveClass}`}>
+                className={`px-2.5 sm:px-4 py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-xl text-[11px] sm:text-[12px] font-black transition-all duration-200 cursor-pointer flex-1 sm:flex-none justify-center ${tab === key ? `${activeClass} ring-1 shadow-sm` : inactiveClass}`}>
                 <span>{label}</span>
                 {count > 0
                   ? <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${tab === key ? badgeClass : "bg-slate-100 text-slate-400"}`}>{count}</span>

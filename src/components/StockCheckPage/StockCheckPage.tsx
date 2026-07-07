@@ -188,9 +188,12 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         {/* Results list */}
         {!loading && results && results.length > 0 && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-500">검색 결과 {results.length}건</span>
-            </div>
+            {/* 결과 수 표시: 직원(로그인)만 · 일반 사용자는 숨김 */}
+            {isLoggedIn && (
+              <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
+                <span className="text-[11px] font-bold text-slate-500">검색 결과 {results.length}건</span>
+              </div>
+            )}
             <div className="divide-y divide-slate-50">
               {results
                 // 비로그인: 재고있음 & 판매중 상품만 노출
@@ -201,6 +204,10 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                 .map((item, i) => {
                   const stockAxis   = getStockAxis(item);
                   const sellingAxis = getSellingAxis(item);
+                  const stockNum = Number(item.current_stock);
+                  const lowStock = stockAxis === "in-stock"
+                    && item.current_stock !== null && item.current_stock !== ""
+                    && Number.isFinite(stockNum) && stockNum > 0 && stockNum < 3;
                   return (
                     <div key={`${item.product_name}-${item.spec ?? ""}-${i}`}
                       className="px-4 py-3 flex items-center gap-3">
@@ -220,6 +227,12 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                         }`}>
                           {sellingAxis === "selling" ? "판매중" : "판매중지"}
                         </span>
+                        {/* 3개 미만 재고 → 품절임박 (재고있음 상태일 때만) */}
+                        {lowStock && (
+                          <span className="text-[10px] font-black px-2 py-0.5 rounded-lg whitespace-nowrap bg-amber-100 text-amber-700 border border-amber-200 animate-pulse">
+                            품절임박
+                          </span>
+                        )}
                       </div>
 
                       {/* Name + spec */}

@@ -681,46 +681,50 @@ const OrderManagePage: React.FC = () => {
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-300">선택 {selectedOrder.size}건</span>
             )}
           </button>
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <input
-              type="text"
-              value={orderSearch}
-              onChange={e => setOrderSearch(e.target.value)}
-              placeholder="상품·코드·공급사 검색"
-              className="text-[11px] border border-slate-200 rounded-lg px-2 py-1 w-40 focus:outline-none focus:border-rose-400"
-            />
-            {/* 발송 채널 선택 */}
-            <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${bulkChannels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-slate-400 border-slate-200"}`}>
-              <input type="checkbox" checked={bulkChannels.email} onChange={e => setBulkChannels(p => ({ ...p, email: e.target.checked }))} className="w-3 h-3" />
-              <Mail size={11} /> 이메일
-            </label>
-            <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 ${bulkChannels.sms ? "bg-sky-50 text-sky-700 border-sky-300" : "bg-white text-slate-400 border-slate-200"}`}>
-              <input type="checkbox" checked={bulkChannels.sms} onChange={e => setBulkChannels(p => ({ ...p, sms: e.target.checked }))} className="w-3 h-3" />
-              <MessageSquare size={11} /> 문자
-            </label>
-            <button
-              onClick={handleBulkOrder}
-              disabled={sendingBulk || selectedOrder.size === 0}
-              className="text-[11px] font-black text-white bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 border border-red-700 rounded-lg px-3 py-1 cursor-pointer disabled:opacity-40 flex items-center gap-1 shadow-sm"
-              title="선택한 발주요청을 공급사별로 그룹핑 후 이메일/문자 발송"
-            >
-              {sendingBulk ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
-              일괄 발주 {selectedOrder.size > 0 && `(${selectedOrder.size})`}
-            </button>
-            <button onClick={toggleAll} className="text-[11px] font-bold text-slate-500 hover:text-slate-800 border border-slate-200 rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1">
-              {allChecked ? <CheckSquare size={12} className="text-rose-500" /> : <Square size={12} />}
-              전체선택
-            </button>
-            <button
-              onClick={() => selectedOrder.size > 0 && confirm(`${selectedOrder.size}건 삭제할까요?`) && deleteOrder([...selectedOrder])}
-              disabled={selectedOrder.size === 0}
-              className="text-[11px] font-bold text-red-600 border border-red-200 rounded-lg px-2 py-1 hover:bg-red-50 disabled:opacity-40 cursor-pointer flex items-center gap-1"
-            >
-              <Trash2 size={12} /> 삭제
-            </button>
-            <button onClick={loadOrderReqs} disabled={orderLoading} className="text-[11px] font-bold text-slate-500 border border-slate-200 rounded-lg px-2 py-1 hover:bg-slate-50 cursor-pointer flex items-center gap-1">
-              <RefreshCw size={12} className={orderLoading ? "animate-spin" : ""} />
-            </button>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <input
+                type="text"
+                value={orderSearch}
+                onChange={e => setOrderSearch(e.target.value)}
+                placeholder="상품·코드·공급사 검색"
+                className="text-[11px] border border-slate-200 rounded-lg px-2 py-1 w-36 min-w-0 focus:outline-none focus:border-rose-400"
+              />
+              {/* 발송 채널 선택 */}
+              <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 shrink-0 ${bulkChannels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-slate-400 border-slate-200"}`}>
+                <input type="checkbox" checked={bulkChannels.email} onChange={e => setBulkChannels(p => ({ ...p, email: e.target.checked }))} className="w-3 h-3" />
+                <Mail size={11} /> 이메일
+              </label>
+              <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 shrink-0 ${bulkChannels.sms ? "bg-sky-50 text-sky-700 border-sky-300" : "bg-white text-slate-400 border-slate-200"}`}>
+                <input type="checkbox" checked={bulkChannels.sms} onChange={e => setBulkChannels(p => ({ ...p, sms: e.target.checked }))} className="w-3 h-3" />
+                <MessageSquare size={11} /> 문자
+              </label>
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                onClick={handleBulkOrder}
+                disabled={sendingBulk || selectedOrder.size === 0}
+                className="text-[11px] font-black text-white bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 border border-red-700 rounded-lg px-3 py-1 cursor-pointer disabled:opacity-40 flex items-center gap-1 shadow-sm shrink-0"
+                title="선택한 발주요청을 공급사별로 그룹핑 후 이메일/문자 발송"
+              >
+                {sendingBulk ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                일괄 발주 {selectedOrder.size > 0 && `(${selectedOrder.size})`}
+              </button>
+              <button onClick={toggleAll} className="text-[11px] font-bold text-slate-500 hover:text-slate-800 border border-slate-200 rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 shrink-0">
+                {allChecked ? <CheckSquare size={12} className="text-rose-500" /> : <Square size={12} />}
+                전체선택
+              </button>
+              <button
+                onClick={() => selectedOrder.size > 0 && confirm(`${selectedOrder.size}건 삭제할까요?`) && deleteOrder([...selectedOrder])}
+                disabled={selectedOrder.size === 0}
+                className="text-[11px] font-bold text-red-600 border border-red-200 rounded-lg px-2 py-1 hover:bg-red-50 disabled:opacity-40 cursor-pointer flex items-center gap-1 shrink-0"
+              >
+                <Trash2 size={12} /> 삭제
+              </button>
+              <button onClick={loadOrderReqs} disabled={orderLoading} className="text-[11px] font-bold text-slate-500 border border-slate-200 rounded-lg px-2 py-1 hover:bg-slate-50 cursor-pointer flex items-center gap-1 shrink-0">
+                <RefreshCw size={12} className={orderLoading ? "animate-spin" : ""} />
+              </button>
+            </div>
           </div>
         </div>
         {!orderReqCollapsed && (<>
@@ -985,22 +989,22 @@ const OrderManagePage: React.FC = () => {
             onClick={(e) => e.stopPropagation()}
           >
             {/* 헤더 */}
-            <div className="px-6 py-4 border-b border-slate-200 bg-gradient-to-r from-red-50 via-rose-50 to-orange-50 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-md">
+            <div className="px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-red-50 via-rose-50 to-orange-50 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-md shrink-0">
                   <ShoppingCart size={18} className="text-white" />
                 </div>
-                <div>
-                  <div className="text-lg font-black text-slate-900">
-                    발주서 {orderModal.suppliers.length > 1 && <span className="text-[11px] font-bold text-slate-500 ml-1">· 공급사별 {orderModal.suppliers.length}건 개별 발주</span>}
+                <div className="min-w-0">
+                  <div className="text-base font-black text-slate-900 flex items-center gap-1 flex-wrap">
+                    발주서 {orderModal.suppliers.length > 1 && <span className="text-[11px] font-bold text-slate-500">· 공급사별 {orderModal.suppliers.length}건 개별 발주</span>}
                   </div>
-                  <div className="text-[11px] font-mono text-slate-500 mt-0.5">{orderModal.suppliers.length > 1 ? "일괄 발송 · 각 공급사별 고유 번호" : `#${orderModal.suppliers[0]?.order_number ?? orderModal.orderNumber}`}</div>
+                  <div className="text-[11px] font-mono text-slate-500 mt-0.5 truncate">{orderModal.suppliers.length > 1 ? "일괄 발송 · 각 공급사별 고유 번호" : `#${orderModal.suppliers[0]?.order_number ?? orderModal.orderNumber}`}</div>
                 </div>
               </div>
               <button
                 onClick={() => !sendingBulk && setOrderModal(null)}
                 disabled={sendingBulk}
-                className="text-slate-400 hover:text-slate-700 text-3xl font-black w-9 h-9 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center disabled:opacity-40"
+                className="text-slate-400 hover:text-slate-700 text-3xl font-black w-9 h-9 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center disabled:opacity-40 shrink-0"
               >×</button>
             </div>
 

@@ -1951,27 +1951,30 @@ export const DayTimelineModal: React.FC<Props> = ({
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 bg-slate-900 text-white flex-shrink-0">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between px-4 py-3 bg-slate-900 text-white flex-shrink-0 gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
             {onDateChange && (
               <button onClick={() => onDateChange(offsetDate(-1))}
-                className="p-1 rounded hover:bg-slate-700 transition-colors text-slate-400 hover:text-white cursor-pointer">
+                className="p-1 rounded hover:bg-slate-700 transition-colors text-slate-400 hover:text-white cursor-pointer shrink-0">
                 <ChevronLeft size={16} />
               </button>
             )}
-            <span className="text-base font-bold tracking-tight">{title}</span>
+            <span className="text-sm font-bold tracking-tight truncate shrink-0">{title}</span>
             {onDateChange && (
               <button onClick={() => onDateChange(offsetDate(1))}
-                className="p-1 rounded hover:bg-slate-700 transition-colors text-slate-400 hover:text-white cursor-pointer">
+                className="p-1 rounded hover:bg-slate-700 transition-colors text-slate-400 hover:text-white cursor-pointer shrink-0">
                 <ChevronRight size={16} />
               </button>
             )}
-            <span className="bg-slate-700 text-slate-300 text-[11px] px-2.5 py-0.5 rounded-full font-semibold ml-1">
+            <span className="bg-slate-700 text-slate-300 text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 hidden sm:inline">
               근무 {workers.length}명 (사원 {staffWorkers.length} / 약사 {pharmacistWorkers.length}
               {otherWorkers.length > 0 ? ` / 기타 ${otherWorkers.length}` : ""})
             </span>
+            <span className="bg-slate-700 text-slate-300 text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 sm:hidden">
+              {workers.length}명
+            </span>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-700 transition-colors text-slate-400 hover:text-white">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-700 transition-colors text-slate-400 hover:text-white shrink-0">
             <X size={17} />
           </button>
         </div>

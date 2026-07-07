@@ -316,7 +316,7 @@ const RawDataView: React.FC = () => {
       </div>
 
       {/* 원본 데이터 테이블 — 정렬·리사이즈 지원 */}
-      <div className="flex-1 min-h-0 bg-white border border-slate-200 rounded-xl shadow-sm overflow-auto">
+      <div className="flex-1 min-h-0 max-h-[72vh] lg:max-h-none bg-white border border-slate-200 rounded-xl shadow-sm overflow-auto">
         <table className="text-[11px]" style={{ tableLayout: "fixed", width: "auto" }}>
           <colgroup>
             {RAW_COLS.map(c => (
@@ -954,23 +954,14 @@ export const StockManagePage: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col max-w-[1360px] mx-auto w-full px-2 sm:px-4 py-2 sm:py-4 gap-2 sm:gap-4">
       {/* 페이지 상단 탭: 대시보드 / 원본 데이터 */}
-      <div className="flex items-center justify-between gap-2 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
-          <TrendingUp size={18} className="text-slate-500" />
+      <div className="flex flex-col gap-2">
+        {/* 1행: 제목 + 서브탭 + 날짜범위 배지 */}
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <TrendingUp size={18} className="text-slate-500 shrink-0" />
           <h2 className="text-lg font-black text-slate-800">재고관리</h2>
-          <span className="text-[11px] font-semibold text-slate-400">ERP 데이터 기준</span>
-          {flowDateRange && (
-            <span className={`text-[11px] font-black rounded-full px-2.5 py-1 border font-mono ${
-              flowPeriodType === "초순" || flowPeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
-              flowPeriodType === "중순" || flowPeriodType === "mid"   ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
-              flowPeriodType === "하순" || flowPeriodType === "late"  ? "text-purple-700 bg-purple-50 border-purple-300" :
-              "text-slate-700 bg-slate-100 border-slate-300"
-            }`}>
-              {flowDateRange}
-            </span>
-          )}
-          {/* 페이지 서브탭 pill — 제목 옆 고정 위치 (오른쪽 컨텐츠 유무에 따라 흔들리지 않도록) */}
-          <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 ml-1 gap-0.5">
+          <span className="text-[11px] font-semibold text-slate-400 hidden sm:inline">ERP 데이터 기준</span>
+          {/* 페이지 서브탭 pill */}
+          <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
             <button onClick={() => setPageTab("dashboard")}
               className={`px-4 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${
                 pageTab === "dashboard"
@@ -1001,8 +992,19 @@ export const StockManagePage: React.FC = () => {
               </span>
             );
           })()}
+          {flowDateRange && (
+            <span className={`text-[11px] font-black rounded-full px-2.5 py-1 border font-mono hidden sm:inline ${
+              flowPeriodType === "초순" || flowPeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
+              flowPeriodType === "중순" || flowPeriodType === "mid"   ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
+              flowPeriodType === "하순" || flowPeriodType === "late"  ? "text-purple-700 bg-purple-50 border-purple-300" :
+              "text-slate-700 bg-slate-100 border-slate-300"
+            }`}>
+              {flowDateRange}
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        {/* 2행: 기간 선택 + 검색 */}
+        <div className="flex items-center gap-2 flex-wrap">
           {pageTab === "dashboard" && (
             <div className="inline-flex bg-slate-100/80 backdrop-blur border border-slate-200/60 rounded-xl p-1 shadow-inner">
               {(["week", "month", "3month"] as Range[]).map(r => (
@@ -1016,10 +1018,10 @@ export const StockManagePage: React.FC = () => {
               ))}
             </div>
           )}
-          {/* 상품명·코드 검색 + 정보확인 — 대시보드 탭 옆으로 이동 */}
+          {/* 상품명·코드 검색 + 정보확인 */}
           {pageTab === "dashboard" && (
-            <div className="flex items-center gap-1.5 flex-wrap bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 rounded-xl px-2 py-1 shadow-sm">
-              <div className="relative flex-1 min-w-0 sm:flex-initial">
+            <div className="flex items-center gap-1.5 flex-wrap bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 rounded-xl px-2 py-1 shadow-sm min-w-0">
+              <div className="relative min-w-0 w-full sm:w-auto">
                 <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   value={infoSearchQuery}

@@ -480,7 +480,7 @@ const ProductTrendTab: React.FC<{ granularity: "10day" | "month"; chartRangeDays
   return (
     <div className="flex flex-col lg:flex-row gap-0 min-h-[520px]">
       {/* ── 좌측: 재고흐름 리스트 (검색+정렬+Top N 내장) ── */}
-      <div className="min-h-0 max-h-[720px] w-full lg:w-auto lg:shrink-0" style={{ width: window.innerWidth >= 1024 ? flowPanelWidth : undefined }}>
+      <div className="min-h-0 max-h-[75vh] lg:max-h-[720px] w-full lg:w-auto lg:shrink-0" style={{ width: window.innerWidth >= 1024 ? flowPanelWidth : undefined }}>
         <StockFlowPanel
           onProductClick={(row) => setSelected(row)}
           selectedCode={selected ? String(selected.product_code) : null}
@@ -496,8 +496,19 @@ const ProductTrendTab: React.FC<{ granularity: "10day" | "month"; chartRangeDays
         <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
       </div>
 
-      {/* ── 우측: 차트 + 표 ── */}
-      <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
+      {/* ── 우측: 차트 + 표 · 모바일에서 상품 선택 시 fullscreen 모달로 표시 ── */}
+      <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0 ${
+        selected ? "fixed inset-0 z-50 bg-slate-50 p-3 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible" : ""
+      }`}>
+        {selected && (
+          <button
+            type="button"
+            onClick={() => setSelected(null)}
+            className="lg:hidden sticky top-0 z-10 self-end -mt-1 mb-1 flex items-center gap-1 text-xs font-black text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-lg px-3 py-1.5 shadow-md cursor-pointer transition"
+          >
+            <X size={14} /> 닫기
+          </button>
+        )}
         {!selected ? (
           <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400">
             <Package size={40} className="mb-3 opacity-30" />
@@ -1136,15 +1147,13 @@ export const SalesTrendPage: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col max-w-[1360px] mx-auto w-full px-2 sm:px-4 py-2 sm:py-4 gap-3">
-      <div className="grid grid-cols-1 sm:grid-cols-3 items-center gap-2">
-        {/* 좌: 제목 */}
-        <div className="flex items-center gap-2">
-          <TrendingUp size={18} className="text-teal-600" />
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+        {/* 좌: 제목 + 서브탭 */}
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          <TrendingUp size={18} className="text-teal-600 shrink-0" />
           <h2 className="text-lg font-black text-slate-800">판매추이</h2>
           <span className="text-[11px] font-semibold text-slate-400 hidden md:inline">10일 스냅샷</span>
-        </div>
-        {/* 중: 서브탭 */}
-        <div className="flex justify-center">
+          {/* 서브탭 */}
           <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
             {[
               { k: "product",  label: "상품별" },
@@ -1161,7 +1170,7 @@ export const SalesTrendPage: React.FC = () => {
           </div>
         </div>
         {/* 우: 차트 컨트롤 (전체기간 + X축 단위) — 그룹핑된 카드 */}
-        <div className="flex justify-end overflow-x-auto scrollbar-none">
+        <div className="flex justify-start sm:justify-end overflow-x-auto scrollbar-none sm:ml-auto">
           <div className="inline-flex items-center gap-2 bg-white/70 backdrop-blur border border-teal-200/60 rounded-2xl px-2 py-1.5 shadow-sm shrink-0">
             {/* 전체 기간 */}
             <div className="flex items-center gap-1.5">

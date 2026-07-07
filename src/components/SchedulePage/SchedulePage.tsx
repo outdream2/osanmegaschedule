@@ -1673,8 +1673,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         {/* Month Navigation Toolbar — responsive two-row layout */}
         <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl py-1.5 sm:py-2 flex flex-col gap-1.5 px-2.5 sm:px-5 shrink-0 shadow-sm">
           {/* 1행: 월 네비게이션 + 오늘 + 범례 */}
-          <div className="flex items-center gap-x-3 gap-y-1 flex-wrap">
-            <div className="flex items-center gap-0.5 sm:gap-1">
+          <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap min-w-0">
+            <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
               <button
                 onClick={handlePrevMonth}
                 className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center hover:bg-indigo-50 active:bg-indigo-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-all cursor-pointer"
@@ -1730,7 +1730,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
               </button>
             </div>
             {/* Legend indicators + 오늘 근무 서머리 */}
-            <div className="flex items-center gap-3 text-[10px] font-semibold flex-wrap">
+            <div className="flex items-center gap-2 text-[10px] font-semibold flex-wrap min-w-0">
               {[
                 { color: "bg-yellow-100 border-yellow-300", label: "오픈" },
                 { color: "bg-emerald-100 border-emerald-300", label: "마감" },
@@ -1766,9 +1766,9 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           </div>
 
           {/* 2행: 합계/인건비 버튼 + 관리자 버튼 */}
-          <div className="flex items-center gap-x-3 gap-y-1 flex-wrap justify-between">
+          <div className="flex items-center gap-x-3 gap-y-1.5 flex-wrap justify-between min-w-0">
             {/* 합계보기 / 인건비보기 토글 버튼 */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 onClick={() => setShowSummary(v => v === "summary" ? "hidden" : "summary")}
                 title="월별 합계(근무일수/시간) 열 표시 토글"
@@ -1789,7 +1789,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
             {/* 관리자 액션 버튼: 편집 / 확정 / 전월복사 */}
             {isAdmin && (
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 shrink-0">
                 {!isMonthLocked && (
                   <button
                     onClick={() => setEditMode(m => !m)}
@@ -1886,18 +1886,18 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
             {/* Admin quick-edit hint bar */}
             {isAdmin && !isMonthLocked && (
-              <div className={`flex items-center gap-2 px-3 py-1.5 border-b shrink-0 ${editMode ? "bg-emerald-50/70 border-emerald-100" : "bg-slate-50/80 border-slate-100"}`}>
+              <div className={`flex items-center gap-2 px-3 py-1.5 border-b shrink-0 min-w-0 overflow-hidden ${editMode ? "bg-emerald-50/70 border-emerald-100" : "bg-slate-50/80 border-slate-100"}`}>
                 {editMode ? (
                   <>
                     <span className="text-emerald-500 text-[10px]">✏️</span>
-                    <span className="text-[10px] text-emerald-700 font-semibold">
+                    <span className="text-[10px] text-emerald-700 font-semibold truncate min-w-0">
                       편집 모드 ON — 셀 <strong>클릭</strong>: 오픈 → 미들 → 마감 → 휴무 순환 | <strong>⚙️</strong> 버튼: 상세 편집
                     </span>
                   </>
                 ) : (
                   <>
                     <span className="text-slate-400 text-[10px]">💡</span>
-                    <span className="text-[10px] text-slate-500">
+                    <span className="text-[10px] text-slate-500 truncate min-w-0">
                       셀을 직접 수정하려면 상단 <strong className="text-slate-700">편집</strong> 버튼을 눌러 편집 모드를 켜세요
                     </span>
                   </>
@@ -1956,8 +1956,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       <tr className="bg-gray-100 text-gray-700 select-none">
                         <th
                           ref={nameThRef}
-                          className="text-center text-[10px] sm:text-[11px] font-bold border-r border-gray-200 border-b border-b-gray-200 sticky left-0 bg-gray-100 z-40 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1.5 sm:px-3"
-                          style={{ width: "96px", minWidth: "96px" }}
+                          className="text-center text-[10px] sm:text-[11px] font-bold border-r border-gray-200 border-b border-b-gray-200 sticky left-0 bg-gray-100 z-40 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1 sm:px-3"
+                          style={{ width: "80px", minWidth: "80px" }}
                         >
                           <span className="hidden sm:inline">직원 성명</span>
                           <span className="sm:hidden">성명</span>
@@ -1998,7 +1998,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       {/* Header Row 2: Day of Week Characters */}
                       <tr className="bg-gray-50 text-gray-500 select-none">
                         {/* Left spacing header matching Name column */}
-                        <th className="border-r border-b border-gray-200 sticky left-0 bg-gray-50 z-40 h-5 sm:h-6" style={{ minWidth: "96px" }}></th>
+                        <th className="border-r border-b border-gray-200 sticky left-0 bg-gray-50 z-40 h-5 sm:h-6" style={{ minWidth: "80px" }}></th>
 
                         {displayDates.map((dateStr, dateIdx) => {
                           const { dayWord, isToday } = getDayDetails(dateStr);
@@ -2047,7 +2047,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                         >
 
                           {/* Column 1: Sticky Employee Name */}
-                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[29] group-hover:bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] min-w-[96px] sm:min-w-[112px] h-auto min-h-[54px] sm:min-h-[58px] p-0" style={{ willChange: "transform" }}>
+                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[29] group-hover:bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] min-w-[80px] sm:min-w-[96px] h-auto min-h-[54px] sm:min-h-[58px] p-0" style={{ willChange: "transform" }}>
                             <div className="flex items-stretch h-full">
                               {/* Row number — updates when drag-drop reorders */}
                               <div className="flex items-center justify-center w-4 sm:w-5 shrink-0 text-[8px] sm:text-[9px] font-bold text-slate-300 select-none">
