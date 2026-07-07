@@ -970,18 +970,18 @@ export const StockManagePage: React.FC = () => {
             </span>
           )}
           {/* 페이지 서브탭 pill — 제목 옆 고정 위치 (오른쪽 컨텐츠 유무에 따라 흔들리지 않도록) */}
-          <div className="inline-flex bg-slate-100/80 backdrop-blur border border-slate-200/60 rounded-xl p-1 shadow-inner ml-1">
+          <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 ml-1 gap-0.5">
             <button onClick={() => setPageTab("dashboard")}
-              className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+              className={`px-4 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${
                 pageTab === "dashboard"
-                  ? "bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-md shadow-indigo-500/30"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                  ? "bg-indigo-100/60 text-indigo-700 ring-1 ring-indigo-200 shadow-sm"
+                  : "text-indigo-400/80 hover:bg-indigo-50/60 hover:text-indigo-600"
               }`}>대시보드</button>
             <button onClick={() => setPageTab("raw")}
-              className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+              className={`px-4 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${
                 pageTab === "raw"
-                  ? "bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-md shadow-indigo-500/30"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                  ? "bg-indigo-100/60 text-indigo-700 ring-1 ring-indigo-200 shadow-sm"
+                  : "text-indigo-400/80 hover:bg-indigo-50/60 hover:text-indigo-600"
               }`}>원본 데이터</button>
           </div>
           {lastImportAt && (() => {
@@ -1380,22 +1380,22 @@ export const StockManagePage: React.FC = () => {
               </span>
             </div>
             <div className={`flex-1 min-h-0 flex flex-col ${flowCardCollapsed ? "hidden" : "flex"}`}>
-            <div className="inline-flex bg-slate-100/80 border border-slate-200/60 rounded-xl p-1 mb-3 shadow-inner">
+            <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 mb-3 gap-0.5">
               <button
                 onClick={() => setTopTab("sale")}
-                className={`px-3.5 py-1.5 text-[11px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                className={`px-3.5 py-1.5 text-[11px] font-black rounded-xl transition-all duration-200 cursor-pointer ${
                   topTab === "sale"
-                    ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-md shadow-orange-500/30"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                    ? "bg-orange-100/60 text-orange-700 ring-1 ring-orange-200 shadow-sm"
+                    : "text-orange-400/80 hover:bg-orange-50/60 hover:text-orange-600"
                 }`}>
                 재고 흐름
               </button>
               <button
                 onClick={() => setTopTab("purchase")}
-                className={`px-3.5 py-1.5 text-[11px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                className={`px-3.5 py-1.5 text-[11px] font-black rounded-xl transition-all duration-200 cursor-pointer ${
                   topTab === "purchase"
-                    ? "bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/30"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                    ? "bg-teal-100/60 text-teal-700 ring-1 ring-teal-200 shadow-sm"
+                    : "text-teal-400/80 hover:bg-teal-50/60 hover:text-teal-600"
                 }`}>
                 공급사거래명세서
               </button>
@@ -1585,8 +1585,8 @@ export const StockManagePage: React.FC = () => {
                           })()}
                           <td
                             className={`text-right px-0.5 py-1.5 font-mono text-[11px] ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
-                            title={`손실 = 종료재고(${fmt(p.closing_stock)}) − 현재고(${fmt(cur)}) = ${loss < 0 ? "-" + fmt(Math.abs(loss)) : loss > 0 ? "+" + fmt(loss) : "0"}`}
-                          >{loss === 0 ? "0" : loss > 0 ? `+${fmt(loss)}` : `-${fmt(Math.abs(loss))}`}</td>
+                            title={`손실 = 종료재고(${fmt(p.closing_stock)}) − 현재고(${fmt(cur)}) = ${loss > 0 ? "-" + fmt(loss) : loss < 0 ? "+" + fmt(Math.abs(loss)) : "0"}`}
+                          >{loss === 0 ? "0" : loss > 0 ? `-${fmt(loss)}` : `+${fmt(Math.abs(loss))}`}</td>
                           <td className="text-right px-0.5 py-1.5 font-mono text-[10px] text-indigo-700 font-bold">{p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</td>
                         </tr>
                         );
@@ -1790,8 +1790,8 @@ export const StockManagePage: React.FC = () => {
                         >{fmt(cur)}</span>
                         <span
                           className={`font-mono w-12 text-right shrink-0 ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
-                          title={`손실 = 종료(${fmt(p.closing_stock)}) − 현재고(${fmt(cur)}) = ${loss < 0 ? "-" + fmt(Math.abs(loss)) : loss > 0 ? "+" + fmt(loss) : "0"}`}
-                        >{loss === 0 ? "0" : loss > 0 ? `+${fmt(loss)}` : `-${fmt(Math.abs(loss))}`}</span>
+                          title={`손실 = 종료(${fmt(p.closing_stock)}) − 현재고(${fmt(cur)}) = ${loss > 0 ? "-" + fmt(loss) : loss < 0 ? "+" + fmt(Math.abs(loss)) : "0"}`}
+                        >{loss === 0 ? "0" : loss > 0 ? `-${fmt(loss)}` : `+${fmt(Math.abs(loss))}`}</span>
                         <span className="font-mono text-indigo-700 font-bold w-14 text-right shrink-0 text-[10px]">{p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</span>
                       </li>
                       );

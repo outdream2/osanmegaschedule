@@ -535,32 +535,34 @@ const OrderManagePage: React.FC = () => {
   return (
     <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-4">
       {/* 상단 탭: 발주요청 / 입고확인 */}
-      <div className="flex items-center gap-1.5 flex-wrap border-b border-slate-200 pb-2">
-        <button
-          onClick={() => setTopTab("order")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-black transition cursor-pointer ${
-            topTab === "order"
-              ? "bg-gradient-to-br from-rose-500 to-red-600 text-white shadow-md shadow-red-500/30"
-              : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-          }`}
-        >
-          <ShoppingCart size={14} /> 발주요청
-        </button>
-        <button
-          onClick={() => setTopTab("receipt")}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-[13px] font-black transition cursor-pointer ${
-            topTab === "receipt"
-              ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/30"
-              : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
-          }`}
-        >
-          <PackageCheck size={14} /> 입고확인
-          {receipts.filter(r => r.status === "pending" || r.status === "partial").length > 0 && (
-            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${topTab === "receipt" ? "bg-white/20" : "bg-emerald-100 text-emerald-700"}`}>
-              {receipts.filter(r => r.status === "pending" || r.status === "partial").length}
-            </span>
-          )}
-        </button>
+      <div className="flex items-center gap-1.5 flex-wrap pb-1">
+        <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
+          <button
+            onClick={() => setTopTab("order")}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[13px] font-black transition-all duration-200 cursor-pointer ${
+              topTab === "order"
+                ? "bg-rose-100/60 text-rose-700 ring-1 ring-rose-200 shadow-sm"
+                : "text-rose-400/80 hover:bg-rose-50/60 hover:text-rose-600"
+            }`}
+          >
+            <ShoppingCart size={15} className={topTab === "order" ? "text-rose-600" : "text-rose-300"} /> 발주요청
+          </button>
+          <button
+            onClick={() => setTopTab("receipt")}
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[13px] font-black transition-all duration-200 cursor-pointer ${
+              topTab === "receipt"
+                ? "bg-emerald-100/60 text-emerald-700 ring-1 ring-emerald-200 shadow-sm"
+                : "text-emerald-400/80 hover:bg-emerald-50/60 hover:text-emerald-600"
+            }`}
+          >
+            <PackageCheck size={15} className={topTab === "receipt" ? "text-emerald-600" : "text-emerald-300"} /> 입고확인
+            {receipts.filter(r => r.status === "pending" || r.status === "partial").length > 0 && (
+              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${topTab === "receipt" ? "bg-emerald-200/60 text-emerald-700" : "bg-emerald-100/60 text-emerald-400"}`}>
+                {receipts.filter(r => r.status === "pending" || r.status === "partial").length}
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ── 입고확인 탭 ── */}

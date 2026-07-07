@@ -254,16 +254,25 @@ router.get("/api/stock-manage/snapshot-summary", async (req, res) => {
 router.get("/api/sales-trend/product", async (req, res) => {
   const code = String(req.query.code ?? "").trim();
   if (!code) return res.status(400).json({ error: "code 필수" });
+  // months 지정 시 오늘 기준 최근 N개월 범위로 필터
+  const months = Math.max(0, Math.min(24, parseInt(String(req.query.months ?? "0"), 10) || 0));
   try {
-    const { data, error } = await supabase
+    let q = supabase
       .from("stock_history")
       .select("period_start_date, snapshot_date, period_type, supplier_name, product_name, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, closing_stock, supply_amount, total_amount")
-      .eq("product_code", code)
+      .eq("product_code", code);
+    if (months > 0) {
+      const today = new Date();
+      const cutoff = new Date(today.getFullYear(), today.getMonth() - months, 1);
+      const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-01`;
+      q = q.gte("snapshot_date", cutoffStr);
+    }
+    const { data, error } = await q
       .order("period_start_date", { ascending: true, nullsFirst: false })
       .order("snapshot_date", { ascending: true });
     if (error) return res.status(500).json({ error: error.message });
     res.setHeader("Cache-Control", "no-store");
-    res.json({ code, rows: data ?? [] });
+    res.json({ code, months, rows: data ?? [] });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -274,16 +283,22 @@ router.get("/api/sales-trend/product", async (req, res) => {
 router.get("/api/sales-trend/supplier", async (req, res) => {
   const name = String(req.query.name ?? "").trim();
   if (!name) return res.status(400).json({ error: "name 필수" });
+  const months = Math.max(0, Math.min(24, parseInt(String(req.query.months ?? "0"), 10) || 0));
+  const cutoffStr = months > 0
+    ? (() => { const t = new Date(); const c = new Date(t.getFullYear(), t.getMonth() - months, 1); return `${c.getFullYear()}-${String(c.getMonth() + 1).padStart(2, "0")}-01`; })()
+    : null;
   try {
     // 페이지네이션으로 전체 fetch (수천 상품 × 스냅샷 여러 개)
     const all: any[] = [];
     const PAGE = 1000;
     let from = 0;
     while (true) {
-      const { data, error } = await supabase
+      let q = supabase
         .from("stock_history")
         .select("period_start_date, snapshot_date, period_type, product_code, purchase_qty, sale_qty, closing_stock, supply_amount, total_amount")
-        .eq("supplier_name", name)
+        .eq("supplier_name", name);
+      if (cutoffStr) q = q.gte("snapshot_date", cutoffStr);
+      const { data, error } = await q
         .order("period_start_date", { ascending: true, nullsFirst: false })
         .range(from, from + PAGE - 1);
       if (error) return res.status(500).json({ error: error.message });

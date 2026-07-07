@@ -15,6 +15,8 @@ import {
   Save,
   Send,
   Sparkles,
+  Store,
+  TrendingUp,
   User,
   X,
   XCircle,
@@ -1401,64 +1403,89 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* 서브탭: 매장관리(기본) / 재고관리(level 9) / 입고알림관리(level 3+) */}
       {(dpCanSeeStockManage || dpCanSeeStockArrivals) && (
-        <div className="bg-gradient-to-b from-white to-slate-50/50 border-b border-slate-200 px-2 sm:px-4">
-          <div className="max-w-[1360px] mx-auto flex items-center flex-wrap gap-1 sm:gap-1.5 py-1.5 sm:py-2">
-            <button onClick={() => setDpSubTab("store")}
-              className={`relative px-2.5 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
-                dpSubTab === "store"
-                  ? "text-white bg-gradient-to-br from-sky-500 to-sky-600 shadow-md shadow-sky-500/30"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
-              }`}>
-              매장관리
-            </button>
-            {dpCanSeeStockManage && (
-              <button onClick={() => setDpSubTab("stock-manage")}
-                className={`relative px-2.5 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
-                  dpSubTab === "stock-manage"
-                    ? "text-white bg-gradient-to-br from-indigo-500 to-indigo-600 shadow-md shadow-indigo-500/30"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
-                }`}>
-                재고관리
+        <div className="bg-white/90 backdrop-blur-sm border-b border-slate-200/70 px-2 sm:px-4" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.05)" }}>
+          <div className="max-w-[1360px] mx-auto flex items-center gap-1 overflow-x-auto scrollbar-none py-2">
+            <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
+              <button
+                onClick={() => setDpSubTab("store")}
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-1 rounded-xl ${
+                  dpSubTab === "store"
+                    ? "bg-sky-100/60 text-sky-700 ring-1 ring-sky-200 shadow-sm"
+                    : "text-sky-400/80 hover:bg-sky-50/60 hover:text-sky-600"
+                }`}
+              >
+                <Store size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "store" ? "text-sky-600" : "text-sky-300"}`} />
+                <span>매장관리</span>
               </button>
-            )}
-            {dpCanSeeStockManage && (
-              <button onClick={() => setDpSubTab("sales-trend")}
-                className={`relative px-2.5 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
-                  dpSubTab === "sales-trend"
-                    ? "text-white bg-gradient-to-br from-teal-500 to-teal-600 shadow-md shadow-teal-500/30"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
-                }`}>
-                판매추이
+
+              {dpCanSeeStockManage && (
+                <button
+                  onClick={() => setDpSubTab("stock-manage")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-1 rounded-xl ${
+                    dpSubTab === "stock-manage"
+                      ? "bg-indigo-100/60 text-indigo-700 ring-1 ring-indigo-200 shadow-sm"
+                      : "text-indigo-400/80 hover:bg-indigo-50/60 hover:text-indigo-600"
+                  }`}
+                >
+                  <Boxes size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "stock-manage" ? "text-indigo-600" : "text-indigo-300"}`} />
+                  <span>재고관리</span>
+                </button>
+              )}
+
+              {dpCanSeeStockManage && (
+                <button
+                  onClick={() => setDpSubTab("sales-trend")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-1 rounded-xl ${
+                    dpSubTab === "sales-trend"
+                      ? "bg-teal-100/60 text-teal-700 ring-1 ring-teal-200 shadow-sm"
+                      : "text-teal-400/80 hover:bg-teal-50/60 hover:text-teal-600"
+                  }`}
+                >
+                  <TrendingUp size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "sales-trend" ? "text-teal-600" : "text-teal-300"}`} />
+                  <span>판매추이</span>
+                </button>
+              )}
+
+              {dpCanSeeStockArrivals && (
+                <button
+                  onClick={() => setDpSubTab("stock-arrivals")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-1 rounded-xl ${
+                    dpSubTab === "stock-arrivals"
+                      ? "bg-emerald-100/60 text-emerald-700 ring-1 ring-emerald-200 shadow-sm"
+                      : "text-emerald-400/80 hover:bg-emerald-50/60 hover:text-emerald-600"
+                  }`}
+                >
+                  <Bell size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "stock-arrivals" ? "text-emerald-600" : "text-emerald-300"}`} />
+                  <span>입고알림관리</span>
+                </button>
+              )}
+
+              {dpCanSeeStockManage && (
+                <button
+                  onClick={() => setDpSubTab("order-manage")}
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-1 rounded-xl ${
+                    dpSubTab === "order-manage"
+                      ? "bg-rose-100/60 text-rose-700 ring-1 ring-rose-200 shadow-sm"
+                      : "text-rose-400/80 hover:bg-rose-50/60 hover:text-rose-600"
+                  }`}
+                >
+                  <ClipboardList size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "order-manage" ? "text-rose-600" : "text-rose-300"}`} />
+                  <span>발주관리</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => setDpSubTab("staff-manage")}
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-1 rounded-xl ${
+                  dpSubTab === "staff-manage"
+                    ? "bg-violet-100/60 text-violet-700 ring-1 ring-violet-200 shadow-sm"
+                    : "text-violet-400/80 hover:bg-violet-50/60 hover:text-violet-600"
+                }`}
+              >
+                <Users size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "staff-manage" ? "text-violet-600" : "text-violet-300"}`} />
+                <span>직원관리</span>
               </button>
-            )}
-            {dpCanSeeStockArrivals && (
-              <button onClick={() => setDpSubTab("stock-arrivals")}
-                className={`relative px-2.5 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
-                  dpSubTab === "stock-arrivals"
-                    ? "text-white bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md shadow-emerald-500/30"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
-                }`}>
-                입고알림
-              </button>
-            )}
-            {dpCanSeeStockManage && (
-              <button onClick={() => setDpSubTab("order-manage")}
-                className={`relative px-2.5 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
-                  dpSubTab === "order-manage"
-                    ? "text-white bg-gradient-to-br from-rose-500 to-red-600 shadow-md shadow-red-500/30"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
-                }`}>
-                발주관리
-              </button>
-            )}
-            <button onClick={() => setDpSubTab("staff-manage")}
-              className={`relative px-2.5 sm:px-4 py-1.5 sm:py-2 text-[12px] sm:text-[13px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
-                dpSubTab === "staff-manage"
-                  ? "text-white bg-gradient-to-br from-violet-500 to-purple-600 shadow-md shadow-violet-500/30"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-slate-100/70"
-              }`}>
-              직원관리
-            </button>
+            </div>
           </div>
         </div>
       )}

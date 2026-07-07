@@ -887,32 +887,34 @@ return (
     />
 
     {/* Tab bar */}
-    <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
-      <div className="max-w-5xl mx-auto px-2 sm:px-4 flex gap-0 overflow-x-auto whitespace-nowrap">
-        <button
-          onClick={() => setMainTab("ocr")}
-          className={`flex items-center gap-1.5 px-3 sm:px-5 py-3 text-xs font-bold border-b-2 shrink-0 transition-colors cursor-pointer ${mainTab === "ocr" ? "border-amber-500 text-amber-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}
-        >
-          <Upload size={12} /> OCR 추출
-        </button>
-        <button
-          onClick={() => setMainTab("synonyms")}
-          className={`flex items-center gap-1.5 px-3 sm:px-5 py-3 text-xs font-bold border-b-2 shrink-0 transition-colors cursor-pointer ${mainTab === "synonyms" ? "border-indigo-500 text-indigo-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}
-        >
-          <BookOpen size={12} /> 동의어 관리
-        </button>
-        <button
-          onClick={() => setMainTab("balance")}
-          className={`flex items-center gap-1.5 px-3 sm:px-5 py-3 text-xs font-bold border-b-2 shrink-0 transition-colors cursor-pointer ${mainTab === "balance" ? "border-orange-500 text-orange-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}
-        >
-          잔고항목 지정
-        </button>
-        <button
-          onClick={() => setMainTab("records")}
-          className={`flex items-center gap-1.5 px-3 sm:px-5 py-3 text-xs font-bold border-b-2 shrink-0 transition-colors cursor-pointer ${mainTab === "records" ? "border-rose-500 text-rose-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}
-        >
-          <FileText size={12} /> 거래명세서 조회
-        </button>
+    <div className="bg-white/90 backdrop-blur-sm border-b border-slate-200/70 sticky top-0 z-10">
+      <div className="max-w-5xl mx-auto px-2 sm:px-4 flex items-center py-2">
+        <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5 overflow-x-auto scrollbar-none">
+          <button
+            onClick={() => setMainTab("ocr")}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-xl shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "ocr" ? "bg-amber-100/60 text-amber-700 ring-1 ring-amber-200 shadow-sm" : "text-amber-400/80 hover:bg-amber-50/60 hover:text-amber-600"}`}
+          >
+            <Upload size={13} className={mainTab === "ocr" ? "text-amber-600" : "text-amber-300"} /> OCR 추출
+          </button>
+          <button
+            onClick={() => setMainTab("synonyms")}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-xl shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "synonyms" ? "bg-indigo-100/60 text-indigo-700 ring-1 ring-indigo-200 shadow-sm" : "text-indigo-400/80 hover:bg-indigo-50/60 hover:text-indigo-600"}`}
+          >
+            <BookOpen size={13} className={mainTab === "synonyms" ? "text-indigo-600" : "text-indigo-300"} /> 동의어 관리
+          </button>
+          <button
+            onClick={() => setMainTab("balance")}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-xl shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "balance" ? "bg-orange-100/60 text-orange-700 ring-1 ring-orange-200 shadow-sm" : "text-orange-400/80 hover:bg-orange-50/60 hover:text-orange-600"}`}
+          >
+            잔고항목 지정
+          </button>
+          <button
+            onClick={() => setMainTab("records")}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-xl shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "records" ? "bg-rose-100/60 text-rose-700 ring-1 ring-rose-200 shadow-sm" : "text-rose-400/80 hover:bg-rose-50/60 hover:text-rose-600"}`}
+          >
+            <FileText size={13} className={mainTab === "records" ? "text-rose-600" : "text-rose-300"} /> 거래명세서 조회
+          </button>
+        </div>
       </div>
     </div>
 
@@ -927,13 +929,15 @@ return (
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 flex flex-col gap-4">
         {/* 동의어 서브 탭 */}
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-          <div className="flex gap-0 border-b border-gray-100 px-4">
-            <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 -mb-px transition-colors cursor-pointer ${synTab === "product" ? "border-indigo-500 text-indigo-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
-              <BookOpen size={12} /> 상품명 동의어 ({productSynonyms.length})
+          <div className="flex items-center gap-1 px-4 py-2 border-b border-slate-100/80">
+            <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
+            <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${synTab === "product" ? "bg-indigo-100/60 text-indigo-700 ring-1 ring-indigo-200 shadow-sm" : "text-indigo-400/80 hover:bg-indigo-50/60 hover:text-indigo-600"}`}>
+              <BookOpen size={12} className={synTab === "product" ? "text-indigo-600" : "text-indigo-300"} /> 상품명 동의어 ({productSynonyms.length})
             </button>
-            <button onClick={() => setSynTab("supplier")} className={`flex items-center gap-1.5 px-4 py-2.5 text-xs font-bold border-b-2 -mb-px transition-colors cursor-pointer ${synTab === "supplier" ? "border-sky-500 text-sky-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
-              <Building2 size={12} /> 공급사 별칭 ({supplierAliases.length})
+            <button onClick={() => setSynTab("supplier")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${synTab === "supplier" ? "bg-sky-100/60 text-sky-700 ring-1 ring-sky-200 shadow-sm" : "text-sky-400/80 hover:bg-sky-50/60 hover:text-sky-600"}`}>
+              <Building2 size={12} className={synTab === "supplier" ? "text-sky-600" : "text-sky-300"} /> 공급사 별칭 ({supplierAliases.length})
             </button>
+            </div>
             <button onClick={fetchSynonyms} className="ml-auto p-1.5 self-center rounded-lg hover:bg-gray-100 cursor-pointer">
               <RefreshCw size={13} className={`text-gray-400 ${synLoading ? "animate-spin" : ""}`} />
             </button>

@@ -447,11 +447,11 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const eatCount = lunchRequests.filter(r => r.eating).length;
   const noEatCount = lunchRequests.filter(r => !r.eating).length;
 
-  const TABS: [Tab, string, number, string, string][] = [
-    ["display",   "진열요청",   displayTabCount,   "text-blue-600",   "border-blue-500"],
-    ["mismatch",  "구역불일치", mismatchTabCount,  "text-orange-600", "border-orange-500"],
-    ["inventory", "실재고차이", inventoryTabCount, "text-purple-600", "border-purple-500"],
-    ["lunch",     "점심불참",   lunchTabCount,     "text-emerald-600","border-emerald-500"],
+  const TABS: [Tab, string, number, string, string, string, string][] = [
+    ["display",   "진열요청",   displayTabCount,   "bg-sky-100/60 text-sky-700 ring-sky-200",          "text-sky-600",     "bg-sky-200/60 text-sky-700",     "text-sky-400/80 hover:bg-sky-50/60 hover:text-sky-600"],
+    ["mismatch",  "구역불일치", mismatchTabCount,  "bg-orange-100/60 text-orange-700 ring-orange-200",  "text-orange-600",  "bg-orange-200/60 text-orange-700","text-orange-400/80 hover:bg-orange-50/60 hover:text-orange-600"],
+    ["inventory", "실재고차이", inventoryTabCount, "bg-violet-100/60 text-violet-700 ring-violet-200",  "text-violet-600",  "bg-violet-200/60 text-violet-700","text-violet-400/80 hover:bg-violet-50/60 hover:text-violet-600"],
+    ["lunch",     "점심불참",   lunchTabCount,     "bg-emerald-100/60 text-emerald-700 ring-emerald-200","text-emerald-600","bg-emerald-200/60 text-emerald-700","text-emerald-400/80 hover:bg-emerald-50/60 hover:text-emerald-600"],
   ];
 
   // 공통 체크박스
@@ -472,19 +472,21 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
         onLogout={onLogout}
       />
 
-      {/* 탭 바 — 콘텐츠와 동일한 max-width 정렬 · 좁은 pill 스타일 */}
-      <div className="bg-white/80 backdrop-blur-sm border-b border-slate-200/70 sticky top-14 z-20" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.06)" }}>
+      {/* 탭 바 — 콘텐츠와 동일한 max-width 정렬 · 파스텔 pill 스타일 */}
+      <div className="bg-white/90 backdrop-blur-sm border-b border-slate-200/70 sticky top-14 z-20" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.05)" }}>
         <div className="max-w-[1360px] mx-auto w-full px-2 sm:px-4 flex gap-1 sm:gap-1.5 flex-wrap py-2">
-          {TABS.map(([key, label, count, color, border]) => (
-            <button key={key} onClick={() => setTab(key)}
-              className={`px-2.5 sm:px-4 py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2 rounded-lg border-2 text-[11px] sm:text-[12px] font-black transition cursor-pointer ${tab === key ? `${color} ${border} bg-white shadow-sm` : "text-slate-400 border-transparent hover:bg-slate-100/70 hover:text-slate-600"}`}>
-              <span>{label}</span>
-              {count > 0
-                ? <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${tab === key ? color.replace("text-", "bg-").replace("-600", "-100") + " " + color : "bg-slate-100 text-slate-400"}`}>{count}</span>
-                : <span className="text-[10px] text-slate-300">0</span>
-              }
-            </button>
-          ))}
+          <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5 flex-wrap">
+            {TABS.map(([key, label, count, activeClass, _iconClass, badgeClass, inactiveClass]) => (
+              <button key={key} onClick={() => setTab(key)}
+                className={`px-2.5 sm:px-4 py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-xl text-[11px] sm:text-[12px] font-black transition-all duration-200 cursor-pointer ${tab === key ? `${activeClass} ring-1 shadow-sm` : inactiveClass}`}>
+                <span>{label}</span>
+                {count > 0
+                  ? <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${tab === key ? badgeClass : "bg-slate-100 text-slate-400"}`}>{count}</span>
+                  : <span className="text-[10px] text-slate-300">0</span>
+                }
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

@@ -868,33 +868,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
 
             {/* 서브탭: 상품목록 · 재고리스트 · 임포트 목록 (통합 이력) */}
-            <div className="flex items-center gap-1 mb-4 border-b border-gray-100">
-              <button
-                onClick={() => setUploadTab("products")}
-                className={`px-3 py-2 text-xs font-bold border-b-2 transition cursor-pointer ${
-                  uploadTab === "products" ? "border-orange-500 text-orange-600" : "border-transparent text-gray-400 hover:text-gray-600"
-                }`}>
-                상품목록
-              </button>
-              <button
-                onClick={() => setUploadTab("stock")}
-                className={`px-3 py-2 text-xs font-bold border-b-2 transition cursor-pointer ${
-                  uploadTab === "stock" ? "border-indigo-500 text-indigo-600" : "border-transparent text-gray-400 hover:text-gray-600"
-                }`}>
-                재고리스트
-              </button>
-              <button
-                onClick={() => { setUploadTab("log"); fetchImportLog(); fetchStockImportLog(); }}
-                className={`px-3 py-2 text-xs font-bold border-b-2 transition cursor-pointer ${
-                  uploadTab === "log" ? "border-emerald-500 text-emerald-600" : "border-transparent text-gray-400 hover:text-gray-600"
-                }`}>
-                임포트 목록
-                {(importLog.length + stockImportLog.length) > 0 && (
-                  <span className="ml-1 text-[9px] font-mono bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full px-1.5 py-0.5">
-                    {importLog.length + stockImportLog.length}
-                  </span>
-                )}
-              </button>
+            <div className="flex items-center gap-1 mb-4">
+              <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
+                <button
+                  onClick={() => setUploadTab("products")}
+                  className={`px-3 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${
+                    uploadTab === "products" ? "bg-orange-100/60 text-orange-700 ring-1 ring-orange-200 shadow-sm" : "text-orange-400/80 hover:bg-orange-50/60 hover:text-orange-600"
+                  }`}>
+                  상품목록
+                </button>
+                <button
+                  onClick={() => setUploadTab("stock")}
+                  className={`px-3 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${
+                    uploadTab === "stock" ? "bg-indigo-100/60 text-indigo-700 ring-1 ring-indigo-200 shadow-sm" : "text-indigo-400/80 hover:bg-indigo-50/60 hover:text-indigo-600"
+                  }`}>
+                  재고리스트
+                </button>
+                <button
+                  onClick={() => { setUploadTab("log"); fetchImportLog(); fetchStockImportLog(); }}
+                  className={`flex items-center gap-1 px-3 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${
+                    uploadTab === "log" ? "bg-emerald-100/60 text-emerald-700 ring-1 ring-emerald-200 shadow-sm" : "text-emerald-400/80 hover:bg-emerald-50/60 hover:text-emerald-600"
+                  }`}>
+                  임포트 목록
+                  {(importLog.length + stockImportLog.length) > 0 && (
+                    <span className={`text-[9px] font-mono rounded-full px-1.5 py-0.5 ${uploadTab === "log" ? "bg-emerald-200/60 text-emerald-700" : "bg-emerald-100/60 text-emerald-400"}`}>
+                      {importLog.length + stockImportLog.length}
+                    </span>
+                  )}
+                </button>
+              </div>
             </div>
 
             {uploadTab === "products" && (

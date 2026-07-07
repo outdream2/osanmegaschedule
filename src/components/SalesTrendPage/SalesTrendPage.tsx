@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Search, TrendingUp, Building2, LineChart, Package, X } from "lucide-react";
+import { Search, TrendingUp, Building2, LineChart, Package, X, Info } from "lucide-react";
+import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
+import type { ProductInfo } from "../../lib/productsCache";
 
 // ─── 유틸 ───────────────────────────────────────────────────────────────────
 const fmt = (n: number | null | undefined): string => {
@@ -14,6 +16,20 @@ const fmtWon = (n: number | null | undefined): string => {
   if (Math.abs(v) >= 10000) return `${(v / 10000).toFixed(1)}만`;
   return v.toLocaleString() + "원";
 };
+// 재고관리와 동일 · YYYY-M-D 형식에서 M/D 추출
+function extractMonthDay(raw: any): string | null {
+  if (!raw) return null;
+  try {
+    if (raw instanceof Date) return `${raw.getMonth() + 1}/${raw.getDate()}`;
+    const s = String(raw).trim();
+    if (!s) return null;
+    const m = /^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})/.exec(s);
+    if (m) return `${Number(m[2])}/${Number(m[3])}`;
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) return `${d.getMonth() + 1}/${d.getDate()}`;
+    return null;
+  } catch { return null; }
+}
 const periodLabel = (start: string, end: string): string => {
   const m1 = /^\d{4}-(\d{2})-(\d{2})$/.exec(start);
   const m2 = /^\d{4}-(\d{2})-(\d{2})$/.exec(end);
@@ -151,7 +167,7 @@ const MultiLineChart: React.FC<LineChartProps> = ({ labels, series, height = 320
           </g>
         ))}
         {/* 영역 라벨 (좌측 상단·좌측 중단) */}
-        <text x={padL} y={padT + 8} fontSize="11" fill="#f97316" fontWeight="bold">판매·종료재고 (좌축)</text>
+        <text x={padL} y={padT + 8} fontSize="11" fill="#dc2626" fontWeight="bold">판매·종료재고 (좌축)</text>
         <text x={padL} y={barTop + 8} fontSize="11" fill="#10b981" fontWeight="bold">매입 (우축)</text>
 
         {/* X축 라벨 */}
@@ -367,14 +383,28 @@ function aggregateToMonths<T extends {
 }
 
 // ─── 상품별 판매추이 탭 (좌측 재고흐름 리스트 · 우측 차트 · 폭조절) ─────────
-const ProductTrendTab: React.FC<{ granularity: "10day" | "month" }> = ({ granularity }) => {
+// chartRangeDays 는 헤더 우측 pill 로 조절 (리스트의 조회기간과 독립)
+const ProductTrendTab: React.FC<{ granularity: "10day" | "month"; chartRangeDays: number }> = ({ granularity, chartRangeDays }) => {
   const [selected, setSelected] = useState<any | null>(null);
   const [rows, setRows] = useState<PeriodRow[]>([]);
   const [loading, setLoading] = useState(false);
-  // 조회기간 · StockFlowPanel 과 차트가 공유 (헤더 duplicate pill 제거되어 여기서 단일 소스)
-  const [tabMonths, setTabMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(3);
-  // 0 (단일 스냅샷 모드) 는 차트에 부적합 → 기본 3 사용, 사용자가 0 선택 시 chart 는 최근 1개월 표시
-  const rangeDays = (tabMonths > 0 ? tabMonths : 1) * 30;
+  const rangeDays = chartRangeDays;
+  // 정보확인 모달 (재고관리와 동일 · ProductInfoCard 표시)
+  const [scanProductModal, setScanProductModal] = useState<ProductInfo | null>(null);
+  const openScanProductModal = useCallback((p: any) => {
+    const info: ProductInfo = {
+      code: String(p.product_code ?? ""),
+      name: String(p.product_name ?? ""),
+      spec: String(p.spec ?? ""),
+      current_stock: p.current_stock ?? null,
+      optimal_stock: p.optimal_stock ?? null,
+      supplier: p.supplier ?? p.supplier_name ?? null,
+      real_map: p.real_map ?? null,
+      warehouse_stock: p.warehouse_stock ?? null,
+      store_stock: p.store_stock ?? null,
+    };
+    setScanProductModal(info);
+  }, []);
 
   // 폭 조절 · localStorage 저장
   const [flowPanelWidth, setFlowPanelWidth] = useState<number>(() => {
@@ -400,14 +430,15 @@ const ProductTrendTab: React.FC<{ granularity: "10day" | "month" }> = ({ granula
     window.addEventListener("mouseup", up);
   };
 
-  // 선택 상품의 시계열 조회 · race condition 방지 (빠른 재선택 시 stale response 무시)
+  // 선택 상품의 시계열 조회 · 기간 변경 시 서버에서 해당 범위만 재조회
+  const months = Math.max(1, Math.round(chartRangeDays / 30));
   useEffect(() => {
     if (!selected) { setRows([]); return; }
     let cancelled = false;
     setLoading(true);
     (async () => {
       try {
-        const r = await fetch(`/api/sales-trend/product?code=${encodeURIComponent(String(selected.product_code))}`);
+        const r = await fetch(`/api/sales-trend/product?code=${encodeURIComponent(String(selected.product_code))}&months=${months}`);
         if (cancelled) return;
         if (r.ok) {
           const j = await r.json();
@@ -416,7 +447,7 @@ const ProductTrendTab: React.FC<{ granularity: "10day" | "month" }> = ({ granula
       } finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [selected]);
+  }, [selected, months]);
 
   // 기간 필터 적용 · 없는 기간은 0으로 채워 완전한 기간 목록 표시
   const filteredRows = useMemo(() => {
@@ -440,11 +471,11 @@ const ProductTrendTab: React.FC<{ granularity: "10day" | "month" }> = ({ granula
       : periodLabel(r.period_start_date, r.snapshot_date)
     ),
     series: [
-      { label: "종료재고", color: "#6366f1", kind: "bar" as const, values: filteredRows.map(r => Number(r.closing_stock ?? 0)), format: "count" as const },
-      { label: "판매",     color: "#f97316", kind: "line" as const, values: filteredRows.map(r => Number(r.sale_qty ?? 0)),     format: "count" as const },
-      { label: "매입",     color: "#10b981", kind: "line" as const, values: filteredRows.map(r => Number(r.purchase_qty ?? 0)), format: "count" as const },
+      { label: "매입",     color: "#10b981", kind: "bar" as const,  values: filteredRows.map(r => Number(r.purchase_qty ?? 0)), format: "count" as const },
+      { label: "판매",     color: "#dc2626", kind: "line" as const, values: filteredRows.map(r => Number(r.sale_qty ?? 0)),     format: "count" as const },
+      { label: "종료재고", color: "#6366f1", kind: "line" as const, values: filteredRows.map(r => Number(r.closing_stock ?? 0)), format: "count" as const },
     ],
-  }), [filteredRows]);
+  }), [filteredRows, granularity]);
 
   return (
     <div className="flex flex-col lg:flex-row gap-0 min-h-[520px]">
@@ -453,8 +484,6 @@ const ProductTrendTab: React.FC<{ granularity: "10day" | "month" }> = ({ granula
         <StockFlowPanel
           onProductClick={(row) => setSelected(row)}
           selectedCode={selected ? String(selected.product_code) : null}
-          months={tabMonths}
-          onMonthsChange={(m) => setTabMonths(m)}
         />
       </div>
 
@@ -490,8 +519,18 @@ const ProductTrendTab: React.FC<{ granularity: "10day" | "month" }> = ({ granula
             <div className="bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 rounded-xl p-3">
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex-1 min-w-0">
-                  <div className="text-base font-black text-slate-800 truncate">
-                    {rows[0]?.product_name ?? selected.product_name}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="text-base font-black text-slate-800 truncate">
+                      {rows[0]?.product_name ?? selected.product_name}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => openScanProductModal({ ...selected, ...(rows[0] ?? {}) })}
+                      className="inline-flex items-center gap-1 text-[10px] font-black text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 rounded-lg px-2 py-1 cursor-pointer transition shadow-sm shrink-0"
+                      title="상세 정보 · 실재고 입력 · 발주 요청"
+                    >
+                      <Info size={11} /> 정보확인
+                    </button>
                   </div>
                   <div className="text-[11px] font-mono text-slate-500">
                     #{selected.product_code} · {rows[0]?.supplier_name ?? selected.supplier ?? "-"}
@@ -571,14 +610,55 @@ const ProductTrendTab: React.FC<{ granularity: "10day" | "month" }> = ({ granula
           </>
         )}
       </div>
+
+      {/* 정보확인 모달 (재고관리 · 적정재고이하 상품 클릭과 동일) */}
+      {scanProductModal && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setScanProductModal(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-sky-50 to-indigo-50">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-md">
+                  <Package size={18} className="text-white" />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-base font-black text-slate-800 truncate">{scanProductModal.name}</div>
+                  <div className="text-[11px] font-mono text-slate-500 mt-0.5">#{scanProductModal.code}</div>
+                </div>
+              </div>
+              <button
+                onClick={() => setScanProductModal(null)}
+                className="text-slate-400 hover:text-slate-700 text-3xl leading-none font-black w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0"
+              >×</button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-4 bg-slate-50">
+              <ProductInfoCard
+                product={scanProductModal}
+                context="stock-manage"
+                editable
+                onRealMapUpdate={(newValue) => {
+                  setScanProductModal(prev => prev ? { ...prev, real_map: newValue } : prev);
+                }}
+                onProductUpdate={(updates) => {
+                  setScanProductModal(prev => prev ? { ...prev, ...updates } : prev);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 // ─── 공급사별 판매추이 탭 (좌측 검색+리스트 · 우측 차트) ───────────────────
-const SupplierTrendTab: React.FC<{ granularity: "10day" | "month" }> = ({ granularity }) => {
-  // 공급사별은 헤더에 조회기간 pill 없어서 기본 3개월 고정 (필요 시 리스트 헤더에 추가 가능)
-  const rangeDays = 90;
+const SupplierTrendTab: React.FC<{ granularity: "10day" | "month"; chartRangeDays: number }> = ({ granularity, chartRangeDays }) => {
+  const rangeDays = chartRangeDays;
   const [suppliers, setSuppliers] = useState<Array<{ name: string; sale?: number; purchase?: number; itemCount?: number }>>([]);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string>("");
@@ -605,13 +685,14 @@ const SupplierTrendTab: React.FC<{ granularity: "10day" | "month" }> = ({ granul
     })();
   }, []);
 
+  const months = Math.max(1, Math.round(chartRangeDays / 30));
   useEffect(() => {
     if (!selected) { setRows([]); return; }
     let cancelled = false;
     setLoading(true);
     (async () => {
       try {
-        const r = await fetch(`/api/sales-trend/supplier?name=${encodeURIComponent(selected)}`);
+        const r = await fetch(`/api/sales-trend/supplier?name=${encodeURIComponent(selected)}&months=${months}`);
         if (cancelled) return;
         if (r.ok) {
           const j = await r.json();
@@ -620,7 +701,7 @@ const SupplierTrendTab: React.FC<{ granularity: "10day" | "month" }> = ({ granul
       } finally { if (!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
-  }, [selected]);
+  }, [selected, months]);
 
   const filteredRows = useMemo(() => {
     const filled = fillPeriodsWithRows(
@@ -650,7 +731,7 @@ const SupplierTrendTab: React.FC<{ granularity: "10day" | "month" }> = ({ granul
     ),
     series: [
       { label: "매입",      color: "#10b981", kind: "bar" as const,  values: filteredRows.map(r => Number(r.purchase_qty ?? 0)),    format: "count" as const },
-      { label: "판매",      color: "#f97316", kind: "line" as const, values: filteredRows.map(r => Number(r.sale_qty ?? 0)),        format: "count" as const },
+      { label: "판매",      color: "#dc2626", kind: "line" as const, values: filteredRows.map(r => Number(r.sale_qty ?? 0)),        format: "count" as const },
       { label: "종료재고",  color: "#6366f1", kind: "line" as const, values: filteredRows.map(r => Number(r.closing_stock ?? 0)),   format: "count" as const },
     ],
   }), [filteredRows, granularity]);
@@ -806,7 +887,7 @@ const StockFlowPanel: React.FC<{
   const [loading, setLoading] = useState(false);
   const [sort, setSort] = useState<FlowSortKey>("sale");
   const [dir, setDir]   = useState<FlowSortDir>("desc");
-  const [limit, setLimit] = useState<number>(100);
+  const [limit, setLimit] = useState<number>(50000); // 전체가 기본
   const [snapshot, setSnapshot] = useState<string>("");
   const [query, setQuery] = useState<string>("");
   const [monthsLocal, setMonthsLocal] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
@@ -879,12 +960,18 @@ const StockFlowPanel: React.FC<{
           {snapshot && <span className="text-[10px] font-mono text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">{snapshot}</span>}
         </div>
         <div className="flex items-center gap-1 shrink-0">
-          {([100, 300, 1000, 5000] as const).map(n => (
-            <button key={n} onClick={() => setLimit(n)}
+          {[
+            { v: 50000, label: "전체" },
+            { v: 2000,  label: "Top 2000" },
+            { v: 1000,  label: "Top 1000" },
+            { v: 300,   label: "Top 300" },
+            { v: 100,   label: "Top 100" },
+          ].map(o => (
+            <button key={o.v} onClick={() => setLimit(o.v)}
               className={`text-[10px] font-black px-1.5 py-0.5 rounded transition ${
-                limit === n ? "bg-orange-500 text-white" : "text-slate-500 hover:bg-slate-100"
+                limit === o.v ? "bg-orange-500 text-white" : "text-slate-500 hover:bg-slate-100"
               }`}
-            >Top {n}</button>
+            >{o.label}</button>
           ))}
         </div>
       </div>
@@ -919,7 +1006,7 @@ const StockFlowPanel: React.FC<{
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="상품명 · 코드 · 공급사 필터"
+            placeholder={limit >= 50000 ? "전체 상품 검색" : "Top 리스트 내 검색"}
             className="w-full pl-7 pr-8 py-1.5 text-xs border border-slate-200 rounded-lg focus:outline-none focus:border-teal-400 bg-white"
           />
           {query && (
@@ -946,16 +1033,17 @@ const StockFlowPanel: React.FC<{
       </div>
       <div className="flex-1 overflow-auto relative">
         {loading && (
-          <div className="absolute top-1 right-1 z-20 text-[10px] font-black text-orange-600 bg-white/90 border border-orange-200 rounded-full px-2 py-0.5 shadow-sm animate-pulse">
-            갱신 중...
+          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-white/60 backdrop-blur-[1px] pointer-events-none">
+            <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+            <div className="mt-3 text-xs font-black text-slate-600">데이터 로딩중...</div>
           </div>
         )}
         {displayRows.length === 0 && !loading ? (
           <div className="text-center text-xs text-slate-400 py-8">데이터 없음</div>
         ) : displayRows.length === 0 && loading ? (
-          <div className="text-center text-xs text-slate-400 py-8">불러오는 중...</div>
+          <div className="text-center text-xs text-slate-400 py-8">&nbsp;</div>
         ) : (
-          <table className={`w-full text-xs ${loading ? "opacity-70 transition-opacity" : ""}`}>
+          <table className={`w-full text-xs ${loading ? "opacity-40 transition-opacity" : ""}`}>
             <thead className="sticky top-0 bg-white z-10">
               <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
                 <th className="text-left px-1 py-1.5 w-7">#</th>
@@ -966,8 +1054,9 @@ const StockFlowPanel: React.FC<{
                   className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 ${sort === "opening" ? "text-slate-800 font-black" : "text-slate-500"}`}
                 >시작{arrow("opening")}</th>
                 <th onClick={() => toggleSort("purchase")}
-                  className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none hover:bg-slate-50 ${sort === "purchase" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
-                >매입{arrow("purchase")}</th>
+                  className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-slate-50 ${sort === "purchase" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
+                  title="클릭: 매입 정렬 · 옆 (M/D)는 최근 매입일"
+                >매입 <span className="text-[8px] font-normal text-slate-400">(M/D)</span>{arrow("purchase")}</th>
                 <th onClick={() => toggleSort("sale")}
                   className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none hover:bg-slate-50 ${sort === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
                 >판매{arrow("sale")}</th>
@@ -976,8 +1065,8 @@ const StockFlowPanel: React.FC<{
                 >종료{arrow("closing")}</th>
                 <th onClick={() => toggleSort("current")}
                   className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 ${sort === "current" ? "text-amber-800 font-black" : "text-amber-600 font-black"}`}
-                  title="ERP 현재고"
-                >ERP{arrow("current")}</th>
+                  title="ERP 현재고 (products.current_stock)"
+                >현재고{arrow("current")}</th>
                 <th onClick={() => toggleSort("loss")}
                   className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 ${sort === "loss" ? "text-rose-700 font-black" : "text-rose-500"}`}
                 >손실{arrow("loss")}</th>
@@ -989,26 +1078,42 @@ const StockFlowPanel: React.FC<{
             <tbody className="divide-y divide-slate-50">
               {displayRows.map((p, i) => {
                 const cur = Number(p.current_stock ?? 0);
-                const loss = Number(p.closing_stock) - cur;
-                const mismatch = Number(p.closing_stock) !== cur;
+                const close = Number(p.closing_stock ?? 0);
+                const loss = close - cur;
+                const mismatch = close !== cur;
                 return (
                   <tr
                     key={`sf-${p.product_code}-${i}`}
                     className={`transition cursor-pointer ${selectedCode === String(p.product_code) ? "bg-teal-50 border-l-4 border-teal-500" : "hover:bg-orange-50/30"}`}
                     onClick={() => onProductClick(p)}
                   >
-                    <td className="px-1 py-1 text-[10px] font-black text-orange-600">{i + 1}</td>
-                    <td className="px-1 py-1">
+                    <td className="px-0.5 py-1.5 text-[10px] font-black text-orange-600">{i + 1}</td>
+                    <td className="px-1 py-1.5">
                       <div className="font-bold text-slate-700 truncate max-w-[160px]" title={p.product_name}>{p.product_name}</div>
                       {p.supplier && <div className="text-[9px] text-slate-400 truncate max-w-[160px]">{p.supplier}</div>}
                     </td>
-                    <td className="text-right px-0.5 py-1 font-mono text-slate-500 text-[11px]">{fmt(p.opening_stock)}</td>
-                    <td className="text-right px-0.5 py-1 font-mono text-emerald-600 text-[11px]">{fmt(p.purchase_qty)}</td>
-                    <td className="text-right px-0.5 py-1 font-mono font-bold text-orange-700 text-[11px]">{fmt(p.sale_qty)}</td>
-                    <td className={`text-right px-0.5 py-1 font-mono text-[11px] ${p.closing_stock < 0 ? "text-rose-500 font-bold" : mismatch ? "text-red-600 font-black" : "text-slate-600"}`}>{fmt(p.closing_stock)}</td>
-                    <td className={`text-right px-0.5 py-1 font-mono font-black text-[11px] ${cur <= 0 ? "text-red-600" : mismatch ? "text-red-600" : "text-amber-700"}`}>{fmt(cur)}</td>
-                    <td className={`text-right px-0.5 py-1 font-mono text-[11px] ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}>{loss === 0 ? "0" : loss > 0 ? `+${fmt(loss)}` : `-${fmt(Math.abs(loss))}`}</td>
-                    <td className="text-right px-0.5 py-1 font-mono text-[10px] text-indigo-700 font-bold">{p.sale_price != null && p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</td>
+                    <td className="text-right px-0.5 py-1.5 font-mono text-slate-500 text-[11px]">{fmt(p.opening_stock)}</td>
+                    <td className="text-right px-0.5 py-1.5 font-mono text-emerald-600 text-[11px]" title={p.last_purchase_date ? `최근 매입: ${p.last_purchase_date}` : "매입 이력 없음"}>
+                      {fmt(p.purchase_qty)}
+                      {(() => {
+                        const md = extractMonthDay(p.last_purchase_date);
+                        return md ? <span className="text-[9px] text-slate-400 font-normal ml-0.5">({md})</span> : null;
+                      })()}
+                    </td>
+                    <td className="text-right px-0.5 py-1.5 font-mono font-bold text-orange-700 text-[11px]">{fmt(p.sale_qty)}</td>
+                    <td
+                      className={`text-right px-0.5 py-1.5 font-mono text-[11px] ${close < 0 ? "text-rose-500 font-bold" : mismatch ? "text-red-600 font-black" : "text-slate-600"}`}
+                      title={mismatch ? `종료 ${fmt(close)} ≠ 현재고 ${fmt(cur)} · 불일치` : "종료재고 (스냅샷)"}
+                    >{fmt(close)}</td>
+                    <td
+                      className={`text-right px-0.5 py-1.5 font-mono font-black text-[11px] ${cur <= 0 ? "text-red-600" : mismatch ? "text-red-600" : "text-amber-700"}`}
+                      title={mismatch ? `현재고 ${fmt(cur)} ≠ 종료 ${fmt(close)} · 불일치` : "ERP 현재고"}
+                    >{fmt(cur)}</td>
+                    <td
+                      className={`text-right px-0.5 py-1.5 font-mono text-[11px] ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
+                      title={`손실 = 종료재고(${fmt(close)}) − 현재고(${fmt(cur)}) = ${loss > 0 ? "-" + fmt(loss) : loss < 0 ? "+" + fmt(Math.abs(loss)) : "0"}`}
+                    >{loss === 0 ? "0" : loss > 0 ? `-${fmt(loss)}` : `+${fmt(Math.abs(loss))}`}</td>
+                    <td className="text-right px-0.5 py-1.5 font-mono text-[10px] text-indigo-700 font-bold">{p.sale_price != null && p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</td>
                   </tr>
                 );
               })}
@@ -1025,6 +1130,9 @@ export const SalesTrendPage: React.FC = () => {
   const [tab, setTab] = useState<"product" | "supplier">("product");
   // X축 스케일: 초/중/말일 (10day) or 월별 (month)
   const [granularity, setGranularity] = useState<"10day" | "month">("10day");
+  // 차트 조회기간 (리스트의 조회기간과는 독립적)
+  const [chartMonths, setChartMonths] = useState<1 | 2 | 3 | 4 | 5 | 6>(3);
+  const chartRangeDays = chartMonths * 30;
 
   return (
     <div className="flex-1 flex flex-col max-w-[1360px] mx-auto w-full px-2 sm:px-4 py-2 sm:py-4 gap-3">
@@ -1037,45 +1145,68 @@ export const SalesTrendPage: React.FC = () => {
         </div>
         {/* 중: 서브탭 */}
         <div className="flex justify-center">
-          <div className="inline-flex bg-slate-100/80 backdrop-blur border border-slate-200/60 rounded-xl p-1 shadow-inner">
+          <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
             {[
               { k: "product",  label: "상품별" },
               { k: "supplier", label: "공급사별" },
             ].map(t => (
               <button key={t.k} onClick={() => setTab(t.k as any)}
-                className={`px-4 sm:px-5 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                className={`px-4 sm:px-5 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${
                   tab === t.k
-                    ? "bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-md shadow-teal-500/30"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                    ? "bg-teal-100/60 text-teal-700 ring-1 ring-teal-200 shadow-sm"
+                    : "text-teal-400/80 hover:bg-teal-50/60 hover:text-teal-600"
                 }`}
               >{t.label}</button>
             ))}
           </div>
         </div>
-        {/* 우: X축 스케일 (기간 pill 은 리스트 헤더에 이미 있어 중복 제거) */}
-        <div className="flex justify-end">
-          <div className="inline-flex bg-slate-100/80 backdrop-blur border border-slate-200/60 rounded-xl p-1 shadow-inner" title="X축 스케일: 10일 단위 (초·중·말일) 또는 월 단위">
-            <button onClick={() => setGranularity("10day")}
-              className={`px-2 sm:px-2.5 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
-                granularity === "10day"
-                  ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-200"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-              }`}
-            >10일</button>
-            <button onClick={() => setGranularity("month")}
-              className={`px-2 sm:px-2.5 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
-                granularity === "month"
-                  ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-200"
-                  : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-              }`}
-            >월별</button>
+        {/* 우: 차트 컨트롤 (전체기간 + X축 단위) — 그룹핑된 카드 */}
+        <div className="flex justify-end overflow-x-auto scrollbar-none">
+          <div className="inline-flex items-center gap-2 bg-white/70 backdrop-blur border border-teal-200/60 rounded-2xl px-2 py-1.5 shadow-sm shrink-0">
+            {/* 전체 기간 */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-black text-teal-700 uppercase tracking-wider shrink-0 pl-1">전체기간</span>
+              <div className="inline-flex bg-slate-100/80 border border-slate-200/60 rounded-lg p-0.5">
+                {[1, 2, 3, 4, 5, 6].map(m => (
+                  <button key={m} onClick={() => setChartMonths(m as any)}
+                    className={`min-w-[26px] px-1.5 py-1 text-[11px] font-black rounded-md transition-all duration-150 cursor-pointer ${
+                      chartMonths === m
+                        ? "bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-sm"
+                        : "text-slate-500 hover:text-slate-800 hover:bg-white/70"
+                    }`}
+                  >{m}</button>
+                ))}
+                <span className="text-[10px] font-bold text-slate-400 self-center px-1">개월</span>
+              </div>
+            </div>
+            <div className="w-px h-6 bg-slate-200" />
+            {/* X축 단위 */}
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-black text-teal-700 uppercase tracking-wider shrink-0">X축</span>
+              <div className="inline-flex bg-slate-100/80 border border-slate-200/60 rounded-lg p-0.5" title="한 데이터 포인트가 나타내는 기간">
+                <button onClick={() => setGranularity("10day")}
+                  className={`px-2.5 py-1 text-[11px] font-black rounded-md transition-all duration-150 cursor-pointer ${
+                    granularity === "10day"
+                      ? "bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-800 hover:bg-white/70"
+                  }`}
+                >10일</button>
+                <button onClick={() => setGranularity("month")}
+                  className={`px-2.5 py-1 text-[11px] font-black rounded-md transition-all duration-150 cursor-pointer ${
+                    granularity === "month"
+                      ? "bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-sm"
+                      : "text-slate-500 hover:text-slate-800 hover:bg-white/70"
+                  }`}
+                >월</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto">
-        {tab === "product"  && <ProductTrendTab granularity={granularity} />}
-        {tab === "supplier" && <SupplierTrendTab granularity={granularity} />}
+        {tab === "product"  && <ProductTrendTab granularity={granularity} chartRangeDays={chartRangeDays} />}
+        {tab === "supplier" && <SupplierTrendTab granularity={granularity} chartRangeDays={chartRangeDays} />}
       </div>
     </div>
   );
