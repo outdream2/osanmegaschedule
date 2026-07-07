@@ -95,18 +95,49 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
   } else {
     // Normal background color scheme based on sections / map definitions
     if (zone.section === "aisle") {
-      const aisleColors: Record<number, string> = {
-        9: "bg-blue-500 text-white border-blue-600 hover:bg-blue-600",
-        8: "bg-blue-400 text-white border-blue-500 hover:bg-blue-500",
-        7: "bg-sky-500 text-white border-sky-600 hover:bg-sky-600",
-        6: "bg-purple-400 text-white border-purple-500 hover:bg-purple-500",
-        5: "bg-stone-400 text-white border-stone-500 hover:bg-stone-500",
-        4: "bg-orange-300 text-white border-orange-400 hover:bg-orange-400",
-        3: "bg-teal-500 text-white border-teal-600 hover:bg-teal-600",
-        2: "bg-yellow-400 text-gray-900 border-yellow-500 hover:bg-yellow-500",
-        1: "bg-green-500 text-white border-green-600 hover:bg-green-600",
+      // 각 pair (1-8) 동일 톤 · A=진한색 / B=연한색 (category.jpg 색상 반영)
+      const aisleColorsAB: Record<number, { A: string; B: string }> = {
+        1: {
+          A: "bg-blue-600 text-white border-blue-700 hover:bg-blue-700",
+          B: "bg-blue-300 text-blue-950 border-blue-400 hover:bg-blue-400",
+        },
+        2: {
+          A: "bg-yellow-500 text-yellow-950 border-yellow-600 hover:bg-yellow-600",
+          B: "bg-yellow-200 text-yellow-900 border-yellow-300 hover:bg-yellow-300",
+        },
+        3: {
+          A: "bg-red-600 text-white border-red-700 hover:bg-red-700",
+          B: "bg-red-300 text-red-950 border-red-400 hover:bg-red-400",
+        },
+        4: {
+          A: "bg-pink-600 text-white border-pink-700 hover:bg-pink-700",
+          B: "bg-pink-300 text-pink-950 border-pink-400 hover:bg-pink-400",
+        },
+        5: {
+          A: "bg-lime-600 text-white border-lime-700 hover:bg-lime-700",
+          B: "bg-lime-300 text-lime-950 border-lime-400 hover:bg-lime-400",
+        },
+        6: {
+          A: "bg-sky-600 text-white border-sky-700 hover:bg-sky-700",
+          B: "bg-sky-300 text-sky-950 border-sky-400 hover:bg-sky-400",
+        },
+        7: {
+          A: "bg-indigo-600 text-white border-indigo-700 hover:bg-indigo-700",
+          B: "bg-indigo-300 text-indigo-950 border-indigo-400 hover:bg-indigo-400",
+        },
+        8: {
+          A: "bg-purple-600 text-white border-purple-700 hover:bg-purple-700",
+          B: "bg-purple-300 text-purple-950 border-purple-400 hover:bg-purple-400",
+        },
       };
-      statusCls = aisleColors[zone.num] || "bg-blue-500 text-white border-blue-600";
+      const pair = aisleColorsAB[zone.num];
+      if (pair) {
+        const isA = zone.id.endsWith("A");
+        const isB = zone.id.endsWith("B");
+        statusCls = isA ? pair.A : isB ? pair.B : pair.A;
+      } else {
+        statusCls = "bg-white text-slate-700 border-slate-300 hover:border-slate-400";
+      }
     } else if (zone.num === 36) {
       statusCls = "bg-blue-50 text-blue-900 border-blue-300 hover:bg-blue-100 hover:border-blue-400";
     } else if (zone.num === 37) {
@@ -144,9 +175,15 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
         />
       )}
 
-      {/* Row 1: 구역 번호 + 상태 dot */}
+      {/* Row 1: A/B 뱃지만 (num은 상위 라벨에 이미 있음) + 상태 dot */}
       <div className="flex items-center justify-between px-1 pt-0.5 shrink-0">
-        <span className="text-[11px] leading-none font-black">{zone.num}</span>
+        {(zone.id.endsWith("A") || zone.id.endsWith("B")) ? (
+          <span className="text-[12px] font-black leading-none">
+            {zone.id.endsWith("A") ? "A" : "B"}
+          </span>
+        ) : (
+          <span />
+        )}
         {zone.status !== "normal" ? (
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot(zone.status)}`} />
         ) : (

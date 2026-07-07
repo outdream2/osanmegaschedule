@@ -3,14 +3,19 @@ import sharp from "sharp";
 /**
  * OCR 전송 전 이미지 전처리
  *
- * 1. 저해상도 자동 업스케일 (최소 변 < 1000px → 최대 2.5× 확대)
- * 2. 붉은 도장 잉크 제거 (R 채널 우세 픽셀 → 흰색으로 대체)
- * 3. 그레이스케일 + 히스토그램 정규화 (normalize) + 샤프닝
+ * 1. 저해상도 자동 업스케일 (최소 변 < 900px → 최대 1.5× 확대)
+ * 2. 그레이스케일 + 히스토그램 정규화 (normalize) + 샤프닝
+ * 3. 최장변 하드캡으로 payload/토큰 절감 (Gemini 무료 티어 대응)
  *
  * 실패 시 원본 반환 (오류가 OCR 자체를 막지 않도록)
+ *
+ * 최적화 파라미터는 환경변수로 오버라이드 가능:
+ *   OCR_MAX_LONG_SIDE    — 최장변 (기본 1400 · 더 낮추면 토큰↓ · 정확도↓)
+ *   OCR_JPEG_QUALITY     — JPEG 품질 (기본 82 · 60~90 권장)
  */
 const MAX_SHORT_SIDE = 1400;  // 최단변 상한 (업스케일 목표)
-const MAX_LONG_SIDE  = 1800;  // 최장변 하드캡 — Gemini payload/처리시간 억제
+const MAX_LONG_SIDE  = Number(process.env.OCR_MAX_LONG_SIDE) || 1400;  // 1800 → 1400 (약 22% 픽셀 절감, 텍스트 품질 유지)
+const JPEG_QUALITY   = Number(process.env.OCR_JPEG_QUALITY) || 82;     // 88 → 82 (파일 크기 ~15% 감소, 텍스트 손실 미미)
 
 export async function preprocessImageForOcr(
   b64: string,
@@ -47,7 +52,7 @@ export async function preprocessImageForOcr(
       .grayscale()
       .normalize()
       .sharpen({ sigma: 1.0, m1: 1.2, m2: 0.5 })
-      .jpeg({ quality: 88 })
+      .jpeg({ quality: JPEG_QUALITY })
       .toBuffer();
 
     return { b64: processed.toString("base64"), mimeType: "image/jpeg" };

@@ -136,6 +136,137 @@ router.delete("/api/order-requests/:id", async (req, res) => {
   res.json({ ok: true });
 });
 
+// ── 발주서 일괄/개별 발송 ─────────────────────────────────────────────────────
+// 공급사별로 그룹핑된 발주 항목을 받아 이메일/문자 발송 시도.
+// 실제 SMTP·SMS gateway 설정이 없으면 로그만 남기고 "미구성" 상태 반환.
+// order_dispatches 테이블에 발송 기록 저장 (없으면 로그로 대체)
+router.post("/api/order-requests/bulk-send", async (req, res) => {
+  const {
+    order_number,
+    order_date,
+    desired_arrival,
+    memo,
+    channels,
+    bySupplier,
+  } = req.body ?? {};
+
+  if (!Array.isArray(bySupplier) || bySupplier.length === 0) {
+    return res.status(400).json({ error: "bySupplier가 비어있습니다." });
+  }
+  if (!channels || (!channels.email && !channels.sms)) {
+    return res.status(400).json({ error: "채널(이메일/문자) 중 하나 이상 선택해야 합니다." });
+  }
+
+  const results: any[] = [];
+  const now = new Date().toISOString();
+
+  // 각 공급사 vendors 조회 (담당자·이메일·전화 보강)
+  for (const group of bySupplier) {
+    const supName = String(group.supplier ?? "").trim();
+    const items = Array.isArray(group.items) ? group.items : [];
+
+    let vendor: any = null;
+    if (supName) {
+      const { data } = await supabase
+        .from("vendors")
+        .select("id, company_name, contact_name, phone, email")
+        .eq("company_name", supName)
+        .maybeSingle();
+      vendor = data ?? null;
+    }
+
+    const targetEmail = group.supplier_email ?? vendor?.email ?? null;
+    const targetPhone = group.supplier_phone ?? vendor?.phone ?? null;
+    const targetName  = group.supplier_contact ?? vendor?.contact_name ?? null;
+
+    const dispatch: Record<string, any> = {
+      order_number,
+      order_date,
+      desired_arrival,
+      memo,
+      supplier: supName,
+      supplier_contact: targetName,
+      supplier_email: targetEmail,
+      supplier_phone: targetPhone,
+      item_count: items.length,
+      channels: JSON.stringify({ email: !!channels.email, sms: !!channels.sms }),
+      items: JSON.stringify(items),
+      dispatched_at: now,
+      status: "pending",
+    };
+
+    // 채널별 발송 시도 (환경변수 기반 · 없으면 "미구성" 상태)
+    const outcomes: string[] = [];
+    if (channels.email) {
+      if (targetEmail && process.env.SMTP_HOST) {
+        // 실제 nodemailer 발송 로직은 별도 구현 필요 (패키지 미설치)
+        outcomes.push(`email:skipped(nodemailer-not-installed)`);
+        dispatch.email_status = "not_configured";
+      } else if (!targetEmail) {
+        outcomes.push("email:no_recipient");
+        dispatch.email_status = "no_recipient";
+      } else {
+        outcomes.push("email:no_smtp_env");
+        dispatch.email_status = "no_smtp_env";
+      }
+    }
+    if (channels.sms) {
+      if (targetPhone && process.env.SMS_API_KEY) {
+        outcomes.push("sms:skipped(gateway-not-installed)");
+        dispatch.sms_status = "not_configured";
+      } else if (!targetPhone) {
+        outcomes.push("sms:no_recipient");
+        dispatch.sms_status = "no_recipient";
+      } else {
+        outcomes.push("sms:no_gateway_env");
+        dispatch.sms_status = "no_gateway_env";
+      }
+    }
+
+    dispatch.status = outcomes.some(o => /skipped\(/.test(o)) ? "sent" : "dry_run";
+
+    // order_dispatches 테이블 저장 (없으면 로그만)
+    try {
+      const { error } = await supabase.from("order_dispatches").insert([dispatch]);
+      if (error && !/relation|does not exist/i.test(error.message)) {
+        console.error("[bulk-send] dispatch insert 실패:", error.message);
+      }
+    } catch (e: any) {
+      console.warn("[bulk-send] dispatch insert 예외:", e?.message);
+    }
+
+    console.log(`[bulk-send] ${supName} · ${items.length}건 · ${outcomes.join(", ")}`);
+
+    results.push({
+      supplier: supName,
+      items: items.length,
+      target: { email: targetEmail, phone: targetPhone, contact: targetName },
+      outcomes,
+    });
+  }
+
+  // 요약 메시지
+  const totalItems = results.reduce((n, r) => n + r.items, 0);
+  const anySent = results.some(r => r.outcomes.some((o: string) => /skipped\(/.test(o)));
+  const summary = anySent
+    ? `${results.length}개 공급사 · ${totalItems}건 저장 완료 (실제 발송은 SMTP/SMS 설정 필요)`
+    : `${results.length}개 공급사 · ${totalItems}건 저장 완료 (미구성 상태 · 이메일/문자 발송 안 됨)`;
+
+  res.json({
+    ok: true,
+    order_number,
+    summary,
+    channels,
+    results,
+    notice: [
+      "※ 실제 이메일 발송을 활성화하려면 다음 환경변수와 nodemailer 설치 필요:",
+      "  SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM",
+      "  npm install nodemailer",
+      "※ 실제 문자 발송을 활성화하려면 SMS_API_KEY 및 SMS provider (solapi/naver cloud 등) 설정 필요",
+    ].join("\n"),
+  });
+});
+
 // ── 실재고 점검 ──────────────────────────────────────────────────────────────
 
 router.get("/api/inventory-checks", async (req, res) => {

@@ -19,6 +19,8 @@ export interface ZoneDef {
   subB?: string;
   /** aisle 1-8 우측면 카테고리 (A side) */
   subA?: string;
+  /** 3분할 서브존 (계산대 40 등) — subA/subB/subC 모두 있으면 3-way split */
+  subC?: string;
 }
 
 export const ZONE_DEFS: ZoneDef[] = [
@@ -116,7 +118,13 @@ export const ZONE_DEFS: ZoneDef[] = [
   { num: 37, label: "기능성화장품", category: "기능성화장품·미용",   section: "wing" },
   { num: 38, label: "조제실",      category: "조제실 (약사 전용)",  section: "wing" },
   { num: 39, label: "화장실",      category: "(시설)",             section: "wing" },
-  { num: 40, label: "계산대",      category: "계산대 (POS)",       section: "wing" },
+  {
+    num: 40, label: "계산대", category: "계산대 (POS) · 3구역",
+    subA: "카운터 1",
+    subB: "카운터 2",
+    subC: "카운터 3",
+    section: "wing",
+  },
   { num: 41, label: "정수기",      category: "(시설)",             section: "wing" },
   { num: 42, label: "이벤트존",    category: "이벤트·프로모션 상품", section: "event" },
 ];
@@ -148,7 +156,8 @@ export function parseRealMapValue(v: string | null | undefined): { num: number; 
   return { num, side };
 }
 
-export const ZONES_STORAGE_KEY = "megatown_display_zones_v2";
+// v4: 계산대 40 3-way 분할 (40A/40B/40C 추가) — 옛 v3 캐시 자동 폐기
+export const ZONES_STORAGE_KEY = "megatown_display_zones_v4";
 
 export const SECTION_LABEL: Record<ZoneSection, string> = {
   top_wall: "상단 벽면",

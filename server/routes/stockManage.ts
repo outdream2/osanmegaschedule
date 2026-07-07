@@ -309,15 +309,15 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
       from += PAGE;
     }
 
-    // products.optimal_stock + sale_price 매핑 준비 (product_code 기준, 페이지네이션)
-    const productMap = new Map<string, { optimal_stock: number; sale_price: number }>();
+    // products.optimal_stock + sale_price + last_purchase_date 매핑 준비 (product_code 기준, 페이지네이션)
+    const productMap = new Map<string, { optimal_stock: number; sale_price: number; current_stock: number; last_purchase_date: string | null }>();
     try {
       const OP_PAGE = 1000;
       let opFrom = 0;
       while (true) {
         const { data: page } = await supabase
           .from("products")
-          .select("product_code, optimal_stock, sale_price")
+          .select("product_code, optimal_stock, sale_price, current_stock, last_purchase_date")
           .range(opFrom, opFrom + OP_PAGE - 1);
         if (!page || page.length === 0) break;
         for (const p of page) {
@@ -326,6 +326,8 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           productMap.set(code, {
             optimal_stock: Number((p as any).optimal_stock ?? 0) || 0,
             sale_price:    Number((p as any).sale_price    ?? 0) || 0,
+            current_stock: Number((p as any).current_stock ?? 0) || 0,
+            last_purchase_date: (p as any).last_purchase_date ?? null,
           });
         }
         if (page.length < OP_PAGE) break;
@@ -335,22 +337,34 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
       console.warn("[top-sales] products fetch 실패:", e?.message);
     }
 
-    // 정렬 키 결정
+    // last_purchase_date 보강: products.last_purchase_date가 null이거나
+    // 현재 스냅샷보다 오래된 경우, 이 스냅샷의 purchase_qty > 0이면
+    // 현재 스냅샷 날짜를 최근 매입일로 대체 (더 최신 정보 반영)
     const rows = (data ?? []).map(r => {
       const prod = productMap.get(String(r.product_code ?? ""));
+      const purchaseQty = Number(r.purchase_qty ?? 0) || 0;
+      let lastPurchase = prod?.last_purchase_date ?? null;
+      // 이 스냅샷에서 실제 매입이 있고, 기존 last_purchase_date가 없거나 이보다 오래되었다면 대체
+      if (purchaseQty > 0) {
+        if (!lastPurchase || String(lastPurchase) < String(targetDate)) {
+          lastPurchase = targetDate;
+        }
+      }
       return {
         product_code:  String(r.product_code ?? ""),
         product_name:  String(r.product_name ?? r.product_code ?? ""),
         supplier:      r.supplier_name ?? null,
         spec:          r.spec ?? null,
         opening_stock: Number(r.opening_stock ?? 0) || 0,
-        purchase_qty:  Number(r.purchase_qty  ?? 0) || 0,
+        purchase_qty:  purchaseQty,
         sale_qty:      Number(r.sale_qty      ?? 0) || 0,
         disposal_qty:  Number(r.disposal_qty  ?? 0) || 0,
         closing_stock: Number(r.closing_stock ?? 0) || 0,
         total_amount:  Number(r.total_amount  ?? 0) || 0,
         optimal_stock: prod?.optimal_stock ?? 0,
         sale_price:    prod?.sale_price    ?? 0,
+        current_stock: prod?.current_stock ?? 0,
+        last_purchase_date: lastPurchase,
       };
     });
     const sign = dir === "asc" ? 1 : -1;

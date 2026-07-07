@@ -130,7 +130,22 @@ router.get("/api/products/:code", async (req, res) => {
       data = r2.data;
     }
     if (!data) return res.status(404).json({ error: "상품을 찾을 수 없습니다" });
-    res.json({ ...data, realMap: data.real_map ?? null });
+    // last_purchase_date가 null이면 stock_history에서 최근 purchase_qty > 0 스냅샷 날짜로 fallback
+    let lastPurchase: string | null = (data as any).last_purchase_date ?? null;
+    if (!lastPurchase) {
+      try {
+        const productCode = (data as any).product_code ?? code;
+        const { data: hist } = await supabase
+          .from("stock_history")
+          .select("snapshot_date")
+          .eq("product_code", productCode)
+          .gt("purchase_qty", 0)
+          .order("snapshot_date", { ascending: false })
+          .limit(1);
+        if (hist && hist.length > 0) lastPurchase = (hist[0] as any).snapshot_date ?? null;
+      } catch { /* silent */ }
+    }
+    res.json({ ...data, realMap: data.real_map ?? null, last_purchase_date: lastPurchase });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
@@ -148,6 +163,50 @@ router.patch("/api/products/:code/realmap", async (req, res) => {
     res.json({ ok: true });
   } catch (err: any) {
     console.error("[realmap PATCH] exception:", err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 상품 인라인 편집 · 허용 컬럼만 수정 (부적절 컬럼 차단)
+const ALLOWED_INLINE_EDIT = new Set([
+  "optimal_stock",
+  "sale_price",
+  "purchase_price",
+  "cost_price",
+  "supplier",
+  "spec",
+  "real_map",
+  "brand",
+  "manufacturer",
+  "barcode",
+  "expiry_date",
+  "memo",
+  "note",
+]);
+router.patch("/api/products/:code", async (req, res) => {
+  const code = (req.params.code ?? "").trim();
+  if (!code) return res.status(400).json({ error: "code required" });
+  const body = req.body ?? {};
+  const updates: Record<string, any> = {};
+  for (const [k, v] of Object.entries(body)) {
+    if (!ALLOWED_INLINE_EDIT.has(k)) continue;
+    // 숫자 필드는 파싱, 빈 문자열은 null
+    if (["optimal_stock", "sale_price", "purchase_price", "cost_price"].includes(k)) {
+      updates[k] = v === "" || v == null ? null : Number(v);
+    } else {
+      updates[k] = v === "" ? null : v;
+    }
+  }
+  if (Object.keys(updates).length === 0) return res.status(400).json({ error: "수정할 필드가 없습니다" });
+  try {
+    const { error } = await supabase.from("products").update(updates).eq("product_code", code);
+    if (error) {
+      console.error("[products PATCH] error:", error.message);
+      return res.status(500).json({ error: error.message });
+    }
+    resetProductCache();
+    res.json({ ok: true, updated: Object.keys(updates) });
+  } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });

@@ -49,12 +49,13 @@ export interface ZoneAssignPopoverProps {
   onAssign: (staffId: number, staffName: string) => void;
   onUnassign: () => void;
   onOpenDetail: () => void;
+  onOpenProducts?: () => void;
   onClose: () => void;
   onStaffInfoClick: (staff: TodayStaff) => void;
 }
 
 export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
-  zone, anchor, logisticsStaff, staffColorMap, onAssign, onUnassign, onOpenDetail, onClose, onStaffInfoClick,
+  zone, anchor, logisticsStaff, staffColorMap, onAssign, onUnassign, onOpenDetail, onOpenProducts, onClose, onStaffInfoClick,
 }) => {
   const [style, setStyle] = useState<React.CSSProperties>({});
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -158,8 +159,18 @@ export const ZoneAssignPopover: React.FC<ZoneAssignPopoverProps> = ({
           onClick={onOpenDetail}
           className="flex-1 text-[10px] font-semibold text-slate-500 hover:text-slate-700 py-1.5 rounded-xl hover:bg-slate-100 border border-transparent transition cursor-pointer flex items-center justify-center gap-1"
         >
-          <Package size={11} />상세 편집 열기
+          <Package size={11} />상세 편집
         </button>
+        {onOpenProducts && (
+          <button
+            type="button"
+            onClick={onOpenProducts}
+            className="flex-1 text-[10px] font-bold text-emerald-700 hover:text-emerald-900 py-1.5 rounded-xl hover:bg-emerald-50 border border-transparent transition cursor-pointer flex items-center justify-center gap-1"
+            title="이 구역에 배정된 상품 리스트"
+          >
+            📦 상품 리스트
+          </button>
+        )}
       </div>
     </div>
   );

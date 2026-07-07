@@ -1,16 +1,104 @@
 import React, { useState, useEffect } from "react";
-import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine } from "lucide-react";
+import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info } from "lucide-react";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
 import { StockCounterModal } from "../StockCounterModal";
+
+// 인라인 편집 가능 필드 종류
+type InlineEditableKey = "optimal_stock" | "sale_price" | "purchase_price" | "cost_price" | "brand" | "manufacturer" | "barcode" | "expiry_date" | "memo";
+
+// 섹션 표시 여부 (context별로 다르게)
+interface ProductInfoSections {
+  header?: boolean;         // 상품명 헤더
+  zoneAssignment?: boolean; // 전산/실제 배정구역 카드
+  stockStatus?: boolean;    // 현재고/적정재고 (인라인 편집 지원)
+  actualStockInput?: boolean; // 창고/매장 실재고 입력
+  orderRequest?: boolean;   // 발주요청 버튼
+  financial?: boolean;      // 매입가/판매가/마진 (신규)
+  productMeta?: boolean;    // 상품코드/공급처/판매상태/최근매입일
+  extraInfo?: boolean;      // 브랜드·제조사·바코드·유효기간·메모 (신규 · 인라인 편집)
+}
 
 interface ProductInfoCardProps {
   product: ProductInfo;
   onRealMapUpdate: (newValue: string) => void;
   checkedBy?: string;
+  /** 사용 컨텍스트 · 섹션 default 프리셋 자동 선택 */
+  context?: "scan" | "stock-manage" | "order-manage";
+  /** 섹션별 세밀 조정 (context default를 override) */
+  sections?: ProductInfoSections;
+  /** 인라인 편집 활성화 여부 (기본: stock-manage에서만 활성) */
+  editable?: boolean;
+  /** 상품 필드 업데이트 후 콜백 (부모 state 동기화용) */
+  onProductUpdate?: (updates: Partial<ProductInfo>) => void;
 }
 
-export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRealMapUpdate, checkedBy }) => {
+// 컨텍스트별 default 섹션
+const SECTION_PRESETS: Record<NonNullable<ProductInfoCardProps["context"]>, ProductInfoSections> = {
+  scan: {
+    header: true, zoneAssignment: true, stockStatus: true, actualStockInput: true,
+    orderRequest: true, productMeta: true, financial: false, extraInfo: false,
+  },
+  "stock-manage": {
+    header: true, zoneAssignment: true, stockStatus: true, actualStockInput: true,
+    orderRequest: true, productMeta: true, financial: true, extraInfo: true,
+  },
+  "order-manage": {
+    header: true, zoneAssignment: true, stockStatus: true, actualStockInput: true,
+    orderRequest: false, productMeta: true, financial: true, extraInfo: true,
+  },
+};
+
+export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
+  product,
+  onRealMapUpdate,
+  checkedBy,
+  context = "scan",
+  sections,
+  editable,
+  onProductUpdate,
+}) => {
+  // 섹션 병합 (context default + override)
+  const S = { ...SECTION_PRESETS[context], ...(sections ?? {}) };
+  const inlineEditEnabled = editable ?? context === "stock-manage";
+
+  // 인라인 편집 상태
+  const [editingKey, setEditingKey] = useState<InlineEditableKey | null>(null);
+  const [editingValue, setEditingValue] = useState<string>("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const startEdit = (k: InlineEditableKey, v: any) => {
+    if (!inlineEditEnabled) return;
+    setEditingKey(k);
+    setEditingValue(v == null ? "" : String(v));
+    setEditError(null);
+  };
+  const cancelEdit = () => { setEditingKey(null); setEditingValue(""); setEditError(null); };
+  const commitEdit = async () => {
+    if (!editingKey) return;
+    setEditSaving(true); setEditError(null);
+    try {
+      const res = await fetch(`/api/products/${encodeURIComponent(product.code)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ [editingKey]: editingValue }),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        setEditError(b.error ?? `서버 오류 (${res.status})`);
+        setEditSaving(false);
+        return;
+      }
+      // 부모 state 동기화
+      const num = ["optimal_stock", "sale_price", "purchase_price", "cost_price"].includes(editingKey);
+      onProductUpdate?.({ [editingKey]: num ? (editingValue === "" ? null : Number(editingValue)) : editingValue } as Partial<ProductInfo>);
+      setEditingKey(null);
+      setEditingValue("");
+    } catch (e: any) {
+      setEditError(e?.message ?? "네트워크 오류");
+    } finally { setEditSaving(false); }
+  };
   const [mapSelectorOpen, setMapSelectorOpen] = useState(false);
   const [stockCounterOpen, setStockCounterOpen] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -183,14 +271,84 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
   const opt = product.optimal_stock != null ? Number(product.optimal_stock) : null;
   const isLow = cur != null && opt != null && cur < opt;
 
+  // 인라인 편집 필드 렌더 헬퍼
+  const InlineField = ({
+    label,
+    fieldKey,
+    value,
+    type = "text",
+    format,
+    accent = "slate",
+  }: {
+    label: string;
+    fieldKey: InlineEditableKey;
+    value: any;
+    type?: "text" | "number" | "date";
+    format?: (v: any) => string;
+    accent?: "slate" | "emerald" | "indigo" | "amber";
+  }) => {
+    const isEditing = editingKey === fieldKey;
+    const displayValue = value == null || value === "" ? "-" : format ? format(value) : String(value);
+    const accentClass = {
+      slate: "text-slate-800",
+      emerald: "text-emerald-700",
+      indigo: "text-indigo-700",
+      amber: "text-amber-700",
+    }[accent];
+
+    return (
+      <div className="min-w-0">
+        <p className="text-[10px] font-bold text-gray-400 mb-0.5">{label}</p>
+        {isEditing ? (
+          <div className="flex items-center gap-1">
+            <input
+              type={type}
+              value={editingValue}
+              onChange={e => setEditingValue(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
+              disabled={editSaving}
+              autoFocus
+              className="flex-1 min-w-0 text-sm font-semibold border-2 border-indigo-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+            />
+            <button onClick={commitEdit} disabled={editSaving} className="shrink-0 w-6 h-6 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 disabled:opacity-40 cursor-pointer">
+              {editSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={12} />}
+            </button>
+            <button onClick={cancelEdit} disabled={editSaving} className="shrink-0 w-6 h-6 rounded bg-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-300 disabled:opacity-40 cursor-pointer">
+              <X size={12} />
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1 group">
+            <p className={`text-sm font-semibold ${accentClass} truncate flex-1`}>{displayValue}</p>
+            {inlineEditEnabled && (
+              <button
+                onClick={() => startEdit(fieldKey, value)}
+                className="shrink-0 opacity-0 group-hover:opacity-100 w-5 h-5 rounded hover:bg-slate-100 text-slate-400 hover:text-indigo-600 flex items-center justify-center transition cursor-pointer"
+                title={`${label} 편집`}
+              >
+                <Pencil size={10} />
+              </button>
+            )}
+          </div>
+        )}
+        {isEditing && editError && (
+          <p className="text-[10px] text-red-500 mt-0.5">{editError}</p>
+        )}
+      </div>
+    );
+  };
+
   return (
     <>
       <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
         {/* 상품명 */}
-        <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1">상품 정보</p>
-        <p className="text-2xl font-black text-gray-900 leading-tight mb-4">{product.name}</p>
+        {S.header && (<>
+          <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide mb-1">상품 정보</p>
+          <p className="text-lg font-black text-gray-900 leading-tight mb-3">{product.name}</p>
+        </>)}
 
         {/* ── 배정 구역: 전산 카드 | 실제 카드 나란히 ── */}
+        {S.zoneAssignment && (<>
         <div className="flex gap-2 mb-3">
           {/* 전산 배정구역 카드 */}
           <div className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-3">
@@ -240,8 +398,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
           </div>
         </div>
 
+        </>)}
         {/* 불일치 경고 / 저장 오류 */}
-        {(hasMismatch || saveError) && (
+        {S.zoneAssignment && (hasMismatch || saveError) && (
           <div className="flex flex-col gap-1 mb-3">
             {hasMismatch && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg">
@@ -258,24 +417,54 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
           </div>
         )}
 
-        {/* ── 재고 현황 섹션 ── */}
+        {/* ── 재고 현황 섹션 (적정재고 인라인 편집 가능) ── */}
+        {S.stockStatus && (
         <div className={`rounded-xl border px-4 py-3 mb-4 ${
           isLow ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"
         }`}>
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">재고 현황</p>
           <div className="flex items-center gap-5">
             <div>
-              <p className="text-[10px] font-bold text-gray-500 mb-0.5">현재고</p>
-              <p className={`text-3xl font-black leading-none ${isLow ? "text-red-500" : "text-gray-800"}`}>
+              <p className="text-[10px] font-bold text-gray-500 mb-0.5">현재고 (ERP)</p>
+              <p className={`text-xl font-black leading-none ${isLow ? "text-red-500" : "text-gray-800"}`}>
                 {cur ?? "-"}
               </p>
             </div>
             <div className={`h-10 w-px ${isLow ? "bg-red-200" : "bg-amber-200"}`} />
-            <div>
-              <p className="text-[10px] font-bold text-amber-600 mb-0.5">적정재고</p>
-              <p className="text-3xl font-black leading-none text-amber-700">
-                {opt ?? "-"}
+            <div className="min-w-0">
+              <p className="text-[10px] font-bold text-amber-600 mb-0.5 flex items-center gap-1">
+                적정재고 {inlineEditEnabled && <span className="text-[8px] text-amber-400">(클릭 편집)</span>}
               </p>
+              {editingKey === "optimal_stock" ? (
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number" min={0}
+                    value={editingValue}
+                    onChange={e => setEditingValue(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
+                    disabled={editSaving}
+                    autoFocus
+                    className="w-20 text-2xl font-black border-2 border-amber-500 rounded px-1.5 py-0.5 focus:outline-none"
+                  />
+                  <button onClick={commitEdit} disabled={editSaving} className="shrink-0 w-7 h-7 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 disabled:opacity-40 cursor-pointer">
+                    {editSaving ? <Loader2 size={13} className="animate-spin" /> : <Check size={14} />}
+                  </button>
+                  <button onClick={cancelEdit} disabled={editSaving} className="shrink-0 w-7 h-7 rounded bg-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-300 disabled:opacity-40 cursor-pointer">
+                    <X size={14} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => inlineEditEnabled && startEdit("optimal_stock", opt)}
+                  disabled={!inlineEditEnabled}
+                  className={`text-xl font-black leading-none text-amber-700 ${inlineEditEnabled ? "hover:bg-amber-100 rounded px-1 -mx-1 cursor-pointer transition" : "cursor-default"}`}
+                >
+                  {opt ?? "-"}
+                </button>
+              )}
+              {editingKey === "optimal_stock" && editError && (
+                <p className="text-[10px] text-red-500 mt-0.5">{editError}</p>
+              )}
             </div>
           </div>
           {isLow && (
@@ -285,9 +474,10 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
             </div>
           )}
         </div>
+        )}
 
         {/* ── 실재고 입력 (창고 / 매장 — 각각 독립 저장) ── */}
-        {(() => {
+        {S.actualStockInput && (() => {
           const hasInput = warehouseStock !== "" || storeStock !== "";
           const totalActual = Number(warehouseStock || 0) + Number(storeStock || 0);
           const diff = hasInput && cur != null ? totalActual - cur : null;
@@ -312,7 +502,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
                     type="number" min="0"
                     value={warehouseStock}
                     onChange={e => { setWarehouseStock(e.target.value === "" ? "" : Number(e.target.value)); setWhStatus("idle"); }}
-                    className="w-full text-2xl font-black text-center bg-cyan-50/50 border border-cyan-200 rounded-lg px-2 py-1.5 outline-none focus:border-cyan-400 transition"
+                    className="w-full text-base font-black text-center bg-cyan-50/50 border border-cyan-200 rounded-lg px-2 py-1 outline-none focus:border-cyan-400 transition"
                     placeholder="—"
                   />
                   {whStatus === "done" ? (
@@ -341,7 +531,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
                     type="number" min="0"
                     value={storeStock}
                     onChange={e => { setStoreStock(e.target.value === "" ? "" : Number(e.target.value)); setStStatus("idle"); }}
-                    className="w-full text-2xl font-black text-center bg-violet-50/50 border border-violet-200 rounded-lg px-2 py-1.5 outline-none focus:border-violet-400 transition"
+                    className="w-full text-base font-black text-center bg-violet-50/50 border border-violet-200 rounded-lg px-2 py-1 outline-none focus:border-violet-400 transition"
                     placeholder="—"
                   />
                   {stStatus === "done" ? (
@@ -378,7 +568,39 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
           );
         })()}
 
+        {/* ── 매입가/판매가/마진 (신규) ── */}
+        {S.financial && (() => {
+          const sp = product.sale_price != null ? Number(product.sale_price) : null;
+          const pp = product.purchase_price != null ? Number(product.purchase_price) : null;
+          const margin = sp != null && pp != null && sp > 0 ? ((sp - pp) / sp * 100).toFixed(1) : null;
+          const stockAsset = pp != null && cur != null ? (pp * cur).toLocaleString() + "원" : null;
+          return (
+            <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 px-4 py-3 mb-4">
+              <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+                <DollarSign size={11}/>매입 · 판매가
+              </p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+                <InlineField label="매입가" fieldKey="purchase_price" value={pp} type="number" accent="emerald" format={v => Number(v).toLocaleString() + "원"} />
+                <InlineField label="판매가" fieldKey="sale_price" value={sp} type="number" accent="indigo" format={v => Number(v).toLocaleString() + "원"} />
+                {margin != null && (
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 mb-0.5">마진율</p>
+                    <p className="text-sm font-semibold text-emerald-700">{margin}%</p>
+                  </div>
+                )}
+                {stockAsset && (
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 mb-0.5">재고 자산</p>
+                    <p className="text-sm font-semibold text-slate-800">{stockAsset}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* ── 발주요청 버튼 ── */}
+        {S.orderRequest && (
         <div className="mb-4">
           {existingOrder && orderStatus !== "done" && (
             <div className="flex items-center gap-2 px-3 py-2 mb-2 bg-orange-50 border border-orange-200 rounded-xl text-[11px] text-orange-700 font-bold">
@@ -410,16 +632,18 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
               {orderStatus === "loading"
                 ? <Loader2 size={15} className="animate-spin" />
                 : <ShoppingCart size={15} />}
-              {orderStatus === "loading" ? "요청 중..." : orderStatus === "error" ? "재시도" : existingOrder ? "발주 요청 업데이트" : "발주 요청"}
+              {orderStatus === "loading" ? "요청 중..." : orderStatus === "error" ? "재시도" : existingOrder ? "발주요청 리스트 업데이트" : "발주요청 리스트에 추가"}
             </button>
           )}
           {orderStatus === "error" && (
             <p className="text-[10px] text-red-500 text-center mt-1">요청 실패 — 다시 시도해주세요</p>
           )}
         </div>
+        )}
 
-        {/* ── 기타 정보 그리드 ── */}
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+        {/* ── 기타 정보 그리드 (상품코드·공급처·판매상태·최근매입일) ── */}
+        {S.productMeta && (
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-4">
           {([
             ["상품코드", product.code, "font-mono text-xs"],
             ["공급처", product.supplier ?? "-", ""],
@@ -432,6 +656,62 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({ product, onRea
             </div>
           ))}
         </div>
+        )}
+
+        {/* ── 추가 상품 정보 (신규 · 브랜드·제조사·바코드·유효기간·메모 · 인라인 편집) ── */}
+        {S.extraInfo && (
+        <div className="rounded-xl border border-slate-200 bg-slate-50/40 px-4 py-3">
+          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+            <Info size={11}/>추가 상품 정보
+          </p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+            <InlineField label="브랜드" fieldKey="brand" value={(product as any).brand} />
+            <InlineField label="제조사" fieldKey="manufacturer" value={(product as any).manufacturer} />
+            <InlineField label="바코드" fieldKey="barcode" value={(product as any).barcode} />
+            <InlineField label="유효기간" fieldKey="expiry_date" value={(product as any).expiry_date} type="date" />
+          </div>
+          <div className="mt-3">
+            <p className="text-[10px] font-bold text-gray-400 mb-0.5">메모</p>
+            {editingKey === "memo" ? (
+              <div className="flex flex-col gap-1">
+                <textarea
+                  value={editingValue}
+                  onChange={e => setEditingValue(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Escape") cancelEdit(); }}
+                  disabled={editSaving}
+                  autoFocus
+                  rows={2}
+                  className="w-full text-sm border-2 border-indigo-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-100 resize-none"
+                />
+                <div className="flex items-center gap-1 justify-end">
+                  <button onClick={commitEdit} disabled={editSaving} className="text-[11px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
+                    {editSaving ? <Loader2 size={11} className="animate-spin"/> : <Check size={11}/>}저장
+                  </button>
+                  <button onClick={cancelEdit} disabled={editSaving} className="text-[11px] font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
+                    <X size={11}/>취소
+                  </button>
+                </div>
+                {editError && <p className="text-[10px] text-red-500">{editError}</p>}
+              </div>
+            ) : (
+              <div className="flex items-start gap-1 group">
+                <p className={`text-sm text-slate-700 flex-1 whitespace-pre-wrap ${!(product as any).memo ? "text-slate-300 italic" : ""}`}>
+                  {(product as any).memo || "(메모 없음)"}
+                </p>
+                {inlineEditEnabled && (
+                  <button
+                    onClick={() => startEdit("memo", (product as any).memo)}
+                    className="shrink-0 opacity-0 group-hover:opacity-100 w-5 h-5 rounded hover:bg-slate-100 text-slate-400 hover:text-indigo-600 flex items-center justify-center transition cursor-pointer"
+                    title="메모 편집"
+                  >
+                    <Pencil size={10}/>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        )}
       </div>
 
       {mapSelectorOpen && (

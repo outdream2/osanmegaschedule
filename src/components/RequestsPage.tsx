@@ -249,9 +249,19 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   }, []);
 
   const loadProducts = useCallback(async () => {
-    if (products.length > 0) return;
     setProductsLoading(true);
-    try { const map = await getProductsMap(); setProducts(Object.values(map)); }
+    try {
+      // 재고관리와 동일한 API 사용 → 데이터·필터 완전 일치 · 항상 실시간
+      const res = await fetch("/api/stock-manage/low-stock");
+      if (res.ok) {
+        const data = await res.json();
+        setProducts(Array.isArray(data) ? data : []);
+      } else {
+        // 실패 시 fallback: 정적 캐시
+        const map = await getProductsMap();
+        setProducts(Object.values(map));
+      }
+    }
     finally { setProductsLoading(false); }
   }, [products.length]);
 
@@ -286,6 +296,12 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   useEffect(() => {
     if (tab === "order") { loadOrderReqs(); loadProducts(); }
   }, [tab]);
+  // ✅ 실재고 수정 이벤트 수신 → 관련 데이터 자동 재조회
+  useEffect(() => {
+    const handler = () => { loadInventoryChecks(); loadOrderReqs(); loadProducts(); };
+    window.addEventListener("inventory-checks-updated", handler);
+    return () => window.removeEventListener("inventory-checks-updated", handler);
+  }, [loadInventoryChecks, loadOrderReqs, loadProducts]);
   useEffect(() => {
     if (!dupOrderModal) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setDupOrderModal(null); };
@@ -433,7 +449,6 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
 
   const TABS: [Tab, string, number, string, string][] = [
     ["display",   "진열요청",   displayTabCount,   "text-blue-600",   "border-blue-500"],
-    ["order",     "발주요청",   orderTabCount,     "text-red-600",    "border-red-500"],
     ["mismatch",  "구역불일치", mismatchTabCount,  "text-orange-600", "border-orange-500"],
     ["inventory", "실재고차이", inventoryTabCount, "text-purple-600", "border-purple-500"],
     ["lunch",     "점심불참",   lunchTabCount,     "text-emerald-600","border-emerald-500"],
@@ -507,12 +522,12 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 <Bell size={32} className="mb-2" /><p className="text-sm font-bold text-gray-400">진열요청이 없습니다</p>
               </div>
             ) : (
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
+              <div className="bg-white border-t border-b border-slate-200 divide-y divide-slate-100">
                 {displayReqs.map(r => {
                   const isDone = r.status === "done";
                   const completing = completingDisplay.has(r.id);
                   return (
-                    <div key={r.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition ${selectedDisplay.has(r.id) ? "bg-rose-50/40" : ""} ${isDone ? "opacity-60" : ""}`}>
+                    <div key={r.id} className={`flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition ${selectedDisplay.has(r.id) ? "bg-rose-50/40" : ""} ${isDone ? "opacity-60" : ""}`}>
                       <Checkbox checked={selectedDisplay.has(r.id)} onChange={() => toggleOne(selectedDisplay, r.id, setSelectedDisplay)} />
                       <div className="flex-1 min-w-0">
                         {/* 담당자 · 구역 · 카테고리 */}
@@ -587,21 +602,27 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               ) : orderReqs.length === 0 && !orderError ? (
                 <p className="text-xs text-gray-400 py-6 text-center">발주 요청 내역이 없습니다</p>
               ) : !orderLoading && (
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
+                <div className="bg-white border-t border-b border-slate-200 divide-y divide-slate-100">
                   {orderReqs.map(r => {
                     const short = (r.optimal_stock ?? 0) - (r.current_stock ?? 0);
                     const inv = invStockMap.get(r.product_code);
                     return (
-                      <div key={r.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition ${selectedOrder.has(r.id) ? "bg-rose-50/40" : ""}`}>
+                      <div key={r.id} className={`flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition ${selectedOrder.has(r.id) ? "bg-rose-50/40" : ""}`}>
                         <Checkbox checked={selectedOrder.has(r.id)} onChange={() => toggleOne(selectedOrder, r.id, setSelectedOrder)} />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-gray-900 truncate">{r.product_name}</p>
-                          <p className="text-[10px] text-gray-400 font-mono">{r.product_code} · 현재 {r.current_stock ?? "-"} / 적정 {r.optimal_stock ?? "-"}</p>
-                          {inv && (
-                            <p className="text-[10px] text-purple-600 font-bold mt-0.5">
-                              실재고 {inv.total}개 <span className="font-normal text-gray-400">(창고 {inv.warehouse ?? "-"} + 매장 {inv.store ?? "-"})</span>
-                            </p>
-                          )}
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[10px] font-mono text-slate-400 shrink-0">{r.product_code}</span>
+                            <span className="text-gray-300 text-[10px]">·</span>
+                            <span className="text-[12px] font-black text-slate-800 truncate">{r.product_name || "(상품명 없음)"}</span>
+                            <span className="text-gray-300 text-[10px]">·</span>
+                            <span className="text-[11px] text-slate-500">현재 <span className="font-bold text-slate-700">{r.current_stock ?? "-"}</span> / 적정 <span className="font-bold text-slate-700">{r.optimal_stock ?? "-"}</span></span>
+                            {inv && (
+                              <>
+                                <span className="text-gray-300 text-[10px]">·</span>
+                                <span className="text-[11px] text-purple-600 font-bold">실재고 {inv.total}<span className="font-normal text-purple-400">(창고 {inv.warehouse ?? "-"}+매장 {inv.store ?? "-"})</span></span>
+                              </>
+                            )}
+                          </div>
                         </div>
                         <span className="text-[11px] font-black text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded-lg shrink-0">-{short}개</span>
                         <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(r.requested_at)}</span>
@@ -629,23 +650,38 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                   <Package size={28} className="mb-2" /><p className="text-sm font-bold text-gray-400">발주 필요 상품이 없습니다</p>
                 </div>
               ) : (
-                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
+                <div className="bg-white border-t border-b border-slate-200 divide-y divide-slate-100">
                   {lowStock.map(p => {
                     const cur = Number(p.current_stock), opt = Number(p.optimal_stock);
-                    const alreadyRequested = requestedCodes.has(p.code);
+                    const code = (p as any).code ?? (p as any).product_code ?? "";
+                    const name = (p as any).name ?? (p as any).product_name ?? "";
+                    const supplier = (p as any).supplier ?? "";
+                    const alreadyRequested = requestedCodes.has(code);
+                    const busy = requestingOrder.has(code);
                     return (
-                      <div key={p.code} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-gray-900 truncate">{p.name}</p>
-                          <p className="text-[10px] text-gray-400 font-mono">{p.code} · {cur}/{opt}</p>
-                        </div>
-                        <span className="text-[11px] font-black text-red-600 shrink-0">-{opt - cur}개</span>
+                      <div key={code} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[10px] font-mono text-slate-400 shrink-0">{code}</span>
+                                <span className="text-gray-300 text-[10px]">·</span>
+                                <span className="text-[12px] font-black text-slate-800 truncate">{name || "(상품명 없음)"}</span>
+                                <span className="text-gray-300 text-[10px]">·</span>
+                                <span className="text-[11px] text-slate-500">현재 <span className="font-bold text-slate-700">{cur}</span> / 적정 <span className="font-bold text-slate-700">{opt}</span></span>
+                                {supplier && (
+                                  <>
+                                    <span className="text-gray-300 text-[10px]">·</span>
+                                    <span className="text-[11px] text-sky-600 font-semibold truncate">{supplier}</span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <span className="text-[11px] font-black text-red-600 shrink-0">-{opt - cur}개</span>
                         {alreadyRequested ? (
                           <button onClick={() => handleRequestOrder(p)} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg shrink-0 cursor-pointer hover:bg-emerald-100 transition">요청됨</button>
                         ) : (
-                          <button onClick={() => handleRequestOrder(p)} disabled={requestingOrder.has(p.code)}
+                          <button onClick={() => handleRequestOrder(p)} disabled={busy}
                             className="text-[11px] font-bold text-white bg-red-500 hover:bg-red-600 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-50 shrink-0 flex items-center gap-1">
-                            <ShoppingCart size={11} />{requestingOrder.has(p.code) ? "..." : "발주"}
+                            <ShoppingCart size={11} />{busy ? "..." : "발주요청 리스트에 추가"}
                           </button>
                         )}
                       </div>
@@ -682,15 +718,20 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 <p className="text-xs text-gray-400 mt-1 text-center leading-relaxed">스캔 후 실제 배정구역이 전산과 다를 때 자동 등록됩니다</p>
               </div>
             ) : (
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
+              <div className="bg-white border-t border-b border-slate-200 divide-y divide-slate-100">
                 {mismatches.map(m => (
-                  <div key={m.id} className={`flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition ${selectedMismatch.has(m.id) ? "bg-rose-50/40" : ""}`}>
+                  <div key={m.id} className={`flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition ${selectedMismatch.has(m.id) ? "bg-rose-50/40" : ""}`}>
                     <Checkbox checked={selectedMismatch.has(m.id)} onChange={() => toggleOne(selectedMismatch, m.id, setSelectedMismatch)} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-gray-900 truncate">{m.product_name}</p>
-                      <p className="text-[11px] text-gray-500 mt-0.5">배정위치: <span className="font-semibold">{m.spec_zone || "미지정"}</span></p>
-                      <p className="text-[11px] text-red-600 font-bold">실제위치: {m.real_zone}</p>
-                      <p className="text-[10px] text-gray-400 font-mono mt-0.5">{m.product_code}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[12px] font-black text-slate-800 truncate">{m.product_name}</span>
+                        <span className="text-gray-300 text-[10px]">·</span>
+                        <span className="text-[10px] font-mono text-slate-400">{m.product_code}</span>
+                        <span className="text-gray-300 text-[10px]">·</span>
+                        <span className="text-[11px] text-slate-500">배정 <span className="font-bold text-slate-700">{m.spec_zone || "미지정"}</span></span>
+                        <span className="text-gray-300 text-[10px]">→</span>
+                        <span className="text-[11px] font-black text-red-600">실제 {m.real_zone}</span>
+                      </div>
                     </div>
                     <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(m.registered_at)}</span>
                   </div>
@@ -746,40 +787,44 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 <p className="text-xs text-gray-400 mt-1 text-center">바코드 스캔 후 창고·매장 실재고를 입력하면 자동 등록됩니다</p>
               </div>
             ) : (
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
+              <div className="bg-white border-t border-b border-slate-200 divide-y divide-slate-100">
                 {inventoryChecks.map(r => {
                   const totalActual = (r.warehouse_stock ?? 0) + (r.store_stock ?? 0);
                   const diff = r.system_stock != null ? totalActual - r.system_stock : null;
                   const isShort = diff != null && diff < 0;
                   const isOver  = diff != null && diff > 0;
                   return (
-                    <div key={r.id} className={`flex items-start gap-3 px-4 py-3 hover:bg-gray-50 transition ${selectedInventory.has(r.id) ? "bg-purple-50/40" : ""}`}>
+                    <div key={r.id} className={`flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition ${selectedInventory.has(r.id) ? "bg-purple-50/40" : ""}`}>
                       <Checkbox checked={selectedInventory.has(r.id)} onChange={() => toggleOne(selectedInventory, r.id, setSelectedInventory)} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-900 truncate">{r.product_name}</p>
-                        <p className="text-[10px] text-gray-400 font-mono mb-1">{r.product_code}</p>
-                        <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                          <span className="flex items-center gap-1 text-gray-600 font-semibold">
-                            창고 <span className="font-black text-gray-800">{r.warehouse_stock ?? "—"}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[12px] font-black text-slate-800 truncate">{r.product_name}</span>
+                          <span className="text-gray-300 text-[10px]">·</span>
+                          <span className="text-[10px] font-mono text-slate-400">{r.product_code}</span>
+                          <span className="text-gray-300 text-[10px]">·</span>
+                          <span className="text-[11px] text-slate-500">
+                            창고 <span className="font-bold text-slate-700">{r.warehouse_stock ?? "—"}</span>
+                            <span className="text-slate-300 mx-0.5">+</span>
+                            매장 <span className="font-bold text-slate-700">{r.store_stock ?? "—"}</span>
+                            <span className="text-slate-300 mx-0.5">=</span>
+                            <span className="font-black text-purple-700">{totalActual}</span>
                           </span>
-                          <span className="text-gray-300">+</span>
-                          <span className="flex items-center gap-1 text-gray-600 font-semibold">
-                            매장 <span className="font-black text-gray-800">{r.store_stock ?? "—"}</span>
-                          </span>
-                          <span className="text-gray-300">=</span>
-                          <span className="font-black text-purple-700">{totalActual}개</span>
-                          <span className="text-gray-300">·</span>
-                          <span className="text-gray-500">현재고 {r.system_stock ?? "—"}</span>
+                          <span className="text-gray-300 text-[10px]">·</span>
+                          <span className="text-[11px] text-slate-500">현재고 <span className="font-bold text-slate-700">{r.system_stock ?? "—"}</span></span>
                           {diff != null && (
-                            <span className={`font-black px-1.5 py-0.5 rounded-lg ${isShort ? "bg-red-50 text-red-600 border border-red-200" : isOver ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-gray-100 text-gray-500"}`}>
+                            <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-md ${isShort ? "bg-red-50 text-red-600 border border-red-200" : isOver ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-slate-100 text-slate-500"}`}>
                               {diff > 0 ? "+" : ""}{diff}
                             </span>
                           )}
+                          {r.checked_by && (
+                            <>
+                              <span className="text-gray-300 text-[10px]">·</span>
+                              <span className="text-[10px] text-gray-400">점검자 {r.checked_by}</span>
+                            </>
+                          )}
                         </div>
-                        {r.checked_by && <p className="text-[10px] text-gray-400 mt-0.5">점검자: {r.checked_by}</p>}
                       </div>
-                      <div className="flex flex-col items-end gap-1 shrink-0">
-                        <span className="text-[10px] text-gray-400">{fmtDate(r.checked_at)}</span>
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <button
                           onClick={() => handleOrderFromInventory(r)}
                           disabled={requestingInvOrder.has(r.product_code)}
@@ -792,6 +837,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                           <ShoppingCart size={9} />
                           {requestingInvOrder.has(r.product_code) ? "..." : requestedCodes.has(r.product_code) ? "요청됨" : "발주요청"}
                         </button>
+                        <span className="text-[10px] text-gray-400">{fmtDate(r.checked_at)}</span>
                       </div>
                     </div>
                   );
@@ -896,9 +942,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                 <p className="text-sm font-bold text-gray-400">아직 신청자가 없습니다</p>
               </div>
             ) : (
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm divide-y divide-gray-100">
+              <div className="bg-white border-t border-b border-slate-200 divide-y divide-slate-100">
                 {lunchRequests.map(r => (
-                  <div key={r.id} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition">
+                  <div key={r.id} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${r.eating ? "bg-emerald-500" : "bg-gray-300"}`} />
                     <span className="text-sm font-semibold text-gray-800 flex-1">{r.employee_name}</span>
                     {r.memo && <span className="text-[10px] text-gray-400 max-w-[120px] truncate">{r.memo}</span>}

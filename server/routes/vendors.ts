@@ -8,7 +8,7 @@ const router = Router();
 router.get("/api/vendors", async (_req, res) => {
   const { data, error } = await supabase
     .from("vendors")
-    .select("id, company_name, contact_name, phone, category, note, created_at")
+    .select("id, company_name, contact_name, phone, email, category, note, created_at")
     .order("company_name");
   if (error) return res.status(500).json({ error: error.message });
   return res.json(data ?? []);
@@ -16,13 +16,13 @@ router.get("/api/vendors", async (_req, res) => {
 
 // 거래처 등록 (관리자)
 router.post("/api/vendors", async (req, res) => {
-  const { company_name, contact_name, phone, category, note } = req.body ?? {};
+  const { company_name, contact_name, phone, email, category, note } = req.body ?? {};
   if (!company_name?.trim()) return res.status(400).json({ error: "거래처명은 필수입니다." });
   const cleanPhone = phone ? String(phone).replace(/[^0-9]/g, "") : null;
   const { data, error } = await supabase
     .from("vendors")
-    .insert({ company_name: company_name.trim(), contact_name: contact_name ?? null, phone: cleanPhone || null, category: category ?? null, note: note ?? null })
-    .select("id, company_name, contact_name, phone, category, note, created_at")
+    .insert({ company_name: company_name.trim(), contact_name: contact_name ?? null, phone: cleanPhone || null, email: email ?? null, category: category ?? null, note: note ?? null })
+    .select("id, company_name, contact_name, phone, email, category, note, created_at")
     .single();
   if (error) return res.status(500).json({ error: error.message });
   return res.status(201).json(data);
@@ -32,15 +32,16 @@ router.post("/api/vendors", async (req, res) => {
 router.patch("/api/vendors/:id", async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ error: "invalid id" });
-  const { company_name, contact_name, phone, category, note } = req.body ?? {};
+  const { company_name, contact_name, phone, email, category, note } = req.body ?? {};
   const updates: Record<string, any> = {};
   if (company_name !== undefined) updates.company_name = company_name.trim();
   if (contact_name !== undefined) updates.contact_name = contact_name;
   if (phone !== undefined) updates.phone = phone ? String(phone).replace(/[^0-9]/g, "") : null;
+  if (email !== undefined) updates.email = email;
   if (category !== undefined) updates.category = category;
   if (note !== undefined) updates.note = note;
   const { data, error } = await supabase.from("vendors").update(updates).eq("id", id)
-    .select("id, company_name, contact_name, phone, category, note").single();
+    .select("id, company_name, contact_name, phone, email, category, note").single();
   if (error) return res.status(500).json({ error: error.message });
   return res.json(data);
 });
