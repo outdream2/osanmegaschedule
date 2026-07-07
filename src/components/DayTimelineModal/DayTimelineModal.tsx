@@ -1173,8 +1173,8 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
 
         return (
           <>
-            <div className="fixed inset-0 z-40 bg-black/40" onClick={() => setCellPicker(null)} />
-            <div className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-2xl shadow-2xl flex flex-col"
+            <div className="fixed inset-0 z-[60] bg-black/40" onClick={() => setCellPicker(null)} />
+            <div className="fixed bottom-0 left-0 right-0 z-[70] bg-white rounded-t-2xl shadow-2xl flex flex-col"
               style={{ maxHeight: "65vh" }}>
               {/* Header */}
               <div className={`flex items-center justify-between px-4 py-3 border-b ${
@@ -1944,7 +1944,7 @@ export const DayTimelineModal: React.FC<Props> = ({
   ], [workers, staffWorkers, pharmacistWorkers, otherWorkers]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 backdrop-blur-sm p-0 sm:p-4 pt-4 sm:pt-0" onClick={onClose}>
       <div
         className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-5xl overflow-hidden flex flex-col"
         style={{ maxHeight: "92vh" }}

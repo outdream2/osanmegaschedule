@@ -69,7 +69,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
       />
       {open && (
         <div
-          className="absolute z-20 top-full right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-xl p-2 w-[196px] animate-in fade-in zoom-in-95 duration-100"
+          className="absolute z-20 bottom-full right-0 mb-1 bg-white border border-slate-200 rounded-lg shadow-xl p-2 w-[196px] animate-in fade-in zoom-in-95 duration-100"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="grid grid-cols-6 gap-1.5 mb-2">
@@ -476,16 +476,16 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
               </p>
 
               {/* Hour type sub-tabs */}
-              <div className="flex gap-0 border border-slate-200 rounded-lg overflow-hidden">
+              <div className="flex flex-wrap gap-1">
                 {HOUR_TABS.map(t => (
                   <button
                     key={t.id}
                     type="button"
                     onClick={() => setScheduleHourTab(t.id)}
-                    className={`flex-1 py-1.5 text-[11px] font-bold transition cursor-pointer ${
+                    className={`flex-1 min-w-[72px] py-1.5 px-2 text-[11px] font-bold rounded-lg border transition cursor-pointer whitespace-nowrap ${
                       scheduleHourTab === t.id
-                        ? "bg-[#2563eb] text-white"
-                        : "bg-white text-slate-500 hover:bg-slate-50"
+                        ? "bg-[#2563eb] border-[#2563eb] text-white"
+                        : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50"
                     }`}
                   >
                     {t.label}
@@ -494,7 +494,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
               </div>
 
               <div className="space-y-1.5">
-                <div className="grid grid-cols-[1fr_28px_1fr_28px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
                   <span>유형명</span>
                   <span>색</span>
                   <span>{HOUR_TABS.find(t => t.id === scheduleHourTab)?.label} 시간</span>
@@ -503,18 +503,36 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                 {scheduleTypes.map((st, idx) => (
                   <div
                     key={idx}
-                    className="grid grid-cols-[1fr_28px_1fr_28px] gap-2 items-center bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-1.5 transition"
+                    className="flex flex-col sm:grid sm:grid-cols-[minmax(0,1fr)_28px_minmax(0,1fr)_28px] gap-2 items-start sm:items-center bg-white border border-slate-200 hover:border-slate-300 rounded-lg px-3 py-2 transition"
                   >
-                    <span
-                      className="text-xs font-semibold text-slate-800 truncate px-1.5 py-0.5 rounded"
-                      style={{ backgroundColor: st.color ?? "#e2e8f0" }}
-                    >
-                      {st.type}
-                    </span>
-                    <ColorPicker
-                      value={st.color ?? "#e2e8f0"}
-                      onChange={(hex) => updateScheduleTypeEntry(idx, "color", hex)}
-                    />
+                    <div className="flex items-center gap-2 w-full min-w-0">
+                      <span
+                        className="flex-1 min-w-0 text-xs font-semibold text-slate-800 truncate px-1.5 py-0.5 rounded"
+                        style={{ backgroundColor: st.color ?? "#e2e8f0" }}
+                      >
+                        {st.type}
+                      </span>
+                      <div className="shrink-0 sm:hidden">
+                        <ColorPicker
+                          value={st.color ?? "#e2e8f0"}
+                          onChange={(hex) => updateScheduleTypeEntry(idx, "color", hex)}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeScheduleType(idx)}
+                        className="sm:hidden text-slate-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded shrink-0"
+                        title="삭제"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                    <div className="hidden sm:block shrink-0">
+                      <ColorPicker
+                        value={st.color ?? "#e2e8f0"}
+                        onChange={(hex) => updateScheduleTypeEntry(idx, "color", hex)}
+                      />
+                    </div>
                     <input
                       type="text"
                       value={st[scheduleHourTab]}
@@ -525,7 +543,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                     <button
                       type="button"
                       onClick={() => removeScheduleType(idx)}
-                      className="text-slate-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
+                      className="hidden sm:block text-slate-300 hover:text-rose-500 transition cursor-pointer p-0.5 rounded"
                       title="삭제"
                     >
                       <Trash2 size={13} />
@@ -594,8 +612,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                   <p className="text-[11px] text-slate-400 italic">먼저 "직급 종류" 탭에서 직급을 추가해 주세요.</p>
                 ) : (
                   <div className="space-y-1.5">
-                    {/* Header row */}
-                    <div className="grid grid-cols-[1fr,1fr,1fr] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                    {/* Header row — hidden on mobile, shown on sm+ */}
+                    <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
                       <span>직급</span>
                       <span>주중 시급 (원)</span>
                       <span>주말 시급 (원)</span>
@@ -605,25 +623,31 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       return (
                         <div
                           key={pos}
-                          className="grid grid-cols-[1fr,1fr,1fr] gap-2 items-center bg-white border border-slate-200 rounded-lg px-3 py-2"
+                          className="flex flex-col gap-1.5 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] sm:gap-2 sm:items-center bg-white border border-slate-200 rounded-lg px-3 py-2"
                         >
                           <span className="text-xs font-semibold text-slate-800 truncate">{pos}</span>
-                          <input
-                            type="number"
-                            min={0}
-                            value={rate.weekday || ""}
-                            onChange={(e) => updatePositionWage(pos, "weekday", parseWageInput(e.target.value))}
-                            placeholder="예: 10340"
-                            className="w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-                          />
-                          <input
-                            type="number"
-                            min={0}
-                            value={rate.weekend || ""}
-                            onChange={(e) => updatePositionWage(pos, "weekend", parseWageInput(e.target.value))}
-                            placeholder="예: 10340"
-                            className="w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-                          />
+                          <div className="flex items-center gap-1.5 sm:contents">
+                            <span className="text-[10px] text-slate-400 font-semibold sm:hidden w-16 shrink-0">주중</span>
+                            <input
+                              type="number"
+                              min={0}
+                              value={rate.weekday || ""}
+                              onChange={(e) => updatePositionWage(pos, "weekday", parseWageInput(e.target.value))}
+                              placeholder="예: 10340"
+                              className="flex-1 sm:w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1.5 sm:contents">
+                            <span className="text-[10px] text-slate-400 font-semibold sm:hidden w-16 shrink-0">주말</span>
+                            <input
+                              type="number"
+                              min={0}
+                              value={rate.weekend || ""}
+                              onChange={(e) => updatePositionWage(pos, "weekend", parseWageInput(e.target.value))}
+                              placeholder="예: 10340"
+                              className="flex-1 sm:w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                            />
+                          </div>
                         </div>
                       );
                     })}
@@ -642,7 +666,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                 {/* Existing overrides list */}
                 {employeesWithOverride.length > 0 ? (
                   <div className="space-y-1.5">
-                    <div className="grid grid-cols-[1fr,1fr,1fr,32px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
+                    <div className="hidden sm:grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_32px] gap-2 px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wide">
                       <span>직원</span>
                       <span>주중 시급 (원)</span>
                       <span>주말 시급 (원)</span>
@@ -653,32 +677,48 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
                       return (
                         <div
                           key={emp.id}
-                          className="grid grid-cols-[1fr,1fr,1fr,32px] gap-2 items-center bg-white border border-slate-200 rounded-lg px-3 py-2"
+                          className="flex flex-col gap-1.5 sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_32px] sm:gap-2 sm:items-center bg-white border border-slate-200 rounded-lg px-3 py-2"
                         >
-                          <span className="text-xs font-semibold text-slate-800 truncate">
-                            {emp.name}
-                            <span className="text-[10px] font-medium text-slate-400 ml-1">({emp.position})</span>
-                          </span>
-                          <input
-                            type="number"
-                            min={0}
-                            value={rate.weekday || ""}
-                            onChange={(e) => updateEmployeeOverride(emp.id, "weekday", parseWageInput(e.target.value))}
-                            placeholder="예: 10340"
-                            className="w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-                          />
-                          <input
-                            type="number"
-                            min={0}
-                            value={rate.weekend || ""}
-                            onChange={(e) => updateEmployeeOverride(emp.id, "weekend", parseWageInput(e.target.value))}
-                            placeholder="예: 10340"
-                            className="w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
-                          />
+                          <div className="flex items-center justify-between min-w-0">
+                            <span className="text-xs font-semibold text-slate-800 truncate min-w-0">
+                              {emp.name}
+                              <span className="text-[10px] font-medium text-slate-400 ml-1">({emp.position})</span>
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeEmployeeOverride(emp.id)}
+                              className="sm:hidden text-slate-300 hover:text-rose-500 transition cursor-pointer p-1 rounded shrink-0 ml-2"
+                              title="개인 시급 제거"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-1.5 sm:contents">
+                            <span className="text-[10px] text-slate-400 font-semibold sm:hidden w-16 shrink-0">주중</span>
+                            <input
+                              type="number"
+                              min={0}
+                              value={rate.weekday || ""}
+                              onChange={(e) => updateEmployeeOverride(emp.id, "weekday", parseWageInput(e.target.value))}
+                              placeholder="예: 10340"
+                              className="flex-1 sm:w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                            />
+                          </div>
+                          <div className="flex items-center gap-1.5 sm:contents">
+                            <span className="text-[10px] text-slate-400 font-semibold sm:hidden w-16 shrink-0">주말</span>
+                            <input
+                              type="number"
+                              min={0}
+                              value={rate.weekend || ""}
+                              onChange={(e) => updateEmployeeOverride(emp.id, "weekend", parseWageInput(e.target.value))}
+                              placeholder="예: 10340"
+                              className="flex-1 sm:w-full text-xs rounded-lg border border-slate-200 focus:border-[#2563eb] p-2 bg-white focus:outline-none"
+                            />
+                          </div>
                           <button
                             type="button"
                             onClick={() => removeEmployeeOverride(emp.id)}
-                            className="text-slate-300 hover:text-rose-500 transition cursor-pointer p-1 rounded justify-self-center"
+                            className="hidden sm:block text-slate-300 hover:text-rose-500 transition cursor-pointer p-1 rounded justify-self-center"
                             title="개인 시급 제거"
                           >
                             <Trash2 size={13} />

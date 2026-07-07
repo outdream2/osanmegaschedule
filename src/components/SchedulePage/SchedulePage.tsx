@@ -1842,7 +1842,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-b-xl overflow-hidden flex flex-col flex-1 shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-b-xl flex flex-col flex-1 shadow-sm overflow-x-hidden">
             {/* Month locked banner */}
             {isMonthLocked && (
               <div className="mx-2 mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2">
@@ -1886,7 +1886,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
             {/* Admin quick-edit hint bar */}
             {isAdmin && !isMonthLocked && (
-              <div className={`flex items-center gap-2 px-3 py-1.5 border-b shrink-0 min-w-0 overflow-hidden ${editMode ? "bg-emerald-50/70 border-emerald-100" : "bg-slate-50/80 border-slate-100"}`}>
+              <div className={`flex items-center gap-2 px-3 py-1.5 border-b shrink-0 min-w-0 overflow-hidden sticky top-0 z-30 ${editMode ? "bg-emerald-50 border-emerald-200 shadow-md" : "bg-slate-50 border-slate-100"}`}>
                 {editMode ? (
                   <>
                     <span className="text-emerald-500 text-[10px]">✏️</span>
