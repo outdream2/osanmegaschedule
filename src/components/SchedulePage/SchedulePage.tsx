@@ -2510,6 +2510,32 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           </div>
         </div>
       )}
+
+      {/* 편집 모드 FAB (Floating Action Button) — 스크롤 위치 관계 없이 항상 우하단 노출 */}
+      {isAdmin && !isMonthLocked && (
+        <button
+          type="button"
+          onClick={() => setEditMode(m => !m)}
+          title={editMode ? "편집 모드 종료" : "편집 모드 시작"}
+          className={`fixed bottom-4 right-4 z-40 flex items-center gap-1.5 px-4 py-3 text-sm font-black rounded-full shadow-2xl transition-all cursor-pointer active:scale-95 ${
+            editMode
+              ? "bg-emerald-500 hover:bg-emerald-600 text-white ring-4 ring-emerald-300/40"
+              : "bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 ring-2 ring-slate-200/60"
+          }`}
+        >
+          {editMode ? (
+            <>
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <span>편집중 · 종료</span>
+            </>
+          ) : (
+            <>
+              <Edit size={14} />
+              <span>편집</span>
+            </>
+          )}
+        </button>
+      )}
     </div>
   );
 };
