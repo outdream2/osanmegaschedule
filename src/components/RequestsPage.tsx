@@ -448,10 +448,10 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const noEatCount = lunchRequests.filter(r => !r.eating).length;
 
   const TABS: [Tab, string, number, string, string, string, string][] = [
-    ["display",   "진열요청",   displayTabCount,   "bg-sky-100/60 text-sky-700 ring-sky-200",          "text-sky-600",     "bg-sky-200/60 text-sky-700",     "text-sky-400/80 hover:bg-sky-50/60 hover:text-sky-600"],
-    ["mismatch",  "구역불일치", mismatchTabCount,  "bg-orange-100/60 text-orange-700 ring-orange-200",  "text-orange-600",  "bg-orange-200/60 text-orange-700","text-orange-400/80 hover:bg-orange-50/60 hover:text-orange-600"],
-    ["inventory", "실재고차이", inventoryTabCount, "bg-violet-100/60 text-violet-700 ring-violet-200",  "text-violet-600",  "bg-violet-200/60 text-violet-700","text-violet-400/80 hover:bg-violet-50/60 hover:text-violet-600"],
-    ["lunch",     "점심불참",   lunchTabCount,     "bg-emerald-100/60 text-emerald-700 ring-emerald-200","text-emerald-600","bg-emerald-200/60 text-emerald-700","text-emerald-400/80 hover:bg-emerald-50/60 hover:text-emerald-600"],
+    ["display",   "진열요청",   displayTabCount,   "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
+    ["mismatch",  "구역불일치", mismatchTabCount,  "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
+    ["inventory", "실재고차이", inventoryTabCount, "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
+    ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
   ];
 
   // 공통 체크박스
@@ -478,7 +478,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
           <div className="flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5 w-fit min-w-full sm:w-auto sm:min-w-0 sm:inline-flex">
             {TABS.map(([key, label, count, activeClass, _iconClass, badgeClass, inactiveClass]) => (
               <button key={key} onClick={() => setTab(key)}
-                className={`px-2.5 sm:px-4 py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-xl text-[11px] sm:text-[12px] font-black transition-all duration-200 cursor-pointer flex-1 sm:flex-none justify-center ${tab === key ? `${activeClass} ring-1 shadow-sm` : inactiveClass}`}>
+                className={`px-2.5 sm:px-4 py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-lg text-[11px] sm:text-[12px] font-black transition-all duration-200 cursor-pointer flex-1 sm:flex-none justify-center ${tab === key ? `${activeClass} ring-1 shadow-sm` : inactiveClass}`}>
                 <span>{label}</span>
                 {count > 0
                   ? <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${tab === key ? badgeClass : "bg-slate-100 text-slate-400"}`}>{count}</span>

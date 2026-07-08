@@ -1160,10 +1160,10 @@ export const SalesTrendPage: React.FC = () => {
               { k: "supplier", label: "공급사별" },
             ].map(t => (
               <button key={t.k} onClick={() => setTab(t.k as any)}
-                className={`px-4 sm:px-5 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`px-4 sm:px-5 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
                   tab === t.k
-                    ? "bg-teal-100/60 text-teal-700 ring-1 ring-teal-200 shadow-sm"
-                    : "text-teal-400/80 hover:bg-teal-50/60 hover:text-teal-600"
+                    ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                 }`}
               >{t.label}</button>
             ))}

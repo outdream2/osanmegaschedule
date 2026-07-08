@@ -892,27 +892,27 @@ return (
         <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5 min-w-max">
           <button
             onClick={() => setMainTab("ocr")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-xl shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "ocr" ? "bg-amber-100/60 text-amber-700 ring-1 ring-amber-200 shadow-sm" : "text-amber-400/80 hover:bg-amber-50/60 hover:text-amber-600"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "ocr" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}
           >
-            <Upload size={13} className={mainTab === "ocr" ? "text-amber-600" : "text-amber-300"} /> OCR 추출
+            <Upload size={13} className={mainTab === "ocr" ? "text-slate-800" : "text-slate-400"} /> OCR 추출
           </button>
           <button
             onClick={() => setMainTab("synonyms")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-xl shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "synonyms" ? "bg-indigo-100/60 text-indigo-700 ring-1 ring-indigo-200 shadow-sm" : "text-indigo-400/80 hover:bg-indigo-50/60 hover:text-indigo-600"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "synonyms" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}
           >
-            <BookOpen size={13} className={mainTab === "synonyms" ? "text-indigo-600" : "text-indigo-300"} /> 동의어 관리
+            <BookOpen size={13} className={mainTab === "synonyms" ? "text-slate-800" : "text-slate-400"} /> 동의어 관리
           </button>
           <button
             onClick={() => setMainTab("balance")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-xl shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "balance" ? "bg-orange-100/60 text-orange-700 ring-1 ring-orange-200 shadow-sm" : "text-orange-400/80 hover:bg-orange-50/60 hover:text-orange-600"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "balance" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}
           >
             잔고항목 지정
           </button>
           <button
             onClick={() => setMainTab("records")}
-            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-xl shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "records" ? "bg-rose-100/60 text-rose-700 ring-1 ring-rose-200 shadow-sm" : "text-rose-400/80 hover:bg-rose-50/60 hover:text-rose-600"}`}
+            className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-xs font-black rounded-lg shrink-0 transition-all duration-200 cursor-pointer ${mainTab === "records" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}
           >
-            <FileText size={13} className={mainTab === "records" ? "text-rose-600" : "text-rose-300"} /> 거래명세서 조회
+            <FileText size={13} className={mainTab === "records" ? "text-slate-800" : "text-slate-400"} /> 거래명세서 조회
           </button>
         </div>
       </div>
@@ -931,11 +931,11 @@ return (
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
           <div className="flex items-center gap-1 px-4 py-2 border-b border-slate-100/80">
             <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
-            <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${synTab === "product" ? "bg-indigo-100/60 text-indigo-700 ring-1 ring-indigo-200 shadow-sm" : "text-indigo-400/80 hover:bg-indigo-50/60 hover:text-indigo-600"}`}>
-              <BookOpen size={12} className={synTab === "product" ? "text-indigo-600" : "text-indigo-300"} /> 상품명 동의어 ({productSynonyms.length})
+            <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${synTab === "product" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}>
+              <BookOpen size={12} className={synTab === "product" ? "text-slate-800" : "text-slate-400"} /> 상품명 동의어 ({productSynonyms.length})
             </button>
-            <button onClick={() => setSynTab("supplier")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${synTab === "supplier" ? "bg-sky-100/60 text-sky-700 ring-1 ring-sky-200 shadow-sm" : "text-sky-400/80 hover:bg-sky-50/60 hover:text-sky-600"}`}>
-              <Building2 size={12} className={synTab === "supplier" ? "text-sky-600" : "text-sky-300"} /> 공급사 별칭 ({supplierAliases.length})
+            <button onClick={() => setSynTab("supplier")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${synTab === "supplier" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}>
+              <Building2 size={12} className={synTab === "supplier" ? "text-slate-800" : "text-slate-400"} /> 공급사 별칭 ({supplierAliases.length})
             </button>
             </div>
             <button onClick={fetchSynonyms} className="ml-auto p-1.5 self-center rounded-lg hover:bg-gray-100 cursor-pointer">

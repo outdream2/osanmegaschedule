@@ -45,20 +45,77 @@ router.get("/api/display-requests", async (_req, res) => {
 
 router.post("/api/display-requests", async (req, res) => {
   const b = req.body ?? {};
+  const assignedStaffId = b.assigned_staff_id ? Number(b.assigned_staff_id) : null;
+  const assignedStaffName = String(b.assigned_staff_name ?? "");
+  const zoneLabel = String(b.zone_label ?? "");
+  const category = String(b.category ?? "");
+  const note = String(b.note ?? "");
   const { data, error } = await supabase
     .from("display_requests")
     .insert([{
       zone_id: String(b.zone_id ?? ""),
-      zone_label: String(b.zone_label ?? ""),
-      category: String(b.category ?? ""),
+      zone_label: zoneLabel,
+      category,
       requested_at: b.requested_at ? new Date(b.requested_at).toISOString() : new Date().toISOString(),
-      assigned_staff_id: b.assigned_staff_id ? Number(b.assigned_staff_id) : null,
-      assigned_staff_name: String(b.assigned_staff_name ?? ""),
-      note: String(b.note ?? ""),
+      assigned_staff_id: assignedStaffId,
+      assigned_staff_name: assignedStaffName,
+      note,
       status: "pending",
     }])
     .select("id").single();
   if (error) return res.status(500).json({ error: error.message });
+
+  // 담당자에게 알림 발송 (DB notification + 웹푸시) · 실패해도 요청 성공 유지
+  if (assignedStaffId) {
+    (async () => {
+      try {
+        const { data: emp } = await supabase
+          .from("employees")
+          .select("id, name, push_subscription")
+          .eq("id", assignedStaffId)
+          .maybeSingle();
+        if (!emp) return;
+        const title = "🛒 진열 보충 요청";
+        const bodyText = zoneLabel
+          ? `"${zoneLabel}"${category ? ` (${category})` : ""} 진열 보충 요청이 도착했습니다${note ? ` · ${note}` : ""}`
+          : `새로운 진열 보충 요청이 도착했습니다${note ? ` · ${note}` : ""}`;
+        // 1) DB 알림
+        try {
+          await notificationsService.create({
+            employee_id: emp.id,
+            title,
+            body: bodyText,
+            type: "alert",
+          });
+        } catch (e: any) {
+          console.warn(`[display-request] DB 알림 insert 실패 · emp=${emp.id}:`, e?.message);
+        }
+        // 2) 웹푸시 (best-effort)
+        if (emp.push_subscription) {
+          try {
+            await webpush.sendNotification(
+              emp.push_subscription as webpush.PushSubscription,
+              JSON.stringify({
+                title,
+                body: bodyText,
+                url: "/",
+                tag: `disp-req-${data?.id ?? Date.now()}`,
+              })
+            );
+          } catch (err: any) {
+            if ((err as any).statusCode === 410) {
+              await supabase.from("employees").update({ push_subscription: null }).eq("id", emp.id);
+            } else {
+              console.warn(`[display-request] push 실패 · emp=${emp.id}:`, err?.message);
+            }
+          }
+        }
+      } catch (e: any) {
+        console.warn("[display-request] 알림 예외:", e?.message);
+      }
+    })();
+  }
+
   res.json({ ok: true, id: data?.id });
 });
 

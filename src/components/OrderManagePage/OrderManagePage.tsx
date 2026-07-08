@@ -539,25 +539,25 @@ const OrderManagePage: React.FC = () => {
         <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
           <button
             onClick={() => setTopTab("order")}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[13px] font-black transition-all duration-200 cursor-pointer ${
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[13px] font-black transition-all duration-200 cursor-pointer ${
               topTab === "order"
-                ? "bg-rose-100/60 text-rose-700 ring-1 ring-rose-200 shadow-sm"
-                : "text-rose-400/80 hover:bg-rose-50/60 hover:text-rose-600"
+                ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
             }`}
           >
-            <ShoppingCart size={15} className={topTab === "order" ? "text-rose-600" : "text-rose-300"} /> 발주요청
+            <ShoppingCart size={15} className={topTab === "order" ? "text-slate-800" : "text-slate-400"} /> 발주요청
           </button>
           <button
             onClick={() => setTopTab("receipt")}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[13px] font-black transition-all duration-200 cursor-pointer ${
+            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[13px] font-black transition-all duration-200 cursor-pointer ${
               topTab === "receipt"
-                ? "bg-emerald-100/60 text-emerald-700 ring-1 ring-emerald-200 shadow-sm"
-                : "text-emerald-400/80 hover:bg-emerald-50/60 hover:text-emerald-600"
+                ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
             }`}
           >
-            <PackageCheck size={15} className={topTab === "receipt" ? "text-emerald-600" : "text-emerald-300"} /> 입고확인
+            <PackageCheck size={15} className={topTab === "receipt" ? "text-slate-800" : "text-slate-400"} /> 입고확인
             {receipts.filter(r => r.status === "pending" || r.status === "partial").length > 0 && (
-              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${topTab === "receipt" ? "bg-emerald-200/60 text-emerald-700" : "bg-emerald-100/60 text-emerald-400"}`}>
+              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${topTab === "receipt" ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-400"}`}>
                 {receipts.filter(r => r.status === "pending" || r.status === "partial").length}
               </span>
             )}

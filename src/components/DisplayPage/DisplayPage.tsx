@@ -1408,26 +1408,26 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
               <button
                 onClick={() => setDpSubTab("store")}
-                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-sky-400 focus-visible:ring-offset-1 rounded-xl ${
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 rounded-lg ${
                   dpSubTab === "store"
-                    ? "bg-sky-100/60 text-sky-700 ring-1 ring-sky-200 shadow-sm"
-                    : "text-sky-400/80 hover:bg-sky-50/60 hover:text-sky-600"
+                    ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                 }`}
               >
-                <Store size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "store" ? "text-sky-600" : "text-sky-300"}`} />
+                <Store size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "store" ? "text-slate-800" : "text-slate-400"}`} />
                 <span>매장관리</span>
               </button>
 
               {dpCanSeeStockManage && (
                 <button
                   onClick={() => setDpSubTab("stock-manage")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-1 rounded-xl ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 rounded-lg ${
                     dpSubTab === "stock-manage"
-                      ? "bg-indigo-100/60 text-indigo-700 ring-1 ring-indigo-200 shadow-sm"
-                      : "text-indigo-400/80 hover:bg-indigo-50/60 hover:text-indigo-600"
+                      ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                   }`}
                 >
-                  <Boxes size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "stock-manage" ? "text-indigo-600" : "text-indigo-300"}`} />
+                  <Boxes size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "stock-manage" ? "text-slate-800" : "text-slate-400"}`} />
                   <span>재고관리</span>
                 </button>
               )}
@@ -1435,13 +1435,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               {dpCanSeeStockManage && (
                 <button
                   onClick={() => setDpSubTab("sales-trend")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-1 rounded-xl ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 rounded-lg ${
                     dpSubTab === "sales-trend"
-                      ? "bg-teal-100/60 text-teal-700 ring-1 ring-teal-200 shadow-sm"
-                      : "text-teal-400/80 hover:bg-teal-50/60 hover:text-teal-600"
+                      ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                   }`}
                 >
-                  <TrendingUp size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "sales-trend" ? "text-teal-600" : "text-teal-300"}`} />
+                  <TrendingUp size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "sales-trend" ? "text-slate-800" : "text-slate-400"}`} />
                   <span>판매추이</span>
                 </button>
               )}
@@ -1449,13 +1449,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               {dpCanSeeStockArrivals && (
                 <button
                   onClick={() => setDpSubTab("stock-arrivals")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-emerald-400 focus-visible:ring-offset-1 rounded-xl ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 rounded-lg ${
                     dpSubTab === "stock-arrivals"
-                      ? "bg-emerald-100/60 text-emerald-700 ring-1 ring-emerald-200 shadow-sm"
-                      : "text-emerald-400/80 hover:bg-emerald-50/60 hover:text-emerald-600"
+                      ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                   }`}
                 >
-                  <Bell size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "stock-arrivals" ? "text-emerald-600" : "text-emerald-300"}`} />
+                  <Bell size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "stock-arrivals" ? "text-slate-800" : "text-slate-400"}`} />
                   <span>입고알림관리</span>
                 </button>
               )}
@@ -1463,26 +1463,26 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               {dpCanSeeStockManage && (
                 <button
                   onClick={() => setDpSubTab("order-manage")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-1 rounded-xl ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 rounded-lg ${
                     dpSubTab === "order-manage"
-                      ? "bg-rose-100/60 text-rose-700 ring-1 ring-rose-200 shadow-sm"
-                      : "text-rose-400/80 hover:bg-rose-50/60 hover:text-rose-600"
+                      ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                      : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                   }`}
                 >
-                  <ClipboardList size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "order-manage" ? "text-rose-600" : "text-rose-300"}`} />
+                  <ClipboardList size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "order-manage" ? "text-slate-800" : "text-slate-400"}`} />
                   <span>발주관리</span>
                 </button>
               )}
 
               <button
                 onClick={() => setDpSubTab("staff-manage")}
-                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-violet-400 focus-visible:ring-offset-1 rounded-xl ${
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 rounded-lg ${
                   dpSubTab === "staff-manage"
-                    ? "bg-violet-100/60 text-violet-700 ring-1 ring-violet-200 shadow-sm"
-                    : "text-violet-400/80 hover:bg-violet-50/60 hover:text-violet-600"
+                    ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                 }`}
               >
-                <Users size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "staff-manage" ? "text-violet-600" : "text-violet-300"}`} />
+                <Users size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "staff-manage" ? "text-slate-800" : "text-slate-400"}`} />
                 <span>직원관리</span>
               </button>
             </div>

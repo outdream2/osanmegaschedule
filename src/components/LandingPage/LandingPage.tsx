@@ -872,26 +872,26 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
                 <button
                   onClick={() => setUploadTab("products")}
-                  className={`px-3 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${
-                    uploadTab === "products" ? "bg-orange-100/60 text-orange-700 ring-1 ring-orange-200 shadow-sm" : "text-orange-400/80 hover:bg-orange-50/60 hover:text-orange-600"
+                  className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                    uploadTab === "products" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                   }`}>
                   상품목록
                 </button>
                 <button
                   onClick={() => setUploadTab("stock")}
-                  className={`px-3 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${
-                    uploadTab === "stock" ? "bg-indigo-100/60 text-indigo-700 ring-1 ring-indigo-200 shadow-sm" : "text-indigo-400/80 hover:bg-indigo-50/60 hover:text-indigo-600"
+                  className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                    uploadTab === "stock" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                   }`}>
                   재고리스트
                 </button>
                 <button
                   onClick={() => { setUploadTab("log"); fetchImportLog(); fetchStockImportLog(); }}
-                  className={`flex items-center gap-1 px-3 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${
-                    uploadTab === "log" ? "bg-emerald-100/60 text-emerald-700 ring-1 ring-emerald-200 shadow-sm" : "text-emerald-400/80 hover:bg-emerald-50/60 hover:text-emerald-600"
+                  className={`flex items-center gap-1 px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                    uploadTab === "log" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                   }`}>
                   임포트 목록
                   {(importLog.length + stockImportLog.length) > 0 && (
-                    <span className={`text-[9px] font-mono rounded-full px-1.5 py-0.5 ${uploadTab === "log" ? "bg-emerald-200/60 text-emerald-700" : "bg-emerald-100/60 text-emerald-400"}`}>
+                    <span className={`text-[9px] font-mono rounded-full px-1.5 py-0.5 ${uploadTab === "log" ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-400"}`}>
                       {importLog.length + stockImportLog.length}
                     </span>
                   )}

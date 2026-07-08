@@ -963,16 +963,16 @@ export const StockManagePage: React.FC = () => {
           {/* 페이지 서브탭 pill */}
           <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
             <button onClick={() => setPageTab("dashboard")}
-              className={`px-4 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${
+              className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
                 pageTab === "dashboard"
-                  ? "bg-indigo-100/60 text-indigo-700 ring-1 ring-indigo-200 shadow-sm"
-                  : "text-indigo-400/80 hover:bg-indigo-50/60 hover:text-indigo-600"
+                  ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
               }`}>대시보드</button>
             <button onClick={() => setPageTab("raw")}
-              className={`px-4 py-1.5 text-xs font-black rounded-xl transition-all duration-200 cursor-pointer ${
+              className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
                 pageTab === "raw"
-                  ? "bg-indigo-100/60 text-indigo-700 ring-1 ring-indigo-200 shadow-sm"
-                  : "text-indigo-400/80 hover:bg-indigo-50/60 hover:text-indigo-600"
+                  ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                  : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
               }`}>원본 데이터</button>
           </div>
           {lastImportAt && (() => {
@@ -1385,19 +1385,19 @@ export const StockManagePage: React.FC = () => {
             <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 mb-3 gap-0.5">
               <button
                 onClick={() => setTopTab("sale")}
-                className={`px-3.5 py-1.5 text-[11px] font-black rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`px-3.5 py-1.5 text-[11px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
                   topTab === "sale"
-                    ? "bg-orange-100/60 text-orange-700 ring-1 ring-orange-200 shadow-sm"
-                    : "text-orange-400/80 hover:bg-orange-50/60 hover:text-orange-600"
+                    ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                 }`}>
                 재고 흐름
               </button>
               <button
                 onClick={() => setTopTab("purchase")}
-                className={`px-3.5 py-1.5 text-[11px] font-black rounded-xl transition-all duration-200 cursor-pointer ${
+                className={`px-3.5 py-1.5 text-[11px] font-black rounded-lg transition-all duration-200 cursor-pointer ${
                   topTab === "purchase"
-                    ? "bg-teal-100/60 text-teal-700 ring-1 ring-teal-200 shadow-sm"
-                    : "text-teal-400/80 hover:bg-teal-50/60 hover:text-teal-600"
+                    ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                 }`}>
                 공급사거래명세서
               </button>
