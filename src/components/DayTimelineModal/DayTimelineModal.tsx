@@ -671,13 +671,13 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
     count: BreakCount,
     onReorder?: (slot: string, empId: number, toIndex: number) => void,
   ) => {
-    // 비활성 슬롯도 드롭 타겟으로 허용 (드롭 시 assign은 되지만 offset이 안 맞으면 화면에는 안 보일 수 있음)
+    // 비활성 슬롯도 드롭 타겟으로 허용 · 클릭 시 인원 선택 팝업 (모바일 친화적 터치 영역)
     if (!isActive) {
       const dataAttrInactive = dropKind === "lunch" ? { "data-drop-lunch": slotKey } : { "data-drop-rest": slotKey };
       return (
         <div
           {...dataAttrInactive}
-          className={`flex-1 bg-slate-50/20 border-r last:border-r-0 min-h-[24px] ${theme.border}`}
+          className={`flex-1 flex items-center justify-center bg-slate-50/40 border-r last:border-r-0 min-h-[32px] cursor-pointer transition ${theme.border} ${theme.hover} active:bg-slate-100/60`}
           onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
           onDrop={e => {
             e.preventDefault();
@@ -688,7 +688,10 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             onDrop(slotKey, draggingId, src ?? undefined);
           }}
           onClick={() => setCellPicker({ type: dropKind, slot: slotKey })}
-        />
+          title="탭하여 인원 배정"
+        >
+          <span className="text-[10px] font-black text-slate-300 select-none">+</span>
+        </div>
       );
     }
     const assigned = slotMap[slotKey] ?? [];
@@ -752,8 +755,8 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                     onUserInteract?.();
                   }}
                   onDragEnd={() => { setDraggingId(null); setDraggingSource(null); }}
-                  onClick={e => { e.stopPropagation(); onRemove(slotKey, empId!); }}
-                  title={w!.emp.position.includes("캐셔") && w!.emp.position.includes("물류") ? "캐셔 겸직 · 드래그하여 이동 · 클릭하여 제거" : "드래그하여 이동 · 클릭하여 제거"}
+                  onClick={e => { e.stopPropagation(); setCellPicker({ type: dropKind, slot: slotKey }); }}
+                  title={w!.emp.position.includes("캐셔") && w!.emp.position.includes("물류") ? "캐셔 겸직 · 탭하여 배정 편집 (모바일) · 드래그하여 이동 (데스크탑)" : "탭하여 배정 편집 (모바일) · 드래그하여 이동 (데스크탑)"}
                   style={{ backgroundColor: c!.chipBg, color: c!.chipText, borderColor: c!.chipBorder }}
                   className="relative w-full text-center rounded text-[10px] font-bold border transition leading-none py-px cursor-grab active:cursor-grabbing hover:opacity-60 inline-flex items-center justify-center gap-0.5 whitespace-nowrap overflow-hidden"
                 >
@@ -1158,6 +1161,20 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
           if (isLunch)        return (lunchSlotMap[slot] ?? []).includes(empId);
           return               (restSlotMap[slot] ?? []).includes(empId);
         };
+        const assignedList: number[] = isZone && zone
+          ? ((zoneMap[zone] ?? {})[slot] ?? [])
+          : isLunch
+          ? (lunchSlotMap[slot] ?? [])
+          : (restSlotMap[slot] ?? []);
+        const canReorder = isLunch || cellPicker.type === "rest";
+        const moveAssigned = (empId: number, dir: -1 | 1) => {
+          const idx = assignedList.indexOf(empId);
+          if (idx < 0) return;
+          const target = idx + dir;
+          if (target < 0 || target >= assignedList.length) return;
+          if (isLunch && onReorderLunch) onReorderLunch(slot, empId, target);
+          else if (cellPicker.type === "rest" && onReorderRest) onReorderRest(slot, empId, target);
+        };
 
         const toggle = (empId: number) => {
           if (isAssigned(empId)) {
@@ -1195,6 +1212,45 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               <div className="overflow-y-auto flex-1">
                 {allWorkers.length === 0 && (
                   <div className="text-center text-slate-400 text-sm py-8">근무자 없음</div>
+                )}
+                {/* 현재 배정된 인원 · 순서 변경 가능 (점심·휴게 슬롯) */}
+                {canReorder && assignedList.length > 0 && (
+                  <div className="border-b border-slate-200 bg-indigo-50/30">
+                    <div className="px-5 py-1.5 text-[10px] font-black uppercase tracking-wider text-indigo-700 border-b border-indigo-100 flex items-center justify-between">
+                      <span>배정된 인원 · 순서 조정</span>
+                      <span className="text-[9px] font-bold text-indigo-500">↑↓ 로 순서 변경</span>
+                    </div>
+                    {assignedList.map((empId, i) => {
+                      const w = allWorkers.find(ww => ww.emp.id === empId);
+                      if (!w) return null;
+                      return (
+                        <div key={`ord-${empId}`} className="flex items-center gap-2 px-5 py-2 border-b border-slate-100">
+                          <span className="text-[11px] font-black text-indigo-500 w-5">{i + 1}.</span>
+                          <span className="font-bold text-sm text-slate-800 flex-1 truncate">{w.emp.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => moveAssigned(empId, -1)}
+                            disabled={i === 0}
+                            className="w-9 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed text-slate-600 font-black text-base flex items-center justify-center cursor-pointer transition"
+                            title="위로 이동"
+                          >↑</button>
+                          <button
+                            type="button"
+                            onClick={() => moveAssigned(empId, 1)}
+                            disabled={i === assignedList.length - 1}
+                            className="w-9 h-9 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed text-slate-600 font-black text-base flex items-center justify-center cursor-pointer transition"
+                            title="아래로 이동"
+                          >↓</button>
+                          <button
+                            type="button"
+                            onClick={() => toggle(empId)}
+                            className="w-9 h-9 rounded-lg border border-rose-200 bg-rose-50 hover:bg-rose-100 text-rose-600 font-black text-sm flex items-center justify-center cursor-pointer transition"
+                            title="배정 제거"
+                          >✕</button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
                 {(() => {
                   const popupSections: { label: string; items: typeof allWorkers; headerCls: string }[] = [
