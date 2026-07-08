@@ -2,8 +2,9 @@
 // 발주관리 페이지 — 매장관리 · 재고관리 · 입고알림관리 옆의 서브탭으로 노출
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
 // 입고확인 탭에서는 거래명세서 OCR(OcrPage) 노출
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle, Upload } from "lucide-react";
+import * as XLSX from "xlsx";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 import { OcrPage } from "../OcrPage";
@@ -96,14 +97,41 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [lowStockCollapsed, setLowStockCollapsed] = useState(false);
   // 공급사 마스터 (vendors 테이블) — 담당자·이메일·전화 매핑
   const [vendors, setVendors] = useState<Array<{ id: number; company_name: string; contact_name: string | null; phone: string | null; email: string | null }>>([]);
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/vendors");
-        if (res.ok) setVendors(await res.json());
-      } catch { /* silent */ }
-    })();
+  const loadVendors = useCallback(async () => {
+    try {
+      const res = await fetch("/api/vendors");
+      if (res.ok) setVendors(await res.json());
+    } catch { /* silent */ }
   }, []);
+  useEffect(() => { loadVendors(); }, [loadVendors]);
+
+  // 공급사현황 엑셀 임포트
+  const vendorImportFileRef = useRef<HTMLInputElement>(null);
+  const [vendorImporting, setVendorImporting] = useState(false);
+  const handleVendorImport = async (file: File) => {
+    setVendorImporting(true);
+    try {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type: "array" });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: null });
+      if (rows.length === 0) throw new Error("엑셀에 데이터가 없습니다.");
+      const res = await fetch("/api/vendors/bulk-import", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rows }),
+      });
+      const j = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(j.error ?? `임포트 실패 (${res.status})`);
+      const msg = `공급사 임포트 완료\n총 ${j.total}건 · 신규 ${j.inserted} · 갱신 ${j.updated}` + (j.failed ? ` · 실패 ${j.failed}` : "");
+      alert(msg + (j.errors?.length ? `\n\n첫 오류:\n${j.errors.slice(0, 3).join("\n")}` : ""));
+      await loadVendors();
+    } catch (e: any) {
+      alert(`공급사 임포트 실패: ${e?.message ?? e}`);
+    } finally {
+      setVendorImporting(false);
+    }
+  };
   const vendorMap = useMemo(() => {
     const m = new Map<string, { contact_name: string | null; phone: string | null; email: string | null }>();
     for (const v of vendors) {
@@ -573,6 +601,30 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             <PackageCheck size={15} className={topTab === "receipt" ? "text-slate-800" : "text-slate-400"} /> 입고확인(OCR)
           </button>
         </div>
+        {/* 공급사현황 엑셀 임포트 (담당자/전화/이메일 매핑용) */}
+        <div className="ml-auto flex items-center gap-1.5">
+          <span className="hidden sm:inline text-[10px] text-slate-400 font-mono">공급사 {vendors.length}건</span>
+          <input
+            ref={vendorImportFileRef}
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) handleVendorImport(f);
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => vendorImportFileRef.current?.click()}
+            disabled={vendorImporting}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-sm active:scale-95 transition disabled:opacity-40 cursor-pointer"
+            title="공급사현황 엑셀 파일 (.xlsx) 임포트 — 회사명 기준으로 담당자/전화/이메일 갱신"
+          >
+            {vendorImporting ? <Loader2 size={11} className="animate-spin" /> : <Upload size={11} />} 공급사 임포트
+          </button>
+        </div>
       </div>
 
       {/* ── 입고확인(OCR) 탭 · 거래명세서 OCR 컨텐츠만 임베드 (헤더 X) ── */}
@@ -775,7 +827,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   <th className="text-left px-1 py-1.5 w-24">공급사</th>
                   <th className="text-left px-1 py-1.5 w-20">담당자</th>
                   <th className="text-left px-1 py-1.5 min-w-[120px]">상품명</th>
-                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/60">ERP재고</th>
+                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/60"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[9px] text-slate-400 font-normal">(현재고)</span></div></th>
                   <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/60 text-violet-500">실재고</th>
                   <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/60">적정</th>
                   <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/60 text-rose-500">부족</th>
@@ -795,11 +847,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   const zoneDisplay = zone?.real_map || zone?.spec || "-";
                   const zoneMismatch = zone?.real_map && zone?.spec && zone.real_map !== zone.spec;
                   const productData = codeVariants.map(c => allProductsMap[c]).find(Boolean);
-                  const supplierDisplay = r.supplier || (productData as any)?.supplier || "-";
-                  const vendor = supplierDisplay !== "-" ? findVendor(supplierDisplay) : undefined;
-                  // 담당자 fallback 순서: OrderRequest → vendor DB → products.supplier_contact → "-"
-                  const contactName = r.supplier_contact
-                    || vendor?.contact_name
+                  // 공급사: products 테이블(원본) 우선 · OrderRequest 스냅샷 fallback
+                  const supplierDisplay = (productData as any)?.supplier || r.supplier || "-";
+                  // vendor lookup: products.supplier 로 먼저 시도 · 실패 시 OrderRequest.supplier
+                  const vendor = findVendor((productData as any)?.supplier) || findVendor(r.supplier) || undefined;
+                  // 담당자 fallback 순서: vendor DB → OrderRequest 스냅샷 → products.supplier_contact → "-"
+                  const contactName = vendor?.contact_name
+                    || r.supplier_contact
                     || (productData as any)?.supplier_contact
                     || (productData as any)?.contact_name
                     || "-";
@@ -949,7 +1003,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   <th className="text-left px-1 py-1.5 w-24">공급사</th>
                   <th className="text-left px-1 py-1.5 w-20">담당자</th>
                   <th className="text-left px-1 py-1.5 min-w-[120px]">상품명</th>
-                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/60">ERP재고</th>
+                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/60"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[9px] text-slate-400 font-normal">(현재고)</span></div></th>
                   <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/60 text-violet-500">실재고</th>
                   <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/60">적정</th>
                   <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/60 text-rose-500">부족</th>

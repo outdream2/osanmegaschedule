@@ -1063,9 +1063,9 @@ export const StockManagePage: React.FC = () => {
         {/* 2행: 기간 선택 + 검색 */}
         <div className="flex items-center gap-2 flex-wrap">
           {/* 1주/1개월/3개월 탭 제거됨 (사용자 요청) */}
-          {/* 상품명·코드 검색 + 정보확인 */}
+          {/* 상품명·코드 검색 + 정보확인 (데스크탑 전용 · 모바일은 조회기간 아래로 이동) */}
           {pageTab === "dashboard" && (
-            <div className="flex items-center gap-1.5 flex-wrap bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 rounded-xl px-2 py-1 shadow-sm min-w-0">
+            <div className="hidden sm:flex items-center gap-1.5 flex-wrap bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 rounded-xl px-2 py-1 shadow-sm min-w-0">
               <div className="relative min-w-0 w-full sm:w-auto">
                 <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
@@ -1467,7 +1467,7 @@ export const StockManagePage: React.FC = () => {
               </div>
               {!flowCardCollapsed && (
                 <p className="text-[10px] text-slate-500 font-semibold leading-tight">
-                  💡 상품명을 누르면 상세 정보와 판매추이가 나옵니다
+                  💡 상품명을 누르면 상세 정보와 재고 상황이 나옵니다
                 </p>
               )}
             </div>
@@ -1517,6 +1517,58 @@ export const StockManagePage: React.FC = () => {
                       className="text-[10px] font-black text-rose-500 hover:text-rose-700 px-1.5 py-1 rounded hover:bg-rose-50 transition cursor-pointer shrink-0">✕</button>
                   )}
                 </div>
+                {/* 모바일 전용 · 조회기간 아래에 상품 정보 검색 + 정보확인 + 숨김관리 (데스크탑은 상단에 위치) */}
+                {pageTab === "dashboard" && (
+                  <div className="sm:hidden mb-2 bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 rounded-xl p-2 shadow-sm">
+                    <div className="text-[9px] font-black text-sky-600 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                      <Search size={10} /> 상품 정보 조회
+                    </div>
+                    <div className="relative w-full mb-1.5">
+                      <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                      <input
+                        value={infoSearchQuery}
+                        onChange={(e) => setInfoSearchQuery(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") runInfoSearch(); }}
+                        placeholder="상품명·코드 검색"
+                        className="w-full pl-7 pr-2 py-1.5 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:border-sky-400 bg-white"
+                      />
+                      {infoSearchResults.length > 0 && (
+                        <div className="absolute left-0 right-0 top-full mt-1 max-h-64 overflow-y-auto border border-slate-200 bg-white rounded-lg shadow-lg z-30 divide-y divide-slate-100">
+                          {infoSearchResults.map((p, i) => (
+                            <button
+                              key={`info-sr-m-${p.product_code}-${i}`}
+                              onClick={() => { setInfoSelected(p); setInfoSearchQuery(p.product_name); setInfoSearchResults([]); }}
+                              className="w-full text-left px-2.5 py-1.5 hover:bg-sky-50 transition text-xs flex items-center justify-between gap-2"
+                            >
+                              <div className="min-w-0">
+                                <div className="font-bold text-slate-800 truncate">{p.product_name}</div>
+                                <div className="text-[9px] font-mono text-slate-400 truncate">#{p.product_code} · {p.supplier ?? "-"}</div>
+                              </div>
+                              <span className="text-[9px] text-slate-400 shrink-0">재고 {p.current_stock ?? "-"}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        onClick={() => openProductInfoModal()}
+                        disabled={!infoSelected && !infoSearchQuery.trim() && infoSearchResults.length === 0}
+                        className="flex items-center justify-center gap-1 text-[11px] font-black text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-2 py-1.5 cursor-pointer transition shadow-sm active:scale-95"
+                        title="상품 선택 후 클릭"
+                      >
+                        <Info size={12} /> 정보확인
+                      </button>
+                      <button
+                        onClick={() => openHiddenManagerModal()}
+                        className="flex items-center justify-center gap-1 text-[11px] font-black text-amber-700 bg-white border border-amber-300 hover:bg-amber-50 rounded-lg px-2 py-1.5 cursor-pointer transition shadow-sm active:scale-95"
+                        title="숨김 처리된 상품 관리"
+                      >
+                        <EyeOff size={12} /> 숨김 관리
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {/* 판매수량 범위 필터 (모바일 최적화) */}
                 <div className="flex items-center gap-1.5 mb-2 flex-wrap text-[11px]">
                   <span className="text-slate-500 font-black text-[11px] shrink-0">판매출고계</span>

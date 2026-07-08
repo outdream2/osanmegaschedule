@@ -200,9 +200,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 if (!el.dataset.retried) { el.dataset.retried = "1"; el.src = "/src/images/logo.png"; }
               }}
             />
-            <span className="font-black tracking-tight leading-none select-none">
-              <span className="text-red-500 text-lg sm:text-xl">OSAN</span>
-              <span className="text-gray-900 text-sm sm:text-base"> MEGATOWN</span>
+            {/* 모바일: OSAN / MEGATOWN 2줄 · 데스크탑: 한 줄 · 로고 옆 정렬 */}
+            <span className="font-black tracking-tight leading-none select-none flex flex-col sm:flex-row sm:items-baseline sm:gap-1">
+              <span className="text-red-500 text-lg sm:text-xl leading-none">OSAN</span>
+              <span className="text-gray-900 text-sm sm:text-base leading-none mt-0.5 sm:mt-0">MEGATOWN</span>
             </span>
           </div>
 

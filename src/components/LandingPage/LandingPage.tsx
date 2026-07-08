@@ -56,8 +56,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [uploadLoading, setUploadLoading] = useState(false);
   const [uploadResult, setUploadResult] = useState<{ ok: boolean; count?: number; msg?: string } | null>(null);
   const [importLog, setImportLog] = useState<{ timestamp: string; count: number }[]>([]);
-  // 데이터 업로드 통합 모달 서브탭: products(기본) / stock
-  const [uploadTab, setUploadTab] = useState<"products" | "stock" | "log">("products");
+  // 데이터 업로드 통합 모달 서브탭: products(기본) / stock / vendors / log
+  const [uploadTab, setUploadTab] = useState<"products" | "stock" | "vendors" | "log">("products");
+  // 공급사관리 업로드
+  const [vendorUploadFile, setVendorUploadFile] = useState<File | null>(null);
+  const [vendorUploadLoading, setVendorUploadLoading] = useState(false);
+  const [vendorUploadResult, setVendorUploadResult] = useState<{ ok: boolean; count?: number; inserted?: number; updated?: number; failed?: number; msg?: string } | null>(null);
+  const vendorUploadInputRef = useRef<HTMLInputElement>(null);
   // 재고 리스트 업로드
   const [stockUploadFile, setStockUploadFile] = useState<File | null>(null);
   const [stockUploadLoading, setStockUploadLoading] = useState(false);
@@ -322,6 +327,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
     }
   };
 
+  const handleVendorUpload = async () => {
+    if (!vendorUploadFile) return;
+    const canUpload = isManagerOrAdmin && !!authSession?.employeeId;
+    if (!canUpload) return;
+    setVendorUploadLoading(true);
+    setVendorUploadResult(null);
+    try {
+      const params = `managerId=${authSession!.employeeId}`;
+      const buf = await vendorUploadFile.arrayBuffer();
+      const res = await axios.post(`/api/upload-vendors?${params}`, buf, {
+        headers: { "Content-Type": "application/octet-stream" },
+      });
+      setVendorUploadResult({
+        ok: true,
+        count: res.data.count,
+        inserted: res.data.inserted,
+        updated: res.data.updated,
+        failed: res.data.failed,
+      });
+    } catch (err: any) {
+      setVendorUploadResult({ ok: false, msg: err?.response?.data?.error ?? "업로드 실패" });
+    } finally {
+      setVendorUploadLoading(false);
+    }
+  };
+
   // Level with role-based fallback for backwards-compat with old sessions
   const userLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
@@ -484,7 +515,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[360px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(99,102,241,0.07) 0%, transparent 70%)" }} />
         <div className="absolute bottom-1/3 left-1/4 w-[500px] h-[260px] rounded-full pointer-events-none" style={{ background: "radial-gradient(ellipse, rgba(16,185,129,0.05) 0%, transparent 70%)" }} />
 
-        <div className="relative z-10 flex flex-col items-center w-full max-w-3xl">
+        <div className="relative z-10 flex flex-col items-center w-full max-w-3xl md:max-w-4xl xl:max-w-6xl">
 
           {/* Hero brand area · 로그인 사용자 표시는 헤더 탭 아래 [이름 직급] 로 통일 */}
           <div className="w-full mb-3 px-1" />
@@ -499,7 +530,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <span className="text-[11px] font-bold text-violet-600 uppercase tracking-widest">관리자 도구</span>
                 <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #ddd6fe, transparent)" }} />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
 
                 {/* 매장관리 · 재고관리 — sky */}
                 <button onClick={() => onNavigate("display", authSession!)}
@@ -637,7 +668,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <span className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest">직원용</span>
                 <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #c7d2fe, transparent)" }} />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
 
                 {/* 스케줄표 조회 — blue */}
                 <button onClick={() => onNavigate("schedule", authSession!)}
@@ -840,7 +871,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">거래처용</span>
                 <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #a7f3d0, transparent)" }} />
               </div>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
                 <button onClick={() => onNavigate("reservation", authSession!)}
                   className="group relative bg-white border border-slate-200/80 hover:border-emerald-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(209,250,229,0.6) 0%, transparent 60%)" }} />
@@ -942,6 +973,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     uploadTab === "stock" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
                   }`}>
                   재고리스트
+                </button>
+                <button
+                  onClick={() => { setUploadTab("vendors"); setVendorUploadResult(null); setVendorUploadFile(null); }}
+                  className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                    uploadTab === "vendors" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                  }`}>
+                  공급사관리
                 </button>
                 <button
                   onClick={() => { setUploadTab("log"); fetchImportLog(); fetchStockImportLog(); }}
@@ -1225,6 +1263,58 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         );
                       })}
                     </div>
+                  </div>
+                )}
+              </>
+            )}
+            {uploadTab === "vendors" && (
+              <>
+                <p className="text-xs text-gray-500 mb-4 leading-relaxed">
+                  공급사관리 xlsx 파일을 업로드하면 <b>회사명</b> 기준으로 담당자·전화·이메일·카테고리·비고가 갱신됩니다.<br />
+                  <span className="text-gray-400">기존에 없는 공급사는 신규 등록됩니다. (컬럼명: 공급사/담당자/전화/이메일/카테고리/비고)</span>
+                </p>
+                {vendorUploadResult?.ok ? (
+                  <div className="flex flex-col items-center gap-3 py-4">
+                    <CheckCircle2 size={36} className="text-emerald-500" />
+                    <p className="text-sm font-bold text-emerald-700">공급사 임포트 완료</p>
+                    <p className="text-xs text-gray-500">
+                      총 {vendorUploadResult.count?.toLocaleString()}건 · 신규 {vendorUploadResult.inserted ?? 0} · 갱신 {vendorUploadResult.updated ?? 0}
+                      {vendorUploadResult.failed ? <> · <span className="text-rose-500">실패 {vendorUploadResult.failed}</span></> : null}
+                    </p>
+                    <button onClick={() => { setVendorUploadResult(null); setVendorUploadFile(null); }} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">확인</button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <input ref={vendorUploadInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={e => {
+                      const file = e.target.files?.[0] ?? null;
+                      if (!file) { setVendorUploadFile(null); return; }
+                      const ext = file.name.split(".").pop()?.toLowerCase();
+                      if (ext !== "xlsx" && ext !== "xls") {
+                        alert("형식이 다른 파일입니다. 공급사관리 xlsx를 업로드해주세요.");
+                        e.target.value = ""; return;
+                      }
+                      setVendorUploadResult(null);
+                      setVendorUploadFile(file);
+                    }} />
+                    <button
+                      type="button"
+                      onClick={() => vendorUploadInputRef.current?.click()}
+                      className="w-full py-3 border-2 border-dashed border-gray-300 hover:border-emerald-400 text-gray-500 hover:text-emerald-600 text-sm font-semibold rounded-xl transition cursor-pointer flex items-center justify-center gap-2"
+                    >
+                      <Upload size={16} />
+                      {vendorUploadFile ? vendorUploadFile.name : "파일 선택 (.xlsx)"}
+                    </button>
+                    {vendorUploadResult?.ok === false && (
+                      <p className="text-xs text-rose-500 font-semibold text-center">{vendorUploadResult.msg}</p>
+                    )}
+                    <button
+                      type="button"
+                      disabled={!vendorUploadFile || vendorUploadLoading}
+                      onClick={handleVendorUpload}
+                      className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-200 disabled:cursor-not-allowed text-white font-bold rounded-xl transition cursor-pointer text-sm flex items-center justify-center gap-2"
+                    >
+                      {vendorUploadLoading ? <><div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white" /><span>임포트 중...</span></> : <><Upload size={14} /><span>DB 임포트</span></>}
+                    </button>
                   </div>
                 )}
               </>
