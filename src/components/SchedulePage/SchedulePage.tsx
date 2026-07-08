@@ -1668,8 +1668,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         />
       )}
 
-      {/* 2. Grid Container Block */}
-      <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-gray-100 gap-0">
+      {/* 2. Grid Container Block · 데스크탑에서만 max-w 적용 (모바일은 전체 폭 사용) */}
+      <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-gray-100 gap-0 w-full lg:max-w-[1600px] lg:mx-auto min-w-0">
         {/* Month Navigation Toolbar — responsive two-row layout */}
         <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl py-1.5 sm:py-2 flex flex-col gap-1.5 px-2.5 sm:px-5 shrink-0 shadow-sm">
           {/* 1행: 월 네비게이션 + 오늘 + 범례 */}
@@ -1842,7 +1842,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-b-xl flex flex-col flex-1 shadow-sm overflow-x-hidden">
+        <div className="bg-white border border-slate-200 rounded-b-xl flex flex-col flex-1 shadow-sm min-w-0 overflow-hidden">
             {/* Month locked banner */}
             {isMonthLocked && (
               <div className="mx-2 mt-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2">
@@ -1949,7 +1949,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 </div>
               ) : (() => {
                 return (
-                  <table className="text-left border-collapse table-fixed min-w-max w-full">
+                  <table className="text-left border-collapse table-fixed w-full min-w-[900px]">
                     {/* Table Headers */}
                     <thead className="sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
                       {/* Header Row 1: Day of Month Numbers */}

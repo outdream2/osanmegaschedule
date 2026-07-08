@@ -249,6 +249,14 @@ router.get("/api/stock-manage/snapshot-summary", async (req, res) => {
 // 판매추이 (Sales Trend) - stock_history 기간별 시계열
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// ── 판매추이 in-memory 캐시 (반복 조회 즉시 응답) ─────────────────────────
+// key: `${code}::${months}` · TTL 5분 · 상품/공급사 변경 시 stock_history POST 에서 clear
+const salesTrendCache = new Map<string, { data: any; expiresAt: number }>();
+const SALES_TREND_TTL = 5 * 60 * 1000; // 5분
+function clearSalesTrendCache() { salesTrendCache.clear(); }
+// stock_history 업로드/변경 시 캐시 초기화 (export 하여 다른 endpoint 에서 사용)
+export { clearSalesTrendCache };
+
 // GET /api/sales-trend/product?code=<상품코드>
 // 하나의 상품에 대한 10일 기간별 시계열 (period_start_date 오름차순)
 router.get("/api/sales-trend/product", async (req, res) => {
@@ -256,6 +264,14 @@ router.get("/api/sales-trend/product", async (req, res) => {
   if (!code) return res.status(400).json({ error: "code 필수" });
   // months 지정 시 오늘 기준 최근 N개월 범위로 필터
   const months = Math.max(0, Math.min(24, parseInt(String(req.query.months ?? "0"), 10) || 0));
+  // 캐시 조회 (반복 클릭·기간 변경 즉시 응답)
+  const cacheKey = `${code}::${months}`;
+  const cached = salesTrendCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("X-Cache", "HIT");
+    return res.json(cached.data);
+  }
   try {
     let q = supabase
       .from("stock_history")
@@ -271,8 +287,11 @@ router.get("/api/sales-trend/product", async (req, res) => {
       .order("period_start_date", { ascending: true, nullsFirst: false })
       .order("snapshot_date", { ascending: true });
     if (error) return res.status(500).json({ error: error.message });
+    const payload = { code, months, rows: data ?? [] };
+    salesTrendCache.set(cacheKey, { data: payload, expiresAt: Date.now() + SALES_TREND_TTL });
     res.setHeader("Cache-Control", "no-store");
-    res.json({ code, months, rows: data ?? [] });
+    res.setHeader("X-Cache", "MISS");
+    res.json(payload);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
@@ -404,6 +423,10 @@ router.get("/api/sales-trend/overview", async (_req, res) => {
   }
 });
 
+// ── top-sales in-memory 캐시 (heavy aggregation · TTL 3분) ─────────────────
+const topSalesCache = new Map<string, { data: any; expiresAt: number }>();
+const TOP_SALES_TTL = 3 * 60 * 1000; // 3분
+
 // GET /api/stock-manage/top-sales?snapshot_date=YYYY-MM-DD&sort=sale|purchase|amount|closing&dir=asc|desc&limit=100&supplier=<이름>&supplier_code=<코드>
 // 재고 스냅샷의 상품별 흐름 (xlsx 각 행) — 정렬·limit·범위 필터는 클라이언트에서
 router.get("/api/stock-manage/top-sales", async (req, res) => {
@@ -418,6 +441,14 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
   const dateParam = String(req.query.snapshot_date ?? "").trim();
   // 기간 범위 (개월). 지정 시 해당 범위의 모든 스냅샷을 상품별로 aggregation
   const monthsParam = Math.max(0, Math.min(24, parseInt(String(req.query.months ?? "0"), 10) || 0));
+
+  // 캐시 조회 (반복 요청 · 정렬/limit 변경 즉시 응답)
+  const cacheKey = `${dateParam}::${monthsParam}::${sort}::${dir}::${limit}::${supplierFilter}::${supplierCodeFilter}`;
+  const cached = topSalesCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    res.setHeader("X-Cache", "HIT");
+    return res.json(cached.data);
+  }
 
   try {
     // ── months 지정 시: 범위 aggregation 모드 ──
@@ -542,7 +573,7 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
         }
       });
       const datesArr = Array.from(snapshotSet).sort((a, b) => b.localeCompare(a));
-      return res.json({
+      const payload = {
         snapshot_date: latestSnapshot || null,
         period_type: null,
         months: monthsParam,
@@ -550,7 +581,10 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
         dates: datesArr,
         dates_with_period: datesArr.map(d => ({ snapshot_date: d, period_type: null })),
         rows: sorted.slice(0, limit),
-      });
+      };
+      topSalesCache.set(cacheKey, { data: payload, expiresAt: Date.now() + TOP_SALES_TTL });
+      res.setHeader("X-Cache", "MISS");
+      return res.json(payload);
     }
     // ── 아래부터는 단일 스냅샷 모드 (기존 로직) ──
 
@@ -694,7 +728,10 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
         default:         return sign * (a.sale_qty      - b.sale_qty);
       }
     });
-    res.json({ snapshot_date: targetDate, period_type: targetPeriodType, dates, dates_with_period, rows: sorted.slice(0, limit) });
+    const payload = { snapshot_date: targetDate, period_type: targetPeriodType, dates, dates_with_period, rows: sorted.slice(0, limit) };
+    topSalesCache.set(cacheKey, { data: payload, expiresAt: Date.now() + TOP_SALES_TTL });
+    res.setHeader("X-Cache", "MISS");
+    res.json(payload);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

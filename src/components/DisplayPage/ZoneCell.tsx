@@ -175,13 +175,17 @@ export const ZoneCell: React.FC<ZoneCellProps> = ({
         />
       )}
 
-      {/* Row 1: 구역 번호 (A/B는 num+letter) + 상태 dot */}
+      {/* Row 1: 구역 번호 (1-8: A/B 로 구분 필요 · 9+: 카테고리와 중복이므로 번호 숨김) + 상태 dot */}
       <div className="flex items-center justify-between px-1 pt-0.5 shrink-0">
-        <span className="text-[11px] font-black leading-none">
-          {zone.num}
-          {zone.id.endsWith("A") && <span>A</span>}
-          {zone.id.endsWith("B") && <span>B</span>}
-        </span>
+        {zone.num <= 8 ? (
+          <span className="text-[11px] font-black leading-none">
+            {zone.num}
+            {zone.id.endsWith("A") && <span>A</span>}
+            {zone.id.endsWith("B") && <span>B</span>}
+          </span>
+        ) : (
+          <span className="w-1 h-1 shrink-0" aria-hidden="true" />
+        )}
         {zone.status !== "normal" ? (
           <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${statusDot(zone.status)}`} />
         ) : (

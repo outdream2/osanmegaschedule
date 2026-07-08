@@ -18,6 +18,7 @@ import { StockCheckPage } from "./components/StockCheckPage/StockCheckPage";
 import { SynonymPage } from "./components/SynonymPage";
 import { StockArrivalPage } from "./components/StockArrivalPage";
 import { BoardPage } from "./components/BoardPage";
+import { BottomNav } from "./components/BottomNav";
 import { SessionTimeoutWarning } from "./components/SessionTimeoutWarning";
 import { useAuth } from "./hooks/useAuth";
 import { usePushSubscription } from "./hooks/usePushSubscription";
@@ -205,10 +206,24 @@ export default function App() {
     );
   }
 
+  // 현재 페이지를 AppNavPage 로 매핑 (BottomNav 활성 표시용)
+  const currentAppNavPage =
+    page === "reservation" ? "landing" :
+    page === "board" ? "board" :
+    (page as any);
+
   return (
     <>
       {pageContent}
       {timeoutWarningOverlay}
+      {authSession && (
+        <BottomNav
+          activePage={currentAppNavPage}
+          authSession={authSession}
+          onNavigate={(next) => navigate(next as any)}
+          onLogout={handleLogout}
+        />
+      )}
     </>
   );
 }

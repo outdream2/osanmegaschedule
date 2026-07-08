@@ -79,22 +79,22 @@ export const NotificationToggle: React.FC<Props> = ({ authSession }) => {
     : "알림 OFF · 탭하여 켜기";
 
   return (
-    <div className="flex items-center gap-1.5 shrink-0" title={title}>
-      <span className={`text-[10px] font-black tracking-tight hidden sm:inline ${
-        isDenied ? "text-slate-400" : isOn ? "text-emerald-600" : "text-slate-400"
+    <div className="flex items-center gap-1.5 sm:gap-2 shrink-0" title={title}>
+      <span className={`text-[11px] font-black tracking-tight hidden sm:inline ${
+        isDenied ? "text-slate-400" : isOn ? "text-emerald-600" : "text-slate-500"
       }`}>
         알림 {isDenied ? "차단" : isOn ? "ON" : "OFF"}
       </span>
-      {/* iOS 스타일 토글 스위치 */}
+      {/* iOS 스타일 토글 스위치 — 더 크게 · 뚜렷한 색상 */}
       <button
         type="button"
         role="switch"
         aria-checked={isOn}
         onClick={isOn ? turnOff : turnOn}
         disabled={busy || isDenied}
-        className={`relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full border transition-colors duration-200 cursor-pointer shadow-inner ${
+        className={`relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full border transition-colors duration-200 cursor-pointer shadow-sm ${
           isDenied
-            ? "bg-slate-200 border-slate-300 cursor-not-allowed"
+            ? "bg-slate-200 border-slate-400 cursor-not-allowed"
             : isOn
             ? "bg-emerald-500 border-emerald-600"
             : "bg-slate-300 border-slate-400"
@@ -102,20 +102,20 @@ export const NotificationToggle: React.FC<Props> = ({ authSession }) => {
       >
         {/* 이동하는 원 */}
         <span
-          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-            isOn ? "translate-x-[22px]" : "translate-x-[2px]"
+          className={`inline-block h-[15px] w-[15px] transform rounded-full bg-white shadow-md transition duration-200 ease-in-out ${
+            isOn ? "translate-x-[18px]" : "translate-x-[2px]"
           }`}
         />
         {/* 스위치 내부 아이콘 */}
         <span className={`absolute inset-y-0 flex items-center pointer-events-none transition-opacity ${
-          isOn ? "left-1.5 opacity-100" : "opacity-0"
+          isOn ? "left-1 opacity-100" : "opacity-0"
         }`}>
-          <BellRing size={10} strokeWidth={2.8} className="text-white" />
+          <BellRing size={9} strokeWidth={2.8} className="text-white" />
         </span>
         <span className={`absolute inset-y-0 flex items-center pointer-events-none transition-opacity ${
-          !isOn ? "right-1.5 opacity-100" : "opacity-0"
+          !isOn ? "right-1 opacity-100" : "opacity-0"
         }`}>
-          <BellOff size={10} strokeWidth={2.8} className={isDenied ? "text-slate-400" : "text-slate-500"} />
+          <BellOff size={9} strokeWidth={2.8} className={isDenied ? "text-slate-400" : "text-slate-500"} />
         </span>
       </button>
     </div>

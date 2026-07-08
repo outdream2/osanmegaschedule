@@ -45,11 +45,46 @@ export async function compressImage(
   return blob;
 }
 
-/** Cloudinary 업로드 (서명 방식) */
+/** Blob → base64 data URL */
+async function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onerror = reject;
+    r.onload = () => resolve(String(r.result));
+    r.readAsDataURL(blob);
+  });
+}
+
+/** 로컬 서버 업로드 (Cloudinary 미설정 fallback · uploads/board/ 폴더에 저장) */
+export async function uploadImageToLocal(file: File): Promise<UploadedImage> {
+  const blob = await compressImage(file);
+  const dataUrl = await blobToDataUrl(blob);
+  const res = await fetch("/api/board/upload-image", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ data_url: dataUrl, filename: file.name.replace(/\.[^.]+$/, "") }),
+  });
+  if (!res.ok) {
+    const t = await res.json().catch(() => ({}));
+    throw new Error(t.error ?? `로컬 업로드 실패 (${res.status})`);
+  }
+  const j = await res.json();
+  return {
+    image_url: j.image_url,
+    public_id: j.public_id,
+    width: j.width ?? 0,
+    height: j.height ?? 0,
+  };
+}
+
+/** Cloudinary 업로드 (서명 방식) · 실패 시 로컬 fallback */
 export async function uploadImageToCloudinary(file: File): Promise<UploadedImage> {
-  // 1) 서명 발급
+  // 1) 서명 발급 시도 · 실패 시 로컬 서버 저장으로 fallback
   const sigRes = await fetch("/api/board/cloudinary-signature", { method: "POST" });
-  if (!sigRes.ok) throw new Error("서명 발급 실패");
+  if (!sigRes.ok) {
+    // Cloudinary 환경변수 미설정 등 → 로컬 저장
+    return uploadImageToLocal(file);
+  }
   const sig = await sigRes.json();
 
   // 2) 압축
@@ -67,8 +102,8 @@ export async function uploadImageToCloudinary(file: File): Promise<UploadedImage
     body: form,
   });
   if (!uploadRes.ok) {
-    const t = await uploadRes.text().catch(() => "");
-    throw new Error(`Cloudinary 업로드 실패: ${uploadRes.status} ${t}`);
+    // Cloudinary 응답 실패 시에도 로컬로 fallback
+    return uploadImageToLocal(file);
   }
   const r = await uploadRes.json();
   return {

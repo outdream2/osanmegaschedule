@@ -6,9 +6,9 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  HelpCircle, AlertTriangle, StickyNote, Search, Plus, Send, X, Image as ImageIcon,
-  ChevronLeft, Pin, CheckCircle2, MessageCircle, ThumbsUp, Eye, Trash2, Loader2,
-  Camera, AtSign,
+  HelpCircle, AlertTriangle, StickyNote, Search, Plus, Send, X as XIcon, Image as ImageIcon,
+  ChevronLeft, Pin, MessageCircle, ThumbsUp, Eye, Trash2, Loader2,
+  Camera, AtSign, Pencil, Check,
 } from "lucide-react";
 import type { AuthSession } from "../types";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
@@ -90,6 +90,8 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
   const [search, setSearch] = useState("");
   const [showComposer, setShowComposer] = useState(false);
   const [detailId, setDetailId] = useState<number | null>(null);
+  // 인라인 확장: 리스트 클릭 시 아래에 댓글 인라인으로 표시
+  const [expandedId, setExpandedId] = useState<number | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
 
   const level = authSession?.level ?? 0;
@@ -188,11 +190,33 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
             <span className="text-xs">등록된 글이 없습니다</span>
           </div>
         ) : (
-          <div className="flex flex-col gap-2">
+          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+            {/* 이슈리스트 제목 */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100 bg-slate-50/60">
+              <span className="text-[11px] font-black text-slate-600">이슈리스트</span>
+              <span className="text-[10px] font-mono text-slate-400">({filtered.length}건)</span>
+            </div>
+            <div className="divide-y divide-slate-100">
             {filtered.map((p: BoardPost) => {
-              const open = () => { setDetailId(p.id); };
-              return <PostCard key={p.id} post={p} onOpen={open} />;
+              const isExpanded = expandedId === p.id;
+              const toggle = () => setExpandedId(prev => prev === p.id ? null : p.id);
+              return (
+                <React.Fragment key={p.id}>
+                  <PostCard post={p} onOpen={toggle} />
+                  {isExpanded && (
+                    <InlineDetail
+                      postId={p.id}
+                      authSession={authSession}
+                      employees={employees}
+                      isManager={isManager}
+                      onOpenFull={() => setDetailId(p.id)}
+                      onChanged={loadPosts}
+                    />
+                  )}
+                </React.Fragment>
+              );
             })}
+            </div>
           </div>
         )}
       </main>
@@ -221,63 +245,209 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
 };
 
 // ── 게시글 카드
+// 날짜 YY/MM/DD (오늘/어제도 실제 날짜로 표시)
+function fmtDateShort(iso: string): string {
+  const d = new Date(iso);
+  const yy = String(d.getFullYear() % 100).padStart(2, "0");
+  const M = String(d.getMonth() + 1).padStart(2, "0");
+  const D = String(d.getDate()).padStart(2, "0");
+  return `${yy}/${M}/${D}`;
+}
+
 const PostCard: React.FC<{ post: BoardPost; onOpen: () => void }> = ({ post, onOpen }) => {
   const meta = TYPE_META[post.post_type] ?? TYPE_META.question;
   const status = STATUS_META[post.status] ?? STATUS_META.open;
   const Icon = meta.icon;
-  const resolved = post.status === "resolved";
+  const hasImg = post.images && post.images.length > 0;
+  const hasCmt = (post.comment_count ?? 0) > 0;
   return (
     <button
       onClick={onOpen}
-      className="w-full text-left bg-white border border-slate-200 rounded-2xl p-3 sm:p-4 shadow-sm hover:shadow-md hover:border-orange-300 transition cursor-pointer group"
+      className="w-full text-left bg-white border border-slate-200 hover:border-orange-300 hover:bg-orange-50/20 transition cursor-pointer flex items-center gap-2 px-2.5 sm:px-3 py-2 min-h-[44px]"
     >
-      <div className="flex items-start gap-2 sm:gap-3">
-        <div className={`shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border ${meta.bg} ${meta.border}`}>
-          <Icon size={16} className={meta.text} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap mb-1">
-            {post.pinned && <Pin size={11} className="text-orange-500" />}
-            <span className={`inline-flex items-center gap-1 text-[10px] font-black ${status.text}`}>
-              <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} /> {status.label}
-            </span>
-            {post.category && (
-              <span className="text-[10px] font-bold text-slate-500 bg-slate-100 rounded-full px-1.5 py-0.5">{post.category}</span>
-            )}
-          </div>
-          <h3 className={`text-[14px] sm:text-[15px] font-black text-slate-900 leading-tight break-keep ${resolved ? "line-through text-slate-400" : ""}`}>
-            {post.title}
-          </h3>
+      {/* 날짜 · 맨 앞 */}
+      <span className="shrink-0 text-[10px] sm:text-[11px] font-mono font-black text-slate-500 tabular-nums w-[52px] sm:w-[64px]">
+        {fmtDateShort(post.created_at)}
+      </span>
+      {/* 좌측 타입 아이콘 */}
+      <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border ${meta.bg} ${meta.border}`}>
+        <Icon size={13} className={meta.text} />
+      </div>
+      {/* 상태 dot */}
+      <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${status.dot}`} title={status.label} />
+      {post.pinned && <Pin size={11} className="text-orange-500 shrink-0" />}
+      {/* 카테고리 */}
+      {post.category && (
+        <span className="shrink-0 text-[10px] font-bold text-slate-500 bg-slate-100 rounded-full px-1.5 py-0.5">{post.category}</span>
+      )}
+      {/* 제목 · 한 줄 · 말줄임 · 취소선 제거 (해결 여부는 상태 dot 으로만 표시) */}
+      <span className="flex-1 min-w-0 text-[13px] sm:text-[14px] font-black text-slate-900 truncate">
+        {post.title}
+      </span>
+      {/* 이미지·댓글 카운트 */}
+      {hasImg && (
+        <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] text-slate-500 font-bold">
+          <ImageIcon size={10} /> {post.images!.length}
+        </span>
+      )}
+      {hasCmt && (
+        <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] text-indigo-500 font-bold">
+          <MessageCircle size={10} /> {post.comment_count}
+        </span>
+      )}
+      {/* 작성자 · 모바일/데스크탑 모두 표시 */}
+      <span className="inline-flex items-center shrink-0">
+        <AuthorBadge name={post.author_name} rank={post.author_rank} />
+      </span>
+    </button>
+  );
+};
+
+// ── 인라인 상세 (리스트 클릭 시 아래에 확장 · 댓글 표시)
+const InlineDetail: React.FC<{
+  postId: number;
+  authSession: AuthSession | null;
+  employees: Employee[];
+  isManager: boolean;
+  onOpenFull: () => void;
+  onChanged: () => void;
+}> = ({ postId, authSession, employees, isManager, onOpenFull, onChanged }) => {
+  void employees; void isManager; // 확장 필요 시 사용
+  const [post, setPost] = useState<BoardPost | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [commentBody, setCommentBody] = useState("");
+  const [posting, setPosting] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingCommentBody, setEditingCommentBody] = useState("");
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/board/posts/${postId}`);
+      if (res.ok) setPost(await res.json());
+    } finally { setLoading(false); }
+  }, [postId]);
+  useEffect(() => { load(); }, [load]);
+
+  const submit = async () => {
+    if (!commentBody.trim() || !authSession?.employeeId) return;
+    setPosting(true);
+    try {
+      const res = await fetch(`/api/board/posts/${postId}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          author_id: authSession.employeeId,
+          author_name: authSession.employeeName ?? "",
+          author_rank: authSession.employeeRank ?? null,
+          body: commentBody.trim(),
+        }),
+      });
+      if (res.ok) { setCommentBody(""); await load(); onChanged(); }
+    } finally { setPosting(false); }
+  };
+
+  const saveEdit = async (id: number) => {
+    if (!editingCommentBody.trim() || !authSession) return;
+    const res = await fetch(`/api/board/comments/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ editor_id: authSession.employeeId, body: editingCommentBody.trim() }),
+    });
+    if (res.ok) { setEditingCommentId(null); setEditingCommentBody(""); await load(); onChanged(); }
+  };
+
+  return (
+    <div className="bg-slate-50/60 border-t border-slate-200 px-3 py-2.5">
+      {loading || !post ? (
+        <div className="flex justify-center py-3 text-slate-400"><Loader2 size={16} className="animate-spin" /></div>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {/* 본문 요약 */}
           {post.body && (
-            <p className="text-[12px] text-slate-500 line-clamp-2 mt-0.5">{post.body}</p>
+            <p className="text-[12px] text-slate-600 whitespace-pre-wrap leading-relaxed">{post.body}</p>
           )}
-          <div className="flex items-center gap-2 mt-2 text-[10px]">
-            <AuthorBadge name={post.author_name} rank={post.author_rank} />
-            <span className="text-slate-300">·</span>
-            <span className="text-slate-400 font-semibold">{timeAgo(post.created_at)}</span>
-            <span className="flex-1" />
-            {post.images && post.images.length > 0 && (
-              <span className="inline-flex items-center gap-0.5 text-slate-500 font-bold">
-                <ImageIcon size={11} /> {post.images.length}
-              </span>
-            )}
-            {(post.comment_count ?? 0) > 0 && (
-              <span className="inline-flex items-center gap-0.5 text-indigo-500 font-bold">
-                <MessageCircle size={11} /> {post.comment_count}
-              </span>
-            )}
-          </div>
+          {/* 이미지 · 크게 표시 · 클릭 시 원본 뷰어 */}
           {post.images && post.images.length > 0 && (
-            <div className="flex gap-1.5 mt-2 overflow-x-auto scrollbar-none">
-              {post.images.slice(0, 4).map((img, i) => (
-                <img key={i} src={img.image_url} alt="" loading="lazy"
-                  className="shrink-0 w-16 h-16 object-cover rounded-lg border border-slate-200" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {post.images.map(img => (
+                <button
+                  key={img.id}
+                  type="button"
+                  onClick={() => window.open(img.image_url, "_blank", "noopener,noreferrer")}
+                  className="block w-full aspect-square rounded-xl overflow-hidden border border-slate-200 hover:border-orange-300 hover:shadow-md transition"
+                  title="크게 보기"
+                >
+                  <img src={img.image_url} alt="" loading="lazy"
+                    className="w-full h-full object-cover" />
+                </button>
               ))}
             </div>
           )}
+          {/* 댓글 리스트 · 이미지 아래 */}
+          <div className="flex flex-col gap-1.5 mt-1">
+            <div className="flex items-center gap-1.5 text-[10px] font-black text-slate-500 uppercase tracking-wider">
+              <MessageCircle size={11} /> 댓글 {post.comments?.length ?? 0}
+              <button onClick={onOpenFull} className="ml-auto text-[10px] font-black text-orange-600 hover:text-orange-800 normal-case tracking-normal">전체보기 →</button>
+            </div>
+            {(post.comments ?? []).map(c => {
+              const canEdit = c.author_id === authSession?.employeeId;
+              const editing = editingCommentId === c.id;
+              return (
+                <div key={c.id} className="bg-white rounded-lg p-2 border border-slate-100">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <AuthorBadge name={c.author_name} rank={c.author_rank} />
+                    <span className="flex-1" />
+                    <span className="text-[9px] text-slate-400 font-semibold">{timeAgo(c.created_at)}</span>
+                  </div>
+                  {editing ? (
+                    <div className="flex flex-col gap-1">
+                      <textarea value={editingCommentBody} onChange={(e) => setEditingCommentBody(e.target.value)} rows={2}
+                        className="w-full px-2 py-1 text-[12px] border border-orange-300 rounded focus:outline-none focus:border-orange-500 resize-none" />
+                      <div className="flex gap-1">
+                        <button onClick={() => saveEdit(c.id)} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black">
+                          <Check size={10} strokeWidth={3} /> 저장
+                        </button>
+                        <button onClick={() => { setEditingCommentId(null); setEditingCommentBody(""); }} className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-black">
+                          취소
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-[12px] text-slate-700 whitespace-pre-wrap">{c.body}</p>
+                      {canEdit && (
+                        <button onClick={() => { setEditingCommentId(c.id); setEditingCommentBody(c.body); }}
+                          className="mt-1 inline-flex items-center gap-0.5 text-[9px] font-black text-orange-600 hover:text-orange-800">
+                          <Pencil size={9} /> 수정
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          {/* 댓글 입력 */}
+          {authSession?.employeeId && (
+            <div className="flex items-center gap-1.5 mt-1">
+              <input
+                type="text"
+                value={commentBody}
+                onChange={(e) => setCommentBody(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } }}
+                placeholder="댓글 작성"
+                className="flex-1 px-2 py-1 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:border-orange-400"
+              />
+              <button onClick={submit} disabled={posting || !commentBody.trim()}
+                className="p-1.5 rounded-lg bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-40 shrink-0">
+                {posting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+              </button>
+            </div>
+          )}
         </div>
-      </div>
-    </button>
+      )}
+    </div>
   );
 };
 
@@ -347,11 +517,11 @@ function ComposerModal({
   const toggleMention = (id: number) => setMentionIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
       <div className="bg-white w-full sm:w-[560px] sm:rounded-2xl sm:max-h-[86vh] max-h-[92vh] overflow-y-auto rounded-t-3xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-3 flex items-center justify-between">
           <h2 className="text-base font-black text-slate-900">새 글 작성</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 text-slate-500"><X size={18} /></button>
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 text-slate-500"><XIcon size={18} /></button>
         </div>
 
         <div className="p-4 flex flex-col gap-3">
@@ -427,7 +597,7 @@ function ComposerModal({
                     <img src={img.image_url} alt="" className="w-full h-full object-cover" />
                     <button onClick={() => removeImg(i)}
                       className="absolute top-1 right-1 w-6 h-6 rounded-full bg-white/90 text-rose-600 hover:bg-white shadow-md flex items-center justify-center">
-                      <X size={12} strokeWidth={3} />
+                      <XIcon size={12} strokeWidth={3} />
                     </button>
                   </div>
                 ))}
@@ -436,38 +606,7 @@ function ComposerModal({
           </div>
 
           {/* @멘션 */}
-          <div>
-            <button
-              onClick={() => setShowMentionPicker(v => !v)}
-              className="flex items-center gap-1.5 text-[12px] font-black text-indigo-600 hover:text-indigo-800"
-            >
-              <AtSign size={13} /> 담당자 지정 ({mentionIds.length})
-            </button>
-            {mentionedList.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-1.5">
-                {mentionedList.map(e => (
-                  <button key={e.id} onClick={() => toggleMention(e.id)}
-                    className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-[11px] font-black hover:bg-indigo-200">
-                    @{e.name}{e.rank ? " " + e.rank : ""}
-                    <X size={10} />
-                  </button>
-                ))}
-              </div>
-            )}
-            {showMentionPicker && (
-              <div className="mt-2 max-h-40 overflow-y-auto border border-slate-200 rounded-xl bg-slate-50 p-2 grid grid-cols-2 sm:grid-cols-3 gap-1">
-                {mentionable.map(e => {
-                  const active = mentionIds.includes(e.id);
-                  return (
-                    <button key={e.id} onClick={() => toggleMention(e.id)}
-                      className={`text-left text-[12px] font-bold px-2 py-1 rounded-md border transition ${active ? "bg-indigo-100 border-indigo-300 text-indigo-800" : "bg-white border-slate-200 text-slate-600 hover:border-indigo-200"}`}>
-                      {e.name}{e.rank ? ` ${e.rank}` : ""}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          {/* 담당자 지정 기능 제거됨 · 관리자 전원 자동 알림만 유지 */}
         </div>
 
         <div className="sticky bottom-0 bg-white border-t border-slate-200 px-4 py-3 flex items-center justify-end gap-2">
@@ -494,6 +633,26 @@ function DetailModal({
   const [commentBody, setCommentBody] = useState("");
   const [posting, setPosting] = useState(false);
   const [previewImg, setPreviewImg] = useState<string | null>(null);
+  // 댓글 수정 상태
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingCommentBody, setEditingCommentBody] = useState("");
+  const saveCommentEdit = async (commentId: number) => {
+    const body = editingCommentBody.trim();
+    if (!body || !authSession) return;
+    try {
+      const res = await fetch(`/api/board/comments/${commentId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ editor_id: authSession.employeeId, body }),
+      });
+      if (res.ok) {
+        setEditingCommentId(null);
+        setEditingCommentBody("");
+        await load();
+        onChanged();
+      }
+    } catch { /* silent */ }
+  };
   const [commentImages, setCommentImages] = useState<UploadedImage[]>([]);
   const [uploadingCmt, setUploadingCmt] = useState(false);
   const cmtFileRef = useRef<HTMLInputElement>(null);
@@ -557,15 +716,7 @@ function DetailModal({
     await load(); onChanged();
   };
 
-  const acceptAnswer = async (commentId: number) => {
-    if (!isAuthor || !authSession) return;
-    await fetch(`/api/board/comments/${commentId}/accept`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ editor_id: authSession.employeeId }),
-    });
-    await load(); onChanged();
-  };
+  // 답변 채택 기능 제거됨
 
   const deletePost = async () => {
     if (!canEdit || !authSession) return;
@@ -601,7 +752,7 @@ function DetailModal({
   const seenCount = (post?.reactions ?? []).filter(r => r.reaction === "seen").length;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
       <div className="bg-white w-full sm:w-[640px] sm:rounded-2xl sm:max-h-[92vh] max-h-[95vh] overflow-y-auto rounded-t-3xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
         {/* 헤더 */}
         <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-200 px-3 sm:px-4 py-3 flex items-center gap-2">
@@ -645,7 +796,7 @@ function DetailModal({
                   );
                 })()}
               </div>
-              <h1 className={`text-lg sm:text-xl font-black text-slate-900 leading-snug break-keep ${post.status === "resolved" ? "line-through text-slate-400" : ""}`}>
+              <h1 className="text-lg sm:text-xl font-black text-slate-900 leading-snug break-keep">
                 {post.title}
               </h1>
               <div className="flex items-center gap-2 mt-1.5">
@@ -706,37 +857,59 @@ function DetailModal({
                 <p className="text-[12px] text-slate-400 text-center py-4">아직 댓글이 없습니다</p>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {post.comments.map(c => (
-                    <div key={c.id} className={`rounded-xl p-3 border ${c.is_answer ? "bg-emerald-50 border-emerald-200" : "bg-slate-50 border-slate-100"}`}>
+                  {post.comments.map(c => {
+                    const canEdit = c.author_id === authSession?.employeeId;
+                    const editing = editingCommentId === c.id;
+                    return (
+                    <div key={c.id} className="rounded-xl p-3 border bg-slate-50 border-slate-100">
                       <div className="flex items-center gap-2 mb-1">
                         <AuthorBadge name={c.author_name} rank={c.author_rank} />
-                        {c.is_answer && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] font-black text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">
-                            <CheckCircle2 size={9} /> 채택
-                          </span>
-                        )}
                         <span className="flex-1" />
                         <span className="text-[10px] text-slate-400 font-semibold">{timeAgo(c.created_at)}</span>
                       </div>
-                      <p className="text-[13px] text-slate-700 whitespace-pre-wrap">{c.body}</p>
-                      {c.images && c.images.length > 0 && (
-                        <div className="flex gap-1.5 mt-2 flex-wrap">
-                          {c.images.map(img => (
-                            <button key={img.id} onClick={() => setPreviewImg(img.image_url)}
-                              className="w-16 h-16 rounded-md overflow-hidden border border-slate-200">
-                              <img src={img.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
-                            </button>
-                          ))}
+                      {editing ? (
+                        <div className="flex flex-col gap-2">
+                          <textarea
+                            value={editingCommentBody}
+                            onChange={(e) => setEditingCommentBody(e.target.value)}
+                            rows={3}
+                            className="w-full px-2 py-1.5 text-[13px] border border-orange-300 rounded-lg focus:outline-none focus:border-orange-500 focus:ring-2 focus:ring-orange-100 resize-none"
+                          />
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => saveCommentEdit(c.id)}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-black"
+                            ><Check size={11} strokeWidth={3} /> 저장</button>
+                            <button
+                              onClick={() => { setEditingCommentId(null); setEditingCommentBody(""); }}
+                              className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-black"
+                            ><XIcon size={11} strokeWidth={3} /> 취소</button>
+                          </div>
                         </div>
-                      )}
-                      {isAuthor && !c.is_answer && (
-                        <button onClick={() => acceptAnswer(c.id)}
-                          className="mt-2 inline-flex items-center gap-1 text-[10px] font-black text-emerald-600 hover:text-emerald-800">
-                          <CheckCircle2 size={10} /> 답변으로 채택
-                        </button>
+                      ) : (
+                        <>
+                          <p className="text-[13px] text-slate-700 whitespace-pre-wrap">{c.body}</p>
+                          {c.images && c.images.length > 0 && (
+                            <div className="flex gap-1.5 mt-2 flex-wrap">
+                              {c.images.map(img => (
+                                <button key={img.id} onClick={() => setPreviewImg(img.image_url)}
+                                  className="w-16 h-16 rounded-md overflow-hidden border border-slate-200">
+                                  <img src={img.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {canEdit && (
+                            <button
+                              onClick={() => { setEditingCommentId(c.id); setEditingCommentBody(c.body); }}
+                              className="mt-2 inline-flex items-center gap-1 text-[10px] font-black text-orange-600 hover:text-orange-800"
+                            ><Pencil size={10} /> 수정</button>
+                          )}
+                        </>
                       )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -751,7 +924,7 @@ function DetailModal({
                         <img src={img.image_url} alt="" className="w-full h-full object-cover" />
                         <button onClick={() => setCommentImages(prev => prev.filter((_, x) => x !== i))}
                           className="absolute top-0.5 right-0.5 w-4 h-4 rounded-full bg-white/90 text-rose-600 flex items-center justify-center shadow">
-                          <X size={9} strokeWidth={3} />
+                          <XIcon size={9} strokeWidth={3} />
                         </button>
                       </div>
                     ))}
@@ -786,7 +959,7 @@ function DetailModal({
         {previewImg && (
           <div className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-4" onClick={() => setPreviewImg(null)}>
             <img src={previewImg} alt="" className="max-w-full max-h-full object-contain rounded-xl" />
-            <button className="absolute top-4 right-4 p-2 rounded-full bg-white/20 text-white hover:bg-white/40"><X size={20} /></button>
+            <button className="absolute top-4 right-4 p-2 rounded-full bg-white/20 text-white hover:bg-white/40"><XIcon size={20} /></button>
           </div>
         )}
       </div>

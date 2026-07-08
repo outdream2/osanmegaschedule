@@ -18,6 +18,8 @@ interface OcrPageProps {
   authSession?: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  /** true 이면 헤더/전체 페이지 셸 없이 OCR 컨텐츠만 렌더 (다른 페이지에 임베드용) */
+  embedded?: boolean;
 }
 
 async function detectTextOrientation(dataUrl: string): Promise<number> {
@@ -551,7 +553,7 @@ const ConfirmedRecordsTab: React.FC = () => {
   );
 };
 
-export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
+export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigate, onLogout, embedded = false }) => {
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -876,15 +878,17 @@ const cellCls = "border border-gray-200 rounded px-2 py-1 text-xs outline-none f
 const cellClsSky = "border border-gray-200 rounded px-2 py-1 text-xs outline-none focus:border-sky-400 w-full";
 
 return (
-  <div className="min-h-screen bg-gray-50 flex flex-col">
-    {/* Shared App Nav Header */}
-    <AppNavHeader
-      activePage="ocr"
-      authSession={authSession ?? null}
-      onBack={onBack}
-      onNavigate={onNavigate}
-      onLogout={onLogout}
-    />
+  <div className={embedded ? "flex-1 flex flex-col min-h-0 bg-gray-50" : "min-h-screen bg-gray-50 flex flex-col"}>
+    {/* Shared App Nav Header · 임베드 모드에선 숨김 (부모 페이지의 헤더 사용) */}
+    {!embedded && (
+      <AppNavHeader
+        activePage="ocr"
+        authSession={authSession ?? null}
+        onBack={onBack}
+        onNavigate={onNavigate}
+        onLogout={onLogout}
+      />
+    )}
 
     {/* Tab bar */}
     <div className="bg-white/90 backdrop-blur-sm border-b border-slate-200/70 sticky top-0 z-10">

@@ -1,10 +1,14 @@
 // src/components/OrderManagePage/OrderManagePage.tsx
 // 발주관리 페이지 — 매장관리 · 재고관리 · 입고알림관리 옆의 서브탭으로 노출
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
+// 입고확인 탭에서는 거래명세서 OCR(OcrPage) 노출
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
+import { OcrPage } from "../OcrPage";
+import type { AuthSession } from "../../types";
+import type { AppNavPage } from "../AppNavHeader";
 
 interface OrderRequest {
   id: string;
@@ -57,7 +61,19 @@ interface GoodsReceipt {
   note?: string | null;
 }
 
-const OrderManagePage: React.FC = () => {
+interface OrderManagePageProps {
+  ocrTabAuthSession?: AuthSession | null;
+  ocrTabOnBack?: () => void;
+  ocrTabOnNavigate?: (page: AppNavPage) => void;
+  ocrTabOnLogout?: () => void;
+}
+
+const OrderManagePage: React.FC<OrderManagePageProps> = ({
+  ocrTabAuthSession,
+  ocrTabOnBack,
+  ocrTabOnNavigate,
+  ocrTabOnLogout,
+}) => {
   // 상단 탭 (발주요청 / 입고확인)
   const [topTab, setTopTab] = useState<"order" | "receipt">("order");
 
@@ -148,14 +164,13 @@ const OrderManagePage: React.FC = () => {
 
   // 전체 products (구역·spec) — 발주요청 리스트에서 low-stock 아닌 상품에도 정보 필요
   const [allProductsMap, setAllProductsMap] = useState<Record<string, any>>({});
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/products-map");
-        if (res.ok) setAllProductsMap(await res.json());
-      } catch { /* silent */ }
-    })();
+  const reloadAllProductsMap = useCallback(async () => {
+    try {
+      const res = await fetch("/api/products-map");
+      if (res.ok) setAllProductsMap(await res.json());
+    } catch { /* silent */ }
   }, []);
+  useEffect(() => { reloadAllProductsMap(); }, [reloadAllProductsMap]);
   // 전체 inventory_checks (창고·매장 재고) 매핑 — 자동 재조회 지원
   const [invMap, setInvMap] = useState<Record<string, { warehouse: number | null; store: number | null }>>({});
   const loadInvMap = useCallback(async () => {
@@ -555,18 +570,25 @@ const OrderManagePage: React.FC = () => {
                 : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
             }`}
           >
-            <PackageCheck size={15} className={topTab === "receipt" ? "text-slate-800" : "text-slate-400"} /> 입고확인
-            {receipts.filter(r => r.status === "pending" || r.status === "partial").length > 0 && (
-              <span className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${topTab === "receipt" ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-400"}`}>
-                {receipts.filter(r => r.status === "pending" || r.status === "partial").length}
-              </span>
-            )}
+            <PackageCheck size={15} className={topTab === "receipt" ? "text-slate-800" : "text-slate-400"} /> 입고확인(OCR)
           </button>
         </div>
       </div>
 
-      {/* ── 입고확인 탭 ── */}
+      {/* ── 입고확인(OCR) 탭 · 거래명세서 OCR 컨텐츠만 임베드 (헤더 X) ── */}
       {topTab === "receipt" && (
+        <div className="flex-1 flex flex-col min-h-0 -mt-1">
+          <OcrPage
+            embedded
+            authSession={ocrTabAuthSession ?? null}
+            onBack={ocrTabOnBack ?? (() => {})}
+            onNavigate={ocrTabOnNavigate}
+            onLogout={ocrTabOnLogout}
+          />
+        </div>
+      )}
+      {/* ── (기존 입고 목록 UI · 참조용 · 표시 안 함) ── */}
+      {false && (
         <section className="flex flex-col gap-3 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
@@ -739,28 +761,30 @@ const OrderManagePage: React.FC = () => {
         ) : orderReqs.length === 0 && !orderError ? (
           <p className="text-xs text-gray-400 py-6 text-center border-t border-b border-slate-200 bg-white">발주 요청 내역이 없습니다</p>
         ) : (
-          <div className="border-t border-b border-slate-200 overflow-x-auto">
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wide text-[10px]">
-                  <th className="w-10 p-2"></th>
-                  <th className="text-left p-2 w-24">상품코드</th>
-                  <th className="text-left p-2 w-28">공급사</th>
-                  <th className="text-left p-2 w-24">담당자</th>
-                  <th className="text-left p-2">상품명</th>
-                  <th className="text-left p-2 w-20 bg-emerald-50 text-emerald-600">구역</th>
-                  <th className="text-right p-2 w-16">현재고</th>
-                  <th className="text-right p-2 w-20 bg-violet-50 text-violet-600">실재고</th>
-                  <th className="text-right p-2 w-16">적정재고</th>
-                  <th className="text-right p-2 w-16">부족</th>
-                  <th className="text-right p-2 w-20">요청시각</th>
-                  <th className="text-center p-2 w-20">발주</th>
+          <>
+          {/* 발주요청 리스트 · 판매리스트와 동일 디자인 */}
+          <div className="px-3 pt-1.5 pb-0.5 flex items-center gap-2 border-t border-slate-100 bg-white">
+            <span className="text-[11px] font-black text-slate-600">발주요청 리스트</span>
+            <span className="text-[10px] font-mono text-slate-400">({orderReqsFiltered.length}건)</span>
+          </div>
+          <div className="border-t border-b border-slate-200 overflow-auto max-h-[280px]">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-white z-10">
+                <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+                  <th className="text-center px-0.5 py-1.5 w-6"></th>
+                  <th className="text-left px-1 py-1.5 w-24">공급사</th>
+                  <th className="text-left px-1 py-1.5 w-20">담당자</th>
+                  <th className="text-left px-1 py-1.5 min-w-[120px]">상품명</th>
+                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/60">ERP재고</th>
+                  <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/60 text-violet-500">실재고</th>
+                  <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/60">적정</th>
+                  <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/60 text-rose-500">부족</th>
+                  <th className="text-center px-0.5 py-1.5 w-14">발주</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-50">
                 {orderReqsFiltered.map(r => {
-                  const short = (r.optimal_stock ?? 0) - (r.current_stock ?? 0);
-                  // 코드 lookup — 원본, 앞자리 0 제거, 0으로 패딩(8자리) 등 여러 형태로 시도
+                  // short 계산은 아래 displayShort 로 대체됨 (실시간 재고 반영)
                   const codeVariants = [
                     r.product_code,
                     r.product_code.replace(/^0+/, ""),
@@ -770,21 +794,50 @@ const OrderManagePage: React.FC = () => {
                   const zone = codeVariants.map(c => zoneMap.get(c)).find(Boolean);
                   const zoneDisplay = zone?.real_map || zone?.spec || "-";
                   const zoneMismatch = zone?.real_map && zone?.spec && zone.real_map !== zone.spec;
-                  // 공급사 fallback: orderRequest에 저장된 값 → products 테이블 조회 → allProductsMap
                   const productData = codeVariants.map(c => allProductsMap[c]).find(Boolean);
                   const supplierDisplay = r.supplier || (productData as any)?.supplier || "-";
                   const vendor = supplierDisplay !== "-" ? findVendor(supplierDisplay) : undefined;
-                  const contactName = r.supplier_contact || vendor?.contact_name || "-";
+                  // 담당자 fallback 순서: OrderRequest → vendor DB → products.supplier_contact → "-"
+                  const contactName = r.supplier_contact
+                    || vendor?.contact_name
+                    || (productData as any)?.supplier_contact
+                    || (productData as any)?.contact_name
+                    || "-";
+                  // ERP재고: allProductsMap 에서 최신 값 우선 · 없으면 요청 저장 시 스냅샷 (실시간 조회 옵션 A)
+                  const liveCurrentStock = (productData as any)?.current_stock;
+                  const displayCurrentStock = liveCurrentStock ?? r.current_stock;
+                  const stockChanged = liveCurrentStock != null && r.current_stock != null && Number(liveCurrentStock) !== Number(r.current_stock);
+                  const liveOptimal = (productData as any)?.optimal_stock;
+                  const displayOptimal = liveOptimal ?? r.optimal_stock;
+                  const displayShort = (Number(displayOptimal ?? 0)) - (Number(displayCurrentStock ?? 0));
                   return (
-                    <tr key={r.id} className={`hover:bg-slate-50/70 transition ${selectedOrder.has(r.id) ? "bg-rose-50/40" : ""}`}>
-                      <td className="p-2 text-center">
-                        <button onClick={() => toggleOne(r.id)} className="cursor-pointer text-gray-300 hover:text-gray-500">
-                          {selectedOrder.has(r.id) ? <CheckSquare size={14} className="text-rose-500" /> : <Square size={14} />}
-                        </button>
+                    <tr key={r.id} className={`transition ${selectedOrder.has(r.id) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
+                      <td className="text-center px-0.5 py-1.5 align-top" onClick={(e) => { e.stopPropagation(); toggleOne(r.id); }}>
+                        {selectedOrder.has(r.id)
+                          ? <CheckSquare size={13} className="text-rose-500 inline cursor-pointer" />
+                          : <Square size={13} className="text-slate-300 hover:text-rose-500 inline cursor-pointer" />}
                       </td>
-                      <td className="p-2 font-mono text-[10px] text-slate-400">{r.product_code}</td>
-                      <td className="p-2 text-sky-600 font-semibold truncate">{supplierDisplay}</td>
-                      <td className="p-2 text-slate-600 truncate">
+                      <td className="px-1 py-1.5 align-top">
+                        {(() => {
+                          // 공급사 문자열에서 부가 정보(괄호/vat 등)를 다음 줄로 분리
+                          const raw = String(supplierDisplay ?? "");
+                          const m = raw.match(/^(.+?)\s*(\(.+?\))\s*$/);
+                          const mainName = m ? m[1].trim() : raw;
+                          const suffix = m ? m[2].trim() : "";
+                          // products 테이블에서 부가 정보(예: 세금 구분) fallback
+                          const extraFromProduct = (productData as any)?.supplier_note || (productData as any)?.tax_note || "";
+                          const secondLine = suffix || extraFromProduct || "";
+                          return (
+                            <>
+                              <div className="text-[11px] text-sky-600 font-semibold break-words whitespace-normal leading-tight">{mainName || "-"}</div>
+                              {secondLine && (
+                                <div className="text-[9px] text-slate-400 font-normal break-words whitespace-normal leading-tight mt-0.5">{secondLine}</div>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-1 py-1.5 text-[11px] text-slate-600 break-words whitespace-normal align-top">
                         {vendor ? (
                           <button
                             type="button"
@@ -793,27 +846,29 @@ const OrderManagePage: React.FC = () => {
                               const rect = (e.target as HTMLElement).getBoundingClientRect();
                               setContactPopover({ anchor: rect, name: contactName, phone: vendor.phone, email: vendor.email });
                             }}
-                            className="hover:text-indigo-700 hover:underline cursor-pointer text-left truncate w-full"
+                            className="hover:text-indigo-700 hover:underline cursor-pointer text-left w-full"
                             title="클릭 시 전화·이메일 표시"
                           >{contactName}</button>
                         ) : (
                           <span>{contactName}</span>
                         )}
                       </td>
-                      <td className="p-2 font-black text-slate-800 truncate max-w-[240px]">
+                      <td className="px-1 py-1.5 align-top">
                         <button
                           onClick={() => setDetailProduct({ code: r.product_code, name: r.product_name })}
-                          className="hover:text-indigo-700 hover:underline cursor-pointer text-left truncate w-full"
+                          className="text-left text-[12px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
                           title="상품 상세정보 조회"
                         >{r.product_name || "(상품명 없음)"}</button>
                       </td>
-                      <td className="p-2 bg-emerald-50/40" title={zone ? `ERP: ${zone.spec || "-"} · 실배정: ${zone.real_map || "-"}` : "구역 미지정"}>
-                        <span className={`text-[10px] font-black font-mono ${zoneDisplay === "-" ? "text-slate-300" : "text-emerald-700"}`}>{zoneDisplay}</span>
-                        {zoneMismatch && <span className="text-[9px] text-rose-500 ml-1">⚠</span>}
-                      </td>
-                      <td className="p-2 text-right font-bold text-slate-700 font-mono">{r.current_stock ?? "-"}</td>
                       <td
-                        className={`p-2 text-right font-black font-mono bg-violet-50/40 ${inv ? "text-violet-700" : "text-slate-300"}`}
+                        className={`text-right px-0.5 py-1.5 font-mono font-bold text-[11px] bg-slate-50/40 align-top ${stockChanged ? "text-orange-600" : "text-slate-700"}`}
+                        title={stockChanged ? `요청 당시 ${r.current_stock ?? "-"} → 현재 ${displayCurrentStock ?? "-"} (변동)` : "현재 ERP 재고 (실시간)"}
+                      >
+                        {displayCurrentStock ?? "-"}
+                        {stockChanged && <span className="block text-[8px] font-normal text-slate-400 leading-none mt-0.5">전 {r.current_stock}</span>}
+                      </td>
+                      <td
+                        className={`text-right px-0.5 py-1.5 font-mono font-black text-[11px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
                         title={inv ? `창고 ${inv.warehouse ?? "-"} + 매장 ${inv.store ?? "-"} = ${inv.total}` : "실재고 미입력"}
                       >
                         {inv ? inv.total : "—"}
@@ -823,14 +878,15 @@ const OrderManagePage: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="p-2 text-right font-bold text-slate-700 font-mono">{r.optimal_stock ?? "-"}</td>
-                      <td className="p-2 text-right"><span className="font-black text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">-{short}</span></td>
-                      <td className="p-2 text-right text-gray-400 text-[10px]">{fmtDate(r.requested_at)}</td>
-                      <td className="p-2 text-center">
+                      <td className="text-right px-0.5 py-1.5 font-mono font-bold text-[11px] text-slate-700 bg-slate-50/40 align-top">{displayOptimal ?? "-"}</td>
+                      <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
+                        <span className="font-mono font-black text-[11px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
+                      </td>
+                      <td className="text-center px-0.5 py-1.5 align-top">
                         <button
                           onClick={() => handleSingleOrder(r)}
                           disabled={sendingBulk}
-                          className="text-[10px] font-black text-white bg-rose-500 hover:bg-rose-600 border border-rose-700 rounded px-2 py-0.5 cursor-pointer disabled:opacity-40 flex items-center gap-1 mx-auto"
+                          className="text-[10px] font-black text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 rounded px-1.5 py-0.5 cursor-pointer disabled:opacity-40 inline-flex items-center gap-0.5"
                           title="이 상품만 개별 발주"
                         >
                           <Send size={9} />발주
@@ -845,6 +901,7 @@ const OrderManagePage: React.FC = () => {
               </tbody>
             </table>
           </div>
+          </>
         )}
         </>)}
       </section>
@@ -880,40 +937,39 @@ const OrderManagePage: React.FC = () => {
             <Package size={28} className="mb-2" /><p className="text-sm font-bold text-gray-400">발주 필요 상품이 없습니다</p>
           </div>
         ) : (
-          <div className="border-t border-b border-slate-200 overflow-x-auto">
-            <table className="w-full text-[11px]">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wide text-[10px]">
-                  <th className="text-left p-2 w-24">상품코드</th>
-                  <th className="text-left p-2 w-28">공급사</th>
-                  <th className="text-left p-2 w-24">담당자</th>
-                  <th className="text-left p-2">상품명</th>
-                  <th className="text-left p-2 w-20 bg-emerald-50 text-emerald-600">구역</th>
-                  <th className="text-right p-2 w-16">현재고</th>
-                  <th className="text-right p-2 w-20 bg-violet-50 text-violet-600">실재고</th>
-                  <th className="text-right p-2 w-16">적정재고</th>
-                  <th className="text-right p-2 w-16">부족</th>
-                  <th className="text-center p-2 w-40">발주</th>
+          <>
+          <div className="px-3 pt-1.5 pb-0.5 flex items-center gap-2 border-t border-slate-100 bg-white">
+            <span className="text-[11px] font-black text-slate-600">발주필요 리스트</span>
+            <span className="text-[10px] font-mono text-slate-400">({lowStockFiltered.length}건)</span>
+          </div>
+          <div className="border-t border-b border-slate-200 overflow-auto max-h-[280px]">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-white z-10">
+                <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+                  <th className="text-left px-1 py-1.5 w-24">공급사</th>
+                  <th className="text-left px-1 py-1.5 w-20">담당자</th>
+                  <th className="text-left px-1 py-1.5 min-w-[120px]">상품명</th>
+                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/60">ERP재고</th>
+                  <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/60 text-violet-500">실재고</th>
+                  <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/60">적정</th>
+                  <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/60 text-rose-500">부족</th>
+                  <th className="text-center px-0.5 py-1.5 w-14">발주</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-50">
                 {lowStockFiltered.map(p => {
                   const cur = Number(p.current_stock), opt = Number(p.optimal_stock);
                   const code = getCode(p);
                   const name = getName(p);
                   const inv = invStockMap.get(code);
-                  const zone = zoneMap.get(code);
-                  const zoneDisplay = zone?.real_map || zone?.spec || "-";
-                  const zoneMismatch = zone?.real_map && zone?.spec && zone.real_map !== zone.spec;
                   const vendor = p.supplier ? findVendor(p.supplier) : undefined;
-                  const contactName = vendor?.contact_name || "-";
+                  const contactName = vendor?.contact_name || (p as any).supplier_contact || "-";
                   const alreadyRequested = requestedCodes.has(code);
                   const busy = requestingOrder.has(code);
                   return (
-                    <tr key={code} className="hover:bg-slate-50/70 transition">
-                      <td className="p-2 font-mono text-[10px] text-slate-400">{code}</td>
-                      <td className="p-2 text-sky-600 font-semibold truncate">{p.supplier || "-"}</td>
-                      <td className="p-2 text-slate-600 truncate">
+                    <tr key={code} className="hover:bg-orange-50/30 transition">
+                      <td className="px-1 py-1.5 text-[11px] text-sky-600 font-semibold break-words whitespace-normal align-top">{p.supplier || "-"}</td>
+                      <td className="px-1 py-1.5 text-[11px] text-slate-600 break-words whitespace-normal align-top">
                         {vendor ? (
                           <button
                             type="button"
@@ -922,27 +978,23 @@ const OrderManagePage: React.FC = () => {
                               const rect = (e.target as HTMLElement).getBoundingClientRect();
                               setContactPopover({ anchor: rect, name: contactName, phone: vendor.phone, email: vendor.email });
                             }}
-                            className="hover:text-indigo-700 hover:underline cursor-pointer text-left truncate w-full"
+                            className="hover:text-indigo-700 hover:underline cursor-pointer text-left w-full"
                             title="클릭 시 전화·이메일 표시"
                           >{contactName}</button>
                         ) : (
                           <span>{contactName}</span>
                         )}
                       </td>
-                      <td className="p-2 font-black text-slate-800 truncate max-w-[240px]">
+                      <td className="px-1 py-1.5 align-top">
                         <button
                           onClick={() => setDetailProduct({ code, name })}
-                          className="hover:text-indigo-700 hover:underline cursor-pointer text-left truncate w-full"
+                          className="text-left text-[12px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
                           title="상품 상세정보 조회"
                         >{name || "(상품명 없음)"}</button>
                       </td>
-                      <td className="p-2 bg-emerald-50/40" title={zone ? `ERP: ${zone.spec || "-"} · 실배정: ${zone.real_map || "-"}` : "구역 미지정"}>
-                        <span className={`text-[10px] font-black font-mono ${zoneDisplay === "-" ? "text-slate-300" : "text-emerald-700"}`}>{zoneDisplay}</span>
-                        {zoneMismatch && <span className="text-[9px] text-rose-500 ml-1">⚠</span>}
-                      </td>
-                      <td className="p-2 text-right font-bold text-slate-700 font-mono">{cur}</td>
+                      <td className="text-right px-0.5 py-1.5 font-mono font-bold text-[11px] text-slate-700 bg-slate-50/40 align-top">{cur}</td>
                       <td
-                        className={`p-2 text-right font-black font-mono bg-violet-50/40 ${inv ? "text-violet-700" : "text-slate-300"}`}
+                        className={`text-right px-0.5 py-1.5 font-mono font-black text-[11px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
                         title={inv ? `창고 ${inv.warehouse ?? "-"} + 매장 ${inv.store ?? "-"} = ${inv.total}` : "실재고 미입력"}
                       >
                         {inv ? inv.total : "—"}
@@ -952,9 +1004,11 @@ const OrderManagePage: React.FC = () => {
                           </span>
                         )}
                       </td>
-                      <td className="p-2 text-right font-bold text-slate-700 font-mono">{opt}</td>
-                      <td className="p-2 text-right"><span className="font-black text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded">-{opt - cur}</span></td>
-                      <td className="p-2 text-center">
+                      <td className="text-right px-0.5 py-1.5 font-mono font-bold text-[11px] text-slate-700 bg-slate-50/40 align-top">{opt}</td>
+                      <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
+                        <span className="font-mono font-black text-[11px] text-rose-600">-{opt - cur}</span>
+                      </td>
+                      <td className="text-center px-0.5 py-1.5 align-top">
                         {alreadyRequested ? (
                           <button onClick={() => handleRequestOrder(p)} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg cursor-pointer hover:bg-emerald-100 transition">요청됨</button>
                         ) : (
@@ -968,11 +1022,12 @@ const OrderManagePage: React.FC = () => {
                   );
                 })}
                 {lowStockFiltered.length === 0 && (
-                  <tr><td colSpan={10} className="p-6 text-center text-slate-300">검색 결과 없음</td></tr>
+                  <tr><td colSpan={8} className="p-6 text-center text-slate-300">검색 결과 없음</td></tr>
                 )}
               </tbody>
             </table>
           </div>
+          </>
         )}
         </>)}
       </section>
@@ -1221,7 +1276,7 @@ const OrderManagePage: React.FC = () => {
       {detailProduct && (
         <div
           className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
-          onClick={() => setDetailProduct(null)}
+          onClick={() => { setDetailProduct(null); reloadAllProductsMap(); loadInvMap(); loadOrderReqs(); }}
         >
           <div
             className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden"

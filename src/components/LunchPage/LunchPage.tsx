@@ -295,8 +295,8 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
           <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-2.5 text-rose-700 text-xs font-semibold">{error}</div>
         )}
 
-        {/* 출근인원 현황 */}
-        {isLoggedIn && attendance !== null && (
+        {/* 출근인원 현황 · 휴게시간 배정 섹션 제거 · 점심불참만 노출 */}
+        {false && isLoggedIn && attendance !== null && (
           <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 shadow-sm flex items-center gap-4">
             <Users size={15} className="text-gray-400 shrink-0" />
             <div className="flex items-center gap-4 flex-1 text-sm">
@@ -319,7 +319,8 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
           </div>
         )}
 
-        {/* ── 휴게시간 타임라인 ────────────────────────────── */}
+        {/* ── 휴게시간 타임라인 · 제거 (점심불참만 노출) ─────── */}
+        {false && (
         <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
           {/* 헤더 */}
           <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between gap-2 flex-wrap">
@@ -460,6 +461,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
             )}
           </div>
         </div>
+        )}
 
         {/* ── 점심 불참 내 신청 ────────────────────────────── */}
         {!employeeId ? (

@@ -134,16 +134,16 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession 
       {/* Bell button — 미확인 알림 있으면 강조 · 신규 도착 시 흔들림 */}
       <button
         onClick={() => { setOpen((v) => !v); if (!open) fetchNotifications(); }}
-        className={`relative flex items-center justify-center w-10 h-10 rounded-xl border transition cursor-pointer shadow-sm ${
+        className={`relative flex items-center justify-center w-9 h-9 rounded-xl border transition-all cursor-pointer shadow-sm hover:shadow-md active:scale-95 ${
           hasUnread
-            ? "bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-600 ring-1 ring-rose-200/60"
-            : "bg-white hover:bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-700"
+            ? "bg-rose-50 hover:bg-rose-100 border-rose-300 text-rose-600"
+            : "bg-white hover:bg-slate-50 border-slate-200 text-slate-600 hover:text-indigo-600 hover:border-indigo-300"
         } ${justArrived ? "notif-bell-shake" : ""}`}
         title={hasUnread ? `미확인 알림 ${unreadCount}건` : "알림"}
       >
-        <Bell size={18} strokeWidth={hasUnread ? 2.4 : 2} className={hasUnread ? "animate-pulse" : ""} />
+        <Bell size={16} strokeWidth={hasUnread ? 2.4 : 2.2} className={hasUnread ? "animate-pulse" : ""} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center leading-none shadow-md ring-2 ring-white">
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center leading-none shadow-md ring-1 ring-white">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}

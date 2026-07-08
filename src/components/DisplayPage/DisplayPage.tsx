@@ -39,6 +39,7 @@ import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { StockManagePage } from "../StockManagePage";
 import { SalesTrendPage } from "../SalesTrendPage/SalesTrendPage";
 import { StockArrivalPage } from "../StockArrivalPage";
+import { OcrPage } from "../OcrPage";
 import OrderManagePage from "../OrderManagePage/OrderManagePage";
 import StaffManagePage from "../StaffManagePage/StaffManagePage";
 import type { AuthSession } from "../../types";
@@ -1401,94 +1402,56 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         onLogout={onLogout}
       />
 
-      {/* 서브탭: 매장관리(기본) / 재고관리(level 9) / 입고알림관리(level 3+) */}
-      {(dpCanSeeStockManage || dpCanSeeStockArrivals) && (
-        <div className="bg-white/90 backdrop-blur-sm border-b border-slate-200/70 px-2 sm:px-4" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.05)" }}>
-          <div className="max-w-[1360px] mx-auto flex items-center gap-1 overflow-x-auto scrollbar-none py-2">
-            <div className="inline-flex bg-white border border-slate-200 rounded-2xl p-1 gap-0.5 shadow-sm">
-              <button
-                onClick={() => setDpSubTab("store")}
-                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-1 rounded-xl ${
-                  dpSubTab === "store"
-                    ? "bg-red-500 text-white shadow-md"
-                    : "text-red-500 hover:bg-red-50"
-                }`}
-              >
-                <Store size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "store" ? "text-white" : "text-red-500"}`} />
-                <span>매장관리</span>
-              </button>
-
-              {dpCanSeeStockManage && (
-                <button
-                  onClick={() => setDpSubTab("stock-manage")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-1 rounded-xl ${
-                    dpSubTab === "stock-manage"
-                      ? "bg-orange-500 text-white shadow-md"
-                      : "text-orange-500 hover:bg-orange-50"
-                  }`}
-                >
-                  <Boxes size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "stock-manage" ? "text-white" : "text-orange-500"}`} />
-                  <span>재고관리</span>
-                </button>
-              )}
-
-              {dpCanSeeStockManage && (
-                <button
-                  onClick={() => setDpSubTab("sales-trend")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-1 rounded-xl ${
-                    dpSubTab === "sales-trend"
-                      ? "bg-cyan-500 text-white shadow-md"
-                      : "text-cyan-500 hover:bg-cyan-50"
-                  }`}
-                >
-                  <TrendingUp size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "sales-trend" ? "text-white" : "text-cyan-500"}`} />
-                  <span>판매추이</span>
-                </button>
-              )}
-
-              {dpCanSeeStockArrivals && (
-                <button
-                  onClick={() => setDpSubTab("stock-arrivals")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-1 rounded-xl ${
-                    dpSubTab === "stock-arrivals"
-                      ? "bg-green-500 text-white shadow-md"
-                      : "text-green-500 hover:bg-green-50"
-                  }`}
-                >
-                  <Bell size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "stock-arrivals" ? "text-white" : "text-green-500"}`} />
-                  <span>입고알림관리</span>
-                </button>
-              )}
-
-              {dpCanSeeStockManage && (
-                <button
-                  onClick={() => setDpSubTab("order-manage")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 rounded-xl ${
-                    dpSubTab === "order-manage"
-                      ? "bg-blue-500 text-white shadow-md"
-                      : "text-blue-500 hover:bg-blue-50"
-                  }`}
-                >
-                  <ClipboardList size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "order-manage" ? "text-white" : "text-blue-500"}`} />
-                  <span>발주관리</span>
-                </button>
-              )}
-
-              <button
-                onClick={() => setDpSubTab("staff-manage")}
-                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1 rounded-xl ${
-                  dpSubTab === "staff-manage"
-                    ? "bg-purple-500 text-white shadow-md"
-                    : "text-purple-500 hover:bg-purple-50"
-                }`}
-              >
-                <Users size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "staff-manage" ? "text-white" : "text-purple-500"}`} />
-                <span>직원관리</span>
-              </button>
+      {/* 서브탭 · 모바일: 가로 스크롤 한 줄 (전체 라벨 유지) · 데스크탑: 인라인 flex 한 줄 */}
+      {(dpCanSeeStockManage || dpCanSeeStockArrivals) && (() => {
+        // 모바일에서도 전체 라벨 유지 · 안 맞으면 가로 스크롤
+        // 순서: 재고 → 판매 → 발주 → 입고알림 → 구역도(구 매장관리) → 직원관리
+        const tabs: Array<{ key: string; label: string; icon: any; color: string; visible: boolean }> = [
+          { key: "stock-manage",   label: "재고관리",     icon: Boxes,          color: "orange", visible: dpCanSeeStockManage },
+          { key: "sales-trend",    label: "판매추이",     icon: TrendingUp,     color: "cyan",   visible: dpCanSeeStockManage },
+          { key: "order-manage",   label: "발주관리",     icon: ClipboardList,  color: "blue",   visible: dpCanSeeStockManage },
+          { key: "stock-arrivals", label: "입고알림",     icon: Bell,           color: "green",  visible: dpCanSeeStockArrivals },
+          { key: "store",          label: "구역도",       icon: Store,          color: "red",    visible: true },
+          { key: "staff-manage",   label: "직원관리",     icon: Users,          color: "purple", visible: true },
+        ];
+        const colorMap: Record<string, { active: string; inactive: string; ring: string; iconActive: string; iconInactive: string; }> = {
+          red:    { active: "bg-gradient-to-br from-red-500 to-red-600 text-white shadow-md",       inactive: "text-red-600 hover:bg-red-50",         ring: "focus-visible:ring-red-400",    iconActive: "text-white", iconInactive: "text-red-500" },
+          orange: { active: "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-md", inactive: "text-orange-600 hover:bg-orange-50",   ring: "focus-visible:ring-orange-400", iconActive: "text-white", iconInactive: "text-orange-500" },
+          cyan:   { active: "bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-md",     inactive: "text-cyan-600 hover:bg-cyan-50",       ring: "focus-visible:ring-cyan-400",   iconActive: "text-white", iconInactive: "text-cyan-500" },
+          green:  { active: "bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md",   inactive: "text-green-600 hover:bg-green-50",     ring: "focus-visible:ring-green-400",  iconActive: "text-white", iconInactive: "text-green-500" },
+          blue:   { active: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md",     inactive: "text-blue-600 hover:bg-blue-50",       ring: "focus-visible:ring-blue-400",   iconActive: "text-white", iconInactive: "text-blue-500" },
+          purple: { active: "bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-md", inactive: "text-purple-600 hover:bg-purple-50",   ring: "focus-visible:ring-purple-400", iconActive: "text-white", iconInactive: "text-purple-500" },
+        };
+        const visibleTabs = tabs.filter(t => t.visible);
+        // 모바일 한 줄 · flex-1 로 균등 분할 · 데스크탑 인라인
+        // 아이콘 위 · 라벨 아래 (세로 스택) · 반응형 유지
+        // 모바일: 균등 분할 (flex-1) · 데스크탑: 자연 폭 · 컨테이너는 가운데 정렬
+        const tabBase = "flex flex-col items-center justify-center gap-0.5 sm:gap-1 px-2 sm:px-4 py-1.5 text-[11px] sm:text-[12px] font-bold whitespace-nowrap transition-all duration-150 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-offset-1 rounded-md sm:rounded-lg min-h-[48px] active:scale-95 flex-1 sm:flex-initial sm:min-w-[80px]";
+        return (
+          <div className="bg-white border-b border-slate-200/70 px-1.5 sm:px-4 w-full">
+            <div className="max-w-[1360px] mx-auto py-1 sm:py-2 w-full flex justify-center overflow-x-auto scrollbar-none">
+              <div className="flex flex-nowrap bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl p-0.5 sm:p-1 gap-0.5 shadow-sm w-full sm:w-auto">
+                {visibleTabs.map(t => {
+                  const c = colorMap[t.color];
+                  const active = dpSubTab === t.key;
+                  const Icon = t.icon;
+                  return (
+                    <button
+                      key={t.key}
+                      onClick={() => setDpSubTab(t.key as any)}
+                      className={`${tabBase} ${c.ring} ${active ? c.active : c.inactive}`}
+                      title={t.label}
+                    >
+                      <Icon size={13} strokeWidth={2.4} className={`shrink-0 sm:size-[14px] ${active ? c.iconActive : c.iconInactive}`} />
+                      <span className="leading-none">{t.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {dpSubTab === "stock-manage" && dpCanSeeStockManage ? (
         <main className="flex-1 flex flex-col min-h-0">
@@ -1510,7 +1473,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         </main>
       ) : dpSubTab === "order-manage" && dpCanSeeStockManage ? (
         <main className="flex-1 flex flex-col min-h-0">
-          <OrderManagePage />
+          <OrderManagePage
+            ocrTabAuthSession={authSession}
+            ocrTabOnBack={onBack}
+            ocrTabOnNavigate={onNavigate as any}
+            ocrTabOnLogout={onLogout}
+          />
         </main>
       ) : dpSubTab === "staff-manage" ? (
         <main className="flex-1 flex flex-col min-h-0">
@@ -2523,10 +2491,15 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                   : "bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50"
                               }`}
                             >
-                              <div className={`text-[10px] font-black leading-tight ${isAssigned ? "text-indigo-800" : otherName ? "text-amber-700" : "text-slate-700"}`}>
-                                {z.num}
-                              </div>
-                              <div className={`text-[8px] leading-none mt-0.5 truncate ${isAssigned ? "text-indigo-500" : otherName ? "text-amber-500" : "text-slate-400"}`}>
+                              {/* 1-8 은 A/B 로 구분되므로 번호 유지 · 9+ 는 카테고리 라벨과 중복이므로 번호 숨김 */}
+                              {z.num <= 8 && (
+                                <div className={`text-[10px] font-black leading-tight ${isAssigned ? "text-indigo-800" : otherName ? "text-amber-700" : "text-slate-700"}`}>
+                                  {z.num}
+                                  {z.id.endsWith("A") && "A"}
+                                  {z.id.endsWith("B") && "B"}
+                                </div>
+                              )}
+                              <div className={`text-[8px] leading-none ${z.num <= 8 ? "mt-0.5" : "mt-0"} truncate ${isAssigned ? "text-indigo-500" : otherName ? "text-amber-500" : "text-slate-400"}`}>
                                 {otherName ? otherName : z.label}
                               </div>
                             </button>

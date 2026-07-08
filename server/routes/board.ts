@@ -1,13 +1,57 @@
 // server/routes/board.ts
 // 이슈공유 게시판 API
 // - 게시글 · 댓글 · 이미지 · 반응 · @멘션 알림
-// - 이미지는 Cloudinary URL 만 DB 에 저장 (실제 파일은 Cloudinary)
+// - 이미지: Cloudinary (환경변수 설정 시) 또는 로컬 서버 uploads/ 폴더 (기본 fallback)
 
 import { Router } from "express";
 import webpush from "web-push";
+import fs from "fs";
+import path from "path";
 import { supabase } from "../../src/supabase/client";
 
 const router = Router();
+
+// 이미지 업로드 · 로컬 서버 저장 (Cloudinary 미설정 시 fallback)
+// - 클라이언트에서 base64 로 전송 · 서버가 uploads/board/YYYY-MM/ 폴더에 저장
+// - /uploads/board/... 로 접근 가능 (server.ts 에서 express.static 처리됨)
+router.post("/api/board/upload-image", async (req, res) => {
+  try {
+    const { data_url, filename } = req.body ?? {};
+    if (!data_url || typeof data_url !== "string" || !data_url.startsWith("data:image/")) {
+      return res.status(400).json({ error: "data_url (data:image/... base64) 필수" });
+    }
+    // data:image/webp;base64,XXXX 파싱
+    const match = /^data:(image\/[a-zA-Z+.-]+);base64,(.+)$/.exec(data_url);
+    if (!match) return res.status(400).json({ error: "잘못된 data URL" });
+    const mime = match[1];
+    const b64 = match[2];
+    const buffer = Buffer.from(b64, "base64");
+    // 크기 제한 5MB
+    if (buffer.length > 5 * 1024 * 1024) {
+      return res.status(413).json({ error: "이미지 크기 초과 (5MB)" });
+    }
+    const ext = mime === "image/webp" ? "webp" : mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : mime === "image/gif" ? "gif" : "bin";
+    const now = new Date();
+    const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const dir = path.join(process.cwd(), "uploads", "board", ym);
+    fs.mkdirSync(dir, { recursive: true });
+    const rand = Math.random().toString(36).slice(2, 8);
+    const safeName = String(filename ?? "img").replace(/[^\w.-]+/g, "_").slice(0, 40);
+    const fname = `${now.getTime()}_${rand}_${safeName}.${ext}`;
+    const fpath = path.join(dir, fname);
+    fs.writeFileSync(fpath, buffer);
+    const publicUrl = `/uploads/board/${ym}/${fname}`;
+    return res.json({
+      image_url: publicUrl,
+      public_id: `board/${ym}/${fname}`,
+      width: null,
+      height: null,
+      storage: "local",
+    });
+  } catch (err: any) {
+    return res.status(500).json({ error: err?.message ?? "upload failed" });
+  }
+});
 
 // 담당자에게 웹푸시 발송 헬퍼 (실패해도 조용히)
 async function pushToEmployees(empIds: number[], title: string, body: string, url = "/") {
@@ -291,6 +335,21 @@ router.post("/api/board/posts/:id/comments", async (req, res) => {
   })();
 
   res.json({ ok: true, id: data.id });
+});
+
+// ── 댓글 수정 (작성자만)
+router.patch("/api/board/comments/:id", async (req, res) => {
+  const id = Number(req.params.id);
+  const b = req.body ?? {};
+  const editorId = Number(b.editor_id ?? 0);
+  if (!Number.isFinite(id)) return res.status(400).json({ error: "invalid id" });
+  if (!b.body || typeof b.body !== "string" || !b.body.trim()) return res.status(400).json({ error: "body required" });
+  const { data: existing } = await supabase.from("board_post_comments").select("author_id").eq("id", id).maybeSingle();
+  if (!existing) return res.status(404).json({ error: "not found" });
+  if (existing.author_id !== editorId) return res.status(403).json({ error: "본인 댓글만 수정 가능" });
+  const { error } = await supabase.from("board_post_comments").update({ body: String(b.body).trim() }).eq("id", id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ ok: true });
 });
 
 // ── 댓글 삭제

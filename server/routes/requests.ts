@@ -41,6 +41,20 @@ router.get("/api/display-requests", async (req, res) => {
   const scope = String(req.query.scope ?? "");
   const employeeIdRaw = req.query.employeeId;
   const employeeId = employeeIdRaw != null && employeeIdRaw !== "" ? Number(employeeIdRaw) : null;
+
+  // 자동 정리: 완료(done) + 요청일 7일 지난 항목 삭제 (백그라운드 · 응답에 영향 X)
+  (async () => {
+    try {
+      const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      await supabase
+        .from("display_requests")
+        .delete()
+        .eq("status", "done")
+        .lt("requested_at", cutoff);
+    } catch { /* silent */ }
+  })();
+
+  // 최신 요청이 항상 위로 (requested_at DESC)
   let query = supabase.from("display_requests").select("*").order("requested_at", { ascending: false });
   if (scope === "mine" && employeeId && Number.isFinite(employeeId)) {
     query = query.eq("assigned_staff_id", employeeId);
