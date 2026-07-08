@@ -1405,29 +1405,29 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       {(dpCanSeeStockManage || dpCanSeeStockArrivals) && (
         <div className="bg-white/90 backdrop-blur-sm border-b border-slate-200/70 px-2 sm:px-4" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.05)" }}>
           <div className="max-w-[1360px] mx-auto flex items-center gap-1 overflow-x-auto scrollbar-none py-2">
-            <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
+            <div className="inline-flex bg-white border border-slate-200 rounded-2xl p-1 gap-0.5 shadow-sm">
               <button
                 onClick={() => setDpSubTab("store")}
-                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 rounded-lg ${
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-red-400 focus-visible:ring-offset-1 rounded-xl ${
                   dpSubTab === "store"
-                    ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                    ? "bg-red-500 text-white shadow-md"
+                    : "text-red-500 hover:bg-red-50"
                 }`}
               >
-                <Store size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "store" ? "text-slate-800" : "text-slate-400"}`} />
+                <Store size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "store" ? "text-white" : "text-red-500"}`} />
                 <span>매장관리</span>
               </button>
 
               {dpCanSeeStockManage && (
                 <button
                   onClick={() => setDpSubTab("stock-manage")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 rounded-lg ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-orange-400 focus-visible:ring-offset-1 rounded-xl ${
                     dpSubTab === "stock-manage"
-                      ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                      ? "bg-orange-500 text-white shadow-md"
+                      : "text-orange-500 hover:bg-orange-50"
                   }`}
                 >
-                  <Boxes size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "stock-manage" ? "text-slate-800" : "text-slate-400"}`} />
+                  <Boxes size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "stock-manage" ? "text-white" : "text-orange-500"}`} />
                   <span>재고관리</span>
                 </button>
               )}
@@ -1435,13 +1435,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               {dpCanSeeStockManage && (
                 <button
                   onClick={() => setDpSubTab("sales-trend")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 rounded-lg ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-cyan-400 focus-visible:ring-offset-1 rounded-xl ${
                     dpSubTab === "sales-trend"
-                      ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                      ? "bg-cyan-500 text-white shadow-md"
+                      : "text-cyan-500 hover:bg-cyan-50"
                   }`}
                 >
-                  <TrendingUp size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "sales-trend" ? "text-slate-800" : "text-slate-400"}`} />
+                  <TrendingUp size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "sales-trend" ? "text-white" : "text-cyan-500"}`} />
                   <span>판매추이</span>
                 </button>
               )}
@@ -1449,13 +1449,13 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               {dpCanSeeStockArrivals && (
                 <button
                   onClick={() => setDpSubTab("stock-arrivals")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 rounded-lg ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-green-400 focus-visible:ring-offset-1 rounded-xl ${
                     dpSubTab === "stock-arrivals"
-                      ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                      ? "bg-green-500 text-white shadow-md"
+                      : "text-green-500 hover:bg-green-50"
                   }`}
                 >
-                  <Bell size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "stock-arrivals" ? "text-slate-800" : "text-slate-400"}`} />
+                  <Bell size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "stock-arrivals" ? "text-white" : "text-green-500"}`} />
                   <span>입고알림관리</span>
                 </button>
               )}
@@ -1463,26 +1463,26 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               {dpCanSeeStockManage && (
                 <button
                   onClick={() => setDpSubTab("order-manage")}
-                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 rounded-lg ${
+                  className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-1 rounded-xl ${
                     dpSubTab === "order-manage"
-                      ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
-                      : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                      ? "bg-blue-500 text-white shadow-md"
+                      : "text-blue-500 hover:bg-blue-50"
                   }`}
                 >
-                  <ClipboardList size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "order-manage" ? "text-slate-800" : "text-slate-400"}`} />
+                  <ClipboardList size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "order-manage" ? "text-white" : "text-blue-500"}`} />
                   <span>발주관리</span>
                 </button>
               )}
 
               <button
                 onClick={() => setDpSubTab("staff-manage")}
-                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-slate-400 focus-visible:ring-offset-1 rounded-lg ${
+                className={`flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[12px] sm:text-[13px] font-black whitespace-nowrap transition-all duration-200 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1 rounded-xl ${
                   dpSubTab === "staff-manage"
-                    ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                    ? "bg-purple-500 text-white shadow-md"
+                    : "text-purple-500 hover:bg-purple-50"
                 }`}
               >
-                <Users size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "staff-manage" ? "text-slate-800" : "text-slate-400"}`} />
+                <Users size={16} className={`shrink-0 transition-colors duration-200 ${dpSubTab === "staff-manage" ? "text-white" : "text-purple-500"}`} />
                 <span>직원관리</span>
               </button>
             </div>
@@ -2654,40 +2654,46 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   <div className="text-center text-xs text-slate-400 py-10">해당 조건의 상품 없음</div>
                 ) : (
                   <div>
-                    {/* 테이블 헤더 (정렬 가능) */}
-                    <div className="grid grid-cols-[1fr_70px_70px_60px_60px_60px] gap-2 px-4 py-2 bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-600 uppercase tracking-wide sticky top-0 z-10">
+                    {/* 테이블 헤더 (정렬 가능) — 구역(ERP/실배정) 컬럼 제거 · 재고 상황 강조 */}
+                    <div className="grid grid-cols-[1fr_80px_80px_60px] gap-2 px-4 py-2 bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-600 uppercase tracking-wide sticky top-0 z-10">
                       <button type="button" onClick={() => toggleSort("name")} className="text-left hover:text-slate-900 cursor-pointer flex items-center gap-1">
                         상품명 <span className="text-slate-400 text-[8px]">{sortIcon("name")}</span>
-                      </button>
-                      <button type="button" onClick={() => toggleSort("spec")} className="text-center hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1">
-                        ERP <span className="text-slate-400 text-[8px]">{sortIcon("spec")}</span>
-                      </button>
-                      <button type="button" onClick={() => toggleSort("real_map")} className="text-center hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1">
-                        실배정 <span className="text-slate-400 text-[8px]">{sortIcon("real_map")}</span>
                       </button>
                       <button type="button" onClick={() => toggleSort("current_stock")} className="text-center hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1">
                         재고 <span className="text-slate-400 text-[8px]">{sortIcon("current_stock")}</span>
                       </button>
-                      <button type="button" onClick={() => toggleSort("mismatch")} className="text-center hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1">
-                        불일치 <span className="text-slate-400 text-[8px]">{sortIcon("mismatch")}</span>
-                      </button>
+                      <div className="text-center">재고 상황</div>
                       <div className="text-center">작업</div>
                     </div>
                     <ul className="divide-y divide-slate-100">
                       {filtered.map((p: ProductInfo) => {
-                        const specStr = String(p.spec ?? "").trim();
-                        const realStr = String(p.real_map ?? "").trim();
-                        const mismatch = specStr !== "" && specStr !== realStr;
+                        const stockRaw = (p as any).current_stock;
+                        const stockNum = stockRaw != null && stockRaw !== "" ? Number(stockRaw) : NaN;
+                        const optRaw = (p as any).optimal_stock;
+                        const optNum = optRaw != null && optRaw !== "" ? Number(optRaw) : NaN;
+                        let statusLabel = "정상";
+                        let statusClass = "text-emerald-700 bg-emerald-50 border-emerald-200";
+                        if (!Number.isFinite(stockNum)) {
+                          statusLabel = "미확인"; statusClass = "text-slate-500 bg-slate-100 border-slate-200";
+                        } else if (stockNum <= 0) {
+                          statusLabel = "품절"; statusClass = "text-red-700 bg-red-50 border-red-300";
+                        } else if (stockNum < 3) {
+                          statusLabel = "품절임박"; statusClass = "text-amber-700 bg-amber-50 border-amber-300 animate-pulse";
+                        } else if (Number.isFinite(optNum) && optNum > 0 && stockNum < optNum) {
+                          statusLabel = "적정이하"; statusClass = "text-orange-700 bg-orange-50 border-orange-200";
+                        }
                         return (
-                          <li key={p.code} className="grid grid-cols-[1fr_70px_70px_60px_60px_60px] gap-2 px-4 py-2 hover:bg-slate-50 items-center text-[11px]">
+                          <li key={p.code} className="grid grid-cols-[1fr_80px_80px_60px] gap-2 px-4 py-2 hover:bg-slate-50 items-center text-[11px]">
                             <div className="min-w-0">
                               <div className="text-[12px] font-bold text-slate-800 truncate" title={p.name}>{p.name}</div>
                             </div>
-                            <div className="text-center font-mono text-slate-600">{specStr || "-"}</div>
-                            <div className="text-center font-mono text-emerald-700">{realStr || "-"}</div>
-                            <div className="text-center font-bold text-amber-700">{p.current_stock != null ? p.current_stock : "-"}</div>
+                            <div className={`text-center font-mono font-black text-[13px] ${Number.isFinite(stockNum) && stockNum <= 0 ? "text-red-600" : Number.isFinite(stockNum) && stockNum < 3 ? "text-amber-700" : "text-slate-800"}`}>
+                              {Number.isFinite(stockNum) ? stockNum : "-"}
+                            </div>
                             <div className="text-center">
-                              {mismatch ? <span className="text-[9px] font-black text-rose-700 bg-rose-100 border border-rose-300 rounded px-1 py-0.5">⚠️</span> : <span className="text-slate-300">-</span>}
+                              <span className={`inline-block text-[10px] font-black border rounded-full px-2 py-0.5 ${statusClass}`}>
+                                {statusLabel}
+                              </span>
                             </div>
                             <div className="text-center">
                               <button

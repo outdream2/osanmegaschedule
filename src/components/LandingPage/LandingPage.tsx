@@ -30,6 +30,8 @@ import {
   Plus,
   BookOpen,
   Megaphone,
+  MessageSquare,
+  MessageCircleQuestion,
 } from "lucide-react";
 import type { AuthSession, AuthRole } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
@@ -414,7 +416,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
   const handleNavNavigate = (page: AppNavPage) => {
     if (page === "landing") return;
-    const requiresManager = ["display", "requests", "leave", "scan", "ocr"].includes(page);
+    // requests · board 는 직원도 접근 가능 (서버에서 role 필터)
+    const requiresManager = ["display", "leave", "scan", "ocr"].includes(page);
     if (!authSession) {
       setPendingPage("schedule");
       return;
@@ -468,36 +471,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
         <div className="relative z-10 flex flex-col items-center w-full max-w-3xl">
 
-          {/* ── Hero brand area ── */}
-          <div className="w-full mb-7 px-1">
-            {isLoggedIn && authSession?.employeeName && (
-              <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold border"
-                style={
-                  isSuperAdmin
-                    ? { background: "#ecfdf5", borderColor: "#6ee7b7", color: "#065f46" }
-                    : isManagerRole
-                    ? { background: "#eff6ff", borderColor: "#93c5fd", color: "#1e40af" }
-                    : { background: "#fffbeb", borderColor: "#fcd34d", color: "#92400e" }
-                }
-              >
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse"
-                  style={{ background: isSuperAdmin ? "#10b981" : isManagerRole ? "#3b82f6" : "#f59e0b" }}
-                />
-                {(isSuperAdmin || isManagerRole) && (
-                  <>
-                    <span>{isSuperAdmin ? "최고관리자" : "관리자"}</span>
-                    <span className="opacity-40 mx-0.5">·</span>
-                  </>
-                )}
-                <span className="font-semibold">
-                  {authSession.employeeName}
-                  {authSession.employeeRank && (
-                    <span className="opacity-70 ml-1">{authSession.employeeRank}</span>
-                  )}
-                </span>
-              </div>
-            )}
-          </div>
+          {/* Hero brand area · 로그인 사용자 표시는 헤더 탭 아래 [이름 직급] 로 통일 */}
+          <div className="w-full mb-3 px-1" />
 
           {/* ── 관리자 도구 (관리자 로그인 시에만 표시) ── */}
           {isManagerOrAdmin && (
@@ -712,6 +687,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">오늘의 점심 불참 신청</div>
                     <div className="flex items-center gap-1 mt-2 text-orange-500 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">신청하기</span>
+                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+
+                {/* 요청목록 · 직원용 (내가 받은 요청만 자동 필터) — indigo */}
+                {isEmployee && (
+                <button onClick={() => onNavigate("requests", authSession!)}
+                  className="group relative bg-white border border-slate-200/80 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,231,255,0.7) 0%, transparent 60%)" }} />
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)", border: "1px solid #a5b4fc" }}>
+                      <MessageSquare size={16} className="text-indigo-600 sm:hidden" /><MessageSquare size={20} className="text-indigo-600 hidden sm:block" />
+                    </div>
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">내 요청목록</div>
+                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">나에게 배정된 진열 보충 요청</div>
+                    <div className="flex items-center gap-1 mt-2 text-indigo-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">확인하기</span>
+                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+                )}
+
+                {/* 이슈공유 게시판 (전체 직원) — orange */}
+                <button onClick={() => onNavigate("board" as any, authSession!)}
+                  className="group relative bg-white border border-slate-200/80 hover:border-amber-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(254,243,199,0.7) 0%, transparent 60%)" }} />
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #fef3c7, #fde68a)", border: "1px solid #fcd34d" }}>
+                      <MessageCircleQuestion size={16} className="text-amber-600 sm:hidden" /><MessageCircleQuestion size={20} className="text-amber-600 hidden sm:block" />
+                    </div>
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">이슈공유</div>
+                    <div className="text-slate-400 text-[11px] sm:text-xs leading-relaxed hidden sm:block">질문·이슈·메모 · 사진 첨부 · 담당자 지정</div>
+                    <div className="flex items-center gap-1 mt-2 text-amber-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">보러가기</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                     </div>
                   </div>

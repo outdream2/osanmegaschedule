@@ -4,7 +4,7 @@
 // 우측: 공급사별 매입 · Top 100 · 적정재고 이하
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Search, Package, TrendingUp, AlertTriangle, Building2, Info, EyeOff, Eye, Loader2 as LoaderIcon } from "lucide-react";
+import { Search, Package, TrendingUp, AlertTriangle, Building2, Info, EyeOff, Eye, Loader2 as LoaderIcon, Pencil, Check, X as XIcon } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import type { ProductInfo } from "../../lib/productsCache";
 
@@ -551,6 +551,11 @@ export const StockManagePage: React.FC = () => {
           ? { ...p, optimal_stock: num as any }
           : p
       ));
+      // 상세 모달이 열려 있고 편집 대상 상품과 일치하면 모달 데이터도 갱신
+      setInfoModalData(prev => {
+        if (!prev || String(prev.product?.product_code ?? "") !== optimalEditCode) return prev;
+        return { ...prev, product: { ...prev.product, optimal_stock: num as any } };
+      });
       setOptimalEditCode(null);
       setOptimalEditValue("");
       // 다른 리스트 재조회 트리거
@@ -1221,30 +1226,53 @@ export const StockManagePage: React.FC = () => {
                               >{realTotal != null ? fmt(realTotal) : "—"}</td>
                             );
                           })()}
-                          <td className="text-right px-2 py-1.5 font-mono text-[11px] text-slate-600">
+                          <td className="text-right px-1 py-1 font-mono text-[11px] text-slate-600">
                             {optimalEditCode === String(p.product_code) ? (
-                              <input
-                                autoFocus
-                                type="number"
-                                min={0}
-                                inputMode="numeric"
-                                value={optimalEditValue}
-                                onChange={(e) => setOptimalEditValue(e.target.value)}
-                                onBlur={commitOptimalEdit}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") { e.preventDefault(); commitOptimalEdit(); }
-                                  else if (e.key === "Escape") { e.preventDefault(); cancelOptimalEdit(); }
-                                }}
-                                disabled={optimalEditSaving}
-                                className="w-14 text-right font-mono text-[11px] border border-indigo-300 rounded px-1 py-0.5 focus:outline-none focus:border-indigo-500 bg-white"
-                              />
+                              <div className="flex items-center justify-end gap-0.5">
+                                <input
+                                  autoFocus
+                                  type="number"
+                                  min={0}
+                                  inputMode="numeric"
+                                  value={optimalEditValue}
+                                  onChange={(e) => setOptimalEditValue(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") { e.preventDefault(); commitOptimalEdit(); }
+                                    else if (e.key === "Escape") { e.preventDefault(); cancelOptimalEdit(); }
+                                  }}
+                                  disabled={optimalEditSaving}
+                                  className="w-12 text-right font-mono text-[12px] font-black border-2 border-indigo-400 rounded-md px-1 py-1 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 bg-white"
+                                />
+                                <button
+                                  type="button"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={commitOptimalEdit}
+                                  disabled={optimalEditSaving}
+                                  className="p-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 active:scale-95 transition disabled:opacity-50 shadow-sm"
+                                  title="저장"
+                                >
+                                  <Check size={12} strokeWidth={3} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onMouseDown={(e) => e.preventDefault()}
+                                  onClick={cancelOptimalEdit}
+                                  className="p-1 rounded bg-slate-200 text-slate-600 hover:bg-slate-300 active:scale-95 transition shadow-sm"
+                                  title="취소"
+                                >
+                                  <XIcon size={12} strokeWidth={3} />
+                                </button>
+                              </div>
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => startOptimalEdit(String(p.product_code), opt)}
-                                className="w-full text-right font-mono text-[11px] hover:bg-slate-100 rounded px-1 py-0.5 cursor-pointer transition"
-                                title="클릭하여 적정재고 편집 · 저장 시 백업 컬럼에도 동기화"
-                              >{opt > 0 ? fmt(opt) : "-"}</button>
+                                className="w-full min-h-[32px] flex items-center justify-end gap-1 text-right font-mono text-[12px] font-bold hover:bg-indigo-50 active:bg-indigo-100 border border-transparent hover:border-indigo-200 rounded-md px-1.5 py-1 cursor-pointer transition"
+                                title="탭하여 적정재고 편집"
+                              >
+                                <span className={opt > 0 ? "text-slate-800" : "text-slate-400"}>{opt > 0 ? fmt(opt) : "입력"}</span>
+                                <Pencil size={10} className="text-indigo-400 shrink-0" />
+                              </button>
                             )}
                           </td>
                           <td className="text-right px-2 py-1.5 font-mono font-bold text-[11px] text-rose-600">{need > 0 ? `+${fmt(need)}` : "-"}</td>
@@ -1506,37 +1534,37 @@ export const StockManagePage: React.FC = () => {
                               >상품명{arrowFor("name")}</th>
                               <th
                                 onClick={() => toggleFlowSort("opening")}
-                                className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "opening" ? "text-slate-800 font-black" : "text-slate-500"}`}
+                                className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-slate-50/60 hover:bg-slate-100 transition ${flowSort === "opening" ? "text-slate-800 font-black" : "text-slate-500"}`}
                                 title="클릭: 시작재고 기준 정렬"
                               >시작{arrowFor("opening")}</th>
                               <th
                                 onClick={() => toggleFlowSort("purchase")}
-                                className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "purchase" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
+                                className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none bg-emerald-50/60 hover:bg-emerald-100 transition ${flowSort === "purchase" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
                                 title="클릭: 매입 기준 정렬 (재클릭 시 방향 반전) · 옆 (M/D)는 최근 매입일"
                               >매입 <span className="text-[8px] font-normal text-slate-400">(M/D)</span>{arrowFor("purchase")}</th>
                               <th
                                 onClick={() => toggleFlowSort("sale")}
-                                className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
+                                className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none bg-orange-50/60 hover:bg-orange-100 transition ${flowSort === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
                                 title="클릭: 판매출고계 기준 정렬 (재클릭 시 방향 반전)"
                               >판매{arrowFor("sale")}</th>
                               <th
                                 onClick={() => toggleFlowSort("closing")}
-                                className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "closing" ? "text-slate-800 font-black" : "text-slate-500"}`}
+                                className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-slate-50/60 hover:bg-slate-100 transition ${flowSort === "closing" ? "text-slate-800 font-black" : "text-slate-500"}`}
                                 title="클릭: 종료재고 기준 정렬 (재클릭 시 방향 반전)"
                               >종료{arrowFor("closing")}</th>
                               <th
                                 onClick={() => toggleFlowSort("current")}
-                                className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "current" ? "text-amber-800 font-black" : "text-amber-600 font-black"}`}
+                                className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "current" ? "text-amber-800 font-black" : "text-amber-600 font-black"}`}
                                 title="클릭: ERP 현재고 기준 정렬 · products.current_stock"
                               >현재고{arrowFor("current")}</th>
                               <th
                                 onClick={() => toggleFlowSort("loss")}
-                                className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "loss" ? "text-rose-700 font-black" : "text-rose-500"}`}
+                                className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-rose-50/60 hover:bg-rose-100 transition ${flowSort === "loss" ? "text-rose-700 font-black" : "text-rose-500"}`}
                                 title="클릭: 손실 기준 정렬 (재클릭 시 방향 반전). 손실 = 종료재고 − 현재고"
                               >손실{arrowFor("loss")}</th>
                               <th
                                 onClick={() => toggleFlowSort("amount")}
-                                className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "amount" ? "text-indigo-700 font-black" : "text-indigo-500"}`}
+                                className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none bg-indigo-50/60 hover:bg-indigo-100 transition ${flowSort === "amount" ? "text-indigo-700 font-black" : "text-indigo-500"}`}
                                 title="클릭: 제품판매가 기준 정렬 (재클릭 시 방향 반전)"
                               >판매가{arrowFor("amount")}</th>
                             </>
@@ -1550,46 +1578,46 @@ export const StockManagePage: React.FC = () => {
                         const loss = Number(p.closing_stock) - cur;
                         return (
                         <tr key={`flow-${p.product_code}-${i}`} className="hover:bg-orange-50/30 transition">
-                          <td className="px-0.5 py-1.5 text-[10px] font-black text-orange-600">{i + 1}</td>
-                          <td className="px-1 py-1.5">
+                          <td className="px-0.5 py-1.5 text-[10px] font-black text-orange-600 align-top">{i + 1}</td>
+                          <td className="px-1 py-1.5 align-top">
                             <button
                               type="button"
                               onClick={() => openScanProductModal(p)}
-                              className="text-left font-bold text-slate-700 hover:text-indigo-600 hover:underline truncate max-w-[160px] cursor-pointer transition"
+                              className="text-left font-bold text-slate-700 hover:text-indigo-600 hover:underline break-words whitespace-normal cursor-pointer transition"
                               title={`${p.product_name} · 클릭하면 상세 정보`}
                             >{p.product_name}</button>
-                            {p.supplier && <div className="text-[9px] text-slate-400 truncate max-w-[160px]">{p.supplier}</div>}
+                            {p.supplier && <div className="text-[9px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
                           </td>
-                          <td className="text-right px-0.5 py-1.5 font-mono text-slate-500 text-[11px]">{fmt(p.opening_stock)}</td>
-                          <td className="text-right px-0.5 py-1.5 font-mono text-emerald-600 text-[11px]" title={p.last_purchase_date ? `최근 매입: ${p.last_purchase_date}` : "매입 이력 없음"}>
+                          <td className="text-right px-0.5 py-1.5 font-mono text-slate-500 text-[11px] bg-slate-50/40 align-top">{fmt(p.opening_stock)}</td>
+                          <td className="text-right px-0.5 py-1.5 font-mono text-emerald-600 text-[11px] bg-emerald-50/40 align-top" title={p.last_purchase_date ? `최근 매입: ${p.last_purchase_date}` : "매입 이력 없음"}>
                             {fmt(p.purchase_qty)}
                             {(() => {
                               const md = extractMonthDay(p.last_purchase_date);
                               return md ? <span className="text-[9px] text-slate-400 font-normal ml-0.5">({md})</span> : null;
                             })()}
                           </td>
-                          <td className="text-right px-0.5 py-1.5 font-mono font-bold text-orange-700 text-[11px]">{fmt(p.sale_qty)}</td>
+                          <td className="text-right px-0.5 py-1.5 font-mono font-bold text-orange-700 text-[11px] bg-orange-50/40 align-top">{fmt(p.sale_qty)}</td>
                           {(() => {
                             const close = Number(p.closing_stock ?? 0);
                             const mismatch = close !== cur;
                             return (
                               <>
                                 <td
-                                  className={`text-right px-0.5 py-1.5 font-mono text-[11px] ${close < 0 ? "text-rose-500 font-bold" : mismatch ? "text-red-600 font-black" : "text-slate-600"}`}
+                                  className={`text-right px-0.5 py-1.5 font-mono text-[11px] bg-slate-50/40 align-top ${close < 0 ? "text-rose-500 font-bold" : mismatch ? "text-red-600 font-black" : "text-slate-600"}`}
                                   title={mismatch ? `종료 ${fmt(close)} ≠ 현재고 ${fmt(cur)} · 불일치` : "종료재고 (스냅샷)"}
                                 >{fmt(close)}</td>
                                 <td
-                                  className={`text-right px-0.5 py-1.5 font-mono font-black text-[11px] ${cur <= 0 ? "text-red-600" : mismatch ? "text-red-600" : "text-amber-700"}`}
+                                  className={`text-right px-0.5 py-1.5 font-mono font-black text-[11px] bg-amber-50/40 align-top ${cur <= 0 ? "text-red-600" : mismatch ? "text-red-600" : "text-amber-700"}`}
                                   title={mismatch ? `현재고 ${fmt(cur)} ≠ 종료 ${fmt(close)} · 불일치` : "ERP 현재고"}
                                 >{fmt(cur)}</td>
                               </>
                             );
                           })()}
                           <td
-                            className={`text-right px-0.5 py-1.5 font-mono text-[11px] ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
+                            className={`text-right px-0.5 py-1.5 font-mono text-[11px] bg-rose-50/40 align-top ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
                             title={`손실 = 종료재고(${fmt(p.closing_stock)}) − 현재고(${fmt(cur)}) = ${loss > 0 ? "-" + fmt(loss) : loss < 0 ? "+" + fmt(Math.abs(loss)) : "0"}`}
                           >{loss === 0 ? "0" : loss > 0 ? `-${fmt(loss)}` : `+${fmt(Math.abs(loss))}`}</td>
-                          <td className="text-right px-0.5 py-1.5 font-mono text-[10px] text-indigo-700 font-bold">{p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</td>
+                          <td className="text-right px-0.5 py-1.5 font-mono text-[10px] text-indigo-700 font-bold bg-indigo-50/40 align-top">{p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</td>
                         </tr>
                         );
                       })}
@@ -2028,7 +2056,56 @@ export const StockManagePage: React.FC = () => {
                         <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">공급처</span><span className="text-sm font-bold text-slate-800 truncate block">{prod.supplier ?? "-"}</span></div>
                         <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">진열위치</span><span className="text-sm font-bold text-slate-800 truncate block">{prod.real_map ?? prod.display_location ?? "-"}</span></div>
                         <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">판매상태</span><span className="text-sm font-bold text-slate-800">{prod.sale_status ?? "-"}</span></div>
-                        <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">적정재고</span><span className="text-base font-mono font-black text-slate-700">{optimalStock > 0 ? fmt(optimalStock) : "-"}</span></div>
+                        <div>
+                          <span className="text-xs text-slate-500 font-semibold block mb-0.5">적정재고</span>
+                          {optimalEditCode === String(prod.product_code) ? (
+                            <div className="flex items-center gap-1">
+                              <input
+                                autoFocus
+                                type="number"
+                                min={0}
+                                inputMode="numeric"
+                                value={optimalEditValue}
+                                onChange={(e) => setOptimalEditValue(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") { e.preventDefault(); commitOptimalEdit(); }
+                                  else if (e.key === "Escape") { e.preventDefault(); cancelOptimalEdit(); }
+                                }}
+                                disabled={optimalEditSaving}
+                                className="w-20 text-right font-mono text-base font-black border-2 border-indigo-400 rounded-md px-2 py-1 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 bg-white"
+                              />
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={commitOptimalEdit}
+                                disabled={optimalEditSaving}
+                                className="p-1.5 rounded bg-emerald-500 text-white hover:bg-emerald-600 active:scale-95 transition disabled:opacity-50 shadow-sm"
+                                title="저장 (Enter)"
+                              >
+                                <Check size={14} strokeWidth={3} />
+                              </button>
+                              <button
+                                type="button"
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={cancelOptimalEdit}
+                                className="p-1.5 rounded bg-slate-200 text-slate-600 hover:bg-slate-300 active:scale-95 transition shadow-sm"
+                                title="취소 (Esc)"
+                              >
+                                <XIcon size={14} strokeWidth={3} />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => startOptimalEdit(String(prod.product_code), optimalStock)}
+                              className="inline-flex items-center gap-1.5 min-h-[36px] px-2 py-1 rounded-md border border-transparent hover:border-indigo-300 hover:bg-indigo-50 active:bg-indigo-100 transition cursor-pointer"
+                              title="탭하여 적정재고 편집"
+                            >
+                              <span className={`text-base font-mono font-black ${optimalStock > 0 ? "text-slate-700" : "text-slate-400"}`}>{optimalStock > 0 ? fmt(optimalStock) : "입력"}</span>
+                              <Pencil size={12} className="text-indigo-500" />
+                            </button>
+                          )}
+                        </div>
                         <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">최소발주</span><span className="text-base font-mono font-black text-sky-700">{prod.min_order ?? "-"}</span></div>
                         <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">필요재고</span><span className="text-base font-mono font-black text-rose-600">{optimalStock > 0 && currentStock < optimalStock ? `+${fmt(optimalStock - currentStock)}` : "-"}</span></div>
                         <div>

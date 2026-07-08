@@ -17,12 +17,14 @@ import { LunchPage } from "./components/LunchPage/LunchPage";
 import { StockCheckPage } from "./components/StockCheckPage/StockCheckPage";
 import { SynonymPage } from "./components/SynonymPage";
 import { StockArrivalPage } from "./components/StockArrivalPage";
+import { BoardPage } from "./components/BoardPage";
 import { SessionTimeoutWarning } from "./components/SessionTimeoutWarning";
 import { useAuth } from "./hooks/useAuth";
+import { usePushSubscription } from "./hooks/usePushSubscription";
 import type { AuthSession } from "./types";
 import { prefetchProducts } from "./lib/productsCache";
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board";
 
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
@@ -40,6 +42,9 @@ export default function App() {
   useEffect(() => {
     if (authSession) prefetchProducts();
   }, [authSession]);
+
+  // 로그인 직후 웹푸시 자동 구독 (권한 팝업 1회 · 이미 구독됐으면 skip)
+  usePushSubscription({ employeeId: authSession?.employeeId ?? null, auto: true });
 
   // Sync page state with browser History API so the back button works
   useEffect(() => {
@@ -64,7 +69,7 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals", auth?: AuthSession) => {
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board", auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
     navigate(next);
   };
@@ -90,7 +95,7 @@ export default function App() {
 
   // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
   // The user is already authenticated here, so no AuthSession is required.
-  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "ocr" | "lunch") => navigate(next);
+  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "ocr" | "lunch" | "board") => navigate(next);
 
   let pageContent: React.ReactElement;
 
@@ -171,6 +176,15 @@ export default function App() {
     pageContent = <SynonymPage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />;
   } else if (page === "stockarrivals") {
     pageContent = <StockArrivalPage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />;
+  } else if (page === "board") {
+    pageContent = (
+      <BoardPage
+        authSession={authSession}
+        onBack={goBack}
+        onNavigate={navigateInner as any}
+        onLogout={handleLogout}
+      />
+    );
   } else if (page === "permissions") {
     pageContent = (
       <PermissionsPage

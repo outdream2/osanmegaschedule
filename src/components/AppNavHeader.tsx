@@ -9,11 +9,13 @@ import {
   Lock,
   LogOut,
   MessageSquare,
+  MessageCircleQuestion,
   Package,
   UtensilsCrossed,
 } from "lucide-react";
 import type { AuthSession } from "../types";
 import { NotificationBell } from "./NotificationBell";
+import { NotificationToggle } from "./NotificationToggle";
 
 export type AppNavPage =
   | "landing"
@@ -27,7 +29,8 @@ export type AppNavPage =
   | "permissions"
   | "stockarrivals"
   | "synonyms"
-  | "stockcheck";
+  | "stockcheck"
+  | "board";
 
 interface AppNavHeaderProps {
   activePage: AppNavPage;
@@ -53,7 +56,8 @@ const TABS: TabDef[] = [
   { key: "schedule", label: "스케줄관리", mobileLabel: "스케줄",  icon: Calendar,      managerOnly: false },
   { key: "lunch",    label: "점심불참",   mobileLabel: "불참",    icon: UtensilsCrossed, managerOnly: false, iconClassName: "text-red-500" },
   { key: "display",  label: "매장관리",   mobileLabel: "매장",    icon: LayoutGrid,    managerOnly: true  },
-  { key: "requests", label: "요청목록",   mobileLabel: "요청",    icon: MessageSquare, managerOnly: true  },
+  { key: "requests", label: "요청목록",   mobileLabel: "요청",    icon: MessageSquare, managerOnly: false },
+  { key: "board",    label: "이슈공유",   mobileLabel: "이슈",    icon: MessageCircleQuestion, managerOnly: false, iconClassName: "text-orange-500" },
   { key: "leave",    label: "연차승인",   mobileLabel: "연차",    icon: CheckCircle,   managerOnly: true  },
   { key: "scan",     label: "상품관리",   mobileLabel: "상품",    icon: Package,       managerOnly: true  },
   { key: "ocr",      label: "거래명세서", mobileLabel: "OCR",     icon: FileText,      managerOnly: true  },
@@ -155,46 +159,26 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           </div>
         </div>
 
-        {/* Right: role badge + rightSlot + logout */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {isAdmin ? (
-            <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] sm:text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="hidden sm:inline">최고관리자</span>
-            </div>
-          ) : isManager ? (
-            <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200 text-[10px] sm:text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse shrink-0" />
-              <span className="hidden sm:inline">관리자</span>
-              {authSession?.employeeName && (
-                <span className="text-sky-600 font-semibold hidden sm:inline border-l border-sky-300 pl-1.5 ml-0.5 truncate max-w-[60px]">
-                  {authSession.employeeName}
-                </span>
-              )}
-            </div>
-          ) : isEmployee ? (
-            <div className="flex items-center gap-1.5 px-2 sm:px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 text-[10px] sm:text-[11px] font-bold">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shrink-0" />
-              <span className="hidden sm:inline truncate max-w-[80px]">{authSession?.employeeName ?? "직원 모드"}</span>
-            </div>
-          ) : null}
+        {/* Right: rightSlot + logout (역할 배지는 메뉴 아래 라인으로 이동) */}
+        <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
 
+          <NotificationToggle authSession={authSession} />
           <NotificationBell authSession={authSession} />
 
           {rightSlot}
 
-          {/* 로그아웃 버튼: 로그인 상태(authSession 존재)면 role/level 무관하게 항상 노출 (모바일에서도 라벨 표시) */}
+          {/* 로그아웃: 모바일에서 아이콘만, 데스크탑에서 라벨 포함 */}
           {authSession && onLogout ? (
             <button
               onClick={onLogout}
-              className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-gray-200 hover:border-rose-300 rounded-lg transition cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-1 px-2 sm:px-3 py-1.5 text-xs font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-gray-200 hover:border-rose-300 rounded-lg transition cursor-pointer shrink-0"
               title="로그아웃"
             >
               <LogOut size={13} />
-              <span>로그아웃</span>
+              <span className="hidden sm:inline">로그아웃</span>
             </button>
           ) : (
-            <div className="flex items-center gap-1 px-2 py-1.5 text-xs font-semibold bg-gray-50 text-gray-400 border border-gray-200 rounded-lg" title="비로그인">
+            <div className="flex items-center gap-1 px-2 py-1.5 text-xs font-semibold bg-gray-50 text-gray-400 border border-gray-200 rounded-lg shrink-0" title="비로그인">
               <Lock size={12} />
             </div>
           )}
@@ -207,6 +191,19 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           <div className="flex items-center gap-0.5 bg-gray-100 rounded-xl p-1 overflow-x-auto scrollbar-none">
             {visibleTabs.map(renderMobileTab)}
           </div>
+        </div>
+      )}
+
+      {/* ── 로그인 사용자 이름·직급 (탭 아래 라인) ── */}
+      {authSession && (authSession.employeeName || authSession.employeeRank) && (
+        <div className="px-4 sm:px-6 pb-1.5 sm:pb-2 -mt-0.5 flex items-center justify-end">
+          <span className="text-[11px] sm:text-xs font-black text-slate-500 tracking-tight">
+            <span className="text-slate-300 font-normal">[</span>
+            {authSession.employeeName && <span className="text-slate-800">{authSession.employeeName}</span>}
+            {authSession.employeeName && authSession.employeeRank && <span className="text-slate-400"> </span>}
+            {authSession.employeeRank && <span className="text-slate-600">{authSession.employeeRank}</span>}
+            <span className="text-slate-300 font-normal">]</span>
+          </span>
         </div>
       )}
     </header>

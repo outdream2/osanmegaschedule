@@ -212,9 +212,17 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   // 로드
   const loadDisplayReqs = useCallback(async () => {
     setDisplayLoading(true);
-    try { const res = await fetch("/api/display-requests"); setDisplayReqs(res.ok ? await res.json() : []); }
+    try {
+      // 직원(관리자 미만)은 본인이 담당자로 지정된 요청만 조회
+      const empId = authSession?.employeeId;
+      const url = !isManager && empId
+        ? `/api/display-requests?scope=mine&employeeId=${empId}`
+        : "/api/display-requests";
+      const res = await fetch(url);
+      setDisplayReqs(res.ok ? await res.json() : []);
+    }
     catch { setDisplayReqs([]); } finally { setDisplayLoading(false); }
-  }, []);
+  }, [authSession?.employeeId, isManager]);
 
   const loadOrderReqs = useCallback(async () => {
     setOrderLoading(true);
@@ -447,11 +455,14 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
   const eatCount = lunchRequests.filter(r => r.eating).length;
   const noEatCount = lunchRequests.filter(r => !r.eating).length;
 
+  // 직원(관리자 미만)은 진열요청만 노출 · 그 외 탭 (구역불일치·실재고차이·점심불참)은 관리자 전용
   const TABS: [Tab, string, number, string, string, string, string][] = [
-    ["display",   "진열요청",   displayTabCount,   "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
-    ["mismatch",  "구역불일치", mismatchTabCount,  "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
-    ["inventory", "실재고차이", inventoryTabCount, "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
-    ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
+    ["display",   isManager ? "진열요청" : "내가 받은 요청",   displayTabCount,   "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
+    ...(isManager ? ([
+      ["mismatch",  "구역불일치", mismatchTabCount,  "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
+      ["inventory", "실재고차이", inventoryTabCount, "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
+      ["lunch",     "점심불참",   lunchTabCount,     "bg-white text-slate-900 ring-slate-200/70",  "text-slate-800", "bg-indigo-100 text-indigo-700",  "text-slate-500 hover:text-slate-800 hover:bg-white/50"],
+    ] as [Tab, string, number, string, string, string, string][]) : []),
   ];
 
   // 공통 체크박스
@@ -507,15 +518,18 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               onDeleteSelected={() => deleteDisplay([...selectedDisplay])}
               onDeleteAll={() => { if (confirm(`진열요청 전체 ${displayReqs.length}건을 삭제할까요?`)) deleteDisplay(displayReqs.map(r => r.id)); }}
               onRefresh={loadDisplayReqs} loading={displayLoading} accentColor="text-blue-600"
+              hideDeleteAll={!isManager}
               extraActions={
-                <button
-                  onClick={handleNotifyAll}
-                  disabled={notifying || displayReqs.filter(r => r.status === "pending").length === 0}
-                  className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-blue-500 hover:bg-blue-600 border border-blue-400 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
-                >
-                  {notifying ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
-                  알림전송
-                </button>
+                isManager ? (
+                  <button
+                    onClick={handleNotifyAll}
+                    disabled={notifying || displayReqs.filter(r => r.status === "pending").length === 0}
+                    className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-blue-500 hover:bg-blue-600 border border-blue-400 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                  >
+                    {notifying ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
+                    알림전송
+                  </button>
+                ) : null
               }
             />
 
@@ -543,15 +557,15 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                           )}
                           {r.zone_label && (
                             <><span className="text-gray-300 text-[10px]">·</span>
-                            <span className="text-[12px] font-bold text-gray-800 truncate">{r.zone_label}</span></>
+                            <span className="text-[12px] font-bold text-gray-800 break-keep">{r.zone_label}</span></>
                           )}
                           {r.category && (
                             <><span className="text-gray-300 text-[10px]">·</span>
-                            <span className="text-[11px] text-gray-500 truncate">{r.category}</span></>
+                            <span className="text-[11px] text-gray-500 break-keep">{r.category}</span></>
                           )}
                           {r.note && (
                             <><span className="text-gray-300 text-[10px]">·</span>
-                            <span className="text-[11px] text-indigo-500 truncate">{r.note}</span></>
+                            <span className="text-[11px] text-indigo-500 break-keep">{r.note}</span></>
                           )}
                         </div>
                       </div>
@@ -617,7 +631,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                           <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="text-[10px] font-mono text-slate-400 shrink-0">{r.product_code}</span>
                             <span className="text-gray-300 text-[10px]">·</span>
-                            <span className="text-[12px] font-black text-slate-800 truncate">{r.product_name || "(상품명 없음)"}</span>
+                            <span className="text-[12px] font-black text-slate-800 break-keep">{r.product_name || "(상품명 없음)"}</span>
                             <span className="text-gray-300 text-[10px]">·</span>
                             <span className="text-[11px] text-slate-500">현재 <span className="font-bold text-slate-700">{r.current_stock ?? "-"}</span> / 적정 <span className="font-bold text-slate-700">{r.optimal_stock ?? "-"}</span></span>
                             {inv && (
@@ -668,13 +682,13 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="text-[10px] font-mono text-slate-400 shrink-0">{code}</span>
                                 <span className="text-gray-300 text-[10px]">·</span>
-                                <span className="text-[12px] font-black text-slate-800 truncate">{name || "(상품명 없음)"}</span>
+                                <span className="text-[12px] font-black text-slate-800 break-keep">{name || "(상품명 없음)"}</span>
                                 <span className="text-gray-300 text-[10px]">·</span>
                                 <span className="text-[11px] text-slate-500">현재 <span className="font-bold text-slate-700">{cur}</span> / 적정 <span className="font-bold text-slate-700">{opt}</span></span>
                                 {supplier && (
                                   <>
                                     <span className="text-gray-300 text-[10px]">·</span>
-                                    <span className="text-[11px] text-sky-600 font-semibold truncate">{supplier}</span>
+                                    <span className="text-[11px] text-sky-600 font-semibold break-keep">{supplier}</span>
                                   </>
                                 )}
                               </div>
@@ -728,7 +742,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     <Checkbox checked={selectedMismatch.has(m.id)} onChange={() => toggleOne(selectedMismatch, m.id, setSelectedMismatch)} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[12px] font-black text-slate-800 truncate">{m.product_name}</span>
+                        <span className="text-[12px] font-black text-slate-800 break-keep">{m.product_name}</span>
                         <span className="text-gray-300 text-[10px]">·</span>
                         <span className="text-[10px] font-mono text-slate-400">{m.product_code}</span>
                         <span className="text-gray-300 text-[10px]">·</span>
@@ -802,7 +816,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                       <Checkbox checked={selectedInventory.has(r.id)} onChange={() => toggleOne(selectedInventory, r.id, setSelectedInventory)} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[12px] font-black text-slate-800 truncate">{r.product_name}</span>
+                          <span className="text-[12px] font-black text-slate-800 break-keep">{r.product_name}</span>
                           <span className="text-gray-300 text-[10px]">·</span>
                           <span className="text-[10px] font-mono text-slate-400">{r.product_code}</span>
                           <span className="text-gray-300 text-[10px]">·</span>
@@ -888,7 +902,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                               <div key={r.id} className="flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 last:border-0 hover:bg-purple-50/30 transition">
                                 <span className="text-[10px] text-gray-400 font-mono shrink-0 w-10">{time}</span>
                                 <div className="flex-1 min-w-0">
-                                  <span className="text-[12px] font-bold text-gray-800 truncate block">{r.product_name}</span>
+                                  <span className="text-[12px] font-bold text-gray-800 break-keep">{r.product_name}</span>
                                   <span className="text-[10px] text-gray-400">
                                     창고 {r.warehouse_stock ?? "—"} + 매장 {r.store_stock ?? "—"} = <strong className="text-purple-700">{totalActual}</strong>
                                     {r.system_stock != null && <> · 현재고 {r.system_stock}</>}
@@ -901,7 +915,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                                     </span>
                                   )}
                                   {r.checked_by && (
-                                    <span className="text-[10px] text-gray-400 max-w-[48px] truncate">{r.checked_by}</span>
+                                    <span className="text-[10px] text-gray-400">{r.checked_by}</span>
                                   )}
                                 </div>
                               </div>
@@ -951,7 +965,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                   <div key={r.id} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${r.eating ? "bg-emerald-500" : "bg-gray-300"}`} />
                     <span className="text-sm font-semibold text-gray-800 flex-1">{r.employee_name}</span>
-                    {r.memo && <span className="text-[10px] text-gray-400 max-w-[120px] truncate">{r.memo}</span>}
+                    {r.memo && <span className="text-[10px] text-gray-400 flex-1 min-w-0 break-keep">{r.memo}</span>}
                     <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full shrink-0 ${r.eating ? "bg-emerald-50 text-emerald-600 border border-emerald-200" : "bg-gray-100 text-gray-500 border border-gray-200"}`}>
                       {r.eating ? "🍱 식사" : "불참"}
                     </span>

@@ -1687,7 +1687,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
           onClick={e => e.stopPropagation()}>
 
           <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200 shrink-0">
-            <span className="text-xs font-bold text-gray-700 truncate max-w-[220px]">{modalLabel}</span>
+            <span className="text-xs font-bold text-gray-700 break-all min-w-0 flex-1 mr-3">{modalLabel}</span>
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg px-1 py-0.5">
                 <button onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))}
@@ -3927,15 +3927,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
           {/* ── 확정 결과표 섹션 ── */}
           {matchItems && confirmed && (
             <div className="w-full bg-white border border-emerald-200 rounded-2xl overflow-hidden shadow-sm">
-              <div className="px-4 py-2.5 border-b border-emerald-100 bg-emerald-50 flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div className="px-4 py-2.5 border-b border-emerald-100 bg-emerald-50 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2 shrink-0">
                   <CheckCircle size={13} className="text-emerald-600" />
                   <span className="text-xs font-bold text-emerald-800">거래명세서 확정표</span>
                   <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded font-bold">
                     {confRows.length}건 · {fmt(confTotal)}원
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <input ref={xlsInputRef} type="file" accept=".xlsx,.xls" className="hidden"
                     onChange={e => { const f = e.target.files?.[0]; if (f) { handleTemplateUpload(f); setXlsTemplateSaved(false); e.target.value = ""; } }} />
                   {/* 확정표 열 순서 리셋 버튼 */}

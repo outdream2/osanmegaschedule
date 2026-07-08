@@ -36,9 +36,16 @@ router.get("/api/requests/pending-counts", async (_req, res) => {
   });
 });
 
-router.get("/api/display-requests", async (_req, res) => {
-  const { data, error } = await supabase
-    .from("display_requests").select("*").order("requested_at", { ascending: false });
+router.get("/api/display-requests", async (req, res) => {
+  // scope=mine · employeeId 지정 시 담당자 본인 요청만 필터 (직원용 뷰)
+  const scope = String(req.query.scope ?? "");
+  const employeeIdRaw = req.query.employeeId;
+  const employeeId = employeeIdRaw != null && employeeIdRaw !== "" ? Number(employeeIdRaw) : null;
+  let query = supabase.from("display_requests").select("*").order("requested_at", { ascending: false });
+  if (scope === "mine" && employeeId && Number.isFinite(employeeId)) {
+    query = query.eq("assigned_staff_id", employeeId);
+  }
+  const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
   res.json(data ?? []);
 });

@@ -495,7 +495,7 @@ const ConfirmedRecordsTab: React.FC = () => {
             <div className="px-4 py-3 border-b border-gray-100 bg-orange-50 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2 min-w-0">
                 <FileText size={13} className="text-orange-600 shrink-0" />
-                <span className="text-xs font-bold text-orange-800 truncate">
+                <span className="text-xs font-bold text-orange-800 break-keep">
                   {balanceHistory.supplier} 잔고 히스토리
                 </span>
                 <span className="text-[10px] bg-orange-100 text-orange-600 px-1.5 py-0.5 rounded font-bold shrink-0">
@@ -1170,7 +1170,7 @@ return (
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-100">
             <div className="flex items-center gap-2">
               <Upload size={13} className="text-amber-500" />
-              <span className="text-xs font-semibold text-amber-700 truncate max-w-[220px]">{fileName}</span>
+              <span className="text-xs font-semibold text-amber-700 break-all">{fileName}</span>
               {loading && pageImages.length < pageCount && (
                 <span className="text-[10px] text-amber-500 font-bold">
                   · {pageImages.length}/{pageCount} 로딩 중...

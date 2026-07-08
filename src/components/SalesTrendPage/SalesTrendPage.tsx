@@ -1062,27 +1062,27 @@ const StockFlowPanel: React.FC<{
                   className={`text-left px-1 py-1.5 min-w-[100px] cursor-pointer select-none hover:bg-slate-50 ${sort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}
                 >상품명{arrow("name")}</th>
                 <th onClick={() => toggleSort("opening")}
-                  className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 ${sort === "opening" ? "text-slate-800 font-black" : "text-slate-500"}`}
+                  className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-100 bg-slate-50/60 ${sort === "opening" ? "text-slate-800 font-black" : "text-slate-500"}`}
                 >시작{arrow("opening")}</th>
                 <th onClick={() => toggleSort("purchase")}
-                  className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-slate-50 ${sort === "purchase" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
+                  className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-emerald-100 bg-emerald-50/60 ${sort === "purchase" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
                   title="클릭: 매입 정렬 · 옆 (M/D)는 최근 매입일"
                 >매입 <span className="text-[8px] font-normal text-slate-400">(M/D)</span>{arrow("purchase")}</th>
                 <th onClick={() => toggleSort("sale")}
-                  className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none hover:bg-slate-50 ${sort === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
+                  className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none hover:bg-orange-100 bg-orange-50/60 ${sort === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
                 >판매{arrow("sale")}</th>
                 <th onClick={() => toggleSort("closing")}
-                  className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 ${sort === "closing" ? "text-slate-800 font-black" : "text-slate-500"}`}
+                  className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-100 bg-slate-50/60 ${sort === "closing" ? "text-slate-800 font-black" : "text-slate-500"}`}
                 >종료{arrow("closing")}</th>
                 <th onClick={() => toggleSort("current")}
-                  className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 ${sort === "current" ? "text-amber-800 font-black" : "text-amber-600 font-black"}`}
+                  className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-amber-100 bg-amber-50/60 ${sort === "current" ? "text-amber-800 font-black" : "text-amber-600 font-black"}`}
                   title="ERP 현재고 (products.current_stock)"
                 >현재고{arrow("current")}</th>
                 <th onClick={() => toggleSort("loss")}
-                  className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-slate-50 ${sort === "loss" ? "text-rose-700 font-black" : "text-rose-500"}`}
+                  className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none hover:bg-rose-100 bg-rose-50/60 ${sort === "loss" ? "text-rose-700 font-black" : "text-rose-500"}`}
                 >손실{arrow("loss")}</th>
                 <th onClick={() => toggleSort("amount")}
-                  className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-slate-50 ${sort === "amount" ? "text-indigo-700 font-black" : "text-indigo-500"}`}
+                  className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-indigo-100 bg-indigo-50/60 ${sort === "amount" ? "text-indigo-700 font-black" : "text-indigo-500"}`}
                 >판매가{arrow("amount")}</th>
               </tr>
             </thead>
@@ -1098,33 +1098,33 @@ const StockFlowPanel: React.FC<{
                     className={`transition cursor-pointer ${selectedCode === String(p.product_code) ? "bg-teal-50 border-l-4 border-teal-500" : "hover:bg-orange-50/30"}`}
                     onClick={() => onProductClick(p)}
                   >
-                    <td className="px-0.5 py-1.5 text-[10px] font-black text-orange-600">{i + 1}</td>
-                    <td className="px-1 py-1.5">
-                      <div className="font-bold text-slate-700 truncate max-w-[160px]" title={p.product_name}>{p.product_name}</div>
-                      {p.supplier && <div className="text-[9px] text-slate-400 truncate max-w-[160px]">{p.supplier}</div>}
+                    <td className="px-0.5 py-1.5 text-[10px] font-black text-orange-600 align-top">{i + 1}</td>
+                    <td className="px-1 py-1.5 align-top">
+                      <div className="font-bold text-slate-700 break-words whitespace-normal" title={p.product_name}>{p.product_name}</div>
+                      {p.supplier && <div className="text-[9px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
                     </td>
-                    <td className="text-right px-0.5 py-1.5 font-mono text-slate-500 text-[11px]">{fmt(p.opening_stock)}</td>
-                    <td className="text-right px-0.5 py-1.5 font-mono text-emerald-600 text-[11px]" title={p.last_purchase_date ? `최근 매입: ${p.last_purchase_date}` : "매입 이력 없음"}>
+                    <td className="text-right px-0.5 py-1.5 font-mono text-slate-500 text-[11px] bg-slate-50/40 align-top">{fmt(p.opening_stock)}</td>
+                    <td className="text-right px-0.5 py-1.5 font-mono text-emerald-600 text-[11px] bg-emerald-50/40 align-top" title={p.last_purchase_date ? `최근 매입: ${p.last_purchase_date}` : "매입 이력 없음"}>
                       {fmt(p.purchase_qty)}
                       {(() => {
                         const md = extractMonthDay(p.last_purchase_date);
                         return md ? <span className="text-[9px] text-slate-400 font-normal ml-0.5">({md})</span> : null;
                       })()}
                     </td>
-                    <td className="text-right px-0.5 py-1.5 font-mono font-bold text-orange-700 text-[11px]">{fmt(p.sale_qty)}</td>
+                    <td className="text-right px-0.5 py-1.5 font-mono font-bold text-orange-700 text-[11px] bg-orange-50/40 align-top">{fmt(p.sale_qty)}</td>
                     <td
-                      className={`text-right px-0.5 py-1.5 font-mono text-[11px] ${close < 0 ? "text-rose-500 font-bold" : mismatch ? "text-red-600 font-black" : "text-slate-600"}`}
+                      className={`text-right px-0.5 py-1.5 font-mono text-[11px] bg-slate-50/40 align-top ${close < 0 ? "text-rose-500 font-bold" : mismatch ? "text-red-600 font-black" : "text-slate-600"}`}
                       title={mismatch ? `종료 ${fmt(close)} ≠ 현재고 ${fmt(cur)} · 불일치` : "종료재고 (스냅샷)"}
                     >{fmt(close)}</td>
                     <td
-                      className={`text-right px-0.5 py-1.5 font-mono font-black text-[11px] ${cur <= 0 ? "text-red-600" : mismatch ? "text-red-600" : "text-amber-700"}`}
+                      className={`text-right px-0.5 py-1.5 font-mono font-black text-[11px] bg-amber-50/40 align-top ${cur <= 0 ? "text-red-600" : mismatch ? "text-red-600" : "text-amber-700"}`}
                       title={mismatch ? `현재고 ${fmt(cur)} ≠ 종료 ${fmt(close)} · 불일치` : "ERP 현재고"}
                     >{fmt(cur)}</td>
                     <td
-                      className={`text-right px-0.5 py-1.5 font-mono text-[11px] ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
+                      className={`text-right px-0.5 py-1.5 font-mono text-[11px] bg-rose-50/40 align-top ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
                       title={`손실 = 종료재고(${fmt(close)}) − 현재고(${fmt(cur)}) = ${loss > 0 ? "-" + fmt(loss) : loss < 0 ? "+" + fmt(Math.abs(loss)) : "0"}`}
                     >{loss === 0 ? "0" : loss > 0 ? `-${fmt(loss)}` : `+${fmt(Math.abs(loss))}`}</td>
-                    <td className="text-right px-0.5 py-1.5 font-mono text-[10px] text-indigo-700 font-bold">{p.sale_price != null && p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</td>
+                    <td className="text-right px-0.5 py-1.5 font-mono text-[10px] text-indigo-700 font-bold bg-indigo-50/40 align-top">{p.sale_price != null && p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</td>
                   </tr>
                 );
               })}

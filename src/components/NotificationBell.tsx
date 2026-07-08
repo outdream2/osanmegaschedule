@@ -40,27 +40,64 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [justArrived, setJustArrived] = useState(false); // 신규 알림 애니메이션 트리거
   const panelRef = useRef<HTMLDivElement>(null);
+  const prevMaxIdRef = useRef<number>(0);
   const employeeId = authSession?.employeeId;
 
   const unreadCount = notifications.filter((n) => !n.read).length;
+
+  // 짧은 알림 소리 재생 (Web Audio · 외부 파일 없이 tone 합성)
+  const playChime = useCallback(() => {
+    try {
+      const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AC) return;
+      const ctx = new AC();
+      const now = ctx.currentTime;
+      const play = (freq: number, start: number, dur: number) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = "sine"; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.0001, now + start);
+        g.gain.exponentialRampToValueAtTime(0.18, now + start + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(now + start); o.stop(now + start + dur);
+      };
+      // 도-미 짧은 2음
+      play(880, 0,    0.22);
+      play(1320, 0.14, 0.24);
+      setTimeout(() => ctx.close?.(), 900);
+    } catch { /* silent */ }
+  }, []);
 
   const fetchNotifications = useCallback(async () => {
     if (!employeeId) return;
     setLoading(true);
     try {
       const res = await fetch(`/api/notifications?employeeId=${employeeId}&limit=30`);
-      if (res.ok) setNotifications(await res.json());
+      if (res.ok) {
+        const list = (await res.json()) as Notification[];
+        // 신규 알림 감지 (이전 최대 id 보다 큰 알림이 있으면 신호)
+        const maxId = list.reduce((m, n) => Math.max(m, n.id), 0);
+        if (prevMaxIdRef.current > 0 && maxId > prevMaxIdRef.current) {
+          setJustArrived(true);
+          playChime();
+          setTimeout(() => setJustArrived(false), 3500);
+        }
+        prevMaxIdRef.current = Math.max(prevMaxIdRef.current, maxId);
+        setNotifications(list);
+      }
     } finally {
       setLoading(false);
     }
-  }, [employeeId]);
+  }, [employeeId, playChime]);
 
-  // Initial fetch + poll every 60 seconds
+  // Initial fetch + poll every 20 seconds (기존 60→20 으로 반응성 강화)
   useEffect(() => {
     if (!employeeId) return;
     fetchNotifications();
-    const id = setInterval(fetchNotifications, 60_000);
+    const id = setInterval(fetchNotifications, 20_000);
     return () => clearInterval(id);
   }, [fetchNotifications]);
 
@@ -91,21 +128,36 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ authSession 
 
   if (!employeeId) return null;
 
+  const hasUnread = unreadCount > 0;
   return (
     <div className="relative" ref={panelRef}>
-      {/* Bell button */}
+      {/* Bell button — 미확인 알림 있으면 강조 · 신규 도착 시 흔들림 */}
       <button
         onClick={() => { setOpen((v) => !v); if (!open) fetchNotifications(); }}
-        className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-700 transition cursor-pointer"
-        title="알림"
+        className={`relative flex items-center justify-center w-10 h-10 rounded-xl border transition cursor-pointer shadow-sm ${
+          hasUnread
+            ? "bg-rose-50 hover:bg-rose-100 border-rose-200 text-rose-600 ring-1 ring-rose-200/60"
+            : "bg-white hover:bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-700"
+        } ${justArrived ? "notif-bell-shake" : ""}`}
+        title={hasUnread ? `미확인 알림 ${unreadCount}건` : "알림"}
       >
-        <Bell size={14} />
+        <Bell size={18} strokeWidth={hasUnread ? 2.4 : 2} className={hasUnread ? "animate-pulse" : ""} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 px-1 rounded-full bg-rose-500 text-white text-[9px] font-black flex items-center justify-center leading-none shadow-sm">
-            {unreadCount > 9 ? "9+" : unreadCount}
+          <span className="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1.5 rounded-full bg-rose-500 text-white text-[10px] font-black flex items-center justify-center leading-none shadow-md ring-2 ring-white">
+            {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
       </button>
+      {/* Shake keyframes — inline style tag · 컴포넌트 유일 */}
+      <style>{`
+        @keyframes notif-bell-shake {
+          0%, 100% { transform: rotate(0deg); }
+          10%, 30%, 50%, 70% { transform: rotate(-14deg); }
+          20%, 40%, 60%, 80% { transform: rotate(14deg); }
+          90% { transform: rotate(-6deg); }
+        }
+        .notif-bell-shake { animation: notif-bell-shake 0.8s ease-in-out 2; transform-origin: 50% 20%; }
+      `}</style>
 
       {/* Dropdown panel */}
       {open && (

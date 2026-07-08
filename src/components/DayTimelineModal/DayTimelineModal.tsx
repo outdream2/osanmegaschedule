@@ -1226,7 +1226,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
                       return (
                         <div key={`ord-${empId}`} className="flex items-center gap-2 px-5 py-2 border-b border-slate-100">
                           <span className="text-[11px] font-black text-indigo-500 w-5">{i + 1}.</span>
-                          <span className="font-bold text-sm text-slate-800 flex-1 truncate">{w.emp.name}</span>
+                          <span className="font-bold text-sm text-slate-800 flex-1 break-keep">{w.emp.name}</span>
                           <button
                             type="button"
                             onClick={() => moveAssigned(empId, -1)}
@@ -2015,7 +2015,7 @@ export const DayTimelineModal: React.FC<Props> = ({
                 <ChevronLeft size={16} />
               </button>
             )}
-            <span className="text-sm font-bold tracking-tight truncate shrink-0">{title}</span>
+            <span className="text-sm font-bold tracking-tight shrink-0 break-keep">{title}</span>
             {onDateChange && (
               <button onClick={() => onDateChange(offsetDate(1))}
                 className="p-1 rounded hover:bg-slate-700 transition-colors text-slate-400 hover:text-white cursor-pointer shrink-0">
@@ -2036,10 +2036,10 @@ export const DayTimelineModal: React.FC<Props> = ({
         </div>
 
         {/* Position filter tabs */}
-        <div className="flex items-center gap-1 px-5 pt-2 pb-0 bg-white border-b border-slate-200 flex-shrink-0">
+        <div className="flex items-center gap-1 px-3 sm:px-5 pt-2 pb-0 bg-white border-b border-slate-200 flex-shrink-0 min-w-0 overflow-x-auto scrollbar-none">
           {tabs.map(({ key, count }) => (
             <button key={key} onClick={() => setActiveTab(key)}
-              className={`px-4 py-1.5 text-xs font-bold rounded-t-lg border border-b-0 transition-colors cursor-pointer ${
+              className={`shrink-0 px-3 sm:px-4 py-1.5 text-xs font-bold rounded-t-lg border border-b-0 transition-colors cursor-pointer ${
                 activeTab === key
                   ? "bg-white border-slate-200 text-slate-800 -mb-px z-10"
                   : "bg-slate-50 border-transparent text-slate-400 hover:text-slate-600"
@@ -2049,7 +2049,7 @@ export const DayTimelineModal: React.FC<Props> = ({
             </button>
           ))}
           {/* 확정 버튼 */}
-          <div className="ml-auto flex items-center gap-2 pb-1">
+          <div className="ml-auto flex items-center gap-2 pb-1 shrink-0 pl-2">
             {isConfirmed ? (
               <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200">
                 <CheckCircle size={13} />
