@@ -733,7 +733,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             ) : mismatches.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 text-gray-300">
                 <MapPin size={32} className="mb-2" /><p className="text-sm font-bold text-gray-400">불일치 상품이 없습니다</p>
-                <p className="text-xs text-gray-400 mt-1 text-center leading-relaxed">스캔 후 실제 배정구역이 전산과 다를 때 자동 등록됩니다</p>
+                <p className="text-xs text-gray-400 mt-1 text-center leading-relaxed">스캔 후 실제배치구역이 전산배치구역과 다를 때 자동 등록됩니다</p>
               </div>
             ) : (
               <div className="bg-white border-t border-b border-slate-200 divide-y divide-slate-100">
@@ -746,9 +746,9 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                         <span className="text-gray-300 text-[10px]">·</span>
                         <span className="text-[10px] font-mono text-slate-400">{m.product_code}</span>
                         <span className="text-gray-300 text-[10px]">·</span>
-                        <span className="text-[11px] text-slate-500">배정 <span className="font-bold text-slate-700">{m.spec_zone || "미지정"}</span></span>
+                        <span className="text-[11px] text-slate-500" title="전산배치구역">전산 <span className="font-bold text-slate-700">{m.spec_zone || "미지정"}</span></span>
                         <span className="text-gray-300 text-[10px]">→</span>
-                        <span className="text-[11px] font-black text-red-600">실제 {m.real_zone}</span>
+                        <span className="text-[11px] font-black text-red-600" title="실제배치구역">실제 {m.real_zone}</span>
                       </div>
                     </div>
                     <span className="text-[10px] text-gray-400 shrink-0">{fmtDate(m.registered_at)}</span>

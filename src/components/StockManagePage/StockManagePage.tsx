@@ -175,7 +175,7 @@ const RAW_COLS: RawColDef[] = [
   { key: "supplier_name", label: "공급사명",   align: "left",  numeric: false, width: 140 },
   { key: "product_code",  label: "코드",       align: "left",  numeric: false, width: 130 },
   { key: "product_name",  label: "명",         align: "left",  numeric: false, width: 240 },
-  { key: "spec",          label: "규격",       align: "left",  numeric: false, width: 90  },
+  { key: "spec",          label: "전산배치",   align: "left",  numeric: false, width: 90  },
   { key: "tax_type",      label: "i",          align: "left",  numeric: false, width: 40  },
   { key: "product_type",  label: "상품유형",   align: "left",  numeric: false, width: 70  },
   { key: "opening_stock", label: "시작재고",   align: "right", numeric: true,  width: 80  },
@@ -2174,9 +2174,9 @@ export const StockManagePage: React.FC = () => {
                         <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-300 rounded-full px-2 py-0.5">ERP</span>
                       </div>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
-                        <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">규격</span><span className="text-sm font-bold text-slate-800 break-keep">{prod.spec ?? "-"}</span></div>
+                        <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">전산배치구역</span><span className="text-sm font-bold text-slate-800 break-keep">{prod.spec ?? "-"}</span></div>
                         <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">공급처</span><span className="text-sm font-bold text-slate-800 truncate block">{prod.supplier ?? "-"}</span></div>
-                        <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">진열위치</span><span className="text-sm font-bold text-slate-800 truncate block">{prod.real_map ?? prod.display_location ?? "-"}</span></div>
+                        <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">실제배치구역</span><span className="text-sm font-bold text-slate-800 truncate block">{prod.real_map ?? prod.display_location ?? "-"}</span></div>
                         <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">판매상태</span><span className="text-sm font-bold text-slate-800">{prod.sale_status ?? "-"}</span></div>
                         <div>
                           <span className="text-xs text-slate-500 font-semibold block mb-0.5">적정재고</span>

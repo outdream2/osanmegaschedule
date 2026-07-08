@@ -1558,7 +1558,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       className="flex-1 min-w-0 text-left hover:opacity-75 transition cursor-pointer"
                     >
                       <div className="text-xs font-semibold text-slate-800 truncate">{p.name}</div>
-                      {p.spec && <div className="text-[10px] text-slate-400 truncate mt-0.5">{p.spec}</div>}
+                      {p.spec && <div className="text-[10px] text-slate-400 truncate mt-0.5" title="전산배치구역">{p.spec}</div>}
                     </button>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {p.realMap && (
@@ -1687,7 +1687,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                               className="flex-1 min-w-0 text-left cursor-pointer"
                             >
                               <div className="text-xs font-semibold text-slate-800 truncate">{p.name}</div>
-                              {p.spec && <div className="text-[10px] text-slate-400 truncate mt-0.5">{p.spec}</div>}
+                              {p.spec && <div className="text-[10px] text-slate-400 truncate mt-0.5" title="전산배치구역">{p.spec}</div>}
                             </button>
                             <div className="flex items-center gap-1.5 shrink-0">
                               {p.realMap && (
@@ -2781,7 +2781,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* ── 구역별 상품 리스트 모달 ── */}
       {zoneProductsModal && (() => {
-        // 매칭 로직: DB products.spec (ERP 지정 구역) + real_map (실배정) 병합 조회
+        // 매칭 로직: DB products.spec (전산배치구역) + real_map (실제배치구역) 병합 조회
         // spec 형식 예: "9B" · "21" · "5A" · "18번 임산부영양제" (real_map)
         const zoneId = zoneProductsModal.zoneId;
         const zoneNum = zoneProductsModal.zoneNum;
@@ -2806,7 +2806,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           if (isAisle18) return parsed.side === zoneSide || parsed.side === null;
           return true;
         };
-        // spec (ERP) OR real_map (실배정) 중 하나라도 이 구역에 속하면 매칭
+        // spec (전산배치구역) OR real_map (실제배치구역) 중 하나라도 이 구역에 속하면 매칭
         const matched = (Object.values(productsMap) as ProductInfo[]).filter(p =>
           matchesZone(p.spec) || matchesZone(p.real_map)
         );
@@ -2995,8 +2995,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                 <div className="text-[12px] font-bold text-slate-800 truncate" title={p.name}>{p.name}</div>
                                 {((p as any).spec || (p as any).real_map) && (
                                   <div className="mt-0.5 text-[9px] text-slate-400 truncate">
-                                    {(p as any).spec && <span className="font-mono">ERP {String((p as any).spec)}</span>}
-                                    {(p as any).real_map && <span className="font-mono"> · 실배정 {String((p as any).real_map)}</span>}
+                                    {(p as any).spec && <span className="font-mono" title="전산배치구역">전산 {String((p as any).spec)}</span>}
+                                    {(p as any).real_map && <span className="font-mono" title="실제배치구역"> · 실제 {String((p as any).real_map)}</span>}
                                   </div>
                                 )}
                               </td>

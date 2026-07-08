@@ -568,7 +568,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <List size={16} className="text-indigo-600 sm:hidden" /><List size={20} className="text-indigo-600 hidden sm:block" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">요청목록 조회</div>
-                    <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">진열·발주요청 및 배정구역 불일치 확인</div>
+                    <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">진열·발주요청 및 배치구역 불일치 확인</div>
                     <div className="flex items-center gap-1 mt-2 text-indigo-600 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">{(requestsCounts.display + requestsCounts.order + requestsCounts.mismatch + requestsCounts.lunch) > 0 ? `대기 ${requestsCounts.display + requestsCounts.order + requestsCounts.mismatch + requestsCounts.lunch}건` : "조회하기"}</span>
                       <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />

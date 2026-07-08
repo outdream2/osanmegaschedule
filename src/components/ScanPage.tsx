@@ -101,7 +101,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavig
     })();
   }, []);
 
-  // 전산 배정구역: spec 파싱
+  // 전산배치구역: spec 파싱
   const specZones: Zone[] = (() => {
     if (!product) return [];
     const spec: string = product.spec ?? "";
@@ -114,7 +114,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavig
     );
   })();
 
-  // 실제 배정구역: realMap 파싱
+  // 실제배치구역: realMap 파싱
   const realMapZone: Zone | null = (() => {
     if (!product) return null;
     const rm: string | null = product.realMap ?? product.real_map ?? null;
@@ -243,7 +243,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavig
             <div className="text-center">
               <p className="text-base font-bold text-gray-800 mb-1">상품 바코드를 스캔하세요</p>
               <p className="text-sm text-gray-400 leading-relaxed">
-                스캔 후 상품명·배정구역을 확인하고<br />담당자에게 진열 보충 요청을 전송합니다
+                스캔 후 상품명·배치구역을 확인하고<br />담당자에게 진열 보충 요청을 전송합니다
               </p>
             </div>
             <button
@@ -372,13 +372,13 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavig
                 <div className="flex flex-col gap-4">
                   {realMapZone && (
                     <div className="flex flex-col gap-2">
-                      <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest px-1">실제 배정구역</p>
+                      <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest px-1">실제배치구역</p>
                       {renderZoneCard(realMapZone)}
                     </div>
                   )}
                   {specZones.length > 0 && (
                     <div className="flex flex-col gap-2">
-                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">전산 배정구역</p>
+                      <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">전산배치구역</p>
                       {specZones.map(renderZoneCard)}
                     </div>
                   )}

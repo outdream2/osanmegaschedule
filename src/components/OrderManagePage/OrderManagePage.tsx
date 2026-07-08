@@ -294,7 +294,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     }
   }
 
-  // 구역 (real_map=실배정, spec=ERP) 맵 — 전체 products에서 우선 구축
+  // 구역 (real_map=실제배치구역, spec=전산배치구역) 맵 — 전체 products에서 우선 구축
   const zoneMap = new Map<string, { real_map: string | null; spec: string | null }>();
   for (const [code, p] of Object.entries(allProductsMap)) {
     const realMap = (p as any).real_map ?? (p as any).realMap ?? null;

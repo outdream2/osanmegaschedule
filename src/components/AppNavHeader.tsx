@@ -260,21 +260,6 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         </div>
       )}
 
-      {/* ── 로그인 사용자 이름·직급 · 모바일 2줄 (이름 위 / 직급 아래) · 데스크탑 한 줄 ── */}
-      {authSession && (authSession.employeeName || authSession.employeeRank) && (
-        <div className="px-4 sm:px-6 pb-2 sm:pb-2.5 -mt-0.5 flex flex-col sm:flex-row sm:items-baseline items-center justify-center gap-0 sm:gap-2 leading-tight">
-          {authSession.employeeName && (
-            <span className="text-[14px] sm:text-[15px] font-black text-slate-800 tracking-tight">
-              {authSession.employeeName}
-            </span>
-          )}
-          {authSession.employeeRank && (
-            <span className="text-[11px] sm:text-[12px] font-bold text-slate-500 tracking-tight">
-              {authSession.employeeRank}
-            </span>
-          )}
-        </div>
-      )}
     </header>
   );
 };

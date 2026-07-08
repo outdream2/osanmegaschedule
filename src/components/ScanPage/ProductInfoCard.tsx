@@ -10,7 +10,7 @@ type InlineEditableKey = "optimal_stock" | "sale_price" | "purchase_price" | "co
 // 섹션 표시 여부 (context별로 다르게)
 interface ProductInfoSections {
   header?: boolean;         // 상품명 헤더
-  zoneAssignment?: boolean; // 전산/실제 배정구역 카드
+  zoneAssignment?: boolean; // 전산/실제배치구역 카드
   stockStatus?: boolean;    // 현재고/적정재고 (인라인 편집 지원)
   actualStockInput?: boolean; // 창고/매장 실재고 입력
   orderRequest?: boolean;   // 발주요청 버튼
@@ -405,9 +405,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         {/* ── 배정 구역: 전산 카드 | 실제 카드 나란히 ── */}
         {S.zoneAssignment && (<>
         <div className="flex gap-2 mb-3">
-          {/* 전산 배정구역 카드 */}
+          {/* 전산배치구역 카드 */}
           <div className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-3">
-            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">전산 배정구역</p>
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">전산배치구역</p>
             <p className="text-sm font-black text-gray-800 leading-tight">{specZone}</p>
           </div>
 
@@ -416,7 +416,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             <ArrowRight size={16} className={hasMismatch ? "text-orange-400" : "text-gray-300"} />
           </div>
 
-          {/* 실제 배정구역 카드 */}
+          {/* 실제배치구역 카드 */}
           <div className={`flex-1 rounded-xl border px-3 py-3 ${
             hasMismatch
               ? "bg-orange-50 border-orange-300"
@@ -428,7 +428,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               <div className="min-w-0">
                 <p className={`text-[9px] font-bold uppercase tracking-wide mb-1.5 ${
                   hasMismatch ? "text-orange-500" : realMap ? "text-teal-600" : "text-gray-400"
-                }`}>실제 배정구역</p>
+                }`}>실제배치구역</p>
                 {realMap ? (
                   <p className={`text-sm font-black leading-tight ${hasMismatch ? "text-red-500" : "text-teal-700"}`}>
                     {realMap}
@@ -460,7 +460,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             {hasMismatch && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg">
                 <AlertTriangle size={11} className="text-orange-500 shrink-0" />
-                <p className="text-[10px] font-bold text-orange-600">전산 배정구역과 실제 위치가 다릅니다</p>
+                <p className="text-[10px] font-bold text-orange-600">전산배치구역과 실제배치구역이 다릅니다</p>
               </div>
             )}
             {saveError && (

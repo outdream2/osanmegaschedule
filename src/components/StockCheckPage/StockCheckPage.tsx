@@ -239,18 +239,18 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-bold text-slate-800 break-words">{item.product_name}</div>
                         {item.spec && (
-                          <div className="text-[11px] text-slate-400 break-words mt-0.5">{item.spec}</div>
+                          <div className="text-[11px] text-slate-400 break-words mt-0.5" title="전산배치구역">{item.spec}</div>
                         )}
-                        {/* 로그인 시: 구역(실제·진열·공급처) 표시 */}
+                        {/* 로그인 시: 구역(실제배치·진열·공급처) 표시 */}
                         {isLoggedIn && (item.real_map || item.display_location || item.supplier) && (
                           <div className="flex items-center gap-1 flex-wrap mt-1">
                             {item.real_map && (
-                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md whitespace-nowrap">
+                              <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md whitespace-nowrap" title="실제배치구역">
                                 실제 {item.real_map}
                               </span>
                             )}
                             {item.display_location && (
-                              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md whitespace-nowrap">
+                              <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md whitespace-nowrap" title="진열위치">
                                 진열 {item.display_location}
                               </span>
                             )}
