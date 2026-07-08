@@ -255,10 +255,40 @@ router.patch("/api/board/posts/:id", async (req, res) => {
       updates.resolved_by = null;
     }
   }
-  if (Object.keys(updates).length === 0) return res.status(400).json({ error: "no updates" });
+  const imagesUpdate = Array.isArray(b.images) ? (b.images as Array<{ image_url: string; public_id?: string; width?: number; height?: number }>) : null;
 
-  const { error } = await supabase.from("board_posts").update(updates).eq("id", id);
-  if (error) return res.status(500).json({ error: error.message });
+  if (Object.keys(updates).length === 0 && imagesUpdate === null) {
+    return res.status(400).json({ error: "no updates" });
+  }
+
+  if (Object.keys(updates).length > 0) {
+    const { error } = await supabase.from("board_posts").update(updates).eq("id", id);
+    if (error) return res.status(500).json({ error: error.message });
+  }
+
+  // 이미지 갱신: 전체 대체 (게시글 본문 이미지만, 댓글 이미지는 comment_id 로 구분되어 있어 영향 없음)
+  if (imagesUpdate !== null) {
+    // 기존 본문 이미지 삭제
+    const { error: delErr } = await supabase
+      .from("board_post_images")
+      .delete()
+      .eq("post_id", id)
+      .is("comment_id", null);
+    if (delErr) return res.status(500).json({ error: delErr.message });
+    // 새 이미지 insert (배열이 비어있으면 skip)
+    if (imagesUpdate.length > 0) {
+      const rows = imagesUpdate.map(img => ({
+        post_id: id,
+        image_url: img.image_url,
+        public_id: img.public_id ?? null,
+        width: img.width ?? null,
+        height: img.height ?? null,
+      }));
+      const { error: insErr } = await supabase.from("board_post_images").insert(rows);
+      if (insErr) return res.status(500).json({ error: insErr.message });
+    }
+  }
+
   res.json({ ok: true });
 });
 

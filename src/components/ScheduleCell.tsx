@@ -149,7 +149,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
       {/* Clickable Card Grid Cell */}
       <div
         id={`cell-${employeeId}-${dateStr}`}
-        className={`w-full h-full rounded-sm flex flex-col justify-center items-center p-0.5 relative transition-all ${
+        className={`w-full h-full rounded-sm flex flex-col ${isAdmin ? "justify-start" : "justify-center"} items-center p-0.5 relative transition-all ${
           isAdmin ? "cursor-pointer hover:bg-slate-50/80 hover:scale-[1.02] shadow-xs" : "cursor-default"
         } ${
           cellBgHex ? (cellIsLight ? "text-slate-900 font-bold" : "text-white font-bold") : "bg-white text-slate-400"
@@ -158,19 +158,19 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
         onClick={handleQuickCycle}
         title={isAdmin ? `클릭: 오픈→미들→마감→휴무 순환 변경\n⚙️ 상세 편집은 호버 후 톱니바퀴 클릭` : undefined}
       >
-        {/* Detail edit button — 셀 최상단 별도 행 · 오픈 텍스트와 겹치지 않음 */}
+        {/* Detail edit button — 셀 최상단 별도 행 · 아래 콘텐츠와 완전 분리 (겹침 방지) */}
         {isAdmin && (
           <button
             onClick={e => { e.stopPropagation(); setIsOpen(true); }}
-            className="w-full flex items-center justify-center gap-0.5 px-1 py-0.5 rounded bg-slate-50 hover:bg-indigo-50 border border-slate-200/60 hover:border-indigo-300 text-slate-500 hover:text-indigo-600 active:scale-95 transition-colors cursor-pointer mb-0.5"
+            className="w-full flex items-center justify-center gap-0.5 px-1 py-0.5 rounded bg-slate-50 hover:bg-indigo-50 border border-slate-200/60 hover:border-indigo-300 text-slate-500 hover:text-indigo-600 active:scale-95 transition-colors cursor-pointer mb-1 shrink-0"
             title="상세 편집"
           >
             <Settings2 size={9} />
             <span className="text-[8px] font-bold leading-none">편집</span>
           </button>
         )}
-        {/* Row 1: Type (오픈, 마감, 휴무 등) */}
-        <div className="text-[11px] font-bold leading-tight truncate text-center w-full">
+        {/* Row 1: Type (오픈, 마감, 휴무 등) — 편집 버튼 아래로 밀림 */}
+        <div className={`text-[11px] font-bold leading-tight truncate text-center w-full ${isAdmin ? "mt-0.5" : ""}`}>
           {displayType || "-"}
         </div>
         {/* 하단 ↻ 클릭 힌트 제거됨 (내용 가림 방지) */}

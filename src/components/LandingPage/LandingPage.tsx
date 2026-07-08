@@ -635,7 +635,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 </button>
 
-                {/* 권한 조정 — fuchsia (level 9 전용) */}
+                {/* 설정 — fuchsia (level 9 전용) · 권한 조정 + 환경 설정 통합 */}
                 {isSuperAdminLevel9 && (
                   <button onClick={() => onNavigate("permissions", authSession!)}
                     className="group relative bg-white border border-fuchsia-200/80 hover:border-fuchsia-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
@@ -644,8 +644,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #fdf4ff, #fae8ff)", border: "1px solid #e879f9" }}>
                         <Shield size={16} className="text-fuchsia-600 sm:hidden" /><Shield size={20} className="text-fuchsia-600 hidden sm:block" />
                       </div>
-                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">권한 조정</div>
-                      <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">페이지별 레벨 읽기·쓰기 권한 설정</div>
+                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">설정</div>
+                      <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">권한 · 근무 유형 · 시급 등 앱 전체 설정</div>
                       <div className="flex items-center gap-1 mt-2 text-fuchsia-600 text-xs font-bold">
                         <span className="text-[11px] sm:text-xs">설정하기</span>
                         <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />

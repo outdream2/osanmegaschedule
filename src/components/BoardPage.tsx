@@ -7,7 +7,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   HelpCircle, AlertTriangle, StickyNote, Search, Plus, Send, X as XIcon, Image as ImageIcon,
-  ChevronLeft, Pin, MessageCircle, ThumbsUp, Eye, Trash2, Loader2,
+  ChevronLeft, Pin, MessageCircle, Trash2, Loader2,
   Camera, AtSign, Pencil, Check,
 } from "lucide-react";
 import type { AuthSession } from "../types";
@@ -156,22 +156,8 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
           </button>
         </div>
 
-        {/* 타입 필터 */}
+        {/* 상태 필터 · 미해결/진행중/해결 (전체·질문·이슈·메모 타입 필터 제거) */}
         <div className="flex items-center gap-1.5 mb-2 flex-wrap">
-          <button onClick={() => setFilterType("")}
-            className={`px-2.5 py-1 rounded-full text-[11px] font-black transition ${filterType === "" ? "bg-slate-800 text-white" : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"}`}>전체</button>
-          {(Object.keys(TYPE_META) as PostType[]).map(t => {
-            const meta = TYPE_META[t];
-            const Icon = meta.icon;
-            const active = filterType === t;
-            return (
-              <button key={t} onClick={() => setFilterType(t)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black transition ${active ? `${meta.bg} ${meta.text} ${meta.border} border-2` : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"}`}>
-                <Icon size={11} /> {meta.label}
-              </button>
-            );
-          })}
-          <span className="mx-1 text-slate-300">·</span>
           {(Object.keys(STATUS_META) as Status[]).map(s => {
             const meta = STATUS_META[s];
             const active = filterStatus === s;
@@ -199,6 +185,8 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
             <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100 bg-slate-50/60">
               <span className="text-[11px] font-black text-slate-600">이슈리스트</span>
               <span className="text-[10px] font-mono text-slate-400">({filtered.length}건)</span>
+              <span className="ml-auto text-[10px] text-slate-400 font-semibold hidden sm:inline">💡 항목 클릭 시 상세내용 표시</span>
+              <span className="ml-auto text-[10px] text-slate-400 font-semibold sm:hidden">💡 클릭 → 상세</span>
             </div>
             {/* 카테고리 필터 배지 · 이슈리스트 (*건) 아래 · 미해결/진행중/해결 상태 필터는 상단 유지 */}
             <div className="flex items-center gap-1.5 flex-wrap px-3 py-2 border-b border-slate-100 bg-white">
@@ -324,9 +312,9 @@ const PostCard: React.FC<{ post: BoardPost; onOpen: () => void; showEdit?: boole
           <MessageCircle size={10} /> {post.comment_count}
         </span>
       )}
-      {/* 작성자 · 모바일/데스크탑 모두 표시 */}
+      {/* 작성자 · 이름만 표시 (직급 제거) */}
       <span className="inline-flex items-center shrink-0">
-        <AuthorBadge name={post.author_name} rank={post.author_rank} />
+        <AuthorBadge name={post.author_name} />
       </span>
       {/* 수정 버튼 · 본인 작성 or 관리자만 노출 · 클릭 시 상세 모달 오픈 (거기서 수정 가능) */}
       {showEdit && onEdit && (
@@ -712,11 +700,42 @@ function DetailModal({
   // 게시글 본문 수정 상태
   const [editingPost, setEditingPost] = useState(false);
   const [editDraft, setEditDraft] = useState<{ title: string; body: string; category: string }>({ title: "", body: "", category: "" });
+  const [editImages, setEditImages] = useState<UploadedImage[]>([]);
+  const [editUploading, setEditUploading] = useState(false);
+  const [editUploadProgress, setEditUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
+  const editFileRef = useRef<HTMLInputElement>(null);
   const startEditPost = () => {
     if (!post) return;
     setEditDraft({ title: post.title ?? "", body: post.body ?? "", category: post.category ?? "" });
+    // 기존 이미지들을 편집 상태로 복사
+    const existing: UploadedImage[] = (post.images ?? []).map(img => ({
+      image_url: img.image_url,
+      public_id: img.public_id ?? "",
+      width: img.width ?? 0,
+      height: img.height ?? 0,
+    }));
+    setEditImages(existing);
     setEditingPost(true);
+  };
+  const handleEditFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    setEditUploading(true);
+    setEditUploadProgress({ done: 0, total: files.length });
+    try {
+      const list = Array.from(files).slice(0, 8 - editImages.length);
+      if (list.length === 0) { alert("이미지는 최대 8장까지 첨부 가능합니다."); return; }
+      const uploaded = await uploadImagesToCloudinary(list, (done, total) => setEditUploadProgress({ done, total }));
+      setEditImages(prev => [...prev, ...uploaded]);
+    } catch (e: any) {
+      alert(e?.message ?? "이미지 업로드 실패");
+    } finally {
+      setEditUploading(false);
+      setEditUploadProgress(null);
+    }
+  };
+  const removeEditImage = (index: number) => {
+    setEditImages(prev => prev.filter((_, i) => i !== index));
   };
   const saveEditPost = async () => {
     if (!post || !authSession) return;
@@ -732,10 +751,12 @@ function DetailModal({
           title: editDraft.title.trim(),
           body: editDraft.body,
           category: editDraft.category || null,
+          images: editImages,
         }),
       });
       if (res.ok) {
         setEditingPost(false);
+        setEditImages([]);
         await load();
         onChanged();
       }
@@ -818,16 +839,6 @@ function DetailModal({
     onChanged(); onClose();
   };
 
-  const react = async (reaction: "helpful" | "seen") => {
-    if (!authSession?.employeeId) return;
-    await fetch(`/api/board/posts/${postId}/react`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ employee_id: authSession.employeeId, reaction }),
-    });
-    await load();
-  };
-
   const handleCmtFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     setUploadingCmt(true);
@@ -839,10 +850,6 @@ function DetailModal({
       alert(e?.message ?? "이미지 업로드 실패");
     } finally { setUploadingCmt(false); }
   };
-
-  const myReactions = new Set((post?.reactions ?? []).filter(r => r.employee_id === authSession?.employeeId).map(r => r.reaction));
-  const helpfulCount = (post?.reactions ?? []).filter(r => r.reaction === "helpful").length;
-  const seenCount = (post?.reactions ?? []).filter(r => r.reaction === "seen").length;
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
@@ -928,10 +935,41 @@ function DetailModal({
                         className={`px-2 py-0.5 rounded-full text-[11px] font-black ${editDraft.category === c ? "bg-indigo-500 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>{c}</button>
                     ))}
                   </div>
+                  {/* 이미지 편집: 기존 이미지 + 신규 첨부 + 취소(X) */}
+                  <div className="mt-3 border border-slate-200 rounded-xl p-2 bg-slate-50/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <input ref={editFileRef} type="file" accept="image/*" multiple capture="environment" className="hidden"
+                        onChange={(e) => { handleEditFiles(e.target.files); e.target.value = ""; }} />
+                      <button type="button" onClick={() => editFileRef.current?.click()} disabled={editUploading || editImages.length >= 8}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:bg-slate-50 text-[11px] font-black text-slate-700 disabled:opacity-40 cursor-pointer">
+                        <Camera size={12} /> 사진 첨부
+                      </button>
+                      <span className="text-[11px] text-slate-400">{editImages.length}/8</span>
+                      {editUploading && editUploadProgress && (
+                        <span className="text-[10px] text-indigo-500 font-black inline-flex items-center gap-1">
+                          <Loader2 size={10} className="animate-spin" />
+                          업로드 {editUploadProgress.done}/{editUploadProgress.total}
+                        </span>
+                      )}
+                    </div>
+                    {editImages.length > 0 && (
+                      <div className="grid grid-cols-4 gap-1.5">
+                        {editImages.map((img, i) => (
+                          <div key={`${img.image_url}-${i}`} className="relative aspect-square rounded-lg overflow-hidden border border-slate-200 bg-white">
+                            <img src={img.image_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+                            <button type="button" onClick={() => removeEditImage(i)}
+                              className="absolute top-0.5 right-0.5 w-6 h-6 rounded-full bg-black/70 hover:bg-black text-white text-xs font-black flex items-center justify-center cursor-pointer shadow"
+                              title="사진 첨부 취소"
+                            >✕</button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   <div className="flex items-center justify-end gap-2 mt-3">
-                    <button type="button" onClick={() => setEditingPost(false)} disabled={savingEdit}
+                    <button type="button" onClick={() => { setEditingPost(false); setEditImages([]); }} disabled={savingEdit || editUploading}
                       className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-[12px] font-black disabled:opacity-40">취소</button>
-                    <button type="button" onClick={saveEditPost} disabled={savingEdit || !editDraft.title.trim()}
+                    <button type="button" onClick={saveEditPost} disabled={savingEdit || editUploading || !editDraft.title.trim()}
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-[12px] font-black disabled:opacity-40">
                       {savingEdit ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />} 저장
                     </button>
@@ -942,7 +980,7 @@ function DetailModal({
                   <p className="text-[13px] text-slate-700 whitespace-pre-wrap leading-relaxed mt-3">{post.body}</p>
                 )
               )}
-              {post.images && post.images.length > 0 && (
+              {!editingPost && post.images && post.images.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
                   {post.images.map(img => (
                     <button key={img.id} onClick={() => setPreviewImg(img.image_url)}
@@ -953,34 +991,23 @@ function DetailModal({
                 </div>
               )}
 
-              {/* 액션 바 */}
-              <div className="flex items-center gap-2 mt-4 flex-wrap">
-                <button onClick={() => react("helpful")}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-black transition ${myReactions.has("helpful") ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
-                  <ThumbsUp size={11} /> 도움됨 {helpfulCount > 0 && helpfulCount}
-                </button>
-                <button onClick={() => react("seen")}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-black transition ${myReactions.has("seen") ? "bg-sky-100 text-sky-700" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}>
-                  <Eye size={11} /> 확인 {seenCount > 0 && seenCount}
-                </button>
-                <span className="flex-1" />
-                {canEdit && (
-                  <div className="flex items-center gap-1 text-[10px]">
-                    <span className="text-slate-400 font-bold">상태:</span>
-                    {(Object.keys(STATUS_META) as Status[]).map(s => {
-                      const meta = STATUS_META[s];
-                      const active = post.status === s;
-                      return (
-                        <button key={s} onClick={() => changeStatus(s)}
-                          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-black transition ${active ? `${meta.text} bg-white border border-current` : "text-slate-500 bg-slate-100 hover:bg-slate-200"}`}>
-                          <span className={`w-1 h-1 rounded-full ${meta.dot}`} />
-                          {meta.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
+              {/* 액션 바 · 도움됨/확인 배지 제거 · 상태 변경만 유지 */}
+              {canEdit && (
+                <div className="flex items-center gap-1 mt-4 text-[10px] flex-wrap">
+                  <span className="text-slate-400 font-bold">상태:</span>
+                  {(Object.keys(STATUS_META) as Status[]).map(s => {
+                    const meta = STATUS_META[s];
+                    const active = post.status === s;
+                    return (
+                      <button key={s} onClick={() => changeStatus(s)}
+                        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-black transition ${active ? `${meta.text} bg-white border border-current` : "text-slate-500 bg-slate-100 hover:bg-slate-200"}`}>
+                        <span className={`w-1 h-1 rounded-full ${meta.dot}`} />
+                        {meta.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* 댓글 */}

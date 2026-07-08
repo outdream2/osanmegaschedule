@@ -671,24 +671,13 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
     count: BreakCount,
     onReorder?: (slot: string, empId: number, toIndex: number) => void,
   ) => {
-    // 비활성 슬롯도 드롭 타겟으로 허용 · 클릭 시 인원 선택 팝업 (모바일 친화적 터치 영역)
+    // 비활성 슬롯: 클릭 시 순차 배정 팝업 (드래그드롭 제거됨)
     if (!isActive) {
-      const dataAttrInactive = dropKind === "lunch" ? { "data-drop-lunch": slotKey } : { "data-drop-rest": slotKey };
       return (
         <div
-          {...dataAttrInactive}
           className={`flex-1 flex items-center justify-center bg-slate-50/40 border-r last:border-r-0 min-h-[32px] cursor-pointer transition ${theme.border} ${theme.hover} active:bg-slate-100/60`}
-          onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
-          onDrop={e => {
-            e.preventDefault();
-            if (draggingId === null) return;
-            const src = draggingSource;
-            setDraggingSource(null);
-            if (src?.type === dropKind && src.slot === slotKey) return;
-            onDrop(slotKey, draggingId, src ?? undefined);
-          }}
           onClick={() => setCellPicker({ type: dropKind, slot: slotKey })}
-          title="탭하여 인원 배정"
+          title="탭하여 인원 배정 (순차)"
         >
           <span className="text-[10px] font-black text-slate-300 select-none">+</span>
         </div>
@@ -696,21 +685,9 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
     }
     const assigned = slotMap[slotKey] ?? [];
     const minLabel = slotKey.slice(3); // "00" or "30"
-    const dataAttr = dropKind === "lunch" ? { "data-drop-lunch": slotKey } : { "data-drop-rest": slotKey };
     return (
       <div
-        {...dataAttr}
         className={`flex-1 flex flex-col border-r last:border-r-0 ${theme.border} ${theme.bg} ${theme.hover} transition cursor-pointer`}
-        onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
-        onDrop={e => {
-          e.preventDefault();
-          if (draggingId === null) return;
-          const src = draggingSource;
-          setDraggingSource(null);
-          // 같은 슬롯 → skip
-          if (src?.type === dropKind && src.slot === slotKey) return;
-          onDrop(slotKey, draggingId, src ?? undefined);
-        }}
         onClick={() => setCellPicker({ type: dropKind, slot: slotKey })}
       >
         <span className={`text-[10px] font-bold text-center leading-none py-0.5 ${theme.label}`}>:{minLabel}</span>
@@ -726,37 +703,11 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             <div
               key={rowIdx}
               className={`flex items-center min-h-[20px] border-t px-0.5 ${theme.border} ${rowIdx === 0 ? "border-t" : ""}`}
-              onDragOver={e => {
-                // 같은 슬롯 내부 재정렬 지원 시에만 drop 허용
-                if (draggingSource?.type === dropKind && draggingSource.slot === slotKey && onReorder) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  e.dataTransfer.dropEffect = "move";
-                }
-              }}
-              onDrop={e => {
-                if (draggingId === null) return;
-                if (draggingSource?.type === dropKind && draggingSource.slot === slotKey && onReorder) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onReorder(slotKey, draggingId, rowIdx);
-                  setDraggingSource(null);
-                }
-              }}
             >
               {shouldRender ? (
                 <button
-                  draggable
-                  onDragStart={e => {
-                    e.stopPropagation();
-                    e.dataTransfer.effectAllowed = "move";
-                    setDraggingId(empId!);
-                    setDraggingSource({ type: dropKind, slot: slotKey });
-                    onUserInteract?.();
-                  }}
-                  onDragEnd={() => { setDraggingId(null); setDraggingSource(null); }}
                   onClick={e => { e.stopPropagation(); setCellPicker({ type: dropKind, slot: slotKey }); }}
-                  title={w!.emp.position.includes("캐셔") && w!.emp.position.includes("물류") ? "캐셔 겸직 · 탭하여 배정 편집 (모바일) · 드래그하여 이동 (데스크탑)" : "탭하여 배정 편집 (모바일) · 드래그하여 이동 (데스크탑)"}
+                  title={w!.emp.position.includes("캐셔") && w!.emp.position.includes("물류") ? "캐셔 겸직 · 탭하여 배정 편집" : "탭하여 배정 편집 (순차)"}
                   style={{ backgroundColor: c!.chipBg, color: c!.chipText, borderColor: c!.chipBorder }}
                   className="relative w-full text-center rounded text-[10px] font-bold border transition leading-none py-px cursor-grab active:cursor-grabbing hover:opacity-60 inline-flex items-center justify-center gap-0.5 whitespace-nowrap overflow-hidden"
                 >
@@ -1153,38 +1104,85 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
         const title = isZone
           ? `${zone} · ${slot}`
           : isLunch
-          ? `점심 · ${slot}`
-          : `휴게 · ${slot}`;
+          ? `점심 배정 (순차)`
+          : `휴게 배정 (순차)`;
 
+        // ── 점심/휴게: 슬롯 단위가 아닌 순차 큐 방식 ──
+        // 사용자가 특정 슬롯을 클릭해서 팝업이 열리더라도, 실제 배정은
+        // shiftedLunchSlots/shiftedRestSlots 순서대로 첫 빈 자리에 자동 삽입.
+        // 배정 리스트는 모든 슬롯을 순서대로 flatten (전체 순차 큐).
+        const findEmpSlot = (empId: number, map: SlotMap): string | null => {
+          for (const [s, arr] of Object.entries(map)) if (arr.includes(empId)) return s;
+          return null;
+        };
+        const findFirstEmptySlot = (order: string[], map: SlotMap, cap: BreakCount): string | null => {
+          for (const s of order) if ((map[s] ?? []).length < cap) return s;
+          return null;
+        };
         const isAssigned = (empId: number) => {
           if (isZone && zone) return ((zoneMap[zone] ?? {})[slot] ?? []).includes(empId);
-          if (isLunch)        return (lunchSlotMap[slot] ?? []).includes(empId);
-          return               (restSlotMap[slot] ?? []).includes(empId);
+          if (isLunch)        return findEmpSlot(empId, lunchSlotMap) !== null;
+          return               findEmpSlot(empId, restSlotMap)  !== null;
+        };
+        // 순차 큐: 전체 슬롯을 순서대로 이어붙임
+        const flattenQueue = (order: string[], map: SlotMap): number[] => {
+          const out: number[] = [];
+          for (const s of order) for (const id of (map[s] ?? [])) out.push(id);
+          return out;
         };
         const assignedList: number[] = isZone && zone
           ? ((zoneMap[zone] ?? {})[slot] ?? [])
           : isLunch
-          ? (lunchSlotMap[slot] ?? [])
-          : (restSlotMap[slot] ?? []);
+          ? flattenQueue(shiftedLunchSlots, lunchSlotMap)
+          : flattenQueue(shiftedRestSlots, restSlotMap);
         const canReorder = isLunch || cellPicker.type === "rest";
+        // 큐 재정렬: empId 를 dir 만큼 이동하려면 전체 큐를 새로 만들고 slot 별로 다시 분배
+        const rebalanceQueue = (newOrder: number[], targetOrder: string[], map: SlotMap, cap: BreakCount, applyOne: (s: string, id: number) => void, removeOne: (s: string, id: number) => void) => {
+          // 기존 배치 전부 제거 후 새 순서대로 다시 배정
+          for (const [s, arr] of Object.entries(map)) for (const id of [...arr]) removeOne(s, id);
+          let cursor = 0;
+          for (const id of newOrder) {
+            while (cursor < targetOrder.length) {
+              const s = targetOrder[cursor];
+              const cur = (map[s] ?? []).length; // NOTE: map 은 stale — 새로 배치할 때는 무시하고 cap 로만 판단
+              // 새 큐 기준으로 슬롯 채우기 (cap 개마다 다음 슬롯)
+              const idxInSlot = newOrder.indexOf(id) - targetOrder.slice(0, cursor).length * cap;
+              if (idxInSlot < cap) { applyOne(s, id); break; }
+              cursor++;
+            }
+          }
+        };
         const moveAssigned = (empId: number, dir: -1 | 1) => {
           const idx = assignedList.indexOf(empId);
           if (idx < 0) return;
           const target = idx + dir;
           if (target < 0 || target >= assignedList.length) return;
-          if (isLunch && onReorderLunch) onReorderLunch(slot, empId, target);
-          else if (cellPicker.type === "rest" && onReorderRest) onReorderRest(slot, empId, target);
+          const newOrder = [...assignedList];
+          [newOrder[idx], newOrder[target]] = [newOrder[target], newOrder[idx]];
+          if (isLunch) {
+            rebalanceQueue(newOrder, shiftedLunchSlots, lunchSlotMap, lunchCount, onDropToLunch, onRemoveFromLunch);
+          } else if (cellPicker.type === "rest") {
+            rebalanceQueue(newOrder, shiftedRestSlots, restSlotMap, restCount, onDropToRest, onRemoveFromRest);
+          }
         };
 
         const toggle = (empId: number) => {
           if (isAssigned(empId)) {
             if (isZone && zone)  onRemoveFromZone(zone, slot, empId);
-            else if (isLunch)    onRemoveFromLunch(slot, empId);
-            else                 onRemoveFromRest(slot, empId);
+            else if (isLunch)    { const s = findEmpSlot(empId, lunchSlotMap); if (s) onRemoveFromLunch(s, empId); }
+            else                 { const s = findEmpSlot(empId, restSlotMap);  if (s) onRemoveFromRest(s, empId); }
           } else {
             if (isZone && zone)  tryDropToZone(zone, slot, empId);
-            else if (isLunch)    onDropToLunch(slot, empId);
-            else                 onDropToRest(slot, empId);
+            else if (isLunch)    {
+              const s = findFirstEmptySlot(shiftedLunchSlots, lunchSlotMap, lunchCount);
+              if (s) onDropToLunch(s, empId);
+              else alert("점심 슬롯이 모두 찼습니다. 인원수/오프셋을 조정하세요.");
+            }
+            else                 {
+              const s = findFirstEmptySlot(shiftedRestSlots, restSlotMap, restCount);
+              if (s) onDropToRest(s, empId);
+              else alert("휴게 슬롯이 모두 찼습니다. 인원수/오프셋을 조정하세요.");
+            }
           }
         };
 

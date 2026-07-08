@@ -185,7 +185,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
         onNavigate={onNavigate}
         onLogout={onLogout}
         rightSlot={
-          isManager ? (
+          isManager && pending.length > 0 ? (
             <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">
               <Clock size={11} />
               대기 {pending.length}건

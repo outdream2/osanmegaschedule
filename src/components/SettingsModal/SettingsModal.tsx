@@ -13,6 +13,8 @@ interface SettingsModalProps {
   editMode?: boolean;
   onEnableEditMode?: () => void;
   sessionEmployeeId?: number | null;
+  /** true 면 fixed 모달 chrome 없이 인라인으로 렌더링 (설정 페이지 탭 등에서 사용) */
+  embedded?: boolean;
 }
 
 type TabId = "positions" | "workplaces" | "scheduleTypes" | "wages" | "account";
@@ -112,7 +114,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
   );
 };
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onApplyShiftHours, onClose, employees, editMode, onEnableEditMode, sessionEmployeeId }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onApplyShiftHours, onClose, employees, editMode, onEnableEditMode, sessionEmployeeId, embedded = false }) => {
   const [activeTab, setActiveTab] = useState<TabId>("positions");
 
   // ─── 비밀번호 변경 상태 ─────────────────────────────────────
@@ -325,11 +327,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
 
   // ── render ────────────────────────────────────────────────────────────────
 
+  const outerCls = embedded
+    ? "w-full"
+    : "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto";
+  const innerCls = embedded
+    ? "relative w-full bg-white rounded-2xl border border-slate-200 flex flex-col"
+    : "relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150";
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-100 flex flex-col max-h-[90vh] animate-in zoom-in-95 duration-150">
+    <div className={outerCls}>
+      <div className={innerCls}>
 
-        {/* Header */}
+        {/* Header · 임베디드 모드에선 X 버튼 숨김 */}
+        {!embedded && (
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
           <h2 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
             <span>⚙️</span>
@@ -344,6 +353,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
             <X size={18} />
           </button>
         </div>
+        )}
 
         {/* Tabs */}
         <div className="flex gap-0 border-b border-slate-100 shrink-0 overflow-x-auto">
@@ -364,7 +374,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
         </div>
 
         {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-4">
+        <div className="flex-1 overflow-y-auto overflow-x-auto min-w-0 px-6 py-5 space-y-4">
 
           {/* ─── Positions Tab ─────────────────────────────────────────── */}
           {activeTab === "positions" && (
@@ -833,7 +843,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
           )}
         </div>
 
-        {/* Footer */}
+        {/* Footer · 임베디드 모드에선 숨김 (탭 UI 에서 자체 저장) */}
+        {!embedded && (
         <div className="flex justify-end px-6 py-4 border-t border-slate-100 shrink-0">
           <button
             type="button"
@@ -843,6 +854,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
             완료 및 닫기
           </button>
         </div>
+        )}
       </div>
 
       {/* Edit mode confirm dialog */}

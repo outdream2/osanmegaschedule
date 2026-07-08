@@ -567,6 +567,20 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   const [extracting, setExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pages, setPages] = useState<OcrPageResult[]>([]);
+  // OCR 엔진 선택 · 3가지
+  //   local  = EasyOCR 로컬 Python 서브프로세스 · 개발 환경 · 완전 무료
+  //   rapid  = multilingual-purejs-ocr (Node ONNX) · Render 배포 · 완전 무료 · 셀프호스팅
+  //   gemini = Gemini 비전 API · 정확도 최상 · 다중 키 로테이션
+  type OcrEngine = "local" | "rapid" | "gemini";
+  const [ocrEngine, setOcrEngine] = useState<OcrEngine>(() => {
+    try {
+      const v = localStorage.getItem("megatown_ocr_engine");
+      if (v === "local" || v === "rapid" || v === "gemini") return v;
+    } catch { /* ignore */ }
+    return "gemini";
+  });
+  useEffect(() => { try { localStorage.setItem("megatown_ocr_engine", ocrEngine); } catch { /* ignore */ } }, [ocrEngine]);
+  const engineToBackend = (e: OcrEngine): string => e === "local" ? "paddle" : e === "rapid" ? "rapid" : "gemini";
   const [barcodeMatches, setBarcodeMatches] = useState<any[]>([]);
   const [pageImages, setPageImages] = useState<string[]>([]);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
@@ -728,7 +742,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
       // 모든 페이지 병렬 처리 — 4장이어도 가장 느린 1장 시간에 완료
       const settled = await Promise.allSettled(
         rotatedImages.map(async (img, i) => {
-          const res = await axios.post("/api/ocr", { images: [img], engine: "gemini" });
+          const res = await axios.post("/api/ocr", { images: [img], engine: engineToBackend(ocrEngine) });
           setProcessed(prev => prev + 1);
           return { index: i, data: res.data };
         })
@@ -763,7 +777,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
       setExtracting(false);
       setStatusMsg("");
     }
-  }, [extracting, rotation]);
+  }, [extracting, rotation, ocrEngine]);
 
 const handleReparsePage = useCallback(async (pageNum: number, supplierHint: string): Promise<any> => {
   const images = imagesDataRef.current;
@@ -772,7 +786,7 @@ const handleReparsePage = useCallback(async (pageNum: number, supplierHint: stri
   const rotImg = rotation !== 0 ? await physicallyRotate(img.data, img.mimeType, rotation) : img;
   const res = await axios.post("/api/ocr", {
     images: [rotImg],
-    engine: "gemini",
+    engine: engineToBackend(ocrEngine),
     supplierHints: [supplierHint],
   });
   const newPage = res.data.pages?.[0];
@@ -780,7 +794,7 @@ const handleReparsePage = useCallback(async (pageNum: number, supplierHint: stri
     setPages(prev => prev.map(p => p.page === pageNum ? { ...newPage, page: pageNum } : p));
   }
   return newPage ?? null;
-}, [rotation]);
+}, [rotation, ocrEngine]);
 
 const rotDeg = ((rotation % 360) + 360) % 360;
 
@@ -1245,11 +1259,74 @@ return (
             </div>
           )}
 
+          {/* OCR 엔진 선택 · 3-way (로컬 · Node 무료 · Gemini) */}
+          <div className="w-full bg-white border border-gray-200 rounded-2xl px-3 py-2 flex flex-col gap-1.5">
+            <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-600">
+              <span>OCR 엔진</span>
+              <span className="text-[10px] font-mono text-slate-400">
+                ({ocrEngine === "local" ? "로컬 Python · 완전 무료"
+                  : ocrEngine === "rapid" ? "Node · 완전 무료 · Render OK"
+                  : "Gemini · 정확도 최상"})
+              </span>
+            </div>
+            <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5 w-full">
+              <button type="button" onClick={() => setOcrEngine("local")}
+                disabled={extracting}
+                className={`flex-1 px-2 py-1.5 text-[11px] font-black rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                  ocrEngine === "local"
+                    ? "bg-gradient-to-br from-slate-600 to-slate-800 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-white"
+                }`}
+                title="EasyOCR 로컬 Python 서버 · 완전 무료 · 로컬 개발 환경 전용">
+                💻 로컬
+              </button>
+              <button type="button" onClick={() => setOcrEngine("rapid")}
+                disabled={extracting}
+                className={`flex-1 px-2 py-1.5 text-[11px] font-black rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                  ocrEngine === "rapid"
+                    ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-white"
+                }`}
+                title="multilingual-purejs-ocr · 순수 Node.js · ONNX Runtime · Render 배포 · 완전 무료">
+                🆓 무료 (Node)
+              </button>
+              <button type="button" onClick={() => setOcrEngine("gemini")}
+                disabled={extracting}
+                className={`flex-1 px-2 py-1.5 text-[11px] font-black rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
+                  ocrEngine === "gemini"
+                    ? "bg-gradient-to-br from-amber-500 to-orange-500 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-white"
+                }`}
+                title="Gemini 비전 API · 정확도 최상 · 다중 키 로테이션">
+                ⚡ Gemini
+              </button>
+            </div>
+            {ocrEngine === "local" && (
+              <p className="text-[10px] text-slate-500 leading-tight">
+                💡 로컬 Python 서버(ocr_server.py) 자동 시작 · 첫 실행 시 모델 로딩 30~60초 · Render 에선 사용 불가
+              </p>
+            )}
+            {ocrEngine === "rapid" && (
+              <p className="text-[10px] text-emerald-600 leading-tight">
+                🆓 순수 Node.js OCR (PP-OCRv4 + 한국어 사전) · 첫 요청 시 모델 로딩 3~5초 · <b>Render 배포 그대로 무료</b> · 표 구조 자동 정렬
+              </p>
+            )}
+            {ocrEngine === "gemini" && (
+              <p className="text-[10px] text-amber-600 leading-tight">
+                ⚡ Gemini · 표 구조 인식 최상 · 다중 키 로테이션 (GEMINI_API_KEY_1/2/3...) · quota 시 자동 전환
+              </p>
+            )}
+          </div>
+
           <button onClick={handleExtract} disabled={extracting}
-            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm">
+            className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm ${
+              ocrEngine === "local" ? "bg-slate-700 hover:bg-slate-800"
+              : ocrEngine === "rapid" ? "bg-emerald-500 hover:bg-emerald-600"
+              : "bg-amber-500 hover:bg-amber-600"
+            }`}>
             {extracting
               ? <><Loader2 size={15} className="animate-spin" />{statusMsg || `OCR 추출 중... (${processed}/${pageCount || "?"})`}</>
-              : <><Zap size={15} />OCR 추출{rotDeg !== 0 ? ` (${rotDeg}° 회전 적용)` : ""}</>}
+              : <><Zap size={15} />OCR 추출 ({ocrEngine === "local" ? "로컬" : ocrEngine === "rapid" ? "무료 Node" : "Gemini"}){rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
           </button>
         </>
       )}

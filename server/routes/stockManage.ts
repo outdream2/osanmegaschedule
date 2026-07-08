@@ -90,7 +90,7 @@ router.get("/api/stock-manage/top-products", async (req, res) => {
 // GET /api/stock-manage/supplier-purchases?snapshot_date=YYYY-MM-DD&limit=20
 // stock_history 기반 공급사별 매입/판매/재고 집계 (금액·수량 · 상품수)
 router.get("/api/stock-manage/supplier-purchases", async (req, res) => {
-  const limit = Math.max(1, Math.min(500, parseInt(String(req.query.limit ?? "20"), 10) || 20));
+  const limit = Math.max(1, Math.min(50000, parseInt(String(req.query.limit ?? "20"), 10) || 20));
   const dateParam = String(req.query.snapshot_date ?? "").trim();
   try {
     let targetDate = /^\d{4}-\d{2}-\d{2}$/.test(dateParam) ? dateParam : "";
@@ -143,9 +143,9 @@ router.get("/api/stock-manage/supplier-purchases", async (req, res) => {
         if (supName) cur.names.add(supName);
         const purchQty = Number(r.purchase_qty ?? 0) || 0;
         cur.purchaseQty      += purchQty;
-        if (purchQty > 0) {
-          cur.purchaseAmount += Number(r.supply_amount ?? 0) || 0;
-        }
+        // 공급가액 = 스냅샷 기간 내 거래 공급가 합계 (매입/판매 모두 포함해 실제 xlsx 값 그대로 노출)
+        // 이전 로직은 purchase_qty > 0 인 row 만 누적해 판매만 있는 공급사가 항상 0 이 되던 이슈 해결
+        cur.purchaseAmount   += Number(r.supply_amount ?? 0) || 0;
         cur.saleQty          += Number(r.sale_qty ?? 0) || 0;
         cur.totalStockAmount += Number(r.total_amount ?? 0) || 0;
         cur.itemCount++;

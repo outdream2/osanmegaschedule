@@ -1445,40 +1445,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         onLogout={handleLogout}
         rightSlot={
           <div className="flex items-center gap-1">
-            {isAdmin && (
-              <button
-                onClick={() => setIsSettingsOpen(true)}
-                title="환경 설정"
-                className="p-2 border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 rounded-lg transition cursor-pointer"
-              >
-                <Settings size={14} />
-              </button>
-            )}
-            {isAdmin && undoStack.length > 0 && (
-              <button
-                onClick={handleUndo}
-                title={`되돌리기 (${undoStack.length}개 남음)`}
-                className="hidden sm:flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold border border-amber-300 bg-amber-50 hover:bg-amber-100 rounded-lg text-amber-700 transition cursor-pointer"
-              >
-                ↩ <span className="text-[10px] bg-amber-200 px-1 rounded">{undoStack.length}</span>
-              </button>
-            )}
-            <button
-              onClick={() => fetchScheduleData()}
-              className="p-2 border border-gray-200 bg-white hover:bg-gray-50 rounded-lg text-gray-600 transition cursor-pointer"
-              title="새로고침"
-            >
-              <span className="text-sm leading-none">↺</span>
-            </button>
-            {isAdmin && (
-              <button
-                onClick={() => openCreateEmployeeModal()}
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white border border-indigo-600 rounded-lg transition cursor-pointer shadow-sm"
-              >
-                <UserPlus size={13} />
-                <span>직원 등록</span>
-              </button>
-            )}
+            {/* 직원 등록 버튼은 헤더에서 제거 · 성명 검색 옆으로 이동 */}
             {userLevel < 1 && (
               <button
                 onClick={() => { setLoginError(""); setIsLoginModalOpen(true); }}
@@ -1489,26 +1456,6 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 <span className="hidden sm:inline">관리자 로그인</span>
               </button>
             )}
-            {/* Mobile: undo + add employee */}
-            <div className="flex sm:hidden items-center gap-1">
-              {isAdmin && undoStack.length > 0 && (
-                <button
-                  onClick={handleUndo}
-                  className="flex items-center gap-0.5 px-2 py-1.5 text-[11px] font-semibold border border-amber-300 bg-amber-50 rounded-lg text-amber-700 cursor-pointer"
-                >
-                  ↩<span className="text-[10px] bg-amber-200 px-1 rounded">{undoStack.length}</span>
-                </button>
-              )}
-              {isAdmin && (
-                <button
-                  onClick={() => openCreateEmployeeModal()}
-                  className="p-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition cursor-pointer"
-                  title="직원 등록"
-                >
-                  <UserPlus size={13} />
-                </button>
-              )}
-            </div>
           </div>
         }
       />
@@ -1533,6 +1480,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           await fetchScheduleData(undefined, true);
           showNotification("정렬 순서가 기본값으로 초기화되었습니다.");
         }}
+        onCreateEmployee={isAdmin ? () => openCreateEmployeeModal() : undefined}
       />
 
       {/* 1.6 Personal Schedule Search Results Quick Insights */}
@@ -1957,8 +1905,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       <tr className="bg-gray-100 text-gray-700 select-none">
                         <th
                           ref={nameThRef}
-                          className="text-center text-[10px] sm:text-[11px] font-bold border-r border-gray-200 border-b border-b-gray-200 sticky left-0 bg-gray-100 z-40 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1 sm:px-3"
-                          style={{ width: "80px", minWidth: "80px" }}
+                          className="text-center text-[10px] sm:text-[11px] font-bold border-r border-gray-200 border-b border-b-gray-200 sticky left-0 bg-gray-100 z-40 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1 sm:px-3 min-w-[80px] sm:min-w-[120px] w-[80px] sm:w-[120px]"
                         >
                           <span className="hidden sm:inline">직원 성명</span>
                           <span className="sm:hidden">성명</span>
@@ -1999,7 +1946,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       {/* Header Row 2: Day of Week Characters */}
                       <tr className="bg-gray-50 text-gray-500 select-none">
                         {/* Left spacing header matching Name column */}
-                        <th className="border-r border-b border-gray-200 sticky left-0 bg-gray-50 z-40 h-5 sm:h-6" style={{ minWidth: "80px" }}></th>
+                        <th className="border-r border-b border-gray-200 sticky left-0 bg-gray-50 z-40 h-5 sm:h-6 min-w-[80px] sm:min-w-[120px]"></th>
 
                         {displayDates.map((dateStr, dateIdx) => {
                           const { dayWord, isToday } = getDayDetails(dateStr);
@@ -2048,7 +1995,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                         >
 
                           {/* Column 1: Sticky Employee Name */}
-                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[29] group-hover:bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] min-w-[80px] sm:min-w-[96px] h-auto min-h-[54px] sm:min-h-[58px] p-0" style={{ willChange: "transform" }}>
+                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[29] group-hover:bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] min-w-[80px] sm:min-w-[120px] w-[80px] sm:w-[120px] h-auto min-h-[54px] sm:min-h-[58px] p-0" style={{ willChange: "transform" }}>
                             <div className="flex items-stretch h-full">
                               {/* Row number — updates when drag-drop reorders */}
                               <div className="flex items-center justify-center w-4 sm:w-5 shrink-0 text-[8px] sm:text-[9px] font-bold text-slate-300 select-none">

@@ -3,6 +3,7 @@ import { supabase } from "../../src/supabase/client";
 import { getProductMap, getSynonymMap, resetSynonymCache, getSupplierAliasMap, resetSupplierAliasCache } from "../productCache";
 import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta, filterCodeOnlyRows } from "../ocr/parse";
 import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiState, extractSupplierFromImage } from "../ocr/llm";
+import { callRapidOcr } from "../ocr/rapidocr";
 import { preprocessImageForOcr } from "../ocr/preprocess";
 import { ensureOcrServer, callEasyOcrServer } from "../ocr/easyocr";
 import { invoiceMatchScore, makeMatchResult, norm, normSupplier, bigramSim } from "../ocr/match";
@@ -390,6 +391,35 @@ router.post("/api/ocr", async (req, res) => {
     return res.status(400).json({ error: "images 배열이 필요합니다." });
   if (engine === "gemini" && getGeminiKeys().length === 0 && getMistralKeys().length === 0)
     return res.status(400).json({ error: "GEMINI_API_KEY 또는 MISTRAL_API_KEY가 설정되지 않았습니다. .env에 추가하세요." });
+
+  // ── RapidOCR (multilingual-purejs-ocr) · Render 배포 · 완전 무료 · 순수 Node.js ──
+  if (engine === "rapid") {
+    try {
+      const pages = await Promise.all(
+        (images as { data: string; mimeType: string }[]).map(async ({ data: b64, mimeType }, i) => {
+          console.log(`[OCR/Rapid] page ${i + 1}/${images.length}`);
+          const raw = await callRapidOcr(b64, mimeType);
+          if (!raw.ok) throw new Error((raw as { ok: false; error: string }).error);
+          // 기존 파이프라인(cleanCellValues → normalizeInvoiceCols → …) 재사용해 표 구조 최적화
+          const cleaned = cleanCellValues(raw.headers ?? [], raw.rows ?? []);
+          const pre = mergeAdjacentHeaders(cleaned.headers, cleaned.rows);
+          const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
+          const spec = extractSpecFromName(normalized.headers, normalized.rows);
+          const cleanMeta = sanitizeOcrMeta(raw.meta ?? {});
+          const rows0 = fixAmountsBySubtotal(spec.headers, spec.rows, cleanMeta.total ?? null);
+          const rows1 = repairColumnShift(spec.headers, rows0);
+          const rows2 = crossValidateIntraPage(spec.headers, rows1);
+          const rows = filterCodeOnlyRows(spec.headers, rows2);
+          console.log(`[OCR/Rapid] page ${i + 1}: 헤더=${JSON.stringify(spec.headers)}, 행=${rows.length}, lines=${raw.lines.length}`);
+          return { page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText: raw.rawText ?? "" };
+        })
+      );
+      return res.json({ pages, engine: "rapid" });
+    } catch (err: any) {
+      console.error("[OCR/Rapid] error:", err?.message);
+      return res.status(500).json({ error: err?.message ?? "RapidOCR 처리 중 오류" });
+    }
+  }
 
   if (engine === "paddle") {
     try {

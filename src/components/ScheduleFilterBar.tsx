@@ -1,6 +1,6 @@
 // src/components/ScheduleFilterBar.tsx
 import React from "react";
-import { X, Search, Building2, Warehouse, Layers } from "lucide-react";
+import { X, Search, Building2, Warehouse, Layers, UserPlus } from "lucide-react";
 import { Employee } from "../types";
 
 export type WorkplaceTab = "전체" | "매장" | "창고";
@@ -23,6 +23,8 @@ interface ScheduleFilterBarProps {
   todayFirst: boolean;
   setTodayFirst: React.Dispatch<React.SetStateAction<boolean>>;
   onResetCustomOrder: () => void | Promise<void>;
+  /** 직원 등록 · 지정 안 하면 노출 안 함 */
+  onCreateEmployee?: () => void;
 }
 
 export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
@@ -40,12 +42,13 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
   todayFirst,
   setTodayFirst,
   onResetCustomOrder,
+  onCreateEmployee,
 }) => {
   return (
     <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col gap-2 sm:gap-3 shrink-0 shadow-sm">
         {/* Filter Tabs: two independent groups */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">필터</span>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0 w-8 sm:w-10">필터</span>
           {/* Group 1: Workplace */}
           <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
             {([
@@ -96,8 +99,9 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
           </div>
         </div>
 
-        {/* Employee Sorting Section */}
-        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs">
+        {/* Employee Sorting Section — 필터 라벨과 동일 폭 · 매장/창고 그룹 아래로 줄맞춤 */}
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap text-xs">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0 w-8 sm:w-10">정렬</span>
           {/* 오늘 출근 우선 토글 */}
           <button
             type="button"
@@ -113,7 +117,6 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
             <span className="hidden sm:inline">오늘 출근 우선</span>
             <span className="sm:hidden">오늘순</span>
           </button>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">정렬</span>
           <div className="inline-flex p-0.5 bg-slate-100 border border-slate-200 rounded-lg gap-0.5">
             {(["position", "name"] as const).map((key) => {
               const labels: Record<string, string> = { position: "구분", name: "이름" };
@@ -167,9 +170,9 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
           </div>
         </div>
 
-        {/* Employee Search Group with integrated help feedback */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:max-w-xs w-full">
-          <div className="relative flex-1">
+        {/* Employee Search Group + 직원등록 버튼 · 항상 한 줄 */}
+        <div className="flex flex-row items-center gap-2 w-full">
+          <div className="relative flex-1 sm:max-w-xs min-w-0">
             <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none text-slate-400">
               <Search size={13} />
             </div>
@@ -189,6 +192,17 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
               </button>
             )}
           </div>
+          {onCreateEmployee && (
+            <button
+              type="button"
+              onClick={onCreateEmployee}
+              title="새 직원 등록"
+              className="shrink-0 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-black text-white bg-indigo-600 hover:bg-indigo-700 border border-indigo-600 rounded-lg shadow-sm transition cursor-pointer active:scale-95"
+            >
+              <UserPlus size={13} />
+              <span>직원 등록</span>
+            </button>
+          )}
         </div>
       </div>
   );

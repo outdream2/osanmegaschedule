@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useCallback } from "react";
 import axios from "axios";
-import { Shield, Check, Loader2, AlertCircle } from "lucide-react";
+import { Shield, Check, Loader2, AlertCircle, Settings as SettingsIcon } from "lucide-react";
 import type { AuthSession, PagePermissions } from "../../types";
 import { DEFAULT_PERMISSIONS } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { SettingsModal } from "../SettingsModal";
+import { useSettings } from "../../hooks/useSettings";
+import type { Employee } from "../../types";
 
 interface PermissionsPageProps {
   authSession: AuthSession | null;
@@ -32,6 +35,32 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   const [saving, setSaving] = useState<string | null>(null); // key being saved
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [tab, setTab] = useState<"permissions" | "app-settings">("permissions");
+
+  // 환경설정(구 톱니바퀴 모달) 통합 — useSettings + employees 로드
+  const {
+    positions: PRESET_POSITIONS,
+    employmentTypes: PRESET_EMPLOYMENT_TYPES,
+    workplaces: settingsWorkplaces,
+    scheduleTypes: settingsScheduleTypes,
+    wageRates: settingsWageRates,
+    employeeWageOverrides: settingsEmployeeWageOverrides,
+    update: updateSettings,
+  } = useSettings();
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  useEffect(() => {
+    const now = new Date();
+    axios.get(`/api/schedules?year=${now.getFullYear()}&month=${now.getMonth() + 1}`)
+      .then(r => {
+        const list = Array.isArray(r.data?.employees) ? r.data.employees : Array.isArray(r.data) ? r.data : [];
+        setEmployees(list);
+      })
+      .catch(() => setEmployees([]));
+  }, []);
+  const applyShiftHoursToAll = useCallback(async () => {
+    // 스케쥴표에서 "지금 월 전체 적용" 이 필요 · 여기선 기본 안내만
+    alert("근무시간 일괄 적용은 스케쥴 관리 페이지에서 진행하세요.");
+  }, []);
 
   const userLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
@@ -89,18 +118,31 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         onLogout={onLogout}
       />
 
-      <div className="flex-1 max-w-2xl mx-auto w-full px-4 py-8">
+      <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-8">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-7 h-7 rounded-lg bg-violet-600 flex items-center justify-center">
               <Shield size={14} className="text-white" />
             </div>
-            <h1 className="text-xl font-black text-slate-900 tracking-tight">권한 조정</h1>
+            <h1 className="text-xl font-black text-slate-900 tracking-tight">설정</h1>
           </div>
-          <p className="text-slate-400 text-sm pl-9">페이지별 최소 접근 레벨을 설정합니다. 변경 즉시 자동 저장됩니다.</p>
+          <p className="text-slate-400 text-sm pl-9">권한 · 근무 유형 · 시급 등 앱 전체 설정을 관리합니다.</p>
         </div>
 
+        {/* 탭 */}
+        <div className="mb-4 inline-flex bg-slate-100 border border-slate-200 rounded-xl p-0.5 gap-0.5">
+          <button type="button" onClick={() => setTab("permissions")}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-black transition cursor-pointer ${tab === "permissions" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+            <Shield size={12} /> 권한 조정
+          </button>
+          <button type="button" onClick={() => setTab("app-settings")}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-black transition cursor-pointer ${tab === "app-settings" ? "bg-white text-violet-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+            <SettingsIcon size={12} /> 스케쥴 설정
+          </button>
+        </div>
+
+        {tab === "permissions" && (<>
         {loadError && (
           <div className="mb-4 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-sm flex items-center gap-2">
             <AlertCircle size={14} /> {loadError}
@@ -163,6 +205,28 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         <p className="text-center text-[11px] text-slate-400 mt-4">
           레벨 9(최고관리자)는 항상 모든 페이지에 접근할 수 있습니다.
         </p>
+        </>)}
+
+        {tab === "app-settings" && (
+          <div className="w-full min-w-0 overflow-hidden">
+            <SettingsModal
+              embedded
+              settings={{
+                positions: PRESET_POSITIONS,
+                employmentTypes: PRESET_EMPLOYMENT_TYPES,
+                workplaces: settingsWorkplaces,
+                scheduleTypes: settingsScheduleTypes,
+                wageRates: settingsWageRates,
+                employeeWageOverrides: settingsEmployeeWageOverrides,
+              }}
+              employees={employees.map(e => ({ id: e.id, name: e.name, position: e.position }))}
+              onUpdate={updateSettings}
+              onApplyShiftHours={applyShiftHoursToAll}
+              onClose={() => { /* no-op · 탭 임베디드 모드 */ }}
+              sessionEmployeeId={authSession?.employeeId ?? null}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

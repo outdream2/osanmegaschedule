@@ -1,5 +1,5 @@
 // src/components/AppNavHeader.tsx
-import React from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
 import {
   Calendar,
   CheckCircle,
@@ -8,8 +8,10 @@ import {
   LayoutGrid,
   Lock,
   LogOut,
+  Menu,
   MessageSquare,
   MessageCircleQuestion,
+  MoreHorizontal,
   ScanBarcode,
   UtensilsCrossed,
 } from "lucide-react";
@@ -101,11 +103,131 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   const isPrivileged = userLevel >= 2;
 
   const visibleTabs = TABS.filter((t) => {
-    if (t.key === "landing") return true;
+    // 랜딩페이지에서는 홈 탭 숨김 (이미 홈에 있으므로 중복 · 로고 클릭으로 이동 가능)
+    if (t.key === "landing") return activePage !== "landing";
     if (!authSession) return false;
     if (t.managerOnly) return isPrivileged;
     return true;
   });
+
+  // ── Priority+ 네비게이션 (데스크탑) ─────────────────────────────────
+  const [visibleCount, setVisibleCount] = useState(visibleTabs.length);
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const measureRef = useRef<HTMLDivElement>(null);
+  const overflowWrapRef = useRef<HTMLDivElement>(null);
+  const OVERFLOW_BTN_WIDTH = 48;
+
+  // ── Priority+ 네비게이션 (모바일) · 넘치는 탭은 삼선(☰) 뒤로 이동 ─────
+  const [mobileVisibleCount, setMobileVisibleCount] = useState(visibleTabs.length);
+  const [mobileOverflowOpen, setMobileOverflowOpen] = useState(false);
+  const mobileContainerRef = useRef<HTMLDivElement>(null);
+  const mobileMeasureRef = useRef<HTMLDivElement>(null);
+  const mobileOverflowWrapRef = useRef<HTMLDivElement>(null);
+  const MOBILE_HAMBURGER_WIDTH = 52;
+
+  useLayoutEffect(() => {
+    const container = tabsContainerRef.current;
+    const measure = measureRef.current;
+    if (!container || !measure) return;
+    const compute = () => {
+      const available = container.clientWidth;
+      const children = Array.from(measure.children) as HTMLElement[];
+      let used = 0;
+      let fit = children.length; // 모두 들어가면 fit=전체
+      for (let i = 0; i < children.length; i++) {
+        const w = children[i].getBoundingClientRect().width + 4; // + gap
+        const isLast = i === children.length - 1;
+        // 마지막 아이템까지 남아있을 때는 overflow 버튼 불필요
+        const budget = isLast ? available : available - OVERFLOW_BTN_WIDTH;
+        if (used + w > budget) { fit = i; break; }
+        used += w;
+      }
+      setVisibleCount(Math.max(0, fit));
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [visibleTabs.length, activePage]);
+
+  // 활성 탭이 오버플로우 영역에 들어가면 앞으로 당김 (사용자가 현재 페이지를 항상 볼 수 있게)
+  const orderedTabs = useMemo(() => {
+    const activeIdx = visibleTabs.findIndex(t => t.key === activePage);
+    if (activeIdx < 0 || activeIdx < visibleCount) return visibleTabs;
+    const arr = [...visibleTabs];
+    const [active] = arr.splice(activeIdx, 1);
+    // 마지막 visible 위치 앞으로 삽입 (visibleCount - 1)
+    arr.splice(Math.max(0, visibleCount - 1), 0, active);
+    return arr;
+  }, [visibleTabs, visibleCount, activePage]);
+  const shownTabs = orderedTabs.slice(0, visibleCount);
+  const overflowTabs = orderedTabs.slice(visibleCount);
+
+  // 바깥 클릭 · ESC 로 dropdown 닫기
+  useEffect(() => {
+    if (!overflowOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (overflowWrapRef.current?.contains(e.target as Node)) return;
+      setOverflowOpen(false);
+    };
+    const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setOverflowOpen(false); };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [overflowOpen]);
+
+  // 모바일 Priority+ 측정 · 넘치는 탭은 삼선 뒤로
+  useLayoutEffect(() => {
+    const container = mobileContainerRef.current;
+    const measure = mobileMeasureRef.current;
+    if (!container || !measure) return;
+    const compute = () => {
+      const available = container.clientWidth;
+      const children = Array.from(measure.children) as HTMLElement[];
+      let used = 0;
+      let fit = children.length;
+      for (let i = 0; i < children.length; i++) {
+        const w = children[i].getBoundingClientRect().width + 4;
+        const isLast = i === children.length - 1;
+        const budget = isLast ? available : available - MOBILE_HAMBURGER_WIDTH;
+        if (used + w > budget) { fit = i; break; }
+        used += w;
+      }
+      setMobileVisibleCount(Math.max(0, fit));
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [visibleTabs.length, activePage]);
+  const mobileOrderedTabs = useMemo(() => {
+    const activeIdx = visibleTabs.findIndex(t => t.key === activePage);
+    if (activeIdx < 0 || activeIdx < mobileVisibleCount) return visibleTabs;
+    const arr = [...visibleTabs];
+    const [active] = arr.splice(activeIdx, 1);
+    arr.splice(Math.max(0, mobileVisibleCount - 1), 0, active);
+    return arr;
+  }, [visibleTabs, mobileVisibleCount, activePage]);
+  const mobileShownTabs = mobileOrderedTabs.slice(0, mobileVisibleCount);
+  const mobileOverflowTabs = mobileOrderedTabs.slice(mobileVisibleCount);
+  useEffect(() => {
+    if (!mobileOverflowOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (mobileOverflowWrapRef.current?.contains(e.target as Node)) return;
+      setMobileOverflowOpen(false);
+    };
+    const onEsc = (e: KeyboardEvent) => { if (e.key === "Escape") setMobileOverflowOpen(false); };
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onEsc);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onEsc);
+    };
+  }, [mobileOverflowOpen]);
 
   const renderDesktopTab = (tab: TabDef) => {
     const Icon = tab.icon;
@@ -207,9 +329,67 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             </span>
           </div>
 
-          {/* Desktop nav tabs — 좁은 데스크탑에서 가로 스크롤 · 오버플로 방지 */}
-          <div className="hidden sm:flex items-center gap-1 ml-3 min-w-0 overflow-x-auto scrollbar-none">
-            {visibleTabs.map(renderDesktopTab)}
+          {/* Desktop nav tabs — Priority+ · 넘치는 탭은 우측 "⋯" 뒤 dropdown */}
+          <div ref={tabsContainerRef} className="hidden sm:flex items-center gap-1 ml-3 min-w-0 flex-1 relative">
+            {/* 숨겨진 측정용 영역 — 각 탭의 실제 폭 측정 */}
+            <div
+              ref={measureRef}
+              aria-hidden="true"
+              className="absolute flex items-center gap-1 opacity-0 pointer-events-none"
+              style={{ left: "-9999px", top: 0 }}
+            >
+              {visibleTabs.map(renderDesktopTab)}
+            </div>
+            {/* 실제 노출되는 탭 */}
+            {shownTabs.map(renderDesktopTab)}
+            {/* 오버플로우 "⋯" 버튼 + dropdown */}
+            {overflowTabs.length > 0 && (
+              <div ref={overflowWrapRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setOverflowOpen(v => !v)}
+                  className={`flex items-center gap-1 px-2.5 py-2 rounded-lg text-[13.5px] font-medium border transition-all cursor-pointer ${
+                    overflowOpen
+                      ? "bg-slate-100 text-slate-800 border-slate-300"
+                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300"
+                  }`}
+                  title={`더보기 (${overflowTabs.length}개)`}
+                  aria-label="더보기 메뉴"
+                  aria-expanded={overflowOpen}
+                >
+                  <MoreHorizontal size={16} strokeWidth={2.2} />
+                </button>
+                {overflowOpen && (
+                  <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-xl border border-slate-200 py-1 min-w-[180px] z-50 max-h-[70vh] overflow-y-auto">
+                    {overflowTabs.map(tab => {
+                      const Icon = tab.icon;
+                      const c = TAB_COLOR_MAP[tab.color ?? "slate"];
+                      const isActive = tab.key === activePage;
+                      const onClickTab = () => {
+                        setOverflowOpen(false);
+                        if (tab.key === "landing" && onBack) onBack();
+                        else onNavigate?.(tab.key);
+                      };
+                      return (
+                        <button
+                          key={tab.key}
+                          type="button"
+                          onClick={onClickTab}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-[13px] font-bold min-h-[44px] transition ${
+                            isActive
+                              ? `bg-gradient-to-r ${c.activeBg} ${c.activeText}`
+                              : `${c.inactiveText} hover:bg-slate-50 cursor-pointer`
+                          }`}
+                        >
+                          <Icon size={15} strokeWidth={isActive ? 2.4 : 1.9} />
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -251,11 +431,70 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         </div>
       </div>
 
-      {/* ── Mobile tab row: 한 줄 · 각 탭 균등 분할 · 양쪽 여백 확보 ── */}
+      {/* ── Mobile tab row: Priority+ · 넘치는 탭은 삼선(☰) 뒤 dropdown ── */}
       {visibleTabs.length > 1 && (
         <div className="sm:hidden px-4 pb-2">
-          <div className="flex items-stretch justify-between gap-1 bg-gray-100 rounded-xl px-2 py-1 overflow-x-auto scrollbar-none">
-            {visibleTabs.map(renderMobileTab)}
+          <div ref={mobileContainerRef} className="flex items-stretch gap-1 bg-gray-100 rounded-xl px-2 py-1 relative">
+            {/* 숨긴 측정 영역 */}
+            <div
+              ref={mobileMeasureRef}
+              aria-hidden="true"
+              className="absolute flex items-stretch gap-1 opacity-0 pointer-events-none"
+              style={{ left: "-9999px", top: 0 }}
+            >
+              {visibleTabs.map(renderMobileTab)}
+            </div>
+            {/* 실제 노출되는 탭 */}
+            {mobileShownTabs.map(renderMobileTab)}
+            {/* 삼선(☰) 오버플로우 버튼 + dropdown */}
+            {mobileOverflowTabs.length > 0 && (
+              <div ref={mobileOverflowWrapRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setMobileOverflowOpen(v => !v)}
+                  className={`min-w-[44px] h-full flex flex-col items-center justify-center gap-0.5 px-2 rounded-lg text-[10px] font-black transition active:scale-95 ${
+                    mobileOverflowOpen
+                      ? "bg-slate-800 text-white shadow-md"
+                      : "text-slate-600 hover:bg-white"
+                  }`}
+                  title={`더보기 (${mobileOverflowTabs.length}개)`}
+                  aria-label="메뉴 더보기"
+                  aria-expanded={mobileOverflowOpen}
+                >
+                  <Menu size={18} strokeWidth={2.4} />
+                  <span className="text-[9px] leading-none">더보기</span>
+                </button>
+                {mobileOverflowOpen && (
+                  <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-xl border border-slate-200 py-1 min-w-[180px] z-50 max-h-[70vh] overflow-y-auto">
+                    {mobileOverflowTabs.map(tab => {
+                      const Icon = tab.icon;
+                      const c = TAB_COLOR_MAP[tab.color ?? "slate"];
+                      const isActive = tab.key === activePage;
+                      const onClickTab = () => {
+                        setMobileOverflowOpen(false);
+                        if (tab.key === "landing" && onBack) onBack();
+                        else onNavigate?.(tab.key);
+                      };
+                      return (
+                        <button
+                          key={tab.key}
+                          type="button"
+                          onClick={onClickTab}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-[13px] font-bold min-h-[44px] transition ${
+                            isActive
+                              ? `bg-gradient-to-r ${c.activeBg} ${c.activeText}`
+                              : `${c.inactiveText} hover:bg-slate-50 cursor-pointer`
+                          }`}
+                        >
+                          <Icon size={15} strokeWidth={isActive ? 2.4 : 1.9} />
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
