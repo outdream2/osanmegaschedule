@@ -158,11 +158,11 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
         onClick={handleQuickCycle}
         title={isAdmin ? `클릭: 오픈→미들→마감→휴무 순환 변경\n⚙️ 상세 편집은 호버 후 톱니바퀴 클릭` : undefined}
       >
-        {/* Detail edit button — top-left, always visible, touch-friendly */}
+        {/* Detail edit button — 셀 최상단 별도 행 · 오픈 텍스트와 겹치지 않음 */}
         {isAdmin && (
           <button
             onClick={e => { e.stopPropagation(); setIsOpen(true); }}
-            className="absolute top-0.5 left-0.5 z-10 flex items-center gap-0.5 px-1 py-0.5 rounded bg-white/80 hover:bg-white border border-slate-200/60 hover:border-indigo-300 shadow-sm text-slate-400 hover:text-indigo-600 active:scale-95 transition-all cursor-pointer"
+            className="w-full flex items-center justify-center gap-0.5 px-1 py-0.5 rounded bg-slate-50 hover:bg-indigo-50 border border-slate-200/60 hover:border-indigo-300 text-slate-500 hover:text-indigo-600 active:scale-95 transition-colors cursor-pointer mb-0.5"
             title="상세 편집"
           >
             <Settings2 size={9} />
@@ -173,13 +173,7 @@ export const ScheduleCell: React.FC<ScheduleCellProps> = ({
         <div className="text-[11px] font-bold leading-tight truncate text-center w-full">
           {displayType || "-"}
         </div>
-
-        {/* Click cycle hint overlay — shown on hover (admin only) */}
-        {isAdmin && isHovered && !isOpen && (
-          <div className="absolute inset-x-0 bottom-0 flex items-center justify-center bg-indigo-600/75 rounded-b-sm py-[2px] pointer-events-none">
-            <span className="text-[7px] font-black text-white leading-none tracking-tight">↻ 클릭</span>
-          </div>
-        )}
+        {/* 하단 ↻ 클릭 힌트 제거됨 (내용 가림 방지) */}
 
         {/* Row 2: Working Hours */}
         {displayWorkingHours && !displayActualHours && (

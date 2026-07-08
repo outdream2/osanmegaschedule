@@ -664,7 +664,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ede9fe, #ddd6fe)", border: "1px solid #c4b5fd" }}>
                       <ScanLine size={16} className="text-violet-600 sm:hidden" /><ScanLine size={20} className="text-violet-600 hidden sm:block" />
                     </div>
-                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품 스캔</div>
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품검색</div>
                     <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">바코드 스캔으로 진열 보충 요청</div>
                     <div className="flex items-center gap-1 mt-2 text-violet-600 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">스캔하기</span>
@@ -751,7 +751,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                           backgroundImage: "linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #06b6d4, #8b5cf6)"
                         }}
                       >
-                        {myPendingCount > 0 ? `대기 ${myPendingCount}건` : "확인하기"}
+                        {authSession?.employeeName ? `${authSession.employeeName}${authSession.employeeRank ? " " + authSession.employeeRank : ""} 님` : "확인하기"}
                       </span>
                       <ChevronRight size={11} className="text-indigo-600 group-hover:translate-x-1 transition-transform" />
                     </div>

@@ -288,6 +288,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     }
   }, [initialEditEmployeeId, employees]);
 
+
   // ── Display zone assignment (shared with DisplayPage via localStorage) ───────
   type DisplayZoneSlim = { id: string; num: number; assignedStaffId: number | null; assignedStaffName: string; status: string; label: string; category: string; section: string; products: string };
 

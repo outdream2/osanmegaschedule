@@ -87,9 +87,11 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<"" | PostType>("");
   const [filterStatus, setFilterStatus] = useState<"" | Status>("");
+  const [filterCategory, setFilterCategory] = useState<"" | typeof CATEGORIES[number]>("");
   const [search, setSearch] = useState("");
   const [showComposer, setShowComposer] = useState(false);
   const [detailId, setDetailId] = useState<number | null>(null);
+  const [detailInitialEdit, setDetailInitialEdit] = useState(false);
   // 인라인 확장: 리스트 클릭 시 아래에 댓글 인라인으로 표시
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -124,7 +126,9 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
     })();
   }, []);
 
-  const filtered: BoardPost[] = useMemo(() => posts, [posts]);
+  const filtered: BoardPost[] = useMemo(() => (
+    filterCategory ? posts.filter(p => (p.category ?? "") === filterCategory) : posts
+  ), [posts, filterCategory]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #fff7ed 0%, #fef3c7 40%, #fef9c3 100%)" }}>
@@ -196,13 +200,34 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
               <span className="text-[11px] font-black text-slate-600">이슈리스트</span>
               <span className="text-[10px] font-mono text-slate-400">({filtered.length}건)</span>
             </div>
+            {/* 카테고리 필터 배지 · 이슈리스트 (*건) 아래 · 미해결/진행중/해결 상태 필터는 상단 유지 */}
+            <div className="flex items-center gap-1.5 flex-wrap px-3 py-2 border-b border-slate-100 bg-white">
+              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider mr-1">카테고리</span>
+              <button
+                onClick={() => setFilterCategory("")}
+                className={`px-2 py-0.5 rounded-full text-[11px] font-black transition ${filterCategory === "" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+              >전체</button>
+              {CATEGORIES.map(c => (
+                <button
+                  key={c}
+                  onClick={() => setFilterCategory(prev => prev === c ? "" : c)}
+                  className={`px-2 py-0.5 rounded-full text-[11px] font-black transition ${filterCategory === c ? "bg-orange-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+                >{c}</button>
+              ))}
+            </div>
             <div className="divide-y divide-slate-100">
             {filtered.map((p: BoardPost) => {
               const isExpanded = expandedId === p.id;
               const toggle = () => setExpandedId(prev => prev === p.id ? null : p.id);
+              const isAuthor = p.author_id === authSession?.employeeId;
               return (
                 <React.Fragment key={p.id}>
-                  <PostCard post={p} onOpen={toggle} />
+                  <PostCard
+                    post={p}
+                    onOpen={toggle}
+                    showEdit={isAuthor || isManager}
+                    onEdit={() => { setDetailInitialEdit(true); setDetailId(p.id); }}
+                  />
                   {isExpanded && (
                     <InlineDetail
                       postId={p.id}
@@ -236,7 +261,8 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
           authSession={authSession}
           employees={employees}
           isManager={isManager}
-          onClose={() => setDetailId(null)}
+          initialEdit={detailInitialEdit}
+          onClose={() => { setDetailId(null); setDetailInitialEdit(false); }}
           onChanged={loadPosts}
         />
       )}
@@ -254,15 +280,18 @@ function fmtDateShort(iso: string): string {
   return `${yy}/${M}/${D}`;
 }
 
-const PostCard: React.FC<{ post: BoardPost; onOpen: () => void }> = ({ post, onOpen }) => {
+const PostCard: React.FC<{ post: BoardPost; onOpen: () => void; showEdit?: boolean; onEdit?: () => void }> = ({ post, onOpen, showEdit, onEdit }) => {
   const meta = TYPE_META[post.post_type] ?? TYPE_META.question;
   const status = STATUS_META[post.status] ?? STATUS_META.open;
   const Icon = meta.icon;
   const hasImg = post.images && post.images.length > 0;
   const hasCmt = (post.comment_count ?? 0) > 0;
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onOpen}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
       className="w-full text-left bg-white border border-slate-200 hover:border-orange-300 hover:bg-orange-50/20 transition cursor-pointer flex items-center gap-2 px-2.5 sm:px-3 py-2 min-h-[44px]"
     >
       {/* 날짜 · 맨 앞 */}
@@ -299,7 +328,18 @@ const PostCard: React.FC<{ post: BoardPost; onOpen: () => void }> = ({ post, onO
       <span className="inline-flex items-center shrink-0">
         <AuthorBadge name={post.author_name} rank={post.author_rank} />
       </span>
-    </button>
+      {/* 수정 버튼 · 본인 작성 or 관리자만 노출 · 클릭 시 상세 모달 오픈 (거기서 수정 가능) */}
+      {showEdit && onEdit && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onEdit(); }}
+          className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-black cursor-pointer active:scale-95 transition"
+          title="글 수정"
+        >
+          <Pencil size={10} /> 수정
+        </button>
+      )}
+    </div>
   );
 };
 
@@ -319,6 +359,7 @@ const InlineDetail: React.FC<{
   const [posting, setPosting] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingCommentBody, setEditingCommentBody] = useState("");
+  const [previewImg, setPreviewImg] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -374,7 +415,7 @@ const InlineDetail: React.FC<{
                 <button
                   key={img.id}
                   type="button"
-                  onClick={() => window.open(img.image_url, "_blank", "noopener,noreferrer")}
+                  onClick={() => setPreviewImg(img.image_url)}
                   className="block w-full aspect-square rounded-xl overflow-hidden border border-slate-200 hover:border-orange-300 hover:shadow-md transition"
                   title="크게 보기"
                 >
@@ -445,6 +486,18 @@ const InlineDetail: React.FC<{
               </button>
             </div>
           )}
+        </div>
+      )}
+      {/* 사진 원본 미리보기 모달 (닫기 버튼 · 배경 클릭 · × 버튼) */}
+      {previewImg && (
+        <div className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-4" onClick={() => setPreviewImg(null)}>
+          <button
+            type="button"
+            onClick={() => setPreviewImg(null)}
+            className="absolute top-3 right-3 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 text-2xl leading-none font-black shadow-lg flex items-center justify-center cursor-pointer"
+            aria-label="닫기"
+          >×</button>
+          <img src={previewImg} alt="" className="max-w-full max-h-full object-contain rounded-xl" onClick={e => e.stopPropagation()} />
         </div>
       )}
     </div>
@@ -624,9 +677,9 @@ function ComposerModal({
 
 // ── 게시글 상세 모달
 function DetailModal({
-  postId, authSession, employees, isManager, onClose, onChanged,
+  postId, authSession, employees, isManager, initialEdit, onClose, onChanged,
 }: {
-  postId: number; authSession: AuthSession | null; employees: Employee[]; isManager: boolean; onClose: () => void; onChanged: () => void;
+  postId: number; authSession: AuthSession | null; employees: Employee[]; isManager: boolean; initialEdit?: boolean; onClose: () => void; onChanged: () => void;
 }) {
   const [post, setPost] = useState<BoardPost | null>(null);
   const [loading, setLoading] = useState(true);
@@ -656,6 +709,38 @@ function DetailModal({
   const [commentImages, setCommentImages] = useState<UploadedImage[]>([]);
   const [uploadingCmt, setUploadingCmt] = useState(false);
   const cmtFileRef = useRef<HTMLInputElement>(null);
+  // 게시글 본문 수정 상태
+  const [editingPost, setEditingPost] = useState(false);
+  const [editDraft, setEditDraft] = useState<{ title: string; body: string; category: string }>({ title: "", body: "", category: "" });
+  const [savingEdit, setSavingEdit] = useState(false);
+  const startEditPost = () => {
+    if (!post) return;
+    setEditDraft({ title: post.title ?? "", body: post.body ?? "", category: post.category ?? "" });
+    setEditingPost(true);
+  };
+  const saveEditPost = async () => {
+    if (!post || !authSession) return;
+    if (!editDraft.title.trim()) return;
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/board/posts/${postId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          editor_id: authSession.employeeId,
+          editor_level: authSession.level ?? 0,
+          title: editDraft.title.trim(),
+          body: editDraft.body,
+          category: editDraft.category || null,
+        }),
+      });
+      if (res.ok) {
+        setEditingPost(false);
+        await load();
+        onChanged();
+      }
+    } finally { setSavingEdit(false); }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -666,6 +751,14 @@ function DetailModal({
   }, [postId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // 리스트의 [수정] 버튼으로 진입한 경우 자동으로 편집 모드로 전환
+  useEffect(() => {
+    if (!initialEdit || !post || editingPost) return;
+    const canEditNow = post.author_id === authSession?.employeeId || isManager;
+    if (canEditNow) startEditPost();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [post?.id, initialEdit]);
 
   if (!post && !loading) return null;
 
@@ -765,6 +858,9 @@ function DetailModal({
               <Pin size={14} />
             </button>
           )}
+          {canEdit && !editingPost && (
+            <button onClick={startEditPost} className="p-1.5 rounded-lg text-indigo-500 hover:bg-indigo-50" title="글 수정"><Pencil size={14} /></button>
+          )}
           {canEdit && (
             <button onClick={deletePost} className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50" title="삭제"><Trash2 size={14} /></button>
           )}
@@ -796,16 +892,55 @@ function DetailModal({
                   );
                 })()}
               </div>
-              <h1 className="text-lg sm:text-xl font-black text-slate-900 leading-snug break-keep">
-                {post.title}
-              </h1>
+              {editingPost ? (
+                <input
+                  type="text"
+                  value={editDraft.title}
+                  onChange={e => setEditDraft(prev => ({ ...prev, title: e.target.value }))}
+                  placeholder="제목"
+                  className="w-full text-lg sm:text-xl font-black text-slate-900 leading-snug bg-white border-2 border-indigo-300 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500"
+                />
+              ) : (
+                <h1 className="text-lg sm:text-xl font-black text-slate-900 leading-snug break-keep">
+                  {post.title}
+                </h1>
+              )}
               <div className="flex items-center gap-2 mt-1.5">
                 <AuthorBadge name={post.author_name} rank={post.author_rank} />
                 <span className="text-slate-300">·</span>
                 <span className="text-[10px] text-slate-400 font-semibold">{timeAgo(post.created_at)}</span>
               </div>
-              {post.body && (
-                <p className="text-[13px] text-slate-700 whitespace-pre-wrap leading-relaxed mt-3">{post.body}</p>
+              {editingPost ? (
+                <>
+                  <textarea
+                    value={editDraft.body}
+                    onChange={e => setEditDraft(prev => ({ ...prev, body: e.target.value }))}
+                    rows={6}
+                    placeholder="본문"
+                    className="w-full mt-3 text-[13px] text-slate-700 leading-relaxed bg-white border border-slate-300 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500 resize-y"
+                  />
+                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                    <span className="text-[10px] font-black text-slate-500 mr-1">카테고리:</span>
+                    <button type="button" onClick={() => setEditDraft(prev => ({ ...prev, category: "" }))}
+                      className={`px-2 py-0.5 rounded-full text-[11px] font-black ${editDraft.category === "" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500"}`}>없음</button>
+                    {CATEGORIES.map(c => (
+                      <button key={c} type="button" onClick={() => setEditDraft(prev => ({ ...prev, category: c }))}
+                        className={`px-2 py-0.5 rounded-full text-[11px] font-black ${editDraft.category === c ? "bg-indigo-500 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}>{c}</button>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-end gap-2 mt-3">
+                    <button type="button" onClick={() => setEditingPost(false)} disabled={savingEdit}
+                      className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 text-[12px] font-black disabled:opacity-40">취소</button>
+                    <button type="button" onClick={saveEditPost} disabled={savingEdit || !editDraft.title.trim()}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-500 hover:bg-indigo-600 text-white text-[12px] font-black disabled:opacity-40">
+                      {savingEdit ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />} 저장
+                    </button>
+                  </div>
+                </>
+              ) : (
+                post.body && (
+                  <p className="text-[13px] text-slate-700 whitespace-pre-wrap leading-relaxed mt-3">{post.body}</p>
+                )
               )}
               {post.images && post.images.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">
@@ -958,8 +1093,13 @@ function DetailModal({
         {/* 이미지 프리뷰 */}
         {previewImg && (
           <div className="fixed inset-0 z-[60] bg-black/85 flex items-center justify-center p-4" onClick={() => setPreviewImg(null)}>
-            <img src={previewImg} alt="" className="max-w-full max-h-full object-contain rounded-xl" />
-            <button className="absolute top-4 right-4 p-2 rounded-full bg-white/20 text-white hover:bg-white/40"><XIcon size={20} /></button>
+            <img src={previewImg} alt="" className="max-w-full max-h-full object-contain rounded-xl" onClick={e => e.stopPropagation()} />
+            <button
+              type="button"
+              onClick={() => setPreviewImg(null)}
+              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 hover:bg-white text-slate-800 text-2xl leading-none font-black shadow-lg flex items-center justify-center cursor-pointer"
+              aria-label="닫기"
+            >×</button>
           </div>
         )}
       </div>

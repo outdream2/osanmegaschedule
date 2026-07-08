@@ -29,6 +29,43 @@ router.get("/api/products-map", async (_req, res) => {
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
 
+// GET /api/inventory-latest — 상품코드별 최신 실재고 (warehouse_stock/store_stock/checked_at)
+// DisplayPage 구역별 상품 리스트에서 재고관리 페이지처럼 창고/매장/실재고 컬럼을 채우기 위해 사용
+router.get("/api/inventory-latest", async (_req, res) => {
+  try {
+    const PAGE = 1000;
+    const map: Record<string, { warehouse_stock: number | null; store_stock: number | null; checked_at: string | null }> = {};
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("inventory_checks")
+        .select("product_code, warehouse_stock, store_stock, checked_at")
+        .order("checked_at", { ascending: false })
+        .range(from, from + PAGE - 1);
+      if (error) {
+        if (/relation|does not exist/i.test(error.message)) break;
+        throw new Error(error.message);
+      }
+      if (!data || data.length === 0) break;
+      for (const r of data) {
+        const code = String((r as any).product_code ?? "").trim();
+        if (!code || map[code]) continue; // 최근값만 유지 (첫 항목)
+        map[code] = {
+          warehouse_stock: (r as any).warehouse_stock != null ? Number((r as any).warehouse_stock) : null,
+          store_stock:     (r as any).store_stock     != null ? Number((r as any).store_stock)     : null,
+          checked_at:      (r as any).checked_at ?? null,
+        };
+      }
+      if (data.length < PAGE) break;
+      from += PAGE;
+    }
+    res.setHeader("Cache-Control", "public, max-age=60");
+    res.json(map);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get("/api/products-search", async (req, res) => {
   const q        = String(req.query.q        ?? "").trim();
   const supplier = String(req.query.supplier ?? "").trim();

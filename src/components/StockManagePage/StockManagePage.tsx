@@ -394,6 +394,8 @@ export const StockManagePage: React.FC = () => {
     }
   };
   const [flowLimit, setFlowLimit]       = useState<number>(100);
+  // 재고흐름 리스트 · 상품명/코드 검색 (필터)
+  const [flowSearch, setFlowSearch] = useState<string>("");
   // 재고흐름 리스트 · 벌크 숨김 · 판매추이와 동일 패턴
   const [selectedFlowCodes, setSelectedFlowCodes] = useState<Set<string>>(new Set());
   const [flowBulkHiding, setFlowBulkHiding] = useState(false);
@@ -955,10 +957,17 @@ export const StockManagePage: React.FC = () => {
   const filteredFlow = useMemo(() => {
     const minN = salesQtyMin.trim() === "" ? null : parseInt(salesQtyMin, 10);
     const maxN = salesQtyMax.trim() === "" ? null : parseInt(salesQtyMax, 10);
+    const q = flowSearch.trim().toLowerCase();
     const filtered = stockFlow.filter(p => {
       const qty = p.sale_qty;
       if (minN != null && Number.isFinite(minN) && qty < minN) return false;
       if (maxN != null && Number.isFinite(maxN) && qty > maxN) return false;
+      if (q) {
+        const hit = String(p.product_name ?? "").toLowerCase().includes(q)
+                 || String(p.product_code ?? "").toLowerCase().includes(q)
+                 || String(p.supplier ?? "").toLowerCase().includes(q);
+        if (!hit) return false;
+      }
       return true;
     });
     // 클라이언트 정렬: name/opening/current/loss 는 서버가 지원하지 않으므로 여기서 처리
@@ -978,7 +987,7 @@ export const StockManagePage: React.FC = () => {
       return [...filtered].sort((a, b) => sign * (Number((a as any).current_stock ?? 0) - Number((b as any).current_stock ?? 0)));
     }
     return filtered;
-  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir]);
+  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowSearch]);
 
   // 상품 이력을 일자별 매입 수량으로 집계 → 차트 데이터
   const chartData = useMemo(() => {
@@ -1053,19 +1062,7 @@ export const StockManagePage: React.FC = () => {
         </div>
         {/* 2행: 기간 선택 + 검색 */}
         <div className="flex items-center gap-2 flex-wrap">
-          {pageTab === "dashboard" && (
-            <div className="inline-flex bg-slate-100/80 backdrop-blur border border-slate-200/60 rounded-xl p-1 shadow-inner">
-              {(["week", "month", "3month"] as Range[]).map(r => (
-                <button key={r} onClick={() => setRange(r)}
-                  className={`px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
-                    range === r
-                      ? "bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200"
-                      : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-                  }`}
-                >{RANGE_LABEL[r]}</button>
-              ))}
-            </div>
-          )}
+          {/* 1주/1개월/3개월 탭 제거됨 (사용자 요청) */}
           {/* 상품명·코드 검색 + 정보확인 */}
           {pageTab === "dashboard" && (
             <div className="flex items-center gap-1.5 flex-wrap bg-gradient-to-r from-sky-50 to-indigo-50 border border-sky-200 rounded-xl px-2 py-1 shadow-sm min-w-0">
@@ -1466,9 +1463,7 @@ export const StockManagePage: React.FC = () => {
                     </span>
                   )}
                 </div>
-                <span className="text-[11px] font-bold text-slate-500 shrink-0">
-                  {topTab === "sale" ? `${filteredFlow.length}건` : `${topProducts.length}건`}
-                </span>
+                {/* 우측 건수 배지 제거 (사용자 요청) */}
               </div>
               {!flowCardCollapsed && (
                 <p className="text-[10px] text-slate-500 font-semibold leading-tight">
@@ -1479,30 +1474,7 @@ export const StockManagePage: React.FC = () => {
             <div className={`flex-1 min-h-0 flex flex-col p-3 ${flowCardCollapsed ? "hidden" : "flex"}`}>
             {topTab === "sale" && (
               <>
-                {/* 컨트롤: 스냅샷 · limit (모바일에서 세로 스택) */}
-                <div className="flex items-center gap-1.5 mb-2 flex-wrap text-[11px]">
-                  <label className="flex items-center gap-1 flex-1 min-w-0 sm:flex-initial">
-                    <span className="text-slate-500 font-black text-[11px] shrink-0">스냅샷</span>
-                    <select value={flowSnapshot} onChange={e => setFlowSnapshot(e.target.value)}
-                      className="flex-1 sm:flex-initial min-w-0 px-2 py-1 border border-slate-200 rounded text-[12px] font-mono focus:outline-none focus:border-orange-400 bg-white">
-                      {availableSnapshots.length === 0 && <option value="">(없음)</option>}
-                      {availableSnapshots.map(d => {
-                        const p = snapshotPeriods[d];
-                        const pKo = p === "early" ? "초순" : p === "mid" ? "중순" : p === "late" ? "하순" : p;
-                        return <option key={d} value={d}>{d}{pKo ? ` · ${pKo}` : ""}</option>;
-                      })}
-                    </select>
-                  </label>
-                  <div className="inline-flex bg-slate-100/80 border border-slate-200/60 rounded-lg p-0.5 shadow-inner w-full sm:w-auto sm:shrink-0 basis-full sm:basis-auto">
-                    {[100, 300, 1000, 5000].map(n => (
-                      <button key={n} onClick={() => setFlowLimit(n)}
-                        className={`flex-1 sm:flex-initial px-2 py-1 text-[10px] font-black rounded transition cursor-pointer ${
-                          flowLimit === n ? "bg-white text-orange-700 shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-800"
-                        }`}>Top {n}</button>
-                    ))}
-                  </div>
-                </div>
-                {/* 기간 조회: 단일 스냅샷(10일) 또는 최근 N개월 aggregation */}
+                {/* 조회기간 (스냅샷/Top N 드롭박스 제거됨) */}
                 <div className="flex items-center gap-1.5 mb-2 flex-wrap text-[11px]">
                   <span className="text-slate-500 font-black text-[11px] shrink-0">조회기간</span>
                   <div className="inline-flex bg-slate-100/80 border border-slate-200/60 rounded-lg p-0.5 shadow-inner">
@@ -1529,6 +1501,21 @@ export const StockManagePage: React.FC = () => {
                       </span>
                     );
                   })()}
+                </div>
+                {/* 조회기간 다음 줄에 상품명·코드 검색 (판매추이 스타일) */}
+                <div className="flex items-center gap-1.5 mb-2 flex-wrap text-[11px]">
+                  <span className="text-slate-500 font-black text-[11px] shrink-0">검색</span>
+                  <input
+                    type="text"
+                    value={flowSearch}
+                    onChange={e => setFlowSearch(e.target.value)}
+                    placeholder="상품명·코드"
+                    className="flex-1 min-w-0 px-2 py-1 border border-slate-200 rounded text-[12px] focus:outline-none focus:border-orange-400 bg-white"
+                  />
+                  {flowSearch && (
+                    <button onClick={() => setFlowSearch("")}
+                      className="text-[10px] font-black text-rose-500 hover:text-rose-700 px-1.5 py-1 rounded hover:bg-rose-50 transition cursor-pointer shrink-0">✕</button>
+                  )}
                 </div>
                 {/* 판매수량 범위 필터 (모바일 최적화) */}
                 <div className="flex items-center gap-1.5 mb-2 flex-wrap text-[11px]">

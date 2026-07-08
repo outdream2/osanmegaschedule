@@ -42,7 +42,7 @@ export const ScheduleFilterBar: React.FC<ScheduleFilterBarProps> = ({
   onResetCustomOrder,
 }) => {
   return (
-    <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-2 sm:gap-3 shrink-0 shadow-sm">
+    <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-2 sm:py-2.5 flex flex-col gap-2 sm:gap-3 shrink-0 shadow-sm">
         {/* Filter Tabs: two independent groups */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">필터</span>

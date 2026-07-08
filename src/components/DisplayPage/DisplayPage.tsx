@@ -32,6 +32,7 @@ import {
   Info,
 } from "lucide-react";
 import { BarcodeScanner } from "../BarcodeScanner";
+import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ZoneCell } from "./ZoneCell";
 import { ZoneAssignPopover } from "./ZoneAssignPopover";
 import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
@@ -361,8 +362,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const [productInfoModal, setProductInfoModal] = useState<ProductInfo | null>(null);
   // 구역별 상품 리스트 모달 (구역 클릭 → 해당 구역 상품 조회)
   const [zoneProductsModal, setZoneProductsModal] = useState<{ zoneId: string; zoneNum: number; zoneLabel: string; category: string } | null>(null);
+  // 모바일 전용 · 전체 매장 구역도 fullscreen 모달 (읽기 전용 · 드래그 스크롤)
+  const [fullMapOpen, setFullMapOpen] = useState(false);
   const [zoneProductsFilter, setZoneProductsFilter] = useState<"all" | "mismatch">("all");
-  const [zoneProductsSort, setZoneProductsSort] = useState<{ key: "name" | "spec" | "real_map" | "current_stock" | "mismatch"; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
+  const [zoneProductsSort, setZoneProductsSort] = useState<{ key: "name" | "spec" | "real_map" | "current_stock" | "warehouse_stock" | "store_stock" | "real_total" | "loss" | "optimal_stock" | "status" | "mismatch"; dir: "asc" | "desc" }>({ key: "name", dir: "asc" });
   const [zoneProductsSearch, setZoneProductsSearch] = useState("");
 
   // Requests panel
@@ -848,8 +851,40 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   }, []);
 
   // ── Load products map for medicine search ────────────────────────────────────
+  // 정적 /products.json (name/spec) + 서버 /api/products-map (real_map·current_stock·optimal_stock 등)
+  // + /api/inventory-latest (창고/매장 실재고 · inventory_checks 최신값) 을 병렬 로드 후 병합.
+  // 재고관리 페이지와 동일한 소스로 통합해서 구역 모달에서 ERP/창고/매장/실재고 컬럼이 항상 채워지도록 함.
   useEffect(() => {
-    getProductsMap().then(m => setProductsMap(m));
+    let cancelled = false;
+    Promise.all([
+      getProductsMap().catch(() => ({} as Record<string, ProductInfo>)),
+      fetch("/api/products-map").then(r => r.ok ? r.json() : {}).catch(() => ({} as Record<string, ProductInfo>)),
+      fetch("/api/inventory-latest").then(r => r.ok ? r.json() : {}).catch(() => ({} as Record<string, any>)),
+    ]).then(([staticMap, serverMap, invMap]) => {
+      if (cancelled) return;
+      const merged: Record<string, ProductInfo> = { ...staticMap };
+      for (const [code, info] of Object.entries(serverMap as Record<string, ProductInfo>)) {
+        merged[code] = { ...(staticMap[code] ?? {} as ProductInfo), ...info };
+      }
+      // inventory_checks 최신값 병합 (product_code 별 warehouse_stock/store_stock/checked_at)
+      const inv = invMap as Record<string, { warehouse_stock: number | null; store_stock: number | null; checked_at: string | null }>;
+      for (const [code, iv] of Object.entries(inv)) {
+        const stripped = code.replace(/^0+/, "");
+        const keys = [code, stripped].filter(Boolean);
+        for (const k of keys) {
+          if (merged[k]) {
+            merged[k] = {
+              ...merged[k],
+              warehouse_stock: iv.warehouse_stock,
+              store_stock: iv.store_stock,
+              inv_checked_at: iv.checked_at,
+            } as ProductInfo;
+          }
+        }
+      }
+      setProductsMap(merged);
+    });
+    return () => { cancelled = true; };
   }, []);
 
   // ── Load zone groups from DB on mount ────────────────────────────────────────
@@ -1406,43 +1441,43 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       {(dpCanSeeStockManage || dpCanSeeStockArrivals) && (() => {
         // 모바일에서도 전체 라벨 유지 · 안 맞으면 가로 스크롤
         // 순서: 재고 → 판매 → 발주 → 입고알림 → 구역도(구 매장관리) → 직원관리
-        const tabs: Array<{ key: string; label: string; icon: any; color: string; visible: boolean }> = [
-          { key: "stock-manage",   label: "재고관리",     icon: Boxes,          color: "orange", visible: dpCanSeeStockManage },
-          { key: "sales-trend",    label: "판매추이",     icon: TrendingUp,     color: "cyan",   visible: dpCanSeeStockManage },
-          { key: "order-manage",   label: "발주관리",     icon: ClipboardList,  color: "blue",   visible: dpCanSeeStockManage },
-          { key: "stock-arrivals", label: "입고알림",     icon: Bell,           color: "green",  visible: dpCanSeeStockArrivals },
-          { key: "store",          label: "구역도",       icon: Store,          color: "red",    visible: true },
-          { key: "staff-manage",   label: "직원관리",     icon: Users,          color: "purple", visible: true },
+        // 옵션 1: 헤더는 무지개 유지 · 서브탭은 그레이톤 · 활성만 인디고 강조 → 시각 계층 명확
+        const tabs: Array<{ key: string; label: string; icon: any; visible: boolean }> = [
+          { key: "stock-manage",   label: "재고관리",     icon: Boxes,          visible: dpCanSeeStockManage },
+          { key: "sales-trend",    label: "판매추이",     icon: TrendingUp,     visible: dpCanSeeStockManage },
+          { key: "order-manage",   label: "발주관리",     icon: ClipboardList,  visible: dpCanSeeStockManage },
+          { key: "stock-arrivals", label: "입고알림",     icon: Bell,           visible: dpCanSeeStockArrivals },
+          { key: "store",          label: "구역도",       icon: Store,          visible: true },
+          { key: "staff-manage",   label: "직원관리",     icon: Users,          visible: true },
         ];
-        const colorMap: Record<string, { active: string; inactive: string; ring: string; iconActive: string; iconInactive: string; }> = {
-          red:    { active: "bg-gradient-to-br from-red-500 to-red-600 text-white shadow-md",       inactive: "text-red-600 hover:bg-red-50",         ring: "focus-visible:ring-red-400",    iconActive: "text-white", iconInactive: "text-red-500" },
-          orange: { active: "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-md", inactive: "text-orange-600 hover:bg-orange-50",   ring: "focus-visible:ring-orange-400", iconActive: "text-white", iconInactive: "text-orange-500" },
-          cyan:   { active: "bg-gradient-to-br from-cyan-500 to-cyan-600 text-white shadow-md",     inactive: "text-cyan-600 hover:bg-cyan-50",       ring: "focus-visible:ring-cyan-400",   iconActive: "text-white", iconInactive: "text-cyan-500" },
-          green:  { active: "bg-gradient-to-br from-green-500 to-green-600 text-white shadow-md",   inactive: "text-green-600 hover:bg-green-50",     ring: "focus-visible:ring-green-400",  iconActive: "text-white", iconInactive: "text-green-500" },
-          blue:   { active: "bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-md",     inactive: "text-blue-600 hover:bg-blue-50",       ring: "focus-visible:ring-blue-400",   iconActive: "text-white", iconInactive: "text-blue-500" },
-          purple: { active: "bg-gradient-to-br from-purple-500 to-purple-600 text-white shadow-md", inactive: "text-purple-600 hover:bg-purple-50",   ring: "focus-visible:ring-purple-400", iconActive: "text-white", iconInactive: "text-purple-500" },
-        };
+        // 통일된 스타일 · 활성 = 인디고 그라디언트 · 비활성 = 슬레이트 그레이톤
+        const activeCls   = "bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-md";
+        const inactiveCls = "text-slate-600 hover:text-slate-900 hover:bg-white";
+        const ringCls     = "focus-visible:ring-indigo-400";
+        const iconActive  = "text-white";
+        const iconInactive = "text-slate-400";
         const visibleTabs = tabs.filter(t => t.visible);
         // 모바일 한 줄 · flex-1 로 균등 분할 · 데스크탑 인라인
         // 아이콘 위 · 라벨 아래 (세로 스택) · 반응형 유지
         // 모바일: 균등 분할 (flex-1) · 데스크탑: 자연 폭 · 컨테이너는 가운데 정렬
-        const tabBase = "flex flex-col items-center justify-center gap-0.5 sm:gap-1 px-2 sm:px-4 py-1.5 text-[11px] sm:text-[12px] font-bold whitespace-nowrap transition-all duration-150 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-offset-1 rounded-md sm:rounded-lg min-h-[48px] active:scale-95 flex-1 sm:flex-initial sm:min-w-[80px]";
+        // 모바일: 아이콘 위 · 라벨 아래 · 균등 분할
+        // 데스크탑: 아이콘 옆 · 라벨 · 왼쪽 정렬 · 큰 사이즈
+        const tabBase = "flex flex-col sm:flex-row items-center sm:justify-start justify-center gap-0.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2.5 text-[11px] sm:text-[14px] font-bold whitespace-nowrap transition-all duration-150 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-offset-1 rounded-md sm:rounded-xl min-h-[48px] sm:min-h-0 active:scale-95 flex-1 sm:flex-initial sm:min-w-0";
         return (
           <div className="bg-white border-b border-slate-200/70 px-1.5 sm:px-4 w-full">
-            <div className="max-w-[1360px] mx-auto py-1 sm:py-2 w-full flex justify-center overflow-x-auto scrollbar-none">
-              <div className="flex flex-nowrap bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl p-0.5 sm:p-1 gap-0.5 shadow-sm w-full sm:w-auto">
+            <div className="max-w-[1360px] mx-auto py-1 sm:py-2 w-full flex justify-center sm:justify-start overflow-x-auto scrollbar-none">
+              <div className="flex flex-nowrap bg-slate-100 border border-slate-200 rounded-lg sm:rounded-xl p-0.5 sm:p-1 gap-0.5 sm:gap-1 shadow-sm w-full sm:w-auto">
                 {visibleTabs.map(t => {
-                  const c = colorMap[t.color];
                   const active = dpSubTab === t.key;
                   const Icon = t.icon;
                   return (
                     <button
                       key={t.key}
                       onClick={() => setDpSubTab(t.key as any)}
-                      className={`${tabBase} ${c.ring} ${active ? c.active : c.inactive}`}
+                      className={`${tabBase} ${ringCls} ${active ? activeCls : inactiveCls}`}
                       title={t.label}
                     >
-                      <Icon size={13} strokeWidth={2.4} className={`shrink-0 sm:size-[14px] ${active ? c.iconActive : c.iconInactive}`} />
+                      <Icon size={13} strokeWidth={2.2} className={`shrink-0 sm:size-[14px] ${active ? iconActive : iconInactive}`} />
                       <span className="leading-none">{t.label}</span>
                     </button>
                   );
@@ -1734,8 +1769,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             </div>
 
             <p className="text-xs text-gray-400 mb-4">
-              * 구역 번호를 누르면 상세 제품리스트가 조회됩니다. 📅 매주 {dayNames[selectedDateObj.getDay()]}에 적용 시 현재 배정이 해당 요일에 반영되고 DB에 저장됩니다.
-              <span className="ml-2 text-emerald-600 font-semibold">📦 카테고리 라벨을 누르면 해당 구역의 진열상품이 조회됩니다.</span>
+              📅 매주 {dayNames[selectedDateObj.getDay()]}에 적용 시 현재 배정이 해당 요일에 반영됩니다.
+              <br />
+              <span className="text-emerald-600 font-semibold">📦 카테고리 라벨을 누르면 해당 구역의 진열상품이 조회됩니다.</span>
             </p>
 
             {zoneConfigOpen && (
@@ -1749,9 +1785,222 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             )}
 
 
-            {/* ── MAP TAB ─────────────────────────────────────────────────── */}
+            {/* ── MOBILE 리스트뷰 · 데스크탑 미표시 · 데스크탑과 동일한 색상 적용 ── */}
+            {(() => {
+              // 데스크탑 catA / catB 컬러 매핑 재사용
+              const catAColors: Record<number, string> = {
+                1: "bg-blue-500 text-white",   2: "bg-yellow-400 text-yellow-950",
+                3: "bg-red-500 text-white",    4: "bg-pink-500 text-white",
+                5: "bg-lime-500 text-lime-950",6: "bg-sky-500 text-white",
+                7: "bg-indigo-500 text-white", 8: "bg-purple-500 text-white",
+              };
+              const catBColors: Record<number, string> = {
+                1: "bg-blue-100 text-blue-900",     2: "bg-yellow-100 text-yellow-900",
+                3: "bg-red-100 text-red-900",       4: "bg-pink-100 text-pink-900",
+                5: "bg-lime-100 text-lime-900",     6: "bg-sky-100 text-sky-900",
+                7: "bg-indigo-100 text-indigo-900", 8: "bg-purple-100 text-purple-900",
+              };
+              // 9+ 구역 · 갈색(amber-800) 배경 · 하얀 글씨 (사용자 지정)
+              const getPillCls = (z: DisplayZone): string => {
+                if (z.num >= 1 && z.num <= 8) {
+                  return z.id.endsWith("A") ? catAColors[z.num] : catBColors[z.num];
+                }
+                return "bg-amber-800 text-white";
+              };
+              return (
+                <div className="sm:hidden bg-white border border-slate-200 rounded-xl overflow-hidden mb-2">
+                  <div className="px-3 py-2 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                    <span className="text-lg">📋</span>
+                    <span className="text-[13px] font-black text-slate-700">구역 리스트</span>
+                    <span className="text-[10px] font-mono text-slate-400">({zones.length}개)</span>
+                    <button
+                      type="button"
+                      onClick={() => setFullMapOpen(true)}
+                      className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black shadow-sm active:scale-95 transition"
+                      title="매장 구역도 보기 (읽기 전용)"
+                    >
+                      🗺️ 매장 구역도 보기
+                    </button>
+                  </div>
+                  <ul className="divide-y divide-slate-100 max-h-[70vh] overflow-y-auto">
+                    {[...zones]
+                      .sort((a, b) => {
+                        if (a.num !== b.num) return a.num - b.num;
+                        const aa = a.id.endsWith("A") ? 0 : 1;
+                        const bb = b.id.endsWith("A") ? 0 : 1;
+                        return aa - bb;
+                      })
+                      .map(z => {
+                        const zoneLabel = z.num <= 8
+                          ? `${z.num}${z.id.endsWith("A") ? "A" : z.id.endsWith("B") ? "B" : ""}`
+                          : String(z.num);
+                        const statusColor = z.status === "empty" ? "bg-red-500" : z.status === "low" ? "bg-amber-500" : "bg-emerald-500";
+                        const pillCls = getPillCls(z);
+                        // 담당자 리스트 · 콤마 구분
+                        const staffNames = z.assignedStaffName ? z.assignedStaffName.split(",").map(s => s.trim()).filter(Boolean) : [];
+                        return (
+                          <li key={`mobile-list-${z.id}`} className="grid grid-cols-[40px_1fr_84px_62px] items-center gap-2 px-2 py-1.5 hover:bg-slate-50 transition">
+                            {/* 1. 구역 번호 pill · 데스크탑 색상 · 고정 40px */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setZoneProductsModal({ zoneId: z.id, zoneNum: z.num, zoneLabel: zoneLabel, category: z.category });
+                                setZoneProductsFilter("all"); setZoneProductsSearch("");
+                              }}
+                              className={`w-full h-[38px] rounded text-[13px] font-black flex items-center justify-center leading-none active:scale-95 transition ${pillCls}`}
+                              title={`${zoneLabel} 상품 조회`}
+                            >
+                              {zoneLabel}
+                            </button>
+                            {/* 2. 카테고리 · 왼쪽 정렬 · 줄임말 없음 */}
+                            <span className="text-[12px] font-black text-slate-800 break-keep whitespace-normal leading-tight">
+                              {z.category || "-"}
+                            </span>
+                            {/* 3. 담당자 배지 · 클릭 → 담당자 변경 popover · 데스크탑 STAFF_COLORS 재사용 */}
+                            <div
+                              className="flex flex-wrap gap-1 justify-end cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                handleZoneCellClick(z, rect);
+                              }}
+                              title="담당자 변경"
+                            >
+                              {staffNames.length > 0 ? (
+                                staffNames.map((name) => {
+                                  const emp = employees.find(e2 => e2.name === name);
+                                  const colorIdx = emp ? (staffColorMap.get(emp.id) ?? 0) : 0;
+                                  const chip = STAFF_COLORS[colorIdx % STAFF_COLORS.length];
+                                  return (
+                                    <span key={`${z.id}-${name}`} className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-black border ${chip} active:scale-95 transition`}>
+                                      {name}
+                                    </span>
+                                  );
+                                })
+                              ) : (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-400 bg-slate-50 border border-dashed border-slate-300 active:scale-95 transition">
+                                  + 배정
+                                </span>
+                              )}
+                            </div>
+                            {/* 4. 진열요청 버튼 · 고정 폭 */}
+                            <div className="w-full">
+                              {renderRequestButton(z.num, z.id)}
+                            </div>
+                          </li>
+                        );
+                      })}
+                  </ul>
+                </div>
+              );
+            })()}
+
+            {/* ── 모바일 · 매장 구역도 fullscreen 모달 (읽기 전용 · 드래그 스크롤) ─── */}
+            {fullMapOpen && (
+              <div className="sm:hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex flex-col" onClick={() => setFullMapOpen(false)}>
+                <div className="flex items-center justify-between px-3 py-2 bg-white border-b border-slate-200 shadow-sm">
+                  <span className="text-sm font-black text-slate-800">🗺️ 매장 구역도 (읽기 전용)</span>
+                  <button onClick={() => setFullMapOpen(false)} className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-lg font-black">×</button>
+                </div>
+                <div className="flex-1 overflow-auto p-2" onClick={e => e.stopPropagation()}>
+                  {/* 데스크탑 매장맵과 동일한 카테고리 라벨/색깔/테두리 · pointer-events-none 으로 읽기만 · 드래그·스크롤은 가능 */}
+                  <div className="min-w-[820px] pointer-events-none select-none">
+                    <div className="p-2 bg-slate-200 rounded-2xl border-4 border-emerald-500 shadow-inner space-y-3">
+                      {/* 상단 벽면 */}
+                      <div className="w-full bg-white border-2 border-emerald-600 rounded-xl p-2 shadow-sm">
+                        <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">상단 벽면 (21→9)</div>
+                        <div className="grid grid-cols-[repeat(13,minmax(0,1fr))] gap-1 bg-slate-100 p-1 rounded">
+                          {[21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9].map((num) => renderWallZoneCard(num, "top"))}
+                        </div>
+
+                        {/* 중앙 진열대: 22 + 8B|8A → 1B|1A · 데스크탑과 동일 카테고리 라벨/색깔/테두리 */}
+                        <div className="my-3 w-full">
+                          <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-1">중앙 진열대 (22 · 8B|8A → 1B|1A · 16구역)</div>
+                          <div className="flex items-stretch justify-start pr-3 px-1.5 bg-slate-50 border border-slate-200 py-2 rounded-lg gap-1.5">
+                            {/* 진열대 22 (단독) */}
+                            <div className="flex flex-col items-center gap-0.5 flex-none w-[40px] min-w-[40px] mr-1">
+                              <div className="w-full text-[10px] font-black text-slate-700 bg-white border-2 border-slate-300 rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex items-center justify-center overflow-hidden">
+                                <span className="line-clamp-4">{ZONE_DEFS.find(z => z.num === 22)?.category ?? ""}</span>
+                              </div>
+                              <div className="w-full text-[9px] font-black text-white bg-slate-600 rounded px-0.5 py-0.5 text-center leading-none">22</div>
+                              {renderZoneCell(22, "w-full h-[80px] flex flex-col justify-between items-center py-1 px-0.5 text-[9px]", "", true)}
+                            </div>
+                            {/* 8→1 pair · 데스크탑 catA/catB 컬러맵 그대로 */}
+                            {(() => {
+                              const catA: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
+                                1: { bg: "bg-blue-500",   border: "border-blue-700",   text: "text-white", labelBg: "bg-blue-800" },
+                                2: { bg: "bg-yellow-400", border: "border-yellow-700", text: "text-yellow-950", labelBg: "bg-yellow-700" },
+                                3: { bg: "bg-red-500",    border: "border-red-700",    text: "text-white", labelBg: "bg-red-800" },
+                                4: { bg: "bg-pink-500",   border: "border-pink-700",   text: "text-white", labelBg: "bg-pink-800" },
+                                5: { bg: "bg-lime-500",   border: "border-lime-700",   text: "text-lime-950", labelBg: "bg-lime-800" },
+                                6: { bg: "bg-sky-500",    border: "border-sky-700",    text: "text-white", labelBg: "bg-sky-800" },
+                                7: { bg: "bg-indigo-500", border: "border-indigo-700", text: "text-white", labelBg: "bg-indigo-800" },
+                                8: { bg: "bg-purple-500", border: "border-purple-700", text: "text-white", labelBg: "bg-purple-800" },
+                              };
+                              const catB: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
+                                1: { bg: "bg-blue-100",   border: "border-blue-300",   text: "text-blue-900",   labelBg: "bg-blue-400" },
+                                2: { bg: "bg-yellow-100", border: "border-yellow-300", text: "text-yellow-900", labelBg: "bg-yellow-400" },
+                                3: { bg: "bg-red-100",    border: "border-red-300",    text: "text-red-900",    labelBg: "bg-red-400" },
+                                4: { bg: "bg-pink-100",   border: "border-pink-300",   text: "text-pink-900",   labelBg: "bg-pink-400" },
+                                5: { bg: "bg-lime-100",   border: "border-lime-300",   text: "text-lime-900",   labelBg: "bg-lime-400" },
+                                6: { bg: "bg-sky-100",    border: "border-sky-300",    text: "text-sky-900",    labelBg: "bg-sky-400" },
+                                7: { bg: "bg-indigo-100", border: "border-indigo-300", text: "text-indigo-900", labelBg: "bg-indigo-400" },
+                                8: { bg: "bg-purple-100", border: "border-purple-300", text: "text-purple-900", labelBg: "bg-purple-400" },
+                              };
+                              return [8, 7, 6, 5, 4, 3, 2, 1].map(num => {
+                                const ca = catA[num];
+                                const cb = catB[num];
+                                const zd = ZONE_DEFS.find(z => z.num === num);
+                                const subB = zd?.subB ?? "";
+                                const subA = zd?.subA ?? "";
+                                return (
+                                  <div key={`fullmap-pair-${num}`} className="flex flex-col items-stretch gap-0.5 flex-[2] min-w-[60px]">
+                                    {/* B (연한 톤) */}
+                                    <div className={`w-full text-[10px] font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden`}>
+                                      <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}B</span>
+                                      <span className="line-clamp-3 text-[10px]">{subB}</span>
+                                    </div>
+                                    {/* B|A zone cell 나란히 */}
+                                    <div className="flex gap-0.5 items-stretch">
+                                      <div className="flex-1 flex flex-col gap-0.5">
+                                        {renderZoneCellById(`${num}B`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[9px]", "", true)}
+                                      </div>
+                                      <div className="flex-1 flex flex-col gap-0.5">
+                                        {renderZoneCellById(`${num}A`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[9px]", "", true)}
+                                      </div>
+                                    </div>
+                                    {/* A (진한 톤) */}
+                                    <div className={`w-full text-[10px] font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden`}>
+                                      <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}A</span>
+                                      <span className="line-clamp-3 text-[10px]">{subA}</span>
+                                    </div>
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
+                        </div>
+
+                        {/* 하단 벽면 */}
+                        <div className="w-full">
+                          <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">하단 벽면 (23→34)</div>
+                          <div className="grid grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
+                            {[23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34].map((num) => renderWallZoneCard(num, "bottom"))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="px-3 py-2 bg-white border-t border-slate-200 text-[10px] text-slate-500 text-center">
+                  💡 좌우로 드래그하여 전체 구역도 확인 · 편집은 데스크탑에서 가능
+                </div>
+              </div>
+            )}
+
+            {/* ── MAP TAB (데스크탑 매장 배치도) · 모바일 숨김 ─────────────── */}
             {/* Simulated 2D Floor Plan Grid matches map.png */}
-            <div className="xl:overflow-x-visible overflow-x-auto">
+            <div className="hidden sm:block xl:overflow-x-visible overflow-x-auto">
             <div className="p-2 bg-slate-200 rounded-2xl flex flex-col justify-between border-4 border-emerald-500 shadow-inner gap-2 min-h-[500px] xl:w-full min-w-[820px] w-max relative">
 
               {/* ── 물류출근직원 pill (매장 배치도 내부 상단) ── */}
@@ -1829,10 +2078,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
               {/* SECTION 1: TOP HORIZONTAL BAND — 신규 배치 (2026 개편) */}
               {/* 상단: 21→9 (좌→우 감소, 13개)  ·  중앙: 22 + 8-1 각 B|A  ·  하단: 23→34 (좌→우 증가, 12개) */}
-              <div className="flex justify-between items-stretch gap-3 w-full shrink-0">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-stretch gap-3 w-full shrink-0">
 
                 {/* Main Horizontal Shelving Wing: Top Wall, Aisle Shelves, Bottom Wall */}
-                <div className="flex-1 bg-white border-2 border-emerald-600 rounded-xl p-3 flex flex-col shadow-sm relative">
+                <div className="flex-1 bg-white border-2 border-emerald-600 rounded-xl p-2 md:p-3 flex flex-col shadow-sm relative min-w-0">
 
                   {/* 미니 위치 다이어그램: 수평윙(현재 표시 영역) 강조 */}
                   <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
@@ -1847,10 +2096,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     <span className="text-[8px] font-bold text-slate-600 leading-none">수평 윙</span>
                   </div>
 
-                  {/* 상단 벽면: 21→9 좌→우 (13개) — 통합 카드 */}
+                  {/* 상단 벽면: 21→9 좌→우 (13개) · 모바일 4열 wrap 순차 · 데스크탑 13열 한 줄 */}
                   <div className="w-full">
                     <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">상단 벽면 (21→9)</div>
-                    <div className="grid gap-1 bg-slate-100 p-1 rounded" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
+                    <div className="grid grid-cols-4 md:grid-cols-[repeat(13,minmax(0,1fr))] gap-1 bg-slate-100 p-1 rounded">
                       {[21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9].map((num) => renderWallZoneCard(num, "top"))}
                     </div>
                   </div>
@@ -1858,9 +2107,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   {/* 중앙 진열대: 22 + 8B/8A/7B/7A/.../1B/1A (16개 세로 진열대 나란히) */}
                   <div className="my-3 w-full">
                     <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-1">중앙 진열대 (22 · 8B|8A → 1B|1A · 16구역)</div>
-                    <div className="flex items-stretch px-1.5 bg-slate-50 border border-slate-200 py-2 rounded-lg gap-1.5">
-                      {/* 진열대 22 (좌측 첫 번째, 단독) */}
-                      <div className="flex flex-col items-center gap-0.5 flex-1 min-w-[32px]">
+                    {/* 반응형: 모바일 (sm 이하) 에서는 2 pair 씩 wrap · 데스크탑은 한 줄 유지 */}
+                    <div className="flex flex-wrap md:flex-nowrap items-stretch justify-start md:pr-3 px-1.5 bg-slate-50 border border-slate-200 py-2 rounded-lg gap-1.5">
+                      {/* 진열대 22 (좌측 첫 번째, 단독) · 왼쪽 벽에 붙임 · 좁은 고정 폭 */}
+                      <div className="flex flex-col items-center gap-0.5 basis-full md:basis-auto md:flex-none md:w-[40px] md:min-w-[40px] md:mr-1">
                         <button
                           type="button"
                           onClick={() => {
@@ -1916,7 +2166,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                           const subB = zd?.subB ?? "";
                           const subA = zd?.subA ?? "";
                           return (
-                            <div key={`pair-${num}`} className="flex flex-col items-stretch gap-0.5 flex-[2] min-w-[60px]">
+                            <div key={`pair-${num}`} className="flex flex-col items-stretch gap-0.5 basis-[calc(50%-6px)] md:basis-0 md:flex-[2_2_0%] md:min-w-[60px]">
                               {/* 상단: B 카테고리 (연한 톤) */}
                               <button
                                 type="button"
@@ -1959,10 +2209,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     </div>
                   </div>
 
-                  {/* 하단 벽면: 23→34 좌→우 (12개) — 통합 카드 */}
+                  {/* 하단 벽면: 23→34 좌→우 (12개) · 모바일 4열 wrap · 데스크탑 12열 한 줄 */}
                   <div className="w-full">
                     <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">하단 벽면 (23→34)</div>
-                    <div className="grid grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
+                    <div className="grid grid-cols-4 md:grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
                       {[23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34].map((num) => renderWallZoneCard(num, "bottom"))}
                     </div>
                   </div>
@@ -1980,20 +2230,20 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
               {/* 실시간 진열 보충 요청 현황 — 드래그로 폭 조절 가능 */}
               <div className="bg-white p-3 rounded-2xl shadow-md shadow-slate-200/60 border border-slate-100 flex flex-col shrink-0" style={{ width: `min(100%, ${reqPanelWidth}px)` }}>
-                <div className="border-b border-slate-100 pb-3 flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                <div className="border-b border-slate-100 pb-3 flex items-center justify-between flex-nowrap gap-2 overflow-x-auto scrollbar-none">
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
                       <ClipboardList size={16} className="text-violet-600" />
                     </div>
-                    <h2 className="text-sm font-bold text-slate-900">실시간 진열 보충 요청 현황</h2>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700 shrink-0">
+                    <h2 className="text-sm font-bold text-slate-900 whitespace-nowrap">실시간 진열 보충 요청 현황</h2>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700 shrink-0 whitespace-nowrap">
                       대기 {requests.filter(r => r.status === "pending").length}건 / 전체 {requests.length}건
                     </span>
                   </div>
-                  <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5 text-[10px]">
+                  <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5 text-[10px] shrink-0">
                     {(["all", "pending", "done"] as const).map((k) => (
                       <button key={k} type="button" onClick={() => setReqFilter(k)}
-                        className={`px-2.5 py-1 font-semibold rounded-md transition cursor-pointer ${reqFilter === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                        className={`px-2.5 py-1 font-semibold rounded-md transition cursor-pointer whitespace-nowrap ${reqFilter === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                         {k === "all" ? "전체" : k === "pending" ? "대기중" : "완료"}
                       </button>
                     ))}
@@ -2574,6 +2824,27 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         // 정렬
         const cmpStr = (a: string, b: string) => a.localeCompare(b, "ko");
         const cmpNum = (a: number, b: number) => a - b;
+        const numOrNaN = (v: any) => v != null && v !== "" ? Number(v) : NaN;
+        const realTotal = (p: any) => {
+          const wh = numOrNaN(p.warehouse_stock);
+          const st = numOrNaN(p.store_stock);
+          if (!Number.isFinite(wh) && !Number.isFinite(st)) return -Infinity;
+          return (Number.isFinite(wh) ? wh : 0) + (Number.isFinite(st) ? st : 0);
+        };
+        const lossOf = (p: any) => {
+          const closing = numOrNaN(p.closing_stock);
+          const cur = numOrNaN(p.current_stock);
+          return (Number.isFinite(closing) && Number.isFinite(cur)) ? closing - cur : -Infinity;
+        };
+        const statusRank = (p: any) => {
+          const cur = numOrNaN(p.current_stock);
+          const opt = numOrNaN(p.optimal_stock);
+          if (!Number.isFinite(cur)) return 5; // 미확인 뒤로
+          if (cur <= 0) return 0; // 품절 앞으로
+          if (cur < 3) return 1;  // 임박
+          if (Number.isFinite(opt) && opt > 0 && cur < opt) return 2; // 적정이하
+          return 3; // 정상
+        };
         const filtered = [...filteredRaw].sort((a, b) => {
           const dir = zoneProductsSort.dir === "asc" ? 1 : -1;
           switch (zoneProductsSort.key) {
@@ -2581,10 +2852,24 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             case "spec": return dir * cmpStr(String(a.spec ?? ""), String(b.spec ?? ""));
             case "real_map": return dir * cmpStr(String(a.real_map ?? ""), String(b.real_map ?? ""));
             case "current_stock": {
-              const aS = a.current_stock ?? -Infinity;
-              const bS = b.current_stock ?? -Infinity;
-              return dir * cmpNum(aS, bS);
+              const aS = numOrNaN((a as any).current_stock); const bS = numOrNaN((b as any).current_stock);
+              return dir * cmpNum(Number.isFinite(aS) ? aS : -Infinity, Number.isFinite(bS) ? bS : -Infinity);
             }
+            case "warehouse_stock": {
+              const aS = numOrNaN((a as any).warehouse_stock); const bS = numOrNaN((b as any).warehouse_stock);
+              return dir * cmpNum(Number.isFinite(aS) ? aS : -Infinity, Number.isFinite(bS) ? bS : -Infinity);
+            }
+            case "store_stock": {
+              const aS = numOrNaN((a as any).store_stock); const bS = numOrNaN((b as any).store_stock);
+              return dir * cmpNum(Number.isFinite(aS) ? aS : -Infinity, Number.isFinite(bS) ? bS : -Infinity);
+            }
+            case "real_total": return dir * cmpNum(realTotal(a), realTotal(b));
+            case "loss": return dir * cmpNum(lossOf(a), lossOf(b));
+            case "optimal_stock": {
+              const aS = numOrNaN((a as any).optimal_stock); const bS = numOrNaN((b as any).optimal_stock);
+              return dir * cmpNum(Number.isFinite(aS) ? aS : -Infinity, Number.isFinite(bS) ? bS : -Infinity);
+            }
+            case "status": return dir * cmpNum(statusRank(a), statusRank(b));
             case "mismatch": {
               const aMis = (String(a.spec ?? "").trim() !== String(a.real_map ?? "").trim()) ? 1 : 0;
               const bMis = (String(b.spec ?? "").trim() !== String(b.real_map ?? "").trim()) ? 1 : 0;
@@ -2598,8 +2883,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         const sortIcon = (key: typeof zoneProductsSort.key) =>
           zoneProductsSort.key !== key ? "↕" : zoneProductsSort.dir === "asc" ? "▲" : "▼";
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setZoneProductsModal(null)}>
-            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-2 sm:p-4" onClick={() => setZoneProductsModal(null)}>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
               {/* Header */}
               <div className="px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-emerald-50 to-sky-50 flex items-center justify-between">
                 <div>
@@ -2621,64 +2906,121 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                 </div>
                 <span className="text-[10px] font-bold text-slate-500 ml-auto">{filtered.length}/{matched.length}건</span>
               </div>
-              {/* List */}
-              <div className="flex-1 overflow-y-auto">
+              {/* List — 재고관리 페이지와 동일한 컬럼 구성 (ERP · 창고 · 매장 · 실재고 · 적정 · 상황) · 가로 스크롤 없음 */}
+              <div className="flex-1 overflow-y-auto overflow-x-hidden bg-slate-50 p-2 sm:p-4">
                 {filtered.length === 0 ? (
-                  <div className="text-center text-xs text-slate-400 py-10">해당 조건의 상품 없음</div>
+                  <div className="text-center text-xs text-slate-400 py-10 bg-white rounded-xl border border-slate-200">해당 조건의 상품 없음</div>
                 ) : (
-                  <div>
-                    {/* 테이블 헤더 (정렬 가능) — 구역(ERP/실배정) 컬럼 제거 · 재고 상황 강조 */}
-                    <div className="grid grid-cols-[1fr_80px_80px_60px] gap-2 px-4 py-2 bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-600 uppercase tracking-wide sticky top-0 z-10">
-                      <button type="button" onClick={() => toggleSort("name")} className="text-left hover:text-slate-900 cursor-pointer flex items-center gap-1">
-                        상품명 <span className="text-slate-400 text-[8px]">{sortIcon("name")}</span>
-                      </button>
-                      <button type="button" onClick={() => toggleSort("current_stock")} className="text-center hover:text-slate-900 cursor-pointer flex items-center justify-center gap-1">
-                        재고 <span className="text-slate-400 text-[8px]">{sortIcon("current_stock")}</span>
-                      </button>
-                      <div className="text-center">재고 상황</div>
-                      <div className="text-center">작업</div>
-                    </div>
-                    <ul className="divide-y divide-slate-100">
-                      {filtered.map((p: ProductInfo) => {
-                        const stockRaw = (p as any).current_stock;
-                        const stockNum = stockRaw != null && stockRaw !== "" ? Number(stockRaw) : NaN;
-                        const optRaw = (p as any).optimal_stock;
-                        const optNum = optRaw != null && optRaw !== "" ? Number(optRaw) : NaN;
-                        let statusLabel = "정상";
-                        let statusClass = "text-emerald-700 bg-emerald-50 border-emerald-200";
-                        if (!Number.isFinite(stockNum)) {
-                          statusLabel = "미확인"; statusClass = "text-slate-500 bg-slate-100 border-slate-200";
-                        } else if (stockNum <= 0) {
-                          statusLabel = "품절"; statusClass = "text-red-700 bg-red-50 border-red-300";
-                        } else if (stockNum < 3) {
-                          statusLabel = "품절임박"; statusClass = "text-amber-700 bg-amber-50 border-amber-300 animate-pulse";
-                        } else if (Number.isFinite(optNum) && optNum > 0 && stockNum < optNum) {
-                          statusLabel = "적정이하"; statusClass = "text-orange-700 bg-orange-50 border-orange-200";
-                        }
-                        return (
-                          <li key={p.code} className="grid grid-cols-[1fr_80px_80px_60px] gap-2 px-4 py-2 hover:bg-slate-50 items-center text-[11px]">
-                            <div className="min-w-0">
-                              <div className="text-[12px] font-bold text-slate-800 truncate" title={p.name}>{p.name}</div>
-                            </div>
-                            <div className={`text-center font-mono font-black text-[13px] ${Number.isFinite(stockNum) && stockNum <= 0 ? "text-red-600" : Number.isFinite(stockNum) && stockNum < 3 ? "text-amber-700" : "text-slate-800"}`}>
-                              {Number.isFinite(stockNum) ? stockNum : "-"}
-                            </div>
-                            <div className="text-center">
-                              <span className={`inline-block text-[10px] font-black border rounded-full px-2 py-0.5 ${statusClass}`}>
-                                {statusLabel}
-                              </span>
-                            </div>
-                            <div className="text-center">
-                              <button
-                                type="button"
-                                onClick={() => { setProductInfoModal(p); setZoneProductsModal(null); }}
-                                className="text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-2 py-0.5 rounded hover:bg-indigo-100 cursor-pointer"
-                              >정보</button>
-                            </div>
-                          </li>
-                        );
-                      })}
-                    </ul>
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+                    <table className="w-full text-[11px] table-fixed">
+                      <colgroup>
+                        <col />
+                        <col className="w-[44px]" />
+                        <col className="w-[44px]" />
+                        <col className="w-[44px]" />
+                        <col className="w-[48px]" />
+                        <col className="w-[44px]" />
+                        <col className="w-[44px]" />
+                        <col className="w-[60px]" />
+                      </colgroup>
+                      <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
+                        <tr className="text-[10px] font-black text-slate-600 uppercase tracking-wide">
+                          <th className="text-left px-2 py-2">
+                            <button type="button" onClick={() => toggleSort("name")} className="hover:text-slate-900 cursor-pointer inline-flex items-center gap-1">
+                              상품명 <span className="text-slate-400 text-[8px]">{sortIcon("name")}</span>
+                            </button>
+                          </th>
+                          <th className="text-right px-1 py-2 text-amber-500" title="ERP 현재고 (products.current_stock)">
+                            <button type="button" onClick={() => toggleSort("current_stock")} className="hover:text-amber-700 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
+                              ERP<span className="text-slate-400 text-[8px]">{sortIcon("current_stock")}</span>
+                            </button>
+                          </th>
+                          <th className="text-right px-1 py-2 bg-cyan-50 text-cyan-600 font-black" title="실재고 · 창고">
+                            <button type="button" onClick={() => toggleSort("warehouse_stock")} className="hover:text-cyan-800 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
+                              창고<span className="text-slate-400 text-[8px]">{sortIcon("warehouse_stock")}</span>
+                            </button>
+                          </th>
+                          <th className="text-right px-1 py-2 bg-violet-50 text-violet-600 font-black" title="실재고 · 매장">
+                            <button type="button" onClick={() => toggleSort("store_stock")} className="hover:text-violet-800 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
+                              매장<span className="text-slate-400 text-[8px]">{sortIcon("store_stock")}</span>
+                            </button>
+                          </th>
+                          <th className="text-right px-1 py-2 text-emerald-600 font-black" title="실재고 합계 (창고+매장)">
+                            <button type="button" onClick={() => toggleSort("real_total")} className="hover:text-emerald-800 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
+                              실재고<span className="text-slate-400 text-[8px]">{sortIcon("real_total")}</span>
+                            </button>
+                          </th>
+                          <th className="text-right px-1 py-2 text-rose-500 font-black" title="손실 (마감재고 - 현재고, 양수일수록 손실)">
+                            <button type="button" onClick={() => toggleSort("loss")} className="hover:text-rose-700 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
+                              손실<span className="text-slate-400 text-[8px]">{sortIcon("loss")}</span>
+                            </button>
+                          </th>
+                          <th className="text-right px-1 py-2 text-slate-500" title="적정재고 (products.optimal_stock)">
+                            <button type="button" onClick={() => toggleSort("optimal_stock")} className="hover:text-slate-800 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
+                              적정<span className="text-slate-400 text-[8px]">{sortIcon("optimal_stock")}</span>
+                            </button>
+                          </th>
+                          <th className="text-center px-1 py-2">
+                            <button type="button" onClick={() => toggleSort("status")} className="hover:text-slate-900 cursor-pointer inline-flex items-center justify-center gap-0.5 w-full">
+                              상황<span className="text-slate-400 text-[8px]">{sortIcon("status")}</span>
+                            </button>
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {filtered.map((p: ProductInfo) => {
+                          const stockRaw = (p as any).current_stock;
+                          const stockNum = stockRaw != null && stockRaw !== "" ? Number(stockRaw) : NaN;
+                          const optRaw = (p as any).optimal_stock;
+                          const optNum = optRaw != null && optRaw !== "" ? Number(optRaw) : NaN;
+                          const wh = (p as any).warehouse_stock;
+                          const st = (p as any).store_stock;
+                          const realTotal = (wh != null || st != null) ? (Number(wh ?? 0) + Number(st ?? 0)) : null;
+                          const mismatch = realTotal != null && Number.isFinite(stockNum) && realTotal !== stockNum;
+                          let statusLabel = "정상";
+                          let statusClass = "text-emerald-700 bg-emerald-50 border-emerald-200";
+                          if (!Number.isFinite(stockNum)) {
+                            statusLabel = "미확인"; statusClass = "text-slate-500 bg-slate-100 border-slate-200";
+                          } else if (stockNum <= 0) {
+                            statusLabel = "품절"; statusClass = "text-red-700 bg-red-50 border-red-300";
+                          } else if (stockNum < 3) {
+                            statusLabel = "품절임박"; statusClass = "text-amber-700 bg-amber-50 border-amber-300 animate-pulse";
+                          } else if (Number.isFinite(optNum) && optNum > 0 && stockNum < optNum) {
+                            statusLabel = "적정이하"; statusClass = "text-orange-700 bg-orange-50 border-orange-200";
+                          }
+                          const fmt = (v: any) => v == null ? "-" : String(v);
+                          return (
+                            <tr key={p.code} className="hover:bg-slate-50 cursor-pointer" onClick={() => { setProductInfoModal(p); setZoneProductsModal(null); }}>
+                              <td className="text-left px-2 py-1.5 min-w-0">
+                                <div className="text-[12px] font-bold text-slate-800 truncate" title={p.name}>{p.name}</div>
+                                {((p as any).spec || (p as any).real_map) && (
+                                  <div className="mt-0.5 text-[9px] text-slate-400 truncate">
+                                    {(p as any).spec && <span className="font-mono">ERP {String((p as any).spec)}</span>}
+                                    {(p as any).real_map && <span className="font-mono"> · 실배정 {String((p as any).real_map)}</span>}
+                                  </div>
+                                )}
+                              </td>
+                              <td className={`text-right px-1 py-1.5 font-mono font-black text-[11px] ${!Number.isFinite(stockNum) ? "text-slate-300" : stockNum <= 0 ? "text-red-600" : "text-amber-700"}`}>{Number.isFinite(stockNum) ? stockNum : "-"}</td>
+                              <td className={`text-right px-1 py-1.5 font-mono font-black text-[11px] bg-cyan-50/50 ${wh != null ? "text-cyan-700" : "text-slate-300"}`}>{fmt(wh)}</td>
+                              <td className={`text-right px-1 py-1.5 font-mono font-black text-[11px] bg-violet-50/50 ${st != null ? "text-violet-700" : "text-slate-300"}`}>{fmt(st)}</td>
+                              <td className={`text-right px-1 py-1.5 font-mono font-black text-[11px] ${realTotal == null ? "text-slate-300" : mismatch ? "text-rose-600" : "text-emerald-700"}`} title={mismatch ? `실재고 ${realTotal} ≠ ERP ${stockNum} · 불일치` : "실재고 합계"}>{realTotal == null ? "-" : realTotal}</td>
+                              {(() => {
+                                const closingRaw = (p as any).closing_stock;
+                                const closingNum = closingRaw != null && closingRaw !== "" ? Number(closingRaw) : NaN;
+                                const loss = (Number.isFinite(closingNum) && Number.isFinite(stockNum)) ? (closingNum - stockNum) : null;
+                                return (
+                                  <td className={`text-right px-1 py-1.5 font-mono font-black text-[11px] ${loss == null ? "text-slate-300" : loss > 0 ? "text-rose-600" : loss < 0 ? "text-sky-600" : "text-slate-500"}`} title={loss == null ? "마감재고 없음" : `마감재고 ${closingNum} - 현재고 ${stockNum} = ${loss}`}>{loss == null ? "-" : loss}</td>
+                                );
+                              })()}
+                              <td className={`text-right px-1 py-1.5 font-mono font-black text-[11px] ${Number.isFinite(optNum) ? "text-slate-600" : "text-slate-300"}`}>{Number.isFinite(optNum) ? optNum : "-"}</td>
+                              <td className="text-center px-1 py-1.5">
+                                <span className={`inline-block text-[9px] font-black border rounded-full px-1.5 py-0.5 ${statusClass}`}>{statusLabel}</span>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 )}
               </div>
@@ -2692,35 +3034,42 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {/* ── 상품정보 모달 ── */}
       {productInfoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4" onClick={() => setProductInfoModal(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className="px-5 pt-5 pb-3 border-b border-gray-100 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">상품 기본정보</p>
-                <p className="text-base font-black text-gray-900 leading-tight truncate">{productInfoModal.name ?? productInfoModal.product_name}</p>
-              </div>
-              <button onClick={() => setProductInfoModal(null)} className="shrink-0 p-1 text-gray-400 hover:text-gray-600 transition cursor-pointer mt-0.5">
-                <X size={16} />
-              </button>
-            </div>
-            <div className="px-5 py-4 flex flex-col gap-3">
-              {([
-                ["상품코드", productInfoModal.code ?? productInfoModal.product_code, "font-mono text-xs"],
-                ["상품명",   productInfoModal.name ?? productInfoModal.product_name, ""],
-                ["공급사",   productInfoModal.supplier ?? "-", ""],
-                ["판매단가", productInfoModal.sale_price != null ? `${Number(productInfoModal.sale_price).toLocaleString()}원` : "-", "font-black text-gray-900"],
-                ["사입가",   productInfoModal.purchase_price != null ? `${Number(productInfoModal.purchase_price).toLocaleString()}원` : "-", "font-black text-indigo-700"],
-              ] as [string, string, string][]).map(([label, value, extra]) => (
-                <div key={label} className="flex items-center justify-between gap-3">
-                  <span className="text-[11px] font-bold text-gray-400 shrink-0">{label}</span>
-                  <span className={`text-sm text-gray-800 text-right truncate ${extra}`}>{value || "-"}</span>
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-1 sm:p-4" onClick={() => setProductInfoModal(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[92vh] flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-sky-50 to-indigo-50">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-md">
+                  <Package size={18} className="text-white" />
                 </div>
-              ))}
+                <div className="min-w-0">
+                  <div className="text-base font-black text-slate-800 truncate">{productInfoModal.name ?? (productInfoModal as any).product_name}</div>
+                  <div className="text-[11px] font-mono text-slate-500 mt-0.5">#{productInfoModal.code ?? (productInfoModal as any).product_code}</div>
+                </div>
+              </div>
+              <button onClick={() => setProductInfoModal(null)} className="text-slate-400 hover:text-slate-700 text-3xl leading-none font-black w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0">×</button>
             </div>
-            <div className="px-5 pb-5">
-              <button onClick={() => setProductInfoModal(null)} className="w-full py-2.5 text-sm font-semibold rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 transition cursor-pointer">
-                닫기
-              </button>
+            <div className="flex-1 overflow-y-auto p-2 sm:p-4 bg-slate-50">
+              <ProductInfoCard
+                product={productInfoModal}
+                context="stock-manage"
+                editable
+                onRealMapUpdate={(newValue) => {
+                  setProductInfoModal(prev => prev ? { ...prev, real_map: newValue } : prev);
+                  setProductsMap(prev => {
+                    const code = String(productInfoModal.code ?? "").trim();
+                    if (!code || !prev[code]) return prev;
+                    return { ...prev, [code]: { ...prev[code], real_map: newValue } };
+                  });
+                }}
+                onProductUpdate={(updates) => {
+                  setProductInfoModal(prev => prev ? { ...prev, ...updates } : prev);
+                  setProductsMap(prev => {
+                    const code = String(productInfoModal.code ?? "").trim();
+                    if (!code || !prev[code]) return prev;
+                    return { ...prev, [code]: { ...prev[code], ...updates } };
+                  });
+                }}
+              />
             </div>
           </div>
         </div>

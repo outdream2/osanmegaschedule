@@ -102,7 +102,7 @@ export class ScheduleController {
    */
   async createEmployee(req: Request, res: Response): Promise<void> {
     try {
-      const { name, position, employmentType, hireDate, retireDate, description, workplace, rank, gender, phone, annual_leave_days, level } = req.body;
+      const { name, position, employmentType, hireDate, retireDate, description, workplace, rank, gender, phone, annual_leave_days, level, address } = req.body;
       if (!name || !position) {
         res.status(400).json({ error: "name and position are required fields" });
         return;
@@ -121,6 +121,7 @@ export class ScheduleController {
         phone: phone ? phone.trim().replace(/[^0-9]/g, "") || null : null,
         annual_leave_days: annual_leave_days != null ? Number(annual_leave_days) : undefined,
         level: level != null ? Number(level) : 1,
+        address: address ?? null,
       });
 
       res.status(201).json(result);
@@ -136,7 +137,7 @@ export class ScheduleController {
   async updateEmployee(req: Request, res: Response): Promise<void> {
     try {
       const id = parseInt(req.params.id);
-      const { name, position, employmentType, hireDate, retireDate, description, workplace, rank, gender, phone, annual_leave_days, level } = req.body;
+      const { name, position, employmentType, hireDate, retireDate, description, workplace, rank, gender, phone, annual_leave_days, level, address } = req.body;
 
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid employee ID" });
@@ -156,6 +157,7 @@ export class ScheduleController {
         phone: phone !== undefined ? (phone ? phone.trim().replace(/[^0-9]/g, "") || null : null) : undefined,
         annual_leave_days: annual_leave_days != null ? Number(annual_leave_days) : undefined,
         level: level != null ? Number(level) : undefined,
+        address: address !== undefined ? (address || null) : undefined,
       });
       res.json(result);
     } catch (error: any) {

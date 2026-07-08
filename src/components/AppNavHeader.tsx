@@ -10,7 +10,7 @@ import {
   LogOut,
   MessageSquare,
   MessageCircleQuestion,
-  Package,
+  ScanBarcode,
   UtensilsCrossed,
 } from "lucide-react";
 import type { AuthSession } from "../types";
@@ -31,7 +31,8 @@ export type AppNavPage =
   | "stockarrivals"
   | "synonyms"
   | "stockcheck"
-  | "board";
+  | "board"
+  | "mypage";
 
 interface AppNavHeaderProps {
   activePage: AppNavPage;
@@ -51,22 +52,24 @@ interface TabDef {
   managerOnly: boolean;
   iconClassName?: string;
   /** 탭 색상 · 활성/비활성 스타일 결정 (tailwind 색상명) */
-  color?: "slate" | "blue" | "red" | "sky" | "indigo" | "orange" | "emerald" | "violet" | "amber";
+  color?: "slate" | "blue" | "red" | "sky" | "indigo" | "orange" | "emerald" | "violet" | "amber" | "cyan";
 }
 
+// 무지개 순서 (노랑 대신 진한 amber · 시인성 확보):
+// 홈 → 매장(빨) → 상품(주) → 스케줄(amber) → 이슈(초) → 요청(청록) → 연차(파) → 점심(남) → OCR(보라)
 const TABS: TabDef[] = [
   { key: "landing",  label: "홈",         mobileLabel: "홈",     icon: Home,          managerOnly: false, color: "slate"   },
-  { key: "schedule", label: "스케줄관리", mobileLabel: "스케줄",  icon: Calendar,      managerOnly: false, color: "blue"    },
-  { key: "lunch",    label: "점심불참",   mobileLabel: "불참",    icon: UtensilsCrossed, managerOnly: false, color: "red"     },
-  { key: "display",  label: "매장관리",   mobileLabel: "매장",    icon: LayoutGrid,    managerOnly: true,  color: "sky"     },
-  { key: "requests", label: "요청목록",   mobileLabel: "요청",    icon: MessageSquare, managerOnly: false, color: "indigo"  },
-  { key: "board",    label: "이슈공유",   mobileLabel: "이슈",    icon: MessageCircleQuestion, managerOnly: false, color: "orange" },
-  { key: "leave",    label: "연차승인",   mobileLabel: "연차",    icon: CheckCircle,   managerOnly: true,  color: "emerald" },
-  { key: "scan",     label: "상품관리",   mobileLabel: "상품",    icon: Package,       managerOnly: true,  color: "violet"  },
-  { key: "ocr",      label: "거래명세서", mobileLabel: "OCR",     icon: FileText,      managerOnly: true,  color: "amber"   },
+  { key: "display",  label: "매장관리",   mobileLabel: "매장",    icon: LayoutGrid,    managerOnly: true,  color: "red"     },
+  { key: "scan",     label: "상품검색",   mobileLabel: "상품",    icon: ScanBarcode,   managerOnly: true,  color: "orange"  },
+  { key: "schedule", label: "스케줄관리", mobileLabel: "스케줄",  icon: Calendar,      managerOnly: false, color: "amber"   },
+  { key: "board",    label: "이슈공유",   mobileLabel: "이슈",    icon: MessageCircleQuestion, managerOnly: false, color: "emerald" },
+  { key: "requests", label: "요청목록",   mobileLabel: "요청",    icon: MessageSquare, managerOnly: false, color: "cyan"    },
+  { key: "leave",    label: "연차승인",   mobileLabel: "연차",    icon: CheckCircle,   managerOnly: true,  color: "blue"    },
+  { key: "lunch",    label: "점심불참",   mobileLabel: "불참",    icon: UtensilsCrossed, managerOnly: false, color: "indigo"  },
+  { key: "ocr",      label: "거래명세서", mobileLabel: "OCR",     icon: FileText,      managerOnly: true,  color: "violet"  },
 ];
 
-// 탭 색상 매핑 · 모바일 활성/비활성
+// 탭 색상 매핑 · 모바일 활성/비활성 (amber 는 노랑 대신 · 시인성 확보 위해 더 진하게)
 const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inactiveText: string; inactiveHoverText: string; }> = {
   slate:   { activeBg: "from-slate-500 to-slate-600",     activeText: "text-white", inactiveText: "text-slate-600",   inactiveHoverText: "hover:text-slate-800"   },
   blue:    { activeBg: "from-blue-500 to-blue-600",       activeText: "text-white", inactiveText: "text-blue-600",    inactiveHoverText: "hover:text-blue-800"    },
@@ -76,7 +79,8 @@ const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inac
   orange:  { activeBg: "from-orange-500 to-orange-600",   activeText: "text-white", inactiveText: "text-orange-600",  inactiveHoverText: "hover:text-orange-800"  },
   emerald: { activeBg: "from-emerald-500 to-emerald-600", activeText: "text-white", inactiveText: "text-emerald-600", inactiveHoverText: "hover:text-emerald-800" },
   violet:  { activeBg: "from-violet-500 to-violet-600",   activeText: "text-white", inactiveText: "text-violet-600",  inactiveHoverText: "hover:text-violet-800"  },
-  amber:   { activeBg: "from-amber-500 to-amber-600",     activeText: "text-white", inactiveText: "text-amber-600",   inactiveHoverText: "hover:text-amber-800"   },
+  amber:   { activeBg: "from-amber-600 to-amber-700",     activeText: "text-white", inactiveText: "text-amber-700",   inactiveHoverText: "hover:text-amber-900"   },
+  cyan:    { activeBg: "from-cyan-500 to-cyan-600",       activeText: "text-white", inactiveText: "text-cyan-600",    inactiveHoverText: "hover:text-cyan-800"    },
 };
 
 export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
@@ -107,12 +111,12 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const Icon = tab.icon;
     const isActive = tab.key === activePage;
     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
-    const base = "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold border transition-all";
+    const base = "flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13.5px] font-medium border transition-all whitespace-nowrap";
     const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key);
     if (isActive) {
       return (
-        <span key={tab.key} className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} border-transparent shadow-sm font-black`}>
-          <Icon size={11} /> {tab.label}
+        <span key={tab.key} className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} border-transparent shadow-sm font-bold`}>
+          <Icon size={15} strokeWidth={2.2} /> {tab.label}
         </span>
       );
     }
@@ -121,9 +125,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         key={tab.key}
         onClick={onClick}
         disabled={!onNavigate && !onBack}
-        className={`${base} bg-white ${c.inactiveText} ${c.inactiveHoverText} border-slate-200 hover:bg-slate-50 hover:border-slate-300 cursor-pointer disabled:opacity-40`}
+        className={`${base} bg-white ${c.inactiveText} ${c.inactiveHoverText} border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-40`}
       >
-        <Icon size={11} /> {tab.label}
+        <Icon size={15} strokeWidth={1.8} /> {tab.label}
       </button>
     );
   };
@@ -208,8 +212,20 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           </div>
         </div>
 
-        {/* Right: rightSlot + logout (역할 배지는 메뉴 아래 라인으로 이동) */}
+        {/* Right: 로그인 이름 + rightSlot + logout */}
         <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+
+          {/* 로그인한 사용자 이름 (알람 스위치 앞) · 클릭 시 마이페이지 이동 · 형식: "로그인:강남규이사" (붙여쓰기) · 모바일/데스크탑 공통 노출 */}
+          {authSession?.employeeName && (
+            <button
+              type="button"
+              onClick={() => onNavigate?.("mypage" as AppNavPage)}
+              className="inline-flex items-center text-[11px] sm:text-[12px] font-bold text-slate-600 whitespace-nowrap px-1.5 sm:px-2 py-1 rounded-lg hover:bg-slate-100 active:scale-95 transition cursor-pointer max-w-[42vw] sm:max-w-none"
+              title="마이페이지"
+            >
+              <span className="text-slate-800 font-black truncate">{authSession.employeeName}{authSession.employeeRank ?? ""}</span>
+            </button>
+          )}
 
           <NotificationToggle authSession={authSession} />
           <NotificationBell authSession={authSession} />
@@ -243,16 +259,19 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         </div>
       )}
 
-      {/* ── 로그인 사용자 이름·직급 · 가운데 정렬 ── */}
+      {/* ── 로그인 사용자 이름·직급 · 모바일 2줄 (이름 위 / 직급 아래) · 데스크탑 한 줄 ── */}
       {authSession && (authSession.employeeName || authSession.employeeRank) && (
-        <div className="px-4 sm:px-6 pb-1.5 sm:pb-2 -mt-0.5 flex items-center justify-center">
-          <span className="text-[11px] sm:text-xs font-black text-slate-500 tracking-tight">
-            <span className="text-slate-300 font-normal">[</span>
-            {authSession.employeeName && <span className="text-slate-800">{authSession.employeeName}</span>}
-            {authSession.employeeName && authSession.employeeRank && <span className="text-slate-400"> </span>}
-            {authSession.employeeRank && <span className="text-slate-600">{authSession.employeeRank}</span>}
-            <span className="text-slate-300 font-normal">]</span>
-          </span>
+        <div className="px-4 sm:px-6 pb-2 sm:pb-2.5 -mt-0.5 flex flex-col sm:flex-row sm:items-baseline items-center justify-center gap-0 sm:gap-2 leading-tight">
+          {authSession.employeeName && (
+            <span className="text-[14px] sm:text-[15px] font-black text-slate-800 tracking-tight">
+              {authSession.employeeName}
+            </span>
+          )}
+          {authSession.employeeRank && (
+            <span className="text-[11px] sm:text-[12px] font-bold text-slate-500 tracking-tight">
+              {authSession.employeeRank}
+            </span>
+          )}
         </div>
       )}
     </header>

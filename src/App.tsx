@@ -18,6 +18,7 @@ import { StockCheckPage } from "./components/StockCheckPage/StockCheckPage";
 import { SynonymPage } from "./components/SynonymPage";
 import { StockArrivalPage } from "./components/StockArrivalPage";
 import { BoardPage } from "./components/BoardPage";
+import { MyPage } from "./components/MyPage";
 import { BottomNav } from "./components/BottomNav";
 import { SessionTimeoutWarning } from "./components/SessionTimeoutWarning";
 import { useAuth } from "./hooks/useAuth";
@@ -25,7 +26,7 @@ import { usePushSubscription } from "./hooks/usePushSubscription";
 import type { AuthSession } from "./types";
 import { prefetchProducts } from "./lib/productsCache";
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage";
 
 export default function App() {
   const [page, setPage] = useState<Page>("landing");
@@ -70,7 +71,7 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board", auth?: AuthSession) => {
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage", auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
     navigate(next);
   };
@@ -96,7 +97,7 @@ export default function App() {
 
   // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
   // The user is already authenticated here, so no AuthSession is required.
-  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "ocr" | "lunch" | "board") => navigate(next);
+  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "ocr" | "lunch" | "board" | "mypage") => navigate(next);
 
   let pageContent: React.ReactElement;
 
@@ -180,6 +181,15 @@ export default function App() {
   } else if (page === "board") {
     pageContent = (
       <BoardPage
+        authSession={authSession}
+        onBack={goBack}
+        onNavigate={navigateInner as any}
+        onLogout={handleLogout}
+      />
+    );
+  } else if (page === "mypage") {
+    pageContent = (
+      <MyPage
         authSession={authSession}
         onBack={goBack}
         onNavigate={navigateInner as any}
