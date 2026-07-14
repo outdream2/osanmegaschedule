@@ -1728,42 +1728,141 @@ function stripRepresentativeName(s: string): string {
   return remaining;
 }
 
-// 사용자 자체 약국(수신처) 이름 · 환경변수 OCR_RECIPIENT_NAMES 로 오버라이드 가능
-//   기본: "코스트팜" (OCR 오독 관대: 코스트탐/코스트팔/코스트탕/Costpharm/Costphara)
-//   환경변수 예: OCR_RECIPIENT_NAMES="메가타운약국,코스트팜"
-const RECIPIENT_HARDCODE = /코\s*스\s*트\s*[팜탐팔탕]|Costphar[ma]|메가타운/i;
-function extraRecipientRegex(): RegExp | null {
-  const raw = process.env.OCR_RECIPIENT_NAMES;
-  if (!raw) return null;
-  const names = raw.split(",").map(s => s.trim()).filter(Boolean);
-  if (names.length === 0) return null;
-  return new RegExp(names.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"), "i");
+// ═══ 공급사에서 제외할 이름 (수신처 · 배송사 · 물류사 · 담당자 등) ═══
+// 관리 방식:
+//   1) DEFAULT_EXCLUDED_SUPPLIERS - 코드 기본값 (아래 3 카테고리)
+//   2) OCR_EXCLUDED_SUPPLIERS 환경변수 - 콤마 구분 · 기본값에 추가
+//   3) OCR_RECIPIENT_NAMES 환경변수 - 하위 호환
+//
+//   Render 설정 예:
+//     OCR_EXCLUDED_SUPPLIERS="(주)신규배송사,홍길동,ABC로지스틱스"
+//
+//   ▷ 자체 약국 (수신처): 공급받는쪽 상호
+//   ▷ 배송사 · 물류사: 공급자로 오인식되기 쉬움
+//   ▷ 수신처 담당자: 상호 근처에 사람 이름이 붙어 오추출되는 경우
+//     예 "코스트팜약국(직/최) 차인대" → "차인대" 제외로 잔여 텍스트 정리
+const DEFAULT_EXCLUDED_SUPPLIERS: string[] = [
+  // ── 자체 약국 (수신처) ──────────────────
+  "코스트팜", "코스트탐", "코스트팔", "코스트탕",
+  "Costpharm", "Costphara",
+  "메가타운",
+  // ── 배송사 · 물류사 ────────────────────
+  "(주)홈우드", "홈우드",
+  "고려택배", "한진택배", "롯데택배", "CJ대한통운", "우체국택배", "로젠택배",
+  // ── 수신처 담당자 (본인 약국 직원) ─────
+  //   OCR 이 공급사 근처로 잘못 배치해서 상호로 오인식되는 경우
+  //   사용자 상황에 맞게 env OCR_EXCLUDED_SUPPLIERS 로 추가 가능
+  "차인대",
+];
+
+let cachedExcludedRe: { key: string; re: RegExp | null } | null = null;
+// env 값 파싱: `|` 또는 `,` 로 구분 (주소에 콤마 있어도 안전하게 파이프 사용 권장)
+function parseExcludeEnv(raw: string): string[] {
+  if (!raw) return [];
+  const sep = raw.includes("|") ? "|" : ",";
+  return raw.split(sep).map(s => s.trim()).filter(Boolean);
 }
+// 카테고리별 env 통합 · 모두 하나의 제외 정규식으로 병합
+//   OCR_RECIPIENT_COMPANY  - 수신처 상호
+//   OCR_RECIPIENT_REP      - 수신처 대표자·담당자
+//   OCR_RECIPIENT_ADDRESS  - 수신처 주소
+//   OCR_EXCLUDED_LOGISTICS - 배송사·물류사
+//   OCR_EXCLUDED_SUPPLIERS - 위 카테고리 외 (catch-all)
+//   OCR_RECIPIENT_NAMES / OCR_RECIPIENT - 하위 호환
+function buildExcludedRegex(): RegExp | null {
+  const envs = [
+    process.env.OCR_RECIPIENT_COMPANY ?? "",
+    process.env.OCR_RECIPIENT_REP ?? "",
+    process.env.OCR_RECIPIENT_ADDRESS ?? "",
+    process.env.OCR_EXCLUDED_LOGISTICS ?? "",
+    process.env.OCR_EXCLUDED_SUPPLIERS ?? "",
+    process.env.OCR_RECIPIENT_NAMES ?? "",   // 하위 호환
+    process.env.OCR_RECIPIENT ?? "",         // 하위 호환 (단일값)
+  ];
+  const cacheKey = envs.join("‡");
+  if (cachedExcludedRe && cachedExcludedRe.key === cacheKey) return cachedExcludedRe.re;
+  const extra = envs.flatMap(parseExcludeEnv);
+  const all = [...DEFAULT_EXCLUDED_SUPPLIERS, ...extra];
+  if (all.length === 0) { cachedExcludedRe = { key: cacheKey, re: null }; return null; }
+  // 중복 제거 + 길이 내림차순 (긴 것부터 매치 · 부분매치 오작동 방지)
+  const uniq = Array.from(new Set(all)).sort((a, b) => b.length - a.length);
+  const escaped = uniq.map(n => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  const re = new RegExp(escaped.join("|"), "i");
+  cachedExcludedRe = { key: cacheKey, re };
+  return re;
+}
+
 function isRecipientName(s: string): boolean {
   if (!s) return false;
-  if (RECIPIENT_HARDCODE.test(s)) return true;
-  const extra = extraRecipientRegex();
-  if (extra && extra.test(s)) return true;
+  const re = buildExcludedRegex();
+  return re ? re.test(s) : false;
+}
+
+// ═══ 노이즈 판정 (공급사 후보에 부적합) ═══
+//   OCR 이 라벨·업태·주소 조각을 상호로 잘못 캡처하는 걸 차단
+const NOISE_PATTERNS = {
+  // 라벨 · 필드명 (단독 또는 접미어)
+  labels: /^(?:성명|성 명|대표|대표자|사업장|주소|업태|종목|담당|전화|팩스|공급|매입|수신|법인|거래처|발급|발행|이메일|메일|영업|보관용|약국|고객|등록번호|사업자번호|성원|성원박|기사명|기사|배송처|배송지|고객특이1|배차|담당자|영업담당|물류센터)$/,
+  // 업태 · 종목 값 (도소매 / 소매업 / 제조업 · 카테고리)
+  bizTypes: /^(?:도소매|도\s*·\s*소매|도매|소매업?|제조업?|서비스업|의약품|의약외품|건강기능식품|화장품|생활용품|종합|기타|음식료|잡화)$/,
+  // 지역명 단독 (경기, 서울시 등)
+  regionOnly: /^(?:서울|부산|대구|인천|광주|대전|울산|세종|경기|강원|충북|충남|전북|전남|경북|경남|제주)(?:시|도|특별시|광역시)?$/,
+  // 주소 접미어 · 도로명 조각
+  addrFrag: /(?:로|길|동|리|층|호)$/,
+  // 순수 숫자/구두점
+  digitsOnly: /^[\d\s.,\-\/()]+$/,
+  // 접미어만 있는 케이스 (약국·제약·(주) 단독)
+  suffixOnly: /^(?:약국|제약|약품|양행|바이오|팜|메디|헬스|케어|화학|테크|랩|사이언스|(?:주식|합자|합명|유한)회사|\(주\))$/,
+};
+
+// 라벨 접두어 (실제 회사명이 이걸로 시작하는 경우 거의 없음)
+//   OCR 오독 관대: 종목↔종옥, 업태↔업EH, 등록↔둥록
+const LABEL_PREFIX_RE = /^(?:종\s*[목옥]|업\s*[태EH]|등\s*[록둥]|성\s*명|대\s*표|사\s*업\s*장|사\s*업\s*자|주\s*소|담\s*당|전\s*화|팩\s*스|공\s*급|매\s*입|수\s*신|거\s*래처|발\s*[급행]|법\s*인)(?:\s|의|이|가|은|는)/;
+
+function isNoiseText(s: string): boolean {
+  if (!s) return true;
+  const t = s.trim();
+  if (t.length < 2) return true;
+  if (NOISE_PATTERNS.digitsOnly.test(t)) return true;
+  if (NOISE_PATTERNS.labels.test(t)) return true;
+  if (NOISE_PATTERNS.bizTypes.test(t)) return true;
+  if (NOISE_PATTERNS.regionOnly.test(t)) return true;
+  if (NOISE_PATTERNS.suffixOnly.test(t)) return true;
+  if (NOISE_PATTERNS.addrFrag.test(t) && /^[가-힣]{2,10}$/.test(t)) return true;
+  if (t.length <= 6 && /(?:성명|대표|주소|담당|전화|팩스)/.test(t)) return true;
+  // 라벨 접두어 + 바로 이어지는 값 = 라벨+값 잘못 캡처 · "종옥의약품", "업태도소매" 등
+  if (LABEL_PREFIX_RE.test(t + " ")) return true;
+  // 종목·업태·종옥 로 시작하는 후보는 라벨 흡수됨 (실제 회사명 없음)
+  if (/^(?:종\s*[목옥]|업\s*[태EH])/.test(t)) return true;
   return false;
 }
 
-// 품명·공급사에 수신처 이름이 접두·접미로 붙어있으면 제거
+// ═══ 회사명 신뢰도 판정 (Whitelist 강화) ═══
+//   실제 회사명은 특정 접미어를 가짐 · 없으면 신뢰도↓
+const COMPANY_SUFFIX_RE = /(?:제약|약품|양행|바이오|팜(?![약])|메디|헬스케어?|케어|화학|테크|랩(?!탑)|사이언스|약국|(?:주식|합자|합명|유한)회사|\(주\)|㈜|코퍼레이션|컴퍼니|엔지니어링|글로벌|인더스트리)$/;
+function hasCompanySuffix(s: string): boolean {
+  if (!s) return false;
+  const t = s.replace(/\s+/g, "");
+  return COMPANY_SUFFIX_RE.test(t);
+}
+
+// 품명·공급사에서 제외 리스트 이름 제거
 //   예: "코스트팜 광동원탕" → "광동원탕"
 //   예: "댕기머리 코스트팜약국(직/최)" → "댕기머리"
-//   전체가 수신처 이름이면 빈 문자열 반환
+//   전체가 제외 이름이면 빈 문자열 반환
 export function stripRecipientName(s: string | null | undefined): string {
   if (!s) return "";
   let out = String(s);
-  const extra = extraRecipientRegex();
-  const patterns: RegExp[] = [
-    /코\s*스\s*트\s*[팜탐팔탕](?:약\s*국)?(?:\([^)]*\))?/gi,
-    /Costphar[ma]/gi,
-    /메가타운(?:약국)?/gi,
-  ];
-  if (extra) patterns.push(new RegExp(extra.source, "gi"));
-  for (const p of patterns) out = out.replace(p, " ");
+  const excluded = buildExcludedRegex();
+  if (excluded) {
+    // 접미어(약국·괄호 표기)까지 함께 제거
+    const withSuffix = new RegExp(
+      `(?:${excluded.source})(?:약\\s*국)?(?:\\([^)]*\\))?`,
+      "gi"
+    );
+    out = out.replace(withSuffix, " ");
+  }
   out = out.replace(/\s+/g, " ").trim();
-  // 남은 문자가 접미어(약국 등)만 있으면 제거
   out = out.replace(/^(?:약국|담당자|성명|대표|주소)\s*/, "").trim();
   return out;
 }
@@ -1774,7 +1873,13 @@ export function extractSupplierFromRawText(rawText: string): DirectSupplierExtra
     if (!s) return;
     const t = s.trim();
     if (t.length < 2) return;
-    if (isRecipientName(t)) return;
+    if (isNoiseText(t)) return;              // 라벨·업태·지역 노이즈 배제
+    if (isRecipientName(t)) return;          // env 등록 수신처 배제
+    // (주) 접두/접미 제거한 코어가 없거나 노이즈면 제외
+    const core = t.replace(/\(\s*주\s*\)|㈜/g, "").replace(/\s+/g, " ").trim();
+    if (!core || core.length < 2) return;    // "(주)" 만 있는 경우 배제
+    if (isNoiseText(core)) return;
+    if (!/[가-힣]/.test(core)) return;         // 한글 없는 후보 배제
     if (!result.candidates.includes(t)) result.candidates.push(t);
   };
   if (!rawText || rawText.length < 10) {
@@ -1836,8 +1941,13 @@ export function extractSupplierFromRawText(rawText: string): DirectSupplierExtra
       const cleaned = cleanCapture(raw);
       const cand = stripRepresentativeName(cleaned);
       if (cand.length < 2 || !/[가-힣]/.test(cand) || /^\d+$/.test(cand)) continue;
+      // 노이즈(라벨·업태·"종옥의약품" 등) 배제
+      if (isNoiseText(cand)) {
+        console.log(`[extract/${label}] ⚠ 매치 "${cand}" (노이즈 · 스킵)`);
+        continue;
+      }
       if (!isRecipientName(cand)) {
-        pushCand(cand);   // 모든 non-recipient 후보 저장 (DB 매칭 재시도용)
+        pushCand(cand);
         if (firstNonRecipient === null) {
           firstNonRecipient = cand;
           console.log(`[extract/${label}] ✅ 매치 "${raw}" → 정리 "${cleaned}" → 절단 "${cand}"`);
@@ -1877,13 +1987,12 @@ export function extractSupplierFromRawText(rawText: string): DirectSupplierExtra
       while ((m = pat.exec(zone))) {
         const name = m[1].trim();
         if (name.length < 2) continue;
+        if (isNoiseText(name)) continue;
         if (isRecipientName(name)) continue;
-        if (/^약국$/.test(name)) continue;
-        // 실제 표기 그대로 (접두/접미 포함) 후보에 넣기
         const withJu = pat.source.startsWith("\\(") || pat.source.startsWith("㈜")
           ? `(주)${name}` : `${name}(주)`;
         pushCand(withJu);
-        pushCand(name);   // 접미 없는 코어 이름도 후보
+        pushCand(name);
       }
     }
     if (!result.supplier && result.candidates.length > 0) {
@@ -1915,10 +2024,11 @@ export function extractSupplierFromRawText(rawText: string): DirectSupplierExtra
         if (cand.length < 3 || cand.length > 25) continue;
         if (/^\d/.test(cand)) continue;
         if (LABEL_BLACKLIST.test(cand)) continue;
+        if (isNoiseText(cand)) continue;         // "종옥의약품" 등 라벨+카테고리 오추출 배제
         if (isRecipientName(cand)) continue;
         const afterJu = cand.replace(/^\(\s*주\s*\)\s*/, "");
         if (REGION_NAMES.has(afterJu)) continue;
-        pushCand(cand);   // 회사명 패턴 매치 전부 후보 등록
+        pushCand(cand);
         if (cand.length > bestLen) { bestLen = cand.length; best = cand; }
       }
       if (best) { winner = { cand: best, patIdx: idx }; break; }
@@ -1926,16 +2036,26 @@ export function extractSupplierFromRawText(rawText: string): DirectSupplierExtra
     if (winner) {
       const cand = stripRepresentativeName(winner.cand);
       const isRcp = isRecipientName(cand);
-      console.log(`[extract/회사명패턴] 매치 "${winner.cand}" (패턴${winner.patIdx + 1}) → 절단 "${cand}" · 수신처=${isRcp}`);
-      if (!isRcp) {
+      const isNoise = isNoiseText(cand);
+      console.log(`[extract/회사명패턴] 매치 "${winner.cand}" (패턴${winner.patIdx + 1}) → 절단 "${cand}" · 수신처=${isRcp} · 노이즈=${isNoise}`);
+      if (!isRcp && !isNoise) {
         result.supplier = cand;
         result.source = "company-pattern";
         console.log(`[extract/회사명패턴] ✅ 채택 "${cand}"`);
       } else {
-        console.log(`[extract/회사명패턴] ⚠ 수신처 필터`);
+        console.log(`[extract/회사명패턴] ⚠ 필터`);
       }
     } else {
       console.log(`[extract/회사명패턴] 매치 없음`);
+    }
+  }
+
+  // 최종 안전장치: result.supplier 가 후보 리스트(pushCand 필터 통과) 에도 없으면 노이즈로 판단
+  if (result.supplier && !result.candidates.includes(result.supplier)) {
+    if (isNoiseText(result.supplier) || isRecipientName(result.supplier)) {
+      console.log(`[extract/최종필터] "${result.supplier}" 노이즈·수신처 판정 → null`);
+      result.supplier = null;
+      result.source = null;
     }
   }
 

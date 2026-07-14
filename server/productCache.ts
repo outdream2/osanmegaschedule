@@ -165,6 +165,39 @@ export async function getProductMap(): Promise<Record<string, ProductInfo>> {
   return productMapPromise;
 }
 
+// OCR 이 추출한 원본 이름 ↔ DB canonical 매핑 저장
+//   다음 스캔 시 즉시 매칭 (fuzzy 매칭 안 거치고 alias 로 바로 해결)
+export async function learnSupplierAlias(rawName: string, canonicalName: string): Promise<{ action: "created" | "updated" | "skipped"; reason?: string }> {
+  if (!rawName || !canonicalName) return { action: "skipped", reason: "empty input" };
+  const alias = rawName.trim();
+  const name = canonicalName.trim();
+  if (alias === name) return { action: "skipped", reason: "identical" };
+  if (alias.length < 2 || name.length < 2) return { action: "skipped", reason: "too short" };
+  try {
+    const { data: existing } = await supabase
+      .from("ocr_supplier_aliases")
+      .select("id, supplier_name")
+      .eq("alias", alias)
+      .limit(1)
+      .maybeSingle();
+    if (existing) {
+      if (existing.supplier_name === name) return { action: "skipped", reason: "already same" };
+      const { error } = await supabase.from("ocr_supplier_aliases").update({ supplier_name: name }).eq("id", existing.id);
+      if (error) return { action: "skipped", reason: error.message };
+      supplierAliasCache = null;
+      supplierAliasPromise = null;
+      return { action: "updated" };
+    }
+    const { error } = await supabase.from("ocr_supplier_aliases").insert({ alias, supplier_name: name });
+    if (error) return { action: "skipped", reason: error.message };
+    supplierAliasCache = null;
+    supplierAliasPromise = null;
+    return { action: "created" };
+  } catch (e: any) {
+    return { action: "skipped", reason: e?.message ?? "unknown" };
+  }
+}
+
 export async function getSupplierAliasMap(): Promise<Map<string, string>> {
   if (supplierAliasCache) return supplierAliasCache;
   if (supplierAliasPromise) return supplierAliasPromise;
