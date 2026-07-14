@@ -21,6 +21,7 @@ import { detectLayout, isLayoutAvailable, filterCellsByTables } from "./tableLay
 import { isDeliveryOrAdminInfo } from "./invoice-vocab";
 import { detectTableSlanet, slanetToTableStructure, isSlanetAvailable } from "./slanetTable";
 import { extractInvoiceMetadata } from "./metadataKV";
+import { extractSupplierFromRawText } from "./parse";
 
 type Cell = { text: string; box: { x: number; y: number; width: number; height: number }; confidence: number };
 
@@ -35,7 +36,10 @@ type OcrPageRaw = {
 //   6.8MB · CPU 100-150ms/이미지 · PubTabNet TEDS 76+ · 격자표 95%+ 실측
 //   다운로드: node scripts/download-slanet.mjs
 //   완전 비활성화: USE_SLANET=false
-const USE_SLANET = process.env.USE_SLANET !== "false";
+//   Render(LOW_MEM) 자동 OFF: 세션 상주 ~40MB 절감
+const USE_SLANET = process.env.USE_SLANET !== "false"
+  && process.env.RENDER !== "true"
+  && process.env.LOW_MEM !== "true";
 
 // TATR 사용 여부 — 기본 OFF (SLANet 로 대체됨 · 115MB 오버킬)
 const USE_TATR = process.env.USE_TATR === "true";
@@ -634,12 +638,40 @@ function extractMeta(text: string): Record<string, any> {
   const dateM = text.match(/(\d{4})[년.\-\/]\s*(\d{1,2})[월.\-\/]\s*(\d{1,2})[일]?/);
   if (dateM) meta.date = `${dateM[1]}-${dateM[2].padStart(2, "0")}-${dateM[3].padStart(2, "0")}`;
 
+  // ═══ 공급사 추출 단계별 로그 (2026-07-14) ═══
+  console.log(`[supplier/①공급자라벨] 시도 · rawText ${text.length}자`);
   const supM = text.match(/공\s*급\s*[자처사]\s*[:\s]*([가-힣a-zA-Z0-9()（）\s]{2,30})/);
   if (supM) {
-    const cand = supM[1].trim().split(/\s{2,}/)[0];
-    // 배송·행정 정보는 supplier 로 부적합
-    if (!isDeliveryOrAdminInfo(cand)) meta.supplier = cand;
+    const raw = supM[1].trim();
+    const cand = raw.split(/\s{2,}/)[0];
+    const isAdmin = isDeliveryOrAdminInfo(cand);
+    console.log(`[supplier/①공급자라벨] 매치 "${raw}" → 후보 "${cand}" · 행정정보=${isAdmin}`);
+    if (!isAdmin) {
+      meta.supplier = cand;
+      console.log(`[supplier/①공급자라벨] ✅ 채택 "${cand}"`);
+    }
+  } else {
+    console.log(`[supplier/①공급자라벨] 매치 없음`);
   }
+
+  // 상호 라벨 폴백
+  if (!meta.supplier) {
+    console.log(`[supplier/②상호라벨] 시도 (공급자 라벨 실패)`);
+    const shoResult = extractSupplierFromRawText(text);
+    console.log(`[supplier/②상호라벨] 결과 supplier="${shoResult.supplier}" · bizNum="${shoResult.supplierBizNum}" · source=${shoResult.source}`);
+    if (shoResult.supplier) {
+      const isAdmin = isDeliveryOrAdminInfo(shoResult.supplier);
+      if (!isAdmin) {
+        meta.supplier = shoResult.supplier;
+        console.log(`[supplier/②상호라벨] ✅ 채택 "${shoResult.supplier}"`);
+      } else {
+        console.log(`[supplier/②상호라벨] ⚠ 행정정보 판정 · 스킵`);
+      }
+    } else {
+      console.log(`[supplier/②상호라벨] 추출 실패`);
+    }
+  }
+  console.log(`[supplier/최종meta] meta.supplier = "${meta.supplier ?? "(없음)"}"`);
 
   // 쉼표 있는 숫자만 추출 (코드/일련번호 오인식 방지)
   const findAmt = (patterns: RegExp[]): number | null => {

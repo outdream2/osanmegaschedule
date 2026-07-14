@@ -3055,29 +3055,72 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               >
                                 🔄 전체 재추출
                               </button>
-                              {/* 🔄 선택 재추출 · 이 명세서의 체크된 행만 · 2026-07-14 */}
+                              {/* 🔄 선택 재추출 + 🗑 선택 삭제 · 이 명세서의 체크된 행만 · 2026-07-14 */}
                               {(() => {
                                 const pageCheckedRows: number[] = Array.from(hiddenRawRows as Set<number>).filter(ri => pageNums[ri] === pn);
                                 if (pageCheckedRows.length === 0) return null;
                                 return (
-                                  <button
-                                    type="button"
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      // 이 페이지의 체크된 행들만 7-cycle 재추출
-                                      pageCheckedRows.forEach(ri => revertSingleRawRow(ri));
-                                      // 이 페이지 체크된 것만 해제
-                                      setHiddenRawRows(prev => {
-                                        const n = new Set(prev);
-                                        pageCheckedRows.forEach(ri => n.delete(ri));
-                                        return n;
-                                      });
-                                    }}
-                                    className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-sky-700 bg-white border border-sky-300 hover:bg-sky-50 rounded px-1.5 py-0.5 whitespace-nowrap"
-                                    title={`${pn}번 명세서 · 선택된 ${pageCheckedRows.length}행 재추출`}
-                                  >
-                                    🔄 선택 재추출 ({pageCheckedRows.length})
-                                  </button>
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        pageCheckedRows.forEach(ri => revertSingleRawRow(ri));
+                                        setHiddenRawRows(prev => {
+                                          const n = new Set(prev);
+                                          pageCheckedRows.forEach(ri => n.delete(ri));
+                                          return n;
+                                        });
+                                      }}
+                                      className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-sky-700 bg-white border border-sky-300 hover:bg-sky-50 rounded px-1.5 py-0.5 whitespace-nowrap"
+                                      title={`${pn}번 명세서 · 선택된 ${pageCheckedRows.length}행 재추출`}
+                                    >
+                                      🔄 선택 재추출 ({pageCheckedRows.length})
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={e => {
+                                        e.stopPropagation();
+                                        const cnt = pageCheckedRows.length;
+                                        if (!window.confirm(`${pn}번 명세서의 체크된 ${cnt}개 행을 완전히 삭제하시겠습니까?\n· DB에 서명이 저장되어 다음 스캔에도 자동 필터됩니다.`)) return;
+                                        const items: Array<{ supplier: string; name: string }> = [];
+                                        pageCheckedRows.forEach(ri => {
+                                          const row = effectiveDispRows[ri] ?? dispRows[ri];
+                                          if (!Array.isArray(row)) return;
+                                          const supplier = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
+                                          const nameIdxLocal = dispHeaders.indexOf("품명");
+                                          const name = nameIdxLocal >= 0 ? String(row[nameIdxLocal] ?? "").trim() : "";
+                                          if (supplier && name) items.push({ supplier, name });
+                                        });
+                                        setPermanentlyDeletedRawRows(prev => {
+                                          const n = new Set(prev);
+                                          pageCheckedRows.forEach(ri => n.add(ri));
+                                          return n;
+                                        });
+                                        setDbDeletedSignatures(prev => {
+                                          const n = new Set(prev);
+                                          items.forEach(it => n.add(makeRowSignature(it.supplier, it.name)));
+                                          return n;
+                                        });
+                                        setHiddenRawRows(prev => {
+                                          const n = new Set(prev);
+                                          pageCheckedRows.forEach(ri => n.delete(ri));
+                                          return n;
+                                        });
+                                        if (items.length > 0) {
+                                          fetch("/api/ocr-deleted-rows", {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ items }),
+                                          }).catch(() => {});
+                                        }
+                                      }}
+                                      className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-white bg-rose-500 hover:bg-rose-600 rounded px-1.5 py-0.5 whitespace-nowrap"
+                                      title={`${pn}번 명세서 · 선택된 ${pageCheckedRows.length}행 완전 삭제 (DB 서명 저장)`}
+                                    >
+                                      🗑 선택 삭제 ({pageCheckedRows.length})
+                                    </button>
+                                  </>
                                 );
                               })()}
                               {isPageCollapsedRaw && <span className={`ml-auto font-normal ${pageHasQpaMismatch ? "text-rose-500" : "text-amber-500"}`}>(클릭하여 펼치기)</span>}

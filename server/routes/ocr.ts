@@ -20,7 +20,10 @@ import type { GeminiResult } from "../ocr/schema";
 // 사용: 단일 페이지 요청 시 캐시의 다른 rawText 와 비교 → 공통 라인 추출
 const _recentRawTextCache: { text: string; ts: number }[] = [];
 const _RAW_CACHE_TTL_MS = 10 * 60 * 1000; // 10분
-const _RAW_CACHE_MAX = 20;
+// LOW_MEM 모드에서는 5개로 · 각 rawText 도 4KB 캡 (요청 간 누적 방지)
+const _LOW_MEM_CACHE = process.env.RENDER === "true" || process.env.LOW_MEM === "true";
+const _RAW_CACHE_MAX = _LOW_MEM_CACHE ? 5 : 20;
+const _RAW_CACHE_TEXT_CAP = _LOW_MEM_CACHE ? 4000 : Infinity;
 function pruneRawTextCache() {
   const now = Date.now();
   while (_recentRawTextCache.length > 0 && now - _recentRawTextCache[0].ts > _RAW_CACHE_TTL_MS) {
@@ -30,7 +33,8 @@ function pruneRawTextCache() {
 }
 function addToRawCache(text: string) {
   if (!text || text.length < 30) return;
-  _recentRawTextCache.push({ text, ts: Date.now() });
+  const trimmed = text.length > _RAW_CACHE_TEXT_CAP ? text.slice(0, _RAW_CACHE_TEXT_CAP) : text;
+  _recentRawTextCache.push({ text: trimmed, ts: Date.now() });
   pruneRawTextCache();
 }
 function getRawCacheTexts(): string[] {
@@ -909,31 +913,42 @@ router.post("/api/ocr", async (req, res) => {
             supplierHint: (supplierHints[i] ?? "").trim() || undefined,
           });
           await runPipeline(pipeline, ctx, { page: i + 1 });
+          const LOW_MEM_MODE = process.env.RENDER === "true" || process.env.LOW_MEM === "true";
+          // pages 저장 · rawText 는 LOW_MEM 에서 4KB 캡 (누적 성장 방지)
           pages.push({
             page: ctx.page,
             headers: ctx.headers,
             rows: ctx.rows,
             meta: ctx.meta,
-            rawText: ctx.rawText,
+            rawText: LOW_MEM_MODE ? (ctx.rawText ?? "").slice(0, 4000) : ctx.rawText,
             supplierHintUsed: ctx.template?.supplier ?? ctx.supplierHint,
             rawOcrHeaders: ctx.rawOcrHeaders ?? [],
             rawOcrSample: ctx.rawOcrSample ?? [],
           });
+          // 진단은 LOW_MEM 에서 더 짧게 · rawFromOnnx 는 필수 필드만
           diagnostics.push({
             page: ctx.page,
             timeMs: Date.now() - startTs,
             rawFromOnnx: {
               headers: ctx.raw?.headers ?? [],
               rowCount: (ctx.raw?.rows ?? []).length,
-              rowsPreview: (ctx.raw?.rows ?? []).slice(0, 5),
+              rowsPreview: LOW_MEM_MODE ? [] : (ctx.raw?.rows ?? []).slice(0, 5),
               meta: ctx.raw?.meta ?? {},
-              rawTextPreview: (ctx.raw?.rawText ?? "").slice(0, 800),
+              rawTextPreview: (ctx.raw?.rawText ?? "").slice(0, LOW_MEM_MODE ? 200 : 800),
             },
-            final: { headers: ctx.headers, rowCount: ctx.rows.length, meta: ctx.meta, rowsPreview: ctx.rows.slice(0, 5) },
-            stages: ctx.diagnostics,
+            final: { headers: ctx.headers, rowCount: ctx.rows.length, meta: ctx.meta, rowsPreview: LOW_MEM_MODE ? [] : ctx.rows.slice(0, 5) },
+            stages: LOW_MEM_MODE ? [] : ctx.diagnostics,
             errors: ctx.errors,
             suspiciousEqualPriceAmount: detectSuspiciousEqualPriceAmount(ctx.headers, ctx.rows),
           });
+          // 명시적 큰 객체 참조 해제 (다음 페이지 전에 GC 가능하게)
+          ctx.raw = undefined;
+          ctx.rawB64 = "";
+          if (LOW_MEM_MODE) {
+            ctx.rawText = "";
+            ctx.rawOcrSample = [];
+            ctx.diagnostics = [];
+          }
         } catch (pageErr: any) {
           console.error(`[OCR/ONNX] page ${i + 1} 처리 실패 · 빈 페이지로 대체:`, pageErr?.message);
           console.error(`  stack:`, pageErr?.stack);

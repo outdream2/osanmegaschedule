@@ -10,6 +10,7 @@ import {
   mergeAdjacentSplitRows,
   sanitizeOcrMeta,
   detectHeaderLineInRawText,
+  stripRecipientName,
 } from "../../parse";
 import type { Stage } from "../types";
 
@@ -90,6 +91,39 @@ export const normalizeStage: Stage = {
 
     // 메타 정리
     const meta = sanitizeOcrMeta(ctx.meta);
+
+    // 수신처 이름(코스트팜 등) 이 품명·공급사에 붙어있으면 제거 (2026-07-14 Phase 9)
+    //   예: "코스트팜 광동원탕" → "광동원탕"
+    //   env OCR_RECIPIENT_NAMES 로 추가 가능
+    const nameIdx = headers.indexOf("품명");
+    if (nameIdx >= 0) {
+      let stripped = 0;
+      rows = rows.map(r => {
+        if (!Array.isArray(r)) return r;
+        const raw = String(r[nameIdx] ?? "");
+        if (!raw) return r;
+        const cleaned = stripRecipientName(raw);
+        if (cleaned !== raw) {
+          stripped++;
+          const next = [...r];
+          next[nameIdx] = cleaned || raw;   // 전체 제거되면 원본 유지
+          return next;
+        }
+        return r;
+      });
+      if (stripped > 0) console.log(`[normalize/recipientStrip] page ${ctx.page}: 품명 ${stripped}건 수신처 이름 제거`);
+    }
+    // 공급사에도 수신처 이름 붙어있으면 제거
+    if (meta.supplier) {
+      const cleanedSup = stripRecipientName(meta.supplier);
+      if (cleanedSup && cleanedSup !== meta.supplier) {
+        console.log(`[normalize/recipientStrip] page ${ctx.page}: 공급사 "${meta.supplier}" → "${cleanedSup}"`);
+        meta.supplier = cleanedSup;
+      } else if (!cleanedSup) {
+        console.log(`[normalize/recipientStrip] page ${ctx.page}: 공급사 "${meta.supplier}" 전체가 수신처 → null 처리`);
+        meta.supplier = undefined;
+      }
+    }
 
     return { headers, rows, meta };
   },
