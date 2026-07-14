@@ -3056,9 +3056,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 🔄 전체 재추출
                               </button>
                               {/* 🔄 선택 재추출 + 🗑 선택 삭제 · 이 명세서의 체크된 행만 · 2026-07-14 */}
+                              {/* 항상 표시 · 0개일 때 비활성 (사용자에게 기능 존재 알림) */}
                               {(() => {
                                 const pageCheckedRows: number[] = Array.from(hiddenRawRows as Set<number>).filter(ri => pageNums[ri] === pn);
-                                if (pageCheckedRows.length === 0) return null;
+                                const hasChecked = pageCheckedRows.length > 0;
+                                if (!hasChecked) {
+                                  return (
+                                    <span className="ml-1 inline-flex items-center gap-1 text-[10px] text-slate-400 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5 whitespace-nowrap" title="행 왼쪽 체크박스로 선택하면 재추출/삭제 버튼이 활성화됩니다">
+                                      ☐ 선택하여 재추출/삭제
+                                    </span>
+                                  );
+                                }
                                 return (
                                   <>
                                     <button

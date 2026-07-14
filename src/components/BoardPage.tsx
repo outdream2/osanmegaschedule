@@ -267,13 +267,12 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
 };
 
 // ── 게시글 카드
-// 날짜 YY/MM/DD (오늘/어제도 실제 날짜로 표시)
+// 날짜 M/D (예: 7/14)
 function fmtDateShort(iso: string): string {
   const d = new Date(iso);
-  const yy = String(d.getFullYear() % 100).padStart(2, "0");
-  const M = String(d.getMonth() + 1).padStart(2, "0");
-  const D = String(d.getDate()).padStart(2, "0");
-  return `${yy}/${M}/${D}`;
+  const M = d.getMonth() + 1;
+  const D = d.getDate();
+  return `${M}/${D}`;
 }
 
 const PostCard: React.FC<{ post: BoardPost; onOpen: () => void; showEdit?: boolean; onEdit?: () => void }> = ({ post, onOpen, showEdit, onEdit }) => {
@@ -288,52 +287,102 @@ const PostCard: React.FC<{ post: BoardPost; onOpen: () => void; showEdit?: boole
       tabIndex={0}
       onClick={onOpen}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
-      className="w-full text-left bg-white border border-slate-200 hover:border-orange-300 hover:bg-orange-50/20 transition cursor-pointer flex items-center gap-2 px-2.5 sm:px-3 py-2 min-h-[44px]"
+      className="w-full text-left bg-white hover:bg-orange-50/30 transition cursor-pointer px-2.5 sm:px-4 py-2 sm:py-3 min-h-[44px]"
     >
-      {/* 날짜 · 맨 앞 */}
-      <span className="shrink-0 text-[10px] sm:text-[11px] font-mono font-black text-slate-500 tabular-nums w-[52px] sm:w-[64px]">
-        {fmtDateShort(post.created_at)}
-      </span>
-      {/* 좌측 타입 아이콘 */}
-      <div className={`shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border ${meta.bg} ${meta.border}`}>
-        <Icon size={13} className={meta.text} />
+      {/* ── 모바일: 단일 flex 행 ── */}
+      <div className="flex items-center gap-2 sm:hidden">
+        {/* 날짜 */}
+        <span className="shrink-0 text-[10px] font-mono font-black text-slate-400 tabular-nums w-[36px]">
+          {fmtDateShort(post.created_at)}
+        </span>
+        {/* 상태 dot */}
+        <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${status.dot}`} title={status.label} />
+        {post.pinned && <Pin size={10} className="text-orange-500 shrink-0" />}
+        {/* 카테고리 */}
+        {post.category && (
+          <span className="shrink-0 text-[9px] font-bold text-slate-500 bg-slate-100 rounded-full px-1.5 py-0.5">{post.category}</span>
+        )}
+        {/* 제목 · 최대 두 줄 */}
+        <span className="flex-1 min-w-0 text-[13px] font-black text-slate-900 line-clamp-2 break-keep leading-snug">
+          {post.title}
+        </span>
+        {/* 이미지·댓글 카운트 */}
+        {hasImg && (
+          <span className="shrink-0 inline-flex items-center gap-0.5 text-[9px] text-slate-400 font-bold">
+            <ImageIcon size={9} /> {post.images!.length}
+          </span>
+        )}
+        {hasCmt && (
+          <span className="shrink-0 inline-flex items-center gap-0.5 text-[9px] text-indigo-400 font-bold">
+            <MessageCircle size={9} /> {post.comment_count}
+          </span>
+        )}
+        {/* 작성자 */}
+        <span className="inline-flex items-center shrink-0">
+          <AuthorBadge name={post.author_name} />
+        </span>
       </div>
-      {/* 상태 dot */}
-      <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${status.dot}`} title={status.label} />
-      {post.pinned && <Pin size={11} className="text-orange-500 shrink-0" />}
-      {/* 카테고리 */}
-      {post.category && (
-        <span className="shrink-0 text-[10px] font-bold text-slate-500 bg-slate-100 rounded-full px-1.5 py-0.5">{post.category}</span>
-      )}
-      {/* 제목 · 한 줄 · 말줄임 · 취소선 제거 (해결 여부는 상태 dot 으로만 표시) */}
-      <span className="flex-1 min-w-0 text-[13px] sm:text-[14px] font-black text-slate-900 truncate">
-        {post.title}
-      </span>
-      {/* 이미지·댓글 카운트 */}
-      {hasImg && (
-        <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] text-slate-500 font-bold">
-          <ImageIcon size={10} /> {post.images!.length}
-        </span>
-      )}
-      {hasCmt && (
-        <span className="shrink-0 inline-flex items-center gap-0.5 text-[10px] text-indigo-500 font-bold">
-          <MessageCircle size={10} /> {post.comment_count}
-        </span>
-      )}
-      {/* 작성자 · 이름만 표시 (직급 제거) */}
-      <span className="inline-flex items-center shrink-0">
-        <AuthorBadge name={post.author_name} />
-      </span>
-      {/* 수정 버튼 · 본인 작성 or 관리자만 노출 · 클릭 시 상세 모달 오픈 (거기서 수정 가능) */}
+
+      {/* ── PC(sm+): 두 줄 레이아웃 ── */}
+      <div className="hidden sm:flex sm:flex-col sm:gap-1">
+        {/* 1행: 상태 · 카테고리 · 제목 */}
+        <div className="flex items-start gap-2.5">
+          {/* 상태 dot */}
+          <span className={`shrink-0 mt-2 w-1.5 h-1.5 rounded-full ${status.dot}`} title={status.label} />
+          {post.pinned && <Pin size={12} className="text-orange-500 shrink-0 mt-1.5" />}
+          {/* 카테고리 배지 */}
+          {post.category && (
+            <span className="shrink-0 self-center text-[10px] font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">{post.category}</span>
+          )}
+          {/* 제목 · PC에서 최대 두 줄 */}
+          <span className="flex-1 min-w-0 text-[14px] font-black text-slate-900 line-clamp-2 break-keep leading-snug">
+            {post.title}
+          </span>
+          {/* 이미지·댓글 카운트 · 우측 정렬 */}
+          {hasImg && (
+            <span className="shrink-0 self-center inline-flex items-center gap-0.5 text-[11px] text-slate-500 font-bold">
+              <ImageIcon size={11} /> {post.images!.length}
+            </span>
+          )}
+          {hasCmt && (
+            <span className="shrink-0 self-center inline-flex items-center gap-0.5 text-[11px] text-indigo-500 font-bold">
+              <MessageCircle size={11} /> {post.comment_count}
+            </span>
+          )}
+          {/* 수정 버튼 */}
+          {showEdit && onEdit && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onEdit(); }}
+              className="shrink-0 self-center inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-black cursor-pointer active:scale-95 transition"
+              title="글 수정"
+            >
+              <Pencil size={10} /> 수정
+            </button>
+          )}
+        </div>
+        {/* 2행: 날짜 · 작성자 */}
+        <div className="flex items-center gap-2 pl-[38px]">
+          <span className="text-[11px] font-mono font-semibold text-slate-400 tabular-nums">
+            {fmtDateShort(post.created_at)}
+          </span>
+          <span className="text-slate-200">·</span>
+          <AuthorBadge name={post.author_name} rank={post.author_rank} />
+        </div>
+      </div>
+
+      {/* 모바일 수정 버튼 · 두 번째 행으로 분리 */}
       {showEdit && onEdit && (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onEdit(); }}
-          className="shrink-0 inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-black cursor-pointer active:scale-95 transition"
-          title="글 수정"
-        >
-          <Pencil size={10} /> 수정
-        </button>
+        <div className="flex sm:hidden justify-end mt-0.5">
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onEdit(); }}
+            className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-indigo-50 hover:bg-indigo-100 text-indigo-600 text-[10px] font-black cursor-pointer active:scale-95 transition"
+            title="글 수정"
+          >
+            <Pencil size={10} /> 수정
+          </button>
+        </div>
       )}
     </div>
   );
