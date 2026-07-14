@@ -1702,85 +1702,119 @@ export interface DirectSupplierExtract {
   source: "sho-label" | "company-pattern" | null;
 }
 
+// 지역명 화이트리스트 (대표자 이름 오인 방지)
+const REGION_NAMES = new Set([
+  "서울", "부산", "대구", "인천", "광주", "대전", "울산", "세종",
+  "경기", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주",
+  "서울시", "부산시", "대구시", "인천시", "광주시", "대전시", "울산시",
+  "종로", "강남", "강북", "중구", "서초", "송파",
+]);
+
+// 대표자 이름 (2-4자 순수 한글) 이 마지막 토큰이면 제거
+//   "부광약품 김철수" → "부광약품"
+//   "(주)엘앤바이오랩 박정선" → "(주)엘앤바이오랩"
+//   단, 결과가 3자 미만이거나 지역명이면 원본 유지
+function stripRepresentativeName(s: string): string {
+  const tokens = s.split(/\s+/).filter(Boolean);
+  if (tokens.length < 2) return s;
+  const last = tokens[tokens.length - 1];
+  if (!/^[가-힣]{2,4}$/.test(last)) return s;
+  if (REGION_NAMES.has(last)) return s;
+  const remaining = tokens.slice(0, -1).join(" ").trim();
+  // 한글 문자 수 (괄호/영문 제외)
+  const remainKorean = (remaining.match(/[가-힣]/g) ?? []).length;
+  if (remainKorean < 2) return s;   // 너무 짧아지면 원본 유지
+  return remaining;
+}
+
 export function extractSupplierFromRawText(rawText: string): DirectSupplierExtract {
   const result: DirectSupplierExtract = { supplier: null, supplierBizNum: null, source: null };
   if (!rawText || rawText.length < 10) return result;
 
-  // "공급자" 라벨 위치 (수신처 라벨 배제)
-  //   공급하는자 / 공급자 · 판매자 / 매출자
-  //   ⚠ "공급받는자" 는 제외 (음수 lookahead)
-  const SUPPLIER_LABEL_RE = /(?:공\s*급\s*자(?!\s*하?\s*는?\s*자|받)|판\s*매\s*자|매\s*출\s*자|공급업체|공급회사|판매업체)/;
-  const RECIPIENT_LABEL_RE = /(?:공\s*급\s*받\s*는?\s*자|매\s*입\s*자|매\s*입\s*처|매\s*출\s*처|수신처|구매자|납품처|고객)/;
+  // 공급자 · 수신처 라벨 (OCR 오독 관대: 공↔궁↔궈, 급↔긥↔귭)
+  const SUPPLIER_LABEL_RE = /(?:[공궁궈]\s*[급긥귭]\s*[자처사](?!\s*하?\s*는?\s*자|받)|판\s*매\s*자|매\s*출\s*자|공급업체|공급회사|판매업체)/;
+  const RECIPIENT_LABEL_RE = /(?:[공궁]\s*[급긥]\s*받\s*는?\s*자|매\s*입\s*자|매\s*입\s*처|매\s*출\s*처|수신처|구매자|납품처|고객사)/;
 
   const suppMatch = rawText.match(SUPPLIER_LABEL_RE);
   const recMatch = rawText.match(RECIPIENT_LABEL_RE);
   const suppPos = suppMatch ? rawText.indexOf(suppMatch[0]) : -1;
   const recPos = recMatch ? rawText.indexOf(recMatch[0]) : -1;
 
-  // 공급자 영역 정의:
-  //   공급자 라벨부터 · 수신처 라벨 전까지 (있으면) · 없으면 250자
+  // Zone 결정:
+  //   공급자 라벨 있으면 → [suppPos, recPos or suppPos+300]
+  //   없으면 → 상단 500자 (recPos 무시 · "공급받는자 보관용" 같은 헤더 표기 우회)
   const zoneStart = suppPos >= 0 ? suppPos : 0;
   let zoneEnd: number;
-  if (recPos >= 0 && recPos > zoneStart) {
-    zoneEnd = recPos;
-  } else if (suppPos >= 0) {
-    zoneEnd = Math.min(rawText.length, suppPos + 250);
+  if (suppPos >= 0) {
+    if (recPos > suppPos) zoneEnd = recPos;
+    else zoneEnd = Math.min(rawText.length, suppPos + 300);
   } else {
-    // 공급자 라벨 없으면 상단 400자만 사용 (헤더 영역 · 상품 라인 오탐 방지)
-    zoneEnd = Math.min(rawText.length, 400);
+    zoneEnd = Math.min(rawText.length, 500);
   }
   const zone = rawText.slice(zoneStart, zoneEnd);
 
-  // 1) 상호 라벨 옆 값 추출
-  //    "상호  부광약품" · "상호: 부광약품" · "상 호 | 부광약품"
-  //    값은 최대 30자 · 공백 포함 · 특수문자 관대
-  const SHO_RE = /상\s*호[\s:：|\-]*([가-힣A-Za-z0-9()（）·・.\s]{2,30}?)(?=\s*(?:성명|성 명|대표|대표자|사업장|주소|업태|종목|담당|전화|팩스|공급받는자|매입자|수신처|$|[\r\n]))/;
+  // 1) 상호 라벨 옆 값 (한 줄 · 여러 줄 모두 대응)
+  //    "상호 부광약품 김철수" · "상 호 | (주)엘앤바이오럽 박정선"
+  //    lookahead 확장: 이메일/법인/거래처 등 다양한 후행 필드
+  const SHO_RE = /상\s*호[\s:：|\-]*([가-힣A-Za-z0-9()（）·・.\s]{2,40}?)(?=\s*(?:성명|성 명|대표|대표자|사업장|주소|업태|종목|담당|전화|팩스|공급받는자|매입자|수신처|법인|거래처|발급|발행|이메일|E-?mail|$|[\r\n]))/i;
   const shoMatch = zone.match(SHO_RE);
   if (shoMatch) {
-    let candidate = shoMatch[1].trim();
-    candidate = candidate.replace(/\s+/g, " ").trim();
-    // 노이즈 배제: 순수 숫자 · 너무 짧음 · 한글 없음
+    let candidate = shoMatch[1].replace(/\s+/g, " ").trim();
+    candidate = stripRepresentativeName(candidate);
     if (candidate.length >= 2 && /[가-힣]/.test(candidate) && !/^\d+$/.test(candidate)) {
       result.supplier = candidate;
       result.source = "sho-label";
     }
   }
 
-  // 2) 상호 실패 시 회사명 접미어 패턴 매칭 (더 엄격 · 접미어 필수)
-  //    XX제약 · XX바이오 · XX팜 · XX양행 · XX주식회사 등
-  //    라벨 텍스트("등록번호", "성명", "사업장" 등) 배제
-  const LABEL_BLACKLIST = /등록|번호|성명|사업장|사업자|대표|주소|업태|종목|담당|전화|팩스|공급|매입|수신/;
+  // 2) 상호 실패 시 회사명 접미어 패턴 (접미어 강한 것부터)
+  const LABEL_BLACKLIST = /등록|번호|성명|사업장|사업자|대표|주소|업태|종목|담당|전화|팩스|공급|매입|수신|거래처|발급|발행|보관용/;
   if (!result.supplier) {
     const COMPANY_PATTERNS: RegExp[] = [
+      // 우선순위 1: 명확한 업종 접미어 (제약/약품/바이오 등)
+      /([가-힣][가-힣A-Za-z0-9]{1,12}(?:제약|바이오|팜|양행|메디|헬스|케어|화학|테크|랩|사이언스|코리아|코퍼레이션|컴퍼니|엔지니어링|약품|약국)(?:\s*\(주\))?)/g,
+      // 우선순위 2: 주식회사 접미
       /([가-힣][가-힣A-Za-z0-9]{1,12}주식회사)/g,
-      /([가-힣][가-힣A-Za-z0-9]{1,12}(?:제약|바이오|팜|양행|메디|헬스|케어|화학|테크|랩|코리아|코퍼레이션|컴퍼니|엔지니어링)(?:\s*\(주\))?)/g,
-      /\(\s*주\s*\)\s*([가-힣][가-힣0-9]{1,12}(?:제약|바이오|팜|양행|메디|헬스|케어|화학|테크|랩)?)/g,
+      // 우선순위 3: (주) 접두 + 회사명 (지역명/도로명 배제)
+      /(\(\s*주\s*\)\s*[가-힣][가-힣A-Za-z0-9]{2,15})/g,
     ];
-    for (const pat of COMPANY_PATTERNS) {
+    let winner: { cand: string; patIdx: number } | null = null;
+    for (let idx = 0; idx < COMPANY_PATTERNS.length; idx++) {
+      const pat = COMPANY_PATTERNS[idx];
       let m: RegExpExecArray | null;
       let best: string | null = null;
       let bestLen = 0;
       while ((m = pat.exec(zone))) {
-        const cand = (m[1] ?? m[0]).trim();
+        const cand = (m[1] ?? m[0]).trim().replace(/\s+/g, " ");
         if (cand.length < 3 || cand.length > 25) continue;
         if (/^\d/.test(cand)) continue;
-        if (LABEL_BLACKLIST.test(cand)) continue;   // 라벨 텍스트 배제
+        if (LABEL_BLACKLIST.test(cand)) continue;
+        // (주) 뒤에 지역명/일반명사 붙는 경우 배제
+        const afterJu = cand.replace(/^\(\s*주\s*\)\s*/, "");
+        if (REGION_NAMES.has(afterJu)) continue;
         if (cand.length > bestLen) { bestLen = cand.length; best = cand; }
       }
-      if (best) {
-        result.supplier = best;
-        result.source = "company-pattern";
-        break;
-      }
+      if (best) { winner = { cand: best, patIdx: idx }; break; }
+    }
+    if (winner) {
+      result.supplier = stripRepresentativeName(winner.cand);
+      result.source = "company-pattern";
     }
   }
 
-  // 3) 사업자번호 추출 (공급자 영역 내)
-  const BIZNUM_RE = /(\d{3}[\s\-.]?\d{2}[\s\-.]?\d{5})/;
+  // 3) 사업자번호: 3-2-5 with REQUIRED separator (발급번호 배제)
+  //    "584-88-01771" ✓  ·  "575256-20260527309" ✗
+  const BIZNUM_RE = /(\d{3}[\s\-.]\d{2}[\s\-.]\d{5})/;
   const bnMatch = zone.match(BIZNUM_RE);
   if (bnMatch) {
     const digits = bnMatch[1].replace(/[^0-9]/g, "");
-    if (digits.length === 10 && digits[0] !== "0" && !/^20\d{2}/.test(digits) && !digits.startsWith("010")) {
+    if (
+      digits.length === 10 &&
+      digits[0] !== "0" &&
+      !/^20\d{2}/.test(digits) &&
+      !digits.startsWith("010") &&
+      !digits.startsWith("011")
+    ) {
       result.supplierBizNum = digits;
     }
   }

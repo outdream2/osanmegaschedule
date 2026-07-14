@@ -940,6 +940,17 @@ router.post("/api/ocr", async (req, res) => {
           pages.push({ page: i + 1, headers: ["품명","규격","수량","단가","금액","비고"], rows: [], meta: {}, rawText: "", supplierHintUsed: undefined, _error: pageErr?.message });
           diagnostics.push({ page: i + 1, timeMs: Date.now() - startTs, error: pageErr?.message });
         }
+        // 페이지 간 메모리 해제 힌트 (Render 512MB · OOM 방지)
+        //   node --expose-gc 필요 · 없으면 조용히 skip
+        //   큰 이미지 버퍼 · ONNX 중간 텐서 참조를 다음 페이지 전에 반환
+        if (typeof (global as any).gc === "function") {
+          (global as any).gc();
+        }
+        // heap 사용량 로그 (Render 대시보드에서 추적용)
+        if (process.env.RENDER === "true" || process.env.LOW_MEM === "true") {
+          const mu = process.memoryUsage();
+          console.log(`[OCR/mem] page ${i + 1} 완료 · rss=${(mu.rss/1024/1024).toFixed(0)}MB · heap=${(mu.heapUsed/1024/1024).toFixed(0)}MB`);
+        }
       }
       // ── 다중 페이지 공통 라인 감지 → 메타 노이즈 2차 필터 (v4c 강화) ──
       //   페이지 2개 이상일 때 rawText 공통 라인 (수신처/공급자/주소/담당자)을 검출해

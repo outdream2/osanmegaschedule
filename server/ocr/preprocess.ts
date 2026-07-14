@@ -70,6 +70,15 @@ export async function preprocessImageForOcr(
  *   - 색상 유지 (Detection 성능 보존)
  *   - JPEG q95 (엣지 손실 최소화)
  */
+// Render 512MB 환경에서 큰 이미지는 다운샘플 필수 (env RENDER=true 또는 LOW_MEM=true)
+const LOW_MEM =
+  process.env.RENDER === "true" ||
+  process.env.LOW_MEM === "true" ||
+  process.env.NODE_ENV === "production";
+
+// LOW_MEM 모드: 1500px 캡 (메모리 절감) · 일반 모드: 2200px 캡 (품질 유지)
+const OCR_MAX_LONG_SIDE = Number(process.env.OCR_INPUT_MAX_LONG_SIDE) || (LOW_MEM ? 1500 : 2200);
+
 export async function preprocessForEasyOcr(
   b64: string,
   _mimeType: string,
@@ -80,17 +89,26 @@ export async function preprocessForEasyOcr(
     const w = meta.width  ?? 640;
     const h = meta.height ?? 480;
     const shortSide = Math.min(w, h);
+    const longSide  = Math.max(w, h);
 
-    let pipeline = sharp(inputBuf, { sequentialRead: true });
-    // 저해상도만 업스케일 (Python 쪽에서 mag_ratio=2.0 로 추가 확대되므로 여기선 1600 목표)
-    if (shortSide < 1200) {
+    let pipeline = sharp(inputBuf, { sequentialRead: true, failOn: "none" });
+
+    // 우선순위 A: 최장변이 캡 초과 → 다운샘플 (메모리 절감 · Render OOM 방지)
+    if (longSide > OCR_MAX_LONG_SIDE) {
+      const ratio = OCR_MAX_LONG_SIDE / longSide;
+      pipeline = pipeline.resize(Math.round(w * ratio), Math.round(h * ratio), { fit: "fill" });
+    }
+    // 우선순위 B: 저해상도 → 업스케일 (작은 글자 확보 · LOW_MEM에서는 억제)
+    else if (shortSide < 1200 && !LOW_MEM) {
       const scale = Math.min(2.0, 1600 / shortSide);
       if (scale > 1.05) {
         pipeline = pipeline.resize(Math.round(w * scale), Math.round(h * scale), { fit: "fill" });
       }
     }
-    // 색상 유지 · normalize/sharpen 생략 · q95 로 최소 손실
-    const processed = await pipeline.jpeg({ quality: 95, mozjpeg: true }).toBuffer();
+
+    // JPEG 품질도 LOW_MEM에서 소폭 낮춤 (95 → 88)
+    const jpegQ = LOW_MEM ? 88 : 95;
+    const processed = await pipeline.jpeg({ quality: jpegQ, mozjpeg: true }).toBuffer();
     return { b64: processed.toString("base64"), mimeType: "image/jpeg" };
   } catch (e: any) {
     console.warn("[OCR/preprocessForEasyOcr] 전처리 실패, 원본 사용:", e?.message ?? e);

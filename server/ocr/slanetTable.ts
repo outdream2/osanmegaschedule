@@ -37,6 +37,23 @@ let sessionPromise: Promise<any> | null = null;
 let vocab: string[] = [];
 let warningShown = false;
 
+const LOW_MEM =
+  process.env.RENDER === "true" ||
+  process.env.LOW_MEM === "true";
+
+async function disposeSession(): Promise<void> {
+  const s = session;
+  session = null;
+  sessionPromise = null;
+  if (!s) return;
+  try {
+    if (typeof s.release === "function") await s.release();
+    else if (typeof s.dispose === "function") await s.dispose();
+  } catch (e: any) {
+    console.warn(`[SLANet] release 실패 (무시):`, e?.message);
+  }
+}
+
 async function loadVocab(): Promise<string[]> {
   if (vocab.length > 0) return vocab;
   try {
@@ -73,9 +90,12 @@ async function getSession() {
 
   sessionPromise = (async () => {
     const ort: any = await import("onnxruntime-node");
+    // LOW_MEM (Render): threads=1 · session 옵션 최소화
+    const LOW_MEM = process.env.RENDER === "true" || process.env.LOW_MEM === "true";
     const s = await ort.InferenceSession.create(MODEL_PATH, {
       executionProviders: ["cpu"],
-      intraOpNumThreads: 2,
+      intraOpNumThreads: LOW_MEM ? 1 : 2,
+      graphOptimizationLevel: LOW_MEM ? "basic" : "all",
     });
     await loadVocab();
     session = s;
@@ -122,6 +142,14 @@ async function preprocess(b64: string): Promise<{ tensor: any; origW: number; or
  * @returns 셀 배열 (원본 이미지 픽셀 좌표)
  */
 export async function detectTableSlanet(b64: string): Promise<SlanetResult> {
+  try {
+    return await _detectInner(b64);
+  } finally {
+    if (LOW_MEM) await disposeSession();
+  }
+}
+
+async function _detectInner(b64: string): Promise<SlanetResult> {
   const sess = await getSession();
   const { tensor, origW, origH } = await preprocess(b64);
   const feeds: Record<string, any> = { [sess.inputNames[0]]: tensor };

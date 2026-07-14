@@ -67,20 +67,33 @@ export function makeVendorMatchStage(deps: {
       }
 
       // ═══ 교차 검증 · 결과 채택 ═══
+      // OCR 오독 관대 비교: 정규화 + 한글 유사도 (Jaccard 3-gram)
       const cleanForCompare = (s: string) => normSupplier(s).replace(/\(주\)|주식회사/g, "");
+      const koreanNgrams = (s: string, n = 2): Set<string> => {
+        const chars = (s.match(/[가-힣]/g) ?? []).join("");
+        const set = new Set<string>();
+        for (let i = 0; i + n <= chars.length; i++) set.add(chars.slice(i, i + n));
+        return set;
+      };
+      const jaccard = (a: Set<string>, b: Set<string>): number => {
+        if (a.size === 0 || b.size === 0) return 0;
+        let inter = 0;
+        for (const x of a) if (b.has(x)) inter++;
+        return inter / (a.size + b.size - inter);
+      };
       if (directSupplier && biznumSupplier) {
         const dc = cleanForCompare(directSupplier);
         const bc = cleanForCompare(biznumSupplier);
-        if (dc === bc || dc.includes(bc) || bc.includes(dc)) {
-          // ✅ 두 로직 결과 일치 → 최고 신뢰도
-          vendorMatched = biznumSupplier;   // DB 등록된 표기 사용
+        const sim = jaccard(koreanNgrams(dc), koreanNgrams(bc));
+        // 완전일치 · 부분일치 · Jaccard >= 0.5 (OCR 오독 1글자 허용)
+        if (dc === bc || dc.includes(bc) || bc.includes(dc) || sim >= 0.5) {
+          vendorMatched = biznumSupplier;   // DB 등록된 canonical 표기 사용
           matchSource = "direct+biznum";
-          console.log(`[vendor-match/✅교차검증] page ${ctx.page}: ①=${directSupplier} · ②=${biznumSupplier} · 일치 → "${vendorMatched}"`);
+          console.log(`[vendor-match/✅교차검증] page ${ctx.page}: ①=${directSupplier} · ②=${biznumSupplier} · 유사도=${sim.toFixed(2)} → "${vendorMatched}"`);
         } else {
-          // ⚠ 두 결과 불일치 · direct 우선 (명세서 원본 신뢰)
           vendorMatched = directSupplier;
           matchSource = "direct";
-          console.warn(`[vendor-match/⚠️불일치] page ${ctx.page}: ①=${directSupplier} · ②=${biznumSupplier} · direct 채택`);
+          console.warn(`[vendor-match/⚠️불일치] page ${ctx.page}: ①=${directSupplier} · ②=${biznumSupplier} · 유사도=${sim.toFixed(2)} → direct 채택`);
         }
       } else if (directSupplier) {
         vendorMatched = directSupplier;
@@ -90,8 +103,15 @@ export function makeVendorMatchStage(deps: {
         matchSource = "biznum";
       }
 
-      // ③ 두 검증 모두 실패 → 폴백 로직
-      if (!vendorMatched) {
+      // Direct 성공 시 폴백 억제: 짧은 부분매칭("앤바이오"⊂"엘앤바이오럽") 방지
+      // 한글 3자 이상 · 회사 접미어 있으면 신뢰 · findVendorInText 스킵
+      const hasCompanySuffix = /(?:제약|바이오|팜|양행|메디|헬스|케어|화학|테크|랩|사이언스|약품|약국|주식회사|\(주\))/.test(directSupplier ?? "");
+      const directIsStrong = directSupplier != null && (
+        (directSupplier.match(/[가-힣]/g)?.length ?? 0) >= 3 || hasCompanySuffix
+      );
+
+      // ③ 두 검증 모두 실패 → 폴백 (direct 없거나 약할 때만)
+      if (!vendorMatched && !directIsStrong) {
         vendorMatched = await deps.findVendorInText(ctx.rawText);
         if (vendorMatched) {
           matchSource = "rawText";

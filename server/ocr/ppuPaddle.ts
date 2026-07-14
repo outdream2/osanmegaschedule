@@ -48,6 +48,12 @@ const USE_LAYOUT = process.env.USE_LAYOUT !== "false";
 let ocrInstance: any | null = null;
 let initPromise: Promise<any> | null = null;
 
+// LOW_MEM: 페이지 처리 후 세션 destroy + 캐시 클리어
+// Render 512MB에서 상주 ~200MB 해제 · 다음 페이지 시 재로드 (1-2초 오버헤드)
+const LOW_MEM =
+  process.env.RENDER === "true" ||
+  process.env.LOW_MEM === "true";
+
 async function getOcrInstance() {
   if (ocrInstance) return ocrInstance;
   if (initPromise) return initPromise;
@@ -296,9 +302,35 @@ function buildMatrixFromTatr(
 }
 
 export async function callPpuOcr(b64: string, mimeType: string): Promise<OcrPageRaw> {
+  try {
+    return await _callPpuOcrInner(b64, mimeType);
+  } finally {
+    // LOW_MEM: 세션 파괴 · 다음 페이지 시 재로드 (~200MB 해제)
+    if (LOW_MEM) {
+      await disposeOcrInstance();
+      if (typeof (global as any).gc === "function") (global as any).gc();
+    }
+  }
+}
+
+async function disposeOcrInstance(): Promise<void> {
+  const svc = ocrInstance;
+  ocrInstance = null;
+  initPromise = null;
+  if (!svc) return;
+  try {
+    if (typeof svc.destroy === "function") await svc.destroy();
+    else if (typeof svc.dispose === "function") await svc.dispose();
+  } catch (e: any) {
+    console.warn(`[OCR/PP-OCR] destroy 실패 (무시):`, e?.message);
+  }
+}
+
+async function _callPpuOcrInner(b64: string, mimeType: string): Promise<OcrPageRaw> {
   const svc = await getOcrInstance();
   const buf = Buffer.from(b64, "base64");
-  const result = await svc.recognize(bufToArrayBuffer(buf));
+  // noCache: true — globalImageCache 축적 방지 (같은 이미지 재사용 없음)
+  const result = await svc.recognize(bufToArrayBuffer(buf), { noCache: true });
 
   const rawLines: Cell[][] = result?.lines ?? [];
   if (rawLines.length === 0) return { headers: [], rows: [], meta: {}, rawText: "" };
