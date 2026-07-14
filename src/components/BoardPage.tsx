@@ -87,7 +87,8 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
   const [loading, setLoading] = useState(true);
   const [filterType, setFilterType] = useState<"" | PostType>("");
   const [filterStatus, setFilterStatus] = useState<"" | Status>("");
-  const [filterCategory, setFilterCategory] = useState<"" | typeof CATEGORIES[number]>("");
+  // "" = 전체, "__none__" = 미분류(카테고리 없는 글), CATEGORIES 중 하나 = 해당 카테고리
+  const [filterCategory, setFilterCategory] = useState<"" | "__none__" | typeof CATEGORIES[number]>("");
   const [search, setSearch] = useState("");
   const [showComposer, setShowComposer] = useState(false);
   const [detailId, setDetailId] = useState<number | null>(null);
@@ -126,9 +127,11 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
     })();
   }, []);
 
-  const filtered: BoardPost[] = useMemo(() => (
-    filterCategory ? posts.filter(p => (p.category ?? "") === filterCategory) : posts
-  ), [posts, filterCategory]);
+  const filtered: BoardPost[] = useMemo(() => {
+    if (!filterCategory) return posts;
+    if (filterCategory === "__none__") return posts.filter(p => !p.category);
+    return posts.filter(p => p.category === filterCategory);
+  }, [posts, filterCategory]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #fff7ed 0%, #fef3c7 40%, #fef9c3 100%)" }}>
@@ -171,6 +174,26 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
           })}
         </div>
 
+        {/* 카테고리 필터 배지 · status 필터 아래 · 항상 표시 (결과 0건이어도 사라지지 않음) */}
+        <div className="flex items-center gap-1.5 flex-wrap mb-3">
+          <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider mr-1">카테고리</span>
+          <button
+            onClick={() => setFilterCategory("")}
+            className={`px-2 py-0.5 rounded-full text-[11px] font-black transition ${filterCategory === "" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+          >전체</button>
+          {CATEGORIES.map(c => (
+            <button
+              key={c}
+              onClick={() => setFilterCategory(prev => prev === c ? "" : c)}
+              className={`px-2 py-0.5 rounded-full text-[11px] font-black transition ${filterCategory === c ? "bg-orange-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+            >{c}</button>
+          ))}
+          <button
+            onClick={() => setFilterCategory(prev => prev === "__none__" ? "" : "__none__")}
+            className={`px-2 py-0.5 rounded-full text-[11px] font-black transition ${filterCategory === "__none__" ? "bg-slate-500 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+          >미분류</button>
+        </div>
+
         {/* 목록 */}
         {loading ? (
           <div className="flex justify-center py-16"><Loader2 className="animate-spin text-orange-400" size={24} /></div>
@@ -187,21 +210,6 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
               <span className="text-[10px] font-mono text-slate-400">({filtered.length}건)</span>
               <span className="ml-auto text-[10px] text-slate-400 font-semibold hidden sm:inline">💡 항목 클릭 시 상세내용 표시</span>
               <span className="ml-auto text-[10px] text-slate-400 font-semibold sm:hidden">💡 클릭 → 상세</span>
-            </div>
-            {/* 카테고리 필터 배지 · 이슈리스트 (*건) 아래 · 미해결/진행중/해결 상태 필터는 상단 유지 */}
-            <div className="flex items-center gap-1.5 flex-wrap px-3 py-2 border-b border-slate-100 bg-white">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider mr-1">카테고리</span>
-              <button
-                onClick={() => setFilterCategory("")}
-                className={`px-2 py-0.5 rounded-full text-[11px] font-black transition ${filterCategory === "" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
-              >전체</button>
-              {CATEGORIES.map(c => (
-                <button
-                  key={c}
-                  onClick={() => setFilterCategory(prev => prev === c ? "" : c)}
-                  className={`px-2 py-0.5 rounded-full text-[11px] font-black transition ${filterCategory === c ? "bg-orange-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
-                >{c}</button>
-              ))}
             </div>
             <div className="divide-y divide-slate-100">
             {filtered.map((p: BoardPost) => {

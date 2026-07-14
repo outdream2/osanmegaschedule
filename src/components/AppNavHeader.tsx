@@ -308,26 +308,30 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     <header className="bg-white border-b border-[#e2e8f0] shrink-0 shadow-sm">
       {/* ── Top row: logo + desktop tabs + right actions ── */}
       <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
-        {/* Left: logo (non-clickable) + desktop nav tabs */}
+        {/* Left: logo (클릭 시 랜딩 이동 · 2026-07-14) + desktop nav tabs */}
         <div className="flex items-center gap-2 min-w-0">
-          <div className="flex items-center gap-3 sm:gap-4 shrink-0 px-1 py-0.5">
+          <button
+            type="button"
+            onClick={onBack ?? (() => onNavigate?.("landing"))}
+            className="flex items-center gap-3 sm:gap-4 shrink-0 px-1 py-0.5 cursor-pointer hover:opacity-80 active:opacity-70 transition rounded-lg"
+            title="홈으로"
+            aria-label="랜딩 페이지로 이동"
+          >
             <img
               src={logoImg}
               alt="OSAN MEGATOWN 로고"
               className="w-14 h-14 sm:w-16 sm:h-16 object-contain shrink-0"
               draggable={false}
               onError={(e) => {
-                // fallback: /src/images/logo.png 상대경로로 재시도
                 const el = e.currentTarget;
                 if (!el.dataset.retried) { el.dataset.retried = "1"; el.src = "/src/images/logo.png"; }
               }}
             />
-            {/* 모바일: OSAN / MEGATOWN 2줄 · 데스크탑: 한 줄 · 로고 옆 정렬 */}
             <span className="font-black tracking-tight leading-none select-none flex flex-col sm:flex-row sm:items-baseline sm:gap-1">
               <span className="text-red-500 text-lg sm:text-xl leading-none">OSAN</span>
               <span className="text-gray-900 text-sm sm:text-base leading-none mt-0.5 sm:mt-0">MEGATOWN</span>
             </span>
-          </div>
+          </button>
 
           {/* Desktop nav tabs — Priority+ · 넘치는 탭은 우측 "⋯" 뒤 dropdown */}
           <div ref={tabsContainerRef} className="hidden sm:flex items-center gap-1 ml-3 min-w-0 flex-1 relative">

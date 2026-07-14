@@ -4,12 +4,12 @@ import type { AuthSession } from "../types";
 
 const STORAGE_KEY = "megatown_auth_session";
 
-/** 8 hours in ms — idle timeout */
-const IDLE_TIMEOUT_MS = 8 * 60 * 60 * 1000;
+/** 30 minutes in ms — idle timeout (2026-07-14 사용자 요청) */
+const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
 /** 24 hours in ms — absolute session cap regardless of activity */
 const ABSOLUTE_TIMEOUT_MS = 24 * 60 * 60 * 1000;
 /** Warn this many ms before idle expiry */
-const WARN_BEFORE_MS = 5 * 60 * 1000;
+const WARN_BEFORE_MS = 3 * 60 * 1000;
 /** How often the background timer tick runs */
 const TICK_INTERVAL_MS = 30_000;
 
@@ -201,7 +201,9 @@ export function useAuth(): UseAuthReturn {
         sessionRef.current = null;
         setSessionState(null);
         setShowTimeoutWarning(false);
-        window.location.replace("/");
+        // 세션 만료 플래그 저장 (LandingPage 에서 안내 표시)
+        try { sessionStorage.setItem("megatown_session_expired", "1"); } catch { /* noop */ }
+        window.location.replace("/?expired=1");
         return;
       }
 

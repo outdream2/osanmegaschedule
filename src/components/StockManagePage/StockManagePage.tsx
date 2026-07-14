@@ -1157,7 +1157,7 @@ export const StockManagePage: React.FC = () => {
                         <div className="flex items-center justify-between mb-1 gap-2">
                           <div className="flex items-center gap-1.5 min-w-0">
                             <span className="text-[10px] font-black text-sky-600 shrink-0">{i + 1}</span>
-                            <span className="text-xs font-bold text-slate-700 truncate">{sup.supplier}</span>
+                            <span className="text-xs font-bold text-slate-700 truncate">{sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</span>
                             <button
                               type="button"
                               onClick={() => openSupplierModal(sup)}

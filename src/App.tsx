@@ -19,6 +19,7 @@ import { SynonymPage } from "./components/SynonymPage";
 import { StockArrivalPage } from "./components/StockArrivalPage";
 import { BoardPage } from "./components/BoardPage";
 import { MyPage } from "./components/MyPage";
+import { AppFooter } from "./components/AppFooter";
 import { SessionTimeoutWarning } from "./components/SessionTimeoutWarning";
 import { useAuth } from "./hooks/useAuth";
 import { usePushSubscription } from "./hooks/usePushSubscription";
@@ -218,6 +219,7 @@ export default function App() {
   return (
     <>
       {pageContent}
+      <AppFooter />
       {timeoutWarningOverlay}
     </>
   );

@@ -32,9 +32,11 @@ import {
   Megaphone,
   MessageSquare,
   MessageCircleQuestion,
+  Search,
 } from "lucide-react";
 import type { AuthSession, AuthRole } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { VendorListEditor } from "./VendorListEditor";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
@@ -44,6 +46,29 @@ interface LandingPageProps {
 }
 
 export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigate, onLogout, onAuthOnly }) => {
+  // 세션 만료 배너 표시 (URL 쿼리 또는 sessionStorage 플래그로 감지 · 2026-07-14)
+  const [sessionExpiredNotice, setSessionExpiredNotice] = useState(() => {
+    try {
+      const flag = sessionStorage.getItem("megatown_session_expired");
+      const url = new URL(window.location.href);
+      const hasQuery = url.searchParams.get("expired") === "1";
+      if (flag || hasQuery) {
+        sessionStorage.removeItem("megatown_session_expired");
+        if (hasQuery) {
+          url.searchParams.delete("expired");
+          window.history.replaceState({}, "", url.pathname + (url.search ? "?" + url.searchParams.toString() : ""));
+        }
+        return true;
+      }
+    } catch { /* noop */ }
+    return false;
+  });
+  useEffect(() => {
+    if (!sessionExpiredNotice) return;
+    const id = setTimeout(() => setSessionExpiredNotice(false), 8000);
+    return () => clearTimeout(id);
+  }, [sessionExpiredNotice]);
+
   const [pendingPage, setPendingPage] = useState<"schedule" | "display" | "scan" | "requests" | "ocr" | "upload" | "leave" | null>(null);
   const [leavePendingCount, setLeavePendingCount] = useState(0);
   const [requestsCounts, setRequestsCounts] = useState({ display: 0, order: 0, mismatch: 0, lunch: 0 });
@@ -103,6 +128,63 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [createLoading, setCreateLoading] = useState(false);
 
   const [unauthorizedToast, setUnauthorizedToast] = useState(false);
+
+  // ── 인라인 재고검색 (비로그인용) ──────────────────────────────────────
+  interface StockItem {
+    product_name: string;
+    spec: string | null;
+    current_stock: string | null;
+    sale_status: string | null;
+    category: string | null;
+    supplier: string | null;
+  }
+  const [stockQuery, setStockQuery] = useState("");
+  const [stockResults, setStockResults] = useState<StockItem[] | null>(null);
+  const [stockSearching, setStockSearching] = useState(false);
+  const stockAbortRef = useRef<AbortController | null>(null);
+  const stockDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    stockAbortRef.current?.abort();
+    if (stockDebounceRef.current) clearTimeout(stockDebounceRef.current);
+  }, []);
+
+  const handleStockSearch = (val: string) => {
+    setStockQuery(val);
+    if (stockDebounceRef.current) clearTimeout(stockDebounceRef.current);
+    if (!val.trim()) { setStockResults(null); setStockSearching(false); return; }
+    setStockSearching(true);
+    stockDebounceRef.current = setTimeout(async () => {
+      stockAbortRef.current?.abort();
+      const ac = new AbortController();
+      stockAbortRef.current = ac;
+      try {
+        const res = await fetch(`/api/stock-check?q=${encodeURIComponent(val.trim())}`, { signal: ac.signal });
+        const data = await res.json();
+        if (res.ok) setStockResults(data);
+      } catch { /* silent */ }
+      finally { setStockSearching(false); }
+    }, 300);
+  };
+
+  // 재고·판매 두 축을 독립적으로 반환 (나란히 표시)
+  //   재고: current_stock > 0 → 재고있음 · <= 0 or 없음 → 재고없음
+  //   판매: sale_status 에 단종/판매중지/판매불가/판매중단 → 판매중단 · 그 외 → 판매중
+  const getStockBadges = (item: StockItem): Array<{ label: string; bg: string; text: string; dot: string }> => {
+    const badges: Array<{ label: string; bg: string; text: string; dot: string }> = [];
+    const n = Number(item.current_stock ?? 0);
+    if (Number.isFinite(n) && n > 0) {
+      badges.push({ label: "재고있음", bg: "bg-emerald-100", text: "text-emerald-700", dot: "bg-emerald-500" });
+    } else {
+      badges.push({ label: "재고없음", bg: "bg-red-100", text: "text-red-600", dot: "bg-red-500" });
+    }
+    const status = item.sale_status ?? "";
+    if (/단종|판매중지|판매불가|판매\s*중단/.test(status))
+      badges.push({ label: "판매중단", bg: "bg-slate-200", text: "text-slate-600", dot: "bg-slate-400" });
+    else
+      badges.push({ label: "판매중", bg: "bg-sky-100", text: "text-sky-700", dot: "bg-sky-500" });
+    return badges;
+  };
 
   const [empNumber, setEmpNumber] = useState(() => localStorage.getItem("megatown_remembered_phone") ?? "");
   const [empPassword, setEmpPassword] = useState("");
@@ -489,6 +571,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "linear-gradient(160deg, #f8faff 0%, #f1f5ff 40%, #f0fdf4 100%)" }}>
 
+      {/* 세션 만료 안내 배너 (30분 무활동 자동 로그아웃 · 8초 후 자동 닫힘) */}
+      {sessionExpiredNotice && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[100] bg-amber-50 border border-amber-300 text-amber-900 rounded-xl shadow-lg px-4 py-3 flex items-center gap-3 max-w-md animate-pulse">
+          <span className="text-lg">⏱️</span>
+          <div className="flex-1">
+            <p className="text-sm font-bold">세션이 만료되었습니다</p>
+            <p className="text-xs text-amber-700 mt-0.5">30분간 활동이 없어 자동 로그아웃되었습니다. 다시 로그인해 주세요.</p>
+          </div>
+          <button
+            onClick={() => setSessionExpiredNotice(false)}
+            className="text-amber-500 hover:text-amber-800 text-xl leading-none"
+            aria-label="닫기"
+          >×</button>
+        </div>
+      )}
+
       {/* ── Header ── */}
       <div className="sticky top-0 z-30">
         <AppNavHeader
@@ -811,31 +909,85 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             </div>
           )}
 
-          {/* ── 비로그인: 재고확인 (메인) + 로그인 버튼 (보조) ── */}
+          {/* ── 비로그인: 인라인 재고검색 + 로그인 버튼 (보조) ── */}
           {!isLoggedIn && (
             <div className="w-full mb-7 flex flex-col gap-3">
-              {/* 재고확인 — 메인 CTA */}
-              <button
-                onClick={() => onNavigate("stockcheck")}
-                className="w-full group relative overflow-hidden rounded-3xl cursor-pointer transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
-                style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 60%, #3b82f6 100%)" }}
-              >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-3xl" style={{ background: "linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #60a5fa 100%)" }} />
-                <div className="relative px-6 py-6 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0" style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)" }}>
-                      <Package size={26} className="text-white" />
-                    </div>
-                    <div className="text-left">
-                      <div className="text-white font-black text-xl sm:text-2xl tracking-tight leading-tight">재고 확인</div>
-                      <div className="text-blue-200 text-xs sm:text-sm mt-1 font-medium">원하는 약품·제품의 재고를 바로 확인하세요</div>
-                    </div>
+              {/* 인라인 재고검색 — 검색바 + 결과 리스트 */}
+              <div className="w-full rounded-3xl overflow-hidden shadow-xl border border-blue-100"
+                style={{ background: "linear-gradient(135deg, #1e3a5f 0%, #1d4ed8 60%, #3b82f6 100%)" }}>
+                <div className="px-5 py-4 flex items-center gap-3 border-b border-blue-400/30">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)" }}>
+                    <Package size={18} className="text-white" />
                   </div>
-                  <div className="relative shrink-0 flex flex-col items-center gap-1 text-blue-200 group-hover:text-white transition-colors mr-1">
-                    <ChevronRight size={22} className="group-hover:translate-x-1 transition-transform" />
+                  <div className="text-left flex-1 min-w-0">
+                    <div className="text-white font-black text-base sm:text-lg tracking-tight leading-tight">재고 확인</div>
+                    <div className="text-blue-200 text-[11px] mt-0.5">약품·제품명 입력 시 실시간 재고 확인</div>
                   </div>
                 </div>
-              </button>
+                {/* 검색바 */}
+                <div className="px-4 pt-3 pb-1 bg-white">
+                  <div className="relative">
+                    <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    <input
+                      type="search"
+                      value={stockQuery}
+                      onChange={e => handleStockSearch(e.target.value)}
+                      placeholder="예: 타이레놀, 판콜에이…"
+                      className="w-full rounded-xl pl-10 pr-9 py-2.5 text-slate-900 text-sm font-semibold placeholder:text-slate-300 placeholder:font-normal focus:outline-none border-2 border-slate-200 bg-slate-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+                    />
+                    {stockQuery && (
+                      <button type="button"
+                        onClick={() => { setStockQuery(""); setStockResults(null); }}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 transition cursor-pointer">
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {/* 결과 리스트 */}
+                <div className="bg-white px-4 pb-3 pt-1 max-h-80 overflow-y-auto">
+                  {stockQuery.trim() && stockSearching && stockResults === null && (
+                    <div className="text-center text-slate-400 text-xs py-4">검색 중…</div>
+                  )}
+                  {stockResults !== null && stockResults.length === 0 && !stockSearching && (
+                    <div className="text-center text-slate-400 text-xs py-4">일치하는 상품이 없습니다.</div>
+                  )}
+                  {stockResults !== null && stockResults.length > 0 && (
+                    <div className="flex flex-col divide-y divide-slate-100">
+                      {stockResults.slice(0, 20).map((item, idx) => {
+                        const badges = getStockBadges(item);
+                        return (
+                          <div key={idx} className="py-2 flex items-center justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              {/* 상품명만 표시 · 구역(spec/real_map/display_location) 숨김 */}
+                              <div className="text-slate-800 font-bold text-xs truncate">
+                                {item.product_name}
+                              </div>
+                              {item.supplier && (
+                                <div className="text-[10px] text-slate-400 truncate mt-0.5">{item.supplier}</div>
+                              )}
+                            </div>
+                            <div className="shrink-0 flex items-center gap-1">
+                              {badges.map((badge, bi) => (
+                                <div key={bi} className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${badge.bg} ${badge.text} text-[10px] font-black`}>
+                                  <span className={`w-1.5 h-1.5 rounded-full ${badge.dot}`} />
+                                  {badge.label}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {stockResults.length > 20 && (
+                        <div className="text-center text-[10px] text-slate-400 pt-2">
+                          외 {stockResults.length - 20}건 · 더 자세히 보려면 로그인
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* 직원·거래처 로그인 — 보조 */}
               <div className="flex gap-2">
@@ -934,12 +1086,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             )}
           </div>
 
-          {/* Footer */}
-          <div className="flex items-center gap-4 mt-10 pt-6 border-t border-slate-200/60 w-full justify-center text-slate-400 text-[11px] font-medium">
-            <span className="flex items-center gap-1.5"><MapPin size={11} />경기도 오산시 메가타운</span>
-            <span className="w-1 h-1 rounded-full bg-slate-300" />
-            <span className="flex items-center gap-1.5"><Clock size={11} />09:00 – 22:00</span>
-          </div>
         </div>
       </div>
 
@@ -1270,9 +1416,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             {uploadTab === "vendors" && (
               <>
                 <p className="text-xs text-gray-500 mb-4 leading-relaxed">
-                  공급사관리 xlsx 파일을 업로드하면 <b>회사명</b> 기준으로 담당자·전화·이메일·카테고리·비고가 갱신됩니다.<br />
-                  <span className="text-gray-400">기존에 없는 공급사는 신규 등록됩니다. (컬럼명: 공급사/담당자/전화/이메일/카테고리/비고)</span>
+                  공급사관리 xlsx 파일을 업로드하면 <b>회사명</b> 기준으로 담당자·전화·이메일·카테고리·비고·사업자번호가 갱신됩니다.<br />
+                  <span className="text-gray-400">기존에 없는 공급사는 신규 등록됩니다.</span>
                 </p>
+                {/* 공급사 리스트 조회·수정 (2026-07-14 신설) */}
+                <VendorListEditor />
                 {vendorUploadResult?.ok ? (
                   <div className="flex flex-col items-center gap-3 py-4">
                     <CheckCircle2 size={36} className="text-emerald-500" />

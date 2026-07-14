@@ -104,9 +104,12 @@ function normalizeNumber(v: any): number | null {
 function normalizeDate(v: any): string | null {
   if (v === undefined || v === null || String(v).trim() === "") return null;
   if (v instanceof Date && !isNaN(v.getTime())) {
-    const yyyy = v.getFullYear();
-    const mm = String(v.getMonth() + 1).padStart(2, "0");
-    const dd = String(v.getDate()).padStart(2, "0");
+    // SheetJS cellDates:true 는 시리얼→Date 변환 시 부동소수점으로 자정 직전(예 23:59:08)이 될 수 있음.
+    // 한국(UTC+9) 등 동시간대에서 .getDate() 가 하루 밀리는 것을 방지하기 위해 12h 버퍼 후 로컬 성분 추출.
+    const shifted = new Date(v.getTime() + 12 * 3600 * 1000);
+    const yyyy = shifted.getFullYear();
+    const mm = String(shifted.getMonth() + 1).padStart(2, "0");
+    const dd = String(shifted.getDate()).padStart(2, "0");
     return `${yyyy}-${mm}-${dd}`;
   }
   if (typeof v === "number" && Number.isFinite(v) && v > 20000 && v < 100000) {

@@ -23,3 +23,5 @@ _test_in.json
 metadata.json
 server/models/best.onnx
 logs/
+# Vercel 링크 (Render 배포 예정)
+.vercel

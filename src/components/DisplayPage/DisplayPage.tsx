@@ -311,13 +311,15 @@ const MULTI_ASSIGN_ZONE_NUMS = new Set([36, 42]);
 
 // ─── Main component ────────────────────────────────────────────────────────────
 export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployeeEdit, authSession, onNavigate, onLogout }) => {
-  // 서브탭: 매장관리(기본) · 재고관리(level 9 전용)
+  // 서브탭: 재고관리(기본 · level 9 전용) · 매장관리(그 외 기본)
   const dpUserLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9 :
      authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
-  const [dpSubTab, setDpSubTab] = useState<"store" | "stock-manage" | "sales-trend" | "stock-arrivals" | "order-manage" | "staff-manage">("store");
+  const [dpSubTab, setDpSubTab] = useState<"store" | "stock-manage" | "sales-trend" | "stock-arrivals" | "order-manage" | "staff-manage">(
+    dpCanSeeStockManage ? "stock-manage" : "store"
+  );
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
   const [zonesLoaded, setZonesLoaded] = useState(false);
   const [requests, setRequests] = useState<DisplayRequest[]>(() => loadRequests());

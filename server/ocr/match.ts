@@ -52,15 +52,120 @@ export function jamoSim(a: string, b: string): number {
   return Math.round((1 - levenshtein(ja, jb) / maxLen) * 100);
 }
 
+// ── OCR 시각적 혼동 쌍 (실측 기반) ────────────────────────────────────────────
+// 각 자모가 시각적으로 헷갈리기 쉬운 파트너들.
+// 이 쌍끼리 오독된 경우 편집거리 비용을 낮춰 정상 상품에 더 잘 매칭되도록.
+const OCR_CONFUSABLE: Record<string, string[]> = {
+  // 자음 — 폐곡선 vs 폐곡선/오픈곡선
+  "ㅇ": ["ㅁ"],           // 원 vs 사각 (실측 최대 오탐)
+  "ㅁ": ["ㅇ", "ㅂ"],     // 사각 vs 원, 사각 vs 위트인
+  "ㅂ": ["ㅁ", "ㅃ", "ㅍ"],// 물병 vs 사각, 쌍자음, ㅍ
+  "ㅃ": ["ㅂ"],
+  "ㅍ": ["ㅂ"],
+  // 자음 — 획 방향 유사
+  "ㄴ": ["ㄷ", "ㄹ"],
+  "ㄷ": ["ㄴ", "ㄸ", "ㄹ"],
+  "ㄸ": ["ㄷ"],
+  "ㄹ": ["ㄷ", "ㄴ"],
+  // 자음 — 파열음/평음
+  "ㄱ": ["ㄲ", "ㅋ"],
+  "ㄲ": ["ㄱ"],
+  "ㅋ": ["ㄱ"],
+  "ㅅ": ["ㅆ", "ㅈ", "ㅊ"],
+  "ㅆ": ["ㅅ"],
+  "ㅈ": ["ㅅ", "ㅉ", "ㅊ"],
+  "ㅉ": ["ㅈ"],
+  "ㅊ": ["ㅈ", "ㅅ", "ㅇ"],
+  // 모음 — 방향/점 개수
+  "ㅗ": ["ㅜ", "ㅛ"],
+  "ㅜ": ["ㅗ", "ㅠ"],
+  "ㅛ": ["ㅗ", "ㅠ"],
+  "ㅠ": ["ㅜ", "ㅛ"],
+  "ㅏ": ["ㅓ", "ㅑ"],
+  "ㅓ": ["ㅏ", "ㅕ"],
+  "ㅑ": ["ㅏ", "ㅕ"],
+  "ㅕ": ["ㅓ", "ㅑ"],
+  "ㅐ": ["ㅔ", "ㅒ"],
+  "ㅔ": ["ㅐ", "ㅖ"],
+  "ㅒ": ["ㅐ"],
+  "ㅖ": ["ㅔ"],
+  "ㅡ": ["ㅢ"],
+  "ㅣ": ["ㅢ"],
+};
+
+/** OCR 혼동 쌍이면 0.3, 아니면 1 (완전 다른 자모) */
+function subCostOcr(a: string, b: string): number {
+  if (a === b) return 0;
+  const pairs = OCR_CONFUSABLE[a];
+  if (pairs && pairs.includes(b)) return 0.3;
+  return 1;
+}
+
+/** 가중 Levenshtein — 치환 비용 커스텀 */
+function levenshteinWeighted(
+  a: string[],
+  b: string[],
+  subCost: (x: string, y: string) => number,
+): number {
+  const m = a.length, n = b.length;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  const curr = new Array<number>(n + 1);
+  for (let i = 1; i <= m; i++) {
+    curr[0] = i;
+    for (let j = 1; j <= n; j++) {
+      const cost = subCost(a[i - 1], b[j - 1]);
+      curr[j] = Math.min(
+        prev[j] + 1,           // 삭제
+        curr[j - 1] + 1,       // 삽입
+        prev[j - 1] + cost,    // 치환 (가중)
+      );
+    }
+    prev = [...curr];
+  }
+  return prev[n];
+}
+
+/**
+ * OCR 오독 인식 자모 유사도 (0-100)
+ *
+ * ㅇ↔ㅁ, ㅂ↔ㅍ, ㅗ↔ㅜ 같은 시각적 혼동 쌍은 편집거리 0.3만 부과 → 유사도 대폭 상승
+ *
+ * 예시:
+ *   "온라인팜" vs "온라인밤" (ㅁ↔ㅂ) → jamoSim 91% / jamoSimOcr 97%
+ *   "댕기머리" vs "덩기머리" (ㅐ↔ㅓ, ㅇ 유지) → 88% / 96%
+ *   "이엑스" vs "이역스" (ㄱ자모 없음) → 낮은 유사도 그대로 (진짜 다른 문자)
+ */
+export function jamoSimOcr(a: string, b: string): number {
+  const ja = toJamo(a), jb = toJamo(b);
+  if (!ja.length || !jb.length) return 0;
+  const maxLen = Math.max(ja.length, jb.length);
+  const dist = levenshteinWeighted(ja, jb, subCostOcr);
+  return Math.round((1 - dist / maxLen) * 100);
+}
+
 // ── 정규화 함수 ────────────────────────────────────────────────────────────────
 
-/** 특수문자·공백 제거, 소문자 변환 */
+/**
+ * 특수문자·공백 제거, 소문자 변환
+ * 확장 (2026-07-09): OCR 오독 대응 위해 @*[]【】~+※'"※+ 및 각종 리딩 심볼 흡수
+ * (Gemini 뽑아준 "@댕기머리" prefix 처럼 서비스 마크가 붙어와 매칭 점수 5-10점 손실 방지)
+ */
 export const norm = (s: string): string =>
-  s.toLowerCase().replace(/[\s\-_()（）,·./[\]{}「」『』]/g, "");
+  s.toLowerCase().replace(/[\s\-_()（）,·./[\]{}「」『』@*※~+【】「」<>《》"'`^!?:;|]/g, "");
 
-/** 공급사명 정규화: 법인 형태 제거 후 norm */
+/**
+ * 공급사명 정규화: 법인 형태 · 회계 태그 · 지역 접미사 제거 후 norm
+ * 확장 (2026-07-09): "vat미포함", "vat 미포함", "vat별도", "부가세별도", 지역명 접미사 흡수
+ * DB의 "일양약품(vat미포함)", "지오영(용인)" 같은 표기가 supplier hint 매칭에서 튕겨나가지 않도록
+ */
 export const normSupplier = (s: string): string =>
-  norm(s.replace(/주식회사|유한회사|합자회사|합명회사|농업회사법인|㈜|\(주\)|\(유\)|\(합\)|\(재\)/gi, ""));
+  norm(s
+    .replace(/주식회사|유한회사|합자회사|합명회사|농업회사법인|㈜|\(주\)|\(유\)|\(합\)|\(재\)/gi, "")
+    .replace(/\(?\s*vat\s*(미)?\s*포\s*함\s*\)?/gi, "")
+    .replace(/\(?\s*vat\s*별\s*도\s*\)?/gi, "")
+    .replace(/\(?\s*부\s*가\s*세?\s*(별\s*도|미\s*포\s*함|포\s*함)\s*\)?/gi, "")
+    .replace(/\(용인|서울|경기|부산|대구|인천|광주|대전|울산|남양공장|아워팜\)/gi, "")
+  );
 
 // ── 의약품 도메인 어휘 사전 ────────────────────────────────────────────────────
 // 길이 내림차순 정렬: 긴 형태를 먼저 제거해야 부분 치환 오류 방지
@@ -164,6 +269,7 @@ export function invoiceMatchScore(ocrRaw: string, p: ProductInfo): number {
 
   // 신호 1–4: Dice bigram (4쌍)
   // 신호 5–6: 자모 Levenshtein
+  // 신호 7–8: OCR 오독 인식 자모 Levenshtein (ㅇ↔ㅁ 등 시각 혼동 쌍 가중치 낮춤)
   const scores: number[] = [
     diceSim(oc, dc),
     diceSim(os, ds),
@@ -171,13 +277,19 @@ export function invoiceMatchScore(ocrRaw: string, p: ProductInfo): number {
     diceSim(os, dc),
     jamoSim(oc, dc),
     jamoSim(os, ds),
+    jamoSimOcr(oc, dc),
+    jamoSimOcr(os, ds),
   ];
 
-  // 신호 7–8: 브랜드 레벨 (규격+제형 완전 제거 → 순수 브랜드명 비교)
+  // 신호 9–11: 브랜드 레벨 (규격+제형 완전 제거 → 순수 브랜드명 비교)
   const ocBrand = parseDrugBrand(ocrClean);
   const dcBrand = parseDrugBrand(p.name ?? "");
   if (ocBrand && dcBrand && ocBrand !== oc) {
-    scores.push(diceSim(ocBrand, dcBrand), jamoSim(ocBrand, dcBrand));
+    scores.push(
+      diceSim(ocBrand, dcBrand),
+      jamoSim(ocBrand, dcBrand),
+      jamoSimOcr(ocBrand, dcBrand),
+    );
   }
 
   // 신호 9+: search_keywords (DB에 동의어/별칭 저장)

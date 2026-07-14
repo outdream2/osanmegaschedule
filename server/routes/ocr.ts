@@ -1,16 +1,356 @@
 import { Router } from "express";
 import { supabase } from "../../src/supabase/client";
-import { getProductMap, getSynonymMap, resetSynonymCache, getSupplierAliasMap, resetSupplierAliasCache } from "../productCache";
-import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta, filterCodeOnlyRows } from "../ocr/parse";
+import { getProductMap, getSynonymMap, resetSynonymCache, getSupplierAliasMap, resetSupplierAliasCache, getVendorNames } from "../productCache";
+import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta, filterCodeOnlyRows, filterMetadataBleedRows, validateCellTypes, applyPositionalHints, detectSuspiciousEqualPriceAmount, mergeSplitProductRows, verifyRowsAgainstRawText, auditRowSumVsTotal, autoFillMissingMathField, inferMissingTotals, extractCommonMetadataLines, fixDateInAmountColumns, sanitizeBalanceContamination, fallbackParseRowsFromRawText, mergeAdjacentSplitRows } from "../ocr/parse";
+import { buildOnnxPipeline, runPipeline, makeInitialContext } from "../ocr/pipeline";
 import { callGeminiOcr, callMistralOcr, getGeminiKeys, getMistralKeys, geminiState, extractSupplierFromImage } from "../ocr/llm";
-import { callRapidOcr } from "../ocr/rapidocr";
-import { preprocessImageForOcr } from "../ocr/preprocess";
-import { ensureOcrServer, callEasyOcrServer } from "../ocr/easyocr";
+import { preprocessImageForOcr, preprocessForEasyOcr, rotateImage, preprocessHighContrast } from "../ocr/preprocess";
+import { callPpuOcr } from "../ocr/ppuPaddle";
+import { SUPPLIER_EXTRACT_RE } from "../ocr/invoice-vocab";
+import { saveMatchDiagnostic, type RowMatchTrace, type MatchDiagnostic } from "../ocr/diagnostics";
 import { invoiceMatchScore, makeMatchResult, norm, normSupplier, bigramSim } from "../ocr/match";
 import type { GeminiResult } from "../ocr/schema";
 
+// ── 세션 단위 rawText 캐시 (2026-07-10 v4c) ────────────────────────────────
+// 사용자 통찰: "여러 명세서에 공통으로 나오는 정보 = 수신처 (공급받는쪽)"
+// 사용자가 명세서를 한 장씩 업로드해도 (pages.length === 1) 최근 요청과 비교하여
+// 공통 라인을 검출 → 필터 강화.
+//
+// 저장: rawText 스냅샷 배열 · TTL 10분 · 최대 20페이지
+// 사용: 단일 페이지 요청 시 캐시의 다른 rawText 와 비교 → 공통 라인 추출
+const _recentRawTextCache: { text: string; ts: number }[] = [];
+const _RAW_CACHE_TTL_MS = 10 * 60 * 1000; // 10분
+const _RAW_CACHE_MAX = 20;
+function pruneRawTextCache() {
+  const now = Date.now();
+  while (_recentRawTextCache.length > 0 && now - _recentRawTextCache[0].ts > _RAW_CACHE_TTL_MS) {
+    _recentRawTextCache.shift();
+  }
+  while (_recentRawTextCache.length > _RAW_CACHE_MAX) _recentRawTextCache.shift();
+}
+function addToRawCache(text: string) {
+  if (!text || text.length < 30) return;
+  _recentRawTextCache.push({ text, ts: Date.now() });
+  pruneRawTextCache();
+}
+function getRawCacheTexts(): string[] {
+  pruneRawTextCache();
+  return _recentRawTextCache.map(c => c.text);
+}
+
 function buildTemplatePrompt(supplierName: string, headers: string[]): string {
   return `[공급처 템플릿 — 최우선 적용]\n이 명세서는 "${supplierName}" 공급처 양식입니다.\n표의 컬럼 순서를 정확히 다음과 같이 지정합니다:\n${headers.map((h, i) => `  ${i + 1}번 컬럼 → "${h}"`).join("\n")}\n이 매핑 외의 추론·재배열은 절대 하지 마세요.`;
+}
+
+// ── OCR 템플릿 자동 저장/조회 헬퍼 (2026-07-09 신설) ──────────────────────
+//
+// 아이디어:
+//   Gemini 는 표 구조 인식 최상 → 성공 시 헤더 구조를 ocr_templates 에 자동 upsert
+//   Local(EasyOCR)/AI(ONNX) 는 같은 공급사 명세서 처리 시 이 템플릿을 참조해 헤더 라벨 교정
+//
+// 이렇게 하면 공급사별 명세서 "형태"가 DB 에 축적됨 → 시간이 지날수록 Local/AI 정확도 상승
+
+/** 헤더가 표준 컬럼(품명/수량/단가/금액 등) 3개 이상 포함하는지 검증 (오탐 저장 방지) */
+function isGoodHeaderSet(headers: string[]): boolean {
+  const stripped = headers.map(h => String(h ?? "").replace(/\s+/g, ""));
+  const CORE = ["품명", "품목", "상품명", "수량", "단가", "금액", "공급가액", "규격", "세액"];
+  const hits = CORE.filter(k => stripped.some(h => h.includes(k) || k.includes(h))).length;
+  return hits >= 3;
+}
+
+/** 공급사 상호 정규화 (템플릿 키용) */
+function cleanSupplierName(name: string): string {
+  return name.replace(/\(주\)|\(株\)|주식회사|（주）|㈜/g, "").trim();
+}
+
+/** Gemini/ONNX 성공 시 헤더 구조를 ocr_templates 에 upsert (자동 학습)
+ *  ⚠ 사용자가 명시적으로 저장한 column_mapping 은 절대 덮어쓰지 않음 (headers 만 업데이트)
+ */
+async function upsertOcrTemplate(supplier: string | null | undefined, headers: string[]): Promise<void> {
+  if (!supplier || !Array.isArray(headers) || !isGoodHeaderSet(headers)) return;
+  const cleaned = cleanSupplierName(supplier);
+  if (!cleaned) return;
+  try {
+    // 기존 레코드 있으면 column_mapping 보존 (headers 만 갱신)
+    const existing = await supabase.from("ocr_templates")
+      .select("column_mapping").eq("supplier_name", cleaned).limit(1).maybeSingle();
+    if (existing.data?.column_mapping) {
+      // 사용자 저장 매핑이 있는 공급사 → 자동 headers 덮어쓰기 스킵
+      return;
+    }
+    await supabase.from("ocr_templates").upsert(
+      { supplier_name: cleaned, headers, updated_at: new Date().toISOString() },
+      { onConflict: "supplier_name" }
+    );
+    console.log(`[OCR/Template] 자동 저장/갱신: "${cleaned}" 헤더=${JSON.stringify(headers)}`);
+  } catch (e: any) {
+    console.warn("[OCR/Template] 자동 저장 실패 (무시):", e?.message);
+  }
+}
+
+/** 공급처 힌트 or rawText 에서 supplier 를 뽑아 템플릿 조회
+ *  반환: { supplier, headers, column_mapping }
+ *   - headers: 표준 필드명 리스트 (예: ["품명","규격","수량","단가","금액"])
+ *   - column_mapping: 원본 컬럼 순서 유지 배열 · "" = 제외 · 없으면 undefined
+ */
+async function findOcrTemplate(supplierHint: string | null | undefined, rawText?: string): Promise<{ supplier: string; headers: string[]; column_mapping?: string[] } | null> {
+  let hint = supplierHint;
+  // 힌트 없으면 rawText에서 공급자 라벨로 추출
+  if (!hint && rawText) {
+    const m = rawText.match(SUPPLIER_EXTRACT_RE);
+    if (m) hint = m[1].trim().split(/\s{2,}/)[0];
+  }
+  if (!hint) return null;
+  try {
+    const cleaned = cleanSupplierName(hint);
+    if (!cleaned) return null;
+    const { data } = await supabase.from("ocr_templates")
+      .select("supplier_name, headers, column_mapping").ilike("supplier_name", `%${cleaned}%`).limit(1);
+    if (data?.[0]?.headers) {
+      return {
+        supplier: data[0].supplier_name,
+        headers: data[0].headers,
+        column_mapping: Array.isArray(data[0].column_mapping) ? data[0].column_mapping : undefined,
+      };
+    }
+    return null;
+  } catch { return null; }
+}
+
+/**
+ * 검출된 헤더 · 행을 template 로 재배치
+ *   column_mapping 이 있으면: 원본 컬럼 순서를 그대로 유지하되 라벨만 매핑 결과로 교체 · "제외" 컬럼 삭제
+ *   column_mapping 이 없으면: 기존 로직 (헤더 수 일치 시 라벨 교체)
+ */
+function applyTemplateHeaders(detected: string[], template: string[]): string[] {
+  if (detected.length === template.length) return [...template];
+  // 검출 헤더 수가 템플릿보다 1개 많으면 트림 (마지막 노이즈 제거)
+  if (detected.length === template.length + 1) return [...template, detected[detected.length - 1]];
+  // 그 외엔 원본 유지
+  return detected;
+}
+
+/**
+ * column_mapping 을 사용해 rows 를 재구성.
+ *   columnMapping[origIdx] === "제외" or "" → 해당 컬럼 제거
+ *   나머지는 순서대로 유지, 헤더는 매핑 결과 사용
+ */
+function applyColumnMapping(
+  detectedHeaders: string[],
+  rows: (string | number | null)[][],
+  columnMapping: string[],
+): { headers: string[]; rows: (string | number | null)[][] } {
+  // 2026-07-10 v4c:
+  //   병합: 여러 원본 컬럼 → 같은 표준 필드 (셀 값 합침)
+  //   분할: 한 원본 컬럼 → 여러 표준 필드 ("|" 구분자 · 셀 값을 공백으로 split)
+  //     예) raw 컬럼값 "20281221 454" · mapping = "유통기한|단가"
+  //         → 유통기한=20281221, 단가=454 로 분리 배치
+  const NUM_FIELDS = new Set(["수량", "단가", "금액", "세액"]);
+  const SPLIT_DELIM = "|";
+
+  // 1) 원본 컬럼 값을 미리 "분할된 (필드, 값)" 페어 리스트로 확장
+  //    → 이후 merge 로직에서 필드별로 병합
+  const expandRow = (row: (string | number | null)[]): { field: string; value: (string | number | null) }[] => {
+    const out: { field: string; value: (string | number | null) }[] = [];
+    for (let ci = 0; ci < columnMapping.length; ci++) {
+      const f = columnMapping[ci];
+      if (!f || f === "제외") continue;
+      const cellVal = ci < row.length ? row[ci] : null;
+      if (f.includes(SPLIT_DELIM)) {
+        const parts = f.split(SPLIT_DELIM).map(s => s.trim()).filter(Boolean);
+        const chunks = cellVal == null ? [] : String(cellVal).trim().split(/\s+/);
+        for (let pi = 0; pi < parts.length; pi++) {
+          const partField = parts[pi];
+          const partValRaw: string | null = chunks[pi] ?? null;
+          if (NUM_FIELDS.has(partField) && partValRaw != null) {
+            const n = parseFloat(String(partValRaw).replace(/[^0-9.-]/g, ""));
+            out.push({ field: partField, value: Number.isFinite(n) ? n : partValRaw });
+          } else {
+            out.push({ field: partField, value: partValRaw });
+          }
+        }
+      } else {
+        out.push({ field: f, value: cellVal });
+      }
+    }
+    return out;
+  };
+
+  // 2) 필드 순서 결정 (첫 등장 순서 유지, 분할 필드 순서도 포함)
+  const fieldOrder: string[] = [];
+  const fieldSeen = new Set<string>();
+  for (const f of columnMapping) {
+    if (!f || f === "제외") continue;
+    const parts = f.includes(SPLIT_DELIM) ? f.split(SPLIT_DELIM).map(s => s.trim()).filter(Boolean) : [f];
+    for (const pf of parts) {
+      if (!fieldSeen.has(pf)) { fieldSeen.add(pf); fieldOrder.push(pf); }
+    }
+  }
+  if (fieldOrder.length === 0) return { headers: detectedHeaders, rows };
+
+  const mergeCells = (values: (string | number | null)[], isNumField: boolean): string | number | null => {
+    const nonNull = values.filter(v => v != null && v !== "");
+    if (nonNull.length === 0) return null;
+    if (nonNull.length === 1) return nonNull[0];
+    if (isNumField) {
+      let sum = 0, allNum = true;
+      for (const v of nonNull) {
+        const n = typeof v === "number" ? v : parseFloat(String(v).replace(/[^0-9.-]/g, ""));
+        if (!Number.isFinite(n)) { allNum = false; break; }
+        sum += n;
+      }
+      return allNum ? sum : nonNull[0];
+    }
+    return nonNull.map(v => String(v).trim()).filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+  };
+
+  const newRows = rows.map(r => {
+    if (!Array.isArray(r)) return r;
+    const pairs = expandRow(r);
+    return fieldOrder.map(f => {
+      const values = pairs.filter(p => p.field === f).map(p => p.value);
+      return mergeCells(values, NUM_FIELDS.has(f));
+    });
+  });
+  return { headers: fieldOrder, rows: newRows };
+}
+
+/**
+ * OCR 로 뽑은 공급사 후보를 vendors 테이블과 fuzzy 매칭 (2026-07-09)
+ *
+ * 사용 시나리오:
+ *   Local(EasyOCR) / AI(ONNX) 는 표에서 공급사명이 뭉개져 나올 때 많음.
+ *   실제 상호 마스터가 vendors 테이블에 150개 있으니 fuzzy 매칭으로 정규화.
+ *   매칭되면 정규화된 상호명 반환 → 상품 pool 필터가 정확해짐.
+ *
+ * 매칭 방식:
+ *   1) normSupplier 로 후보/DB 상호 정규화 (법인·VAT·지역 태그 제거)
+ *   2) exact / includes / bigramSim >= 60 순으로 매칭
+ *   3) 최고 점수 반환 (임계 미만이면 null)
+ */
+async function matchVendorSupplier(rawSupplier: string | null | undefined): Promise<string | null> {
+  if (!rawSupplier || String(rawSupplier).trim().length < 2) return null;
+  try {
+    const vendors = await getVendorNames();
+    if (vendors.length === 0) return null;
+    const target = normSupplier(String(rawSupplier));
+    if (!target) return null;
+
+    let best: string | null = null;
+    let bestScore = 0;
+    for (const v of vendors) {
+      const vn = normSupplier(v);
+      if (!vn) continue;
+      // exact
+      if (vn === target) return v;
+      // includes 관계 (부분 일치)
+      if (vn.includes(target) || target.includes(vn)) {
+        const ratio = Math.min(vn.length, target.length) / Math.max(vn.length, target.length);
+        const score = Math.round(80 + 15 * ratio);
+        if (score > bestScore) { bestScore = score; best = v; }
+        continue;
+      }
+      // fuzzy
+      const score = bigramSim(vn, target);
+      if (score > bestScore) { bestScore = score; best = v; }
+    }
+    return bestScore >= 60 ? best : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * rawText 에서 vendors DB 와 매칭되는 공급사명을 찾기 (2026-07-09)
+ *
+ * Local(EasyOCR)/AI(ONNX) 는 meta.supplier 추출이 자주 실패함.
+ * 그럴 때 rawText 를 vendors 상호 리스트로 스캔해서 매칭되는 것을 찾음.
+ *
+ * 매칭 방식:
+ *   1) vendors 상호를 normSupplier 로 정규화
+ *   2) 정규화된 rawText 에 정규화된 vendor 상호가 포함되는지 검사
+ *   3) 가장 긴 매칭이 우승 (짧은 이름이 다른 이름의 부분으로 잘못 매칭되는 것 방지)
+ */
+async function findVendorInText(rawText: string | null | undefined): Promise<string | null> {
+  if (!rawText || String(rawText).trim().length < 3) return null;
+  try {
+    const vendors = await getVendorNames();
+    if (vendors.length === 0) return null;
+
+    // 2026-07-14 v3 (A + C 조합):
+    //   A) 최장 매칭 (v1 · 결정적 · 안전)
+    //   C) 명세서 상단 헤더 영역만 스캔 (첫 350자) · 하단 상품 라인 노이즈 배제
+    //      + 공급자 라벨 근처 vendor 최우선
+    //      + 상단에서 매칭 없으면 전체 rawText 로 폴백
+
+    const SUPPLIER_LABEL = /(?:공\s*급\s*자|공\s*급\s*하?\s*는?\s*자|공급업체|공급회사|판\s*매\s*자|판매업체|매출자)/;
+
+    // (1) 명세서 상단 헤더 영역: 첫 350자 (헤더 · 공급자/수신처 정보)
+    const header = rawText.slice(0, 350);
+    const headerNorm = normSupplier(header);
+
+    // 헤더 내에서 매칭 · 최장 이름 우승 (v1 방식)
+    const headerFindLongest = (): string | null => {
+      let best: string | null = null;
+      let bestLen = 0;
+      for (const v of vendors) {
+        const vn = normSupplier(v);
+        if (!vn || vn.length < 3) continue;
+        if (headerNorm.includes(vn) && vn.length > bestLen) {
+          bestLen = vn.length;
+          best = v;
+        }
+      }
+      return best;
+    };
+
+    // (2) 공급자 라벨 직후 100자 안에서 매칭 · 최우선
+    const supplierMatch = rawText.match(SUPPLIER_LABEL);
+    if (supplierMatch) {
+      const pos = rawText.indexOf(supplierMatch[0]);
+      const window = rawText.slice(pos, Math.min(rawText.length, pos + 100));
+      const windowNorm = normSupplier(window);
+      let best: string | null = null;
+      let bestLen = 0;
+      for (const v of vendors) {
+        const vn = normSupplier(v);
+        if (!vn || vn.length < 3) continue;
+        if (windowNorm.includes(vn) && vn.length > bestLen) {
+          bestLen = vn.length;
+          best = v;
+        }
+      }
+      if (best) {
+        console.log(`[findVendorInText] page-header/공급자-label → "${best}"`);
+        return best;
+      }
+    }
+
+    // (3) 상단 350자 안에서 최장 매칭
+    const headerBest = headerFindLongest();
+    if (headerBest) {
+      console.log(`[findVendorInText] page-header 최장매칭 → "${headerBest}"`);
+      return headerBest;
+    }
+
+    // (4) 최종 폴백: 전체 rawText 에서 최장 매칭 (v1 원본 로직 · 안전)
+    const textNorm = normSupplier(rawText);
+    if (!textNorm) return null;
+    let best: string | null = null;
+    let bestLen = 0;
+    for (const v of vendors) {
+      const vn = normSupplier(v);
+      if (!vn || vn.length < 3) continue;
+      if (textNorm.includes(vn) && vn.length > bestLen) {
+        bestLen = vn.length;
+        best = v;
+      }
+    }
+    if (best) console.log(`[findVendorInText] 전체 rawText 최장매칭 → "${best}"`);
+    return best;
+  } catch {
+    return null;
+  }
 }
 
 const router = Router();
@@ -61,12 +401,14 @@ router.post("/api/ocr-match", async (req, res) => {
       const pool = (() => {
         if (!supplierHint) return products;
         const sh = normSupplier(supplierHint);
+        // 2026-07-09 안전판: bigramSim threshold 40→30 (한글 접미사·괄호 태그 있는 DB에 관대)
+        // 또한 pool 이 5개 미만이면 전체 상품 fallback (잘못된 pool 필터로 정답 배제 방지)
         const filtered = products.filter(p => {
           if (!p.supplier) return false;
-          const sp = norm(String(p.supplier));
-          return sp === sh || sp.includes(sh) || sh.includes(sp) || bigramSim(sp, sh) >= 40;
+          const sp = normSupplier(String(p.supplier));
+          return sp === sh || sp.includes(sh) || sh.includes(sp) || bigramSim(sp, sh) >= 30;
         });
-        return filtered.length > 0 ? filtered : products;
+        return filtered.length >= 5 ? filtered : products;
       })();
 
       const scored = pool
@@ -88,8 +430,14 @@ router.post("/api/ocr-match", async (req, res) => {
 
     const supplierHints: string[] = Array.isArray(req.body?.suppliers) ? req.body.suppliers : [];
 
+    // 매칭 진단 수집 (사용자가 어느 행이 왜 매칭 실패했는지 즉시 파악 가능)
+    const matchTraces: RowMatchTrace[] = [];
+
     const matches = names.map((name: string, i: number) => {
-      if (!name?.trim()) return { input: name, matched: null };
+      if (!name?.trim()) {
+        matchTraces.push({ rowIdx: i, ocrName: String(name ?? ""), supplierHint: null, bestScore: 0, bestCandidate: null, bestCode: null, matched: false, reason: "empty-name" });
+        return { input: name, matched: null };
+      }
 
       const supplierHint = resolveSupplier((supplierHints[i] ?? "").trim());
       const nameLC = name.trim().toLowerCase();
@@ -97,7 +445,10 @@ router.post("/api/ocr-match", async (req, res) => {
       const synCode = (synKeyCompound && synonymMap.get(synKeyCompound)) ?? synonymMap.get(nameLC);
       if (synCode) {
         const sp = map[synCode] ?? products.find(p => p.code === synCode);
-        if (sp) return makeMatchResult(name, sp, 100);
+        if (sp) {
+          matchTraces.push({ rowIdx: i, ocrName: name, supplierHint, bestScore: 100, bestCandidate: sp.name, bestCode: sp.code, matched: true, reason: "synonym-hit" });
+          return makeMatchResult(name, sp, 100);
+        }
       }
 
       const pool = (() => {
@@ -105,25 +456,31 @@ router.post("/api/ocr-match", async (req, res) => {
         const sh = normSupplier(supplierHint);
         const filtered = products.filter(p => {
           if (!p.supplier) return false;
-          const sp = norm(String(p.supplier));
-          return sp === sh || sp.includes(sh) || sh.includes(sp) || bigramSim(sp, sh) >= 40;
+          const sp = normSupplier(String(p.supplier));
+          return sp === sh || sp.includes(sh) || sh.includes(sp) || bigramSim(sp, sh) >= 30;
         });
-        return filtered.length > 0 ? filtered : products;
+        return filtered.length >= 5 ? filtered : products;
       })();
 
-      let best = null as (typeof products)[0] | null;
-      let bestScore = 0;
-      for (const p of pool) {
-        const s = invoiceMatchScore(name, p);
-        if (s > bestScore) { bestScore = s; best = p; }
-      }
-      if (!best || bestScore < 25) {
+      // 상위 3개 후보 저장 (진단용)
+      const scoredAll = pool.map(p => ({ p, score: invoiceMatchScore(name, p) }));
+      scoredAll.sort((a, b) => b.score - a.score);
+      const top3 = scoredAll.slice(0, 3).map(({ p, score }) => ({ name: p.name, code: p.code, score }));
+
+      const best = scoredAll[0]?.p ?? null;
+      const bestScore = scoredAll[0]?.score ?? 0;
+
+      const commonTrace = { rowIdx: i, ocrName: name, supplierHint, bestScore, bestCandidate: best?.name ?? null, bestCode: best?.code ?? null, top3Candidates: top3 };
+
+      if (!best || bestScore < 20) {
         console.log(`[MATCH-MISS] score=${bestScore ?? 0} ocr="${name}" best="${best?.name ?? "-"}"`);
+        matchTraces.push({ ...commonTrace, matched: false, reason: bestScore < 20 ? "score-too-low" : "no-candidate" });
         return { input: name, matched: null, score: bestScore };
       }
       if (bestScore < 70) {
         console.log(`[MATCH-LOW] score=${bestScore} ocr="${name}" → db="${best.name}"`);
       }
+      matchTraces.push({ ...commonTrace, matched: true, reason: bestScore >= 95 ? "high-confidence" : bestScore >= 70 ? "medium-confidence" : "low-confidence" });
       return {
         input: name,
         matched: {
@@ -132,12 +489,25 @@ router.post("/api/ocr-match", async (req, res) => {
           spec: best.spec,
           score: bestScore,
           masterPrice:  best.purchase_price != null ? Number(best.purchase_price)  : null,
-          salePrice:    best.sale_price      != null ? Number(best.sale_price)      : null,
-          profitRate:   best.profit_rate     != null ? Number(best.profit_rate)     : null,
-          expiryDate:   best.expiry_date     != null ? String(best.expiry_date)     : null,
+          salePrice:    best.sale_price      != null ? Number(best.sale_price)     : null,
+          profitRate:   best.profit_rate     != null ? Number(best.profit_rate)    : null,
+          expiryDate:   best.expiry_date     != null ? String(best.expiry_date)    : null,
         },
       };
     });
+
+    // 매칭 진단 저장 (비동기 · 응답에 영향 없음)
+    const diag: MatchDiagnostic = {
+      ts: new Date().toISOString(),
+      totalRows: matchTraces.length,
+      matched: matchTraces.filter(r => r.matched).length,
+      missed: matchTraces.filter(r => !r.matched).length,
+      lowScore: matchTraces.filter(r => r.matched && r.bestScore < 70).length,
+      perfectMatch: matchTraces.filter(r => r.bestScore >= 95).length,
+      supplierHints: [...new Set(supplierHints.filter(Boolean))],
+      rows: matchTraces,
+    };
+    void saveMatchDiagnostic(diag);
 
     res.json({ matches });
   } catch (err: any) {
@@ -354,10 +724,16 @@ router.get("/api/ocr-templates", async (_req, res) => {
 
 router.post("/api/ocr-templates", async (req, res) => {
   try {
-    const { supplier_name, headers } = req.body ?? {};
+    const { supplier_name, headers, column_mapping } = req.body ?? {};
     if (!supplier_name?.trim() || !Array.isArray(headers)) return res.status(400).json({ error: "supplier_name, headers 필요" });
+    // column_mapping: 원본 컬럼 순서 유지 배열 (선택) · 예: ["품명","","수량","단가","금액","유통기한"]
+    //   빈 문자열 = 이 컬럼은 제외 · 나머지는 표준 필드명
+    const payload: any = { supplier_name: supplier_name.trim(), headers, updated_at: new Date().toISOString() };
+    if (Array.isArray(column_mapping)) {
+      payload.column_mapping = column_mapping.map((v: any) => (v == null ? "" : String(v)));
+    }
     const { data, error } = await supabase.from("ocr_templates")
-      .upsert({ supplier_name: supplier_name.trim(), headers, updated_at: new Date().toISOString() }, { onConflict: "supplier_name" })
+      .upsert(payload, { onConflict: "supplier_name" })
       .select().single();
     if (error) throw new Error(error.message);
     res.json({ template: data });
@@ -392,59 +768,211 @@ router.post("/api/ocr", async (req, res) => {
   if (engine === "gemini" && getGeminiKeys().length === 0 && getMistralKeys().length === 0)
     return res.status(400).json({ error: "GEMINI_API_KEY 또는 MISTRAL_API_KEY가 설정되지 않았습니다. .env에 추가하세요." });
 
-  // ── RapidOCR (multilingual-purejs-ocr) · Render 배포 · 완전 무료 · 순수 Node.js ──
-  if (engine === "rapid") {
-    try {
-      const pages = await Promise.all(
-        (images as { data: string; mimeType: string }[]).map(async ({ data: b64, mimeType }, i) => {
-          console.log(`[OCR/Rapid] page ${i + 1}/${images.length}`);
-          const raw = await callRapidOcr(b64, mimeType);
-          if (!raw.ok) throw new Error((raw as { ok: false; error: string }).error);
-          // 기존 파이프라인(cleanCellValues → normalizeInvoiceCols → …) 재사용해 표 구조 최적화
-          const cleaned = cleanCellValues(raw.headers ?? [], raw.rows ?? []);
-          const pre = mergeAdjacentHeaders(cleaned.headers, cleaned.rows);
-          const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
-          const spec = extractSpecFromName(normalized.headers, normalized.rows);
-          const cleanMeta = sanitizeOcrMeta(raw.meta ?? {});
-          const rows0 = fixAmountsBySubtotal(spec.headers, spec.rows, cleanMeta.total ?? null);
-          const rows1 = repairColumnShift(spec.headers, rows0);
-          const rows2 = crossValidateIntraPage(spec.headers, rows1);
-          const rows = filterCodeOnlyRows(spec.headers, rows2);
-          console.log(`[OCR/Rapid] page ${i + 1}: 헤더=${JSON.stringify(spec.headers)}, 행=${rows.length}, lines=${raw.lines.length}`);
-          return { page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText: raw.rawText ?? "" };
-        })
-      );
-      return res.json({ pages, engine: "rapid" });
-    } catch (err: any) {
-      console.error("[OCR/Rapid] error:", err?.message);
-      return res.status(500).json({ error: err?.message ?? "RapidOCR 처리 중 오류" });
-    }
-  }
+  console.log(`[OCR] 요청 엔진: ${engine}`);
 
-  if (engine === "paddle") {
+  // AI 파이프라인용 raw 데이터 로그 저장 (진단용)
+  //   - engine=onnx 는 원래 진단 로그 저장이 없어서 raw 데이터 확인 불가했음
+  //   - logs/ocr-last.json + logs/ocr-onnx-last.json 에 파이프라인 각 단계 결과 저장
+  //   - logs/ocr-compare-onnx-last.txt 에 raw OCR ↔ 1차보정테이블 side-by-side 비교
+  const saveLocalOcrLog = async (
+    engineName: "onnx",
+    pageDiagnostics: any[]
+  ) => {
     try {
-      await ensureOcrServer();
-      const pages = await Promise.all(
-        (images as { data: string; mimeType: string }[]).map(async ({ data: b64, mimeType }, i) => {
-          console.log(`[OCR/EasyOCR] page ${i + 1}/${images.length}`);
-          const raw = await callEasyOcrServer(b64, mimeType);
-          const cleaned = cleanCellValues(raw.headers ?? [], raw.rows ?? []);
-          const pre  = mergeAdjacentHeaders(cleaned.headers, cleaned.rows);
-          const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
-          const spec = extractSpecFromName(normalized.headers, normalized.rows);
-          const cleanMeta = sanitizeOcrMeta(raw.meta ?? {});
-          const rows0 = fixAmountsBySubtotal(spec.headers, spec.rows, cleanMeta.total ?? null);
-          const rows1 = repairColumnShift(spec.headers, rows0);
-          const rows2 = crossValidateIntraPage(spec.headers, rows1);
-          const rows  = filterCodeOnlyRows(spec.headers, rows2);
-          console.log(`[OCR/EasyOCR] page ${i + 1}: 헤더=${JSON.stringify(spec.headers)}, 행=${rows.length}`);
-          return { page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText: raw.rawText ?? "" };
-        })
-      );
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const logsDir = path.join(process.cwd(), "logs");
+      await fs.mkdir(logsDir, { recursive: true });
+      const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+      const payload = JSON.stringify({
+        ts: new Date().toISOString(),
+        engine: engineName,
+        pageCount: pageDiagnostics.length,
+        diagnostics: pageDiagnostics,
+      }, null, 2);
+
+      // ── side-by-side 비교 로그 (raw OCR ↔ 1차보정테이블) ──
+      const compareLines: string[] = [];
+      const dt = new Date().toLocaleString("ko-KR", { timeZone: "Asia/Seoul" });
+      const engineLabel = "🤖 AI 모델 (ONNX)";
+      compareLines.push(`════════════════════════════════════════════════════════════════════════════════`);
+      compareLines.push(`  OCR ↔ 1차보정테이블 비교 · ${engineLabel} · ${dt}`);
+      compareLines.push(`════════════════════════════════════════════════════════════════════════════════`);
+
+      for (const d of pageDiagnostics) {
+        compareLines.push(``);
+        compareLines.push(`─── 페이지 ${d.page} (${(d.timeMs / 1000).toFixed(2)}초) ──────────────────────────────────`);
+        const rawKey = "rawFromOnnx";
+        const rawInfo = d[rawKey] ?? {};
+        const finalInfo = d.final ?? {};
+        compareLines.push(``);
+        compareLines.push(`[OCR 원본 헤더]  : ${JSON.stringify(rawInfo.headers ?? [])}`);
+        compareLines.push(`[1차보정 헤더]  : ${JSON.stringify(finalInfo.headers ?? [])}`);
+        compareLines.push(`[원본 행 수]    : ${rawInfo.rowCount ?? 0}`);
+        compareLines.push(`[1차보정 행 수] : ${finalInfo.rowCount ?? 0}`);
+        const m = finalInfo.meta ?? {};
+        compareLines.push(`[공급자]         : ${m.supplier ?? "-"}`);
+        compareLines.push(`[일자]           : ${m.date ?? "-"}`);
+        compareLines.push(`[소계]           : ${m.subtotal?.toLocaleString() ?? "-"}`);
+        compareLines.push(`[공급가액]      : ${m.supplyAmount?.toLocaleString() ?? "-"}`);
+        compareLines.push(`[세액/부가세]   : ${m.vat?.toLocaleString() ?? "-"}`);
+        compareLines.push(`[합계/총합계]   : ${m.total?.toLocaleString() ?? "-"}`);
+        if (m.balancePrev != null) compareLines.push(`[전잔액]        : ${m.balancePrev.toLocaleString()}`);
+        if (m.balanceAfter != null) compareLines.push(`[누적잔액]      : ${m.balanceAfter.toLocaleString()}`);
+        compareLines.push(``);
+        compareLines.push(`  ┌─ 원본 OCR 행 (상위 5개) ─────────────────────────────────────────`);
+        for (let i = 0; i < (rawInfo.rowsPreview ?? []).length; i++) {
+          const row = rawInfo.rowsPreview[i];
+          const preview = row.map((c: any) => c == null ? "-" : String(c).slice(0, 25)).join(" | ");
+          compareLines.push(`  │ #${i + 1}: ${preview}`);
+        }
+        compareLines.push(`  └─────────────────────────────────────────────────────────────────`);
+        compareLines.push(``);
+        compareLines.push(`  ┌─ 1차보정 행 (상위 5개) ──────────────────────────────────────────`);
+        for (let i = 0; i < (finalInfo.rowsPreview ?? []).length; i++) {
+          const row = finalInfo.rowsPreview[i];
+          const preview = row.map((c: any) => c == null ? "-" : String(c).slice(0, 25)).join(" | ");
+          compareLines.push(`  │ #${i + 1}: ${preview}`);
+        }
+        compareLines.push(`  └─────────────────────────────────────────────────────────────────`);
+        // 진단: 단가==금액 의심 행
+        const susp = d.suspiciousEqualPriceAmount ?? [];
+        if (susp.length > 0) {
+          compareLines.push(``);
+          compareLines.push(`  ⚠️  단가=금액 의심 행 ${susp.length}개 (페이지 통계 벗어남 · 보정 X · 진단만)`);
+          susp.slice(0, 10).forEach((s: any) => {
+            compareLines.push(`     · 행#${s.rowIdx}: ${s.reason}`);
+          });
+        }
+        // rawText 미리보기
+        if (rawInfo.rawTextPreview) {
+          compareLines.push(``);
+          compareLines.push(`[Raw Text (500자 미리보기)]`);
+          compareLines.push(String(rawInfo.rawTextPreview).slice(0, 500));
+        }
+      }
+      compareLines.push(``);
+      compareLines.push(`════════════════════════════════════════════════════════════════════════════════`);
+      compareLines.push(`  다음: RawOcrTable 에서 매칭 → logs/ocr-match-summary.txt 확인`);
+      compareLines.push(`════════════════════════════════════════════════════════════════════════════════`);
+      const compareText = compareLines.join("\n");
+
+      await Promise.all([
+        fs.writeFile(path.join(logsDir, "ocr-last.json"), payload),
+        fs.writeFile(path.join(logsDir, `ocr-${engineName}-last.json`), payload),
+        fs.writeFile(path.join(logsDir, `ocr-${timestamp}.json`), payload),
+        fs.writeFile(path.join(logsDir, `ocr-compare-${engineName}-last.txt`), compareText),
+      ]);
+      // 콘솔에도 비교 요약 출력
+      console.log("\n" + compareText + "\n");
+
+      // 오래된 로그 정리 (30개 유지)
+      const files = (await fs.readdir(logsDir)).filter(f => /^ocr-\d/.test(f)).sort();
+      while (files.length > 30) {
+        const f = files.shift();
+        if (f) await fs.unlink(path.join(logsDir, f)).catch(() => {});
+      }
+    } catch (e: any) {
+      console.warn(`[OCR/${engineName}] 로그 저장 실패 (무시):`, e?.message);
+    }
+  };
+
+  // ── ONNX (PP-OCRv5 한국어) · Render 배포 · 완전 무료 · Node 네이티브 ──
+  //   순차 처리 이유: onnxruntime-node 세션은 CPU 코어를 다 쓰므로 병렬 실행이 오히려 느림
+  //   2026-07-14 리팩토링: 파이프라인 구조로 전환 · 각 stage 격리 · 진단 로그 자동
+  if (engine === "onnx") {
+    try {
+      const pages: any[] = [];
+      const diagnostics: any[] = [];
+      const imgs = images as { data: string; mimeType: string }[];
+
+      // 파이프라인 조립 (한 번만)
+      const pipeline = buildOnnxPipeline({
+        matchVendorSupplier,
+        findVendorInText,
+        findOcrTemplate,
+        applyColumnMapping,
+        applyTemplateHeaders,
+        upsertOcrTemplate,
+      });
+
+      for (let i = 0; i < imgs.length; i++) {
+        const startTs = Date.now();
+        const { data: rawB64, mimeType: rawMime } = imgs[i];
+        console.log(`[OCR/ONNX] page ${i + 1}/${imgs.length}`);
+        try {
+          // 파이프라인 실행 (모든 stage 순차 · 실패해도 다음 stage 진행)
+          const ctx = makeInitialContext({
+            page: i + 1,
+            rawB64,
+            rawMime,
+            supplierHint: (supplierHints[i] ?? "").trim() || undefined,
+          });
+          await runPipeline(pipeline, ctx, { page: i + 1 });
+          pages.push({
+            page: ctx.page,
+            headers: ctx.headers,
+            rows: ctx.rows,
+            meta: ctx.meta,
+            rawText: ctx.rawText,
+            supplierHintUsed: ctx.template?.supplier ?? ctx.supplierHint,
+            rawOcrHeaders: ctx.rawOcrHeaders ?? [],
+            rawOcrSample: ctx.rawOcrSample ?? [],
+          });
+          diagnostics.push({
+            page: ctx.page,
+            timeMs: Date.now() - startTs,
+            rawFromOnnx: {
+              headers: ctx.raw?.headers ?? [],
+              rowCount: (ctx.raw?.rows ?? []).length,
+              rowsPreview: (ctx.raw?.rows ?? []).slice(0, 5),
+              meta: ctx.raw?.meta ?? {},
+              rawTextPreview: (ctx.raw?.rawText ?? "").slice(0, 800),
+            },
+            final: { headers: ctx.headers, rowCount: ctx.rows.length, meta: ctx.meta, rowsPreview: ctx.rows.slice(0, 5) },
+            stages: ctx.diagnostics,
+            errors: ctx.errors,
+            suspiciousEqualPriceAmount: detectSuspiciousEqualPriceAmount(ctx.headers, ctx.rows),
+          });
+        } catch (pageErr: any) {
+          console.error(`[OCR/ONNX] page ${i + 1} 처리 실패 · 빈 페이지로 대체:`, pageErr?.message);
+          console.error(`  stack:`, pageErr?.stack);
+          pages.push({ page: i + 1, headers: ["품명","규격","수량","단가","금액","비고"], rows: [], meta: {}, rawText: "", supplierHintUsed: undefined, _error: pageErr?.message });
+          diagnostics.push({ page: i + 1, timeMs: Date.now() - startTs, error: pageErr?.message });
+        }
+      }
+      // ── 다중 페이지 공통 라인 감지 → 메타 노이즈 2차 필터 (v4c 강화) ──
+      //   페이지 2개 이상일 때 rawText 공통 라인 (수신처/공급자/주소/담당자)을 검출해
+      //   각 페이지의 상품 행 목록에서 재차 제거. 여러 명세서 배치 처리 시 정확도 급상승.
+      //   + v4c: 단일 페이지 요청도 세션 캐시(_recentRawTextCache)의 다른 rawText 와 비교
+      //          → 사용자가 한 장씩 업로드해도 공통 라인 검출 가능
+      const currentRawTexts = pages.map(p => p.rawText ?? "").filter(t => t.length > 30);
+      // 세션 캐시에 이번 페이지들의 rawText 추가 (다음 요청에서 활용 가능)
+      currentRawTexts.forEach(t => addToRawCache(t));
+      // 공통 라인 검출용 rawText 풀 (현재 페이지 + 세션 캐시)
+      const commonPool = [...currentRawTexts, ...getRawCacheTexts().filter(t => !currentRawTexts.includes(t))];
+      if (commonPool.length >= 2) {
+        const commonLines = extractCommonMetadataLines(commonPool, 0.5);
+        if (commonLines.length > 0) {
+          console.log(`[OCR/ONNX/commonMeta] 공통 라인 ${commonLines.length}개 검출 (풀 ${commonPool.length}개 · 세션캐시 ${_recentRawTextCache.length}개):`);
+          commonLines.slice(0, 10).forEach(c => console.log(`   · "${c}"`));
+          for (const p of pages) {
+            const beforeCnt = p.rows.length;
+            const filtered = filterMetadataBleedRows(p.headers, p.rows, p.meta, commonLines);
+            if (filtered.length < beforeCnt) {
+              console.log(`[OCR/ONNX/commonMeta] page ${p.page}: 공통라인 기반 ${beforeCnt - filtered.length}행 추가 제거`);
+              p.rows = filtered;
+            }
+          }
+        }
+      }
+      await saveLocalOcrLog("onnx", diagnostics);
       return res.json({ pages, engine });
     } catch (err: any) {
-      console.error("[OCR/EasyOCR] error:", err?.message);
-      return res.status(500).json({ error: err?.message ?? "EasyOCR 처리 중 오류" });
+      // 🔍 stack trace 전체 로그 (Cannot read undefined length 위치 파악)
+      console.error("[OCR/ONNX] error:", err?.message);
+      console.error("[OCR/ONNX] stack:", err?.stack);
+      return res.status(500).json({ error: err?.message ?? "ONNX(PP-OCRv5 한국어) 처리 중 오류" });
     }
   }
 
@@ -593,11 +1121,23 @@ router.post("/api/ocr", async (req, res) => {
           const pre        = mergeAdjacentHeaders(cleaned.headers, cleaned.rows);
           const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
           const spec       = extractSpecFromName(normalized.headers, normalized.rows);
+          const validated  = validateCellTypes(spec.headers, spec.rows);
+          if (validated.issues.length > 0) console.log(`[OCR/Gemini/validate] page ${i + 1}: ${validated.issues.length}개 셀 보정`);
           const cleanMeta  = sanitizeOcrMeta(parsed.meta ?? {});
-          const rows0 = fixAmountsBySubtotal(spec.headers, spec.rows, cleanMeta.total ?? null);
-          const rows1 = repairColumnShift(spec.headers, rows0);
-          const rows2 = crossValidateIntraPage(spec.headers, rows1);
-          const rows  = filterCodeOnlyRows(spec.headers, rows2);
+          const rows0 = fixAmountsBySubtotal(validated.headers, validated.rows, cleanMeta.total ?? null);
+          const rows1 = repairColumnShift(validated.headers, rows0);
+          const rows2 = crossValidateIntraPage(validated.headers, rows1);
+          const rows3 = filterCodeOnlyRows(validated.headers, rows2);
+          // 메타데이터 노이즈 필터 (공급사명/수신처/주소/업종/사람이름 반복 행 제거)
+          const beforeMeta = rows3.length;
+          const rows  = filterMetadataBleedRows(validated.headers, rows3, cleanMeta);
+          if (rows.length < beforeMeta) console.log(`[OCR/Gemini] page ${i + 1}: 메타 노이즈 ${beforeMeta - rows.length}행 제거`);
+          // 진단: 단가==금액 이지만 페이지 통계상 컬럼 shift 의심되는 행 (보정 없이 로그만)
+          const suspicious = detectSuspiciousEqualPriceAmount(spec.headers, rows);
+          if (suspicious.length > 0) {
+            console.log(`[OCR/Gemini/suspicious] page ${i + 1}: ${suspicious.length}개 의심 행 (단가=금액 · 페이지 통계 벗어남)`);
+            suspicious.slice(0, 5).forEach(s => console.log(`  · 행#${s.rowIdx}: ${s.reason}`));
+          }
 
           // 파이프라인 각 단계 추적
           trace.parsePipeline = {
@@ -611,6 +1151,7 @@ router.post("/api/ocr", async (req, res) => {
             afterRepairShift: { rowCount: rows1.length, changed: JSON.stringify(rows1) !== JSON.stringify(rows0) },
             afterCrossValidate: { rowCount: rows2.length, changed: JSON.stringify(rows2) !== JSON.stringify(rows1) },
             afterFilterCode: { rowCount: rows.length, filtered: rows2.length - rows.length },
+            suspiciousEqualPriceAmount: suspicious,
             finalMeta: cleanMeta,
           };
           const aI = spec.headers.indexOf("금액");
@@ -644,7 +1185,7 @@ router.post("/api/ocr", async (req, res) => {
               rowHits.forEach(h => console.log(`  ${h}`));
             }
           } catch (_diagErr) { /* ignore */ }
-          pageData = { page: i + 1, headers: spec.headers, rows, meta: cleanMeta, rawText, supplierHintUsed: hint || undefined };
+          pageData = { page: i + 1, headers: validated.headers, rows, meta: cleanMeta, rawText, supplierHintUsed: hint || undefined };
         } catch (parseErr: any) {
           console.error(`[OCR/parse-error] page ${i + 1}:`, parseErr?.stack ?? parseErr?.message);
           trace.parseError = String(parseErr?.message ?? parseErr);
@@ -653,6 +1194,12 @@ router.post("/api/ocr", async (req, res) => {
         trace.totalMs = Date.now() - pageStartTs;
         pageTraces.push(trace);
         pages.push(pageData);
+
+        // ── 자동 학습: Gemini가 뽑은 헤더가 표준 컬럼 3개+ 포함하면 템플릿 저장 ──
+        //    Local/AI 가 같은 공급사 처리할 때 이 헤더 구조를 참조하게 됨
+        if (pageData?.headers?.length && pageData?.meta?.supplier) {
+          void upsertOcrTemplate(pageData.meta.supplier, pageData.headers);
+        }
       }
     }
 
@@ -830,6 +1377,7 @@ router.post("/api/ocr", async (req, res) => {
     return res.json({ pages, engine });
   } catch (err: any) {
     console.error("[OCR] error:", err?.message);
+    console.error("[OCR] stack:", err?.stack);
     res.status(500).json({ error: err?.message ?? "OCR 처리 중 오류" });
   }
 });

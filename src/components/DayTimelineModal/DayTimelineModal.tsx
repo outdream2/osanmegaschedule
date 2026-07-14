@@ -513,6 +513,10 @@ interface ZoneSectionProps {
   onUserInteract?: () => void;
   // 현재 탭 인원 기준 최적 임의배치 실행
   onAutoSuggest?: () => void;
+  // 확정 버튼 (헤더 버튼용)
+  isConfirmed?: boolean;
+  confirming?: boolean;
+  onConfirm?: () => void;
 }
 
 // Zone section uses HOUR_SLOTS as column keys — 10:00 ~ 19:00 시작박스 (10칸)
@@ -540,6 +544,7 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
   lunchInterval, restInterval, onSetLunchInterval, onSetRestInterval,
   lunchCount, restCount, onSetLunchCount, onSetRestCount,
   tabWorkerIds, isTabAll, onUserInteract, onAutoSuggest,
+  isConfirmed, confirming, onConfirm,
 }) => {
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [touchDraggingId, setTouchDraggingId] = useState<number | null>(null);
@@ -548,6 +553,8 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
   const [cellPicker, setCellPicker] = useState<CellPicker | null>(null);
   // 드래그 출발지 — zone/lunch/rest 어디서 왔는지 추적 (자유로운 상호 이동 지원)
   const [draggingSource, setDraggingSource] = useState<{ type: "zone" | "lunch" | "rest"; zone?: ZoneRow; slot: string } | null>(null);
+  // 점심/휴게 셀 내부 chip 재정렬 드래그 (같은 슬롯 내부에서만 순서 변경)
+  const [breakChipDrag, setBreakChipDrag] = useState<{ kind: "lunch" | "rest"; slot: string; fromIdx: number } | null>(null);
   // 하위 호환: 기존 코드 참조 잠깐 유지
   const draggingZoneSource = draggingSource && draggingSource.type === "zone"
     ? { zone: draggingSource.zone!, slot: draggingSource.slot } : null;
@@ -685,46 +692,105 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
     }
     const assigned = slotMap[slotKey] ?? [];
     const minLabel = slotKey.slice(3); // "00" or "30"
+    // 탭 필터 통과 인원만 실제 표시 (기존과 동일 규칙)
+    const visibleChips = assigned
+      .map((empId, origIdx) => {
+        const w = allWorkers.find(ww => ww.emp.id === empId);
+        if (!w) return null;
+        const inTab = isTabAll || tabWorkerIds.has(w.emp.id);
+        if (!inTab) return null;
+        const c = typeTones[w.schedule.type] ?? DEFAULT_TONE;
+        return { empId, w, c, origIdx };
+      })
+      .filter((x): x is NonNullable<typeof x> => x !== null);
+
+    // 외부 chip 드롭 → 이 슬롯의 맨 앞에 삽입 (넣는 대로 맨 위 채움 · 무제한)
+    const handleContainerDrop = (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (draggingId === null) return;
+      // 이미 이 슬롯에 있으면 무시 (내부 재정렬은 chip drag 로 처리)
+      if (assigned.includes(draggingId)) return;
+      onDrop(slotKey, draggingId, draggingSource ?? undefined);
+    };
+    const handleContainerDragOver = (e: React.DragEvent) => {
+      // 내부 chip 재정렬 중이면 컨테이너 dragover 무시
+      if (breakChipDrag?.kind === dropKind && breakChipDrag.slot === slotKey) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    };
+
     return (
       <div
-        className={`flex-1 flex flex-col border-r last:border-r-0 ${theme.border} ${theme.bg} ${theme.hover} transition cursor-pointer`}
+        data-drop-slot={slotKey}
+        {...(dropKind === "lunch" ? { "data-drop-lunch": slotKey } : { "data-drop-rest": slotKey })}
+        className={`flex-1 flex flex-col border-r last:border-r-0 ${theme.border} ${theme.bg} ${theme.hover} transition`}
+        onDragOver={handleContainerDragOver}
+        onDrop={handleContainerDrop}
         onClick={() => setCellPicker({ type: dropKind, slot: slotKey })}
       >
         <span className={`text-[10px] font-bold text-center leading-none py-0.5 ${theme.label}`}>:{minLabel}</span>
-        {/* 인원 수만큼 행(row) 표시 */}
-        {Array.from({ length: count }, (_, rowIdx) => {
-          const empId = assigned[rowIdx];
-          const w = empId !== undefined ? allWorkers.find(ww => ww.emp.id === empId) : undefined;
-          const c = w ? (typeTones[w.schedule.type] ?? DEFAULT_TONE) : null;
-          // 탭 필터: 현재 탭에 없는 사람은 완전히 숨김 (빈 슬롯으로 표시)
-          const inTab = w ? (isTabAll || tabWorkerIds.has(w.emp.id)) : true;
-          const shouldRender = w && c && inTab;
-          return (
-            <div
-              key={rowIdx}
-              className={`flex items-center min-h-[20px] border-t px-0.5 ${theme.border} ${rowIdx === 0 ? "border-t" : ""}`}
-            >
-              {shouldRender ? (
-                <button
+        {/* 한 공간: 배정된 chip 만 위에서부터 stack · 빈 자리(–) 없음 */}
+        <div className="flex flex-col gap-px px-0.5 pb-0.5 min-h-[24px]">
+          {visibleChips.length === 0 ? (
+            <span className="text-[9px] text-slate-300 leading-none text-center py-0.5 select-none">–</span>
+          ) : (
+            visibleChips.map((chip, listIdx) => {
+              const { empId, w, c, origIdx } = chip;
+              const isDragging = breakChipDrag?.kind === dropKind && breakChipDrag.slot === slotKey && breakChipDrag.fromIdx === origIdx;
+              return (
+                <div
+                  key={`${slotKey}-${empId}`}
+                  draggable
+                  onDragStart={e => {
+                    e.stopPropagation();
+                    e.dataTransfer.effectAllowed = "move";
+                    setBreakChipDrag({ kind: dropKind, slot: slotKey, fromIdx: origIdx });
+                  }}
+                  onDragOver={e => {
+                    // 같은 슬롯 내부 chip 재정렬만 허용
+                    if (!breakChipDrag || breakChipDrag.kind !== dropKind || breakChipDrag.slot !== slotKey) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.dataTransfer.dropEffect = "move";
+                  }}
+                  onDrop={e => {
+                    if (!breakChipDrag || breakChipDrag.kind !== dropKind || breakChipDrag.slot !== slotKey) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const from = breakChipDrag.fromIdx;
+                    // 눈에 보이는 list index → 실제 assigned 배열 index
+                    const to = origIdx;
+                    if (from === to) { setBreakChipDrag(null); return; }
+                    if (onReorder) onReorder(slotKey, empId, listIdx);
+                    else {
+                      const newOrder = [...assigned];
+                      const [moved] = newOrder.splice(from, 1);
+                      newOrder.splice(to, 0, moved);
+                      // reorder 콜백 없으면 remove+drop 시퀀스로 근사 (외부 API 우선 사용 권장)
+                      onRemove(slotKey, moved);
+                      onDrop(slotKey, moved, { type: dropKind, slot: slotKey });
+                    }
+                    setBreakChipDrag(null);
+                  }}
+                  onDragEnd={() => setBreakChipDrag(null)}
                   onClick={e => { e.stopPropagation(); setCellPicker({ type: dropKind, slot: slotKey }); }}
-                  title={w!.emp.position.includes("캐셔") && w!.emp.position.includes("물류") ? "캐셔 겸직 · 탭하여 배정 편집" : "탭하여 배정 편집 (순차)"}
-                  style={{ backgroundColor: c!.chipBg, color: c!.chipText, borderColor: c!.chipBorder }}
+                  title={w.emp.position.includes("캐셔") && w.emp.position.includes("물류") ? "캐셔 겸직 · 드래그로 순서 변경" : "드래그로 순서 변경 · 탭하여 편집"}
+                  style={{ backgroundColor: c.chipBg, color: c.chipText, borderColor: c.chipBorder, opacity: isDragging ? 0.4 : 1 }}
                   className="relative w-full text-center rounded text-[10px] font-bold border transition leading-none py-px cursor-grab active:cursor-grabbing hover:opacity-60 inline-flex items-center justify-center gap-0.5 whitespace-nowrap overflow-hidden"
                 >
-                  <span className="truncate">{w!.emp.name}</span>
-                  {w!.emp.position.includes("캐셔") && w!.emp.position.includes("물류") && (
+                  <span className="truncate">{w.emp.name}</span>
+                  {w.emp.position.includes("캐셔") && w.emp.position.includes("물류") && (
                     <span
                       className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-blue-500 border border-white text-white text-[7px] font-black leading-none flex items-center justify-center shadow-sm pointer-events-none"
                       title="캐셔 겸직"
                     >C</span>
                   )}
-                </button>
-              ) : (
-                <span className="w-full text-center text-[9px] text-slate-300 leading-none">–</span>
-              )}
-            </div>
-          );
-        })}
+                </div>
+              );
+            })
+          )}
+        </div>
       </div>
     );
   };
@@ -749,10 +815,27 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
               type="button"
               onClick={onAutoSuggest}
               className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white cursor-pointer shadow-sm transition"
-              title="현재 탭 인원 기준으로 카운터·매장을 자동 배치"
+              title="현재 탭 인원 기준으로 카운터·매장을 자동 배치 (약사 1시간 로테이션 + 캐셔 팀)"
             >
               ⚡ 임의배치
             </button>
+          )}
+          {onConfirm && (
+            isConfirmed ? (
+              <span className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 px-2 py-0.5 rounded-full bg-emerald-100 border border-emerald-300">
+                ✓ 확정됨
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={onConfirm}
+                disabled={confirming}
+                className="text-[10px] font-black px-2 py-0.5 rounded-full bg-indigo-500 hover:bg-indigo-600 text-white cursor-pointer shadow-sm transition disabled:opacity-50"
+                title="현재 배치를 확정하고 날짜/요일 템플릿에 저장"
+              >
+                {confirming ? "저장중…" : "✓ 확정"}
+              </button>
+            )
           )}
         </div>
         <div className="flex items-center gap-1">
@@ -934,18 +1017,6 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             <div className="w-14 shrink-0 flex flex-col justify-center gap-0.5">
               <div className="flex items-center gap-0.5">
                 <span className="text-[12px] font-black text-yellow-700">점심</span>
-                {/* 인원 수 선택 */}
-                <select
-                  value={lunchCount}
-                  onChange={e => onSetLunchCount(parseInt(e.target.value, 10) as BreakCount)}
-                  className="ml-0.5 text-[9px] font-bold border border-yellow-300 rounded bg-white text-yellow-700 px-0.5 py-px cursor-pointer appearance-none text-center"
-                  style={{ width: "36px" }}
-                  title="점심 인원 수"
-                >
-                  {([1,2,3,4,5,6,7,8,9,10] as BreakCount[]).map(n => (
-                    <option key={n} value={n}>{n}명</option>
-                  ))}
-                </select>
               </div>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftLunchOffset(-30)} disabled={lunchOffset <= -60}
@@ -1015,18 +1086,6 @@ const ZoneSection: React.FC<ZoneSectionProps> = React.memo(({
             <div className="w-14 shrink-0 flex flex-col justify-center gap-0.5">
               <div className="flex items-center gap-0.5">
                 <span className="text-[12px] font-black text-violet-700">휴게</span>
-                {/* 인원 수 선택 */}
-                <select
-                  value={restCount}
-                  onChange={e => onSetRestCount(parseInt(e.target.value, 10) as BreakCount)}
-                  className="ml-0.5 text-[9px] font-bold border border-violet-300 rounded bg-white text-violet-700 px-0.5 py-px cursor-pointer appearance-none text-center"
-                  style={{ width: "36px" }}
-                  title="휴게 인원 수"
-                >
-                  {([1,2,3,4,5,6,7,8,9,10] as BreakCount[]).map(n => (
-                    <option key={n} value={n}>{n}명</option>
-                  ))}
-                </select>
               </div>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => onShiftRestOffset(-30)} disabled={restOffset <= -60}
@@ -1449,36 +1508,126 @@ export const DayTimelineModal: React.FC<Props> = ({
     }
   }, []);
 
-  // 임의배치 생성: 약사 1명 + 캐셔/물류/진열 2명 → 카운터, 나머지 → 매장
-  const buildAutoSuggest = useCallback((workerList: WorkerEntry[]): ZoneMap => {
+  // ─── 임의배치 생성 (정교화) ─────────────────────────────────────────────────
+  // 알고리즘:
+  //  1) 약사 1시간 로테이션 → 슬롯마다 약사 한 명씩 순환 배정 (근무 시간 밖 스킵)
+  //  2) 캐셔 풀 → 슬롯마다 2명씩 순환 배정 (카운터 팀 = 약사 1 + 캐셔 2)
+  //  3) 사원(정규) 중 캐셔가 아닌 인원 → 매장 고정
+  //  4) 기타/알바 → 매장 고정
+  //  ※ 점심 배정은 별도 lunchAssignments 결과를 onAutoSuggest에서 주입하므로
+  //    buildAutoSuggest 자체는 zone 배정만 담당 (충돌 제거는 onAutoSuggest에서)
+  const buildAutoSuggest = useCallback((
+    workerList: WorkerEntry[],
+    // 점심 배정 맵: empId → lunchSlotKey (점심 시간과 겹치는 zone slot에서 제외하기 위해)
+    lunchMap: Map<number, string> = new Map(),
+    // 근무 범위 맵: workRanges 를 파라미터로 받아 선언 순서 문제 해소
+    rangeMap: Record<number, { start: number; end: number } | null> = {},
+  ): ZoneMap => {
     if (workerList.length === 0) return {};
     const newZoneMap: ZoneMap = { 카운터: {}, 매장: {} };
 
-    // 카운터 팀 구성
-    const pharmacists = workerList.filter(w => w.emp.position === "약사");
-    const cashierLogistics = workerList.filter(w =>
-      w.emp.position.includes("캐셔") || w.emp.position.includes("물류") || w.emp.position === "진열"
+    // 근무 범위 헬퍼 (슬롯 시작 분 기준 — slotH 는 분)
+    const inRange = (empId: number, slotH: number): boolean => {
+      const r = rangeMap[empId];
+      if (!r) return true; // 근무 시간 미정이면 포함
+      return slotH < r.end && slotH + 60 > r.start;
+    };
+
+    // 점심 충돌 헬퍼: 이 empId 가 이 zone slot 시간과 겹치는 점심을 가졌으면 true
+    const conflictsWithLunch = (empId: number, slotH: number): boolean => {
+      const lKey = lunchMap.get(empId);
+      if (!lKey) return false;
+      const [lh, lm] = lKey.split(":").map(Number);
+      const lStart = lh * 60 + lm;
+      const lEnd = lStart + 30;
+      return slotH < lEnd && slotH + 60 > lStart;
+    };
+
+    // 그룹 분류
+    // 캐셔 풀: 포지션에 "캐셔" 포함
+    const pharmWorkers = workerList.filter(w => isPharmEmp(w.emp));
+    const cashierWorkers = workerList.filter(w =>
+      !isPharmEmp(w.emp) && w.emp.position.includes("캐셔")
+    );
+    // 나머지 사원/기타 (매장 담당)
+    const otherWorkers = workerList.filter(w =>
+      !isPharmEmp(w.emp) && !w.emp.position.includes("캐셔")
     );
 
-    const counterTeam: WorkerEntry[] = [];
-    // 약사 1명
-    if (pharmacists.length > 0) counterTeam.push(pharmacists[0]);
-    // 캐셔/물류/진열 최대 2명
-    for (let i = 0; i < Math.min(2, cashierLogistics.length); i++) counterTeam.push(cashierLogistics[i]);
+    // 약사 / 캐셔 각자의 로테이션 인덱스 (슬롯 횟수 기준)
+    let pharmRIdx = 0; // 다음에 배정할 약사 인덱스
+    let cashier1Idx = 0; // 카운터 캐셔 시작 인덱스 (슬롯마다 1씩 shift)
 
-    const counterIds = new Set(counterTeam.map(w => w.emp.id));
+    for (const slot of ZONE_SLOTS) {
+      const slotH = parseInt(slot.split(":")[0], 10) * 60;
 
-    // 모든 직원 배정
-    workerList.forEach(w => {
-      const zone: typeof ZONE_ROWS[number] = counterIds.has(w.emp.id) ? "카운터" : "매장";
-      const range = parseRange(w.wh);
-      ZONE_SLOTS.forEach(slot => {
-        const slotH = parseInt(slot.split(":")[0], 10) * 60;
-        if (range && (slotH + 60 <= range.start || slotH >= range.end)) return;
-        if (!newZoneMap[zone][slot]) newZoneMap[zone][slot] = [];
-        newZoneMap[zone][slot].push(w.emp.id);
-      });
-    });
+      // ── 카운터: 약사 한 명 배정 (로테이션, 근무 시간·점심 충돌 고려) ──────
+      let pharmAssigned: number | null = null;
+      if (pharmWorkers.length > 0) {
+        // 현재 인덱스부터 순환하며 근무 가능한 약사 탐색
+        for (let tries = 0; tries < pharmWorkers.length; tries++) {
+          const candidate = pharmWorkers[(pharmRIdx + tries) % pharmWorkers.length];
+          if (inRange(candidate.emp.id, slotH) && !conflictsWithLunch(candidate.emp.id, slotH)) {
+            pharmAssigned = candidate.emp.id;
+            // 다음 슬롯에서 다음 약사로 넘어감 (한 바퀴 돌도록)
+            pharmRIdx = (pharmRIdx + 1) % pharmWorkers.length;
+            break;
+          }
+          // 이 약사를 이 슬롯에서 못 쓰는 경우 — 다음 약사로 시도하되 index 넘기지 않음
+        }
+        // 탐색 실패 시 pharmRIdx 그대로 유지 (다음 슬롯에서 재시도)
+      }
+      if (pharmAssigned != null) {
+        if (!newZoneMap["카운터"][slot]) newZoneMap["카운터"][slot] = [];
+        newZoneMap["카운터"][slot].push(pharmAssigned);
+      }
+
+      // ── 카운터: 캐셔 2명 배정 (로테이션) ─────────────────────────────────
+      if (cashierWorkers.length > 0) {
+        const c1 = cashierWorkers.length;
+        let assigned = 0;
+        // cashier1Idx 부터 2명을 순환 배정
+        for (let offset = 0; offset < c1 && assigned < 2; offset++) {
+          const idx = (cashier1Idx + offset) % c1;
+          const candidate = cashierWorkers[idx];
+          if (inRange(candidate.emp.id, slotH) && !conflictsWithLunch(candidate.emp.id, slotH)) {
+            if (!newZoneMap["카운터"][slot]) newZoneMap["카운터"][slot] = [];
+            newZoneMap["카운터"][slot].push(candidate.emp.id);
+            assigned++;
+          }
+        }
+        // 다음 슬롯에서 다음 캐셔 쌍으로 로테이션 (1씩 shift)
+        cashier1Idx = (cashier1Idx + 1) % Math.max(1, c1);
+      }
+
+      // ── 매장: 카운터에 배정 안 된 약사 (규칙: 카운터에 없는 약사는 매장 배치) ──
+      for (const w of pharmWorkers) {
+        if (w.emp.id === pharmAssigned) continue;
+        if (inRange(w.emp.id, slotH) && !conflictsWithLunch(w.emp.id, slotH)) {
+          if (!newZoneMap["매장"][slot]) newZoneMap["매장"][slot] = [];
+          newZoneMap["매장"][slot].push(w.emp.id);
+        }
+      }
+
+      // ── 매장: 기타/나머지 사원들 ──────────────────────────────────────────
+      for (const w of otherWorkers) {
+        if (inRange(w.emp.id, slotH) && !conflictsWithLunch(w.emp.id, slotH)) {
+          if (!newZoneMap["매장"][slot]) newZoneMap["매장"][slot] = [];
+          newZoneMap["매장"][slot].push(w.emp.id);
+        }
+      }
+
+      // ── 매장: 카운터에 배정 안 된 캐셔 (점심/범위 걸리거나 슬롯 오버일 때) ──
+      // 카운터 배정된 캐셔 셋
+      const counterCashierSet = new Set(newZoneMap["카운터"][slot] ?? []);
+      for (const w of cashierWorkers) {
+        if (!counterCashierSet.has(w.emp.id) && inRange(w.emp.id, slotH) && !conflictsWithLunch(w.emp.id, slotH)) {
+          if (!newZoneMap["매장"][slot]) newZoneMap["매장"][slot] = [];
+          newZoneMap["매장"][slot].push(w.emp.id);
+        }
+      }
+    }
+
     return newZoneMap;
   }, []);
 
@@ -1576,7 +1725,10 @@ export const DayTimelineModal: React.FC<Props> = ({
   // 임의배치 실제 적용: isAutoSuggested가 true가 된 뒤 workers가 준비되면 배치 생성
   useEffect(() => {
     if (!isAutoSuggested || workers.length === 0) return;
-    const suggested = buildAutoSuggest(workers);
+    // workRanges는 아래 useMemo보다 이 effect가 뒤에 실행되므로 직접 계산
+    const localRangeMap: Record<number, { start: number; end: number } | null> = {};
+    workers.forEach(w => { localRangeMap[w.emp.id] = parseRange(w.wh); });
+    const suggested = buildAutoSuggest(workers, new Map(), localRangeMap);
     setZoneSlots(suggested);
     localStorage.setItem(`tl_zone_slots_${date}`, JSON.stringify(suggested));
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1663,35 +1815,6 @@ export const DayTimelineModal: React.FC<Props> = ({
       }).catch(() => {});
     }, 1500);
   }, [date]);
-
-  // 확정 저장
-  const handleConfirm = useCallback(async () => {
-    setConfirming(true);
-    try {
-      const res = await fetch(`/api/zone-day/${date}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          zone_slots: zoneSlots, lunch_slots: lunchSlots, rest_slots: restSlots,
-          lunch_offset: lunchOffset, rest_offset: restOffset,
-          lunch_interval: lunchInterval, rest_interval: restInterval,
-          lunch_count: lunchCount, rest_count: restCount,
-          is_confirmed: true,
-        }),
-      });
-      if (res.ok) {
-        setIsConfirmed(true);
-        setIsAutoSuggested(false);
-      } else {
-        const detail = await res.text().catch(() => "");
-        alert("확정 저장에 실패했습니다.\n" + detail);
-      }
-    } catch (e) {
-      alert("확정 저장 오류: " + (e as Error).message);
-    } finally {
-      setConfirming(false);
-    }
-  }, [date, zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount]);
 
   // ── Row drag handlers ─────────────────────────────────────────────────────
   const handleRowDragStart = useCallback((e: React.DragEvent, empId: number) => {
@@ -1926,6 +2049,38 @@ export const DayTimelineModal: React.FC<Props> = ({
       alert("저장 실패: " + (e as Error).message);
     }
   }, [zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount]);
+
+  // 확정 저장 (날짜별 + 요일 템플릿 동시 저장)
+  // saveTemplateToDow 뒤에 정의하여 의존성 순서 보장
+  const handleConfirm = useCallback(async () => {
+    setConfirming(true);
+    try {
+      const res = await fetch(`/api/zone-day/${date}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          zone_slots: zoneSlots, lunch_slots: lunchSlots, rest_slots: restSlots,
+          lunch_offset: lunchOffset, rest_offset: restOffset,
+          lunch_interval: lunchInterval, rest_interval: restInterval,
+          lunch_count: lunchCount, rest_count: restCount,
+          is_confirmed: true,
+        }),
+      });
+      if (res.ok) {
+        setIsConfirmed(true);
+        setIsAutoSuggested(false);
+        // 확정 시 요일 템플릿도 동시 저장 → 다음번 같은 요일 열면 자동 로드
+        await saveTemplateToDow(dow).catch(() => {});
+      } else {
+        const detail = await res.text().catch(() => "");
+        alert("확정 저장에 실패했습니다.\n" + detail);
+      }
+    } catch (e) {
+      alert("확정 저장 오류: " + (e as Error).message);
+    } finally {
+      setConfirming(false);
+    }
+  }, [date, dow, zoneSlots, lunchSlots, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount, saveTemplateToDow]);
 
   const handleLunchShiftOffset = useCallback((delta: number) => {
     setLunchOffset(prev => {
@@ -2387,43 +2542,88 @@ export const DayTimelineModal: React.FC<Props> = ({
               isTabAll={isTabAll}
               onUserInteract={() => setIsAutoSuggested(false)}
               onAutoSuggest={() => {
-                // 현재 탭 인원 기준으로 자동배치 생성 후 기존 zoneSlots에 병합
-                // (다른 탭 인원의 배정은 보존)
-                const suggested = buildAutoSuggest(tabWorkers);
+                // ─────────────────────────────────────────────────────────────
+                // 임의배치 콜백 (정교화 버전)
+                //
+                // 단계:
+                //  1) 점심 배정 계산 (구역 배정보다 먼저 — 겹침 방지용)
+                //     - "카운터에 없는 사람(매장/기타)"이 먼저 점심 slot 앞쪽
+                //     - 같은 카운터 팀(같은 슬롯에 배정될 예정인 3명) 동시 점심 방지
+                //     - 근무 시간(workRanges) 안에 있는 slot만 배정
+                //     - lunchCount 명까지 동시 배정 허용 (라운드로빈)
+                //  2) 점심 배정 결과를 buildAutoSuggest에 전달 → zone 배정
+                //     (buildAutoSuggest 내부에서 점심 충돌 slot 자동 제외)
+                //  3) 기존 zoneSlots에 현재 탭 인원 배정만 병합 (다른 탭 보존)
+                //  4) lunchSlots 업데이트
+                // ─────────────────────────────────────────────────────────────
+
                 const tabIdSet = new Set(tabWorkers.map(w => w.emp.id));
 
-                // ── 1단계: 점심 배정 계산 (구역 배정 전에 먼저 확정) ──────────
-                const lunchAssignments = new Map<number, string>(); // empId → lunch slot key
-                {
-                  const slots = [...shiftedLunchSlots];
-                  if (slots.length > 0) {
-                    const perSlotCount: Record<string, number> = {};
-                    slots.forEach(s => { perSlotCount[s] = 0; });
-                    // 근무 시간이 첫 lunch slot을 포함하는 사람만 후보
-                    const candidates = tabWorkers.filter(w => {
-                      const r = workRanges[w.emp.id];
-                      if (!r) return true;
-                      const [lh0, lm0] = slots[0].split(":").map(Number);
-                      const first = lh0 * 60 + lm0;
-                      return first >= r.start && first < r.end;
+                // ── 1단계: 점심 배정 계산 ─────────────────────────────────
+                const lunchAssignments = new Map<number, string>(); // empId → slot
+
+                const lunchSlotArr = [...shiftedLunchSlots];
+                if (lunchSlotArr.length > 0) {
+                  // 각 슬롯 가용 인원 카운터
+                  const perSlotCount: Record<string, number> = {};
+                  lunchSlotArr.forEach(s => { perSlotCount[s] = 0; });
+
+                  // 점심 가능 후보: 근무 범위 내 어느 슬롯이라도 포함하는 사람
+                  const lunchCandidates = tabWorkers.filter(w => {
+                    const r = workRanges[w.emp.id];
+                    if (!r) return true;
+                    // 최소 하나의 lunch slot이 근무 범위 안에 있으면 후보
+                    return lunchSlotArr.some(slot => {
+                      const [lh, lm] = slot.split(":").map(Number);
+                      const lStart = lh * 60 + lm;
+                      return lStart >= r.start && lStart < r.end;
                     });
-                    let si = 0;
-                    for (const w of candidates) {
-                      let tries = 0;
-                      while (tries < slots.length && perSlotCount[slots[si]] >= lunchCount) {
-                        si = (si + 1) % slots.length;
-                        tries++;
+                  });
+
+                  // "매장/기타" 인원이 앞에 오도록 정렬 (카운터 없는 사람 먼저 점심)
+                  // 임의배치 전 기준: 약사/캐셔(카운터 후보) 후순위
+                  const pharmAndCashier = new Set(
+                    tabWorkers
+                      .filter(w => isPharmEmp(w.emp) || w.emp.position.includes("캐셔"))
+                      .map(w => w.emp.id)
+                  );
+                  const sortedCandidates = [...lunchCandidates].sort((a, b) => {
+                    const aCounter = pharmAndCashier.has(a.emp.id) ? 1 : 0;
+                    const bCounter = pharmAndCashier.has(b.emp.id) ? 1 : 0;
+                    return aCounter - bCounter; // 매장 인원(0) 먼저
+                  });
+
+                  // 라운드로빈으로 slot 배정 (lunchCount 명 제한)
+                  let si = 0;
+                  for (const w of sortedCandidates) {
+                    const empId = w.emp.id;
+                    const r = workRanges[empId];
+                    // 이 사람이 쓸 수 있는 슬롯 찾기 (근무 범위 + 아직 꽉 안 참)
+                    let assigned = false;
+                    for (let tries = 0; tries < lunchSlotArr.length; tries++) {
+                      const slotKey = lunchSlotArr[(si + tries) % lunchSlotArr.length];
+                      if (perSlotCount[slotKey] >= lunchCount) continue;
+                      if (r) {
+                        const [lh, lm] = slotKey.split(":").map(Number);
+                        const lStart = lh * 60 + lm;
+                        if (lStart < r.start || lStart >= r.end) continue;
                       }
-                      if (tries >= slots.length) break;
-                      const key = slots[si];
-                      lunchAssignments.set(w.emp.id, key);
-                      perSlotCount[key]++;
-                      si = (si + 1) % slots.length;
+                      lunchAssignments.set(empId, slotKey);
+                      perSlotCount[slotKey]++;
+                      si = (lunchSlotArr.indexOf(slotKey) + 1) % lunchSlotArr.length;
+                      assigned = true;
+                      break;
+                    }
+                    if (!assigned) {
+                      // 사용 가능한 slot 없음 — 다음 라운드에서 처리 (배정 안 됨)
                     }
                   }
                 }
 
-                // ── 2단계: 구역(zone) 배정 — 점심시간에 걸리는 zone slot에서는 해당 인원 제외 ─
+                // ── 2단계: zone 배정 (점심 맵 + workRanges 전달) ─────────────
+                const suggested = buildAutoSuggest(tabWorkers, lunchAssignments, workRanges);
+
+                // ── 3단계: 기존 zoneSlots에 현재 탭 인원 배정 병합 ───────────
                 let nextZone: ZoneMap = {};
                 setZoneSlots(prev => {
                   const next: ZoneMap = {};
@@ -2431,26 +2631,21 @@ export const DayTimelineModal: React.FC<Props> = ({
                     const existing = prev[zone] ?? {};
                     const cleaned: Record<string, number[]> = {};
                     for (const [slot, ids] of Object.entries(existing)) {
+                      // 현재 탭 인원의 기존 배정 제거 (새 배정으로 교체)
                       cleaned[slot] = (ids as number[]).filter(id => !tabIdSet.has(id));
                     }
                     next[zone] = cleaned;
                   }
-                  // suggested 병합 시 점심 시간과 겹치는 slot에서는 해당 인원 제거
-                  const conflictsWithLunch = (empId: number, zoneSlot: string): boolean => {
-                    const lunchSlot = lunchAssignments.get(empId);
-                    if (!lunchSlot) return false;
-                    const zh = parseInt(zoneSlot.split(":")[0], 10) * 60;
-                    const zEnd = zh + 60;
-                    const [lh, lm] = lunchSlot.split(":").map(Number);
-                    const lStart = lh * 60 + lm;
-                    const lEnd = lStart + 30;
-                    return zh < lEnd && zEnd > lStart;
-                  };
+                  // suggested 병합
                   for (const zone of ZONE_ROWS) {
                     const sug = suggested[zone] ?? {};
                     for (const [slot, idsRaw] of Object.entries(sug)) {
-                      const ids = (idsRaw as number[]).filter(id => !conflictsWithLunch(id, slot));
-                      next[zone][slot] = [...(next[zone][slot] ?? []).filter(id => !ids.includes(id)), ...ids];
+                      const ids = idsRaw as number[];
+                      if (ids.length === 0) continue;
+                      next[zone][slot] = [
+                        ...(next[zone][slot] ?? []).filter(id => !ids.includes(id)),
+                        ...ids,
+                      ];
                     }
                   }
                   nextZone = next;
@@ -2458,14 +2653,15 @@ export const DayTimelineModal: React.FC<Props> = ({
                   return next;
                 });
 
-                // ── 3단계: 점심 배정 반영 ─────────────────────────────────
+                // ── 4단계: 점심 배정 반영 ─────────────────────────────────
                 setLunchSlots(prev => {
                   const cleaned: SlotMap = {};
                   for (const [slot, ids] of Object.entries(prev)) {
                     cleaned[slot] = (ids as number[]).filter(id => !tabIdSet.has(id));
                   }
                   for (const [empId, slot] of lunchAssignments) {
-                    cleaned[slot] = [...(cleaned[slot] ?? []), empId];
+                    if (!cleaned[slot]) cleaned[slot] = [];
+                    if (!cleaned[slot].includes(empId)) cleaned[slot].push(empId);
                   }
                   localStorage.setItem(`tl_lunch_slots_${date}`, JSON.stringify(cleaned));
                   scheduleAutoSave(nextZone, cleaned, restSlots, lunchOffset, restOffset, lunchInterval, restInterval, lunchCount, restCount);
@@ -2474,6 +2670,9 @@ export const DayTimelineModal: React.FC<Props> = ({
 
                 setIsAutoSuggested(false);
               }}
+              isConfirmed={isConfirmed}
+              confirming={confirming}
+              onConfirm={handleConfirm}
             />
           </div>
 

@@ -4,7 +4,7 @@ import { Upload, Loader2, X, Zap, AlertCircle, Images, BookOpen, Building2, Plus
 import * as pdfjsLib from "pdfjs-dist";
 import { PageImageViewer } from "./PageImageViewer";
 import { RawOcrTable, type ConfirmedItem } from "./RawOcrTable";
-import type { OcrPageResult } from "./paddleEngine";
+import type { OcrPageResult } from "./types";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession } from "../../types";
 
@@ -567,21 +567,20 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   const [extracting, setExtracting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pages, setPages] = useState<OcrPageResult[]>([]);
-  // OCR 엔진 선택 · 3가지
-  //   local  = EasyOCR 로컬 Python 서브프로세스 · 개발 환경 · 완전 무료
-  //   rapid  = multilingual-purejs-ocr (Node ONNX) · Render 배포 · 완전 무료 · 셀프호스팅
-  //   gemini = Gemini 비전 API · 정확도 최상 · 다중 키 로테이션
-  type OcrEngine = "local" | "rapid" | "gemini";
+  // OCR 엔진 선택 · 2가지
+  //   onnx   = PP-OCRv5 한국어 Node ONNX · Render 배포 · 완전 무료 · 셀프호스팅
+  //   gemini = Gemini 비전 API · 정확도 최상 · 다중 키 로테이션 · Render 배포
+  type OcrEngine = "onnx" | "gemini";
   const [ocrEngine, setOcrEngine] = useState<OcrEngine>(() => {
     try {
       const v = localStorage.getItem("megatown_ocr_engine");
-      if (v === "local" || v === "rapid" || v === "gemini") return v;
+      if (v === "onnx" || v === "gemini") return v;
     } catch { /* ignore */ }
     return "gemini";
   });
   useEffect(() => { try { localStorage.setItem("megatown_ocr_engine", ocrEngine); } catch { /* ignore */ } }, [ocrEngine]);
-  const engineToBackend = (e: OcrEngine): string => e === "local" ? "paddle" : e === "rapid" ? "rapid" : "gemini";
-  const [barcodeMatches, setBarcodeMatches] = useState<any[]>([]);
+  const engineToBackend = (e: OcrEngine): string => e;
+  // 바코드 매칭 기능 제거됨 (사용자 요청) · 관련 state 유지 안 함
   const [pageImages, setPageImages] = useState<string[]>([]);
   const [currentPageIdx, setCurrentPageIdx] = useState(0);
   const [pingStatus, setPingStatus] = useState<{ ok: boolean; gemini: boolean; geminiKeyCount: number } | null>(null);
@@ -658,16 +657,23 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
     setPageCount(pdf.numPages);
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
-      const vp = page.getViewport({ scale: 2.0 });
+      // 이미지 업로드와 동일한 처리 위해 scale 은 크게 렌더 후 resizeImageForOcr 로 통일
+      // (기존 scale 2.0 은 사이즈 캡 없어서 A3 이상 PDF 는 3000px+ 로 나옴)
+      const vp = page.getViewport({ scale: 2.5 });
       const canvas = document.createElement("canvas");
       canvas.width = Math.floor(vp.width);
       canvas.height = Math.floor(vp.height);
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error(`페이지 ${i} Canvas를 초기화할 수 없습니다.`);
       await page.render({ canvasContext: ctx as any, viewport: vp, canvas } as any).promise;
-      const dataUrl = canvas.toDataURL("image/jpeg", 0.92);
-      setPageImages(prev => [...prev, dataUrl]);
-      imgs.push({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
+      // 1차 렌더링 → base64 (품질 q95, 이후 resize 에서 손실 최소화)
+      const rawDataUrl = canvas.toDataURL("image/jpeg", 0.95);
+      const rawB64 = rawDataUrl.split(",")[1];
+      // 이미지 업로드 경로와 동일한 resize 파이프라인 (max 2400px · JPEG q92)
+      const resized = await resizeImageForOcr(rawB64, "image/jpeg");
+      const previewUrl = `data:${resized.mimeType};base64,${resized.data}`;
+      setPageImages(prev => [...prev, previewUrl]);
+      imgs.push(resized);
     }
     return imgs;
   }, []);
@@ -730,23 +736,41 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   const handleExtract = useCallback(async () => {
     const images = imagesDataRef.current;
     if (images.length === 0 || extracting) return;
-    setExtracting(true); setPages([]); setBarcodeMatches([]); setProcessed(0); setError(null);
+    setExtracting(true); setPages([]); setProcessed(0); setError(null);
     setStatusMsg(images.length > 1 ? `${images.length}장 동시 처리 중...` : "처리 중...");
     try {
       const rotatedImages = rotation === 0
         ? images
         : await Promise.all(images.map(img => physicallyRotate(img.data, img.mimeType, rotation)));
 
-      const accumBarcodes: any[] = [];
+      // 병렬 정책:
+      //   - gemini: 네트워크 I/O + 다중키 로테이션 → 병렬 유리
+      //   - onnx: CPU-bound 싱글스레드 → 병렬시 뒤 페이지 timeout · 순차 처리
+      const isSerial = ocrEngine === "onnx";
+      let settled: PromiseSettledResult<{ index: number; data: any }>[];
 
-      // 모든 페이지 병렬 처리 — 4장이어도 가장 느린 1장 시간에 완료
-      const settled = await Promise.allSettled(
-        rotatedImages.map(async (img, i) => {
-          const res = await axios.post("/api/ocr", { images: [img], engine: engineToBackend(ocrEngine) });
-          setProcessed(prev => prev + 1);
-          return { index: i, data: res.data };
-        })
-      );
+      if (isSerial) {
+        settled = [];
+        for (let i = 0; i < rotatedImages.length; i++) {
+          const img = rotatedImages[i];
+          setStatusMsg(`${i + 1}/${rotatedImages.length} 페이지 처리 중...`);
+          try {
+            const res = await axios.post("/api/ocr", { images: [img], engine: engineToBackend(ocrEngine) });
+            setProcessed(prev => prev + 1);
+            settled.push({ status: "fulfilled", value: { index: i, data: res.data } });
+          } catch (err) {
+            settled.push({ status: "rejected", reason: err });
+          }
+        }
+      } else {
+        settled = await Promise.allSettled(
+          rotatedImages.map(async (img, i) => {
+            const res = await axios.post("/api/ocr", { images: [img], engine: engineToBackend(ocrEngine) });
+            setProcessed(prev => prev + 1);
+            return { index: i, data: res.data };
+          })
+        );
+      }
 
       const all: OcrPageResult[] = [];
       const pageErrors: string[] = [];
@@ -755,11 +779,6 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
         if (result.status === "fulfilled") {
           const page = result.value.data.pages?.[0];
           if (page) all.push({ ...page, page: i + 1 });
-          if (Array.isArray(result.value.data.barcodeMatches)) {
-            result.value.data.barcodeMatches.forEach((m: any) => {
-              if (!accumBarcodes.find((x: any) => x.code === m.code)) accumBarcodes.push(m);
-            });
-          }
         } else {
           const msg = (result.reason as any)?.response?.data?.error
             ?? (result.reason as any)?.message ?? "OCR 실패";
@@ -770,7 +789,6 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
       if (all.length === 0 && pageErrors.length > 0) throw new Error(pageErrors.join(" / "));
       if (pageErrors.length > 0) setError(pageErrors.join(" / "));
       setPages(all);
-      setBarcodeMatches(accumBarcodes);
     } catch (err: any) {
       setError(err?.response?.data?.error ?? err?.message ?? "OCR 처리 중 오류가 발생했습니다.");
     } finally {
@@ -799,7 +817,7 @@ const handleReparsePage = useCallback(async (pageNum: number, supplierHint: stri
 const rotDeg = ((rotation % 360) + 360) % 360;
 
 const clearFiles = () => {
-  setFileName(null); setPages([]); setBarcodeMatches([]); setPageImages([]);
+  setFileName(null); setPages([]); setPageImages([]);
   setCurrentPageIdx(0); imagesDataRef.current = [];
   setPageCount(0); setError(null); setRotation(0);
 };
@@ -1259,36 +1277,25 @@ return (
             </div>
           )}
 
-          {/* OCR 엔진 선택 · 3-way (로컬 · Node 무료 · Gemini) */}
+          {/* OCR 엔진 선택 · 2-way (AI 모델 · Gemini) */}
           <div className="w-full bg-white border border-gray-200 rounded-2xl px-3 py-2 flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-600">
               <span>OCR 엔진</span>
               <span className="text-[10px] font-mono text-slate-400">
-                ({ocrEngine === "local" ? "로컬 Python · 완전 무료"
-                  : ocrEngine === "rapid" ? "Node · 완전 무료 · Render OK"
+                ({ocrEngine === "onnx" ? "AI 모델 (ONNX) · 완전 무료 · Render OK"
                   : "Gemini · 정확도 최상"})
               </span>
             </div>
             <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5 w-full">
-              <button type="button" onClick={() => setOcrEngine("local")}
+              <button type="button" onClick={() => setOcrEngine("onnx")}
                 disabled={extracting}
                 className={`flex-1 px-2 py-1.5 text-[11px] font-black rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
-                  ocrEngine === "local"
-                    ? "bg-gradient-to-br from-slate-600 to-slate-800 text-white shadow-sm"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-white"
-                }`}
-                title="EasyOCR 로컬 Python 서버 · 완전 무료 · 로컬 개발 환경 전용">
-                💻 로컬
-              </button>
-              <button type="button" onClick={() => setOcrEngine("rapid")}
-                disabled={extracting}
-                className={`flex-1 px-2 py-1.5 text-[11px] font-black rounded-md transition disabled:opacity-40 disabled:cursor-not-allowed ${
-                  ocrEngine === "rapid"
+                  ocrEngine === "onnx"
                     ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm"
                     : "text-slate-500 hover:text-slate-800 hover:bg-white"
                 }`}
-                title="multilingual-purejs-ocr · 순수 Node.js · ONNX Runtime · Render 배포 · 완전 무료">
-                🆓 무료 (Node)
+                title="PP-OCRv5 한국어 AI 모델 (ONNX · ppu-paddle-ocr) · 완전 무료 · Render 배포 · 셀프호스팅">
+                🤖 AI 모델
               </button>
               <button type="button" onClick={() => setOcrEngine("gemini")}
                 disabled={extracting}
@@ -1301,14 +1308,9 @@ return (
                 ⚡ Gemini
               </button>
             </div>
-            {ocrEngine === "local" && (
-              <p className="text-[10px] text-slate-500 leading-tight">
-                💡 로컬 Python 서버(ocr_server.py) 자동 시작 · 첫 실행 시 모델 로딩 30~60초 · Render 에선 사용 불가
-              </p>
-            )}
-            {ocrEngine === "rapid" && (
+            {ocrEngine === "onnx" && (
               <p className="text-[10px] text-emerald-600 leading-tight">
-                🆓 순수 Node.js OCR (PP-OCRv4 + 한국어 사전) · 첫 요청 시 모델 로딩 3~5초 · <b>Render 배포 그대로 무료</b> · 표 구조 자동 정렬
+                🤖 AI 모델 (PP-OCRv5 한국어 ONNX) · 첫 요청 시 모델 초기화 5~10초 · <b>Render 배포 무료</b> · Apache 2.0
               </p>
             )}
             {ocrEngine === "gemini" && (
@@ -1320,13 +1322,12 @@ return (
 
           <button onClick={handleExtract} disabled={extracting}
             className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm ${
-              ocrEngine === "local" ? "bg-slate-700 hover:bg-slate-800"
-              : ocrEngine === "rapid" ? "bg-emerald-500 hover:bg-emerald-600"
+              ocrEngine === "onnx" ? "bg-emerald-500 hover:bg-emerald-600"
               : "bg-amber-500 hover:bg-amber-600"
             }`}>
             {extracting
               ? <><Loader2 size={15} className="animate-spin" />{statusMsg || `OCR 추출 중... (${processed}/${pageCount || "?"})`}</>
-              : <><Zap size={15} />OCR 추출 ({ocrEngine === "local" ? "로컬" : ocrEngine === "rapid" ? "무료 Node" : "Gemini"}){rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
+              : <><Zap size={15} />OCR 추출 ({ocrEngine === "onnx" ? "AI 모델" : "Gemini"}){rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
           </button>
         </>
       )}
@@ -1346,7 +1347,7 @@ return (
         </div>
       )}
 
-      {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} rotation={rotation} onReparsePage={handleReparsePage} barcodeMatches={barcodeMatches} balanceConfig={balanceConfig} onSaveConfirmed={handleSaveConfirmed} />}
+      {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} rotation={rotation} onReparsePage={handleReparsePage} balanceConfig={balanceConfig} onSaveConfirmed={handleSaveConfirmed} />}
     </div>
     )}
   </div>
