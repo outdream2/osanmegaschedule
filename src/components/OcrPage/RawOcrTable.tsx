@@ -1533,58 +1533,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     setBarcodeAutoMap(result);
   }, [barcodeMatches, dispRows, nameIdx]);
 
-  // ── Feature 3: OCR 추출 후 동의어 사전 1차 자동보정 ─────────────────────
+  // ── 1차보정에서 자동 매칭 제거 (2026-07-14 사용자 정책 재확립) ─────────
+  //   1차보정 = OCR 원본 그대로 표시
+  //   수동편집(직접 셀 편집·후보 선택) → 2차보정(handleMatch 버튼) → 확정
+  //   pages 변경 시 이전 매칭 상태만 클리어 · 신규 fetch 안 함
   useEffect(() => {
-    if (!pages?.length) { setAutoSynonymMatches({}); return; }
-
-    // pages에서 직접 이름/공급처 추출 (dispRows 의존성 없이)
-    const structPages = pages.filter(p =>
-      !(p.headers.length <= 1 && (p.headers[0] === "원문 텍스트" || p.headers[0] === "원문 응답"))
-      && Array.isArray(p.rows)
-    );
-    if (structPages.length === 0) return;
-    const mHeaders = buildMasterHeaders(structPages);
-    const localNameIdx = mHeaders.indexOf("품명");
-    const localSuppIdx = mHeaders.indexOf("공급처");
-    if (localNameIdx < 0) return;
-
-    const localRows: { name: string; supplier: string }[] = structPages.flatMap(p =>
-      p.rows.filter(row => Array.isArray(row)).map(row => {
-        const nameI = p.headers.indexOf("품명");
-        const suppMeta = p.meta.supplier ?? "";
-        const name = nameI >= 0 ? String(row[nameI] ?? "").trim() : "";
-        let supplier = suppMeta;
-        if (localSuppIdx >= 0) {
-          const colVal = String(row[localSuppIdx] ?? "").trim();
-          if (colVal) supplier = colVal;
-        }
-        return { name, supplier };
-      })
-    );
-
-    const names = localRows.map(r => r.name);
-    const suppliers = localRows.map(r => r.supplier);
-    if (names.every(n => !n)) return;
-
-    setAutoSynonymLoading(true);
     setAutoSynonymMatches({});
-    fetch("/api/ocr-match", {
-      method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ names, suppliers }),
-    })
-      .then(r => r.json())
-      .then(data => {
-        const matches: MatchedItem[] = data.matches ?? [];
-        const result: Record<number, { code: string; name: string }> = {};
-        matches.forEach((m, ri) => {
-          if (m.matched && (m.matched.score ?? 0) === 100) {
-            result[ri] = { code: m.matched.code, name: m.matched.name };
-          }
-        });
-        setAutoSynonymMatches(result);
-      })
-      .catch(() => {})
-      .finally(() => setAutoSynonymLoading(false));
+    setAutoSynonymLoading(false);
   }, [pages]);
 
   useEffect(() => {

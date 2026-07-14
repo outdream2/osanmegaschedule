@@ -45,22 +45,36 @@ export function makeVendorMatchStage(_deps: {
         console.log(`[vendor-match/①사업자번호] rawText 에 사업자번호 없음`);
       }
 
-      // DB 매칭 임계치 30 (bigramSim 30% · OCR 오독 관대)
-      const MATCH_THRESHOLD = 30;
+      // DB 매칭 임계치 60 (B: 30→60 · 오매칭 억제 · 사업자번호는 exact 100)
+      const MATCH_THRESHOLD = 60;
+      // substring 매칭: 길이 비율 페널티 (A · 짧은 substring 오매칭 방지)
+      const substringScore = (a: string, b: string): number => {
+        const short = Math.min(a.length, b.length);
+        const long = Math.max(a.length, b.length);
+        if (long === 0) return 0;
+        return Math.round(30 + (short / long) * 60);
+      };
       const tryMatchCandidate = (cand: string): { db: string; score: number } | null => {
+        // D: alias 결과도 실제 vendor 존재 여부 확인 · 오염된 alias 방어
         const aliasKey = normSupplier(cand);
         const aliased = aliasMap.get(aliasKey);
         if (aliased) {
-          const found = vendors.find(v => normSupplier(v) === normSupplier(aliased));
+          const aliasedNorm = normSupplier(aliased);
+          const found = vendors.find(v => normSupplier(v) === aliasedNorm);
           if (found) return { db: found, score: 100 };
+          console.warn(`[vendor-match/alias-invalid] "${cand}" → alias "${aliased}" 이 vendors DB 에 없음 · alias 무시`);
         }
         const target = normSupplier(cand);
         let best: { db: string; score: number } | null = null;
         for (const v of vendorNorms) {
           if (!v.n || v.n.length < 2) continue;
-          const s = target === v.n ? 100
-            : (target.includes(v.n) || v.n.includes(target)) ? 90
-            : bigramSim(target, v.n);
+          let s: number;
+          if (target === v.n) s = 100;
+          else {
+            const bs = bigramSim(target, v.n);
+            const isSubstr = target.includes(v.n) || v.n.includes(target);
+            s = isSubstr ? Math.max(substringScore(target, v.n), bs) : bs;
+          }
           if (s >= MATCH_THRESHOLD && (best === null || s > best.score)) {
             best = { db: v.name, score: s };
           }
@@ -68,16 +82,31 @@ export function makeVendorMatchStage(_deps: {
         return best;
       };
 
+      // B: metaSup 자체 신뢰도 판정 · 노이즈이면 부스트 안 함
+      //   회사 접미어(제약/약품/바이오/…) 또는 (주)/㈜ 있으면 신뢰
+      //   순수 라벨/카테고리("종옥의약품" 이 우연히 접미어 "의약품" 있어 통과할 수 있으므로
+      //   접미어 앞에 진짜 회사명 부분이 있는지도 검증)
+      const isTrustworthyMetaSup = (s: string): boolean => {
+        if (!s || s.length < 3) return false;
+        const HARD_NOISE = /^(?:종\s*[목옥의]|업\s*[태EH의]|등\s*[록둥의]|성\s*명|대\s*표|사\s*업\s*장|주\s*소|담\s*당|전\s*화|팩\s*스|공\s*급|매\s*입|수\s*신|법\s*인|거\s*래처|발\s*[급행])/;
+        if (HARD_NOISE.test(s)) return false;
+        // 회사 접미어 있어야 신뢰
+        const SUFFIX = /(?:제약|약품|양행|바이오|팜(?![약])|메디|헬스케?어|화학|테크|랩(?!탑)|사이언스|(?:주식|합자|합명|유한)회사|\(주\)|㈜)/;
+        return SUFFIX.test(s);
+      };
+
       // ② ppuPaddle 원본 meta.supplier 최우선 · DB 매칭되면 그것 확정
-      //   raw OCR 이 잘 뽑았을 때 vendor-match 자체 후보로 덮어쓰는 걸 방지
+      //   B: metaSup 자체가 신뢰 가능할 때만 +20 부스트 (노이즈 metaSup 방어)
       const nameMatches: Array<{ cand: string; db: string; score: number; from: string }> = [];
       const metaSup = (ctx.meta?.supplier ?? "").trim();
       let metaSupHandled = false;
       if (metaSup) {
         const mm = tryMatchCandidate(metaSup);
         if (mm) {
-          nameMatches.push({ cand: metaSup, db: mm.db, score: mm.score + 20, from: `meta⭐("${metaSup}")` });
-          console.log(`[vendor-match/②meta최우선] "${metaSup}" → "${mm.db}" (score ${mm.score}+20 부스트)`);
+          const trusted = isTrustworthyMetaSup(metaSup);
+          const boost = trusted ? 20 : 0;
+          nameMatches.push({ cand: metaSup, db: mm.db, score: mm.score + boost, from: `meta${trusted ? "⭐" : ""}("${metaSup}")` });
+          console.log(`[vendor-match/②meta] "${metaSup}" → "${mm.db}" (score ${mm.score}${trusted ? "+20⭐" : " · 부스트X"} · trusted=${trusted})`);
           metaSupHandled = true;
         } else {
           console.log(`[vendor-match/②meta] "${metaSup}" · DB 매칭 실패 · 다른 후보 탐색`);
