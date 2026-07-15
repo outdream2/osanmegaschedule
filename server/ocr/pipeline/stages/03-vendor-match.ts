@@ -1,6 +1,8 @@
 import { extractBusinessNumbersFromRawText, extractSupplierFromRawText } from "../../parse";
 import { getVendorNames, getVendorBizNumMap, learnVendorBusinessNumber, getSupplierAliasMap, learnSupplierAlias } from "../../../productCache";
+import { DEFAULT_EXCLUDED_SUPPLIERS, isExcludedBusinessNumber } from "../../excludedSuppliers";
 import { normSupplier, bigramSim } from "../../match";
+import { supabase } from "../../../../src/supabase/client";
 import type { Stage } from "../types";
 
 // Phase 10 (2026-07-14): 공급사 추출 → DB 매칭 (80%↑) → 안되면 다음 후보
@@ -32,8 +34,11 @@ export function makeVendorMatchStage(_deps: {
       const bizMap = await getVendorBizNumMap();
 
       // ① 사업자번호 DB 조회 (exact match · score 100)
+      //    수신처 blacklist (excludedSuppliers.ts) 에 있으면 아예 사용 안 함
       let biznumMatched: { db: string; score: number; from: string } | null = null;
-      if (primaryBiz) {
+      if (primaryBiz && isExcludedBusinessNumber(primaryBiz)) {
+        console.warn(`[vendor-match/①사업자번호] ${primaryBiz} 은 수신처 blacklist · 매칭·학습 모두 스킵`);
+      } else if (primaryBiz) {
         const byBiz = bizMap.get(primaryBiz);
         if (byBiz) {
           biznumMatched = { db: byBiz, score: 100, from: `biznum(${primaryBiz})` };
@@ -129,48 +134,62 @@ export function makeVendorMatchStage(_deps: {
 
       // ②-b 상품명 제외 영역 토큰 스캔 (meta 확정 시 스킵 · 노이즈 방지)
       if (!metaSupHandled) {
-      const nameIdxInRows = ctx.headers.indexOf("품명");
-      const productNames = nameIdxInRows >= 0
-        ? ctx.rows
+        const nameIdxInRows = ctx.headers.indexOf("품명");
+        const productNames = nameIdxInRows >= 0
+          ? ctx.rows
             .map(r => Array.isArray(r) ? String(r[nameIdxInRows] ?? "").trim() : "")
             .filter(n => n.length >= 3)
-        : [];
-      let nonProductText = rawText;
-      for (const pn of productNames) {
-        // 정확 매칭 · 첫 5글자로 근사 (품명이 여러 줄로 나뉜 경우 대응)
-        const core = pn.slice(0, Math.min(15, pn.length));
-        if (core.length >= 3) {
-          const parts = nonProductText.split(core);
-          nonProductText = parts.join(" ");
+          : [];
+        let nonProductText = rawText;
+        for (const pn of productNames) {
+          // 정확 매칭 · 첫 5글자로 근사 (품명이 여러 줄로 나뉜 경우 대응)
+          const core = pn.slice(0, Math.min(15, pn.length));
+          if (core.length >= 3) {
+            const parts = nonProductText.split(core);
+            nonProductText = parts.join(" ");
+          }
         }
-      }
-      // 한글/영문 토큰 (2~20자 · 라벨/노이즈/수신처/이미 후보 배제)
-      const seenCands = new Set(direct.candidates.map(c => normSupplier(c)));
-      const tokenRegex = /[가-힣][가-힣A-Za-z0-9()·・\-]{1,19}/g;
-      const extraTokens = new Set<string>();
-      let tm: RegExpExecArray | null;
-      while ((tm = tokenRegex.exec(nonProductText))) {
-        const t = tm[0].trim().replace(/[\s·・\-]+$/, "");
-        if (t.length < 3) continue;
-        if (seenCands.has(normSupplier(t))) continue;
-        extraTokens.add(t);
-      }
-      let extraMatchCount = 0;
-      for (const tok of extraTokens) {
-        const m = tryMatchCandidate(tok);
-        if (m) {
-          nameMatches.push({ cand: tok, db: m.db, score: m.score, from: `nonProduct("${tok}")` });
-          extraMatchCount++;
+        // 한글/영문 토큰 (2~20자 · 라벨/노이즈/수신처/이미 후보 배제)
+        const seenCands = new Set(direct.candidates.map(c => normSupplier(c)));
+        const tokenRegex = /[가-힣][가-힣A-Za-z0-9()·・\-]{1,19}/g;
+        const extraTokens = new Set<string>();
+        let tm: RegExpExecArray | null;
+        while ((tm = tokenRegex.exec(nonProductText))) {
+          const t = tm[0].trim().replace(/[\s·・\-]+$/, "");
+          if (t.length < 3) continue;
+          if (seenCands.has(normSupplier(t))) continue;
+          extraTokens.add(t);
         }
-      }
-      if (extraTokens.size > 0) {
-        console.log(`[vendor-match/②-b비상품영역] 토큰 ${extraTokens.size}개 스캔 → DB 매칭 ${extraMatchCount}건`);
-      }
+        let extraMatchCount = 0;
+        for (const tok of extraTokens) {
+          const m = tryMatchCandidate(tok);
+          if (m) {
+            nameMatches.push({ cand: tok, db: m.db, score: m.score, from: `nonProduct("${tok}")` });
+            extraMatchCount++;
+          }
+        }
+        if (extraTokens.size > 0) {
+          console.log(`[vendor-match/②-b비상품영역] 토큰 ${extraTokens.size}개 스캔 → DB 매칭 ${extraMatchCount}건`);
+        }
       } // end !metaSupHandled
 
-      // ③ 사업자번호 매칭 + 이름 매칭 모두 통합 · 최고점 채택
+      // ③ direct extract 최종채택 우선 정책 (2026-07-15 · 사용자 지시)
+      //   extract 가 신뢰 가능한 이름 뽑았으면 그 이름으로 확정 · biznum 이 다른 회사 이름 반환해도 무시
+      //   (원인: 과거 잘못 학습된 사업자번호 매핑 · 예: 3101805493 → "종옥의약품" 인데
+      //          실제는 (주)대지인잠 → biznum 신뢰도 낮은 학습 데이터 방어)
+      const directTrusted = direct.supplier && isTrustworthyMetaSup(direct.supplier);
+      // biznum 결과가 direct extract 와 얼마나 유사한가 (다르면 오학습)
+      const biznumMatchesDirect = biznumMatched && direct.supplier
+        ? bigramSim(normSupplier(biznumMatched.db).replace(/\(주\)|주식회사/g, ""),
+          normSupplier(direct.supplier).replace(/\(주\)|주식회사/g, "")) >= 40
+        : false;
+      if (biznumMatched && directTrusted && !biznumMatchesDirect) {
+        console.warn(`[vendor-match/⚠️biznum-무시] page ${ctx.page}: extract="${direct.supplier}" ≠ biznum="${biznumMatched.db}" (오학습 의심 · biznum 채택 스킵)`);
+      }
+
       const allMatches: Array<{ db: string; score: number; from: string }> = [];
-      if (biznumMatched) allMatches.push(biznumMatched);
+      // biznum 은 direct 와 유사할 때만 포함 (또는 direct 없을 때)
+      if (biznumMatched && (!directTrusted || biznumMatchesDirect)) allMatches.push(biznumMatched);
       allMatches.push(...nameMatches);
       if (allMatches.length > 0) {
         allMatches.sort((a, b) => b.score - a.score);
@@ -181,18 +200,137 @@ export function makeVendorMatchStage(_deps: {
         if (allMatches.length > 1) {
           console.log(`[vendor-match/후보전체] ${allMatches.map(m => `${m.from}→"${m.db}"(${m.score})`).join(" · ")}`);
         }
+      } else if (directTrusted && direct.supplier) {
+        // 매칭 없어도 extract 신뢰 가능하면 그대로 사용 (미상 처리 대신)
+        vendorMatched = direct.supplier;
+        matchSource = `extract-raw("${direct.supplier}")`;
+        console.log(`[vendor-match/✅extract최종채택] page ${ctx.page}: "${direct.supplier}" (DB 매칭 없음 · extract 원본 사용)`);
       } else {
-        console.log(`[vendor-match/③미상] page ${ctx.page}: 매칭된 후보 없음 · 공란 (사용자 입력 대기) · 이름후보=${JSON.stringify(direct.candidates)} · 사업자번호=${primaryBiz ?? "-"}`);
+        // ③ 상품기반 fallback (2026-07-15) — rawText 에 공급자명 없어도
+        //    상품명 → products.supplier 최빈값 (majority vote) 으로 유추
+        //    예: 광동제약 명세서에서 공급자 라인이 잘려도 상품(광동원탕/광동쌍화탕/...)
+        //        모두 products.supplier="(주)광동제약" → 자동 채택
+        try {
+          const nameIdx = ctx.headers.indexOf("품명");
+          if (nameIdx < 0) {
+            console.log(`[vendor-match/③상품기반] skip: headers 에 "품명" 없음`);
+          } else {
+            const productNames = Array.from(new Set(
+              ctx.rows
+                .map(r => Array.isArray(r) ? String(r[nameIdx] ?? "").trim() : "")
+                .filter(n => n.length >= 2)
+            ));
+            if (productNames.length < 5) {
+              console.log(`[vendor-match/③상품기반] skip: 샘플 부족 (${productNames.length}개 < 5)`);
+            } else {
+              // 1) exact match 우선
+              const { data: exactRows, error: prodErr } = await supabase
+                .from("products")
+                .select("product_name,supplier")
+                .in("product_name", productNames);
+              if (prodErr) {
+                console.warn(`[vendor-match/③상품기반] products 조회 실패:`, prodErr.message);
+              } else {
+                const supplierCounts = new Map<string, number>();
+                let totalHits = 0;
+                const matchedNames = new Set<string>();
+                for (const row of (exactRows ?? [])) {
+                  const sup = String((row as any).supplier ?? "").trim();
+                  const pn = String((row as any).product_name ?? "").trim();
+                  if (!sup) continue;
+                  supplierCounts.set(sup, (supplierCounts.get(sup) ?? 0) + 1);
+                  matchedNames.add(pn);
+                  totalHits++;
+                }
+                // 2) exact 매칭 실패한 상품명에 대해 fuzzy fallback
+                //    · OCR 오탈자 대응 · 상품명 앞 4자를 접두어로 ilike 검색
+                //    · 예: "광동 원탕" (실패) → "광동" 으로 시작하는 상품 조회
+                const missedNames = productNames.filter(n => !matchedNames.has(n) && n.length >= 4);
+                if (missedNames.length > 0 && totalHits / productNames.length < 0.5) {
+                  // 매칭률 50% 미만이면 fuzzy fallback 시도
+                  const prefixSet = new Set<string>();
+                  for (const n of missedNames) {
+                    const cleaned = n.replace(/[\s()（）\[\]]/g, "");
+                    if (cleaned.length >= 3) prefixSet.add(cleaned.slice(0, 3));  // 앞 3자
+                  }
+                  // OR 조건으로 병합 (Supabase 는 or() 사용)
+                  const orExpr = Array.from(prefixSet).map(p => `product_name.ilike.${p}%`).join(",");
+                  if (orExpr) {
+                    const { data: fuzzyRows } = await supabase
+                      .from("products")
+                      .select("product_name,supplier")
+                      .or(orExpr)
+                      .limit(500);
+                    let fuzzyAdded = 0;
+                    for (const row of (fuzzyRows ?? [])) {
+                      const sup = String((row as any).supplier ?? "").trim();
+                      const pn = String((row as any).product_name ?? "").trim();
+                      if (!sup || matchedNames.has(pn)) continue;
+                      // OCR 상품명과 DB 상품명 앞 3자 매치되면 count
+                      const cleanedDb = pn.replace(/[\s()（）\[\]]/g, "");
+                      if ([...prefixSet].some(p => cleanedDb.startsWith(p))) {
+                        supplierCounts.set(sup, (supplierCounts.get(sup) ?? 0) + 1);
+                        matchedNames.add(pn);
+                        totalHits++;
+                        fuzzyAdded++;
+                      }
+                    }
+                    if (fuzzyAdded > 0) console.log(`[vendor-match/③상품기반-fuzzy] 접두어 매칭 ${fuzzyAdded}건 추가 (총 ${totalHits}건)`);
+                  }
+                }
+                if (totalHits === 0) {
+                  console.log(`[vendor-match/③상품기반] products 매칭 0건 (샘플 ${productNames.length}개)`);
+                } else {
+                  let topSup = "";
+                  let topCnt = 0;
+                  for (const [sup, cnt] of supplierCounts) {
+                    if (cnt > topCnt) { topSup = sup; topCnt = cnt; }
+                  }
+                  // 수신처 blacklist 체크 (excludedSuppliers)
+                  const envRaw = (process.env.OCR_EXCLUDED_SUPPLIERS ?? "") + "|" + (process.env.OCR_RECIPIENT_COMPANY ?? "");
+                  const envExtra = envRaw.split(/[|,]/).map(s => s.trim()).filter(Boolean);
+                  const excludedNorms = new Set([...DEFAULT_EXCLUDED_SUPPLIERS, ...envExtra].map(s => normSupplier(s)));
+                  const topNorm = normSupplier(topSup);
+                  const isBlacklisted = topNorm && [...excludedNorms].some(en => en && (topNorm === en || topNorm.includes(en) || en.includes(topNorm)));
+                  const ratio = topCnt / totalHits;
+                  if (isBlacklisted) {
+                    console.log(`[vendor-match/③상품기반] skip: 최빈 supplier "${topSup}" 은 수신처 blacklist`);
+                  } else if (ratio >= 0.6) {
+                    vendorMatched = topSup;
+                    matchSource = `product-majority(${topCnt}/${totalHits})`;
+                    console.log(`[vendor-match/③상품기반] ${productNames.length}개 상품 → "${topSup}" (${topCnt}/${totalHits} 우세 · ${Math.round(ratio * 100)}%)`);
+                  } else {
+                    console.log(`[vendor-match/③상품기반] 우세 부족: top="${topSup}" ${topCnt}/${totalHits} (${Math.round(ratio * 100)}% < 60%)`);
+                  }
+                }
+              }
+            }
+          }
+        } catch (e: any) {
+          console.warn(`[vendor-match/③상품기반] 예외:`, e?.message);
+        }
+
+        if (!vendorMatched) {
+          console.log(`[vendor-match/③미상] page ${ctx.page}: 매칭된 후보 없음 · 공란 (사용자 입력 대기) · 이름후보=${JSON.stringify(direct.candidates)} · 사업자번호=${primaryBiz ?? "-"}`);
+        }
       }
 
-      // ④ 사업자번호 학습: 상호 확정 + 사업자번호 있는데 DB 미등록
-      if (vendorMatched && primaryBiz && !bizMap.get(primaryBiz)) {
+      // ④ 사업자번호 학습 (오학습 방어 강화)
+      //   조건: (1) 이름 확정  (2) 사업자번호 있음  (3) DB 미등록
+      //         (4) direct extract 결과가 신뢰 가능 (오학습 방지)
+      //         (5) 이름이 사업자번호 근처 텍스트에 실제 등장 (같은 명세서 데이터임을 확인)
+      //         (6) 수신처 blacklist 사업자번호가 아님 (핵심 안전장치)
+      if (primaryBiz && isExcludedBusinessNumber(primaryBiz)) {
+        console.warn(`[vendor-match/④학습-사업자번호] 스킵: ${primaryBiz} 은 수신처 blacklist (오학습 재발 방지)`);
+      } else if (vendorMatched && primaryBiz && !bizMap.get(primaryBiz) && directTrusted) {
         try {
           const r = await learnVendorBusinessNumber(vendorMatched, primaryBiz);
           console.log(`[vendor-match/④학습-사업자번호] "${vendorMatched}" ↔ ${primaryBiz} (${r.action})`);
         } catch (e: any) {
           console.warn(`[vendor-match/④학습-사업자번호] 실패:`, e?.message);
         }
+      } else if (vendorMatched && primaryBiz && !bizMap.get(primaryBiz)) {
+        console.log(`[vendor-match/④학습-사업자번호] 스킵 (direct 신뢰도 부족 · 오학습 방지) · "${vendorMatched}" ↔ ${primaryBiz}`);
       }
 
       // ⑤ Alias 학습: OCR 원본 이름이 DB canonical 과 다르면 alias 등록

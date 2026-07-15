@@ -1,15 +1,17 @@
 // src/components/OrderManagePage/OrderManagePage.tsx
 // 발주관리 페이지 — 매장관리 · 재고관리 · 입고알림관리 옆의 서브탭으로 노출
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
-// 입고확인 탭에서는 거래명세서 OCR(OcrPage) 노출
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle, Upload } from "lucide-react";
+// 사입(OCR거래명세서 등록) 탭에서는 거래명세서 OCR(OcrPage) 노출
+import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from "react";
+import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle, Upload, Building2, ClipboardList } from "lucide-react";
 import * as XLSX from "xlsx";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 import { OcrPage } from "../OcrPage";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../AppNavHeader";
+// 공급사관리(마스터-디테일) 은 무겁고 조건부라 lazy 로드
+const VendorListEditor = lazy(() => import("../LandingPage/VendorListEditor").then(m => ({ default: m.VendorListEditor })));
 
 interface OrderRequest {
   id: string;
@@ -75,10 +77,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   ocrTabOnNavigate,
   ocrTabOnLogout,
 }) => {
-  // 상단 탭 (발주요청 / 입고확인)
-  const [topTab, setTopTab] = useState<"order" | "receipt">("order");
+  // 상단 탭 (발주요청 / 발주필요 / 사입(OCR거래명세서 등록) / 공급사관리) · Vercel Ink underline 스타일
+  const [topTab, setTopTab] = useState<"order" | "need" | "receipt" | "vendor">("order");
+  // 공급사관리 서브 pill (재고관리 스타일 · 대시보드/원본데이터)
+  const [vendorPageTab, setVendorPageTab] = useState<"dashboard" | "raw">("dashboard");
+  // 원본데이터 → 대시보드 전환 시 자동 선택될 공급사 id
+  const [vendorPreselectId, setVendorPreselectId] = useState<number | null>(null);
 
-  // 입고확인 상태
+  // 사입(OCR거래명세서 등록) 상태
   const [receipts, setReceipts] = useState<GoodsReceipt[]>([]);
   const [receiptsLoading, setReceiptsLoading] = useState(false);
   const [receiptFilter, setReceiptFilter] = useState<"all" | "pending" | "partial" | "complete">("all");
@@ -105,33 +111,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   }, []);
   useEffect(() => { loadVendors(); }, [loadVendors]);
 
-  // 공급사현황 엑셀 임포트
-  const vendorImportFileRef = useRef<HTMLInputElement>(null);
-  const [vendorImporting, setVendorImporting] = useState(false);
-  const handleVendorImport = async (file: File) => {
-    setVendorImporting(true);
-    try {
-      const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf, { type: "array" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows: any[] = XLSX.utils.sheet_to_json(ws, { defval: null });
-      if (rows.length === 0) throw new Error("엑셀에 데이터가 없습니다.");
-      const res = await fetch("/api/vendors/bulk-import", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rows }),
-      });
-      const j = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(j.error ?? `임포트 실패 (${res.status})`);
-      const msg = `공급사 임포트 완료\n총 ${j.total}건 · 신규 ${j.inserted} · 갱신 ${j.updated}` + (j.failed ? ` · 실패 ${j.failed}` : "");
-      alert(msg + (j.errors?.length ? `\n\n첫 오류:\n${j.errors.slice(0, 3).join("\n")}` : ""));
-      await loadVendors();
-    } catch (e: any) {
-      alert(`공급사 임포트 실패: ${e?.message ?? e}`);
-    } finally {
-      setVendorImporting(false);
-    }
-  };
+  // 공급사 임포트 로직은 LandingPage 데이터 업로드 > 공급사관리 로 이동됨 (여기서 제거 · 2026-07-15)
   const vendorMap = useMemo(() => {
     const m = new Map<string, { contact_name: string | null; phone: string | null; email: string | null }>();
     for (const v of vendors) {
@@ -229,7 +209,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   useEffect(() => { loadOrderReqs(); loadProducts(); }, [loadOrderReqs, loadProducts]);
 
-  // 입고확인 목록 로드 (order_dispatches → goods_receipts 통합 조회)
+  // 사입(OCR거래명세서 등록) 목록 로드 (order_dispatches → goods_receipts 통합 조회)
   const loadReceipts = useCallback(async () => {
     setReceiptsLoading(true);
     try {
@@ -577,57 +557,176 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   return (
     <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-4">
-      {/* 상단 탭: 발주요청 / 입고확인 */}
-      <div className="flex items-center gap-1.5 flex-wrap pb-1">
-        <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
-          <button
-            onClick={() => setTopTab("order")}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[13px] font-black transition-all duration-200 cursor-pointer ${
-              topTab === "order"
-                ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
-                : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-            }`}
-          >
-            <ShoppingCart size={15} className={topTab === "order" ? "text-slate-800" : "text-slate-400"} /> 발주요청
-          </button>
-          <button
-            onClick={() => setTopTab("receipt")}
-            className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[13px] font-black transition-all duration-200 cursor-pointer ${
-              topTab === "receipt"
-                ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
-                : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-            }`}
-          >
-            <PackageCheck size={15} className={topTab === "receipt" ? "text-slate-800" : "text-slate-400"} /> 입고확인(OCR)
-          </button>
-        </div>
-        {/* 공급사현황 엑셀 임포트 (담당자/전화/이메일 매핑용) */}
-        <div className="ml-auto flex items-center gap-1.5">
-          <span className="hidden sm:inline text-[10px] text-slate-400 font-mono">공급사 {vendors.length}건</span>
-          <input
-            ref={vendorImportFileRef}
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) handleVendorImport(f);
-              e.target.value = "";
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => vendorImportFileRef.current?.click()}
-            disabled={vendorImporting}
-            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-black text-white bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-sm active:scale-95 transition disabled:opacity-40 cursor-pointer"
-            title="공급사현황 엑셀 파일 (.xlsx) 임포트 — 회사명 기준으로 담당자/전화/이메일 갱신"
-          >
-            {vendorImporting ? <Loader2 size={11} className="animate-spin" /> : <Upload size={11} />} 공급사 임포트
-          </button>
-        </div>
+      {/* 상단 탭 (2026-07-15) · Vercel Ink underline 스타일 · 재고관리/판매추이와 통일 */}
+      <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-1 border-b border-slate-200 sm:overflow-x-auto sm:scrollbar-none">
+        {[
+          { k: "order"   as const, label: "발주요청", icon: ShoppingCart, color: "sky" },
+          { k: "need"    as const, label: "발주필요", icon: ClipboardList, color: "amber", badge: lowStock.length },
+          { k: "receipt" as const, label: "사입(OCR거래명세서 등록)", icon: PackageCheck, color: "violet" },
+          { k: "vendor"  as const, label: "공급사관리", icon: Building2, color: "teal" },
+        ].map(t => {
+          const Icon = t.icon;
+          const active = topTab === t.k;
+          const activeText = {
+            sky:    "text-sky-700",
+            amber:  "text-amber-700",
+            violet: "text-violet-700",
+            teal:   "text-teal-700",
+          }[t.color]!;
+          const activeBar = {
+            sky:    "bg-sky-500",
+            amber:  "bg-amber-500",
+            violet: "bg-violet-500",
+            teal:   "bg-teal-500",
+          }[t.color]!;
+          return (
+            <button key={t.k} onClick={() => setTopTab(t.k)}
+              className={`relative basis-1/2 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-[13px] font-bold leading-tight transition-colors duration-150 ${
+                active ? activeText : "text-slate-400 hover:text-slate-700"
+              }`}>
+              <Icon size={13} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
+              <span>{t.label}</span>
+              {"badge" in t && t.badge != null && t.badge > 0 && (
+                <span className={`inline-flex items-center justify-center min-w-[14px] sm:min-w-[18px] px-1 h-4 rounded-full text-[9px] font-black ${active ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"}`}>
+                  {t.badge}
+                </span>
+              )}
+              {active && (
+                <span className={`absolute left-0 right-0 -bottom-px h-[2px] ${activeBar} rounded-t-sm`} />
+              )}
+            </button>
+          );
+        })}
       </div>
 
-      {/* ── 입고확인(OCR) 탭 · 거래명세서 OCR 컨텐츠만 임베드 (헤더 X) ── */}
+      {/* ── 발주필요 탭 · 적정재고 미달 상품 리스트 (order 탭에서 이동) ── */}
+      {topTab === "need" && (
+      <section className="flex flex-col gap-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <button onClick={() => setLowStockCollapsed(!lowStockCollapsed)} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-1 py-0.5 transition" title={lowStockCollapsed ? "펼치기" : "접기"}>
+            <span className={`text-slate-400 text-xs transition-transform ${lowStockCollapsed ? "" : "rotate-90"}`}>▶</span>
+            <Package size={16} className="text-amber-500" />
+            <h2 className="text-sm font-black text-slate-800">발주 필요 상품</h2>
+            <span className="text-[10px] text-slate-500 font-normal">(현재고 &lt; 적정재고)</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">{lowStock.length}개</span>
+          </button>
+          <div className="flex items-center gap-1.5">
+            <input
+              type="text"
+              value={lowStockSearch}
+              onChange={e => setLowStockSearch(e.target.value)}
+              placeholder="상품·코드·공급사 검색"
+              className="text-[11px] border border-slate-200 rounded-lg px-2 py-1 w-40 focus:outline-none focus:border-amber-400"
+            />
+            <button onClick={loadProducts} disabled={productsLoading} className="text-[11px] font-bold text-slate-500 border border-slate-200 rounded-lg px-2 py-1 hover:bg-slate-50 cursor-pointer flex items-center gap-1">
+              <RefreshCw size={12} className={productsLoading ? "animate-spin" : ""} />
+            </button>
+          </div>
+        </div>
+        {!lowStockCollapsed && (<>
+        {productsLoading ? (
+          <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-amber-400" /></div>
+        ) : lowStock.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-gray-300 border-t border-b border-slate-200 bg-white">
+            <Package size={28} className="mb-2" /><p className="text-sm font-bold text-gray-400">발주 필요 상품이 없습니다</p>
+          </div>
+        ) : (
+          <>
+          <div className="px-3 pt-1.5 pb-0.5 flex items-center gap-2 border-t border-slate-100 bg-white">
+            <span className="text-[11px] font-black text-slate-600">발주필요 리스트</span>
+            <span className="text-[10px] font-mono text-slate-400">({lowStockFiltered.length}건)</span>
+          </div>
+          <div className="border-t border-b border-slate-200 overflow-auto max-h-[280px]">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-white z-10">
+                <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+                  <th className="text-left px-1 py-1.5 w-24">공급사</th>
+                  <th className="text-left px-1 py-1.5 w-20">담당자</th>
+                  <th className="text-left px-1 py-1.5 min-w-[120px]">상품명</th>
+                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/60"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[9px] text-slate-400 font-normal">(현재고)</span></div></th>
+                  <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/60 text-violet-500">실재고</th>
+                  <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/60">적정</th>
+                  <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/60 text-rose-500">부족</th>
+                  <th className="text-center px-0.5 py-1.5 w-14">발주</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {lowStockFiltered.map(p => {
+                  const cur = Number(p.current_stock), opt = Number(p.optimal_stock);
+                  const code = getCode(p);
+                  const name = getName(p);
+                  const inv = invStockMap.get(code);
+                  const vendor = p.supplier ? findVendor(p.supplier) : undefined;
+                  const contactName = vendor?.contact_name || (p as any).supplier_contact || "-";
+                  const alreadyRequested = requestedCodes.has(code);
+                  const busy = requestingOrder.has(code);
+                  return (
+                    <tr key={code} className="hover:bg-orange-50/30 transition">
+                      <td className="px-1 py-1.5 text-[11px] text-sky-600 font-semibold break-words whitespace-normal align-top">{p.supplier || "-"}</td>
+                      <td className="px-1 py-1.5 text-[11px] text-slate-600 break-words whitespace-normal align-top">
+                        {vendor ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const rect = (e.target as HTMLElement).getBoundingClientRect();
+                              setContactPopover({ anchor: rect, name: contactName, phone: vendor.phone, email: vendor.email });
+                            }}
+                            className="hover:text-indigo-700 hover:underline cursor-pointer text-left w-full"
+                            title="클릭 시 전화·이메일 표시"
+                          >{contactName}</button>
+                        ) : (
+                          <span>{contactName}</span>
+                        )}
+                      </td>
+                      <td className="px-1 py-1.5 align-top">
+                        <button
+                          onClick={() => setDetailProduct({ code, name })}
+                          className="text-left text-[12px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
+                          title="상품 상세정보 조회"
+                        >{name || "(상품명 없음)"}</button>
+                      </td>
+                      <td className="text-right px-0.5 py-1.5 font-mono font-bold text-[11px] text-slate-700 bg-slate-50/40 align-top">{cur}</td>
+                      <td
+                        className={`text-right px-0.5 py-1.5 font-mono font-black text-[11px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
+                        title={inv ? `창고 ${inv.warehouse ?? "-"} + 매장 ${inv.store ?? "-"} = ${inv.total}` : "실재고 미입력"}
+                      >
+                        {inv ? inv.total : "—"}
+                        {inv && (
+                          <span className="block text-[9px] font-normal text-slate-400 leading-none mt-0.5">
+                            창{inv.warehouse ?? "-"}·매{inv.store ?? "-"}
+                          </span>
+                        )}
+                      </td>
+                      <td className="text-right px-0.5 py-1.5 font-mono font-bold text-[11px] text-slate-700 bg-slate-50/40 align-top">{opt}</td>
+                      <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
+                        <span className="font-mono font-black text-[11px] text-rose-600">-{opt - cur}</span>
+                      </td>
+                      <td className="text-center px-0.5 py-1.5 align-top">
+                        {alreadyRequested ? (
+                          <button onClick={() => handleRequestOrder(p)} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg cursor-pointer hover:bg-emerald-100 transition">요청됨</button>
+                        ) : (
+                          <button onClick={() => handleRequestOrder(p)} disabled={busy}
+                            className="text-[10px] font-bold text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded-lg transition cursor-pointer disabled:opacity-50 flex items-center gap-1 mx-auto">
+                            <ShoppingCart size={10} />{busy ? "..." : "리스트에 추가"}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+                {lowStockFiltered.length === 0 && (
+                  <tr><td colSpan={8} className="p-6 text-center text-slate-300">검색 결과 없음</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          </>
+        )}
+        </>)}
+      </section>
+      )}
+      {/* ── 사입(OCR거래명세서 등록) 탭 · 거래명세서 OCR 컨텐츠만 임베드 (헤더 X) ── */}
       {topTab === "receipt" && (
         <div className="flex-1 flex flex-col min-h-0 -mt-1">
           <OcrPage
@@ -639,13 +738,44 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           />
         </div>
       )}
+      {/* ── 공급사관리 탭 · VendorListEditor + 대시보드/원본데이터 pill (재고관리 스타일) ── */}
+      {topTab === "vendor" && (
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex items-center gap-2 flex-wrap mb-3">
+            <Building2 size={18} className="text-teal-600 shrink-0" />
+            <h2 className="text-lg font-black text-slate-800">공급사관리</h2>
+            <span className="text-[11px] font-semibold text-slate-400 hidden sm:inline">사업자등록번호 · 담당자 정보 관리</span>
+            <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5 ml-1">
+              <button onClick={() => setVendorPageTab("dashboard")}
+                className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                  vendorPageTab === "dashboard"
+                    ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                }`}>대시보드</button>
+              <button onClick={() => setVendorPageTab("raw")}
+                className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
+                  vendorPageTab === "raw"
+                    ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                }`}>원본 데이터</button>
+            </div>
+          </div>
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">공급사관리 로딩 중...</div>}>
+            <VendorListEditor
+              mode={vendorPageTab}
+              initialSelectedId={vendorPreselectId}
+              onEditRequest={(id) => { setVendorPreselectId(id); setVendorPageTab("dashboard"); }}
+            />
+          </Suspense>
+        </div>
+      )}
       {/* ── (기존 입고 목록 UI · 참조용 · 표시 안 함) ── */}
       {false && (
         <section className="flex flex-col gap-3 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <Truck size={18} className="text-emerald-500" />
-              <h2 className="text-sm font-black text-slate-800">입고확인 목록</h2>
+              <h2 className="text-sm font-black text-slate-800">사입(OCR거래명세서 등록) 목록</h2>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">{receipts.length}건</span>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -960,131 +1090,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         </>)}
       </section>
 
-      {/* 발주 필요 상품 (테이블 헤더 · 검색) */}
-      <section className="flex flex-col gap-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <button onClick={() => setLowStockCollapsed(!lowStockCollapsed)} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-1 py-0.5 transition" title={lowStockCollapsed ? "펼치기" : "접기"}>
-            <span className={`text-slate-400 text-xs transition-transform ${lowStockCollapsed ? "" : "rotate-90"}`}>▶</span>
-            <Package size={16} className="text-amber-500" />
-            <h2 className="text-sm font-black text-slate-800">발주 필요 상품</h2>
-            <span className="text-[10px] text-slate-500 font-normal">(현재고 &lt; 적정재고)</span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">{lowStock.length}개</span>
-          </button>
-          <div className="flex items-center gap-1.5">
-            <input
-              type="text"
-              value={lowStockSearch}
-              onChange={e => setLowStockSearch(e.target.value)}
-              placeholder="상품·코드·공급사 검색"
-              className="text-[11px] border border-slate-200 rounded-lg px-2 py-1 w-40 focus:outline-none focus:border-amber-400"
-            />
-            <button onClick={loadProducts} disabled={productsLoading} className="text-[11px] font-bold text-slate-500 border border-slate-200 rounded-lg px-2 py-1 hover:bg-slate-50 cursor-pointer flex items-center gap-1">
-              <RefreshCw size={12} className={productsLoading ? "animate-spin" : ""} />
-            </button>
-          </div>
-        </div>
-        {!lowStockCollapsed && (<>
-        {productsLoading ? (
-          <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-amber-400" /></div>
-        ) : lowStock.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-gray-300 border-t border-b border-slate-200 bg-white">
-            <Package size={28} className="mb-2" /><p className="text-sm font-bold text-gray-400">발주 필요 상품이 없습니다</p>
-          </div>
-        ) : (
-          <>
-          <div className="px-3 pt-1.5 pb-0.5 flex items-center gap-2 border-t border-slate-100 bg-white">
-            <span className="text-[11px] font-black text-slate-600">발주필요 리스트</span>
-            <span className="text-[10px] font-mono text-slate-400">({lowStockFiltered.length}건)</span>
-          </div>
-          <div className="border-t border-b border-slate-200 overflow-auto max-h-[280px]">
-            <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-white z-10">
-                <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
-                  <th className="text-left px-1 py-1.5 w-24">공급사</th>
-                  <th className="text-left px-1 py-1.5 w-20">담당자</th>
-                  <th className="text-left px-1 py-1.5 min-w-[120px]">상품명</th>
-                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/60"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[9px] text-slate-400 font-normal">(현재고)</span></div></th>
-                  <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/60 text-violet-500">실재고</th>
-                  <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/60">적정</th>
-                  <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/60 text-rose-500">부족</th>
-                  <th className="text-center px-0.5 py-1.5 w-14">발주</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {lowStockFiltered.map(p => {
-                  const cur = Number(p.current_stock), opt = Number(p.optimal_stock);
-                  const code = getCode(p);
-                  const name = getName(p);
-                  const inv = invStockMap.get(code);
-                  const vendor = p.supplier ? findVendor(p.supplier) : undefined;
-                  const contactName = vendor?.contact_name || (p as any).supplier_contact || "-";
-                  const alreadyRequested = requestedCodes.has(code);
-                  const busy = requestingOrder.has(code);
-                  return (
-                    <tr key={code} className="hover:bg-orange-50/30 transition">
-                      <td className="px-1 py-1.5 text-[11px] text-sky-600 font-semibold break-words whitespace-normal align-top">{p.supplier || "-"}</td>
-                      <td className="px-1 py-1.5 text-[11px] text-slate-600 break-words whitespace-normal align-top">
-                        {vendor ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const rect = (e.target as HTMLElement).getBoundingClientRect();
-                              setContactPopover({ anchor: rect, name: contactName, phone: vendor.phone, email: vendor.email });
-                            }}
-                            className="hover:text-indigo-700 hover:underline cursor-pointer text-left w-full"
-                            title="클릭 시 전화·이메일 표시"
-                          >{contactName}</button>
-                        ) : (
-                          <span>{contactName}</span>
-                        )}
-                      </td>
-                      <td className="px-1 py-1.5 align-top">
-                        <button
-                          onClick={() => setDetailProduct({ code, name })}
-                          className="text-left text-[12px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
-                          title="상품 상세정보 조회"
-                        >{name || "(상품명 없음)"}</button>
-                      </td>
-                      <td className="text-right px-0.5 py-1.5 font-mono font-bold text-[11px] text-slate-700 bg-slate-50/40 align-top">{cur}</td>
-                      <td
-                        className={`text-right px-0.5 py-1.5 font-mono font-black text-[11px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
-                        title={inv ? `창고 ${inv.warehouse ?? "-"} + 매장 ${inv.store ?? "-"} = ${inv.total}` : "실재고 미입력"}
-                      >
-                        {inv ? inv.total : "—"}
-                        {inv && (
-                          <span className="block text-[9px] font-normal text-slate-400 leading-none mt-0.5">
-                            창{inv.warehouse ?? "-"}·매{inv.store ?? "-"}
-                          </span>
-                        )}
-                      </td>
-                      <td className="text-right px-0.5 py-1.5 font-mono font-bold text-[11px] text-slate-700 bg-slate-50/40 align-top">{opt}</td>
-                      <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
-                        <span className="font-mono font-black text-[11px] text-rose-600">-{opt - cur}</span>
-                      </td>
-                      <td className="text-center px-0.5 py-1.5 align-top">
-                        {alreadyRequested ? (
-                          <button onClick={() => handleRequestOrder(p)} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg cursor-pointer hover:bg-emerald-100 transition">요청됨</button>
-                        ) : (
-                          <button onClick={() => handleRequestOrder(p)} disabled={busy}
-                            className="text-[10px] font-bold text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded-lg transition cursor-pointer disabled:opacity-50 flex items-center gap-1 mx-auto">
-                            <ShoppingCart size={10} />{busy ? "..." : "리스트에 추가"}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-                {lowStockFiltered.length === 0 && (
-                  <tr><td colSpan={8} className="p-6 text-center text-slate-300">검색 결과 없음</td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          </>
-        )}
-        </>)}
-      </section>
       </>)}
 
       {/* 발주서 (Purchase Order) 모달 — 표준 발주 포맷 */}

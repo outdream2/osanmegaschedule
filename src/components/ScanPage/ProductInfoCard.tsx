@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info, EyeOff, Eye } from "lucide-react";
+import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info, EyeOff, Eye, TrendingUp } from "lucide-react";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
 import { StockCounterModal } from "../StockCounterModal";
@@ -371,17 +371,17 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
   return (
     <>
-      <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+      <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
         {/* 상품명 */}
         {S.header && (<>
-          <div className="flex items-start justify-between gap-2 mb-1">
-            <p className="text-[11px] font-bold text-gray-400 uppercase tracking-wide">상품 정보</p>
+          <div className="flex items-start justify-between gap-2 mb-0.5">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">상품 정보</p>
             <button
               type="button"
               onClick={toggleHidden}
               disabled={hideSaving}
               title={isHidden ? "숨김 해제 · 검색·발주 리스트에 다시 표시" : "이 상품 숨김 · 검색·발주 리스트에서 제외"}
-              className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-black px-2 py-1 rounded-lg border transition cursor-pointer ${
+              className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg border transition cursor-pointer ${
                 isHidden
                   ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100"
                   : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-700"
@@ -391,81 +391,71 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               {isHidden ? "숨김 해제" : "숨기기"}
             </button>
           </div>
-          <div className="flex items-center gap-2 mb-3">
-            <p className="text-lg font-black text-gray-900 leading-tight">{product.name}</p>
+          <div className="flex items-center gap-2 mb-2">
+            <p className="text-base font-black text-gray-900 leading-tight">{product.name}</p>
             {isHidden && (
               <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300 whitespace-nowrap">
                 숨김
               </span>
             )}
           </div>
-          {hideError && <p className="text-[10px] text-rose-600 mb-2 -mt-2">{hideError}</p>}
+          {hideError && <p className="text-[10px] text-rose-600 mb-1.5 -mt-1.5">{hideError}</p>}
         </>)}
 
-        {/* ── 배정 구역: 전산 카드 | 실제 카드 나란히 ── */}
+        {/* ── 배정 구역: 전산/실제 인라인 ── */}
         {S.zoneAssignment && (<>
-        <div className="flex gap-2 mb-3">
-          {/* 전산배치구역 카드 */}
-          <div className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-3 py-3">
-            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">전산배치구역</p>
-            <p className="text-sm font-black text-gray-800 leading-tight">{specZone}</p>
+        <div className="flex items-center gap-1.5 mb-2 px-2.5 py-2 rounded-xl border border-gray-200 bg-gray-50/60">
+          {/* 전산배치구역 */}
+          <div className="min-w-0 flex-1">
+            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide leading-none mb-0.5">전산</p>
+            <p className="text-sm font-black text-gray-800 leading-tight truncate">{specZone}</p>
           </div>
 
           {/* 화살표 */}
-          <div className="flex items-center shrink-0">
-            <ArrowRight size={16} className={hasMismatch ? "text-orange-400" : "text-gray-300"} />
+          <ArrowRight size={13} className={`shrink-0 ${hasMismatch ? "text-orange-400" : "text-gray-300"}`} />
+
+          {/* 실제배치구역 */}
+          <div className={`min-w-0 flex-1 rounded-lg px-2 py-1 ${
+            hasMismatch ? "bg-orange-50" : realMap ? "bg-teal-50" : "bg-white border border-dashed border-gray-300"
+          }`}>
+            <p className={`text-[9px] font-bold uppercase tracking-wide leading-none mb-0.5 ${
+              hasMismatch ? "text-orange-500" : realMap ? "text-teal-600" : "text-gray-400"
+            }`}>실제</p>
+            {realMap ? (
+              <p className={`text-sm font-black leading-tight truncate ${hasMismatch ? "text-red-500" : "text-teal-700"}`}>{realMap}</p>
+            ) : (
+              <p className="text-xs text-gray-400">미등록</p>
+            )}
           </div>
 
-          {/* 실제배치구역 카드 */}
-          <div className={`flex-1 rounded-xl border px-3 py-3 ${
-            hasMismatch
-              ? "bg-orange-50 border-orange-300"
-              : realMap
-              ? "bg-teal-50 border-teal-300"
-              : "bg-white border-dashed border-gray-300"
-          }`}>
-            <div className="flex items-start justify-between gap-1">
-              <div className="min-w-0">
-                <p className={`text-[9px] font-bold uppercase tracking-wide mb-1.5 ${
-                  hasMismatch ? "text-orange-500" : realMap ? "text-teal-600" : "text-gray-400"
-                }`}>실제배치구역</p>
-                {realMap ? (
-                  <p className={`text-sm font-black leading-tight ${hasMismatch ? "text-red-500" : "text-teal-700"}`}>
-                    {realMap}
-                  </p>
-                ) : (
-                  <p className="text-xs text-gray-400">미등록</p>
-                )}
-              </div>
-              <button
-                onClick={() => setMapSelectorOpen(true)}
-                disabled={saving}
-                className={`shrink-0 flex items-center gap-0.5 px-2 py-1 rounded-lg border text-[10px] font-bold transition cursor-pointer ${
-                  realMap
-                    ? "bg-white border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600"
-                    : "bg-teal-500 border-teal-600 text-white hover:bg-teal-600"
-                }`}
-              >
-                {saving ? <Loader2 size={10} className="animate-spin" /> : <Pencil size={10} />}
-                {saving ? "" : realMap ? "변경" : "등록"}
-              </button>
-            </div>
-          </div>
+          {/* 변경/등록 버튼 */}
+          <button
+            onClick={() => setMapSelectorOpen(true)}
+            disabled={saving}
+            className={`shrink-0 flex items-center gap-0.5 px-2 py-1.5 rounded-lg border text-[10px] font-bold transition cursor-pointer ${
+              realMap
+                ? "bg-white border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600"
+                : "bg-teal-500 border-teal-600 text-white hover:bg-teal-600"
+            }`}
+          >
+            {saving ? <Loader2 size={10} className="animate-spin" /> : <Pencil size={10} />}
+            {saving ? "" : realMap ? "변경" : "등록"}
+          </button>
         </div>
 
         </>)}
         {/* 불일치 경고 / 저장 오류 */}
         {S.zoneAssignment && (hasMismatch || saveError) && (
-          <div className="flex flex-col gap-1 mb-3">
+          <div className="flex flex-col gap-1 mb-2">
             {hasMismatch && (
-              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 border border-orange-200 rounded-lg">
-                <AlertTriangle size={11} className="text-orange-500 shrink-0" />
+              <div className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-50 border border-orange-200 rounded-lg">
+                <AlertTriangle size={10} className="text-orange-500 shrink-0" />
                 <p className="text-[10px] font-bold text-orange-600">전산배치구역과 실제배치구역이 다릅니다</p>
               </div>
             )}
             {saveError && (
-              <div className="flex items-start gap-1.5 px-3 py-2 bg-red-50 border border-red-200 rounded-lg">
-                <AlertTriangle size={11} className="text-red-500 shrink-0 mt-0.5" />
+              <div className="flex items-start gap-1.5 px-2.5 py-1.5 bg-red-50 border border-red-200 rounded-lg">
+                <AlertTriangle size={10} className="text-red-500 shrink-0 mt-0.5" />
                 <p className="text-[10px] font-bold text-red-600 whitespace-pre-wrap">{saveError}</p>
               </div>
             )}
@@ -474,20 +464,19 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
         {/* ── 재고 현황 섹션 (적정재고 인라인 편집 가능) ── */}
         {S.stockStatus && (
-        <div className={`rounded-xl border px-4 py-3 mb-4 ${
+        <div className={`rounded-xl border px-3 py-2 mb-2.5 ${
           isLow ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"
         }`}>
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-2">재고 현황</p>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4">
             <div>
-              <p className="text-[10px] font-bold text-gray-500 mb-0.5">현재고 (ERP)</p>
-              <p className={`text-xl font-black leading-none ${isLow ? "text-red-500" : "text-gray-800"}`}>
+              <p className="text-[9px] font-bold text-gray-500 leading-none mb-0.5">현재고 (ERP)</p>
+              <p className={`text-lg font-black leading-none ${isLow ? "text-red-500" : "text-gray-800"}`}>
                 {cur ?? "-"}
               </p>
             </div>
-            <div className={`h-10 w-px ${isLow ? "bg-red-200" : "bg-amber-200"}`} />
+            <div className={`h-8 w-px ${isLow ? "bg-red-200" : "bg-amber-200"}`} />
             <div className="min-w-0">
-              <p className="text-[10px] font-bold text-amber-600 mb-0.5 flex items-center gap-1">
+              <p className="text-[9px] font-bold text-amber-600 leading-none mb-0.5 flex items-center gap-1">
                 적정재고 {inlineEditEnabled && <span className="text-[8px] text-amber-400">(클릭 편집)</span>}
               </p>
               {editingKey === "optimal_stock" ? (
@@ -499,20 +488,20 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                     onKeyDown={e => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
                     disabled={editSaving}
                     autoFocus
-                    className="w-20 text-2xl font-black border-2 border-amber-500 rounded px-1.5 py-0.5 focus:outline-none"
+                    className="w-16 text-lg font-black border-2 border-amber-500 rounded px-1.5 py-0.5 focus:outline-none"
                   />
-                  <button onClick={commitEdit} disabled={editSaving} className="shrink-0 w-7 h-7 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 disabled:opacity-40 cursor-pointer">
-                    {editSaving ? <Loader2 size={13} className="animate-spin" /> : <Check size={14} />}
+                  <button onClick={commitEdit} disabled={editSaving} className="shrink-0 w-6 h-6 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 disabled:opacity-40 cursor-pointer">
+                    {editSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={12} />}
                   </button>
-                  <button onClick={cancelEdit} disabled={editSaving} className="shrink-0 w-7 h-7 rounded bg-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-300 disabled:opacity-40 cursor-pointer">
-                    <X size={14} />
+                  <button onClick={cancelEdit} disabled={editSaving} className="shrink-0 w-6 h-6 rounded bg-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-300 disabled:opacity-40 cursor-pointer">
+                    <X size={12} />
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={() => inlineEditEnabled && startEdit("optimal_stock", opt)}
                   disabled={!inlineEditEnabled}
-                  className={`text-xl font-black leading-none text-amber-700 ${inlineEditEnabled ? "hover:bg-amber-100 rounded px-1 -mx-1 cursor-pointer transition" : "cursor-default"}`}
+                  className={`text-lg font-black leading-none text-amber-700 ${inlineEditEnabled ? "hover:bg-amber-100 rounded px-1 -mx-1 cursor-pointer transition" : "cursor-default"}`}
                 >
                   {opt ?? "-"}
                 </button>
@@ -521,13 +510,13 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                 <p className="text-[10px] text-red-500 mt-0.5">{editError}</p>
               )}
             </div>
+            {isLow && (
+              <div className="ml-auto flex items-center gap-1">
+                <AlertTriangle size={10} className="text-red-500 shrink-0" />
+                <p className="text-[10px] font-bold text-red-600 whitespace-nowrap">재고 부족</p>
+              </div>
+            )}
           </div>
-          {isLow && (
-            <div className="flex items-center gap-1 mt-2">
-              <AlertTriangle size={11} className="text-red-500 shrink-0" />
-              <p className="text-[10px] font-bold text-red-600">재고 부족 — 보충이 필요합니다</p>
-            </div>
-          )}
         </div>
         )}
 
@@ -537,40 +526,40 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           const totalActual = Number(warehouseStock || 0) + Number(storeStock || 0);
           const diff = hasInput && cur != null ? totalActual - cur : null;
           return (
-            <div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-3 mb-4">
-              <div className="flex items-center justify-between mb-2.5">
-                <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wide">실재고 입력 <span className="text-purple-400">(창고·매장 독립 저장)</span></p>
+            <div className="rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 mb-2.5">
+              <div className="flex items-center justify-between mb-1.5">
+                <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wide">실재고 입력</p>
                 <button
                   onClick={() => setStockCounterOpen(true)}
-                  className="flex items-center gap-1 px-2.5 py-1 bg-green-500 hover:bg-green-600 text-white text-[10px] font-bold rounded-lg transition cursor-pointer shadow-sm"
+                  className="flex items-center gap-1 px-2 py-0.5 bg-green-500 hover:bg-green-600 text-white text-[10px] font-bold rounded-lg transition cursor-pointer shadow-sm"
                 >
-                  <ScanLine size={11} />
+                  <ScanLine size={10} />
                   재고 세기
                 </button>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className="grid grid-cols-2 gap-1.5 mb-1.5">
                 {/* 창고 */}
-                <div className="bg-white rounded-xl border border-cyan-200 p-2.5">
+                <div className="bg-white rounded-xl border border-cyan-200 p-2">
                   <p className="text-[10px] font-bold text-cyan-600 mb-1 flex items-center gap-1"><Warehouse size={10} />창고</p>
                   <input
                     type="number" min="0"
                     value={warehouseStock}
                     onChange={e => { setWarehouseStock(e.target.value === "" ? "" : Number(e.target.value)); setWhStatus("idle"); }}
-                    className="w-full text-base font-black text-center bg-cyan-50/50 border border-cyan-200 rounded-lg px-2 py-1 outline-none focus:border-cyan-400 transition"
+                    className="w-full text-sm font-black text-center bg-cyan-50/50 border border-cyan-200 rounded-lg px-2 py-1 outline-none focus:border-cyan-400 transition"
                     placeholder="—"
                   />
                   {whStatus === "done" ? (
-                    <div className="mt-1.5 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
-                      <CheckCircle2 size={11} /> 창고 저장됨
+                    <div className="mt-1 flex items-center justify-center gap-1 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
+                      <CheckCircle2 size={10} /> 창고 저장됨
                     </div>
                   ) : (
                     <button
                       onClick={handleWarehouseSubmit}
                       disabled={whStatus === "loading" || warehouseStock === ""}
-                      className="mt-1.5 w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-black transition cursor-pointer disabled:opacity-40 shadow-sm bg-cyan-500 hover:bg-cyan-600 text-white"
+                      className="mt-1 w-full flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-black transition cursor-pointer disabled:opacity-40 shadow-sm bg-cyan-500 hover:bg-cyan-600 text-white"
                     >
-                      {whStatus === "loading" ? <Loader2 size={11} className="animate-spin" /> : <ClipboardCheck size={11} />}
+                      {whStatus === "loading" ? <Loader2 size={10} className="animate-spin" /> : <ClipboardCheck size={10} />}
                       {whStatus === "loading" ? "저장 중..." : whStatus === "error" ? "재시도" : "창고 저장"}
                     </button>
                   )}
@@ -580,26 +569,26 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                 </div>
 
                 {/* 매장 */}
-                <div className="bg-white rounded-xl border border-violet-200 p-2.5">
+                <div className="bg-white rounded-xl border border-violet-200 p-2">
                   <p className="text-[10px] font-bold text-violet-600 mb-1 flex items-center gap-1"><Store size={10} />매장</p>
                   <input
                     type="number" min="0"
                     value={storeStock}
                     onChange={e => { setStoreStock(e.target.value === "" ? "" : Number(e.target.value)); setStStatus("idle"); }}
-                    className="w-full text-base font-black text-center bg-violet-50/50 border border-violet-200 rounded-lg px-2 py-1 outline-none focus:border-violet-400 transition"
+                    className="w-full text-sm font-black text-center bg-violet-50/50 border border-violet-200 rounded-lg px-2 py-1 outline-none focus:border-violet-400 transition"
                     placeholder="—"
                   />
                   {stStatus === "done" ? (
-                    <div className="mt-1.5 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[11px] font-bold">
-                      <CheckCircle2 size={11} /> 매장 저장됨
+                    <div className="mt-1 flex items-center justify-center gap-1 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
+                      <CheckCircle2 size={10} /> 매장 저장됨
                     </div>
                   ) : (
                     <button
                       onClick={handleStoreSubmit}
                       disabled={stStatus === "loading" || storeStock === ""}
-                      className="mt-1.5 w-full flex items-center justify-center gap-1 py-1.5 rounded-lg text-[11px] font-black transition cursor-pointer disabled:opacity-40 shadow-sm bg-violet-500 hover:bg-violet-600 text-white"
+                      className="mt-1 w-full flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-black transition cursor-pointer disabled:opacity-40 shadow-sm bg-violet-500 hover:bg-violet-600 text-white"
                     >
-                      {stStatus === "loading" ? <Loader2 size={11} className="animate-spin" /> : <ClipboardCheck size={11} />}
+                      {stStatus === "loading" ? <Loader2 size={10} className="animate-spin" /> : <ClipboardCheck size={10} />}
                       {stStatus === "loading" ? "저장 중..." : stStatus === "error" ? "재시도" : "매장 저장"}
                     </button>
                   )}
@@ -610,7 +599,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               </div>
 
               {hasInput && (
-                <div className="flex items-center justify-between text-[11px] font-bold px-1">
+                <div className="flex items-center justify-between text-[10px] font-bold px-0.5">
                   <span className="text-purple-700">합계: {totalActual}개</span>
                   {diff != null && (
                     <span className={diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-600" : "text-gray-500"}>
@@ -630,11 +619,11 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           const margin = sp != null && pp != null && sp > 0 ? ((sp - pp) / sp * 100).toFixed(1) : null;
           const stockAsset = pp != null && cur != null ? (pp * cur).toLocaleString() + "원" : null;
           return (
-            <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 px-4 py-3 mb-4">
-              <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wide mb-2 flex items-center gap-1">
-                <DollarSign size={11}/>매입 · 판매가
+            <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 px-3 py-2 mb-2.5">
+              <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+                <DollarSign size={10}/>매입 · 판매가
               </p>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2">
                 <InlineField label="매입가" fieldKey="purchase_price" value={pp} type="number" accent="emerald" format={v => Number(v).toLocaleString() + "원"} />
                 <InlineField label="판매가" fieldKey="sale_price" value={sp} type="number" accent="indigo" format={v => Number(v).toLocaleString() + "원"} />
                 {margin != null && (
@@ -656,10 +645,10 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
         {/* ── 발주요청 버튼 ── */}
         {S.orderRequest && (
-        <div className="mb-4">
+        <div className="mb-2.5">
           {existingOrder && orderStatus !== "done" && (
-            <div className="flex items-center gap-2 px-3 py-2 mb-2 bg-orange-50 border border-orange-200 rounded-xl text-[11px] text-orange-700 font-bold">
-              <ShoppingCart size={11} className="shrink-0" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 mb-1.5 bg-orange-50 border border-orange-200 rounded-xl text-[10px] text-orange-700 font-bold">
+              <ShoppingCart size={10} className="shrink-0" />
               <span>기존 발주요청 있음 — 현재고 {existingOrder.current_stock ?? "—"} ({new Date(existingOrder.requested_at).toLocaleDateString("ko-KR")} 요청)</span>
             </div>
           )}
@@ -670,23 +659,23 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               <button onClick={() => setOrderConfirm(false)} className="text-[11px] font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition cursor-pointer">취소</button>
             </div>
           ) : orderStatus === "done" ? (
-            <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold">
-              <CheckCircle2 size={15} />
+            <div className="flex items-center justify-center gap-2 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold">
+              <CheckCircle2 size={14} />
               발주 요청이 등록되었습니다
             </div>
           ) : (
             <button
               onClick={handleOrderRequest}
               disabled={orderStatus === "loading"}
-              className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition cursor-pointer disabled:opacity-60 ${
+              className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-bold transition cursor-pointer disabled:opacity-60 ${
                 isLow
                   ? "bg-red-500 hover:bg-red-600 text-white shadow-sm shadow-red-200"
                   : "bg-white border border-gray-300 hover:border-indigo-400 hover:text-indigo-600 text-gray-600"
               }`}
             >
               {orderStatus === "loading"
-                ? <Loader2 size={15} className="animate-spin" />
-                : <ShoppingCart size={15} />}
+                ? <Loader2 size={14} className="animate-spin" />
+                : <ShoppingCart size={14} />}
               {orderStatus === "loading" ? "요청 중..." : orderStatus === "error" ? "재시도" : existingOrder ? "발주요청 리스트 업데이트" : "발주요청 리스트에 추가"}
             </button>
           )}
@@ -696,78 +685,82 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         </div>
         )}
 
-        {/* ── 기타 정보 그리드 (상품코드·공급처·판매상태·최근매입일) ── */}
-        {S.productMeta && (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3 mb-4">
-          {([
-            ["상품코드", product.code, "font-mono text-xs"],
-            ["공급처", product.supplier ?? "-", ""],
-            ["판매상태", product.sale_status ?? "-", ""],
-            ["최근매입일", product.last_purchase_date ?? "-", ""],
-          ] as [string, string, string][]).map(([label, value, extra]) => (
-            <div key={label}>
-              <p className="text-[10px] font-bold text-gray-400 mb-0.5">{label}</p>
-              <p className={`text-sm font-semibold text-gray-800 truncate ${extra}`}>{value}</p>
-            </div>
-          ))}
-        </div>
-        )}
-
-        {/* ── 추가 상품 정보 (신규 · 브랜드·제조사·바코드·유효기간·메모 · 인라인 편집) ── */}
-        {S.extraInfo && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50/40 px-4 py-3">
-          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-2 flex items-center gap-1">
-            <Info size={11}/>추가 상품 정보
-          </p>
-          <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-            <InlineField label="브랜드" fieldKey="brand" value={(product as any).brand} />
-            <InlineField label="제조사" fieldKey="manufacturer" value={(product as any).manufacturer} />
-            <InlineField label="바코드" fieldKey="barcode" value={(product as any).barcode} />
-            <InlineField label="유효기간" fieldKey="expiry_date" value={(product as any).expiry_date} type="date" />
-          </div>
-          <div className="mt-3">
-            <p className="text-[10px] font-bold text-gray-400 mb-0.5">메모</p>
-            {editingKey === "memo" ? (
-              <div className="flex flex-col gap-1">
-                <textarea
-                  value={editingValue}
-                  onChange={e => setEditingValue(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Escape") cancelEdit(); }}
-                  disabled={editSaving}
-                  autoFocus
-                  rows={2}
-                  className="w-full text-sm border-2 border-indigo-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-100 resize-none"
-                />
-                <div className="flex items-center gap-1 justify-end">
-                  <button onClick={commitEdit} disabled={editSaving} className="text-[11px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
-                    {editSaving ? <Loader2 size={11} className="animate-spin"/> : <Check size={11}/>}저장
-                  </button>
-                  <button onClick={cancelEdit} disabled={editSaving} className="text-[11px] font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
-                    <X size={11}/>취소
-                  </button>
+        {/* ── 기타 정보 그리드 (상품코드·공급처·판매상태·최근매입일) + 추가 정보 통합 ── */}
+        {(S.productMeta || S.extraInfo) && (
+        <div className="rounded-xl border border-slate-200 bg-slate-50/30 px-3 py-2 mb-2.5">
+          {S.productMeta && (
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 mb-2">
+              {([
+                ["상품코드", product.code, "font-mono text-xs"],
+                ["공급처", product.supplier ?? "-", ""],
+                ["판매상태", product.sale_status ?? "-", ""],
+                ["최근매입일", product.last_purchase_date ?? "-", ""],
+              ] as [string, string, string][]).map(([label, value, extra]) => (
+                <div key={label}>
+                  <p className="text-[10px] font-bold text-gray-400 mb-0.5">{label}</p>
+                  <p className={`text-sm font-semibold text-gray-800 truncate ${extra}`}>{value}</p>
                 </div>
-                {editError && <p className="text-[10px] text-red-500">{editError}</p>}
-              </div>
-            ) : (
-              <div className="flex items-start gap-1 group">
-                <p className={`text-sm text-slate-700 flex-1 whitespace-pre-wrap ${!(product as any).memo ? "text-slate-300 italic" : ""}`}>
-                  {(product as any).memo || "(메모 없음)"}
-                </p>
-                {inlineEditEnabled && (
-                  <button
-                    onClick={() => startEdit("memo", (product as any).memo)}
-                    className="shrink-0 opacity-0 group-hover:opacity-100 w-5 h-5 rounded hover:bg-slate-100 text-slate-400 hover:text-indigo-600 flex items-center justify-center transition cursor-pointer"
-                    title="메모 편집"
-                  >
-                    <Pencil size={10}/>
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
+          {S.productMeta && S.extraInfo && <div className="border-t border-slate-200 mb-2" />}
+          {S.extraInfo && (<>
+            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 flex items-center gap-1">
+              <Info size={10}/>추가 정보
+            </p>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+              <InlineField label="브랜드" fieldKey="brand" value={(product as any).brand} />
+              <InlineField label="제조사" fieldKey="manufacturer" value={(product as any).manufacturer} />
+              <InlineField label="바코드" fieldKey="barcode" value={(product as any).barcode} />
+              <InlineField label="유효기간" fieldKey="expiry_date" value={(product as any).expiry_date} type="date" />
+            </div>
+            <div className="mt-2">
+              <p className="text-[10px] font-bold text-gray-400 mb-0.5">메모</p>
+              {editingKey === "memo" ? (
+                <div className="flex flex-col gap-1">
+                  <textarea
+                    value={editingValue}
+                    onChange={e => setEditingValue(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Escape") cancelEdit(); }}
+                    disabled={editSaving}
+                    autoFocus
+                    rows={2}
+                    className="w-full text-sm border-2 border-indigo-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-100 resize-none"
+                  />
+                  <div className="flex items-center gap-1 justify-end">
+                    <button onClick={commitEdit} disabled={editSaving} className="text-[11px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
+                      {editSaving ? <Loader2 size={11} className="animate-spin"/> : <Check size={11}/>}저장
+                    </button>
+                    <button onClick={cancelEdit} disabled={editSaving} className="text-[11px] font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
+                      <X size={11}/>취소
+                    </button>
+                  </div>
+                  {editError && <p className="text-[10px] text-red-500">{editError}</p>}
+                </div>
+              ) : (
+                <div className="flex items-start gap-1 group">
+                  <p className={`text-sm text-slate-700 flex-1 whitespace-pre-wrap ${!(product as any).memo ? "text-slate-300 italic" : ""}`}>
+                    {(product as any).memo || "(메모 없음)"}
+                  </p>
+                  {inlineEditEnabled && (
+                    <button
+                      onClick={() => startEdit("memo", (product as any).memo)}
+                      className="shrink-0 opacity-0 group-hover:opacity-100 w-5 h-5 rounded hover:bg-slate-100 text-slate-400 hover:text-indigo-600 flex items-center justify-center transition cursor-pointer"
+                      title="메모 편집"
+                    >
+                      <Pencil size={10}/>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </>)}
         </div>
         )}
       </div>
+
+      {/* ─── 매입 이력 (2026-07-15) · purchase_details 조회 · 이 상품의 최근 매입 20건 ─── */}
+      <PurchaseHistorySection productCode={product.code} />
 
       {mapSelectorOpen && (
         <RealMapSelector
@@ -784,5 +777,80 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         />
       )}
     </>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// 매입 이력 섹션 (2026-07-15) · purchase_details 조회 · 최근 20건 매입 · 총합
+// ═══════════════════════════════════════════════════════════════════════
+const PurchaseHistorySection: React.FC<{ productCode: string }> = ({ productCode }) => {
+  const [rows, setRows] = useState<Array<{ purchase_date: string; supplier_name: string | null; quantity: number; amount: number; total: number; unit_price: number }>>([]);
+  const [loading, setLoading] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  useEffect(() => {
+    if (!productCode) return;
+    setLoading(true);
+    fetch(`/api/purchase-details?product_code=${encodeURIComponent(productCode)}&limit=200`)
+      .then(r => r.ok ? r.json() : { rows: [] })
+      .then(j => setRows(Array.isArray(j.rows) ? j.rows : []))
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  }, [productCode]);
+  const fmt = (n: number) => n.toLocaleString();
+  const fmtWon = (n: number) => n >= 1_0000_0000 ? `${(n/1_0000_0000).toFixed(1)}억` : n >= 10000 ? `${(n/10000).toFixed(1)}만` : `${n.toLocaleString()}원`;
+  const totalQty = rows.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
+  const totalAmt = rows.reduce((s, r) => s + (Number(r.total ?? r.amount) || 0), 0);
+  return (
+    <div className="mt-3 border-t border-slate-200 pt-3">
+      <button
+        type="button"
+        onClick={() => setCollapsed(c => !c)}
+        className="w-full flex items-center gap-2 pb-2 text-left hover:bg-slate-50 -mx-2 px-2 py-1 rounded transition cursor-pointer"
+      >
+        <TrendingUp size={12} className="text-emerald-600" />
+        <span className="text-xs font-black text-slate-700">매입 이력</span>
+        {loading ? (
+          <span className="text-[10px] text-slate-400"><Loader2 size={10} className="inline animate-spin mr-1"/>로딩...</span>
+        ) : rows.length === 0 ? (
+          <span className="text-[10px] text-slate-400 italic">이력 없음</span>
+        ) : (
+          <span className="text-[10px] font-mono text-slate-500">
+            {rows.length}건 · 총 {fmt(totalQty)}개 · <span className="text-emerald-700 font-black">{fmtWon(totalAmt)}</span>
+          </span>
+        )}
+        <span className={`ml-auto text-slate-400 text-xs transition-transform ${collapsed ? "" : "rotate-180"}`}>▲</span>
+      </button>
+      {!collapsed && rows.length > 0 && (
+        <div className="overflow-auto max-h-48 border border-slate-200 rounded-lg">
+          <table className="w-full text-[11px]">
+            <thead className="sticky top-0 bg-slate-50 border-b border-slate-200">
+              <tr className="text-slate-500 text-[9px] uppercase">
+                <th className="text-left px-2 py-1">매입일</th>
+                <th className="text-left px-2 py-1">공급사</th>
+                <th className="text-right px-2 py-1 w-14">수량</th>
+                <th className="text-right px-2 py-1 w-16">단가</th>
+                <th className="text-right px-2 py-1 w-20">금액</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.slice(0, 20).map((r, i) => (
+                <tr key={i} className="hover:bg-emerald-50/30">
+                  <td className="px-2 py-1 font-mono text-slate-600 whitespace-nowrap">{r.purchase_date}</td>
+                  <td className="px-2 py-1 text-slate-700 truncate max-w-[120px]" title={r.supplier_name ?? undefined}>{r.supplier_name ?? "-"}</td>
+                  <td className="text-right px-2 py-1 font-mono font-bold">{fmt(Number(r.quantity) || 0)}</td>
+                  <td className="text-right px-2 py-1 font-mono text-slate-500">{r.unit_price ? fmt(r.unit_price) : "-"}</td>
+                  <td className="text-right px-2 py-1 font-mono font-black text-emerald-700">{fmtWon(Number(r.total ?? r.amount) || 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {rows.length > 20 && (
+            <div className="text-[9px] text-slate-400 text-center py-1 bg-slate-50 border-t border-slate-100">
+              최근 20건만 표시 · 전체 {rows.length}건
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 };

@@ -1728,32 +1728,9 @@ function stripRepresentativeName(s: string): string {
   return remaining;
 }
 
-// ═══ 공급사에서 제외할 이름 (수신처 · 배송사 · 물류사 · 담당자 등) ═══
-// 관리 방식:
-//   1) DEFAULT_EXCLUDED_SUPPLIERS - 코드 기본값 (아래 3 카테고리)
-//   2) OCR_EXCLUDED_SUPPLIERS 환경변수 - 콤마 구분 · 기본값에 추가
-//   3) OCR_RECIPIENT_NAMES 환경변수 - 하위 호환
-//
-//   Render 설정 예:
-//     OCR_EXCLUDED_SUPPLIERS="(주)신규배송사,홍길동,ABC로지스틱스"
-//
-//   ▷ 자체 약국 (수신처): 공급받는쪽 상호
-//   ▷ 배송사 · 물류사: 공급자로 오인식되기 쉬움
-//   ▷ 수신처 담당자: 상호 근처에 사람 이름이 붙어 오추출되는 경우
-//     예 "코스트팜약국(직/최) 차인대" → "차인대" 제외로 잔여 텍스트 정리
-const DEFAULT_EXCLUDED_SUPPLIERS: string[] = [
-  // ── 자체 약국 (수신처) ──────────────────
-  "코스트팜", "코스트탐", "코스트팔", "코스트탕",
-  "Costpharm", "Costphara",
-  "메가타운",
-  // ── 배송사 · 물류사 ────────────────────
-  "(주)홈우드", "홈우드",
-  "고려택배", "한진택배", "롯데택배", "CJ대한통운", "우체국택배", "로젠택배",
-  // ── 수신처 담당자 (본인 약국 직원) ─────
-  //   OCR 이 공급사 근처로 잘못 배치해서 상호로 오인식되는 경우
-  //   사용자 상황에 맞게 env OCR_EXCLUDED_SUPPLIERS 로 추가 가능
-  "차인대",
-];
+// 공급사 제외 리스트는 별도 파일에서 관리 (2026-07-15)
+//   server/ocr/excludedSuppliers.ts 편집 시 재배포로 즉시 반영
+import { DEFAULT_EXCLUDED_SUPPLIERS, isExcludedBusinessNumber } from "./excludedSuppliers";
 
 let cachedExcludedRe: { key: string; re: RegExp | null } | null = null;
 // env 값 파싱: `|` 또는 `,` 로 구분 (주소에 콤마 있어도 안전하게 파이프 사용 권장)
@@ -2069,10 +2046,13 @@ export function extractSupplierFromRawText(rawText: string): DirectSupplierExtra
     const validFirst = digits[0] !== "0";
     const notYear = !/^20\d{2}/.test(digits);
     const notPhone = !digits.startsWith("010") && !digits.startsWith("011");
-    console.log(`[extract/사업자번호] 매치 "${bnMatch[1]}" → ${digits} · 유효길이=${validLen} · 첫자리≠0=${validFirst} · 년도아님=${notYear} · 폰번호아님=${notPhone}`);
-    if (validLen && validFirst && notYear && notPhone) {
+    const notBlacklisted = !isExcludedBusinessNumber(digits);
+    console.log(`[extract/사업자번호] 매치 "${bnMatch[1]}" → ${digits} · 유효길이=${validLen} · 첫자리≠0=${validFirst} · 년도아님=${notYear} · 폰번호아님=${notPhone} · 수신처아님=${notBlacklisted}`);
+    if (validLen && validFirst && notYear && notPhone && notBlacklisted) {
       result.supplierBizNum = digits;
       console.log(`[extract/사업자번호] ✅ 채택 ${digits}`);
+    } else if (!notBlacklisted) {
+      console.log(`[extract/사업자번호] ⚠ 수신처 사업자번호 blacklist 걸림 (excludedSuppliers.ts) → 스킵`);
     } else {
       console.log(`[extract/사업자번호] ⚠ 필터 걸림`);
     }

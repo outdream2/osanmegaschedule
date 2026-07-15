@@ -1,5 +1,5 @@
 // src/components/DisplayPage/DisplayPage.tsx
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from "react";
 import { ZONE_DEFS, ZONES_STORAGE_KEY, type ZoneSection } from "../../constants/displayZones";
 import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import {
@@ -37,8 +37,10 @@ import { ZoneCell } from "./ZoneCell";
 import { ZoneAssignPopover } from "./ZoneAssignPopover";
 import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
-import { StockManagePage } from "../StockManagePage";
-import { SalesTrendPage } from "../SalesTrendPage/SalesTrendPage";
+// A. code splitting (2026-07-15) · StockManage/SalesTrend 큰 컴포넌트 lazy 로드
+//    초기 앱 번들에서 제외 · 사용자가 해당 탭 클릭 시에만 로드
+const StockManagePage = lazy(() => import("../StockManagePage").then(m => ({ default: m.StockManagePage })));
+const SalesTrendPage = lazy(() => import("../SalesTrendPage/SalesTrendPage").then(m => ({ default: m.SalesTrendPage })));
 import { StockArrivalPage } from "../StockArrivalPage";
 import { OcrPage } from "../OcrPage";
 import OrderManagePage from "../OrderManagePage/OrderManagePage";
@@ -1444,26 +1446,22 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         // 모바일에서도 전체 라벨 유지 · 안 맞으면 가로 스크롤
         // 순서: 재고 → 판매 → 발주 → 입고알림 → 구역도(구 매장관리) → 직원관리
         // 옵션 1: 헤더는 무지개 유지 · 서브탭은 그레이톤 · 활성만 인디고 강조 → 시각 계층 명확
-        const tabs: Array<{ key: string; label: string; icon: any; visible: boolean }> = [
-          { key: "stock-manage",   label: "재고관리",     icon: Boxes,          visible: dpCanSeeStockManage },
-          { key: "sales-trend",    label: "판매추이",     icon: TrendingUp,     visible: dpCanSeeStockManage },
-          { key: "order-manage",   label: "발주관리",     icon: ClipboardList,  visible: dpCanSeeStockManage },
-          { key: "stock-arrivals", label: "입고알림",     icon: Bell,           visible: dpCanSeeStockArrivals },
-          { key: "store",          label: "구역도",       icon: Store,          visible: true },
-          { key: "staff-manage",   label: "직원관리",     icon: Users,          visible: true },
+        // 2026-07-15 · 연한 파스텔 톤 (사용자 요청 · 진한 gradient 대신 tinted bg)
+        //   active: bg-{color}-50 border border-{color}-200 text-{color}-700 (톤다운 · 시인성 유지)
+        //   inactive: text-slate-500 · hover 만 subtle bg
+        //   각 탭별 아이덴티티 색상 유지 · 촌스러운 채도 down
+        type TabDef = { key: string; label: string; icon: any; visible: boolean; activeCls: string; iconActiveCls: string; ringCls: string; hoverCls: string };
+        const tabs: Array<TabDef> = [
+          { key: "stock-manage",   label: "재고관리", icon: Boxes,         visible: dpCanSeeStockManage,   activeCls: "bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-sm", iconActiveCls: "text-emerald-600", ringCls: "focus-visible:ring-emerald-300", hoverCls: "hover:bg-emerald-50/60 hover:text-emerald-700" },
+          { key: "sales-trend",    label: "판매추이", icon: TrendingUp,    visible: dpCanSeeStockManage,   activeCls: "bg-amber-50 border border-amber-200 text-amber-700 shadow-sm",     iconActiveCls: "text-amber-600",   ringCls: "focus-visible:ring-amber-300",   hoverCls: "hover:bg-amber-50/60 hover:text-amber-700"   },
+          { key: "order-manage",   label: "발주관리", icon: ClipboardList, visible: dpCanSeeStockManage,   activeCls: "bg-sky-50 border border-sky-200 text-sky-700 shadow-sm",           iconActiveCls: "text-sky-600",     ringCls: "focus-visible:ring-sky-300",     hoverCls: "hover:bg-sky-50/60 hover:text-sky-700"       },
+          { key: "stock-arrivals", label: "입고알림", icon: Bell,          visible: dpCanSeeStockArrivals, activeCls: "bg-orange-50 border border-orange-200 text-orange-700 shadow-sm",  iconActiveCls: "text-orange-600",  ringCls: "focus-visible:ring-orange-300",  hoverCls: "hover:bg-orange-50/60 hover:text-orange-700" },
+          { key: "store",          label: "구역도",   icon: Store,         visible: true,                  activeCls: "bg-rose-50 border border-rose-200 text-rose-700 shadow-sm",        iconActiveCls: "text-rose-600",    ringCls: "focus-visible:ring-rose-300",    hoverCls: "hover:bg-rose-50/60 hover:text-rose-700"     },
+          { key: "staff-manage",   label: "직원관리", icon: Users,         visible: true,                  activeCls: "bg-indigo-50 border border-indigo-200 text-indigo-700 shadow-sm",  iconActiveCls: "text-indigo-600",  ringCls: "focus-visible:ring-indigo-300",  hoverCls: "hover:bg-indigo-50/60 hover:text-indigo-700" },
         ];
-        // 통일된 스타일 · 활성 = 인디고 그라디언트 · 비활성 = 슬레이트 그레이톤
-        const activeCls   = "bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-md";
-        const inactiveCls = "text-slate-600 hover:text-slate-900 hover:bg-white";
-        const ringCls     = "focus-visible:ring-indigo-400";
-        const iconActive  = "text-white";
+        const inactiveCls = "text-slate-500";
         const iconInactive = "text-slate-400";
         const visibleTabs = tabs.filter(t => t.visible);
-        // 모바일 한 줄 · flex-1 로 균등 분할 · 데스크탑 인라인
-        // 아이콘 위 · 라벨 아래 (세로 스택) · 반응형 유지
-        // 모바일: 균등 분할 (flex-1) · 데스크탑: 자연 폭 · 컨테이너는 가운데 정렬
-        // 모바일: 아이콘 위 · 라벨 아래 · 균등 분할
-        // 데스크탑: 아이콘 옆 · 라벨 · 왼쪽 정렬 · 큰 사이즈
         const tabBase = "flex flex-col sm:flex-row items-center sm:justify-start justify-center gap-0.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2.5 text-[11px] sm:text-[14px] font-bold whitespace-nowrap transition-all duration-150 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-offset-1 rounded-md sm:rounded-xl min-h-[48px] sm:min-h-0 active:scale-95 flex-1 sm:flex-initial sm:min-w-0";
         return (
           <div className="bg-white border-b border-slate-200/70 px-1.5 sm:px-4 w-full">
@@ -1476,10 +1474,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                     <button
                       key={t.key}
                       onClick={() => setDpSubTab(t.key as any)}
-                      className={`${tabBase} ${ringCls} ${active ? activeCls : inactiveCls}`}
+                      className={`${tabBase} ${t.ringCls} ${active ? t.activeCls : `${inactiveCls} ${t.hoverCls}`}`}
                       title={t.label}
                     >
-                      <Icon size={13} strokeWidth={2.2} className={`shrink-0 sm:size-[14px] ${active ? iconActive : iconInactive}`} />
+                      <Icon size={13} strokeWidth={2.2} className={`shrink-0 sm:size-[14px] ${active ? t.iconActiveCls : iconInactive}`} />
                       <span className="leading-none">{t.label}</span>
                     </button>
                   );
@@ -1492,11 +1490,15 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
 
       {dpSubTab === "stock-manage" && dpCanSeeStockManage ? (
         <main className="flex-1 flex flex-col min-h-0">
-          <StockManagePage />
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">재고관리 로딩 중...</div>}>
+            <StockManagePage />
+          </Suspense>
         </main>
       ) : dpSubTab === "sales-trend" && dpCanSeeStockManage ? (
         <main className="flex-1 flex flex-col min-h-0">
-          <SalesTrendPage />
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">판매추이 로딩 중...</div>}>
+            <SalesTrendPage />
+          </Suspense>
         </main>
       ) : dpSubTab === "stock-arrivals" && dpCanSeeStockArrivals ? (
         <main className="flex-1 flex flex-col min-h-0">

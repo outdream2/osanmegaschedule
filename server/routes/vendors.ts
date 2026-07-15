@@ -106,11 +106,26 @@ router.post("/api/upload-vendors", express.raw({ type: "application/octet-stream
 
 // 전체 거래처 목록 (관리자)
 router.get("/api/vendors", async (req, res) => {
-  const { data, error } = await supabase
-    .from("vendors")
-    .select("id, company_name, contact_name, phone, email, category, note, business_number, created_at")
-    .order("company_name");
-  if (error) return res.status(500).json({ error: error.message });
+  // 2026-07-15: email 컬럼이 없는 DB 도 호환 (첫 시도에 email 포함 → 실패 시 email 없이 재시도)
+  let data: any[] | null = null;
+  let firstErr: string | null = null;
+  {
+    const r1 = await supabase
+      .from("vendors")
+      .select("id, company_name, contact_name, phone, email, category, note, business_number, created_at")
+      .order("company_name");
+    if (!r1.error) data = r1.data ?? [];
+    else firstErr = r1.error.message;
+  }
+  if (!data) {
+    // email 컬럼 없는 구 DB fallback
+    const r2 = await supabase
+      .from("vendors")
+      .select("id, company_name, contact_name, phone, category, note, business_number, created_at")
+      .order("company_name");
+    if (r2.error) return res.status(500).json({ error: `vendors 조회 실패: ${r2.error.message} (첫시도: ${firstErr})` });
+    data = (r2.data ?? []).map((v: any) => ({ ...v, email: null }));
+  }
 
   // 2026-07-14: withBalances=1 파라미터 · vendors 에 잔액/잔고 정보 첨부
   //   supplier_balances (최신값) + supplier_balance_configs (잔고 컬럼 지정) 조인

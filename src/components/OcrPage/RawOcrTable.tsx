@@ -363,7 +363,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [confDragColIdx, setConfDragColIdx] = useState<number | null>(null);
 
   // ── 셀 인라인 편집 (수량/단가/금액) ───────────────────────────────────────
-  const [cellEdits,      setCellEdits     ] = useState<Record<number, Record<number, number | null>>>({});
+  // 2026-07-15: shiftRowLeft 지원 위해 string 값도 허용 (품명·규격·유통기한 등 이동)
+  const [cellEdits,      setCellEdits     ] = useState<Record<number, Record<number, string | number | null>>>({});
   const [editingCell,    setEditingCell   ] = useState<{ ri: number; ci: number } | null>(null);
   const [editingCellVal, setEditingCellVal] = useState("");
 
@@ -541,6 +542,77 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
    *   5) rawRow 의 numeric 후보 값을 비어있는 컬럼에 채움 (자기 행)
    *   6) rawRow numeric 후보 조합 다른 배치 (자기 행 · 매그니튜드 재정렬)
    */
+  // ── 단일 셀 재추출 (2026-07-15 · 각 수량/단가/금액/유통기한 셀 옆 🔄 버튼) ──
+  // A안 3-로직 (rawText 로컬 + 컬럼 지문 + 크로스 페이지) 를 셀 하나에 적용
+  //   · 수량/단가 재추출 시 · 금액도 자동 계산 (수량 × 단가)
+  const reextractOneCell = useCallback((ri: number, ci: number, colName: "수량" | "단가" | "금액" | "유통기한") => {
+    // 유통기한은 rawText 로컬 스캔으로 직접 처리 (candidates 없음 · 간단 정규식)
+    if (colName === "유통기한") {
+      const pn = pageNums[ri];
+      const pageObj = structuredPages.find(p => p.page === pn) ?? pages.find(p => p.page === pn);
+      if (!pageObj?.rawText) return;
+      const raw = String(pageObj.rawText);
+      // 유통기한 후보 정규식: YYYY.MM.DD, YYYY-MM-DD, YYYY/MM/DD, YY.MM.DD, YYYYMMDD 등
+      const patterns = [
+        /(20\d{2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/g,
+        /(20\d{2})(\d{2})(\d{2})/g,
+      ];
+      const cands: string[] = [];
+      for (const pat of patterns) {
+        let m;
+        while ((m = pat.exec(raw)) !== null) {
+          const y = m[1], mo = String(m[2]).padStart(2, "0"), d = String(m[3]).padStart(2, "0");
+          cands.push(`${y}-${mo}-${d}`);
+        }
+      }
+      // 최근 것 (오늘 이후 · 최소 6개월 뒤) 우선
+      const now = new Date();
+      const min = new Date(now.getFullYear(), now.getMonth() + 6, 1);
+      const valid = cands.filter(c => new Date(c) > min).sort();
+      const chosen = valid[0] ?? cands.sort().reverse()[0];
+      if (chosen) {
+        setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [ci]: chosen } }));
+        console.log(`[셀재추출/유통기한] ri=${ri} → ${chosen} (${cands.length}개 후보)`);
+      } else {
+        console.log(`[셀재추출/유통기한] ri=${ri} 후보 없음`);
+      }
+      return;
+    }
+    const pn = pageNums[ri];
+    const pageObj = structuredPages.find(p => p.page === pn) ?? pages.find(p => p.page === pn);
+    if (!pageObj) { console.warn(`[셀재추출/단일] page ${pn} 없음`); return; }
+    const pageRi = pageNums.slice(0, ri).filter(p => p === pn).length;
+    const others = pages.filter(p => p.page !== pn);
+    const cands = reextractCellCandidates({
+      currentPage: { page: pageObj.page, headers: pageObj.headers, rows: pageObj.rows, rawText: pageObj.rawText },
+      otherPages: others.map(p => ({ page: p.page, headers: p.headers, rows: p.rows, rawText: p.rawText })),
+      rowIndex: pageRi,
+      columnKind: colName,
+    });
+    if (cands.length > 0 && cands[0].confidence >= 0.5) {
+      const newVal = Number(cands[0].value);
+      setCellEdits(prev => {
+        const rowEdits = { ...(prev[ri] ?? {}), [ci]: newVal };
+        // 수량 or 단가 재추출 시 → 금액 자동 계산 (수량 × 단가)
+        //   dispHeaders 로 현재 컬럼 인덱스 조회 (useCallback dep 에서 forward ref 회피)
+        const qIdx = pageObj.headers?.indexOf?.("수량") ?? -1;
+        const pIdx = pageObj.headers?.indexOf?.("단가") ?? -1;
+        const aIdx = pageObj.headers?.indexOf?.("금액") ?? -1;
+        if ((ci === qIdx || ci === pIdx) && aIdx >= 0 && qIdx >= 0 && pIdx >= 0) {
+          const qtyVal = ci === qIdx ? newVal : parseNumber(prev[ri]?.[qIdx] ?? pageObj.rows?.[pageRi]?.[qIdx]);
+          const priVal = ci === pIdx ? newVal : parseNumber(prev[ri]?.[pIdx] ?? pageObj.rows?.[pageRi]?.[pIdx]);
+          if (qtyVal > 0 && priVal > 0) rowEdits[aIdx] = Math.round(qtyVal * priVal);
+        }
+        return { ...prev, [ri]: rowEdits };
+      });
+      console.log(`[셀재추출/단일] ri=${ri} ci=${ci} (${colName}) → ${cands[0].value} · ${cands[0].source} · ${(cands[0].confidence*100).toFixed(0)}%`);
+    } else {
+      // fallback: 7-cycle 로 전체 행 재추출
+      console.log(`[셀재추출/단일] ri=${ri} 후보 부족 · 행 fallback`);
+      revertSingleRawRow(ri);
+    }
+  }, [pageNums, structuredPages, pages]);
+
   const revertSingleRawRow = useCallback((ri: number) => {
     // 편집·보정·삭제 상태 초기화 (원본 복원부터)
     setCellEdits(prev => {
@@ -727,6 +799,36 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       setCellEdits(prev => ({ ...prev, [ri]: editsForRow }));
     }
   }, [reextractCycle, dispHeaders, dispRows, rawRows, amtIdx, pageNums]);
+
+  // ── 2026-07-15: 한 칸 왼쪽 shift (OCR 컬럼 밀림 정정) ──────────────────────
+  //   effectiveDispRows (편집 반영본) 의 그 행 셀들을 왼쪽으로 1칸 이동
+  //   첫 컬럼(0번) 값은 버리고 · 마지막 컬럼은 null 로 · cellEdits 로 저장
+  //   → rawRows 원본은 건드리지 않음 · 사용자가 개별 셀 편집으로 재조정 가능
+  const shiftRowLeft = useCallback((ri: number) => {
+    const baseRow = effectiveDispRowsRef.current[ri] ?? dispRows[ri];
+    if (!Array.isArray(baseRow) || baseRow.length === 0) return;
+    const nextEdits: Record<number, string | number | null> = {};
+    for (let ci = 0; ci < baseRow.length; ci++) {
+      const src = ci + 1 < baseRow.length ? baseRow[ci + 1] : null;
+      // number / string / null 유지 (원본 타입 존중) · undefined → null
+      const val: string | number | null =
+        src == null ? null
+        : typeof src === "number" ? src
+        : typeof src === "string" ? src
+        : String(src);
+      nextEdits[ci] = val;
+    }
+    setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), ...nextEdits } }));
+    // shift 는 명시 편집이므로 재추출 cycle 은 원본(0)으로 리셋
+    setReextractCycle(prev => {
+      if ((prev[ri] ?? 0) === 0) return prev;
+      const next = { ...prev };
+      delete next[ri];
+      return next;
+    });
+    console.log(`[shiftRowLeft] ri=${ri} · ${baseRow.length}개 셀 왼쪽 이동`);
+  }, [dispRows]);
+
   // effectiveDispRows 참조용 ref (revertSingleRawRow 가 자기보다 뒤에 선언된 값 접근용)
   const effectiveDispRowsRef = useRef<(string | number | null)[][]>([]);
 
@@ -919,9 +1021,18 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     return base;
   };
 
+  // 총 합계 = 각 명세서(page)의 확정 소계값 합계 — supplierTotals와 동일 기준
+  // (getPageDisplayTotal: pageSubtotalChoices(stated/computed/custom) 우선순위 반영 · 에누리 감안)
+  // 이전 버그: effectiveDispRows[amtIdx] 원시 합산 → 사용자 선택/에누리 무시하여 소계합과 불일치
+  const _uniquePageNumsForTotal = [...new Set(pageNums)].sort((a, b) => a - b);
   const total = amtIdx >= 0
-    ? effectiveDispRows.reduce((s, r) => s + parseNumber(r[amtIdx]), 0)
+    ? _uniquePageNumsForTotal.reduce((s, pn) => s + getPageDisplayTotal(pn), 0)
     : 0;
+  // 툴팁용 계산 내역: "명세서1 X원 + 명세서2 Y원 + ... = 총 Z원"
+  const totalBreakdownTitle = amtIdx >= 0 && _uniquePageNumsForTotal.length > 0
+    ? _uniquePageNumsForTotal.map(pn => `명세서${pn} ${fmt(getPageDisplayTotal(pn))}원`).join(" + ")
+      + ` = 총 ${fmt(total)}원`
+    : "";
 
   const meta = pages.map(p => p.meta).find(m => m.date || m.supplier) ?? {};
 
@@ -1448,6 +1559,21 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const ocrSuppIdx = dispHeaders.indexOf("공급처");
   const globalSupplier = pages.map(p => p.meta.supplier).find(Boolean) ?? null;
 
+  // ── 공급사 미입력 페이지 검출 (필수 입력 검증 · 2026-07-15) ────────────
+  //   rawSupplierByPage 편집값 우선 → structuredPages meta.supplier 폴백
+  //   빈 문자열/null 이면 미입력으로 간주 → 자동보정·저장 차단
+  const effectiveSupplierForPage = useCallback((pn: number): string => {
+    const edited = rawSupplierByPage[pn];
+    if (edited !== undefined) return String(edited ?? "").trim();
+    const meta = structuredPages.find(p => p.page === pn)?.meta.supplier;
+    return String(meta ?? "").trim();
+  }, [rawSupplierByPage, structuredPages]);
+  const missingSupplierPages: number[] = React.useMemo(() => {
+    const uniquePages = Array.from(new Set(structuredPages.map(p => p.page)));
+    return uniquePages.filter(pn => !effectiveSupplierForPage(pn));
+  }, [structuredPages, effectiveSupplierForPage]);
+  const hasMissingSupplier = missingSupplierPages.length > 0;
+
   // ── Feature 1: 금액 자동보정 콜백 ────────────────────────────────────────
   const autoCorrectAmounts = useCallback((pageNum: number) => {
     if (ocrQtyIdx < 0 || ocrPriIdx < 0 || amtIdx < 0) return;
@@ -1720,6 +1846,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // ── 확정표에 저장 (외부 콜백에 ConfirmedItem[] 전달) ──────────────────────
   const handleSaveConfirmed = useCallback(async () => {
     if (!onSaveConfirmed || nameIdx < 0) return;
+    // 공급사 필수 입력 검증 (2026-07-15) — 미입력 페이지가 있으면 차단
+    if (missingSupplierPages.length > 0) {
+      const pagesLabel = missingSupplierPages.join(", ");
+      window.alert(`공급사가 지정되지 않은 페이지가 있습니다: ${pagesLabel}번\n\n1차보정 표의 "공급처" 셀을 클릭하여 공급사명을 먼저 입력하세요.`);
+      setSaveConfirmedToast({ type: "error", msg: `공급사 미입력 (${pagesLabel}번 페이지)` });
+      setTimeout(() => setSaveConfirmedToast(null), 3000);
+      return;
+    }
     const expiryIdx = dispHeaders.indexOf("유통기한");
     const items: ConfirmedItem[] = [];
     effectiveDispRows.forEach((row, ri) => {
@@ -1810,11 +1944,18 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     ocrSuppIdx, rawSupplierByPage, supplierOverrides, globalSupplier, matchItems, cancelledRows,
     selectedCands, cancelledAutoMap, autoSynonymMatches, barcodeAutoMap, cancelledAutoSyn,
     overrides, ocrQtyIdx, ocrPriIdx, amtIdx, pageBalanceFromConfig,
-    erpCellEdits, pageSupplierBalances, pageBalanceOverride, confirmedAt,
+    erpCellEdits, pageSupplierBalances, pageBalanceOverride, confirmedAt, missingSupplierPages,
   ]);
 
   const handleMatch = useCallback(async () => {
     if (nameIdx < 0) return;
+    // 공급사 필수 입력 검증 (2026-07-15) — 미입력 페이지가 있으면 차단
+    //   supplier 힌트 없이 2차보정을 실행하면 잘못된 매칭 · 동의어 오학습 위험
+    if (missingSupplierPages.length > 0) {
+      const pagesLabel = missingSupplierPages.join(", ");
+      window.alert(`공급사가 지정되지 않은 페이지가 있습니다: ${pagesLabel}번\n\n1차보정 표의 "공급처" 셀을 클릭하여 공급사명을 먼저 입력하세요.\n(공급사 정보 없이 상품명 매칭 시 잘못된 결과가 저장될 수 있습니다)`);
+      return;
+    }
     // 2026-07-09: 강화된 필터
     // - 빈 품명 · 배송·행정 라벨(차람번호/기사명/담당자/주소 등) · 사람이름/사업자번호 등을 스킵
     // - 공급자 힌트도 상품명·배송정보로 오분류된 것 페이지 fallback
@@ -1861,7 +2002,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       activePairs.forEach((p, ai) => { aligned[p.rowIdx] = returned[ai] ?? null; });
       setMatchItems(aligned.map(m => m ?? { input: "", matched: null }));
     } finally { setMatching(false); }
-  }, [dispRows, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier]);
+  }, [dispRows, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier, missingSupplierPages]);
 
   // ── 확정 표 ──────────────────────────────────────────────────────────────
   const CONF_HEADERS = [
@@ -2214,12 +2355,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     )}
 
     {/* ── 공급처 자동완성 드롭다운 (fixed · 테이블 stacking context 우회) ── */}
-    {editingRawSuppRow != null && suppDropdownRect && vendorNames.length > 0 && (() => {
+    {/* editing 활성 시 무조건 표시 · vendorNames 없어도 진단용 안내 · rect 없으면 input 재추적 */}
+    {editingRawSuppRow != null && (() => {
+      // rect 없으면 input 을 지금 다시 조회 (ref callback 놓쳤을 경우 대비)
+      let rect = suppDropdownRect;
+      if (!rect && suppInputRef.current) {
+        const r = suppInputRef.current.getBoundingClientRect();
+        rect = { top: r.bottom, left: r.left, width: Math.max(220, r.width) };
+      }
+      if (!rect) return null;
       const q = editingRawSuppVal.trim().toLowerCase().replace(/[\s()（）]/g, "");
-      const matches = q.length === 0
+      const matches = vendorNames.length === 0 ? [] : (q.length === 0
         ? vendorNames.slice(0, 8)
-        : vendorNames.filter(n => n.toLowerCase().replace(/[\s()（）]/g, "").includes(q)).slice(0, 8);
-      if (matches.length === 0) return null;
+        : vendorNames.filter(n => n.toLowerCase().replace(/[\s()（）]/g, "").includes(q)).slice(0, 8));
       const commit = (val: string) => {
         const trimmed = val.trim();
         const pn = pageNums[editingRawSuppRow];
@@ -2234,12 +2382,18 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       return (
         <div
           className="fixed z-[9999] max-h-52 overflow-y-auto bg-white border border-sky-300 rounded-lg shadow-xl text-xs"
-          style={{ top: suppDropdownRect.top + 2, left: suppDropdownRect.left, width: suppDropdownRect.width }}
+          style={{ top: rect.top + 2, left: rect.left, width: rect.width }}
         >
           <div className="px-2 py-1 text-[9px] text-slate-500 border-b border-slate-100 bg-slate-50 font-bold">
-            공급사 DB · {matches.length}건 {q ? `("${q}" 매칭)` : "(전체)"}
+            공급사 DB · {vendorNames.length === 0 ? "⚠ vendors 로드 안 됨 (F5 시도)" : `${matches.length}건${q ? ` ("${q}" 매칭)` : " (전체)"} / 총 ${vendorNames.length}`}
           </div>
-          {matches.map(name => (
+          {vendorNames.length === 0 ? (
+            <div className="px-2 py-3 text-[10px] text-rose-500 text-center">
+              공급사 DB 목록이 로드되지 않았어요.<br />/api/vendors 응답 확인 필요.
+            </div>
+          ) : matches.length === 0 ? (
+            <div className="px-2 py-2 text-[10px] text-slate-400 text-center">"{q}" 매칭 없음</div>
+          ) : matches.map(name => (
             <button
               key={name}
               type="button"
@@ -2783,6 +2937,23 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             </div>
           )}
 
+          {/* ── 공급사 미입력 페이지 경고 배너 (2026-07-15 · 필수 검증) ── */}
+          {hasMissingSupplier && (
+            <div className="mx-3 my-2 px-3 py-2 rounded-lg bg-rose-50 border-2 border-rose-300 flex items-start gap-2 text-[11px] font-semibold text-rose-800">
+              <AlertTriangle size={14} className="shrink-0 mt-0.5 text-rose-600" />
+              <div className="flex-1">
+                <div className="font-black text-rose-900 mb-0.5">
+                  공급사 미입력 페이지 {missingSupplierPages.length}개 — 입력이 필요합니다
+                </div>
+                <div className="font-normal text-rose-700">
+                  <span className="font-bold">{missingSupplierPages.join(", ")}번 명세서</span>의 공급사가 지정되지 않았습니다.
+                  아래 표 <span className="font-bold text-sky-700">"공급처"</span> 셀(rose 배경)을 클릭하여 공급사명을 입력해주세요.
+                  공급사 정보 없이는 <span className="font-bold">상품명 자동보정 · 확정표 저장</span>이 차단됩니다.
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* ── 공급처 변경 재파싱 상태 ── */}
           {Object.entries(reparseStatus).map(([pnStr, status]) => {
             const pn = Number(pnStr);
@@ -3110,15 +3281,34 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             />
                             <button
                               type="button"
-                              onClick={e => { e.stopPropagation(); revertSingleRawRow(ri); }}
+                              onClick={e => {
+                                e.stopPropagation();
+                                // Shift+Click → 한 칸 왼쪽 shift (컬럼 밀림 정정)
+                                if (e.shiftKey) { shiftRowLeft(ri); return; }
+                                revertSingleRawRow(ri);
+                              }}
+                              onContextMenu={e => {
+                                // 우클릭 → 한 칸 왼쪽 shift
+                                e.preventDefault();
+                                e.stopPropagation();
+                                shiftRowLeft(ri);
+                              }}
                               className={`text-[10px] font-bold rounded w-5 h-5 flex items-center justify-center transition cursor-pointer ${
                                 (reextractCycle[ri] ?? 0) > 0
                                   ? "bg-indigo-500 text-white hover:bg-indigo-600"
                                   : "bg-slate-200 text-slate-600 hover:bg-indigo-100 hover:text-indigo-700"
                               }`}
-                              title={`재추출 (다른 값 시도) · 클릭할 때마다 순환: 원본 → 수량↔단가 스왑 → 단가↔금액 스왑 → 왼쪽 shift${(reextractCycle[ri] ?? 0) > 0 ? ` · 현재 ${reextractCycle[ri]}번째 시도` : ""}`}
+                              title={`재추출 (다른 값 시도) · 클릭할 때마다 7-cycle 순환\nShift+Click 또는 우클릭 → 한 칸 왼쪽 shift (컬럼 밀림 정정)${(reextractCycle[ri] ?? 0) > 0 ? `\n현재 ${reextractCycle[ri]}번째 시도` : ""}`}
                             >
                               🔄
+                            </button>
+                            <button
+                              type="button"
+                              onClick={e => { e.stopPropagation(); shiftRowLeft(ri); }}
+                              className="text-[10px] font-bold rounded w-5 h-5 flex items-center justify-center transition cursor-pointer bg-slate-200 text-slate-600 hover:bg-amber-100 hover:text-amber-700"
+                              title="셀 한 칸 왼쪽 shift (OCR 컬럼 밀림 정정)"
+                            >
+                              →
                             </button>
                           </div>
                         </td>
@@ -3195,6 +3385,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           }
 
                           if (isSupplier) {
+                            // 공급사 미입력 검증 (2026-07-15) — 빈 값이면 rose 배경 + "⚠ 공급사 필수" 강조
+                            const cellStr = cell == null ? "" : String(cell).trim();
+                            const isEmpty = !cellStr;
                             return (
                               <td key={ci}
                                 onClick={e => {
@@ -3202,14 +3395,29 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   setEditingRawSuppRow(ri);
                                   setEditingRawSuppVal(String(cell ?? ""));
                                 }}
-                                className="px-2 sm:px-3 py-2 text-sky-700 font-semibold cursor-pointer hover:bg-sky-50 group max-w-[60px] sm:max-w-[120px]"
-                                title={`클릭하여 공급처 변경${cell != null ? ` (${String(cell)})` : ""}`}
+                                className={
+                                  isEmpty
+                                    ? "px-2 sm:px-3 py-2 font-bold cursor-pointer bg-rose-50 hover:bg-rose-100 text-rose-700 border-l-2 border-rose-400 group max-w-[80px] sm:max-w-[140px] animate-pulse"
+                                    : "px-2 sm:px-3 py-2 text-sky-700 font-semibold cursor-pointer hover:bg-sky-50 group max-w-[60px] sm:max-w-[120px]"
+                                }
+                                title={
+                                  isEmpty
+                                    ? "공급사 미입력 — 클릭하여 입력하세요 (자동보정/저장 차단)"
+                                    : `클릭하여 공급처 변경${cell != null ? ` (${String(cell)})` : ""}`
+                                }
                               >
                                 <span className="flex items-center gap-1">
-                                  <span className="break-words">
-                                    {cell == null ? <span className="text-gray-300">—</span> : String(cell)}
-                                  </span>
-                                  <Pencil size={9} className="text-sky-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
+                                  {isEmpty ? (
+                                    <span className="flex items-center gap-0.5 text-[10px] font-black whitespace-nowrap">
+                                      <AlertTriangle size={10} className="shrink-0" />
+                                      공급사 필수
+                                    </span>
+                                  ) : (
+                                    <>
+                                      <span className="break-words">{String(cell)}</span>
+                                      <Pencil size={9} className="text-sky-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
+                                    </>
+                                  )}
                                 </span>
                               </td>
                             );
@@ -3371,6 +3579,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   })()}
                                   {hasDirectEdit && <span className="text-[9px] bg-indigo-100 text-indigo-600 px-1 rounded font-bold">수정</span>}
                                   {isCorrectedAmt && <span className="text-[9px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>}
+                                  {/* 셀 단위 재추출 버튼 · 2026-07-15 · A안 3-로직 (rawText + 지문 + 크로스페이지) */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); reextractOneCell(ri, ci, h as "수량" | "단가" | "금액"); }}
+                                    className="text-[9px] px-1 py-px rounded bg-sky-50 text-sky-600 hover:bg-sky-500 hover:text-white transition opacity-0 group-hover:opacity-100 shrink-0 cursor-pointer font-black"
+                                    title={`${h} 재추출 · rawText + 컬럼지문 + 크로스페이지 참조`}
+                                  >🔄</button>
                                   <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                 </span>
                               </td>
@@ -3543,6 +3758,23 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               <td key={ci} className="px-3 py-2 max-w-[80px] text-gray-600">
                                 <span className="block line-clamp-2 break-words text-[10px]">
                                   {cell == null ? <span className="text-gray-300">—</span> : String(cell)}
+                                </span>
+                              </td>
+                            );
+                          }
+
+                          // 유통기한 컬럼: 재추출 버튼 (rawText 날짜 정규식 스캔) · 2026-07-15
+                          if (h === "유통기한") {
+                            return (
+                              <td key={ci} className="px-3 py-2 text-gray-500 text-[10px] whitespace-nowrap group">
+                                <span className="flex items-center justify-between gap-1">
+                                  <span>{cell == null ? <span className="text-gray-300">—</span> : String(cell)}</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); reextractOneCell(ri, ci, "유통기한"); }}
+                                    className="text-[9px] px-1 py-px rounded bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white transition opacity-0 group-hover:opacity-100 shrink-0 cursor-pointer font-black"
+                                    title="유통기한 재추출 · rawText 날짜 정규식 스캔"
+                                  >🔄</button>
                                 </span>
                               </td>
                             );
@@ -4019,8 +4251,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                     </tr>
                   ))}
                   <tr className="bg-amber-50 border-t-2 border-amber-300">
-                    {amtOrderIdx > 0 && <td colSpan={Math.max(1, amtOrderIdx)} className="px-3 py-2.5 text-right font-black text-gray-700">합 계</td>}
-                    <td className="px-3 py-2.5 text-right font-black text-amber-700 text-sm whitespace-nowrap">{fmt(total)}원</td>
+                    {amtOrderIdx > 0 && (
+                      <td
+                        colSpan={Math.max(1, amtOrderIdx)}
+                        className="px-3 py-2.5 text-right font-black text-gray-700 cursor-help"
+                        title={totalBreakdownTitle}
+                      >합 계</td>
+                    )}
+                    <td
+                      className="px-3 py-2.5 text-right font-black text-amber-700 text-sm whitespace-nowrap cursor-help"
+                      title={totalBreakdownTitle}
+                    >{fmt(total)}원</td>
                     {orderNow.slice(amtOrderIdx + 1).map((_, i) => <td key={i} />)}
                   </tr>
                 </tfoot>
@@ -4036,11 +4277,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         <>
           {!matchItems && (
             <div className="w-full flex flex-col sm:flex-row gap-2">
-              <button onClick={handleMatch} disabled={matching}
+              <button onClick={handleMatch} disabled={matching || hasMissingSupplier}
+                title={hasMissingSupplier ? `공급사 미입력 페이지 (${missingSupplierPages.join(", ")}번) 를 먼저 채워주세요` : undefined}
                 className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer">
                 {matching
                   ? <><Loader2 size={13} className="animate-spin" />상품명 매칭 중...</>
-                  : <><Wand2 size={13} />상품명 자동보정{autoSynonymCount > 0 ? ` (동의어 ${autoSynonymCount}건 포함)` : ""}</>}
+                  : hasMissingSupplier
+                    ? <><AlertTriangle size={13} />공급사 입력 필요 ({missingSupplierPages.length}개 페이지)</>
+                    : <><Wand2 size={13} />상품명 자동보정{autoSynonymCount > 0 ? ` (동의어 ${autoSynonymCount}건 포함)` : ""}</>}
               </button>
             </div>
           )}
@@ -4087,8 +4331,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                       명세서 뷰
                     </button>
                   </div>
-                  <button onClick={handleMatch} disabled={matching}
-                    className="text-[11px] text-indigo-500 hover:text-indigo-700 font-bold cursor-pointer">재실행</button>
+                  <button onClick={handleMatch} disabled={matching || hasMissingSupplier}
+                    title={hasMissingSupplier ? `공급사 미입력 페이지 (${missingSupplierPages.join(", ")}번) 를 먼저 채워주세요` : undefined}
+                    className="text-[11px] text-indigo-500 hover:text-indigo-700 font-bold cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">재실행</button>
                   <button onClick={() => {
                       setConfirmed(true);
                       // 확정 버튼 누른 시점의 작업일 (로컬 날짜 YYYY-MM-DD) 저장
@@ -5385,13 +5630,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   </table>
                 </div>
                 {onSaveConfirmed && (
-                  <div className="px-4 py-3 flex justify-end border-t border-emerald-100 bg-white">
+                  <div className="px-4 py-3 flex justify-end items-center gap-3 border-t border-emerald-100 bg-white">
+                    {hasMissingSupplier && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-300 rounded px-2 py-0.5">
+                        <AlertTriangle size={10} className="shrink-0" />
+                        공급사 미입력 ({missingSupplierPages.join(", ")}번) — 저장 차단
+                      </span>
+                    )}
                     <button
                       type="button"
                       onClick={handleSaveConfirmed}
-                      disabled={savingConfirmed}
+                      disabled={savingConfirmed || hasMissingSupplier}
                       className="flex items-center gap-1.5 text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer shrink-0 shadow-sm"
-                      title="현재 표시된 항목들을 확정표(DB)에 저장합니다"
+                      title={hasMissingSupplier ? `공급사 미입력 페이지 (${missingSupplierPages.join(", ")}번) 를 먼저 채워주세요` : "현재 표시된 항목들을 확정표(DB)에 저장합니다"}
                     >
                       {savingConfirmed
                         ? <><Loader2 size={12} className="animate-spin" />저장 중</>

@@ -620,57 +620,100 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
     if (!targetDate) return res.json({ snapshot_date: null, dates: [], rows: [] });
 
     // 사용 가능한 모든 스냅샷 날짜 (+ period_type 매핑)
-    const { data: allDates } = await supabase
-      .from("stock_history")
-      .select("snapshot_date, period_type")
-      .order("snapshot_date", { ascending: false })
-      .limit(5000);
-    const dateToPeriodMap = new Map<string, string>();
-    for (const d of allDates ?? []) {
-      const dt = (d as any).snapshot_date;
-      const pt = (d as any).period_type;
-      if (dt && pt && !dateToPeriodMap.has(dt)) dateToPeriodMap.set(dt, pt);
+    //   기존: stock_history 전체 5000행 스캔 → 무거움 (스냅샷 * 상품수)
+    //   개선: distinct snapshot_date 만 뽑음 (Supabase Distinct via select head)
+    //   fallback: 실패 시 기존 방식
+    let dates: string[] = [];
+    let dateToPeriodMap = new Map<string, string>();
+    try {
+      // Postgres 에서 distinct 를 위한 트릭: 스냅샷 개수는 상대적으로 적음 (~30개/월 x 몇개월)
+      // stock_history 에서 distinct(snapshot_date, period_type) 만 필요 → 페이지 크기 넉넉히 · Supabase 는 SELECT DISTINCT 미지원
+      // → snapshot_date 별 첫 row 만 필요하므로 order by snapshot_date desc + limit 로 sample 확보
+      //    (같은 스냅샷 여러 row 나오는 건 감수 · Set 으로 dedupe)
+      const { data: dRows } = await supabase
+        .from("stock_history")
+        .select("snapshot_date, period_type")
+        .order("snapshot_date", { ascending: false })
+        .limit(1000);
+      const set = new Set<string>();
+      for (const d of dRows ?? []) {
+        const dt = (d as any).snapshot_date;
+        const pt = (d as any).period_type;
+        if (!dt) continue;
+        if (!set.has(dt)) { set.add(dt); if (pt) dateToPeriodMap.set(dt, pt); }
+      }
+      dates = Array.from(set).sort((a, b) => b.localeCompare(a));
+    } catch (e: any) {
+      console.warn("[top-sales] dates 조회 실패, 계속:", e?.message);
     }
-    const dates = [...new Set((allDates ?? []).map(d => (d as any).snapshot_date))];
     const dates_with_period = dates.map(dt => ({ snapshot_date: dt, period_type: dateToPeriodMap.get(dt) ?? null }));
     const targetPeriodType = dateToPeriodMap.get(targetDate) ?? null;
 
-    // 해당 스냅샷 데이터 조회 (페이지네이션으로 전체 로드, 공급사 필터 적용)
+    // 해당 스냅샷 데이터 조회
+    //   기존: 스냅샷 전체 3000+ 행 페이지네이션 로드 → 클라 sort → slice(limit)
+    //   개선: 서버 정렬 지원 컬럼(sale/purchase/closing)이면 DB order+limit 로 최소 로드
+    //         hidden 필터 여유분: limit * 3 로 넉넉히
     const data: any[] = [];
-    const PAGE = 1000;
-    let from = 0;
-    while (true) {
+    const dbSortColumn: Record<string, string> = {
+      sale: "sale_qty",
+      purchase: "purchase_qty",
+      closing: "closing_stock",
+    };
+    const dbCol = dbSortColumn[sort];
+    if (dbCol && !supplierFilter && !supplierCodeFilter) {
+      // 서버 정렬 지원 · limit 확장 (hidden 제거 후에도 채우기 위해)
+      const fetchLimit = Math.max(limit * 3, 300);
       let q = supabase
         .from("stock_history")
-        .select("product_code, product_name, supplier_code, supplier_name, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, closing_stock, total_amount")
-        .eq("snapshot_date", targetDate);
-      if (supplierCodeFilter) q = q.eq("supplier_code", supplierCodeFilter);
-      else if (supplierFilter) q = q.eq("supplier_name", supplierFilter);
-      const { data: page, error } = await q.range(from, from + PAGE - 1);
+        .select("product_code, product_name, supplier_code, supplier_name, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, internal_qty, adjustment_qty, closing_stock, total_amount")
+        .eq("snapshot_date", targetDate)
+        .order(dbCol, { ascending: dir === "asc" })
+        .limit(fetchLimit);
+      const { data: page, error } = await q;
       if (error) {
         if (/relation|does not exist/i.test(error.message)) return res.json({ snapshot_date: null, dates: [], rows: [] });
         throw new Error(error.message);
       }
-      if (!page || page.length === 0) break;
-      data.push(...page);
-      if (page.length < PAGE) break;
-      from += PAGE;
+      data.push(...(page ?? []));
+    } else {
+      // fallback: 공급사 필터 있거나 정렬 컬럼 미지원 → 기존 전체 페이지네이션
+      const PAGE = 1000;
+      let from = 0;
+      while (true) {
+        let q = supabase
+          .from("stock_history")
+          .select("product_code, product_name, supplier_code, supplier_name, spec, opening_stock, purchase_qty, sale_qty, disposal_qty, internal_qty, adjustment_qty, closing_stock, total_amount")
+          .eq("snapshot_date", targetDate);
+        if (supplierCodeFilter) q = q.eq("supplier_code", supplierCodeFilter);
+        else if (supplierFilter) q = q.eq("supplier_name", supplierFilter);
+        const { data: page, error } = await q.range(from, from + PAGE - 1);
+        if (error) {
+          if (/relation|does not exist/i.test(error.message)) return res.json({ snapshot_date: null, dates: [], rows: [] });
+          throw new Error(error.message);
+        }
+        if (!page || page.length === 0) break;
+        data.push(...page);
+        if (page.length < PAGE) break;
+        from += PAGE;
+      }
     }
 
-    // products.optimal_stock + sale_price + last_purchase_date 매핑 준비 (product_code 기준, 페이지네이션)
-    // hidden=true 상품은 재고흐름 리스트에서 제외
+    // products 조회: 결과 rows 의 product_code 만 in() 으로 최소 fetch (5000 → ~100)
+    //   기존: 전체 products 페이지네이션 로드 (5000+행)
+    //   개선: 이번 응답에 필요한 코드만
     const productMap = new Map<string, { optimal_stock: number; sale_price: number; current_stock: number; last_purchase_date: string | null }>();
     const hiddenSet = new Set<string>();
+    const codesInResult = Array.from(new Set(data.map(r => String(r.product_code ?? "").trim()).filter(Boolean)));
     try {
-      const OP_PAGE = 1000;
-      let opFrom = 0;
-      while (true) {
+      // Supabase in() 은 URL 길이 제한 있어서 청크로 분할
+      const CHUNK = 500;
+      for (let i = 0; i < codesInResult.length; i += CHUNK) {
+        const chunk = codesInResult.slice(i, i + CHUNK);
         const { data: page } = await supabase
           .from("products")
-          .select("product_code, optimal_stock, sale_price, current_stock, last_purchase_date, hidden")
-          .range(opFrom, opFrom + OP_PAGE - 1);
-        if (!page || page.length === 0) break;
-        for (const p of page) {
+          .select("product_code, optimal_stock, sale_price, current_stock, last_purchase_date, min_order, hidden")
+          .in("product_code", chunk);
+        for (const p of page ?? []) {
           const code = String((p as any).product_code ?? "").trim();
           if (!code) continue;
           if ((p as any).hidden === true) { hiddenSet.add(code); continue; }
@@ -679,13 +722,44 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
             sale_price:    Number((p as any).sale_price    ?? 0) || 0,
             current_stock: Number((p as any).current_stock ?? 0) || 0,
             last_purchase_date: (p as any).last_purchase_date ?? null,
-          });
+            min_order:     Number((p as any).min_order     ?? 0) || 0,
+          } as any);
         }
-        if (page.length < OP_PAGE) break;
-        opFrom += OP_PAGE;
       }
     } catch (e: any) {
       console.warn("[top-sales] products fetch 실패:", e?.message);
+    }
+
+    // ═══ purchase_details 조인 · 최근/최초 매입일 + 매입 금액 + 횟수 병합 (2026-07-15) ═══
+    //   상품 코드별: 최근 매입일 · 최초 매입일(매입주기 계산용) · 총 매입 금액 · 매입 횟수
+    const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; lastAmount: number; totalQty: number; totalAmount: number; count: number }>();
+    try {
+      const CHUNK = 500;
+      for (let i = 0; i < codesInResult.length; i += CHUNK) {
+        const chunk = codesInResult.slice(i, i + CHUNK);
+        const { data: pdRows } = await supabase
+          .from("purchase_details")
+          .select("product_code, purchase_date, quantity, amount, total")
+          .in("product_code", chunk)
+          .order("purchase_date", { ascending: false });
+        for (const r of pdRows ?? []) {
+          const code = String((r as any).product_code ?? "").trim();
+          if (!code) continue;
+          const cur = purchaseInfoMap.get(code) ?? { lastDate: null, firstDate: null, lastAmount: 0, totalQty: 0, totalAmount: 0, count: 0 };
+          const d = String((r as any).purchase_date ?? "");
+          const amt = Number((r as any).total ?? (r as any).amount ?? 0) || 0;
+          const qty = Number((r as any).quantity ?? 0) || 0;
+          if (!cur.lastDate || d > cur.lastDate) { cur.lastDate = d; cur.lastAmount = amt; }
+          if (!cur.firstDate || d < cur.firstDate) { cur.firstDate = d; }
+          cur.totalQty += qty;
+          cur.totalAmount += amt;
+          cur.count++;
+          purchaseInfoMap.set(code, cur);
+        }
+      }
+      console.log(`[top-sales] purchase_details 조인: ${purchaseInfoMap.size}개 상품 매입 이력 매칭`);
+    } catch (e: any) {
+      console.warn("[top-sales] purchase_details 조인 실패 (계속 진행):", e?.message);
     }
 
     // last_purchase_date 보강: products.last_purchase_date가 null이거나
@@ -701,21 +775,38 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           lastPurchase = targetDate;
         }
       }
+      // purchase_details 조인 · 최근 매입일이 더 최신이면 그걸로 대체
+      const purchaseInfo = purchaseInfoMap.get(String(r.product_code ?? ""));
+      if (purchaseInfo?.lastDate) {
+        if (!lastPurchase || String(purchaseInfo.lastDate) > String(lastPurchase)) {
+          lastPurchase = purchaseInfo.lastDate;
+        }
+      }
       return {
         product_code:  String(r.product_code ?? ""),
         product_name:  String(r.product_name ?? r.product_code ?? ""),
         supplier:      r.supplier_name ?? null,
         spec:          r.spec ?? null,
-        opening_stock: Number(r.opening_stock ?? 0) || 0,
-        purchase_qty:  purchaseQty,
-        sale_qty:      Number(r.sale_qty      ?? 0) || 0,
-        disposal_qty:  Number(r.disposal_qty  ?? 0) || 0,
-        closing_stock: Number(r.closing_stock ?? 0) || 0,
-        total_amount:  Number(r.total_amount  ?? 0) || 0,
+        opening_stock:  Number(r.opening_stock ?? 0) || 0,
+        purchase_qty:   purchaseQty,
+        sale_qty:       Number(r.sale_qty       ?? 0) || 0,
+        disposal_qty:   Number(r.disposal_qty   ?? 0) || 0,
+        internal_qty:   Number((r as any).internal_qty   ?? 0) || 0,
+        adjustment_qty: Number((r as any).adjustment_qty ?? 0) || 0,
+        closing_stock:  Number(r.closing_stock  ?? 0) || 0,
+        total_amount:   Number(r.total_amount   ?? 0) || 0,
         optimal_stock: prod?.optimal_stock ?? 0,
         sale_price:    prod?.sale_price    ?? 0,
         current_stock: prod?.current_stock ?? 0,
         last_purchase_date: lastPurchase,
+        // purchase_details 매입 이력 요약 (재고리스트 · 공급사재고 확장 리스트에서 표시)
+        purchase_last_amount:  purchaseInfo?.lastAmount ?? 0,
+        purchase_total_qty:    purchaseInfo?.totalQty   ?? 0,
+        purchase_total_amount: purchaseInfo?.totalAmount?? 0,
+        purchase_count:        purchaseInfo?.count      ?? 0,
+        first_purchase_date:   purchaseInfo?.firstDate  ?? null,
+        // 최소주문량 (products.min_order) — 공급사재고 확장 리스트에 표시
+        min_order: Number((prod as any)?.min_order ?? 0) || 0,
       };
     });
     const sign = dir === "asc" ? 1 : -1;
@@ -801,10 +892,14 @@ router.get("/api/stock-manage/low-stock", async (_req, res) => {
         return p._opt > 0 && p._cur < p._opt;
       })
       .sort((a, b) => (b._opt - b._cur) - (a._opt - a._cur))
-      .map(({ _cur: _c, _opt: _o, ...rest }) => {
+      .map(({ _cur: _c, _opt: _o, ...rest }: any) => {
         const inv = invMap.get(String(rest.product_code ?? ""));
+        // 타입 정규화 (2026-07-15): 숫자 필드 Number 화 · UI parseNumber 부담 감소
+        //   products 테이블의 xlsx import 특성상 string 으로 저장된 경우 대응
         return {
           ...rest,
+          current_stock:  rest.current_stock  != null && rest.current_stock  !== "" ? Number(rest.current_stock)  : null,
+          optimal_stock:  rest.optimal_stock  != null && rest.optimal_stock  !== "" ? Number(rest.optimal_stock)  : null,
           warehouse_stock: inv?.warehouse_stock ?? null,
           store_stock:     inv?.store_stock     ?? null,
           inv_checked_at:  inv?.checked_at ?? null,
@@ -951,14 +1046,15 @@ router.post("/api/upload-stock", express.raw({ type: "application/octet-stream",
     };
     const codeI    = findCol([/^코드$/i, /상품\s*코드/i, /품목\s*번호/i, /product[_ ]?code/i, /^code$/i]);
     // "종료일 재고" 가 실제 현재고. 없으면 "현재고" / "재고" 로 fallback (하지만 "재고금액" 은 아님)
-    const stockI   = findCol([/종료일\s*재고/i, /^현재고$/i, /^재고$/i, /current[_ ]?stock/i]);
+    const stockI   = findCol([/종료일\s*재고/i, /기말\s*재고/i, /^현재고$/i, /^재고$/i, /current[_ ]?stock/i, /closing[_ ]?stock/i]);
     const nameI    = findCol([/^명$/i, /상품\s*명/i, /제품\s*명/i, /product[_ ]?name/i]);
     const supNameI = findCol([/공급사\s*명/i, /supplier[_ ]?name/i, /^공급사$/i]);
     const supCodeI = findCol([/공급사\s*코드/i, /supplier[_ ]?code/i]);
     const specI    = findCol([/^규격$/i, /^spec$/i]);
     const taxTypeI = findCol([/^i$/i, /과세\s*구분/i, /세금\s*구분/i]);
     const prodTypeI= findCol([/^상품\s*유형$/i, /product[_ ]?type/i]);
-    const openI    = findCol([/시작일\s*재고/i, /opening[_ ]?stock/i]);
+    // 시작재고 헤더 변형 광범위 대응 (미매칭 시 opening_stock=0 저장돼서 재고흐름 계산 망가짐)
+    const openI    = findCol([/시작일\s*재고/i, /기초\s*재고/i, /시작\s*재고/i, /전월\s*이월/i, /전기\s*이월/i, /opening[_ ]?stock/i]);
     const purchI   = findCol([/입고\s*계/i, /^입고$/i, /purchase/i]);
     const saleI    = findCol([/판매\s*출고\s*계/i, /^판매$/i, /sale/i]);
     const disposeI = findCol([/^폐기$/i, /disposal/i]);
@@ -1073,15 +1169,26 @@ router.post("/api/upload-stock", express.raw({ type: "application/octet-stream",
     const updated = 0;
     const inserted = 0;
 
-    // ① 같은 기간(period_start_date) 기존 rows 완전 삭제 — 재임포트 시 이전 부분/전체 데이터 대체
+    // ① 같은 기간(period_start_date) 기존 rows 감지
+    //    force=true 없으면 409 로 응답 · 클라이언트에서 confirm 후 재요청 (2026-07-15)
+    const forceOverwrite = String(req.query.force ?? "").trim() === "true";
     let deletedCount = 0;
     try {
       const { count: pre } = await supabase
         .from("stock_history")
         .select("*", { count: "exact", head: true })
         .eq("period_start_date", periodStartDate);
-      deletedCount = pre ?? 0;
-      if (deletedCount > 0) {
+      const existingCount = pre ?? 0;
+      if (existingCount > 0 && !forceOverwrite) {
+        // 확인 필요
+        return res.status(409).json({
+          needsConfirm: true,
+          existingCount,
+          period: { from: periodStartDate, to: snapshotDate, type: periodType },
+          message: `기간 ${periodStartDate} ~ ${snapshotDate} 에 이미 ${existingCount}행 재고 스냅샷이 존재합니다. 덮어쓰시겠습니까?`,
+        });
+      }
+      if (existingCount > 0) {
         const { error: delErr } = await supabase
           .from("stock_history")
           .delete()
@@ -1090,12 +1197,13 @@ router.post("/api/upload-stock", express.raw({ type: "application/octet-stream",
           console.warn(`[upload-stock] 기존 rows DELETE 실패 (${periodStartDate}):`, delErr.message);
           deletedCount = 0;
         } else {
-          console.log(`[upload-stock] 기간 ${periodStartDate} 기존 ${deletedCount}행 삭제`);
+          deletedCount = existingCount;
+          console.log(`[upload-stock] 기간 ${periodStartDate} 기존 ${deletedCount}행 삭제 (덮어쓰기 확인됨)`);
         }
       }
     } catch (e: any) {
       // period_start_date 컬럼이 없는 구 DB 는 삭제 skip (INSERT 는 fallback 처리)
-      console.warn("[upload-stock] period_start_date DELETE skip:", e?.message);
+      console.warn("[upload-stock] period_start_date 감지/DELETE skip:", e?.message);
     }
 
     // ② stock_history 에 새 스냅샷 upsert (같은 snapshot_date+코드 있으면 덮어쓰기)
@@ -1204,6 +1312,57 @@ router.get("/api/stock-import-log", async (_req, res) => {
 router.delete("/api/stock-import-log", async (_req, res) => {
   await supabase.from("app_settings").upsert({ key: "stock_import_log", value: [], updated_at: new Date().toISOString() }, { onConflict: "key" });
   res.json({ ok: true });
+});
+
+// ═════════════════════════════════════════════════════════════════
+// GET /api/stock-manage/period-coverage
+//   재고 스냅샷 커버리지 (월 × 초/중/하순) · 어느 기간 데이터가 있는지 한 눈에
+//   응답: { periods: [{ ym, early, mid, late, total }], missing: [{ ym, period_type }] }
+// ═════════════════════════════════════════════════════════════════
+router.get("/api/stock-manage/period-coverage", async (_req, res) => {
+  try {
+    // stock_import_log(app_settings) 에서 임포트 이력 조회 · Supabase 1000행 제한 회피
+    //   각 배치의 snapshot_date + period_type 로 커버리지 집계 · 스냅샷당 상품 rows 는 조회 불필요
+    const { data: logData } = await supabase.from("app_settings").select("value").eq("key", "stock_import_log").maybeSingle();
+    const logs = Array.isArray(logData?.value) ? (logData.value as any[]) : [];
+    // ym → { early/mid/late : Set<snapshot_date> } (dedupe · 같은 스냅샷 여러 번 임포트해도 1개로 셈)
+    const bucket = new Map<string, { early: Set<string>; mid: Set<string>; late: Set<string> }>();
+    for (const l of logs) {
+      const d = String(l.snapshot_date ?? "");
+      if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+      const ym = d.slice(0, 7);
+      let pt = String(l.period_type ?? "");
+      if (!pt) {
+        const dd = Number(d.slice(8, 10));
+        pt = dd <= 10 ? "early" : dd <= 20 ? "mid" : "late";
+      }
+      const cur = bucket.get(ym) ?? { early: new Set(), mid: new Set(), late: new Set() };
+      if (pt === "early" || pt === "mid" || pt === "late") cur[pt].add(d);
+      bucket.set(ym, cur);
+    }
+    const yms = Array.from(bucket.keys()).sort();
+    if (yms.length > 0) {
+      const [y0, m0] = yms[0].split("-").map(Number);
+      const [y1, m1] = yms[yms.length - 1].split("-").map(Number);
+      for (let y = y0, m = m0; y < y1 || (y === y1 && m <= m1); ) {
+        const ym = `${y}-${String(m).padStart(2, "0")}`;
+        if (!bucket.has(ym)) bucket.set(ym, { early: new Set(), mid: new Set(), late: new Set() });
+        m++; if (m > 12) { m = 1; y++; }
+      }
+    }
+    const periods = Array.from(bucket.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([ym, v]) => ({ ym, early: v.early.size, mid: v.mid.size, late: v.late.size, total: v.early.size + v.mid.size + v.late.size }));
+    const missing: Array<{ ym: string; period_type: string }> = [];
+    for (const p of periods) {
+      if (p.early === 0) missing.push({ ym: p.ym, period_type: "early" });
+      if (p.mid === 0)   missing.push({ ym: p.ym, period_type: "mid" });
+      if (p.late === 0)  missing.push({ ym: p.ym, period_type: "late" });
+    }
+    res.json({ periods, missing });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message ?? "커버리지 조회 실패" });
+  }
 });
 
 export default router;

@@ -29,6 +29,7 @@ import { prefetchProducts } from "./lib/productsCache";
 type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage";
 
 export default function App() {
+  // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
   const [page, setPage] = useState<Page>("landing");
   const [pendingEditEmpId, setPendingEditEmpId] = useState<number | null>(null);
   const {
@@ -40,10 +41,14 @@ export default function App() {
     extendSession,
   } = useAuth();
 
-  // Prefetch product list as soon as user is authenticated
+  // 상품 캐시 prefetch · 로그인 즉시 아니라 상품 관련 페이지 진입 시로 지연 (2026-07-15 · B)
+  //   상품 관련 페이지: scan/display/stockcheck/synonyms/stockarrivals · 상품 데이터 필요
+  //   나머지 페이지: 상품 데이터 안 씀 → prefetch 스킵으로 초기 로딩 부하 감소
   useEffect(() => {
-    if (authSession) prefetchProducts();
-  }, [authSession]);
+    if (!authSession) return;
+    const needsProducts: Page[] = ["scan", "display", "stockcheck", "synonyms", "stockarrivals"];
+    if (needsProducts.includes(page)) prefetchProducts();
+  }, [authSession, page]);
 
   // 로그인 직후 웹푸시 자동 구독 (권한 팝업 1회 · 이미 구독됐으면 skip)
   usePushSubscription({ employeeId: authSession?.employeeId ?? null, auto: true });

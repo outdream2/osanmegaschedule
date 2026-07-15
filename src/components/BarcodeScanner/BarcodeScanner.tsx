@@ -259,7 +259,14 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
               <img src={state.frozenFrame} alt="snap" className="w-full h-full object-cover" />
               <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black via-black/75 to-transparent px-4 pt-10 pb-3 flex flex-col gap-2.5">
                 <p className="text-white font-mono text-sm font-bold tracking-widest text-center drop-shadow-lg">{state.scannedCode}</p>
-                <div className="flex gap-2.5">
+                <div className="flex gap-2">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onClose(); }}
+                    className="px-3 py-2.5 rounded-xl text-sm font-bold text-white bg-rose-600/80 border border-rose-500 active:scale-95 transition-transform cursor-pointer backdrop-blur-sm"
+                    title="스캔 취소 · 창 닫기"
+                  >
+                    ✕ 취소
+                  </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleRetry(); }}
                     className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white bg-white/15 border border-white/30 active:scale-95 transition-transform cursor-pointer backdrop-blur-sm"
