@@ -2,12 +2,18 @@ services:
   - type: web
     name: megatown-staff-scheduler
     runtime: node
-    buildCommand: git lfs pull && npm install --include=dev && npm run build
+    # git lfs pull 은 lfs 안 쓰거나 미설치 시 실패 회피 · npm ci 로 lockfile 기반 빠른 설치
+    buildCommand: "(git lfs pull || true) && npm ci --include=dev && npm run build"
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
+      # Render free tier 512MB 대응 · OCR 파이프라인 저메모리 모드
+      - key: LOW_MEM
+        value: "true"
+      - key: RENDER
+        value: "true"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY
