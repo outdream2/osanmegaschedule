@@ -1890,7 +1890,9 @@ const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> = ({ onO
                   <td className="text-right px-2 py-1.5 font-mono text-slate-600">{fmt(close)}</td>
                   <td className="text-right px-2 py-1.5 font-mono text-indigo-600 font-bold hidden md:table-cell">{fmt(expected)}</td>
                   <td className={`text-right px-2 py-1.5 font-mono text-slate-500 hidden md:table-cell ${purch > 0 ? "text-emerald-600 font-bold" : ""}`}>{fmt(purch)}</td>
-                  <td className="text-right px-2 py-1.5 font-mono font-black text-rose-600">-{fmt(r.loss)}</td>
+                  <td className={`text-right px-2 py-1.5 font-mono font-black ${r.loss < 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    {r.loss > 0 ? `-${fmt(r.loss)}` : r.loss < 0 ? `+${fmt(-r.loss)}` : "0"}
+                  </td>
                 </tr>
               );
               })}

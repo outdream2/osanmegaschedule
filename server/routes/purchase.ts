@@ -7,6 +7,8 @@
 // CREATE TABLE IF NOT EXISTS purchase_details (
 //   id BIGSERIAL PRIMARY KEY,
 //   purchase_date DATE NOT NULL,
+//   period_start_date DATE,                   -- 임포트 기간 시작 (커버리지 위젯용)
+//   period_type TEXT,                         -- 'daily' | 'monthly' 등
 //   supplier_code TEXT,
 //   supplier_name TEXT,
 //   product_code TEXT NOT NULL,
