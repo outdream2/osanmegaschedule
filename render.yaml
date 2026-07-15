@@ -2,23 +2,15 @@ services:
   - type: web
     name: megatown-staff-scheduler
     runtime: node
-    # repo 에 LFS 파일 없음 (git lfs ls-files 빈 결과) · git lfs pull 제거로 sh 파싱/실패 회피
-    # npm install 유지 (npm ci 는 lockfile 미세 불일치에도 hard fail)
-    buildCommand: npm install --include=dev && npm run build
+    buildCommand: git lfs pull && npm install --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production
-      # Render free tier 512MB 대응 · OCR 파이프라인 저메모리 모드
+      # 2026-07-15: OCR 파이프라인 저메모리 모드 (기존 코드가 이 env 참조)
       - key: LOW_MEM
         value: "true"
-      - key: RENDER
-        value: "true"
-      # Vite build 시 OOM 예방 · Free tier 512MB 대응 (2026-07-15)
-      #   frontend +3600 라인 추가 후 Vite 메모리 사용 증가 → build 단계 kill 방지
-      - key: NODE_OPTIONS
-        value: "--max-old-space-size=400"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY
