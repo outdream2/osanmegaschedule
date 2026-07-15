@@ -2,8 +2,9 @@ services:
   - type: web
     name: megatown-staff-scheduler
     runtime: node
-    # git lfs pull 은 lfs 안 쓰거나 미설치 시 실패 회피 · npm ci 로 lockfile 기반 빠른 설치
-    buildCommand: "(git lfs pull || true) && npm ci --include=dev && npm run build"
+    # repo 에 LFS 파일 없음 (git lfs ls-files 빈 결과) · git lfs pull 제거로 sh 파싱/실패 회피
+    # npm install 유지 (npm ci 는 lockfile 미세 불일치에도 hard fail)
+    buildCommand: npm install --include=dev && npm run build
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:
