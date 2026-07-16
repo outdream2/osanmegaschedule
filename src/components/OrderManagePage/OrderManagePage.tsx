@@ -2,16 +2,18 @@
 // 발주관리 페이지 — 매장관리 · 재고관리 · 입고알림관리 옆의 서브탭으로 노출
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
 // 사입(OCR거래명세서 등록) 탭에서는 거래명세서 OCR(OcrPage) 노출
-import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle, Upload, Building2, ClipboardList } from "lucide-react";
 import * as XLSX from "xlsx";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
+import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 import { OcrPage } from "../OcrPage";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../AppNavHeader";
-// 공급사관리(마스터-디테일) 은 무겁고 조건부라 lazy 로드
-const VendorListEditor = lazy(() => import("../LandingPage/VendorListEditor").then(m => ({ default: m.VendorListEditor })));
+// VendorListEditor · VendorDetailModal · Vendor — split 패널 구성 (static import · panel 모드 지원)
+import { VendorListEditor, VendorDetailModal } from "../LandingPage/VendorListEditor";
+import type { Vendor } from "../LandingPage/VendorListEditor";
 
 interface OrderRequest {
   id: string;
@@ -80,9 +82,39 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // 상단 탭 (발주요청 / 발주필요 / 사입(OCR거래명세서 등록) / 공급사관리) · Vercel Ink underline 스타일
   const [topTab, setTopTab] = useState<"order" | "need" | "receipt" | "vendor">("order");
   // 공급사관리 서브 pill (재고관리 스타일 · 대시보드/원본데이터)
-  const [vendorPageTab, setVendorPageTab] = useState<"dashboard" | "raw">("dashboard");
+  // (removed 2026-07-16) vendorPageTab — VendorListEditor 를 한 줄 리스트 + 모달 방식으로 통일
   // 원본데이터 → 대시보드 전환 시 자동 선택될 공급사 id
   const [vendorPreselectId, setVendorPreselectId] = useState<number | null>(null);
+
+  // ── 공급사관리(vendor) 탭 · 좌우 분할 레이아웃 state ──
+  const [vendorPanelWidth, setVendorPanelWidth] = useState<number>(() => {
+    try { const v = Number(localStorage.getItem("megatown_order_vendor_w")); return Number.isFinite(v) && v > 0 ? v : 640; } catch { return 640; }
+  });
+  useEffect(() => { try { localStorage.setItem("megatown_order_vendor_w", String(vendorPanelWidth)); } catch {} }, [vendorPanelWidth]);
+  const vendorPanelWidthRef = useRef(vendorPanelWidth);
+  useEffect(() => { vendorPanelWidthRef.current = vendorPanelWidth; }, [vendorPanelWidth]);
+  const vendorResizeRef = useRef<{ startX: number; startW: number } | null>(null);
+  const onVendorResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    vendorResizeRef.current = { startX: e.clientX, startW: vendorPanelWidthRef.current };
+    const move = (ev: MouseEvent) => { const r = vendorResizeRef.current; if (!r) return; setVendorPanelWidth(Math.min(1000, Math.max(320, r.startW + (ev.clientX - r.startX)))); };
+    const up = () => { vendorResizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+  };
+  // 우측 패널용 선택된 공급사 (vendor 탭)
+  const [vendorSelected, setVendorSelected] = useState<Vendor | null>(null);
+  const [vendorReloadKey, setVendorReloadKey] = useState(0);
+  // 공급사 클릭 → API 로 전체 목록 fetch 후 해당 id 의 vendor 우측 패널 표시
+  const handleVendorEditRequest = useCallback(async (vendorId: number) => {
+    try {
+      const res = await fetch("/api/vendors?withBalances=1");
+      if (res.ok) {
+        const list: Vendor[] = await res.json();
+        const found = list.find(v => v.id === vendorId);
+        if (found) setVendorSelected(found);
+      }
+    } catch { /* silent */ }
+  }, []);
 
   // 사입(OCR거래명세서 등록) 상태
   const [receipts, setReceipts] = useState<GoodsReceipt[]>([]);
@@ -151,6 +183,72 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       finally { setDetailLoading(false); }
     })();
   }, [detailProduct]);
+
+  // ── 발주요청(order) 탭 · 좌우 분할 레이아웃 state ──
+  const [orderPanelWidth, setOrderPanelWidth] = useState<number>(() => {
+    try { const v = Number(localStorage.getItem("megatown_ordermanage_order_w")); return Number.isFinite(v) && v > 0 ? v : 640; } catch { return 640; }
+  });
+  useEffect(() => { try { localStorage.setItem("megatown_ordermanage_order_w", String(orderPanelWidth)); } catch { /**/ } }, [orderPanelWidth]);
+  const orderPanelWidthRef = useRef(orderPanelWidth);
+  useEffect(() => { orderPanelWidthRef.current = orderPanelWidth; }, [orderPanelWidth]);
+  const orderResizeRef = useRef<{ startX: number; startW: number } | null>(null);
+  const onOrderResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    orderResizeRef.current = { startX: e.clientX, startW: orderPanelWidthRef.current };
+    const move = (ev: MouseEvent) => { const r = orderResizeRef.current; if (!r) return; setOrderPanelWidth(Math.min(1000, Math.max(320, r.startW + (ev.clientX - r.startX)))); };
+    const up = () => { orderResizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+  };
+  // 우측 패널용 선택 상품 (발주요청 탭)
+  const [orderPanelProduct, setOrderPanelProduct] = useState<{ code: string; name: string } | null>(null);
+  const [orderPanelFull, setOrderPanelFull] = useState<Record<string, any> | null>(null);
+  const [orderPanelLoading, setOrderPanelLoading] = useState(false);
+  const [orderPanelError, setOrderPanelError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!orderPanelProduct) { setOrderPanelFull(null); setOrderPanelError(null); return; }
+    setOrderPanelLoading(true); setOrderPanelError(null);
+    (async () => {
+      try {
+        const res = await fetch(`/api/products/${encodeURIComponent(orderPanelProduct.code)}`);
+        if (res.ok) setOrderPanelFull(await res.json());
+        else { const b = await res.json().catch(() => ({})); setOrderPanelError(b.error ?? `조회 실패 (${res.status})`); }
+      } catch (err: any) { setOrderPanelError(err?.message ?? "네트워크 오류"); }
+      finally { setOrderPanelLoading(false); }
+    })();
+  }, [orderPanelProduct]);
+
+  // ── 발주필요(need) 탭 · 좌우 분할 레이아웃 state ──
+  const [needPanelWidth, setNeedPanelWidth] = useState<number>(() => {
+    try { const v = Number(localStorage.getItem("megatown_ordermanage_need_w")); return Number.isFinite(v) && v > 0 ? v : 600; } catch { return 600; }
+  });
+  useEffect(() => { try { localStorage.setItem("megatown_ordermanage_need_w", String(needPanelWidth)); } catch { /**/ } }, [needPanelWidth]);
+  const needPanelWidthRef = useRef(needPanelWidth);
+  useEffect(() => { needPanelWidthRef.current = needPanelWidth; }, [needPanelWidth]);
+  const needResizeRef = useRef<{ startX: number; startW: number } | null>(null);
+  const onNeedResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    needResizeRef.current = { startX: e.clientX, startW: needPanelWidthRef.current };
+    const move = (ev: MouseEvent) => { const r = needResizeRef.current; if (!r) return; setNeedPanelWidth(Math.min(1000, Math.max(320, r.startW + (ev.clientX - r.startX)))); };
+    const up = () => { needResizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+  };
+  // 우측 패널용 선택 상품 (발주필요 탭)
+  const [needPanelProduct, setNeedPanelProduct] = useState<{ code: string; name: string } | null>(null);
+  const [needPanelFull, setNeedPanelFull] = useState<Record<string, any> | null>(null);
+  const [needPanelLoading, setNeedPanelLoading] = useState(false);
+  const [needPanelError, setNeedPanelError] = useState<string | null>(null);
+  useEffect(() => {
+    if (!needPanelProduct) { setNeedPanelFull(null); setNeedPanelError(null); return; }
+    setNeedPanelLoading(true); setNeedPanelError(null);
+    (async () => {
+      try {
+        const res = await fetch(`/api/products/${encodeURIComponent(needPanelProduct.code)}`);
+        if (res.ok) setNeedPanelFull(await res.json());
+        else { const b = await res.json().catch(() => ({})); setNeedPanelError(b.error ?? `조회 실패 (${res.status})`); }
+      } catch (err: any) { setNeedPanelError(err?.message ?? "네트워크 오류"); }
+      finally { setNeedPanelLoading(false); }
+    })();
+  }, [needPanelProduct]);
 
   const loadOrderReqs = useCallback(async () => {
     setOrderLoading(true); setOrderError(null);
@@ -562,7 +660,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         {[
           { k: "order"   as const, label: "발주요청", icon: ShoppingCart, color: "sky" },
           { k: "need"    as const, label: "발주필요", icon: ClipboardList, color: "amber", badge: lowStock.length },
-          { k: "receipt" as const, label: "사입(OCR거래명세서 등록)", icon: PackageCheck, color: "violet" },
+          // 라벨 반응형: 데스크탑 lg+ 은 풀네임 · 태블릿·모바일은 축약 (2026-07-16)
+          { k: "receipt" as const, label: "사입(OCR거래명세서 등록)", shortLabel: "사입·OCR", icon: PackageCheck, color: "violet" },
           { k: "vendor"  as const, label: "공급사관리", icon: Building2, color: "teal" },
         ].map(t => {
           const Icon = t.icon;
@@ -585,7 +684,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 active ? activeText : "text-slate-400 hover:text-slate-700"
               }`}>
               <Icon size={13} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
-              <span>{t.label}</span>
+              {/* 태블릿·모바일에서 shortLabel 우선 (있으면) · 데스크탑(lg+)에서 풀네임 */}
+              <span className="lg:hidden">{(t as any).shortLabel ?? t.label}</span>
+              <span className="hidden lg:inline">{t.label}</span>
               {"badge" in t && t.badge != null && t.badge > 0 && (
                 <span className={`inline-flex items-center justify-center min-w-[14px] sm:min-w-[18px] px-1 h-4 rounded-full text-[9px] font-black ${active ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"}`}>
                   {t.badge}
@@ -599,15 +700,20 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         })}
       </div>
 
-      {/* ── 발주필요 탭 · 적정재고 미달 상품 리스트 (order 탭에서 이동) ── */}
+      {/* ── 발주필요 탭 · 좌우 분할 레이아웃 ── */}
       {topTab === "need" && (
-      <section className="flex flex-col gap-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <button onClick={() => setLowStockCollapsed(!lowStockCollapsed)} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-1 py-0.5 transition" title={lowStockCollapsed ? "펼치기" : "접기"}>
+      <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+        {/* 좌측: 발주필요 리스트 */}
+        <div
+          className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
+          style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? needPanelWidth : undefined }}
+        >
+      <section className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+          <button onClick={() => setLowStockCollapsed(!lowStockCollapsed)} className="flex items-center gap-1.5 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-1 py-0.5 transition" title={lowStockCollapsed ? "펼치기" : "접기"}>
             <span className={`text-slate-400 text-xs transition-transform ${lowStockCollapsed ? "" : "rotate-90"}`}>▶</span>
-            <Package size={16} className="text-amber-500" />
-            <h2 className="text-sm font-black text-slate-800">발주 필요 상품</h2>
-            <span className="text-[10px] text-slate-500 font-normal">(현재고 &lt; 적정재고)</span>
+            <Package size={14} className="text-amber-600" />
+            <span className="text-sm font-black text-slate-700">발주 필요 상품<span className="text-[10px] font-semibold text-slate-400 ml-1">(현재고 &lt; 적정재고)</span></span>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">{lowStock.length}개</span>
           </button>
           <div className="flex items-center gap-1.5">
@@ -624,19 +730,21 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           </div>
         </div>
         {!lowStockCollapsed && (<>
-        {productsLoading ? (
-          <div className="flex justify-center py-8"><Loader2 size={20} className="animate-spin text-amber-400" /></div>
-        ) : lowStock.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-10 text-gray-300 border-t border-b border-slate-200 bg-white">
-            <Package size={28} className="mb-2" /><p className="text-sm font-bold text-gray-400">발주 필요 상품이 없습니다</p>
+        {productsLoading && lowStock.length > 0 && (
+          <div className="flex items-center justify-center gap-1.5 text-[10px] text-amber-600 font-bold py-1.5 mb-1 bg-amber-50 border border-amber-200 rounded-md sticky top-0 z-10">
+            <Loader2 size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
           </div>
+        )}
+        {productsLoading && lowStock.length === 0 ? (
+          <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+        ) : lowStock.length === 0 ? (
+          <div className="text-center text-[11px] text-slate-300 py-6">발주 필요 상품 없음</div>
         ) : (
           <>
-          <div className="px-3 pt-1.5 pb-0.5 flex items-center gap-2 border-t border-slate-100 bg-white">
-            <span className="text-[11px] font-black text-slate-600">발주필요 리스트</span>
-            <span className="text-[10px] font-mono text-slate-400">({lowStockFiltered.length}건)</span>
-          </div>
-          <div className="border-t border-b border-slate-200 overflow-auto max-h-[280px]">
+          <p className="text-[10px] text-amber-600 font-semibold mb-2 flex items-center gap-1">
+            <span className="text-amber-400">▶</span> 발주필요 리스트 <span className="text-slate-400 font-normal">({lowStockFiltered.length}건)</span>
+          </p>
+          <div className={`max-h-[50vh] overflow-auto relative ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-white z-10">
                 <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
@@ -681,7 +789,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       </td>
                       <td className="px-1 py-1.5 align-top">
                         <button
-                          onClick={() => setDetailProduct({ code, name })}
+                          onClick={() => setNeedPanelProduct({ code, name })}
                           className="text-left text-[12px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
                           title="상품 상세정보 조회"
                         >{name || "(상품명 없음)"}</button>
@@ -725,6 +833,49 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         )}
         </>)}
       </section>
+        </div>{/* 좌측 패널 wrapper close */}
+
+        {/* 리사이즈 핸들 (데스크탑만) */}
+        <div onMouseDown={onNeedResizeStart}
+          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-amber-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+          title="드래그하여 폭 조절">
+          <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+        </div>
+
+        {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}
+        {needPanelLoading ? (
+          <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
+            <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+              <Loader2 size={32} className="animate-spin mb-3 opacity-50" />
+              <div className="text-sm font-bold">불러오는 중...</div>
+            </div>
+          </div>
+        ) : needPanelError ? (
+          <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
+            <div className="bg-white rounded-xl border border-slate-200 p-4 text-sm text-red-700">
+              <div className="font-bold mb-1">조회 실패</div>
+              <div className="text-[11px] font-mono">{needPanelError}</div>
+            </div>
+          </div>
+        ) : (
+          <ProductDetailRightPanel
+            selected={needPanelFull ? ({
+              code: (needPanelFull as any).product_code ?? (needPanelFull as any).code ?? (needPanelProduct?.code ?? ""),
+              name: (needPanelFull as any).product_name ?? (needPanelFull as any).name ?? (needPanelProduct?.name ?? ""),
+              spec: (needPanelFull as any).spec ?? "",
+              ...needPanelFull,
+              realMap: (needPanelFull as any).realMap ?? (needPanelFull as any).real_map ?? null,
+            } as ProductInfoType) : null}
+            onClose={() => setNeedPanelProduct(null)}
+            onProductUpdate={(u) => setNeedPanelFull(prev => prev ? { ...prev, ...u } : prev)}
+            onRealMapUpdate={(v) => setNeedPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
+            showChart={true}
+            context="order-manage"
+            editable={true}
+            emptySub="상세 정보가 표시됩니다"
+          />
+        )}
+      </div>
       )}
       {/* ── 사입(OCR거래명세서 등록) 탭 · 거래명세서 OCR 컨텐츠만 임베드 (헤더 X) ── */}
       {topTab === "receipt" && (
@@ -738,35 +889,66 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           />
         </div>
       )}
-      {/* ── 공급사관리 탭 · VendorListEditor + 대시보드/원본데이터 pill (재고관리 스타일) ── */}
+      {/* ── 공급사관리 탭 · 좌우 split 레이아웃 (2026-07-16) ── */}
       {topTab === "vendor" && (
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex items-center gap-2 flex-wrap mb-3">
-            <Building2 size={18} className="text-teal-600 shrink-0" />
-            <h2 className="text-lg font-black text-slate-800">공급사관리</h2>
-            <span className="text-[11px] font-semibold text-slate-400 hidden sm:inline">사업자등록번호 · 담당자 정보 관리</span>
-            <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5 ml-1">
-              <button onClick={() => setVendorPageTab("dashboard")}
-                className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
-                  vendorPageTab === "dashboard"
-                    ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-                }`}>대시보드</button>
-              <button onClick={() => setVendorPageTab("raw")}
-                className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${
-                  vendorPageTab === "raw"
-                    ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-                }`}>원본 데이터</button>
-            </div>
+        <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+          {/* 좌측: 공급사 리스트 */}
+          <div
+            className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
+            style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? vendorPanelWidth : undefined }}
+          >
+              <VendorListEditor
+                key={vendorReloadKey}
+                initialSelectedId={vendorPreselectId}
+                onEditRequest={handleVendorEditRequest}
+                compact
+              />
           </div>
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">공급사관리 로딩 중...</div>}>
-            <VendorListEditor
-              mode={vendorPageTab}
-              initialSelectedId={vendorPreselectId}
-              onEditRequest={(id) => { setVendorPreselectId(id); setVendorPageTab("dashboard"); }}
-            />
-          </Suspense>
+
+          {/* 리사이즈 핸들 (데스크탑만) */}
+          <div onMouseDown={onVendorResizeStart}
+            className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+            title="드래그하여 폭 조절">
+            <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          </div>
+
+          {/* 우측: 선택 공급사 상세 · 모바일 fullscreen 모달 */}
+          <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-slate-50 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible" : ""}`}>
+            {/* 모바일 헤더 (lg 미만만) */}
+            {vendorSelected && (
+              <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md">
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <button type="button" onClick={() => setVendorSelected(null)}
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
+                    <span className="text-lg font-black">×</span>
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-black text-slate-800 truncate leading-tight">{vendorSelected.company_name}</div>
+                    <div className="text-[10px] font-mono text-slate-500 truncate">공급사 상세 · 편집</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {!vendorSelected ? (
+              <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+                <Building2 size={40} className="mb-3 opacity-30" />
+                <div className="text-sm font-bold">리스트에서 공급사를 클릭하세요</div>
+                <div className="text-[11px] mt-1">상세 정보 · 편집 · 매입이력이 표시됩니다</div>
+              </div>
+            ) : (
+              <VendorDetailModal
+                vendor={vendorSelected}
+                panel
+                onClose={() => setVendorSelected(null)}
+                onSaved={() => {
+                  setVendorReloadKey(k => k + 1);
+                  // 저장 후에도 우측 패널 유지 (선택 해제 안 함)
+                  // 최신 데이터 재조회
+                  handleVendorEditRequest(vendorSelected.id);
+                }}
+              />
+            )}
+          </div>
         </div>
       )}
       {/* ── (기존 입고 목록 UI · 참조용 · 표시 안 함) ── */}
@@ -871,15 +1053,21 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         </section>
       )}
 
-      {/* ── 발주요청 탭 (기존 내용) ── */}
-      {topTab === "order" && (<>
-      {/* 발주 요청 목록 (일괄 발주 가능) */}
-      <section className="flex flex-col gap-2 bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <button onClick={() => setOrderReqCollapsed(!orderReqCollapsed)} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-1 py-0.5 transition" title={orderReqCollapsed ? "펼치기" : "접기"}>
+      {/* ── 발주요청 탭 · 좌우 분할 레이아웃 ── */}
+      {topTab === "order" && (
+      <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+        {/* 좌측: 발주요청 리스트 */}
+        <div
+          className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
+          style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? orderPanelWidth : undefined }}
+        >
+      {/* 발주 요청 목록 · 재고관리 스타일 통일 (2026-07-16) */}
+      <section className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+        <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+          <button onClick={() => setOrderReqCollapsed(!orderReqCollapsed)} className="flex items-center gap-1.5 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-1 py-0.5 transition" title={orderReqCollapsed ? "펼치기" : "접기"}>
             <span className={`text-slate-400 text-xs transition-transform ${orderReqCollapsed ? "" : "rotate-90"}`}>▶</span>
-            <ShoppingCart size={16} className="text-red-500" />
-            <h2 className="text-sm font-black text-slate-800">발주 요청 목록</h2>
+            <ShoppingCart size={14} className="text-red-600" />
+            <span className="text-sm font-black text-slate-700">발주 요청 목록</span>
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">{orderReqs.length}건</span>
             {selectedOrder.size > 0 && (
               <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-300">선택 {selectedOrder.size}건</span>
@@ -938,18 +1126,21 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             <button onClick={loadOrderReqs} className="ml-auto text-red-500 underline cursor-pointer">재시도</button>
           </div>
         )}
-        {orderLoading ? (
-          <div className="flex justify-center py-10"><Loader2 size={20} className="animate-spin text-red-400" /></div>
+        {orderLoading && orderReqs.length > 0 && (
+          <div className="flex items-center justify-center gap-1.5 text-[10px] text-red-600 font-bold py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
+            <Loader2 size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+          </div>
+        )}
+        {orderLoading && orderReqs.length === 0 ? (
+          <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
         ) : orderReqs.length === 0 && !orderError ? (
-          <p className="text-xs text-gray-400 py-6 text-center border-t border-b border-slate-200 bg-white">발주 요청 내역이 없습니다</p>
+          <div className="text-center text-[11px] text-slate-300 py-6">발주 요청 내역 없음</div>
         ) : (
           <>
-          {/* 발주요청 리스트 · 판매리스트와 동일 디자인 */}
-          <div className="px-3 pt-1.5 pb-0.5 flex items-center gap-2 border-t border-slate-100 bg-white">
-            <span className="text-[11px] font-black text-slate-600">발주요청 리스트</span>
-            <span className="text-[10px] font-mono text-slate-400">({orderReqsFiltered.length}건)</span>
-          </div>
-          <div className="border-t border-b border-slate-200 overflow-auto max-h-[280px]">
+          <p className="text-[10px] text-red-600 font-semibold mb-2 flex items-center gap-1">
+            <span className="text-red-400">▶</span> 발주요청 리스트 <span className="text-slate-400 font-normal">({orderReqsFiltered.length}건)</span>
+          </p>
+          <div className={`max-h-[50vh] overflow-auto relative ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             <table className="w-full text-xs">
               <thead className="sticky top-0 bg-white z-10">
                 <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
@@ -1039,7 +1230,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       </td>
                       <td className="px-1 py-1.5 align-top">
                         <button
-                          onClick={() => setDetailProduct({ code: r.product_code, name: r.product_name })}
+                          onClick={() => setOrderPanelProduct({ code: r.product_code, name: r.product_name })}
                           className="text-left text-[12px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
                           title="상품 상세정보 조회"
                         >{r.product_name || "(상품명 없음)"}</button>
@@ -1089,8 +1280,51 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         )}
         </>)}
       </section>
+        </div>{/* 좌측 패널 wrapper close */}
 
-      </>)}
+        {/* 리사이즈 핸들 (데스크탑만) */}
+        <div onMouseDown={onOrderResizeStart}
+          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-sky-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+          title="드래그하여 폭 조절">
+          <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+        </div>
+
+        {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}
+        {orderPanelLoading ? (
+          <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
+            <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+              <Loader2 size={32} className="animate-spin mb-3 opacity-50" />
+              <div className="text-sm font-bold">불러오는 중...</div>
+            </div>
+          </div>
+        ) : orderPanelError ? (
+          <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0">
+            <div className="bg-white rounded-xl border border-slate-200 p-4 text-sm text-red-700">
+              <div className="font-bold mb-1">조회 실패</div>
+              <div className="text-[11px] font-mono">{orderPanelError}</div>
+            </div>
+          </div>
+        ) : (
+          <ProductDetailRightPanel
+            selected={orderPanelFull ? ({
+              code: (orderPanelFull as any).product_code ?? (orderPanelFull as any).code ?? (orderPanelProduct?.code ?? ""),
+              name: (orderPanelFull as any).product_name ?? (orderPanelFull as any).name ?? (orderPanelProduct?.name ?? ""),
+              spec: (orderPanelFull as any).spec ?? "",
+              ...orderPanelFull,
+              realMap: (orderPanelFull as any).realMap ?? (orderPanelFull as any).real_map ?? null,
+            } as ProductInfoType) : null}
+            onClose={() => setOrderPanelProduct(null)}
+            onProductUpdate={(u) => setOrderPanelFull(prev => prev ? { ...prev, ...u } : prev)}
+            onRealMapUpdate={(v) => setOrderPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
+            showChart={true}
+            context="order-manage"
+            editable={true}
+            emptyMessage="리스트에서 상품을 클릭하세요"
+            emptySub="상세 정보가 표시됩니다"
+          />
+        )}
+      </div>
+      )}
 
       {/* 발주서 (Purchase Order) 모달 — 표준 발주 포맷 */}
       {orderModal && (

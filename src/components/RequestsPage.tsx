@@ -533,14 +533,17 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               }
             />
 
-            {displayLoading ? (
-              <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" /></div>
-            ) : displayReqs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-300">
-                <Bell size={32} className="mb-2" /><p className="text-sm font-bold text-gray-400">진열요청이 없습니다</p>
+            {displayLoading && displayReqs.length > 0 && (
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-blue-600 font-bold py-1.5 mb-1 bg-blue-50 border border-blue-200 rounded-md sticky top-0 z-10">
+                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
               </div>
+            )}
+            {displayLoading && displayReqs.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+            ) : !displayLoading && displayReqs.length === 0 ? (
+              <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
             ) : (
-              <div className="bg-white border-t border-b border-slate-200 divide-y divide-slate-100">
+              <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${displayLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {displayReqs.map(r => {
                   const isDone = r.status === "done";
                   const completing = completingDisplay.has(r.id);
@@ -615,12 +618,17 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                   <button onClick={loadOrderReqs} className="ml-auto text-red-500 underline cursor-pointer">재시도</button>
                 </div>
               )}
-              {orderLoading ? (
-                <div className="flex justify-center py-10"><div className="w-6 h-6 border-2 border-red-400 border-t-transparent rounded-full animate-spin" /></div>
-              ) : orderReqs.length === 0 && !orderError ? (
-                <p className="text-xs text-gray-400 py-6 text-center">발주 요청 내역이 없습니다</p>
-              ) : !orderLoading && (
-                <div className="bg-white border-t border-b border-slate-200 divide-y divide-slate-100">
+              {orderLoading && orderReqs.length > 0 && (
+                <div className="flex items-center justify-center gap-1.5 text-[10px] text-red-600 font-bold py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
+                  <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+                </div>
+              )}
+              {orderLoading && orderReqs.length === 0 ? (
+                <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              ) : !orderLoading && orderReqs.length === 0 && !orderError ? (
+                <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
+              ) : (
+                <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {orderReqs.map(r => {
                     const short = (r.optimal_stock ?? 0) - (r.current_stock ?? 0);
                     const inv = invStockMap.get(r.product_code);
@@ -661,14 +669,17 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                   ⚠ {orderRequestError}
                 </div>
               )}
-              {productsLoading ? (
-                <div className="flex justify-center py-8"><div className="w-6 h-6 border-2 border-gray-300 border-t-transparent rounded-full animate-spin" /></div>
-              ) : lowStock.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-10 text-gray-300">
-                  <Package size={28} className="mb-2" /><p className="text-sm font-bold text-gray-400">발주 필요 상품이 없습니다</p>
+              {productsLoading && lowStock.length > 0 && (
+                <div className="flex items-center justify-center gap-1.5 text-[10px] text-red-600 font-bold py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
+                  <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
                 </div>
+              )}
+              {productsLoading && lowStock.length === 0 ? (
+                <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              ) : !productsLoading && lowStock.length === 0 ? (
+                <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
               ) : (
-                <div className="bg-white border-t border-b border-slate-200 divide-y divide-slate-100">
+                <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {lowStock.map(p => {
                     const cur = Number(p.current_stock), opt = Number(p.optimal_stock);
                     const code = (p as any).code ?? (p as any).product_code ?? "";
@@ -722,21 +733,23 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               onDeleteAll={() => { if (confirm(`구역불일치 전체 ${mismatches.length}건을 삭제할까요?`)) deleteMismatch(mismatches.map(r => r.id)); }}
               onRefresh={loadMismatches} loading={mismatchLoading} accentColor="text-orange-600"
             />
-            {mismatchLoading ? (
-              <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-orange-400 border-t-transparent rounded-full animate-spin" /></div>
+            {mismatchLoading && mismatches.length > 0 && (
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-orange-600 font-bold py-1.5 mb-1 bg-orange-50 border border-orange-200 rounded-md sticky top-0 z-10">
+                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+              </div>
+            )}
+            {mismatchLoading && mismatches.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
             ) : mismatchError ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2">
                 <p className="text-sm font-bold text-red-500">불러오기 오류</p>
                 <p className="text-xs text-red-400 font-mono text-center px-4">{mismatchError}</p>
                 <button onClick={loadMismatches} className="mt-2 text-xs text-orange-600 underline cursor-pointer">다시 시도</button>
               </div>
-            ) : mismatches.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-300">
-                <MapPin size={32} className="mb-2" /><p className="text-sm font-bold text-gray-400">불일치 상품이 없습니다</p>
-                <p className="text-xs text-gray-400 mt-1 text-center leading-relaxed">스캔 후 실제배치구역이 전산배치구역과 다를 때 자동 등록됩니다</p>
-              </div>
+            ) : !mismatchLoading && mismatches.length === 0 ? (
+              <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
             ) : (
-              <div className="bg-white border-t border-b border-slate-200 divide-y divide-slate-100">
+              <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${mismatchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {mismatches.map(m => (
                   <div key={m.id} className={`flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition ${selectedMismatch.has(m.id) ? "bg-rose-50/40" : ""}`}>
                     <Checkbox checked={selectedMismatch.has(m.id)} onChange={() => toggleOne(selectedMismatch, m.id, setSelectedMismatch)} />
@@ -796,16 +809,17 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               onDeleteAll={() => { if (confirm(`실재고 점검 내역 전체 ${inventoryChecks.length}건을 삭제할까요?`)) deleteInventory(inventoryChecks.map(r => r.id)); }}
               onRefresh={loadInventoryChecks} loading={inventoryLoading} accentColor="text-purple-600"
             />
-            {inventoryLoading ? (
-              <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" /></div>
-            ) : inventoryChecks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-300">
-                <Package size={32} className="mb-2" />
-                <p className="text-sm font-bold text-gray-400">실재고 점검 내역이 없습니다</p>
-                <p className="text-xs text-gray-400 mt-1 text-center">바코드 스캔 후 창고·매장 실재고를 입력하면 자동 등록됩니다</p>
+            {inventoryLoading && inventoryChecks.length > 0 && (
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-purple-600 font-bold py-1.5 mb-1 bg-purple-50 border border-purple-200 rounded-md sticky top-0 z-10">
+                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
               </div>
+            )}
+            {inventoryLoading && inventoryChecks.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+            ) : !inventoryLoading && inventoryChecks.length === 0 ? (
+              <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
             ) : (
-              <div className="bg-white border-t border-b border-slate-200 divide-y divide-slate-100">
+              <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${inventoryLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {inventoryChecks.map(r => {
                   const totalActual = (r.warehouse_stock ?? 0) + (r.store_stock ?? 0);
                   const diff = r.system_stock != null ? totalActual - r.system_stock : null;
@@ -952,15 +966,17 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               </div>
             </div>
 
-            {lunchLoading ? (
-              <div className="flex justify-center py-16"><div className="w-6 h-6 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" /></div>
-            ) : lunchRequests.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-gray-300">
-                <Utensils size={32} className="mb-2" />
-                <p className="text-sm font-bold text-gray-400">아직 신청자가 없습니다</p>
+            {lunchLoading && lunchRequests.length > 0 && (
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-600 font-bold py-1.5 mb-1 bg-slate-100 border border-slate-200 rounded-md sticky top-0 z-10">
+                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
               </div>
+            )}
+            {lunchLoading && lunchRequests.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+            ) : !lunchLoading && lunchRequests.length === 0 ? (
+              <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
             ) : (
-              <div className="bg-white border-t border-b border-slate-200 divide-y divide-slate-100">
+              <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${lunchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {lunchRequests.map(r => (
                   <div key={r.id} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${r.eating ? "bg-emerald-500" : "bg-gray-300"}`} />

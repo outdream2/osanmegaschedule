@@ -17,6 +17,7 @@ interface ProductInfoSections {
   financial?: boolean;      // 매입가/판매가/마진 (신규)
   productMeta?: boolean;    // 상품코드/공급처/판매상태/최근매입일
   extraInfo?: boolean;      // 브랜드·제조사·바코드·유효기간·메모 (신규 · 인라인 편집)
+  purchaseHistory?: boolean; // 매입 이력 (접기/펼치기) · 2026-07-16 · 위치 조정용 flag
 }
 
 interface ProductInfoCardProps {
@@ -38,14 +39,17 @@ const SECTION_PRESETS: Record<NonNullable<ProductInfoCardProps["context"]>, Prod
   scan: {
     header: true, zoneAssignment: true, stockStatus: true, actualStockInput: true,
     orderRequest: true, productMeta: true, financial: false, extraInfo: false,
+    purchaseHistory: true,
   },
   "stock-manage": {
     header: true, zoneAssignment: true, stockStatus: true, actualStockInput: true,
     orderRequest: true, productMeta: true, financial: true, extraInfo: true,
+    purchaseHistory: true,
   },
   "order-manage": {
     header: true, zoneAssignment: true, stockStatus: true, actualStockInput: true,
     orderRequest: false, productMeta: true, financial: true, extraInfo: true,
+    purchaseHistory: true,
   },
 };
 
@@ -67,6 +71,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
   const [editingValue, setEditingValue] = useState<string>("");
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
+  // 2026-07-16 · 재고 현황 섹션 접기/펼치기 (사용자 요청)
+  const [stockSectionCollapsed, setStockSectionCollapsed] = useState(false);
 
   const startEdit = (k: InlineEditableKey, v: any) => {
     if (!inlineEditEnabled) return;
@@ -462,145 +468,136 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           </div>
         )}
 
-        {/* ── 재고 현황 섹션 (적정재고 인라인 편집 가능) ── */}
-        {S.stockStatus && (
-        <div className={`rounded-xl border px-3 py-2 mb-2.5 ${
-          isLow ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"
-        }`}>
-          <div className="flex items-center gap-4">
-            <div>
-              <p className="text-[9px] font-bold text-gray-500 leading-none mb-0.5">현재고 (ERP)</p>
-              <p className={`text-lg font-black leading-none ${isLow ? "text-red-500" : "text-gray-800"}`}>
-                {cur ?? "-"}
-              </p>
-            </div>
-            <div className={`h-8 w-px ${isLow ? "bg-red-200" : "bg-amber-200"}`} />
-            <div className="min-w-0">
-              <p className="text-[9px] font-bold text-amber-600 leading-none mb-0.5 flex items-center gap-1">
-                적정재고 {inlineEditEnabled && <span className="text-[8px] text-amber-400">(클릭 편집)</span>}
-              </p>
-              {editingKey === "optimal_stock" ? (
-                <div className="flex items-center gap-1">
-                  <input
-                    type="number" min={0}
-                    value={editingValue}
-                    onChange={e => setEditingValue(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
-                    disabled={editSaving}
-                    autoFocus
-                    className="w-16 text-lg font-black border-2 border-amber-500 rounded px-1.5 py-0.5 focus:outline-none"
-                  />
-                  <button onClick={commitEdit} disabled={editSaving} className="shrink-0 w-6 h-6 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 disabled:opacity-40 cursor-pointer">
-                    {editSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={12} />}
-                  </button>
-                  <button onClick={cancelEdit} disabled={editSaving} className="shrink-0 w-6 h-6 rounded bg-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-300 disabled:opacity-40 cursor-pointer">
-                    <X size={12} />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => inlineEditEnabled && startEdit("optimal_stock", opt)}
-                  disabled={!inlineEditEnabled}
-                  className={`text-lg font-black leading-none text-amber-700 ${inlineEditEnabled ? "hover:bg-amber-100 rounded px-1 -mx-1 cursor-pointer transition" : "cursor-default"}`}
-                >
-                  {opt ?? "-"}
-                </button>
-              )}
-              {editingKey === "optimal_stock" && editError && (
-                <p className="text-[10px] text-red-500 mt-0.5">{editError}</p>
-              )}
-            </div>
-            {isLow && (
-              <div className="ml-auto flex items-center gap-1">
-                <AlertTriangle size={10} className="text-red-500 shrink-0" />
-                <p className="text-[10px] font-bold text-red-600 whitespace-nowrap">재고 부족</p>
-              </div>
-            )}
-          </div>
-        </div>
-        )}
-
-        {/* ── 실재고 입력 (창고 / 매장 — 각각 독립 저장) ── */}
-        {S.actualStockInput && (() => {
+        {/* ── 재고 통합 (2026-07-16 컴팩트화) · 현재고 · 적정 · 창고 · 매장 · 한 줄 ── */}
+        {(S.stockStatus || S.actualStockInput) && (() => {
           const hasInput = warehouseStock !== "" || storeStock !== "";
           const totalActual = Number(warehouseStock || 0) + Number(storeStock || 0);
           const diff = hasInput && cur != null ? totalActual - cur : null;
           return (
-            <div className="rounded-xl border border-purple-200 bg-purple-50 px-3 py-2 mb-2.5">
+            <div className={`rounded-xl border px-3 py-2 mb-2.5 ${isLow ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200"}`}>
+              {/* 2026-07-16 · 헤더 · 재고현황 라벨(클릭 시 접기/펼치기) + 재고세기 버튼 + 부족 뱃지 */}
               <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[10px] font-bold text-purple-600 uppercase tracking-wide">실재고 입력</p>
                 <button
-                  onClick={() => setStockCounterOpen(true)}
-                  className="flex items-center gap-1 px-2 py-0.5 bg-green-500 hover:bg-green-600 text-white text-[10px] font-bold rounded-lg transition cursor-pointer shadow-sm"
+                  type="button"
+                  onClick={() => setStockSectionCollapsed(c => !c)}
+                  className="flex items-center gap-1.5 hover:bg-white/40 -mx-1 px-1 py-0.5 rounded transition cursor-pointer"
+                  title={stockSectionCollapsed ? "펼치기" : "접기"}
                 >
-                  <ScanLine size={10} />
-                  재고 세기
+                  <span className={`text-slate-400 text-xs transition-transform ${stockSectionCollapsed ? "" : "rotate-90"}`}>▶</span>
+                  <Package size={11} className={isLow ? "text-red-500" : "text-slate-500"} />
+                  <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">재고현황</p>
+                  {isLow && (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 text-red-600 text-[9px] font-black rounded">
+                      <AlertTriangle size={9} /> 부족
+                    </span>
+                  )}
+                  {stockSectionCollapsed && (
+                    <span className="text-[10px] font-mono text-slate-500 ml-1">현재고 {cur ?? "-"} · 적정 {opt ?? "-"}</span>
+                  )}
                 </button>
+                {S.actualStockInput && !stockSectionCollapsed && (
+                  <button
+                    onClick={() => setStockCounterOpen(true)}
+                    className="flex items-center gap-1 px-2 py-0.5 bg-green-500 hover:bg-green-600 text-white text-[10px] font-bold rounded-lg transition cursor-pointer shadow-sm"
+                  >
+                    <ScanLine size={10} /> 재고 세기
+                  </button>
+                )}
               </div>
 
-              <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-                {/* 창고 */}
-                <div className="bg-white rounded-xl border border-cyan-200 p-2">
-                  <p className="text-[10px] font-bold text-cyan-600 mb-1 flex items-center gap-1"><Warehouse size={10} />창고</p>
-                  <input
-                    type="number" min="0"
-                    value={warehouseStock}
-                    onChange={e => { setWarehouseStock(e.target.value === "" ? "" : Number(e.target.value)); setWhStatus("idle"); }}
-                    className="w-full text-sm font-black text-center bg-cyan-50/50 border border-cyan-200 rounded-lg px-2 py-1 outline-none focus:border-cyan-400 transition"
-                    placeholder="—"
-                  />
-                  {whStatus === "done" ? (
-                    <div className="mt-1 flex items-center justify-center gap-1 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
-                      <CheckCircle2 size={10} /> 창고 저장됨
+              {/* 4열 그리드 · 현재고 · 적정 · 창고 · 매장 */}
+              <div className="grid grid-cols-4 gap-1.5">
+                {/* 현재고 */}
+                <div className="text-center bg-white rounded-lg border border-slate-200 py-1.5 px-1">
+                  <p className="text-[9px] font-bold text-slate-500 mb-0.5">현재고</p>
+                  <p className={`text-base font-black leading-none ${isLow ? "text-red-500" : "text-slate-800"}`}>{cur ?? "-"}</p>
+                </div>
+                {/* 적정재고 (인라인 편집) */}
+                <div className="text-center bg-white rounded-lg border border-amber-200 py-1.5 px-1">
+                  <p className="text-[9px] font-bold text-amber-600 mb-0.5">적정재고</p>
+                  {editingKey === "optimal_stock" ? (
+                    <div className="flex items-center gap-0.5 justify-center">
+                      <input
+                        type="number" min={0}
+                        value={editingValue}
+                        onChange={e => setEditingValue(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
+                        disabled={editSaving}
+                        autoFocus
+                        className="w-10 text-base font-black text-center border border-amber-500 rounded px-0.5 py-0 focus:outline-none"
+                      />
+                      <button onClick={commitEdit} disabled={editSaving} className="w-4 h-4 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 disabled:opacity-40 cursor-pointer">
+                        {editSaving ? <Loader2 size={8} className="animate-spin" /> : <Check size={9} />}
+                      </button>
+                      <button onClick={cancelEdit} disabled={editSaving} className="w-4 h-4 rounded bg-slate-200 text-slate-600 flex items-center justify-center hover:bg-slate-300 disabled:opacity-40 cursor-pointer">
+                        <X size={9} />
+                      </button>
                     </div>
                   ) : (
                     <button
-                      onClick={handleWarehouseSubmit}
-                      disabled={whStatus === "loading" || warehouseStock === ""}
-                      className="mt-1 w-full flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-black transition cursor-pointer disabled:opacity-40 shadow-sm bg-cyan-500 hover:bg-cyan-600 text-white"
-                    >
-                      {whStatus === "loading" ? <Loader2 size={10} className="animate-spin" /> : <ClipboardCheck size={10} />}
-                      {whStatus === "loading" ? "저장 중..." : whStatus === "error" ? "재시도" : "창고 저장"}
-                    </button>
-                  )}
-                  {whStatus === "error" && whError && (
-                    <p className="text-[10px] text-red-500 text-center mt-0.5">{whError}</p>
+                      onClick={() => inlineEditEnabled && startEdit("optimal_stock", opt)}
+                      disabled={!inlineEditEnabled}
+                      className={`text-base font-black leading-none text-amber-700 ${inlineEditEnabled ? "hover:bg-amber-100 rounded px-1 -mx-1 cursor-pointer transition" : "cursor-default"}`}
+                      title={inlineEditEnabled ? "클릭 → 편집" : undefined}
+                    >{opt ?? "-"}</button>
                   )}
                 </div>
-
-                {/* 매장 */}
-                <div className="bg-white rounded-xl border border-violet-200 p-2">
-                  <p className="text-[10px] font-bold text-violet-600 mb-1 flex items-center gap-1"><Store size={10} />매장</p>
-                  <input
-                    type="number" min="0"
-                    value={storeStock}
-                    onChange={e => { setStoreStock(e.target.value === "" ? "" : Number(e.target.value)); setStStatus("idle"); }}
-                    className="w-full text-sm font-black text-center bg-violet-50/50 border border-violet-200 rounded-lg px-2 py-1 outline-none focus:border-violet-400 transition"
-                    placeholder="—"
-                  />
-                  {stStatus === "done" ? (
-                    <div className="mt-1 flex items-center justify-center gap-1 py-1 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 text-[10px] font-bold">
-                      <CheckCircle2 size={10} /> 매장 저장됨
-                    </div>
-                  ) : (
-                    <button
-                      onClick={handleStoreSubmit}
-                      disabled={stStatus === "loading" || storeStock === ""}
-                      className="mt-1 w-full flex items-center justify-center gap-1 py-1 rounded-lg text-[10px] font-black transition cursor-pointer disabled:opacity-40 shadow-sm bg-violet-500 hover:bg-violet-600 text-white"
-                    >
-                      {stStatus === "loading" ? <Loader2 size={10} className="animate-spin" /> : <ClipboardCheck size={10} />}
-                      {stStatus === "loading" ? "저장 중..." : stStatus === "error" ? "재시도" : "매장 저장"}
-                    </button>
-                  )}
-                  {stStatus === "error" && stError && (
-                    <p className="text-[10px] text-red-500 text-center mt-0.5">{stError}</p>
-                  )}
-                </div>
+                {/* 창고 실재고 */}
+                {S.actualStockInput && (
+                  <div className="bg-white rounded-lg border border-cyan-200 py-1 px-1 text-center">
+                    <p className="text-[9px] font-bold text-cyan-600 mb-0.5 flex items-center justify-center gap-0.5"><Warehouse size={9} />창고</p>
+                    <input
+                      type="number" min="0"
+                      value={warehouseStock}
+                      onChange={e => { setWarehouseStock(e.target.value === "" ? "" : Number(e.target.value)); setWhStatus("idle"); }}
+                      className="w-full text-sm font-black text-center bg-cyan-50/50 border border-cyan-200 rounded px-1 py-0 outline-none focus:border-cyan-400 transition"
+                      placeholder="—"
+                    />
+                    {whStatus === "done" ? (
+                      <div className="mt-0.5 text-[9px] font-bold text-emerald-700 flex items-center justify-center gap-0.5"><CheckCircle2 size={9} /> 저장됨</div>
+                    ) : (
+                      <button
+                        onClick={handleWarehouseSubmit}
+                        disabled={whStatus === "loading" || warehouseStock === ""}
+                        className="mt-0.5 w-full text-[9px] font-black rounded transition cursor-pointer disabled:opacity-40 bg-cyan-500 hover:bg-cyan-600 text-white py-0.5 flex items-center justify-center gap-0.5"
+                      >
+                        {whStatus === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
+                        {whStatus === "loading" ? "저장중" : whStatus === "error" ? "재시도" : "저장"}
+                      </button>
+                    )}
+                  </div>
+                )}
+                {/* 매장 실재고 */}
+                {S.actualStockInput && (
+                  <div className="bg-white rounded-lg border border-violet-200 py-1 px-1 text-center">
+                    <p className="text-[9px] font-bold text-violet-600 mb-0.5 flex items-center justify-center gap-0.5"><Store size={9} />매장</p>
+                    <input
+                      type="number" min="0"
+                      value={storeStock}
+                      onChange={e => { setStoreStock(e.target.value === "" ? "" : Number(e.target.value)); setStStatus("idle"); }}
+                      className="w-full text-sm font-black text-center bg-violet-50/50 border border-violet-200 rounded px-1 py-0 outline-none focus:border-violet-400 transition"
+                      placeholder="—"
+                    />
+                    {stStatus === "done" ? (
+                      <div className="mt-0.5 text-[9px] font-bold text-emerald-700 flex items-center justify-center gap-0.5"><CheckCircle2 size={9} /> 저장됨</div>
+                    ) : (
+                      <button
+                        onClick={handleStoreSubmit}
+                        disabled={stStatus === "loading" || storeStock === ""}
+                        className="mt-0.5 w-full text-[9px] font-black rounded transition cursor-pointer disabled:opacity-40 bg-violet-500 hover:bg-violet-600 text-white py-0.5 flex items-center justify-center gap-0.5"
+                      >
+                        {stStatus === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
+                        {stStatus === "loading" ? "저장중" : stStatus === "error" ? "재시도" : "저장"}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
-              {hasInput && (
-                <div className="flex items-center justify-between text-[10px] font-bold px-0.5">
-                  <span className="text-purple-700">합계: {totalActual}개</span>
+              {/* 하단 · 합계 + 차이 (실재고 입력 시만) */}
+              {S.actualStockInput && hasInput && (
+                <div className="flex items-center justify-between text-[10px] font-bold px-0.5 mt-1.5">
+                  <span className="text-slate-600">실재고 합계: <span className="text-purple-700">{totalActual}개</span></span>
                   {diff != null && (
                     <span className={diff > 0 ? "text-emerald-600" : diff < 0 ? "text-red-600" : "text-gray-500"}>
                       현재고 대비 {diff > 0 ? "+" : ""}{diff}개
@@ -608,11 +605,22 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                   )}
                 </div>
               )}
+              {/* 편집 에러 표시 */}
+              {editingKey === "optimal_stock" && editError && (
+                <p className="text-[10px] text-red-500 mt-1">{editError}</p>
+              )}
+              {/* 창고/매장 저장 에러 */}
+              {S.actualStockInput && (whStatus === "error" && whError) && (
+                <p className="text-[10px] text-red-500 text-center mt-1">창고: {whError}</p>
+              )}
+              {S.actualStockInput && (stStatus === "error" && stError) && (
+                <p className="text-[10px] text-red-500 text-center mt-1">매장: {stError}</p>
+              )}
             </div>
           );
         })()}
 
-        {/* ── 매입가/판매가/마진 (신규) ── */}
+        {/* ── 매입 · 판매가 (2026-07-16 · 한 줄 grid-cols-4 컴팩트) ── */}
         {S.financial && (() => {
           const sp = product.sale_price != null ? Number(product.sale_price) : null;
           const pp = product.purchase_price != null ? Number(product.purchase_price) : null;
@@ -623,21 +631,17 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-wide mb-1.5 flex items-center gap-1">
                 <DollarSign size={10}/>매입 · 판매가
               </p>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-1.5">
                 <InlineField label="매입가" fieldKey="purchase_price" value={pp} type="number" accent="emerald" format={v => Number(v).toLocaleString() + "원"} />
                 <InlineField label="판매가" fieldKey="sale_price" value={sp} type="number" accent="indigo" format={v => Number(v).toLocaleString() + "원"} />
-                {margin != null && (
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-400 mb-0.5">마진율</p>
-                    <p className="text-sm font-semibold text-emerald-700">{margin}%</p>
-                  </div>
-                )}
-                {stockAsset && (
-                  <div>
-                    <p className="text-[10px] font-bold text-gray-400 mb-0.5">재고 자산</p>
-                    <p className="text-sm font-semibold text-slate-800">{stockAsset}</p>
-                  </div>
-                )}
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 mb-0.5">마진율</p>
+                  <p className="text-sm font-semibold text-emerald-700">{margin != null ? `${margin}%` : "-"}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-gray-400 mb-0.5">재고 자산</p>
+                  <p className="text-sm font-semibold text-slate-800 truncate" title={stockAsset ?? undefined}>{stockAsset ?? "-"}</p>
+                </div>
               </div>
             </div>
           );
@@ -759,8 +763,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         )}
       </div>
 
-      {/* ─── 매입 이력 (2026-07-15) · purchase_details 조회 · 이 상품의 최근 매입 20건 ─── */}
-      <PurchaseHistorySection productCode={product.code} />
+      {/* ─── 매입 이력 (2026-07-15) · purchase_details 조회 · 이 상품의 최근 매입 20건 · 2026-07-16 section flag ─── */}
+      {S.purchaseHistory && <PurchaseHistorySection productCode={product.code} />}
 
       {mapSelectorOpen && (
         <RealMapSelector
@@ -800,6 +804,20 @@ const PurchaseHistorySection: React.FC<{ productCode: string }> = ({ productCode
   const fmtWon = (n: number) => n >= 1_0000_0000 ? `${(n/1_0000_0000).toFixed(1)}억` : n >= 10000 ? `${(n/10000).toFixed(1)}만` : `${n.toLocaleString()}원`;
   const totalQty = rows.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
   const totalAmt = rows.reduce((s, r) => s + (Number(r.total ?? r.amount) || 0), 0);
+  // 2026-07-16 · 평균 매입 (건당 평균 매입액)
+  const avgAmt = rows.length > 0 ? Math.round(totalAmt / rows.length) : 0;
+  // 2026-07-16 · 평균 매입주기 (연속 매입일 간 평균 일수 · 정렬 후 diff)
+  const avgCycleDays = (() => {
+    if (rows.length < 2) return null;
+    const dates = rows
+      .map(r => (r.purchase_date ? new Date(String(r.purchase_date)).getTime() : NaN))
+      .filter(t => Number.isFinite(t))
+      .sort((a, b) => a - b);
+    if (dates.length < 2) return null;
+    let sum = 0;
+    for (let i = 1; i < dates.length; i++) sum += (dates[i] - dates[i - 1]);
+    return Math.round(sum / (dates.length - 1) / (1000 * 60 * 60 * 24));
+  })();
   return (
     <div className="mt-3 border-t border-slate-200 pt-3">
       <button
@@ -814,8 +832,14 @@ const PurchaseHistorySection: React.FC<{ productCode: string }> = ({ productCode
         ) : rows.length === 0 ? (
           <span className="text-[10px] text-slate-400 italic">이력 없음</span>
         ) : (
-          <span className="text-[10px] font-mono text-slate-500">
-            {rows.length}건 · 총 {fmt(totalQty)}개 · <span className="text-emerald-700 font-black">{fmtWon(totalAmt)}</span>
+          <span className="text-[10px] font-mono text-slate-500 flex items-center gap-1 flex-wrap">
+            <span>{rows.length}건 · 총 {fmt(totalQty)}개 · <span className="text-emerald-700 font-black">{fmtWon(totalAmt)}</span></span>
+            <span className="text-slate-300">·</span>
+            <span title="건당 평균 매입액 (총 매입액 ÷ 건수)">평균 <span className="text-indigo-600 font-black">{fmtWon(avgAmt)}</span></span>
+            {avgCycleDays != null && (<>
+              <span className="text-slate-300">·</span>
+              <span title="평균 매입주기 (연속 매입일 간격 평균)">주기 <span className="text-sky-600 font-black">{avgCycleDays}일</span></span>
+            </>)}
           </span>
         )}
         <span className={`ml-auto text-slate-400 text-xs transition-transform ${collapsed ? "" : "rotate-180"}`}>▲</span>

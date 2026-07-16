@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bell, BellOff, Calendar, Check, Clock,
-  Package, Pencil, RefreshCw, Send, Trash2, X,
+  Package, Pencil, RefreshCw, Send, Trash2, X, Loader2,
 } from "lucide-react";
 import type { AuthSession } from "../types";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
@@ -345,21 +345,27 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
         )}
 
         {/* ── 리스트 ──────────────────────────────────────────────────────── */}
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+          {loading && arrivals.length > 0 && (
+            <div className="flex items-center justify-center gap-1.5 text-[10px] text-sky-600 font-bold py-1.5 bg-sky-50 border-b border-sky-200 sticky top-0 z-10">
+              <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+            </div>
+          )}
           {loading && arrivals.length === 0 && (
-            <div className="px-4 py-8 text-center text-gray-400 text-sm">불러오는 중...</div>
+            <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
           )}
           {!loading && arrivals.length === 0 && (
-            <div className="px-4 py-8 text-center text-gray-400 text-sm">등록된 입고 알림 없음</div>
+            <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
           )}
 
+          <div className={loading && arrivals.length > 0 ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
           {arrivals.map((a, idx) => {
             const isEditing = editId === a.id;
             const pending   = isPending(a);
             const schedOpen = schedPickerId === a.id;
 
             return (
-              <div key={a.id} className={idx > 0 ? "border-t border-gray-100" : ""}>
+              <div key={a.id} className={idx > 0 ? "border-t border-slate-50" : ""}>
 
                 {/* ── 인라인 수정 모드 ── */}
                 {isEditing ? (
@@ -473,6 +479,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
               </div>
             );
           })}
+          </div>
         </div>
       </div>
     </div>

@@ -155,7 +155,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
         </div>
 
         {/* Permissions table */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           {/* Table header */}
           <div className="grid grid-cols-[1fr_110px_110px] px-5 py-3 bg-slate-50 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
             <span>페이지</span>

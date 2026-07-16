@@ -34,8 +34,17 @@
 import express from "express";
 import XLSX from "xlsx";
 import { supabase } from "../../src/supabase/client";
+import { resolveSeasonMonths } from "./settings";
 
 const router = express.Router();
+
+/** YYYY-MM-DD 가 season 월 배열에 속하는지 (년도 무관) */
+function purchaseDateInSeason(dateStr: string, months: number[] | null): boolean {
+  if (!months || months.length === 0) return true;
+  const m = /^\d{4}-(\d{2})/.exec(String(dateStr));
+  if (!m) return false;
+  return months.includes(Number(m[1]));
+}
 
 // ─── 유틸 ────────────────────────────────────────────────────────
 const parseNum = (v: unknown): number => {
@@ -489,15 +498,21 @@ router.get("/api/purchase-details", async (req, res) => {
     const from = String(req.query.from ?? "").trim();
     const to = String(req.query.to ?? "").trim();
     const limit = Math.max(1, Math.min(5000, parseInt(String(req.query.limit ?? "500"), 10) || 500));
+    // 계절 필터 · 지정 시 년도 무관 · from/to 무시 (season 우선)
+    const seasonParam = String(req.query.season ?? "").trim().toLowerCase();
+    const seasonMonths = await resolveSeasonMonths(seasonParam);
 
     let q = supabase
       .from("purchase_details")
       .select("id, purchase_date, period_start_date, period_type, supplier_code, supplier_name, product_code, product_name, spec, quantity, unit_price, amount, vat, total")
-      .order("purchase_date", { ascending: false })
-      .limit(limit);
+      .order("purchase_date", { ascending: false });
+    // season 지정 시 전체 스캔 필요 → limit 확장 (필터 후 슬라이스)
+    q = q.limit(seasonMonths ? Math.max(limit * 6, 5000) : limit);
     if (productCode) q = q.eq("product_code", productCode);
-    if (from && /^\d{4}-\d{2}-\d{2}$/.test(from)) q = q.gte("purchase_date", from);
-    if (to && /^\d{4}-\d{2}-\d{2}$/.test(to)) q = q.lte("purchase_date", to);
+    if (!seasonMonths) {
+      if (from && /^\d{4}-\d{2}-\d{2}$/.test(from)) q = q.gte("purchase_date", from);
+      if (to && /^\d{4}-\d{2}-\d{2}$/.test(to)) q = q.lte("purchase_date", to);
+    }
 
     const { data, error } = await q;
     if (error) {
@@ -507,6 +522,10 @@ router.get("/api/purchase-details", async (req, res) => {
       throw new Error(error.message);
     }
     let rows = data ?? [];
+    // 계절 월 필터 (년도 무관) — SQL EXTRACT 미지원이므로 후처리
+    if (seasonMonths) {
+      rows = rows.filter(r => purchaseDateInSeason(String((r as any).purchase_date ?? ""), seasonMonths)).slice(0, limit);
+    }
 
     // 조회 시 products 조인: xlsx 에 없는 supplier/name/spec 보강 + min_order (2026-07-15)
     const codes = Array.from(new Set(rows.map(r => String((r as any).product_code ?? "")).filter(Boolean)));
@@ -590,7 +609,7 @@ router.get("/api/purchase-details", async (req, res) => {
     // 공급사 필터 (조인 후 처리 · products.supplier 보강값도 인식)
     if (supplier) rows = rows.filter((r: any) => String(r.supplier_name ?? "").trim() === supplier);
 
-    res.json({ rows });
+    res.json({ rows, season: seasonParam || undefined, season_months: seasonMonths ?? undefined });
   } catch (err: any) {
     res.status(500).json({ error: err?.message ?? "조회 실패" });
   }

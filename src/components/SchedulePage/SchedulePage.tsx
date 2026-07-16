@@ -2023,7 +2023,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   <span
                                     onMouseDown={(e) => e.stopPropagation()}
                                     onClick={(e) => { e.stopPropagation(); setCalendarEmployee(emp); }}
-                                    className="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-xs sm:text-[13px] cursor-pointer select-none transition truncate"
+                                    className={`font-bold text-xs sm:text-[13px] cursor-pointer select-none transition truncate hover:underline ${emp.position === "약사" ? "text-emerald-700 hover:text-emerald-900 ring-2 ring-emerald-500 ring-offset-1 rounded px-0.5" : "text-indigo-600 hover:text-indigo-800"}`}
                                     title="클릭하여 개인 스케줄 달력 보기"
                                   >
                                     {emp.name}
@@ -2266,7 +2266,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
       {/* 4. Admin Login Dialog Modal */}
       {isLoginModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-xs animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl border border-gray-200 p-6 flex flex-col justify-between overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Header */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">

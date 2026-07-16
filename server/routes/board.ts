@@ -1,7 +1,11 @@
 // server/routes/board.ts
 // 이슈공유 게시판 API
 // - 게시글 · 댓글 · 이미지 · 반응 · @멘션 알림
-// - 이미지: Cloudinary (환경변수 설정 시) 또는 로컬 서버 uploads/ 폴더 (기본 fallback)
+// - 이미지 업로드 우선순위:
+//   1) Supabase Storage (public 버킷 "board-images") · Render 등 ephemeral FS 환경 필수
+//   2) 로컬 서버 uploads/board/YYYY-MM/ 폴더 (dev 환경 fallback)
+//   ※ 사용자 액션 필요: Supabase 대시보드 > Storage > 새 public 버킷 "board-images" 생성
+//     (public read 정책 · 5MB 정도의 이미지 파일)
 
 import { Router } from "express";
 import webpush from "web-push";
@@ -11,9 +15,12 @@ import { supabase } from "../../src/supabase/client";
 
 const router = Router();
 
-// 이미지 업로드 · 로컬 서버 저장 (Cloudinary 미설정 시 fallback)
-// - 클라이언트에서 base64 로 전송 · 서버가 uploads/board/YYYY-MM/ 폴더에 저장
-// - /uploads/board/... 로 접근 가능 (server.ts 에서 express.static 처리됨)
+// Supabase Storage 버킷 이름 · 환경변수로 오버라이드 가능
+const BOARD_BUCKET = process.env.SUPABASE_BOARD_BUCKET || "board-images";
+
+// 이미지 업로드
+// - 클라이언트에서 base64 (data:image/...;base64,...) 로 전송
+// - 우선 Supabase Storage 시도 · 실패 시 로컬 파일시스템 fallback
 router.post("/api/board/upload-image", async (req, res) => {
   try {
     const { data_url, filename } = req.body ?? {};
@@ -33,14 +40,51 @@ router.post("/api/board/upload-image", async (req, res) => {
     const ext = mime === "image/webp" ? "webp" : mime === "image/jpeg" ? "jpg" : mime === "image/png" ? "png" : mime === "image/gif" ? "gif" : "bin";
     const now = new Date();
     const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const dir = path.join(process.cwd(), "uploads", "board", ym);
-    fs.mkdirSync(dir, { recursive: true });
     const rand = Math.random().toString(36).slice(2, 8);
     const safeName = String(filename ?? "img").replace(/[^\w.-]+/g, "_").slice(0, 40);
     const fname = `${now.getTime()}_${rand}_${safeName}.${ext}`;
+    const objectPath = `${ym}/${fname}`;
+
+    // 1) Supabase Storage 시도
+    try {
+      const { error: upErr } = await supabase
+        .storage
+        .from(BOARD_BUCKET)
+        .upload(objectPath, buffer, {
+          contentType: mime,
+          cacheControl: "31536000", // 1년 (파일명 unique)
+          upsert: false,
+        });
+      if (upErr) {
+        // 버킷 없음 · 정책 미설정 등 · 로컬 fallback 로 진행
+        console.warn(`[board/upload] Supabase Storage 실패 · fallback 로컬 · bucket=${BOARD_BUCKET} · reason=${upErr.message}`);
+      } else {
+        const { data: pub } = supabase.storage.from(BOARD_BUCKET).getPublicUrl(objectPath);
+        const publicUrl = pub?.publicUrl;
+        if (publicUrl) {
+          console.log(`[board/upload] Supabase Storage · path=${objectPath}`);
+          return res.json({
+            image_url: publicUrl,
+            public_id: `board/${objectPath}`,
+            width: null,
+            height: null,
+            storage: "supabase",
+          });
+        }
+        console.warn(`[board/upload] Supabase getPublicUrl 실패 · fallback 로컬 · path=${objectPath}`);
+      }
+    } catch (supErr: any) {
+      // 네트워크 · SDK 예외 등 · 로컬 fallback
+      console.warn(`[board/upload] Supabase Storage 예외 · fallback 로컬 · ${supErr?.message ?? supErr}`);
+    }
+
+    // 2) 로컬 파일시스템 fallback (dev · Supabase 미설정 · 오류 상황)
+    const dir = path.join(process.cwd(), "uploads", "board", ym);
+    fs.mkdirSync(dir, { recursive: true });
     const fpath = path.join(dir, fname);
     fs.writeFileSync(fpath, buffer);
     const publicUrl = `/uploads/board/${ym}/${fname}`;
+    console.log(`[board/upload] Local fallback · path=${publicUrl}`);
     return res.json({
       image_url: publicUrl,
       public_id: `board/${ym}/${fname}`,

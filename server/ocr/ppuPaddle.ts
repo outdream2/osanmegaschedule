@@ -685,15 +685,20 @@ function extractMeta(text: string): Record<string, any> {
     return null;
   };
 
-  const subtotalV = findAmt([/소\s*계[^\d]*(\d{1,3}(?:,\d{3})+)/]);
+  // 2026-07-16 · 소계·공급가액·세액·잔액 regex 관대화
+  //   기존: `\d{1,3}(?:,\d{3})+` 만 매치 → 쉼표 없는 숫자 (예: "25044", "1000000") 놓침
+  //   개선: `\d{1,3}(?:,\d{3})+|\d{4,}` 로 쉼표 없는 4자리+ 정수도 허용
+  //   목적: 다양한 명세서 대응 (일부 OCR 이 쉼표를 놓치는 케이스 방어)
+  const NUM_LOOSE = `(\\d{1,3}(?:,\\d{3})+|\\d{4,})`;
+  const subtotalV = findAmt([new RegExp(`소\\s*계[^\\d]*${NUM_LOOSE}`)]);
   const discountV = findAmt([
-    /에누리\s*액?[^\d]*(\d{1,3}(?:,\d{3})+)/,
-    /할\s*인\s*액?[^\d]*(\d{1,3}(?:,\d{3})+)/,
+    new RegExp(`에누리\\s*액?[^\\d]*${NUM_LOOSE}`),
+    new RegExp(`할\\s*인\\s*액?[^\\d]*${NUM_LOOSE}`),
   ]);
-  const supplyAmountV = findAmt([/공\s*급\s*가\s*액[^\d]*(\d{1,3}(?:,\d{3})+)/]);
-  const vatV = findAmt([/세\s*액[^\d]*(\d{1,3}(?:,\d{3})+)/, /부\s*가\s*세[^\d]*(\d{1,3}(?:,\d{3})+)/]);
-  const balancePrevV = findAmt([/전\s*잔\s*액[^\d]*(\d{1,3}(?:,\d{3})+)/, /이\s*월\s*잔\s*액[^\d]*(\d{1,3}(?:,\d{3})+)/]);
-  const balanceAfterV = findAmt([/(?<!전\s*)(?<!이\s*월\s*)잔\s*액[^\d]*(\d{1,3}(?:,\d{3})+)/]);
+  const supplyAmountV = findAmt([new RegExp(`공\\s*급\\s*가\\s*액[^\\d]*${NUM_LOOSE}`)]);
+  const vatV = findAmt([new RegExp(`세\\s*액[^\\d]*${NUM_LOOSE}`), new RegExp(`부\\s*가\\s*세[^\\d]*${NUM_LOOSE}`)]);
+  const balancePrevV = findAmt([new RegExp(`전\\s*잔\\s*액[^\\d]*${NUM_LOOSE}`), new RegExp(`이\\s*월\\s*잔\\s*액[^\\d]*${NUM_LOOSE}`)]);
+  const balanceAfterV = findAmt([new RegExp(`(?<!전\\s*)(?<!이\\s*월\\s*)잔\\s*액[^\\d]*${NUM_LOOSE}`)]);
 
   if (subtotalV) meta.subtotal = subtotalV;
   if (discountV) meta.discount = discountV;
@@ -706,11 +711,12 @@ function extractMeta(text: string): Record<string, any> {
   //   1) "합계금액" > "총합계" > "총금액" > "합계"(합계액 제외) 순서
   //   2) [^\d]{0,20} 로 바운드 → 여러 라인 흡수 방지
   //   3) total == balancePrev/balanceAfter 면 잔고 오염이므로 무효화
+  // 2026-07-16 · total 도 관대화 · 쉼표 없는 큰 숫자도 허용
   const totalPatterns: Array<[string, RegExp]> = [
-    ["합계금액", /합\s*계\s*금\s*액[^\d]{0,20}(\d{1,3}(?:,\d{3})+)/],
-    ["총합계",   /총\s*합\s*계[^\d]{0,20}(\d{1,3}(?:,\d{3})+)/],
-    ["총금액",   /총\s*금\s*액[^\d]{0,20}(\d{1,3}(?:,\d{3})+)/],
-    ["합계",     /합\s*계(?!\s*액)[^\d]{0,20}(\d{1,3}(?:,\d{3})+)/],
+    ["합계금액", new RegExp(`합\\s*계\\s*금\\s*액[^\\d]{0,20}${NUM_LOOSE}`)],
+    ["총합계",   new RegExp(`총\\s*합\\s*계[^\\d]{0,20}${NUM_LOOSE}`)],
+    ["총금액",   new RegExp(`총\\s*금\\s*액[^\\d]{0,20}${NUM_LOOSE}`)],
+    ["합계",     new RegExp(`합\\s*계(?!\\s*액)[^\\d]{0,20}${NUM_LOOSE}`)],
   ];
   for (const [, pat] of totalPatterns) {
     const m = text.match(pat);

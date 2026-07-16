@@ -386,22 +386,26 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
                       }}
                       onDrop={() => handleDrop(slotIdx)}
                     >
-                      {slotAssignments.map(a => (
-                        <div
-                          key={a.employeeId}
-                          draggable
-                          onDragStart={() => setDraggedEmpId(a.employeeId)}
-                          onDragEnd={() => { setDraggedEmpId(null); setDragOverSlot(null); }}
-                          className="px-1.5 py-1 bg-indigo-100 border border-indigo-200 rounded-lg text-[10px] font-bold text-indigo-800 flex items-center gap-1 cursor-grab select-none hover:bg-indigo-200 transition"
-                        >
-                          <span className="truncate flex-1">{a.employeeName}</span>
-                          <button
-                            onMouseDown={e => e.stopPropagation()}
-                            onClick={() => removeAssignment(a.employeeId)}
-                            className="shrink-0 text-indigo-400 hover:text-rose-500 leading-none"
-                          >×</button>
-                        </div>
-                      ))}
+                      {slotAssignments.map(a => {
+                        const slotEmp = dayEmployees.find(e => e.id === a.employeeId);
+                        const isPharm = slotEmp ? (slotEmp.position === "약사" || slotEmp.position.startsWith("약사")) : false;
+                        return (
+                          <div
+                            key={a.employeeId}
+                            draggable
+                            onDragStart={() => setDraggedEmpId(a.employeeId)}
+                            onDragEnd={() => { setDraggedEmpId(null); setDragOverSlot(null); }}
+                            className={`px-1.5 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 cursor-grab select-none transition ${isPharm ? "bg-emerald-50 border border-emerald-300 ring-2 ring-emerald-500 ring-offset-1 text-emerald-800 hover:bg-emerald-100" : "bg-indigo-100 border border-indigo-200 text-indigo-800 hover:bg-indigo-200"}`}
+                          >
+                            <span className="truncate flex-1">{a.employeeName}</span>
+                            <button
+                              onMouseDown={e => e.stopPropagation()}
+                              onClick={() => removeAssignment(a.employeeId)}
+                              className={`shrink-0 leading-none ${isPharm ? "text-emerald-400 hover:text-rose-500" : "text-indigo-400 hover:text-rose-500"}`}
+                            >×</button>
+                          </div>
+                        );
+                      })}
                       {isOver && (
                         <div className="flex-1 border-2 border-dashed border-indigo-300 rounded-lg flex items-center justify-center text-[9px] text-indigo-400 font-bold min-h-[32px]">
                           {TIME_SLOTS[slotIdx]}
@@ -427,17 +431,20 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setDragOverSlot(null); }}
               onDrop={handleDropToPool}
             >
-              {unassigned.map(emp => (
-                <div
-                  key={emp.id}
-                  draggable
-                  onDragStart={() => setDraggedEmpId(emp.id)}
-                  onDragEnd={() => { setDraggedEmpId(null); setDragOverSlot(null); }}
-                  className="px-3 py-1.5 bg-white border border-gray-200 rounded-xl text-xs font-semibold text-gray-700 cursor-grab shadow-sm hover:border-indigo-300 hover:text-indigo-700 select-none transition"
-                >
-                  {emp.name}
-                </div>
-              ))}
+              {unassigned.map(emp => {
+                const isPharm = emp.position === "약사" || emp.position.startsWith("약사");
+                return (
+                  <div
+                    key={emp.id}
+                    draggable
+                    onDragStart={() => setDraggedEmpId(emp.id)}
+                    onDragEnd={() => { setDraggedEmpId(null); setDragOverSlot(null); }}
+                    className={`px-3 py-1.5 bg-white border rounded-xl text-xs font-semibold cursor-grab shadow-sm select-none transition ${isPharm ? "border-emerald-400 ring-2 ring-emerald-500 ring-offset-1 text-emerald-800 hover:border-emerald-500 hover:text-emerald-900" : "border-gray-200 text-gray-700 hover:border-indigo-300 hover:text-indigo-700"}`}
+                  >
+                    {emp.name}
+                  </div>
+                );
+              })}
               {unassigned.length === 0 && tabEmployees.length > 0 && (
                 <span className="text-[11px] text-gray-400 self-center">모두 배정됨</span>
               )}
@@ -507,23 +514,21 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
 
         {/* ── 불참 현황 ────────────────────────────────────── */}
         {isLoggedIn && (
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-            <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <UtensilsCrossed size={13} className="text-gray-400" />
-                <span className="text-xs font-bold text-gray-700">점심 불참 현황</span>
-                <span className="text-[10px] text-gray-400">({allRequests.length}명 응답)</span>
+          <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-1.5">
+                <UtensilsCrossed size={14} className="text-rose-600" />
+                <span className="text-sm font-black text-slate-700">점심 불참 현황</span>
+                <span className="text-[10px] font-mono text-slate-400">({allRequests.length}명 응답)</span>
               </div>
-              <span className="bg-gray-100 text-gray-600 border border-gray-200 text-[11px] font-bold px-2 py-0.5 rounded-full">
-                불참 {noEatCount}명
-              </span>
+              <span className="text-[11px] font-bold text-slate-500">불참 {noEatCount}명</span>
             </div>
             {noEatCount === 0 ? (
-              <div className="px-4 py-8 text-center text-xs text-gray-400">불참 신청자가 없습니다</div>
+              <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
             ) : (
-              <div className="divide-y divide-gray-50">
+              <div className="divide-y divide-slate-50">
                 {allRequests.filter(r => !r.eating).map(r => (
-                  <div key={r.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <div key={r.id} className="flex items-center gap-3 px-1 py-2.5">
                     <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-gray-300" />
                     <span className="text-sm font-semibold text-gray-800 flex-1">{r.employee_name}</span>
                     {r.memo && <span className="text-[10px] text-gray-400 max-w-[130px] truncate">{r.memo}</span>}

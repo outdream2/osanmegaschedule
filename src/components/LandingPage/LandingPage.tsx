@@ -33,6 +33,7 @@ import {
   MessageSquare,
   MessageCircleQuestion,
   Search,
+  Loader2,
 } from "lucide-react";
 import type { AuthSession, AuthRole } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
@@ -307,24 +308,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   type UnifiedLogEntry =
     | { kind: "products"; timestamp: string; count: number }
     | {
-        kind: "stock";
-        timestamp: string;
-        count: number;
-        total?: number;
-        history?: number;
-        snapshot_date?: string;
-        start_date?: string | null;
-        period_type?: "early" | "mid" | "late" | null;
-      }
+      kind: "stock";
+      timestamp: string;
+      count: number;
+      total?: number;
+      history?: number;
+      snapshot_date?: string;
+      start_date?: string | null;
+      period_type?: "early" | "mid" | "late" | null;
+    }
     | {
-        kind: "purchase";
-        timestamp: string;
-        count: number;
-        startDate: string;
-        endDate: string;
-        periodStart: string | null;
-        periodType: string | null;
-      };
+      kind: "purchase";
+      timestamp: string;
+      count: number;
+      startDate: string;
+      endDate: string;
+      periodStart: string | null;
+      periodType: string | null;
+    };
   const allImportLogs = useMemo<UnifiedLogEntry[]>(() => {
     const p: UnifiedLogEntry[] = importLog.map(e => ({ kind: "products", timestamp: e.timestamp, count: e.count }));
     const s: UnifiedLogEntry[] = stockImportLog.map(e => ({
@@ -350,7 +351,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   }, [importLog, stockImportLog, purchaseImportBatches]);
 
   // Stock arrivals
-  const [stockArrivals, setStockArrivals] = useState<Array<{id: number; title: string; body?: string | null; created_at: string}>>([]);
+  const [stockArrivals, setStockArrivals] = useState<Array<{ id: number; title: string; body?: string | null; created_at: string }>>([]);
   const [arrivalsLoading, setArrivalsLoading] = useState(true);
   const [pushSubscribed, setPushSubscribed] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
@@ -438,10 +439,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   useEffect(() => {
     fetch("/api/stock-arrivals")
       .then(r => r.ok ? r.json() : [])
-      .then((data: Array<{id: number; title: string; body?: string | null; created_at: string}>) =>
+      .then((data: Array<{ id: number; title: string; body?: string | null; created_at: string }>) =>
         setStockArrivals([...data].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()))
       )
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setArrivalsLoading(false));
     setPushSubscribed(localStorage.getItem("anon_push_subscribed") === "1");
   }, []);
@@ -747,8 +748,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   // Level with role-based fallback for backwards-compat with old sessions
   const userLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
-    : authSession?.role === "manager" ? 2
-    : authSession?.role === "employee" ? 1 : 0);
+      : authSession?.role === "manager" ? 2
+        : authSession?.role === "employee" ? 1 : 0);
   const isSuperAdmin = userLevel >= 9;
   const isManagerRole = userLevel >= 2 && userLevel < 9;
   const isAdmin = isSuperAdmin;
@@ -772,7 +773,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           lunch: d.lunch ?? 0,
         });
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [isManagerOrAdmin]);
 
   // 직원 로그인 시: 나에게 배정된 진열 보충 요청 중 pending 개수 로드 (완료 시 자동 0)
@@ -1147,54 +1148,54 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
                 {/* 내 요청목록 · 무지개 gradient · 맨 앞 · 눈에 띄는 강조 */}
                 {isEmployee && (
-                <button onClick={() => onNavigate("requests", authSession!)}
-                  className="order-1 group relative rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-2xl hover:-translate-y-1 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-lg ring-2 ring-white"
-                  style={{
-                    background: "linear-gradient(135deg, #ef4444 0%, #f97316 20%, #eab308 40%, #22c55e 60%, #06b6d4 80%, #8b5cf6 100%)"
-                  }}
-                >
-                  {/* 내부 흰색 카드 배경 */}
-                  <div className="absolute inset-0.5 rounded-[14px] bg-white/95 backdrop-blur-sm" />
-                  {/* 호버 시 무지개 오버레이 */}
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #06b6d4, #8b5cf6)" }} />
-                  {/* 우상단 대기 배지 (pending > 0) */}
-                  {myPendingCount > 0 && (
-                    <div className="absolute top-2 right-2 z-10">
-                      <span className="min-w-[24px] h-[24px] px-1.5 rounded-full flex items-center justify-center text-[11px] font-black text-white bg-gradient-to-br from-rose-500 to-rose-600 shadow-lg ring-2 ring-white animate-pulse">
-                        {myPendingCount > 99 ? "99+" : myPendingCount}
-                      </span>
-                    </div>
-                  )}
-                  <div className="relative">
-                    <div
-                      className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-110 shadow-md ${myPendingCount > 0 ? "mt-5 sm:mt-6" : ""}`}
-                      style={{
-                        background: "linear-gradient(135deg, #ef4444 0%, #f97316 20%, #eab308 40%, #22c55e 60%, #06b6d4 80%, #8b5cf6 100%)"
-                      }}
-                    >
-                      <MessageSquare size={16} className="text-white sm:hidden" strokeWidth={2.6} />
-                      <MessageSquare size={20} className="text-white hidden sm:block" strokeWidth={2.6} />
-                    </div>
-                    <div
-                      className="font-black text-xs sm:text-sm mb-0.5 tracking-tight bg-clip-text text-transparent"
-                      style={{
-                        backgroundImage: "linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #06b6d4, #8b5cf6)"
-                      }}
-                    >내 요청목록</div>
-                    <div className="text-slate-500 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">나에게 배정된 진열 보충 요청</div>
-                    <div className="flex items-center gap-1 mt-2 text-xs font-bold">
-                      <span
-                        className="text-[11px] sm:text-xs bg-clip-text text-transparent font-black"
+                  <button onClick={() => onNavigate("requests", authSession!)}
+                    className="order-1 group relative rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-2xl hover:-translate-y-1 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-lg ring-2 ring-white"
+                    style={{
+                      background: "linear-gradient(135deg, #ef4444 0%, #f97316 20%, #eab308 40%, #22c55e 60%, #06b6d4 80%, #8b5cf6 100%)"
+                    }}
+                  >
+                    {/* 내부 흰색 카드 배경 */}
+                    <div className="absolute inset-0.5 rounded-[14px] bg-white/95 backdrop-blur-sm" />
+                    {/* 호버 시 무지개 오버레이 */}
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-20 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #06b6d4, #8b5cf6)" }} />
+                    {/* 우상단 대기 배지 (pending > 0) */}
+                    {myPendingCount > 0 && (
+                      <div className="absolute top-2 right-2 z-10">
+                        <span className="min-w-[24px] h-[24px] px-1.5 rounded-full flex items-center justify-center text-[11px] font-black text-white bg-gradient-to-br from-rose-500 to-rose-600 shadow-lg ring-2 ring-white animate-pulse">
+                          {myPendingCount > 99 ? "99+" : myPendingCount}
+                        </span>
+                      </div>
+                    )}
+                    <div className="relative">
+                      <div
+                        className={`w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-110 shadow-md ${myPendingCount > 0 ? "mt-5 sm:mt-6" : ""}`}
+                        style={{
+                          background: "linear-gradient(135deg, #ef4444 0%, #f97316 20%, #eab308 40%, #22c55e 60%, #06b6d4 80%, #8b5cf6 100%)"
+                        }}
+                      >
+                        <MessageSquare size={16} className="text-white sm:hidden" strokeWidth={2.6} />
+                        <MessageSquare size={20} className="text-white hidden sm:block" strokeWidth={2.6} />
+                      </div>
+                      <div
+                        className="font-black text-xs sm:text-sm mb-0.5 tracking-tight bg-clip-text text-transparent"
                         style={{
                           backgroundImage: "linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #06b6d4, #8b5cf6)"
                         }}
-                      >
-                        {authSession?.employeeName ? `${authSession.employeeName}${authSession.employeeRank ? " " + authSession.employeeRank : ""} 님` : "확인하기"}
-                      </span>
-                      <ChevronRight size={11} className="text-indigo-600 group-hover:translate-x-1 transition-transform" />
+                      >내 요청목록</div>
+                      <div className="text-slate-500 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">나에게 배정된 진열 보충 요청</div>
+                      <div className="flex items-center gap-1 mt-2 text-xs font-bold">
+                        <span
+                          className="text-[11px] sm:text-xs bg-clip-text text-transparent font-black"
+                          style={{
+                            backgroundImage: "linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #06b6d4, #8b5cf6)"
+                          }}
+                        >
+                          {authSession?.employeeName ? `${authSession.employeeName}${authSession.employeeRank ? " " + authSession.employeeRank : ""} 님` : "확인하기"}
+                        </span>
+                        <ChevronRight size={11} className="text-indigo-600 group-hover:translate-x-1 transition-transform" />
+                      </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
                 )}
 
                 {/* 이슈공유 게시판 (전체 직원) — amber */}
@@ -1307,7 +1308,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 >
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)" }} />
                   <Lock size={14} className="relative text-indigo-600" />
-                  <span className="relative text-indigo-700 font-bold text-sm">로그인</span>
+                  <span className="relative text-indigo-700 font-bold text-sm">직원로그인</span>
                 </button>
                 <button
                   onClick={() => setVendorLoginOpen(true)}
@@ -1376,12 +1377,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </span>
               )}
             </div>
-            {arrivalsLoading ? (
-              <div className="text-slate-400 text-xs text-center py-3">불러오는 중...</div>
-            ) : stockArrivals.length === 0 ? (
-              <div className="text-slate-400 text-xs text-center py-3">입고 알림이 없습니다</div>
+            {arrivalsLoading && stockArrivals.length > 0 && (
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-sky-600 font-bold py-1.5 mb-1 bg-sky-50 border border-sky-200 rounded-md sticky top-0 z-10">
+                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+              </div>
+            )}
+            {arrivalsLoading && stockArrivals.length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+            ) : !arrivalsLoading && stockArrivals.length === 0 ? (
+              <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
             ) : (
-              <div className="bg-white border border-slate-200/80 rounded-xl overflow-hidden divide-y divide-slate-100 shadow-sm">
+              <div className={`bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 shadow-sm ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {stockArrivals.slice(0, 5).map(a => (
                   <div key={a.id} className="flex items-center gap-2.5 px-3.5 py-2.5">
                     <Package size={12} className="text-sky-500 shrink-0" />
@@ -1417,37 +1423,32 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               <div className="flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5 overflow-x-auto scrollbar-none">
                 <button
                   onClick={() => setUploadTab("products")}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${
-                    uploadTab === "products" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-                  }`}>
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "products" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                    }`}>
                   상품목록
                 </button>
                 <button
                   onClick={() => setUploadTab("stock")}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${
-                    uploadTab === "stock" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-                  }`}>
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "stock" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                    }`}>
                   재고리스트
                 </button>
                 <button
                   onClick={() => { setUploadTab("vendors"); setVendorUploadResult(null); setVendorUploadFile(null); }}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${
-                    uploadTab === "vendors" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-                  }`}>
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "vendors" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                    }`}>
                   공급사관리
                 </button>
                 <button
                   onClick={() => { setUploadTab("purchase"); setPurchaseUploadResult(null); setPurchaseUploadFile(null); fetchPurchaseImportLog(); }}
-                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${
-                    uploadTab === "purchase" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-                  }`}>
+                  className={`flex-1 min-w-0 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "purchase" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                    }`}>
                   매입상세
                 </button>
                 <button
                   onClick={() => { setUploadTab("log"); fetchImportLog(); fetchStockImportLog(); fetchPurchaseImportLog(); }}
-                  className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${
-                    uploadTab === "log" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-                  }`}>
+                  className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-2 py-1.5 text-[11px] sm:text-xs font-black rounded-lg transition-all duration-200 cursor-pointer leading-tight ${uploadTab === "log" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
+                    }`}>
                   임포트 목록
                   {(importLog.length + stockImportLog.length + purchaseImportBatches.length) > 0 && (
                     <span className={`text-[9px] font-mono rounded-full px-1.5 py-0.5 ${uploadTab === "log" ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-400"}`}>
@@ -1582,11 +1583,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       {/* 자동 판정 표시 */}
                       <div className="mt-2 flex items-center gap-2 flex-wrap text-[10px]">
                         {stockPeriodType ? (
-                          <span className={`font-black px-2 py-0.5 rounded-full border ${
-                            stockPeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
-                            stockPeriodType === "mid"   ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
-                                                          "text-purple-700 bg-purple-50 border-purple-300"
-                          }`}>
+                          <span className={`font-black px-2 py-0.5 rounded-full border ${stockPeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
+                            stockPeriodType === "mid" ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
+                              "text-purple-700 bg-purple-50 border-purple-300"
+                            }`}>
                             자동판정: {stockPeriodType === "early" ? "초순 (1-10일)" : stockPeriodType === "mid" ? "중순 (11-20일)" : "하순 (21-말일)"}
                           </span>
                         ) : (
@@ -1679,9 +1679,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       {stockImportLog.map((entry, i) => {
                         // 재고기간 라벨: "2026-06-01 ~ 2026-06-10 · 초순"
                         const periodLabel = entry.period_type === "early" ? "초순"
-                                          : entry.period_type === "mid"   ? "중순"
-                                          : entry.period_type === "late"  ? "하순"
-                                          : null;
+                          : entry.period_type === "mid" ? "중순"
+                            : entry.period_type === "late" ? "하순"
+                              : null;
                         // "4/20" 형식 (한자리 M/D)
                         const shortDate = (d?: string | null): string | null => {
                           if (!d) return null;
@@ -1831,11 +1831,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       {/* 자동판정 배지 · 재고와 동일 규칙 (종료매입일 dd 로 초/중/하순) */}
                       <div className="mt-2 flex items-center gap-2 flex-wrap text-[10px]">
                         {purchasePeriodType ? (
-                          <span className={`font-black px-2 py-0.5 rounded-full border ${
-                            purchasePeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
-                            purchasePeriodType === "mid"   ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
-                                                            "text-purple-700 bg-purple-50 border-purple-300"
-                          }`}>
+                          <span className={`font-black px-2 py-0.5 rounded-full border ${purchasePeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
+                            purchasePeriodType === "mid" ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
+                              "text-purple-700 bg-purple-50 border-purple-300"
+                            }`}>
                             자동판정: {purchasePeriodType === "early" ? "초순 (1-10일)" : purchasePeriodType === "mid" ? "중순 (11-20일)" : "하순 (21-말일)"}
                           </span>
                         ) : (
@@ -1979,9 +1978,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                         key={t.k}
                         type="button"
                         onClick={() => setLogFilter(f => ({ ...f, type: t.k }))}
-                        className={`text-[10px] font-black rounded-full px-2 py-0.5 border transition cursor-pointer ${
-                          logFilter.type === t.k ? `${t.cls} bg-white shadow-sm` : "text-slate-400 border-slate-200 bg-white/60 hover:bg-white"
-                        }`}
+                        className={`text-[10px] font-black rounded-full px-2 py-0.5 border transition cursor-pointer ${logFilter.type === t.k ? `${t.cls} bg-white shadow-sm` : "text-slate-400 border-slate-200 bg-white/60 hover:bg-white"
+                          }`}
                       >{t.label}</button>
                     ))}
                   </div>
@@ -2289,8 +2287,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)" }}
                 >
                   <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="12" y="3" width="8" height="26" rx="3" fill="white"/>
-                    <rect x="3" y="12" width="26" height="8" rx="3" fill="white"/>
+                    <rect x="12" y="3" width="8" height="26" rx="3" fill="white" />
+                    <rect x="3" y="12" width="26" height="8" rx="3" fill="white" />
                   </svg>
                 </div>
                 <div>
@@ -2302,111 +2300,109 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             {/* ── Form area ── */}
             <div className="px-7 pt-5 pb-7">
 
-                {/* ── Employee login form ── */}
-                <form onSubmit={handleEmployeeSubmit} className="flex flex-col gap-4">
+              {/* ── Employee login form ── */}
+              <form onSubmit={handleEmployeeSubmit} className="flex flex-col gap-4">
 
-                  {/* Phone number field */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-slate-600 text-xs font-semibold pl-1">
-                      전화번호
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                        <User size={14} className="text-slate-400" />
-                      </div>
-                      <input
-                        ref={empNumberRef}
-                        type="tel"
-                        inputMode="numeric"
-                        value={empNumber}
-                        onChange={(e) => { setEmpNumber(e.target.value); setEmpError(null); }}
-                        placeholder="01012345678"
-                        style={{ fontSize: "16px" }}
-                        className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-slate-900 font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${
-                          empError
-                            ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
-                            : "border-2 border-slate-200 bg-slate-50 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-                        }`}
-                        autoComplete="username"
-                        disabled={empLoading}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Password field */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-slate-600 text-xs font-semibold pl-1">
-                      비밀번호
-                    </label>
-                    <div className="relative">
-                      <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                        <Lock size={14} className="text-slate-400" />
-                      </div>
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        value={empPassword}
-                        onChange={(e) => { setEmpPassword(e.target.value); setEmpError(null); }}
-                        placeholder="비밀번호 입력"
-                        style={{ fontSize: "16px" }}
-                        className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-slate-900 font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${
-                          empError
-                            ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
-                            : "border-2 border-slate-200 bg-slate-50 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
-                        }`}
-                        autoComplete="current-password"
-                        disabled={empLoading}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((v) => !v)}
-                        className="absolute inset-y-0 right-4 flex items-center text-slate-400 hover:text-slate-600 transition cursor-pointer"
-                        aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
-                      >
-                        {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Remember me checkbox */}
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none group">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-4 h-4 rounded border-2 border-slate-300 text-indigo-600 accent-indigo-600 cursor-pointer"
-                    />
-                    <span className="text-xs text-slate-500 group-hover:text-slate-700 transition">자동 로그인</span>
+                {/* Phone number field */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-600 text-xs font-semibold pl-1">
+                    전화번호
                   </label>
-
-                  {/* Error message */}
-                  {empError && (
-                    <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
-                      <AlertCircle size={13} className="text-rose-500 mt-0.5 shrink-0" />
-                      <p className="text-rose-600 text-xs font-semibold leading-relaxed">{empError}</p>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                      <User size={14} className="text-slate-400" />
                     </div>
+                    <input
+                      ref={empNumberRef}
+                      type="tel"
+                      inputMode="numeric"
+                      value={empNumber}
+                      onChange={(e) => { setEmpNumber(e.target.value); setEmpError(null); }}
+                      placeholder="01012345678"
+                      style={{ fontSize: "16px" }}
+                      className={`w-full rounded-2xl pl-10 pr-4 py-3.5 text-slate-900 font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${empError
+                        ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
+                        : "border-2 border-slate-200 bg-slate-50 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                        }`}
+                      autoComplete="username"
+                      disabled={empLoading}
+                    />
+                  </div>
+                </div>
+
+                {/* Password field */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-slate-600 text-xs font-semibold pl-1">
+                    비밀번호
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+                      <Lock size={14} className="text-slate-400" />
+                    </div>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={empPassword}
+                      onChange={(e) => { setEmpPassword(e.target.value); setEmpError(null); }}
+                      placeholder="비밀번호 입력"
+                      style={{ fontSize: "16px" }}
+                      className={`w-full rounded-2xl pl-10 pr-12 py-3.5 text-slate-900 font-semibold placeholder:font-normal placeholder:text-slate-300 focus:outline-none transition-all duration-150 ${empError
+                        ? "border-2 border-rose-400 bg-rose-50 focus:ring-2 focus:ring-rose-100"
+                        : "border-2 border-slate-200 bg-slate-50 focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100"
+                        }`}
+                      autoComplete="current-password"
+                      disabled={empLoading}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                      className="absolute inset-y-0 right-4 flex items-center text-slate-400 hover:text-slate-600 transition cursor-pointer"
+                      aria-label={showPassword ? "비밀번호 숨기기" : "비밀번호 보기"}
+                    >
+                      {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Remember me checkbox */}
+                <label className="flex items-center gap-2.5 cursor-pointer select-none group">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-2 border-slate-300 text-indigo-600 accent-indigo-600 cursor-pointer"
+                  />
+                  <span className="text-xs text-slate-500 group-hover:text-slate-700 transition">자동 로그인</span>
+                </label>
+
+                {/* Error message */}
+                {empError && (
+                  <div className="flex items-start gap-2 px-3.5 py-2.5 rounded-xl bg-rose-50 border border-rose-200">
+                    <AlertCircle size={13} className="text-rose-500 mt-0.5 shrink-0" />
+                    <p className="text-rose-600 text-xs font-semibold leading-relaxed">{empError}</p>
+                  </div>
+                )}
+
+                {/* Submit button */}
+                <button
+                  type="submit"
+                  disabled={empLoading}
+                  className="w-full py-3.5 rounded-2xl text-white font-bold text-sm mt-1 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-indigo-200"
+                  style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}
+                >
+                  {empLoading ? (
+                    <>
+                      <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                      <span>로그인 중...</span>
+                    </>
+                  ) : (
+                    <span>직원으로 입장하기</span>
                   )}
+                </button>
 
-                  {/* Submit button */}
-                  <button
-                    type="submit"
-                    disabled={empLoading}
-                    className="w-full py-3.5 rounded-2xl text-white font-bold text-sm mt-1 transition-all duration-150 cursor-pointer active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 flex items-center justify-center gap-2 shadow-lg shadow-indigo-200"
-                    style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}
-                  >
-                    {empLoading ? (
-                      <>
-                        <div className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                        <span>로그인 중...</span>
-                      </>
-                    ) : (
-                      <span>직원으로 입장하기</span>
-                    )}
-                  </button>
-
-                  <p className="text-[11px] text-slate-400 text-center leading-relaxed">
-                    비밀번호 분실 시 관리자에게 문의하세요
-                  </p>
-                </form>
+                <p className="text-[11px] text-slate-400 text-center leading-relaxed">
+                  비밀번호 분실 시 관리자에게 문의하세요
+                </p>
+              </form>
             </div>
           </div>
         </div>

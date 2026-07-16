@@ -423,11 +423,11 @@ router.post("/api/ocr-match", async (req, res) => {
       return res.json({
         candidates: scored.map(({ p, score }) => ({
           code: p.code, name: p.name, spec: p.spec, score,
-          supplier:    p.supplier    != null ? String(p.supplier)    : null,
+          supplier: p.supplier != null ? String(p.supplier) : null,
           masterPrice: p.purchase_price != null ? Number(p.purchase_price) : null,
-          salePrice:   p.sale_price     != null ? Number(p.sale_price)     : null,
-          profitRate:  p.profit_rate    != null ? Number(p.profit_rate)    : null,
-          expiryDate:  p.expiry_date    != null ? String(p.expiry_date)    : null,
+          salePrice: p.sale_price != null ? Number(p.sale_price) : null,
+          profitRate: p.profit_rate != null ? Number(p.profit_rate) : null,
+          expiryDate: p.expiry_date != null ? String(p.expiry_date) : null,
         })),
       });
     }
@@ -492,10 +492,10 @@ router.post("/api/ocr-match", async (req, res) => {
           name: best.name,
           spec: best.spec,
           score: bestScore,
-          masterPrice:  best.purchase_price != null ? Number(best.purchase_price)  : null,
-          salePrice:    best.sale_price      != null ? Number(best.sale_price)     : null,
-          profitRate:   best.profit_rate     != null ? Number(best.profit_rate)    : null,
-          expiryDate:   best.expiry_date     != null ? String(best.expiry_date)    : null,
+          masterPrice: best.purchase_price != null ? Number(best.purchase_price) : null,
+          salePrice: best.sale_price != null ? Number(best.sale_price) : null,
+          profitRate: best.profit_rate != null ? Number(best.profit_rate) : null,
+          expiryDate: best.expiry_date != null ? String(best.expiry_date) : null,
         },
       };
     });
@@ -531,11 +531,11 @@ router.post("/api/ocr-synonyms", async (req, res) => {
   try {
     const { prod_name_old, prod_name_new, supplier_old, supplier_new, product_code } = req.body ?? {};
     if (!prod_name_old?.trim() || !product_code?.trim()) return res.status(400).json({ error: "prod_name_old, product_code 필요" });
-    const nameOldNorm     = prod_name_old.trim().toLowerCase();
-    const codeNorm        = product_code.trim();
+    const nameOldNorm = prod_name_old.trim().toLowerCase();
+    const codeNorm = product_code.trim();
     const supplierNewNorm = supplier_new?.trim() ? normSupplier(supplier_new.trim()) : null;
     const supplierOldNorm = supplier_old?.trim() || null;
-    const nameNewVal      = prod_name_new?.trim() || null;
+    const nameNewVal = prod_name_new?.trim() || null;
 
     // prod_name_old 기준 기존 행 조회
     const { data: existing } = await supabase
@@ -673,7 +673,7 @@ router.post("/api/ocr-supplier-aliases", async (req, res) => {
     const { alias, supplier_name } = req.body ?? {};
     if (!alias?.trim() || !supplier_name?.trim()) return res.status(400).json({ error: "alias, supplier_name 필요" });
     const aliasNorm = alias.trim();
-    const nameNorm  = supplier_name.trim();
+    const nameNorm = supplier_name.trim();
 
     const { data: existing } = await supabase
       .from("ocr_supplier_aliases").select("id").eq("alias", aliasNorm).limit(1);
@@ -810,7 +810,7 @@ router.post("/api/ocr", async (req, res) => {
         const rawInfo = d[rawKey] ?? {};
         const finalInfo = d.final ?? {};
         compareLines.push(``);
-        compareLines.push(`[OCR 원본 헤더]  : ${JSON.stringify(rawInfo.headers ?? [])}`);
+        compareLines.push(`로 : ${JSON.stringify(rawInfo.headers ?? [])}`);
         compareLines.push(`[1차보정 헤더]  : ${JSON.stringify(finalInfo.headers ?? [])}`);
         compareLines.push(`[원본 행 수]    : ${rawInfo.rowCount ?? 0}`);
         compareLines.push(`[1차보정 행 수] : ${finalInfo.rowCount ?? 0}`);
@@ -874,7 +874,7 @@ router.post("/api/ocr", async (req, res) => {
       const files = (await fs.readdir(logsDir)).filter(f => /^ocr-\d/.test(f)).sort();
       while (files.length > 30) {
         const f = files.shift();
-        if (f) await fs.unlink(path.join(logsDir, f)).catch(() => {});
+        if (f) await fs.unlink(path.join(logsDir, f)).catch(() => { });
       }
     } catch (e: any) {
       console.warn(`[OCR/${engineName}] 로그 저장 실패 (무시):`, e?.message);
@@ -952,7 +952,7 @@ router.post("/api/ocr", async (req, res) => {
         } catch (pageErr: any) {
           console.error(`[OCR/ONNX] page ${i + 1} 처리 실패 · 빈 페이지로 대체:`, pageErr?.message);
           console.error(`  stack:`, pageErr?.stack);
-          pages.push({ page: i + 1, headers: ["품명","규격","수량","단가","금액","비고"], rows: [], meta: {}, rawText: "", supplierHintUsed: undefined, _error: pageErr?.message });
+          pages.push({ page: i + 1, headers: ["품명", "규격", "수량", "단가", "금액", "비고"], rows: [], meta: {}, rawText: "", supplierHintUsed: undefined, _error: pageErr?.message });
           diagnostics.push({ page: i + 1, timeMs: Date.now() - startTs, error: pageErr?.message });
         }
         // 페이지 간 메모리 해제 힌트 (Render 512MB · OOM 방지)
@@ -964,7 +964,7 @@ router.post("/api/ocr", async (req, res) => {
         // heap 사용량 로그 (Render 대시보드에서 추적용)
         if (process.env.RENDER === "true" || process.env.LOW_MEM === "true") {
           const mu = process.memoryUsage();
-          console.log(`[OCR/mem] page ${i + 1} 완료 · rss=${(mu.rss/1024/1024).toFixed(0)}MB · heap=${(mu.heapUsed/1024/1024).toFixed(0)}MB`);
+          console.log(`[OCR/mem] page ${i + 1} 완료 · rss=${(mu.rss / 1024 / 1024).toFixed(0)}MB · heap=${(mu.heapUsed / 1024 / 1024).toFixed(0)}MB`);
         }
       }
       // ── 다중 페이지 공통 라인 감지 → 메타 노이즈 2차 필터 (v4c 강화) ──
@@ -1142,21 +1142,21 @@ router.post("/api/ocr", async (req, res) => {
           const rawRowsCount = Array.isArray(parsed.rows) ? parsed.rows.length : 0;
           const cleaned = cleanCellValues(
             Array.isArray(parsed.headers) ? parsed.headers : [],
-            Array.isArray(parsed.rows)    ? parsed.rows    : [],
+            Array.isArray(parsed.rows) ? parsed.rows : [],
           );
-          const pre        = mergeAdjacentHeaders(cleaned.headers, cleaned.rows);
+          const pre = mergeAdjacentHeaders(cleaned.headers, cleaned.rows);
           const normalized = normalizeInvoiceCols(pre.headers, pre.rows);
-          const spec       = extractSpecFromName(normalized.headers, normalized.rows);
-          const validated  = validateCellTypes(spec.headers, spec.rows);
+          const spec = extractSpecFromName(normalized.headers, normalized.rows);
+          const validated = validateCellTypes(spec.headers, spec.rows);
           if (validated.issues.length > 0) console.log(`[OCR/Gemini/validate] page ${i + 1}: ${validated.issues.length}개 셀 보정`);
-          const cleanMeta  = sanitizeOcrMeta(parsed.meta ?? {});
+          const cleanMeta = sanitizeOcrMeta(parsed.meta ?? {});
           const rows0 = fixAmountsBySubtotal(validated.headers, validated.rows, cleanMeta.total ?? null);
           const rows1 = repairColumnShift(validated.headers, rows0);
           const rows2 = crossValidateIntraPage(validated.headers, rows1);
           const rows3 = filterCodeOnlyRows(validated.headers, rows2);
           // 메타데이터 노이즈 필터 (공급사명/수신처/주소/업종/사람이름 반복 행 제거)
           const beforeMeta = rows3.length;
-          const rows  = filterMetadataBleedRows(validated.headers, rows3, cleanMeta);
+          const rows = filterMetadataBleedRows(validated.headers, rows3, cleanMeta);
           if (rows.length < beforeMeta) console.log(`[OCR/Gemini] page ${i + 1}: 메타 노이즈 ${beforeMeta - rows.length}행 제거`);
           // 진단: 단가==금액 이지만 페이지 통계상 컬럼 shift 의심되는 행 (보정 없이 로그만)
           const suspicious = detectSuspiciousEqualPriceAmount(spec.headers, rows);
@@ -1236,12 +1236,12 @@ router.post("/api/ocr", async (req, res) => {
       const rows: any[][] = pg.rows ?? [];
       // 표준 컬럼 인덱스
       const idx = (re: RegExp) => H.findIndex(h => re.test(String(h).replace(/\s+/g, "")));
-      const iName  = idx(/품명|품목|상품명|제품명/);
-      const iSpec  = idx(/규격|사양/);
-      const iQty   = idx(/수량|매수/);
+      const iName = idx(/품명|품목|상품명|제품명/);
+      const iSpec = idx(/규격|사양/);
+      const iQty = idx(/수량|매수/);
       const iPrice = idx(/단가/);
-      const iAmt   = idx(/^금액$|공급가액|매출액/);
-      const iVat   = idx(/세액|부가세/);
+      const iAmt = idx(/^금액$|공급가액|매출액/);
+      const iVat = idx(/세액|부가세/);
 
       let qtyPriceAmtMismatch = 0;
       let missingName = 0;
@@ -1266,21 +1266,21 @@ router.post("/api/ocr", async (req, res) => {
       for (let ri = 0; ri < rows.length; ri++) {
         const row = rows[ri];
         if (!Array.isArray(row)) continue;
-        const name  = iName  >= 0 ? String(row[iName]  ?? "").trim() : "";
-        const qty   = iQty   >= 0 ? toNum(row[iQty])   : 0;
+        const name = iName >= 0 ? String(row[iName] ?? "").trim() : "";
+        const qty = iQty >= 0 ? toNum(row[iQty]) : 0;
         const price = iPrice >= 0 ? toNum(row[iPrice]) : 0;
-        const amt   = iAmt   >= 0 ? toNum(row[iAmt])   : 0;
+        const amt = iAmt >= 0 ? toNum(row[iAmt]) : 0;
         const issues: string[] = [];
 
         if (!name) { missingName++; issues.push("품명 없음"); }
-        if (iQty   >= 0 && qty   === 0) { missingQty++;    issues.push("수량 0/없음"); }
-        if (iPrice >= 0 && price === 0) { missingPrice++;  issues.push("단가 0/없음"); }
-        if (iAmt   >= 0 && amt   === 0) { missingAmount++; issues.push("금액 0/없음"); }
+        if (iQty >= 0 && qty === 0) { missingQty++; issues.push("수량 0/없음"); }
+        if (iPrice >= 0 && price === 0) { missingPrice++; issues.push("단가 0/없음"); }
+        if (iAmt >= 0 && amt === 0) { missingAmount++; issues.push("금액 0/없음"); }
 
         // 이상치 감지 (한국 거래명세서 통계적 범위)
-        if (qty   > 0 && qty   > 100000)      { outlierQty++;    issues.push(`수량 과대(${qty})`); }
-        if (price > 0 && price > 10_000_000)  { outlierPrice++;  issues.push(`단가 과대(${price})`); }
-        if (amt   > 0 && amt   > 100_000_000) { outlierAmount++; issues.push(`금액 과대(${amt})`); }
+        if (qty > 0 && qty > 100000) { outlierQty++; issues.push(`수량 과대(${qty})`); }
+        if (price > 0 && price > 10_000_000) { outlierPrice++; issues.push(`단가 과대(${price})`); }
+        if (amt > 0 && amt > 100_000_000) { outlierAmount++; issues.push(`금액 과대(${amt})`); }
 
         // 행의 모든 셀 값 (진단용) + 다른 수량 후보 (X × 단가 ≈ 금액 을 만족하는 값)
         const allCells = row.map((v, ci) => ({ col: ci, header: H[ci] ?? `col${ci}`, value: v }));
@@ -1378,7 +1378,7 @@ router.post("/api/ocr", async (req, res) => {
         diagnostics: diagnosticsMerged,
       };
       const detailedPayload = JSON.stringify({ ...summary, pages }, null, 2);
-      const summaryPayload  = JSON.stringify(summary, null, 2);
+      const summaryPayload = JSON.stringify(summary, null, 2);
       await Promise.all([
         fs.writeFile(path.join(logsDir, "ocr-last.json"), detailedPayload),
         fs.writeFile(path.join(logsDir, `ocr-${timestamp}.json`), detailedPayload),
@@ -1388,7 +1388,7 @@ router.post("/api/ocr", async (req, res) => {
       const files = (await fs.readdir(logsDir)).filter(f => /^ocr-\d/.test(f)).sort();
       while (files.length > 20) {
         const f = files.shift();
-        if (f) await fs.unlink(path.join(logsDir, f)).catch(() => {});
+        if (f) await fs.unlink(path.join(logsDir, f)).catch(() => { });
       }
       // 콘솔 요약 출력 — 다음 개선 방안 착수 시 즉시 확인 가능
       console.log(`[OCR/diag] ${pages.length}페이지 처리 완료:

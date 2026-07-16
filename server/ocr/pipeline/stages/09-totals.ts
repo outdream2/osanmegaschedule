@@ -60,6 +60,17 @@ export const totalsStage: Stage = {
       console.log(`[totals/balance] page ${ctx.page}: ⚠ 의심 · total(${meta.total.toLocaleString()}) 이 참조값(${ref.toLocaleString()}) 의 ${(meta.total / ref).toFixed(1)}배 · 20배 미만이라 유지`);
     }
 
+    // 2026-07-16 Fix: "소계 라벨 없는 명세서" subtotal → total 승격
+    //   클라이언트 getPageDisplayTotal 은 meta.total 만 stated 로 참조함.
+    //   extractMeta 가 "소계/합계" 라벨을 못 찾으면 meta.total = null 로 남아
+    //   클라이언트가 computed(행합) 으로 폴백하는데, OCR 이 행 금액도 잘못 읽으면 0 표시됨.
+    //   → meta.total 이 없고 meta.subtotal 이 rowsSum 으로 채워졌으면 total 로도 올림.
+    //   안전 조건: total 이 이미 있거나 · subtotal ≤ 0 이면 건드리지 않음.
+    if (meta.total == null && typeof meta.subtotal === "number" && meta.subtotal > 0) {
+      meta.total = meta.subtotal;
+      console.log(`[totals/subtotal-promote] page ${ctx.page}: subtotal(${meta.subtotal.toLocaleString()}) → total 으로 승격 (라벨 없는 명세서 소계 보장)`);
+    }
+
     // 할인·에누리·차액·반품·부가세별도 자동 감지 (2026-07-14 Phase 1a)
     const disc = extractDiscount(ctx.rawText ?? "", rowsSum, meta);
     if (disc.inferred.length > 0) {

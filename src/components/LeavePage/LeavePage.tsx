@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import {
   CalendarDays, Clock, CheckCircle2, XCircle,
-  RefreshCw, Plus, X, Trash2, ChevronDown,
+  RefreshCw, Plus, X, Trash2, ChevronDown, Loader2,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
@@ -292,23 +292,29 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
             )}
 
             {/* 내 신청 내역 */}
-            <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">내 신청 내역</p>
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-1.5">
+                  <CalendarDays size={14} className="text-green-600" />
+                  <span className="text-sm font-black text-slate-700">내 신청 내역</span>
+                  <span className="text-[10px] font-mono text-slate-400">({myRequests.length}건)</span>
+                </div>
                 <button onClick={loadMyRequests} disabled={myLoading} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer px-2 py-1 rounded-lg hover:bg-gray-100 transition">
                   <RefreshCw size={11} className={myLoading ? "animate-spin" : ""} />
                 </button>
               </div>
 
-              {myLoading ? (
-                <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-green-400 border-t-transparent rounded-full animate-spin" /></div>
-              ) : myRequests.length === 0 ? (
-                <div className="flex flex-col items-center py-16 text-gray-300">
-                  <CalendarDays size={36} className="mb-3" />
-                  <p className="text-sm font-bold text-gray-400">신청 내역이 없습니다</p>
+              {myLoading && myRequests.length > 0 && (
+                <div className="flex items-center justify-center gap-1.5 text-[10px] text-amber-600 font-bold py-1.5 mb-1 bg-amber-50 border border-amber-200 rounded-md sticky top-0 z-10">
+                  <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
                 </div>
+              )}
+              {myLoading && myRequests.length === 0 ? (
+                <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              ) : !myLoading && myRequests.length === 0 ? (
+                <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
               ) : (
-                <div className="flex flex-col gap-2">
+                <div className={`flex flex-col gap-2 ${myLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {myRequests.map(r => (
                     <div key={r.id} className={`bg-white border rounded-xl p-4 shadow-sm ${r.status === "pending" ? "border-amber-200" : r.status === "approved" ? "border-emerald-200" : "border-rose-200"}`}>
                       <div className="flex items-start justify-between gap-2 mb-2">
@@ -368,23 +374,33 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               ))}
             </div>
 
-            <div className="flex items-center justify-end">
-              <button onClick={loadAllRequests} disabled={allLoading} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer px-2 py-1 rounded-lg hover:bg-gray-100 transition">
-                <RefreshCw size={11} className={allLoading ? "animate-spin" : ""} /> 새로고침
-              </button>
-            </div>
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-1.5">
+                  <Clock size={14} className="text-amber-600" />
+                  <span className="text-sm font-black text-slate-700">
+                    {mgrTab === "pending" ? "승인 대기" : "전체 목록"}
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    ({(mgrTab === "pending" ? pending : reviewed).length}건)
+                  </span>
+                </div>
+                <button onClick={loadAllRequests} disabled={allLoading} className="flex items-center gap-1 text-xs text-gray-400 hover:text-gray-700 cursor-pointer px-2 py-1 rounded-lg hover:bg-gray-100 transition">
+                  <RefreshCw size={11} className={allLoading ? "animate-spin" : ""} /> 새로고침
+                </button>
+              </div>
 
-            {allLoading ? (
-              <div className="flex justify-center py-12"><div className="w-6 h-6 border-2 border-green-400 border-t-transparent rounded-full animate-spin" /></div>
+            {allLoading && (mgrTab === "pending" ? pending : reviewed).length > 0 && (
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-indigo-600 font-bold py-1.5 mb-1 bg-indigo-50 border border-indigo-200 rounded-md sticky top-0 z-10">
+                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+              </div>
+            )}
+            {allLoading && (mgrTab === "pending" ? pending : reviewed).length === 0 ? (
+              <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
             ) : (
-              <div className="flex flex-col gap-2">
+              <div className={`flex flex-col gap-2 ${allLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {(mgrTab === "pending" ? pending : reviewed).length === 0 ? (
-                  <div className="flex flex-col items-center py-16 text-gray-300">
-                    <CheckCircle2 size={36} className="mb-3" />
-                    <p className="text-sm font-bold text-gray-400">
-                      {mgrTab === "pending" ? "대기 중인 신청이 없습니다" : "검토 완료된 신청이 없습니다"}
-                    </p>
-                  </div>
+                  <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
                 ) : (
                   (mgrTab === "pending" ? pending : reviewed).map(r => (
                     <div key={r.id} className={`bg-white border rounded-xl p-4 shadow-sm ${r.status === "pending" ? "border-amber-200" : r.status === "approved" ? "border-emerald-200" : "border-rose-200"}`}>
@@ -458,6 +474,7 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
                 )}
               </div>
             )}
+            </div>
           </div>
         )}
       </main>

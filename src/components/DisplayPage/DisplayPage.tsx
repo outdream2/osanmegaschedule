@@ -149,7 +149,7 @@ const buildDefaultZones = (): DisplayZone[] =>
 
 // ─── localStorage helpers ─────────────────────────────────────────────────────
 const ZONES_KEY = ZONES_STORAGE_KEY;
-const REQS_KEY  = "megatown_display_requests";
+const REQS_KEY = "megatown_display_requests";
 
 const loadZones = (): DisplayZone[] => {
   try {
@@ -176,13 +176,13 @@ const loadZones = (): DisplayZone[] => {
     });
   } catch { return buildDefaultZones(); }
 };
-const saveZones = (z: DisplayZone[]) => { try { localStorage.setItem(ZONES_KEY, JSON.stringify(z)); } catch {} };
+const saveZones = (z: DisplayZone[]) => { try { localStorage.setItem(ZONES_KEY, JSON.stringify(z)); } catch { } };
 
 const loadRequests = (): DisplayRequest[] => {
   try { const r = localStorage.getItem(REQS_KEY); return r ? (JSON.parse(r) as DisplayRequest[]) : []; }
   catch { return []; }
 };
-const saveRequests = (r: DisplayRequest[]) => { try { localStorage.setItem(REQS_KEY, JSON.stringify(r)); } catch {} };
+const saveRequests = (r: DisplayRequest[]) => { try { localStorage.setItem(REQS_KEY, JSON.stringify(r)); } catch { } };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const STATUS_LABEL: Record<ZoneStatus, string> = { normal: "정상", low: "부족", empty: "품절" };
@@ -195,13 +195,13 @@ const statusCell = (s: ZoneStatus, extra = ""): string => {
   };
   return `${m[s]} ${extra}`;
 };
-const statusDot  = (s: ZoneStatus) => ({ normal: "bg-emerald-500", low: "bg-amber-500", empty: "bg-red-500" }[s]);
+const statusDot = (s: ZoneStatus) => ({ normal: "bg-emerald-500", low: "bg-amber-500", empty: "bg-red-500" }[s]);
 const statusBadge = (s: ZoneStatus) => ({ normal: "bg-emerald-100 text-emerald-700 border-emerald-300", low: "bg-amber-100 text-amber-700 border-amber-300", empty: "bg-red-100 text-red-700 border-red-300" }[s]);
 
 const SHIFT_BADGE: Record<string, string> = {
-  "오픈":    "bg-emerald-100 text-emerald-800 border-emerald-300",
-  "미들":    "bg-blue-100 text-blue-800 border-blue-300",
-  "마감":    "bg-rose-100 text-rose-800 border-rose-300",
+  "오픈": "bg-emerald-100 text-emerald-800 border-emerald-300",
+  "미들": "bg-blue-100 text-blue-800 border-blue-300",
+  "마감": "bg-rose-100 text-rose-800 border-rose-300",
   "오전반차": "bg-lime-100 text-lime-800 border-lime-300",
   "오후반차": "bg-amber-100 text-amber-800 border-amber-300",
 };
@@ -316,7 +316,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   // 서브탭: 재고관리(기본 · level 9 전용) · 매장관리(그 외 기본)
   const dpUserLevel = authSession?.level ??
     (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9 :
-     authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
+      authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
   const [dpSubTab, setDpSubTab] = useState<"store" | "stock-manage" | "sales-trend" | "stock-arrivals" | "order-manage" | "staff-manage">(
@@ -485,7 +485,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         assigned_staff_name: zone.assignedStaffName,
         note: "빠른 요청",
       }),
-    }).catch(() => {});
+    }).catch(() => { });
     // Fire-and-forget push notification
     fetch("/api/push-send", {
       method: "POST",
@@ -496,7 +496,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         body: `${zone.num}번 ${zone.label} (${zone.category}) 보충이 필요합니다.`,
         url: "/",
       }),
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   // 전체월에 적용: 현재 배정 상태를 선택된 월 전체(1일~말일) 모든 날짜에 적용
@@ -742,8 +742,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       const zd = ZONE_DEFS.find(z => z.num === parseInt(zoneId, 10));
       const side = zoneId.endsWith("A") ? "A" : zoneId.endsWith("B") ? "B" : "";
       const category = side === "A" ? (zd?.subA ?? zd?.category ?? "")
-                     : side === "B" ? (zd?.subB ?? zd?.category ?? "")
-                     : (zd?.category ?? "");
+        : side === "B" ? (zd?.subB ?? zd?.category ?? "")
+          : (zd?.category ?? "");
       const zoneLabel = buildZoneLabel(zoneId, zd);
       if (!grouped.has(id)) grouped.set(id, { name, zones: [] });
       grouped.get(id)!.zones.push({ zoneLabel, category });
@@ -760,7 +760,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           body: `${name}님, ${dateLabel} 진열 담당 구역 ${zList.length}곳입니다.\n${zonesText}`,
           url: "/",
         }),
-      }).catch(() => {});
+      }).catch(() => { });
       sent++;
     }
     setPendingAutoAssign(null);
@@ -896,7 +896,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
     fetch("/api/zone-groups")
       .then((r) => r.json())
       .then((data) => setZoneGroups(Array.isArray(data) ? data : []))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setZoneGroupsLoaded(true));
   }, []);
 
@@ -908,7 +908,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(zoneGroups),
-      }).catch(() => {});
+      }).catch(() => { });
     }, 800);
     return () => clearTimeout(t);
   }, [zoneGroups, zoneGroupsLoaded]);
@@ -1165,7 +1165,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         assigned_staff_name: staff.name,
         note: requestNote,
       }),
-    }).catch(() => {});
+    }).catch(() => { });
     setRequestFlash(true);
     setTimeout(() => setRequestFlash(false), 1500);
   }, [activeZone, canRequest, draftCategory, draftProducts, draftStaffId, draftStatus, requestNote, employees]);
@@ -1452,12 +1452,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         //   각 탭별 아이덴티티 색상 유지 · 촌스러운 채도 down
         type TabDef = { key: string; label: string; icon: any; visible: boolean; activeCls: string; iconActiveCls: string; ringCls: string; hoverCls: string };
         const tabs: Array<TabDef> = [
-          { key: "stock-manage",   label: "재고관리", icon: Boxes,         visible: dpCanSeeStockManage,   activeCls: "bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-sm", iconActiveCls: "text-emerald-600", ringCls: "focus-visible:ring-emerald-300", hoverCls: "hover:bg-emerald-50/60 hover:text-emerald-700" },
-          { key: "sales-trend",    label: "판매추이", icon: TrendingUp,    visible: dpCanSeeStockManage,   activeCls: "bg-amber-50 border border-amber-200 text-amber-700 shadow-sm",     iconActiveCls: "text-amber-600",   ringCls: "focus-visible:ring-amber-300",   hoverCls: "hover:bg-amber-50/60 hover:text-amber-700"   },
-          { key: "order-manage",   label: "발주관리", icon: ClipboardList, visible: dpCanSeeStockManage,   activeCls: "bg-sky-50 border border-sky-200 text-sky-700 shadow-sm",           iconActiveCls: "text-sky-600",     ringCls: "focus-visible:ring-sky-300",     hoverCls: "hover:bg-sky-50/60 hover:text-sky-700"       },
-          { key: "stock-arrivals", label: "입고알림", icon: Bell,          visible: dpCanSeeStockArrivals, activeCls: "bg-orange-50 border border-orange-200 text-orange-700 shadow-sm",  iconActiveCls: "text-orange-600",  ringCls: "focus-visible:ring-orange-300",  hoverCls: "hover:bg-orange-50/60 hover:text-orange-700" },
-          { key: "store",          label: "구역도",   icon: Store,         visible: true,                  activeCls: "bg-rose-50 border border-rose-200 text-rose-700 shadow-sm",        iconActiveCls: "text-rose-600",    ringCls: "focus-visible:ring-rose-300",    hoverCls: "hover:bg-rose-50/60 hover:text-rose-700"     },
-          { key: "staff-manage",   label: "직원관리", icon: Users,         visible: true,                  activeCls: "bg-indigo-50 border border-indigo-200 text-indigo-700 shadow-sm",  iconActiveCls: "text-indigo-600",  ringCls: "focus-visible:ring-indigo-300",  hoverCls: "hover:bg-indigo-50/60 hover:text-indigo-700" },
+          { key: "stock-manage", label: "재고관리", icon: Boxes, visible: dpCanSeeStockManage, activeCls: "bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-sm", iconActiveCls: "text-emerald-600", ringCls: "focus-visible:ring-emerald-300", hoverCls: "hover:bg-emerald-50/60 hover:text-emerald-700" },
+          { key: "sales-trend", label: "판매추이", icon: TrendingUp, visible: dpCanSeeStockManage, activeCls: "bg-amber-50 border border-amber-200 text-amber-700 shadow-sm", iconActiveCls: "text-amber-600", ringCls: "focus-visible:ring-amber-300", hoverCls: "hover:bg-amber-50/60 hover:text-amber-700" },
+          { key: "order-manage", label: "발주/사입관리", icon: ClipboardList, visible: dpCanSeeStockManage, activeCls: "bg-sky-50 border border-sky-200 text-sky-700 shadow-sm", iconActiveCls: "text-sky-600", ringCls: "focus-visible:ring-sky-300", hoverCls: "hover:bg-sky-50/60 hover:text-sky-700" },
+          { key: "stock-arrivals", label: "입고알림", icon: Bell, visible: dpCanSeeStockArrivals, activeCls: "bg-orange-50 border border-orange-200 text-orange-700 shadow-sm", iconActiveCls: "text-orange-600", ringCls: "focus-visible:ring-orange-300", hoverCls: "hover:bg-orange-50/60 hover:text-orange-700" },
+          { key: "store", label: "구역도", icon: Store, visible: true, activeCls: "bg-rose-50 border border-rose-200 text-rose-700 shadow-sm", iconActiveCls: "text-rose-600", ringCls: "focus-visible:ring-rose-300", hoverCls: "hover:bg-rose-50/60 hover:text-rose-700" },
+          { key: "staff-manage", label: "직원관리", icon: Users, visible: true, activeCls: "bg-indigo-50 border border-indigo-200 text-indigo-700 shadow-sm", iconActiveCls: "text-indigo-600", ringCls: "focus-visible:ring-indigo-300", hoverCls: "hover:bg-indigo-50/60 hover:text-indigo-700" },
         ];
         const inactiveCls = "text-slate-500";
         const iconInactive = "text-slate-400";
@@ -1524,913 +1524,911 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           <StaffManagePage />
         </main>
       ) : (
-      /* Main Content Grid — 세로 스택: 상단(검색+출근직원 가로), 하단(매장맵 전체) */
-      <main className="max-w-[1360px] w-full mx-auto p-4 flex flex-col gap-4 flex-1">
+        /* Main Content Grid — 세로 스택: 상단(검색+출근직원 가로), 하단(매장맵 전체) */
+        <main className="max-w-[1360px] w-full mx-auto p-4 flex flex-col gap-4 flex-1">
 
-        {/* TOP SECTION: Search + Today's Staff (side by side on lg, stacked on mobile) */}
-        <section className="flex flex-col lg:flex-row gap-4">
+          {/* TOP SECTION: Search + Today's Staff (side by side on lg, stacked on mobile) */}
+          <section className="flex flex-col lg:flex-row gap-4">
 
-          {/* LEFT of top bar: 약찾기 결과 (검색 시에만 노출 · 검색창은 매장맵 상단으로 이동됨) */}
-          <div className="flex-1 flex flex-col gap-3 min-w-0">
-          {/* ── 약찾기 결과 패널 ──────────────────────────────────────────────── */}
-          {productSearchResults.length > 0 && (
-            <div className="bg-white rounded-xl border border-emerald-200 shadow-xs overflow-hidden shrink-0">
-              <div className="px-3 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
-                <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700">
-                  <Pill size={12} />
-                  약 위치 검색 결과 ({productSearchResults.length}건)
-                </div>
-                <button
-                  type="button"
-                  onClick={() => { setSearchQuery(""); setProductMatchZoneId(null); }}
-                  className="text-slate-400 hover:text-slate-600 transition cursor-pointer"
-                >
-                  <X size={12} />
-                </button>
-              </div>
-              <div className="max-h-52 overflow-y-auto divide-y divide-slate-50">
-                {productSearchResults.map((p) => (
-                  <div
-                    key={p.code}
-                    className={`px-3 py-2 flex items-start justify-between gap-2 ${
-                      productMatchZoneId && zones.find(z => z.id === productMatchZoneId)?.num === parseInt((p.realMap ?? "").match(/^(\d+)번/)?.[1] ?? "-1") ? "bg-emerald-50 border-l-2 border-emerald-400" : ""
-                    }`}
-                  >
+            {/* LEFT of top bar: 약찾기 결과 (검색 시에만 노출 · 검색창은 매장맵 상단으로 이동됨) */}
+            <div className="flex-1 flex flex-col gap-3 min-w-0">
+              {/* ── 약찾기 결과 패널 ──────────────────────────────────────────────── */}
+              {productSearchResults.length > 0 && (
+                <div className="bg-white rounded-xl border border-emerald-200 shadow-xs overflow-hidden shrink-0">
+                  <div className="px-3 py-2 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700">
+                      <Pill size={12} />
+                      약 위치 검색 결과 ({productSearchResults.length}건)
+                    </div>
                     <button
                       type="button"
-                      onClick={() => handleProductResultClick(p.realMap)}
-                      className="flex-1 min-w-0 text-left hover:opacity-75 transition cursor-pointer"
+                      onClick={() => { setSearchQuery(""); setProductMatchZoneId(null); }}
+                      className="text-slate-400 hover:text-slate-600 transition cursor-pointer"
                     >
-                      <div className="text-xs font-semibold text-slate-800 truncate">{p.name}</div>
-                      {p.spec && <div className="text-[10px] text-slate-400 truncate mt-0.5" title="전산배치구역">{p.spec}</div>}
+                      <X size={12} />
                     </button>
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {p.realMap && (
+                  </div>
+                  <div className="max-h-52 overflow-y-auto divide-y divide-slate-50">
+                    {productSearchResults.map((p) => (
+                      <div
+                        key={p.code}
+                        className={`px-3 py-2 flex items-start justify-between gap-2 ${productMatchZoneId && zones.find(z => z.id === productMatchZoneId)?.num === parseInt((p.realMap ?? "").match(/^(\d+)번/)?.[1] ?? "-1") ? "bg-emerald-50 border-l-2 border-emerald-400" : ""
+                          }`}
+                      >
                         <button
                           type="button"
                           onClick={() => handleProductResultClick(p.realMap)}
-                          className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-emerald-200 transition cursor-pointer"
+                          className="flex-1 min-w-0 text-left hover:opacity-75 transition cursor-pointer"
                         >
-                          <MapPin size={9} />
-                          {p.realMap}
+                          <div className="text-xs font-semibold text-slate-800 truncate">{p.name}</div>
+                          {p.spec && <div className="text-[10px] text-slate-400 truncate mt-0.5" title="전산배치구역">{p.spec}</div>}
                         </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const full = productsMap[p.code] ?? productsMap[p.code.replace(/^0+/, "")] ?? p as ProductInfo;
-                          setProductInfoModal(full);
-                        }}
-                        className="flex items-center gap-0.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-indigo-100 transition cursor-pointer"
-                      >
-                        <Info size={9} />
-                        상품정보
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          </div>
-        </section>
-
-        {/* BOTTOM SECTION: 매장 배치도 (full width, 한번에 보이게) */}
-        <section className="flex flex-col">
-          <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex-1 flex flex-col">
-
-            {/* Save-all toast */}
-            {saveAllToast && (
-              <div className="fixed top-5 right-5 z-[70] bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 animate-in slide-in-from-top-2 duration-200">
-                <CheckCircle2 size={14} />
-                전 요일에 현재 배정이 적용 · DB 저장되었습니다.
-              </div>
-            )}
-
-            {/* Quick request toast */}
-            {quickReqToast && (
-              <div className="fixed top-5 right-5 z-[71] bg-amber-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 animate-in slide-in-from-top-2 duration-200 max-w-xs">
-                <Bell size={14} />
-                {quickReqToast}
-              </div>
-            )}
-
-            {/* Date navigation */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 pb-3 border-b border-gray-100">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => navigateDate(-1)}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-gray-800 transition cursor-pointer"
-                >
-                  <ChevronLeft size={18} />
-                </button>
-                <div className="text-center min-w-[140px] sm:min-w-[160px]">
-                  <div className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight tracking-tight">
-                    {selectedDateObj.getMonth() + 1}월 {selectedDateObj.getDate()}일
-                  </div>
-                  <div className="flex items-center justify-center gap-1.5 mt-0.5">
-                    <span className="text-sm font-semibold text-gray-400">{dayNames[selectedDateObj.getDay()]}요일</span>
-                    {isToday && <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600">오늘</span>}
-                    {!isToday && (
-                      <button
-                        onClick={() => setSelectedDate(todayStr)}
-                        className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 hover:bg-indigo-100 hover:text-indigo-600 transition cursor-pointer"
-                      >
-                        오늘로
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <button
-                  onClick={() => navigateDate(1)}
-                  className="p-1.5 rounded-lg hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-gray-800 transition cursor-pointer"
-                >
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-              <div className="flex items-center gap-2 flex-wrap justify-start sm:justify-end">
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-xl">🗺️</span>
-                  <span className="text-sm font-bold text-gray-600">매장 배치도</span>
-                </div>
-                {/* 약찾기 검색 — 전체저장 옆에 배치 · 검색결과 드롭다운 아래로 노출 */}
-                <div className="relative flex-1 min-w-[140px] sm:min-w-[200px] max-w-[360px]">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="약 · 증상 검색 (예: 감기약)"
-                    className="w-full pl-8 pr-8 py-1.5 border border-gray-300 rounded-lg shadow-3xs focus:outline-none focus:ring-1 focus:ring-emerald-400 bg-white text-xs"
-                  />
-                  <Search className="absolute left-2 top-2 text-gray-400" size={13} />
-                  {searchQuery && (
-                    <button
-                      onClick={() => { setSearchQuery(""); setProductMatchZoneId(null); }}
-                      className="absolute right-2 top-1.5 text-gray-400 hover:text-gray-600 cursor-pointer"
-                    >
-                      <X size={14} />
-                    </button>
-                  )}
-                  {/* 검색 결과 드롭다운 (검색어 존재 시 자동 노출) */}
-                  {searchQuery && productSearchResults.length > 0 && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg border border-emerald-300 shadow-xl z-40 overflow-hidden">
-                      <div className="px-3 py-1.5 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
-                        <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700">
-                          <Pill size={12} />
-                          검색 결과 ({productSearchResults.length}건)
-                        </div>
-                      </div>
-                      <div className="max-h-72 overflow-y-auto divide-y divide-slate-50">
-                        {productSearchResults.map((p) => (
-                          <div key={p.code} className="px-3 py-2 flex items-start justify-between gap-2 hover:bg-slate-50 transition">
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          {p.realMap && (
                             <button
                               type="button"
                               onClick={() => handleProductResultClick(p.realMap)}
-                              className="flex-1 min-w-0 text-left cursor-pointer"
+                              className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-emerald-200 transition cursor-pointer"
                             >
-                              <div className="text-xs font-semibold text-slate-800 truncate">{p.name}</div>
-                              {p.spec && <div className="text-[10px] text-slate-400 truncate mt-0.5" title="전산배치구역">{p.spec}</div>}
+                              <MapPin size={9} />
+                              {p.realMap}
                             </button>
-                            <div className="flex items-center gap-1.5 shrink-0">
-                              {p.realMap && (
-                                <button
-                                  type="button"
-                                  onClick={() => handleProductResultClick(p.realMap)}
-                                  className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-emerald-200 transition cursor-pointer"
-                                >
-                                  <MapPin size={9} />
-                                  {p.realMap}
-                                </button>
-                              )}
+                          )}
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const full = productsMap[p.code] ?? productsMap[p.code.replace(/^0+/, "")] ?? p as ProductInfo;
+                              setProductInfoModal(full);
+                            }}
+                            className="flex items-center gap-0.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-indigo-100 transition cursor-pointer"
+                          >
+                            <Info size={9} />
+                            상품정보
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            </div>
+          </section>
+
+          {/* BOTTOM SECTION: 매장 배치도 (full width, 한번에 보이게) */}
+          <section className="flex flex-col">
+            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex-1 flex flex-col">
+
+              {/* Save-all toast */}
+              {saveAllToast && (
+                <div className="fixed top-5 right-5 z-[70] bg-emerald-600 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 animate-in slide-in-from-top-2 duration-200">
+                  <CheckCircle2 size={14} />
+                  전 요일에 현재 배정이 적용 · DB 저장되었습니다.
+                </div>
+              )}
+
+              {/* Quick request toast */}
+              {quickReqToast && (
+                <div className="fixed top-5 right-5 z-[71] bg-amber-500 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 animate-in slide-in-from-top-2 duration-200 max-w-xs">
+                  <Bell size={14} />
+                  {quickReqToast}
+                </div>
+              )}
+
+              {/* Date navigation */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => navigateDate(-1)}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-gray-800 transition cursor-pointer"
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <div className="text-center min-w-[140px] sm:min-w-[160px]">
+                    <div className="text-2xl sm:text-3xl font-black text-gray-900 leading-tight tracking-tight">
+                      {selectedDateObj.getMonth() + 1}월 {selectedDateObj.getDate()}일
+                    </div>
+                    <div className="flex items-center justify-center gap-1.5 mt-0.5">
+                      <span className="text-sm font-semibold text-gray-400">{dayNames[selectedDateObj.getDay()]}요일</span>
+                      {isToday && <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full bg-indigo-100 text-indigo-600">오늘</span>}
+                      {!isToday && (
+                        <button
+                          onClick={() => setSelectedDate(todayStr)}
+                          className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-500 hover:bg-indigo-100 hover:text-indigo-600 transition cursor-pointer"
+                        >
+                          오늘로
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigateDate(1)}
+                    className="p-1.5 rounded-lg hover:bg-gray-100 border border-gray-200 text-gray-500 hover:text-gray-800 transition cursor-pointer"
+                  >
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap justify-start sm:justify-end">
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-xl">🗺️</span>
+                    <span className="text-sm font-bold text-gray-600">매장 배치도</span>
+                  </div>
+                  {/* 약찾기 검색 — 전체저장 옆에 배치 · 검색결과 드롭다운 아래로 노출 */}
+                  <div className="relative flex-1 min-w-[140px] sm:min-w-[200px] max-w-[360px]">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="약 · 증상 검색 (예: 감기약)"
+                      className="w-full pl-8 pr-8 py-1.5 border border-gray-300 rounded-lg shadow-3xs focus:outline-none focus:ring-1 focus:ring-emerald-400 bg-white text-xs"
+                    />
+                    <Search className="absolute left-2 top-2 text-gray-400" size={13} />
+                    {searchQuery && (
+                      <button
+                        onClick={() => { setSearchQuery(""); setProductMatchZoneId(null); }}
+                        className="absolute right-2 top-1.5 text-gray-400 hover:text-gray-600 cursor-pointer"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                    {/* 검색 결과 드롭다운 (검색어 존재 시 자동 노출) */}
+                    {searchQuery && productSearchResults.length > 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg border border-emerald-300 shadow-xl z-40 overflow-hidden">
+                        <div className="px-3 py-1.5 bg-emerald-50 border-b border-emerald-100 flex items-center justify-between">
+                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-700">
+                            <Pill size={12} />
+                            검색 결과 ({productSearchResults.length}건)
+                          </div>
+                        </div>
+                        <div className="max-h-72 overflow-y-auto divide-y divide-slate-50">
+                          {productSearchResults.map((p) => (
+                            <div key={p.code} className="px-3 py-2 flex items-start justify-between gap-2 hover:bg-slate-50 transition">
                               <button
                                 type="button"
+                                onClick={() => handleProductResultClick(p.realMap)}
+                                className="flex-1 min-w-0 text-left cursor-pointer"
+                              >
+                                <div className="text-xs font-semibold text-slate-800 truncate">{p.name}</div>
+                                {p.spec && <div className="text-[10px] text-slate-400 truncate mt-0.5" title="전산배치구역">{p.spec}</div>}
+                              </button>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                {p.realMap && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleProductResultClick(p.realMap)}
+                                    className="flex items-center gap-0.5 text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-emerald-200 transition cursor-pointer"
+                                  >
+                                    <MapPin size={9} />
+                                    {p.realMap}
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const full = productsMap[p.code] ?? productsMap[p.code.replace(/^0+/, "")] ?? p as ProductInfo;
+                                    setProductInfoModal(full);
+                                  }}
+                                  className="flex items-center gap-0.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-indigo-100 transition cursor-pointer"
+                                >
+                                  <Info size={9} />
+                                  정보
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {searchQuery && productSearchResults.length === 0 && (
+                      <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg border border-slate-200 shadow-lg z-40 px-3 py-3 text-[11px] text-slate-400 text-center">
+                        검색 결과 없음
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setScannerMode("search")}
+                    title="바코드 스캔으로 검색"
+                    className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-emerald-50 hover:border-emerald-400 text-gray-500 hover:text-emerald-600 transition cursor-pointer shadow-3xs"
+                  >
+                    <ScanLine size={14} />
+                  </button>
+                  <button
+                    onClick={() => { setZoneConfigOpen((v) => !v); setActiveGroupId(null); }}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer shrink-0 ${zoneConfigOpen
+                        ? "bg-indigo-600 text-white shadow-sm"
+                        : "bg-white border border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600"
+                      }`}
+                  >
+                    <Layers size={13} />
+                    구역 설정
+                  </button>
+                  {/* DB 저장 상태 표시 */}
+                  <span
+                    className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg border shrink-0 ${saveStatus === "saving" ? "bg-blue-50 border-blue-200 text-blue-700" :
+                        saveStatus === "saved" ? "bg-emerald-50 border-emerald-200 text-emerald-700" :
+                          saveStatus === "error" ? "bg-red-50 border-red-200 text-red-700 cursor-help" :
+                            "bg-slate-50 border-slate-200 text-slate-400"
+                      }`}
+                    title={saveStatus === "error" ? `DB 저장 실패: ${lastSaveError ?? "알 수 없는 오류"}` : "매장맵 자동저장 상태"}
+                  >
+                    {saveStatus === "saving" && <><Loader2 size={10} className="animate-spin" />저장중</>}
+                    {saveStatus === "saved" && <><CheckCircle2 size={10} />저장됨</>}
+                    {saveStatus === "error" && <>❌ 저장 실패</>}
+                    {saveStatus === "idle" && <>◎ 대기</>}
+                  </span>
+                  <button
+                    onClick={handleApplyToWeekday}
+                    title={`현재 배정을 매주 ${dayNames[selectedDateObj.getDay()]}에 적용 · DB 저장`}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition cursor-pointer shrink-0"
+                  >
+                    <Save size={13} />
+                    📅 매주 {dayNames[selectedDateObj.getDay()]}에 적용
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-xs text-gray-400 mb-4">
+                📅 매주 {dayNames[selectedDateObj.getDay()]}에 적용 시 현재 배정이 해당 요일에 반영됩니다.
+                <br />
+                <span className="text-emerald-600 font-semibold">📦 카테고리 라벨을 누르면 해당 구역의 진열상품이 조회됩니다.</span>
+              </p>
+
+              {zoneConfigOpen && (
+                <ZoneGroupPanel
+                  groups={zoneGroups}
+                  activeGroupId={activeGroupId}
+                  employees={employees}
+                  onGroupsChange={setZoneGroups}
+                  onActiveGroupChange={setActiveGroupId}
+                />
+              )}
+
+
+              {/* ── MOBILE 리스트뷰 · 데스크탑 미표시 · 데스크탑과 동일한 색상 적용 ── */}
+              {(() => {
+                // 데스크탑 catA / catB 컬러 매핑 재사용
+                const catAColors: Record<number, string> = {
+                  1: "bg-blue-500 text-white", 2: "bg-yellow-400 text-yellow-950",
+                  3: "bg-red-500 text-white", 4: "bg-pink-500 text-white",
+                  5: "bg-lime-500 text-lime-950", 6: "bg-sky-500 text-white",
+                  7: "bg-indigo-500 text-white", 8: "bg-purple-500 text-white",
+                };
+                const catBColors: Record<number, string> = {
+                  1: "bg-blue-100 text-blue-900", 2: "bg-yellow-100 text-yellow-900",
+                  3: "bg-red-100 text-red-900", 4: "bg-pink-100 text-pink-900",
+                  5: "bg-lime-100 text-lime-900", 6: "bg-sky-100 text-sky-900",
+                  7: "bg-indigo-100 text-indigo-900", 8: "bg-purple-100 text-purple-900",
+                };
+                // 9+ 구역 · 갈색(amber-800) 배경 · 하얀 글씨 (사용자 지정)
+                const getPillCls = (z: DisplayZone): string => {
+                  if (z.num >= 1 && z.num <= 8) {
+                    return z.id.endsWith("A") ? catAColors[z.num] : catBColors[z.num];
+                  }
+                  return "bg-amber-800 text-white";
+                };
+                return (
+                  <div className="sm:hidden bg-white border border-slate-200 rounded-xl overflow-hidden mb-2">
+                    <div className="px-3 py-2 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
+                      <span className="text-lg">📋</span>
+                      <span className="text-[13px] font-black text-slate-700">구역 리스트</span>
+                      <span className="text-[10px] font-mono text-slate-400">({zones.length}개)</span>
+                      <button
+                        type="button"
+                        onClick={() => setFullMapOpen(true)}
+                        className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black shadow-sm active:scale-95 transition"
+                        title="매장 구역도 보기 (읽기 전용)"
+                      >
+                        🗺️ 매장 구역도 보기
+                      </button>
+                    </div>
+                    <ul className="divide-y divide-slate-100 max-h-[70vh] overflow-y-auto">
+                      {[...zones]
+                        .sort((a, b) => {
+                          if (a.num !== b.num) return a.num - b.num;
+                          const aa = a.id.endsWith("A") ? 0 : 1;
+                          const bb = b.id.endsWith("A") ? 0 : 1;
+                          return aa - bb;
+                        })
+                        .map(z => {
+                          const zoneLabel = z.num <= 8
+                            ? `${z.num}${z.id.endsWith("A") ? "A" : z.id.endsWith("B") ? "B" : ""}`
+                            : String(z.num);
+                          const statusColor = z.status === "empty" ? "bg-red-500" : z.status === "low" ? "bg-amber-500" : "bg-emerald-500";
+                          const pillCls = getPillCls(z);
+                          // 담당자 리스트 · 콤마 구분
+                          const staffNames = z.assignedStaffName ? z.assignedStaffName.split(",").map(s => s.trim()).filter(Boolean) : [];
+                          return (
+                            <li key={`mobile-list-${z.id}`} className="grid grid-cols-[40px_1fr_84px_62px] items-center gap-2 px-2 py-1.5 hover:bg-slate-50 transition">
+                              {/* 1. 구역 번호 pill · 데스크탑 색상 · 고정 40px */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setZoneProductsModal({ zoneId: z.id, zoneNum: z.num, zoneLabel: zoneLabel, category: z.category });
+                                  setZoneProductsFilter("all"); setZoneProductsSearch("");
+                                }}
+                                className={`w-full h-[38px] rounded text-[13px] font-black flex items-center justify-center leading-none active:scale-95 transition ${pillCls}`}
+                                title={`${zoneLabel} 상품 조회`}
+                              >
+                                {zoneLabel}
+                              </button>
+                              {/* 2. 카테고리 · 왼쪽 정렬 · 줄임말 없음 */}
+                              <span className="text-[12px] font-black text-slate-800 break-keep whitespace-normal leading-tight">
+                                {z.category || "-"}
+                              </span>
+                              {/* 3. 담당자 배지 · 클릭 → 담당자 변경 popover · 데스크탑 STAFF_COLORS 재사용 */}
+                              <div
+                                className="flex flex-wrap gap-1 justify-end cursor-pointer"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  const full = productsMap[p.code] ?? productsMap[p.code.replace(/^0+/, "")] ?? p as ProductInfo;
-                                  setProductInfoModal(full);
+                                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                  handleZoneCellClick(z, rect);
                                 }}
-                                className="flex items-center gap-0.5 text-[10px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 px-1.5 py-0.5 rounded-lg whitespace-nowrap hover:bg-indigo-100 transition cursor-pointer"
+                                title="담당자 변경"
                               >
-                                <Info size={9} />
-                                정보
-                              </button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {searchQuery && productSearchResults.length === 0 && (
-                    <div className="absolute left-0 right-0 top-full mt-1 bg-white rounded-lg border border-slate-200 shadow-lg z-40 px-3 py-3 text-[11px] text-slate-400 text-center">
-                      검색 결과 없음
-                    </div>
-                  )}
-                </div>
-                <button
-                  onClick={() => setScannerMode("search")}
-                  title="바코드 스캔으로 검색"
-                  className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg border border-gray-300 bg-white hover:bg-emerald-50 hover:border-emerald-400 text-gray-500 hover:text-emerald-600 transition cursor-pointer shadow-3xs"
-                >
-                  <ScanLine size={14} />
-                </button>
-                <button
-                  onClick={() => { setZoneConfigOpen((v) => !v); setActiveGroupId(null); }}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-lg transition cursor-pointer shrink-0 ${
-                    zoneConfigOpen
-                      ? "bg-indigo-600 text-white shadow-sm"
-                      : "bg-white border border-gray-300 text-gray-600 hover:border-indigo-400 hover:text-indigo-600"
-                  }`}
-                >
-                  <Layers size={13} />
-                  구역 설정
-                </button>
-                {/* DB 저장 상태 표시 */}
-                <span
-                  className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg border shrink-0 ${
-                    saveStatus === "saving" ? "bg-blue-50 border-blue-200 text-blue-700" :
-                    saveStatus === "saved"  ? "bg-emerald-50 border-emerald-200 text-emerald-700" :
-                    saveStatus === "error"  ? "bg-red-50 border-red-200 text-red-700 cursor-help" :
-                    "bg-slate-50 border-slate-200 text-slate-400"
-                  }`}
-                  title={saveStatus === "error" ? `DB 저장 실패: ${lastSaveError ?? "알 수 없는 오류"}` : "매장맵 자동저장 상태"}
-                >
-                  {saveStatus === "saving" && <><Loader2 size={10} className="animate-spin" />저장중</>}
-                  {saveStatus === "saved"  && <><CheckCircle2 size={10} />저장됨</>}
-                  {saveStatus === "error"  && <>❌ 저장 실패</>}
-                  {saveStatus === "idle"   && <>◎ 대기</>}
-                </span>
-                <button
-                  onClick={handleApplyToWeekday}
-                  title={`현재 배정을 매주 ${dayNames[selectedDateObj.getDay()]}에 적용 · DB 저장`}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-sm transition cursor-pointer shrink-0"
-                >
-                  <Save size={13} />
-                  📅 매주 {dayNames[selectedDateObj.getDay()]}에 적용
-                </button>
-              </div>
-            </div>
-
-            <p className="text-xs text-gray-400 mb-4">
-              📅 매주 {dayNames[selectedDateObj.getDay()]}에 적용 시 현재 배정이 해당 요일에 반영됩니다.
-              <br />
-              <span className="text-emerald-600 font-semibold">📦 카테고리 라벨을 누르면 해당 구역의 진열상품이 조회됩니다.</span>
-            </p>
-
-            {zoneConfigOpen && (
-              <ZoneGroupPanel
-                groups={zoneGroups}
-                activeGroupId={activeGroupId}
-                employees={employees}
-                onGroupsChange={setZoneGroups}
-                onActiveGroupChange={setActiveGroupId}
-              />
-            )}
-
-
-            {/* ── MOBILE 리스트뷰 · 데스크탑 미표시 · 데스크탑과 동일한 색상 적용 ── */}
-            {(() => {
-              // 데스크탑 catA / catB 컬러 매핑 재사용
-              const catAColors: Record<number, string> = {
-                1: "bg-blue-500 text-white",   2: "bg-yellow-400 text-yellow-950",
-                3: "bg-red-500 text-white",    4: "bg-pink-500 text-white",
-                5: "bg-lime-500 text-lime-950",6: "bg-sky-500 text-white",
-                7: "bg-indigo-500 text-white", 8: "bg-purple-500 text-white",
-              };
-              const catBColors: Record<number, string> = {
-                1: "bg-blue-100 text-blue-900",     2: "bg-yellow-100 text-yellow-900",
-                3: "bg-red-100 text-red-900",       4: "bg-pink-100 text-pink-900",
-                5: "bg-lime-100 text-lime-900",     6: "bg-sky-100 text-sky-900",
-                7: "bg-indigo-100 text-indigo-900", 8: "bg-purple-100 text-purple-900",
-              };
-              // 9+ 구역 · 갈색(amber-800) 배경 · 하얀 글씨 (사용자 지정)
-              const getPillCls = (z: DisplayZone): string => {
-                if (z.num >= 1 && z.num <= 8) {
-                  return z.id.endsWith("A") ? catAColors[z.num] : catBColors[z.num];
-                }
-                return "bg-amber-800 text-white";
-              };
-              return (
-                <div className="sm:hidden bg-white border border-slate-200 rounded-xl overflow-hidden mb-2">
-                  <div className="px-3 py-2 border-b border-slate-100 bg-slate-50 flex items-center gap-2">
-                    <span className="text-lg">📋</span>
-                    <span className="text-[13px] font-black text-slate-700">구역 리스트</span>
-                    <span className="text-[10px] font-mono text-slate-400">({zones.length}개)</span>
-                    <button
-                      type="button"
-                      onClick={() => setFullMapOpen(true)}
-                      className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[10px] font-black shadow-sm active:scale-95 transition"
-                      title="매장 구역도 보기 (읽기 전용)"
-                    >
-                      🗺️ 매장 구역도 보기
-                    </button>
-                  </div>
-                  <ul className="divide-y divide-slate-100 max-h-[70vh] overflow-y-auto">
-                    {[...zones]
-                      .sort((a, b) => {
-                        if (a.num !== b.num) return a.num - b.num;
-                        const aa = a.id.endsWith("A") ? 0 : 1;
-                        const bb = b.id.endsWith("A") ? 0 : 1;
-                        return aa - bb;
-                      })
-                      .map(z => {
-                        const zoneLabel = z.num <= 8
-                          ? `${z.num}${z.id.endsWith("A") ? "A" : z.id.endsWith("B") ? "B" : ""}`
-                          : String(z.num);
-                        const statusColor = z.status === "empty" ? "bg-red-500" : z.status === "low" ? "bg-amber-500" : "bg-emerald-500";
-                        const pillCls = getPillCls(z);
-                        // 담당자 리스트 · 콤마 구분
-                        const staffNames = z.assignedStaffName ? z.assignedStaffName.split(",").map(s => s.trim()).filter(Boolean) : [];
-                        return (
-                          <li key={`mobile-list-${z.id}`} className="grid grid-cols-[40px_1fr_84px_62px] items-center gap-2 px-2 py-1.5 hover:bg-slate-50 transition">
-                            {/* 1. 구역 번호 pill · 데스크탑 색상 · 고정 40px */}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setZoneProductsModal({ zoneId: z.id, zoneNum: z.num, zoneLabel: zoneLabel, category: z.category });
-                                setZoneProductsFilter("all"); setZoneProductsSearch("");
-                              }}
-                              className={`w-full h-[38px] rounded text-[13px] font-black flex items-center justify-center leading-none active:scale-95 transition ${pillCls}`}
-                              title={`${zoneLabel} 상품 조회`}
-                            >
-                              {zoneLabel}
-                            </button>
-                            {/* 2. 카테고리 · 왼쪽 정렬 · 줄임말 없음 */}
-                            <span className="text-[12px] font-black text-slate-800 break-keep whitespace-normal leading-tight">
-                              {z.category || "-"}
-                            </span>
-                            {/* 3. 담당자 배지 · 클릭 → 담당자 변경 popover · 데스크탑 STAFF_COLORS 재사용 */}
-                            <div
-                              className="flex flex-wrap gap-1 justify-end cursor-pointer"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-                                handleZoneCellClick(z, rect);
-                              }}
-                              title="담당자 변경"
-                            >
-                              {staffNames.length > 0 ? (
-                                staffNames.map((name) => {
-                                  const emp = employees.find(e2 => e2.name === name);
-                                  const colorIdx = emp ? (staffColorMap.get(emp.id) ?? 0) : 0;
-                                  const chip = STAFF_COLORS[colorIdx % STAFF_COLORS.length];
-                                  return (
-                                    <span key={`${z.id}-${name}`} className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-black border ${chip} active:scale-95 transition`}>
-                                      {name}
-                                    </span>
-                                  );
-                                })
-                              ) : (
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-400 bg-slate-50 border border-dashed border-slate-300 active:scale-95 transition">
-                                  + 배정
-                                </span>
-                              )}
-                            </div>
-                            {/* 4. 진열요청 버튼 · 고정 폭 */}
-                            <div className="w-full">
-                              {renderRequestButton(z.num, z.id)}
-                            </div>
-                          </li>
-                        );
-                      })}
-                  </ul>
-                </div>
-              );
-            })()}
-
-            {/* ── 모바일 · 매장 구역도 fullscreen 모달 (읽기 전용 · 드래그 스크롤) ─── */}
-            {fullMapOpen && (
-              <div className="sm:hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex flex-col" onClick={() => setFullMapOpen(false)}>
-                <div className="flex items-center justify-between px-3 py-2 bg-white border-b border-slate-200 shadow-sm">
-                  <span className="text-sm font-black text-slate-800">🗺️ 매장 구역도 (읽기 전용)</span>
-                  <button onClick={() => setFullMapOpen(false)} className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-lg font-black">×</button>
-                </div>
-                <div className="flex-1 overflow-auto p-2" onClick={e => e.stopPropagation()}>
-                  {/* 데스크탑 매장맵과 동일한 카테고리 라벨/색깔/테두리 · pointer-events-none 으로 읽기만 · 드래그·스크롤은 가능 */}
-                  <div className="min-w-[820px] pointer-events-none select-none">
-                    <div className="p-2 bg-slate-200 rounded-2xl border-4 border-emerald-500 shadow-inner space-y-3">
-                      {/* 상단 벽면 */}
-                      <div className="w-full bg-white border-2 border-emerald-600 rounded-xl p-2 shadow-sm">
-                        <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">상단 벽면 (21→9)</div>
-                        <div className="grid grid-cols-[repeat(13,minmax(0,1fr))] gap-1 bg-slate-100 p-1 rounded">
-                          {[21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9].map((num) => renderWallZoneCard(num, "top"))}
-                        </div>
-
-                        {/* 중앙 진열대: 22 + 8B|8A → 1B|1A · 데스크탑과 동일 카테고리 라벨/색깔/테두리 */}
-                        <div className="my-3 w-full">
-                          <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-1">중앙 진열대 (22 · 8B|8A → 1B|1A · 16구역)</div>
-                          <div className="flex items-stretch justify-start pr-3 px-1.5 bg-slate-50 border border-slate-200 py-2 rounded-lg gap-1.5">
-                            {/* 진열대 22 (단독) */}
-                            <div className="flex flex-col items-center gap-0.5 flex-none w-[40px] min-w-[40px] mr-1">
-                              <div className="w-full text-[10px] font-black text-slate-700 bg-white border-2 border-slate-300 rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex items-center justify-center overflow-hidden">
-                                <span className="line-clamp-4">{ZONE_DEFS.find(z => z.num === 22)?.category ?? ""}</span>
+                                {staffNames.length > 0 ? (
+                                  staffNames.map((name) => {
+                                    const emp = employees.find(e2 => e2.name === name);
+                                    const colorIdx = emp ? (staffColorMap.get(emp.id) ?? 0) : 0;
+                                    const chip = STAFF_COLORS[colorIdx % STAFF_COLORS.length];
+                                    const isPharm = emp ? (emp.position === "약사" || emp.position.startsWith("약사")) : false;
+                                    return (
+                                      <span key={`${z.id}-${name}`} className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-[11px] font-black border ${chip} active:scale-95 transition ${isPharm ? "ring-2 ring-emerald-500 ring-offset-1" : ""}`}>
+                                        {name}
+                                      </span>
+                                    );
+                                  })
+                                ) : (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold text-slate-400 bg-slate-50 border border-dashed border-slate-300 active:scale-95 transition">
+                                    + 배정
+                                  </span>
+                                )}
                               </div>
-                              <div className="w-full text-[9px] font-black text-white bg-slate-600 rounded px-0.5 py-0.5 text-center leading-none">22</div>
-                              {renderZoneCell(22, "w-full h-[80px] flex flex-col justify-between items-center py-1 px-0.5 text-[9px]", "", true)}
-                            </div>
-                            {/* 8→1 pair · 데스크탑 catA/catB 컬러맵 그대로 */}
-                            {(() => {
-                              const catA: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
-                                1: { bg: "bg-blue-500",   border: "border-blue-700",   text: "text-white", labelBg: "bg-blue-800" },
-                                2: { bg: "bg-yellow-400", border: "border-yellow-700", text: "text-yellow-950", labelBg: "bg-yellow-700" },
-                                3: { bg: "bg-red-500",    border: "border-red-700",    text: "text-white", labelBg: "bg-red-800" },
-                                4: { bg: "bg-pink-500",   border: "border-pink-700",   text: "text-white", labelBg: "bg-pink-800" },
-                                5: { bg: "bg-lime-500",   border: "border-lime-700",   text: "text-lime-950", labelBg: "bg-lime-800" },
-                                6: { bg: "bg-sky-500",    border: "border-sky-700",    text: "text-white", labelBg: "bg-sky-800" },
-                                7: { bg: "bg-indigo-500", border: "border-indigo-700", text: "text-white", labelBg: "bg-indigo-800" },
-                                8: { bg: "bg-purple-500", border: "border-purple-700", text: "text-white", labelBg: "bg-purple-800" },
-                              };
-                              const catB: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
-                                1: { bg: "bg-blue-100",   border: "border-blue-300",   text: "text-blue-900",   labelBg: "bg-blue-400" },
-                                2: { bg: "bg-yellow-100", border: "border-yellow-300", text: "text-yellow-900", labelBg: "bg-yellow-400" },
-                                3: { bg: "bg-red-100",    border: "border-red-300",    text: "text-red-900",    labelBg: "bg-red-400" },
-                                4: { bg: "bg-pink-100",   border: "border-pink-300",   text: "text-pink-900",   labelBg: "bg-pink-400" },
-                                5: { bg: "bg-lime-100",   border: "border-lime-300",   text: "text-lime-900",   labelBg: "bg-lime-400" },
-                                6: { bg: "bg-sky-100",    border: "border-sky-300",    text: "text-sky-900",    labelBg: "bg-sky-400" },
-                                7: { bg: "bg-indigo-100", border: "border-indigo-300", text: "text-indigo-900", labelBg: "bg-indigo-400" },
-                                8: { bg: "bg-purple-100", border: "border-purple-300", text: "text-purple-900", labelBg: "bg-purple-400" },
-                              };
-                              return [8, 7, 6, 5, 4, 3, 2, 1].map(num => {
-                                const ca = catA[num];
-                                const cb = catB[num];
-                                const zd = ZONE_DEFS.find(z => z.num === num);
-                                const subB = zd?.subB ?? "";
-                                const subA = zd?.subA ?? "";
-                                return (
-                                  <div key={`fullmap-pair-${num}`} className="flex flex-col items-stretch gap-0.5 flex-[2] min-w-[60px]">
-                                    {/* B (연한 톤) */}
-                                    <div className={`w-full text-[10px] font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden`}>
-                                      <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}B</span>
-                                      <span className="line-clamp-3 text-[10px]">{subB}</span>
-                                    </div>
-                                    {/* B|A zone cell 나란히 */}
-                                    <div className="flex gap-0.5 items-stretch">
-                                      <div className="flex-1 flex flex-col gap-0.5">
-                                        {renderZoneCellById(`${num}B`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[9px]", "", true)}
-                                      </div>
-                                      <div className="flex-1 flex flex-col gap-0.5">
-                                        {renderZoneCellById(`${num}A`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[9px]", "", true)}
-                                      </div>
-                                    </div>
-                                    {/* A (진한 톤) */}
-                                    <div className={`w-full text-[10px] font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden`}>
-                                      <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}A</span>
-                                      <span className="line-clamp-3 text-[10px]">{subA}</span>
-                                    </div>
-                                  </div>
-                                );
-                              });
-                            })()}
-                          </div>
-                        </div>
-
-                        {/* 하단 벽면 */}
-                        <div className="w-full">
-                          <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">하단 벽면 (23→34)</div>
-                          <div className="grid grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
-                            {[23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34].map((num) => renderWallZoneCard(num, "bottom"))}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="px-3 py-2 bg-white border-t border-slate-200 text-[10px] text-slate-500 text-center">
-                  💡 좌우로 드래그하여 전체 구역도 확인 · 편집은 데스크탑에서 가능
-                </div>
-              </div>
-            )}
-
-            {/* ── MAP TAB (데스크탑 매장 배치도) · 모바일 숨김 ─────────────── */}
-            {/* Simulated 2D Floor Plan Grid matches map.png */}
-            <div className="hidden sm:block xl:overflow-x-visible overflow-x-auto">
-            <div className="p-2 bg-slate-200 rounded-2xl flex flex-col justify-between border-4 border-emerald-500 shadow-inner gap-2 min-h-[500px] xl:w-full min-w-[820px] w-max relative">
-
-              {/* ── 물류출근직원 pill (매장 배치도 내부 상단) ── */}
-              {todayStaff.length > 0 && (() => {
-                const 물류 = todayStaff.filter(s => s.employee.position.includes("물류"));
-                if (물류.length === 0) return null;
-                const ORDER: Record<string, number> = { "오픈": 0, "미들": 1, "마감": 2 };
-                const sortShift = (a: typeof todayStaff[0], b: typeof todayStaff[0]) => (ORDER[a.scheduleType] ?? 3) - (ORDER[b.scheduleType] ?? 3);
-                return (
-                  <div className="bg-white/95 backdrop-blur rounded-lg border border-orange-200 px-2 py-1.5 shadow-sm inline-flex flex-wrap items-center gap-1 mb-1 w-fit max-w-full">
-                    <span className="text-[10px] font-black text-orange-700 mr-1">📦 물류 출근직원 ({물류.length})</span>
-                    {물류.sort(sortShift).map(({ employee, scheduleType, workingHours }) => {
-                      const colorIdx = staffColorMap.get(employee.id) ?? 0;
-                      const chipColor = STAFF_COLORS[colorIdx % STAFF_COLORS.length];
-                      return (
-                        <button
-                          key={employee.id}
-                          type="button"
-                          draggable
-                          onDragStart={(e) => {
-                            const s = { employee, scheduleType, workingHours };
-                            dragStaffRef.current = s;
-                            setDragStaff(s);
-                            e.dataTransfer.effectAllowed = "move";
-                            e.dataTransfer.setData("text/plain", String(employee.id));
-                          }}
-                          onDragEnd={() => { dragStaffRef.current = null; setDragStaff(null); setDragOverZoneId(null); }}
-                          onClick={() => setActiveStaffInfo({ employee, scheduleType, workingHours })}
-                          className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold border cursor-grab active:cursor-grabbing transition hover:brightness-95 ${chipColor}`}
-                          title={`${employee.name} · ${scheduleType}${workingHours ? ` · ${workingHours}` : ""} · 드래그하여 구역 배정`}
-                        >
-                          <span>{employee.name}</span>
-                          <span className={`text-[8px] font-black px-1 rounded ${SHIFT_BADGE[scheduleType] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}>
-                            {scheduleType}
-                          </span>
-                        </button>
-                      );
-                    })}
-                    <button
-                      onClick={handleAutoAssign}
-                      title="물류 출근직원 미리보기 배치 (확정 전엔 DB 저장·알림 없음)"
-                      className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-black rounded-full shadow-sm transition cursor-pointer border border-violet-700"
-                    >
-                      🎲 임의배치
-                    </button>
-                    {pendingAutoAssign && (
-                      <>
-                        <button
-                          onClick={handleConfirmAutoAssign}
-                          title="DB 저장 + 각 담당자에게 날짜·배정구역 알림 전송"
-                          className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black rounded-full shadow-sm transition cursor-pointer border border-emerald-700 animate-pulse"
-                        >
-                          <Bell size={9} /> 배치확정 ({pendingAutoAssign.assignedList.length})
-                        </button>
-                        <button
-                          onClick={handleCancelAutoAssign}
-                          title="미리보기 취소 · 이전 배치로 되돌리기"
-                          className="inline-flex items-center gap-1 px-2 py-0.5 bg-white hover:bg-slate-50 text-slate-600 text-[10px] font-bold rounded-full shadow-sm transition cursor-pointer border border-slate-300"
-                        >
-                          ↺ 취소
-                        </button>
-                      </>
-                    )}
+                              {/* 4. 진열요청 버튼 · 고정 폭 */}
+                              <div className="w-full">
+                                {renderRequestButton(z.num, z.id)}
+                              </div>
+                            </li>
+                          );
+                        })}
+                    </ul>
                   </div>
                 );
               })()}
 
-              {/* 미리보기 안내 배너 (얇은 힌트) */}
-              {pendingAutoAssign && (
-                <div className="bg-violet-50 border border-violet-200 rounded-lg px-2 py-1 text-[9px] text-violet-700 mb-1 flex items-center gap-1.5">
-                  <span>🎲</span>
-                  <span>임의배치 미리보기 중 — 배치를 조정한 뒤 위쪽 <b>배치확정</b> 버튼을 눌러 DB 저장 + 담당자 알림 전송</span>
+              {/* ── 모바일 · 매장 구역도 fullscreen 모달 (읽기 전용 · 드래그 스크롤) ─── */}
+              {fullMapOpen && (
+                <div className="sm:hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex flex-col" onClick={() => setFullMapOpen(false)}>
+                  <div className="flex items-center justify-between px-3 py-2 bg-white border-b border-slate-200 shadow-sm">
+                    <span className="text-sm font-black text-slate-800">🗺️ 매장 구역도 (읽기 전용)</span>
+                    <button onClick={() => setFullMapOpen(false)} className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-lg font-black">×</button>
+                  </div>
+                  <div className="flex-1 overflow-auto p-2" onClick={e => e.stopPropagation()}>
+                    {/* 데스크탑 매장맵과 동일한 카테고리 라벨/색깔/테두리 · pointer-events-none 으로 읽기만 · 드래그·스크롤은 가능 */}
+                    <div className="min-w-[820px] pointer-events-none select-none">
+                      <div className="p-2 bg-slate-200 rounded-2xl border-4 border-emerald-500 shadow-inner space-y-3">
+                        {/* 상단 벽면 */}
+                        <div className="w-full bg-white border-2 border-emerald-600 rounded-xl p-2 shadow-sm">
+                          <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">상단 벽면 (21→9)</div>
+                          <div className="grid grid-cols-[repeat(13,minmax(0,1fr))] gap-1 bg-slate-100 p-1 rounded">
+                            {[21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9].map((num) => renderWallZoneCard(num, "top"))}
+                          </div>
+
+                          {/* 중앙 진열대: 22 + 8B|8A → 1B|1A · 데스크탑과 동일 카테고리 라벨/색깔/테두리 */}
+                          <div className="my-3 w-full">
+                            <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-1">중앙 진열대 (22 · 8B|8A → 1B|1A · 16구역)</div>
+                            <div className="flex items-stretch justify-start pr-3 px-1.5 bg-slate-50 border border-slate-200 py-2 rounded-lg gap-1.5">
+                              {/* 진열대 22 (단독) */}
+                              <div className="flex flex-col items-center gap-0.5 flex-none w-[40px] min-w-[40px] mr-1">
+                                <div className="w-full text-[10px] font-black text-slate-700 bg-white border-2 border-slate-300 rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex items-center justify-center overflow-hidden">
+                                  <span className="line-clamp-4">{ZONE_DEFS.find(z => z.num === 22)?.category ?? ""}</span>
+                                </div>
+                                <div className="w-full text-[9px] font-black text-white bg-slate-600 rounded px-0.5 py-0.5 text-center leading-none">22</div>
+                                {renderZoneCell(22, "w-full h-[80px] flex flex-col justify-between items-center py-1 px-0.5 text-[9px]", "", true)}
+                              </div>
+                              {/* 8→1 pair · 데스크탑 catA/catB 컬러맵 그대로 */}
+                              {(() => {
+                                const catA: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
+                                  1: { bg: "bg-blue-500", border: "border-blue-700", text: "text-white", labelBg: "bg-blue-800" },
+                                  2: { bg: "bg-yellow-400", border: "border-yellow-700", text: "text-yellow-950", labelBg: "bg-yellow-700" },
+                                  3: { bg: "bg-red-500", border: "border-red-700", text: "text-white", labelBg: "bg-red-800" },
+                                  4: { bg: "bg-pink-500", border: "border-pink-700", text: "text-white", labelBg: "bg-pink-800" },
+                                  5: { bg: "bg-lime-500", border: "border-lime-700", text: "text-lime-950", labelBg: "bg-lime-800" },
+                                  6: { bg: "bg-sky-500", border: "border-sky-700", text: "text-white", labelBg: "bg-sky-800" },
+                                  7: { bg: "bg-indigo-500", border: "border-indigo-700", text: "text-white", labelBg: "bg-indigo-800" },
+                                  8: { bg: "bg-purple-500", border: "border-purple-700", text: "text-white", labelBg: "bg-purple-800" },
+                                };
+                                const catB: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
+                                  1: { bg: "bg-blue-100", border: "border-blue-300", text: "text-blue-900", labelBg: "bg-blue-400" },
+                                  2: { bg: "bg-yellow-100", border: "border-yellow-300", text: "text-yellow-900", labelBg: "bg-yellow-400" },
+                                  3: { bg: "bg-red-100", border: "border-red-300", text: "text-red-900", labelBg: "bg-red-400" },
+                                  4: { bg: "bg-pink-100", border: "border-pink-300", text: "text-pink-900", labelBg: "bg-pink-400" },
+                                  5: { bg: "bg-lime-100", border: "border-lime-300", text: "text-lime-900", labelBg: "bg-lime-400" },
+                                  6: { bg: "bg-sky-100", border: "border-sky-300", text: "text-sky-900", labelBg: "bg-sky-400" },
+                                  7: { bg: "bg-indigo-100", border: "border-indigo-300", text: "text-indigo-900", labelBg: "bg-indigo-400" },
+                                  8: { bg: "bg-purple-100", border: "border-purple-300", text: "text-purple-900", labelBg: "bg-purple-400" },
+                                };
+                                return [8, 7, 6, 5, 4, 3, 2, 1].map(num => {
+                                  const ca = catA[num];
+                                  const cb = catB[num];
+                                  const zd = ZONE_DEFS.find(z => z.num === num);
+                                  const subB = zd?.subB ?? "";
+                                  const subA = zd?.subA ?? "";
+                                  return (
+                                    <div key={`fullmap-pair-${num}`} className="flex flex-col items-stretch gap-0.5 flex-[2] min-w-[60px]">
+                                      {/* B (연한 톤) */}
+                                      <div className={`w-full text-[10px] font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden`}>
+                                        <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}B</span>
+                                        <span className="line-clamp-3 text-[10px]">{subB}</span>
+                                      </div>
+                                      {/* B|A zone cell 나란히 */}
+                                      <div className="flex gap-0.5 items-stretch">
+                                        <div className="flex-1 flex flex-col gap-0.5">
+                                          {renderZoneCellById(`${num}B`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[9px]", "", true)}
+                                        </div>
+                                        <div className="flex-1 flex flex-col gap-0.5">
+                                          {renderZoneCellById(`${num}A`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[9px]", "", true)}
+                                        </div>
+                                      </div>
+                                      {/* A (진한 톤) */}
+                                      <div className={`w-full text-[10px] font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden`}>
+                                        <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}A</span>
+                                        <span className="line-clamp-3 text-[10px]">{subA}</span>
+                                      </div>
+                                    </div>
+                                  );
+                                });
+                              })()}
+                            </div>
+                          </div>
+
+                          {/* 하단 벽면 */}
+                          <div className="w-full">
+                            <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">하단 벽면 (23→34)</div>
+                            <div className="grid grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
+                              {[23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34].map((num) => renderWallZoneCard(num, "bottom"))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="px-3 py-2 bg-white border-t border-slate-200 text-[10px] text-slate-500 text-center">
+                    💡 좌우로 드래그하여 전체 구역도 확인 · 편집은 데스크탑에서 가능
+                  </div>
                 </div>
               )}
 
-              {/* SECTION 1: TOP HORIZONTAL BAND — 신규 배치 (2026 개편) */}
-              {/* 상단: 21→9 (좌→우 감소, 13개)  ·  중앙: 22 + 8-1 각 B|A  ·  하단: 23→34 (좌→우 증가, 12개) */}
-              <div className="flex flex-col md:flex-row md:justify-between md:items-stretch gap-3 w-full shrink-0">
+              {/* ── MAP TAB (데스크탑 매장 배치도) · 모바일 숨김 ─────────────── */}
+              {/* Simulated 2D Floor Plan Grid matches map.png */}
+              <div className="hidden sm:block xl:overflow-x-visible overflow-x-auto">
+                <div className="p-2 bg-slate-200 rounded-2xl flex flex-col justify-between border-4 border-emerald-500 shadow-inner gap-2 min-h-[500px] xl:w-full min-w-[820px] w-max relative">
 
-                {/* Main Horizontal Shelving Wing: Top Wall, Aisle Shelves, Bottom Wall */}
-                <div className="flex-1 bg-white border-2 border-emerald-600 rounded-xl p-2 md:p-3 flex flex-col shadow-sm relative min-w-0">
-
-                  {/* 미니 위치 다이어그램: 수평윙(현재 표시 영역) 강조 */}
-                  <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
-                    <svg width="36" height="28" viewBox="0 0 42 34" className="shrink-0" aria-label="수평윙 위치">
-                      {/* 메인 매장 (수평 윙 · 현재 영역 · 강조) */}
-                      <rect x="1" y="1" width="30" height="20" rx="1.5" fill="#10b981" stroke="#047857" strokeWidth="1" />
-                      {/* 수직 윙 (다른 영역 · 회색 아웃라인) */}
-                      <rect x="31" y="1" width="10" height="32" rx="1.5" fill="none" stroke="#cbd5e1" strokeWidth="1.2" />
-                      {/* 현재 위치 마커 (수평윙 중앙) */}
-                      <circle cx="16" cy="11" r="2" fill="#fbbf24" />
-                    </svg>
-                    <span className="text-[8px] font-bold text-slate-600 leading-none">수평 윙</span>
-                  </div>
-
-                  {/* 상단 벽면: 21→9 좌→우 (13개) · 모바일 4열 wrap 순차 · 데스크탑 13열 한 줄 */}
-                  <div className="w-full">
-                    <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">상단 벽면 (21→9)</div>
-                    <div className="grid grid-cols-4 md:grid-cols-[repeat(13,minmax(0,1fr))] gap-1 bg-slate-100 p-1 rounded">
-                      {[21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9].map((num) => renderWallZoneCard(num, "top"))}
-                    </div>
-                  </div>
-
-                  {/* 중앙 진열대: 22 + 8B/8A/7B/7A/.../1B/1A (16개 세로 진열대 나란히) */}
-                  <div className="my-3 w-full">
-                    <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-1">중앙 진열대 (22 · 8B|8A → 1B|1A · 16구역)</div>
-                    {/* 반응형: 모바일 (sm 이하) 에서는 2 pair 씩 wrap · 데스크탑은 한 줄 유지 */}
-                    <div className="flex flex-wrap md:flex-nowrap items-stretch justify-start md:pr-3 px-1.5 bg-slate-50 border border-slate-200 py-2 rounded-lg gap-1.5">
-                      {/* 진열대 22 (좌측 첫 번째, 단독) · 왼쪽 벽에 붙임 · 좁은 고정 폭 */}
-                      <div className="flex flex-col items-center gap-0.5 basis-full md:basis-auto md:flex-none md:w-[40px] md:min-w-[40px] md:mr-1">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const zd = ZONE_DEFS.find(z => z.num === 22);
-                            setZoneProductsModal({ zoneId: "22", zoneNum: 22, zoneLabel: `진열대 22`, category: zd?.category ?? "" });
-                            setZoneProductsFilter("all"); setZoneProductsSearch("");
-                          }}
-                          title="22 카테고리 클릭 → 상품 리스트 보기"
-                          className="w-full text-[10px] font-black text-slate-700 bg-white border-2 border-slate-300 rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex items-center justify-center overflow-hidden cursor-pointer hover:bg-slate-50 transition">
-                          <span className="line-clamp-4">{ZONE_DEFS.find(z => z.num === 22)?.category ?? ""}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const zd = ZONE_DEFS.find(z => z.num === 22);
-                            setZoneProductsModal({ zoneId: "22", zoneNum: 22, zoneLabel: `진열대 22`, category: zd?.category ?? "" });
-                            setZoneProductsFilter("all"); setZoneProductsSearch("");
-                          }}
-                          title="22 구역 상품 리스트 보기"
-                          className="w-full text-[9px] font-black text-white bg-slate-600 rounded px-0.5 py-0.5 text-center leading-none cursor-pointer hover:brightness-110 transition"
-                        >22</button>
-                        {renderZoneCell(22, "w-full h-[80px] flex flex-col justify-between items-center py-1 px-0.5 text-[9px]")}
-                        <div className="w-full h-[56px]" />
-                      </div>
-                      {/* 진열대 8→1 각각 B|A pair — 카테고리 라벨은 A/B 합친 폭으로 넓게 표시 */}
-                      {(() => {
-                        // A=진한 톤 (셀 색상 = bg-{color}-600) / B=연한 톤 (셀 색상 = bg-{color}-300)
-                        // 대비가 명확히 보이도록 A는 진한 배경, B는 연한 배경
-                        const catA: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
-                          1: { bg: "bg-blue-500",   border: "border-blue-700",   text: "text-white", labelBg: "bg-blue-800" },
-                          2: { bg: "bg-yellow-400", border: "border-yellow-700", text: "text-yellow-950", labelBg: "bg-yellow-700" },
-                          3: { bg: "bg-red-500",    border: "border-red-700",    text: "text-white", labelBg: "bg-red-800" },
-                          4: { bg: "bg-pink-500",   border: "border-pink-700",   text: "text-white", labelBg: "bg-pink-800" },
-                          5: { bg: "bg-lime-500",   border: "border-lime-700",   text: "text-lime-950", labelBg: "bg-lime-800" },
-                          6: { bg: "bg-sky-500",    border: "border-sky-700",    text: "text-white", labelBg: "bg-sky-800" },
-                          7: { bg: "bg-indigo-500", border: "border-indigo-700", text: "text-white", labelBg: "bg-indigo-800" },
-                          8: { bg: "bg-purple-500", border: "border-purple-700", text: "text-white", labelBg: "bg-purple-800" },
-                        };
-                        const catB: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
-                          1: { bg: "bg-blue-100",   border: "border-blue-300",   text: "text-blue-900",   labelBg: "bg-blue-400" },
-                          2: { bg: "bg-yellow-100", border: "border-yellow-300", text: "text-yellow-900", labelBg: "bg-yellow-400" },
-                          3: { bg: "bg-red-100",    border: "border-red-300",    text: "text-red-900",    labelBg: "bg-red-400" },
-                          4: { bg: "bg-pink-100",   border: "border-pink-300",   text: "text-pink-900",   labelBg: "bg-pink-400" },
-                          5: { bg: "bg-lime-100",   border: "border-lime-300",   text: "text-lime-900",   labelBg: "bg-lime-400" },
-                          6: { bg: "bg-sky-100",    border: "border-sky-300",    text: "text-sky-900",    labelBg: "bg-sky-400" },
-                          7: { bg: "bg-indigo-100", border: "border-indigo-300", text: "text-indigo-900", labelBg: "bg-indigo-400" },
-                          8: { bg: "bg-purple-100", border: "border-purple-300", text: "text-purple-900", labelBg: "bg-purple-400" },
-                        };
-                        return [8, 7, 6, 5, 4, 3, 2, 1].map((num) => {
-                          const ca = catA[num];
-                          const cb = catB[num];
-                          const zd = ZONE_DEFS.find(z => z.num === num);
-                          const subB = zd?.subB ?? "";
-                          const subA = zd?.subA ?? "";
+                  {/* ── 물류출근직원 pill (매장 배치도 내부 상단) ── */}
+                  {todayStaff.length > 0 && (() => {
+                    const 물류 = todayStaff.filter(s => s.employee.position.includes("물류"));
+                    if (물류.length === 0) return null;
+                    const ORDER: Record<string, number> = { "오픈": 0, "미들": 1, "마감": 2 };
+                    const sortShift = (a: typeof todayStaff[0], b: typeof todayStaff[0]) => (ORDER[a.scheduleType] ?? 3) - (ORDER[b.scheduleType] ?? 3);
+                    return (
+                      <div className="bg-white/95 backdrop-blur rounded-lg border border-orange-200 px-2 py-1.5 shadow-sm inline-flex flex-wrap items-center gap-1 mb-1 w-fit max-w-full">
+                        <span className="text-[10px] font-black text-orange-700 mr-1">📦 물류 출근직원 ({물류.length})</span>
+                        {물류.sort(sortShift).map(({ employee, scheduleType, workingHours }) => {
+                          const colorIdx = staffColorMap.get(employee.id) ?? 0;
+                          const chipColor = STAFF_COLORS[colorIdx % STAFF_COLORS.length];
                           return (
-                            <div key={`pair-${num}`} className="flex flex-col items-stretch gap-0.5 basis-[calc(50%-6px)] md:basis-0 md:flex-[2_2_0%] md:min-w-[60px]">
-                              {/* 상단: B 카테고리 (연한 톤) */}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setZoneProductsModal({ zoneId: `${num}B`, zoneNum: num, zoneLabel: `진열대 ${num}B`, category: subB });
-                                  setZoneProductsFilter("all"); setZoneProductsSearch("");
-                                }}
-                                title={`${num}B 카테고리 → 상품 조회`}
-                                className={`w-full text-[10px] font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:brightness-95 transition`}>
-                                <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}B</span>
-                                <span className="line-clamp-3 text-[10px]">{subB}</span>
-                              </button>
-                              {/* 드래그드롭 zone (B|A 나란히) */}
-                              <div className="flex gap-0.5 items-stretch">
-                                <div className="flex-1 flex flex-col gap-0.5">
-                                  {renderZoneCellById(`${num}B`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[9px]", "", true)}
-                                  {renderRequestButton(num, `${num}B`)}
-                                </div>
-                                <div className="flex-1 flex flex-col gap-0.5">
-                                  {renderZoneCellById(`${num}A`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[9px]", "", true)}
-                                  {renderRequestButton(num, `${num}A`)}
-                                </div>
-                              </div>
-                              {/* 하단: A 카테고리 (진한 톤) */}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setZoneProductsModal({ zoneId: `${num}A`, zoneNum: num, zoneLabel: `진열대 ${num}A`, category: subA });
-                                  setZoneProductsFilter("all"); setZoneProductsSearch("");
-                                }}
-                                title={`${num}A 카테고리 → 상품 조회`}
-                                className={`w-full text-[10px] font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:brightness-95 transition`}>
-                                <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}A</span>
-                                <span className="line-clamp-3 text-[10px]">{subA}</span>
-                              </button>
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  </div>
-
-                  {/* 하단 벽면: 23→34 좌→우 (12개) · 모바일 4열 wrap · 데스크탑 12열 한 줄 */}
-                  <div className="w-full">
-                    <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">하단 벽면 (23→34)</div>
-                    <div className="grid grid-cols-4 md:grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
-                      {[23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34].map((num) => renderWallZoneCard(num, "bottom"))}
-                    </div>
-                  </div>
-
-                  {/* Expiring Products Zone Marker at far right of top wing */}
-                  <div className="absolute top-1 right-2 bg-rose-50 text-rose-700 text-[8px] border border-rose-300 font-extrabold px-1.5 rounded-full uppercase tracking-wider shadow-3xs">
-                    유통기한 임박존
-                  </div>
-                </div>
-
-              </div>
-
-              {/* SECTION 2 + 실시간 보충요청 (2열 배치 · 보충요청 왼쪽 · 윙 오른쪽 축소) */}
-              <div className="w-full flex flex-col lg:flex-row gap-2 mt-2 items-stretch">
-
-              {/* 실시간 진열 보충 요청 현황 — 드래그로 폭 조절 가능 */}
-              <div className="bg-white p-3 rounded-2xl shadow-md shadow-slate-200/60 border border-slate-100 flex flex-col shrink-0" style={{ width: `min(100%, ${reqPanelWidth}px)` }}>
-                <div className="border-b border-slate-100 pb-3 flex items-center justify-between flex-nowrap gap-2 overflow-x-auto scrollbar-none">
-                  <div className="flex items-center gap-2 shrink-0">
-                    <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-                      <ClipboardList size={16} className="text-violet-600" />
-                    </div>
-                    <h2 className="text-sm font-bold text-slate-900 whitespace-nowrap">실시간 진열 보충 요청 현황</h2>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700 shrink-0 whitespace-nowrap">
-                      대기 {requests.filter(r => r.status === "pending").length}건 / 전체 {requests.length}건
-                    </span>
-                  </div>
-                  <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5 text-[10px] shrink-0">
-                    {(["all", "pending", "done"] as const).map((k) => (
-                      <button key={k} type="button" onClick={() => setReqFilter(k)}
-                        className={`px-2.5 py-1 font-semibold rounded-md transition cursor-pointer whitespace-nowrap ${reqFilter === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
-                        {k === "all" ? "전체" : k === "pending" ? "대기중" : "완료"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto mt-2">
-                  {filteredReqs.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-10 text-slate-400 text-xs text-center px-4">
-                      <Bell size={24} className="mb-2 opacity-30 animate-bounce" />
-                      {reqFilter === "done" ? "완료된 요청이 없습니다" : reqFilter === "pending" ? "대기 중인 요청이 없습니다" : "등록된 진열 요청이 없습니다"}
-                    </div>
-                  ) : (
-                    <table className="w-full text-left text-[11px] border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
-                          <th className="p-2 w-24">구역</th>
-                          <th className="p-2 w-24">담당</th>
-                          <th className="p-2 w-20">시각</th>
-                          <th className="p-2 w-16 text-center">상태</th>
-                          <th className="p-2 text-center">작업</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {filteredReqs.map((req) => (
-                          <tr key={req.id} className="hover:bg-slate-50 transition">
-                            <td className="p-2 font-bold text-slate-900">{req.zoneLabel}</td>
-                            <td className="p-2 font-bold text-slate-800">{req.assignedStaffName || "미배정"}</td>
-                            <td className="p-2 text-slate-500 text-[10px]">{formatRel(req.requestedAt)}</td>
-                            <td className="p-2 text-center">
-                              <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${req.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-300" : "bg-emerald-50 text-emerald-700 border-emerald-300"}`}>
-                                {req.status === "pending" ? "대기" : "완료"}
+                            <button
+                              key={employee.id}
+                              type="button"
+                              draggable
+                              onDragStart={(e) => {
+                                const s = { employee, scheduleType, workingHours };
+                                dragStaffRef.current = s;
+                                setDragStaff(s);
+                                e.dataTransfer.effectAllowed = "move";
+                                e.dataTransfer.setData("text/plain", String(employee.id));
+                              }}
+                              onDragEnd={() => { dragStaffRef.current = null; setDragStaff(null); setDragOverZoneId(null); }}
+                              onClick={() => setActiveStaffInfo({ employee, scheduleType, workingHours })}
+                              className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold border cursor-grab active:cursor-grabbing transition hover:brightness-95 ${chipColor}`}
+                              title={`${employee.name} · ${scheduleType}${workingHours ? ` · ${workingHours}` : ""} · 드래그하여 구역 배정`}
+                            >
+                              <span>{employee.name}</span>
+                              <span className={`text-[8px] font-black px-1 rounded ${SHIFT_BADGE[scheduleType] ?? "bg-slate-100 text-slate-700 border-slate-200"}`}>
+                                {scheduleType}
                               </span>
-                            </td>
-                            <td className="p-2 text-center">
-                              <div className="flex items-center justify-center gap-1">
-                                {req.status === "pending" && (
-                                  <button onClick={() => {
-                                    setRequests((prev) => prev.map((r) => r.id === req.id ? { ...r, status: "done" as const } : r));
-                                    fetch(`/api/display-requests/${req.id}`, {
-                                      method: "PATCH",
-                                      headers: { "Content-Type": "application/json" },
-                                      body: JSON.stringify({ status: "done" }),
-                                    }).catch(() => {});
-                                  }}
-                                    className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer flex items-center gap-0.5">
-                                    <CheckCircle2 size={9} />완료
-                                  </button>
-                                )}
-                                <button onClick={() => {
-                                  setRequests((prev) => prev.filter((r) => r.id !== req.id));
-                                  fetch(`/api/display-requests/${req.id}`, { method: "DELETE" }).catch(() => {});
-                                }}
-                                  className="text-[9px] font-medium px-1.5 py-0.5 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer border border-slate-200">
-                                  삭제
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                            </button>
+                          );
+                        })}
+                        <button
+                          onClick={handleAutoAssign}
+                          title="물류 출근직원 미리보기 배치 (확정 전엔 DB 저장·알림 없음)"
+                          className="ml-1 inline-flex items-center gap-1 px-2 py-0.5 bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-black rounded-full shadow-sm transition cursor-pointer border border-violet-700"
+                        >
+                          🎲 임의배치
+                        </button>
+                        {pendingAutoAssign && (
+                          <>
+                            <button
+                              onClick={handleConfirmAutoAssign}
+                              title="DB 저장 + 각 담당자에게 날짜·배정구역 알림 전송"
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black rounded-full shadow-sm transition cursor-pointer border border-emerald-700 animate-pulse"
+                            >
+                              <Bell size={9} /> 배치확정 ({pendingAutoAssign.assignedList.length})
+                            </button>
+                            <button
+                              onClick={handleCancelAutoAssign}
+                              title="미리보기 취소 · 이전 배치로 되돌리기"
+                              className="inline-flex items-center gap-1 px-2 py-0.5 bg-white hover:bg-slate-50 text-slate-600 text-[10px] font-bold rounded-full shadow-sm transition cursor-pointer border border-slate-300"
+                            >
+                              ↺ 취소
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* 미리보기 안내 배너 (얇은 힌트) */}
+                  {pendingAutoAssign && (
+                    <div className="bg-violet-50 border border-violet-200 rounded-lg px-2 py-1 text-[9px] text-violet-700 mb-1 flex items-center gap-1.5">
+                      <span>🎲</span>
+                      <span>임의배치 미리보기 중 — 배치를 조정한 뒤 위쪽 <b>배치확정</b> 버튼을 눌러 DB 저장 + 담당자 알림 전송</span>
+                    </div>
                   )}
-                </div>
-              </div>
 
-              {/* 리사이즈 핸들 — 좌우 폭 조절 · 데스크탑만 */}
-              <div
-                onMouseDown={startReqPanelResize}
-                className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-emerald-400 rounded-full cursor-col-resize transition-all shrink-0 relative group"
-                title="드래그하여 폭 조절"
-              >
-                <span className="text-[10px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
-              </div>
+                  {/* SECTION 1: TOP HORIZONTAL BAND — 신규 배치 (2026 개편) */}
+                  {/* 상단: 21→9 (좌→우 감소, 13개)  ·  중앙: 22 + 8-1 각 B|A  ·  하단: 23→34 (좌→우 증가, 12개) */}
+                  <div className="flex flex-col md:flex-row md:justify-between md:items-stretch gap-3 w-full shrink-0">
 
-              {/* SECTION 2: 우측 윙 — 남는 공간 모두 사용 · 미니멀 세련 톤 */}
-              <div className="flex-1 min-w-0 lg:min-w-[400px] bg-white border border-slate-200 rounded-2xl p-3 flex flex-col gap-3 shadow-md shadow-slate-200/60 relative">
+                    {/* Main Horizontal Shelving Wing: Top Wall, Aisle Shelves, Bottom Wall */}
+                    <div className="flex-1 bg-white border-2 border-emerald-600 rounded-xl p-2 md:p-3 flex flex-col shadow-sm relative min-w-0">
 
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-slate-900 flex items-center justify-center shadow-sm">
-                      <span className="text-[10px]">🚪</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-slate-900 leading-none">동측 윙</span>
-                      <span className="text-[8px] font-semibold text-slate-400 leading-none mt-0.5 uppercase tracking-wider">Counter · Event · Front Display</span>
-                    </div>
-                  </div>
-                  {/* 미니 위치 다이어그램 · 세련된 카드 */}
-                  <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
-                    <svg width="30" height="24" viewBox="0 0 42 34" className="shrink-0" aria-label="수직윙 위치">
-                      <rect x="1" y="1" width="30" height="20" rx="1.5" fill="none" stroke="#cbd5e1" strokeWidth="1.2" />
-                      <rect x="31" y="1" width="10" height="32" rx="1.5" fill="#0f172a" />
-                      <circle cx="36" cy="17" r="2" fill="#fbbf24" />
-                    </svg>
-                    <span className="text-[8px] font-bold text-slate-600 leading-none">현재 위치</span>
-                  </div>
-                </div>
-
-                {/* 1단: 베스트존 (이벤트 3구역) — 35·36·37 */}
-                <div className="w-full bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
-                      <span className="w-1 h-3 bg-amber-500 rounded-full inline-block" />
-                      베스트존
-                    </span>
-                    <span className="text-[8px] font-semibold text-slate-400">이벤트 3구역 · 35·36·37</span>
-                  </div>
-                  <div className="flex gap-1.5 items-stretch">
-                    {[35, 36, 37].map(num => (
-                      <div key={`event-slot-${num}`} className="flex-1 flex flex-col gap-0.5">
-                        <span className="text-[8px] font-bold text-slate-500 leading-none">이벤트 · {num}</span>
-                        {renderZoneCell(num, "w-full h-[70px] text-[9px] p-1 justify-center")}
+                      {/* 미니 위치 다이어그램: 수평윙(현재 표시 영역) 강조 */}
+                      <div className="absolute top-2 right-2 z-10 flex items-center gap-1 bg-white border border-slate-200 rounded-lg px-2 py-1 shadow-sm">
+                        <svg width="36" height="28" viewBox="0 0 42 34" className="shrink-0" aria-label="수평윙 위치">
+                          {/* 메인 매장 (수평 윙 · 현재 영역 · 강조) */}
+                          <rect x="1" y="1" width="30" height="20" rx="1.5" fill="#10b981" stroke="#047857" strokeWidth="1" />
+                          {/* 수직 윙 (다른 영역 · 회색 아웃라인) */}
+                          <rect x="31" y="1" width="10" height="32" rx="1.5" fill="none" stroke="#cbd5e1" strokeWidth="1.2" />
+                          {/* 현재 위치 마커 (수평윙 중앙) */}
+                          <circle cx="16" cy="11" r="2" fill="#fbbf24" />
+                        </svg>
+                        <span className="text-[8px] font-bold text-slate-600 leading-none">수평 윙</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
 
-                {/* 2단: 메인 카운터 (40 A/B/C) */}
-                <div className="w-full bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
-                      <span className="w-1 h-3 bg-slate-900 rounded-full inline-block" />
-                      메인 카운터
-                    </span>
-                    <span className="text-[8px] font-semibold text-slate-400">3구역 · 40A · 40B · 40C</span>
-                  </div>
-                  <div className="flex gap-1.5 items-stretch">
-                    {(["A", "B", "C"] as const).map((side) => (
-                      <div key={`counter-${side}`} className="flex-1 flex flex-col gap-0.5">
-                        <span className="text-[8px] font-bold text-slate-500 leading-none">카운터 {side === "A" ? "1" : side === "B" ? "2" : "3"}</span>
-                        {renderZoneCellById(`40${side}`, "w-full h-[70px] justify-between items-center text-[9px] p-1 bg-slate-800 text-white", "", true)}
+                      {/* 상단 벽면: 21→9 좌→우 (13개) · 모바일 4열 wrap 순차 · 데스크탑 13열 한 줄 */}
+                      <div className="w-full">
+                        <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">상단 벽면 (21→9)</div>
+                        <div className="grid grid-cols-4 md:grid-cols-[repeat(13,minmax(0,1fr))] gap-1 bg-slate-100 p-1 rounded">
+                          {[21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9].map((num) => renderWallZoneCard(num, "top"))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
 
-                {/* 3단: 정면 약진열 (38) + 시설 (41, 39) */}
-                <div className="w-full flex gap-2">
-                  <div className="flex-[3] bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
-                        <span className="w-1 h-3 bg-emerald-500 rounded-full inline-block" />
-                        정면 약진열
-                      </span>
-                      <span className="text-[8px] font-semibold text-slate-400">38</span>
-                    </div>
-                    {renderZoneCell(38, "w-full h-[70px] justify-center bg-emerald-600 text-white text-[9px] p-1 font-bold")}
-                  </div>
-                  <div className="flex-[2] bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
-                        <span className="w-1 h-3 bg-slate-400 rounded-full inline-block" />
-                        시설
-                      </span>
-                    </div>
-                    <div className="flex gap-1.5 flex-1">
-                      <div className="flex-1 flex flex-col gap-0.5">
-                        <span className="text-[8px] font-bold text-slate-500 leading-none">☕ 휴게실</span>
-                        {renderZoneCell(41, "w-full h-[70px] text-[9px] bg-slate-200 text-slate-700 justify-center border-none")}
+                      {/* 중앙 진열대: 22 + 8B/8A/7B/7A/.../1B/1A (16개 세로 진열대 나란히) */}
+                      <div className="my-3 w-full">
+                        <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-1">중앙 진열대 (22 · 8B|8A → 1B|1A · 16구역)</div>
+                        {/* 반응형: 모바일 (sm 이하) 에서는 2 pair 씩 wrap · 데스크탑은 한 줄 유지 */}
+                        <div className="flex flex-wrap md:flex-nowrap items-stretch justify-start md:pr-3 px-1.5 bg-slate-50 border border-slate-200 py-2 rounded-lg gap-1.5">
+                          {/* 진열대 22 (좌측 첫 번째, 단독) · 왼쪽 벽에 붙임 · 좁은 고정 폭 */}
+                          <div className="flex flex-col items-center gap-0.5 basis-full md:basis-auto md:flex-none md:w-[40px] md:min-w-[40px] md:mr-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const zd = ZONE_DEFS.find(z => z.num === 22);
+                                setZoneProductsModal({ zoneId: "22", zoneNum: 22, zoneLabel: `진열대 22`, category: zd?.category ?? "" });
+                                setZoneProductsFilter("all"); setZoneProductsSearch("");
+                              }}
+                              title="22 카테고리 클릭 → 상품 리스트 보기"
+                              className="w-full text-[10px] font-black text-slate-700 bg-white border-2 border-slate-300 rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex items-center justify-center overflow-hidden cursor-pointer hover:bg-slate-50 transition">
+                              <span className="line-clamp-4">{ZONE_DEFS.find(z => z.num === 22)?.category ?? ""}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const zd = ZONE_DEFS.find(z => z.num === 22);
+                                setZoneProductsModal({ zoneId: "22", zoneNum: 22, zoneLabel: `진열대 22`, category: zd?.category ?? "" });
+                                setZoneProductsFilter("all"); setZoneProductsSearch("");
+                              }}
+                              title="22 구역 상품 리스트 보기"
+                              className="w-full text-[9px] font-black text-white bg-slate-600 rounded px-0.5 py-0.5 text-center leading-none cursor-pointer hover:brightness-110 transition"
+                            >22</button>
+                            {renderZoneCell(22, "w-full h-[80px] flex flex-col justify-between items-center py-1 px-0.5 text-[9px]")}
+                            <div className="w-full h-[56px]" />
+                          </div>
+                          {/* 진열대 8→1 각각 B|A pair — 카테고리 라벨은 A/B 합친 폭으로 넓게 표시 */}
+                          {(() => {
+                            // A=진한 톤 (셀 색상 = bg-{color}-600) / B=연한 톤 (셀 색상 = bg-{color}-300)
+                            // 대비가 명확히 보이도록 A는 진한 배경, B는 연한 배경
+                            const catA: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
+                              1: { bg: "bg-blue-500", border: "border-blue-700", text: "text-white", labelBg: "bg-blue-800" },
+                              2: { bg: "bg-yellow-400", border: "border-yellow-700", text: "text-yellow-950", labelBg: "bg-yellow-700" },
+                              3: { bg: "bg-red-500", border: "border-red-700", text: "text-white", labelBg: "bg-red-800" },
+                              4: { bg: "bg-pink-500", border: "border-pink-700", text: "text-white", labelBg: "bg-pink-800" },
+                              5: { bg: "bg-lime-500", border: "border-lime-700", text: "text-lime-950", labelBg: "bg-lime-800" },
+                              6: { bg: "bg-sky-500", border: "border-sky-700", text: "text-white", labelBg: "bg-sky-800" },
+                              7: { bg: "bg-indigo-500", border: "border-indigo-700", text: "text-white", labelBg: "bg-indigo-800" },
+                              8: { bg: "bg-purple-500", border: "border-purple-700", text: "text-white", labelBg: "bg-purple-800" },
+                            };
+                            const catB: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
+                              1: { bg: "bg-blue-100", border: "border-blue-300", text: "text-blue-900", labelBg: "bg-blue-400" },
+                              2: { bg: "bg-yellow-100", border: "border-yellow-300", text: "text-yellow-900", labelBg: "bg-yellow-400" },
+                              3: { bg: "bg-red-100", border: "border-red-300", text: "text-red-900", labelBg: "bg-red-400" },
+                              4: { bg: "bg-pink-100", border: "border-pink-300", text: "text-pink-900", labelBg: "bg-pink-400" },
+                              5: { bg: "bg-lime-100", border: "border-lime-300", text: "text-lime-900", labelBg: "bg-lime-400" },
+                              6: { bg: "bg-sky-100", border: "border-sky-300", text: "text-sky-900", labelBg: "bg-sky-400" },
+                              7: { bg: "bg-indigo-100", border: "border-indigo-300", text: "text-indigo-900", labelBg: "bg-indigo-400" },
+                              8: { bg: "bg-purple-100", border: "border-purple-300", text: "text-purple-900", labelBg: "bg-purple-400" },
+                            };
+                            return [8, 7, 6, 5, 4, 3, 2, 1].map((num) => {
+                              const ca = catA[num];
+                              const cb = catB[num];
+                              const zd = ZONE_DEFS.find(z => z.num === num);
+                              const subB = zd?.subB ?? "";
+                              const subA = zd?.subA ?? "";
+                              return (
+                                <div key={`pair-${num}`} className="flex flex-col items-stretch gap-0.5 basis-[calc(50%-6px)] md:basis-0 md:flex-[2_2_0%] md:min-w-[60px]">
+                                  {/* 상단: B 카테고리 (연한 톤) */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setZoneProductsModal({ zoneId: `${num}B`, zoneNum: num, zoneLabel: `진열대 ${num}B`, category: subB });
+                                      setZoneProductsFilter("all"); setZoneProductsSearch("");
+                                    }}
+                                    title={`${num}B 카테고리 → 상품 조회`}
+                                    className={`w-full text-[10px] font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:brightness-95 transition`}>
+                                    <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}B</span>
+                                    <span className="line-clamp-3 text-[10px]">{subB}</span>
+                                  </button>
+                                  {/* 드래그드롭 zone (B|A 나란히) */}
+                                  <div className="flex gap-0.5 items-stretch">
+                                    <div className="flex-1 flex flex-col gap-0.5">
+                                      {renderZoneCellById(`${num}B`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[9px]", "", true)}
+                                      {renderRequestButton(num, `${num}B`)}
+                                    </div>
+                                    <div className="flex-1 flex flex-col gap-0.5">
+                                      {renderZoneCellById(`${num}A`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[9px]", "", true)}
+                                      {renderRequestButton(num, `${num}A`)}
+                                    </div>
+                                  </div>
+                                  {/* 하단: A 카테고리 (진한 톤) */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setZoneProductsModal({ zoneId: `${num}A`, zoneNum: num, zoneLabel: `진열대 ${num}A`, category: subA });
+                                      setZoneProductsFilter("all"); setZoneProductsSearch("");
+                                    }}
+                                    title={`${num}A 카테고리 → 상품 조회`}
+                                    className={`w-full text-[10px] font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:brightness-95 transition`}>
+                                    <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}A</span>
+                                    <span className="line-clamp-3 text-[10px]">{subA}</span>
+                                  </button>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
                       </div>
-                      <div className="flex-1 flex flex-col gap-0.5">
-                        <span className="text-[8px] font-bold text-slate-500 leading-none">🗄️ 사물함</span>
-                        {renderZoneCell(39, "w-full h-[70px] text-[9px] bg-slate-200 text-slate-700 justify-center border-none")}
+
+                      {/* 하단 벽면: 23→34 좌→우 (12개) · 모바일 4열 wrap · 데스크탑 12열 한 줄 */}
+                      <div className="w-full">
+                        <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">하단 벽면 (23→34)</div>
+                        <div className="grid grid-cols-4 md:grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
+                          {[23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34].map((num) => renderWallZoneCard(num, "bottom"))}
+                        </div>
+                      </div>
+
+                      {/* Expiring Products Zone Marker at far right of top wing */}
+                      <div className="absolute top-1 right-2 bg-rose-50 text-rose-700 text-[8px] border border-rose-300 font-extrabold px-1.5 rounded-full uppercase tracking-wider shadow-3xs">
+                        유통기한 임박존
                       </div>
                     </div>
+
                   </div>
+
+                  {/* SECTION 2 + 실시간 보충요청 (2열 배치 · 보충요청 왼쪽 · 윙 오른쪽 축소) */}
+                  <div className="w-full flex flex-col lg:flex-row gap-2 mt-2 items-stretch">
+
+                    {/* 실시간 진열 보충 요청 현황 — 드래그로 폭 조절 가능 */}
+                    <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex flex-col shrink-0" style={{ width: `min(100%, ${reqPanelWidth}px)` }}>
+                      <div className="border-b border-slate-100 pb-3 flex items-center justify-between flex-nowrap gap-2 overflow-x-auto scrollbar-none">
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
+                            <ClipboardList size={16} className="text-violet-600" />
+                          </div>
+                          <h2 className="text-sm font-bold text-slate-900 whitespace-nowrap">실시간 진열 보충 요청 현황</h2>
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700 shrink-0 whitespace-nowrap">
+                            대기 {requests.filter(r => r.status === "pending").length}건 / 전체 {requests.length}건
+                          </span>
+                        </div>
+                        <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5 text-[10px] shrink-0">
+                          {(["all", "pending", "done"] as const).map((k) => (
+                            <button key={k} type="button" onClick={() => setReqFilter(k)}
+                              className={`px-2.5 py-1 font-semibold rounded-md transition cursor-pointer whitespace-nowrap ${reqFilter === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                              {k === "all" ? "전체" : k === "pending" ? "대기중" : "완료"}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto mt-2">
+                        {filteredReqs.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-10 text-slate-400 text-xs text-center px-4">
+                            <Bell size={24} className="mb-2 opacity-30 animate-bounce" />
+                            {reqFilter === "done" ? "완료된 요청이 없습니다" : reqFilter === "pending" ? "대기 중인 요청이 없습니다" : "등록된 진열 요청이 없습니다"}
+                          </div>
+                        ) : (
+                          <table className="w-full text-left text-[11px] border-collapse">
+                            <thead>
+                              <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
+                                <th className="p-2 w-24">구역</th>
+                                <th className="p-2 w-24">담당</th>
+                                <th className="p-2 w-20">시각</th>
+                                <th className="p-2 w-16 text-center">상태</th>
+                                <th className="p-2 text-center">작업</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                              {filteredReqs.map((req) => (
+                                <tr key={req.id} className="hover:bg-slate-50 transition">
+                                  <td className="p-2 font-bold text-slate-900">{req.zoneLabel}</td>
+                                  <td className="p-2 font-bold text-slate-800">{req.assignedStaffName || "미배정"}</td>
+                                  <td className="p-2 text-slate-500 text-[10px]">{formatRel(req.requestedAt)}</td>
+                                  <td className="p-2 text-center">
+                                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${req.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-300" : "bg-emerald-50 text-emerald-700 border-emerald-300"}`}>
+                                      {req.status === "pending" ? "대기" : "완료"}
+                                    </span>
+                                  </td>
+                                  <td className="p-2 text-center">
+                                    <div className="flex items-center justify-center gap-1">
+                                      {req.status === "pending" && (
+                                        <button onClick={() => {
+                                          setRequests((prev) => prev.map((r) => r.id === req.id ? { ...r, status: "done" as const } : r));
+                                          fetch(`/api/display-requests/${req.id}`, {
+                                            method: "PATCH",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ status: "done" }),
+                                          }).catch(() => { });
+                                        }}
+                                          className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer flex items-center gap-0.5">
+                                          <CheckCircle2 size={9} />완료
+                                        </button>
+                                      )}
+                                      <button onClick={() => {
+                                        setRequests((prev) => prev.filter((r) => r.id !== req.id));
+                                        fetch(`/api/display-requests/${req.id}`, { method: "DELETE" }).catch(() => { });
+                                      }}
+                                        className="text-[9px] font-medium px-1.5 py-0.5 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer border border-slate-200">
+                                        삭제
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 리사이즈 핸들 — 좌우 폭 조절 · 데스크탑만 */}
+                    <div
+                      onMouseDown={startReqPanelResize}
+                      className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-emerald-400 rounded-full cursor-col-resize transition-all shrink-0 relative group"
+                      title="드래그하여 폭 조절"
+                    >
+                      <span className="text-[10px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+                    </div>
+
+                    {/* SECTION 2: 우측 윙 — 남는 공간 모두 사용 · 미니멀 세련 톤 */}
+                    <div className="flex-1 min-w-0 lg:min-w-[400px] bg-white border border-slate-200 rounded-2xl p-3 flex flex-col gap-3 shadow-md shadow-slate-200/60 relative">
+
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-lg bg-slate-900 flex items-center justify-center shadow-sm">
+                            <span className="text-[10px]">🚪</span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-slate-900 leading-none">동측 윙</span>
+                            <span className="text-[8px] font-semibold text-slate-400 leading-none mt-0.5 uppercase tracking-wider">Counter · Event · Front Display</span>
+                          </div>
+                        </div>
+                        {/* 미니 위치 다이어그램 · 세련된 카드 */}
+                        <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1">
+                          <svg width="30" height="24" viewBox="0 0 42 34" className="shrink-0" aria-label="수직윙 위치">
+                            <rect x="1" y="1" width="30" height="20" rx="1.5" fill="none" stroke="#cbd5e1" strokeWidth="1.2" />
+                            <rect x="31" y="1" width="10" height="32" rx="1.5" fill="#0f172a" />
+                            <circle cx="36" cy="17" r="2" fill="#fbbf24" />
+                          </svg>
+                          <span className="text-[8px] font-bold text-slate-600 leading-none">현재 위치</span>
+                        </div>
+                      </div>
+
+                      {/* 1단: 베스트존 (이벤트 3구역) — 35·36·37 */}
+                      <div className="w-full bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
+                            <span className="w-1 h-3 bg-amber-500 rounded-full inline-block" />
+                            베스트존
+                          </span>
+                          <span className="text-[8px] font-semibold text-slate-400">이벤트 3구역 · 35·36·37</span>
+                        </div>
+                        <div className="flex gap-1.5 items-stretch">
+                          {[35, 36, 37].map(num => (
+                            <div key={`event-slot-${num}`} className="flex-1 flex flex-col gap-0.5">
+                              <span className="text-[8px] font-bold text-slate-500 leading-none">이벤트 · {num}</span>
+                              {renderZoneCell(num, "w-full h-[70px] text-[9px] p-1 justify-center")}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 2단: 메인 카운터 (40 A/B/C) */}
+                      <div className="w-full bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
+                            <span className="w-1 h-3 bg-slate-900 rounded-full inline-block" />
+                            메인 카운터
+                          </span>
+                          <span className="text-[8px] font-semibold text-slate-400">3구역 · 40A · 40B · 40C</span>
+                        </div>
+                        <div className="flex gap-1.5 items-stretch">
+                          {(["A", "B", "C"] as const).map((side) => (
+                            <div key={`counter-${side}`} className="flex-1 flex flex-col gap-0.5">
+                              <span className="text-[8px] font-bold text-slate-500 leading-none">카운터 {side === "A" ? "1" : side === "B" ? "2" : "3"}</span>
+                              {renderZoneCellById(`40${side}`, "w-full h-[70px] justify-between items-center text-[9px] p-1 bg-slate-800 text-white", "", true)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* 3단: 정면 약진열 (38) + 시설 (41, 39) */}
+                      <div className="w-full flex gap-2">
+                        <div className="flex-[3] bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
+                              <span className="w-1 h-3 bg-emerald-500 rounded-full inline-block" />
+                              정면 약진열
+                            </span>
+                            <span className="text-[8px] font-semibold text-slate-400">38</span>
+                          </div>
+                          {renderZoneCell(38, "w-full h-[70px] justify-center bg-emerald-600 text-white text-[9px] p-1 font-bold")}
+                        </div>
+                        <div className="flex-[2] bg-slate-50/60 rounded-xl p-2.5 flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-black text-slate-800 uppercase tracking-wide flex items-center gap-1">
+                              <span className="w-1 h-3 bg-slate-400 rounded-full inline-block" />
+                              시설
+                            </span>
+                          </div>
+                          <div className="flex gap-1.5 flex-1">
+                            <div className="flex-1 flex flex-col gap-0.5">
+                              <span className="text-[8px] font-bold text-slate-500 leading-none">☕ 휴게실</span>
+                              {renderZoneCell(41, "w-full h-[70px] text-[9px] bg-slate-200 text-slate-700 justify-center border-none")}
+                            </div>
+                            <div className="flex-1 flex flex-col gap-0.5">
+                              <span className="text-[8px] font-bold text-slate-500 leading-none">🗄️ 사물함</span>
+                              {renderZoneCell(39, "w-full h-[70px] text-[9px] bg-slate-200 text-slate-700 justify-center border-none")}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center text-[8px] text-slate-400 pt-1 leading-none">
+                        <span>🛗 1층 연결 EV · 🛒 카트존</span>
+                        <span>🚰 수도 시설</span>
+                      </div>
+                    </div>
+
+                  </div>{/* end 2-column row */}
+
                 </div>
-
-                <div className="flex justify-between items-center text-[8px] text-slate-400 pt-1 leading-none">
-                  <span>🛗 1층 연결 EV · 🛒 카트존</span>
-                  <span>🚰 수도 시설</span>
-                </div>
-              </div>
-
-              </div>{/* end 2-column row */}
-
+              </div>{/* end overflow-x-auto */}
             </div>
-            </div>{/* end overflow-x-auto */}
-          </div>
-        </section>
+          </section>
 
-      </main>
+        </main>
       )}
 
       {/* Footer */}
@@ -2544,13 +2542,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                   key={dow}
                                   type="button"
                                   onClick={() => toggleZoneDow(activeZone.id, name, dow)}
-                                  className={`w-7 h-7 text-[11px] font-bold rounded-md border transition cursor-pointer ${
-                                    active
+                                  className={`w-7 h-7 text-[11px] font-bold rounded-md border transition cursor-pointer ${active
                                       ? (dow === 0 ? "bg-rose-500 text-white border-rose-500"
                                         : dow === 6 ? "bg-sky-500 text-white border-sky-500"
-                                        : "bg-indigo-500 text-white border-indigo-500")
+                                          : "bg-indigo-500 text-white border-indigo-500")
                                       : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
-                                  }`}
+                                    }`}
                                   title={`${lb}요일 ${active ? "제외" : "포함"}`}
                                 >{lb}</button>
                               );
@@ -2572,7 +2569,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       className={`py-2.5 text-xs font-semibold rounded-xl border-2 transition cursor-pointer flex items-center justify-center gap-1.5 ${draftStatus === s
                         ? s === "normal" ? "bg-emerald-50 text-emerald-700 border-emerald-400 shadow-sm"
                           : s === "low" ? "bg-amber-50 text-amber-700 border-amber-400 shadow-sm"
-                          : "bg-red-50 text-red-700 border-red-400 shadow-sm"
+                            : "bg-red-50 text-red-700 border-red-400 shadow-sm"
                         : "bg-white text-slate-500 border-slate-200 hover:border-slate-300"}`}>
                       <span className={`w-2 h-2 rounded-full ${statusDot(s)}`} />
                       {STATUS_LABEL[s]}
@@ -2737,13 +2734,12 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                 ));
                               }}
                               title={otherName ? `현재: ${otherName} 담당 (클릭 시 재배정)` : z.category}
-                              className={`rounded-lg border-2 p-1 text-left transition-all cursor-pointer active:scale-95 ${
-                                isAssigned
+                              className={`rounded-lg border-2 p-1 text-left transition-all cursor-pointer active:scale-95 ${isAssigned
                                   ? "bg-indigo-100 border-indigo-400 shadow-sm"
                                   : otherName
-                                  ? "bg-amber-50 border-amber-300 hover:border-indigo-300"
-                                  : "bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50"
-                              }`}
+                                    ? "bg-amber-50 border-amber-300 hover:border-indigo-300"
+                                    : "bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50"
+                                }`}
                             >
                               {/* 1-8 은 A/B 로 구분되므로 번호 유지 · 9+ 는 카테고리 라벨과 중복이므로 번호 숨김 */}
                               {z.num <= 8 && (
@@ -2794,10 +2790,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           const s = v.trim();
           // 1) "18번 ..." 형식 (real_map)
           const m1 = /^(\d+)번[^A-Z]*?([AB])?$/.exec(s);
-          if (m1) return { num: Number(m1[1]), side: (m1[2] as "A"|"B") ?? null };
+          if (m1) return { num: Number(m1[1]), side: (m1[2] as "A" | "B") ?? null };
           // 2) "9B" · "5A" · "21" 형식 (spec)
           const m2 = /^(\d+)([AB])?$/.exec(s);
-          if (m2) return { num: Number(m2[1]), side: (m2[2] as "A"|"B") ?? null };
+          if (m2) return { num: Number(m2[1]), side: (m2[2] as "A" | "B") ?? null };
           return null;
         };
         const isAisle18 = zoneNum >= 1 && zoneNum <= 8;

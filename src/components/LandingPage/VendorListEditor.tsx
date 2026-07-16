@@ -1,20 +1,21 @@
 // src/components/LandingPage/VendorListEditor.tsx
-// 공급사 관리 · 마스터-디테일 (2026-07-14 · 사용자 요청)
-//   왼쪽: 검색창 + 리스트  ·  오른쪽: 클릭한 공급사 상세 정보 + 수정 + 확인 버튼
-// mode="dashboard" (기본): 마스터-디테일 · mode="raw": 원본 데이터 스프레드시트 뷰
+// 공급사관리 · 한 줄 테이블 리스트 + 상세 모달 (2026-07-16 재편)
+//   리스트: 한 줄 · 반응형 (모바일 카드 · 태블릿·데스크탑 테이블)
+//   모달:   기본 정보 편집 + 잔고 · 매입 통계 · 최근 매입 이력
 
-import React, { useEffect, useState, useMemo } from "react";
-import { Search, Check, X, Loader2, Building2 } from "lucide-react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import { Search, Check, X, Loader2, Building2, Package, Calendar, DollarSign, TrendingUp } from "lucide-react";
 
 interface VendorListEditorProps {
+  // 기존 API 호환용 · 무시됨 (모달 방식으로 통일)
   mode?: "dashboard" | "raw";
-  // 대시보드 진입 시 자동으로 선택될 공급사 id (raw → dashboard 전환 시 활용)
   initialSelectedId?: number | null;
-  // raw 모드에서 편집 요청 시 호출 (부모가 mode 를 dashboard 로 전환)
   onEditRequest?: (vendorId: number) => void;
+  /** 2026-07-16 · 좌우 split 좌측용 컴팩트 모드 · 공급사명·사업자번호·담당자 3컬럼만 */
+  compact?: boolean;
 }
 
-interface Vendor {
+export interface Vendor {
   id: number;
   company_name: string;
   contact_name: string | null;
@@ -55,18 +56,18 @@ const formatBizNum = (s: string | null): string => {
   if (d.length !== 10) return d;
   return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
 };
+const fmtWon = (n: number): string => n >= 1_0000_0000 ? `${(n/1_0000_0000).toFixed(1)}억` : n >= 10000 ? `${(n/10000).toFixed(1)}만` : `${n.toLocaleString()}원`;
 
-export const VendorListEditor: React.FC<VendorListEditorProps> = ({ mode = "dashboard", initialSelectedId, onEditRequest }) => {
+export const VendorListEditor: React.FC<VendorListEditorProps> = ({ initialSelectedId, onEditRequest, compact = false }) => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [filterMissingBiz, setFilterMissingBiz] = useState(false);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [draft, setDraft] = useState<EditDraft | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [modalVendorId, setModalVendorId] = useState<number | null>(null);
+  // onEditRequest 제공 시 내부 모달 스킵 · 외부 split 패널로 위임
+  const handleVendorClick = (id: number) => { if (onEditRequest) { onEditRequest(id); } else { setModalVendorId(id); } };
 
-  const loadVendors = async () => {
+  const loadVendors = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("/api/vendors?withBalances=1");
@@ -77,19 +78,15 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ mode = "dash
     } finally {
       setLoading(false);
     }
-  };
-  useEffect(() => { loadVendors(); }, []);
+  }, []);
+  useEffect(() => { loadVendors(); }, [loadVendors]);
 
-  // 부모가 initialSelectedId 를 넘겨준 경우 (raw → dashboard 전환) 자동 선택
+  // 부모가 initialSelectedId 로 특정 공급사 열기 요청한 경우 자동 모달 오픈
   useEffect(() => {
-    if (mode !== "dashboard" || initialSelectedId == null) return;
-    const v = vendors.find(x => x.id === initialSelectedId);
-    if (v) {
-      setSelectedId(v.id);
-      setDraft(emptyDraft(v));
-      setSaveMsg(null);
+    if (initialSelectedId != null && vendors.find(v => v.id === initialSelectedId)) {
+      setModalVendorId(initialSelectedId);
     }
-  }, [mode, initialSelectedId, vendors]);
+  }, [initialSelectedId, vendors]);
 
   const filtered = useMemo(() => {
     let list = vendors;
@@ -99,48 +96,217 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ mode = "dash
       list = list.filter(v => {
         const name = (v.company_name ?? "").toLowerCase().replace(/[^0-9가-힣a-z]/g, "");
         const bn = (v.business_number ?? "").replace(/[^0-9]/g, "");
-        return name.includes(q) || bn.includes(q);
+        const contact = (v.contact_name ?? "").toLowerCase().replace(/[^0-9가-힣a-z]/g, "");
+        const phone = (v.phone ?? "").replace(/[^0-9]/g, "");
+        const email = (v.email ?? "").toLowerCase();
+        return name.includes(q) || bn.includes(q) || contact.includes(q) || phone.includes(q) || email.includes(q);
       });
     }
     return list.slice().sort((a, b) => (a.company_name ?? "").localeCompare(b.company_name ?? "", "ko"));
   }, [vendors, search, filterMissingBiz]);
 
-  const selected = useMemo(() => vendors.find(v => v.id === selectedId) ?? null, [vendors, selectedId]);
+  const missingCount = vendors.filter(v => !v.business_number).length;
+  const modalVendor = useMemo(() => vendors.find(v => v.id === modalVendorId) ?? null, [vendors, modalVendorId]);
 
-  const handleSelect = (v: Vendor) => {
-    setSelectedId(v.id);
-    setDraft(emptyDraft(v));
-    setSaveMsg(null);
-  };
+  return (
+    <div className="flex flex-col gap-3 min-h-0 flex-1">
+      {/* 상단 필터 바 */}
+      <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl border border-slate-200 shadow-sm p-3">
+        <div className="relative flex-1 min-w-[200px] sm:min-w-[240px] sm:flex-none">
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="회사명 · 사업자번호 · 담당자 · 전화 · 이메일"
+            className="pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 w-full sm:w-80"
+          />
+        </div>
+        <label className="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer">
+          <input type="checkbox" checked={filterMissingBiz} onChange={e => setFilterMissingBiz(e.target.checked)} className="w-3.5 h-3.5 accent-teal-500" />
+          사업자번호 미등록만 <span className="text-rose-500 font-bold">({missingCount})</span>
+        </label>
+        <span className="text-[11px] font-mono text-slate-500">
+          {loading ? <><Loader2 size={11} className="inline animate-spin mr-1" />로딩...</> : `${filtered.length} / ${vendors.length}건`}
+        </span>
+        <button onClick={loadVendors} disabled={loading}
+          className="ml-auto inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 rounded-lg font-bold text-slate-600 cursor-pointer transition">
+          새로고침
+        </button>
+      </div>
 
-  const isDirty = useMemo(() => {
-    if (!selected || !draft) return false;
-    return (
-      draft.company_name !== (selected.company_name ?? "") ||
-      draft.business_number !== (selected.business_number ?? "") ||
-      draft.contact_name !== (selected.contact_name ?? "") ||
-      draft.phone !== (selected.phone ?? "") ||
-      draft.email !== (selected.email ?? "") ||
-      draft.category !== (selected.category ?? "") ||
-      draft.note !== (selected.note ?? "")
-    );
-  }, [selected, draft]);
+      {/* 반응형 리스트 · 모바일(< md): 카드 · 태블릿·데스크탑(md+): 한 줄 테이블 */}
+      <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+        {/* 모바일: 카드 리스트 */}
+        <div className="md:hidden divide-y divide-slate-100">
+          {filtered.length === 0 ? (
+            <div className="text-center py-10 text-slate-400 text-sm font-semibold">
+              {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 데이터 없음"}
+            </div>
+          ) : filtered.map((v, i) => (
+            <button
+              key={v.id}
+              onClick={() => handleVendorClick(v.id)}
+              className="w-full text-left px-3 py-2 hover:bg-teal-50 active:bg-teal-100 transition"
+            >
+              <div className="flex items-start gap-2">
+                <span className="text-[10px] text-slate-400 font-mono mt-0.5 w-6 shrink-0">{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-1 mb-0.5">
+                    <Building2 size={11} className="text-teal-500 shrink-0" />
+                    <span className="text-[13px] font-bold text-slate-800 break-words">{v.company_name}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5 flex-wrap">
+                    {v.business_number
+                      ? <span className="font-mono">{formatBizNum(v.business_number)}</span>
+                      : <span className="text-rose-500 font-semibold italic">사번없음</span>}
+                    {v.category && <span>· {v.category}</span>}
+                    {v.contact_name && <span>· {v.contact_name}</span>}
+                    {v.phone && <span className="font-mono">· {v.phone}</span>}
+                    {v.latestBalance?.balance != null && (
+                      <span className="font-mono font-bold text-emerald-700">· 잔고 {fmtWon(v.latestBalance.balance)}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+        {/* 태블릿·데스크탑: 한 줄 테이블 · 2026-07-16 · compact 모드 지원 (공급사명+사업자번호+담당자만) */}
+        <table className="hidden md:table w-full text-xs">
+          <thead className="sticky top-0 bg-white z-10 border-b border-slate-200 shadow-sm">
+            <tr className="text-slate-500 uppercase text-[10px]">
+              <th className="text-left px-3 py-2 w-10">#</th>
+              <th className="text-left px-3 py-2 min-w-[160px]">회사명</th>
+              <th className="text-left px-3 py-2 w-28">사업자번호</th>
+              <th className="text-left px-3 py-2 w-20">담당자</th>
+              {!compact && <th className="text-left px-3 py-2 w-24">전화</th>}
+              {!compact && <th className="text-left px-3 py-2 w-40 hidden lg:table-cell">이메일</th>}
+              {!compact && <th className="text-left px-3 py-2 w-20 hidden xl:table-cell">분류</th>}
+              {!compact && <th className="text-right px-3 py-2 w-24">잔고</th>}
+              {!compact && <th className="text-left px-3 py-2 w-24 hidden lg:table-cell">등록일</th>}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-50">
+            {filtered.length === 0 ? (
+              <tr><td colSpan={compact ? 4 : 9} className="text-center py-10 text-slate-400 font-semibold">
+                {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 데이터 없음"}
+              </td></tr>
+            ) : filtered.map((v, i) => (
+              <tr key={v.id}
+                onClick={() => handleVendorClick(v.id)}
+                className="hover:bg-teal-50 cursor-pointer transition"
+                title="클릭하여 상세 · 편집">
+                <td className="px-3 py-1.5 text-orange-600 font-black text-[10px]">{i + 1}</td>
+                <td className="px-3 py-1.5 font-bold text-slate-800">
+                  <span className="inline-flex items-center gap-1">
+                    <Building2 size={11} className="text-teal-500 shrink-0" />
+                    <span className="underline decoration-dotted decoration-teal-400 underline-offset-2 break-words">{v.company_name}</span>
+                  </span>
+                </td>
+                <td className="px-3 py-1.5 font-mono text-slate-600 whitespace-nowrap">{v.business_number ? formatBizNum(v.business_number) : <span className="text-rose-400 italic">없음</span>}</td>
+                <td className="px-3 py-1.5 text-slate-700 truncate">{v.contact_name ?? "-"}</td>
+                {!compact && <td className="px-3 py-1.5 font-mono text-slate-600 whitespace-nowrap">{v.phone ?? "-"}</td>}
+                {!compact && <td className="px-3 py-1.5 text-slate-600 truncate hidden lg:table-cell" title={v.email ?? undefined}>{v.email ?? "-"}</td>}
+                {!compact && <td className="px-3 py-1.5 text-slate-500 truncate hidden xl:table-cell">{v.category ?? "-"}</td>}
+                {!compact && <td className="px-3 py-1.5 text-right font-mono font-black text-emerald-700 whitespace-nowrap">{v.latestBalance?.balance != null ? fmtWon(v.latestBalance.balance) : "-"}</td>}
+                {!compact && <td className="px-3 py-1.5 font-mono text-[10px] text-slate-400 hidden lg:table-cell">{v.created_at ? String(v.created_at).slice(0, 10) : "-"}</td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* 상세 모달 */}
+      {modalVendor && (
+        <VendorDetailModal
+          vendor={modalVendor}
+          onClose={() => setModalVendorId(null)}
+          onSaved={loadVendors}
+        />
+      )}
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// 공급사 상세 모달 · 편집 필드 + 잔고 · 매입 통계 · 최근 매입 이력
+// ═══════════════════════════════════════════════════════════════════
+interface PurchaseRow {
+  id: number;
+  purchase_date: string;
+  product_code: string;
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  amount: number;
+  total: number;
+}
+interface VendorSummary {
+  totalAmount: number;
+  totalQty: number;
+  uniqueProducts: number;
+  latestDate: string | null;
+  earliestDate: string | null;
+  count: number;
+}
+
+export const VendorDetailModal: React.FC<{ vendor: Vendor; onClose: () => void; onSaved: () => void; panel?: boolean }> = ({ vendor, onClose, onSaved, panel }) => {
+  const [draft, setDraft] = useState<EditDraft>(emptyDraft(vendor));
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
+  const [purchLoading, setPurchLoading] = useState(false);
+  const [summary, setSummary] = useState<VendorSummary | null>(null);
+
+  // ESC · 배경 클릭 닫기
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  // 매입 이력 · 통계 로드 (supplier 필터로 GET /api/purchase-details)
+  useEffect(() => {
+    setPurchLoading(true);
+    fetch(`/api/purchase-details?supplier=${encodeURIComponent(vendor.company_name)}&limit=1000`)
+      .then(r => r.ok ? r.json() : { rows: [] })
+      .then(j => {
+        const rows: PurchaseRow[] = Array.isArray(j.rows) ? j.rows : [];
+        setPurchases(rows.slice(0, 30)); // 최근 30건만 표시
+        // 통계 · 전체 rows 기반
+        const totalAmount = rows.reduce((s, r) => s + (Number(r.total ?? r.amount) || 0), 0);
+        const totalQty = rows.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
+        const uniqueCodes = new Set(rows.map(r => String(r.product_code)));
+        const dates = rows.map(r => String(r.purchase_date)).filter(Boolean).sort();
+        setSummary({
+          totalAmount, totalQty,
+          uniqueProducts: uniqueCodes.size,
+          latestDate: dates[dates.length - 1] ?? null,
+          earliestDate: dates[0] ?? null,
+          count: rows.length,
+        });
+      })
+      .catch(() => { setPurchases([]); setSummary(null); })
+      .finally(() => setPurchLoading(false));
+  }, [vendor.id, vendor.company_name]);
+
+  const isDirty = useMemo(() => (
+    draft.company_name !== (vendor.company_name ?? "") ||
+    draft.business_number !== (vendor.business_number ?? "") ||
+    draft.contact_name !== (vendor.contact_name ?? "") ||
+    draft.phone !== (vendor.phone ?? "") ||
+    draft.email !== (vendor.email ?? "") ||
+    draft.category !== (vendor.category ?? "") ||
+    draft.note !== (vendor.note ?? "")
+  ), [vendor, draft]);
 
   const handleSave = async () => {
-    if (!selected || !draft) return;
     const bnDigits = normalizeBizNum(draft.business_number);
-    if (bnDigits && bnDigits.length !== 10) {
-      setSaveMsg({ type: "err", text: "사업자번호는 10자리 숫자여야 합니다" });
-      return;
-    }
-    if (!draft.company_name.trim()) {
-      setSaveMsg({ type: "err", text: "회사명은 필수입니다" });
-      return;
-    }
-    setSaving(true);
-    setSaveMsg(null);
+    if (bnDigits && bnDigits.length !== 10) { setSaveMsg({ type: "err", text: "사업자번호는 10자리 숫자여야 합니다" }); return; }
+    if (!draft.company_name.trim()) { setSaveMsg({ type: "err", text: "회사명은 필수입니다" }); return; }
+    setSaving(true); setSaveMsg(null);
     try {
-      const res = await fetch(`/api/vendors/${selected.id}`, {
+      const res = await fetch(`/api/vendors/${vendor.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -155,7 +321,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ mode = "dash
       });
       if (!res.ok) throw new Error(`서버 ${res.status}`);
       setSaveMsg({ type: "ok", text: "저장 완료" });
-      await loadVendors();
+      onSaved();
     } catch (e: any) {
       setSaveMsg({ type: "err", text: `저장 실패: ${e?.message ?? e}` });
     } finally {
@@ -163,318 +329,146 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ mode = "dash
     }
   };
 
-  const handleCancel = () => {
-    if (selected) setDraft(emptyDraft(selected));
-    setSaveMsg(null);
-  };
-
-  const missingCount = vendors.filter(v => !v.business_number).length;
-
-  // ─── 원본 데이터 뷰 (스프레드시트 · 검색 + 정렬) ──────────────────
-  if (mode === "raw") {
-    return <RawVendorsView vendors={vendors} loading={loading} onReload={loadVendors} onEditRequest={onEditRequest} />;
-  }
-
   return (
-    <div className="flex flex-col lg:flex-row gap-4 h-[600px]">
-      {/* ── 좌: 검색 + 리스트 ─────────────────────────── */}
-      <div className="w-full lg:w-72 flex-shrink-0 flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="p-3 border-b border-gray-200 space-y-2">
-          <div className="relative">
-            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="회사명 · 사업자번호"
-              className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400"
-            />
-          </div>
-          <label className="flex items-center gap-1.5 text-[11px] text-gray-600 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={filterMissingBiz}
-              onChange={e => setFilterMissingBiz(e.target.checked)}
-              className="w-3.5 h-3.5 accent-emerald-500"
-            />
-            사업자번호 미등록만 <span className="text-rose-500 font-bold">({missingCount})</span>
-          </label>
-          <div className="text-[10px] text-gray-400">
-            총 {vendors.length}개 · 결과 {filtered.length}개
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-8 text-gray-400 text-xs">
-              <Loader2 size={14} className="animate-spin mr-2" />불러오는 중...
+    <div className={panel ? "relative bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden min-h-0 flex-1" : "fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"} onClick={panel ? undefined : onClose}>
+      <div
+        className={panel ? "relative flex flex-col flex-1 min-h-0 overflow-hidden" : "relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[95vh] md:h-auto md:min-h-[85vh] md:max-h-[92vh] flex flex-col overflow-hidden"}
+        onClick={panel ? undefined : (e => e.stopPropagation())}
+      >
+        {/* 헤더 */}
+        <div className="flex items-start justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-gradient-to-r from-teal-50 to-emerald-50">
+          <div className="flex items-center gap-2 min-w-0">
+            <Building2 size={22} className="text-teal-600 shrink-0" />
+            <div className="min-w-0">
+              <div className="text-base sm:text-lg font-black text-slate-800 truncate">{vendor.company_name}</div>
+              <div className="text-[11px] text-slate-500 font-mono">
+                {vendor.business_number ? formatBizNum(vendor.business_number) : <span className="text-rose-500 italic">사업자번호 없음</span>}
+                {vendor.created_at && <span className="ml-2 text-slate-400">· 등록 {String(vendor.created_at).slice(0, 10)}</span>}
+              </div>
             </div>
-          ) : filtered.length === 0 ? (
-            <div className="text-center py-8 text-gray-400 text-xs">결과 없음</div>
-          ) : (
-            <ul className="divide-y divide-gray-100">
-              {filtered.map(v => {
-                const active = v.id === selectedId;
-                return (
-                  <li key={v.id}>
-                    <button
-                      onClick={() => handleSelect(v)}
-                      className={`w-full text-left px-3 py-2 hover:bg-emerald-50 transition ${active ? "bg-emerald-100/70 border-l-2 border-emerald-500" : ""}`}
-                    >
-                      <div className="text-xs font-semibold text-gray-800 truncate">{v.company_name}</div>
-                      <div className="text-[10px] text-gray-500 flex items-center gap-1.5 mt-0.5">
-                        {v.business_number ? (
-                          <span className="font-mono">{formatBizNum(v.business_number)}</span>
-                        ) : (
-                          <span className="text-rose-500 font-semibold">사업자번호 없음</span>
-                        )}
-                        {v.category && <span>· {v.category}</span>}
-                      </div>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0 ml-2 transition">
+            <X size={16} />
+          </button>
         </div>
-      </div>
 
-      {/* ── 우: 상세 편집 ─────────────────────────── */}
-      <div className="flex-1 bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col">
-        {!selected || !draft ? (
-          <div className="flex-1 flex flex-col items-center justify-center text-gray-400 text-sm gap-2">
-            <Building2 size={40} className="opacity-40" />
-            <p>좌측 리스트에서 공급사를 선택하세요</p>
-          </div>
-        ) : (
-          <>
-            <div className="p-4 border-b border-gray-200">
-              <div className="text-lg font-bold text-gray-800">{selected.company_name}</div>
-              <div className="text-[11px] text-gray-500 mt-0.5">
-                ID: {selected.id}
-                {selected.latestBalance?.balance != null && (
-                  <span className="ml-3">
-                    · 잔고: <span className="font-semibold text-emerald-700">{selected.latestBalance.balance.toLocaleString()}원</span>
-                    {selected.latestBalance.invoice_date && <span className="text-gray-400"> ({selected.latestBalance.invoice_date})</span>}
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              <Field label="회사명 *">
-                <input type="text" value={draft.company_name} onChange={e => setDraft({ ...draft, company_name: e.target.value })} className={inputCls} />
-              </Field>
+        {/* 본문 · 반응형 2단 (< lg 1단 · lg+ 2단 · 태블릿 답답함 해소) */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+            {/* Left · 편집 필드 */}
+            <div className="space-y-2.5">
+              <SectionTitle icon="📝" title="기본 정보" />
+              <Field label="회사명 *"><input type="text" value={draft.company_name} onChange={e => setDraft({ ...draft, company_name: e.target.value })} className={inputCls} /></Field>
               <Field label="사업자번호 (10자리)">
-                <input
-                  type="text"
-                  value={draft.business_number}
-                  onChange={e => setDraft({ ...draft, business_number: normalizeBizNum(e.target.value) })}
-                  placeholder="0000000000"
-                  className={`${inputCls} font-mono`}
-                  maxLength={10}
-                />
+                <input type="text" value={draft.business_number} onChange={e => setDraft({ ...draft, business_number: normalizeBizNum(e.target.value) })} placeholder="0000000000" className={`${inputCls} font-mono`} maxLength={10} />
                 {draft.business_number && draft.business_number.length === 10 && (
-                  <div className="text-[10px] text-gray-500 mt-1">표시: {formatBizNum(draft.business_number)}</div>
+                  <div className="text-[10px] text-slate-500 mt-1">표시: {formatBizNum(draft.business_number)}</div>
                 )}
               </Field>
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="담당자">
-                  <input type="text" value={draft.contact_name} onChange={e => setDraft({ ...draft, contact_name: e.target.value })} className={inputCls} />
-                </Field>
-                <Field label="전화">
-                  <input type="text" value={draft.phone} onChange={e => setDraft({ ...draft, phone: e.target.value })} className={inputCls} />
-                </Field>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="담당자"><input type="text" value={draft.contact_name} onChange={e => setDraft({ ...draft, contact_name: e.target.value })} className={inputCls} /></Field>
+                <Field label="전화"><input type="text" value={draft.phone} onChange={e => setDraft({ ...draft, phone: e.target.value })} className={inputCls} /></Field>
               </div>
-              <Field label="이메일">
-                <input type="email" value={draft.email} onChange={e => setDraft({ ...draft, email: e.target.value })} placeholder="example@company.com" className={inputCls} />
-              </Field>
-              <Field label="카테고리">
-                <input type="text" value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })} placeholder="제약 · 의약외품 · 화장품 등" className={inputCls} />
-              </Field>
-              <Field label="비고">
-                <textarea value={draft.note} onChange={e => setDraft({ ...draft, note: e.target.value })} className={`${inputCls} h-20 resize-none`} />
-              </Field>
-              {/* 읽기 전용 · DB 메타데이터 */}
-              {(selected.created_at || selected.balanceConfig || selected.latestBalance) && (
-                <div className="pt-2 border-t border-slate-100 space-y-1 text-[11px] text-slate-500">
-                  {selected.created_at && (
-                    <div>등록일: <span className="font-mono text-slate-700">{new Date(selected.created_at).toLocaleDateString("ko-KR")}</span></div>
-                  )}
-                  {selected.balanceConfig?.balance_field && (
-                    <div>잔고 필드: <span className="font-mono text-slate-700">{selected.balanceConfig.balance_field}</span></div>
-                  )}
-                  {selected.latestBalance?.balance != null && (
-                    <div>최근 잔고: <span className="font-mono font-bold text-emerald-700">{selected.latestBalance.balance.toLocaleString()}원</span>
-                      {selected.latestBalance.invoice_date && <span className="text-slate-400 ml-1">({selected.latestBalance.invoice_date})</span>}
-                    </div>
-                  )}
-                </div>
-              )}
+              <Field label="이메일"><input type="email" value={draft.email} onChange={e => setDraft({ ...draft, email: e.target.value })} placeholder="example@company.com" className={inputCls} /></Field>
+              <Field label="카테고리"><input type="text" value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })} placeholder="제약 · 의약외품 · 화장품 등" className={inputCls} /></Field>
+              <Field label="비고"><textarea value={draft.note} onChange={e => setDraft({ ...draft, note: e.target.value })} className={`${inputCls} h-16 resize-none`} /></Field>
             </div>
-            <div className="p-3 border-t border-gray-200 bg-gray-50 flex items-center gap-2">
-              {saveMsg && (
-                <span className={`text-xs font-medium ${saveMsg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
-                  {saveMsg.type === "ok" ? "✓" : "✗"} {saveMsg.text}
-                </span>
-              )}
-              <div className="flex-1" />
-              <button
-                onClick={handleCancel}
-                disabled={!isDirty || saving}
-                className="inline-flex items-center gap-1 text-xs px-3 py-1.5 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-gray-700 font-medium"
-              >
-                <X size={12} />취소
-              </button>
-              <button
-                onClick={handleSave}
-                disabled={!isDirty || saving}
-                className="inline-flex items-center gap-1 text-xs px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold rounded-lg"
-              >
-                {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-                확인
-              </button>
+
+            {/* Right · 통계 · 매입 이력 */}
+            <div className="space-y-3">
+              <SectionTitle icon="📊" title="공급 요약" />
+              {/* 4-way stat cards */}
+              <div className="grid grid-cols-2 gap-2">
+                <StatCard icon={<DollarSign size={12} />} color="emerald" label="최근 잔고" value={vendor.latestBalance?.balance != null ? vendor.latestBalance.balance.toLocaleString() + "원" : "-"} sub={vendor.latestBalance?.invoice_date ?? undefined} />
+                <StatCard icon={<TrendingUp size={12} />} color="indigo" label="총 매입액" value={summary ? fmtWon(summary.totalAmount) : "-"} sub={summary ? `${summary.count.toLocaleString()}건` : undefined} />
+                <StatCard icon={<Package size={12} />} color="violet" label="매입 상품" value={summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"} sub={summary?.totalQty ? `총 ${summary.totalQty.toLocaleString()}개` : undefined} />
+                <StatCard icon={<Calendar size={12} />} color="rose" label="최근 매입일" value={summary?.latestDate ?? "-"} sub={summary?.earliestDate ? `첫 ${summary.earliestDate}` : undefined} />
+              </div>
+
+              <SectionTitle icon="📦" title="최근 매입 이력" hint={purchLoading ? "로딩..." : `${purchases.length}건`} />
+              <div className="rounded-lg border border-slate-200 overflow-auto max-h-[300px] bg-slate-50/40">
+                {purchLoading ? (
+                  <div className="p-4 text-center text-slate-400 text-xs"><Loader2 size={14} className="animate-spin inline mr-1" />로딩중...</div>
+                ) : purchases.length === 0 ? (
+                  <div className="p-4 text-center text-slate-400 text-xs">매입 이력 없음</div>
+                ) : (
+                  <table className="w-full text-[11px]">
+                    <thead className="sticky top-0 bg-slate-100 text-slate-500 text-[9px] uppercase">
+                      <tr>
+                        <th className="text-left px-2 py-1 w-16">일자</th>
+                        <th className="text-left px-2 py-1">상품</th>
+                        <th className="text-right px-2 py-1 w-10">수량</th>
+                        <th className="text-right px-2 py-1 w-16">금액</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {purchases.map((p, i) => (
+                        <tr key={p.id ?? i} className="hover:bg-white transition align-top">
+                          <td className="px-2 py-1 font-mono text-slate-500 whitespace-nowrap">{String(p.purchase_date).slice(5)}</td>
+                          <td className="px-2 py-1 text-slate-700 break-words leading-tight">{p.product_name}</td>
+                          <td className="text-right px-2 py-1 font-mono text-slate-700">{Number(p.quantity ?? 0).toLocaleString()}</td>
+                          <td className="text-right px-2 py-1 font-mono font-bold text-emerald-700 whitespace-nowrap">{Number(p.total ?? p.amount ?? 0).toLocaleString()}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
             </div>
-          </>
-        )}
+          </div>
+        </div>
+
+        {/* 푸터 · 저장/취소 */}
+        <div className="px-4 sm:px-6 py-3 border-t border-slate-200 bg-slate-50 flex items-center gap-2 flex-wrap">
+          {saveMsg && (
+            <span className={`text-xs font-bold ${saveMsg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
+              {saveMsg.type === "ok" ? "✓" : "✗"} {saveMsg.text}
+            </span>
+          )}
+          <div className="flex-1" />
+          <button onClick={onClose} className="text-xs px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg text-slate-700 font-bold transition">닫기</button>
+          <button onClick={handleSave} disabled={!isDirty || saving}
+            className="inline-flex items-center gap-1 text-xs px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black rounded-lg transition shadow-sm">
+            {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}저장
+          </button>
+        </div>
       </div>
     </div>
   );
 };
 
-const inputCls = "w-full px-2.5 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400";
+// ─── 공용 UI 헬퍼 ───────────────────────────────────────────
+const inputCls = "w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white";
 
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <label className="block">
-    <div className="text-[11px] font-semibold text-gray-600 mb-1">{label}</div>
+    <div className="text-[11px] font-black text-slate-600 mb-0.5">{label}</div>
     {children}
   </label>
 );
 
-// ═══════════════════════════════════════════════════════════════════════
-// 원본 데이터 뷰 (재고관리 원본데이터 스타일 · 스프레드시트)
-// ═══════════════════════════════════════════════════════════════════════
-type RawSortKey = "company_name" | "business_number" | "contact_name" | "phone" | "email" | "category" | "created_at";
+const SectionTitle: React.FC<{ icon: string; title: string; hint?: string }> = ({ icon, title, hint }) => (
+  <div className="flex items-center gap-1.5 pb-1 border-b border-slate-100">
+    <span className="text-sm">{icon}</span>
+    <span className="text-[12px] font-black text-slate-700">{title}</span>
+    {hint && <span className="ml-auto text-[10px] text-slate-400 font-mono">{hint}</span>}
+  </div>
+);
 
-const RawVendorsView: React.FC<{ vendors: Vendor[]; loading: boolean; onReload: () => void; onEditRequest?: (id: number) => void }> = ({ vendors, loading, onReload, onEditRequest }) => {
-  const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<RawSortKey>("company_name");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase().replace(/[^0-9가-힣a-z]/g, "");
-    const base = !q ? vendors : vendors.filter(v => {
-      const name = (v.company_name ?? "").toLowerCase().replace(/[^0-9가-힣a-z]/g, "");
-      const bn = (v.business_number ?? "").replace(/[^0-9]/g, "");
-      const contact = (v.contact_name ?? "").toLowerCase().replace(/[^0-9가-힣a-z]/g, "");
-      const phone = (v.phone ?? "").replace(/[^0-9]/g, "");
-      const email = (v.email ?? "").toLowerCase();
-      return name.includes(q) || bn.includes(q) || contact.includes(q) || phone.includes(q) || email.includes(q);
-    });
-    return [...base].sort((a, b) => {
-      const va = String((a as any)[sortKey] ?? "");
-      const vb = String((b as any)[sortKey] ?? "");
-      return sortDir === "asc" ? va.localeCompare(vb, "ko") : vb.localeCompare(va, "ko");
-    });
-  }, [vendors, search, sortKey, sortDir]);
-
-  const handleSort = (k: RawSortKey) => {
-    if (sortKey === k) setSortDir(d => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(k); setSortDir("asc"); }
+const StatCard: React.FC<{ icon: React.ReactNode; color: "emerald" | "indigo" | "violet" | "rose"; label: string; value: string; sub?: string }> = ({ icon, color, label, value, sub }) => {
+  const c: Record<string, string> = {
+    emerald: "from-emerald-50 to-emerald-100/60 border-emerald-200 text-emerald-800",
+    indigo:  "from-indigo-50 to-indigo-100/60 border-indigo-200 text-indigo-800",
+    violet:  "from-violet-50 to-violet-100/60 border-violet-200 text-violet-800",
+    rose:    "from-rose-50 to-rose-100/60 border-rose-200 text-rose-800",
   };
-  const arrow = (k: RawSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
-
-  const downloadCsv = () => {
-    const headers = ["id", "company_name", "business_number", "contact_name", "phone", "email", "category", "note", "created_at"];
-    const esc = (v: any) => {
-      if (v == null) return "";
-      const s = String(v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const csv = [
-      headers.join(","),
-      ...filtered.map(v => headers.map(h => esc((v as any)[h])).join(",")),
-    ].join("\n");
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `vendors_${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
-    <div className="flex flex-col gap-3 min-h-0 flex-1">
-      <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl border border-slate-200 shadow-sm p-3">
-        <div className="relative min-w-[240px]">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="회사명 · 사업자번호 · 담당자 · 전화 · 이메일 검색"
-            className="pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 w-full sm:w-96"
-          />
-        </div>
-        <span className="text-[11px] font-mono text-slate-500">
-          {loading ? <><Loader2 size={11} className="inline animate-spin mr-1" />로딩...</> : `${filtered.length} / ${vendors.length}건`}
-        </span>
-        <div className="ml-auto flex items-center gap-1.5">
-          <button onClick={onReload} disabled={loading}
-            className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 rounded-lg font-bold text-slate-600 cursor-pointer transition">
-            새로고침
-          </button>
-          <button onClick={downloadCsv}
-            className="inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 bg-teal-500 hover:bg-teal-600 text-white rounded-lg font-bold cursor-pointer transition shadow-sm">
-            CSV 다운로드
-          </button>
-        </div>
+    <div className={`bg-gradient-to-br ${c[color]} border rounded-lg px-2.5 py-2 shadow-sm`}>
+      <div className="flex items-center gap-1 text-[10px] font-black opacity-70 uppercase tracking-wider">
+        {icon}<span>{label}</span>
       </div>
-      <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
-        <table className="w-full text-xs">
-          <thead className="sticky top-0 bg-white z-10 border-b border-slate-200 shadow-sm">
-            <tr className="text-slate-500 uppercase text-[10px]">
-              <th className="text-left px-3 py-2 w-10">#</th>
-              {([
-                { k: "company_name" as const,    label: "회사명",       w: "min-w-[180px]" },
-                { k: "business_number" as const, label: "사업자번호",   w: "w-32" },
-                { k: "contact_name" as const,    label: "담당자",       w: "w-24" },
-                { k: "phone" as const,           label: "전화",         w: "w-28" },
-                { k: "email" as const,           label: "이메일",       w: "w-52" },
-                { k: "category" as const,        label: "분류",         w: "w-24" },
-                { k: "created_at" as const,      label: "등록일",       w: "w-28" },
-              ]).map(col => (
-                <th key={col.k} onClick={() => handleSort(col.k)}
-                  className={`text-left px-3 py-2 ${col.w} cursor-pointer select-none hover:bg-teal-50 transition ${sortKey === col.k ? "text-teal-700 font-black" : ""}`}>
-                  {col.label}{arrow(col.k)}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
-            {filtered.length === 0 ? (
-              <tr><td colSpan={8} className="text-center py-10 text-slate-400 font-semibold">
-                {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 데이터 없음"}
-              </td></tr>
-            ) : filtered.map((v, i) => (
-              <tr key={v.id}
-                onClick={() => onEditRequest?.(v.id)}
-                className={`transition ${onEditRequest ? "hover:bg-teal-50 cursor-pointer" : "hover:bg-teal-50/30"}`}
-                title={onEditRequest ? "클릭하여 편집 · 대시보드로 이동" : undefined}>
-                <td className="px-3 py-1.5 text-slate-400 font-mono">{i + 1}</td>
-                <td className="px-3 py-1.5 font-bold text-slate-800 flex items-center gap-1">
-                  <Building2 size={11} className="text-teal-500 shrink-0" />
-                  <span className={`truncate ${onEditRequest ? "underline decoration-dotted decoration-teal-400 underline-offset-2" : ""}`} title={v.company_name}>{v.company_name}</span>
-                </td>
-                <td className="px-3 py-1.5 font-mono text-slate-600">{v.business_number ? formatBizNum(v.business_number) : <span className="text-rose-400 italic">없음</span>}</td>
-                <td className="px-3 py-1.5 text-slate-700">{v.contact_name ?? "-"}</td>
-                <td className="px-3 py-1.5 font-mono text-slate-600">{v.phone ?? "-"}</td>
-                <td className="px-3 py-1.5 text-slate-600 truncate" title={v.email ?? undefined}>{v.email ?? "-"}</td>
-                <td className="px-3 py-1.5 text-slate-500">{v.category ?? "-"}</td>
-                <td className="px-3 py-1.5 font-mono text-[10px] text-slate-400">{v.created_at ? String(v.created_at).slice(0, 10) : "-"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <div className="text-sm sm:text-base font-black mt-0.5 font-mono truncate" title={value}>{value}</div>
+      {sub && <div className="text-[9px] font-semibold opacity-60 mt-0.5 truncate" title={sub}>{sub}</div>}
     </div>
   );
 };

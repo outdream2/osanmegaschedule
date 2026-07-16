@@ -194,22 +194,26 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
           >미분류</button>
         </div>
 
-        {/* 목록 */}
-        {loading ? (
-          <div className="flex justify-center py-16"><Loader2 className="animate-spin text-orange-400" size={24} /></div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-2">
-            <StickyNote size={32} className="text-slate-300" />
-            <span className="text-xs">등록된 글이 없습니다</span>
+        {/* 목록 · 재고관리 스타일 통일 (2026-07-16) */}
+        {loading && filtered.length > 0 && (
+          <div className="flex items-center justify-center gap-1.5 text-[10px] text-orange-600 font-bold py-1.5 mb-1 bg-orange-50 border border-orange-200 rounded-md sticky top-0 z-10">
+            <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
           </div>
+        )}
+        {loading && filtered.length === 0 ? (
+          <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+        ) : !loading && filtered.length === 0 ? (
+          <div className="text-center text-[11px] text-slate-300 py-6">등록된 글 없음</div>
         ) : (
-          <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+          <div className={`bg-white rounded-xl border border-slate-200 p-4 shadow-sm ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             {/* 이슈리스트 제목 */}
-            <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-100 bg-slate-50/60">
-              <span className="text-[11px] font-black text-slate-600">이슈리스트</span>
-              <span className="text-[10px] font-mono text-slate-400">({filtered.length}건)</span>
-              <span className="ml-auto text-[10px] text-slate-400 font-semibold hidden sm:inline">💡 항목 클릭 시 상세내용 표시</span>
-              <span className="ml-auto text-[10px] text-slate-400 font-semibold sm:hidden">💡 클릭 → 상세</span>
+            <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+              <div className="flex items-center gap-1.5">
+                <StickyNote size={14} className="text-orange-600" />
+                <span className="text-sm font-black text-slate-700">이슈리스트</span>
+                <span className="text-[10px] font-mono text-slate-400">({filtered.length}건)</span>
+              </div>
+              <span className="text-[10px] text-slate-400 font-semibold">💡 항목 클릭 → 상세</span>
             </div>
             <div className="divide-y divide-slate-100">
             {filtered.map((p: BoardPost) => {

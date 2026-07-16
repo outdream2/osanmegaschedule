@@ -647,7 +647,7 @@ const StaffManagePage: React.FC = () => {
   return (
     <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-0 min-h-0">
       {/* 페이지 헤더 */}
-      <div className="bg-white border border-slate-200 rounded-t-2xl border-b-0 px-4 py-3 flex items-center justify-between flex-wrap gap-2">
+      <div className="bg-white border border-slate-200 rounded-t-xl border-b-0 px-4 py-3 flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Users size={17} className="text-indigo-500" />
           <h2 className="text-sm font-black text-slate-800">직원관리</h2>
@@ -675,7 +675,7 @@ const StaffManagePage: React.FC = () => {
 
       {/* 마스터-디테일 */}
       <div
-        className="flex flex-col lg:flex-row flex-1 bg-white border border-slate-200 rounded-b-2xl shadow-sm overflow-hidden"
+        className="flex flex-col lg:flex-row flex-1 bg-white border border-slate-200 rounded-b-xl shadow-sm overflow-hidden"
         style={{ minHeight: "calc(100vh - 160px)" }}
       >
         {/* ════ 좌측: 슬림 원라인 리스트 ════ */}
@@ -719,7 +719,12 @@ const StaffManagePage: React.FC = () => {
 
           {/* 직원 목록 */}
           <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
-            {loading ? (
+            {loading && filtered.length > 0 && (
+              <div className="flex items-center justify-center gap-1.5 text-[10px] text-indigo-600 font-bold py-1.5 bg-indigo-50 border-b border-indigo-200 sticky top-0 z-10">
+                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+              </div>
+            )}
+            {loading && filtered.length === 0 ? (
               <div className="flex justify-center py-10">
                 <Loader2 size={18} className="animate-spin text-indigo-400" />
               </div>
@@ -728,10 +733,12 @@ const StaffManagePage: React.FC = () => {
                 {error}
                 <button onClick={loadEmployees} className="ml-2 underline cursor-pointer">재시도</button>
               </div>
-            ) : filtered.length === 0 ? (
+            ) : !loading && filtered.length === 0 ? (
               <p className="text-center py-10 text-slate-300 text-xs">해당 조건의 직원이 없습니다</p>
             ) : (
-              filtered.map((emp) => <ListRow key={emp.id} emp={emp} />)
+              <div className={loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
+                {filtered.map((emp) => <ListRow key={emp.id} emp={emp} />)}
+              </div>
             )}
           </div>
 

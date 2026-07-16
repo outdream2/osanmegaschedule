@@ -170,7 +170,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const Icon = tab.icon;
     const isActive = tab.key === activePage;
     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
-    const base = "flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-[13.5px] font-medium border transition-all whitespace-nowrap";
+    // 태블릿(md 이하)에서 tab 축약 · 데스크탑(lg+) 에서 넉넉하게
+    const base = "flex items-center gap-1 md:gap-1.5 px-2 lg:px-3.5 py-2 rounded-lg text-[11px] lg:text-[13.5px] font-medium border transition-all whitespace-nowrap";
     const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key);
     if (isActive) {
       return (
@@ -269,7 +270,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             </span>
           </button>
 
-          {/* Desktop nav tabs — 가로 스크롤 (오버플로 "..." 없이 모두 노출) */}
+          {/* Desktop/태블릿 nav tabs — sm(640px)+ 노출 · 태블릿에서도 PC 공통헤더 사용 (2026-07-16) */}
           <div className="hidden sm:flex items-center gap-1 ml-3 min-w-0 overflow-x-auto scrollbar-none">
             {visibleTabs.map(renderDesktopTab)}
           </div>
@@ -310,7 +311,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         </div>
       </div>
 
-      {/* ── Mobile tab row: 넘치는 탭 삼선 드롭다운 (2026-07-15) ── */}
+      {/* ── Mobile 전용 탭 행: 태블릿·PC 는 상단 탭 사용 (2026-07-16) ── */}
       {visibleTabs.length > 1 && (
         <div className="sm:hidden px-4 pb-2">
           <div ref={mobileContainerRef} className="flex items-stretch gap-1 bg-gray-100 rounded-xl px-2 py-1 relative">

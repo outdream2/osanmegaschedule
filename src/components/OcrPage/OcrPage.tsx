@@ -203,8 +203,8 @@ const BalanceConfigTab: React.FC<BalanceConfigTabProps> = ({ pages, config, onCo
 
   return (
     <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 flex flex-col gap-4">
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 bg-orange-50 flex items-center gap-2">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 bg-orange-50 flex items-center gap-2">
           <span className="text-xs font-bold text-orange-800">잔고항목 지정</span>
           <span className="text-[11px] text-orange-500">공급처별로 잔고로 표시할 항목을 지정하세요. 확정표에 주황색으로 표시됩니다.</span>
         </div>
@@ -342,8 +342,8 @@ const ConfirmedRecordsTab: React.FC = () => {
 
   return (
     <div className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 py-4 flex flex-col gap-3">
-      <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 bg-rose-50 flex items-center gap-2 flex-wrap">
+      <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+        <div className="px-4 py-3 border-b border-slate-100 bg-rose-50 flex items-center gap-2 flex-wrap">
           <FileText size={13} className="text-rose-600" />
           <span className="text-xs font-bold text-rose-800">거래명세서 조회</span>
           <span className="text-[11px] text-rose-500">저장된 확정 항목을 조회·삭제합니다{dateFilter ? "" : " (기본: 최근 30일)"}</span>
@@ -357,7 +357,7 @@ const ConfirmedRecordsTab: React.FC = () => {
           </button>
         </div>
 
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex flex-wrap gap-2 items-center">
+        <div className="px-4 py-3 border-b border-slate-100 bg-slate-50 flex flex-wrap gap-2 items-center">
           <label className="flex items-center gap-1.5 text-[11px] font-bold text-gray-600">
             날짜
             <input
@@ -413,16 +413,21 @@ const ConfirmedRecordsTab: React.FC = () => {
           </div>
         )}
 
-        {loading ? (
+        {loading && items.length > 0 && (
+          <div className="flex items-center justify-center gap-1.5 text-[10px] text-rose-600 font-bold py-1.5 bg-rose-50 border-b border-rose-200 sticky top-0 z-10">
+            <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+          </div>
+        )}
+        {loading && items.length === 0 ? (
           <div className="px-4 py-10 flex items-center justify-center text-gray-400 text-xs gap-2">
             <Loader2 size={14} className="animate-spin" />불러오는 중...
           </div>
-        ) : items.length === 0 ? (
+        ) : !loading && items.length === 0 ? (
           <div className="px-4 py-10 text-center text-gray-400 text-xs">
             저장된 항목이 없습니다.
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className={`overflow-x-auto ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-rose-50 border-b border-rose-100">
@@ -491,7 +496,7 @@ const ConfirmedRecordsTab: React.FC = () => {
           onClick={() => setBalanceHistory(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl border border-gray-100 w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
             onClick={e => e.stopPropagation()}
           >
             <div className="px-4 py-3 border-b border-gray-100 bg-orange-50 flex items-center justify-between shrink-0">
@@ -964,7 +969,7 @@ return (
       /* ── 동의어 관리 탭 ── */
       <div className="flex-1 max-w-5xl mx-auto w-full px-4 py-4 flex flex-col gap-4">
         {/* 동의어 서브 탭 */}
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
           <div className="flex items-center gap-1 px-4 py-2 border-b border-slate-100/80">
             <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
             <button onClick={() => setSynTab("product")} className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${synTab === "product" ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm" : "text-slate-500 hover:text-slate-800 hover:bg-white/50"}`}>
@@ -1006,9 +1011,9 @@ return (
 
         {/* 리스트 테이블 */}
         {synTab === "product" ? (
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
             {/* 상품명 / 공급사명 뷰 토글 */}
-            <div className="flex items-center gap-1 px-3 py-2 border-b border-gray-100 bg-gray-50">
+            <div className="flex items-center gap-1 px-3 py-2 border-b border-slate-100 bg-slate-50">
               <button
                 onClick={() => setProdListView("prodname")}
                 className={`px-3 py-1 text-[11px] font-bold rounded-lg transition cursor-pointer ${prodListView === "prodname" ? "bg-indigo-100 text-indigo-700" : "text-gray-400 hover:text-gray-700"}`}
@@ -1107,7 +1112,7 @@ return (
             </table>
           </div>
         ) : (
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-sky-50 border-b border-sky-100">
@@ -1158,10 +1163,10 @@ return (
       </div>
     ) : (
     /* ── OCR 추출 탭 ── */
-    <div className="flex-1 flex flex-col items-center px-4 py-6 gap-5 max-w-5xl mx-auto w-full">
+    <div className="flex-1 flex flex-col px-4 py-6 gap-5 max-w-none w-full">
 
       {/* 파일 업로드 + 이미지 뷰어 */}
-      <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden">
+      <div className="w-full bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
 
         {pageImages.length === 0 ? (
           <div
@@ -1278,7 +1283,7 @@ return (
           )}
 
           {/* OCR 엔진 선택 · 2-way (AI 모델 · Gemini) */}
-          <div className="w-full bg-white border border-gray-200 rounded-2xl px-3 py-2 flex flex-col gap-1.5">
+          <div className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 flex flex-col gap-1.5 shadow-sm">
             <div className="flex items-center gap-1.5 text-[11px] font-black text-slate-600">
               <span>OCR 엔진</span>
               <span className="text-[10px] font-mono text-slate-400">
@@ -1333,8 +1338,8 @@ return (
       )}
 
       {extracting && pageCount > 0 && (
-        <div className="w-full bg-white border border-gray-200 rounded-2xl px-4 py-3">
-          <div className="w-full bg-gray-100 rounded-full h-1.5">
+        <div className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
+          <div className="w-full bg-slate-100 rounded-full h-1.5">
             <div className="h-1.5 rounded-full transition-all bg-amber-500"
               style={{ width: `${(processed / pageCount) * 100}%` }} />
           </div>

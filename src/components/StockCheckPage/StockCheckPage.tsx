@@ -161,8 +161,14 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
             ))}
         </div>
 
-        {/* Loading */}
-        {loading && (
+        {/* Loading · 배너+dim 패턴 */}
+        {loading && results && results.length > 0 && (
+          <div className="flex items-center justify-center gap-1.5 text-[10px] text-indigo-600 font-bold py-1.5 mb-1 bg-indigo-50 border border-indigo-200 rounded-md sticky top-0 z-10">
+            <div className="w-2.5 h-2.5 rounded-full border-2 border-indigo-200 border-t-indigo-500 animate-spin shrink-0" />
+            검색 중...
+          </div>
+        )}
+        {loading && (!results || results.length === 0) && (
           <div className="flex items-center gap-2 py-4 px-1 text-slate-400 text-xs font-medium">
             <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-200 border-t-indigo-500 animate-spin shrink-0" />
             검색 중...
@@ -186,8 +192,8 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         )}
 
         {/* Results list */}
-        {!loading && results && results.length > 0 && (
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+        {results && results.length > 0 && (
+          <div className={`bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             {/* 결과 수 표시: 직원(로그인)만 · 일반 사용자는 숨김 */}
             {isLoggedIn && (
               <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">

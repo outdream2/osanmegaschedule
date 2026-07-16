@@ -966,7 +966,9 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                         draggable
                         onDragStart={(e) => handleDragStart(e, String(item.employee.id))}
                         className={`p-2.5 rounded-xl border flex items-center justify-between transition cursor-grab active:cursor-grabbing hover:shadow-xs hover:border-slate-350 bg-white ${
-                          isPlaced ? "border-slate-200" : "border-slate-300 ring-2 ring-blue-500/10"
+                          item.employee.position === "약사" || item.employee.position.startsWith("약사")
+                            ? "border-emerald-400 ring-2 ring-emerald-500 ring-offset-1"
+                            : isPlaced ? "border-slate-200" : "border-slate-300 ring-2 ring-blue-500/10"
                         }`}
                       >
                         <div className="flex items-center gap-2">

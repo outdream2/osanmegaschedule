@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Trash2, Plus, BookOpen, Building2, RefreshCw, Pencil, Check, X } from "lucide-react";
+import { Trash2, Plus, BookOpen, Building2, RefreshCw, Pencil, Check, X, Loader2 } from "lucide-react";
 import type { AuthSession } from "../types";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
 
@@ -276,8 +276,26 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
               </button>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-              <table className="w-full text-xs border-collapse">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50/60">
+                <div className="flex items-center gap-1.5">
+                  <BookOpen size={14} className="text-indigo-600" />
+                  <span className="text-sm font-black text-slate-700">상품명 동의어</span>
+                  <span className="text-[10px] font-mono text-slate-400">({productSynonyms.length}건)</span>
+                </div>
+              </div>
+              <div className="max-h-[60vh] overflow-y-auto">
+              {loading && productSynonyms.length > 0 && (
+                <div className="flex items-center justify-center gap-1.5 text-[10px] text-indigo-600 font-bold py-1.5 bg-indigo-50 border-b border-indigo-200 sticky top-0 z-10">
+                  <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+                </div>
+              )}
+              {loading && productSynonyms.length === 0 ? (
+                <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              ) : !loading && productSynonyms.length === 0 ? (
+                <div className="text-center text-[11px] text-slate-300 py-6">등록된 상품명 동의어 없음</div>
+              ) : (
+              <table className={`w-full text-xs border-collapse ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <thead>
                   <tr className="bg-indigo-50 border-b border-indigo-100">
                     <th className="px-3 py-2 text-left font-bold text-indigo-800">OCR 상품명</th>
@@ -288,9 +306,6 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
                   </tr>
                 </thead>
                 <tbody>
-                  {productSynonyms.length === 0 && (
-                    <tr><td colSpan={5} className="px-3 py-8 text-center text-gray-400">등록된 상품명 동의어 없음</td></tr>
-                  )}
                   {productSynonyms.map(s => {
                     const isEditing = editingProdId === s.id && editingProd;
                     return (
@@ -351,6 +366,8 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
                   })}
                 </tbody>
               </table>
+              )}
+              </div>
             </div>
           </>
         ) : (
@@ -384,8 +401,26 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
               </button>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-              <table className="w-full text-xs border-collapse">
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50/60">
+                <div className="flex items-center gap-1.5">
+                  <Building2 size={14} className="text-sky-600" />
+                  <span className="text-sm font-black text-slate-700">공급사 별칭</span>
+                  <span className="text-[10px] font-mono text-slate-400">({supplierAliases.length}건)</span>
+                </div>
+              </div>
+              <div className="max-h-[60vh] overflow-y-auto">
+              {loading && supplierAliases.length > 0 && (
+                <div className="flex items-center justify-center gap-1.5 text-[10px] text-sky-600 font-bold py-1.5 bg-sky-50 border-b border-sky-200 sticky top-0 z-10">
+                  <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+                </div>
+              )}
+              {loading && supplierAliases.length === 0 ? (
+                <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
+              ) : !loading && supplierAliases.length === 0 ? (
+                <div className="text-center text-[11px] text-slate-300 py-6">등록된 공급사 별칭 없음</div>
+              ) : (
+              <table className={`w-full text-xs border-collapse ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <thead>
                   <tr className="bg-sky-50 border-b border-sky-100">
                     <th className="px-3 py-2 text-left font-bold text-sky-800">OCR 공급사명 (별칭)</th>
@@ -448,6 +483,8 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
                   })}
                 </tbody>
               </table>
+              )}
+              </div>
             </div>
           </>
         )}
