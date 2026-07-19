@@ -735,8 +735,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         </div>
         {!lowStockCollapsed && (<>
         {productsLoading && lowStock.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 text-[10px] text-amber-600 font-bold py-1.5 mb-1 bg-amber-50 border border-amber-200 rounded-md sticky top-0 z-10">
-            <Loader2 size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+          <div className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mb-1 bg-sky-50 border border-sky-200 rounded-md shrink-0">
+            <Loader2 size={11} className="animate-spin text-sky-600" /><span className="text-[10px] font-bold text-sky-700">조건 변경 · 새로 불러오는 중...</span>
           </div>
         )}
         {productsLoading && lowStock.length === 0 ? (
@@ -749,17 +749,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             <span className="text-amber-400">▶</span> 발주필요 리스트 <span className="text-slate-400 font-normal">({lowStockFiltered.length}건)</span>
           </p>
           <div className={`max-h-[50vh] overflow-auto relative ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-            <table className="w-full text-xs">
+            <table className="w-full text-[10px] sm:text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
                 <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
-                  <th className="text-left px-1 py-1.5 w-24">공급사</th>
-                  <th className="text-left px-1 py-1.5 w-20">담당자</th>
-                  <th className="text-left px-1 py-1.5 min-w-[120px]">상품명</th>
-                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/60"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[9px] text-slate-400 font-normal">(현재고)</span></div></th>
-                  <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/60 text-violet-500">실재고</th>
-                  <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/60">적정</th>
-                  <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/60 text-rose-500">부족</th>
-                  <th className="text-center px-0.5 py-1.5 w-14">발주</th>
+                  <th className="text-left px-0.5 py-1.5 w-24 cursor-default">공급사</th>
+                  <th className="text-left px-0.5 py-1.5 w-20 cursor-default">담당자</th>
+                  <th className="text-left px-0.5 py-1.5 min-w-[120px] cursor-default">상품명</th>
+                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/40 text-slate-500"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[9px] text-slate-400 font-normal">(현재고)</span></div></th>
+                  <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500">실재고</th>
+                  <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/40 text-slate-500">적정</th>
+                  <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500">부족</th>
+                  <th className="text-center px-0.5 py-1.5 w-14 cursor-default">발주</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -774,8 +774,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   const busy = requestingOrder.has(code);
                   return (
                     <tr key={code} className="hover:bg-orange-50/30 transition">
-                      <td className="px-1 py-1.5 text-[11px] text-sky-600 font-semibold break-words whitespace-normal align-top">{p.supplier || "-"}</td>
-                      <td className="px-1 py-1.5 text-[11px] text-slate-600 break-words whitespace-normal align-top">
+                      <td className="px-0.5 py-1.5 text-[11px] text-sky-600 font-semibold break-words whitespace-normal align-top">{p.supplier || "-"}</td>
+                      <td className="px-0.5 py-1.5 text-[11px] text-slate-600 break-words whitespace-normal align-top">
                         {vendor ? (
                           <button
                             type="button"
@@ -791,10 +791,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           <span>{contactName}</span>
                         )}
                       </td>
-                      <td className="px-1 py-1.5 align-top">
+                      <td className="px-0.5 py-1.5 align-top">
                         <button
                           onClick={() => setNeedPanelProduct({ code, name })}
-                          className="text-left text-[12px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
+                          className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
                           title="상품 상세정보 조회"
                         >{name || "(상품명 없음)"}</button>
                       </td>
@@ -828,7 +828,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   );
                 })}
                 {lowStockFiltered.length === 0 && (
-                  <tr><td colSpan={8} className="p-6 text-center text-slate-300">검색 결과 없음</td></tr>
+                  <tr><td colSpan={8} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
                 )}
               </tbody>
             </table>
@@ -1140,8 +1140,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           </div>
         )}
         {orderLoading && orderReqs.length > 0 && (
-          <div className="flex items-center justify-center gap-1.5 text-[10px] text-red-600 font-bold py-1.5 mb-1 bg-red-50 border border-red-200 rounded-md sticky top-0 z-10">
-            <Loader2 size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+          <div className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mb-1 bg-sky-50 border border-sky-200 rounded-md shrink-0">
+            <Loader2 size={11} className="animate-spin text-sky-600" /><span className="text-[10px] font-bold text-sky-700">조건 변경 · 새로 불러오는 중...</span>
           </div>
         )}
         {orderLoading && orderReqs.length === 0 ? (
@@ -1154,18 +1154,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             <span className="text-red-400">▶</span> 발주요청 리스트 <span className="text-slate-400 font-normal">({orderReqsFiltered.length}건)</span>
           </p>
           <div className={`max-h-[50vh] overflow-auto relative ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-            <table className="w-full text-xs">
+            <table className="w-full text-[10px] sm:text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
                 <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
                   <th className="text-center px-0.5 py-1.5 w-6"></th>
-                  <th className="text-left px-1 py-1.5 w-24">공급사</th>
-                  <th className="text-left px-1 py-1.5 w-20">담당자</th>
-                  <th className="text-left px-1 py-1.5 min-w-[120px]">상품명</th>
-                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/60"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[9px] text-slate-400 font-normal">(현재고)</span></div></th>
-                  <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/60 text-violet-500">실재고</th>
-                  <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/60">적정</th>
-                  <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/60 text-rose-500">부족</th>
-                  <th className="text-center px-0.5 py-1.5 w-14">발주</th>
+                  <th className="text-left px-0.5 py-1.5 w-24 cursor-default">공급사</th>
+                  <th className="text-left px-0.5 py-1.5 w-20 cursor-default">담당자</th>
+                  <th className="text-left px-0.5 py-1.5 min-w-[120px] cursor-default">상품명</th>
+                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/40 text-slate-500"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[9px] text-slate-400 font-normal">(현재고)</span></div></th>
+                  <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500">실재고</th>
+                  <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/40 text-slate-500">적정</th>
+                  <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500">부족</th>
+                  <th className="text-center px-0.5 py-1.5 w-14 cursor-default">발주</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -1205,7 +1205,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           ? <CheckSquare size={13} className="text-rose-500 inline cursor-pointer" />
                           : <Square size={13} className="text-slate-300 hover:text-rose-500 inline cursor-pointer" />}
                       </td>
-                      <td className="px-1 py-1.5 align-top">
+                      <td className="px-0.5 py-1.5 align-top">
                         {(() => {
                           // 공급사 문자열에서 부가 정보(괄호/vat 등)를 다음 줄로 분리
                           const raw = String(supplierDisplay ?? "");
@@ -1225,7 +1225,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           );
                         })()}
                       </td>
-                      <td className="px-1 py-1.5 text-[11px] text-slate-600 break-words whitespace-normal align-top">
+                      <td className="px-0.5 py-1.5 text-[11px] text-slate-600 break-words whitespace-normal align-top">
                         {vendor ? (
                           <button
                             type="button"
@@ -1241,10 +1241,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           <span>{contactName}</span>
                         )}
                       </td>
-                      <td className="px-1 py-1.5 align-top">
+                      <td className="px-0.5 py-1.5 align-top">
                         <button
                           onClick={() => setOrderPanelProduct({ code: r.product_code, name: r.product_name })}
-                          className="text-left text-[12px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
+                          className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
                           title="상품 상세정보 조회"
                         >{r.product_name || "(상품명 없음)"}</button>
                       </td>
@@ -1284,7 +1284,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   );
                 })}
                 {orderReqsFiltered.length === 0 && (
-                  <tr><td colSpan={12} className="p-6 text-center text-slate-300">검색 결과 없음</td></tr>
+                  <tr><td colSpan={12} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
                 )}
               </tbody>
             </table>

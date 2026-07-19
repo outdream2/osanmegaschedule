@@ -347,7 +347,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
         {/* ── 리스트 ──────────────────────────────────────────────────────── */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           {loading && arrivals.length > 0 && (
-            <div className="flex items-center justify-center gap-1.5 text-[10px] text-sky-600 font-bold py-1.5 bg-sky-50 border-b border-sky-200 sticky top-0 z-10">
+            <div className="flex items-center justify-center gap-1.5 text-[10px] text-emerald-600 font-bold py-1.5 bg-emerald-50 border-b border-emerald-100 sticky top-0 z-10">
               <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
             </div>
           )}
@@ -396,7 +396,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
                   </div>
                 ) : (
                   /* ── 일반 행 ── */
-                  <div className="flex items-start gap-2 px-3 py-2.5">
+                  <div className="flex items-start gap-2 px-0.5 py-1.5 hover:bg-orange-50/30 transition">
                     {/* 내용 */}
                     <Package size={13} className="text-sky-400 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">

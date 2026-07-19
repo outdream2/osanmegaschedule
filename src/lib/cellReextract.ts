@@ -105,9 +105,9 @@ export function reextractCellCandidates(args: {
         if (cleaned.length >= 10) continue;
         if (seen.has(n)) continue;
         seen.add(n);
-        // 컬럼 kind 별 우선순위 (금액은 쉼표 포함 우선)
+        // 컬럼 kind 별 우선순위 (단가·금액은 쉼표 포함 우선 — 기능 1)
         let bonus = 0;
-        if (columnKind === "금액" && raw.includes(",")) bonus += 0.1;
+        if ((columnKind === "금액" || columnKind === "단가") && raw.includes(",")) bonus += 0.2;
         if (columnKind === "수량" && n <= 999) bonus += 0.1;
         candidates.push({
           value: n,

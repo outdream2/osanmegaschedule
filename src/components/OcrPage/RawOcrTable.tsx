@@ -69,7 +69,8 @@ interface RawOcrTableProps {
   pages: RawPage[];
   pageImages?: string[]; // dataURL per page (index = page-1)
   rotation?: number;     // CSS rotation applied in PageImageViewer (degrees)
-  onReparsePage?: (pageNum: number, supplier: string) => Promise<any>;
+  // approach (2026-07-19 · 순환 재파싱): default | rearrange | high-contrast | gemini
+  onReparsePage?: (pageNum: number, supplier: string, approach?: "default" | "rearrange" | "high-contrast" | "gemini") => Promise<any>;
   barcodeMatches?: BarcodeProduct[];
   balanceConfig?: Record<string, string>;
   onSaveConfirmed?: (items: ConfirmedItem[]) => Promise<void>;
@@ -599,6 +600,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         if (rng && rawText) {
           const NUM_RE = /\d{1,3}(?:[,.]\d{3})+|\d{4,}|\d+/g;
           const seen = new Set<number>();
+          // 기능 1 (쉼표 우선): 쉼표 포함 여부 추적
+          const commaSet = new Set<number>();
           const cands: number[] = [];
           let m: RegExpExecArray | null;
           while ((m = NUM_RE.exec(rawText))) {
@@ -611,10 +614,78 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             if (sameRowOthers.has(n)) continue; // 같은 행 다른 셀 값 배제
             if (seen.has(n)) continue;
             seen.add(n);
+            if (raw.includes(",")) commaSet.add(n); // 쉼표 원본 추적
             cands.push(n);
           }
+          // 단가 컬럼: 쉼표 포함 원본을 앞으로 정렬 (기능 1)
+          if (colName === "단가" && commaSet.size > 0) {
+            cands.sort((a, b) => {
+              const aC = commaSet.has(a) ? 0 : 1;
+              const bC = commaSet.has(b) ? 0 : 1;
+              return aC - bC;
+            });
+          }
           candidateVals = cands;
-          console.log(`[셀재추출/폴백] ri=${ri} (${colName}) 페이지 전체 rawText 스캔 · ${cands.length}개 후보`);
+          console.log(`[셀재추출/폴백] ri=${ri} (${colName}) 페이지 전체 rawText 스캔 · ${cands.length}개 후보 (쉼표포함: ${commaSet.size}개)`);
+        }
+      }
+
+      // ── 기능 2: 내부 교차검증 정렬 (수량 × 단가 = 금액) ──────────────────
+      //   같은 행의 다른 컬럼 값을 이용해 방정식 만족 후보를 앞으로 정렬
+      //   오차 허용: |q × p − a| ≤ max(1, a × 0.02)
+      if (candidateVals.length > 1 && (colName === "수량" || colName === "단가" || colName === "금액")) {
+        const effRow = effectiveDispRowsRef.current[ri];
+        if (Array.isArray(effRow)) {
+          const qI2 = dispHeaders.indexOf("수량");
+          const pI2 = dispHeaders.indexOf("단가");
+          const aI2 = dispHeaders.indexOf("금액");
+          const parseN = (v: unknown): number | null => {
+            if (v == null) return null;
+            const n = typeof v === "number" ? v : parseFloat(String(v).replace(/[^0-9.]/g, ""));
+            return Number.isFinite(n) && n > 0 ? n : null;
+          };
+          const mathOk2 = (q: number, p: number, a: number) =>
+            Math.abs(q * p - a) <= Math.max(1, a * 0.02);
+
+          const crossSorted = [...candidateVals].sort((av, bv) => {
+            // 각 후보에 대해 방정식 통과 여부 평가
+            let aOk = false, bOk = false;
+            if (colName === "수량") {
+              const p = pI2 >= 0 ? parseN(effRow[pI2]) : null;
+              const a = aI2 >= 0 ? parseN(effRow[aI2]) : null;
+              if (p != null && a != null) { aOk = mathOk2(av, p, a); bOk = mathOk2(bv, p, a); }
+            } else if (colName === "단가") {
+              const q = qI2 >= 0 ? parseN(effRow[qI2]) : null;
+              const a = aI2 >= 0 ? parseN(effRow[aI2]) : null;
+              if (q != null && a != null) { aOk = mathOk2(q, av, a); bOk = mathOk2(q, bv, a); }
+            } else { // 금액
+              const q = qI2 >= 0 ? parseN(effRow[qI2]) : null;
+              const p = pI2 >= 0 ? parseN(effRow[pI2]) : null;
+              if (q != null && p != null) { aOk = mathOk2(q, p, av); bOk = mathOk2(q, p, bv); }
+            }
+            if (aOk && !bOk) return -1;
+            if (!aOk && bOk) return 1;
+            return 0;
+          });
+          const passCount = crossSorted.filter(v => {
+            if (colName === "수량") {
+              const p = pI2 >= 0 ? parseN(effRow[pI2]) : null;
+              const a = aI2 >= 0 ? parseN(effRow[aI2]) : null;
+              return p != null && a != null && mathOk2(v, p, a);
+            } else if (colName === "단가") {
+              const q = qI2 >= 0 ? parseN(effRow[qI2]) : null;
+              const a = aI2 >= 0 ? parseN(effRow[aI2]) : null;
+              return q != null && a != null && mathOk2(q, v, a);
+            } else {
+              const q = qI2 >= 0 ? parseN(effRow[qI2]) : null;
+              const p = pI2 >= 0 ? parseN(effRow[pI2]) : null;
+              return q != null && p != null && mathOk2(q, p, v);
+            }
+          }).length;
+          if (passCount > 0) {
+            candidateVals = crossSorted;
+            console.log(`[셀재추출/교차검증] ri=${ri} (${colName}) 방정식 통과 ${passCount}개 → 앞으로 정렬`);
+          }
         }
       }
 
@@ -899,6 +970,22 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   type ReparseStatus = 'loading' | 'done' | 'error' | 'saved';
   const [reparseStatus,   setReparseStatus  ] = useState<Record<number, ReparseStatus>>({});
   const [reparseSupplier, setReparseSupplier] = useState<Record<number, string>>({});
+  // 페이지별 재추출 시도 카운트 (2026-07-19 · 순환 approach)
+  //   0=default(다음 클릭) → 1=rearrange → 2=high-contrast → 3=gemini → wrap-around
+  const [reparseAttempt, setReparseAttempt] = useState<Record<number, number>>({});
+  const REPARSE_APPROACH_CYCLE = ["default", "rearrange", "high-contrast", "gemini"] as const;
+  const APPROACH_LABEL: Record<string, string> = {
+    "default":       "원본 방식 재추출",
+    "rearrange":     "rawText 재배치 (헤더·컬럼 순서 대안)",
+    "high-contrast": "대비강화 전처리 후 재 OCR",
+    "gemini":        "Gemini API 강제 사용",
+  };
+  const APPROACH_SHORT: Record<string, string> = {
+    "default":       "원본",
+    "rearrange":     "재배치",
+    "high-contrast": "대비강화",
+    "gemini":        "Gemini",
+  };
 
   // ── Feature 3: OCR 추출 후 자동 동의어 1차 보정 ──────────────────────────
   const [autoSynonymMatches, setAutoSynonymMatches] = useState<Record<number, { code: string; name: string }>>({});
@@ -918,15 +1005,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     const nr = [...row];
     if (hasAmtCorr) nr[amtIdx] = amountCorrections[ri];
     if (edits) for (const [ciStr, val] of Object.entries(edits)) nr[Number(ciStr)] = val as string | number;
-    // 금액 무조건 자동 계산 · 사용자 명시 편집만 예외
+    // 금액 = 수량 × 단가 · 항상 우선 (2026-07-19 · OCR 추출 금액보다 계산값 우선)
+    //   수량 또는 단가 없으면 금액도 비움 (계산 불가)
     if (amtIdx >= 0 && _qtyIdxER >= 0 && _priIdxER >= 0) {
-      const amtManuallyEdited = edits && edits[amtIdx] !== undefined;
-      if (!amtManuallyEdited) {
-        const q = parseNumber(nr[_qtyIdxER]);
-        const p = parseNumber(nr[_priIdxER]);
-        if (q > 0 && p > 0) {
-          nr[amtIdx] = Math.round(q * p);
-        }
+      const q = parseNumber(nr[_qtyIdxER]);
+      const p = parseNumber(nr[_priIdxER]);
+      if (q > 0 && p > 0) {
+        nr[amtIdx] = Math.round(q * p);
+      } else {
+        nr[amtIdx] = null as any;
       }
     }
     return nr;
@@ -1037,18 +1124,55 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     });
   }
 
-  // 페이지의 에누리/차액 금액 감지 (summary_rows에서 라벨 매칭)
-  const getPageDiscount = (pn: number): { amount: number; label: string } | null => {
+  // 페이지의 에누리/차액 금액 감지
+  //   1순위: summary_rows 라벨 매칭 (서버 09-totals 이 채운 경우)
+  //   2순위: meta.discount 직접 참조 (KV 파서 · extractDiscount 직접 감지)
+  //   3순위: 교차검증 역산값 (meta.discountCrossCheck.discEst)
+  const getPageDiscount = (pn: number): { amount: number; label: string; isEstimated?: boolean } | null => {
     const pageData = structuredPages.find(p => p.page === pn);
+    // 1순위: summary_rows
     const summary = pageData?.meta?.summary_rows ?? [];
-    // "에누리액", "에누리", "할인액", "할인", "차액", "차감" 등 라벨 매칭
     const discRe = /에누리|할인|차액|차감|DC|D\.C/i;
     const hit = summary.find(s => {
       const norm = String(s.label ?? "").replace(/\s+/g, "");
       return discRe.test(norm);
     });
     if (hit && Math.abs(hit.amount) > 0) {
-      return { amount: Math.abs(hit.amount), label: String(hit.label ?? "에누리").trim() };
+      const label = String(hit.label ?? "에누리").trim();
+      return { amount: Math.abs(hit.amount), label, isEstimated: label.includes("역산") };
+    }
+    // 2순위: meta.discount 직접
+    const metaDisc = pageData?.meta?.discount;
+    if (typeof metaDisc === "number" && metaDisc > 0) {
+      const label = String(pageData?.meta?.discountLabel ?? "에누리").trim();
+      return { amount: metaDisc, label, isEstimated: label.includes("역산") };
+    }
+    return null;
+  };
+
+  // 페이지 교차검증: 공급가액 > 합계 이면서 에누리로 설명 안 되는 경우 경고
+  // 한국 거래명세서 기본 관계식 (세액 별도 항목 명세서):
+  //   합계(T) = 공급가액(A) - 에누리(D)   ∴ A - D == T
+  // 주의: T > A 이면 VAT 포함 합계일 수 있으므로 A > T 인 경우에만 검증
+  // 역산값이 이미 적용된 경우(isEstimated) 서버가 보정한 것이므로 경고 없음
+  const getPageCrossCheckWarning = (pn: number): string | null => {
+    const pageData = structuredPages.find(p => p.page === pn);
+    if (!pageData?.meta) return null;
+    const A = typeof pageData.meta.supplyAmount === "number" ? pageData.meta.supplyAmount : null;
+    const T = typeof pageData.meta.total === "number" ? pageData.meta.total : null;
+    if (A == null || T == null) return null;
+    // T >= A 이면 VAT 포함 합계이므로 이 관계식 미적용
+    if (T >= A) return null;
+    const disc = getPageDiscount(pn);
+    // 역산값이 이미 적용됐으면 경고 없음
+    if (disc?.isEstimated) return null;
+    const D = disc?.amount ?? 0;
+    // A - D == T 이어야 함
+    const diff = Math.abs((A - D) - T);
+    if (diff > Math.max(1, A * 0.01)) {
+      const V = typeof pageData.meta.vat === "number" ? pageData.meta.vat : null;
+      const vatNote = V != null && Math.abs(V - A) < 1 ? ` (세액=${V.toLocaleString()} 이 공급가액과 같아 OCR 오독 의심)` : "";
+      return `공급가액(${A.toLocaleString()}) - 에누리(${D.toLocaleString()}) ≠ 합계(${T.toLocaleString()}) · 차이 ${diff.toLocaleString()}원${vatNote}`;
     }
     return null;
   };
@@ -1446,7 +1570,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       if (!st) return;
       const dx = e.clientX - st.startX;
       const nextRaw = st.startW + dx;
-      const maxPx = Math.round(window.innerWidth * 0.6);
+      // 상한 제거 · 자유롭게 넓이 조절 (2026-07-19 · 사용자 요청)
+      const maxPx = window.innerWidth; // 뷰포트 전체까지 허용
       const bounded = Math.min(maxPx, Math.max(INV_COL_MIN, nextRaw));
       setInvoiceColWidth(bounded);
     };
@@ -1470,7 +1595,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   const onInvColResizeStart = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    invColResizeRef.current = { startX: e.clientX, startW: invoiceColWidth };
+    e.stopPropagation();
+    console.log("[리사이즈] 시작 · clientX =", e.clientX, "· 현재 폭 =", invoiceColWidth);
+    let wrap: HTMLElement | null = (e.currentTarget as HTMLElement);
+    while (wrap && !(wrap.classList.contains("overflow-x-auto") && wrap.tagName === "DIV")) {
+      wrap = wrap.parentElement;
+    }
+    invColResizeRef.current = { startX: e.clientX, startW: invoiceColWidth, wrap } as any;
     setInvColResizing(true);
   }, [invoiceColWidth]);
 
@@ -2155,12 +2286,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       }
 
       // 상품명이 아닌 것 (배송·행정·주소·사람이름·번호 등) 스킵
-      const skip = !rawName || isNonProductText(rawName);
+      // 2026-07-19 · 체크박스로 제외한 행 · 완전 삭제 행 · DB필터 행도 매칭 요청에서 제외
+      const skip = !rawName || isNonProductText(rawName)
+        || hiddenRawRows.has(ri)
+        || permanentlyDeletedRawRows.has(ri)
+        || isRowDbDeleted(ri);
       return { rowIdx: ri, name: rawName, supplier: sup, skip };
     });
 
     const skippedCount = nameSupplierPairs.filter(p => p.skip).length;
-    if (skippedCount > 0) console.log(`[handleMatch] ${skippedCount}행 스킵 (빈 품명·배송정보·잡문자)`);
+    if (skippedCount > 0) console.log(`[handleMatch] ${skippedCount}행 스킵 (빈 품명·배송정보·잡문자·삭제행)`);
     const activePairs = nameSupplierPairs.filter(p => !p.skip);
     const names = activePairs.map(p => p.name);
     const suppliers = activePairs.map(p => p.supplier);
@@ -2200,7 +2335,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         sup = (pageSup && isValidSupplierHint(pageSup)) ? pageSup :
               (globalSupplier && isValidSupplierHint(globalSupplier)) ? globalSupplier : "";
       }
-      const skip = !rawName || isNonProductText(rawName);
+      // 2026-07-19 · handleMatch 와 동일하게 삭제행 스킵
+      const skip = !rawName || isNonProductText(rawName)
+        || hiddenRawRows.has(ri)
+        || permanentlyDeletedRawRows.has(ri)
+        || isRowDbDeleted(ri);
       return { rowIdx: ri, name: rawName, supplier: sup, skip };
     }).filter((x): x is { rowIdx: number; name: string; supplier: string; skip: boolean } => x !== null);
 
@@ -3046,7 +3185,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
           })}
 
           <div className="w-full overflow-x-auto">
-            <table className="w-full text-xs border-collapse">
+            <table className="min-w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-amber-50 border-b-2 border-amber-200">
                   {/* 이미지 컬럼 헤더 (이미지가 있을 때) */}
@@ -3055,18 +3194,21 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                       className="px-1 py-2 text-center bg-gray-50 border-r border-gray-200 text-[9px] font-bold text-gray-500 whitespace-nowrap select-none"
                       style={{ width: invoiceColWidth, minWidth: 120 }}
                     >
-                      <div className="flex items-center justify-between px-1 gap-1">
+                      <div className="relative flex items-center justify-center px-1 gap-1">
                         <span>거래명세서</span>
+                        {/* 리사이즈 핸들 · TH 우측에 전체 세로 · 넓은 클릭영역 (2026-07-19) */}
                         <div
                           role="separator"
                           aria-label="이미지 폭 조절"
                           onMouseDown={onInvColResizeStart}
                           onDoubleClick={() => setInvoiceColWidth(INV_COL_DEFAULT)}
                           title="드래그하여 이미지 폭 조절 · 더블클릭 초기화"
-                          className={`cursor-col-resize h-4 w-1 rounded transition-colors shrink-0 ${
-                            invColResizing ? "bg-emerald-400" : "bg-slate-300 hover:bg-emerald-400"
-                          }`}
-                        />
+                          className="absolute top-0 right-0 h-full w-2.5 cursor-col-resize flex items-center justify-center group z-10"
+                        >
+                          <div className={`h-4 w-1 rounded transition-colors ${
+                            invColResizing ? "bg-emerald-500" : "bg-slate-400 group-hover:bg-emerald-500"
+                          }`} />
+                        </div>
                       </div>
                     </th>
                   ) : null}
@@ -3095,7 +3237,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                     const ci = origIdx;
                     return (
                       <th key={origIdx}
-                        style={{ width: colWidths[ci] ?? 'auto', minWidth: 40, position: 'relative' }}
+                        style={{ width: colWidths[ci] ?? 'auto', minWidth: h === "품명" ? 180 : 40, position: 'relative' }}
                         className={`px-3 py-2 font-bold text-amber-900 whitespace-nowrap select-none ${NUM_COLS.has(h) ? "text-right" : "text-left"}`}>
                         {h}
                         <div
@@ -3180,9 +3322,20 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           {pageImages?.length ? (
                             <td
                               rowSpan={imgRowSpan}
-                              className="align-top bg-gray-50 border-r border-gray-200 p-0"
+                              className="align-top bg-gray-50 border-r border-gray-200 p-0 relative"
                               style={{ width: invoiceColWidth, minWidth: 120, verticalAlign: "top" }}
                             >
+                              {/* 리사이즈 핸들 · 각 이미지 셀 우측 · 눈에 잘 보이게 초록 세로 막대 (2026-07-19) */}
+                              <div
+                                role="separator"
+                                aria-label="이미지 폭 조절"
+                                onMouseDown={onInvColResizeStart}
+                                onDoubleClick={() => setInvoiceColWidth(INV_COL_DEFAULT)}
+                                title="드래그하여 이미지 폭 조절 · 더블클릭 초기화"
+                                className={`absolute top-0 right-0 h-full w-3 cursor-col-resize z-20 flex items-center justify-center ${
+                                  invColResizing ? "bg-emerald-400" : "bg-emerald-200/50 hover:bg-emerald-400"
+                                }`}
+                              />
                               {(() => {
                                 const imgSrc = pageImages[pn - 1];
                                 if (!imgSrc) return (
@@ -3230,6 +3383,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             <span className={`flex items-center gap-2 text-xs font-bold ${pageHasQpaMismatch ? "text-rose-800" : "text-amber-800"}`}>
                               <span className={`bg-white border rounded px-1.5 py-0.5 ${pageHasQpaMismatch ? "border-rose-300 text-rose-700" : "border-amber-300 text-amber-700"}`}>{pn}번 명세서</span>
                               {pageSupplierHeadRaw && <span className={pageHasQpaMismatch ? "text-rose-700 font-black" : "text-amber-700 font-black"}>{pageSupplierHeadRaw}</span>}
+                              {/* 공급사 정보 조회·수정 버튼 (2026-07-19 · 명세서 헤더 · 공급사관리 상세 페이지 재사용) */}
+                              {pageSupplierHeadRaw && (
+                                <button
+                                  type="button"
+                                  onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplierHeadRaw); }}
+                                  className="inline-flex items-center gap-0.5 text-[9px] font-bold text-white bg-teal-500 hover:bg-teal-600 rounded px-1.5 py-0.5 whitespace-nowrap"
+                                  title={`${pageSupplierHeadRaw} 공급사 정보 조회·수정`}
+                                >
+                                  🔍 조회
+                                </button>
+                              )}
                               <span className={pageHasQpaMismatch ? "text-rose-500 font-normal" : "text-amber-500 font-normal"}>· {pageRowCountRaw}건</span>
                               {pageHasQpaMismatch && (() => {
                                 // 어떤 행들이 수식오탐인지 상세 · 각 행의 품명/수량/단가/금액 표시
@@ -3269,29 +3433,42 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               {/* 🔄 명세서 재추출 (2026-07-19 · 재부활)
                                   이미지에서 다시 OCR → 기존 supplier hint 재사용 → 해당 페이지만 교체
                                   onReparsePage 프롭 유무로 표시 조건 */}
-                              {onReparsePage && (
-                                <button
-                                  type="button"
-                                  onClick={async e => {
-                                    e.stopPropagation();
-                                    setReparseStatus(prev => ({ ...prev, [pn]: 'loading' }));
-                                    setReparseSupplier(prev => ({ ...prev, [pn]: pageSupplierHeadRaw }));
-                                    try {
-                                      await onReparsePage(pn, pageSupplierHeadRaw ?? "");
-                                      setReparseStatus(prev => ({ ...prev, [pn]: 'done' }));
-                                    } catch {
-                                      setReparseStatus(prev => ({ ...prev, [pn]: 'error' }));
+                              {onReparsePage && (() => {
+                                // 순환 approach 선택 (2026-07-19): 이번 클릭 = attempt 번째 · 클릭 후 카운터 +1
+                                const attempt = reparseAttempt[pn] ?? 0;
+                                const currentApproach = REPARSE_APPROACH_CYCLE[attempt % REPARSE_APPROACH_CYCLE.length];
+                                const nextApproach = REPARSE_APPROACH_CYCLE[(attempt + 1) % REPARSE_APPROACH_CYCLE.length];
+                                const currentLabel = APPROACH_LABEL[currentApproach];
+                                const nextLabel = APPROACH_LABEL[nextApproach];
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={async e => {
+                                      e.stopPropagation();
+                                      setReparseStatus(prev => ({ ...prev, [pn]: 'loading' }));
+                                      setReparseSupplier(prev => ({ ...prev, [pn]: pageSupplierHeadRaw }));
+                                      try {
+                                        await onReparsePage(pn, pageSupplierHeadRaw ?? "", currentApproach);
+                                        setReparseStatus(prev => ({ ...prev, [pn]: 'done' }));
+                                        setReparseAttempt(prev => ({ ...prev, [pn]: attempt + 1 }));
+                                      } catch {
+                                        setReparseStatus(prev => ({ ...prev, [pn]: 'error' }));
+                                      }
+                                    }}
+                                    disabled={reparseStatus[pn] === 'loading'}
+                                    className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed rounded px-1.5 py-0.5 whitespace-nowrap"
+                                    title={
+                                      `${pn}번 명세서 재추출 · 이번: [${currentLabel}]\n` +
+                                      `다음 클릭: [${nextLabel}]\n` +
+                                      `순환: 원본 → 재배치 → 대비강화 → Gemini${pageSupplierHeadRaw ? `\n공급사: ${pageSupplierHeadRaw}` : ""}`
                                     }
-                                  }}
-                                  disabled={reparseStatus[pn] === 'loading'}
-                                  className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed rounded px-1.5 py-0.5 whitespace-nowrap"
-                                  title={`${pn}번 명세서 이미지에서 다시 OCR 추출${pageSupplierHeadRaw ? ` (공급사: ${pageSupplierHeadRaw})` : ""}`}
-                                >
-                                  {reparseStatus[pn] === 'loading'
-                                    ? <><Loader2 size={10} className="animate-spin" />재추출 중...</>
-                                    : <>🔄 이 명세서 재추출</>}
-                                </button>
-                              )}
+                                  >
+                                    {reparseStatus[pn] === 'loading'
+                                      ? <><Loader2 size={10} className="animate-spin" />재추출 중...</>
+                                      : <>🔄 이 명세서 재추출 <span className="opacity-80">[{APPROACH_SHORT[currentApproach]}]</span></>}
+                                  </button>
+                                );
+                              })()}
                               {/* 🔄 선택 재추출 + 🗑 선택 삭제 · 이 명세서의 체크된 행만 · 2026-07-14 */}
                               {/* 항상 표시 · 0개일 때 비활성 (사용자에게 기능 존재 알림) */}
                               {(() => {
@@ -3572,16 +3749,35 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       moveToCell(ri, editableIdxs[curPos + 1]);
                                       return;
                                     }
-                                    if (e.key === "ArrowDown" && ri < effectiveDispRows.length - 1) {
-                                      e.preventDefault();
-                                      commitCellEdit(ri, ci, editingCellVal);
-                                      moveToCell(ri + 1, ci);
+                                    // ArrowDown/Up · 삭제·숨김 행 건너뛰고 다음 가시 행으로 이동 (2026-07-19)
+                                    if (e.key === "ArrowDown") {
+                                      let nextRi = ri + 1;
+                                      while (nextRi < effectiveDispRows.length
+                                        && (permanentlyDeletedRawRows.has(nextRi)
+                                          || hiddenRawRows.has(nextRi)
+                                          || isRowDbDeleted(nextRi))) {
+                                        nextRi++;
+                                      }
+                                      if (nextRi < effectiveDispRows.length) {
+                                        e.preventDefault();
+                                        commitCellEdit(ri, ci, editingCellVal);
+                                        moveToCell(nextRi, ci);
+                                      }
                                       return;
                                     }
-                                    if (e.key === "ArrowUp" && ri > 0) {
-                                      e.preventDefault();
-                                      commitCellEdit(ri, ci, editingCellVal);
-                                      moveToCell(ri - 1, ci);
+                                    if (e.key === "ArrowUp") {
+                                      let prevRi = ri - 1;
+                                      while (prevRi >= 0
+                                        && (permanentlyDeletedRawRows.has(prevRi)
+                                          || hiddenRawRows.has(prevRi)
+                                          || isRowDbDeleted(prevRi))) {
+                                        prevRi--;
+                                      }
+                                      if (prevRi >= 0) {
+                                        e.preventDefault();
+                                        commitCellEdit(ri, ci, editingCellVal);
+                                        moveToCell(prevRi, ci);
+                                      }
                                       return;
                                     }
                                   }}
@@ -4070,11 +4266,26 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                 {fmt(displayTotal)}원
                                               </span>
                                               {disc && (
-                                                <span className="text-[9px] font-bold text-amber-700 bg-white/70 border border-amber-300 rounded px-1.5 py-0.5 whitespace-nowrap"
-                                                  title={`합계 ${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원 = ${fmt(displayTotal)}원`}>
-                                                  {disc.label} {fmt(disc.amount)}원 적용 전
+                                                <span className={`text-[9px] font-bold bg-white/70 border rounded px-1.5 py-0.5 whitespace-nowrap ${disc.isEstimated ? "text-orange-700 border-orange-300" : "text-amber-700 border-amber-300"}`}
+                                                  title={disc.isEstimated
+                                                    ? `공급가액과 합계·세액 관계로 역산된 추정 에누리\n합계 ${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원 = ${fmt(displayTotal)}원`
+                                                    : `합계 ${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원 = ${fmt(displayTotal)}원`}>
+                                                  {disc.isEstimated ? "~" : ""}{disc.label} {fmt(disc.amount)}원 적용 전
                                                 </span>
                                               )}
+                                              {/* ── 소계 관계식 교차검증 배지 (공급가액 ≠ 합계+세액-에누리) ── */}
+                                              {(() => {
+                                                const warn = getPageCrossCheckWarning(pn);
+                                                if (!warn) return null;
+                                                return (
+                                                  <span
+                                                    className="text-[9px] font-bold text-orange-700 bg-orange-50 border border-orange-300 rounded px-1.5 py-0.5 whitespace-nowrap"
+                                                    title={`관계식 불일치:\n${warn}\n\n공급가액 = 합계 + 세액 - 에누리 조건이 맞지 않습니다.\nOCR 오독 가능성: 세액이 공급가액과 같으면 세액 오독 의심`}
+                                                  >
+                                                    ⚠ 관계식 불일치
+                                                  </span>
+                                                );
+                                              })()}
                                               {/* ── 교차검증 배지 (행합 · 수량×단가합 · OCR총계 대조) ── */}
                                               {(() => {
                                                 const rowSum = effectivePageTotals.get(pn) ?? 0;
@@ -5164,29 +5375,29 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               const isSkip2 = pageBalanceModeSkip.has(pn);
                               const currentVal2 = isManual2 ? "__manual__" : isSkip2 ? "__skip__" : (overrideVal2 != null ? String(overrideVal2) : (balanceAmount2 ?? ""));
                               return (
-                                <tr className="border-t-2 border-amber-400">
+                                <tr className="border-t-2 border-violet-400">
                                   <td colSpan={allErpCols.length} className="px-0 py-0"
-                                    style={{ background: "linear-gradient(90deg, #fef3c7 0%, #ffedd5 55%, #fed7aa 100%)" }}>
+                                    style={{ background: "linear-gradient(90deg, #ede9fe 0%, #e0e7ff 55%, #ddd6fe 100%)" }}>
                                     <div className="flex items-center justify-between gap-2 flex-wrap px-3 py-1.5">
                                       {/* 좌측: [N번 명세서 소계] [거래명세서 보기] [공급사] */}
                                       <div className="flex items-center gap-2 flex-shrink-0">
-                                        <span className="text-amber-700 font-black text-[10px] tracking-wide uppercase whitespace-nowrap bg-amber-200/60 border border-amber-300 rounded px-1.5 py-0.5">
+                                        <span className="text-violet-700 font-black text-[10px] tracking-wide uppercase whitespace-nowrap bg-violet-200/60 border border-violet-300 rounded px-1.5 py-0.5">
                                           {pn}번 명세서 소계
                                         </span>
                                         {pageImages?.length ? (
                                           <button type="button"
                                             onClick={e => { e.stopPropagation(); openPageModal(pn); }}
-                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-amber-500 hover:bg-amber-600 active:bg-amber-700 px-2.5 py-1 rounded shadow-sm transition cursor-pointer whitespace-nowrap"
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-violet-500 hover:bg-violet-600 active:bg-violet-700 px-2.5 py-1 rounded shadow-sm transition cursor-pointer whitespace-nowrap"
                                             title={`${pn}번 거래명세서 이미지 보기`}
                                           >📄 거래명세서 보기</button>
                                         ) : (
-                                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-100 px-2.5 py-1 rounded opacity-50 whitespace-nowrap cursor-not-allowed">📄 이미지 없음</span>
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-300 bg-violet-100 px-2.5 py-1 rounded opacity-50 whitespace-nowrap cursor-not-allowed">📄 이미지 없음</span>
                                         )}
                                         {pageSupplier && (
                                           <button
                                             type="button"
                                             onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplier); }}
-                                            className="text-amber-800 font-black text-[11px] whitespace-nowrap border-l border-amber-300 pl-2 underline decoration-dotted decoration-amber-600 underline-offset-2 hover:text-amber-950 hover:decoration-solid cursor-pointer transition"
+                                            className="text-violet-800 font-black text-[11px] whitespace-nowrap border-l border-violet-300 pl-2 underline decoration-dotted decoration-violet-600 underline-offset-2 hover:text-violet-950 hover:decoration-solid cursor-pointer transition"
                                             title="클릭하면 공급사 정보 조회·수정"
                                           >{pageSupplier}</button>
                                         )}
@@ -5212,18 +5423,30 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                             if (q > 0 && p > 0) sumQtyPrice2 += Math.round(q * p);
                                           });
                                           const mismatch2 = stated2 != null && sumQtyPrice2 > 0 && Math.abs(sumQtyPrice2 - stated2) > 1;
+                                          // 에누리·차액·할인 항목 (OCR summary_rows 에서 감지)
+                                          const disc2 = getPageDiscount(pn);
                                           return (
                                             <div className="flex flex-col items-center gap-0.5">
-                                              <span
-                                                className={`font-black text-base tracking-tight whitespace-nowrap ${
-                                                  mismatch2 ? "text-rose-600 underline decoration-wavy decoration-rose-400 underline-offset-2" : "text-amber-900"
-                                                }`}
-                                                title={mismatch2
-                                                  ? `수량×단가 합(${fmt(sumQtyPrice2)}원)이 명세서 소계(${fmt(stated2!)}원)와 다릅니다`
-                                                  : `수량×단가 합과 명세서 소계가 일치`}
-                                              >
-                                                {fmt(pageTotalEdited)}원
-                                              </span>
+                                              <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                                                <span
+                                                  className={`font-black text-base tracking-tight whitespace-nowrap ${
+                                                    mismatch2 ? "text-rose-600 underline decoration-wavy decoration-rose-400 underline-offset-2" : "text-violet-900"
+                                                  }`}
+                                                  title={mismatch2
+                                                    ? `수량×단가 합(${fmt(sumQtyPrice2)}원)이 명세서 소계(${fmt(stated2!)}원)와 다릅니다`
+                                                    : `수량×단가 합과 명세서 소계가 일치`}
+                                                >
+                                                  {fmt(pageTotalEdited)}원
+                                                </span>
+                                                {disc2 && (
+                                                  <span
+                                                    className="text-[9px] font-bold text-violet-700 bg-white/70 border border-violet-300 rounded px-1.5 py-0.5 whitespace-nowrap"
+                                                    title={`${disc2.label} ${fmt(disc2.amount)}원`}
+                                                  >
+                                                    {disc2.label} {fmt(disc2.amount)}원
+                                                  </span>
+                                                )}
+                                              </div>
                                               {mismatch2 && (
                                                 <span className="text-[9px] font-bold whitespace-nowrap px-1.5 py-0.5 rounded border bg-rose-50 text-rose-700 border-rose-300">
                                                   ⚠ 수량×단가 합({fmt(sumQtyPrice2)}원) ≠ 합계금액({fmt(stated2!)}원)

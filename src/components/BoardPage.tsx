@@ -205,17 +205,17 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
         ) : !loading && filtered.length === 0 ? (
           <div className="text-center text-[11px] text-slate-300 py-6">등록된 글 없음</div>
         ) : (
-          <div className={`bg-white rounded-xl border border-slate-200 p-4 shadow-sm ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+          <div className={`bg-white rounded-xl border border-slate-200 shadow-sm ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             {/* 이슈리스트 제목 */}
-            <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
+            <div className="flex items-center justify-between px-4 py-3 gap-2 flex-wrap border-b border-slate-100">
               <div className="flex items-center gap-1.5">
                 <StickyNote size={14} className="text-orange-600" />
                 <span className="text-sm font-black text-slate-700">이슈리스트</span>
                 <span className="text-[10px] font-mono text-slate-400">({filtered.length}건)</span>
               </div>
-              <span className="text-[10px] text-slate-400 font-semibold">💡 항목 클릭 → 상세</span>
+              <span className="text-[10px] text-slate-400 font-semibold">항목 클릭 → 상세</span>
             </div>
-            <div className="divide-y divide-slate-100">
+            <div className="divide-y divide-slate-50">
             {filtered.map((p: BoardPost) => {
               const isExpanded = expandedId === p.id;
               const toggle = () => setExpandedId(prev => prev === p.id ? null : p.id);
@@ -291,7 +291,7 @@ const PostCard: React.FC<{ post: BoardPost; onOpen: () => void; showEdit?: boole
       tabIndex={0}
       onClick={onOpen}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
-      className="w-full text-left bg-white hover:bg-orange-50/30 transition cursor-pointer px-2.5 sm:px-4 py-2 sm:py-3 min-h-[44px]"
+      className="w-full text-left bg-white hover:bg-orange-50/30 transition cursor-pointer px-0.5 sm:px-4 py-1.5 sm:py-2 min-h-[44px]"
     >
       {/* ── 모바일: 단일 flex 행 ── */}
       <div className="flex items-center gap-2 sm:hidden">

@@ -287,8 +287,9 @@ export function inferColumnTypesByData(
       candidates.수량.push({ idx: st.idx, score: numRatio * 50 + fillRatio * 30 + (med >= 1 && med <= 100 ? 20 : 10) });
     }
     // 단가: 숫자 60%+ · 중앙값 100~99999 (좁힘) · 코드 아님
+    // 2026-07-19 롤백: commaFmtRatio 40 → 20 (LOW_MEM 압축 쉼표 소실 시 컬럼 스왑 방지)
     if (numRatio >= 0.6 && med >= 100 && med <= 99999 && !isLikelyCode) {
-      candidates.단가.push({ idx: st.idx, score: numRatio * 40 + fillRatio * 30 + (med >= 500 && med <= 50000 ? 25 : 5) + commaFmtRatio * 15 });
+      candidates.단가.push({ idx: st.idx, score: numRatio * 40 + fillRatio * 30 + (med >= 500 && med <= 50000 ? 25 : 5) + commaFmtRatio * 20 });
     }
     // 금액: 숫자 60%+ · 중앙값 1000~9999999 · 쉼표포맷 우세 (금액은 대개 쉼표 있음) · 코드 아님
     if (numRatio >= 0.6 && med >= 1000 && med <= 99999999 && !isLikelyCode) {
@@ -577,11 +578,12 @@ export function mergeSplitProductRows(
     return s === "" || s === "—" || s === "-";
   };
 
-  const hasNumericFields = (row: (string | number | null)[]): boolean => {
-    if (qI >= 0 && !isEmptyCell(row[qI])) return true;
-    if (pI >= 0 && !isEmptyCell(row[pI])) return true;
-    if (aI >= 0 && !isEmptyCell(row[aI])) return true;
-    return false;
+  const countNumericFields = (row: (string | number | null)[]): number => {
+    let n = 0;
+    if (qI >= 0 && !isEmptyCell(row[qI])) n++;
+    if (pI >= 0 && !isEmptyCell(row[pI])) n++;
+    if (aI >= 0 && !isEmptyCell(row[aI])) n++;
+    return n;
   };
 
   const hasName = (row: (string | number | null)[]): boolean => {
@@ -594,10 +596,11 @@ export function mergeSplitProductRows(
     if (!Array.isArray(cur)) { merged.push(cur); continue; }
 
     const next = rows[i + 1];
+    // 품명행(cur): 수량/단가/금액 중 ≤1개 (OCR 잡음 허용) · 숫자행(next): 2개 이상
     const canMerge =
       Array.isArray(next) &&
-      hasName(cur) && !hasNumericFields(cur) &&
-      !hasName(next) && hasNumericFields(next);
+      hasName(cur) && countNumericFields(cur) <= 1 &&
+      !hasName(next) && countNumericFields(next) >= 2;
 
     if (canMerge) {
       // 두 행의 셀 개수 맞추기 · cur 을 기준으로 복사
@@ -1559,8 +1562,8 @@ export function mergeAdjacentSplitRows(
     const nq = qI >= 0 ? hasNum(row[qI]) : false;
     const np = pI >= 0 ? hasNum(row[pI]) : false;
     const na = aI >= 0 ? hasNum(row[aI]) : false;
-    // 수량+단가+금액 3개 다 있음
-    return nq && np && na;
+    // 수량+단가+금액 중 2개 이상 있음 (금액 컬럼 부재 or OCR 누락 허용)
+    return [nq, np, na].filter(Boolean).length >= 2;
   };
   // 수식 검증: 수량 × 단가 ≈ 금액 (5% 오차)
   const mathValid = (row: (string | number | null)[]): boolean => {

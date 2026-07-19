@@ -1213,25 +1213,24 @@ export const StockReconciliationTab: React.FC<{
             </button>
           </div>
           {sessionsLoading ? (
-            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 py-3">
-              <Loader2 size={13} className="animate-spin" />
-              불러오는 중...
+            <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2">
+              <Loader2 size={14} className="animate-spin" />로딩 중...
             </div>
           ) : sessions.length === 0 ? (
-            <div className="text-[11px] text-slate-400 py-3 text-center">
+            <div className="text-center text-[11px] text-slate-300 py-6">
               저장된 세션이 없습니다
             </div>
           ) : (
-            <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+            <div className="flex flex-col divide-y divide-slate-50 max-h-48 overflow-y-auto">
               {sessions.map((s) => (
                 <button
                   key={s.id}
                   type="button"
                   onClick={() => loadSession(s.id)}
-                  className={`w-full text-left px-2.5 py-2 rounded-lg border text-[11px] transition flex items-center gap-2 ${
+                  className={`w-full text-left px-0.5 py-1.5 text-[11px] transition flex items-center gap-2 ${
                     sessionId === s.id
-                      ? "border-sky-300 bg-sky-50"
-                      : "border-slate-100 hover:bg-slate-50"
+                      ? "bg-emerald-50/50"
+                      : "hover:bg-orange-50/30"
                   }`}
                 >
                   <div className="flex-1 min-w-0">
@@ -1324,10 +1323,7 @@ export const StockReconciliationTab: React.FC<{
           {/* 리스트 */}
           <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-50">
             {items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-10 text-slate-300 gap-2">
-                <Plus size={24} />
-                <span className="text-[11px]">상품을 추가하세요</span>
-              </div>
+              <div className="text-center text-[11px] text-slate-300 py-6">상품을 추가하세요</div>
             ) : (
               items.map((it) => {
                 const isSelected = selectedProductCode === it.product_code;
@@ -1336,10 +1332,10 @@ export const StockReconciliationTab: React.FC<{
                 return (
                   <div
                     key={it.product_code}
-                    className={`group border-b border-slate-100 last:border-0 transition-colors ${
+                    className={`group border-b border-slate-50 last:border-0 transition-colors ${
                       isSelected
-                        ? "bg-sky-100/70 ring-1 ring-inset ring-sky-300"
-                        : "hover:bg-slate-50/60"
+                        ? "bg-emerald-50/50"
+                        : "hover:bg-orange-50/30"
                     }`}
                   >
                     {/* 한 줄 레이아웃: [상품명+코드] [스캔뱃지] [수량] [날짜] [확인] [삭제] */}
@@ -1520,12 +1516,11 @@ export const StockReconciliationTab: React.FC<{
                 </div>
                 <div className="flex-1 min-h-0 overflow-y-auto divide-y divide-slate-50">
                   {relatedLoading ? (
-                    <div className="flex items-center gap-1.5 text-[11px] text-slate-400 px-3 py-4">
-                      <Loader2 size={12} className="animate-spin" />
-                      조회 중...
+                    <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2">
+                      <Loader2 size={14} className="animate-spin" />로딩 중...
                     </div>
                   ) : relatedInvoiceItems.length === 0 ? (
-                    <div className="text-[11px] text-slate-400 px-3 py-4 text-center">
+                    <div className="text-center text-[11px] text-slate-300 py-6">
                       관련 명세서가 없습니다
                     </div>
                   ) : (
@@ -1552,10 +1547,10 @@ export const StockReconciliationTab: React.FC<{
                               toggleChosen();
                             }
                           }}
-                          className={`w-full text-left px-3 py-2 text-[11px] transition cursor-pointer ${
+                          className={`w-full text-left px-0.5 py-1.5 text-[11px] transition cursor-pointer ${
                             isChosen
-                              ? "bg-violet-100/70 ring-1 ring-inset ring-violet-300"
-                              : "hover:bg-slate-50/60"
+                              ? "bg-emerald-50/50"
+                              : "hover:bg-orange-50/30"
                           }`}
                         >
                           <div className="flex items-center justify-between gap-2">

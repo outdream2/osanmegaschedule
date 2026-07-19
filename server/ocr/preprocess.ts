@@ -71,10 +71,10 @@ export async function preprocessImageForOcr(
  *   - JPEG q95 (엣지 손실 최소화)
  */
 // Render 512MB 환경에서 큰 이미지는 다운샘플 필수 (env RENDER=true 또는 LOW_MEM=true)
+// 2026-07-19 롤백: NODE_ENV=production 조건 제거 (로컬 프로덕션 빌드 저화질 오염 방지)
 const LOW_MEM =
   process.env.RENDER === "true" ||
-  process.env.LOW_MEM === "true" ||
-  process.env.NODE_ENV === "production";
+  process.env.LOW_MEM === "true";
 
 // LOW_MEM 모드: 1500px 캡 (메모리 절감) · 일반 모드: 2200px 캡 (품질 유지)
 const OCR_MAX_LONG_SIDE = Number(process.env.OCR_INPUT_MAX_LONG_SIDE) || (LOW_MEM ? 1500 : 2200);

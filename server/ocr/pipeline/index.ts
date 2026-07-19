@@ -15,6 +15,7 @@ import { filterStage } from "./stages/07-filter";
 import { verifyStage } from "./stages/08-verify";
 import { totalsStage } from "./stages/09-totals";
 import { fallbackStage } from "./stages/10-fallback";
+import { rearrangeParseStage } from "./stages/10b-rearrange";
 import { makeLearnStage } from "./stages/11-learn";
 
 export interface OnnxPipelineDeps {
@@ -39,6 +40,9 @@ export function buildOnnxPipeline(deps: OnnxPipelineDeps): Stage[] {
       applyColumnMapping: deps.applyColumnMapping,
       applyTemplateHeaders: deps.applyTemplateHeaders,
     }),
+    // rearrange 재추출 시 · rawText 재파싱 (when: approach==="rearrange") · normalize 앞
+    //   → 재파싱 결과가 normalize/verify/totals 를 통과하도록 rearrange 를 초기에 배치
+    rearrangeParseStage,
     normalizeStage,
     mathFillStage,
     filterStage,

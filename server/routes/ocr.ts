@@ -754,7 +754,19 @@ router.delete("/api/ocr-templates/:supplier_name", async (req, res) => {
 
 router.post("/api/ocr", async (req, res) => {
   const { images, engine: reqEngine = "gemini" } = req.body ?? {};
-  const engine = reqEngine as string;
+  // ── 재추출 approach 파라미터 (2026-07-19 · 순환 재파싱) ─────────────────────
+  //   ?approach=default        (첫 클릭 · 기존 동작)
+  //   ?approach=rearrange      (2회차 · rawText 재파싱만 · OCR 스킵 · body.cachedRawTexts 필수)
+  //   ?approach=high-contrast  (3회차 · preprocessHighContrast 강제 후 재 OCR)
+  //   ?approach=gemini         (4회차 · engine 강제 override to "gemini")
+  const rawApproach = String(req.query.approach ?? "default");
+  const approach = (["default", "rearrange", "high-contrast", "gemini"].includes(rawApproach)
+    ? rawApproach
+    : "default") as "default" | "rearrange" | "high-contrast" | "gemini";
+  // gemini approach 는 엔진을 강제로 gemini 로 override
+  const engine = (approach === "gemini" ? "gemini" : (reqEngine as string));
+  // rearrange 모드: 클라이언트가 이전 결과의 rawText 를 body.cachedRawTexts 로 전달 · OCR 스킵
+  const cachedRawTexts: string[] = Array.isArray(req.body?.cachedRawTexts) ? req.body.cachedRawTexts : [];
   const supplierHints: string[] = Array.isArray(req.body?.supplierHints) ? req.body.supplierHints : [];
   // 요청 스코프 로컬 키 인덱스 — 동시 요청 간 race 방지
   // 시작값만 전역 geminiState에서 읽고, 이후는 로컬에서만 관리
@@ -933,7 +945,9 @@ router.post("/api/ocr", async (req, res) => {
   // ── ONNX (PP-OCRv5 한국어) · Render 배포 · 완전 무료 · Node 네이티브 ──
   //   순차 처리 이유: onnxruntime-node 세션은 CPU 코어를 다 쓰므로 병렬 실행이 오히려 느림
   //   2026-07-14 리팩토링: 파이프라인 구조로 전환 · 각 stage 격리 · 진단 로그 자동
-  if (engine === "onnx") {
+  //   2026-07-19: 재추출 approach="rearrange" 는 엔진 선택과 무관하게 ONNX 파이프라인 사용
+  //               (rearrange 는 OCR 재실행 없이 rawText 재파싱만 하므로 엔진 무관)
+  if (engine === "onnx" || approach === "rearrange") {
     try {
       const pages: any[] = [];
       const diagnostics: any[] = [];
@@ -955,11 +969,14 @@ router.post("/api/ocr", async (req, res) => {
         console.log(`[OCR/ONNX] page ${i + 1}/${imgs.length}`);
         try {
           // 파이프라인 실행 (모든 stage 순차 · 실패해도 다음 stage 진행)
+          //   재추출 approach 는 파이프라인 stage 별 분기 (types.ReparseApproach 참조)
           const ctx = makeInitialContext({
             page: i + 1,
             rawB64,
             rawMime,
             supplierHint: (supplierHints[i] ?? "").trim() || undefined,
+            approach,
+            cachedRawText: cachedRawTexts[i],
           });
           await runPipeline(pipeline, ctx, { page: i + 1 });
           const LOW_MEM_MODE = process.env.RENDER === "true" || process.env.LOW_MEM === "true";
@@ -1092,8 +1109,12 @@ router.post("/api/ocr", async (req, res) => {
         };
 
         // 이미지 전처리: 업스케일 + 도장 제거 + 그레이스케일 정규화
+        //   재추출 approach="high-contrast" 는 preprocessHighContrast 강제 (2026-07-19)
         const preT0 = Date.now();
-        const { b64, mimeType } = await preprocessImageForOcr(rawB64, rawMime);
+        const { b64, mimeType } = approach === "high-contrast"
+          ? await preprocessHighContrast(rawB64)
+          : await preprocessImageForOcr(rawB64, rawMime);
+        if (approach === "high-contrast") console.log(`[OCR/Gemini] page ${i + 1}: high-contrast 강제 (재추출 approach)`);
         trace.preprocessing = {
           timeMs: Date.now() - preT0,
           originalMime: rawMime,

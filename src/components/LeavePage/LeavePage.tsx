@@ -314,9 +314,9 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
               ) : !myLoading && myRequests.length === 0 ? (
                 <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
               ) : (
-                <div className={`flex flex-col gap-2 ${myLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                <div className={`flex flex-col divide-y divide-slate-50 ${myLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                   {myRequests.map(r => (
-                    <div key={r.id} className={`bg-white border rounded-xl p-4 shadow-sm ${r.status === "pending" ? "border-amber-200" : r.status === "approved" ? "border-emerald-200" : "border-rose-200"}`}>
+                    <div key={r.id} className={`py-1.5 hover:bg-orange-50/30 transition rounded-lg ${r.status === "pending" ? "border-l-2 border-amber-300 pl-2" : r.status === "approved" ? "border-l-2 border-emerald-300 pl-2" : "border-l-2 border-rose-300 pl-2"}`}>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
                           <p className="text-sm font-black text-gray-900">{r.leave_type}</p>
@@ -398,12 +398,12 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
             {allLoading && (mgrTab === "pending" ? pending : reviewed).length === 0 ? (
               <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
             ) : (
-              <div className={`flex flex-col gap-2 ${allLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+              <div className={`flex flex-col divide-y divide-slate-50 ${allLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {(mgrTab === "pending" ? pending : reviewed).length === 0 ? (
                   <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
                 ) : (
                   (mgrTab === "pending" ? pending : reviewed).map(r => (
-                    <div key={r.id} className={`bg-white border rounded-xl p-4 shadow-sm ${r.status === "pending" ? "border-amber-200" : r.status === "approved" ? "border-emerald-200" : "border-rose-200"}`}>
+                    <div key={r.id} className={`py-1.5 hover:bg-orange-50/30 transition rounded-lg ${r.status === "pending" ? "border-l-2 border-amber-300 pl-2" : r.status === "approved" ? "border-l-2 border-emerald-300 pl-2" : "border-l-2 border-rose-300 pl-2"}`}>
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div>
                           <div className="flex items-center gap-2">

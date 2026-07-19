@@ -841,22 +841,40 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
     }
   }, [extracting, rotation, ocrEngine]);
 
-const handleReparsePage = useCallback(async (pageNum: number, supplierHint: string): Promise<any> => {
+// ── 재추출 approach 순환 (2026-07-19) ────────────────────────────────────
+//   같은 명세서를 반복 재추출 시 매번 다른 접근 방식으로 시도.
+//   순환: default → rearrange → high-contrast → gemini → default ...
+type ReparseApproach = "default" | "rearrange" | "high-contrast" | "gemini";
+const REPARSE_APPROACH_CYCLE: ReparseApproach[] = ["default", "rearrange", "high-contrast", "gemini"];
+
+const handleReparsePage = useCallback(async (
+  pageNum: number,
+  supplierHint: string,
+  approach: ReparseApproach = "default",
+): Promise<any> => {
   const images = imagesDataRef.current;
   const img = images[pageNum - 1];
   if (!img) return null;
   const rotImg = rotation !== 0 ? await physicallyRotate(img.data, img.mimeType, rotation) : img;
-  const res = await axios.post("/api/ocr", {
+  // rearrange 모드: 이미지 대신 이전 rawText 를 body 로 전달 · 서버가 OCR 스킵
+  const currentPage = pages.find(p => p.page === pageNum);
+  const cachedRawText = (currentPage?.rawText ?? "") as string;
+  const body: any = {
     images: [rotImg],
     engine: engineToBackend(ocrEngine),
     supplierHints: [supplierHint],
-  });
+  };
+  if (approach === "rearrange") {
+    body.cachedRawTexts = [cachedRawText];
+  }
+  const url = approach === "default" ? "/api/ocr" : `/api/ocr?approach=${encodeURIComponent(approach)}`;
+  const res = await axios.post(url, body);
   const newPage = res.data.pages?.[0];
   if (newPage) {
     setPages(prev => prev.map(p => p.page === pageNum ? { ...newPage, page: pageNum } : p));
   }
   return newPage ?? null;
-}, [rotation, ocrEngine]);
+}, [rotation, ocrEngine, pages]);
 
 const rotDeg = ((rotation % 360) + 360) % 360;
 

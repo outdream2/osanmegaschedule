@@ -46,12 +46,23 @@ export interface StageLog {
   error?: string;
 }
 
+// 재추출 접근 방식 (2026-07-19 · 순환 재파싱)
+//   default        = 표준 파이프라인 (첫 시도 · 기존 동작)
+//   rearrange      = OCR 는 원본 rawText 를 재사용 · 파싱 로직 대안 (컬럼 오프셋/헤더 스킵/템플릿 무시/fallback 우선)
+//   high-contrast  = preprocessHighContrast 강제 적용 후 OCR 재실행
+//   gemini         = Gemini API 강제 사용 (엔진 override)
+export type ReparseApproach = "default" | "rearrange" | "high-contrast" | "gemini";
+
 export interface PageContext {
   // 입력
   page: number;                    // 1-indexed
   rawB64: string;
   rawMime: string;
   supplierHint?: string;
+  // 재추출 접근 방식 (default 이외는 파이프라인 stage 별 분기)
+  approach?: ReparseApproach;
+  // 재추출 시 이전 결과의 rawText (rearrange 모드용 · OCR 스킵)
+  cachedRawText?: string;
 
   // OCR 원본 (파이프라인 초기 stage 에서 채움)
   raw?: RawOcrResult;
@@ -86,12 +97,16 @@ export function makeInitialContext(args: {
   rawB64: string;
   rawMime: string;
   supplierHint?: string;
+  approach?: ReparseApproach;
+  cachedRawText?: string;
 }): PageContext {
   return {
     page: args.page,
     rawB64: args.rawB64,
     rawMime: args.rawMime,
     supplierHint: args.supplierHint,
+    approach: args.approach ?? "default",
+    cachedRawText: args.cachedRawText,
     rawText: "",
     headers: [],
     rows: [],

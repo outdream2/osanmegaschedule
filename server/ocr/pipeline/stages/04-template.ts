@@ -8,6 +8,11 @@ export function makeTemplateStage(deps: {
   return {
     name: "template-apply",
     async run(ctx) {
+      // 재추출 rearrange 모드: 템플릿 자동 감지·적용 스킵 (다른 결과 시도)
+      if (ctx.approach === "rearrange") {
+        console.log(`[template] page ${ctx.page}: rearrange 모드 · 템플릿 무시`);
+        return { template: undefined };
+      }
       const hint = (ctx.supplierHint ?? "").trim() || ctx.vendorMatched || undefined;
       const tmpl = await deps.findOcrTemplate(hint, ctx.rawText);
       if (!tmpl) return { template: undefined };

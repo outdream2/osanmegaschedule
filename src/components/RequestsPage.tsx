@@ -548,7 +548,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                   const isDone = r.status === "done";
                   const completing = completingDisplay.has(r.id);
                   return (
-                    <div key={r.id} className={`flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition ${selectedDisplay.has(r.id) ? "bg-rose-50/40" : ""} ${isDone ? "opacity-60" : ""}`}>
+                    <div key={r.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition ${selectedDisplay.has(r.id) ? "bg-rose-50/50" : "hover:bg-orange-50/30"} ${isDone ? "opacity-60" : ""}`}>
                       <Checkbox checked={selectedDisplay.has(r.id)} onChange={() => toggleOne(selectedDisplay, r.id, setSelectedDisplay)} />
                       <div className="flex-1 min-w-0">
                         {/* 담당자 · 구역 · 카테고리 */}
@@ -633,7 +633,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     const short = (r.optimal_stock ?? 0) - (r.current_stock ?? 0);
                     const inv = invStockMap.get(r.product_code);
                     return (
-                      <div key={r.id} className={`flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition ${selectedOrder.has(r.id) ? "bg-rose-50/40" : ""}`}>
+                      <div key={r.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition ${selectedOrder.has(r.id) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
                         <Checkbox checked={selectedOrder.has(r.id)} onChange={() => toggleOne(selectedOrder, r.id, setSelectedOrder)} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -688,7 +688,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     const alreadyRequested = requestedCodes.has(code);
                     const busy = requestingOrder.has(code);
                     return (
-                      <div key={code} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition">
+                      <div key={code} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-orange-50/30 transition">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="text-[10px] font-mono text-slate-400 shrink-0">{code}</span>
@@ -741,6 +741,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             {mismatchLoading && mismatches.length === 0 ? (
               <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><Loader2 size={14} className="animate-spin" />로딩 중...</div>
             ) : mismatchError ? (
+
               <div className="flex flex-col items-center justify-center py-10 gap-2">
                 <p className="text-sm font-bold text-red-500">불러오기 오류</p>
                 <p className="text-xs text-red-400 font-mono text-center px-4">{mismatchError}</p>
@@ -751,7 +752,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             ) : (
               <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${mismatchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {mismatches.map(m => (
-                  <div key={m.id} className={`flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition ${selectedMismatch.has(m.id) ? "bg-rose-50/40" : ""}`}>
+                  <div key={m.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition ${selectedMismatch.has(m.id) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
                     <Checkbox checked={selectedMismatch.has(m.id)} onChange={() => toggleOne(selectedMismatch, m.id, setSelectedMismatch)} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -826,7 +827,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                   const isShort = diff != null && diff < 0;
                   const isOver  = diff != null && diff > 0;
                   return (
-                    <div key={r.id} className={`flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition ${selectedInventory.has(r.id) ? "bg-purple-50/40" : ""}`}>
+                    <div key={r.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition ${selectedInventory.has(r.id) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
                       <Checkbox checked={selectedInventory.has(r.id)} onChange={() => toggleOne(selectedInventory, r.id, setSelectedInventory)} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -978,7 +979,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             ) : (
               <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${lunchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {lunchRequests.map(r => (
-                  <div key={r.id} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50/70 transition">
+                  <div key={r.id} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-orange-50/30 transition">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${r.eating ? "bg-emerald-500" : "bg-gray-300"}`} />
                     <span className="text-sm font-semibold text-gray-800 flex-1">{r.employee_name}</span>
                     {r.memo && <span className="text-[10px] text-gray-400 flex-1 min-w-0 break-keep">{r.memo}</span>}

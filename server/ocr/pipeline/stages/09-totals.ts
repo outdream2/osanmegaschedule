@@ -83,6 +83,64 @@ export const totalsStage: Stage = {
       if (disc.vatSeparate) meta.vatSeparate = true;
     }
 
+    // 교차 검증: supplyAmount - discount = total - vat (정상 관계)
+    //   공식: supplyAmount = total + vat - discount  (에누리 없으면 discount=0)
+    //   대웅제약 케이스: supplyAmount(2,310,000) · total(1,900,000) · vat(오독=2,310,000)
+    //     → vat 이 supplyAmount 와 같으면 OCR 오독 의심 (실제 세액은 total × 1/11 ≈)
+    //     → discount 역산: supplyAmount - total + vat_corrected
+    //
+    //   조건: supplyAmount · total 모두 있고, discount 가 아직 없는 경우에만 시도
+    const A = typeof meta.supplyAmount === "number" ? meta.supplyAmount : null;
+    const T = typeof meta.total === "number" ? meta.total : null;
+    const V = typeof meta.vat === "number" ? meta.vat : null;
+    // A > T 조건: T < A 이면 에누리 갭 존재 가능. T >= A 이면 VAT 포함 합계일 수 있어 스킵
+    if (A != null && T != null && A > T && meta.discount == null) {
+      // Case 1: vat 이 supplyAmount 와 같으면 OCR 오독 (세액 → 공급가액으로 잘못 읽음)
+      //   세액 보정: (A - D) × 0.1 = (T) × 0.1 (에누리 차감 후 금액의 10%)
+      //   에누리 역산: D = A - T  (합계 = 공급가액 - 에누리)
+      if (V != null && Math.abs(V - A) < 1) {
+        const discEst = A - T;
+        if (discEst > 0 && discEst < A * 0.5) {
+          const vatCorrected = Math.round(T * 0.1);
+          meta.discount = discEst;
+          meta.discountLabel = "에누리(역산)";
+          meta.vat = vatCorrected;   // 세액 보정: 합계의 10%
+          meta.discountCrossCheck = { supplyAmount: A, total: T, vatOriginal: V, vatCorrected, discEst };
+          console.log(`[totals/crosscheck] page ${ctx.page}: 세액 오독 의심 · 세액(${V.toLocaleString()}) = 공급가액 → 에누리 역산(${discEst.toLocaleString()}) · 세액 보정(${vatCorrected.toLocaleString()})`);
+        }
+      } else {
+        // Case 2: vat 정상 · 합계(T) = 공급가액(A) - 에누리(D) 관계식에서 역산
+        //   한국 거래명세서: 합계 = 공급가액 - 에누리  (세액은 별도 항목)
+        //   ∴ D = A - T
+        const discEst = A - T;
+        const tolerance = A * 0.01;      // 1% 오차 허용 (OCR 자릿수 오독 방어)
+        if (discEst > tolerance && discEst < A * 0.5) {
+          meta.discount = discEst;
+          meta.discountLabel = "에누리(역산)";
+          meta.discountCrossCheck = { supplyAmount: A, total: T, discEst };
+          console.log(`[totals/crosscheck] page ${ctx.page}: 공급가액(${A.toLocaleString()}) - 합계(${T.toLocaleString()}) = 에누리 역산(${discEst.toLocaleString()})`);
+        }
+      }
+    }
+
+    // summary_rows 빌드: meta 의 각 숫자 필드를 라벨·금액 페어로 변환
+    //   - 프론트 getPageDiscount 가 summary_rows 를 읽으므로 여기서 반드시 채워야 함
+    //   - meta.discount 가 역산이든 직접 감지든 항상 포함
+    const summaryRows: Array<{ label: string; amount: number }> = [];
+    if (typeof meta.supplyAmount === "number" && meta.supplyAmount > 0)
+      summaryRows.push({ label: "공급가액", amount: meta.supplyAmount });
+    if (typeof meta.vat === "number" && meta.vat > 0)
+      summaryRows.push({ label: "부가세", amount: meta.vat });
+    if (typeof meta.discount === "number" && meta.discount > 0)
+      summaryRows.push({ label: meta.discountLabel ?? "에누리", amount: meta.discount });
+    if (typeof meta.returnAmount === "number" && meta.returnAmount > 0)
+      summaryRows.push({ label: "반품", amount: meta.returnAmount });
+    if (typeof meta.subtotal === "number" && meta.subtotal > 0)
+      summaryRows.push({ label: "소계", amount: meta.subtotal });
+    if (typeof meta.total === "number" && meta.total > 0)
+      summaryRows.push({ label: "합계", amount: meta.total });
+    if (summaryRows.length > 0) meta.summary_rows = summaryRows;
+
     return { meta };
   },
 };

@@ -601,8 +601,8 @@ const StaffManagePage: React.FC = () => {
         onClick={() => handleSelect(emp)}
         className={`w-full text-left flex items-center h-14 px-3 gap-2.5 relative transition-colors cursor-pointer group ${
           isSelected
-            ? "bg-indigo-50/80"
-            : "hover:bg-slate-50"
+            ? "bg-rose-50/50"
+            : "hover:bg-orange-50/30"
         }`}
       >
         {/* 선택 강조선 */}
@@ -617,7 +617,7 @@ const StaffManagePage: React.FC = () => {
         </div>
         {/* 이름 + 메타 */}
         <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-          <span className={`text-[13px] font-black truncate leading-tight ${isSelected ? "text-indigo-700" : "text-slate-800"}`}>
+          <span className="text-[13px] font-medium text-slate-800 leading-tight truncate">
             {emp.name}
           </span>
           <div className="flex items-center gap-1 flex-wrap">
@@ -718,15 +718,16 @@ const StaffManagePage: React.FC = () => {
           </div>
 
           {/* 직원 목록 */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
             {loading && filtered.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 text-[10px] text-indigo-600 font-bold py-1.5 bg-indigo-50 border-b border-indigo-200 sticky top-0 z-10">
-                <Loader2 size={11} className="animate-spin" /> 새로 불러오는 중...
+              <div className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mb-1 bg-sky-50 border border-sky-200 rounded-md shrink-0">
+                <Loader2 size={11} className="animate-spin text-sky-600" />
+                <span className="text-[10px] font-bold text-sky-700">조건 변경 · 새로 불러오는 중...</span>
               </div>
             )}
             {loading && filtered.length === 0 ? (
-              <div className="flex justify-center py-10">
-                <Loader2 size={18} className="animate-spin text-indigo-400" />
+              <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2">
+                <Loader2 size={14} className="animate-spin" />로딩 중...
               </div>
             ) : error ? (
               <div className="m-3 p-3 text-[11px] text-red-600 font-bold bg-red-50 rounded-lg border border-red-200">
@@ -734,7 +735,7 @@ const StaffManagePage: React.FC = () => {
                 <button onClick={loadEmployees} className="ml-2 underline cursor-pointer">재시도</button>
               </div>
             ) : !loading && filtered.length === 0 ? (
-              <p className="text-center py-10 text-slate-300 text-xs">해당 조건의 직원이 없습니다</p>
+              <div className="text-center text-[11px] text-slate-300 py-6">해당 조건의 직원이 없습니다</div>
             ) : (
               <div className={loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
                 {filtered.map((emp) => <ListRow key={emp.id} emp={emp} />)}

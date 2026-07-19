@@ -1,6 +1,6 @@
 // src/components/AppNavHeader.tsx
-// 헤더 · 2026-07-15
-//   - PC: 데스크톱 탭 가로 스크롤 (오버플로 없이 전부 표시)
+// 헤더 · 2026-07-19
+//   - PC: 데스크톱 탭 실측 폭 기반 오버플로 · 넘어가는 탭만 삼선(☰) 드롭다운
 //   - 모바일: 균등 분할 · 넘치는 탭 삼선(☰) 드롭다운 처리
 //   - 로고 클릭 → 홈(랜딩) 이동
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
@@ -166,6 +166,71 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   const mobileShownTabs = mobileOrderedTabs.slice(0, mobileVisibleCount);
   const mobileOverflowTabs = mobileOrderedTabs.slice(mobileVisibleCount);
 
+  // ── 데스크탑 오버플로 처리 (2026-07-19 · 2-pass 계산) ────────────
+  //   1-pass: 버튼 예약 없이 전부 맞는지 확인 (맞으면 삼선 안 뜸)
+  //   2-pass: 오버플로 발생 시에만 ☰ 공간 확보 후 재계산
+  const desktopContainerRef = useRef<HTMLDivElement>(null);
+  const desktopMeasureRef = useRef<HTMLDivElement>(null);
+  const desktopOverflowBtnRef = useRef<HTMLDivElement>(null);
+  const [desktopVisibleCount, setDesktopVisibleCount] = useState(visibleTabs.length);
+  const [desktopOverflowOpen, setDesktopOverflowOpen] = useState(false);
+
+  useLayoutEffect(() => {
+    const container = desktopContainerRef.current;
+    const measure = desktopMeasureRef.current;
+    if (!container || !measure) return;
+    const calc = () => {
+      const containerW = container.clientWidth;
+      const btnW = 56; // ☰ 버튼 예약 폭 (오버플로 발생 시에만 사용)
+      const gap = 4; // gap-1
+      const tabEls = measure.querySelectorAll<HTMLElement>("[data-desktop-tab]");
+      // 1-pass · 버튼 예약 없이 전부 맞는지 확인
+      let totalW = 0;
+      for (let i = 0; i < tabEls.length; i++) {
+        totalW += tabEls[i].offsetWidth + (i > 0 ? gap : 0);
+      }
+      if (totalW <= containerW) {
+        setDesktopVisibleCount(tabEls.length);
+        return;
+      }
+      // 2-pass · ☰ 공간 확보 후 재계산
+      const limit = containerW - btnW - gap;
+      let used = 0;
+      let count = 0;
+      for (let i = 0; i < tabEls.length; i++) {
+        const w = tabEls[i].offsetWidth + (i > 0 ? gap : 0);
+        if (used + w > limit) break;
+        used += w;
+        count++;
+      }
+      setDesktopVisibleCount(Math.max(1, count));
+    };
+    calc();
+    const ro = new ResizeObserver(calc);
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [visibleTabs]);
+
+  useEffect(() => {
+    if (!desktopOverflowOpen) return;
+    const onDoc = (e: MouseEvent) => {
+      if (!desktopOverflowBtnRef.current?.contains(e.target as Node)) setDesktopOverflowOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, [desktopOverflowOpen]);
+
+  const desktopOrderedTabs = useMemo(() => {
+    const activeIdx = visibleTabs.findIndex(t => t.key === activePage);
+    if (activeIdx < 0 || activeIdx < desktopVisibleCount) return visibleTabs;
+    const arr = visibleTabs.slice();
+    const [active] = arr.splice(activeIdx, 1);
+    arr.splice(Math.max(0, desktopVisibleCount - 1), 0, active);
+    return arr;
+  }, [visibleTabs, activePage, desktopVisibleCount]);
+  const desktopShownTabs = desktopOrderedTabs.slice(0, desktopVisibleCount);
+  const desktopOverflowTabs = desktopOrderedTabs.slice(desktopVisibleCount);
+
   const renderDesktopTab = (tab: TabDef) => {
     const Icon = tab.icon;
     const isActive = tab.key === activePage;
@@ -270,9 +335,69 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             </span>
           </button>
 
-          {/* Desktop/태블릿 nav tabs — sm(640px)+ 노출 · 태블릿에서도 PC 공통헤더 사용 (2026-07-16) */}
-          <div className="hidden sm:flex items-center gap-1 ml-3 min-w-0 overflow-x-auto scrollbar-none">
-            {visibleTabs.map(renderDesktopTab)}
+          {/* Desktop/태블릿 nav tabs — sm(640px)+ 노출 · 넘치는 탭은 ☰ 드롭다운 (2026-07-19) */}
+          <div ref={desktopContainerRef} className="hidden sm:flex items-center gap-1 ml-3 min-w-0 relative flex-1">
+            {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
+            <div
+              ref={desktopMeasureRef}
+              aria-hidden="true"
+              className="absolute flex items-center gap-1 opacity-0 pointer-events-none"
+              style={{ left: "-9999px", top: 0 }}
+            >
+              {visibleTabs.map(t => (
+                <div key={`dmeasure-${t.key}`} data-desktop-tab>{renderDesktopTab(t)}</div>
+              ))}
+            </div>
+            {/* 실제 노출 탭 */}
+            {desktopShownTabs.map(renderDesktopTab)}
+            {/* 오버플로 · 삼선 ☰ 드롭다운 */}
+            {desktopOverflowTabs.length > 0 && (
+              <div ref={desktopOverflowBtnRef} className="relative shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setDesktopOverflowOpen(v => !v)}
+                  className={`flex items-center gap-1 px-2.5 py-2 rounded-lg text-[13px] font-bold border transition-all active:scale-95 cursor-pointer ${
+                    desktopOverflowOpen
+                      ? "bg-slate-800 text-white border-transparent shadow-md"
+                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm"
+                  }`}
+                  title={`더보기 (${desktopOverflowTabs.length}개)`}
+                  aria-label="더보기 메뉴"
+                  aria-expanded={desktopOverflowOpen}
+                >
+                  <Menu size={16} strokeWidth={2.2} />
+                </button>
+                {desktopOverflowOpen && (
+                  <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-xl border border-slate-200 py-1 min-w-[180px] z-50 max-h-[70vh] overflow-y-auto">
+                    {desktopOverflowTabs.map(tab => {
+                      const Icon = tab.icon;
+                      const c = TAB_COLOR_MAP[tab.color ?? "slate"];
+                      const isActive = tab.key === activePage;
+                      const onClickTab = () => {
+                        setDesktopOverflowOpen(false);
+                        if (tab.key === "landing" && onBack) onBack();
+                        else onNavigate?.(tab.key);
+                      };
+                      return (
+                        <button
+                          key={tab.key}
+                          type="button"
+                          onClick={onClickTab}
+                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-bold transition ${
+                            isActive
+                              ? `bg-gradient-to-r ${c.activeBg} ${c.activeText}`
+                              : `${c.inactiveText} hover:bg-slate-50 cursor-pointer`
+                          }`}
+                        >
+                          <Icon size={15} strokeWidth={isActive ? 2.4 : 1.9} />
+                          {tab.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

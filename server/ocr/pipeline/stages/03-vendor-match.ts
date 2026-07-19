@@ -36,18 +36,22 @@ export function makeVendorMatchStage(_deps: {
       // ① 사업자번호 DB 조회 (exact match · score 100)
       //    수신처 blacklist (excludedSuppliers.ts) 에 있으면 아예 사용 안 함
       let biznumMatched: { db: string; score: number; from: string } | null = null;
+      console.log(`[vendor-match/①사업자번호] page ${ctx.page}: rawText 내 사업자번호 추출 결과 · bizList=${JSON.stringify(bizList)} · supplierBiz=${JSON.stringify(supplierBiz)} · primaryBiz=${primaryBiz ?? "(없음)"}`);
       if (primaryBiz && isExcludedBusinessNumber(primaryBiz)) {
-        console.warn(`[vendor-match/①사업자번호] ${primaryBiz} 은 수신처 blacklist · 매칭·학습 모두 스킵`);
+        console.warn(`[vendor-match/①사업자번호] 실패-blacklist: ${primaryBiz} 은 수신처 blacklist → 매칭·학습 모두 스킵`);
       } else if (primaryBiz) {
+        const bizMapSize = bizMap.size;
+        console.log(`[vendor-match/①사업자번호] DB bizMap 크기=${bizMapSize} · "${primaryBiz}" 조회 시작`);
         const byBiz = bizMap.get(primaryBiz);
         if (byBiz) {
           biznumMatched = { db: byBiz, score: 100, from: `biznum(${primaryBiz})` };
-          console.log(`[vendor-match/①사업자번호] ${primaryBiz} → "${byBiz}" (DB 매칭 · score 100)`);
+          console.log(`[vendor-match/①사업자번호] 성공: ${primaryBiz} → "${byBiz}" (score 100)`);
         } else {
-          console.log(`[vendor-match/①사업자번호] ${primaryBiz} DB 미등록 (매칭 후 학습 예정)`);
+          console.log(`[vendor-match/①사업자번호] 실패-DB미등록: ${primaryBiz} · bizMap 에 없음 (현재 ${bizMapSize}개 등록) · 매칭 후 학습 예정`);
         }
       } else {
-        console.log(`[vendor-match/①사업자번호] rawText 에 사업자번호 없음`);
+        const allBizInText = extractBusinessNumbersFromRawText(rawText);
+        console.log(`[vendor-match/①사업자번호] 실패-없음: rawText 에 사업자번호 미감지 · (전체 추출=${allBizInText.length}개 · 공급처 role 없음)`);
       }
 
       // DB 매칭 임계치 60 (B: 30→60 · 오매칭 억제 · 사업자번호는 exact 100)
@@ -105,31 +109,47 @@ export function makeVendorMatchStage(_deps: {
       const nameMatches: Array<{ cand: string; db: string; score: number; from: string }> = [];
       const metaSup = (ctx.meta?.supplier ?? "").trim();
       let metaSupHandled = false;
+      console.log(`[vendor-match/②이름매칭] page ${ctx.page}: 후보 리스트 · meta="${metaSup || "(없음)"}" · direct.candidates=${JSON.stringify(direct.candidates)} · vendorNorms 수=${vendorNorms.length}`);
       if (metaSup) {
         const mm = tryMatchCandidate(metaSup);
+        const trusted = isTrustworthyMetaSup(metaSup);
         if (mm) {
-          const trusted = isTrustworthyMetaSup(metaSup);
           const boost = trusted ? 20 : 0;
           nameMatches.push({ cand: metaSup, db: mm.db, score: mm.score + boost, from: `meta${trusted ? "⭐" : ""}("${metaSup}")` });
-          console.log(`[vendor-match/②meta] "${metaSup}" → "${mm.db}" (score ${mm.score}${trusted ? "+20⭐" : " · 부스트X"} · trusted=${trusted})`);
+          console.log(`[vendor-match/②meta] 성공: "${metaSup}" → "${mm.db}" (score ${mm.score}${boost > 0 ? `+${boost}⭐` : " · 부스트X"} · trusted=${trusted})`);
           metaSupHandled = true;
         } else {
-          console.log(`[vendor-match/②meta] "${metaSup}" · DB 매칭 실패 · 다른 후보 탐색`);
+          console.log(`[vendor-match/②meta] 실패: "${metaSup}" · DB 매칭 없음 · trusted=${trusted} · threshold=${MATCH_THRESHOLD} · vendors ${vendorNorms.length}개 대상 전부 미달 · 다른 후보 탐색`);
         }
+      } else {
+        console.log(`[vendor-match/②meta] skip: meta.supplier 비어 있음`);
       }
 
       // ② 이름 후보 DB 매칭 (meta 확정 시 스킵 · 노이즈 픽업 방지)
       if (!metaSupHandled) {
+        if (direct.candidates.length === 0) {
+          console.log(`[vendor-match/②이름매칭] skip: direct.candidates 가 비어 있음 (extractSupplierFromRawText 에서 후보 없음)`);
+        }
         for (const cand of direct.candidates) {
           if (metaSup && normSupplier(cand) === normSupplier(metaSup)) continue;
           const m = tryMatchCandidate(cand);
           if (m) {
             nameMatches.push({ cand, db: m.db, score: m.score, from: `name("${cand}")` });
-            console.log(`[vendor-match/②이름매칭] "${cand}" → "${m.db}" (score ${m.score})`);
+            console.log(`[vendor-match/②이름매칭] 성공: "${cand}" → "${m.db}" (score ${m.score})`);
           } else {
-            console.log(`[vendor-match/②이름매칭] "${cand}" · 매칭 실패`);
+            // 최고 점수 후보도 함께 표시 (임계값 미달 원인 파악)
+            const normCand = normSupplier(cand);
+            let debugBest: { db: string; score: number } | null = null;
+            for (const v of vendorNorms) {
+              if (!v.n || v.n.length < 2) continue;
+              const bs = normCand === v.n ? 100 : bigramSim(normCand, v.n);
+              if (debugBest === null || bs > debugBest.score) debugBest = { db: v.name, score: bs };
+            }
+            console.log(`[vendor-match/②이름매칭] 실패: "${cand}" (norm="${normCand}") · threshold=${MATCH_THRESHOLD} · 최고점 후보="${debugBest?.db ?? "없음"}" (score=${debugBest?.score ?? 0})`);
           }
         }
+      } else {
+        console.log(`[vendor-match/②이름매칭] skip: metaSupHandled=true · direct.candidates 스캔 생략`);
       }
 
       // ②-b 상품명 제외 영역 토큰 스캔 (meta 확정 시 스킵 · 노이즈 방지)
@@ -213,15 +233,16 @@ export function makeVendorMatchStage(_deps: {
         try {
           const nameIdx = ctx.headers.indexOf("품명");
           if (nameIdx < 0) {
-            console.log(`[vendor-match/③상품기반] skip: headers 에 "품명" 없음`);
+            console.log(`[vendor-match/③상품기반] skip: headers 에 "품명" 없음 · headers=${JSON.stringify(ctx.headers)}`);
           } else {
             const productNames = Array.from(new Set(
               ctx.rows
                 .map(r => Array.isArray(r) ? String(r[nameIdx] ?? "").trim() : "")
                 .filter(n => n.length >= 2)
             ));
+            console.log(`[vendor-match/③상품기반] page ${ctx.page}: 시도 · 상품명 ${productNames.length}개 · 샘플=${JSON.stringify(productNames.slice(0, 5))}`);
             if (productNames.length < 5) {
-              console.log(`[vendor-match/③상품기반] skip: 샘플 부족 (${productNames.length}개 < 5)`);
+              console.log(`[vendor-match/③상품기반] skip: 샘플 부족 (${productNames.length}개 < 5) · 최소 5개 필요`);
             } else {
               // 1) exact match 우선
               const { data: exactRows, error: prodErr } = await supabase
@@ -231,6 +252,8 @@ export function makeVendorMatchStage(_deps: {
               if (prodErr) {
                 console.warn(`[vendor-match/③상품기반] products 조회 실패:`, prodErr.message);
               } else {
+                const exactHitCount = (exactRows ?? []).length;
+                console.log(`[vendor-match/③상품기반] exact 조회 결과: ${exactHitCount}건 히트 / ${productNames.length}개 조회`);
                 const supplierCounts = new Map<string, number>();
                 let totalHits = 0;
                 const matchedNames = new Set<string>();
@@ -242,17 +265,24 @@ export function makeVendorMatchStage(_deps: {
                   matchedNames.add(pn);
                   totalHits++;
                 }
+                if (supplierCounts.size > 0) {
+                  const voteSummary = Array.from(supplierCounts.entries()).map(([s, c]) => `"${s}"=${c}`).join(", ");
+                  console.log(`[vendor-match/③상품기반] exact 득표: ${voteSummary}`);
+                }
                 // 2) exact 매칭 실패한 상품명에 대해 fuzzy fallback
                 //    · OCR 오탈자 대응 · 상품명 앞 4자를 접두어로 ilike 검색
                 //    · 예: "광동 원탕" (실패) → "광동" 으로 시작하는 상품 조회
                 const missedNames = productNames.filter(n => !matchedNames.has(n) && n.length >= 4);
-                if (missedNames.length > 0 && totalHits / productNames.length < 0.5) {
+                const exactMatchRatio = productNames.length > 0 ? totalHits / productNames.length : 0;
+                console.log(`[vendor-match/③상품기반] exact 매칭률=${Math.round(exactMatchRatio * 100)}% · missedNames=${missedNames.length}개 · fuzzy 발동 기준(<50%): ${exactMatchRatio < 0.5 ? "YES" : "NO"}`);
+                if (missedNames.length > 0 && exactMatchRatio < 0.5) {
                   // 매칭률 50% 미만이면 fuzzy fallback 시도
                   const prefixSet = new Set<string>();
                   for (const n of missedNames) {
                     const cleaned = n.replace(/[\s()（）\[\]]/g, "");
                     if (cleaned.length >= 3) prefixSet.add(cleaned.slice(0, 3));  // 앞 3자
                   }
+                  console.log(`[vendor-match/③상품기반-fuzzy] 접두어 ${prefixSet.size}개로 ILIKE 조회 시작 · prefixes=${JSON.stringify(Array.from(prefixSet).slice(0, 10))}`);
                   // OR 조건으로 병합 (Supabase 는 or() 사용)
                   const orExpr = Array.from(prefixSet).map(p => `product_name.ilike.${p}%`).join(",");
                   if (orExpr) {
@@ -275,11 +305,16 @@ export function makeVendorMatchStage(_deps: {
                         fuzzyAdded++;
                       }
                     }
-                    if (fuzzyAdded > 0) console.log(`[vendor-match/③상품기반-fuzzy] 접두어 매칭 ${fuzzyAdded}건 추가 (총 ${totalHits}건)`);
+                    if (fuzzyAdded > 0) {
+                      const fuzzyVoteSummary = Array.from(supplierCounts.entries()).map(([s, c]) => `"${s}"=${c}`).join(", ");
+                      console.log(`[vendor-match/③상품기반-fuzzy] 접두어 매칭 ${fuzzyAdded}건 추가 (총 ${totalHits}건) · 득표: ${fuzzyVoteSummary}`);
+                    } else {
+                      console.log(`[vendor-match/③상품기반-fuzzy] 접두어 매칭 0건 · DB 에 해당 접두어 상품 없음`);
+                    }
                   }
                 }
                 if (totalHits === 0) {
-                  console.log(`[vendor-match/③상품기반] products 매칭 0건 (샘플 ${productNames.length}개)`);
+                  console.log(`[vendor-match/③상품기반] 실패: products 매칭 0건 · exact ${exactHitCount}건 · fuzzy 후에도 0건 · 샘플 ${productNames.length}개 중 미스=${missedNames.length}개`);
                 } else {
                   let topSup = "";
                   let topCnt = 0;
@@ -294,13 +329,14 @@ export function makeVendorMatchStage(_deps: {
                   const isBlacklisted = topNorm && [...excludedNorms].some(en => en && (topNorm === en || topNorm.includes(en) || en.includes(topNorm)));
                   const ratio = topCnt / totalHits;
                   if (isBlacklisted) {
-                    console.log(`[vendor-match/③상품기반] skip: 최빈 supplier "${topSup}" 은 수신처 blacklist`);
-                  } else if (ratio >= 0.6) {
+                    console.log(`[vendor-match/③상품기반] 실패-blacklist: 최빈 supplier "${topSup}" 은 수신처 blacklist · ${topCnt}/${totalHits}표`);
+                  } else if (ratio >= 0.5) {
                     vendorMatched = topSup;
                     matchSource = `product-majority(${topCnt}/${totalHits})`;
-                    console.log(`[vendor-match/③상품기반] ${productNames.length}개 상품 → "${topSup}" (${topCnt}/${totalHits} 우세 · ${Math.round(ratio * 100)}%)`);
+                    console.log(`[vendor-match/③상품기반] 성공: ${productNames.length}개 상품 → "${topSup}" (${topCnt}/${totalHits} · ${Math.round(ratio * 100)}%)`);
                   } else {
-                    console.log(`[vendor-match/③상품기반] 우세 부족: top="${topSup}" ${topCnt}/${totalHits} (${Math.round(ratio * 100)}% < 60%)`);
+                    const allVotes = Array.from(supplierCounts.entries()).map(([s, c]) => `"${s}"=${c}`).join(", ");
+                    console.log(`[vendor-match/③상품기반] 실패-우세부족: top="${topSup}" ${topCnt}/${totalHits} (${Math.round(ratio * 100)}% < 50%) · 전체득표: ${allVotes}`);
                   }
                 }
               }
@@ -311,36 +347,80 @@ export function makeVendorMatchStage(_deps: {
         }
 
         // ④ 역인덱스 폴백 (Task #50 · 2026-07-19)
-        //   ③ 상품기반 fallback 도 실패한 경우에만 동작
+        //   ③ 상품기반 fallback 도 실패한 경우에만 동작 (샘플 부족 포함)
         //   추출된 상품명들을 getProductToSuppliersMap() 로 조회 → 최다 득표 공급사
-        //   신뢰도(votes/total) < 50% 이면 채우지 않음
+        //   신뢰도(votes/total) < 30% 이면 채우지 않음 (임계값 40→30% 하향)
         if (!vendorMatched) {
           try {
             const nameIdxRl = ctx.headers.indexOf("품명");
-            const rlNames = nameIdxRl >= 0
+            // Stage 3 와 달리 품목 수 하한 없음 (1개라도 히트 가능)
+            const rlNamesRaw = nameIdxRl >= 0
               ? Array.from(new Set(
                   ctx.rows
-                    .map(r => Array.isArray(r) ? String(r[nameIdxRl] ?? "").trim().toLowerCase() : "")
+                    .map(r => Array.isArray(r) ? String(r[nameIdxRl] ?? "").trim() : "")
                     .filter(n => n.length >= 2)
-                )).slice(0, 10)
+                ))
               : [];
+            // 역인덱스 키는 toLowerCase · 원본도 함께 보관 (진단 로그용)
+            const rlNames = rlNamesRaw.map(n => n.toLowerCase());
             if (rlNames.length === 0) {
               console.log(`[vendor-match/④역인덱스] skip: 품명 없음`);
             } else {
               const rlMap = await getProductToSuppliersMap();
+              console.log(`[vendor-match/④역인덱스] 역인덱스 Map 크기=${rlMap.size} · 조회 상품=${rlNames.length}개: ${JSON.stringify(rlNamesRaw.slice(0, 5))}`);
               const voteCounts = new Map<string, number>();
               let totalVotes = 0;
-              for (const pn of rlNames) {
+              const hitNames: string[] = [];
+              const missNames: string[] = [];
+              for (let i = 0; i < rlNames.length; i++) {
+                const pn = rlNames[i];
                 const candidates = rlMap.get(pn);
-                if (!candidates || candidates.length === 0) continue;
+                if (!candidates || candidates.length === 0) {
+                  missNames.push(rlNamesRaw[i]);
+                  continue;
+                }
                 // 1순위 공급사에만 투표 (다수결)
                 const topSup = candidates[0].supplier;
                 voteCounts.set(topSup, (voteCounts.get(topSup) ?? 0) + 1);
                 totalVotes++;
+                hitNames.push(rlNamesRaw[i]);
+              }
+              // ④-b · ILIKE 부분매칭 폴백 (2026-07-19)
+              //   exact 매칭 hit 0 시 · products 테이블에 상품명 부분 매칭 · supplier 취합
+              //   예: OCR "광동원탕" → SELECT supplier FROM products WHERE product_name ILIKE '%광동원탕%'
+              if (totalVotes === 0 && rlNamesRaw.length > 0) {
+                console.log(`[vendor-match/④-b ILIKE] exact 매칭 실패 · products 테이블 ILIKE 조회 시작 (${rlNamesRaw.length}개)`);
+                for (let i = 0; i < rlNamesRaw.length; i++) {
+                  const rawName = rlNamesRaw[i];
+                  if (rawName.length < 3) continue; // 너무 짧은 이름 스킵
+                  try {
+                    const { data, error } = await supabase
+                      .from("products")
+                      .select("supplier")
+                      .ilike("product_name", `%${rawName}%`)
+                      .not("supplier", "is", null)
+                      .limit(3);
+                    if (error || !data || data.length === 0) {
+                      if (!missNames.includes(rawName)) missNames.push(rawName);
+                      continue;
+                    }
+                    // 첫번째 supplier 로 투표 (products 는 canonical 데이터)
+                    const supHit = String((data[0] as any).supplier ?? "").trim();
+                    if (supHit) {
+                      voteCounts.set(supHit, (voteCounts.get(supHit) ?? 0) + 1);
+                      totalVotes++;
+                      if (!hitNames.includes(rawName)) hitNames.push(rawName);
+                    }
+                  } catch (e: any) {
+                    console.warn(`[vendor-match/④-b ILIKE] "${rawName}" 예외:`, e?.message);
+                  }
+                }
+                console.log(`[vendor-match/④-b ILIKE] 완료 · 히트 ${hitNames.length}건 (총 ${totalVotes}표)`);
               }
               if (totalVotes === 0) {
-                console.log(`[vendor-match/④역인덱스] 역인덱스 히트 없음 (${rlNames.length}개 상품명 조회)`);
+                console.log(`[vendor-match/④역인덱스] 역인덱스 히트 없음 (${rlNames.length}개 조회 · 미스: ${JSON.stringify(missNames.slice(0, 5))})`);
               } else {
+                console.log(`[vendor-match/④역인덱스] 히트 ${hitNames.length}건: ${JSON.stringify(hitNames.slice(0, 5))} · 미스: ${JSON.stringify(missNames.slice(0, 5))}`);
                 let topSup = "";
                 let topVotes = 0;
                 for (const [sup, cnt] of voteCounts) {
@@ -355,14 +435,14 @@ export function makeVendorMatchStage(_deps: {
                 const isBlacklisted2 = topNorm2 && [...excludedNorms2].some(en => en && (topNorm2 === en || topNorm2.includes(en) || en.includes(topNorm2)));
                 if (isBlacklisted2) {
                   console.log(`[vendor-match/④역인덱스] skip: 최빈 supplier "${topSup}" 수신처 blacklist`);
-                } else if (confidence >= 0.5) {
+                } else if (confidence >= 0.3) {
                   vendorMatched = topSup;
                   matchSource = `reverse-lookup(${topVotes}/${totalVotes})`;
                   const inferenceInfo = { source: "reverse-lookup", votes: topVotes, total: totalVotes, confidence: Math.round(confidence * 100) };
                   (ctx.meta as any).supplier_inference = inferenceInfo;
                   console.log(`[vendor-match/④역인덱스] "${topSup}" (${topVotes}/${totalVotes} · ${Math.round(confidence * 100)}%)`);
                 } else {
-                  console.log(`[vendor-match/④역인덱스] 신뢰도 부족: top="${topSup}" ${topVotes}/${totalVotes} (${Math.round(confidence * 100)}% < 50%) · 공란 유지`);
+                  console.log(`[vendor-match/④역인덱스] 신뢰도 부족: top="${topSup}" ${topVotes}/${totalVotes} (${Math.round(confidence * 100)}% < 30%) · 공란 유지`);
                 }
               }
             }
@@ -413,6 +493,22 @@ export function makeVendorMatchStage(_deps: {
 
       // meta 반영
       const meta = { ...ctx.meta };
+
+      // 스테이지별 결과 요약 (디버깅용)
+      const stageResult = {
+        "①biz-num": biznumMatched
+          ? `success(${biznumMatched.db})`
+          : primaryBiz
+            ? (isExcludedBusinessNumber(primaryBiz) ? "fail-blacklist" : "fail-db-miss")
+            : "fail-not-detected",
+        "②name-match": nameMatches.length > 0
+          ? `success(${nameMatches.map(m => `${m.db}@${m.score}`).join(",")})`
+          : (direct.candidates.length > 0 ? `fail-below-${MATCH_THRESHOLD}%` : "fail-no-candidates"),
+        "③product-based": matchSource.startsWith("product-majority") ? `success(${matchSource})` : "fail-or-skip",
+        "④reverse-index": matchSource.startsWith("reverse-lookup") ? `success(${matchSource})` : "not-reached-or-skip",
+      };
+      console.log(`[vendor-match/최종요약] page ${ctx.page}: vendor="${vendorMatched ?? "(미상)"}" · source="${matchSource || "(없음)"}" · stages=${JSON.stringify(stageResult)}`);
+
       if (vendorMatched) {
         if (vendorMatched !== meta.supplier) {
           console.log(`[vendor-match/최종] page ${ctx.page}: "${meta.supplier ?? "(없음)"}" → "${vendorMatched}" (${matchSource})`);
@@ -422,7 +518,7 @@ export function makeVendorMatchStage(_deps: {
         }
       } else {
         // DB 매칭 실패 → 공란 (사용자 입력 대기)
-        console.log(`[vendor-match/최종] page ${ctx.page}: 미상 · 공란 처리 (사용자 입력 필요)`);
+        console.log(`[vendor-match/최종] page ${ctx.page}: 미상 · 공란 처리 (사용자 입력 필요) · 이름후보=${JSON.stringify(direct.candidates)} · 사업자번호=${primaryBiz ?? "-"}`);
         meta.supplier = undefined;
       }
 

@@ -319,7 +319,10 @@ export const VendorDetailModal: React.FC<{ vendor: Vendor; onClose: () => void; 
           note: draft.note.trim() || null,
         }),
       });
-      if (!res.ok) throw new Error(`서버 ${res.status}`);
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData?.error ?? `서버 ${res.status}`);
+      }
       setSaveMsg({ type: "ok", text: "저장 완료" });
       onSaved();
     } catch (e: any) {

@@ -26,9 +26,20 @@ const scoreOf = (r: RawOcrResult | null | undefined): number => {
 //     - attempts 배열 대신 best 스칼라 유지 · 매 시도 즉시 폐기
 //     - LOW_MEM 모드에서는 재시도 90° 1회만 (기존 대비/90/180/270 = 4회 → 1회)
 //     - 조기 종료 조건 충족 시 즉시 반환
+//   재추출 approach 분기 (2026-07-19):
+//     - "rearrange": OCR 재실행 안 함 · cachedRawText 를 headers/rows 비운 채 rawText 로 주입
+//                    → 후속 stage (fallback + normalize) 가 rawText 재파싱만으로 결과 생성
 export const ocrEngineStage: Stage = {
   name: "ocr-engine",
   async run(ctx) {
+    // rearrange 모드: OCR 스킵 · 이전 rawText 를 재사용해 파싱 로직만 다르게 (headers/rows 비우기)
+    if (ctx.approach === "rearrange") {
+      const cached = ctx.cachedRawText ?? "";
+      console.log(`[ocr-engine] page ${ctx.page}: rearrange 모드 · OCR 스킵 · cachedRawText ${cached.length}자 재파싱`);
+      const raw: RawOcrResult = { headers: [], rows: [], meta: {}, rawText: cached };
+      return finalize(raw);
+    }
+
     let best: RawOcrResult = await callPpuOcr(ctx.rawB64, ctx.rawMime);
     let bestLabel = "원본";
 
@@ -55,9 +66,10 @@ export const ocrEngineStage: Stage = {
       }
     };
 
-    // 시도 순서: LOW_MEM 이면 90° 하나만 · 아니면 대비→90→180→270
+    // 시도 순서: LOW_MEM 이면 재시도 없음 (원본 유지 · 90° 편향 방지 · 2026-07-19 롤백)
+    //   · 이전 90° 단독 재시도가 rows 수 오판으로 뒤집힌 텍스트를 채택하는 버그 발생
     const attempts: Array<[string, () => Promise<{ b64: string; mimeType: string }>]> = LOW_MEM
-      ? [["90°", () => rotateImage(ctx.rawB64, 90)]]
+      ? []
       : [
           ["대비강화", () => preprocessHighContrast(ctx.rawB64)],
           ["90°",  () => rotateImage(ctx.rawB64, 90)],
