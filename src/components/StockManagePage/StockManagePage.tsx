@@ -543,9 +543,16 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [supplierFilter, setSupplierFilter] = useState("");
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
-  const [periodPreset, setPeriodPreset] = useState<PDPeriodPreset>("all");
+  const [periodPreset, setPeriodPreset] = useState<PDPeriodPreset>("3m");
+  const [dateFrom, setDateFrom] = useState<string>(() => {
+    const today = new Date();
+    const start = new Date(today.getFullYear(), today.getMonth() - 3, today.getDate());
+    return `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-${String(start.getDate()).padStart(2, "0")}`;
+  });
+  const [dateTo, setDateTo] = useState<string>(() => {
+    const today = new Date();
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  });
   const [sortKey, setSortKey] = useState<PDSortKey>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [importBatches, setImportBatches] = useState<any[]>([]);

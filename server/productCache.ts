@@ -16,6 +16,9 @@ let supplierAliasCache: Map<string, string> | null = null;
 let supplierAliasPromise: Promise<Map<string, string>> | null = null;
 let vendorNamesCache: string[] | null = null;
 let vendorNamesPromise: Promise<string[]> | null = null;
+// 상품명 → 공급사 후보 역인덱스 캐시 (Task #50)
+let productToSuppliersCache: Map<string, { supplier: string; count: number }[]> | null = null;
+let productToSuppliersPromise: Promise<Map<string, { supplier: string; count: number }[]>> | null = null;
 
 export function resetProductCache(): void {
   productMapCache = null;
@@ -35,6 +38,11 @@ export function resetSupplierAliasCache(): void {
 export function resetVendorNamesCache(): void {
   vendorNamesCache = null;
   vendorNamesPromise = null;
+}
+
+export function resetProductToSuppliersCache(): void {
+  productToSuppliersCache = null;
+  productToSuppliersPromise = null;
 }
 
 /**
@@ -214,6 +222,79 @@ export async function getSupplierAliasMap(): Promise<Map<string, string>> {
     return map;
   })();
   return supplierAliasPromise;
+}
+
+/**
+ * 상품명 → 공급사 후보 역인덱스 (Task #50 · 2026-07-19)
+ *   데이터 소스 ①: ocr_synonyms.prod_name_old + supplier_new (동의어 우선)
+ *   데이터 소스 ②: products.product_name + supplier (실제 DB · 보조)
+ *   같은 상품명에 여러 공급사 → count 순 정렬
+ */
+export async function getProductToSuppliersMap(): Promise<Map<string, { supplier: string; count: number }[]>> {
+  if (productToSuppliersCache) return productToSuppliersCache;
+  if (productToSuppliersPromise) return productToSuppliersPromise;
+  productToSuppliersPromise = (async () => {
+    // raw accumulator: normKey → { supplier → count }
+    const acc = new Map<string, Map<string, number>>();
+    const addEntry = (rawName: string, supplier: string) => {
+      const key = rawName.trim().toLowerCase();
+      const sup = supplier.trim();
+      if (!key || !sup || key.length < 2) return;
+      if (!acc.has(key)) acc.set(key, new Map());
+      const m = acc.get(key)!;
+      m.set(sup, (m.get(sup) ?? 0) + 1);
+    };
+
+    try {
+      // ① ocr_synonyms (동의어 우선 · supplier_new 있는 행만)
+      const { data: synRows } = await supabase
+        .from("ocr_synonyms")
+        .select("prod_name_old,supplier_new,cancelled");
+      for (const row of (synRows ?? []) as any[]) {
+        if (row.cancelled === true) continue;
+        const name = String(row.prod_name_old ?? "").trim();
+        const sup  = String(row.supplier_new ?? "").trim();
+        if (name && sup) addEntry(name, sup);
+      }
+    } catch {
+      // 조회 실패 시 무시 · 다음 소스 계속
+    }
+
+    try {
+      // ② products (보조 · supplier 컬럼 있는 행만)
+      const PAGE = 1000;
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("products")
+          .select("product_name,supplier")
+          .not("supplier", "is", null)
+          .range(from, from + PAGE - 1);
+        if (error || !data || data.length === 0) break;
+        for (const row of data as any[]) {
+          const name = String(row.product_name ?? "").trim();
+          const sup  = String(row.supplier ?? "").trim();
+          if (name && sup) addEntry(name, sup);
+        }
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+    } catch {
+      // 조회 실패 시 무시
+    }
+
+    // Map<normKey, {supplier,count}[] sorted by count desc> 로 변환
+    const result = new Map<string, { supplier: string; count: number }[]>();
+    for (const [key, supplierMap] of acc) {
+      const sorted = Array.from(supplierMap.entries())
+        .map(([supplier, count]) => ({ supplier, count }))
+        .sort((a, b) => b.count - a.count);
+      result.set(key, sorted);
+    }
+    productToSuppliersCache = result;
+    return result;
+  })();
+  return productToSuppliersPromise;
 }
 
 export async function getSynonymMap(): Promise<Map<string, string>> {

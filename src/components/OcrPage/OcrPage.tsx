@@ -742,58 +742,97 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
     const images = imagesDataRef.current;
     if (images.length === 0 || extracting) return;
     setExtracting(true); setPages([]); setProcessed(0); setError(null);
-    setStatusMsg(images.length > 1 ? `${images.length}장 동시 처리 중...` : "처리 중...");
+    setStatusMsg(images.length > 1 ? `${images.length}장 처리 시작...` : "처리 중...");
     try {
       const rotatedImages = rotation === 0
         ? images
         : await Promise.all(images.map(img => physicallyRotate(img.data, img.mimeType, rotation)));
 
-      // 병렬 정책:
-      //   - gemini: 네트워크 I/O + 다중키 로테이션 → 병렬 유리
-      //   - onnx: CPU-bound 싱글스레드 → 병렬시 뒤 페이지 timeout · 순차 처리
-      const isSerial = ocrEngine === "onnx";
-      let settled: PromiseSettledResult<{ index: number; data: any }>[];
+      // ── SSE 스트리밍 (2026-07-19) ─────────────────────────────────────────
+      //   1. 서버가 한 페이지 처리할 때마다 즉시 event: page 로 flush
+      //   2. 클라이언트는 페이지 도착 즉시 setPages 로 아래로 렌더 추가
+      //   3. Gemini/ONNX 모두 서버 내부에서 순차 처리 (기존 병렬은 폐기)
+      //      · Gemini 도 순차: 다중키 회전 로직이 요청 스코프이므로 병렬 시 키 경쟁
+      //      · ONNX 는 이미 CPU 병목으로 순차였음
+      //   SSE 선택 이유는 파일 상단 주석 참조 (Render 프록시 keep-alive 20초 대응)
+      const pageErrors: string[] = [];
+      const total = rotatedImages.length;
 
-      if (isSerial) {
-        settled = [];
-        for (let i = 0; i < rotatedImages.length; i++) {
-          const img = rotatedImages[i];
-          setStatusMsg(`${i + 1}/${rotatedImages.length} 페이지 처리 중...`);
-          try {
-            const res = await axios.post("/api/ocr", { images: [img], engine: engineToBackend(ocrEngine) });
-            setProcessed(prev => prev + 1);
-            settled.push({ status: "fulfilled", value: { index: i, data: res.data } });
-          } catch (err) {
-            settled.push({ status: "rejected", reason: err });
-          }
-        }
-      } else {
-        settled = await Promise.allSettled(
-          rotatedImages.map(async (img, i) => {
-            const res = await axios.post("/api/ocr", { images: [img], engine: engineToBackend(ocrEngine) });
-            setProcessed(prev => prev + 1);
-            return { index: i, data: res.data };
-          })
-        );
+      const res = await fetch("/api/ocr?stream=1", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
+        body: JSON.stringify({ images: rotatedImages, engine: engineToBackend(ocrEngine) }),
+      });
+      if (!res.ok || !res.body) {
+        // 서버가 SSE 응답을 시작하기 전 400/500 반환 시 JSON 파싱 시도
+        let errMsg = `HTTP ${res.status}`;
+        try {
+          const j = await res.json();
+          errMsg = j?.error ?? errMsg;
+        } catch { /* body 가 SSE 이거나 비어 있음 */ }
+        throw new Error(errMsg);
       }
 
-      const all: OcrPageResult[] = [];
-      const pageErrors: string[] = [];
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+      let buf = "";
+      let doneFlag = false;
 
-      settled.forEach((result, i) => {
-        if (result.status === "fulfilled") {
-          const page = result.value.data.pages?.[0];
-          if (page) all.push({ ...page, page: i + 1 });
-        } else {
-          const msg = (result.reason as any)?.response?.data?.error
-            ?? (result.reason as any)?.message ?? "OCR 실패";
-          pageErrors.push(`${i + 1}페이지: ${msg}`);
+      // SSE 이벤트 파서 · 빈 줄로 구분되는 블록마다 event/data 분리
+      const processBlock = (block: string) => {
+        let eventName = "message";
+        const dataLines: string[] = [];
+        for (const line of block.split("\n")) {
+          if (!line || line.startsWith(":")) continue;   // comment/keepalive
+          if (line.startsWith("event:")) eventName = line.slice(6).trim();
+          else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
         }
-      });
+        if (dataLines.length === 0) return;
+        let payload: any = null;
+        try { payload = JSON.parse(dataLines.join("\n")); } catch { return; }
+        if (eventName === "start") {
+          setStatusMsg(`0 / ${payload?.total ?? total} 페이지 처리 중...`);
+        } else if (eventName === "page") {
+          const pg = payload?.page;
+          if (pg && typeof pg.page === "number") {
+            setPages(prev => {
+              // 중복 페이지 번호 방지 (혹시 재전송)
+              if (prev.some(p => p.page === pg.page)) return prev.map(p => p.page === pg.page ? pg : p);
+              return [...prev, pg as OcrPageResult];
+            });
+          }
+          setProcessed(prev => {
+            const next = prev + 1;
+            setStatusMsg(`${next} / ${payload?.total ?? total} 페이지 처리 중...`);
+            return next;
+          });
+          if (payload?.error) pageErrors.push(`${(payload?.index ?? 0) + 1}페이지: ${payload.error}`);
+        } else if (eventName === "error") {
+          const msg = payload?.error ?? "OCR 실패";
+          const p = payload?.page ? `${payload.page}페이지: ` : "";
+          pageErrors.push(`${p}${msg}`);
+        } else if (eventName === "done") {
+          doneFlag = true;
+        }
+      };
 
-      if (all.length === 0 && pageErrors.length > 0) throw new Error(pageErrors.join(" / "));
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        // SSE 이벤트 구분자: 빈 줄 (\n\n)
+        let idx: number;
+        while ((idx = buf.indexOf("\n\n")) >= 0) {
+          const block = buf.slice(0, idx);
+          buf = buf.slice(idx + 2);
+          processBlock(block);
+        }
+        if (doneFlag) break;
+      }
+      // 잔여 flush
+      if (buf.trim()) processBlock(buf);
+
       if (pageErrors.length > 0) setError(pageErrors.join(" / "));
-      setPages(all);
     } catch (err: any) {
       setError(err?.response?.data?.error ?? err?.message ?? "OCR 처리 중 오류가 발생했습니다.");
     } finally {

@@ -14,6 +14,7 @@ import type { AppNavPage } from "../AppNavHeader";
 // VendorListEditor · VendorDetailModal · Vendor — split 패널 구성 (static import · panel 모드 지원)
 import { VendorListEditor, VendorDetailModal } from "../LandingPage/VendorListEditor";
 import type { Vendor } from "../LandingPage/VendorListEditor";
+import { StockReconciliationTab } from "../StockManagePage/StockReconciliationTab";
 
 interface OrderRequest {
   id: string;
@@ -80,7 +81,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   ocrTabOnLogout,
 }) => {
   // 상단 탭 (발주요청 / 발주필요 / 사입(OCR거래명세서 등록) / 공급사관리) · Vercel Ink underline 스타일
-  const [topTab, setTopTab] = useState<"order" | "need" | "receipt" | "vendor">("order");
+  const [topTab, setTopTab] = useState<"order" | "need" | "receipt" | "reconciliation" | "vendor">("order");
   // 공급사관리 서브 pill (재고관리 스타일 · 대시보드/원본데이터)
   // (removed 2026-07-16) vendorPageTab — VendorListEditor 를 한 줄 리스트 + 모달 방식으로 통일
   // 원본데이터 → 대시보드 전환 시 자동 선택될 공급사 id
@@ -662,21 +663,24 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           { k: "need"    as const, label: "발주필요", icon: ClipboardList, color: "amber", badge: lowStock.length },
           // 라벨 반응형: 데스크탑 lg+ 은 풀네임 · 태블릿·모바일은 축약 (2026-07-16)
           { k: "receipt" as const, label: "사입(OCR거래명세서 등록)", shortLabel: "사입·OCR", icon: PackageCheck, color: "violet" },
+          { k: "reconciliation" as const, label: "입고/사입/ERP 검증", shortLabel: "입고/사입/ERP", icon: CheckSquare, color: "emerald" },
           { k: "vendor"  as const, label: "공급사관리", icon: Building2, color: "teal" },
         ].map(t => {
           const Icon = t.icon;
           const active = topTab === t.k;
           const activeText = {
-            sky:    "text-sky-700",
-            amber:  "text-amber-700",
-            violet: "text-violet-700",
-            teal:   "text-teal-700",
+            sky:     "text-sky-700",
+            amber:   "text-amber-700",
+            violet:  "text-violet-700",
+            emerald: "text-emerald-700",
+            teal:    "text-teal-700",
           }[t.color]!;
           const activeBar = {
-            sky:    "bg-sky-500",
-            amber:  "bg-amber-500",
-            violet: "bg-violet-500",
-            teal:   "bg-teal-500",
+            sky:     "bg-sky-500",
+            amber:   "bg-amber-500",
+            violet:  "bg-violet-500",
+            emerald: "bg-emerald-500",
+            teal:    "bg-teal-500",
           }[t.color]!;
           return (
             <button key={t.k} onClick={() => setTopTab(t.k)}
@@ -886,6 +890,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             onBack={ocrTabOnBack ?? (() => {})}
             onNavigate={ocrTabOnNavigate}
             onLogout={ocrTabOnLogout}
+          />
+        </div>
+      )}
+      {/* ── 입고/사입/ERP 검증 탭 (2026-07-19 복원) ── */}
+      {topTab === "reconciliation" && (
+        <div className="flex-1 flex flex-col min-h-0">
+          <StockReconciliationTab
+            authSession={ocrTabAuthSession ?? null}
+            onOpenOcr={() => setTopTab("receipt")}
           />
         </div>
       )}

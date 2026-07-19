@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import { Download, Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, FileSpreadsheet, Upload as UploadIcon, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
 import { isNonProductText, isValidSupplierHint } from "../../lib/ocrRowFilter";
 import { reextractCellCandidates } from "../../lib/cellReextract";
+import { VendorDetailModal, type Vendor } from "../LandingPage/VendorListEditor";
 
 export interface ConfirmedItem {
   supplier: string;
@@ -14,8 +15,11 @@ export interface ConfirmedItem {
   balance?: number;
   expiry_date?: string;
   memo?: string;
-  confirmed_at?: string; // 2차보정 확정 버튼 누른 작업일 (YYYY-MM-DD)
+  confirmed_at?: string;  // 2차보정 확정 버튼 누른 작업일 (YYYY-MM-DD)
+  invoice_date?: string;  // 거래명세서 원본 날짜 (meta.date) — saved_at과 별개
   raw_json?: Record<string, unknown>;
+  image_url?: string;     // Cloudinary 명세서 원본 이미지 URL
+  image_public_id?: string; // Cloudinary public_id (삭제 시 사용)
 }
 
 interface RawPage {
@@ -180,6 +184,43 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   // ── 공급처 편집 상태 — supplierTotals 계산보다 먼저 선언해야 참조 가능
   const [rawSupplierByPage, setRawSupplierByPage] = useState<Record<number, string>>({});
+  // 공급사 조회·수정 모달 (2026-07-18 · 명세서 헤더 공급사 클릭 시)
+  const [vendorEditModal, setVendorEditModal] = useState<Vendor | null>(null);
+  const openVendorEdit = useCallback(async (supplierName: string) => {
+    const name = supplierName.trim();
+    if (!name) return;
+    try {
+      const res = await fetch(`/api/vendors`);
+      const data = await res.json();
+      const arr: Vendor[] = Array.isArray(data) ? data : (data.rows ?? []);
+      const norm = (s: string) => s.toLowerCase().replace(/[()（）\s㈜(주)주식회사]/g, "");
+      const target = norm(name);
+      // 정확 일치 우선 · 다음 부분일치
+      let match = arr.find(v => norm(String(v.company_name ?? "")) === target);
+      if (!match) match = arr.find(v => norm(String(v.company_name ?? "")).includes(target) || target.includes(norm(String(v.company_name ?? ""))));
+      if (!match) {
+        // 신규 공급사 등록 유도
+        if (window.confirm(`"${name}" 은(는) 공급사 DB 에 없습니다.\n신규 등록하시겠습니까?`)) {
+          const created = await fetch("/api/vendors", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ company_name: name }),
+          });
+          if (created.ok) {
+            const newV = await created.json();
+            setVendorEditModal(newV);
+          } else {
+            alert("공급사 신규 등록 실패");
+          }
+        }
+        return;
+      }
+      setVendorEditModal(match);
+    } catch (e) {
+      console.error("[공급사조회] 실패:", e);
+      alert("공급사 정보 조회 실패");
+    }
+  }, []);
   const [editingRawSuppRow, setEditingRawSuppRow] = useState<number | null>(null);
   const [editingRawSuppVal, setEditingRawSuppVal] = useState("");
   const [supplierConfirm,   setSupplierConfirm  ] = useState<{ pageNum: number; newVal: string; rowCount: number; addSynonyms: boolean } | null>(null);
@@ -264,10 +305,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [savingBalance, setSavingBalance] = useState<Record<string, boolean>>({});
   // 확정표 컬럼 접기
   const [collapsedConfCols, setCollapsedConfCols] = useState<Set<string>>(new Set());
-  // 페이지별 접기 상태 (각 표 별도 관리)
-  const [collapsedErpPages, setCollapsedErpPages]   = useState<Set<number>>(new Set());
-  const [collapsedRawPages, setCollapsedRawPages]   = useState<Set<number>>(new Set());
-  const [collapsedConfPages, setCollapsedConfPages] = useState<Set<number>>(new Set());
+  // 페이지별 접기 상태 제거 (2026-07-19) · 우측 명세서는 항상 펼침
   // ERP 상품코드 → 현재고 매핑 (products-map API 캐시)
   const [erpStockMap, setErpStockMap] = useState<Record<string, number | null>>({});
   const [erpStockLoaded, setErpStockLoaded] = useState(false);
@@ -342,6 +380,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // numericCellCandidates[`${ri}-${ci}`] = 이 셀에 대해 캐싱된 후보 배열
   const [numericCellCycle, setNumericCellCycle] = useState<Record<string, number>>({});
   const [numericCellCandidates, setNumericCellCandidates] = useState<Record<string, (string | number)[]>>({});
+  // 후보 없음 시각 피드백 (2026-07-18)
+  const [noCandidateCells, setNoCandidateCells] = useState<Set<string>>(new Set());
 
   // ── 1차보정 체크박스 마킹 (삭제 대기 · 취소선 표시) ─────────────────────
   const [hiddenRawRows, setHiddenRawRows] = useState<Set<number>>(new Set());
@@ -449,30 +489,40 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const reextractOneCell = useCallback((ri: number, ci: number, colName: "수량" | "단가" | "금액" | "유통기한") => {
     const cellKey = `${ri}-${ci}`;
 
-    // 유통기한은 rawText 로컬 스캔으로 직접 처리 (순환 포함)
+    // 유통기한은 rawText 로컬 스캔으로 직접 처리 (순환 포함) · 2026이상 년도로 시작하는 모든 날짜형식
     if (colName === "유통기한") {
       const pn = pageNums[ri];
       const pageObj = structuredPages.find(p => p.page === pn) ?? pages.find(p => p.page === pn);
       if (!pageObj?.rawText) return;
       const raw = String(pageObj.rawText);
-      const patterns = [
-        /(20\d{2})[.\-\/](\d{1,2})[.\-\/](\d{1,2})/g,
-        /(20\d{2})(\d{2})(\d{2})/g,
+      const MIN_YEAR = 2026;
+      // 유연 패턴 · 공백 허용 · 다양한 구분자 · YYYY | YYYY-MM | YYYY-MM-DD | YYYY년MM월DD일 | YYYYMMDD
+      const patterns: { re: RegExp; hasM?: boolean; hasD?: boolean }[] = [
+        { re: /(20\d{2})\s*[.\-\/·~]\s*(\d{1,2})\s*[.\-\/·~]\s*(\d{1,2})/g, hasM: true, hasD: true },
+        { re: /(20\d{2})(\d{2})(\d{2})(?!\d)/g, hasM: true, hasD: true },
+        { re: /(20\d{2})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일/g, hasM: true, hasD: true },
+        { re: /(20\d{2})\s*[.\-\/·~]\s*(\d{1,2})(?!\s*[.\-\/·~\d])/g, hasM: true, hasD: false },
+        { re: /(20\d{2})\s*년\s*(\d{1,2})\s*월(?!\s*\d)/g, hasM: true, hasD: false },
+        { re: /(?<![\d])(20\d{2})(?!\s*[.\-\/·~\d년])/g, hasM: false, hasD: false },
       ];
       const allCands: string[] = [];
-      for (const pat of patterns) {
+      for (const p of patterns) {
         let m;
-        while ((m = pat.exec(raw)) !== null) {
-          const y = m[1], mo = String(m[2]).padStart(2, "0"), d = String(m[3]).padStart(2, "0");
+        while ((m = p.re.exec(raw)) !== null) {
+          const yN = Number(m[1]);
+          if (yN < MIN_YEAR) continue;
+          const y = m[1];
+          const mo = p.hasM ? String(m[2]).padStart(2, "0") : "01";
+          const d = p.hasD ? String(m[3]).padStart(2, "0") : "01";
+          const monthN = Number(mo), dayN = Number(d);
+          if (monthN < 1 || monthN > 12 || dayN < 1 || dayN > 31) continue;
           const dateStr = `${y}-${mo}-${d}`;
           if (!allCands.includes(dateStr)) allCands.push(dateStr);
         }
       }
-      const now = new Date();
-      const minDate = new Date(now.getFullYear(), now.getMonth() + 6, 1);
-      const validFirst = allCands.filter(c => new Date(c) > minDate).sort();
-      const rest = allCands.filter(c => !validFirst.includes(c)).sort().reverse();
-      const sortedCands = [...validFirst, ...rest];
+      // 정렬: 년도 오름차순 → 월/일 오름차순 (모두 순환)
+      const sortedCands = [...allCands].sort();
+      console.log(`[셀재추출/유통기한] ri=${ri} page=${pn} 후보 ${sortedCands.length}개:`, sortedCands);
       if (sortedCands.length === 0) { console.log(`[셀재추출/유통기한] ri=${ri} 후보 없음`); return; }
 
       // 기존 캐시 또는 새로 계산
@@ -516,23 +566,84 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         rowIndex: pageRi,
         columnKind: colName,
       });
-      candidateVals = rawCands.map(c => Number(c.value));
+      // 격리 강화 (2026-07-18): 같은 행의 "다른" 셀 값은 후보에서 제외.
+      //   예) 수량 재추출 시 이 행의 단가·금액과 동일한 숫자는 후보에서 배제 → 옆 셀 값 붙여넣기 방지
+      const sameRowOthers = new Set<number>();
+      const qtyH = pageObj.headers.indexOf("수량");
+      const priH = pageObj.headers.indexOf("단가");
+      const amtH = pageObj.headers.indexOf("금액");
+      const localRow = pageObj.rows[pageRi];
+      if (Array.isArray(localRow)) {
+        for (const otherH of [qtyH, priH, amtH]) {
+          if (otherH < 0) continue;
+          if (pageObj.headers[otherH] === colName) continue; // 자기 셀은 스킵
+          const raw = localRow[otherH];
+          const n = typeof raw === "number" ? raw : parseFloat(String(raw ?? "").replace(/[^0-9.-]/g, ""));
+          if (Number.isFinite(n) && n > 0) sameRowOthers.add(n);
+        }
+      }
+      candidateVals = rawCands
+        .map(c => Number(c.value))
+        .filter(v => !sameRowOthers.has(v));
+
+      // 폴백: 위 로직에서 후보 0개면 페이지 전체 rawText 를 스캔 (2026-07-18)
+      //   품명 위치를 못 찾거나 헤더가 다른 이름으로 저장된 경우에도 항상 순환 가능하도록
+      if (candidateVals.length === 0) {
+        const rawText = String(pageObj.rawText ?? "");
+        const RANGE_FOR_COL: Record<string, { min: number; max: number }> = {
+          수량: { min: 1, max: 99999 },
+          단가: { min: 50, max: 9999999 },
+          금액: { min: 100, max: 999999999 },
+        };
+        const rng = RANGE_FOR_COL[colName];
+        if (rng && rawText) {
+          const NUM_RE = /\d{1,3}(?:[,.]\d{3})+|\d{4,}|\d+/g;
+          const seen = new Set<number>();
+          const cands: number[] = [];
+          let m: RegExpExecArray | null;
+          while ((m = NUM_RE.exec(rawText))) {
+            const raw = m[0];
+            const cleaned = raw.replace(/[,.]/g, "");
+            const n = parseInt(cleaned, 10);
+            if (!Number.isFinite(n) || n < rng.min || n > rng.max) continue;
+            if (/^20\d{2}/.test(cleaned) && cleaned.length >= 4 && cleaned.length <= 8) continue; // 유통기한 오분류 방지
+            if (cleaned.length >= 10) continue; // 사업자번호·바코드 배제
+            if (sameRowOthers.has(n)) continue; // 같은 행 다른 셀 값 배제
+            if (seen.has(n)) continue;
+            seen.add(n);
+            cands.push(n);
+          }
+          candidateVals = cands;
+          console.log(`[셀재추출/폴백] ri=${ri} (${colName}) 페이지 전체 rawText 스캔 · ${cands.length}개 후보`);
+        }
+      }
+
       if (candidateVals.length > 0) {
         setNumericCellCandidates(prev => ({ ...prev, [cellKey]: candidateVals }));
       }
     }
 
     if (candidateVals.length === 0) {
-      console.log(`[셀재추출/단일] ri=${ri} ci=${ci} 후보 없음 · 행 fallback`);
-      revertSingleRawRow(ri);
+      // 격리 정책 (2026-07-18): 후보 0개일 때 다른 셀 건드리지 않음 · 시각 피드백만
+      const localRow2 = pageObj.rows[pageRi];
+      const nameH = pageObj.headers.indexOf("품명");
+      const nameVal = Array.isArray(localRow2) && nameH >= 0 ? String(localRow2[nameH] ?? "").trim() : "";
+      const hasCol = pageObj.headers.indexOf(colName) >= 0;
+      console.log(`[셀재추출/단일] ri=${ri} ci=${ci} (${colName}) 후보 없음`,
+        { page: pn, pageRi, headers: pageObj.headers, hasColInPage: hasCol, productName: nameVal, rawTextLen: (pageObj.rawText ?? "").length });
+      setNoCandidateCells(prev => new Set(prev).add(cellKey));
       return;
+    }
+    // 후보 있으면 no-candidate 마킹 해제
+    if (noCandidateCells.has(cellKey)) {
+      setNoCandidateCells(prev => { const n = new Set(prev); n.delete(cellKey); return n; });
     }
 
     const prevIdx = numericCellCycle[cellKey] ?? -1;
     const nextIdx = prevIdx + 1;
 
     if (nextIdx >= candidateVals.length) {
-      // wrap-around: 원본 복원
+      // wrap-around: 해당 셀만 원본 복원 · 다른 셀에는 영향 없음 (2026-07-18)
       setNumericCellCycle(prev => { const n = { ...prev }; delete n[cellKey]; return n; });
       setCellEdits(prev => {
         const rowEdits = { ...(prev[ri] ?? {}) };
@@ -544,22 +655,22 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     } else {
       setNumericCellCycle(prev => ({ ...prev, [cellKey]: nextIdx }));
       const newVal = candidateVals[nextIdx];
+      // 재추출 시 셀 값 갱신 + 수량·단가 재추출이면 금액 잠금 해제 (2026-07-19)
+      //   → effectiveDispRows 에서 수량×단가 로 자동 재계산됨 (별도 명시 계산 불필요)
       setCellEdits(prev => {
         const rowEdits = { ...(prev[ri] ?? {}), [ci]: newVal };
-        // 수량 or 단가 재추출 시 → 금액도 자동 계산
-        const qIdx = pageObj.headers?.indexOf?.("수량") ?? -1;
-        const pIdx = pageObj.headers?.indexOf?.("단가") ?? -1;
-        const aIdx = pageObj.headers?.indexOf?.("금액") ?? -1;
-        if ((colName === "수량" || colName === "단가") && aIdx >= 0 && qIdx >= 0 && pIdx >= 0) {
-          const qtyVal = colName === "수량" ? newVal : parseNumber(prev[ri]?.[qIdx] ?? pageObj.rows?.[pageRi]?.[qIdx]);
-          const priVal = colName === "단가" ? newVal : parseNumber(prev[ri]?.[pIdx] ?? pageObj.rows?.[pageRi]?.[pIdx]);
-          if (qtyVal > 0 && priVal > 0) rowEdits[aIdx] = Math.round(qtyVal * priVal);
+        if (colName === "수량" || colName === "단가") {
+          const aIdx = dispHeaders.indexOf("금액");
+          if (aIdx >= 0) {
+            delete rowEdits[aIdx]; // 잠금 해제 → effectiveDispRows 자동 계산
+            console.log(`[재추출/금액잠금해제] ri=${ri} · ${colName}=${newVal} · 금액 자동 재계산 예정`);
+          }
         }
         return { ...prev, [ri]: rowEdits };
       });
       console.log(`[셀재추출/단일] ri=${ri} ci=${ci} (${colName}) → ${newVal} (${nextIdx + 1}/${candidateVals.length})`);
     }
-  }, [pageNums, structuredPages, pages, numericCellCycle, numericCellCandidates]);
+  }, [pageNums, structuredPages, pages, numericCellCycle, numericCellCandidates, noCandidateCells]);
 
   const revertSingleRawRow = useCallback((ri: number) => {
     // 편집·보정·삭제 상태 초기화 (원본 복원부터)
@@ -795,22 +906,27 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [barcodeAutoMap, setBarcodeAutoMap] = useState<Record<number, CandidateInfo>>({});
 
   // effectiveDispRows: 자동보정 + 셀 인라인 편집 결과를 반영한 행 (cellEdits 우선)
-  // + 2026-07-10: 금액 null · 수량·단가 있으면 자동 계산값 표시 (수량 × 단가 = 금액)
-  const _qtyIdxForAuto = dispHeaders.indexOf("수량");
-  const _priIdxForAuto = dispHeaders.indexOf("단가");
+  // 2026-07-18 v2 · 금액 무조건 자동 반영 (사용자 요청)
+  //   - 처음부터 수량×단가 로 금액 계산 (OCR 원본 금액 있어도 덮어씀)
+  //   - 재추출로 수량/단가 바뀌면 즉시 금액 갱신
+  //   - 유일한 예외: 사용자가 금액 셀을 직접 편집한 경우 (cellEdits[ri][amtIdx] 있음)
+  const _qtyIdxER = dispHeaders.indexOf("수량");
+  const _priIdxER = dispHeaders.indexOf("단가");
   const effectiveDispRows = dispRows.map((row, ri) => {
     const hasAmtCorr = amtIdx >= 0 && amountCorrections[ri] !== undefined;
     const edits = cellEdits[ri];
     const nr = [...row];
     if (hasAmtCorr) nr[amtIdx] = amountCorrections[ri];
     if (edits) for (const [ciStr, val] of Object.entries(edits)) nr[Number(ciStr)] = val as string | number;
-    // 금액이 여전히 비어있고 수량·단가 모두 있으면 자동 계산해 채움 (표시용)
-    if (amtIdx >= 0 && _qtyIdxForAuto >= 0 && _priIdxForAuto >= 0) {
-      const rawAmt = parseNumber(nr[amtIdx]);
-      if (rawAmt <= 0) {
-        const q = parseNumber(nr[_qtyIdxForAuto]);
-        const p = parseNumber(nr[_priIdxForAuto]);
-        if (q > 0 && p > 0) nr[amtIdx] = Math.round(q * p);
+    // 금액 무조건 자동 계산 · 사용자 명시 편집만 예외
+    if (amtIdx >= 0 && _qtyIdxER >= 0 && _priIdxER >= 0) {
+      const amtManuallyEdited = edits && edits[amtIdx] !== undefined;
+      if (!amtManuallyEdited) {
+        const q = parseNumber(nr[_qtyIdxER]);
+        const p = parseNumber(nr[_priIdxER]);
+        if (q > 0 && p > 0) {
+          nr[amtIdx] = Math.round(q * p);
+        }
       }
     }
     return nr;
@@ -1305,6 +1421,59 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     }
   }
 
+  // ── 명세서별 이미지 컬럼 폭 (드래그 리사이즈) ─────────────────────────────
+  const INV_COL_MIN = 150;
+  const INV_COL_DEFAULT = 360;
+  const [invoiceColWidth, setInvoiceColWidth] = useState<number>(() => {
+    try {
+      const v = localStorage.getItem("ocr-invoice-col-width");
+      if (!v) return INV_COL_DEFAULT;
+      const n = Number(v);
+      return Number.isFinite(n) && n >= INV_COL_MIN ? n : INV_COL_DEFAULT;
+    } catch { return INV_COL_DEFAULT; }
+  });
+  const [invColResizing, setInvColResizing] = useState(false);
+  const invColResizeRef = useRef<{ startX: number; startW: number } | null>(null);
+
+  useEffect(() => {
+    try { localStorage.setItem("ocr-invoice-col-width", String(Math.round(invoiceColWidth))); } catch { /* empty */ }
+  }, [invoiceColWidth]);
+
+  useEffect(() => {
+    if (!invColResizing) return;
+    const onMove = (e: MouseEvent) => {
+      const st = invColResizeRef.current;
+      if (!st) return;
+      const dx = e.clientX - st.startX;
+      const nextRaw = st.startW + dx;
+      const maxPx = Math.round(window.innerWidth * 0.6);
+      const bounded = Math.min(maxPx, Math.max(INV_COL_MIN, nextRaw));
+      setInvoiceColWidth(bounded);
+    };
+    const onUp = () => {
+      setInvColResizing(false);
+      invColResizeRef.current = null;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    return () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [invColResizing]);
+
+  const onInvColResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    invColResizeRef.current = { startX: e.clientX, startW: invoiceColWidth };
+    setInvColResizing(true);
+  }, [invoiceColWidth]);
+
   // ── 이미지 모달 + 줌/패닝 ────────────────────────────────────────────────
   const [modalImg,   setModalImg  ] = useState<string | null>(null);
   const [modalPageNum, setModalPageNum] = useState<number | null>(null);
@@ -1352,14 +1521,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     const pNum = Math.max(1, Math.min(pageNums[rowIdx] ?? 1, pageImages.length));
     const img  = pageImages[pNum - 1] ?? pageImages[0];
     const label = String(dispRows[rowIdx]?.[nameIdx] ?? "");
-    if (img) { setModalImg(img); setModalLabel(label); setModalPageNum(pNum); setZoom(1); setPan({ x: 0, y: 0 }); }
+    if (!img) return;
+    setModalImg(img); setModalLabel(label); setModalPageNum(pNum); setZoom(1); setPan({ x: 0, y: 0 });
   }, [pageImages, pageNums, dispRows, nameIdx]);
 
   const openPageModal = useCallback((pageNum: number) => {
     if (!pageImages?.length) return;
     const pNum = Math.max(1, Math.min(pageNum, pageImages.length));
     const img = pageImages[pNum - 1] ?? pageImages[0];
-    if (img) { setModalImg(img); setModalLabel(`${pageNum}번 명세서`); setModalPageNum(pNum); setZoom(1); setPan({ x: 0, y: 0 }); }
+    if (!img) return;
+    setModalImg(img); setModalLabel(`${pageNum}번 명세서`); setModalPageNum(pNum); setZoom(1); setPan({ x: 0, y: 0 });
   }, [pageImages]);
 
   // 명세서 모달 내 페이지 이동 (← 이전 · → 다음 · Enter 이동/현위치 유지 · +/- 줌 · Esc 닫기)
@@ -1523,25 +1694,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const hasMissingSupplier = missingSupplierPages.length > 0;
 
   // ── Feature 1: 금액 자동보정 콜백 ────────────────────────────────────────
-  const autoCorrectAmounts = useCallback((pageNum: number) => {
-    if (ocrQtyIdx < 0 || ocrPriIdx < 0 || amtIdx < 0) return;
-    const corrections: Record<number, number> = {};
-    dispRows.forEach((row, ri) => {
-      if (pageNums[ri] !== pageNum) return;
-      const qty = parseNumber(row[ocrQtyIdx]);
-      const pri = parseNumber(row[ocrPriIdx]);
-      const amt = parseNumber(row[amtIdx]);
-      if (qty > 0 && pri > 0) {
-        const expected = Math.round(qty * pri);
-        if (Math.abs(expected - amt) > 1) {
-          corrections[ri] = expected;
-        }
-      }
-    });
-    if (Object.keys(corrections).length > 0) {
-      setAmountCorrections(prev => ({ ...prev, ...corrections }));
-    }
-  }, [ocrQtyIdx, ocrPriIdx, amtIdx, dispRows, pageNums]);
+  // WARNING: 재추출 격리 정책 (2026-07-18) — 이 함수는 수량×단가로 금액을 자동계산합니다.
+  // 격리 정책에 따라 절대 호출하면 안 됩니다. dead function 으로 유지.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const autoCorrectAmounts = useCallback((_pageNum: number) => {
+    void _pageNum; // 재추출 격리 정책으로 비활성화 (2026-07-18) — 절대 호출 금지
+  }, []);
 
   // ── Feature 2: 공급사 변경 + 동의어 일괄 추가 ───────────────────────────
   const handleSynonymBulkAdd = useCallback(async (pageNum: number, newSupplier: string) => {
@@ -1732,18 +1890,21 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const commitCellEdit = useCallback((ri: number, ci: number, rawVal: string) => {
     const cleaned = rawVal.replace(/[^0-9.-]/g, "");
     const numVal = cleaned === "" ? null : (parseFloat(cleaned) || null);
+    // 셀 값 갱신 + 수량·단가 편집이면 금액 잠금 자동 해제 (2026-07-19)
+    //   → effectiveDispRows 에서 수량×단가 로 다시 자동 계산됨
     setCellEdits(prev => {
-      const rowEdits = { ...(prev[ri] ?? {}) };
-      rowEdits[ci] = numVal;
-      if ((ci === ocrQtyIdx || ci === ocrPriIdx) && amtIdx >= 0 && ocrQtyIdx >= 0 && ocrPriIdx >= 0) {
-        const qtyVal = ci === ocrQtyIdx ? (numVal ?? 0) : parseNumber(prev[ri]?.[ocrQtyIdx] ?? dispRows[ri]?.[ocrQtyIdx]);
-        const priVal = ci === ocrPriIdx ? (numVal ?? 0) : parseNumber(prev[ri]?.[ocrPriIdx] ?? dispRows[ri]?.[ocrPriIdx]);
-        if (qtyVal > 0 && priVal > 0) rowEdits[amtIdx] = Math.round(qtyVal * priVal);
+      const rowEdits = { ...(prev[ri] ?? {}), [ci]: numVal };
+      const qIdx = dispHeaders.indexOf("수량");
+      const pIdx = dispHeaders.indexOf("단가");
+      const aIdx = dispHeaders.indexOf("금액");
+      // 수량 또는 단가 편집 → 이전에 잠긴 금액 편집값 제거 (자동재계산 유발)
+      if ((ci === qIdx || ci === pIdx) && aIdx >= 0) {
+        delete rowEdits[aIdx];
       }
       return { ...prev, [ri]: rowEdits };
     });
     setEditingCell(null);
-  }, [ocrQtyIdx, ocrPriIdx, amtIdx, dispRows]);
+  }, [dispHeaders]);
 
   const handleRetry = useCallback(async (ri: number, inputName: string, supplierHint?: string) => {
     if (retryingRows.has(ri)) return;
@@ -1838,8 +1999,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         : (ocrPriIdx >= 0 ? numOrUndef(parseNumber(row[ocrPriIdx])) : undefined);
       let amt: number | undefined;
       if (amtEditV !== undefined) amt = numOrUndef(parseNumber(amtEditV));
-      else if ((qtyEditV !== undefined || priEditV !== undefined) && qty && pri) amt = numOrUndef(Math.round(Number(qty) * Number(pri)));
-      else amt = amtIdx >= 0 ? numOrUndef(parseNumber(row[amtIdx])) : undefined;
+      // 2차보정 원복 (2026-07-18): 수량/단가 편집 있으면 금액 자동계산 (확정표 저장 시)
+      else if ((qtyEditV !== undefined || priEditV !== undefined) && qty && pri && qty > 0 && pri > 0) {
+        amt = Math.round(qty * pri);
+      }
+      else {
+        const rawA = amtIdx >= 0 ? parseNumber(row[amtIdx]) : 0;
+        if (rawA > 0) amt = numOrUndef(rawA);
+        else if (qty && pri && qty > 0 && pri > 0) amt = Math.round(qty * pri);
+        else amt = undefined;
+      }
       // 유통기한 — erpCellEdits > OCR row > 매칭 정보
       const expiry = erpEdits?.["유통기한"] !== undefined
         ? String(erpEdits["유통기한"]).trim()
@@ -1854,6 +2023,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       rawObj.__page = pn;
       if (pageData?.meta.date) rawObj.__date = pageData.meta.date;
 
+      // 거래명세서 원본 날짜 (meta.date) — 페이지별로 추출
+      const invoiceDate = pageData?.meta.date ? String(pageData.meta.date).trim() : undefined;
+
       // 확정일: 셀 편집(erpCellEdits[ri]["확정일"]) 우선, 없으면 전체 confirmedAt
       const confirmedDate = (erpCellEdits[ri]?.["확정일"] ?? confirmedAt ?? "").trim() || undefined;
       items.push({
@@ -1867,6 +2039,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         expiry_date: expiry ? String(expiry) : undefined,
         memo: undefined,
         confirmed_at: confirmedDate,
+        invoice_date: invoiceDate,
         raw_json: rawObj,
       });
     });
@@ -1879,8 +2052,62 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
     setSavingConfirmed(true);
     try {
-      await onSaveConfirmed(items);
-      setSaveConfirmedToast({ type: "success", msg: `저장 완료! (${items.length}건)` });
+      // ── 페이지별 이미지 Cloudinary 병렬 업로드 (선택적) ─────────────
+      // items 각각의 raw_json.__page 를 통해 pageNum 을 알고 있으므로
+      // 저장 대상 페이지들 unique 목록만 뽑아 Promise.all 로 병렬 업로드
+      // 업로드 실패는 items 저장에 영향 없음 (image 는 optional)
+      const uniquePages = Array.from(
+        new Set(items.map(it => Number((it.raw_json as any)?.__page)).filter(n => Number.isFinite(n) && n > 0))
+      );
+      const pageImagesMap = new Map<number, { url: string; public_id: string }>();
+      if (pageImages && pageImages.length > 0 && uniquePages.length > 0) {
+        setSaveConfirmedToast({ type: "success", msg: `명세서 이미지 업로드 중... (${uniquePages.length}장)` });
+        const uploadResults = await Promise.allSettled(
+          uniquePages.map(async (pn) => {
+            const dataUrl = pageImages[pn - 1];
+            if (!dataUrl || !dataUrl.startsWith("data:image/")) return null;
+            const res = await fetch("/api/invoice-images/upload", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ data_url: dataUrl, page: pn }),
+            });
+            if (!res.ok) {
+              const errText = await res.text().catch(() => "");
+              throw new Error(`p.${pn} 업로드 실패: ${res.status} ${errText.slice(0, 120)}`);
+            }
+            const d = await res.json();
+            return { pn, url: String(d.url ?? ""), public_id: String(d.public_id ?? "") };
+          })
+        );
+        let uploadedCount = 0;
+        let failedCount = 0;
+        uploadResults.forEach((r) => {
+          if (r.status === "fulfilled" && r.value && r.value.url) {
+            pageImagesMap.set(r.value.pn, { url: r.value.url, public_id: r.value.public_id });
+            uploadedCount++;
+          } else if (r.status === "rejected") {
+            failedCount++;
+            console.warn(`[handleSaveConfirmed] 이미지 업로드 실패: ${r.reason?.message ?? r.reason}`);
+          }
+        });
+        if (failedCount > 0) {
+          console.warn(`[handleSaveConfirmed] 이미지 ${uploadedCount}장 업로드 · ${failedCount}장 실패 (items 저장은 계속)`);
+        } else {
+          console.log(`[handleSaveConfirmed] 이미지 ${uploadedCount}장 업로드 완료`);
+        }
+      }
+
+      // items 에 image_url · image_public_id 병합
+      const itemsWithImages: ConfirmedItem[] = items.map((it) => {
+        const pn = Number((it.raw_json as any)?.__page);
+        const img = Number.isFinite(pn) ? pageImagesMap.get(pn) : undefined;
+        if (!img) return it;
+        return { ...it, image_url: img.url, image_public_id: img.public_id };
+      });
+
+      await onSaveConfirmed(itemsWithImages);
+      const imgNote = pageImagesMap.size > 0 ? ` · 이미지 ${pageImagesMap.size}장 첨부` : "";
+      setSaveConfirmedToast({ type: "success", msg: `저장 완료! (${items.length}건${imgNote})` });
     } catch (e: any) {
       setSaveConfirmedToast({ type: "error", msg: e?.message ?? "저장 실패" });
     } finally {
@@ -1893,6 +2120,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     selectedCands, cancelledAutoMap, autoSynonymMatches, barcodeAutoMap, cancelledAutoSyn,
     overrides, ocrQtyIdx, ocrPriIdx, amtIdx, pageBalanceFromConfig,
     erpCellEdits, pageSupplierBalances, pageBalanceOverride, confirmedAt, missingSupplierPages,
+    pageImages,
   ]);
 
   const handleMatch = useCallback(async () => {
@@ -2083,8 +2311,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
           : (ocrPriIdx >= 0 ? row[ocrPriIdx] : null);
         let amt: number | null;
         if (amtEditVal !== undefined) amt = parseNumber(amtEditVal);
-        else if ((qtyEditVal !== undefined || priEditVal !== undefined) && qty && pri) amt = Math.round(Number(qty) * Number(pri));
-        else amt = amtIdx >= 0 && row[amtIdx] != null ? parseNumber(row[amtIdx]) : null;
+        // 2차보정 원복 (2026-07-18): 수량/단가 편집 있으면 금액 자동계산
+        else if ((qtyEditVal !== undefined || priEditVal !== undefined) && parseNumber(qty) > 0 && parseNumber(pri) > 0) {
+          amt = Math.round(parseNumber(qty) * parseNumber(pri));
+        }
+        else {
+          const rawA = amtIdx >= 0 && row[amtIdx] != null ? parseNumber(row[amtIdx]) : 0;
+          if (rawA > 0) amt = rawA;
+          else if (parseNumber(qty) > 0 && parseNumber(pri) > 0) amt = Math.round(parseNumber(qty) * parseNumber(pri));
+          else amt = null;
+        }
         const spec = ocrSpecIdx >= 0 ? (row[ocrSpecIdx] ?? m?.spec ?? bc?.spec ?? null) : (m?.spec ?? bc?.spec ?? null);
         const pn = pageNums[ri];
         const rawSupp = rawSupplierByPage[pn] !== undefined
@@ -2440,6 +2676,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       </div>
     )}
 
+    {/* ── 공급사 조회·수정 모달 (2026-07-18 · 공급사명 클릭 시) ── */}
+    {vendorEditModal && (
+      <VendorDetailModal
+        vendor={vendorEditModal}
+        onClose={() => setVendorEditModal(null)}
+        onSaved={() => { setVendorEditModal(null); }}
+      />
+    )}
+
     {/* ── 공급처 변경 확인 다이얼로그 ── */}
     {supplierConfirm && (
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
@@ -2512,9 +2757,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       </div>
     )}
 
-    <div className="w-full flex flex-col gap-3">
+    {/* ── 명세서별 이미지+테이블 2컬럼 그리드 (per-page pair) ── */}
+    {/* 이미지 컬럼 폭 CSS variable · 드래그 리사이즈로 조절 */}
+    <div
+      className="w-full flex flex-col gap-0"
+      style={{ "--inv-col-w": `${invoiceColWidth}px` } as React.CSSProperties}
+    >
 
-      {/* ── OCR 원본 표 ── */}
+      {/* ── 콘텐츠 래퍼 ── */}
+      <div className="w-full flex flex-col gap-3">
+
+      {/* ── OCR 원본 표 (이미지+테이블 2컬럼 · rowSpan 방식) ── */}
       {structuredPages.length > 0 && (
         <div className="w-full bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
           <div className="px-4 py-2.5 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
@@ -2587,10 +2840,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                         if (!pageObj) { missCells.push(k); return; }
                         // 이 페이지의 row index (page-local)
                         const pageRi = pageNums.slice(0, ri).filter(p => p === pn).length;
-                        const others = pages.filter(p => p.page !== pn);
                         const cands = reextractCellCandidates({
                           currentPage: { page: pageObj.page, headers: pageObj.headers, rows: pageObj.rows, rawText: pageObj.rawText },
-                          otherPages: others.map(p => ({ page: p.page, headers: p.headers, rows: p.rows, rawText: p.rawText })),
+                          otherPages: [], // 재추출 격리 정책 (2026-07-18): 명세서 스코프 — 다른 페이지 참조 안 함
                           rowIndex: pageRi,
                           columnKind: colName as "수량" | "단가" | "금액",
                         });
@@ -2663,19 +2915,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-300 rounded px-2 py-0.5 whitespace-nowrap">
                     ☑ {hiddenRawRows.size}행 선택
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      // 선택된 행 재추출 · 각 행에 대해 7-cycle 로직 순환
-                      Array.from(hiddenRawRows).forEach(ri => revertSingleRawRow(ri));
-                      // 체크 해제 (재추출 후 재확인)
-                      setHiddenRawRows(new Set());
-                    }}
-                    className="inline-flex items-center gap-1 text-[10px] font-black text-white bg-sky-500 hover:bg-sky-600 active:bg-sky-700 px-2 py-0.5 rounded shadow-sm transition cursor-pointer whitespace-nowrap"
-                    title="선택 행 재추출 (수량↔단가 스왑 · 인접 행 후보 · rawText 재분석 순환)"
-                  >
-                    🔄 선택 재추출
-                  </button>
+                  {/* 선택 재추출 버튼 제거 (2026-07-18 · 사용자 요청) */}
                   <button
                     type="button"
                     onClick={revertSelectedRawRows}
@@ -2809,6 +3049,27 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-amber-50 border-b-2 border-amber-200">
+                  {/* 이미지 컬럼 헤더 (이미지가 있을 때) */}
+                  {pageImages?.length ? (
+                    <th
+                      className="px-1 py-2 text-center bg-gray-50 border-r border-gray-200 text-[9px] font-bold text-gray-500 whitespace-nowrap select-none"
+                      style={{ width: invoiceColWidth, minWidth: 120 }}
+                    >
+                      <div className="flex items-center justify-between px-1 gap-1">
+                        <span>거래명세서</span>
+                        <div
+                          role="separator"
+                          aria-label="이미지 폭 조절"
+                          onMouseDown={onInvColResizeStart}
+                          onDoubleClick={() => setInvoiceColWidth(INV_COL_DEFAULT)}
+                          title="드래그하여 이미지 폭 조절 · 더블클릭 초기화"
+                          className={`cursor-col-resize h-4 w-1 rounded transition-colors shrink-0 ${
+                            invColResizing ? "bg-emerald-400" : "bg-slate-300 hover:bg-emerald-400"
+                          }`}
+                        />
+                      </div>
+                    </th>
+                  ) : null}
                   <th className="w-14 px-1 py-2 text-center" title="선택 · 재추출">
                     <span className="text-[9px] font-bold text-amber-700">선택 · 🔄</span>
                   </th>
@@ -2872,9 +3133,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   const isFirstInPage = ri === _firstVisibleByPage.get(pageNums[ri]);
                   const isLastInPage = ri === _lastVisibleByPage.get(pageNums[ri]);
                   const pn = pageNums[ri];
-                  const isPageCollapsedRaw = collapsedRawPages.has(pn);
+                  // 우측 명세서 접기 제거 (2026-07-19) · 항상 펼침
+                  const isPageCollapsedRaw = false;
                   const pageRowCountRaw = isFirstInPage
                     ? effectiveDispRows.filter((_, i) => pageNums[i] === pn && !permanentlyDeletedRawRows.has(i) && !hiddenRawRows.has(i)).length
+                    : 0;
+                  // 이미지 rowSpan: 헤더 행(1) + 렌더된 데이터 행(hiddenRawRows 포함, 취소선으로 표시됨) + 소계 행
+                  // hiddenRawRows 는 return null 되지 않고 취소선으로 렌더됨 → rowSpan 에 포함해야 테이블 정합
+                  const imgRowSpan = isFirstInPage
+                    ? 1 + effectiveDispRows.filter((_, i) => pageNums[i] === pn && !permanentlyDeletedRawRows.has(i) && !isRowDbDeleted(i)).length + (amtIdx >= 0 ? 1 : 0)
                     : 0;
                   const pageSupplierHeadRaw = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
                   const rawColSpan = (() => {
@@ -2902,81 +3169,129 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   const pageHasQpaMismatch = pageQpaMismatchCount > 0;
                   return (
                     <React.Fragment key={ri}>
-                      {/* 페이지 헤더 (접기/펴기) — 불일치 있으면 붉은 강조 */}
+                      {/* 페이지 헤더 — 접기 제거 (2026-07-19) · 명세서 정보만 표시 */}
                       {isFirstInPage && (
-                        <tr className={`border-t-2 cursor-pointer select-none ${
+                        <tr className={`border-t-2 select-none ${
                           pageHasQpaMismatch
-                            ? "bg-rose-100/80 border-rose-400 hover:bg-rose-200/80 ring-2 ring-rose-400 ring-inset"
-                            : "bg-amber-100/70 border-amber-300 hover:bg-amber-200/70"
-                        }`}
-                          onClick={() => setCollapsedRawPages(prev => {
-                            const n = new Set(prev);
-                            if (n.has(pn)) n.delete(pn); else n.add(pn);
-                            return n;
-                          })}
-                          title={isPageCollapsedRaw ? "펴기" : "접기"}>
+                            ? "bg-rose-100/80 border-rose-400 ring-2 ring-rose-400 ring-inset"
+                            : "bg-amber-100/70 border-amber-300"
+                        }`}>
+                          {/* 이미지 셀: rowSpan으로 이 명세서 전체 행을 커버 */}
+                          {pageImages?.length ? (
+                            <td
+                              rowSpan={imgRowSpan}
+                              className="align-top bg-gray-50 border-r border-gray-200 p-0"
+                              style={{ width: invoiceColWidth, minWidth: 120, verticalAlign: "top" }}
+                            >
+                              {(() => {
+                                const imgSrc = pageImages[pn - 1];
+                                if (!imgSrc) return (
+                                  <div className="flex items-center justify-center h-full p-3 text-[10px] text-gray-400">이미지 없음</div>
+                                );
+                                return (
+                                  <button
+                                    type="button"
+                                    onClick={() => openPageModal(pn)}
+                                    className="block w-full h-full bg-gray-50 hover:bg-gray-100 transition cursor-zoom-in p-1.5"
+                                    title={`${pn}번 명세서 이미지 보기`}
+                                  >
+                                    <img
+                                      src={imgSrc}
+                                      alt={`${pn}번 명세서`}
+                                      draggable={false}
+                                      style={{
+                                        display: "block",
+                                        margin: "0 auto",
+                                        transform: `rotate(${rotation}deg)`,
+                                        maxWidth: (rotation === 90 || rotation === -90 || rotation === 270) ? "60%" : "100%",
+                                        width: "auto",
+                                        height: "auto",
+                                        objectFit: "contain",
+                                        userSelect: "none",
+                                      }}
+                                    />
+                                    <div className="mt-1 flex items-center justify-between px-0.5">
+                                      <span className="text-[9px] text-gray-400">{pn}번</span>
+                                      <a
+                                        href={imgSrc}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={e => e.stopPropagation()}
+                                        className="text-[9px] font-bold text-indigo-500 hover:text-indigo-700"
+                                        title="원본 이미지 새 창으로 열기"
+                                      >원본↗</a>
+                                    </div>
+                                  </button>
+                                );
+                              })()}
+                            </td>
+                          ) : null}
                           <td colSpan={rawColSpan} className="px-3 py-1.5">
                             <span className={`flex items-center gap-2 text-xs font-bold ${pageHasQpaMismatch ? "text-rose-800" : "text-amber-800"}`}>
-                              <span className={`w-4 text-center ${pageHasQpaMismatch ? "text-rose-600" : "text-amber-600"}`}>{isPageCollapsedRaw ? "▶" : "▼"}</span>
                               <span className={`bg-white border rounded px-1.5 py-0.5 ${pageHasQpaMismatch ? "border-rose-300 text-rose-700" : "border-amber-300 text-amber-700"}`}>{pn}번 명세서</span>
                               {pageSupplierHeadRaw && <span className={pageHasQpaMismatch ? "text-rose-700 font-black" : "text-amber-700 font-black"}>{pageSupplierHeadRaw}</span>}
                               <span className={pageHasQpaMismatch ? "text-rose-500 font-normal" : "text-amber-500 font-normal"}>· {pageRowCountRaw}건</span>
-                              {pageHasQpaMismatch && (
-                                <span className="ml-1 inline-flex items-center gap-1 text-[10px] font-black text-white bg-rose-500 border border-rose-600 rounded px-1.5 py-0.5 animate-pulse">
-                                  ⚠️ 수량×단가 ≠ 금액 {pageQpaMismatchCount}건
-                                </span>
-                              )}
-                              {/* 상품명 자동보정 버튼 */}
-                              <button
-                                type="button"
-                                onClick={e => { e.stopPropagation(); handleMatchPage(pn); }}
-                                disabled={!!matchingPage[pn]}
-                                className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-white bg-violet-500 hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed rounded px-1.5 py-0.5 whitespace-nowrap"
-                                title={`${pn}번 명세서 상품명만 자동보정`}
-                              >
-                                {matchingPage[pn] ? <Loader2 size={10} className="animate-spin" /> : <Wand2 size={10} />}
-                                {pn}번 상품명 보정
-                              </button>
-                              {/* 🔄 명세서 재추출 (이 명세서 모든 행의 편집·보정 초기화 + 서버 재파싱) */}
-                              <button
-                                type="button"
-                                onClick={async e => {
-                                  e.stopPropagation();
-                                  // 1) 이 페이지의 모든 행의 cellEdits/amountCorrections 초기화
-                                  const pageRowIndices: number[] = [];
-                                  pageNums.forEach((p, i) => { if (p === pn) pageRowIndices.push(i); });
-                                  setCellEdits(prev => {
-                                    const next = { ...prev };
-                                    pageRowIndices.forEach(i => { delete next[i]; });
-                                    return next;
-                                  });
-                                  setAmountCorrections(prev => {
-                                    const next = { ...prev };
-                                    pageRowIndices.forEach(i => { delete next[i]; });
-                                    return next;
-                                  });
-                                  setReextractCycle(prev => {
-                                    const next = { ...prev };
-                                    pageRowIndices.forEach(i => { delete next[i]; });
-                                    return next;
-                                  });
-                                  // 2) 서버 재파싱 (템플릿 + 컬럼 매핑 재적용)
-                                  if (onReparsePage) {
+                              {pageHasQpaMismatch && (() => {
+                                // 어떤 행들이 수식오탐인지 상세 · 각 행의 품명/수량/단가/금액 표시
+                                const qtyH = dispHeaders.indexOf("수량");
+                                const priH = dispHeaders.indexOf("단가");
+                                const amtHIdx = dispHeaders.indexOf("금액");
+                                const nameH = dispHeaders.indexOf("품명");
+                                const details: string[] = [];
+                                effectiveDispRows.forEach((row, i) => {
+                                  if (pageNums[i] !== pn) return;
+                                  if (isRowDeleted(i)) return;
+                                  const q = parseNumber(row[qtyH]);
+                                  const p = parseNumber(row[priH]);
+                                  const a = parseNumber(row[amtHIdx]);
+                                  if (q > 0 && p > 0 && a > 0) {
+                                    const expected = Math.round(q * p);
+                                    // 조건 완화 (2026-07-19): 절대차 5원 이상 AND 상대차 3% 이상 · 잔돈 오차 무시
+                                    const diff = Math.abs(expected - a);
+                                    if (diff > 5 && diff > a * 0.03) {
+                                      const name = String(row[nameH] ?? "").slice(0, 15);
+                                      details.push(`${name} · ${q}×${p}=${fmt(expected)} vs ${fmt(a)}`);
+                                    }
+                                  }
+                                });
+                                const tooltip = details.slice(0, 10).join("\n") + (details.length > 10 ? `\n… 외 ${details.length - 10}건` : "");
+                                return (
+                                  <span
+                                    className="ml-1 inline-flex items-center gap-1 text-[10px] font-black text-white bg-rose-500 border border-rose-600 rounded px-1.5 py-0.5 cursor-help"
+                                    title={`[수식오탐 ${pageQpaMismatchCount}건]\n${tooltip}`}
+                                  >
+                                    ⚠️ 수식오탐 {pageQpaMismatchCount}건 (마우스오버 · 상세)
+                                  </span>
+                                );
+                              })()}
+                              {/* 페이지별 상품명 보정 버튼 제거 (2026-07-19 · 실수 클릭 방지)
+                                  전체 매칭은 아래 "1차보정 완료 · 2차보정 시작" 버튼으로 진행 */}
+                              {/* 🔄 명세서 재추출 (2026-07-19 · 재부활)
+                                  이미지에서 다시 OCR → 기존 supplier hint 재사용 → 해당 페이지만 교체
+                                  onReparsePage 프롭 유무로 표시 조건 */}
+                              {onReparsePage && (
+                                <button
+                                  type="button"
+                                  onClick={async e => {
+                                    e.stopPropagation();
                                     setReparseStatus(prev => ({ ...prev, [pn]: 'loading' }));
                                     setReparseSupplier(prev => ({ ...prev, [pn]: pageSupplierHeadRaw }));
                                     try {
-                                      await onReparsePage(pn, pageSupplierHeadRaw);
+                                      await onReparsePage(pn, pageSupplierHeadRaw ?? "");
                                       setReparseStatus(prev => ({ ...prev, [pn]: 'done' }));
                                     } catch {
                                       setReparseStatus(prev => ({ ...prev, [pn]: 'error' }));
                                     }
-                                  }
-                                }}
-                                className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-white border border-emerald-300 hover:bg-emerald-50 rounded px-1.5 py-0.5 whitespace-nowrap"
-                                title={`${pn}번 명세서 재추출 · 모든 행 편집·보정 초기화 + 서버 재파싱`}
-                              >
-                                🔄 명세서 재추출
-                              </button>
+                                  }}
+                                  disabled={reparseStatus[pn] === 'loading'}
+                                  className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-white bg-indigo-500 hover:bg-indigo-600 disabled:opacity-50 disabled:cursor-not-allowed rounded px-1.5 py-0.5 whitespace-nowrap"
+                                  title={`${pn}번 명세서 이미지에서 다시 OCR 추출${pageSupplierHeadRaw ? ` (공급사: ${pageSupplierHeadRaw})` : ""}`}
+                                >
+                                  {reparseStatus[pn] === 'loading'
+                                    ? <><Loader2 size={10} className="animate-spin" />재추출 중...</>
+                                    : <>🔄 이 명세서 재추출</>}
+                                </button>
+                              )}
                               {/* 🔄 선택 재추출 + 🗑 선택 삭제 · 이 명세서의 체크된 행만 · 2026-07-14 */}
                               {/* 항상 표시 · 0개일 때 비활성 (사용자에게 기능 존재 알림) */}
                               {(() => {
@@ -2991,22 +3306,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 }
                                 return (
                                   <>
-                                    <button
-                                      type="button"
-                                      onClick={e => {
-                                        e.stopPropagation();
-                                        pageCheckedRows.forEach(ri => revertSingleRawRow(ri));
-                                        setHiddenRawRows(prev => {
-                                          const n = new Set(prev);
-                                          pageCheckedRows.forEach(ri => n.delete(ri));
-                                          return n;
-                                        });
-                                      }}
-                                      className="ml-1 inline-flex items-center gap-1 text-[10px] font-bold text-sky-700 bg-white border border-sky-300 hover:bg-sky-50 rounded px-1.5 py-0.5 whitespace-nowrap"
-                                      title={`${pn}번 명세서 · 선택된 ${pageCheckedRows.length}행 재추출`}
-                                    >
-                                      🔄 선택 재추출 ({pageCheckedRows.length})
-                                    </button>
+                                    {/* 선택 재추출 버튼 제거 (2026-07-18 · 사용자 요청) */}
                                     <button
                                       type="button"
                                       onClick={e => {
@@ -3053,7 +3353,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   </>
                                 );
                               })()}
-                              {isPageCollapsedRaw && <span className={`ml-auto font-normal ${pageHasQpaMismatch ? "text-rose-500" : "text-amber-500"}`}>(클릭하여 펼치기)</span>}
+                              {/* 접기 제거 — 펼치기 힌트 제거 */}
                             </span>
                           </td>
                         </tr>
@@ -3075,37 +3375,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               className="w-4 h-4 cursor-pointer accent-rose-500"
                               title={hiddenRawRows.has(ri) ? "이 행을 다시 포함" : "이 행을 소계 계산에서 제외"}
                             />
-                            <button
-                              type="button"
-                              onClick={e => {
-                                e.stopPropagation();
-                                // Shift+Click → 한 칸 왼쪽 shift (컬럼 밀림 정정)
-                                if (e.shiftKey) { shiftRowLeft(ri); return; }
-                                revertSingleRawRow(ri);
-                              }}
-                              onContextMenu={e => {
-                                // 우클릭 → 한 칸 왼쪽 shift
-                                e.preventDefault();
-                                e.stopPropagation();
-                                shiftRowLeft(ri);
-                              }}
-                              className={`text-[10px] font-bold rounded w-5 h-5 flex items-center justify-center transition cursor-pointer ${
-                                (reextractCycle[ri] ?? 0) > 0
-                                  ? "bg-indigo-500 text-white hover:bg-indigo-600"
-                                  : "bg-slate-200 text-slate-600 hover:bg-indigo-100 hover:text-indigo-700"
-                              }`}
-                              title={`재추출 (다른 값 시도) · 클릭할 때마다 7-cycle 순환\nShift+Click 또는 우클릭 → 한 칸 왼쪽 shift (컬럼 밀림 정정)${(reextractCycle[ri] ?? 0) > 0 ? `\n현재 ${reextractCycle[ri]}번째 시도` : ""}`}
-                            >
-                              🔄
-                            </button>
-                            <button
-                              type="button"
-                              onClick={e => { e.stopPropagation(); shiftRowLeft(ri); }}
-                              className="text-[10px] font-bold rounded w-5 h-5 flex items-center justify-center transition cursor-pointer bg-slate-200 text-slate-600 hover:bg-amber-100 hover:text-amber-700"
-                              title="셀 한 칸 왼쪽 shift (OCR 컬럼 밀림 정정)"
-                            >
-                              →
-                            </button>
+                            {/* 재추출·행 밀기 버튼 전면 제거 (2026-07-18 · 사용자 요청) */}
                           </div>
                         </td>
                         {(() => {
@@ -3146,36 +3416,47 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           if (isEditingThisSupp) {
                             return (
                               <td key={ci} className="px-1 py-1" onClick={e => e.stopPropagation()}>
-                                <input
-                                  ref={el => {
-                                    if (el && suppInputRef.current !== el) {
-                                      suppInputRef.current = el;
-                                      // 한 번만 좌표 계산 (매 렌더마다 setState 호출 방지)
-                                      const r = el.getBoundingClientRect();
-                                      setSuppDropdownRect({ top: r.bottom, left: r.left, width: Math.max(220, r.width) });
-                                    }
-                                  }}
-                                  autoFocus
-                                  className="text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-300 rounded px-2 py-0.5 outline-none min-w-[120px] w-full"
-                                  value={editingRawSuppVal}
-                                  onChange={e => setEditingRawSuppVal(e.target.value)}
-                                  onKeyDown={e => {
-                                    if (e.key === "Enter") { e.currentTarget.blur(); }
-                                    if (e.key === "Escape") { setSuppDropdownRect(null); setEditingRawSuppRow(null); }
-                                  }}
-                                  onBlur={() => {
-                                    setTimeout(() => {
-                                      const trimmed = editingRawSuppVal.trim();
-                                      const current = String(cell ?? "");
-                                      if (trimmed && trimmed !== current) {
-                                        const rowCount = pageNums.filter(p => p === pn).length;
-                                        setSupplierConfirm({ pageNum: pn, newVal: trimmed, rowCount, addSynonyms: addSynonymsOnChange });
+                                <div className="flex items-center gap-1">
+                                  <input
+                                    ref={el => {
+                                      if (el && suppInputRef.current !== el) {
+                                        suppInputRef.current = el;
+                                        // 한 번만 좌표 계산 (매 렌더마다 setState 호출 방지)
+                                        const r = el.getBoundingClientRect();
+                                        setSuppDropdownRect({ top: r.bottom, left: r.left, width: Math.max(220, r.width) });
                                       }
-                                      setSuppDropdownRect(null);
-                                      setEditingRawSuppRow(null);
-                                    }, 150);
-                                  }}
-                                />
+                                    }}
+                                    autoFocus
+                                    className="flex-1 text-xs font-semibold text-sky-700 bg-sky-50 border border-sky-300 rounded px-2 py-0.5 outline-none min-w-[120px]"
+                                    value={editingRawSuppVal}
+                                    onChange={e => setEditingRawSuppVal(e.target.value)}
+                                    onKeyDown={e => {
+                                      if (e.key === "Enter") { e.currentTarget.blur(); }
+                                      if (e.key === "Escape") { setSuppDropdownRect(null); setEditingRawSuppRow(null); }
+                                    }}
+                                    onBlur={() => {
+                                      setTimeout(() => {
+                                        const trimmed = editingRawSuppVal.trim();
+                                        const current = String(cell ?? "");
+                                        if (trimmed && trimmed !== current) {
+                                          const rowCount = pageNums.filter(p => p === pn).length;
+                                          setSupplierConfirm({ pageNum: pn, newVal: trimmed, rowCount, addSynonyms: addSynonymsOnChange });
+                                        }
+                                        setSuppDropdownRect(null);
+                                        setEditingRawSuppRow(null);
+                                      }, 150);
+                                    }}
+                                  />
+                                  {/* 공급사 정보 조회·수정 버튼 (2026-07-19 · 입력창 옆) */}
+                                  <button
+                                    type="button"
+                                    onMouseDown={e => { e.preventDefault(); e.stopPropagation(); const name = editingRawSuppVal.trim() || String(cell ?? "").trim(); if (name) openVendorEdit(name); }}
+                                    className="shrink-0 flex items-center gap-1 text-[10px] font-black text-sky-700 bg-white border border-sky-300 hover:bg-sky-50 rounded px-1.5 py-0.5 whitespace-nowrap cursor-pointer transition"
+                                    title="공급사 정보 조회·수정"
+                                  >
+                                    <Search size={10} /> 조회
+                                  </button>
+                                </div>
                               </td>
                             );
                           }
@@ -3236,31 +3517,37 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             );
                           }
 
-                          // 수량/단가/금액 인라인 편집 — 입력 중
+                          // 수량/단가/금액 인라인 편집 — 입력 중 · 입력창은 데이터 길이에 맞게 (2026-07-18)
                           if (isEditingThisNum) {
                             return (
-                              <td key={ci} className="px-1 py-1" onClick={e => e.stopPropagation()}>
+                              <td key={ci} className="px-1 py-1 text-right" onClick={e => e.stopPropagation()}>
                                 <input
                                   key={`edit-${ri}-${ci}`}
                                   autoFocus
                                   type="text"
                                   inputMode="numeric"
-                                  className="text-xs font-bold text-right text-indigo-700 bg-indigo-50 border border-indigo-300 rounded px-2 py-0.5 outline-none w-full min-w-[60px]"
+                                  size={Math.max(6, editingCellVal.length + 2)}
+                                  style={{ width: `${Math.max(6, editingCellVal.length + 2)}ch`, minWidth: "5rem" }}
+                                  className="text-xs font-bold text-right text-indigo-700 bg-indigo-50 border border-indigo-300 rounded px-2 py-0.5 outline-none"
                                   value={editingCellVal}
                                   onChange={e => setEditingCellVal(e.target.value)}
                                   onKeyDown={e => {
                                     const moveToCell = (nextRi: number, nextCi: number) => {
-                                      const cellVal = effectiveDispRows[nextRi]?.[nextCi];
                                       setEditingCell({ ri: nextRi, ci: nextCi });
-                                      setEditingCellVal(cellVal != null ? String(parseNumber(cellVal) || "") : "");
+                                      // 이동 시에도 값 비움 · 새로 입력 (2026-07-19)
+                                      setEditingCellVal("");
                                     };
                                     const editableIdxs = [dispHeaders.indexOf("수량"), dispHeaders.indexOf("단가"), dispHeaders.indexOf("금액")].filter(i => i >= 0).sort((a,b) => a - b);
                                     const curPos = editableIdxs.indexOf(ci);
-                                    const input = e.currentTarget as HTMLInputElement;
-                                    const atStart = input.selectionStart === 0 && input.selectionEnd === 0;
-                                    const atEnd = input.selectionStart === input.value.length && input.selectionEnd === input.value.length;
 
-                                    if (e.key === "Enter" || e.key === "Tab") {
+                                    if (e.key === "Enter") {
+                                      // Enter → 입력창만 빠져나옴 (다음 셀로 이동 없음 · 2026-07-16)
+                                      e.preventDefault();
+                                      commitCellEdit(ri, ci, editingCellVal);
+                                      setEditingCell(null);
+                                      return;
+                                    }
+                                    if (e.key === "Tab") {
                                       e.preventDefault();
                                       commitCellEdit(ri, ci, editingCellVal);
                                       const nextCi = e.shiftKey
@@ -3272,17 +3559,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     }
                                     if (e.key === "Escape") { setEditingCell(null); return; }
 
-                                    // 방향키로 셀 이동 · 텍스트 편집 방해 없이:
-                                    //   ← : 커서가 맨 앞이면 왼쪽 셀로
-                                    //   → : 커서가 맨 뒤면 오른쪽 셀로
-                                    //   ↑↓: 항상 위/아래 행 같은 컬럼으로
-                                    if (e.key === "ArrowLeft" && atStart && curPos > 0) {
+                                    // 방향키로 셀 이동 · 항상 이동 (수량↔단가↔금액 · 위/아래 행 · 2026-07-16)
+                                    if (e.key === "ArrowLeft" && curPos > 0) {
                                       e.preventDefault();
                                       commitCellEdit(ri, ci, editingCellVal);
                                       moveToCell(ri, editableIdxs[curPos - 1]);
                                       return;
                                     }
-                                    if (e.key === "ArrowRight" && atEnd && curPos < editableIdxs.length - 1) {
+                                    if (e.key === "ArrowRight" && curPos < editableIdxs.length - 1) {
                                       e.preventDefault();
                                       commitCellEdit(ri, ci, editingCellVal);
                                       moveToCell(ri, editableIdxs[curPos + 1]);
@@ -3322,81 +3606,58 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     return;
                                   }
                                   setEditingCell({ ri, ci });
-                                  // 금액 셀이 비어있으면 수량×단가 자동 계산값 프리필
-                                  if (isAmt && (cell == null || parseNumber(cell) <= 0)) {
-                                    const qtyIdx = dispHeaders.indexOf("수량");
-                                    const priIdx = dispHeaders.indexOf("단가");
-                                    if (qtyIdx >= 0 && priIdx >= 0) {
-                                      const q = parseNumber(effectiveDispRows[ri]?.[qtyIdx]);
-                                      const p = parseNumber(effectiveDispRows[ri]?.[priIdx]);
-                                      if (q > 0 && p > 0) {
-                                        setEditingCellVal(String(Math.round(q * p)));
-                                        return;
-                                      }
-                                    }
-                                  }
-                                  const rawNum = cell != null ? String(parseNumber(cell) || "") : "";
-                                  setEditingCellVal(rawNum);
+                                  // 입력창 오픈 시 값 비움 · 새로 입력받음 (2026-07-19 · 사용자 요청)
+                                  setEditingCellVal("");
                                 }}
-                                className={`px-3 py-2 whitespace-nowrap text-right cursor-pointer hover:bg-indigo-50/60 group ${
+                                style={{ minWidth: 110 }}
+                                className={`px-2 py-2 whitespace-nowrap text-right cursor-pointer hover:bg-indigo-50/60 group ${
                                   isCellChecked ? "bg-sky-100 ring-1 ring-sky-400" :
                                   isMismatch && isAmt ? "text-amber-700 font-bold" : "font-bold text-amber-800"
                                 }`}
                                 title={isCellChecked ? "체크됨 (Alt+Click 해제)" : "클릭하여 수정 · Alt+Click 으로 선택"}
                               >
-                                <span className="flex flex-col items-end gap-0.5">
-                                  <span className="flex items-center justify-end gap-1">
-                                    {isMismatch && isAmt && <AlertTriangle size={9} className="text-rose-400 shrink-0" />}
-                                    {(() => {
-                                      // 금액이 비어있으면 수량×단가 자동 계산값 표시 + 확인 배지
-                                      if (isAmt && (cell == null || parseNumber(cell) <= 0)) {
-                                        const qtyIdx2 = dispHeaders.indexOf("수량");
-                                        const priIdx2 = dispHeaders.indexOf("단가");
-                                        if (qtyIdx2 >= 0 && priIdx2 >= 0) {
-                                          const q2 = parseNumber(effectiveDispRows[ri]?.[qtyIdx2]);
-                                          const p2 = parseNumber(effectiveDispRows[ri]?.[priIdx2]);
-                                          if (q2 > 0 && p2 > 0) {
-                                            const auto = Math.round(q2 * p2);
-                                            return (
-                                              <>
-                                                <span className="text-amber-700 font-bold">{fmt(auto)}</span>
-                                                <span className="text-[9px] bg-amber-100 text-amber-700 border border-amber-300 px-1 rounded font-bold whitespace-nowrap" title="수량 × 단가 자동 계산 · 클릭하여 확인/수정">
-                                                  ⚠ 자동계산확인필요
-                                                </span>
-                                              </>
-                                            );
-                                          }
-                                        }
-                                        return <span className="text-gray-300">—</span>;
-                                      }
-                                      return (
-                                        <span className={hasDirectEdit ? "text-indigo-700" : isCorrectedAmt ? "text-emerald-700" : ""}>
-                                          {typeof cell === "number" ? fmt(cell) : String(cell)}
-                                        </span>
-                                      );
-                                    })()}
-                                    {hasDirectEdit && <span className="text-[9px] bg-indigo-100 text-indigo-600 px-1 rounded font-bold">수정</span>}
-                                    {isCorrectedAmt && <span className="text-[9px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>}
-                                    <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
-                                  </span>
-                                  {/* 재추출 버튼 · 아래줄 · 순환 wrap-around (2026-07-16) */}
+                                <span className="flex items-center justify-end gap-1">
+                                  {isMismatch && isAmt && <AlertTriangle size={9} className="text-rose-400 shrink-0" />}
                                   {(() => {
+                                    // 재추출 격리: 각 셀은 자기 값만 표시 · 자동 계산 없음 (2026-07-18)
+                                    if (cell == null || (typeof cell === "number" && cell <= 0 && !hasDirectEdit)) {
+                                      return <span className="text-gray-300">—</span>;
+                                    }
+                                    return (
+                                      <span className={hasDirectEdit ? "text-indigo-700" : isCorrectedAmt ? "text-emerald-700" : ""}>
+                                        {typeof cell === "number" ? fmt(cell) : String(cell)}
+                                      </span>
+                                    );
+                                  })()}
+                                  {hasDirectEdit && <span className="text-[9px] bg-indigo-100 text-indigo-600 px-1 rounded font-bold">수정</span>}
+                                  {isCorrectedAmt && <span className="text-[9px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>}
+                                  <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
+                                  {/* 수량·단가 셀 전용 재추출 아이콘 · 각 셀만 갱신 · 서로 연동 없음 (2026-07-18) */}
+                                  {(h === "수량" || h === "단가") && (() => {
                                     const cellKey = `${ri}-${ci}`;
                                     const cycleIdx = numericCellCycle[cellKey] ?? -1;
                                     const totalCands = (numericCellCandidates[cellKey] as number[] | undefined)?.length ?? 0;
+                                    const noCands = noCandidateCells.has(cellKey);
+                                    const isQty = h === "수량";
+                                    const activeCls = isQty ? "bg-sky-500 text-white hover:bg-sky-600" : "bg-emerald-500 text-white hover:bg-emerald-600";
+                                    const idleCls = isQty ? "bg-sky-50 text-sky-600 hover:bg-sky-500 hover:text-white" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white";
                                     return (
                                       <button
                                         type="button"
-                                        onClick={(e) => { e.stopPropagation(); reextractOneCell(ri, ci, h as "수량" | "단가" | "금액"); }}
-                                        className={`text-[9px] px-1.5 py-px rounded transition opacity-0 group-hover:opacity-100 shrink-0 cursor-pointer font-black whitespace-nowrap ${
-                                          cycleIdx >= 0
-                                            ? "bg-sky-500 text-white hover:bg-sky-600"
-                                            : "bg-sky-50 text-sky-600 hover:bg-sky-500 hover:text-white"
+                                        onClick={(e) => { e.stopPropagation(); reextractOneCell(ri, ci, h as "수량" | "단가"); }}
+                                        className={`ml-1 shrink-0 w-5 h-5 flex items-center justify-center text-[11px] rounded transition cursor-pointer ${
+                                          noCands
+                                            ? "bg-rose-100 text-rose-500 hover:bg-rose-200"
+                                            : cycleIdx >= 0
+                                              ? activeCls
+                                              : idleCls
                                         }`}
-                                        title={cycleIdx >= 0
-                                          ? `${h} 재추출 순환 중 (${cycleIdx + 1}/${totalCands}) · 클릭하면 다음 후보 · 마지막이면 원본 복원`
-                                          : `${h} 재추출 · 명세서 내 rawText 스캔 · 클릭할 때마다 순환`}
-                                      >🔄 재추출{cycleIdx >= 0 ? ` ${cycleIdx + 1}/${totalCands}` : ""}</button>
+                                        title={noCands
+                                          ? `${h} 후보 없음 · 이 명세서 rawText에서 ${h}으로 인식 가능한 값을 찾지 못함`
+                                          : cycleIdx >= 0
+                                            ? `${h} 재추출 순환 중 (${cycleIdx + 1}/${totalCands}) · 클릭하면 다음 후보 · 마지막이면 원본 복원`
+                                            : `${h} 재추출 · 이 명세서 rawText의 ${h} 후보 순환 · 이 셀만 갱신 (다른 셀 절대 연동 안 됨)`}
+                                      >{noCands ? "⌀" : "🔄"}</button>
                                     );
                                   })()}
                                 </span>
@@ -3404,8 +3665,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             );
                           }
 
-                          // 바코드 100% 확정 매칭
-                          if (isName && barcodeMatch && !matchItems) {
+                          // 바코드 100% 확정 매칭 (매칭 후에도 1차 품명 편집 유지 · 2026-07-16)
+                          if (isName && barcodeMatch) {
                             return (
                               <td key={ci} className="px-3 py-2 max-w-[240px]">
                                 <div className="flex flex-col gap-0">
@@ -3425,8 +3686,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             );
                           }
 
-                          // ── 품명 인라인 편집 (autoMatch/일반/취소 통합) ──────────
-                          if (isName && !matchItems) {
+                          // ── 품명 인라인 편집 (autoMatch/일반/취소 통합 · 매칭 후에도 편집 가능) ──────────
+                          if (isName) {
                             const rawSupplierForRow = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? globalSupplier ?? "";
                             // 편집 중: 입력창 + fixed-position 드롭다운(별도 렌더)
                             if (editingNameRow === ri) {
@@ -3575,27 +3836,77 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             );
                           }
 
-                          // 유통기한 컬럼: 재추출 버튼 아래줄 · 순환 (2026-07-16)
+                          // 유통기한 컬럼: 클릭 편집 + 재추출 버튼 · 순환 (2026-07-18)
                           if (h === "유통기한") {
                             const cellKey = `${ri}-${ci}`;
                             const cycleIdx = numericCellCycle[cellKey] ?? -1;
                             const totalCands = (numericCellCandidates[cellKey] as string[] | undefined)?.length ?? 0;
+                            const isEditingExp = editingCell?.ri === ri && editingCell?.ci === ci;
+                            if (isEditingExp) {
+                              return (
+                                <td key={ci} className="px-1 py-1 text-right" onClick={e => e.stopPropagation()}>
+                                  <input
+                                    key={`edit-exp-${ri}-${ci}`}
+                                    autoFocus
+                                    type="text"
+                                    placeholder="2026-12-31"
+                                    size={Math.max(13, editingCellVal.length + 2)}
+                                    style={{ width: `${Math.max(13, editingCellVal.length + 2)}ch`, minWidth: "7rem" }}
+                                    className="text-[10px] font-mono text-amber-700 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 outline-none text-right"
+                                    value={editingCellVal}
+                                    onChange={e => setEditingCellVal(e.target.value)}
+                                    onKeyDown={e => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        const v = editingCellVal.trim();
+                                        setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [ci]: v === "" ? null : v } }));
+                                        setEditingCell(null);
+                                      } else if (e.key === "Escape") {
+                                        setEditingCell(null);
+                                      }
+                                    }}
+                                    onBlur={() => {
+                                      const v = editingCellVal.trim();
+                                      setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [ci]: v === "" ? null : v } }));
+                                      setEditingCell(null);
+                                    }}
+                                  />
+                                </td>
+                              );
+                            }
+                            const expCellKey = `${ri}-${ci}`;
+                            const expCycleIdx = numericCellCycle[expCellKey] ?? -1;
+                            const expTotalCands = (numericCellCandidates[expCellKey] as string[] | undefined)?.length ?? 0;
+                            const expNoCands = noCandidateCells.has(expCellKey);
                             return (
-                              <td key={ci} className="px-3 py-2 text-gray-500 text-[10px] group">
-                                <span className="flex flex-col items-start gap-0.5">
-                                  <span className="whitespace-nowrap">{cell == null ? <span className="text-gray-300">—</span> : String(cell)}</span>
+                              <td key={ci} style={{ minWidth: 110 }}
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  setEditingCell({ ri, ci });
+                                  setEditingCellVal("");  // 입력창 오픈 시 값 비움 (2026-07-19)
+                                }}
+                                className="px-2 py-2 text-gray-500 text-[10px] group cursor-pointer hover:bg-amber-50/60 text-right"
+                                title="클릭하여 유통기한 수정">
+                                <span className="flex items-center justify-end gap-1">
+                                  {cell == null ? <span className="text-gray-300">—</span> : String(cell)}
+                                  <Pencil size={8} className="text-amber-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
+                                  {/* 유통기한 재추출 아이콘 · 20xx 로 시작하는 rawText 날짜 순환 · 이 셀만 갱신 (2026-07-18) */}
                                   <button
                                     type="button"
-                                    onClick={(e) => { e.stopPropagation(); reextractOneCell(ri, ci, "유통기한"); }}
-                                    className={`text-[9px] px-1.5 py-px rounded transition opacity-0 group-hover:opacity-100 shrink-0 cursor-pointer font-black whitespace-nowrap ${
-                                      cycleIdx >= 0
-                                        ? "bg-amber-500 text-white hover:bg-amber-600"
-                                        : "bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white"
+                                    onClick={e => { e.stopPropagation(); reextractOneCell(ri, ci, "유통기한"); }}
+                                    className={`ml-0.5 shrink-0 w-5 h-5 flex items-center justify-center text-[11px] rounded transition cursor-pointer ${
+                                      expNoCands
+                                        ? "bg-rose-100 text-rose-500 hover:bg-rose-200"
+                                        : expCycleIdx >= 0
+                                          ? "bg-amber-500 text-white hover:bg-amber-600"
+                                          : "bg-amber-50 text-amber-600 hover:bg-amber-500 hover:text-white"
                                     }`}
-                                    title={cycleIdx >= 0
-                                      ? `유통기한 재추출 순환 중 (${cycleIdx + 1}/${totalCands}) · 클릭하면 다음 후보 · 마지막이면 원본 복원`
-                                      : "유통기한 재추출 · rawText 날짜 정규식 스캔 · 클릭할 때마다 순환"}
-                                  >🔄 재추출{cycleIdx >= 0 ? ` ${cycleIdx + 1}/${totalCands}` : ""}</button>
+                                    title={expNoCands
+                                      ? "유통기한 후보 없음 · 이 명세서 rawText 에서 20xx 년도 날짜를 찾지 못함"
+                                      : expCycleIdx >= 0
+                                        ? `유통기한 재추출 순환 중 (${expCycleIdx + 1}/${expTotalCands}) · 클릭하면 다음 후보 · 마지막이면 원본 복원`
+                                        : "유통기한 재추출 · 이 명세서 rawText 의 20xx+ 날짜 순환 · 이 셀만 갱신"}
+                                  >{expNoCands ? "⌀" : "🔄"}</button>
                                 </span>
                               </td>
                             );
@@ -3701,9 +4012,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       );
                                     })()}
                                     {pageSupplier && (
-                                      <span className="text-amber-800 font-black text-[11px] whitespace-nowrap">
+                                      <button
+                                        type="button"
+                                        onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplier); }}
+                                        className="text-amber-800 font-black text-[11px] whitespace-nowrap underline decoration-dotted decoration-amber-600 underline-offset-2 hover:text-amber-950 hover:decoration-solid cursor-pointer transition"
+                                        title="클릭하면 공급사 정보 조회·수정"
+                                      >
                                         {pageSupplier}
-                                      </span>
+                                      </button>
                                     )}
                                   </div>
 
@@ -4059,10 +4375,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
               {total > 0 && (() => {
                 const orderNow = dispHeaders.map((_, i) => i);
                 const amtOrderIdx = orderNow.indexOf(amtIdx);
+                const imgColOffset = pageImages?.length ? 1 : 0; // 이미지 컬럼 추가 시 colSpan 보정
                 return (
                 <tfoot>
                   {supplierTotals.length >= 1 && supplierTotals.map(({ supplier, total: sTotal, count }) => (
                     <tr key={supplier} className="border-t border-amber-100 bg-amber-50/40">
+                      {imgColOffset > 0 && <td />}
                       {amtOrderIdx > 0 && (
                         <td colSpan={Math.max(1, amtOrderIdx)} className="px-3 py-2 text-right font-semibold text-gray-500">
                           {supplier} <span className="text-gray-400">({count}매)</span>
@@ -4073,6 +4391,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                     </tr>
                   ))}
                   <tr className="bg-amber-50 border-t-2 border-amber-300">
+                    {imgColOffset > 0 && <td />}
                     {amtOrderIdx > 0 && (
                       <td
                         colSpan={Math.max(1, amtOrderIdx)}
@@ -4100,19 +4419,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
           {!matchItems && (
             <div className="w-full flex flex-col sm:flex-row gap-2">
               <button onClick={handleMatch} disabled={matching || hasMissingSupplier}
-                title={hasMissingSupplier ? `공급사 미입력 페이지 (${missingSupplierPages.join(", ")}번) 를 먼저 채워주세요` : undefined}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer">
+                title={hasMissingSupplier ? `공급사 미입력 페이지 (${missingSupplierPages.join(", ")}번) 를 먼저 채워주세요` : "1차보정 완료 · 2차보정(ERP 상품 매칭) 시작"}
+                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-black text-white bg-indigo-600 border border-indigo-700 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm">
                 {matching
-                  ? <><Loader2 size={13} className="animate-spin" />상품명 매칭 중...</>
+                  ? <><Loader2 size={15} className="animate-spin" />상품명 매칭 중...</>
                   : hasMissingSupplier
-                    ? <><AlertTriangle size={13} />공급사 입력 필요 ({missingSupplierPages.length}개 페이지)</>
-                    : <><Wand2 size={13} />상품명 자동보정{autoSynonymCount > 0 ? ` (동의어 ${autoSynonymCount}건 포함)` : ""}</>}
+                    ? <><AlertTriangle size={15} />공급사 입력 필요 ({missingSupplierPages.length}개 페이지)</>
+                    : <><Wand2 size={15} />1차보정 완료 · 2차보정 시작{autoSynonymCount > 0 ? ` (동의어 ${autoSynonymCount}건 포함)` : ""}</>}
               </button>
             </div>
           )}
 
           {matchItems && (
-            <div className="w-full bg-white border border-indigo-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="w-full max-w-[1200px] ml-0 mr-8 sm:mr-24 lg:mr-56 bg-white border border-indigo-200 rounded-2xl overflow-hidden shadow-sm">
               <div className="px-4 py-2.5 border-b border-indigo-100 bg-indigo-50 flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
                   <span className="text-[9px] font-black text-white bg-indigo-600 px-1.5 py-0.5 rounded shrink-0">2차보정</span>
@@ -4560,7 +4879,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                         const pn = pageNums[ri];
                         const isFirstInPage = ri === 0 || pageNums[ri - 1] !== pn;
                         const isLastInPage = ri === effectiveDispRows.length - 1 || pageNums[ri] !== pageNums[ri + 1];
-                        const isPageCollapsed = collapsedErpPages.has(pn);
+                        // 우측 명세서 접기 제거 (2026-07-19) · 항상 펼침
+                        const isPageCollapsed = false;
                         const origName = nameIdx >= 0 ? String(row[nameIdx] ?? "").trim() : "";
 
                         // ERP 매칭 결과 결정
@@ -4595,10 +4915,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                         let amtVal: number | null;
                         if (amtEdit !== undefined) {
                           amtVal = parseNumber(amtEdit);
-                        } else if ((qtyEdit !== undefined || priEdit !== undefined) && qtyVal && priVal) {
+                        } else if ((qtyEdit !== undefined || priEdit !== undefined) && qtyVal && priVal && qtyVal > 0 && priVal > 0) {
+                          // 2차보정 원복 (2026-07-18): 수량/단가 편집 시 금액 자동계산
                           amtVal = Math.round(qtyVal * priVal);
                         } else {
-                          amtVal = amtIdx >= 0 ? (parseNumber(row[amtIdx]) || null) : null;
+                          const rawAmt = amtIdx >= 0 ? parseNumber(row[amtIdx]) : 0;
+                          if (rawAmt > 0) amtVal = rawAmt;
+                          else if (qtyVal && priVal && qtyVal > 0 && priVal > 0) amtVal = Math.round(qtyVal * priVal);
+                          else amtVal = null;
                         }
 
                         // 잔고: 페이지 마지막 행에만 표시 + 편집값 우선
@@ -4613,22 +4937,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                         const pageSupplierHead = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
                         return (
                           <React.Fragment key={ri}>
-                            {/* 페이지 헤더 (접기/펴기 토글) — 각 페이지 첫 행 앞에 삽입 */}
+                            {/* 페이지 헤더 — 접기 제거 (2026-07-19) · 명세서 정보만 표시 */}
                             {isFirstInPage && (
-                              <tr className="bg-indigo-50 border-t-2 border-indigo-200 cursor-pointer hover:bg-indigo-100/70 select-none"
-                                onClick={() => setCollapsedErpPages(prev => {
-                                  const n = new Set(prev);
-                                  if (n.has(pn)) n.delete(pn); else n.add(pn);
-                                  return n;
-                                })}
-                                title={isPageCollapsed ? "펴기" : "접기"}>
+                              <tr className="bg-indigo-50 border-t-2 border-indigo-200 select-none">
                                 <td colSpan={allErpCols.length} className="px-3 py-1.5">
                                   <span className="flex items-center gap-2 text-xs font-bold text-indigo-800">
-                                    <span className="w-4 text-center text-indigo-500">{isPageCollapsed ? "▶" : "▼"}</span>
                                     <span className="bg-white border border-indigo-200 rounded px-1.5 py-0.5 text-indigo-700">{pn}번 명세서</span>
                                     {pageSupplierHead && <span className="text-indigo-600 font-semibold">{pageSupplierHead}</span>}
                                     <span className="text-indigo-400 font-normal">· {pageRowCount}건</span>
-                                    {isPageCollapsed && <span className="text-indigo-400 font-normal ml-auto">(클릭하여 펼치기)</span>}
                                   </span>
                                 </td>
                               </tr>
@@ -4867,7 +5183,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                           <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-300 bg-amber-100 px-2.5 py-1 rounded opacity-50 whitespace-nowrap cursor-not-allowed">📄 이미지 없음</span>
                                         )}
                                         {pageSupplier && (
-                                          <span className="text-amber-800 font-black text-[11px] whitespace-nowrap border-l border-amber-300 pl-2">{pageSupplier}</span>
+                                          <button
+                                            type="button"
+                                            onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplier); }}
+                                            className="text-amber-800 font-black text-[11px] whitespace-nowrap border-l border-amber-300 pl-2 underline decoration-dotted decoration-amber-600 underline-offset-2 hover:text-amber-950 hover:decoration-solid cursor-pointer transition"
+                                            title="클릭하면 공급사 정보 조회·수정"
+                                          >{pageSupplier}</button>
                                         )}
                                       </div>
                                       {/* 중앙: 소계 금액 — 수량×단가 합과 일치 여부에 따라 색상 변경 + 코멘트 */}
@@ -5054,7 +5375,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
           {/* ── 확정 결과표 섹션 ── */}
           {matchItems && confirmed && (
-            <div className="w-full bg-white border border-emerald-200 rounded-2xl overflow-hidden shadow-sm">
+            <div className="w-full max-w-[1200px] ml-0 mr-8 sm:mr-24 lg:mr-56 bg-white border border-emerald-200 rounded-2xl overflow-hidden shadow-sm">
               <div className="px-4 py-2.5 border-b border-emerald-100 bg-emerald-50 flex flex-wrap items-center justify-between gap-2">
                 <div className="flex items-center gap-2 shrink-0">
                   <CheckCircle size={13} className="text-emerald-600" />
@@ -5140,27 +5461,20 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                         const isFirstInPage = ri === 0 || pageNums[ri - 1] !== pageNums[ri];
                         const isLastInPage = ri === confRows.length - 1 || pageNums[ri] !== pageNums[ri + 1];
                         const pn = pageNums[ri];
-                        const isPageCollapsedConf = collapsedConfPages.has(pn);
+                        // 우측 명세서 접기 제거 (2026-07-19) · 항상 펼침
+                        const isPageCollapsedConf = false;
                         const pageRowCountConf = isFirstInPage ? confRows.filter((_, i) => pageNums[i] === pn).length : 0;
                         const pageSupplierHeadConf = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
                         return (
                           <React.Fragment key={ri}>
-                            {/* 확정표 페이지 헤더 (접기/펴기) */}
+                            {/* 확정표 페이지 헤더 — 접기 제거 (2026-07-19) · 명세서 정보만 표시 */}
                             {isFirstInPage && (
-                              <tr className="bg-emerald-100/70 border-t-2 border-emerald-300 cursor-pointer hover:bg-emerald-200/70 select-none"
-                                onClick={() => setCollapsedConfPages(prev => {
-                                  const n = new Set(prev);
-                                  if (n.has(pn)) n.delete(pn); else n.add(pn);
-                                  return n;
-                                })}
-                                title={isPageCollapsedConf ? "펴기" : "접기"}>
+                              <tr className="bg-emerald-100/70 border-t-2 border-emerald-300 select-none">
                                 <td colSpan={CONF_HEADERS.length} className="px-3 py-1.5">
                                   <span className="flex items-center gap-2 text-xs font-bold text-emerald-800">
-                                    <span className="w-4 text-center text-emerald-600">{isPageCollapsedConf ? "▶" : "▼"}</span>
                                     <span className="bg-white border border-emerald-300 rounded px-1.5 py-0.5 text-emerald-700">{pn}번 명세서</span>
                                     {pageSupplierHeadConf && <span className="text-emerald-700 font-black">{pageSupplierHeadConf}</span>}
                                     <span className="text-emerald-500 font-normal">· {pageRowCountConf}건</span>
-                                    {isPageCollapsedConf && <span className="text-emerald-500 font-normal ml-auto">(클릭하여 펼치기)</span>}
                                   </span>
                                 </td>
                               </tr>
@@ -5263,7 +5577,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       if (collapsedConfCols.has(h)) return <td key={origIdx} className="px-0 py-1.5 w-1 max-w-[4px] bg-emerald-50/30" />;
                                       if (h === "공급처") return (
                                         <td key={origIdx} className="px-3 py-1.5 text-left font-bold text-emerald-500 whitespace-nowrap">
-                                          {pageSupplier}
+                                          {pageSupplier && (
+                                            <button type="button"
+                                              onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplier); }}
+                                              className="underline decoration-dotted decoration-emerald-400 underline-offset-2 hover:text-emerald-700 hover:decoration-solid cursor-pointer transition"
+                                              title="클릭하면 공급사 정보 조회·수정">{pageSupplier}</button>
+                                          )}
                                         </td>
                                       );
                                       if (h === "매입총계") return (
@@ -5292,7 +5611,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       <tr className="bg-orange-50 border-b border-orange-100">
                                         <td colSpan={CONF_HEADERS.length} className="px-3 py-1 text-center text-[11px] font-bold text-orange-600 whitespace-nowrap">
                                           <span className="inline-flex items-center gap-2 justify-center flex-wrap">
-                                            {pageSupplier && <span className="text-orange-700 font-black">{pageSupplier}</span>}
+                                            {pageSupplier && (
+                                              <button type="button"
+                                                onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplier); }}
+                                                className="text-orange-700 font-black underline decoration-dotted decoration-orange-500 underline-offset-2 hover:text-orange-900 hover:decoration-solid cursor-pointer transition"
+                                                title="클릭하면 공급사 정보 조회·수정">{pageSupplier}</button>
+                                            )}
                                             {pageImages?.length ? (
                                               <button
                                                 type="button"
@@ -5471,7 +5795,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
               {onReparsePage && supplier && (
                 <button
                   type="button"
-                  onClick={() => onReparsePage(p.page, supplier)}
+                  onClick={() => onReparsePage(p.page, supplier).catch(() => {})}
                   className="inline-flex items-center gap-1 text-[10px] font-bold text-white bg-indigo-500 hover:bg-indigo-600 rounded px-1.5 py-0.5 whitespace-nowrap"
                   title="이 페이지 재파싱 시도"
                 >🔄 재파싱</button>
@@ -5483,7 +5807,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
           </div>
         );
       })}
-    </div>
+      </div>{/* end 콘텐츠 래퍼 */}
+    </div>{/* end 명세서별 2컬럼 그리드 래퍼 */}
     </>
   );
 };

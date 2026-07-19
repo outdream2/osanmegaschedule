@@ -1,5 +1,5 @@
 import { extractBusinessNumbersFromRawText, extractSupplierFromRawText } from "../../parse";
-import { getVendorNames, getVendorBizNumMap, learnVendorBusinessNumber, getSupplierAliasMap, learnSupplierAlias } from "../../../productCache";
+import { getVendorNames, getVendorBizNumMap, learnVendorBusinessNumber, getSupplierAliasMap, learnSupplierAlias, getProductToSuppliersMap } from "../../../productCache";
 import { DEFAULT_EXCLUDED_SUPPLIERS, isExcludedBusinessNumber } from "../../excludedSuppliers";
 import { normSupplier, bigramSim } from "../../match";
 import { supabase } from "../../../../src/supabase/client";
@@ -308,6 +308,67 @@ export function makeVendorMatchStage(_deps: {
           }
         } catch (e: any) {
           console.warn(`[vendor-match/③상품기반] 예외:`, e?.message);
+        }
+
+        // ④ 역인덱스 폴백 (Task #50 · 2026-07-19)
+        //   ③ 상품기반 fallback 도 실패한 경우에만 동작
+        //   추출된 상품명들을 getProductToSuppliersMap() 로 조회 → 최다 득표 공급사
+        //   신뢰도(votes/total) < 50% 이면 채우지 않음
+        if (!vendorMatched) {
+          try {
+            const nameIdxRl = ctx.headers.indexOf("품명");
+            const rlNames = nameIdxRl >= 0
+              ? Array.from(new Set(
+                  ctx.rows
+                    .map(r => Array.isArray(r) ? String(r[nameIdxRl] ?? "").trim().toLowerCase() : "")
+                    .filter(n => n.length >= 2)
+                )).slice(0, 10)
+              : [];
+            if (rlNames.length === 0) {
+              console.log(`[vendor-match/④역인덱스] skip: 품명 없음`);
+            } else {
+              const rlMap = await getProductToSuppliersMap();
+              const voteCounts = new Map<string, number>();
+              let totalVotes = 0;
+              for (const pn of rlNames) {
+                const candidates = rlMap.get(pn);
+                if (!candidates || candidates.length === 0) continue;
+                // 1순위 공급사에만 투표 (다수결)
+                const topSup = candidates[0].supplier;
+                voteCounts.set(topSup, (voteCounts.get(topSup) ?? 0) + 1);
+                totalVotes++;
+              }
+              if (totalVotes === 0) {
+                console.log(`[vendor-match/④역인덱스] 역인덱스 히트 없음 (${rlNames.length}개 상품명 조회)`);
+              } else {
+                let topSup = "";
+                let topVotes = 0;
+                for (const [sup, cnt] of voteCounts) {
+                  if (cnt > topVotes) { topSup = sup; topVotes = cnt; }
+                }
+                const confidence = topVotes / totalVotes;
+                // 수신처 blacklist 체크
+                const envRaw2 = (process.env.OCR_EXCLUDED_SUPPLIERS ?? "") + "|" + (process.env.OCR_RECIPIENT_COMPANY ?? "");
+                const envExtra2 = envRaw2.split(/[|,]/).map(s => s.trim()).filter(Boolean);
+                const excludedNorms2 = new Set([...DEFAULT_EXCLUDED_SUPPLIERS, ...envExtra2].map(s => normSupplier(s)));
+                const topNorm2 = normSupplier(topSup);
+                const isBlacklisted2 = topNorm2 && [...excludedNorms2].some(en => en && (topNorm2 === en || topNorm2.includes(en) || en.includes(topNorm2)));
+                if (isBlacklisted2) {
+                  console.log(`[vendor-match/④역인덱스] skip: 최빈 supplier "${topSup}" 수신처 blacklist`);
+                } else if (confidence >= 0.5) {
+                  vendorMatched = topSup;
+                  matchSource = `reverse-lookup(${topVotes}/${totalVotes})`;
+                  const inferenceInfo = { source: "reverse-lookup", votes: topVotes, total: totalVotes, confidence: Math.round(confidence * 100) };
+                  (ctx.meta as any).supplier_inference = inferenceInfo;
+                  console.log(`[vendor-match/④역인덱스] "${topSup}" (${topVotes}/${totalVotes} · ${Math.round(confidence * 100)}%)`);
+                } else {
+                  console.log(`[vendor-match/④역인덱스] 신뢰도 부족: top="${topSup}" ${topVotes}/${totalVotes} (${Math.round(confidence * 100)}% < 50%) · 공란 유지`);
+                }
+              }
+            }
+          } catch (e: any) {
+            console.warn(`[vendor-match/④역인덱스] 예외:`, e?.message);
+          }
         }
 
         if (!vendorMatched) {

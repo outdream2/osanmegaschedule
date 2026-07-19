@@ -1,0 +1,10 @@
+import "dotenv/config";
+import { createClient } from "@supabase/supabase-js";
+const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
+const { count: totalPd } = await sb.from("purchase_details").select("id", { count: "exact", head: true });
+console.log(`purchase_details 총 ${totalPd ?? 0}건`);
+const { count: totalCi } = await sb.from("ocr_confirmed_items").select("id", { count: "exact", head: true });
+console.log(`ocr_confirmed_items 총 ${totalCi ?? 0}건`);
+const { data: pdSample } = await sb.from("purchase_details").select("supplier_name, product_name, purchase_date").limit(5);
+console.log("\npurchase_details 샘플:");
+(pdSample ?? []).forEach(r => console.log(`  · ${r.purchase_date} / ${r.supplier_name} / ${r.product_name}`));

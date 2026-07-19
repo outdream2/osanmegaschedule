@@ -1,4 +1,4 @@
-import sharp from "sharp";
+import sharp, { type Sharp } from "sharp";
 
 type ZBarSym = { decode: () => string; typeName: string };
 type ScanFn = (data: { data: Uint8ClampedArray; width: number; height: number }) => Promise<ZBarSym[]>;
@@ -36,7 +36,7 @@ export async function scanBarcodesFromB64(b64: string, _mimeType: string): Promi
     const buf = Buffer.from(b64, "base64");
     const results = new Set<string>();
 
-    const trySharp = async (input: Buffer | sharp.Sharp) => {
+    const trySharp = async (input: Buffer | Sharp) => {
       const { data, info } = await (typeof input === "object" && "raw" in input ? input : sharp(input))
         .ensureAlpha()
         .raw()

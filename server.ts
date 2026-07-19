@@ -57,7 +57,10 @@ async function startServer() {
   }
 
   app.use(compression());
-  app.use(express.json({ limit: "200mb" }));
+  // Render 512MB 환경: json body 파싱 한도를 50MB 로 제한 (OOM 방지)
+  // 로컬/개발: 200MB 유지 (대용량 이미지 배치 허용)
+  const JSON_LIMIT = (process.env.RENDER === "true" || process.env.LOW_MEM === "true") ? "50mb" : "200mb";
+  app.use(express.json({ limit: JSON_LIMIT }));
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
   app.use(schedulesRouter);

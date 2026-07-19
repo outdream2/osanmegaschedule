@@ -767,10 +767,59 @@ router.post("/api/ocr", async (req, res) => {
     (tmpls ?? []).forEach((t: any) => templateMap.set(t.supplier_name, t.headers));
   }
 
+  // ── SSE 스트리밍 모드 (2026-07-19) ───────────────────────────────────────
+  //   ?stream=1 요청 시 각 페이지 처리 완료 즉시 event: page 로 flush
+  //   Render 프록시 유지 위해 20초마다 keep-alive ping 전송
+  //   compression 미들웨어 우회 → Content-Encoding: identity + X-Accel-Buffering: no
+  const streamMode = req.query.stream === "1" || req.query.stream === "true";
+  let sseKeepAlive: NodeJS.Timeout | null = null;
+  const totalPagesReq = Array.isArray(images) ? images.length : 0;
+  if (streamMode) {
+    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    // compression 미들웨어가 SSE 를 버퍼링하지 않도록 명시 (일부 프록시 대응)
+    res.setHeader("Content-Encoding", "identity");
+    (res as any).flushHeaders?.();
+    sseKeepAlive = setInterval(() => {
+      try { res.write(`: ping ${Date.now()}\n\n`); } catch { /* ignore */ }
+    }, 20000);
+    req.on("close", () => {
+      if (sseKeepAlive) { clearInterval(sseKeepAlive); sseKeepAlive = null; }
+    });
+  }
+  const sseWrite = (event: string, data: any) => {
+    if (!streamMode) return;
+    try {
+      res.write(`event: ${event}\n`);
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    } catch (e: any) {
+      console.warn(`[OCR/SSE] write 실패 (${event}):`, e?.message);
+    }
+  };
+  const sseEnd = () => {
+    if (!streamMode) return;
+    if (sseKeepAlive) { clearInterval(sseKeepAlive); sseKeepAlive = null; }
+    try { res.end(); } catch { /* ignore */ }
+  };
+  // JSON/SSE 통합 응답 헬퍼 — 에러/최종 응답을 모드에 따라 분기
+  const sendJson = (status: number, payload: any): any => {
+    if (streamMode) {
+      if (status >= 400) sseWrite("error", payload);
+      else sseWrite("done", payload);
+      sseEnd();
+      return;
+    }
+    return res.status(status).json(payload);
+  };
+
   if (!Array.isArray(images) || images.length === 0)
-    return res.status(400).json({ error: "images 배열이 필요합니다." });
+    return sendJson(400, { error: "images 배열이 필요합니다." });
   if (engine === "gemini" && getGeminiKeys().length === 0 && getMistralKeys().length === 0)
-    return res.status(400).json({ error: "GEMINI_API_KEY 또는 MISTRAL_API_KEY가 설정되지 않았습니다. .env에 추가하세요." });
+    return sendJson(400, { error: "GEMINI_API_KEY 또는 MISTRAL_API_KEY가 설정되지 않았습니다. .env에 추가하세요." });
+
+  if (streamMode) sseWrite("start", { total: totalPagesReq, engine });
 
   console.log(`[OCR] 요청 엔진: ${engine}`);
 
@@ -915,7 +964,7 @@ router.post("/api/ocr", async (req, res) => {
           await runPipeline(pipeline, ctx, { page: i + 1 });
           const LOW_MEM_MODE = process.env.RENDER === "true" || process.env.LOW_MEM === "true";
           // pages 저장 · rawText 는 LOW_MEM 에서 4KB 캡 (누적 성장 방지)
-          pages.push({
+          const onnxPageData = {
             page: ctx.page,
             headers: ctx.headers,
             rows: ctx.rows,
@@ -924,7 +973,10 @@ router.post("/api/ocr", async (req, res) => {
             supplierHintUsed: ctx.template?.supplier ?? ctx.supplierHint,
             rawOcrHeaders: ctx.rawOcrHeaders ?? [],
             rawOcrSample: ctx.rawOcrSample ?? [],
-          });
+          };
+          pages.push(onnxPageData);
+          // SSE: 페이지 완료 즉시 flush
+          sseWrite("page", { index: i, total: imgs.length, page: onnxPageData });
           // 진단은 LOW_MEM 에서 더 짧게 · rawFromOnnx 는 필수 필드만
           diagnostics.push({
             page: ctx.page,
@@ -952,8 +1004,11 @@ router.post("/api/ocr", async (req, res) => {
         } catch (pageErr: any) {
           console.error(`[OCR/ONNX] page ${i + 1} 처리 실패 · 빈 페이지로 대체:`, pageErr?.message);
           console.error(`  stack:`, pageErr?.stack);
-          pages.push({ page: i + 1, headers: ["품명", "규격", "수량", "단가", "금액", "비고"], rows: [], meta: {}, rawText: "", supplierHintUsed: undefined, _error: pageErr?.message });
+          const errPage = { page: i + 1, headers: ["품명", "규격", "수량", "단가", "금액", "비고"], rows: [], meta: {}, rawText: "", supplierHintUsed: undefined, _error: pageErr?.message };
+          pages.push(errPage);
           diagnostics.push({ page: i + 1, timeMs: Date.now() - startTs, error: pageErr?.message });
+          // SSE: 페이지 실패도 progress 유지 · error 페이로드 포함
+          sseWrite("page", { index: i, total: imgs.length, page: errPage, error: pageErr?.message });
         }
         // 페이지 간 메모리 해제 힌트 (Render 512MB · OOM 방지)
         //   node --expose-gc 필요 · 없으면 조용히 skip
@@ -993,11 +1048,21 @@ router.post("/api/ocr", async (req, res) => {
         }
       }
       await saveLocalOcrLog("onnx", diagnostics);
+      if (streamMode) {
+        sseWrite("done", { ok: true, total: pages.length, engine });
+        sseEnd();
+        return;
+      }
       return res.json({ pages, engine });
     } catch (err: any) {
       // 🔍 stack trace 전체 로그 (Cannot read undefined length 위치 파악)
       console.error("[OCR/ONNX] error:", err?.message);
       console.error("[OCR/ONNX] stack:", err?.stack);
+      if (streamMode) {
+        sseWrite("error", { error: err?.message ?? "ONNX(PP-OCRv5 한국어) 처리 중 오류" });
+        sseEnd();
+        return;
+      }
       return res.status(500).json({ error: err?.message ?? "ONNX(PP-OCRv5 한국어) 처리 중 오류" });
     }
   }
@@ -1126,6 +1191,11 @@ router.post("/api/ocr", async (req, res) => {
           const errMsg = deadCount === keys.length
             ? `Gemini 키 ${keys.length}개 모두 할당량 초과 또는 인증 실패. 새 키를 추가하거나 내일 재시도하세요.`
             : `OCR 실패: ${lastError}`;
+          if (streamMode) {
+            sseWrite("error", { error: errMsg, page: i + 1 });
+            sseEnd();
+            return;
+          }
           return res.status(500).json({ error: errMsg });
         }
 
@@ -1220,6 +1290,8 @@ router.post("/api/ocr", async (req, res) => {
         trace.totalMs = Date.now() - pageStartTs;
         pageTraces.push(trace);
         pages.push(pageData);
+        // SSE: 페이지 완료 즉시 flush (Gemini 병렬 처리 X — 순차 for-loop)
+        sseWrite("page", { index: i, total: images.length, page: pageData });
 
         // ── 자동 학습: Gemini가 뽑은 헤더가 표준 컬럼 3개+ 포함하면 템플릿 저장 ──
         //    Local/AI 가 같은 공급사 처리할 때 이 헤더 구조를 참조하게 됨
@@ -1400,10 +1472,20 @@ router.post("/api/ocr", async (req, res) => {
     } catch (logErr: any) {
       console.warn("[OCR/log-save]", logErr?.message);
     }
+    if (streamMode) {
+      sseWrite("done", { ok: true, total: pages.length, engine });
+      sseEnd();
+      return;
+    }
     return res.json({ pages, engine });
   } catch (err: any) {
     console.error("[OCR] error:", err?.message);
     console.error("[OCR] stack:", err?.stack);
+    if (streamMode) {
+      sseWrite("error", { error: err?.message ?? "OCR 처리 중 오류" });
+      sseEnd();
+      return;
+    }
     res.status(500).json({ error: err?.message ?? "OCR 처리 중 오류" });
   }
 });

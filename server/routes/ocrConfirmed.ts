@@ -8,6 +8,7 @@ const CREATE_SQL = `
 CREATE TABLE IF NOT EXISTS ocr_confirmed_items (
   id           SERIAL PRIMARY KEY,
   saved_at     DATE NOT NULL DEFAULT CURRENT_DATE,
+  invoice_date TEXT,
   supplier     TEXT NOT NULL,
   product_name TEXT NOT NULL,
   product_code TEXT,
@@ -20,6 +21,8 @@ CREATE TABLE IF NOT EXISTS ocr_confirmed_items (
   raw_json     JSONB,
   created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+-- 기존 테이블 컬럼 추가 (컬럼 없으면):
+-- ALTER TABLE ocr_confirmed_items ADD COLUMN IF NOT EXISTS invoice_date TEXT;
 `;
 
 // 테이블 존재 여부 사전 체크 — 없으면 SQL 안내
@@ -44,6 +47,7 @@ interface ConfirmedItemInput {
   memo?: string | null;
   raw_json?: Record<string, unknown> | null;
   saved_at?: string | null;
+  invoice_date?: string | null; // 거래명세서 원본 날짜 (OCR meta.date)
 }
 
 const toNumOrNull = (v: unknown): number | null => {
@@ -70,6 +74,7 @@ router.post("/api/ocr-confirmed-items", async (req, res) => {
       if (!supplier || !product_name) return null;
       return {
         saved_at: item.saved_at ?? defaultSavedAt ?? new Date().toISOString().slice(0, 10),
+        invoice_date: item.invoice_date ? String(item.invoice_date).trim() : null,
         supplier,
         product_name,
         product_code: item.product_code ? String(item.product_code).trim() : null,
@@ -129,6 +134,9 @@ router.get("/api/ocr-confirmed-items", async (req, res) => {
   if (hasBalanceParam) {
     query = query.not("balance", "is", null).gt("balance", 0);
   }
+
+  // 기본 한도 500 (Supabase PostgREST 기본 1000 초과 방지 · Render 메모리 절감)
+  query = query.limit(500);
 
   const { data, error } = await query;
 
