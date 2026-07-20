@@ -1,10 +1,7 @@
 import { callPpuOcr } from "../../ppuPaddle";
 import { preprocessHighContrast, rotateImage } from "../../preprocess";
+import { ocrConfig } from "../../../config/ocrConfig";
 import type { RawOcrResult, Stage } from "../types";
-
-const LOW_MEM =
-  process.env.RENDER === "true" ||
-  process.env.LOW_MEM === "true";
 
 // 인식 부족 판정
 const isPoorRaw = (r: any): boolean => {
@@ -47,7 +44,7 @@ export const ocrEngineStage: Stage = {
       return finalize(best);
     }
 
-    console.log(`[ocr-engine] page ${ctx.page}: 인식 부족 (rawText=${(best?.rawText ?? "").length}자, rows=${(best?.rows ?? []).length}) · 재시도 시작 (LOW_MEM=${LOW_MEM})`);
+    console.log(`[ocr-engine] page ${ctx.page}: 인식 부족 (rawText=${(best?.rawText ?? "").length}자, rows=${(best?.rows ?? []).length}) · 재시도 시작 (attempts=${ocrConfig.retryAttempts.length})`);
 
     // best-only 갱신 헬퍼 (직전 시도 즉시 폐기)
     const tryOne = async (label: string, gen: () => Promise<{ b64: string; mimeType: string }>): Promise<boolean> => {
@@ -66,16 +63,17 @@ export const ocrEngineStage: Stage = {
       }
     };
 
-    // 시도 순서: LOW_MEM 이면 재시도 없음 (원본 유지 · 90° 편향 방지 · 2026-07-19 롤백)
-    //   · 이전 90° 단독 재시도가 rows 수 오판으로 뒤집힌 텍스트를 채택하는 버그 발생
-    const attempts: Array<[string, () => Promise<{ b64: string; mimeType: string }>]> = LOW_MEM
-      ? []
-      : [
-          ["대비강화", () => preprocessHighContrast(ctx.rawB64)],
-          ["90°",  () => rotateImage(ctx.rawB64, 90)],
-          ["180°", () => rotateImage(ctx.rawB64, 180)],
-          ["270°", () => rotateImage(ctx.rawB64, 270)],
-        ];
+    // 재시도 순서 · server/config/ocrConfig.ts 에서 관리 (env 무시 · 로컬↔Render 일치)
+    const retryGens: Record<string, () => Promise<{ b64: string; mimeType: string }>> = {
+      "대비강화": () => preprocessHighContrast(ctx.rawB64),
+      "90°":  () => rotateImage(ctx.rawB64, 90),
+      "180°": () => rotateImage(ctx.rawB64, 180),
+      "270°": () => rotateImage(ctx.rawB64, 270),
+    };
+    const attempts: Array<[string, () => Promise<{ b64: string; mimeType: string }>]> =
+      ocrConfig.retryAttempts
+        .map(label => [label, retryGens[label]] as [string, () => Promise<{ b64: string; mimeType: string }>])
+        .filter(([, gen]) => typeof gen === "function");
 
     for (const [label, gen] of attempts) {
       const done = await tryOne(label, gen);

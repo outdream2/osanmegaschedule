@@ -37,9 +37,12 @@ let sessionPromise: Promise<any> | null = null;
 let vocab: string[] = [];
 let warningShown = false;
 
-const LOW_MEM =
-  process.env.RENDER === "true" ||
-  process.env.LOW_MEM === "true";
+// 2026-07-20: env 분기 제거 · server/config/ocrConfig.ts 단일 소스
+import { ocrConfig } from "../config/ocrConfig";
+const DISPOSE_PER_PAGE = ocrConfig.disposeSessionsPerPage;
+const FORCE_GC = ocrConfig.forceGcAfterDispose;
+const ONNX_INTRA_OP = ocrConfig.onnxIntraOpThreads;
+const ONNX_OPT_LEVEL = ocrConfig.onnxGraphOptimizationLevel;
 
 async function disposeSession(): Promise<void> {
   const s = session;
@@ -90,12 +93,10 @@ async function getSession() {
 
   sessionPromise = (async () => {
     const ort: any = await import("onnxruntime-node");
-    // LOW_MEM (Render): threads=1 · session 옵션 최소화
-    const LOW_MEM = process.env.RENDER === "true" || process.env.LOW_MEM === "true";
     const s = await ort.InferenceSession.create(MODEL_PATH, {
       executionProviders: ["cpu"],
-      intraOpNumThreads: LOW_MEM ? 1 : 2,
-      graphOptimizationLevel: LOW_MEM ? "basic" : "all",
+      intraOpNumThreads: ONNX_INTRA_OP,
+      graphOptimizationLevel: ONNX_OPT_LEVEL,
     });
     await loadVocab();
     session = s;
@@ -145,7 +146,11 @@ export async function detectTableSlanet(b64: string): Promise<SlanetResult> {
   try {
     return await _detectInner(b64);
   } finally {
-    if (LOW_MEM) await disposeSession();
+    if (DISPOSE_PER_PAGE) {
+      await disposeSession();
+      // config.forceGcAfterDispose 시 40MB spike 확실히 회수 · --expose-gc 필요
+      if (FORCE_GC && typeof (global as any).gc === "function") (global as any).gc();
+    }
   }
 }
 

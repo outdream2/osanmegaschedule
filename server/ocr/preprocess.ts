@@ -70,14 +70,12 @@ export async function preprocessImageForOcr(
  *   - 색상 유지 (Detection 성능 보존)
  *   - JPEG q95 (엣지 손실 최소화)
  */
-// Render 512MB 환경에서 큰 이미지는 다운샘플 필수 (env RENDER=true 또는 LOW_MEM=true)
-// 2026-07-19 롤백: NODE_ENV=production 조건 제거 (로컬 프로덕션 빌드 저화질 오염 방지)
-const LOW_MEM =
-  process.env.RENDER === "true" ||
-  process.env.LOW_MEM === "true";
-
-// LOW_MEM 모드: 1500px 캡 (메모리 절감) · 일반 모드: 2200px 캡 (품질 유지)
-const OCR_MAX_LONG_SIDE = Number(process.env.OCR_INPUT_MAX_LONG_SIDE) || (LOW_MEM ? 1500 : 2200);
+// 2026-07-20: env 분기 제거 · server/config/ocrConfig.ts 단일 소스
+//   Render↔로컬 결과 일치 · 페이지마다 dispose 로 메모리 안전
+import { ocrConfig } from "../config/ocrConfig";
+const OCR_MAX_LONG_SIDE = ocrConfig.maxImageLongSide;
+const OCR_JPEG_QUALITY = ocrConfig.jpegQuality;
+const OCR_UPSCALE = ocrConfig.upscaleSmallImages;
 
 export async function preprocessForEasyOcr(
   b64: string,
@@ -93,22 +91,20 @@ export async function preprocessForEasyOcr(
 
     let pipeline = sharp(inputBuf, { sequentialRead: true, failOn: "none" });
 
-    // 우선순위 A: 최장변이 캡 초과 → 다운샘플 (메모리 절감 · Render OOM 방지)
+    // 우선순위 A: 최장변이 캡 초과 → 다운샘플
     if (longSide > OCR_MAX_LONG_SIDE) {
       const ratio = OCR_MAX_LONG_SIDE / longSide;
       pipeline = pipeline.resize(Math.round(w * ratio), Math.round(h * ratio), { fit: "fill" });
     }
-    // 우선순위 B: 저해상도 → 업스케일 (작은 글자 확보 · LOW_MEM에서는 억제)
-    else if (shortSide < 1200 && !LOW_MEM) {
+    // 우선순위 B: 저해상도 → 업스케일 (config.upscaleSmallImages 로 제어)
+    else if (shortSide < 1200 && OCR_UPSCALE) {
       const scale = Math.min(2.0, 1600 / shortSide);
       if (scale > 1.05) {
         pipeline = pipeline.resize(Math.round(w * scale), Math.round(h * scale), { fit: "fill" });
       }
     }
 
-    // JPEG 품질도 LOW_MEM에서 소폭 낮춤 (95 → 88)
-    const jpegQ = LOW_MEM ? 88 : 95;
-    const processed = await pipeline.jpeg({ quality: jpegQ, mozjpeg: true }).toBuffer();
+    const processed = await pipeline.jpeg({ quality: OCR_JPEG_QUALITY, mozjpeg: true }).toBuffer();
     return { b64: processed.toString("base64"), mimeType: "image/jpeg" };
   } catch (e: any) {
     console.warn("[OCR/preprocessForEasyOcr] 전처리 실패, 원본 사용:", e?.message ?? e);

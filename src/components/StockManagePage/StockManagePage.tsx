@@ -498,8 +498,15 @@ export const ProductManageView: React.FC<{ onProductClick: (p: any) => void }> =
           </thead>
           <tbody className="divide-y divide-slate-50">
             {filtered.length === 0 ? (
-              <tr><td colSpan={7} className="text-center text-[11px] text-slate-300 py-6">
-                {loading ? "로딩 중..." : search ? "검색 결과 없음" : "상품 데이터 없음"}
+              <tr><td colSpan={7} className="text-center py-6">
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center gap-3">
+                    <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+                    <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
+                  </div>
+                ) : (
+                  <span className="text-[11px] text-slate-300">{search ? "검색 결과 없음" : "상품 데이터 없음"}</span>
+                )}
               </td></tr>
             ) : filtered.slice(0, 500).map((p, i) => (
               <tr key={String(p.product_code ?? p.code ?? i)}
@@ -667,11 +674,7 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
               {periodBadge}
             </span>
           )}
-          {loading && (
-            <span className="text-[10px] text-slate-400 font-semibold inline-flex items-center gap-1">
-              <LoaderIcon size={10} className="animate-spin" />로딩...
-            </span>
-          )}
+          {/* 2026-07-20: 헤더의 loading 표시 제거 · 리스트 내부 shimmer 배너로 통일 */}
           {!loading && filtered.length > 0 && (
             <span className="text-[10px] text-slate-500 font-semibold">
               수량 {fmt(totalQty)} · 금액 <span className="text-emerald-700 font-black">{fmtWon(totalAmount)}</span>
@@ -751,20 +754,24 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
       <p className="text-[10px] text-slate-500 font-semibold leading-tight px-3 py-1.5 border-b border-slate-200 shrink-0">
         상품명 클릭 → 상세 정보 + 재고 상황 · 매입 숫자 클릭 → 상세 매입현황
       </p>
-      {/* 로딩 시 상단 배너 (조건 변경) */}
-      {loading && rows.length > 0 && (
-        <div className="flex items-center justify-center gap-1.5 text-[10px] text-emerald-600 font-bold py-1.5 mx-3 mb-1 bg-emerald-50 border border-emerald-200 rounded-md shrink-0">
-          <LoaderIcon size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
-        </div>
-      )}
+      {/* 2026-07-20: 로딩 UI 통일 · 판매추이 공급사별판매 패턴 */}
       {rows.length === 0 && loading ? (
-        <div className="flex items-center justify-center py-10 text-slate-400 text-sm gap-2"><LoaderIcon size={14} className="animate-spin" /> 로딩 중...</div>
+        <div className="flex flex-col items-center justify-center gap-3 py-8">
+          <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+          <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
+        </div>
       ) : rows.length === 0 ? (
         <div className="text-center py-10 text-slate-400 text-sm">
           매입상세 데이터 없음 · <span className="text-slate-500 font-semibold">데이터 업로드 → 매입상세 탭에서 xlsx 임포트하세요</span>
         </div>
       ) : (
-        <div className={`flex-1 overflow-y-auto ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+        <div className="relative flex-1 overflow-y-auto">
+          {loading && rows.length > 0 && (
+            <div className="flex items-center justify-center gap-1.5 text-[10px] text-sky-600 font-bold py-1.5 mx-3 mt-2 mb-1 bg-sky-50 border border-sky-200 rounded-md">
+              <LoaderIcon size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+            </div>
+          )}
+          <div className={`${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
           {/* 코드 컬럼 제거 · 매입일 간단(M/D) · 가로 스크롤 방지 (table-fixed) */}
           <table className="w-full text-[10px] sm:text-xs table-fixed">
             <thead className="sticky top-0 bg-white z-10">
@@ -853,6 +860,7 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
           {filtered.length > 1000 && (
             <div className="text-[10px] text-slate-400 text-center py-2">상위 1000개만 표시 · 검색/기간으로 좁혀보세요 (전체 {filtered.length.toLocaleString()}건)</div>
           )}
+          </div>{/* opacity dim wrapper close */}
         </div>
       )}
 
@@ -981,7 +989,10 @@ const InvoiceLookupModal: React.FC<{ purchaseDate: string; supplier: string; hig
 
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {loading ? (
-            <div className="flex items-center justify-center py-10 text-slate-400 gap-2"><LoaderIcon size={14} className="animate-spin" /> 로딩중...</div>
+            <div className="flex flex-col items-center justify-center gap-3 py-8">
+              <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+              <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
+            </div>
           ) : error ? (
             <div className="text-center py-8 text-rose-500 text-sm font-bold">{error}</div>
           ) : items.length === 0 ? (
@@ -1100,7 +1111,10 @@ export const ProductPurchaseHistoryModal: React.FC<{ productCode: string; produc
 
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {loading ? (
-            <div className="flex items-center justify-center py-10 text-slate-400 gap-2"><LoaderIcon size={14} className="animate-spin" /> 로딩중...</div>
+            <div className="flex flex-col items-center justify-center gap-3 py-8">
+              <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+              <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
+            </div>
           ) : error ? (
             <div className="text-center py-8 text-rose-500 text-sm font-bold">{error}</div>
           ) : rows.length === 0 ? (
@@ -2187,6 +2201,21 @@ export const StockManagePage: React.FC = () => {
   const [supplierMonths, setSupplierMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
   const [supplierSeason, setSupplierSeason] = useState<SeasonKey | null>(null);
 
+  // 2026-07-20: 탭 전환 시 각 리스트의 기간·검색 필터 초기화 (프레시 시작)
+  //   재고흐름/공급사재고 state 는 StockManagePage 스코프라 탭 스위치 시 유지되던 문제 해결
+  //   매입상세는 PurchaseDetailsView 컴포넌트가 조건부 언마운트되어 자동 리셋됨
+  useEffect(() => {
+    setFlowMonths(0);
+    setFlowSeason(null);
+    setPendingFlowMonths(0);
+    setFlowSearch("");
+    setSalesQtyMin("");
+    setSalesQtyMax("");
+    setSupplierMonths(0);
+    setSupplierSeason(null);
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [stockTab]);
+
   // xlsx 기반 공급사별 매입 집계 · 기간 파라미터 지원 (2026-07-16)
   useEffect(() => {
     (async () => {
@@ -2477,13 +2506,24 @@ export const StockManagePage: React.FC = () => {
                   </div>
                   {!supplierCardCollapsed && (<>
                     {/* 순위 리스트 (재고자산 기준 내림차순) — 우측 스크롤바 여백 확보 */}
-                    <div className="flex-1 overflow-y-auto px-3 py-2">
-                      {xlsxSuppliers.length === 0 ? (
-                        <div className="text-center text-[11px] text-slate-300 py-6">
-                          {loading ? "불러오는 중..." : "데이터 없음"}
+                    <div className="relative flex-1 overflow-y-auto px-3 py-2">
+                      {/* 2026-07-20: 로딩 UI 통일 · 판매추이 공급사별판매 패턴 */}
+                      {loading && xlsxSuppliers.length > 0 && (
+                        <div className="flex items-center justify-center gap-1.5 text-[10px] text-sky-600 font-bold py-1.5 mb-1 bg-sky-50 border border-sky-200 rounded-md">
+                          <LoaderIcon size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
                         </div>
+                      )}
+                      {xlsxSuppliers.length === 0 ? (
+                        loading ? (
+                          <div className="flex flex-col items-center justify-center gap-3 py-8">
+                            <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+                            <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
+                          </div>
+                        ) : (
+                          <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
+                        )
                       ) : (
-                        <div className="divide-y divide-slate-50">
+                        <div className={`divide-y divide-slate-50 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                           {xlsxSuppliers.map((sup, i) => {
                             const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
                             const isExpanded = expandedSuppliers.has(key);
@@ -2766,7 +2806,10 @@ export const StockManagePage: React.FC = () => {
                         </div>
                       )}
                       {loading && lowStock.length === 0 ? (
-                        <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><LoaderIcon size={14} className="animate-spin" />로딩 중...</div>
+                        <div className="flex flex-col items-center justify-center gap-3 py-8">
+                          <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+                          <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
+                        </div>
                       ) : lowStock.length === 0 ? (
                         <div className="text-center text-[11px] text-slate-300 py-6">해당 상품 없음</div>
                       ) : (
@@ -2947,7 +2990,10 @@ export const StockManagePage: React.FC = () => {
                           </div>
                         )}
                         {loading && diffList.length === 0 ? (
-                          <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2"><LoaderIcon size={14} className="animate-spin" />로딩 중...</div>
+                          <div className="flex flex-col items-center justify-center gap-3 py-8">
+                          <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+                          <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
+                        </div>
                         ) : diffList.length === 0 ? (
                           <div className="text-center text-[11px] text-slate-300 py-6">차이 있는 상품 없음</div>
                         ) : (
@@ -3128,11 +3174,7 @@ export const StockManagePage: React.FC = () => {
                       </div>
                       {/* 2026-07-16 · 계절 조회 · 지정 시 flowMonths 무시 */}
                       <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) { setPendingFlowMonths(0); setFlowMonths(0); } }} size="sm" hideLabel />
-                      {loading && (
-                        <span className="inline-flex items-center gap-1 text-[10px] font-black text-teal-600">
-                          <LoaderIcon size={11} className="animate-spin" /> 불러오는 중...
-                        </span>
-                      )}
+                      {/* 2026-07-20: loading 인디케이터를 리스트 내부로 이동 (아래 shimmer 배너 · 헤더 자리 확보) */}
                       {/* 실제 조회 날짜 범위 표시 (현재 적용된 flowMonths 기준) */}
                       {flowMonths > 0 && (() => {
                         const today = new Date();
@@ -3209,18 +3251,30 @@ export const StockManagePage: React.FC = () => {
                     ({topTab === "sale" ? filteredFlow.length : topProducts.length}건)
                   </span>
                 </div>
-                <div className="flex-1 overflow-auto -mx-1 max-h-[50vh]">
+                <div className="relative flex-1 overflow-auto -mx-1 max-h-[50vh]">
+                  {/* 2026-07-20: 리스트 내부 로딩 배너 · 데이터 있을 때 sticky 상단 · shimmer 애니메이션 · 아래 데이터 opacity 60% */}
+                  {/* 2026-07-20: 로딩 UI 통일 · 판매추이 공급사별판매 패턴 */}
+                  {loading && topTab === "sale" && filteredFlow.length > 0 && (
+                    <div className="flex items-center justify-center gap-1.5 text-[10px] text-sky-600 font-bold py-1.5 mx-1 mt-1 mb-1 bg-sky-50 border border-sky-200 rounded-md">
+                      <LoaderIcon size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+                    </div>
+                  )}
                   {topTab === "sale" ? (
                     filteredFlow.length === 0 ? (
-                      <div className="text-center text-[11px] text-slate-300 py-6">
-                        {loading
-                          ? "불러오는 중..."
-                          : stockFlow.length === 0
+                      loading ? (
+                        <div className="flex flex-col items-center justify-center gap-3 py-8">
+                          <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+                          <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
+                        </div>
+                      ) : (
+                        <div className="text-center text-[11px] text-slate-300 py-6">
+                          {stockFlow.length === 0
                             ? "재고 데이터 없음 (재고현황 xlsx 업로드 필요)"
                             : "선택한 판매수량 범위에 해당하는 상품 없음"}
-                      </div>
+                        </div>
+                      )
                     ) : (
-                      <div className="overflow-x-auto">
+                      <div className={`overflow-x-auto transition-opacity duration-200 ${loading ? "opacity-60" : "opacity-100"}`}>
                       <table className="w-full text-[10px] sm:text-xs sm:min-w-[540px]">
                         <thead className="sticky top-0 bg-white z-10">
                           {selectedFlowCodes.size > 0 && (
@@ -3520,9 +3574,9 @@ export const StockManagePage: React.FC = () => {
             {/* 컨텐츠 (리스트, 세로 스크롤 하나만) */}
             <div className="flex-1 overflow-y-auto overflow-x-auto bg-white">
               {supplierModalLoading ? (
-                <div className="text-center text-sm text-slate-400 py-16 flex flex-col items-center gap-3">
-                  <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-sky-500 animate-spin" />
-                  불러오는 중...
+                <div className="flex flex-col items-center justify-center gap-3 py-8">
+                  <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+                  <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
                 </div>
               ) : !supplierModalRows || supplierModalRows.length === 0 ? (
                 <div className="text-center text-sm text-slate-400 py-16">이 공급사의 상품이 없습니다</div>
@@ -3665,9 +3719,9 @@ export const StockManagePage: React.FC = () => {
 
             <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 bg-slate-50">
               {infoModalLoading ? (
-                <div className="text-center text-sm text-slate-400 py-16 flex flex-col items-center gap-3">
-                  <div className="w-8 h-8 rounded-full border-2 border-slate-200 border-t-sky-500 animate-spin" />
-                  불러오는 중...
+                <div className="flex flex-col items-center justify-center gap-3 py-8">
+                  <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+                  <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
                 </div>
               ) : !infoModalData ? (
                 <div className="text-center text-sm text-slate-400 py-16">데이터 없음</div>
@@ -4177,9 +4231,9 @@ export const StockManagePage: React.FC = () => {
             </div>
             <div className="flex-1 overflow-y-auto bg-slate-50">
               {hiddenLoading ? (
-                <div className="flex items-center justify-center py-12 text-slate-400 text-sm">
-                  <LoaderIcon size={14} className="animate-spin mr-2" />
-                  불러오는 중...
+                <div className="flex flex-col items-center justify-center gap-3 py-8">
+                  <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+                  <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
                 </div>
               ) : hiddenList.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-2">

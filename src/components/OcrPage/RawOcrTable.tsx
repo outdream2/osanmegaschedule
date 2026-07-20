@@ -1,160 +1,47 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { Download, Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, FileSpreadsheet, Upload as UploadIcon, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
 import { isNonProductText, isValidSupplierHint } from "../../lib/ocrRowFilter";
 import { reextractCellCandidates } from "../../lib/cellReextract";
 import { VendorDetailModal, type Vendor } from "../LandingPage/VendorListEditor";
+import type {
+  ConfirmedItem,
+  RawPage,
+  MatchedItem,
+  CandidateInfo,
+  BarcodeProduct,
+  RawOcrTableProps,
+} from "./RawOcrTable/types";
+import {
+  SCHEMA_ORDER,
+  HIDDEN_COLS,
+  NUM_COLS,
+  fmt,
+  isFallback,
+  buildMasterHeaders,
+  alignRow,
+  scoreColor,
+  ScoreIcon,
+  parseNumber,
+  renderTextWithBreaks,
+} from "./RawOcrTable/utils";
+import { ImageZoomModal } from "./RawOcrTable/ImageZoomModal";
+import { SupplierChangeDialog } from "./RawOcrTable/SupplierChangeDialog";
+import { DeleteSynonymDialog } from "./RawOcrTable/DeleteSynonymDialog";
+import {
+  exportCsv as _exportCsv,
+  parseXlsxTemplateHeaders as _parseXlsxTemplateHeaders,
+  writeXlsxWithTemplate as _writeXlsxWithTemplate,
+  writeXlsxFresh as _writeXlsxFresh,
+} from "./RawOcrTable/exportHelpers";
+import {
+  computePageBalanceCandidates as _computePageBalanceCandidates,
+  computePageBalanceFromConfig as _computePageBalanceFromConfig,
+} from "./RawOcrTable/balanceHelpers";
+import { CrossCheckBadge } from "./RawOcrTable/CrossCheckBadge";
 
-export interface ConfirmedItem {
-  supplier: string;
-  product_name: string;
-  product_code?: string;
-  quantity?: number;
-  unit_price?: number;
-  amount?: number;
-  balance?: number;
-  expiry_date?: string;
-  memo?: string;
-  confirmed_at?: string;  // 2차보정 확정 버튼 누른 작업일 (YYYY-MM-DD)
-  invoice_date?: string;  // 거래명세서 원본 날짜 (meta.date) — saved_at과 별개
-  raw_json?: Record<string, unknown>;
-  image_url?: string;     // Cloudinary 명세서 원본 이미지 URL
-  image_public_id?: string; // Cloudinary public_id (삭제 시 사용)
-}
-
-interface RawPage {
-  page: number;
-  headers: string[];
-  rows: (string | number | null)[][];
-  meta: {
-    supplier?: string | null;
-    recipient?: string | null;
-    date?: string | null;
-    total?: number | null;
-    summary_rows?: Array<{ label: string; amount: number }>;
-  };
-  rawText?: string;
-  rawOcrHeaders?: string[];
-  rawOcrSample?: (string | number | null)[][];
-}
-
-interface MatchedItem {
-  input: string;
-  matched: {
-    code: string; name: string; spec: string; score: number;
-    masterPrice: number | null;
-    salePrice:   number | null;
-    profitRate:  number | null;
-    expiryDate:  string | null;
-    supplier:    string | null;
-  } | null;
-  score?: number;
-}
-
-type CandidateInfo = NonNullable<MatchedItem["matched"]>;
-
-interface BarcodeProduct {
-  barcode: string;
-  code: string;
-  name: string;
-  spec: string | null;
-  supplier: string | null;
-  masterPrice: number | null;
-  salePrice: number | null;
-  profitRate: number | null;
-  expiryDate: string | null;
-}
-
-interface RawOcrTableProps {
-  pages: RawPage[];
-  pageImages?: string[]; // dataURL per page (index = page-1)
-  rotation?: number;     // CSS rotation applied in PageImageViewer (degrees)
-  // approach (2026-07-19 · 순환 재파싱): default | rearrange | high-contrast | gemini
-  onReparsePage?: (pageNum: number, supplier: string, approach?: "default" | "rearrange" | "high-contrast" | "gemini") => Promise<any>;
-  barcodeMatches?: BarcodeProduct[];
-  balanceConfig?: Record<string, string>;
-  onSaveConfirmed?: (items: ConfirmedItem[]) => Promise<void>;
-}
-
-const SCHEMA_ORDER = ["공급처","일자","품명","수량","단가","금액","세액","규격","유통기한","단위","비고"];
-// "에누리"/"에누리액"은 할인 금액으로 계산에 사용하므로 HIDDEN에서 제외 (필요 시 상세정보 모드에서 표시)
-// "유통기한"은 SCHEMA_ORDER 에 포함 → HIDDEN 에서 제외
-const HIDDEN_COLS  = new Set(["번호", "배치번호", "Batch No", "BatchNo", "BATCH NO", "소비기한", "사용기한", "소비/사용기한", "보험코드"]);
-const NUM_COLS     = new Set(["수량","단가","금액","세액"]);
-
-function fmt(v: number) { return v.toLocaleString("ko-KR"); }
-
-function isFallback(headers: string[]) {
-  return headers.length <= 1 &&
-    (headers[0] === "원문 텍스트" || headers[0] === "원문 응답" || headers.length === 0);
-}
-
-function buildMasterHeaders(pages: RawPage[]): string[] {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  const hasSupplier = pages.some(p => p.meta.supplier);
-  for (const col of SCHEMA_ORDER) {
-    if (col === "공급처") {
-      if (hasSupplier) { out.push(col); seen.add(col); }
-      continue;
-    }
-    if (pages.some(p => p.headers.includes(col))) {
-      out.push(col); seen.add(col);
-    }
-  }
-  for (const p of pages) {
-    for (const h of p.headers) {
-      if (!seen.has(h) && !isFallback([h]) && !HIDDEN_COLS.has(h)) {
-        out.push(h); seen.add(h);
-      }
-    }
-  }
-  return out;
-}
-
-function alignRow(
-  row: (string | number | null)[],
-  src: string[],
-  dst: string[]
-): (string | number | null)[] {
-  return dst.map(h => { const i = src.indexOf(h); return i >= 0 ? row[i] : null; });
-}
-
-function scoreColor(score: number) {
-  if (score >= 80) return "text-emerald-600";
-  if (score >= 50) return "text-amber-500";
-  return "text-rose-500";
-}
-
-function ScoreIcon({ score }: { score: number }) {
-  if (score >= 80) return <CheckCircle size={12} className="text-emerald-500 shrink-0" />;
-  if (score >= 50) return <AlertTriangle size={12} className="text-amber-400 shrink-0" />;
-  return <XCircle size={12} className="text-rose-400 shrink-0" />;
-}
-
-const parseNumber = (val: any): number => {
-  if (val == null) return 0;
-  if (typeof val === "number") return val;
-  const clean = String(val).replace(/[^0-9.-]/g, "");
-  const num = parseFloat(clean);
-  return isNaN(num) ? 0 : num;
-};
-
-// 말줄임표(..., …)를 줄바꿈으로 렌더링
-function renderTextWithBreaks(text: string): React.ReactNode {
-  const parts = text.split(/\.{3}|…/);
-  if (parts.length <= 1) return text;
-  return (
-    <>
-      {parts.map((part, i) => (
-        <React.Fragment key={i}>
-          {part}
-          {i < parts.length - 1 && <br />}
-        </React.Fragment>
-      ))}
-    </>
-  );
-}
+// 외부 소비자(OcrPage.tsx)가 `import { type ConfirmedItem } from "./RawOcrTable"` 로 사용 중 → re-export 유지
+export type { ConfirmedItem };
 
 export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp, onSaveConfirmed }) => {
   const structuredPages = pages.filter(p => !isFallback(p.headers) && Array.isArray(p.rows) && p.rows.length > 0);
@@ -1236,210 +1123,18 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   }
   const uniquePageNums = [...new Set(pageNums)].sort((a, b) => a - b);
 
-  // 페이지별 잔고 후보 — 요약 행/헤더/공급사설정 모두 감지
-  // 하드코딩 없이 요약 행 패턴을 자동 감지:
-  //   - 요약 성격의 한국어 문자 세트(합·계·잔·총·미·공·부·매·입·급) 중 하나 이상 포함 = 라벨 후보
-  //   - 이 라벨과 같은 행에 금액이 있으면 후보로 저장
-  //   - 라벨 문자열 자체(그대로)를 후보의 label로 사용 → OCR이 뽑은 원문 그대로 반영
-  const normalizeLabelStr = (s: string): string => s.replace(/[\s.·:/\\-]+/g, "");
-  // 요약 성격의 한글자 패턴 (금액 요약 라벨에서 흔히 나타나는 글자들)
-  const SUMMARY_CHAR = /[합계잔총미공부매입급액]/;
-  const isSummaryLabel = (s: string): boolean => {
-    if (!s) return false;
-    const norm = normalizeLabelStr(s);
-    // 숫자만 있으면 라벨 아님
-    if (!/[가-힣]/.test(norm)) return false;
-    // 너무 긴 문자열(문장)은 라벨 아님
-    if (norm.length > 10) return false;
-    // 요약 문자 세트 포함 + 순수 한글자 위주
-    if (!SUMMARY_CHAR.test(norm)) return false;
-    return true;
-  };
-  // DB에 이미 지정된 balance_field 값들(사용자가 확정한 실제 라벨) — 우선 인식
+  // 2026-07-20: 잔고 후보 계산 로직 → ./RawOcrTable/balanceHelpers.ts 로 추출
+  const _balResult = _computePageBalanceCandidates(structuredPages, uniquePageNums, balanceConfig);
+  const pageBalanceCandidates = _balResult.pageBalanceCandidates;
+  _balResult.pageBalanceCandidatesForFormula.forEach((v, k) => pageBalanceCandidatesForFormula.set(k, v));
+  const pageBalanceFromConfig = _computePageBalanceFromConfig(structuredPages, uniquePageNums, rawSupplierByPage, balanceConfig ?? {});
+  // JSX 에서 참조하는 learnedLabels (원래 inline 이었음 · helpers 로 이동 후에도 UI 정렬에 필요)
+  const _normalizeLabelStr = (s: string): string => s.replace(/[\s.·:/\\-]+/g, "");
   const learnedLabels: Set<string> = new Set(
     Object.values(balanceConfig ?? {})
-      .filter(v => typeof v === "string" && v.trim() && v !== "(없음)" && v !== "직접입력")
-      .map(v => normalizeLabelStr(String(v)))
+      .filter((v): v is string => typeof v === "string" && v.trim() !== "" && v !== "(없음)" && v !== "직접입력")
+      .map(v => _normalizeLabelStr(v)),
   );
-  const findKeyword = (s: string): string | null => {
-    const norm = normalizeLabelStr(s);
-    if (!norm) return null;
-    // 1) DB에 학습된 라벨과 완전/부분 일치하면 그대로 사용
-    for (const lk of learnedLabels) if (lk && norm.includes(lk)) return lk;
-    // 2) 요약 문자 세트 기반 자동 감지
-    if (isSummaryLabel(s)) return norm;
-    return null;
-  };
-  const pageBalanceCandidates = new Map<number, { label: string; amount: number }[]>();
-  for (const pn of uniquePageNums) {
-    const pageData = structuredPages.find(p => p.page === pn);
-    if (!pageData) continue;
-    const seen = new Set<number>();
-    const result: { label: string; amount: number }[] = [];
-
-    const pushCand = (label: string, amount: number) => {
-      if (amount <= 0 || seen.has(amount)) return;
-      seen.add(amount);
-      result.push({ label, amount });
-    };
-
-    // 1) 요약/합계/잔고/잔액 라벨이 있는 행에서 라벨과 함께 금액 추출
-    //    - 같은 셀 안에 여러 label+amount 쌍이 CSV로 있어도 (예: "합계, 1,900,000, 잔고, 500,000") 개별 파싱
-    const NUM_RE = /(?:\d{1,3}(?:,\d{3})+|\d+)(?:\.\d+)?/g;
-    for (const row of pageData.rows) {
-      if (!Array.isArray(row)) continue;
-      const isSummaryRow = row.some(cell => cell != null && findKeyword(String(cell)) != null);
-      if (!isSummaryRow) continue;
-      let rowLabel = "";
-      const rowNums: number[] = [];
-      for (const cell of row) {
-        if (cell == null) continue;
-        // 1-a) 셀 안에서 여러 금액 추출 (콤마 포함 형식 지원)
-        if (typeof cell === "string") {
-          // 1-b) 셀 내부 label...amount 쌍 스캔 (예: "합계액 1,900,000")
-          const kwInCell = findKeyword(cell);
-          const matches = Array.from(cell.matchAll(NUM_RE));
-          if (kwInCell && matches.length > 0) {
-            for (const m of matches) {
-              const n = parseFloat(m[0].replace(/,/g, ""));
-              if (n > 0) pushCand(kwInCell, n);
-            }
-          }
-          // 1-c) label만 있고 amount는 다른 셀에 있는 경우 대비 (rowLabel 저장)
-          if (kwInCell && cell.length <= 25) rowLabel = kwInCell;
-          // 1-d) 라벨 없는 셀에서도 amount 후보 저장 (같은 행의 라벨과 매칭)
-          for (const m of matches) {
-            const n = parseFloat(m[0].replace(/,/g, ""));
-            if (n > 0) rowNums.push(n);
-          }
-        } else if (typeof cell === "number") {
-          if (cell > 0) rowNums.push(cell);
-        }
-      }
-      // 라벨이 확인되면 이 행의 모든 숫자에 그 라벨 부여
-      for (const n of rowNums) pushCand(rowLabel || "합계", n);
-    }
-
-    // 2) 명세서 메타 total (해당 페이지 총합)
-    if (pageData.meta?.total && pageData.meta.total > 0) pushCand("총합계", pageData.meta.total);
-
-    // 2-b) meta.summary_rows — Gemini가 별도로 반환한 요약 행들 (합계액/에누리액/총합계액/공급가액/부가세 등)
-    //      OCR이 rows에서 제외한 요약 데이터의 정본
-    if (Array.isArray(pageData.meta?.summary_rows)) {
-      for (const sr of pageData.meta!.summary_rows!) {
-        if (sr && typeof sr.amount === "number" && sr.amount > 0) {
-          const lbl = normalizeLabelStr(String(sr.label ?? ""));
-          if (lbl) pushCand(lbl, sr.amount);
-        }
-      }
-    }
-
-    // 3) 헤더 자체가 잔고 관련 키워드(합계액/총합계/잔고 등)인 경우 → 해당 컬럼의 마지막 유효값
-    if (Array.isArray(pageData.headers)) {
-      for (let ci = 0; ci < pageData.headers.length; ci++) {
-        const kw = findKeyword(String(pageData.headers[ci] ?? ""));
-        if (!kw) continue;
-        let lastVal: number | null = null;
-        for (const row of pageData.rows) {
-          if (!Array.isArray(row)) continue;
-          const v = row[ci];
-          if (v == null) continue;
-          const n = typeof v === "number" ? v : parseNumber(v);
-          if (n > 0) lastVal = n;
-        }
-        if (lastVal != null) pushCand(kw, lastVal);
-      }
-    }
-
-    // 4) 요약 라벨이 있는 셀 옆에(같은 행 뿐 아니라) 인접 행/셀도 스캔 (라벨이 별도 셀에 있는 경우)
-    for (let ri = 0; ri < pageData.rows.length; ri++) {
-      const row = pageData.rows[ri];
-      if (!Array.isArray(row)) continue;
-      for (let ci = 0; ci < row.length; ci++) {
-        const cell = row[ci];
-        if (typeof cell !== "string") continue;
-        const kw = findKeyword(cell);
-        if (!kw || cell.length > 20) continue;
-        // 같은 행의 뒤 셀들 스캔
-        for (let cj = ci + 1; cj < row.length; cj++) {
-          const v = row[cj];
-          if (v == null) continue;
-          const n = typeof v === "number" ? v : parseNumber(v);
-          if (n > 0) { pushCand(kw, n); break; }
-        }
-        // 아래 행 같은 컬럼도 시도
-        const belowRow = pageData.rows[ri + 1];
-        if (Array.isArray(belowRow)) {
-          const v = belowRow[ci];
-          if (v != null) {
-            const n = typeof v === "number" ? v : parseNumber(v);
-            if (n > 0) pushCand(kw, n);
-          }
-        }
-      }
-    }
-
-    if (result.length > 0) pageBalanceCandidates.set(pn, result);
-    // formula 계산용 label→amount 맵
-    const labelMap = new Map<string, number>();
-    for (const c of result) { if (!labelMap.has(c.label)) labelMap.set(c.label, c.amount); }
-    pageBalanceCandidatesForFormula.set(pn, labelMap);
-
-    // ── 진단 로그: 잔고 후보가 없으면 왜 없는지 표시 ───────────────
-    // eslint-disable-next-line no-console
-    if (typeof window !== "undefined" && (window as any).__OCR_BAL_DEBUG !== false) {
-      // eslint-disable-next-line no-console
-      console.groupCollapsed(`[잔고진단] page ${pn} (공급사="${pageData.meta?.supplier ?? ""}") → 후보 ${result.length}건`);
-      // eslint-disable-next-line no-console
-      console.log("headers:", pageData.headers);
-      // eslint-disable-next-line no-console
-      console.log("meta:", pageData.meta);
-      // 잔고 관련 후보군이 될 만한 셀 스캔 결과 요약
-      const scan: Array<{ where: string; label: string; amount?: number; cell?: unknown; row?: unknown[] }> = [];
-      // 헤더 스캔
-      (pageData.headers ?? []).forEach((h, hi) => {
-        const kw = findKeyword(String(h ?? ""));
-        if (kw) scan.push({ where: `헤더[${hi}]`, label: `${h} → ${kw}` });
-      });
-      // 행 스캔
-      (pageData.rows ?? []).forEach((r, ri) => {
-        if (!Array.isArray(r)) return;
-        r.forEach((c, ci) => {
-          if (typeof c !== "string") return;
-          const kw = findKeyword(c);
-          if (kw) scan.push({ where: `행[${ri}][${ci}]`, label: `"${c}" → ${kw}`, cell: c, row: r });
-        });
-      });
-      // eslint-disable-next-line no-console
-      console.log("잔고 키워드 스캔:", scan);
-      // eslint-disable-next-line no-console
-      console.log("최종 후보:", result);
-      // eslint-disable-next-line no-console
-      console.groupEnd();
-    }
-  }
-
-  // balanceConfig에 지정된 컬럼의 마지막 유효값 = 잔고
-  const pageBalanceFromConfig = new Map<number, number>();
-  for (const pn of uniquePageNums) {
-    const pageData = structuredPages.find(p => p.page === pn);
-    if (!pageData) continue;
-    const pageSupplier = (rawSupplierByPage[pn] ?? pageData.meta.supplier ?? "").trim();
-    const configuredLabel = pageSupplier ? balanceConfig[pageSupplier] : undefined;
-    if (!configuredLabel || configuredLabel === "(없음)") continue;
-    const colIdx = pageData.headers.indexOf(configuredLabel);
-    if (colIdx < 0) continue;
-    let lastVal: number | null = null;
-    for (const row of pageData.rows) {
-      if (!Array.isArray(row)) continue;
-      const v = row[colIdx];
-      if (v != null) {
-        const n = typeof v === "number" ? v : parseNumber(v as any);
-        if (n > 0) lastVal = n;
-      }
-    }
-    if (lastVal != null) pageBalanceFromConfig.set(pn, lastVal);
-  }
 
   // 공급사별 OCR 잔고 합산
   const supplierOcrBalance = new Map<string, number>();
@@ -2516,103 +2211,51 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       })()
     : [];
 
+  // 2026-07-20: export 로직 → ./RawOcrTable/exportHelpers.ts 분리 · state 는 부모 유지
   const handleExport = useCallback((headers: string[], rows: (string | number | null)[][], suffix: string) => {
-    const csv = [headers, ...rows]
-      .map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
-      .join("\r\n");
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `거래명세서_${meta.date?.replace(/-/g, "") ?? "OCR"}_${suffix}.csv`;
-    a.click(); URL.revokeObjectURL(a.href);
+    _exportCsv(headers, rows, `거래명세서_${meta.date?.replace(/-/g, "") ?? "OCR"}_${suffix}.csv`);
   }, [meta]);
 
   const handleTemplateUpload = useCallback((file: File) => {
     const reader = new FileReader();
     reader.onload = e => {
       const buf = e.target?.result as ArrayBuffer;
-      try {
-        const wb = XLSX.read(buf, { type: "array" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const range = XLSX.utils.decode_range(ws["!ref"] ?? "A1");
-        const hdrs: string[] = [];
-        for (let c = range.s.c; c <= range.e.c; c++) {
-          const cell = ws[XLSX.utils.encode_cell({ r: range.s.r, c })];
-          hdrs.push(cell?.v != null ? String(cell.v) : "");
-        }
+      const hdrs = _parseXlsxTemplateHeaders(buf);
+      if (hdrs) {
         setXlsTemplate(buf);
         setXlsTemplateName(file.name);
         setXlsTemplateHdrs(hdrs);
-      } catch { /* invalid file */ }
+      }
     };
     reader.readAsArrayBuffer(file);
   }, []);
 
   const handleExcelExport = useCallback(() => {
     if (!matchItems || confRows.length === 0) return;
-
-    const buildDataMap = (row: (string | number | null)[]) => {
-      const m: Record<string, string | number | null> = {};
-      CONF_HEADERS.forEach((h, ci) => { m[h] = row[ci] ?? null; });
-      return m;
-    };
+    const filename = `거래명세서_${meta.date?.replace(/-/g, "") ?? "OCR"}_확정.xlsx`;
 
     if (xlsTemplate && xlsTemplateHdrs) {
-      const wb = XLSX.read(xlsTemplate, { type: "array" });
-      const wsName = wb.SheetNames[0];
-      const ws = wb.Sheets[wsName];
-      const templateRange = XLSX.utils.decode_range(ws["!ref"] ?? "A1");
-      const dataStartRow = templateRange.s.r + 1;
-
-      const colMap: (string | null)[] = xlsTemplateHdrs.map(th => {
-        const t = th.trim();
-        return COL_ALIAS[t] ?? (CONF_HEADERS.includes(t) ? t : null);
+      _writeXlsxWithTemplate({
+        templateBuf: xlsTemplate,
+        templateHdrs: xlsTemplateHdrs,
+        confHeaders: CONF_HEADERS,
+        colAlias: COL_ALIAS,
+        confRows,
+        filename,
       });
-
-      confRows.forEach((row, ri) => {
-        const dm = buildDataMap(row);
-        colMap.forEach((ourKey, tc) => {
-          if (!ourKey) return;
-          const val = dm[ourKey];
-          if (val == null) return;
-          const addr = XLSX.utils.encode_cell({ r: dataStartRow + ri, c: templateRange.s.c + tc });
-          ws[addr] = typeof val === "number" ? { t: "n", v: val } : { t: "s", v: String(val) };
-        });
-      });
-
-      const newRange = XLSX.utils.decode_range(ws["!ref"] ?? "A1");
-      newRange.e.r = Math.max(newRange.e.r, dataStartRow + confRows.length - 1);
-      ws["!ref"] = XLSX.utils.encode_range(newRange);
-      XLSX.writeFile(wb, `거래명세서_${meta.date?.replace(/-/g, "") ?? "OCR"}_확정.xlsx`);
     } else {
-      const wsData: (string | number | null)[][] = [CONF_HEADERS];
-      confRows.forEach((row, ri) => {
-        wsData.push(row.slice());
-        const isLastInPage = ri === confRows.length - 1 || pageNums[ri] !== pageNums[ri + 1];
-        if (isLastInPage && uniquePageNums.length > 1 && confAmtIdx >= 0) {
-          const pn = pageNums[ri];
-          const ps = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
-          const sub: (string | number | null)[] = Array(CONF_HEADERS.length).fill(null);
-          sub[CONF_HEADERS.indexOf("상품명")] = `${ps ? ps + " " : ""}${pn}번 소계`;
-          sub[confAmtIdx] = confPageTotals.get(pn) ?? 0;
-          wsData.push(sub);
-        }
+      _writeXlsxFresh({
+        confHeaders: CONF_HEADERS,
+        confRows,
+        pageNums,
+        uniquePageNums,
+        confAmtIdx,
+        confPageTotals,
+        confTotal,
+        rawSupplierByPage,
+        supplierByPageFallback: (pn) => structuredPages.find(p => p.page === pn)?.meta.supplier ?? "",
+        filename,
       });
-      if (confTotal > 0) {
-        const tot: (string | number | null)[] = Array(CONF_HEADERS.length).fill(null);
-        tot[CONF_HEADERS.indexOf("상품명")] = "합 계";
-        tot[confAmtIdx] = confTotal;
-        wsData.push(tot);
-      }
-      const ws = XLSX.utils.aoa_to_sheet(wsData);
-      ws["!cols"] = CONF_HEADERS.map(h => ({
-        wch: h === "상품명" ? 32 : h === "공급처" ? 14 : h === "상품코드" ? 13 :
-             h === "규격" ? 12 : h === "유통기한" || h === "거래일" ? 13 :
-             h.includes("단가") || h === "매입총계" ? 14 : 9,
-      }));
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "거래명세서");
-      XLSX.writeFile(wb, `거래명세서_${meta.date?.replace(/-/g, "") ?? "OCR"}_확정.xlsx`);
     }
   }, [matchItems, confRows, CONF_HEADERS, COL_ALIAS, pageNums, uniquePageNums, confAmtIdx,
       confPageTotals, confTotal, rawSupplierByPage, structuredPages, meta, xlsTemplate, xlsTemplateHdrs]);
@@ -2673,26 +2316,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
     {/* ── 동의어 삭제 확인 다이얼로그 ── */}
     {deleteSynConfirm && (
-      <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 backdrop-blur-sm">
-        <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm border border-slate-100 space-y-4">
-          <p className="text-sm font-bold text-slate-800">동의어를 삭제하시겠습니까?</p>
-          <p className="text-xs text-slate-500 leading-relaxed">
-            <span className="line-through text-gray-400">{deleteSynConfirm.origName}</span>의 동의어 매핑을 삭제합니다.
-          </p>
-          <div className="flex gap-2 pt-1">
-            <button type="button" onClick={() => setDeleteSynConfirm(null)}
-              className="flex-1 px-3 py-2 text-xs font-bold bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-600 cursor-pointer">아니오</button>
-            <button type="button"
-              onClick={async () => {
-                const { ri, origName } = deleteSynConfirm;
-                setDeleteSynConfirm(null);
-                await deleteSynonymByName(origName);
-                setAutoSynonymMatches(prev => { const s = { ...prev }; delete s[ri]; return s; });
-              }}
-              className="flex-1 px-3 py-2 text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white rounded-lg cursor-pointer">예, 삭제</button>
-          </div>
-        </div>
-      </div>
+      <DeleteSynonymDialog
+        deleteSynConfirm={deleteSynConfirm}
+        setDeleteSynConfirm={setDeleteSynConfirm}
+        deleteSynonymByName={deleteSynonymByName}
+        setAutoSynonymMatches={setAutoSynonymMatches}
+      />
     )}
 
     {/* ── 공급처 자동완성 드롭다운 (fixed · 테이블 stacking context 우회) ── */}
@@ -2750,69 +2379,22 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
     {/* ── 이미지 모달 (줌·드래그 · ESC 로 닫기) ── */}
     {modalImg && (
-      <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 outline-none"
-        onClick={closeModal}
-        tabIndex={-1}
-        autoFocus
-        ref={el => { if (el) el.focus(); }}
-        onKeyDown={e => {
-          if (e.key === "Escape" || e.key === "Esc") { e.stopPropagation(); closeModal(); }
-        }}
-      >
-        <div className="relative w-full bg-white rounded-2xl overflow-hidden shadow-2xl flex flex-col"
-          style={{ maxWidth: "min(900px, 95vw)", height: "90vh" }}
-          onClick={e => e.stopPropagation()}>
-
-          <div className="flex items-center justify-between px-4 py-2.5 bg-gray-50 border-b border-gray-200 shrink-0">
-            <span className="text-xs font-bold text-gray-700 break-all min-w-0 flex-1 mr-3">{modalLabel}</span>
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-0.5 bg-gray-100 rounded-lg px-1 py-0.5">
-                <button onClick={() => setZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))}
-                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-600 font-bold text-base leading-none cursor-pointer select-none">−</button>
-                <span className="text-[11px] font-bold text-gray-500 min-w-[40px] text-center tabular-nums">
-                  {Math.round(zoom * 100)}%
-                </span>
-                <button onClick={() => setZoom(z => Math.min(6, +(z + 0.25).toFixed(2)))}
-                  className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-600 font-bold text-base leading-none cursor-pointer select-none">+</button>
-              </div>
-              <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
-                className="text-[10px] font-bold text-gray-400 hover:text-gray-600 px-2 py-1 rounded hover:bg-gray-100 cursor-pointer">
-                초기화
-              </button>
-              <button onClick={closeModal} className="p-1 rounded-lg hover:bg-gray-200 cursor-pointer">
-                <X size={16} className="text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          <div ref={viewportCbRef}
-            className="relative flex-1 min-h-0 overflow-hidden select-none flex items-center justify-center"
-            style={{ cursor: isDragging ? "grabbing" : zoom > 1 ? "grab" : "zoom-in" }}
-            onMouseDown={onMouseDown} onMouseMove={onMouseMove}
-            onMouseUp={onMouseUp} onMouseLeave={onMouseUp} onDoubleClick={onDblClick}>
-            <div style={{
-              transform: `translate(${pan.x}px,${pan.y}px) scale(${zoom})`,
-              transformOrigin: "center center",
-              transition: isDragging ? "none" : "transform 0.12s ease-out",
-            }}>
-              <img src={modalImg} alt={modalLabel} draggable={false}
-                style={{
-                  display: "block",
-                  transform: `rotate(${rotation}deg)`,
-                  maxWidth:  (rotation === 90 || rotation === -90 || rotation === 270) ? "80vh" : "90vw",
-                  maxHeight: (rotation === 90 || rotation === -90 || rotation === 270) ? "80vw" : "80vh",
-                  width: "auto", height: "auto", userSelect: "none", pointerEvents: "none",
-                }} />
-            </div>
-            {zoom <= 1 && (
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 text-[10px] text-white/70 bg-black/40 px-3 py-1 rounded-full pointer-events-none whitespace-nowrap">
-                스크롤 줌 · 더블클릭 2.5× · 드래그 이동
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+      <ImageZoomModal
+        modalImg={modalImg}
+        modalLabel={modalLabel}
+        zoom={zoom}
+        pan={pan}
+        isDragging={isDragging}
+        rotation={rotation}
+        viewportCbRef={viewportCbRef}
+        closeModal={closeModal}
+        setZoom={setZoom}
+        setPan={setPan}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onDblClick={onDblClick}
+      />
     )}
 
     {/* ── 공급사 조회·수정 모달 (2026-07-18 · 공급사명 클릭 시) ── */}
@@ -2826,74 +2408,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
     {/* ── 공급처 변경 확인 다이얼로그 ── */}
     {supplierConfirm && (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
-        onClick={() => setSupplierConfirm(null)}>
-        <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 p-5 max-w-sm w-full flex flex-col gap-4"
-          onClick={e => e.stopPropagation()}>
-          <div>
-            <p className="text-sm font-bold text-gray-800 mb-1">공급처 변경</p>
-            <p className="text-xs text-gray-500 leading-relaxed">
-              <span className="font-bold text-sky-700">"{supplierConfirm.newVal}"</span>으로 변경합니다.{" "}
-              해당 페이지의 <span className="font-bold text-gray-700">{supplierConfirm.rowCount}개</span> 항목과
-              이후 모든 프로세스(보정 결과, 확정 표)에 즉시 반영됩니다.
-            </p>
-          </div>
-          {/* 동의어 일괄 추가 옵션 */}
-          {nameIdx >= 0 && (
-            <label className="flex items-start gap-2.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={supplierConfirm.addSynonyms}
-                onChange={e => setSupplierConfirm(prev => prev ? { ...prev, addSynonyms: e.target.checked } : null)}
-                className="mt-0.5 accent-indigo-500"
-              />
-              <span className="text-xs text-gray-600 leading-snug">
-                <span className="font-bold text-indigo-700">동의어 일괄 추가</span> — 이 페이지 상품명을{" "}
-                <span className="font-semibold text-sky-700">"{supplierConfirm.newVal}"</span> 공급사로 동의어 사전에 등록
-                <span className="block text-[10px] text-gray-400 mt-0.5">(DB 매칭 후 상품코드 포함 자동 등록)</span>
-              </span>
-            </label>
-          )}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setSupplierConfirm(null)}
-              className="flex-1 py-2 text-xs font-bold text-gray-500 bg-gray-100 hover:bg-gray-200 rounded-xl transition cursor-pointer"
-            >
-              취소
-            </button>
-            <button
-              onClick={async () => {
-                const { pageNum, newVal, addSynonyms } = supplierConfirm;
-                // 이전 OCR 인식 공급사 → 보정 공급사를 DB에 저장 (자동보정)
-                const oldOcrSupplier = structuredPages.find(p => p.page === pageNum)?.meta.supplier;
-                if (oldOcrSupplier && oldOcrSupplier.trim() !== newVal.trim()) {
-                  fetch("/api/ocr-supplier-aliases", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ alias: oldOcrSupplier.trim(), supplier_name: newVal.trim() }),
-                  }).catch(() => {});
-                }
-                setRawSupplierByPage(prev => ({ ...prev, [pageNum]: newVal }));
-                setSupplierConfirm(null);
-                if (addSynonyms) await handleSynonymBulkAdd(pageNum, newVal);
-                if (onReparsePage) {
-                  setReparseStatus(prev => ({ ...prev, [pageNum]: 'loading' }));
-                  setReparseSupplier(prev => ({ ...prev, [pageNum]: newVal }));
-                  try {
-                    await onReparsePage(pageNum, newVal);
-                    setReparseStatus(prev => ({ ...prev, [pageNum]: 'done' }));
-                  } catch {
-                    setReparseStatus(prev => ({ ...prev, [pageNum]: 'error' }));
-                  }
-                }
-              }}
-              className="flex-1 py-2 text-xs font-bold text-white bg-sky-500 hover:bg-sky-600 rounded-xl transition cursor-pointer"
-            >
-              변경 적용
-            </button>
-          </div>
-        </div>
-      </div>
+      <SupplierChangeDialog
+        supplierConfirm={supplierConfirm}
+        setSupplierConfirm={setSupplierConfirm}
+        nameIdx={nameIdx}
+        structuredPages={structuredPages}
+        setRawSupplierByPage={setRawSupplierByPage}
+        handleSynonymBulkAdd={handleSynonymBulkAdd}
+        onReparsePage={onReparsePage}
+        setReparseStatus={setReparseStatus}
+        setReparseSupplier={setReparseSupplier}
+      />
     )}
 
     {/* ── 명세서별 이미지+테이블 2컬럼 그리드 (per-page pair) ── */}
@@ -4287,33 +3812,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                 );
                                               })()}
                                               {/* ── 교차검증 배지 (행합 · 수량×단가합 · OCR총계 대조) ── */}
-                                              {(() => {
-                                                const rowSum = effectivePageTotals.get(pn) ?? 0;
-                                                const qpSum  = effectivePageQtyPrice.get(pn) ?? 0;
-                                                const statedTotal = stated ?? null;
-                                                const qpaMismatchCount = pageQtyPriceAmtMismatch.get(pn) ?? 0;
-                                                const rowSumOk = statedTotal != null && Math.abs(rowSum - statedTotal) <= Math.max(1, statedTotal * 0.02);
-                                                const qpSumOk = qpSum > 0 && Math.abs(qpSum - rowSum) <= Math.max(1, rowSum * 0.02);
-                                                const allOk = qpaMismatchCount === 0 && (statedTotal == null || rowSumOk);
-                                                return (
-                                                  <span
-                                                    className={`text-[9px] font-black border rounded px-1.5 py-0.5 whitespace-nowrap ${
-                                                      allOk
-                                                        ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                                                        : "bg-rose-50 text-rose-700 border-rose-300"
-                                                    }`}
-                                                    title={
-                                                      `[교차검증]\n` +
-                                                      `· 행 금액합: ${fmt(rowSum)}원\n` +
-                                                      `· 수량×단가 합: ${fmt(qpSum)}원 (${qpSumOk ? "일치" : "불일치"})\n` +
-                                                      (statedTotal != null ? `· OCR 소계: ${fmt(statedTotal)}원 (${rowSumOk ? "일치" : `Δ=${fmt(Math.abs(rowSum - statedTotal))}`})\n` : "· OCR 소계 없음\n") +
-                                                      `· 행 수식 오탐: ${qpaMismatchCount}건`
-                                                    }
-                                                  >
-                                                    {allOk ? "✓ 교차검증" : `⚠ 교차검증 · 행합 ${fmt(rowSum)}${statedTotal != null && !rowSumOk ? ` ≠ OCR ${fmt(statedTotal)}` : ""}${qpaMismatchCount > 0 ? ` · 수식오탐 ${qpaMismatchCount}건` : ""}`}
-                                                  </span>
-                                                );
-                                              })()}
+                                              <CrossCheckBadge
+                                                pn={pn}
+                                                effectivePageTotals={effectivePageTotals}
+                                                effectivePageQtyPrice={effectivePageQtyPrice}
+                                                statedTotal={stated}
+                                                pageQtyPriceAmtMismatch={pageQtyPriceAmtMismatch}
+                                              />
                                               <button
                                                 type="button"
                                                 onClick={() => {

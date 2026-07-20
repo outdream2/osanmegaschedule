@@ -1,7 +1,7 @@
 // server/ocr/tableLayout.ts
 // DocLayout-YOLO 기반 문서 레이아웃 검출 (OCR 전용)
 //
-// ** 재고세기(ai_detector, 포트 8003)와 완전 분리 **
+// ** 재고세기(yolo_server.py, 포트 8002)와 완전 분리 **
 //   - 별도 Python 프로세스: server/ocr/layout_server.py (포트 8004)
 //   - 별도 모델: server/models/doclayout_yolo.pt (재고 SKU110K 와 다른 학습 데이터)
 //
@@ -25,7 +25,7 @@ let layoutServerProc: ReturnType<typeof spawn> | null = null;
 let modelWarningShown = false;
 
 /**
- * OCR layout 서버 자동 시작 (재고세기 ai_detector 와 완전 별개 프로세스)
+ * OCR layout 서버 자동 시작 (재고세기 yolo_server 와 완전 별개 프로세스)
  * 모델 파일 없으면 spawn 안 함 (헛수고 방지)
  */
 export async function ensureLayoutServer(): Promise<void> {

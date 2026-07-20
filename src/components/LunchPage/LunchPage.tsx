@@ -165,6 +165,13 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
     }
   }, [selectedDate]);
 
+  // 2026-07-20: 저장소 관계 명시
+  //   LunchPage 는 `settings.break_timeline_{date}` 키(개별 직원 휴게 스케줄) 를 사용.
+  //   DayTimelineModal 은 `zone_day_assignments.rest_slots` 를 사용 (시간대별 인원 리스트).
+  //   두 저장소는 목적이 다름:
+  //     - break_timeline: 개별 직원 클릭 UI · 유연한 시작슬롯·지속시간 (직원별)
+  //     - rest_slots: 시간대별 그룹 배정 · 구역맵과 함께 저장 (구역별)
+  //   실수로 같이 편집하지 않도록 UI 에서 상호 배타적 라우팅 필요 (관리자 안내).
   const saveAssignments = async (next: BreakAssignment[]) => {
     await fetch("/api/settings", {
       method: "POST",

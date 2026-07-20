@@ -8,9 +8,11 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      # 2026-07-15: OCR 파이프라인 저메모리 모드 (기존 코드가 이 env 참조)
-      - key: LOW_MEM
-        value: "true"
+      # 2026-07-20: OCR 분기 env 전면 제거 — 로컬↔Render 결과 값 일치용
+      #   기존 LOW_MEM / USE_SLANET / OCR_RETRY_LOW_MEM 제거
+      #   대신 --expose-gc 로 명시적 gc() 호출을 유지 (메모리 회수는 필요)
+      - key: NODE_OPTIONS
+        value: "--expose-gc --max-old-space-size=400"
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY

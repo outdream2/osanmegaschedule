@@ -63,29 +63,33 @@ export function makeVendorMatchStage(_deps: {
         if (long === 0) return 0;
         return Math.round(30 + (short / long) * 60);
       };
-      const tryMatchCandidate = (cand: string): { db: string; score: number } | null => {
+      // 2026-07-20: via 필드로 매칭 출처 명시 (alias vs exact vs fuzzy)
+      //   → 하위 sort 에서 엄격한 우선순위 적용 (사업자번호 > alias > exact > fuzzy > 상품기반)
+      const tryMatchCandidate = (cand: string): { db: string; score: number; via: "alias" | "exact" | "fuzzy" } | null => {
         // D: alias 결과도 실제 vendor 존재 여부 확인 · 오염된 alias 방어
         const aliasKey = normSupplier(cand);
         const aliased = aliasMap.get(aliasKey);
         if (aliased) {
           const aliasedNorm = normSupplier(aliased);
           const found = vendors.find(v => normSupplier(v) === aliasedNorm);
-          if (found) return { db: found, score: 100 };
+          if (found) return { db: found, score: 100, via: "alias" };
           console.warn(`[vendor-match/alias-invalid] "${cand}" → alias "${aliased}" 이 vendors DB 에 없음 · alias 무시`);
         }
         const target = normSupplier(cand);
-        let best: { db: string; score: number } | null = null;
+        let best: { db: string; score: number; via: "exact" | "fuzzy" } | null = null;
         for (const v of vendorNorms) {
           if (!v.n || v.n.length < 2) continue;
           let s: number;
-          if (target === v.n) s = 100;
+          let via: "exact" | "fuzzy";
+          if (target === v.n) { s = 100; via = "exact"; }
           else {
             const bs = bigramSim(target, v.n);
             const isSubstr = target.includes(v.n) || v.n.includes(target);
             s = isSubstr ? Math.max(substringScore(target, v.n), bs) : bs;
+            via = "fuzzy";
           }
           if (s >= MATCH_THRESHOLD && (best === null || s > best.score)) {
-            best = { db: v.name, score: s };
+            best = { db: v.name, score: s, via };
           }
         }
         return best;
@@ -106,7 +110,7 @@ export function makeVendorMatchStage(_deps: {
 
       // ② ppuPaddle 원본 meta.supplier 최우선 · DB 매칭되면 그것 확정
       //   B: metaSup 자체가 신뢰 가능할 때만 +20 부스트 (노이즈 metaSup 방어)
-      const nameMatches: Array<{ cand: string; db: string; score: number; from: string }> = [];
+      const nameMatches: Array<{ cand: string; db: string; score: number; from: string; via: "alias" | "exact" | "fuzzy" }> = [];
       const metaSup = (ctx.meta?.supplier ?? "").trim();
       let metaSupHandled = false;
       console.log(`[vendor-match/②이름매칭] page ${ctx.page}: 후보 리스트 · meta="${metaSup || "(없음)"}" · direct.candidates=${JSON.stringify(direct.candidates)} · vendorNorms 수=${vendorNorms.length}`);
@@ -115,7 +119,7 @@ export function makeVendorMatchStage(_deps: {
         const trusted = isTrustworthyMetaSup(metaSup);
         if (mm) {
           const boost = trusted ? 20 : 0;
-          nameMatches.push({ cand: metaSup, db: mm.db, score: mm.score + boost, from: `meta${trusted ? "⭐" : ""}("${metaSup}")` });
+          nameMatches.push({ cand: metaSup, db: mm.db, score: mm.score + boost, from: `meta${trusted ? "⭐" : ""}("${metaSup}")`, via: mm.via });
           console.log(`[vendor-match/②meta] 성공: "${metaSup}" → "${mm.db}" (score ${mm.score}${boost > 0 ? `+${boost}⭐` : " · 부스트X"} · trusted=${trusted})`);
           metaSupHandled = true;
         } else {
@@ -134,7 +138,7 @@ export function makeVendorMatchStage(_deps: {
           if (metaSup && normSupplier(cand) === normSupplier(metaSup)) continue;
           const m = tryMatchCandidate(cand);
           if (m) {
-            nameMatches.push({ cand, db: m.db, score: m.score, from: `name("${cand}")` });
+            nameMatches.push({ cand, db: m.db, score: m.score, from: `name("${cand}")`, via: m.via });
             console.log(`[vendor-match/②이름매칭] 성공: "${cand}" → "${m.db}" (score ${m.score})`);
           } else {
             // 최고 점수 후보도 함께 표시 (임계값 미달 원인 파악)
@@ -184,7 +188,7 @@ export function makeVendorMatchStage(_deps: {
         for (const tok of extraTokens) {
           const m = tryMatchCandidate(tok);
           if (m) {
-            nameMatches.push({ cand: tok, db: m.db, score: m.score, from: `nonProduct("${tok}")` });
+            nameMatches.push({ cand: tok, db: m.db, score: m.score, from: `nonProduct("${tok}")`, via: m.via });
             extraMatchCount++;
           }
         }
@@ -207,12 +211,26 @@ export function makeVendorMatchStage(_deps: {
         console.warn(`[vendor-match/⚠️biznum-무시] page ${ctx.page}: extract="${direct.supplier}" ≠ biznum="${biznumMatched.db}" (오학습 의심 · biznum 채택 스킵)`);
       }
 
-      const allMatches: Array<{ db: string; score: number; from: string }> = [];
+      // 2026-07-20: 엄격한 우선순위 (사용자 스펙 준수)
+      //   tier 1 = 사업자번호(biznum) | 2 = alias | 3 = exact | 4 = fuzzy
+      //   같은 tier 안에서는 score 최고점 채택
+      type MatchEntry = { db: string; score: number; from: string; via?: "alias" | "exact" | "fuzzy" };
+      const allMatches: MatchEntry[] = [];
       // biznum 은 direct 와 유사할 때만 포함 (또는 direct 없을 때)
       if (biznumMatched && (!directTrusted || biznumMatchesDirect)) allMatches.push(biznumMatched);
       allMatches.push(...nameMatches);
       if (allMatches.length > 0) {
-        allMatches.sort((a, b) => b.score - a.score);
+        const tierOf = (m: MatchEntry): number => {
+          if (m.from.startsWith("biznum")) return 1;
+          if (m.via === "alias") return 2;
+          if (m.via === "exact") return 3;
+          return 4; // fuzzy or unlabeled
+        };
+        allMatches.sort((a, b) => {
+          const ta = tierOf(a), tb = tierOf(b);
+          if (ta !== tb) return ta - tb; // 낮은 tier = 높은 우선순위
+          return b.score - a.score;
+        });
         const best = allMatches[0];
         vendorMatched = best.db;
         matchSource = best.from;

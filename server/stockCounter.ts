@@ -3,16 +3,19 @@ import path from "path";
 import fs from "fs";
 import { execFile, spawn } from "child_process";
 import { promisify } from "util";
+import { stockCounterConfig } from "./config/stockCounterConfig";
 
 const execFileAsync = promisify(execFile);
 
 const MODELS_DIR  = path.join(process.cwd(), "server", "models");
 const ONNX_PATH   = path.join(MODELS_DIR, "sku110k-yolo11-n640.onnx");
 const PT_PATH     = path.join(MODELS_DIR, "sku110k-yolo11-n640.pt");
-const YOLO_SERVER_URL = "http://localhost:8002";
-const INPUT_SIZE  = 640;
-const CONF_THRESHOLD = 0.25;
-const IOU_THRESHOLD  = 0.45;
+// 2026-07-20: env/상수 → server/config/stockCounterConfig.ts 단일 소스
+const YOLO_SERVER_URL = stockCounterConfig.yoloServerUrl;
+const INPUT_SIZE      = stockCounterConfig.inputSize;
+const CONF_THRESHOLD  = stockCounterConfig.confThreshold;
+const IOU_THRESHOLD   = stockCounterConfig.iouThreshold;
+const FIT_MODE        = stockCounterConfig.fitMode;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let ort: any = null;
@@ -97,7 +100,8 @@ export async function loadStockCountModel(): Promise<boolean> {
   if (loadAttempted) return session !== null || useYoloServer;
   loadAttempted = true;
 
-  // 1) best.onnx가 있으면 onnxruntime-node로 직접 로드
+  // 1) sku110k-yolo11-n640.onnx (ONNX_PATH) 있으면 onnxruntime-node 로 직접 로드
+  //   (레거시 best.onnx 188MB 는 .gitignore 처리 · 실제 사용 X)
   if (fs.existsSync(ONNX_PATH)) {
     try {
       if (!ort) ort = await import("onnxruntime-node");
@@ -206,13 +210,45 @@ export async function getCurrentYoloModel(): Promise<string | null> {
 
 // ── 이미지 전처리 (ONNX 경로 전용) ─────────────────────────────────────────
 
-async function preprocessBase64(b64: string): Promise<Float32Array> {
+interface PreprocessResult {
+  floats: Float32Array;
+  /** letterbox 시 필요 · 원본 이미지 → 640x640 space 변환 정보 */
+  origW: number;
+  origH: number;
+  /** letterbox 스케일 (fill 모드에서는 미사용) */
+  scale: number;
+  /** letterbox 패딩 (fill 모드에서는 0) */
+  padX: number;
+  padY: number;
+}
+
+async function preprocessBase64(b64: string): Promise<PreprocessResult> {
   const buf = Buffer.from(b64, "base64");
-  const { data } = await sharp(buf)
-    .resize(INPUT_SIZE, INPUT_SIZE, { fit: "fill" })
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
+  const meta = await sharp(buf).metadata();
+  const origW = meta.width ?? INPUT_SIZE;
+  const origH = meta.height ?? INPUT_SIZE;
+
+  let scale = 1;
+  let padX = 0;
+  let padY = 0;
+
+  let pipeline = sharp(buf);
+  if (FIT_MODE === "contain") {
+    // Letterbox: aspect 유지 · 남는 공간 회색(114) 패딩 (YOLO 표준)
+    scale = Math.min(INPUT_SIZE / origW, INPUT_SIZE / origH);
+    const resizedW = Math.round(origW * scale);
+    const resizedH = Math.round(origH * scale);
+    padX = Math.floor((INPUT_SIZE - resizedW) / 2);
+    padY = Math.floor((INPUT_SIZE - resizedH) / 2);
+    pipeline = pipeline.resize(INPUT_SIZE, INPUT_SIZE, {
+      fit: "contain",
+      background: { r: 114, g: 114, b: 114, alpha: 1 },
+    });
+  } else {
+    pipeline = pipeline.resize(INPUT_SIZE, INPUT_SIZE, { fit: "fill" });
+  }
+
+  const { data } = await pipeline.removeAlpha().raw().toBuffer({ resolveWithObject: true });
 
   const n = INPUT_SIZE * INPUT_SIZE;
   const floats = new Float32Array(3 * n);
@@ -221,7 +257,7 @@ async function preprocessBase64(b64: string): Promise<Float32Array> {
     floats[n + i]     = data[i * 3 + 1] / 255.0;
     floats[2 * n + i] = data[i * 3 + 2] / 255.0;
   }
-  return floats;
+  return { floats, origW, origH, scale, padX, padY };
 }
 
 function iou(a: number[], b: number[]): number {
@@ -271,8 +307,8 @@ export async function countObjectsInImage(b64: string, modelFile?: string): Prom
   // ONNX 방식
   if (!session) throw new Error("모델 미로드 — server/models/best.pt를 추가하고 서버를 재시작하세요");
 
-  const inputData = await preprocessBase64(b64);
-  const tensor = new ort.Tensor("float32", inputData, [1, 3, INPUT_SIZE, INPUT_SIZE]);
+  const pre = await preprocessBase64(b64);
+  const tensor = new ort.Tensor("float32", pre.floats, [1, 3, INPUT_SIZE, INPUT_SIZE]);
   const feeds: Record<string, unknown> = { [session.inputNames[0]]: tensor };
   const out = await session.run(feeds);
 
@@ -302,14 +338,26 @@ export async function countObjectsInImage(b64: string, modelFile?: string): Prom
   }
 
   const kept = nms(boxes, scores);
+  // letterbox 시: 640-space 좌표 → un-pad → un-scale → 원본 0-1 정규화
+  //   프론트는 여전히 box * naturalWidth 로 사용 가능 (호환 유지)
+  const toNormalized = (px: number, py: number): [number, number] => {
+    if (FIT_MODE === "contain") {
+      const xu = (px - pre.padX) / pre.scale;
+      const yu = (py - pre.padY) / pre.scale;
+      return [Math.max(0, Math.min(1, xu / pre.origW)), Math.max(0, Math.min(1, yu / pre.origH))];
+    }
+    return [px / INPUT_SIZE, py / INPUT_SIZE];
+  };
+
   return {
     count: kept.length,
-    boxes: kept.map(i => ({
-      x1: boxes[i][0] / INPUT_SIZE,
-      y1: boxes[i][1] / INPUT_SIZE,
-      x2: boxes[i][2] / INPUT_SIZE,
-      y2: boxes[i][3] / INPUT_SIZE,
-      score: Math.round(scores[i] * 100),
-    })),
+    boxes: kept.map(i => {
+      const [nx1, ny1] = toNormalized(boxes[i][0], boxes[i][1]);
+      const [nx2, ny2] = toNormalized(boxes[i][2], boxes[i][3]);
+      return {
+        x1: nx1, y1: ny1, x2: nx2, y2: ny2,
+        score: Math.round(scores[i] * 100),
+      };
+    }),
   };
 }

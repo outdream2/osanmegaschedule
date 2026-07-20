@@ -25,3 +25,9 @@ server/models/best.onnx
 logs/
 # Vercel 링크 (Render 배포 예정)
 .vercel
+
+# 실데이터 xlsx가 소스 트리에 유입되는 것 방지 (엑셀 파일은 uploads/ 로만)
+src/*.xlsx
+
+# 게시판 업로드 이미지
+uploads/board/

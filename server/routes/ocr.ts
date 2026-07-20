@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { supabase } from "../../src/supabase/client";
+import { ocrConfig } from "../config/ocrConfig";
 import { getProductMap, getSynonymMap, resetSynonymCache, getSupplierAliasMap, resetSupplierAliasCache, getVendorNames } from "../productCache";
 import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta, filterCodeOnlyRows, filterMetadataBleedRows, validateCellTypes, applyPositionalHints, detectSuspiciousEqualPriceAmount, mergeSplitProductRows, verifyRowsAgainstRawText, auditRowSumVsTotal, autoFillMissingMathField, inferMissingTotals, extractCommonMetadataLines, fixDateInAmountColumns, sanitizeBalanceContamination, fallbackParseRowsFromRawText, mergeAdjacentSplitRows } from "../ocr/parse";
 import { buildOnnxPipeline, runPipeline, makeInitialContext } from "../ocr/pipeline";
@@ -20,10 +21,9 @@ import type { GeminiResult } from "../ocr/schema";
 // 사용: 단일 페이지 요청 시 캐시의 다른 rawText 와 비교 → 공통 라인 추출
 const _recentRawTextCache: { text: string; ts: number }[] = [];
 const _RAW_CACHE_TTL_MS = 10 * 60 * 1000; // 10분
-// LOW_MEM 모드에서는 5개로 · 각 rawText 도 4KB 캡 (요청 간 누적 방지)
-const _LOW_MEM_CACHE = process.env.RENDER === "true" || process.env.LOW_MEM === "true";
-const _RAW_CACHE_MAX = _LOW_MEM_CACHE ? 5 : 20;
-const _RAW_CACHE_TEXT_CAP = _LOW_MEM_CACHE ? 4000 : Infinity;
+// 2026-07-20: env 분기 제거 · server/config/ocrConfig.ts 단일 소스
+const _RAW_CACHE_MAX = ocrConfig.rawCacheMax;
+const _RAW_CACHE_TEXT_CAP = ocrConfig.rawCacheTextCap;
 function pruneRawTextCache() {
   const now = Date.now();
   while (_recentRawTextCache.length > 0 && now - _recentRawTextCache[0].ts > _RAW_CACHE_TTL_MS) {
@@ -979,14 +979,17 @@ router.post("/api/ocr", async (req, res) => {
             cachedRawText: cachedRawTexts[i],
           });
           await runPipeline(pipeline, ctx, { page: i + 1 });
-          const LOW_MEM_MODE = process.env.RENDER === "true" || process.env.LOW_MEM === "true";
-          // pages 저장 · rawText 는 LOW_MEM 에서 4KB 캡 (누적 성장 방지)
+          // 2026-07-20: env 분기 제거 · server/config/ocrConfig.ts 단일 소스
+          const rawTextCap = ocrConfig.rawCacheTextCap;
+          const rawTextPreviewLen = ocrConfig.logRawTextPreviewLength;
+          const rowsPreviewCount = ocrConfig.logRowsPreviewCount;
+          const includeStages = ocrConfig.logStageDiagnostics;
           const onnxPageData = {
             page: ctx.page,
             headers: ctx.headers,
             rows: ctx.rows,
             meta: ctx.meta,
-            rawText: LOW_MEM_MODE ? (ctx.rawText ?? "").slice(0, 4000) : ctx.rawText,
+            rawText: Number.isFinite(rawTextCap) ? (ctx.rawText ?? "").slice(0, rawTextCap) : ctx.rawText,
             supplierHintUsed: ctx.template?.supplier ?? ctx.supplierHint,
             rawOcrHeaders: ctx.rawOcrHeaders ?? [],
             rawOcrSample: ctx.rawOcrSample ?? [],
@@ -994,30 +997,24 @@ router.post("/api/ocr", async (req, res) => {
           pages.push(onnxPageData);
           // SSE: 페이지 완료 즉시 flush
           sseWrite("page", { index: i, total: imgs.length, page: onnxPageData });
-          // 진단은 LOW_MEM 에서 더 짧게 · rawFromOnnx 는 필수 필드만
           diagnostics.push({
             page: ctx.page,
             timeMs: Date.now() - startTs,
             rawFromOnnx: {
               headers: ctx.raw?.headers ?? [],
               rowCount: (ctx.raw?.rows ?? []).length,
-              rowsPreview: LOW_MEM_MODE ? [] : (ctx.raw?.rows ?? []).slice(0, 5),
+              rowsPreview: (ctx.raw?.rows ?? []).slice(0, rowsPreviewCount),
               meta: ctx.raw?.meta ?? {},
-              rawTextPreview: (ctx.raw?.rawText ?? "").slice(0, LOW_MEM_MODE ? 200 : 800),
+              rawTextPreview: (ctx.raw?.rawText ?? "").slice(0, rawTextPreviewLen),
             },
-            final: { headers: ctx.headers, rowCount: ctx.rows.length, meta: ctx.meta, rowsPreview: LOW_MEM_MODE ? [] : ctx.rows.slice(0, 5) },
-            stages: LOW_MEM_MODE ? [] : ctx.diagnostics,
+            final: { headers: ctx.headers, rowCount: ctx.rows.length, meta: ctx.meta, rowsPreview: ctx.rows.slice(0, rowsPreviewCount) },
+            stages: includeStages ? ctx.diagnostics : [],
             errors: ctx.errors,
             suspiciousEqualPriceAmount: detectSuspiciousEqualPriceAmount(ctx.headers, ctx.rows),
           });
           // 명시적 큰 객체 참조 해제 (다음 페이지 전에 GC 가능하게)
           ctx.raw = undefined;
           ctx.rawB64 = "";
-          if (LOW_MEM_MODE) {
-            ctx.rawText = "";
-            ctx.rawOcrSample = [];
-            ctx.diagnostics = [];
-          }
         } catch (pageErr: any) {
           console.error(`[OCR/ONNX] page ${i + 1} 처리 실패 · 빈 페이지로 대체:`, pageErr?.message);
           console.error(`  stack:`, pageErr?.stack);
@@ -1030,11 +1027,11 @@ router.post("/api/ocr", async (req, res) => {
         // 페이지 간 메모리 해제 힌트 (Render 512MB · OOM 방지)
         //   node --expose-gc 필요 · 없으면 조용히 skip
         //   큰 이미지 버퍼 · ONNX 중간 텐서 참조를 다음 페이지 전에 반환
-        if (typeof (global as any).gc === "function") {
+        if (ocrConfig.forceGcAfterDispose && typeof (global as any).gc === "function") {
           (global as any).gc();
         }
-        // heap 사용량 로그 (Render 대시보드에서 추적용)
-        if (process.env.RENDER === "true" || process.env.LOW_MEM === "true") {
+        // heap 사용량 로그 (항상 · Render 대시보드/로컬 모두에서 추적)
+        {
           const mu = process.memoryUsage();
           console.log(`[OCR/mem] page ${i + 1} 완료 · rss=${(mu.rss / 1024 / 1024).toFixed(0)}MB · heap=${(mu.heapUsed / 1024 / 1024).toFixed(0)}MB`);
         }

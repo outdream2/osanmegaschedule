@@ -30,7 +30,6 @@ import zoneAssignmentsRouter from "./server/routes/zoneAssignments";
 import supplierBalanceConfigRouter from "./server/routes/supplierBalanceConfig";
 import ocrConfirmedRouter from "./server/routes/ocrConfirmed";
 import { ocrDeletedRowsRouter } from "./server/routes/ocrDeletedRows";
-import aiDetectorRouter from "./server/routes/aiDetector";
 import boardRouter from "./server/routes/board";
 import { loadStockCountModel } from "./server/stockCounter";
 
@@ -57,10 +56,9 @@ async function startServer() {
   }
 
   app.use(compression());
-  // Render 512MB 환경: json body 파싱 한도를 50MB 로 제한 (OOM 방지)
-  // 로컬/개발: 200MB 유지 (대용량 이미지 배치 허용)
-  const JSON_LIMIT = (process.env.RENDER === "true" || process.env.LOW_MEM === "true") ? "50mb" : "200mb";
-  app.use(express.json({ limit: JSON_LIMIT }));
+  // 2026-07-20: env 분기 제거 · 로컬↔Render 통일 · 페이지마다 dispose+gc 로 peak 안전
+  //   100MB 는 다중 페이지 base64 배치를 충분히 허용하면서 Render OOM 도 피하는 절충치
+  app.use(express.json({ limit: "100mb" }));
   app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
 
   app.use(schedulesRouter);
@@ -84,7 +82,6 @@ async function startServer() {
   app.use(supplierBalanceConfigRouter);
   app.use(ocrConfirmedRouter);
   app.use(ocrDeletedRowsRouter);
-  app.use(aiDetectorRouter);
   app.use(boardRouter);
 
   // /products.json — 항상 DB에서 동적으로 제공 (브라우저 캐시 없음, 서버 메모리 캐시만 사용)

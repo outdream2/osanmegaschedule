@@ -2,7 +2,7 @@
 OCR 문서 레이아웃 검출 마이크로서버 (DocLayout-YOLO 전용)
 포트 8004 · Node.js 메인 서버가 HTTP 로 호출
 
-** 재고세기(ai_detector, 포트 8003)와 완전히 분리 **
+** 재고세기(yolo_server.py, 포트 8002)와 완전히 분리 **
    - 학습 데이터 다름 (문서 vs 상품)
    - 모델 파일 다름 (doclayout_yolo.pt vs sku110k.pt)
    - 프로세스 다름 (독립 lifecycle)

@@ -22,6 +22,7 @@ import { isDeliveryOrAdminInfo } from "./invoice-vocab";
 import { detectTableSlanet, slanetToTableStructure, isSlanetAvailable } from "./slanetTable";
 import { extractInvoiceMetadata } from "./metadataKV";
 import { extractSupplierFromRawText } from "./parse";
+import { ocrConfig } from "../config/ocrConfig";
 
 type Cell = { text: string; box: { x: number; y: number; width: number; height: number }; confidence: number };
 
@@ -32,31 +33,17 @@ type OcrPageRaw = {
   rawText: string;
 };
 
-// SLANet-plus 사용 여부 — 기본 ON (모델 있으면)
-//   6.8MB · CPU 100-150ms/이미지 · PubTabNet TEDS 76+ · 격자표 95%+ 실측
-//   다운로드: node scripts/download-slanet.mjs
-//   완전 비활성화: USE_SLANET=false
-//   Render(LOW_MEM) 자동 OFF: 세션 상주 ~40MB 절감
-const USE_SLANET = process.env.USE_SLANET !== "false"
-  && process.env.RENDER !== "true"
-  && process.env.LOW_MEM !== "true";
-
-// TATR 사용 여부 — 기본 OFF (SLANet 로 대체됨 · 115MB 오버킬)
-const USE_TATR = process.env.USE_TATR === "true";
-
-// DocLayout-YOLO 사용 여부 — 기본 ON (ai_detector 이미 있음)
-//   layout 모델 다운로드: python server/ai_detector/download_layout_model.py
-//   실패 시 조용히 fallback (기존 파이프라인)
-const USE_LAYOUT = process.env.USE_LAYOUT !== "false";
+// 2026-07-20: env 분기 제거 · server/config/ocrConfig.ts 단일 소스
+const USE_SLANET = ocrConfig.useSlanet;
+const USE_TATR   = ocrConfig.useTatr;
+const USE_LAYOUT = ocrConfig.useLayout;
 
 let ocrInstance: any | null = null;
 let initPromise: Promise<any> | null = null;
 
-// LOW_MEM: 페이지 처리 후 세션 destroy + 캐시 클리어
-// Render 512MB에서 상주 ~200MB 해제 · 다음 페이지 시 재로드 (1-2초 오버헤드)
-const LOW_MEM =
-  process.env.RENDER === "true" ||
-  process.env.LOW_MEM === "true";
+// 세션 dispose 정책 · config 단일 소스 (env 무시)
+const DISPOSE_PER_PAGE = ocrConfig.disposeSessionsPerPage;
+const FORCE_GC = ocrConfig.forceGcAfterDispose;
 
 async function getOcrInstance() {
   if (ocrInstance) return ocrInstance;
@@ -69,13 +56,13 @@ async function getOcrInstance() {
       const path = await import("path");
       const fs = await import("fs");
 
-      // ── 모델 선택 (env `OCR_MODEL` 로 런타임 전환 가능) ────────────────────
+      // ── 모델 선택 (server/config/ocrConfig.ts 에서 통일 관리 · env 무시) ──
       //   v5_korean_mobile (기본, 한국어 특화, 13MB rec)
       //   v5_server        (다국어 서버, ~130MB, 표·숫자 정확도 상승)
       //   v6_small         (v6 소형, 다국어, ~35MB, 새 아키텍처)
       //   v6_medium        (v6 중형, 다국어, ~120MB, 정확도 최상)
       //   v6_tiny          (v6 소형화, ~10MB)
-      const modelName = String(process.env.OCR_MODEL ?? "v5_korean_mobile").toLowerCase();
+      const modelName = String(ocrConfig.ocrModel).toLowerCase();
       const {
         V5_KOREAN_MOBILE_MODEL,
         V5_SERVER_MODEL,
@@ -309,10 +296,10 @@ export async function callPpuOcr(b64: string, mimeType: string): Promise<OcrPage
   try {
     return await _callPpuOcrInner(b64, mimeType);
   } finally {
-    // LOW_MEM: 세션 파괴 · 다음 페이지 시 재로드 (~200MB 해제)
-    if (LOW_MEM) {
+    // 페이지마다 세션 dispose · ~200MB 해제 · 다음 페이지 시 재로드 (1-2초 오버헤드)
+    if (DISPOSE_PER_PAGE) {
       await disposeOcrInstance();
-      if (typeof (global as any).gc === "function") (global as any).gc();
+      if (FORCE_GC && typeof (global as any).gc === "function") (global as any).gc();
     }
   }
 }

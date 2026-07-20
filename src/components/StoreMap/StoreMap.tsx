@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Employee, Schedule } from "../../types";
 import { ZONE_DEFS, ZONES_STORAGE_KEY, SECTION_LABEL } from "../../constants/displayZones";
 import {
@@ -474,10 +474,18 @@ export const StoreMap: React.FC<StoreMapProps> = ({
     saveAssignments(updated);
   };
 
-  // Filter staff based on assignment zone helper
-  const getStaffInZone = (zoneId: string) => {
-    return activeWorkingStaff.filter((item) => assignments[String(item.employee.id)] === zoneId);
-  };
+  // 2026-07-20: 14회 반복 filter → 1회 groupBy 로 병목 완화 (useMemo · 재계산 최소화)
+  //   assignments 또는 activeWorkingStaff 가 바뀔 때만 재계산
+  const staffByZone = useMemo(() => {
+    const groups: Record<string, typeof activeWorkingStaff> = {};
+    for (const item of activeWorkingStaff) {
+      const zoneId = assignments[String(item.employee.id)] ?? "unassigned";
+      if (!groups[zoneId]) groups[zoneId] = [];
+      groups[zoneId].push(item);
+    }
+    return groups;
+  }, [activeWorkingStaff, assignments]);
+  const getStaffInZone = useCallback((zoneId: string) => staffByZone[zoneId] ?? [], [staffByZone]);
 
   // Categorized personnel list in current zone model
   const expiringStaff = getStaffInZone("slot_expiring");
@@ -1606,7 +1614,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                     {/* Content — 3개 창구 (카운터1·2·3) 세로로 나눔, gap으로 사이 공간 */}
                     <div className="flex-1 flex flex-col gap-2">
                       {[1, 2, 3].map(deskNum => {
-                        // 담당자를 3개 창구에 라운드로빈으로 배분
+                        // 담당자를 3개 창구에 라운드로빈으로 배분 (2026-07-20: 렌더마다 3회 filter · cashiers 짧으니 유지)
                         const deskStaff = cashiers.filter((_, i) => (i % 3) + 1 === deskNum);
                         return (
                           <div
