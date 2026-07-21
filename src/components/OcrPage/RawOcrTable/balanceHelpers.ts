@@ -145,8 +145,9 @@ export function computePageBalanceCandidates(
     for (const c of result) { if (!labelMap.has(c.label)) labelMap.set(c.label, c.amount); }
     pageBalanceCandidatesForFormula.set(pn, labelMap);
 
-    // 진단 로그 (window.__OCR_BAL_DEBUG !== false 일 때만)
-    if (typeof window !== "undefined" && (window as unknown as { __OCR_BAL_DEBUG?: boolean }).__OCR_BAL_DEBUG !== false) {
+    // 2026-07-21: opt-in 방식으로 변경 · 기본 off (매 렌더마다 콘솔 스팸 방지)
+    //   진단 필요 시 브라우저 콘솔에서 `window.__OCR_BAL_DEBUG = true` 실행
+    if (typeof window !== "undefined" && (window as unknown as { __OCR_BAL_DEBUG?: boolean }).__OCR_BAL_DEBUG === true) {
       /* eslint-disable no-console */
       console.groupCollapsed(`[잔고진단] page ${pn} (공급사="${pageData.meta?.supplier ?? ""}") → 후보 ${result.length}건`);
       console.log("headers:", pageData.headers);

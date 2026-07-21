@@ -1,14 +1,15 @@
+/* 2026-07-16 · 숫자 전용 폰트 통일 · Geist Mono (Vercel · 모던 세련) */
+/*   - Geist Mono: 데이터/숫자 전용 · 명확한 자릿수 · 최신 SaaS 트렌드 (Notion·Linear·Vercel) */
+/*   - JetBrains Mono: fallback 유지 */
+/*   ⚠️ CSS 스펙: @import 는 반드시 파일 최상단 (@charset 외 어떤 규칙보다 먼저) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Geist+Mono:wght@400;500;700;900&family=JetBrains+Mono:wght@400;550&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
+@import "tailwindcss";
+
 /* 2026-07-20 · 리스트 내부 로딩 배너 shimmer 애니메이션 */
 @keyframes shimmer {
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(300%); }
 }
-
-/* 2026-07-16 · 숫자 전용 폰트 통일 · Geist Mono (Vercel · 모던 세련) */
-/*   - Geist Mono: 데이터/숫자 전용 · 명확한 자릿수 · 최신 SaaS 트렌드 (Notion·Linear·Vercel) */
-/*   - JetBrains Mono: fallback 유지 */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&family=Geist+Mono:wght@400;500;700;900&family=JetBrains+Mono:wght@400;550&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap');
-@import "tailwindcss";
 
 @theme {
   --font-sans: "Inter", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;

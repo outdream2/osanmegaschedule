@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { supabase } from "../../src/supabase/client";
 import { ocrConfig } from "../config/ocrConfig";
+import { computeFieldMatchSummary, logFieldMatchSummary } from "../ocr/fieldMatchLog";
 import { getProductMap, getSynonymMap, resetSynonymCache, getSupplierAliasMap, resetSupplierAliasCache, getVendorNames } from "../productCache";
 import { cleanCellValues, mergeAdjacentHeaders, normalizeInvoiceCols, extractSpecFromName, repairColumnShift, fixAmountsBySubtotal, crossValidateIntraPage, sanitizeOcrMeta, filterCodeOnlyRows, filterMetadataBleedRows, validateCellTypes, applyPositionalHints, detectSuspiciousEqualPriceAmount, mergeSplitProductRows, verifyRowsAgainstRawText, auditRowSumVsTotal, autoFillMissingMathField, inferMissingTotals, extractCommonMetadataLines, fixDateInAmountColumns, sanitizeBalanceContamination, fallbackParseRowsFromRawText, mergeAdjacentSplitRows } from "../ocr/parse";
 import { buildOnnxPipeline, runPipeline, makeInitialContext } from "../ocr/pipeline";
@@ -979,6 +980,53 @@ router.post("/api/ocr", async (req, res) => {
             cachedRawText: cachedRawTexts[i],
           });
           await runPipeline(pipeline, ctx, { page: i + 1 });
+          // 2026-07-21 · 절대 실패 없는 파이프라인 안전망
+          //   요구사항: "페이지 추출 실패 절대 없음 · 무조건 명세표는 만들어야 함"
+          //   1) headers 비었으면 · 공급사 있으면 ocr_templates DB 참조 → 그 공급사 저장된 헤더 사용
+          //   2) 없으면 · 표준 헤더 강제 주입
+          //   3) rows 비었으면 rawText 에서 한글 3자+ 첫 라인 뽑아 1행 생성
+          if (!ctx.headers || ctx.headers.length === 0) {
+            let recovered = false;
+            const sup = String(ctx.meta?.supplier ?? "").trim();
+            if (sup) {
+              try {
+                const tmpl = await supabase.from("ocr_templates")
+                  .select("supplier_name, headers").ilike("supplier_name", `%${sup.replace(/[()\s(주)㈜]/g, "")}%`).limit(1);
+                const arr = tmpl.data?.[0]?.headers;
+                if (Array.isArray(arr) && arr.length > 0) {
+                  ctx.headers = arr;
+                  recovered = true;
+                  console.log(`[safety-net/headers] page ${ctx.page}: 공급사 "${sup}" ocr_templates 에서 헤더 ${arr.length}개 복원`);
+                }
+              } catch (e: any) {
+                console.warn(`[safety-net/headers] ocr_templates 조회 실패:`, e?.message);
+              }
+            }
+            if (!recovered) {
+              ctx.headers = ["품명", "규격", "수량", "단가", "금액", "유통기한", "비고"];
+              console.warn(`[safety-net/headers] page ${ctx.page}: 헤더 비어있음 → 표준 헤더 강제 주입 (공급사="${sup || "미상"}", 템플릿 없음)`);
+            }
+          }
+          if (!ctx.rows || ctx.rows.length === 0) {
+            // rawText 에서 첫 한글 3자+ 라인을 상품명 후보로 · 최소 1행 강제
+            const firstLine = (ctx.rawText ?? "")
+              .split(/\r?\n/)
+              .find(ln => /[가-힣]{3,}/.test(ln));
+            const emptyRow = new Array(ctx.headers.length).fill(null);
+            if (firstLine) {
+              const nameIdx = ctx.headers.indexOf("품명");
+              if (nameIdx >= 0) emptyRow[nameIdx] = firstLine.trim().slice(0, 40);
+            }
+            ctx.rows = [emptyRow];
+            console.warn(`[safety-net/rows] page ${ctx.page}: rows 비어있음 → 폴백 1행 생성 (품명="${emptyRow[0] ?? ""}")`);
+          }
+          // 2026-07-21: 필드별 매칭 요약 로그 (추후 매칭율 튜닝 데이터)
+          try {
+            const summary = computeFieldMatchSummary(ctx.page, ctx.headers, ctx.rows, ctx.meta);
+            logFieldMatchSummary(summary);
+          } catch (e: any) {
+            console.warn(`[fieldMatch/page ${ctx.page}] 요약 실패:`, e?.message);
+          }
           // 2026-07-20: env 분기 제거 · server/config/ocrConfig.ts 단일 소스
           const rawTextCap = ocrConfig.rawCacheTextCap;
           const rawTextPreviewLen = ocrConfig.logRawTextPreviewLength;

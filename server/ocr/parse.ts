@@ -1,5 +1,5 @@
 import { INVOICE_SCHEMA } from "./schema";
-import { isDeliveryOrAdminInfo } from "./invoice-vocab";
+import { isDeliveryOrAdminInfo, HEADER_MISREAD_MAP, HEADER_COMPOUNDS } from "./invoice-vocab";
 
 const OCR_RECIPIENTS: string[] = (process.env.OCR_RECIPIENT ?? "")
   .split(",").map(s => s.trim().toLowerCase()).filter(Boolean);
@@ -43,25 +43,9 @@ export function mergeAdjacentHeaders(
   headers: string[],
   rows: (string | number | null)[][]
 ): { headers: string[]; rows: (string | number | null)[][] } {
-  const COMPOUNDS: [string, string, string][] = [
-    ["품", "명", "품명"], ["품", "목", "품목"], ["상품", "명", "상품명"], ["제품", "명", "제품명"],
-    ["수", "량", "수량"], ["단", "가", "단가"], ["금", "액", "금액"], ["가", "액", "가액"],
-    ["세", "액", "세액"], ["규", "격", "규격"], ["단", "위", "단위"], ["포", "장", "포장"],
-    ["비", "고", "비고"], ["적", "요", "적요"], ["번", "호", "번호"],
-    ["발행", "일자", "발행일자"], ["전표", "일자", "전표일자"], ["월", "일", "월일"],
-    ["거래", "일자", "거래일자"], ["발행", "일", "발행일"], ["일", "자", "일자"],
-    ["총매출", "액", "총매출액"], ["공급", "가액", "공급가액"], ["공급", "가", "공급가"],
-    ["부가", "세", "부가세"], ["합계", "금액", "합계금액"],
-    ["유통", "기한", "유통기한"], ["소비", "기한", "소비기한"], ["유효", "기한", "유효기한"],
-    ["상품", "코드", "상품코드"], ["품목", "코드", "품목코드"], ["바", "코드", "바코드"],
-  ];
-
-  // 오독 → 표준 헤더 매핑 (한 칸으로 병합된 상태의 오탈자)
-  const MISREAD_MAP: [RegExp, string][] = [
-    [/^품\s*로\s*명$/, "품명"], [/^품\s*로$/, "품명"], [/^품\s*목\s*명$/, "품목명"],
-    [/^공\s*급\s*가\s*역$/, "공급가액"], [/^부\s*가\s*세$/, "부가세"],
-    [/^수\s*량\s*\([단개]?$/, "수량"], [/^인\s*지$/, "번호"],
-  ];
+  // 2026-07-21: invoice-vocab.ts 중앙 사전 사용 (기존 로컬 사본 삭제 · 확장 매핑 반영)
+  const COMPOUNDS = HEADER_COMPOUNDS;
+  const MISREAD_MAP = HEADER_MISREAD_MAP;
 
   // 노이즈 셀 판정: 단독 특수문자, 단독 자모/한글 1자 중 헤더 어휘와 무관한 것
   const NOISE_SINGLES = new Set(["숲", "@", "*", "※", "~", "+", "-", "·", "•", "▪", "■", "□"]);
@@ -284,16 +268,22 @@ export function inferColumnTypesByData(
     const isLikelyCode = alphaCodeRatio >= 0.3;
     // 수량: 숫자 60%+ · 중앙값 1~999 · 코드 컬럼 아님
     if (numRatio >= 0.6 && med >= 1 && med <= 999 && !isLikelyCode) {
-      candidates.수량.push({ idx: st.idx, score: numRatio * 50 + fillRatio * 30 + (med >= 1 && med <= 100 ? 20 : 10) });
+      // 2026-07-21: 쉼표 있으면 수량 후보에서 강한 감점 (수량은 쉼표 거의 없음 · 콤마 있으면 금액)
+      const commaPenalty = commaFmtRatio >= 0.5 ? -30 : 0;
+      candidates.수량.push({ idx: st.idx, score: numRatio * 50 + fillRatio * 30 + (med >= 1 && med <= 100 ? 20 : 10) + commaPenalty });
     }
     // 단가: 숫자 60%+ · 중앙값 100~99999 (좁힘) · 코드 아님
-    // 2026-07-19 롤백: commaFmtRatio 40 → 20 (LOW_MEM 압축 쉼표 소실 시 컬럼 스왑 방지)
+    //   2026-07-21: 쉼표 가중치 20 → 30 (쉼표 있으면 단가 확률 상승, 단 금액보다는 낮게)
     if (numRatio >= 0.6 && med >= 100 && med <= 99999 && !isLikelyCode) {
-      candidates.단가.push({ idx: st.idx, score: numRatio * 40 + fillRatio * 30 + (med >= 500 && med <= 50000 ? 25 : 5) + commaFmtRatio * 20 });
+      candidates.단가.push({ idx: st.idx, score: numRatio * 40 + fillRatio * 30 + (med >= 500 && med <= 50000 ? 25 : 5) + commaFmtRatio * 30 });
     }
     // 금액: 숫자 60%+ · 중앙값 1000~9999999 · 쉼표포맷 우세 (금액은 대개 쉼표 있음) · 코드 아님
+    //   2026-07-21: 쉼표 가중치 20 → 50 (사용자 지시: "쉼표 있으면 우선적으로 금액")
+    //   쉼표 완전 부재 시(commaFmtRatio=0) 금액 후보 점수 강한 감점 · 확실히 금액이면 반드시 쉼표
     if (numRatio >= 0.6 && med >= 1000 && med <= 99999999 && !isLikelyCode) {
-      candidates.금액.push({ idx: st.idx, score: numRatio * 40 + fillRatio * 30 + (med >= 5000 ? 15 : 5) + commaFmtRatio * 20 });
+      const commaBonus = commaFmtRatio >= 0.7 ? 30 : 0;  // 70%+ 쉼표 → 확실 금액
+      const noCommaPenalty = commaFmtRatio === 0 && med < 100000 ? -10 : 0;  // 쉼표 전혀 없고 값 작으면 감점
+      candidates.금액.push({ idx: st.idx, score: numRatio * 40 + fillRatio * 30 + (med >= 5000 ? 15 : 5) + commaFmtRatio * 50 + commaBonus + noCommaPenalty });
     }
     // 품명: 한글 필수 · 문자열 우세 · 길이 4자+
     //   사용자 통찰: "품명에 한글은 꼭 있고 각 행에서 가장 긴 셀"
@@ -338,6 +328,67 @@ export function inferColumnTypesByData(
   if (!stdTaken.has("금액")) {
     const amtBest = amtList.find(c => !usedIdx.has(c.idx));
     if (amtBest) { chosen["금액"] = amtBest.idx; usedIdx.add(amtBest.idx); stdTaken.add("금액"); }
+  }
+
+  // 2026-07-21 · 사용자 통찰: "수량 * 단가 = 금액 검증으로 컬럼 라벨링 확정"
+  //   통계 기반 할당 후 Q*P=A 가 성립하지 않으면 · 숫자 컬럼들 순열 중 성립 확률 높은 조합으로 재할당
+  //   총합계(매우 큰 값) 컬럼을 금액으로 오배정한 케이스 특히 유효
+  const numericCols = stats
+    .filter(st => st.ints.length >= Math.max(2, Math.floor(st.total * 0.5)))
+    .map(st => st.idx);
+  if (numericCols.length >= 3 && rows.length >= 2) {
+    const validateAssignment = (qIdx: number, pIdx: number, aIdx: number): number => {
+      let matches = 0;
+      let attempts = 0;
+      for (const row of rows) {
+        if (!Array.isArray(row)) continue;
+        const q = safeParseNumber(row[qIdx]);
+        const p = safeParseNumber(row[pIdx]);
+        const a = safeParseNumber(row[aIdx]);
+        if (q == null || p == null || a == null || q <= 0 || p <= 0 || a <= 0) continue;
+        attempts++;
+        const exp = q * p;
+        if (Math.abs(exp - a) <= Math.max(1, exp * 0.02)) matches++;
+      }
+      // 매칭율 60% 이상 · 최소 2행 검증
+      return attempts >= 2 && matches / attempts >= 0.6 ? matches : 0;
+    };
+    // 현재 할당 검증
+    const currentQ = chosen["수량"] ?? -1;
+    const currentP = chosen["단가"] ?? -1;
+    const currentA = chosen["금액"] ?? -1;
+    const currentScore = currentQ >= 0 && currentP >= 0 && currentA >= 0
+      ? validateAssignment(currentQ, currentP, currentA)
+      : 0;
+    // 모든 순열 시도 (numericCols 중 3개 선택 · 순서)
+    let bestQ = currentQ, bestP = currentP, bestA = currentA;
+    let bestScore = currentScore;
+    for (let i = 0; i < numericCols.length; i++) {
+      for (let j = 0; j < numericCols.length; j++) {
+        if (j === i) continue;
+        for (let k = 0; k < numericCols.length; k++) {
+          if (k === i || k === j) continue;
+          const s = validateAssignment(numericCols[i], numericCols[j], numericCols[k]);
+          if (s > bestScore) {
+            bestScore = s;
+            bestQ = numericCols[i];
+            bestP = numericCols[j];
+            bestA = numericCols[k];
+          }
+        }
+      }
+    }
+    if (bestScore > currentScore && (bestQ !== currentQ || bestP !== currentP || bestA !== currentA)) {
+      console.log(`[inferColumns/Q*P=A 재배치] page: score ${currentScore} → ${bestScore} · Q col ${currentQ}→${bestQ}, P col ${currentP}→${bestP}, A col ${currentA}→${bestA}`);
+      // 기존 할당 해제
+      for (const std of ["수량", "단가", "금액"] as const) {
+        if (chosen[std] != null) usedIdx.delete(chosen[std]);
+        delete chosen[std];
+      }
+      chosen["수량"] = bestQ; usedIdx.add(bestQ);
+      chosen["단가"] = bestP; usedIdx.add(bestP);
+      chosen["금액"] = bestA; usedIdx.add(bestA);
+    }
   }
 
   for (const [std, idx] of Object.entries(chosen)) {
@@ -813,6 +864,96 @@ const V_KOREAN = /[가-힣]/;
 const V_HAS_LETTER = /[가-힣A-Za-z]/;
 const V_CODE_PAT = /^[A-Z]\d{5,7}(\s+\S+)?$/;
 const V_DATE_PAT = /^(20\d{2})[-./ ]?(0?[1-9]|1[0-2])[-./ ]?(0?[1-9]|[12]\d|3[01])$/;
+
+/**
+ * 2026-07-21: 통일 유통기한 파서 · 8가지 포맷 → YYYY-MM-DD 정규화
+ *
+ * 지원 포맷:
+ *   YYYY-MM-DD, YYYY.MM.DD, YYYY/MM/DD, YYYYMMDD, YYYY MM DD
+ *   YY-MM-DD, YY.MM.DD (2자리 년도 → 20YY 확장)
+ *   YYYY년 MM월 DD일, 2028년 12월 21일
+ *   DD/MM/YYYY, DD-MM-YYYY (일-월-년 순)
+ *   MM/YYYY, YYYY.MM (일 없음 → 그 달 말일)
+ *
+ * @returns YYYY-MM-DD 문자열 or null (파싱 실패)
+ */
+export function parseExpiryDate(input: string | number | null | undefined): string | null {
+  if (input == null) return null;
+  const raw = String(input).trim();
+  if (!raw) return null;
+
+  const yearInRange = (y: number) => y >= 2020 && y <= 2040;
+  const daysInMonth = (y: number, m: number): number => new Date(y, m, 0).getDate();
+  const validYMD = (y: number, m: number, d: number): boolean => {
+    if (!yearInRange(y)) return false;
+    if (m < 1 || m > 12) return false;
+    if (d < 1 || d > daysInMonth(y, m)) return false;
+    return true;
+  };
+  const format = (y: number, m: number, d: number): string =>
+    `${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+  // 1. YYYYMMDD (순수 8자리)
+  const cleaned = raw.replace(/\s+/g, "");
+  if (/^\d{8}$/.test(cleaned)) {
+    const y = +cleaned.slice(0, 4), m = +cleaned.slice(4, 6), d = +cleaned.slice(6, 8);
+    if (validYMD(y, m, d)) return format(y, m, d);
+  }
+
+  // 2. YYYY년 MM월 DD일
+  const koreanM = raw.match(/^(\d{4})\s*년\s*(\d{1,2})\s*월\s*(\d{1,2})\s*일?$/);
+  if (koreanM) {
+    const y = +koreanM[1], m = +koreanM[2], d = +koreanM[3];
+    if (validYMD(y, m, d)) return format(y, m, d);
+  }
+
+  // 3. YYYY[-./ ]MM[-./ ]DD (표준 · 4자리 년도)
+  const stdM = raw.match(/^(\d{4})[-.\/\s]+(\d{1,2})[-.\/\s]+(\d{1,2})\.?$/);
+  if (stdM) {
+    const y = +stdM[1], m = +stdM[2], d = +stdM[3];
+    if (validYMD(y, m, d)) return format(y, m, d);
+  }
+
+  // 4. YY[-./ ]MM[-./ ]DD (2자리 년도 · 20YY 확장 · 25-40 범위만)
+  const yy2M = raw.match(/^(\d{2})[-.\/\s]+(\d{1,2})[-.\/\s]+(\d{1,2})\.?$/);
+  if (yy2M) {
+    const yy = +yy2M[1], m = +yy2M[2], d = +yy2M[3];
+    if (yy >= 20 && yy <= 40) {
+      const y = 2000 + yy;
+      if (validYMD(y, m, d)) return format(y, m, d);
+    }
+  }
+
+  // 5. DD[-./ ]MM[-./ ]YYYY (일-월-년 순 · 년도 4자리)
+  const dmyM = raw.match(/^(\d{1,2})[-.\/\s]+(\d{1,2})[-.\/\s]+(\d{4})$/);
+  if (dmyM) {
+    const d = +dmyM[1], m = +dmyM[2], y = +dmyM[3];
+    if (validYMD(y, m, d)) return format(y, m, d);
+  }
+
+  // 6. YYYY[-./ ]MM (일 없음 → 그 달 말일)
+  const ymM = raw.match(/^(\d{4})[-.\/\s]+(\d{1,2})\.?$/);
+  if (ymM) {
+    const y = +ymM[1], m = +ymM[2];
+    if (yearInRange(y) && m >= 1 && m <= 12) return format(y, m, daysInMonth(y, m));
+  }
+
+  // 7. MM[-./ ]YYYY (월/년 · 일 없음 → 말일)
+  const myM = raw.match(/^(\d{1,2})[-.\/\s]+(\d{4})$/);
+  if (myM) {
+    const m = +myM[1], y = +myM[2];
+    if (yearInRange(y) && m >= 1 && m <= 12) return format(y, m, daysInMonth(y, m));
+  }
+
+  // 8. 최후 폴백 · 기존 V_DATE_PAT
+  const legacyM = cleaned.match(V_DATE_PAT);
+  if (legacyM) {
+    const y = +legacyM[1], m = +legacyM[2], d = +legacyM[3];
+    if (validYMD(y, m, d)) return format(y, m, d);
+  }
+
+  return null;
+}
 const V_UNIT_ONLY = /^(mg|mcg|ug|μg|g|kg|ml|mL|L|IU|mEq|%|T|C|V|정|캡슐|포|개|EA|ea|BOX|박스|호)$/i;
 const V_SPEC_PAT = /\d+\s*(mg|mcg|ug|μg|g|kg|ml|mL|L|IU|mEq|%|T|C|V|정|캡슐|포|개|EA|ea|BOX|박스|호)/i;
 
@@ -877,10 +1018,38 @@ export function validateCellTypes(
       }
     }
 
+    // 2026-07-21: 유통기한 우선 배치 (사용자 지시)
+    //   숫자·문자열이 202X 로 시작하면 유통기한 후보 → 수량/단가/금액 컬럼에 있어도 유통기한 컬럼으로 이동
+    //   조건: 20[26-40] 로 시작하는 8자리(YYYYMMDD) or 년-월-일 형식
+    const YEAR_PREFIX_RE = /^20(2[6-9]|[3-4]\d)/;  // 2026~2049 만 (오탐 방지)
+    const isYearPrefixDate = (s: string): boolean => {
+      if (!YEAR_PREFIX_RE.test(s)) return false;
+      // parseExpiryDate 로 실제 날짜인지 재검증
+      return parseExpiryDate(s) != null;
+    };
+    // 수량/단가/금액 셀 검증 전 · 유통기한 재배치 시도
+    if (iE >= 0) {
+      for (const numI of [iQ, iP, iA, iT]) {
+        if (numI < 0 || out[numI] == null) continue;
+        const cellStr = String(out[numI]).trim();
+        if (isYearPrefixDate(cellStr)) {
+          // 유통기한 컬럼 비어있으면 · 이동
+          if (out[iE] == null || String(out[iE]).trim() === "") {
+            const normalized = parseExpiryDate(cellStr);
+            put(iE, "유통기한", normalized, "exp-relocate-from-num");
+            put(numI, headers[numI], null, `${headers[numI]}-year-prefix-relocated`);
+          }
+        }
+      }
+    }
+
     // ── 수량 (정수 1~99999) ──
     if (iQ >= 0 && out[iQ] != null) {
       const raw = String(out[iQ]).trim();
-      if (V_KOREAN.test(raw) && !/^\d/.test(raw)) {
+      // 2026-07-21: 202X 시작 값은 유통기한 후보 (수량 아님)
+      if (isYearPrefixDate(raw)) {
+        put(iQ, "수량", null, "qty-year-prefix");
+      } else if (V_KOREAN.test(raw) && !/^\d/.test(raw)) {
         put(iQ, "수량", null, "qty-korean");
       } else {
         const n = vParseInt(raw);
@@ -898,6 +1067,8 @@ export function validateCellTypes(
     for (const [i, label, max] of numChecks) {
       if (i < 0 || out[i] == null) continue;
       let raw = String(out[i]).trim();
+      // 2026-07-21: 202X 시작 값은 유통기한 후보 (단가/금액/세액 아님)
+      if (isYearPrefixDate(raw)) { put(i, label, null, `${label}-year-prefix`); continue; }
       if (V_KOREAN.test(raw)) { put(i, label, null, `${label}-korean`); continue; }
       if (/[a-zA-Z]/.test(raw)) raw = V_OCR_CHAR_FIX(raw);  // p→0 l→1 O→0 B→8
       // "1,000 2,000" 같은 복수 콤마 숫자 (진짜 이중값) 만 reject
@@ -918,16 +1089,11 @@ export function validateCellTypes(
       else if (/^\d+$/.test(s)) put(iS, "규격", null, "spec-pure-int");
     }
 
-    // ── 유통기한 (YYYY-MM-DD 정규화) ──
+    // ── 유통기한 (YYYY-MM-DD 정규화) · 2026-07-21 통일 파서 사용 ──
     if (iE >= 0 && out[iE] != null) {
-      const s = String(out[iE]).replace(/\s+/g, "").trim();
-      const m = s.match(V_DATE_PAT);
-      if (!m) put(iE, "유통기한", null, "exp-format");
-      else {
-        const y = +m[1];
-        if (y < 2020 || y > 2035) put(iE, "유통기한", null, "exp-range");
-        else put(iE, "유통기한", `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}`, "exp-normalize");
-      }
+      const normalized = parseExpiryDate(out[iE]);
+      if (!normalized) put(iE, "유통기한", null, "exp-format");
+      else if (normalized !== String(out[iE])) put(iE, "유통기한", normalized, "exp-normalize");
     }
 
     return out;
@@ -2187,7 +2353,8 @@ export function extractDiscount(rawText: string, rowsSum: number, meta: any): {
   //   - "에누리액 -500,000" 매칭
   //   - "에누리액 : 500,000" 매칭 (콜론 · 공백 관대)
   //   - 라벨과 숫자 사이 최대 20자 허용 (다른 라벨이 있어도 스킵)
-  const AMT = "\\-?\\d{1,3}(?:,\\d{3})+";
+  // 2026-07-21: 쉼표 없는 3자리+ 정수도 허용 (소액 에누리 500, 1000, 5000 놓치던 문제 해결)
+  const AMT = "\\-?(?:\\d{1,3}(?:,\\d{3})+|\\d{3,})";
   const findAmt = (labelPatterns: Array<{ label: string; pat: RegExp }>): { value: number; label: string } | null => {
     for (const { label, pat } of labelPatterns) {
       const m = rawText.match(pat);
@@ -2259,6 +2426,21 @@ export function extractDiscount(rawText: string, rowsSum: number, meta: any): {
     if (meta.vat > 0 && Math.abs(meta.supplyAmount / meta.vat - 10) < 0.5) {
       // 10:1 관계는 이미 부가세 포함 명세서의 정상 관계 · 하지만 총계도 봐야 함
       // 이건 그냥 확인용 · 여기선 별도 처리 안 함
+    }
+  }
+
+  // 2026-07-21: 라벨 없이 (총합계 ≠ 소계) 인 경우 · 차액 자동 추정
+  //   조건: meta.total 있음, rowsSum 있음, discount 아직 감지 못 함, vatSeparate 아님
+  //   차이가 소계의 0.5%~20% 사이 · 소계보다 작아짐 → 차액으로 등록
+  if (!result.discount && !result.vatSeparate
+      && typeof meta?.total === "number" && meta.total > 0 && rowsSum > 0) {
+    const diff = rowsSum - meta.total;
+    const diffRatio = Math.abs(diff) / rowsSum;
+    if (diff > 0 && diffRatio > 0.005 && diffRatio < 0.20) {
+      // rowsSum > total : 차감 필요 (에누리/할인/차액 성격)
+      result.discount = diff;
+      result.discountLabel = "차액(추정)";
+      result.inferred.push(`차액추정=${diff.toLocaleString()} (rowsSum ${rowsSum.toLocaleString()} - total ${meta.total.toLocaleString()})`);
     }
   }
 

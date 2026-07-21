@@ -24,7 +24,7 @@ export function makeVendorMatchStage(_deps: {
       const supplierBiz = bizList.filter(b => b.role !== "recipient");
       const primaryBiz = supplierBiz[0]?.bizNum ?? direct.supplierBizNum ?? null;
 
-      console.log(`[vendor-match/입력] page ${ctx.page}: candidates=${JSON.stringify(direct.candidates)} · bizNum=${primaryBiz ?? "-"}`);
+      console.log(`[vendor-match/입력 · v2026-07-21-v5] page ${ctx.page}: candidates=${JSON.stringify(direct.candidates)} · bizNum=${primaryBiz ?? "-"}`);
 
       let vendorMatched: string | null = null;
       let matchSource = "";
@@ -34,24 +34,31 @@ export function makeVendorMatchStage(_deps: {
       const bizMap = await getVendorBizNumMap();
 
       // ① 사업자번호 DB 조회 (exact match · score 100)
-      //    수신처 blacklist (excludedSuppliers.ts) 에 있으면 아예 사용 안 함
+      //   2026-07-21 강화: primaryBiz 만이 아닌 · rawText 내 발견된 모든 biznum 시도
+      //   role=recipient 는 명시 제외 · role=unknown 도 시도 (라벨 없어도 vendor 등록번호일 수 있음)
+      //   blacklist 는 recipient 명시 대상만 · unknown 은 시도 후 매칭 성공 시 채택
       let biznumMatched: { db: string; score: number; from: string } | null = null;
-      console.log(`[vendor-match/①사업자번호] page ${ctx.page}: rawText 내 사업자번호 추출 결과 · bizList=${JSON.stringify(bizList)} · supplierBiz=${JSON.stringify(supplierBiz)} · primaryBiz=${primaryBiz ?? "(없음)"}`);
-      if (primaryBiz && isExcludedBusinessNumber(primaryBiz)) {
-        console.warn(`[vendor-match/①사업자번호] 실패-blacklist: ${primaryBiz} 은 수신처 blacklist → 매칭·학습 모두 스킵`);
-      } else if (primaryBiz) {
-        const bizMapSize = bizMap.size;
-        console.log(`[vendor-match/①사업자번호] DB bizMap 크기=${bizMapSize} · "${primaryBiz}" 조회 시작`);
-        const byBiz = bizMap.get(primaryBiz);
+      const allBiznumsToTry = bizList
+        .filter(b => b.role !== "recipient")
+        .map(b => b.bizNum)
+        .filter(bn => !isExcludedBusinessNumber(bn));
+      console.log(`[vendor-match/①사업자번호] page ${ctx.page}: bizList=${JSON.stringify(bizList)} · 시도목록=${JSON.stringify(allBiznumsToTry)}`);
+      for (const bnCand of allBiznumsToTry) {
+        const byBiz = bizMap.get(bnCand);
         if (byBiz) {
-          biznumMatched = { db: byBiz, score: 100, from: `biznum(${primaryBiz})` };
-          console.log(`[vendor-match/①사업자번호] 성공: ${primaryBiz} → "${byBiz}" (score 100)`);
+          biznumMatched = { db: byBiz, score: 100, from: `biznum(${bnCand})` };
+          console.log(`[vendor-match/①사업자번호] ✅ 성공: ${bnCand} → "${byBiz}"`);
+          break;
         } else {
-          console.log(`[vendor-match/①사업자번호] 실패-DB미등록: ${primaryBiz} · bizMap 에 없음 (현재 ${bizMapSize}개 등록) · 매칭 후 학습 예정`);
+          console.log(`[vendor-match/①사업자번호] ${bnCand} · bizMap 미등록 · 다음 후보 시도`);
         }
-      } else {
-        const allBizInText = extractBusinessNumbersFromRawText(rawText);
-        console.log(`[vendor-match/①사업자번호] 실패-없음: rawText 에 사업자번호 미감지 · (전체 추출=${allBizInText.length}개 · 공급처 role 없음)`);
+      }
+      if (!biznumMatched && allBiznumsToTry.length === 0) {
+        if (primaryBiz && isExcludedBusinessNumber(primaryBiz)) {
+          console.warn(`[vendor-match/①사업자번호] 실패-모두blacklist: primaryBiz=${primaryBiz} · 수신처 blacklist 만 있음`);
+        } else {
+          console.log(`[vendor-match/①사업자번호] 실패-없음: rawText 에 유효 사업자번호 없음`);
+        }
       }
 
       // DB 매칭 임계치 60 (B: 30→60 · 오매칭 억제 · 사업자번호는 exact 100)
@@ -238,12 +245,10 @@ export function makeVendorMatchStage(_deps: {
         if (allMatches.length > 1) {
           console.log(`[vendor-match/후보전체] ${allMatches.map(m => `${m.from}→"${m.db}"(${m.score})`).join(" · ")}`);
         }
-      } else if (directTrusted && direct.supplier) {
-        // 매칭 없어도 extract 신뢰 가능하면 그대로 사용 (미상 처리 대신)
-        vendorMatched = direct.supplier;
-        matchSource = `extract-raw("${direct.supplier}")`;
-        console.log(`[vendor-match/✅extract최종채택] page ${ctx.page}: "${direct.supplier}" (DB 매칭 없음 · extract 원본 사용)`);
       } else {
+        // 2026-07-20 fix: extract-raw 는 ③/④ 폴백 이후로 이동 (역방향 매칭 우선)
+        //   기존 로직: directTrusted 이면 ③/④ 스킵 → 상품기반 역추적 기능이 무력화되던 버그
+        //   개선: 항상 ③ 상품기반 → ④ 역인덱스 시도 · 실패 시에만 extract-raw
         // ③ 상품기반 fallback (2026-07-15) — rawText 에 공급자명 없어도
         //    상품명 → products.supplier 최빈값 (majority vote) 으로 유추
         //    예: 광동제약 명세서에서 공급자 라인이 잘려도 상품(광동원탕/광동쌍화탕/...)
@@ -259,8 +264,10 @@ export function makeVendorMatchStage(_deps: {
                 .filter(n => n.length >= 2)
             ));
             console.log(`[vendor-match/③상품기반] page ${ctx.page}: 시도 · 상품명 ${productNames.length}개 · 샘플=${JSON.stringify(productNames.slice(0, 5))}`);
-            if (productNames.length < 5) {
-              console.log(`[vendor-match/③상품기반] skip: 샘플 부족 (${productNames.length}개 < 5) · 최소 5개 필요`);
+            // 2026-07-21: 임계값 5 → 2 완화 (거래명세서 소규모(2-4행)도 상품기반 매칭 가능하게)
+            //   실사례: 코스트팜 명세서 2행(광동원탕/광동쌍화탕) → 광동제약 매칭 필요
+            if (productNames.length < 2) {
+              console.log(`[vendor-match/③상품기반] skip: 샘플 부족 (${productNames.length}개 < 2) · 최소 2개 필요`);
             } else {
               // 1) exact match 우선
               const { data: exactRows, error: prodErr } = await supabase
@@ -469,8 +476,138 @@ export function makeVendorMatchStage(_deps: {
           }
         }
 
+        // 2026-07-21 순서 재배치 · v5 (상품앞2자다수결) 를 extract-raw 보다 먼저!
+        //   기존 버그: direct.candidates 에 노이즈("광동 아주" 등) 하나만 있어도 v5 스킵되고 노이즈 채택
+        //   개선: DB 기반 v5 를 최우선 · extract-raw 는 v5/v6 모두 실패한 뒤에만
+        // 5.0: v5 상품앞2자 다수결 (DB 기반 · 가장 신뢰)
         if (!vendorMatched) {
-          console.log(`[vendor-match/③미상] page ${ctx.page}: 매칭된 후보 없음 · 공란 (사용자 입력 대기) · 이름후보=${JSON.stringify(direct.candidates)} · 사업자번호=${primaryBiz ?? "-"}`);
+          const nameIdx5 = ctx.headers.indexOf("품명");
+          console.log(`[vendor-match/v5-diag] page ${ctx.page}: nameIdx5=${nameIdx5} · headers=${JSON.stringify(ctx.headers)}`);
+          if (nameIdx5 >= 0) {
+            const productNames5: string[] = ctx.rows
+              .map(r => Array.isArray(r) ? String(r[nameIdx5] ?? "").trim() : "")
+              .filter(n => n.length >= 2 && /[가-힣]/.test(n));  // 한글 있는 것만 (숫자코드 배제)
+            console.log(`[vendor-match/v5-diag] productNames5=${JSON.stringify(productNames5)}`);
+            const prefixesUsed: string[] = [];
+            const votesByVendor = new Map<string, number>();
+            for (const pn of productNames5) {
+              const productPrefix = pn.replace(/[\s()（）\[\]0-9A-Za-z]/g, "").slice(0, 2);  // 한글만 남기고 2자
+              prefixesUsed.push(productPrefix);
+              if (productPrefix.length < 2) continue;
+              for (const v of vendorNorms) {
+                if (!v.n || v.n.length < 2) continue;
+                const isExcluded = DEFAULT_EXCLUDED_SUPPLIERS.some(ex => normSupplier(ex) === v.n);
+                if (isExcluded) continue;
+                if (v.n.startsWith(productPrefix)) {
+                  votesByVendor.set(v.name, (votesByVendor.get(v.name) ?? 0) + 1);
+                }
+              }
+            }
+            console.log(`[vendor-match/v5-diag] prefixes=${JSON.stringify(prefixesUsed)} · vendorNorms 개수=${vendorNorms.length} · votes=${JSON.stringify(Array.from(votesByVendor.entries()))}`);
+            if (votesByVendor.size > 0) {
+              let bestVendor = "";
+              let bestVotes = 0;
+              for (const [name, votes] of votesByVendor) {
+                if (votes > bestVotes) { bestVendor = name; bestVotes = votes; }
+              }
+              // 1표라도 있으면 채택 (DB에 있는 정확한 이름이므로)
+              vendorMatched = bestVendor;
+              matchSource = `product-prefix-vote(${bestVotes}/${productNames5.length})`;
+              console.log(`[vendor-match/✅상품앞2자다수결] page ${ctx.page}: "${bestVendor}" (${bestVotes}/${productNames5.length}상품 매칭)`);
+            } else {
+              console.log(`[vendor-match/v5-실패] 어떤 vendor 도 상품 앞2자와 매칭 없음`);
+            }
+          } else {
+            console.log(`[vendor-match/v5-실패] 헤더에 "품명" 없음`);
+          }
+        }
+
+        // 5.1: extract-raw fallback (v5/v6 모두 실패한 뒤 · 마지막 수단)
+        if (!vendorMatched) {
+          const fallbackCandidates = [
+            direct.supplier,
+            direct.candidates[0],
+            metaSup,
+            ...direct.candidates.slice(1),
+          ].filter((s): s is string => typeof s === "string" && s.trim().length >= 2);
+          if (fallbackCandidates.length > 0) {
+            const fallbackSup = fallbackCandidates[0].trim();
+            vendorMatched = fallbackSup;
+            matchSource = `extract-raw("${fallbackSup}")${directTrusted ? "" : "·untrusted"}`;
+            console.log(`[vendor-match/✅extract최종폴백] page ${ctx.page}: "${fallbackSup}" (후보=${JSON.stringify(fallbackCandidates)})`);
+          }
+        }
+
+        // 2026-07-21 v6 · 절대 실패 방지 최종 폴백: rawText 전체에서 vendor 이름 (or prefix) 스캔
+        //   상품이 없거나 상품기반 실패했을 때도 · rawText 어딘가에 vendor 이름 조각 있으면 채택
+        if (!vendorMatched) {
+          const rtNorm = rawText.replace(/\s+/g, "");
+          console.log(`[vendor-match/v6-diag] rtNorm 길이=${rtNorm.length} · vendorNorms 개수=${vendorNorms.length}`);
+          let bestVendorName = "";
+          let bestVendorLen = 0;
+          const fullMatches: string[] = [];
+          const prefixMatches: string[] = [];
+          for (const v of vendorNorms) {
+            if (!v.n || v.n.length < 2) continue;
+            const isExcluded = DEFAULT_EXCLUDED_SUPPLIERS.some(ex => normSupplier(ex) === v.n);
+            if (isExcluded) continue;
+            // full name 포함 → 최우선 (긴 이름 우선)
+            if (rtNorm.includes(v.n)) {
+              fullMatches.push(v.name);
+              if (v.n.length > bestVendorLen) {
+                bestVendorName = v.name;
+                bestVendorLen = v.n.length;
+              }
+            }
+          }
+          // full 매치 없으면 앞 3자 prefix 로 폴백
+          console.log(`[vendor-match/v6-diag] full 매칭 ${fullMatches.length}건=${JSON.stringify(fullMatches.slice(0, 5))}`);
+          if (!bestVendorName) {
+            for (const v of vendorNorms) {
+              if (!v.n || v.n.length < 3) continue;
+              const isExcluded = DEFAULT_EXCLUDED_SUPPLIERS.some(ex => normSupplier(ex) === v.n);
+              if (isExcluded) continue;
+              const prefix3 = v.n.slice(0, 3);
+              if (rtNorm.includes(prefix3)) {
+                prefixMatches.push(`${v.name}(prefix="${prefix3}")`);
+                if (v.n.length > bestVendorLen) {
+                  bestVendorName = v.name;
+                  bestVendorLen = v.n.length;
+                }
+              }
+            }
+            console.log(`[vendor-match/v6-diag] prefix3 매칭 ${prefixMatches.length}건=${JSON.stringify(prefixMatches.slice(0, 5))}`);
+          }
+          // 2026-07-21 v6.5: 2자 prefix 도 시도 (마지막 폴백 · 광동제약 → "광동" 등)
+          if (!bestVendorName) {
+            const prefix2Matches: string[] = [];
+            for (const v of vendorNorms) {
+              if (!v.n || v.n.length < 2) continue;
+              const isExcluded = DEFAULT_EXCLUDED_SUPPLIERS.some(ex => normSupplier(ex) === v.n);
+              if (isExcluded) continue;
+              const prefix2 = v.n.slice(0, 2);
+              if (rtNorm.includes(prefix2)) {
+                prefix2Matches.push(`${v.name}(prefix2="${prefix2}")`);
+                if (v.n.length > bestVendorLen) {
+                  bestVendorName = v.name;
+                  bestVendorLen = v.n.length;
+                }
+              }
+            }
+            console.log(`[vendor-match/v6-diag] prefix2 매칭 ${prefix2Matches.length}건=${JSON.stringify(prefix2Matches.slice(0, 5))}`);
+          }
+          if (bestVendorName) {
+            vendorMatched = bestVendorName;
+            matchSource = `rawtext-scan("${bestVendorName}")`;
+            console.log(`[vendor-match/✅rawtext최종스캔] page ${ctx.page}: "${bestVendorName}" (rawText 전체 스캔 매칭)`);
+          } else {
+            console.log(`[vendor-match/v6-실패] rawText 에 vendor 이름·prefix 매칭 없음 · rawText 샘플="${rtNorm.slice(0, 200)}"`);
+          }
+        }
+
+        if (!vendorMatched) {
+          console.error(`[vendor-match/❌완전실패] page ${ctx.page}: 5-stage 모두 실패 · 이름후보=${JSON.stringify(direct.candidates)} · 사업자번호=${primaryBiz ?? "-"} · rawText길이=${rawText.length}`);
+          console.error(`[vendor-match/❌완전실패] vendorNorms 샘플 (앞 5개)=${JSON.stringify(vendorNorms.slice(0, 5).map(v => v.n))}`);
         }
       }
 

@@ -161,6 +161,57 @@ export function reextractCellCandidates(args: {
     }
   }
 
+  // 2026-07-21 · 로직 3: 로컬 400자 스캔에서 후보 부족 시 · 전체 rawText 스캔 폴백
+  if (candidates.length < 3 && rawText) {
+    const NUM_RE = /\d{1,3}(?:[,.]\d{3})+|\d{4,}|\d+/g;
+    const seenFull = new Set(candidates.map(c => c.value));
+    let mm: RegExpExecArray | null;
+    while ((mm = NUM_RE.exec(rawText))) {
+      const raw = mm[0];
+      const cleaned = raw.replace(/[,.]/g, "");
+      const n = parseInt(cleaned, 10);
+      if (!Number.isFinite(n) || n < range.min || n > range.max) continue;
+      if (/^20\d{2}/.test(cleaned) && cleaned.length >= 4 && cleaned.length <= 8) continue;
+      if (cleaned.length >= 10) continue;
+      if (seenFull.has(n)) continue;
+      seenFull.add(n);
+      let bonus = 0;
+      if ((columnKind === "금액" || columnKind === "단가") && raw.includes(",")) bonus += 0.15;
+      if (columnKind === "수량" && n <= 999) bonus += 0.05;
+      candidates.push({
+        value: n,
+        source: "rawText 전체(fallback)",
+        confidence: 0.45 + bonus,
+      });
+    }
+  }
+
+  // 2026-07-21 · 로직 4: Q*P=A 방정식 사전 검증 boost (사용자 지시)
+  //   후보 c 가 방정식 성립시키면 confidence +0.35 (강한 boost) · 최상위로 정렬됨
+  const qI = headers.indexOf("수량");
+  const pI = headers.indexOf("단가");
+  const aI = headers.indexOf("금액");
+  if (qI >= 0 && pI >= 0 && aI >= 0) {
+    const otherQ = columnKind === "수량" ? -1 : parseNum(currentRow[qI]);
+    const otherP = columnKind === "단가" ? -1 : parseNum(currentRow[pI]);
+    const otherA = columnKind === "금액" ? -1 : parseNum(currentRow[aI]);
+    const mathOk = (exp: number, actual: number) => Math.abs(exp - actual) <= Math.max(1, exp * 0.02);
+    for (const c of candidates) {
+      let pass = false;
+      if (columnKind === "수량" && otherP > 0 && otherA > 0) {
+        pass = mathOk(c.value * otherP, otherA);
+      } else if (columnKind === "단가" && otherQ > 0 && otherA > 0) {
+        pass = mathOk(otherQ * c.value, otherA);
+      } else if (columnKind === "금액" && otherQ > 0 && otherP > 0) {
+        pass = mathOk(otherQ * otherP, c.value);
+      }
+      if (pass) {
+        c.confidence = Math.min(1.0, c.confidence + 0.35);
+        c.source = `${c.source} · Q×P=A 성립`;
+      }
+    }
+  }
+
   // 중복 값 병합 (같은 값이 여러 소스에서 나오면 confidence 상승)
   const merged = new Map<number, Candidate>();
   for (const c of candidates) {
@@ -172,9 +223,9 @@ export function reextractCellCandidates(args: {
     }
   }
 
-  // 요청 1: top 10 반환 (순환 클릭 시 더 많은 후보 탐색 가능)
+  // 2026-07-21: top 15 반환 (기존 10 → 확장 · 방정식 성립 후보 놓치지 않게)
   const result = Array.from(merged.values()).sort((a, b) => b.confidence - a.confidence);
-  return result.slice(0, 10);
+  return result.slice(0, 15);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

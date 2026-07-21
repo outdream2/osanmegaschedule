@@ -149,6 +149,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [amountCorrections, setAmountCorrections] = useState<Record<number, number>>({});
   // 소계 불일치 시 사용자 선택: "stated" = 명세서 소계, "computed" = 인식된 합계, "custom" = 직접 선택
   const [pageSubtotalChoices, setPageSubtotalChoices] = useState<Record<number, "stated" | "computed" | "custom">>({});
+  // 2026-07-21: 에누리 적용 전/후 토글 · 기본 "before" (적용 전 · stated + 에누리)
+  //   사용자가 "after" 선택 시 stated 그대로 (에누리 이미 반영된 최종금액 사용)
+  const [discountApplyMode, setDiscountApplyMode] = useState<Record<number, "before" | "after">>(() => {
+    try {
+      const v = localStorage.getItem("ocr-discount-mode");
+      return v ? JSON.parse(v) : {};
+    } catch { return {}; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem("ocr-discount-mode", JSON.stringify(discountApplyMode)); } catch { /* empty */ }
+  }, [discountApplyMode]);
   // "둘 다 아님" 선택 시 사용자가 고른 커스텀 소계 값
   const [pageSubtotalCustom, setPageSubtotalCustom] = useState<Record<number, number>>({});
   // "둘 다 아님" 드롭다운 열림 상태
@@ -370,6 +381,115 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
    *   5) rawRow 의 numeric 후보 값을 비어있는 컬럼에 채움 (자기 행)
    *   6) rawRow numeric 후보 조합 다른 배치 (자기 행 · 매그니튜드 재정렬)
    */
+  // 2026-07-21 v2: 첫 행 참조 · 다른 행에서 가장 비슷한 위치·숫자 찾기 (스마트 매칭)
+  //   시나리오:
+  //     첫 행 수량=1000 (4자리), 금액=508000 (6자리) 확정
+  //     → 다른 행에서 각 행의 모든 숫자 셀 중 4자리 값 = 수량, 6자리 값 = 금액 채택
+  //   장점: OCR 컬럼 밀림 · 셀 시프트가 있어도 값의 magnitude(자릿수)로 정확 매칭
+  const applyFirstRowPattern = useCallback((pn: number, colName: "수량" | "금액") => {
+    const colIdx = dispHeaders.indexOf(colName);
+    if (colIdx < 0) return;
+    const firstRi = pageNums.findIndex(p => p === pn);
+    if (firstRi < 0) return;
+    const editedCell = cellEdits[firstRi]?.[colIdx] ?? dispRows[firstRi]?.[colIdx];
+    if (editedCell == null || String(editedCell).trim() === "") {
+      alert(`첫 행의 ${colName} 셀을 먼저 채우세요.`);
+      return;
+    }
+    const refValue = Number(String(editedCell).replace(/[^0-9.-]/g, ""));
+    if (!Number.isFinite(refValue) || refValue <= 0) {
+      alert(`첫 행 ${colName} 값이 유효한 숫자여야 합니다.`);
+      return;
+    }
+    const refDigits = String(Math.abs(Math.floor(refValue))).length;
+    // 대상 행
+    const targetRows: number[] = [];
+    dispRows.forEach((_, i) => {
+      if (i === firstRi) return;
+      if (pageNums[i] !== pn) return;
+      if (permanentlyDeletedRawRows.has(i) || hiddenRawRows.has(i)) return;
+      if (cellEdits[i]?.[colIdx] !== undefined) return;
+      targetRows.push(i);
+    });
+    if (targetRows.length === 0) {
+      alert(`이 페이지에 적용할 다른 행이 없습니다.`);
+      return;
+    }
+    // 각 대상 행에서: 모든 셀의 숫자 값 스캔 · 자릿수 = refDigits ±1 인 값 선호 · 컬럼 위치 근접도 가점
+    const previews: Array<{ ri: number; before: string; after: string; sourceCol: number; score: number }> = [];
+    for (const ri of targetRows) {
+      const row = dispRows[ri];
+      if (!Array.isArray(row)) continue;
+      const beforeVal = String(row[colIdx] ?? "");
+      let bestCandidate: { value: number; sourceCol: number; score: number } | null = null;
+      for (let ci = 0; ci < row.length; ci++) {
+        const cell = row[ci];
+        if (cell == null) continue;
+        const cellStr = String(cell).trim();
+        if (!cellStr) continue;
+        // 셀에서 숫자 후보 추출 (콤마·마침표 천단위 처리)
+        const numMatches = cellStr.matchAll(/\d[\d,.]*\d|\d+/g);
+        for (const m of numMatches) {
+          const clean = m[0].replace(/[,.]/g, "");
+          const n = parseInt(clean, 10);
+          if (!Number.isFinite(n) || n <= 0) continue;
+          const nDigits = String(n).length;
+          // 202X 로 시작 (년도) 배제
+          if (/^20[2-4]\d/.test(clean) && clean.length >= 4 && clean.length <= 8) continue;
+          // 사업자번호 배제 (10자리)
+          if (clean.length >= 10) continue;
+          // 자릿수 매칭 점수 (완전 일치 100 · ±1 = 50 · 그 외 감점)
+          let score = 0;
+          const digitDiff = Math.abs(nDigits - refDigits);
+          if (digitDiff === 0) score += 100;
+          else if (digitDiff === 1) score += 50;
+          else score -= digitDiff * 20;
+          // 컬럼 위치 근접도 (같은 컬럼 최우선 · 이웃 컬럼 가점)
+          const colDiff = Math.abs(ci - colIdx);
+          score += Math.max(0, 30 - colDiff * 10);
+          // 값 근접도 (magnitude · refValue 와 같은 order 이면 가점)
+          const refMag = Math.floor(Math.log10(refValue) || 0);
+          const nMag = Math.floor(Math.log10(n) || 0);
+          if (refMag === nMag) score += 40;
+          if (!bestCandidate || score > bestCandidate.score) {
+            bestCandidate = { value: n, sourceCol: ci, score };
+          }
+        }
+      }
+      if (bestCandidate && bestCandidate.score > 30) {
+        previews.push({
+          ri,
+          before: beforeVal,
+          after: String(bestCandidate.value),
+          sourceCol: bestCandidate.sourceCol,
+          score: bestCandidate.score,
+        });
+      }
+    }
+    if (previews.length === 0) {
+      alert(`다른 행에서 첫 행 ${colName}(${refValue.toLocaleString()}, ${refDigits}자리) 와 유사한 값을 찾지 못함.`);
+      return;
+    }
+    const previewText = previews.slice(0, 8).map(p => {
+      const sourceColName = dispHeaders[p.sourceCol] ?? `열${p.sourceCol}`;
+      const posNote = p.sourceCol === colIdx ? "" : ` [원위치=${sourceColName}]`;
+      return `  행${p.ri + 1}: "${p.before}" → "${Number(p.after).toLocaleString()}"${posNote}`;
+    }).join("\n");
+    const moreText = previews.length > 8 ? `\n  ... 외 ${previews.length - 8}개` : "";
+    if (!window.confirm(
+      `첫 행 ${colName} 참조: ${refValue.toLocaleString()} (${refDigits}자리)\n\n` +
+      `다른 ${previews.length}개 행에서 자릿수·위치가 가장 비슷한 값 자동 선택:\n\n${previewText}${moreText}\n\n적용하시겠습니까?`
+    )) return;
+    setCellEdits(prev => {
+      const next = { ...prev };
+      for (const p of previews) {
+        next[p.ri] = { ...(next[p.ri] ?? {}), [colIdx]: Number(p.after) };
+      }
+      return next;
+    });
+    console.log(`[first-row-pattern-v2] page ${pn} ${colName} (ref=${refValue}): ${previews.length}행 스마트 매칭 적용`);
+  }, [dispHeaders, dispRows, cellEdits, pageNums, permanentlyDeletedRawRows, hiddenRawRows]);
+
   // ── 단일 셀 재추출 (2026-07-16 · 순환 wrap-around · 명세서 스코프) ──────────
   // 클릭할 때마다 다음 후보로 순환 · 마지막 소진 시 원본 복원 (wrap-around)
   // 소스: 해당 명세서(페이지) 값만 (otherPages: [] 전달)
@@ -892,16 +1012,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     const nr = [...row];
     if (hasAmtCorr) nr[amtIdx] = amountCorrections[ri];
     if (edits) for (const [ciStr, val] of Object.entries(edits)) nr[Number(ciStr)] = val as string | number;
-    // 금액 = 수량 × 단가 · 항상 우선 (2026-07-19 · OCR 추출 금액보다 계산값 우선)
-    //   수량 또는 단가 없으면 금액도 비움 (계산 불가)
+    // 2026-07-21 정책: 수량×단가 우선
+    //   - Q>0, P>0 이면 무조건 Q*P 채택 (기존 금액이 같으면 놔두고 · 다르면 Q*P 로 교체)
+    //   - Q 또는 P 없으면 기존 금액 그대로 유지 (null 로 비우지 않음)
     if (amtIdx >= 0 && _qtyIdxER >= 0 && _priIdxER >= 0) {
       const q = parseNumber(nr[_qtyIdxER]);
       const p = parseNumber(nr[_priIdxER]);
       if (q > 0 && p > 0) {
         nr[amtIdx] = Math.round(q * p);
-      } else {
-        nr[amtIdx] = null as any;
       }
+      // Q 또는 P 없으면 · nr[amtIdx] 그대로 유지 (기존 값 or edits 반영값)
     }
     return nr;
   });
@@ -1088,9 +1208,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     const base = stated ?? computed;
     if (base <= 0) return computed;
 
-    // 4) 에누리/차액이 있으면 그 금액 만큼 되돌린 값 (에누리 적용 전)
+    // 4) 에누리/차액이 있으면 · 모드에 따라 처리
+    //   "before" (기본): stated + 에누리 (에누리 적용 전 금액 표시)
+    //   "after": stated 그대로 (에누리 이미 반영된 최종 금액)
     const disc = getPageDiscount(pn);
-    if (disc) return base + disc.amount;
+    if (disc) {
+      const mode = discountApplyMode[pn] ?? "before";
+      return mode === "after" ? base : base + disc.amount;
+    }
 
     // 5) 명세서 합계 그대로
     return base;
@@ -1124,10 +1249,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const uniquePageNums = [...new Set(pageNums)].sort((a, b) => a - b);
 
   // 2026-07-20: 잔고 후보 계산 로직 → ./RawOcrTable/balanceHelpers.ts 로 추출
-  const _balResult = _computePageBalanceCandidates(structuredPages, uniquePageNums, balanceConfig);
+  // 2026-07-21: useMemo 로 감쌈 · 매 렌더마다 재계산되어 로그 스팸 + 성능 낭비되던 문제 해결
+  const _balResult = React.useMemo(
+    () => _computePageBalanceCandidates(structuredPages, uniquePageNums, balanceConfig),
+    [structuredPages, uniquePageNums, balanceConfig],
+  );
   const pageBalanceCandidates = _balResult.pageBalanceCandidates;
   _balResult.pageBalanceCandidatesForFormula.forEach((v, k) => pageBalanceCandidatesForFormula.set(k, v));
-  const pageBalanceFromConfig = _computePageBalanceFromConfig(structuredPages, uniquePageNums, rawSupplierByPage, balanceConfig ?? {});
+  const pageBalanceFromConfig = React.useMemo(
+    () => _computePageBalanceFromConfig(structuredPages, uniquePageNums, rawSupplierByPage, balanceConfig ?? {}),
+    [structuredPages, uniquePageNums, rawSupplierByPage, balanceConfig],
+  );
   // JSX 에서 참조하는 learnedLabels (원래 inline 이었음 · helpers 로 이동 후에도 UI 정렬에 필요)
   const _normalizeLabelStr = (s: string): string => s.replace(/[\s.·:/\\-]+/g, "");
   const learnedLabels: Set<string> = new Set(
@@ -1243,6 +1375,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // ── 명세서별 이미지 컬럼 폭 (드래그 리사이즈) ─────────────────────────────
   const INV_COL_MIN = 150;
   const INV_COL_DEFAULT = 360;
+  // 2026-07-21: 컴팩트 컬럼 폭 · 한 화면 유지 우선
+  //   품명(140) + 수량(45) + 단가(60) + 금액(80) + 규격(50) + 유통기한(72) + 비고(32) = 479
+  const MIN_DATA_WIDTH = 500;
   const [invoiceColWidth, setInvoiceColWidth] = useState<number>(() => {
     try {
       const v = localStorage.getItem("ocr-invoice-col-width");
@@ -1252,53 +1387,113 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     } catch { return INV_COL_DEFAULT; }
   });
   const [invColResizing, setInvColResizing] = useState(false);
-  const invColResizeRef = useRef<{ startX: number; startW: number } | null>(null);
+
+  // 2026-07-21: 페이지별 이미지 줌 (0.5x ~ 3x · 기본 1x · localStorage 저장) + 드래그 팬
+  const [pageZoom, setPageZoom] = useState<Record<number, number>>(() => {
+    try {
+      const v = localStorage.getItem("ocr-page-zoom");
+      return v ? JSON.parse(v) : {};
+    } catch { return {}; }
+  });
+  const [pagePan, setPagePan] = useState<Record<number, { x: number; y: number }>>({});
+  const panDragRef = useRef<{ pn: number; startX: number; startY: number; startPanX: number; startPanY: number } | null>(null);
+  useEffect(() => {
+    try { localStorage.setItem("ocr-page-zoom", JSON.stringify(pageZoom)); } catch { /* empty */ }
+  }, [pageZoom]);
+  const zoomIn = useCallback((pn: number) => {
+    setPageZoom(prev => ({ ...prev, [pn]: Math.min(3, +((prev[pn] ?? 1) + 0.25).toFixed(2)) }));
+  }, []);
+  const zoomOut = useCallback((pn: number) => {
+    setPageZoom(prev => ({ ...prev, [pn]: Math.max(0.5, +((prev[pn] ?? 1) - 0.25).toFixed(2)) }));
+  }, []);
+  const zoomReset = useCallback((pn: number) => {
+    setPageZoom(prev => { const n = { ...prev }; delete n[pn]; return n; });
+    setPagePan(prev => { const n = { ...prev }; delete n[pn]; return n; });
+  }, []);
+  const onImgPanStart = useCallback((pn: number, e: React.MouseEvent) => {
+    const currentZoom = (pageZoom[pn] ?? 1);
+    if (currentZoom <= 1) return;  // 확대 상태에서만 팬
+    e.preventDefault();
+    e.stopPropagation();
+    const currentPan = pagePan[pn] ?? { x: 0, y: 0 };
+    panDragRef.current = { pn, startX: e.clientX, startY: e.clientY, startPanX: currentPan.x, startPanY: currentPan.y };
+    const onMove = (ev: MouseEvent) => {
+      const st = panDragRef.current;
+      if (!st) return;
+      const dx = ev.clientX - st.startX;
+      const dy = ev.clientY - st.startY;
+      setPagePan(prev => ({ ...prev, [st.pn]: { x: st.startPanX + dx, y: st.startPanY + dy } }));
+    };
+    const onUp = () => {
+      panDragRef.current = null;
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    document.body.style.cursor = "grabbing";
+  }, [pageZoom, pagePan]);
+
+  // 2026-07-21: 테이블 컨테이너 폭 추적 (ResizeObserver) · 이미지 컬럼 최대치 계산용
+  const invTableWrapRef = useRef<HTMLDivElement | null>(null);
+  const [containerWidth, setContainerWidth] = useState<number>(0);
+  useEffect(() => {
+    const el = invTableWrapRef.current;
+    if (!el) return;
+    const update = () => setContainerWidth(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  // 2026-07-21 완전 반응형:
+  //   1. 사용자 드래그값이 있으면 우선 (단 캡 안에서)
+  //   2. 없으면 컨테이너 폭의 40% (반응형 · 화면 크기 따라 자동 확장·축소)
+  //   3. 최소: INV_COL_MIN · 최대: containerWidth - MIN_DATA_WIDTH
+  const invColMax = containerWidth > 0 ? Math.max(INV_COL_MIN, containerWidth - MIN_DATA_WIDTH) : Infinity;
+  const isUserAdjusted = Math.abs(invoiceColWidth - INV_COL_DEFAULT) > 5;
+  const autoRatio = 0.4;  // 컨테이너 폭의 40% (반응형 기본값)
+  const responsiveDefault = containerWidth > 0
+    ? Math.max(INV_COL_MIN, Math.min(containerWidth * autoRatio, invColMax))
+    : INV_COL_DEFAULT;
+  const effectiveInvColWidth = isUserAdjusted
+    ? Math.min(Math.max(INV_COL_MIN, invoiceColWidth), invColMax)
+    : responsiveDefault;
 
   useEffect(() => {
     try { localStorage.setItem("ocr-invoice-col-width", String(Math.round(invoiceColWidth))); } catch { /* empty */ }
   }, [invoiceColWidth]);
 
-  useEffect(() => {
-    if (!invColResizing) return;
-    const onMove = (e: MouseEvent) => {
-      const st = invColResizeRef.current;
-      if (!st) return;
-      const dx = e.clientX - st.startX;
-      const nextRaw = st.startW + dx;
-      // 상한 제거 · 자유롭게 넓이 조절 (2026-07-19 · 사용자 요청)
-      const maxPx = window.innerWidth; // 뷰포트 전체까지 허용
-      const bounded = Math.min(maxPx, Math.max(INV_COL_MIN, nextRaw));
+  // 2026-07-21: 리사이즈 · 뷰포트 초과 방지 (컨테이너 폭 - 데이터 최소 폭)
+  const onInvColResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startW = invoiceColWidth;
+    setInvColResizing(true);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+
+    const onMove = (ev: MouseEvent) => {
+      ev.preventDefault();
+      const dx = ev.clientX - startX;
+      const nextRaw = startW + dx;
+      // 2026-07-21: containerWidth - MIN_DATA_WIDTH 로 상한 캡 (한 화면 유지)
+      const maxAllowed = containerWidth > 0 ? containerWidth - MIN_DATA_WIDTH : Infinity;
+      const bounded = Math.min(maxAllowed, Math.max(INV_COL_MIN, nextRaw));
       setInvoiceColWidth(bounded);
     };
     const onUp = () => {
-      setInvColResizing(false);
-      invColResizeRef.current = null;
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-    document.body.style.cursor = "col-resize";
-    document.body.style.userSelect = "none";
-    return () => {
       document.removeEventListener("mousemove", onMove);
       document.removeEventListener("mouseup", onUp);
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
+      setInvColResizing(false);
     };
-  }, [invColResizing]);
-
-  const onInvColResizeStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log("[리사이즈] 시작 · clientX =", e.clientX, "· 현재 폭 =", invoiceColWidth);
-    let wrap: HTMLElement | null = (e.currentTarget as HTMLElement);
-    while (wrap && !(wrap.classList.contains("overflow-x-auto") && wrap.tagName === "DIV")) {
-      wrap = wrap.parentElement;
-    }
-    invColResizeRef.current = { startX: e.clientX, startW: invoiceColWidth, wrap } as any;
-    setInvColResizing(true);
-  }, [invoiceColWidth]);
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [invoiceColWidth, containerWidth]);
 
   // ── 이미지 모달 + 줌/패닝 ────────────────────────────────────────────────
   const [modalImg,   setModalImg  ] = useState<string | null>(null);
@@ -1517,6 +1712,99 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     const uniquePages = Array.from(new Set(structuredPages.map(p => p.page)));
     return uniquePages.filter(pn => !effectiveSupplierForPage(pn));
   }, [structuredPages, effectiveSupplierForPage]);
+
+  // 2026-07-21: 서버 vendor-match 실패 폴백 · 클라이언트에서 직접 상품앞2자→vendor 다수결
+  //   페이지가 미상일 때 · vendors DB (vendorNames) 로 즉시 자동 채움
+  useEffect(() => {
+    if (missingSupplierPages.length === 0 || vendorNames.length === 0) return;
+    const normV = (s: string) => s.replace(/[\s()（）·・.,\-*/[\]{}]/g, "")
+      .replace(/주식회사|유한회사|㈜|\(주\)|\(유\)/gi, "").toLowerCase();
+    const vendorNorms = vendorNames.map(v => ({ name: v, n: normV(v) }));
+    const autoFill: Record<number, string> = {};
+    for (const pn of missingSupplierPages) {
+      const pd = structuredPages.find(p => p.page === pn);
+      if (!pd) continue;
+      const nameIdx = pd.headers.indexOf("품명");
+      if (nameIdx < 0) continue;
+      // 상품명에서 한글 앞2자 추출
+      const productPrefixes: string[] = [];
+      for (const row of pd.rows) {
+        if (!Array.isArray(row)) continue;
+        const nm = String(row[nameIdx] ?? "").trim();
+        if (nm.length < 2 || !/[가-힣]/.test(nm)) continue;
+        const koreanOnly = nm.replace(/[^가-힣]/g, "").slice(0, 2);
+        if (koreanOnly.length >= 2) productPrefixes.push(koreanOnly);
+      }
+      // vendor 앞2자 매칭 다수결
+      const votes = new Map<string, number>();
+      for (const p of productPrefixes) {
+        for (const v of vendorNorms) {
+          if (v.n.startsWith(p)) votes.set(v.name, (votes.get(v.name) ?? 0) + 1);
+        }
+      }
+      if (votes.size > 0) {
+        let bestName = "", bestVotes = 0;
+        for (const [n, c] of votes) if (c > bestVotes) { bestName = n; bestVotes = c; }
+        // 이미 사용자가 편집한 값 있으면 스킵
+        if (rawSupplierByPage[pn] === undefined && bestVotes >= 1) {
+          autoFill[pn] = bestName;
+          console.log(`[client/auto-supplier] page ${pn}: "${bestName}" (${bestVotes}/${productPrefixes.length}상품 매칭 · prefixes=${JSON.stringify(productPrefixes)})`);
+        }
+      } else {
+        // 상품에서 못 찾으면 rawText 전체에서 vendor 이름/prefix2 스캔
+        const rtNorm = (pd.rawText ?? "").replace(/\s+/g, "");
+        let best = "";
+        let bestLen = 0;
+        for (const v of vendorNorms) {
+          if (v.n.length < 2) continue;
+          if (rtNorm.includes(v.n) && v.n.length > bestLen) {
+            best = v.name; bestLen = v.n.length;
+          }
+        }
+        if (!best) {
+          for (const v of vendorNorms) {
+            if (v.n.length < 2) continue;
+            const prefix2 = v.n.slice(0, 2);
+            if (rtNorm.includes(prefix2) && v.n.length > bestLen) {
+              best = v.name; bestLen = v.n.length;
+            }
+          }
+        }
+        if (best && rawSupplierByPage[pn] === undefined) {
+          autoFill[pn] = best;
+          console.log(`[client/auto-supplier] page ${pn}: "${best}" (rawText 스캔)`);
+        }
+      }
+    }
+    if (Object.keys(autoFill).length > 0) {
+      setRawSupplierByPage(prev => ({ ...prev, ...autoFill }));
+    }
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [missingSupplierPages, vendorNames, structuredPages]);
+
+  // 2026-07-21: 미상 페이지 진단 로그 · 목록이 실제 변경될 때만 1회 출력 (useEffect · spam 방지)
+  const _prevMissingKeyRef = useRef<string>("");
+  useEffect(() => {
+    const key = missingSupplierPages.join(",");
+    if (key === _prevMissingKeyRef.current) return;
+    _prevMissingKeyRef.current = key;
+    if (missingSupplierPages.length === 0) return;
+    console.group(`[missingSupplier] ${missingSupplierPages.length}개 페이지 미상 · 원인 분석`);
+    for (const pn of missingSupplierPages) {
+      const pd = structuredPages.find(p => p.page === pn);
+      const rawText = pd?.rawText ?? "";
+      console.log(`━━━ page ${pn} ━━━`);
+      console.log(`meta.supplier: "${pd?.meta?.supplier ?? "(undefined)"}"`);
+      console.log(`meta.recipient: "${pd?.meta?.recipient ?? "(undefined)"}"`);
+      console.log(`meta.date: "${pd?.meta?.date ?? "(undefined)"}"`);
+      console.log(`headers (${pd?.headers?.length ?? 0}): ${JSON.stringify(pd?.headers ?? [])}`);
+      console.log(`rowCount: ${pd?.rows?.length ?? 0}`);
+      console.log(`rawTextLen: ${rawText.length}`);
+      console.log(`--- rawText (첫 500자) ---\n${rawText.slice(0, 500)}`);
+      if (rawText.length > 500) console.log(`--- ... 총 ${rawText.length}자 ---`);
+    }
+    console.groupEnd();
+  }, [missingSupplierPages, structuredPages]);
   const hasMissingSupplier = missingSupplierPages.length > 0;
 
   // ── Feature 1: 금액 자동보정 콜백 ────────────────────────────────────────
@@ -1564,8 +1852,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   }, [nameIdx, pageNums, dispRows]);
 
   // ── 바코드 DB 매칭 결과를 행에 자동 바인딩 ─────────────────────────────
+  // 2026-07-21: 무한 루프 픽스 · dispRows 는 매 렌더 새 ref → 이전 결과와 shallow-equal 비교 후에만 setState
   useEffect(() => {
-    if (!barcodeMatches?.length || nameIdx < 0) { setBarcodeAutoMap({}); return; }
+    if (!barcodeMatches?.length || nameIdx < 0) {
+      setBarcodeAutoMap(prev => Object.keys(prev).length === 0 ? prev : {});
+      return;
+    }
     const normName = (s: string) => s.toLowerCase().replace(/[\s\-\(\)·]/g, "");
     const result: Record<number, CandidateInfo> = {};
     dispRows.forEach((row, ri) => {
@@ -1588,7 +1880,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         }
       }
     });
-    setBarcodeAutoMap(result);
+    // 이전 state 와 shallow-equal 이면 setState 스킵 (매 렌더 loop 방지)
+    setBarcodeAutoMap(prev => {
+      const prevKeys = Object.keys(prev);
+      const newKeys = Object.keys(result);
+      if (prevKeys.length !== newKeys.length) return result;
+      for (const k of newKeys) {
+        const p = prev[+k], n = result[+k];
+        if (!p || p.code !== n.code || p.name !== n.name) return result;
+      }
+      return prev;
+    });
   }, [barcodeMatches, dispRows, nameIdx]);
 
   // ── 1차보정에서 자동 매칭 제거 (2026-07-14 사용자 정책 재확립) ─────────
@@ -2709,32 +3011,43 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             return null;
           })}
 
-          <div className="w-full overflow-x-auto">
-            <table className="min-w-full text-xs border-collapse">
+          {/* 2026-07-21 반응형: table-layout auto + min-widths · 컬럼 자동 확장·축소 */}
+          <div className="w-full overflow-x-hidden" ref={invTableWrapRef}>
+            <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-amber-50 border-b-2 border-amber-200">
                   {/* 이미지 컬럼 헤더 (이미지가 있을 때) */}
                   {pageImages?.length ? (
                     <th
-                      className="px-1 py-2 text-center bg-gray-50 border-r border-gray-200 text-[9px] font-bold text-gray-500 whitespace-nowrap select-none"
-                      style={{ width: invoiceColWidth, minWidth: 120 }}
+                      className="p-0 text-center bg-gray-50 border-r border-gray-200 text-[9px] font-bold text-gray-500 whitespace-nowrap select-none"
+                      style={{ width: effectiveInvColWidth, minWidth: effectiveInvColWidth, maxWidth: effectiveInvColWidth, position: "relative", boxSizing: "border-box" }}
                     >
-                      <div className="relative flex items-center justify-center px-1 gap-1">
+                      <div style={{ padding: "8px 4px", textAlign: "center" }}>
                         <span>거래명세서</span>
-                        {/* 리사이즈 핸들 · TH 우측에 전체 세로 · 넓은 클릭영역 (2026-07-19) */}
-                        <div
-                          role="separator"
-                          aria-label="이미지 폭 조절"
-                          onMouseDown={onInvColResizeStart}
-                          onDoubleClick={() => setInvoiceColWidth(INV_COL_DEFAULT)}
-                          title="드래그하여 이미지 폭 조절 · 더블클릭 초기화"
-                          className="absolute top-0 right-0 h-full w-2.5 cursor-col-resize flex items-center justify-center group z-10"
-                        >
-                          <div className={`h-4 w-1 rounded transition-colors ${
-                            invColResizing ? "bg-emerald-500" : "bg-slate-400 group-hover:bg-emerald-500"
-                          }`} />
-                        </div>
                       </div>
+                      {/* 2026-07-21: 얇고 은은한 리사이즈 핸들 · hover 시 emerald 강조 */}
+                      <div
+                        role="separator"
+                        aria-label="이미지 폭 조절"
+                        onMouseDown={onInvColResizeStart}
+                        onDoubleClick={() => setInvoiceColWidth(INV_COL_DEFAULT)}
+                        onDragStart={e => { e.preventDefault(); e.stopPropagation(); }}
+                        draggable={false}
+                        title="드래그하여 이미지 폭 조절 · 더블클릭 초기화"
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          right: 0,
+                          bottom: 0,
+                          width: 4,
+                          cursor: "col-resize",
+                          zIndex: 50,
+                          backgroundColor: invColResizing ? "#10b981" : "transparent",
+                          transition: "background-color 0.15s",
+                        }}
+                        onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = "#10b981"; }}
+                        onMouseLeave={(e) => { if (!invColResizing) (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
+                      />
                     </th>
                   ) : null}
                   <th className="w-14 px-1 py-2 text-center" title="선택 · 재추출">
@@ -2760,10 +3073,26 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   })().map(({ origIdx, orderIdx }) => {
                     const h = dispHeaders[origIdx];
                     const ci = origIdx;
+                    // 2026-07-21 반응형: min-width 만 · width 는 auto (컬럼 자동 확장·축소)
+                    //   품명: 140px 최소 → 남은 공간 우선 배정 (auto layout)
+                    //   숫자 컬럼들: min-width 로 최소만 보장 · 컨테이너 넓어지면 확장
+                    const DEFAULT_MIN_WIDTHS: Record<string, number> = {
+                      번호: 32, 순번: 32, "품명": 140,
+                      수량: 45, 단가: 60, 금액: 80, 세액: 55,
+                      규격: 50, 유통기한: 72, 유효기한: 72, 유통기간: 72,
+                      비고: 32, 단위: 36, 배치번호: 55, "Batch.No": 55,
+                    };
+                    const explicitW = colWidths[ci];
+                    const defaultMin = DEFAULT_MIN_WIDTHS[h] ?? 32;
+                    const isNameCol = h === "품명";
                     return (
                       <th key={origIdx}
-                        style={{ width: colWidths[ci] ?? 'auto', minWidth: h === "품명" ? 180 : 40, position: 'relative' }}
-                        className={`px-3 py-2 font-bold text-amber-900 whitespace-nowrap select-none ${NUM_COLS.has(h) ? "text-right" : "text-left"}`}>
+                        style={{
+                          width: explicitW,  // 사용자 리사이즈 시만 · 아니면 auto
+                          minWidth: explicitW ?? defaultMin,
+                          position: 'relative',
+                        }}
+                        className={`px-1.5 py-1.5 font-bold text-amber-900 select-none text-[10px] ${NUM_COLS.has(h) ? "text-right" : "text-left"} break-words`}>
                         {h}
                         <div
                           style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 5, cursor: 'col-resize', zIndex: 1 }}
@@ -2847,31 +3176,82 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           {pageImages?.length ? (
                             <td
                               rowSpan={imgRowSpan}
-                              className="align-top bg-gray-50 border-r border-gray-200 p-0 relative"
-                              style={{ width: invoiceColWidth, minWidth: 120, verticalAlign: "top" }}
+                              className="align-top bg-gray-50 border-r border-gray-200"
+                              style={{ width: effectiveInvColWidth, minWidth: effectiveInvColWidth, maxWidth: effectiveInvColWidth, verticalAlign: "top", padding: 0, position: "relative", boxSizing: "border-box" }}
                             >
-                              {/* 리사이즈 핸들 · 각 이미지 셀 우측 · 눈에 잘 보이게 초록 세로 막대 (2026-07-19) */}
+                              {/* 2026-07-21: inline style 로 통일 · 세로 전체 span · 클릭영역 확대 · z-index 최상단 */}
                               <div
                                 role="separator"
                                 aria-label="이미지 폭 조절"
                                 onMouseDown={onInvColResizeStart}
                                 onDoubleClick={() => setInvoiceColWidth(INV_COL_DEFAULT)}
+                                onDragStart={e => { e.preventDefault(); e.stopPropagation(); }}
+                                draggable={false}
                                 title="드래그하여 이미지 폭 조절 · 더블클릭 초기화"
-                                className={`absolute top-0 right-0 h-full w-3 cursor-col-resize z-20 flex items-center justify-center ${
-                                  invColResizing ? "bg-emerald-400" : "bg-emerald-200/50 hover:bg-emerald-400"
-                                }`}
+                                style={{
+                                  position: "absolute",
+                                  top: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  width: 4,
+                                  cursor: "col-resize",
+                                  zIndex: 50,
+                                  backgroundColor: invColResizing ? "#10b981" : "transparent",
+                                  transition: "background-color 0.15s",
+                                }}
+                                onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = "#10b981"; }}
+                                onMouseLeave={(e) => { if (!invColResizing) (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; }}
                               />
                               {(() => {
                                 const imgSrc = pageImages[pn - 1];
                                 if (!imgSrc) return (
                                   <div className="flex items-center justify-center h-full p-3 text-[10px] text-gray-400">이미지 없음</div>
                                 );
+                                const currentZoom = pageZoom[pn] ?? 1;
+                                const currentPan = pagePan[pn] ?? { x: 0, y: 0 };
+                                const canPan = currentZoom > 1;
                                 return (
+                                  <div
+                                    style={{ position: "relative", width: "100%", height: "100%", cursor: canPan ? "grab" : "default" }}
+                                    onMouseDown={canPan ? (e => onImgPanStart(pn, e)) : undefined}
+                                  >
+                                    {/* 2026-07-21: 페이지별 줌 인/아웃 버튼 · 우측 상단 오버레이 */}
+                                    <div style={{
+                                      position: "absolute", top: 4, right: 4, zIndex: 5,
+                                      display: "flex", gap: 2, background: "rgba(255,255,255,0.9)",
+                                      borderRadius: 6, padding: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+                                    }} onClick={e => e.stopPropagation()}>
+                                      <button type="button" onClick={() => zoomOut(pn)}
+                                        title="축소" disabled={currentZoom <= 0.5}
+                                        style={{
+                                          width: 22, height: 22, fontSize: 14, fontWeight: 900,
+                                          color: currentZoom <= 0.5 ? "#cbd5e1" : "#475569",
+                                          cursor: currentZoom <= 0.5 ? "not-allowed" : "pointer",
+                                          background: "transparent", border: "none", borderRadius: 4,
+                                        }}>−</button>
+                                      <button type="button" onClick={() => zoomReset(pn)}
+                                        title={`초기화 (현재 ${Math.round(currentZoom * 100)}%)`}
+                                        style={{
+                                          minWidth: 34, height: 22, fontSize: 10, fontWeight: 800,
+                                          color: "#475569", cursor: "pointer", padding: "0 4px",
+                                          background: currentZoom !== 1 ? "#fef3c7" : "transparent",
+                                          border: "none", borderRadius: 4,
+                                        }}>{Math.round(currentZoom * 100)}%</button>
+                                      <button type="button" onClick={() => zoomIn(pn)}
+                                        title="확대" disabled={currentZoom >= 3}
+                                        style={{
+                                          width: 22, height: 22, fontSize: 14, fontWeight: 900,
+                                          color: currentZoom >= 3 ? "#cbd5e1" : "#475569",
+                                          cursor: currentZoom >= 3 ? "not-allowed" : "pointer",
+                                          background: "transparent", border: "none", borderRadius: 4,
+                                        }}>+</button>
+                                    </div>
                                   <button
                                     type="button"
                                     onClick={() => openPageModal(pn)}
-                                    className="block w-full h-full bg-gray-50 hover:bg-gray-100 transition cursor-zoom-in p-1.5"
-                                    title={`${pn}번 명세서 이미지 보기`}
+                                    className="block bg-gray-50 hover:bg-gray-100 transition cursor-zoom-in p-1.5"
+                                    style={{ width: "100%", height: "100%", maxWidth: effectiveInvColWidth - 12, overflow: "hidden" }}
+                                    title={`${pn}번 명세서 이미지 보기 (모달)`}
                                   >
                                     <img
                                       src={imgSrc}
@@ -2880,12 +3260,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       style={{
                                         display: "block",
                                         margin: "0 auto",
-                                        transform: `rotate(${rotation}deg)`,
+                                        transform: `translate(${currentPan.x}px, ${currentPan.y}px) rotate(${rotation}deg) scale(${currentZoom})`,
+                                        transformOrigin: "top center",
+                                        transition: panDragRef.current ? "none" : "transform 0.15s ease-out",
                                         maxWidth: (rotation === 90 || rotation === -90 || rotation === 270) ? "60%" : "100%",
                                         width: "auto",
                                         height: "auto",
                                         objectFit: "contain",
                                         userSelect: "none",
+                                        pointerEvents: canPan ? "none" : "auto",
                                       }}
                                     />
                                     <div className="mt-1 flex items-center justify-between px-0.5">
@@ -2900,6 +3283,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       >원본↗</a>
                                     </div>
                                   </button>
+                                  </div>
                                 );
                               })()}
                             </td>
@@ -3459,7 +3843,25 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                         setNameEditSearchDone(false);
                                         setNameDropdownRect(null);
                                       }
-                                      if (e.key === "Enter") e.currentTarget.blur();
+                                      if (e.key === "Enter") {
+                                        // 2026-07-21: Enter 시 · 편집값 저장 + 동의어 DB 자동 등록
+                                        //   dropdown 최상위 매치 있으면 그것으로 · 없으면 raw text edit
+                                        const v = editingNameVal.trim();
+                                        const orig = String(origCell ?? "").trim();
+                                        if (v && v !== orig) {
+                                          const topMatch = nameEditResults[0];
+                                          if (topMatch?.product_code) {
+                                            // DB 매치 있음 · 동의어 저장 (canonical name 으로 셀 교체)
+                                            setAutoSynonymMatches(prev => ({ ...prev, [ri]: { code: topMatch.product_code, name: topMatch.product_name } }));
+                                            setCancelledAutoSyn(prev => { const s = new Set(prev); s.delete(ri); return s; });
+                                            saveSynonym(ri, orig, topMatch.product_code, rawSupplierForRow || undefined, topMatch.product_name);
+                                          } else {
+                                            // DB 매치 없음 · 사용자 입력값 그대로 cellEdit 저장 (원본→편집값 동의어는 다음 dropdown 선택 때)
+                                            setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [ci]: v } }));
+                                          }
+                                        }
+                                        e.currentTarget.blur();
+                                      }
                                     }}
                                     onBlur={() => setTimeout(() => {
                                       setEditingNameRow(null);
@@ -3790,14 +4192,27 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                               >
                                                 {fmt(displayTotal)}원
                                               </span>
-                                              {disc && (
-                                                <span className={`text-[9px] font-bold bg-white/70 border rounded px-1.5 py-0.5 whitespace-nowrap ${disc.isEstimated ? "text-orange-700 border-orange-300" : "text-amber-700 border-amber-300"}`}
-                                                  title={disc.isEstimated
-                                                    ? `공급가액과 합계·세액 관계로 역산된 추정 에누리\n합계 ${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원 = ${fmt(displayTotal)}원`
-                                                    : `합계 ${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원 = ${fmt(displayTotal)}원`}>
-                                                  {disc.isEstimated ? "~" : ""}{disc.label} {fmt(disc.amount)}원 적용 전
-                                                </span>
-                                              )}
+                                              {disc && (() => {
+                                                const mode = discountApplyMode[pn] ?? "before";
+                                                const isAfter = mode === "after";
+                                                return (
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setDiscountApplyMode(prev => ({ ...prev, [pn]: isAfter ? "before" : "after" }))}
+                                                    className={`text-[9px] font-bold border rounded px-1.5 py-0.5 whitespace-nowrap cursor-pointer transition hover:bg-white ${
+                                                      isAfter
+                                                        ? "text-slate-600 bg-slate-50 border-slate-300"
+                                                        : disc.isEstimated
+                                                          ? "text-orange-700 bg-white/70 border-orange-300"
+                                                          : "text-amber-700 bg-white/70 border-amber-300"
+                                                    }`}
+                                                    title={isAfter
+                                                      ? `현재: 에누리 적용 후 (${fmt(stated ?? 0)}원) · 클릭 시 적용 전으로 전환`
+                                                      : `현재: 에누리 적용 전 (${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원) · 클릭 시 적용 후로 전환`}>
+                                                    {disc.isEstimated ? "~" : ""}{disc.label} {fmt(disc.amount)}원 {isAfter ? "적용 후 ✓" : "적용 전"}
+                                                  </button>
+                                                );
+                                              })()}
                                               {/* ── 소계 관계식 교차검증 배지 (공급가액 ≠ 합계+세액-에누리) ── */}
                                               {(() => {
                                                 const warn = getPageCrossCheckWarning(pn);
@@ -3828,6 +4243,35 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                 className="text-[9px] font-bold text-amber-700 hover:text-amber-900 bg-white/70 border border-amber-300 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap"
                                                 title="소계 금액 직접 입력"
                                               >✎ 수정</button>
+                                              {/* 2026-07-21: 첫 행 형식 → 다른 행 일괄 적용 (수량 · 금액만) */}
+                                              <button
+                                                type="button"
+                                                onClick={() => applyFirstRowPattern(pn, "수량")}
+                                                className="text-[9px] font-bold text-sky-700 hover:text-white hover:bg-sky-500 bg-sky-50 border border-sky-300 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap inline-flex items-center gap-0.5"
+                                                title="첫 행 수량 수정 형식을 나머지 행에 적용"
+                                              >🔁 수량 형식</button>
+                                              <button
+                                                type="button"
+                                                onClick={() => applyFirstRowPattern(pn, "금액")}
+                                                className="text-[9px] font-bold text-emerald-700 hover:text-white hover:bg-emerald-500 bg-emerald-50 border border-emerald-300 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap inline-flex items-center gap-0.5"
+                                                title="첫 행 금액 수정 형식을 나머지 행에 적용"
+                                              >🔁 금액 형식</button>
+                                              {/* 2026-07-21: 페이지별 2차보정 확정 버튼 · 이 페이지 데이터를 매칭해서 2차보정 표로 전송 */}
+                                              {!hasMissingSupplier && (
+                                                <button
+                                                  type="button"
+                                                  onClick={() => handleMatchPage(pn)}
+                                                  disabled={!!matchingPage[pn]}
+                                                  className="text-[10px] font-black text-white bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed border border-emerald-600 rounded px-2 py-0.5 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-sm"
+                                                  title={`${pn}번 명세서를 2차보정 표로 확정 전송`}
+                                                >
+                                                  {matchingPage[pn] ? (
+                                                    <><Loader2 size={11} className="animate-spin" /> 확정중...</>
+                                                  ) : (
+                                                    <><Check size={11} /> 확정 → 2차보정</>
+                                                  )}
+                                                </button>
+                                              )}
                                             </>
                                           )}
                                         </div>
@@ -5163,14 +5607,32 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                     <tr className="bg-emerald-50/60 border-b-2 border-emerald-200">
                       {CONF_HEADERS.map((h, origIdx) => {
                         const collapsed = collapsedConfCols.has(h);
+                        // 2026-07-21: 확정표도 컬럼별 명시 폭 · 상품명은 최소 160px (10글자+ 한줄 보장)
+                        const CONF_COL_WIDTHS: Record<string, number> = {
+                          "거래일": 82, "확정일": 82, "상품코드": 90, "상품명": 0, // 0 = 남은 공간
+                          "공급처": 90, "규격": 60, "유통기한": 82,
+                          "OCR수량": 55, "OCR단가": 78, "OCR금액": 92,
+                          "매입수량": 55, "매입단가": 78, "매입금액": 92, "매입총계": 92,
+                          "전표 매입단가": 78, "마스터단가": 78, "판매가": 78, "이익률": 60,
+                          "잔고": 82, "메모": 60,
+                        };
+                        const cw = CONF_COL_WIDTHS[h];
+                        const cellWidth = collapsed ? undefined : (cw && cw > 0 ? cw : undefined);
+                        const isNameCol = h === "상품명";
                         return (
                           <th key={origIdx}
                             onClick={() => setCollapsedConfCols(prev => { const s = new Set(prev); s.has(h) ? s.delete(h) : s.add(h); return s; })}
                             title={collapsed ? `${h} (클릭해서 펼치기)` : "클릭해서 접기"}
-                            style={{ cursor: 'pointer' }}
-                            className={`py-2 font-bold whitespace-nowrap select-none transition-colors hover:bg-emerald-100/60 ${
+                            style={{
+                              cursor: 'pointer',
+                              width: cellWidth,
+                              minWidth: collapsed ? 16 : (isNameCol ? 160 : (cellWidth ?? 40)),
+                            }}
+                            className={`py-2 font-bold select-none transition-colors hover:bg-emerald-100/60 ${
                               collapsed ? "px-1 text-center text-emerald-300 w-4 max-w-[16px]" :
-                              CONF_NUM.has(h) ? "px-3 text-right text-emerald-900" : "px-3 text-left text-emerald-900"
+                              CONF_NUM.has(h) ? "px-3 text-right text-emerald-900 whitespace-nowrap" :
+                              isNameCol ? "px-3 text-left text-emerald-900 break-words" :
+                              "px-3 text-left text-emerald-900 whitespace-nowrap"
                             }`}>
                             {collapsed ? "·" : h}
                           </th>
