@@ -2345,9 +2345,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   }, [selectCandidate, saveSynonym]);
 
   // ── 확정표에 저장 (외부 콜백에 ConfirmedItem[] 전달) ──────────────────────
-  const handleSaveConfirmed = useCallback(async () => {
+  // 2026-07-23 · filterPage 추가 · 특정 페이지만 저장 (사용자 요청: 페이지별 DB저장)
+  const handleSaveConfirmed = useCallback(async (filterPage?: number) => {
     if (!onSaveConfirmed || nameIdx < 0) return;
-    // 공급사 필수 입력 검증 (2026-07-15) — 미입력 페이지가 있으면 차단
     if (missingSupplierPages.length > 0) {
       const pagesLabel = missingSupplierPages.join(", ");
       window.alert(`공급사가 지정되지 않은 페이지가 있습니다: ${pagesLabel}번\n\n1차보정 표의 "공급처" 셀을 클릭하여 공급사명을 먼저 입력하세요.`);
@@ -2359,6 +2359,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     const items: ConfirmedItem[] = [];
     effectiveDispRows.forEach((row, ri) => {
       const pn = pageNums[ri];
+      if (filterPage != null && pn !== filterPage) return;
       const pageData = structuredPages.find(p => p.page === pn);
       // 공급처
       const rowSupp = ocrSuppIdx >= 0 ? String(row[ocrSuppIdx] ?? "").trim() : "";
@@ -6217,7 +6218,41 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       );
                                       if (h === "매입총계") return (
                                         <td key={origIdx} className="px-3 py-1.5 text-right font-black text-emerald-600 whitespace-nowrap">
-                                          {fmt(confPageTotals.get(pn) ?? 0)}원
+                                          <span className="inline-flex items-center gap-2 justify-end">
+                                            {fmt(confPageTotals.get(pn) ?? 0)}원
+                                            {/* 2026-07-23 · 사용자 요청: 페이지별 DB저장 버튼 · 기존 정보 있으면 확인 */}
+                                            <button type="button"
+                                              onClick={async () => {
+                                                if (!onSaveConfirmed) return;
+                                                const invDate = structuredPages.find(p => p.page === pn)?.meta?.date ?? "";
+                                                const supp = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta?.supplier ?? "";
+                                                if (!supp) { alert(`${pn}번 명세서 공급사 없음 · 저장 불가`); return; }
+                                                // 기존 DB 확인
+                                                try {
+                                                  const query = new URLSearchParams();
+                                                  if (invDate) query.set("invoice_date", invDate);
+                                                  query.set("supplier", supp);
+                                                  const chkRes = await fetch(`/api/ocr-confirmed-items?${query}`);
+                                                  const chk = chkRes.ok ? await chkRes.json() : { items: [] };
+                                                  const existing = Array.isArray(chk?.items) ? chk.items : [];
+                                                  if (existing.length > 0) {
+                                                    const sample = existing.slice(0, 3).map((it: any) => `· ${it.product_name} ${it.quantity ?? "-"}개`).join("\n");
+                                                    // 3-way 선택: 덮어쓰기 · 취소 (표에서 수정 후 재저장)
+                                                    const overwrite = window.confirm(`${supp} · ${invDate || "날짜 미상"} 이미 ${existing.length}건 저장됨:\n${sample}${existing.length > 3 ? `\n... 외 ${existing.length - 3}건` : ""}\n\n[확인] = 덮어쓰기 (기존 삭제 후 재저장)\n[취소] = 저장 안 함 (표에서 수정 후 다시 저장 가능)`);
+                                                    if (!overwrite) return;
+                                                    for (const it of existing) {
+                                                      if (it.id) await fetch(`/api/ocr-confirmed-items/${it.id}`, { method: "DELETE" });
+                                                    }
+                                                  }
+                                                } catch (e: any) {
+                                                  console.warn("[DB저장/확인] 실패 (계속 진행):", e?.message);
+                                                }
+                                                await handleSaveConfirmed(pn);
+                                              }}
+                                              className="text-[10px] font-black text-white bg-indigo-500 hover:bg-indigo-600 rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
+                                              title={`${pn}번 명세서 확정표를 DB 에 저장 · 기존 있으면 덮어쓰기 확인`}
+                                            >💾 DB저장</button>
+                                          </span>
                                         </td>
                                       );
                                       if (h === "공급사잔고" && pageBalance != null) return (
