@@ -643,6 +643,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   }, [dispHeaders, dispRows, pageNums, permanentlyDeletedRawRows, hiddenRawRows]);
 
   // ── 단일 셀 재추출 (2026-07-16 · 순환 wrap-around · 명세서 스코프) ──────────
+  // 2026-07-22 · matchItems 순환참조 방지용 ref (reextractOneCell 이 matchItems 를 사용하지만 forward reference)
+  const matchItemsRef = useRef<MatchedItem[] | null>(null);
   // 클릭할 때마다 다음 후보로 순환 · 마지막 소진 시 원본 복원 (wrap-around)
   // 소스: 해당 명세서(페이지) 값만 (otherPages: [] 전달)
   //   · 수량/단가 재추출 시 · 금액도 자동 계산 (수량 × 단가)
@@ -790,9 +792,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       }
 
       // 2026-07-22 · 단가 재추출 시 DB 근접값 우선 정렬 (사용자 요청)
-      //   matchItems[ri].matched.masterPrice 가 있으면 · 후보들을 DB 값과의 차이로 오름차순 정렬
+      //   matchItemsRef.current[ri].matched.masterPrice 가 있으면 · 후보들을 DB 값과의 차이로 오름차순 정렬
       if (colName === "단가" && candidateVals.length > 1) {
-        const dbPrice = matchItems?.[ri]?.matched?.masterPrice;
+        const dbPrice = matchItemsRef.current?.[ri]?.matched?.masterPrice;
         if (dbPrice != null && Number.isFinite(dbPrice) && dbPrice > 0) {
           const before = candidateVals.slice(0, 3).join(",");
           candidateVals = [...candidateVals].sort((a, b) =>
@@ -913,7 +915,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       });
       console.log(`[셀재추출/단일] ri=${ri} ci=${ci} (${colName}) → ${newVal} (${nextIdx + 1}/${candidateVals.length})`);
     }
-  }, [pageNums, structuredPages, pages, numericCellCycle, numericCellCandidates, noCandidateCells, matchItems]);
+  }, [pageNums, structuredPages, pages, numericCellCycle, numericCellCandidates, noCandidateCells]);
 
   const revertSingleRawRow = useCallback((ri: number) => {
     // 편집·보정·삭제 상태 초기화 (원본 복원부터)
@@ -1788,6 +1790,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // ── 상품명 보정 ──────────────────────────────────────────────────────────
   const [matching,         setMatching        ] = useState(false);
   const [matchItems,       setMatchItems      ] = useState<MatchedItem[] | null>(null);
+  // 2026-07-22 · matchItems ref 동기화 (reextractOneCell forward reference용)
+  useEffect(() => { matchItemsRef.current = matchItems; }, [matchItems]);
   // matchItems가 준비되면 products-map을 한 번 로드해서 code → current_stock 매핑 생성
   useEffect(() => {
     if (!matchItems || matchItems.length === 0) return;
