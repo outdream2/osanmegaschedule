@@ -4390,181 +4390,194 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     : "linear-gradient(90deg, #fef3c7 0%, #ffedd5 55%, #fed7aa 100%)"
                                 }}
                               >
-                                {/* 2026-07-22: 3줄 → 한 줄 (사용자 요청) · flex-nowrap 강제 + overflow-x-auto (좁으면 가로 스크롤) */}
-                                <div className="flex flex-row items-center gap-2 flex-nowrap px-2 py-1 overflow-x-auto">
+                                {/* 2026-07-22: 재디자인 — 3개 그룹 세로 쌓기 · 명확한 계층 */}
+                                <div className="flex flex-col gap-0 px-3 py-2">
 
-                                  {/* 1줄: 소계 라벨 + 공급사 잔고 + 공급사명 */}
-                                  <div className="flex items-center gap-1 flex-wrap min-w-0">
-                                    <span className="text-amber-700 font-black text-[10px] tracking-wide whitespace-nowrap bg-amber-200/60 border border-amber-300 rounded px-1 py-px">
-                                      {pn}번 소계
-                                    </span>
-                                    {/* 2026-07-22: 거래명세서 보기 버튼 삭제 (사용자 요청) */}
-                                    {/* 공급사 잔고 값 (있으면 · 공급사 앞에 표시) */}
-                                    {(() => {
-                                      const bal = pageSupplierBalances[pn] ?? pageBalanceOverride[pn];
-                                      const manualBal = pageBalanceModeManual.has(pn) ? parseNumber(pageBalanceManualInput[pn] ?? "") : 0;
-                                      const displayBal = bal ?? (manualBal > 0 ? manualBal : null);
-                                      if (displayBal == null || displayBal <= 0) return null;
-                                      return (
-                                        <span className="inline-flex items-center gap-1 text-[11px] font-black text-rose-700 bg-rose-50 border border-rose-300 rounded px-1.5 py-0.5 whitespace-nowrap"
-                                          title="공급사 잔고">
-                                          💰 {fmt(displayBal)}
-                                        </span>
-                                      );
-                                    })()}
-                                    {pageSupplier && (
-                                      <button
-                                        type="button"
-                                        onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplier); }}
-                                        className="text-amber-800 font-black text-[12px] whitespace-nowrap underline decoration-dotted decoration-amber-600 underline-offset-2 hover:text-amber-950 hover:decoration-solid cursor-pointer transition"
-                                        title="클릭하면 공급사 정보 조회·수정"
-                                      >
-                                        {pageSupplier}
-                                      </button>
-                                    )}
+                                  {/* ── 헤더 행: [번호+공급사명] ··· [소계금액+액션] ── */}
+                                  <div className="flex items-center justify-between gap-2 min-w-0">
+                                    {/* 좌: 번호 배지 + 공급사명 */}
+                                    <div className="flex items-center gap-1.5 min-w-0 shrink">
+                                      <span className="shrink-0 text-[10px] font-black text-amber-700 bg-amber-200 rounded px-1.5 py-px tracking-wide whitespace-nowrap">
+                                        {pn}번
+                                      </span>
+                                      {pageSupplier ? (
+                                        <button
+                                          type="button"
+                                          onClick={e => { e.stopPropagation(); openVendorEdit(pageSupplier); }}
+                                          className="text-[13px] font-black text-amber-900 whitespace-nowrap hover:text-amber-600 cursor-pointer transition truncate max-w-[140px]"
+                                          title="클릭하면 공급사 정보 조회·수정"
+                                        >
+                                          {pageSupplier}
+                                        </button>
+                                      ) : (
+                                        <span className="text-[12px] font-bold text-amber-400 italic">공급사 미지정</span>
+                                      )}
+                                      {/* 잔고 인라인 표시 (소형) */}
+                                      {(() => {
+                                        const bal = pageSupplierBalances[pn] ?? pageBalanceOverride[pn];
+                                        const manualBal = pageBalanceModeManual.has(pn) ? parseNumber(pageBalanceManualInput[pn] ?? "") : 0;
+                                        const displayBal = bal ?? (manualBal > 0 ? manualBal : null);
+                                        if (displayBal == null || displayBal <= 0) return null;
+                                        return (
+                                          <span className="shrink-0 text-[11px] font-bold text-rose-600 whitespace-nowrap" title="공급사 잔고">
+                                            잔 {fmt(displayBal)}원
+                                          </span>
+                                        );
+                                      })()}
+                                    </div>
+
+                                    {/* 우: 소계금액 + 확정 버튼 */}
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      {(() => {
+                                        const displayTotal = getPageDisplayTotal(pn);
+                                        const pageData = structuredPages.find(p => p.page === pn);
+                                        const stated = pageData?.meta?.total ?? null;
+                                        const disc = getPageDiscount(pn);
+                                        const isCustom = pageSubtotalChoices[pn] === "custom";
+                                        return isCustom ? (
+                                          <div className="flex items-center gap-1">
+                                            <input
+                                              type="text"
+                                              inputMode="numeric"
+                                              value={(() => {
+                                                const raw = String(pageSubtotalCustom[pn] ?? "");
+                                                const n = parseNumber(raw);
+                                                return n > 0 ? fmt(n) : raw;
+                                              })()}
+                                              onChange={e => {
+                                                const raw = e.target.value.replace(/[^\d-]/g, "");
+                                                setPageSubtotalCustom(prev => ({ ...prev, [pn]: parseNumber(raw) }));
+                                              }}
+                                              placeholder="금액"
+                                              className="w-[110px] text-[15px] font-black text-amber-900 bg-white border-2 border-amber-400 rounded px-2 py-0.5 focus:outline-none focus:border-amber-600 text-right"
+                                              autoFocus
+                                            />
+                                            <span className="font-black text-[15px] text-amber-900">원</span>
+                                            <button
+                                              type="button"
+                                              onClick={() => setPageSubtotalChoices(prev => { const n = { ...prev }; delete n[pn]; return n; })}
+                                              className="text-[10px] font-bold text-slate-500 hover:text-slate-700 bg-white/70 border border-slate-300 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap"
+                                              title="자동값으로 되돌리기"
+                                            >취소</button>
+                                          </div>
+                                        ) : (
+                                          <div className="flex items-center gap-1.5">
+                                            <span
+                                              className="text-[17px] font-black tracking-tight whitespace-nowrap text-amber-900"
+                                              title={disc
+                                                ? `명세서 합계 ${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원 (에누리 적용 전 금액)`
+                                                : `명세서 합계 ${fmt(displayTotal)}원`}
+                                            >
+                                              {fmt(displayTotal)}원
+                                            </span>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                setPageSubtotalChoices(prev => ({ ...prev, [pn]: "custom" }));
+                                                setPageSubtotalCustom(prev => ({ ...prev, [pn]: displayTotal }));
+                                              }}
+                                              className="text-[10px] font-semibold text-amber-600 hover:text-amber-900 cursor-pointer transition whitespace-nowrap"
+                                              title="소계 금액 직접 입력"
+                                            >✎</button>
+                                          </div>
+                                        );
+                                      })()}
+                                      {/* 확정 → 2차보정 버튼 */}
+                                      {!hasMissingSupplier && (() => {
+                                        const isConfirmed = confirmedPages.has(pn);
+                                        return (
+                                          <button
+                                            type="button"
+                                            onClick={() => handleMatchPage(pn)}
+                                            disabled={!!matchingPage[pn]}
+                                            className={`text-[11px] font-black text-white disabled:bg-slate-300 disabled:cursor-not-allowed border rounded px-2.5 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-sm transition ${
+                                              isConfirmed
+                                                ? "bg-violet-500 hover:bg-violet-600 border-violet-600"
+                                                : "bg-emerald-500 hover:bg-emerald-600 border-emerald-600"
+                                            }`}
+                                            title={isConfirmed
+                                              ? `${pn}번 명세서 · 확정 완료 · 다시 클릭하면 재매칭`
+                                              : `${pn}번 명세서를 2차보정 표로 확정 전송`}
+                                          >
+                                            {matchingPage[pn] ? (
+                                              <><Loader2 size={11} className="animate-spin" /> 확정중...</>
+                                            ) : isConfirmed ? (
+                                              <><Check size={11} /> 완료</>
+                                            ) : (
+                                              <><Check size={11} /> 확정</>
+                                            )}
+                                          </button>
+                                        );
+                                      })()}
+                                    </div>
                                   </div>
 
-                                  {/* 2줄: 소계 금액 + 교차검증 · flex-nowrap 유지 */}
-                                  <div className="flex items-center justify-start flex-nowrap gap-1 overflow-x-auto">
-                                    {(() => {
-                                      const displayTotal = getPageDisplayTotal(pn);
-                                      const pageData = structuredPages.find(p => p.page === pn);
-                                      const stated = pageData?.meta?.total ?? null;
-                                      const disc = getPageDiscount(pn);
-                                      const isCustom = pageSubtotalChoices[pn] === "custom";
-                                      return (
-                                        <div className="flex items-center gap-1">
-                                          {isCustom ? (
-                                            <>
-                                              <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                value={(() => {
-                                                  const raw = String(pageSubtotalCustom[pn] ?? "");
-                                                  const n = parseNumber(raw);
-                                                  return n > 0 ? fmt(n) : raw;
-                                                })()}
-                                                onChange={e => {
-                                                  const raw = e.target.value.replace(/[^\d-]/g, "");
-                                                  setPageSubtotalCustom(prev => ({ ...prev, [pn]: parseNumber(raw) }));
-                                                }}
-                                                placeholder="금액"
-                                                className="w-[120px] text-base font-black text-amber-900 bg-white border-2 border-amber-400 rounded px-2 py-0.5 focus:outline-none focus:border-amber-600 text-right"
-                                                autoFocus
-                                              />
-                                              <span className="font-black text-base text-amber-900">원</span>
-                                              <button
-                                                type="button"
-                                                onClick={() => setPageSubtotalChoices(prev => { const n = { ...prev }; delete n[pn]; return n; })}
-                                                className="text-[10px] font-bold text-slate-500 hover:text-slate-700 bg-white/70 border border-slate-300 rounded px-1.5 py-0.5 cursor-pointer"
-                                                title="자동값으로 되돌리기"
-                                              >취소</button>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <span
-                                                className="font-black text-base tracking-tight whitespace-nowrap text-amber-900"
-                                                title={disc
-                                                  ? `명세서 합계 ${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원 (에누리 적용 전 금액)`
-                                                  : `명세서 합계 ${fmt(displayTotal)}원`}
-                                              >
-                                                {fmt(displayTotal)}원
-                                              </span>
-                                              {disc && (() => {
-                                                const mode = discountApplyMode[pn] ?? "before";
-                                                const isAfter = mode === "after";
-                                                return (
-                                                  <button
-                                                    type="button"
-                                                    onClick={() => setDiscountApplyMode(prev => ({ ...prev, [pn]: isAfter ? "before" : "after" }))}
-                                                    className={`text-[11px] font-semibold whitespace-nowrap cursor-pointer transition underline-offset-2 hover:underline ${
-                                                      isAfter
-                                                        ? "text-slate-500"
-                                                        : disc.isEstimated
-                                                          ? "text-orange-600"
-                                                          : "text-amber-700"
-                                                    }`}
-                                                    title={isAfter
-                                                      ? `현재: 에누리 적용 후 (${fmt(stated ?? 0)}원) · 클릭 시 적용 전으로 전환`
-                                                      : `현재: 에누리 적용 전 (${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원) · 클릭 시 적용 후로 전환`}>
-                                                    {disc.isEstimated ? "~" : ""}{disc.label} {fmt(disc.amount)}원 {isAfter ? "적용 후 ✓" : "적용 전"}
-                                                  </button>
-                                                );
-                                              })()}
-                                              {/* 2026-07-22 · 배지 → 텍스트 (사용자 요청 "너무 산만") */}
-                                              {(() => {
-                                                const warn = getPageCrossCheckWarning(pn);
-                                                if (!warn) return null;
-                                                return (
-                                                  <span
-                                                    className="text-[11px] font-semibold text-orange-600 whitespace-nowrap"
-                                                    title={`관계식 불일치:\n${warn}\n\n공급가액 = 합계 + 세액 - 에누리 조건이 맞지 않습니다.\nOCR 오독 가능성: 세액이 공급가액과 같으면 세액 오독 의심`}
-                                                  >
-                                                    관계식 불일치
-                                                  </span>
-                                                );
-                                              })()}
-                                              {/* ── 교차검증 배지 (행합 · 수량×단가합 · OCR총계 대조) ──
-                                                   2026-07-22: 불일치 시 두 값(행합/OCR) 클릭해서 소계로 채택 가능 */}
-                                              <CrossCheckBadge
-                                                pn={pn}
-                                                effectivePageTotals={effectivePageTotals}
-                                                effectivePageQtyPrice={effectivePageQtyPrice}
-                                                statedTotal={stated}
-                                                pageQtyPriceAmtMismatch={pageQtyPriceAmtMismatch}
-                                                currentChoice={pageSubtotalChoices[pn]}
-                                                onChooseSubtotal={(pageN, choice) => {
-                                                  setPageSubtotalChoices(prev => ({ ...prev, [pageN]: choice }));
-                                                }}
-                                              />
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  setPageSubtotalChoices(prev => ({ ...prev, [pn]: "custom" }));
-                                                  setPageSubtotalCustom(prev => ({ ...prev, [pn]: displayTotal }));
-                                                }}
-                                                className="text-[10px] font-bold text-amber-700 hover:text-amber-900 bg-white/70 border border-amber-300 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap"
-                                                title="소계 금액 직접 입력"
-                                              >✎ 수정</button>
-                                              {/* 2026-07-22: 수량/금액 형식 · 전체 형식 맞춤 버튼 삭제 (사용자 요청) */}
-                                              {/* 2026-07-21: 페이지별 2차보정 확정 버튼 · 이 페이지 데이터를 매칭해서 2차보정 표로 전송
-                                                   2026-07-22: 확정 완료 시 색 변경 (emerald → violet + ✓ 완료) */}
-                                              {!hasMissingSupplier && (() => {
-                                                const isConfirmed = confirmedPages.has(pn);
-                                                return (
-                                                <button
-                                                  type="button"
-                                                  onClick={() => handleMatchPage(pn)}
-                                                  disabled={!!matchingPage[pn]}
-                                                  className={`text-[11px] font-black text-white disabled:bg-slate-300 disabled:cursor-not-allowed border rounded px-2 py-0.5 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-sm ${
-                                                    isConfirmed
-                                                      ? "bg-violet-500 hover:bg-violet-600 border-violet-600"
-                                                      : "bg-emerald-500 hover:bg-emerald-600 border-emerald-600"
-                                                  }`}
-                                                  title={isConfirmed
-                                                    ? `${pn}번 명세서 · 확정 완료 · 다시 클릭하면 재매칭`
-                                                    : `${pn}번 명세서를 2차보정 표로 확정 전송`}
-                                                >
-                                                  {matchingPage[pn] ? (
-                                                    <><Loader2 size={11} className="animate-spin" /> 확정중...</>
-                                                  ) : isConfirmed ? (
-                                                    <><Check size={11} /> 확정 완료 (재매칭)</>
-                                                  ) : (
-                                                    <><Check size={11} /> 확정 → 2차보정</>
-                                                  )}
-                                                </button>
-                                                );
-                                              })()}
-                                            </>
-                                          )}
-                                        </div>
-                                      );
-                                    })()}
-                                  </div>
+                                  {/* ── 검증 행: 에누리 · 관계식 경고 · CrossCheckBadge ── */}
+                                  {(() => {
+                                    const displayTotal = getPageDisplayTotal(pn);
+                                    const pageData = structuredPages.find(p => p.page === pn);
+                                    const stated = pageData?.meta?.total ?? null;
+                                    const disc = getPageDiscount(pn);
+                                    const warn = getPageCrossCheckWarning(pn);
+                                    const isCustom = pageSubtotalChoices[pn] === "custom";
+                                    const hasBadge = !isCustom;
+                                    if (!disc && !warn && !hasBadge) return null;
+                                    return (
+                                      <div className="flex items-center gap-2 flex-wrap mt-0.5 pl-0.5">
+                                        {disc && (() => {
+                                          const mode = discountApplyMode[pn] ?? "before";
+                                          const isAfter = mode === "after";
+                                          return (
+                                            <button
+                                              type="button"
+                                              onClick={() => setDiscountApplyMode(prev => ({ ...prev, [pn]: isAfter ? "before" : "after" }))}
+                                              className={`text-[11px] font-semibold whitespace-nowrap cursor-pointer transition underline-offset-2 hover:underline ${
+                                                isAfter
+                                                  ? "text-slate-400"
+                                                  : disc.isEstimated
+                                                    ? "text-orange-500"
+                                                    : "text-amber-600"
+                                              }`}
+                                              title={isAfter
+                                                ? `현재: 에누리 적용 후 (${fmt(stated ?? 0)}원) · 클릭 시 적용 전으로 전환`
+                                                : `현재: 에누리 적용 전 (${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원) · 클릭 시 적용 후로 전환`}
+                                            >
+                                              {disc.isEstimated ? "~" : ""}{disc.label} {fmt(disc.amount)}원 {isAfter ? "적용 후 ✓" : "적용 전"}
+                                            </button>
+                                          );
+                                        })()}
+                                        {warn && (
+                                          <span
+                                            className="text-[10px] font-semibold text-orange-500 whitespace-nowrap"
+                                            title={`관계식 불일치:\n${warn}\n\n공급가액 = 합계 + 세액 - 에누리 조건이 맞지 않습니다.\nOCR 오독 가능성: 세액이 공급가액과 같으면 세액 오독 의심`}
+                                          >
+                                            관계식 불일치
+                                          </span>
+                                        )}
+                                        {hasBadge && (() => {
+                                          const pageData2 = structuredPages.find(p => p.page === pn);
+                                          const stated2 = pageData2?.meta?.total ?? null;
+                                          return (
+                                            <CrossCheckBadge
+                                              pn={pn}
+                                              effectivePageTotals={effectivePageTotals}
+                                              effectivePageQtyPrice={effectivePageQtyPrice}
+                                              statedTotal={stated2}
+                                              pageQtyPriceAmtMismatch={pageQtyPriceAmtMismatch}
+                                              currentChoice={pageSubtotalChoices[pn]}
+                                              onChooseSubtotal={(pageN, choice) => {
+                                                setPageSubtotalChoices(prev => ({ ...prev, [pageN]: choice }));
+                                              }}
+                                            />
+                                          );
+                                        })()}
+                                      </div>
+                                    );
+                                  })()}
 
-                                  {/* 3줄: 공급사 잔고 드롭박스 + 직접입력 + 기록안함 + 확인 */}
-                                  <div className="flex items-center gap-1 flex-wrap justify-start border-t border-amber-300/50 pt-0.5">
-                                    <span className="text-rose-600 font-bold text-[11px] whitespace-nowrap">공급사 잔고</span>
+                                  {/* ── 잔고 행 ── */}
+                                  <div className="flex items-center gap-1.5 flex-wrap mt-1.5 pt-1.5 border-t border-amber-300/40">
+                                    <span className="text-[10px] font-semibold text-rose-500 whitespace-nowrap">잔고</span>
                                     {(() => {
                                       const allAmts = pageAmountCandidates.get(pn) ?? [];
                                       // 정렬 우선순위:
