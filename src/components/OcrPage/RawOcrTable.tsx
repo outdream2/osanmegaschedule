@@ -4127,10 +4127,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     const ocrPrice = typeof cell === "number" ? cell : parseNumber(cell);
                                     const diffRatio = ocrPrice > 0 ? Math.abs(ocrPrice - dbPrice) / ocrPrice : 1;
                                     const isBigDiff = diffRatio > 0.5;
+                                    // 2026-07-23 · 사용자 요청: 사입가 < 단가(OCR) 이면 빨강 강조 (역마진 경고)
+                                    const isSaipLower = ocrPrice > 0 && dbPrice < ocrPrice;
+                                    const cls = isSaipLower ? "text-rose-600 font-black" : isBigDiff ? "text-rose-500" : "text-indigo-600";
                                     return (
                                       <span
-                                        className={`text-[11px] font-bold font-mono ${isBigDiff ? "text-rose-500" : "text-indigo-600"}`}
-                                        title={`사입단가 ${fmt(dbPrice)}원${isBigDiff && ocrPrice > 0 ? ` (OCR 값과 ${Math.round(diffRatio*100)}% 차이)` : ""}`}
+                                        className={`text-[11px] font-mono ${cls}`}
+                                        title={`사입단가 ${fmt(dbPrice)}원${isSaipLower ? ` (⚠ 단가 ${fmt(ocrPrice)}원 보다 작음 · 역마진)` : isBigDiff && ocrPrice > 0 ? ` (OCR 값과 ${Math.round(diffRatio*100)}% 차이)` : ""}`}
                                       >사입 {fmt(dbPrice)}</span>
                                     );
                                   })()}
