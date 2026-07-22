@@ -1639,8 +1639,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const expInputMinW = _cw < 500 ? "6rem" : _cw < 700 ? "7rem" : "7.5rem";
   // 재추출 버튼 크기 (px): 좁으면 w-4 h-4, 넓으면 w-5 h-5
   const reextBtnCls = _cw < 500 ? "w-4 h-4 text-[10px]" : "w-5 h-5 text-[12px]";
-  // flex-col(값+버튼) → 항상 flex-row inline · 행 높이 최소화
-  const numCellInnerCls = "flex flex-row items-center justify-end gap-1";
+  // 2026-07-22 · 사용자 요청 "재추출 버튼 아래로" · flex-col 로 값(위) + 버튼(아래)
+  const numCellInnerCls = "flex flex-col items-end gap-0.5";
 
   useEffect(() => {
     try { localStorage.setItem("ocr-invoice-col-width", String(Math.round(invoiceColWidth))); } catch { /* empty */ }
@@ -4390,7 +4390,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     : "linear-gradient(90deg, #fef3c7 0%, #ffedd5 55%, #fed7aa 100%)"
                                 }}
                               >
-                                <div className="flex flex-col gap-1 px-2 py-1">
+                                {/* 2026-07-22: 3줄 → 한 줄 (사용자 요청) · flex-nowrap 강제 + overflow-x-auto (좁으면 가로 스크롤) */}
+                                <div className="flex flex-row items-center gap-2 flex-nowrap px-2 py-1 overflow-x-auto">
 
                                   {/* 1줄: 소계 라벨 + 공급사 잔고 + 공급사명 */}
                                   <div className="flex items-center gap-1 flex-wrap min-w-0">
