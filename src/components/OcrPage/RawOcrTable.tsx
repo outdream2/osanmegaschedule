@@ -64,8 +64,20 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const keepCols = masterH.map((_, ci) =>
     rawRows.some(r => r[ci] != null && String(r[ci]).trim() !== "")
   );
-  const dispHeaders = masterH.filter((_, ci) => keepCols[ci]);
-  const dispRows    = rawRows.map(r => r.filter((_, ci) => keepCols[ci]));
+  // 2026-07-22 · 유통기한 컬럼 강제 표시 (사용자 요청 "1차보정에 유통기한 나오게")
+  //   데이터가 없어도 컬럼은 항상 렌더 · 사용자가 수동 입력 가능
+  const expiryVariants = ["유통기한", "유효기한", "유통기간"];
+  const hasExpiryInMaster = expiryVariants.some(v => masterH.indexOf(v) >= 0);
+  masterH.forEach((h, ci) => {
+    if (expiryVariants.includes(h)) keepCols[ci] = true; // 데이터 없어도 유지
+  });
+  let dispHeaders: string[] = masterH.filter((_, ci) => keepCols[ci]);
+  let dispRows: (string | number | null)[][] = rawRows.map(r => r.filter((_, ci) => keepCols[ci]));
+  // masterH 에 유통기한 계열이 아예 없으면 · 강제로 추가 (빈 컬럼)
+  if (!hasExpiryInMaster) {
+    dispHeaders = [...dispHeaders, "유통기한"];
+    dispRows = dispRows.map(r => [...r, null]);
+  }
 
   const amtIdx  = dispHeaders.indexOf("금액");
   const nameIdx = dispHeaders.indexOf("품명");
