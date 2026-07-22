@@ -2869,25 +2869,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       );
     })()}
 
-    {/* ── 이미지 모달 (줌·드래그 · ESC 로 닫기) ── */}
-    {modalImg && (
-      <ImageZoomModal
-        modalImg={modalImg}
-        modalLabel={modalLabel}
-        zoom={zoom}
-        pan={pan}
-        isDragging={isDragging}
-        rotation={rotation}
-        viewportCbRef={viewportCbRef}
-        closeModal={closeModal}
-        setZoom={setZoom}
-        setPan={setPan}
-        onMouseDown={onMouseDown}
-        onMouseMove={onMouseMove}
-        onMouseUp={onMouseUp}
-        onDblClick={onDblClick}
-      />
-    )}
+    {/* 2026-07-22: 이미지 모달 렌더링 제거 (사용자 요청) · state/함수는 유지 (다른 코드 참조 대비) */}
 
     {/* ── 공급사 조회·수정 모달 (2026-07-18 · 공급사명 클릭 시) ── */}
     {vendorEditModal && (
@@ -3956,7 +3938,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       <button
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); reextractOneCell(ri, ci, h as "수량" | "단가"); }}
-                                        className={`opacity-0 group-hover:opacity-100 shrink-0 w-5 h-5 flex items-center justify-center text-[12px] rounded transition cursor-pointer ${
+                                        className={`opacity-70 hover:opacity-100 shrink-0 w-5 h-5 flex items-center justify-center text-[12px] rounded transition cursor-pointer ${
                                           noCands
                                             ? "bg-rose-100 text-rose-500 hover:bg-rose-200"
                                             : cycleIdx >= 0
@@ -4225,7 +4207,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   <button
                                     type="button"
                                     onClick={e => { e.stopPropagation(); reextractOneCell(ri, ci, "유통기한"); }}
-                                    className={`opacity-0 group-hover:opacity-100 shrink-0 w-5 h-5 flex items-center justify-center text-[12px] rounded transition cursor-pointer ${
+                                    className={`opacity-70 hover:opacity-100 shrink-0 w-5 h-5 flex items-center justify-center text-[12px] rounded transition cursor-pointer ${
                                       expNoCands
                                         ? "bg-rose-100 text-rose-500 hover:bg-rose-200"
                                         : expCycleIdx >= 0
