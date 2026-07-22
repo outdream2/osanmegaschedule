@@ -2517,6 +2517,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [matchingPage, setMatchingPage] = useState<Record<number, boolean>>({});
   // 2026-07-22 · 확정 → 2차보정 완료 페이지 추적 · 버튼 색 변경 (사용자 요청)
   const [confirmedPages, setConfirmedPages] = useState<Set<number>>(new Set());
+  // 2026-07-22 · DB 에서 채워진 셀 추적 (사용자 요청: "옆에 표시해")
+  const [dbFilledCells, setDbFilledCells] = useState<Set<string>>(new Set()); // key: `${ri}-${ci}`
 
   const handleMatchPage = useCallback(async (targetPage: number) => {
     if (nameIdx < 0) return;
@@ -2572,7 +2574,63 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     }
   }, [dispRows, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier]);
 
-  // 2026-07-22: fillPageUnitPricesFromDB 함수 제거 (사용자 요청 "db단가 만들지 말고")
+  // 2026-07-22 · 첫행보정 후 단가 비어있는 행에 대해 · 상품명+공급사로 products DB 조회 → 사입단가(purchase_price) 자동 채움
+  //   사용자 원문: "단가가 정보가없는 경우 · 상품명과 공급사로 product db 에 정보를 찾아서 사입단가를 찾아"
+  //   호출 조건: applyFirstRowPattern(pn, "단가") 이후 실행 · 이미 채워진 단가는 skip
+  const fillMissingPricesFromDB = useCallback(async (pn: number) => {
+    const priIdx = dispHeaders.indexOf("단가");
+    if (priIdx < 0 || nameIdx < 0) return;
+    // 대상: 이 페이지 · 삭제 X · 단가 없음 · 품명 있음
+    const targets: { rowIdx: number; name: string; supplier: string }[] = [];
+    dispRows.forEach((row, ri) => {
+      if (pageNums[ri] !== pn) return;
+      if (permanentlyDeletedRawRows.has(ri) || hiddenRawRows.has(ri) || isRowDbDeleted(ri)) return;
+      // 현재 유효 단가: cellEdits 우선, 없으면 dispRows
+      const effective = cellEdits[ri]?.[priIdx] ?? row[priIdx];
+      const n = effective == null ? 0 : parseNumber(effective);
+      if (n > 0) return;  // 이미 단가 있음 · skip
+      const rawName = String(row[nameIdx] ?? "").trim();
+      if (!rawName || isNonProductText(rawName)) return;
+      const sup = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? globalSupplier ?? "";
+      targets.push({ rowIdx: ri, name: rawName, supplier: sup });
+    });
+    if (targets.length === 0) return;
+    try {
+      const res = await fetch("/api/ocr-match", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ names: targets.map(t => t.name), suppliers: targets.map(t => t.supplier) }),
+      });
+      const data = await res.json();
+      const matches: MatchedItem[] = data.matches ?? [];
+      let filled = 0;
+      const dbCellKeys: string[] = [];
+      setCellEdits(prev => {
+        const next = { ...prev };
+        targets.forEach((t, ai) => {
+          const mp = matches[ai]?.matched?.masterPrice;
+          if (mp != null && Number.isFinite(mp) && mp > 0) {
+            next[t.rowIdx] = { ...(next[t.rowIdx] ?? {}), [priIdx]: mp };
+            dbCellKeys.push(`${t.rowIdx}-${priIdx}`);
+            filled++;
+          }
+        });
+        return next;
+      });
+      // DB 채운 셀 마킹 (렌더에서 "DB" 배지 표시)
+      if (dbCellKeys.length > 0) {
+        setDbFilledCells(prev => new Set([...prev, ...dbCellKeys]));
+      }
+      // matchItems 도 채워두면 2차보정 재사용
+      setMatchItems(prev => {
+        const arr = prev ? [...prev] : dispRows.map(() => ({ input: "", matched: null }));
+        targets.forEach((t, ai) => { if (matches[ai]) arr[t.rowIdx] = matches[ai]; });
+        return arr;
+      });
+      console.log(`[fillMissingPricesFromDB] page ${pn}: ${filled}/${targets.length} 행 사입단가 DB 채움`);
+    } catch (e: any) {
+      console.warn(`[fillMissingPricesFromDB] page ${pn}: DB 조회 실패`, e?.message);
+    }
+  }, [dispHeaders, nameIdx, dispRows, pageNums, permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted, cellEdits, rawSupplierByPage, structuredPages, globalSupplier]);
 
   // ── 확정 표 ──────────────────────────────────────────────────────────────
   const CONF_HEADERS = [
@@ -3942,6 +4000,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     })()}
                                     {hasDirectEdit && <span className="text-[10px] bg-indigo-100 text-indigo-600 px-1 rounded font-bold">수정</span>}
                                     {isCorrectedAmt && <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>}
+                                    {/* 2026-07-22 · DB 에서 자동 채운 셀 마커 (사용자 요청) */}
+                                    {dbFilledCells.has(`${ri}-${ci}`) && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1 rounded font-black" title="products DB 에서 자동 채움">DB</span>}
                                     <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                   </span>
                                   {/* 2026-07-22: 재추출 버튼 셀 값 아래 (다음줄) · 항상 표시 · 사용자 요청 */}
@@ -4271,12 +4331,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           <td colSpan={rawColSpan} className="px-2 py-1 text-right bg-sky-50/40 border-b border-sky-100">
                             <button
                               type="button"
-                              onClick={() => {
+                              onClick={async () => {
                                 applyFirstRowPattern(pn, "수량");
                                 applyFirstRowPattern(pn, "단가");
+                                // 2026-07-22: 단가 비어있는 행은 상품명+공급사로 products DB 조회하여 사입단가 자동 채움
+                                await fillMissingPricesFromDB(pn);
                               }}
                               className="text-[10px] font-black text-white bg-sky-500 hover:bg-sky-600 rounded px-2 py-1 cursor-pointer shadow-sm whitespace-nowrap"
-                              title="윗행에서 보정한 수량·단가 위치를 기준으로 아래행들에 같은 위치의 값 자동 채움"
+                              title="윗행 수량·단가 위치를 기준으로 아래행 채움 · 단가 없는 행은 상품명+공급사로 DB 조회 (마커: DB)"
                             >첫행보정</button>
                           </td>
                         </tr>
