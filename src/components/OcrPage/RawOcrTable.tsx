@@ -2572,6 +2572,58 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     }
   }, [dispRows, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier]);
 
+  // 2026-07-22 · 상품명 → products DB masterPrice 조회 → 단가 자동 채움 (사용자 요청)
+  //   "상품명의 단가를 찾아서 가장 근접한 데이터를 단가에 넣어줄수있어"
+  //   1) 페이지 행의 품명·공급사 → /api/ocr-match POST
+  //   2) 응답의 matched.masterPrice 를 단가 컬럼에 cellEdits 로 주입
+  //   3) 금액은 Q*P 자동계산 (effectiveDispRows)
+  const fillPageUnitPricesFromDB = useCallback(async (targetPage: number) => {
+    if (nameIdx < 0) return;
+    const priIdx = dispHeaders.indexOf("단가");
+    if (priIdx < 0) { alert("단가 컬럼이 없습니다."); return; }
+    const pairs = dispRows.map((row, ri) => {
+      if (pageNums[ri] !== targetPage) return null;
+      const rawName = String(row[nameIdx] ?? "").trim();
+      let sup = rawSupplierByPage[targetPage] ?? "";
+      if (!sup) sup = structuredPages.find(p => p.page === targetPage)?.meta.supplier ?? globalSupplier ?? "";
+      const skip = !rawName || isNonProductText(rawName)
+        || hiddenRawRows.has(ri) || permanentlyDeletedRawRows.has(ri) || isRowDbDeleted(ri);
+      return { rowIdx: ri, name: rawName, supplier: sup, skip };
+    }).filter((x): x is { rowIdx: number; name: string; supplier: string; skip: boolean } => x !== null);
+    const active = pairs.filter(p => !p.skip);
+    if (active.length === 0) { alert("적용할 상품 행이 없습니다."); return; }
+    try {
+      const res = await fetch("/api/ocr-match", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ names: active.map(p => p.name), suppliers: active.map(p => p.supplier) }),
+      });
+      const data = await res.json();
+      const matches: MatchedItem[] = data.matches ?? [];
+      // matchItems 도 함께 업데이트 (2차보정 재사용)
+      setMatchItems(prev => {
+        const next = prev ? [...prev] : dispRows.map(() => ({ input: "", matched: null }));
+        active.forEach((p, ai) => { next[p.rowIdx] = matches[ai] ?? { input: "", matched: null }; });
+        return next;
+      });
+      // 단가 채움
+      let filled = 0;
+      setCellEdits(prev => {
+        const next = { ...prev };
+        active.forEach((p, ai) => {
+          const mp = matches[ai]?.matched?.masterPrice;
+          if (mp != null && Number.isFinite(mp) && mp > 0) {
+            next[p.rowIdx] = { ...(next[p.rowIdx] ?? {}), [priIdx]: mp };
+            filled++;
+          }
+        });
+        return next;
+      });
+      console.log(`[fillPageUnitPricesFromDB] page ${targetPage}: ${filled}/${active.length} 행 단가 DB 채움`);
+    } catch (e: any) {
+      alert(`DB 단가 조회 실패: ${e?.message ?? "unknown"}`);
+    }
+  }, [nameIdx, dispHeaders, dispRows, pageNums, rawSupplierByPage, structuredPages, globalSupplier, hiddenRawRows, permanentlyDeletedRawRows, isRowDbDeleted]);
+
   // ── 확정 표 ──────────────────────────────────────────────────────────────
   const CONF_HEADERS = [
     "거래일","확정일","상품코드","상품명",
@@ -4276,6 +4328,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               className="text-[10px] font-black text-white bg-sky-500 hover:bg-sky-600 rounded px-2 py-1 cursor-pointer shadow-sm whitespace-nowrap"
                               title="윗행에서 보정한 수량·단가 위치를 기준으로 아래행들에 같은 위치의 값 자동 채움"
                             >첫행보정</button>
+                            {/* 2026-07-22 · DB 단가 자동 채움 · products.purchase_price 조회 → 단가 셀 주입 */}
+                            <button
+                              type="button"
+                              onClick={() => fillPageUnitPricesFromDB(pn)}
+                              className="ml-1 text-[10px] font-black text-white bg-indigo-500 hover:bg-indigo-600 rounded px-2 py-1 cursor-pointer shadow-sm whitespace-nowrap"
+                              title="이 명세서 상품명들을 products DB 로 매칭 · 마스터 단가 를 단가 셀에 자동 채움 (금액=Q×P 자동재계산)"
+                            >🏷️ DB단가</button>
                           </td>
                         </tr>
                       )}
