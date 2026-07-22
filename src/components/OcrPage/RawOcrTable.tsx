@@ -2632,6 +2632,71 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     }
   }, [dispHeaders, nameIdx, dispRows, pageNums, permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted, cellEdits, rawSupplierByPage, structuredPages, globalSupplier]);
 
+  // 2026-07-22 · OCR 단가 vs DB 사입가 큰 차이 스왑 (사용자 원문: "금액 차이 너무 많이 나면 단가에서 제외 다른 후보 찾아")
+  //   현재 있는 matchItems 활용 · 새 API 호출 X · 50% 이상 차이면 DB 값으로 스왑
+  const verifyAndSwapPricesWithDB = useCallback((pn: number) => {
+    const priIdx = dispHeaders.indexOf("단가");
+    if (priIdx < 0 || !matchItems) return;
+    let swapped = 0;
+    const dbKeys: string[] = [];
+    setCellEdits(prev => {
+      const next = { ...prev };
+      dispRows.forEach((row, ri) => {
+        if (pageNums[ri] !== pn) return;
+        if (permanentlyDeletedRawRows.has(ri) || hiddenRawRows.has(ri) || isRowDbDeleted(ri)) return;
+        const dbPrice = matchItems[ri]?.matched?.masterPrice;
+        if (dbPrice == null || !Number.isFinite(dbPrice) || dbPrice <= 0) return;
+        const cur = parseNumber(next[ri]?.[priIdx] ?? row[priIdx]);
+        if (cur <= 0) return;
+        const diffRatio = Math.abs(cur - dbPrice) / Math.max(cur, 1);
+        if (diffRatio > 0.5) {  // 50% 이상 차이 → 스왑
+          next[ri] = { ...(next[ri] ?? {}), [priIdx]: dbPrice };
+          dbKeys.push(`${ri}-${priIdx}`);
+          swapped++;
+        }
+      });
+      return next;
+    });
+    if (dbKeys.length > 0) setDbFilledCells(prev => new Set([...prev, ...dbKeys]));
+    console.log(`[verifyAndSwapPricesWithDB] page ${pn}: ${swapped} 행 · OCR vs DB 50%+ 차이 → DB 값으로 스왑`);
+  }, [dispHeaders, matchItems, dispRows, pageNums, permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted]);
+
+  // 2026-07-22 · 컬럼별 자동정리 파이프라인 (사용자 최우선 요청)
+  //   1. 공급사 · 기존 서버 vendor-match 결과 그대로 (재추출 시 vendor 재계산)
+  //   2. 상품명 · handleMatchPage → /api/ocr-match (서버측 동의어사전 조회 포함) → matchItems 채움
+  //   3. 수량 · applyFirstRowPattern(수량) · 첫 행 위치 기반
+  //   4. 단가 · applyFirstRowPattern(단가) → fillMissingPricesFromDB → verifyAndSwapPricesWithDB
+  //   금액 = Q*P (자동)
+  //   유통기한 = 기존 그대로
+  const [runningPipeline, setRunningPipeline] = useState<Record<number, boolean>>({});
+  const runColumnPipeline = useCallback(async (pn: number) => {
+    if (runningPipeline[pn]) return;
+    setRunningPipeline(prev => ({ ...prev, [pn]: true }));
+    console.log(`\n╔══ [column-pipeline] page ${pn} 시작 ══`);
+    try {
+      // 1+2: 공급사·상품명 매칭 (서버측 동의어사전 활용)
+      console.log(`║ 1·2단계: 상품명 매칭 (동의어사전 포함)`);
+      await handleMatchPage(pn);
+      // 3: 수량
+      console.log(`║ 3단계: 수량 첫행보정`);
+      applyFirstRowPattern(pn, "수량");
+      // 4a: 단가 첫행 위치 기반
+      console.log(`║ 4a단계: 단가 첫행보정`);
+      applyFirstRowPattern(pn, "단가");
+      // 4b: 빈 단가 DB 조회
+      console.log(`║ 4b단계: 빈 단가 DB 조회`);
+      await fillMissingPricesFromDB(pn);
+      // 4c: OCR vs DB 큰 차이 스왑
+      console.log(`║ 4c단계: OCR vs DB 큰 차이 스왑`);
+      verifyAndSwapPricesWithDB(pn);
+      console.log(`╚══ [column-pipeline] page ${pn} 완료 · 금액=Q*P 자동재계산\n`);
+    } catch (e: any) {
+      console.error(`[column-pipeline] page ${pn} 예외:`, e?.message);
+    } finally {
+      setRunningPipeline(prev => ({ ...prev, [pn]: false }));
+    }
+  }, [runningPipeline, handleMatchPage, applyFirstRowPattern, fillMissingPricesFromDB, verifyAndSwapPricesWithDB]);
+
   // ── 확정 표 ──────────────────────────────────────────────────────────────
   const CONF_HEADERS = [
     "거래일","확정일","상품코드","상품명",
@@ -4347,12 +4412,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               onClick={async () => {
                                 applyFirstRowPattern(pn, "수량");
                                 applyFirstRowPattern(pn, "단가");
-                                // 2026-07-22: 단가 비어있는 행은 상품명+공급사로 products DB 조회하여 사입단가 자동 채움
                                 await fillMissingPricesFromDB(pn);
                               }}
                               className="text-[10px] font-black text-white bg-sky-500 hover:bg-sky-600 rounded px-2 py-1 cursor-pointer shadow-sm whitespace-nowrap"
-                              title="윗행 수량·단가 위치를 기준으로 아래행 채움 · 단가 없는 행은 상품명+공급사로 DB 조회 (마커: DB)"
+                              title="윗행 수량·단가 위치를 기준으로 아래행 채움 · 단가 없는 행은 상품명+공급사로 DB 조회"
                             >첫행보정</button>
+                            {/* 2026-07-22 · 컬럼별 자동정리 파이프라인 · 공급사→상품명(동의어)→수량→단가(DB검증) */}
+                            <button
+                              type="button"
+                              onClick={() => runColumnPipeline(pn)}
+                              disabled={!!runningPipeline[pn]}
+                              className="ml-1 text-[10px] font-black text-white bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-300 disabled:cursor-not-allowed rounded px-2 py-1 cursor-pointer shadow-sm whitespace-nowrap"
+                              title="컬럼별 자동정리: 상품명 매칭+동의어 → 수량 → 단가(첫행+DB조회+큰차이 스왑) · 금액=Q*P 자동"
+                            >{runningPipeline[pn] ? "⏳ 정리중..." : "🎯 자동정리"}</button>
                           </td>
                         </tr>
                       )}
