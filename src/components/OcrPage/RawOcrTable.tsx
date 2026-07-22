@@ -4365,8 +4365,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             );
                           }
 
-                          // 유통기한 컬럼: 클릭 편집 + 재추출 버튼 · 순환 (2026-07-18)
-                          if (h === "유통기한") {
+                          // 유통기한/유효기한/유통기간 컬럼: 클릭 편집 + 재추출 버튼 · 순환 (2026-07-18 · 2026-07-22 확장)
+                          if (h === "유통기한" || h === "유효기한" || h === "유통기간") {
                             const cellKey = `${ri}-${ci}`;
                             const cycleIdx = numericCellCycle[cellKey] ?? -1;
                             const totalCands = (numericCellCandidates[cellKey] as string[] | undefined)?.length ?? 0;
