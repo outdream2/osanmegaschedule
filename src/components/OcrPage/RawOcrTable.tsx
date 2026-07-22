@@ -3258,8 +3258,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             return null;
           })}
 
-          {/* 2026-07-22 반응형: table-layout fixed + 가중치 비율 배분 · 가로 스크롤 없음 */}
-          <div className="w-full overflow-x-hidden" ref={invTableWrapRef}>
+          {/* 2026-07-22 반응형: table-layout fixed + 가중치 비율 배분 · 가로 스크롤 없음
+               2026-07-22 · 우측 여백 (사용자 요청 "오른쪽에 여백 있어야해") · pr-3 */}
+          <div className="w-full overflow-x-hidden pr-3" ref={invTableWrapRef}>
             <table className={`w-full border-collapse ${_cw < 500 ? "text-[10px]" : "text-xs"}`} style={{ tableLayout: "fixed" }}>
               <thead>
                 <tr className="bg-amber-50 border-b-2 border-amber-200">
@@ -4000,11 +4001,23 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     })()}
                                     {hasDirectEdit && <span className="text-[10px] bg-indigo-100 text-indigo-600 px-1 rounded font-bold">수정</span>}
                                     {isCorrectedAmt && <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>}
-                                    {/* 2026-07-22 · DB 에서 자동 채운 셀 마커 (사용자 요청) */}
                                     {dbFilledCells.has(`${ri}-${ci}`) && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1 rounded font-black" title="products DB 에서 자동 채움">DB</span>}
                                     <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                   </span>
-                                  {/* 2026-07-22: 재추출 버튼 셀 값 아래 (다음줄) · 항상 표시 · 사용자 요청 */}
+                                  {/* 2026-07-22 · 단가 셀 아래 DB 사입가 참고 표시 (사용자 요청 "db에서 사입가 찾아서 단가 아래 표시해") */}
+                                  {h === "단가" && (() => {
+                                    const dbPrice = matchItems?.[ri]?.matched?.masterPrice;
+                                    if (dbPrice == null || !Number.isFinite(dbPrice) || dbPrice <= 0) return null;
+                                    const ocrPrice = typeof cell === "number" ? cell : parseNumber(cell);
+                                    const diffRatio = ocrPrice > 0 ? Math.abs(ocrPrice - dbPrice) / ocrPrice : 1;
+                                    const isBigDiff = diffRatio > 0.5;
+                                    return (
+                                      <span
+                                        className={`text-[9px] font-mono ${isBigDiff ? "text-rose-500" : "text-indigo-500"}`}
+                                        title={`DB 사입가: ${fmt(dbPrice)}원${isBigDiff && ocrPrice > 0 ? ` (OCR 값과 ${Math.round(diffRatio*100)}% 차이)` : ""}`}
+                                      >DB {fmt(dbPrice)}</span>
+                                    );
+                                  })()}
                                   {(h === "수량" || h === "단가") && (() => {
                                     const cellKey = `${ri}-${ci}`;
                                     const cycleIdx = numericCellCycle[cellKey] ?? -1;
