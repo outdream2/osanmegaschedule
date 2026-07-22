@@ -4452,26 +4452,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                 className="text-[10px] font-bold text-amber-700 hover:text-amber-900 bg-white/70 border border-amber-300 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap"
                                                 title="소계 금액 직접 입력"
                                               >✎ 수정</button>
-                                              {/* 2026-07-21: 첫 행 형식 → 다른 행 일괄 적용 (수량 · 금액만) */}
-                                              <button
-                                                type="button"
-                                                onClick={() => applyFirstRowPattern(pn, "수량")}
-                                                className="text-[10px] font-bold text-sky-700 hover:text-white hover:bg-sky-500 bg-sky-50 border border-sky-300 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap inline-flex items-center gap-0.5"
-                                                title="첫 행 수량 수정 형식을 나머지 행에 적용"
-                                              >🔁 수량 형식</button>
-                                              <button
-                                                type="button"
-                                                onClick={() => applyFirstRowPattern(pn, "금액")}
-                                                className="text-[10px] font-bold text-emerald-700 hover:text-white hover:bg-emerald-500 bg-emerald-50 border border-emerald-300 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap inline-flex items-center gap-0.5"
-                                                title="첫 행 금액 수정 형식을 나머지 행에 적용"
-                                              >🔁 금액 형식</button>
-                                              {/* 2026-07-22: 가장 긴 행 형식으로 모두 재배치 · 값 타입별 분류 */}
-                                              <button
-                                                type="button"
-                                                onClick={() => applyLongestRowPatternAll(pn)}
-                                                className="text-[10px] font-bold text-indigo-700 hover:text-white hover:bg-indigo-500 bg-indigo-50 border border-indigo-300 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap inline-flex items-center gap-0.5"
-                                                title="가장 긴 상품행을 기준으로 다른 행 셀 값을 타입별(품명·규격·수량·단가·금액·유통기한) 재배치"
-                                              >🎯 전체 형식 맞춤</button>
+                                              {/* 2026-07-22: 수량/금액 형식 · 전체 형식 맞춤 버튼 삭제 (사용자 요청) */}
                                               {/* 2026-07-21: 페이지별 2차보정 확정 버튼 · 이 페이지 데이터를 매칭해서 2차보정 표로 전송 */}
                                               {!hasMissingSupplier && (
                                                 <button
