@@ -1627,6 +1627,21 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     ? Math.min(Math.max(INV_COL_MIN, invoiceColWidth), invColMax)
     : responsiveDefault;
 
+  // 2026-07-22 반응형 breakpoint 파생값
+  //   cw = containerWidth (0 이면 700 fallback)
+  //   bp: xs(<500) sm(<700) md(<900) lg(≥900)
+  const _cw = containerWidth || 700;
+  // 숫자 셀(수량/단가/금액/유통기한) 최소 폭: 좁을수록 작게
+  const numCellMinW = _cw < 500 ? 60 : _cw < 700 ? 80 : 110;
+  // 편집 input 최소 폭 (숫자)
+  const numInputMinW = _cw < 500 ? "4rem" : _cw < 700 ? "5rem" : "5.5rem";
+  // 유통기한 편집 input 최소 폭
+  const expInputMinW = _cw < 500 ? "6rem" : _cw < 700 ? "7rem" : "7.5rem";
+  // 재추출 버튼 크기 (px): 좁으면 w-4 h-4, 넓으면 w-5 h-5
+  const reextBtnCls = _cw < 500 ? "w-4 h-4 text-[10px]" : "w-5 h-5 text-[12px]";
+  // flex-col(값+버튼) → 좁을 때 flex-row inline 으로 fallback
+  const numCellInnerCls = _cw < 600 ? "flex flex-row items-center justify-end gap-1" : "flex flex-col items-end gap-0.5";
+
   useEffect(() => {
     try { localStorage.setItem("ocr-invoice-col-width", String(Math.round(invoiceColWidth))); } catch { /* empty */ }
   }, [invoiceColWidth]);
@@ -3185,7 +3200,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
           {/* 2026-07-22 반응형: table-layout fixed + 가중치 비율 배분 · 가로 스크롤 없음 */}
           <div className="w-full overflow-x-hidden" ref={invTableWrapRef}>
-            <table className="w-full text-xs border-collapse" style={{ tableLayout: "fixed" }}>
+            <table className={`w-full border-collapse ${_cw < 500 ? "text-[10px]" : "text-xs"}`} style={{ tableLayout: "fixed" }}>
               <thead>
                 <tr className="bg-amber-50 border-b-2 border-amber-200">
                   {/* 이미지 컬럼 헤더 (이미지가 있을 때) */}
@@ -3281,7 +3296,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                       const computedW = totalWeight > 0
                         ? Math.round((weight / totalWeight) * autoAvail)
                         : Math.round(autoAvail / Math.max(autoColList.length, 1));
-                      const colW = explicitW ?? computedW;
+                      // 숫자/날짜 셀은 breakpoint 기반 최소 폭 보장 (사용자 리사이즈 없을 때만)
+                      const isCompactCell = NUM_COLS.has(h) || h === "유통기한" || h === "유효기한" || h === "유통기간";
+                      const minGuard = explicitW == null && isCompactCell ? numCellMinW : 0;
+                      const colW = explicitW ?? Math.max(computedW, minGuard);
                       return (
                         <th key={origIdx}
                           style={{
@@ -3774,7 +3792,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   type="text"
                                   inputMode="numeric"
                                   size={Math.max(6, editingCellVal.length + 2)}
-                                  style={{ width: `${Math.max(6, editingCellVal.length + 2)}ch`, minWidth: "5rem" }}
+                                  style={{ width: `${Math.max(6, editingCellVal.length + 2)}ch`, minWidth: numInputMinW, maxWidth: "100%" }}
                                   className="text-xs font-bold text-right text-indigo-700 bg-indigo-50 border border-indigo-300 rounded px-2 py-0.5 outline-none"
                                   value={editingCellVal}
                                   onChange={e => setEditingCellVal(e.target.value)}
@@ -3900,14 +3918,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   // 입력창 오픈 시 값 비움 · 새로 입력받음 (2026-07-19 · 사용자 요청)
                                   setEditingCellVal("");
                                 }}
-                                style={{ minWidth: 110 }}
-                                className={`px-2 py-2 whitespace-nowrap text-right cursor-pointer hover:bg-indigo-50/60 group ${
+                                style={{ minWidth: numCellMinW }}
+                                className={`px-1 py-2 whitespace-nowrap text-right cursor-pointer hover:bg-indigo-50/60 group ${
                                   isCellChecked ? "bg-sky-100 ring-1 ring-sky-400" :
                                   isMismatch && isAmt ? "text-amber-700 font-bold" : "font-bold text-amber-800"
                                 }`}
                                 title={isCellChecked ? "체크됨 (Alt+Click 해제)" : "클릭하여 수정 · Alt+Click 으로 선택"}
                               >
-                                <span className="flex flex-col items-end gap-0.5">
+                                <span className={numCellInnerCls}>
                                   <span className="flex items-center justify-end gap-1">
                                     {isMismatch && isAmt && <AlertTriangle size={9} className="text-rose-400 shrink-0" />}
                                     {(() => {
@@ -3937,7 +3955,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       <button
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); reextractOneCell(ri, ci, h as "수량" | "단가"); }}
-                                        className={`opacity-70 hover:opacity-100 shrink-0 w-5 h-5 flex items-center justify-center text-[12px] rounded transition cursor-pointer ${
+                                        className={`opacity-70 hover:opacity-100 shrink-0 flex items-center justify-center rounded transition cursor-pointer ${reextBtnCls} ${
                                           noCands
                                             ? "bg-rose-100 text-rose-500 hover:bg-rose-200"
                                             : cycleIdx >= 0
@@ -4161,7 +4179,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     type="text"
                                     placeholder="2026-12-31"
                                     size={Math.max(13, editingCellVal.length + 2)}
-                                    style={{ width: `${Math.max(13, editingCellVal.length + 2)}ch`, minWidth: "7rem" }}
+                                    style={{ width: `${Math.max(13, editingCellVal.length + 2)}ch`, minWidth: expInputMinW, maxWidth: "100%" }}
                                     className="text-[11px] font-mono text-amber-700 bg-amber-50 border border-amber-300 rounded px-1.5 py-0.5 outline-none text-right"
                                     value={editingCellVal}
                                     onChange={e => setEditingCellVal(e.target.value)}
@@ -4189,15 +4207,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             const expTotalCands = (numericCellCandidates[expCellKey] as string[] | undefined)?.length ?? 0;
                             const expNoCands = noCandidateCells.has(expCellKey);
                             return (
-                              <td key={ci} style={{ minWidth: 110 }}
+                              <td key={ci} style={{ minWidth: numCellMinW }}
                                 onClick={e => {
                                   e.stopPropagation();
                                   setEditingCell({ ri, ci });
                                   setEditingCellVal("");  // 입력창 오픈 시 값 비움 (2026-07-19)
                                 }}
-                                className="px-2 py-2 text-gray-500 text-[11px] group cursor-pointer hover:bg-amber-50/60 text-right"
+                                className="px-1 py-2 text-gray-500 text-[11px] group cursor-pointer hover:bg-amber-50/60 text-right"
                                 title="클릭하여 유통기한 수정">
-                                <span className="flex flex-col items-end gap-0.5">
+                                <span className={numCellInnerCls}>
                                   <span className="flex items-center justify-end gap-1">
                                     {cell == null ? <span className="text-gray-300">—</span> : String(cell)}
                                     <Pencil size={8} className="text-amber-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
@@ -4206,7 +4224,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   <button
                                     type="button"
                                     onClick={e => { e.stopPropagation(); reextractOneCell(ri, ci, "유통기한"); }}
-                                    className={`opacity-70 hover:opacity-100 shrink-0 w-5 h-5 flex items-center justify-center text-[12px] rounded transition cursor-pointer ${
+                                    className={`opacity-70 hover:opacity-100 shrink-0 flex items-center justify-center rounded transition cursor-pointer ${reextBtnCls} ${
                                       expNoCands
                                         ? "bg-rose-100 text-rose-500 hover:bg-rose-200"
                                         : expCycleIdx >= 0
