@@ -3777,7 +3777,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                       )}
                       {!isPageCollapsedRaw && (
                       <tr
-                        className={`border-t transition-colors hover:bg-amber-50/50 ${
+                        className={`border-t-4 transition-colors hover:bg-amber-50/50 ${
                           hiddenRawRows.has(ri) ? "opacity-40 line-through bg-slate-100/60" : ""
                         } ${
                           isMismatch ? "bg-rose-50/60 border-rose-100" : ri % 2 !== 0 ? "bg-gray-50/40 border-gray-100" : "border-gray-100"
@@ -4095,7 +4095,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     {dbFilledCells.has(`${ri}-${ci}`) && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1 rounded font-black" title="products DB 에서 자동 채움">DB</span>}
                                     <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                   </span>
-                                  {/* 2026-07-22 · 단가 셀 아래 사입단가 · [적용] 버튼 (사용자 요청) */}
+                                  {/* 2026-07-22 · 단가 셀 아래 사입단가 텍스트 (적용 버튼은 재추출 옆으로 이동) */}
                                   {h === "단가" && (() => {
                                     const dbPrice = matchItems?.[ri]?.matched?.masterPrice;
                                     if (dbPrice == null || !Number.isFinite(dbPrice) || dbPrice <= 0) return null;
@@ -4103,22 +4103,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     const diffRatio = ocrPrice > 0 ? Math.abs(ocrPrice - dbPrice) / ocrPrice : 1;
                                     const isBigDiff = diffRatio > 0.5;
                                     return (
-                                      <span className="inline-flex items-center gap-1 justify-end">
-                                        <span
-                                          className={`text-[11px] font-bold font-mono ${isBigDiff ? "text-rose-500" : "text-indigo-600"}`}
-                                          title={`사입단가 ${fmt(dbPrice)}원${isBigDiff && ocrPrice > 0 ? ` (OCR 값과 ${Math.round(diffRatio*100)}% 차이)` : ""}`}
-                                        >사입 {fmt(dbPrice)}</span>
-                                        <button
-                                          type="button"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [ci]: dbPrice } }));
-                                            setDbFilledCells(prev => new Set(prev).add(`${ri}-${ci}`));
-                                          }}
-                                          className="text-[10px] font-black text-white bg-indigo-500 hover:bg-indigo-600 rounded px-1.5 py-px cursor-pointer whitespace-nowrap transition"
-                                          title="이 사입단가를 단가에 적용 (Q*P 자동 재계산)"
-                                        >적용</button>
-                                      </span>
+                                      <span
+                                        className={`text-[11px] font-bold font-mono ${isBigDiff ? "text-rose-500" : "text-indigo-600"}`}
+                                        title={`사입단가 ${fmt(dbPrice)}원${isBigDiff && ocrPrice > 0 ? ` (OCR 값과 ${Math.round(diffRatio*100)}% 차이)` : ""}`}
+                                      >사입 {fmt(dbPrice)}</span>
                                     );
                                   })()}
                                   {(h === "수량" || h === "단가") && (() => {
@@ -4129,23 +4117,40 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     const isQty = h === "수량";
                                     const activeCls = isQty ? "bg-sky-500 text-white hover:bg-sky-600" : "bg-emerald-500 text-white hover:bg-emerald-600";
                                     const idleCls = isQty ? "bg-sky-50 text-sky-600 hover:bg-sky-500 hover:text-white" : "bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white";
+                                    // 2026-07-22 · 단가일 때만 · 사입적용 버튼 (재추출 버튼 앞)
+                                    const dbPrice = h === "단가" ? matchItemsRef.current?.[ri]?.matched?.masterPrice : null;
+                                    const hasDbPrice = dbPrice != null && Number.isFinite(dbPrice) && dbPrice > 0;
                                     return (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); reextractOneCell(ri, ci, h as "수량" | "단가"); }}
-                                        className={`opacity-70 hover:opacity-100 shrink-0 flex items-center justify-center rounded transition cursor-pointer ${reextBtnCls} ${
-                                          noCands
-                                            ? "bg-rose-100 text-rose-500 hover:bg-rose-200"
+                                      <span className="inline-flex items-center gap-1 justify-end">
+                                        {hasDbPrice && (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [ci]: dbPrice as number } }));
+                                              setDbFilledCells(prev => new Set(prev).add(`${ri}-${ci}`));
+                                            }}
+                                            className="text-[10px] font-black text-white bg-indigo-500 hover:bg-indigo-600 rounded px-1.5 py-px cursor-pointer whitespace-nowrap transition"
+                                            title={`사입단가 ${fmt(dbPrice as number)}원을 단가에 적용 (Q*P 자동 재계산)`}
+                                          >사입적용</button>
+                                        )}
+                                        <button
+                                          type="button"
+                                          onClick={(e) => { e.stopPropagation(); reextractOneCell(ri, ci, h as "수량" | "단가"); }}
+                                          className={`opacity-70 hover:opacity-100 shrink-0 flex items-center justify-center rounded transition cursor-pointer ${reextBtnCls} ${
+                                            noCands
+                                              ? "bg-rose-100 text-rose-500 hover:bg-rose-200"
+                                              : cycleIdx >= 0
+                                                ? activeCls
+                                                : idleCls
+                                          }`}
+                                          title={noCands
+                                            ? `${h} 후보 없음 · 이 명세서 rawText에서 ${h}으로 인식 가능한 값을 찾지 못함`
                                             : cycleIdx >= 0
-                                              ? activeCls
-                                              : idleCls
-                                        }`}
-                                        title={noCands
-                                          ? `${h} 후보 없음 · 이 명세서 rawText에서 ${h}으로 인식 가능한 값을 찾지 못함`
-                                          : cycleIdx >= 0
-                                            ? `${h} 재추출 순환 중 (${cycleIdx + 1}/${totalCands}) · 클릭하면 다음 후보 · 마지막이면 원본 복원`
-                                            : `${h} 재추출 · 이 명세서 rawText의 ${h} 후보 순환 · 이 셀만 갱신 (다른 셀 절대 연동 안 됨)`}
-                                      >{noCands ? "⌀" : "🔄"}</button>
+                                              ? `${h} 재추출 순환 중 (${cycleIdx + 1}/${totalCands}) · 클릭하면 다음 후보 · 마지막이면 원본 복원`
+                                              : `${h} 재추출 · 이 명세서 rawText의 ${h} 후보 순환 · 이 셀만 갱신 (다른 셀 절대 연동 안 됨)`}
+                                        >{noCands ? "⌀" : "🔄"}</button>
+                                      </span>
                                     );
                                   })()}
                                 </span>
