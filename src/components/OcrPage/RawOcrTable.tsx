@@ -69,7 +69,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const expiryVariants = ["유통기한", "유효기한", "유통기간"];
   const hasExpiryInMaster = expiryVariants.some(v => masterH.indexOf(v) >= 0);
   masterH.forEach((h, ci) => {
-    if (expiryVariants.includes(h)) keepCols[ci] = true; // 데이터 없어도 유지
+    if (expiryVariants.includes(h)) keepCols[ci] = true;
+  });
+  // 2026-07-23 · 거래일 컬럼 강제 표시 (사용자 요청 "1차보정에 거래일 컬럼 추가 · 수정 가능")
+  const dateVariants = ["거래일", "일자", "날짜", "거래일자", "거래날짜"];
+  const hasDateInMaster = dateVariants.some(v => masterH.indexOf(v) >= 0);
+  masterH.forEach((h, ci) => {
+    if (dateVariants.includes(h)) keepCols[ci] = true;
   });
   let dispHeaders: string[] = masterH.filter((_, ci) => keepCols[ci]);
   let dispRows: (string | number | null)[][] = rawRows.map(r => r.filter((_, ci) => keepCols[ci]));
@@ -77,6 +83,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   if (!hasExpiryInMaster) {
     dispHeaders = [...dispHeaders, "유통기한"];
     dispRows = dispRows.map(r => [...r, null]);
+  }
+  // masterH 에 거래일 계열 없으면 · 첫번째 컬럼으로 강제 추가 (page.meta.date 값 채움)
+  if (!hasDateInMaster) {
+    dispHeaders = ["거래일", ...dispHeaders];
+    dispRows = dispRows.map((r, ri) => {
+      const pn = pageNums[ri];
+      const md = structuredPages.find(p => p.page === pn)?.meta?.date ?? null;
+      return [md, ...r];
+    });
   }
 
   const amtIdx  = dispHeaders.indexOf("금액");
@@ -231,7 +246,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   void setShowRawDetail;
   // 1차보정 압축(기본) 모드에서 표시할 필수 컬럼 순서
   // 요구사항: 공급처 → 품명 → 수량 → 단가 → 금액 → 규격 → 유통기한
-  const RAW_ESSENTIAL_COLS = ["공급처", "품명", "수량", "단가", "금액", "규격", "유통기한"];
+  const RAW_ESSENTIAL_COLS = ["거래일", "공급처", "품명", "수량", "단가", "금액", "규격", "유통기한"];
 
   // ── 컬럼 너비 조정 ────────────────────────────────────────────────────────────
   const [colWidths, setColWidths] = useState<Record<number, number>>({});
