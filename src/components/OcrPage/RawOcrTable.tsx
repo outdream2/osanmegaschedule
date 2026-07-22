@@ -789,6 +789,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         }
       }
 
+      // 2026-07-22 · 단가 재추출 시 DB 근접값 우선 정렬 (사용자 요청)
+      //   matchItems[ri].matched.masterPrice 가 있으면 · 후보들을 DB 값과의 차이로 오름차순 정렬
+      if (colName === "단가" && candidateVals.length > 1) {
+        const dbPrice = matchItems?.[ri]?.matched?.masterPrice;
+        if (dbPrice != null && Number.isFinite(dbPrice) && dbPrice > 0) {
+          const before = candidateVals.slice(0, 3).join(",");
+          candidateVals = [...candidateVals].sort((a, b) =>
+            Math.abs(Number(a) - dbPrice) - Math.abs(Number(b) - dbPrice)
+          );
+          console.log(`[셀재추출/DB근접] ri=${ri} 단가 · DB=${dbPrice} · 재정렬: ${before} → ${candidateVals.slice(0, 3).join(",")}`);
+        }
+      }
+
       // ── 기능 2: 내부 교차검증 정렬 (수량 × 단가 = 금액) ──────────────────
       //   같은 행의 다른 컬럼 값을 이용해 방정식 만족 후보를 앞으로 정렬
       //   오차 허용: |q × p − a| ≤ max(1, a × 0.02)
@@ -900,7 +913,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       });
       console.log(`[셀재추출/단일] ri=${ri} ci=${ci} (${colName}) → ${newVal} (${nextIdx + 1}/${candidateVals.length})`);
     }
-  }, [pageNums, structuredPages, pages, numericCellCycle, numericCellCandidates, noCandidateCells]);
+  }, [pageNums, structuredPages, pages, numericCellCycle, numericCellCandidates, noCandidateCells, matchItems]);
 
   const revertSingleRawRow = useCallback((ri: number) => {
     // 편집·보정·삭제 상태 초기화 (원본 복원부터)
