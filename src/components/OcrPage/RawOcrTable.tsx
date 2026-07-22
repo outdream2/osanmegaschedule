@@ -2870,20 +2870,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const confAmtIdx  = CONF_HEADERS.indexOf("매입총계");
   const confSuppIdx = CONF_HEADERS.indexOf("공급처");
 
-  // 확정표 페이지별 소계 — 1차보정 사용자 선택(pageSubtotalChoices) 우선 반영, 없으면 confRows 합
+  // 2026-07-23 · 사용자 요청 "금액은 1차보정 거래명세서에서 가져와"
+  //   confPageTotals 는 항상 1차보정 총소계 (getPageDisplayTotal) 사용 · confRows 자체 계산 X
   const confPageTotals = new Map<number, number>();
-  if (confAmtIdx >= 0 && matchItems) {
-    // 우선 확정표 행별 amount 합계를 계산
-    confRows.forEach((row, ri) => {
-      const pn = pageNums[ri];
-      confPageTotals.set(pn, (confPageTotals.get(pn) ?? 0) + parseNumber(row[confAmtIdx]));
-    });
-    // 1차보정에서 사용자가 소계를 명시적으로 선택한 페이지는 그 값으로 오버라이드
+  if (confAmtIdx >= 0) {
     uniquePageNums.forEach(pn => {
-      const choice = pageSubtotalChoices[pn];
-      if (choice === "stated" || choice === "computed" || choice === "custom") {
-        confPageTotals.set(pn, getPageDisplayTotal(pn));
-      }
+      confPageTotals.set(pn, getPageDisplayTotal(pn));
     });
   }
 
