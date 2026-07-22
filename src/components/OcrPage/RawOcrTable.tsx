@@ -4414,12 +4414,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                   <button
                                                     type="button"
                                                     onClick={() => setDiscountApplyMode(prev => ({ ...prev, [pn]: isAfter ? "before" : "after" }))}
-                                                    className={`text-[10px] font-bold border rounded px-1.5 py-0.5 whitespace-nowrap cursor-pointer transition hover:bg-white ${
+                                                    className={`text-[11px] font-semibold whitespace-nowrap cursor-pointer transition underline-offset-2 hover:underline ${
                                                       isAfter
-                                                        ? "text-slate-600 bg-slate-50 border-slate-300"
+                                                        ? "text-slate-500"
                                                         : disc.isEstimated
-                                                          ? "text-orange-700 bg-white/70 border-orange-300"
-                                                          : "text-amber-700 bg-white/70 border-amber-300"
+                                                          ? "text-orange-600"
+                                                          : "text-amber-700"
                                                     }`}
                                                     title={isAfter
                                                       ? `현재: 에누리 적용 후 (${fmt(stated ?? 0)}원) · 클릭 시 적용 전으로 전환`
@@ -4428,16 +4428,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                   </button>
                                                 );
                                               })()}
-                                              {/* ── 소계 관계식 교차검증 배지 (공급가액 ≠ 합계+세액-에누리) ── */}
+                                              {/* 2026-07-22 · 배지 → 텍스트 (사용자 요청 "너무 산만") */}
                                               {(() => {
                                                 const warn = getPageCrossCheckWarning(pn);
                                                 if (!warn) return null;
                                                 return (
                                                   <span
-                                                    className="text-[10px] font-bold text-orange-700 bg-orange-50 border border-orange-300 rounded px-1.5 py-0.5 whitespace-nowrap"
+                                                    className="text-[11px] font-semibold text-orange-600 whitespace-nowrap"
                                                     title={`관계식 불일치:\n${warn}\n\n공급가액 = 합계 + 세액 - 에누리 조건이 맞지 않습니다.\nOCR 오독 가능성: 세액이 공급가액과 같으면 세액 오독 의심`}
                                                   >
-                                                    ⚠ 관계식 불일치
+                                                    관계식 불일치
                                                   </span>
                                                 );
                                               })()}

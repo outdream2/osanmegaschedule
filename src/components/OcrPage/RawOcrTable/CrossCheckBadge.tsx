@@ -7,14 +7,12 @@ interface CrossCheckBadgeProps {
   effectivePageQtyPrice: Map<number, number>;
   statedTotal: number | null;
   pageQtyPriceAmtMismatch: Map<number, number>;
-  /** 2026-07-22 · 소계 선택 상태 · 클릭 가능 배지용 */
   currentChoice?: "stated" | "computed" | "custom";
-  /** 2026-07-22 · 소계 선택 콜백 · rowSum(computed) 또는 statedTotal(stated) 선택 */
   onChooseSubtotal?: (pn: number, choice: "stated" | "computed") => void;
 }
 
-/** 교차검증 배지 — 행합 · 수량×단가합 · OCR총계 대조 결과를 뱃지로 표시
- *  2026-07-22 · 값 불일치 시 두 값을 각각 클릭해서 소계로 채택 가능 */
+/** 2026-07-22 · 배지 → 텍스트 형태 (사용자 요청 "너무 산만")
+ *  일치: "✓" 만 · 불일치: "금액합계 X ≠ OCR Y" 텍스트 + 클릭 가능 (밑줄로 인터랙션 힌트) */
 export const CrossCheckBadge: React.FC<CrossCheckBadgeProps> = ({
   pn,
   effectivePageTotals,
@@ -38,66 +36,54 @@ export const CrossCheckBadge: React.FC<CrossCheckBadgeProps> = ({
     (statedTotal != null ? `· OCR 소계: ${fmt(statedTotal)}원 (${rowSumOk ? "일치" : `Δ=${fmt(Math.abs(rowSum - statedTotal))}`})\n` : "· OCR 소계 없음\n") +
     `· 행 수식 오탐: ${qpaMismatchCount}건`;
 
-  // 모두 일치 시 · 기존과 동일한 단일 배지
   if (allOk) {
     return (
-      <span
-        className="text-[10px] font-black border rounded px-1.5 py-0.5 whitespace-nowrap bg-emerald-50 text-emerald-700 border-emerald-300"
-        title={commonTitle}
-      >
-        ✓ 교차검증
+      <span className="text-[11px] font-bold text-emerald-600 whitespace-nowrap" title={commonTitle}>
+        ✓ 검증
       </span>
     );
   }
 
-  // 불일치 · 두 값이 모두 있으면 각각 클릭 가능한 배지로 분리
   const canChoose = !!onChooseSubtotal && statedTotal != null && !rowSumOk;
   if (canChoose) {
-    const chosen = currentChoice ?? "stated"; // stated 가 기본 (getPageDisplayTotal 참조)
+    const chosen = currentChoice ?? "stated";
     return (
-      <span className="inline-flex items-center gap-0.5 flex-nowrap whitespace-nowrap" title={commonTitle}>
-        <span className="text-[10px] font-black text-rose-700 whitespace-nowrap">⚠</span>
+      <span className="inline-flex items-center gap-1 flex-nowrap whitespace-nowrap text-[11px]" title={commonTitle}>
         <button
           type="button"
           onClick={() => onChooseSubtotal!(pn, "computed")}
-          className={`text-[10px] font-black rounded px-1.5 py-0.5 whitespace-nowrap border cursor-pointer transition ${
+          className={`cursor-pointer transition ${
             chosen === "computed"
-              ? "bg-emerald-500 text-white border-emerald-600 shadow-sm"
-              : "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100"
+              ? "font-black text-emerald-700 underline"
+              : "font-semibold text-slate-500 hover:text-emerald-600 hover:underline"
           }`}
           title="행합을 이 페이지 소계로 채택"
         >
-          {chosen === "computed" ? "✓ " : ""}금액합계 {fmt(rowSum)}
+          금액합계 {fmt(rowSum)}
         </button>
-        <span className="text-[10px] font-bold text-slate-500">≠</span>
+        <span className="text-slate-400">≠</span>
         <button
           type="button"
           onClick={() => onChooseSubtotal!(pn, "stated")}
-          className={`text-[10px] font-black rounded px-1.5 py-0.5 whitespace-nowrap border cursor-pointer transition ${
+          className={`cursor-pointer transition ${
             chosen === "stated"
-              ? "bg-amber-500 text-white border-amber-600 shadow-sm"
-              : "bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100"
+              ? "font-black text-amber-700 underline"
+              : "font-semibold text-slate-500 hover:text-amber-600 hover:underline"
           }`}
           title="OCR 원본 소계를 이 페이지 소계로 채택"
         >
-          {chosen === "stated" ? "✓ " : ""}OCR {fmt(statedTotal)}
+          OCR {fmt(statedTotal)}
         </button>
         {qpaMismatchCount > 0 && (
-          <span className="text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-300 rounded px-1 py-0.5 whitespace-nowrap">
-            수식오탐 {qpaMismatchCount}
-          </span>
+          <span className="text-rose-600 font-semibold">· 수식오탐 {qpaMismatchCount}</span>
         )}
       </span>
     );
   }
 
-  // 불일치이지만 statedTotal 없거나 콜백 미제공 · 기존 단일 배지 (읽기 전용)
   return (
-    <span
-      className="text-[10px] font-black border rounded px-1.5 py-0.5 whitespace-nowrap bg-rose-50 text-rose-700 border-rose-300"
-      title={commonTitle}
-    >
-      ⚠ 교차검증 · 금액합계 {fmt(rowSum)}{statedTotal != null && !rowSumOk ? ` ≠ OCR ${fmt(statedTotal)}` : ""}{qpaMismatchCount > 0 ? ` · 수식오탐 ${qpaMismatchCount}건` : ""}
+    <span className="text-[11px] font-semibold text-rose-600 whitespace-nowrap" title={commonTitle}>
+      금액합계 {fmt(rowSum)}{statedTotal != null && !rowSumOk ? ` ≠ OCR ${fmt(statedTotal)}` : ""}{qpaMismatchCount > 0 ? ` · 수식오탐 ${qpaMismatchCount}` : ""}
     </span>
   );
 };
