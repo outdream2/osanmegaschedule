@@ -3476,7 +3476,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   // hiddenRawRows 는 return null 되지 않고 취소선으로 렌더됨 → rowSpan 에 포함해야 테이블 정합
                   // 첫행보정 행: isFirstInPage 일 때 항상 1개 추가 렌더됨 → rowSpan 에 반드시 포함
                   const imgRowSpan = isFirstInPage
-                    ? 1 + effectiveDispRows.filter((_, i) => pageNums[i] === pn && !permanentlyDeletedRawRows.has(i) && !isRowDbDeleted(i)).length + 1 /* 첫행보정 행 */ + (amtIdx >= 0 ? 1 : 0)
+                    ? 1 + effectiveDispRows.filter((_, i) => pageNums[i] === pn && !permanentlyDeletedRawRows.has(i) && !isRowDbDeleted(i)).length + (amtIdx >= 0 ? 1 : 0)
+                    /* 2026-07-22: 첫행보정 행 제거되어 +1 삭제 */
                     : 0;
                   const pageSupplierHeadRaw = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
                   const rawColSpan = (() => {
@@ -3740,7 +3741,22 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   </>
                                 );
                               })()}
-                              {/* 접기 제거 — 펼치기 힌트 제거 */}
+                              {/* 2026-07-22 · 첫행보정 · 🎯 자동정리 버튼 (사용자 요청: 명세서 시작 부분으로 이동) */}
+                              <button type="button"
+                                onClick={async () => {
+                                  applyFirstRowPattern(pn, "수량");
+                                  applyFirstRowPattern(pn, "단가");
+                                  await fillMissingPricesFromDB(pn);
+                                }}
+                                className="ml-1 text-[10px] font-black text-white bg-sky-500 hover:bg-sky-600 rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
+                                title="윗행 수량·단가 위치 기준으로 아래행 채움 · 단가 빈 행은 DB 조회"
+                              >첫행보정</button>
+                              <button type="button"
+                                onClick={() => runColumnPipeline(pn)}
+                                disabled={!!runningPipeline[pn]}
+                                className="ml-1 text-[10px] font-black text-white bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-300 disabled:cursor-not-allowed rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
+                                title="컬럼별 자동정리: 상품명 매칭+동의어 → 수량 → 단가(첫행+DB조회+큰차이 스왑) · 금액=Q*P 자동"
+                              >{runningPipeline[pn] ? "⏳ 정리중..." : "🎯 자동정리"}</button>
                             </span>
                           </td>
                         </tr>
@@ -4416,31 +4432,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                         })}
                       </tr>
                       )}
-                      {/* 2026-07-22 · 첫 행 형식 → 아래행 적용 · 사용자 요청: "각 명세의 첫번째 행 맨 끝에 전체행에 이 적용하는 버튼" */}
-                      {isFirstInPage && (
-                        <tr>
-                          <td colSpan={rawColSpan} className="px-2 py-1 text-right bg-sky-50/40 border-b border-sky-100">
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                applyFirstRowPattern(pn, "수량");
-                                applyFirstRowPattern(pn, "단가");
-                                await fillMissingPricesFromDB(pn);
-                              }}
-                              className="text-[10px] font-black text-white bg-sky-500 hover:bg-sky-600 rounded px-2 py-1 cursor-pointer shadow-sm whitespace-nowrap"
-                              title="윗행 수량·단가 위치를 기준으로 아래행 채움 · 단가 없는 행은 상품명+공급사로 DB 조회"
-                            >첫행보정</button>
-                            {/* 2026-07-22 · 컬럼별 자동정리 파이프라인 · 공급사→상품명(동의어)→수량→단가(DB검증) */}
-                            <button
-                              type="button"
-                              onClick={() => runColumnPipeline(pn)}
-                              disabled={!!runningPipeline[pn]}
-                              className="ml-1 text-[10px] font-black text-white bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-300 disabled:cursor-not-allowed rounded px-2 py-1 cursor-pointer shadow-sm whitespace-nowrap"
-                              title="컬럼별 자동정리: 상품명 매칭+동의어 → 수량 → 단가(첫행+DB조회+큰차이 스왑) · 금액=Q*P 자동"
-                            >{runningPipeline[pn] ? "⏳ 정리중..." : "🎯 자동정리"}</button>
-                          </td>
-                        </tr>
-                      )}
+                      {/* 2026-07-22 · 첫행보정·자동정리 버튼 → 명세서 시작 부분(페이지 헤더 행)으로 이동 · 여기 tr 삭제 */}
                       {isLastInPage && amtIdx >= 0 && (() => {
                         const pageSupplier = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
                         const configuredLabel = pageSupplier ? balanceConfig[pageSupplier] : undefined;
