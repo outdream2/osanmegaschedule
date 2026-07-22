@@ -386,7 +386,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   //     첫 행 수량=1000 (4자리), 금액=508000 (6자리) 확정
   //     → 다른 행에서 각 행의 모든 숫자 셀 중 4자리 값 = 수량, 6자리 값 = 금액 채택
   //   장점: OCR 컬럼 밀림 · 셀 시프트가 있어도 값의 magnitude(자릿수)로 정확 매칭
-  const applyFirstRowPattern = useCallback((pn: number, colName: "수량" | "금액") => {
+  const applyFirstRowPattern = useCallback((pn: number, colName: "수량" | "단가" | "금액") => {
     const colIdx = dispHeaders.indexOf(colName);
     if (colIdx < 0) return;
     const firstRi = pageNums.findIndex(p => p === pn);
@@ -4268,6 +4268,22 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           }
                         })}
                       </tr>
+                      )}
+                      {/* 2026-07-22 · 첫 행 형식 → 아래행 적용 · 사용자 요청: "각 명세의 첫번째 행 맨 끝에 전체행에 이 적용하는 버튼" */}
+                      {isFirstInPage && (
+                        <tr>
+                          <td colSpan={rawColSpan} className="px-2 py-1 text-right bg-sky-50/40 border-b border-sky-100">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                applyFirstRowPattern(pn, "수량");
+                                applyFirstRowPattern(pn, "단가");
+                              }}
+                              className="text-[10px] font-black text-white bg-sky-500 hover:bg-sky-600 rounded px-2 py-1 cursor-pointer shadow-sm whitespace-nowrap inline-flex items-center gap-1"
+                              title="윗행에서 보정한 수량·단가 위치를 기준으로 아래행들에 같은 위치의 값 자동 채움"
+                            >🔁 첫 행 형식 → 아래 채움 (수량·단가)</button>
+                          </td>
+                        </tr>
                       )}
                       {isLastInPage && amtIdx >= 0 && (() => {
                         const pageSupplier = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
