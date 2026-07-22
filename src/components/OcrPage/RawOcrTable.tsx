@@ -423,13 +423,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       }
     }
 
-    // 2) 대상 행 목록
+    // 2) 대상 행 목록 · 2026-07-22: 재시도 지원 · 기존 편집값도 덮어쓰기 (사용자 "재시도 할 수 있게 해")
     const targetRows: number[] = [];
     dispRows.forEach((_, i) => {
       if (i === firstRi) return;
       if (pageNums[i] !== pn) return;
       if (permanentlyDeletedRawRows.has(i) || hiddenRawRows.has(i)) return;
-      if (cellEdits[i]?.[colIdx] !== undefined) return;
+      // cellEdits 있어도 skip 안 함 → 재시도 시 새 위치로 덮어씀
       targetRows.push(i);
     });
     if (targetRows.length === 0) {
@@ -3911,7 +3911,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   <span className="flex items-center justify-end gap-1">
                                     {isMismatch && isAmt && <AlertTriangle size={9} className="text-rose-400 shrink-0" />}
                                     {(() => {
-                                      // 재추출 격리: 각 셀은 자기 값만 표시 · 자동 계산 없음 (2026-07-18)
                                       if (cell == null || (typeof cell === "number" && cell <= 0 && !hasDirectEdit)) {
                                         return <span className="text-gray-300">—</span>;
                                       }
@@ -3925,7 +3924,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     {isCorrectedAmt && <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>}
                                     <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                   </span>
-                                  {/* 수량·단가 셀 전용 재추출 아이콘 · 셀 값 아래 배치 · 옆 셀 침범 없음 (2026-07-22) */}
+                                  {/* 2026-07-22: 재추출 버튼 셀 값 아래 (다음줄) · 항상 표시 · 사용자 요청 */}
                                   {(h === "수량" || h === "단가") && (() => {
                                     const cellKey = `${ri}-${ci}`;
                                     const cycleIdx = numericCellCycle[cellKey] ?? -1;
@@ -4203,7 +4202,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     {cell == null ? <span className="text-gray-300">—</span> : String(cell)}
                                     <Pencil size={8} className="text-amber-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                   </span>
-                                  {/* 유통기한 재추출 아이콘 · 셀 값 아래 배치 · 옆 셀 침범 없음 (2026-07-22) */}
+                                  {/* 2026-07-22: 유통기한 재추출 버튼 다음줄 · 항상 표시 */}
                                   <button
                                     type="button"
                                     onClick={e => { e.stopPropagation(); reextractOneCell(ri, ci, "유통기한"); }}
