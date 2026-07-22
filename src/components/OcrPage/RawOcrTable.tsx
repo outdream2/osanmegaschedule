@@ -791,16 +791,26 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         }
       }
 
-      // 2026-07-22 · 단가 재추출 시 DB 근접값 우선 정렬 (사용자 요청)
-      //   matchItemsRef.current[ri].matched.masterPrice 가 있으면 · 후보들을 DB 값과의 차이로 오름차순 정렬
-      if (colName === "단가" && candidateVals.length > 1) {
+      // 2026-07-22 · 단가 재추출 · DB 값과 30배 이상 차이 후보 제외 + DB 근접값 우선 정렬 (사용자 요청)
+      if (colName === "단가" && candidateVals.length > 0) {
         const dbPrice = matchItemsRef.current?.[ri]?.matched?.masterPrice;
         if (dbPrice != null && Number.isFinite(dbPrice) && dbPrice > 0) {
-          const before = candidateVals.slice(0, 3).join(",");
+          const before = candidateVals.length;
+          // 30배 이상 차이 후보 필터링: v > DB*30 또는 v < DB/30 이면 제외
+          const upper = dbPrice * 30;
+          const lower = dbPrice / 30;
+          const filtered = candidateVals.filter(v => {
+            const n = Number(v);
+            return Number.isFinite(n) && n >= lower && n <= upper;
+          });
+          // 필터로 다 사라지면 원본 유지 (안전)
+          if (filtered.length > 0) candidateVals = filtered;
+          const excluded = before - candidateVals.length;
+          // DB 근접값 오름차순 정렬
           candidateVals = [...candidateVals].sort((a, b) =>
             Math.abs(Number(a) - dbPrice) - Math.abs(Number(b) - dbPrice)
           );
-          console.log(`[셀재추출/DB근접] ri=${ri} 단가 · DB=${dbPrice} · 재정렬: ${before} → ${candidateVals.slice(0, 3).join(",")}`);
+          console.log(`[셀재추출/DB필터+정렬] ri=${ri} 단가 · DB=${dbPrice} · 30배 초과 ${excluded}개 제외 · Top3=${candidateVals.slice(0, 3).join(",")}`);
         }
       }
 
