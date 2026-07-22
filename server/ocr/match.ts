@@ -244,6 +244,102 @@ export const diceSim = (a: string, b: string): number => {
 /** 하위 호환성 유지 (bigramSim = diceSim) */
 export const bigramSim = diceSim;
 
+// ── Jaro-Winkler 유사도 (2026-07-22) ─────────────────────────────────────────
+/**
+ * Jaro-Winkler 유사도 (0-100)
+ *
+ * 회사명 짧은 문자열에서 prefix 가중치 덕에 정확도 우수:
+ *   - "(주)엘앤바이오랩" ↔ "앤바이오": bigramSim 은 부분포함으로 오히려 높게 나옴
+ *   - jaroWinkler 는 prefix 다름을 페널티 → 다른 회사로 정확 판단
+ *
+ * 알고리즘:
+ *   1. matching window = max(|a|, |b|) / 2 - 1
+ *   2. 두 문자열의 매칭 문자 수 m 계산
+ *   3. 전치(transposition) t/2 를 감안한 jaro = ((m/|a| + m/|b| + (m-t/2)/m) / 3)
+ *   4. prefix 최대 4자까지 공통이면 (1 - jaro) * 0.1 만큼 부스트
+ */
+export const jaroWinkler = (a: string, b: string): number => {
+  if (!a || !b) return 0;
+  if (a === b) return 100;
+  const la = a.length, lb = b.length;
+  const matchDistance = Math.max(la, lb) >> 1 - 1;
+  const aMatches = new Array(la).fill(false);
+  const bMatches = new Array(lb).fill(false);
+  let matches = 0;
+  for (let i = 0; i < la; i++) {
+    const start = Math.max(0, i - matchDistance);
+    const end = Math.min(i + matchDistance + 1, lb);
+    for (let j = start; j < end; j++) {
+      if (bMatches[j]) continue;
+      if (a[i] !== b[j]) continue;
+      aMatches[i] = true;
+      bMatches[j] = true;
+      matches++;
+      break;
+    }
+  }
+  if (matches === 0) return 0;
+  // transpositions
+  let k = 0, transpositions = 0;
+  for (let i = 0; i < la; i++) {
+    if (!aMatches[i]) continue;
+    while (!bMatches[k]) k++;
+    if (a[i] !== b[k]) transpositions++;
+    k++;
+  }
+  const m = matches;
+  const jaro = (m / la + m / lb + (m - transpositions / 2) / m) / 3;
+  // Winkler prefix boost (최대 4자)
+  let prefix = 0;
+  const limit = Math.min(4, la, lb);
+  for (let i = 0; i < limit; i++) {
+    if (a[i] === b[i]) prefix++;
+    else break;
+  }
+  const jw = jaro + prefix * 0.1 * (1 - jaro);
+  return Math.round(jw * 100);
+};
+
+// ── Token Set Ratio (2026-07-22) ────────────────────────────────────────────
+/**
+ * Token Set Ratio (0-100) · RapidFuzz 방식
+ *
+ * 어순 다름·중복 토큰에 강함:
+ *   - "(주)광동제약" vs "광동제약 (주)" → 100
+ *   - 공백·괄호로 tokenize 후 교집합·차집합 기반 Jaro-Winkler 3개 중 최대
+ */
+export const tokenSetRatio = (a: string, b: string): number => {
+  if (!a || !b) return 0;
+  const tokenize = (s: string) =>
+    new Set(s.replace(/[()·\s]+/g, " ").trim().split(/\s+/).filter(Boolean));
+  const setA = tokenize(a);
+  const setB = tokenize(b);
+  if (setA.size === 0 || setB.size === 0) return 0;
+  const inter = new Set([...setA].filter(x => setB.has(x)));
+  const diffA = new Set([...setA].filter(x => !inter.has(x)));
+  const diffB = new Set([...setB].filter(x => !inter.has(x)));
+  const sortJoin = (s: Set<string>) => [...s].sort().join(" ");
+  const t0 = sortJoin(inter);
+  const t1 = (t0 + " " + sortJoin(diffA)).trim();
+  const t2 = (t0 + " " + sortJoin(diffB)).trim();
+  return Math.max(jaroWinkler(t1, t2), jaroWinkler(t0, t1), jaroWinkler(t0, t2));
+};
+
+// ── 통합 유사도 (2026-07-22) ────────────────────────────────────────────────
+/**
+ * 회사명 유사도 종합 판정 (0-100) · vendor-match 용
+ *
+ * 신호 3개 중 max 채택:
+ *   1. diceSim (기존 bigramSim) — 긴 이름·중복 문자 안정
+ *   2. jaroWinkler — 짧은 이름·prefix 정확도
+ *   3. tokenSetRatio — 어순 다른 케이스
+ */
+export const supplierSim = (a: string, b: string): number => {
+  if (!a || !b) return 0;
+  if (a === b) return 100;
+  return Math.max(diceSim(a, b), jaroWinkler(a, b), tokenSetRatio(a, b));
+};
+
 // ── 종합 매칭 점수 ─────────────────────────────────────────────────────────────
 /**
  * OCR 인식 상품명과 DB 상품의 매칭 점수 (0-100)

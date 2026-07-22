@@ -738,30 +738,33 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
     }
   }, [renderPdfToImages]);
 
-  const handleExtract = useCallback(async () => {
+  // 2026-07-22 · ONNX 파싱 선택 · null=원래 (Gemini 엔진 기본 흐름) · "local"=로컬 파이프라인 · "gemini"=Gemini 텍스트 파싱
+  //   Gemini 엔진(⚡)은 항상 null (원래 흐름 · 미변경)
+  const handleExtract = useCallback(async (onnxParser: "local" | "gemini" | null = null) => {
     const images = imagesDataRef.current;
     if (images.length === 0 || extracting) return;
     setExtracting(true); setPages([]); setProcessed(0); setError(null);
     setStatusMsg(images.length > 1 ? `${images.length}장 처리 시작...` : "처리 중...");
+    // 2026-07-22 · Gemini 파싱만 raw 모드 (rawText만 뽑고 Gemini 에 텍스트 전송)
+    //   로컬 파싱은 raw 모드 안 씀 → 어제 그대로 전체 파이프라인 실행
+    const useRawMode = ocrEngine === "onnx" && onnxParser === "gemini";
     try {
       const rotatedImages = rotation === 0
         ? images
         : await Promise.all(images.map(img => physicallyRotate(img.data, img.mimeType, rotation)));
 
-      // ── SSE 스트리밍 (2026-07-19) ─────────────────────────────────────────
-      //   1. 서버가 한 페이지 처리할 때마다 즉시 event: page 로 flush
-      //   2. 클라이언트는 페이지 도착 즉시 setPages 로 아래로 렌더 추가
-      //   3. Gemini/ONNX 모두 서버 내부에서 순차 처리 (기존 병렬은 폐기)
-      //      · Gemini 도 순차: 다중키 회전 로직이 요청 스코프이므로 병렬 시 키 경쟁
-      //      · ONNX 는 이미 CPU 병목으로 순차였음
-      //   SSE 선택 이유는 파일 상단 주석 참조 (Render 프록시 keep-alive 20초 대응)
       const pageErrors: string[] = [];
       const total = rotatedImages.length;
+      const collectedPages: OcrPageResult[] = [];  // SSE 결과 로컬 누적 (파싱 체인용)
 
       const res = await fetch("/api/ocr?stream=1", {
         method: "POST",
         headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
-        body: JSON.stringify({ images: rotatedImages, engine: engineToBackend(ocrEngine) }),
+        body: JSON.stringify({
+          images: rotatedImages,
+          engine: engineToBackend(ocrEngine),
+          ...(useRawMode ? { parseMode: "raw" } : {}),
+        }),
       });
       if (!res.ok || !res.body) {
         // 서버가 SSE 응답을 시작하기 전 400/500 반환 시 JSON 파싱 시도
@@ -795,8 +798,10 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
         } else if (eventName === "page") {
           const pg = payload?.page;
           if (pg && typeof pg.page === "number") {
+            const existIdx = collectedPages.findIndex(p => p.page === pg.page);
+            if (existIdx >= 0) collectedPages[existIdx] = pg as OcrPageResult;
+            else collectedPages.push(pg as OcrPageResult);
             setPages(prev => {
-              // 중복 페이지 번호 방지 (혹시 재전송)
               if (prev.some(p => p.page === pg.page)) return prev.map(p => p.page === pg.page ? pg : p);
               return [...prev, pg as OcrPageResult];
             });
@@ -833,11 +838,35 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
       if (buf.trim()) processBlock(buf);
 
       if (pageErrors.length > 0) setError(pageErrors.join(" / "));
+
+      // 2026-07-22 · Gemini 파싱 체인 (raw 모드일 때만) · rawText 를 Gemini 에 텍스트 전송
+      if (useRawMode && onnxParser === "gemini" && collectedPages.length > 0) {
+        setStatusMsg(`Gemini 파싱 중...`);
+        try {
+          const payload = { pages: collectedPages.map(p => ({ page: p.page, rawText: p.rawText ?? "" })) };
+          const resp = await axios.post("/api/ocr/parse-gemini", payload);
+          const parsed = resp.data.pages as OcrPageResult[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setPages(parsed);
+            const diag = resp.data?._diag?.summaries;
+            if (Array.isArray(diag)) {
+              const bad = diag.filter((d: any) => d.status && d.status !== "OK");
+              setStatusMsg(bad.length > 0
+                ? `Gemini 파싱 부분성공 · 실패 ${bad.length}개 (서버 로그 확인)`
+                : `Gemini 파싱 완료 (${parsed.length}페이지)`);
+            } else {
+              setStatusMsg(`Gemini 파싱 완료 (${parsed.length}페이지)`);
+            }
+          }
+        } catch (e: any) {
+          setError(`Gemini 파싱 실패: ${e?.response?.data?.error ?? e?.message ?? "unknown"}`);
+        }
+      }
     } catch (err: any) {
       setError(err?.response?.data?.error ?? err?.message ?? "OCR 처리 중 오류가 발생했습니다.");
     } finally {
       setExtracting(false);
-      setStatusMsg("");
+      if (!useRawMode) setStatusMsg("");
     }
   }, [extracting, rotation, ocrEngine]);
 
@@ -1382,15 +1411,32 @@ return (
             )}
           </div>
 
-          <button onClick={handleExtract} disabled={extracting}
-            className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm ${
-              ocrEngine === "onnx" ? "bg-emerald-500 hover:bg-emerald-600"
-              : "bg-amber-500 hover:bg-amber-600"
-            }`}>
-            {extracting
-              ? <><Loader2 size={15} className="animate-spin" />{statusMsg || `OCR 추출 중... (${processed}/${pageCount || "?"})`}</>
-              : <><Zap size={15} />OCR 추출 ({ocrEngine === "onnx" ? "AI 모델" : "Gemini"}){rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
-          </button>
+          {/* 2026-07-22 · ONNX 는 2가지로 분기 · Gemini 엔진은 단일 (원래) */}
+          {ocrEngine === "onnx" ? (
+            <div className="flex flex-row gap-2">
+              <button onClick={() => handleExtract("local")} disabled={extracting}
+                className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl text-[13px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm"
+                title="ONNX (PP-OCRv5) 로 rawText 추출 → 로컬 파이프라인 (vendor-match·normalize·verify) 으로 파싱/매칭">
+                {extracting
+                  ? <><Loader2 size={14} className="animate-spin" />처리 중...</>
+                  : <><Zap size={14} />ONNX → 🔧 로컬 파싱/매칭{rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
+              </button>
+              <button onClick={() => handleExtract("gemini")} disabled={extracting}
+                className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl text-[13px] font-bold text-white bg-violet-500 hover:bg-violet-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm"
+                title="ONNX (PP-OCRv5) 로 rawText 추출 → Gemini 에 텍스트 전송 · 이미지 X · 토큰 60-70% 절감">
+                {extracting
+                  ? <><Loader2 size={14} className="animate-spin" />처리 중...</>
+                  : <><Zap size={14} />ONNX → 🪄 Gemini 파싱/매칭{rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => handleExtract(null)} disabled={extracting}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm">
+              {extracting
+                ? <><Loader2 size={15} className="animate-spin" />{statusMsg || `OCR 추출 중... (${processed}/${pageCount || "?"})`}</>
+                : <><Zap size={15} />OCR 추출 (Gemini){rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
+            </button>
+          )}
         </>
       )}
 

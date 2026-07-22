@@ -159,13 +159,29 @@ router.post("/api/vendors", async (req, res) => {
   const cleanPhone = phone ? String(phone).replace(/[^0-9]/g, "") : null;
   const cleanBizNum = business_number ? String(business_number).replace(/[^0-9]/g, "") : null;
   const validBizNum = cleanBizNum && cleanBizNum.length === 10 ? cleanBizNum : null;
-  const { data, error } = await supabase
-    .from("vendors")
-    .insert({ company_name: company_name.trim(), contact_name: contact_name ?? null, phone: cleanPhone || null, email: email ?? null, category: category ?? null, note: note ?? null, business_number: validBizNum })
+  const baseRow = {
+    company_name: company_name.trim(),
+    contact_name: contact_name ?? null,
+    phone: cleanPhone || null,
+    category: category ?? null,
+    note: note ?? null,
+    business_number: validBizNum,
+  };
+  // 2026-07-22: email 컬럼 없는 DB 호환 · 첫 시도에 email 포함 → 실패 시 email 없이 재시도
+  const r1 = await supabase.from("vendors")
+    .insert({ ...baseRow, email: email ?? null })
     .select("id, company_name, contact_name, phone, email, category, note, business_number, created_at")
     .single();
-  if (error) return res.status(500).json({ error: error.message });
-  return res.status(201).json(data);
+  if (!r1.error) return res.status(201).json(r1.data);
+  if (/email/i.test(r1.error.message)) {
+    const r2 = await supabase.from("vendors")
+      .insert(baseRow)
+      .select("id, company_name, contact_name, phone, category, note, business_number, created_at")
+      .single();
+    if (r2.error) return res.status(500).json({ error: `vendors 등록 실패: ${r2.error.message}` });
+    return res.status(201).json({ ...r2.data, email: null });
+  }
+  return res.status(500).json({ error: r1.error.message });
 });
 
 // 거래처 수정 (관리자)
@@ -184,10 +200,19 @@ router.patch("/api/vendors/:id", async (req, res) => {
     const digits = business_number ? String(business_number).replace(/[^0-9]/g, "") : "";
     updates.business_number = digits.length === 10 ? digits : null;
   }
-  const { data, error } = await supabase.from("vendors").update(updates).eq("id", id)
-    .select("id, company_name, contact_name, phone, email, category, note, business_number").single();
-  if (error) return res.status(500).json({ error: error.message });
-  return res.json(data);
+  // 2026-07-22: email 컬럼 없는 DB 호환 · 실패 시 email 제외 후 재시도 (GET 과 동일 패턴)
+  const SELECT_WITH_EMAIL = "id, company_name, contact_name, phone, email, category, note, business_number";
+  const SELECT_NO_EMAIL   = "id, company_name, contact_name, phone, category, note, business_number";
+  const r1 = await supabase.from("vendors").update(updates).eq("id", id).select(SELECT_WITH_EMAIL).single();
+  if (!r1.error) return res.json(r1.data);
+  if (/email/i.test(r1.error.message)) {
+    const updatesNoEmail = { ...updates };
+    delete updatesNoEmail.email;
+    const r2 = await supabase.from("vendors").update(updatesNoEmail).eq("id", id).select(SELECT_NO_EMAIL).single();
+    if (r2.error) return res.status(500).json({ error: `vendors 수정 실패: ${r2.error.message}` });
+    return res.json({ ...r2.data, email: null });
+  }
+  return res.status(500).json({ error: r1.error.message });
 });
 
 // 거래처 삭제 (관리자)

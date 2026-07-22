@@ -599,7 +599,8 @@ router.get("/api/purchase-details", async (req, res) => {
         rows = rows.map((r: any) => {
           const info = cycleMap.get(String(r.product_code));
           if (!info) return r;
-          return { ...r, cycle_days: info.days, purchase_count_total: info.count, first_purchase_date: info.firstDate };
+          // 2026-07-22: 최근매입일 (last_purchase_date) 추가 · 클라이언트 매입상세 리스트 컬럼용
+          return { ...r, cycle_days: info.days, purchase_count_total: info.count, first_purchase_date: info.firstDate, last_purchase_date: info.lastDate };
         });
       } catch (e: any) {
         console.warn("[purchase-details] 매입주기 계산 실패 (계속):", e?.message);

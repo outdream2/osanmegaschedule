@@ -643,7 +643,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
             key={`placed-tag-${item.employee.id}`}
             draggable
             onDragStart={(e) => handleDragStart(e, String(item.employee.id))}
-            className={`px-1.5 py-0.5 border rounded-lg text-[10px] font-black inline-flex items-center gap-1 shadow-3xs cursor-grab active:cursor-grabbing hover:scale-102 hover:border-blue-500 transition-transform ${getBadgeStyle(item.schedule.type)}`}
+            className={`px-1.5 py-0.5 border rounded-lg text-[11px] font-black inline-flex items-center gap-1 shadow-3xs cursor-grab active:cursor-grabbing hover:scale-102 hover:border-blue-500 transition-transform ${getBadgeStyle(item.schedule.type)}`}
             title={`드래그하여 이동 가능 / ${item.employee.position} / ${item.schedule.type}`}
           >
             <span>{item.employee.name}</span>
@@ -652,7 +652,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                 e.stopPropagation();
                 handleUnassign(String(item.employee.id));
               }}
-              className="text-[9px] font-extrabold hover:text-red-600 rounded px-0.5 transition"
+              className="text-[10px] font-extrabold hover:text-red-600 rounded px-0.5 transition"
               title="배치 빼기"
             >
               ✕
@@ -679,7 +679,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
               <h3 className="text-sm font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
                 매장맵 배치 및 스케줄 시뮬레이터 🗺️
               </h3>
-              <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
+              <p className="text-[12px] text-slate-500 font-semibold mt-0.5">
                 {formatWithKoreanWeekday(selectedDate)}
                 <span className="mx-2 text-slate-300">|</span>
                 출역 직원을 드래그 앤 드롭으로 맵에 직접 매치하여 오늘의 진열 배치를 자유롭게 시뮬레이션하십시오.
@@ -695,7 +695,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                 <button
                   key={`shift-pill-${shift}`}
                   onClick={() => setSelectedShift(shift)}
-                  className={`px-2.5 py-1 text-[11px] font-bold rounded-lg cursor-pointer transition ${
+                  className={`px-2.5 py-1 text-[12px] font-bold rounded-lg cursor-pointer transition ${
                     selectedShift === shift
                       ? shiftColors[shift]
                       : "text-slate-600 hover:text-slate-800 hover:bg-slate-200"
@@ -716,7 +716,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
               <select
                 value={openTime}
                 onChange={(e) => handleOpenTimeChange(e.target.value)}
-                className="bg-white border border-slate-200 p-0.5 rounded text-[11px] font-extrabold text-slate-705 cursor-pointer focus:outline-none"
+                className="bg-white border border-slate-200 p-0.5 rounded text-[12px] font-extrabold text-slate-705 cursor-pointer focus:outline-none"
               >
                 {Array.from({ length: 7 }, (_, i) => `${String(6 + i).padStart(2, "0")}:00`).map((t) => (
                   <option key={`open-${t}`} value={t}>{t} 오픈</option>
@@ -726,7 +726,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
               <select
                 value={closeTime}
                 onChange={(e) => handleCloseTimeChange(e.target.value)}
-                className="bg-white border border-slate-200 p-0.5 rounded text-[11px] font-extrabold text-slate-705 cursor-pointer focus:outline-none"
+                className="bg-white border border-slate-200 p-0.5 rounded text-[12px] font-extrabold text-slate-705 cursor-pointer focus:outline-none"
               >
                 {Array.from({ length: 7 }, (_, i) => `${String(18 + i).padStart(2, "0")}:00`).map((t) => (
                   <option key={`close-${t}`} value={t}>{t} 마감</option>
@@ -739,21 +739,21 @@ export const StoreMap: React.FC<StoreMapProps> = ({
         {/* Date Selector Wrap Panel - shows all days of the month at once */}
         <div className="border-t border-slate-100 pt-3">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <span className="text-[12px] font-black text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <span>📅 {currentMonth}월 전체 시뮬레이션 일자 선택기 (한 달 전체 날짜가 한 눈에 표시됩니다)</span>
-              <span className="text-[9px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-bold">원클릭 실시간 전환</span>
+              <span className="text-[10px] text-blue-600 bg-blue-50 px-1.5 py-0.5 rounded font-bold">원클릭 실시간 전환</span>
             </span>
             <div className="flex gap-1">
               <button
                 onClick={() => handleShiftDate("prev")}
-                className="p-1 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 transition cursor-pointer shrink-0"
+                className="p-1 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-600 transition cursor-pointer shrink-0"
                 title="이전 날짜로 이동"
               >
                 ◀ 이전 일
               </button>
               <button
                 onClick={() => handleShiftDate("next")}
-                className="p-1 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[10px] font-bold text-slate-600 transition cursor-pointer shrink-0"
+                className="p-1 px-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-[11px] font-bold text-slate-600 transition cursor-pointer shrink-0"
                 title="다음 날짜로 이동"
               >
                 다음 일 ▶
@@ -794,7 +794,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                       : "bg-white border-slate-200 hover:border-slate-300 text-slate-800"
                   }`}
                 >
-                  <span className={`text-[8px] md:text-[9px] font-extrabold uppercase tracking-wider leading-none ${
+                  <span className={`text-[8px] md:text-[10px] font-extrabold uppercase tracking-wider leading-none ${
                     isSelected ? "text-amber-300" : colorClass.split(" ")[0]
                   }`}>
                     {dStr}
@@ -827,7 +827,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
 
           {/* Quick Stats overview panel */}
           <div className="p-3 bg-slate-50 border border-slate-150 rounded-xl space-y-1.5">
-            <span className="text-[10px] uppercase font-extrabold text-blue-600 tracking-wider flex items-center gap-1">
+            <span className="text-[11px] uppercase font-extrabold text-blue-600 tracking-wider flex items-center gap-1">
               <span>📋 시뮬레이션 지표</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
             </span>
@@ -875,7 +875,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
               <button
                 key={`sidebar-shift-${shift}`}
                 onClick={() => setSelectedShift(shift)}
-                className={`flex-1 py-1 text-[10px] font-bold rounded-lg cursor-pointer transition ${
+                className={`flex-1 py-1 text-[11px] font-bold rounded-lg cursor-pointer transition ${
                   selectedShift === shift
                     ? shiftColors[shift]
                     : "text-slate-600 hover:text-slate-800 hover:bg-slate-200"
@@ -895,7 +895,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
               <button
                 key={`pos-filter-${pos}`}
                 onClick={() => setSidebarPositionFilter(pos)}
-                className={`flex-1 py-1 text-[10px] font-bold rounded-lg cursor-pointer transition border ${
+                className={`flex-1 py-1 text-[11px] font-bold rounded-lg cursor-pointer transition border ${
                   sidebarPositionFilter === pos
                     ? pos === "전체"
                       ? "bg-slate-800 text-white border-slate-800"
@@ -934,7 +934,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
               onDrop={(e) => handleDrop(e, "unassigned")}
             >
               {/* Drag tips info banner */}
-              <div className="p-2.5 bg-blue-50/60 border border-blue-150 rounded-xl text-[11px] text-blue-800 font-semibold leading-relaxed flex gap-1.5">
+              <div className="p-2.5 bg-blue-50/60 border border-blue-150 rounded-xl text-[12px] text-blue-800 font-semibold leading-relaxed flex gap-1.5">
                 <Info size={14} className="text-blue-500 shrink-0 mt-0.5" />
                 <p>
                   이름을 <strong>직접 드래그</strong>하여 오른쪽 맵 배치도의 구역 안에 넣어 배치하거나, 맵에 끌어올려 이동하세요.<br />
@@ -974,9 +974,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                         draggable
                         onDragStart={(e) => handleDragStart(e, String(item.employee.id))}
                         className={`p-2.5 rounded-xl border flex items-center justify-between transition cursor-grab active:cursor-grabbing hover:shadow-xs hover:border-slate-350 bg-white ${
-                          item.employee.position === "약사" || item.employee.position.startsWith("약사")
-                            ? "border-emerald-400 ring-2 ring-emerald-500 ring-offset-1"
-                            : isPlaced ? "border-slate-200" : "border-slate-300 ring-2 ring-blue-500/10"
+                          isPlaced ? "border-slate-200" : "border-slate-300 ring-2 ring-blue-500/10"
                         }`}
                       >
                         <div className="flex items-center gap-2">
@@ -985,12 +983,12 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                           </span>
                           <div>
                             <span className="text-xs font-black text-slate-800 block leading-tight">{item.employee.name}</span>
-                            <span className="text-[9px] text-slate-400 font-bold block mt-0.5">{item.employee.position} ({item.schedule.type})</span>
+                            <span className="text-[10px] text-slate-400 font-bold block mt-0.5">{item.employee.position} ({item.schedule.type})</span>
                           </div>
                         </div>
 
                         <div className="flex items-center gap-1.5 shrink-0">
-                          <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md ${
+                          <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
                             isPlaced ? "bg-slate-100 text-slate-600" : "bg-blue-100 text-blue-800"
                           }`}>
                             {zoneLabel}
@@ -1019,7 +1017,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
               <div className="border-t border-slate-150 pt-2.5 flex gap-2">
                 <button
                   onClick={handleResetToAuto}
-                  className="flex-1 text-[10px] font-black p-2 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+                  className="flex-1 text-[11px] font-black p-2 bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-300 rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
                   title="초기 역할별 자동 배정 알고리즘 작동"
                 >
                   <RotateCcw size={11} />
@@ -1027,7 +1025,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                 </button>
                 <button
                   onClick={handleClearAllAssignments}
-                  className="flex-1 text-[10px] font-black p-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
+                  className="flex-1 text-[11px] font-black p-2 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-xl transition flex items-center justify-center gap-1 cursor-pointer"
                   title="전체 직원을 배치 대기 상태로 회수"
                 >
                   <Trash2 size={11} />
@@ -1038,7 +1036,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
             </div>
           ) : (
             <div className="flex-1 flex flex-col gap-2.5 min-h-[300px]">
-              <div className="p-2.5 bg-rose-50/50 border border-rose-150 rounded-xl text-[11px] text-rose-800 font-semibold flex gap-1.5">
+              <div className="p-2.5 bg-rose-50/50 border border-rose-150 rounded-xl text-[12px] text-rose-800 font-semibold flex gap-1.5">
                 <Coffee size={14} className="text-rose-500 shrink-0 mt-0.5" />
                 <p>금일 공식 스케줄 상 '휴무', '월차', '지정휴무' 및 '결근' 처리되어 현장 배치에서 제외된 휴식 인원입니다.</p>
               </div>
@@ -1059,11 +1057,11 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                           <span className="text-slate-400 text-xs">💤</span>
                           <div>
                             <span className="text-xs font-black text-slate-800 leading-tight">{emp.name}</span>
-                            <span className="text-[9px] text-slate-400 font-bold block mt-0.5">{emp.position}</span>
+                            <span className="text-[10px] text-slate-400 font-bold block mt-0.5">{emp.position}</span>
                           </div>
                         </div>
 
-                        <span className="text-[10px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-100">
+                        <span className="text-[11px] font-black text-rose-600 bg-rose-50 px-2 py-0.5 rounded-lg border border-rose-100">
                           {offType}
                         </span>
                       </div>
@@ -1088,17 +1086,17 @@ export const StoreMap: React.FC<StoreMapProps> = ({
           {/* Interactive Zoom Level Selection for full responsiveness */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-3 bg-white border border-slate-200 p-2.5 rounded-xl z-20 relative shadow-3xs">
             <div className="flex items-center gap-1.5 text-left">
-              <span className="text-[10px] md:text-xs font-black text-slate-800 flex items-center gap-1">
+              <span className="text-[11px] md:text-xs font-black text-slate-800 flex items-center gap-1">
                 <span>🏬 2D 매장 실무 배치도 (ㄱ자 구조)</span>
               </span>
-              <span className="text-[8px] md:text-[9px] bg-blue-50 border border-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-black hidden xs:inline-block shadow-3xs animate-pulse">
+              <span className="text-[8px] md:text-[10px] bg-blue-50 border border-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-black hidden xs:inline-block shadow-3xs animate-pulse">
                 시뮬레이션 작동 중
               </span>
             </div>
             
             {/* Quick Zoom Controller for mobile/tablet responsiveness */}
             <div className="flex items-center gap-1 w-full sm:w-auto justify-end">
-              <span className="text-[9px] font-black text-slate-500 hidden md:inline">화면 크기 맞춤 (반응형 줌):</span>
+              <span className="text-[10px] font-black text-slate-500 hidden md:inline">화면 크기 맞춤 (반응형 줌):</span>
               <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50 shadow-inner flex-wrap justify-end gap-0.5">
                 {[
                   { label: "📱 모바일 (0.5x)", val: 0.5 },
@@ -1110,7 +1108,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                     key={`zoom-${zm.val}`}
                     type="button"
                     onClick={() => setZoomLevel(zm.val)}
-                    className={`px-1.5 py-1 text-[9px] font-extrabold rounded-md transition cursor-pointer ${
+                    className={`px-1.5 py-1 text-[10px] font-extrabold rounded-md transition cursor-pointer ${
                       zoomLevel === zm.val
                         ? "bg-slate-900 text-white shadow-3xs"
                         : "text-slate-600 hover:text-slate-900 hover:bg-white"
@@ -1148,7 +1146,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                 <div className="col-span-16 xl:col-span-14 bg-white border-4 border-blue-600 rounded-2xl p-3.5 flex flex-col shadow-md relative min-h-[170px]">
 
                   {/* Floating ㄱ-자 Section Badge */}
-                  <div className="absolute -top-3 left-4 bg-blue-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20 flex items-center gap-1">
+                  <div className="absolute -top-3 left-4 bg-blue-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20 flex items-center gap-1">
                     <span>🏬 [ㄱ자 매장실내] 가로 매대 라인</span>
                     <span className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></span>
                   </div>
@@ -1171,7 +1169,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                           : "bg-orange-50/40 border-orange-200"
                       }`}
                     >
-                      <span className="text-amber-600 text-[11px] font-bold">⚠️ 임박존</span>
+                      <span className="text-amber-600 text-[12px] font-bold">⚠️ 임박존</span>
                       <div className="flex items-center gap-1">
                         {expiringStaff.length > 0 ? (
                           renderPlacedStaffTags(expiringStaff)
@@ -1222,7 +1220,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                                   {isMulti ? (
                                     <>
                                       <div className="flex flex-col items-center shrink-0 border-r border-slate-200 pr-1.5 min-w-[42px]">
-                                        <span className={`text-[9px] font-black leading-none ${isAssigned ? "text-violet-700" : "text-slate-500"}`}>
+                                        <span className={`text-[10px] font-black leading-none ${isAssigned ? "text-violet-700" : "text-slate-500"}`}>
                                           {zoneDef.num}
                                         </span>
                                         <span className={`text-[7px] leading-none mt-0.5 text-center ${isAssigned ? "text-violet-600" : "text-slate-400"}`}>
@@ -1234,7 +1232,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                                           staffList.map((s, idx) => (
                                             <div
                                               key={`multi-${zoneDef.num}-${s.id ?? idx}-${s.name}`}
-                                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-white border border-violet-300 rounded text-[9px] font-black text-violet-700 shadow-3xs"
+                                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-white border border-violet-300 rounded text-[10px] font-black text-violet-700 shadow-3xs"
                                             >
                                               <span>{s.name}</span>
                                               {s.id != null && (
@@ -1256,7 +1254,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                                     </>
                                   ) : (
                                     <>
-                                      <span className={`text-[9px] font-black leading-none ${isAssigned ? "text-violet-700" : "text-slate-500"}`}>
+                                      <span className={`text-[10px] font-black leading-none ${isAssigned ? "text-violet-700" : "text-slate-500"}`}>
                                         {zoneDef.num}
                                       </span>
                                       <span className={`text-[7px] leading-none mt-0.5 text-center ${isAssigned ? "text-violet-600" : "text-slate-300"}`}>
@@ -1299,14 +1297,14 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-[9px] text-slate-500 font-bold block">🏬 중앙통로/진열대 전담 배치</span>
+                      <span className="text-[10px] text-slate-500 font-bold block">🏬 중앙통로/진열대 전담 배치</span>
                       <span className="text-[8px] text-slate-400">총 {mainAisleStaff.length}명 배치됨</span>
                     </div>
 
                     {mainAisleStaff.length > 0 ? (
                       renderPlacedStaffTags(mainAisleStaff)
                     ) : (
-                      <span className="text-[9px] text-slate-400 italic text-center py-1">여기에 드래그하여 중앙 진열대 담당을 지정하세요.</span>
+                      <span className="text-[10px] text-slate-400 italic text-center py-1">여기에 드래그하여 중앙 진열대 담당을 지정하세요.</span>
                     )}
                   </div>
 
@@ -1321,7 +1319,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                   </div>
 
                   <div className="border-b border-indigo-100 pb-1 flex flex-col items-center justify-center">
-                    <span className="text-[9px] font-extrabold text-indigo-950 flex items-center gap-1">
+                    <span className="text-[10px] font-extrabold text-indigo-950 flex items-center gap-1">
                       🛗 엘베
                     </span>
                     <span className="text-[7px] text-slate-400 font-bold mt-0.5">2층 연결</span>
@@ -1329,10 +1327,10 @@ export const StoreMap: React.FC<StoreMapProps> = ({
 
                   {/* Compact vertical stack: EV / Stairs icons */}
                   <div className="grid grid-cols-1 gap-1 my-1 flex-1">
-                    <div className="bg-slate-50 px-1 py-1 border rounded flex items-center justify-center shadow-3xs text-[10px] font-bold text-slate-500">
+                    <div className="bg-slate-50 px-1 py-1 border rounded flex items-center justify-center shadow-3xs text-[11px] font-bold text-slate-500">
                       🛗
                     </div>
-                    <div className="bg-slate-50 px-1 py-1 border rounded flex items-center justify-center shadow-3xs text-[10px] font-bold text-slate-500">
+                    <div className="bg-slate-50 px-1 py-1 border rounded flex items-center justify-center shadow-3xs text-[11px] font-bold text-slate-500">
                       ↗️
                     </div>
                   </div>
@@ -1357,11 +1355,11 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                   
                   {/* Real-time map guidance banner */}
                   <div className="p-3 bg-blue-50/65 border border-blue-150 rounded-xl">
-                    <span className="text-[10px] uppercase font-extrabold text-blue-600 tracking-wider flex items-center gap-1.5">
+                    <span className="text-[11px] uppercase font-extrabold text-blue-600 tracking-wider flex items-center gap-1.5">
                       <span>💡 실제 소매 매장 동선 설계 (ㄱ자 구조) 안내</span>
                       <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
                     </span>
-                    <p className="text-[10px] text-blue-800 font-semibold mt-1 leading-relaxed">
+                    <p className="text-[11px] text-blue-800 font-semibold mt-1 leading-relaxed">
                       본 시뮬레이터는 매장의 실제 **ㄱ자(L-shape)형** 레이아웃을 정확하게 재현했습니다. 
                       상단의 넓은 가로 매대 라인과 우측 수직 프로모션/약국 카운터 동선, 최하단 창고·휴게 부속지를 드래그 앤 드롭으로 자유롭게 매핑하여 효율적인 실무 교대 시점을 관리하세요.
                     </p>
@@ -1369,10 +1367,10 @@ export const StoreMap: React.FC<StoreMapProps> = ({
 
                   {/* 오픈, 미들, 마감 직원색상 설명 */}
                   <div className="space-y-1.5 border-t border-slate-100 pt-2 pb-0.5">
-                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wide block mb-1">
+                    <span className="text-[11px] font-black text-slate-500 uppercase tracking-wide block mb-1">
                       🎨 근무조 분류 설명 및 가이드
                     </span>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5 text-[11px] font-semibold text-slate-700">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-1.5 text-[12px] font-semibold text-slate-700">
                       <div className="flex flex-col justify-between p-1.5 rounded-xl bg-amber-50/60 border border-amber-200">
                         <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-full bg-amber-400 border border-amber-500"></span>오픈조 (☀️)</span>
                         <span className="text-[8px] text-amber-800 font-black mt-0.5 tracking-tight">{openShiftHour.replace("-", " ~ ")}</span>
@@ -1392,7 +1390,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                   <div className="space-y-2 border-t border-slate-150 pt-2.5">
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                        <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
                           ⏱️ 시간대별 인원배치 실시간 집계 (10시 ~ 20시)
                         </span>
                         <span className="text-[8px] text-[#2563eb] bg-blue-50 px-1.5 py-0.5 rounded font-black">자동 계산</span>
@@ -1417,11 +1415,11 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                               }`}
                               title={`${hour}시 근무자 확인 (총 ${count}명)`}
                             >
-                              <span className={`text-[9px] font-black tracking-tight ${isInspected ? "text-white" : "text-slate-500"}`}>
+                              <span className={`text-[10px] font-black tracking-tight ${isInspected ? "text-white" : "text-slate-500"}`}>
                                 {hour === 20 ? "8(20)시" : `${hour}시`}
                               </span>
                               <div className="mt-1 flex items-center justify-center">
-                                <span className={`text-[10px] font-black ${isInspected ? "text-blue-100" : (count > 0 ? "text-[#2563eb]" : "text-slate-400")}`}>
+                                <span className={`text-[11px] font-black ${isInspected ? "text-blue-100" : (count > 0 ? "text-[#2563eb]" : "text-slate-400")}`}>
                                   {count}명
                                 </span>
                               </div>
@@ -1435,16 +1433,16 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                     <div className="mt-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl min-h-[70px] flex flex-col justify-center">
                       {inspectedHour !== null ? (
                         <div>
-                          <div className="flex items-center justify-between border-b border-slate-200 pb-1 mb-1.5 text-[9px] font-bold text-slate-500">
+                          <div className="flex items-center justify-between border-b border-slate-200 pb-1 mb-1.5 text-[10px] font-bold text-slate-500">
                             <span>🕒 {inspectedHour}시 실무 출근 인원 명단 ({getStaffForHour(inspectedHour).length}명)</span>
-                            <button onClick={() => setInspectedHour(null)} className="text-slate-400 hover:text-red-500 font-extrabold text-[9px] px-1">✕</button>
+                            <button onClick={() => setInspectedHour(null)} className="text-slate-400 hover:text-red-500 font-extrabold text-[10px] px-1">✕</button>
                           </div>
                           {getStaffForHour(inspectedHour).length > 0 ? (
                             <div className="flex flex-wrap gap-1 w-full">
                               {getStaffForHour(inspectedHour).map((item) => (
                                 <div
                                   key={`inspected-staff-${item.employee.id}`}
-                                  className={`px-1.5 py-0.5 rounded text-[9px] border font-bold flex items-center gap-1 ${getBadgeStyle(item.schedule.type)}`}
+                                  className={`px-1.5 py-0.5 rounded text-[10px] border font-bold flex items-center gap-1 ${getBadgeStyle(item.schedule.type)}`}
                                   title={`${item.employee.position} / ${item.schedule.workingHours}`}
                                 >
                                   <span>{item.employee.name}</span>
@@ -1453,13 +1451,13 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                               ))}
                             </div>
                           ) : (
-                            <span className="text-[9px] text-slate-400 italic block text-center">해당 시간대 출근 수속자 없음</span>
+                            <span className="text-[10px] text-slate-400 italic block text-center">해당 시간대 출근 수속자 없음</span>
                           )}
                         </div>
                       ) : (
                         <div className="text-center py-1 text-slate-500 font-medium flex flex-col items-center gap-0.5">
-                          <span className="text-[10px] font-extrabold text-[#2563eb]">💡 위 시간표 버튼을 눌러보세요</span>
-                          <span className="text-[9px] text-slate-400 font-normal">교대 시간대별 근무 가능 인원 명단을 정렬하여 보여줍니다.</span>
+                          <span className="text-[11px] font-extrabold text-[#2563eb]">💡 위 시간표 버튼을 눌러보세요</span>
+                          <span className="text-[10px] text-slate-400 font-normal">교대 시간대별 근무 가능 인원 명단을 정렬하여 보여줍니다.</span>
                         </div>
                       )}
                     </div>
@@ -1471,12 +1469,12 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                 <div className="col-span-16 xl:col-span-6 bg-white border-2 border-violet-400 rounded-2xl p-3 flex flex-col gap-2 shadow-md relative">
 
                   {/* Floating Badge */}
-                  <div className="absolute -top-3 left-3 bg-violet-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20 flex items-center gap-1">
+                  <div className="absolute -top-3 left-3 bg-violet-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20 flex items-center gap-1">
                     <span>🧬 프로모션 구역</span>
                   </div>
 
                   <div className="flex items-center justify-between border-b pb-1.5 mt-1">
-                    <span className="text-[11px] font-black text-slate-800 flex items-center gap-1">🧬 베스트·이벤트 라인</span>
+                    <span className="text-[12px] font-black text-slate-800 flex items-center gap-1">🧬 베스트·이벤트 라인</span>
                     <span className="text-[8px] bg-violet-100 text-violet-700 rounded px-1 py-0.5 font-bold">중앙 섹션</span>
                   </div>
 
@@ -1493,7 +1491,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                       }`}
                     >
                       <div className="flex flex-col gap-0.5 border-b border-blue-200/70 pb-1 mb-1">
-                        <span className="text-[10px] font-black text-blue-950 flex items-center gap-1">🧬 베스트 세트존</span>
+                        <span className="text-[11px] font-black text-blue-950 flex items-center gap-1">🧬 베스트 세트존</span>
                         <span className="text-[7px] text-blue-600 font-extrabold">연령/질환별</span>
                       </div>
                       <div className="flex-1 py-1 flex flex-col justify-center">
@@ -1508,7 +1506,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
 
                     {/* 이벤트존 (3 stacked sub-zones) */}
                     <div className="flex-1 bg-white border border-slate-200 rounded-lg p-2 flex flex-col gap-1.5">
-                      <span className="text-[10px] font-black text-slate-800 flex items-center gap-1 border-b border-slate-200 pb-1">
+                      <span className="text-[11px] font-black text-slate-800 flex items-center gap-1 border-b border-slate-200 pb-1">
                         🎈 이벤트 존
                       </span>
                       <div className="flex-1 flex flex-col gap-1">
@@ -1562,13 +1560,13 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                 <div className="col-span-16 xl:col-span-4 bg-slate-50 border-4 border-blue-600 rounded-2xl p-3 flex flex-col gap-2.5 shadow-md relative">
 
                   {/* Floating ㄱ-자 Section Badge */}
-                  <div className="absolute -top-3 left-3 bg-blue-600 text-white text-[9px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20 flex items-center gap-1">
+                  <div className="absolute -top-3 left-3 bg-blue-600 text-white text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider shadow-sm z-20 flex items-center gap-1">
                     <span>🚪 우측 수직 윙</span>
                   </div>
 
                   {/* Wing Title Badge */}
                   <div className="flex items-center justify-between border-b pb-1.5 mb-0.5 mt-1">
-                    <span className="text-[11px] font-black text-slate-800 flex items-center gap-1">
+                    <span className="text-[12px] font-black text-slate-800 flex items-center gap-1">
                       🚪 우측 카운터 라인
                     </span>
                     <span className="text-[8px] bg-slate-200 text-slate-600 rounded px-1 py-0.5 font-bold">수직 윙</span>
@@ -1583,7 +1581,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                       dragOverZone === "slot_drink" ? "ring-2 ring-yellow-500 bg-yellow-100" : ""
                     }`}
                   >
-                    <span className="text-[10px] font-black text-amber-950 flex items-center gap-1 shrink-0">🧊 냉장고</span>
+                    <span className="text-[11px] font-black text-amber-950 flex items-center gap-1 shrink-0">🧊 냉장고</span>
                     <div className="flex-1 flex items-center justify-end gap-1">
                       {drinkStaff.length > 0 ? (
                         renderPlacedStaffTags(drinkStaff)
@@ -1605,7 +1603,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                     {/* Vertical title label (rotated) */}
                     <div className="flex items-center justify-center shrink-0 w-5 mr-2 border-r border-blue-300/60">
                       <span
-                        className="text-[10px] font-black text-blue-900 whitespace-nowrap"
+                        className="text-[11px] font-black text-blue-900 whitespace-nowrap"
                         style={{ writingMode: "vertical-rl" }}
                       >
                         💳 메인 카운터 (Checkout)
@@ -1656,7 +1654,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                   >
                     <div className="flex items-center gap-1 border-b border-orange-300 pb-1">
                       <span className="text-orange-600 text-xs">💊</span>
-                      <span className="text-[10px] font-black text-orange-950 leading-tight">정면 약국 진열</span>
+                      <span className="text-[11px] font-black text-orange-950 leading-tight">정면 약국 진열</span>
                     </div>
 
                     <div className="flex-1 py-1 flex flex-col justify-center">
@@ -1682,7 +1680,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between border-b border-emerald-200 pb-0.5">
-                      <span className="text-[9px] font-black text-emerald-950">👥 대량구매상담</span>
+                      <span className="text-[10px] font-black text-emerald-950">👥 대량구매상담</span>
                       <span className="text-[7px] font-bold text-emerald-700">VIP</span>
                     </div>
                     <div className="flex-1 py-1">
@@ -1704,7 +1702,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-[9px] font-black text-indigo-950">🛒 카트존</span>
+                      <span className="text-[10px] font-black text-indigo-950">🛒 카트존</span>
                       <span className="text-[7px] text-slate-500 font-bold">반입정렬</span>
                     </div>
                     <div className="flex-1 py-0.5 flex items-center justify-center">
@@ -1736,7 +1734,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
                 >
                   <div className="flex items-center gap-1 border-b border-indigo-100 pb-1 mb-1">
                     <span className="text-indigo-600 text-xs">📦</span>
-                    <span className="text-[9px] font-black text-slate-950">창고/물류</span>
+                    <span className="text-[10px] font-black text-slate-950">창고/물류</span>
                   </div>
                   <div className="flex-1 py-1 flex items-center justify-center">
                     {warehouseStaff.length > 0 ? (
@@ -1758,7 +1756,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
 
           {/* Footer of Blueprint design guidelines */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-slate-200/60 pt-4 mt-6">
-            <div className="flex flex-wrap items-center gap-4 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+            <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-400 font-bold uppercase tracking-wider">
               <span className="text-slate-500">범례 (근무 시간대 배지):</span>
               <div className="flex items-center gap-1">
                 <div className="w-2.5 h-2.5 rounded-full bg-amber-400 border border-amber-500"></div>
@@ -1774,7 +1772,7 @@ export const StoreMap: React.FC<StoreMapProps> = ({
               </div>
             </div>
 
-            <p className="text-[9px] text-slate-400 font-semibold tracking-tight">
+            <p className="text-[10px] text-slate-400 font-semibold tracking-tight">
               * 출역 직원을 자유롭게 드래그 배치할 수 있도록 설계된 인터랙티브 교대시점 시뮬레이터 시스템입니다.
             </p>
           </div>

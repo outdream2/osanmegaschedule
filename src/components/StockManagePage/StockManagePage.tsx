@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Search, Package, TrendingUp, AlertTriangle, Building2, Info, EyeOff, Eye, Loader2 as LoaderIcon, Pencil, Check, X as XIcon, CheckSquare, Square, Boxes, Activity, Layers, FileText, LineChart } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
+import { PurchaseHistoryModal } from "../common/PurchaseHistoryModal";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { useHiddenManager } from "../../hooks/useHiddenManager";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
@@ -540,7 +541,7 @@ export const ProductManageView: React.FC<{ onProductClick: (p: any) => void }> =
 // ═══════════════════════════════════════════════════════════════════════
 // 매입상세 뷰 (2026-07-15) · purchase_details 리스트 · 검색·정렬·기간 필터
 // ═══════════════════════════════════════════════════════════════════════
-type PDSortKey = "date" | "supplier" | "name" | "code" | "quantity" | "amount" | "cycle" | "min_order";
+type PDSortKey = "date" | "supplier" | "name" | "code" | "quantity" | "amount" | "cycle" | "min_order" | "last_purchase";
 // 매입상세 조회 기간 프리셋 (재고흐름 · 판매추이와 통일)
 type PDPeriodPreset = "all" | "10d" | "1m" | "3m" | "6m" | "custom";
 const PD_PRESET_LABEL: Record<PDPeriodPreset, string> = {
@@ -566,6 +567,8 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
   const [importBatches, setImportBatches] = useState<any[]>([]);
   // 거래명세서 조회 모달 (2026-07-16) · 매입일+공급사 로 ocr_confirmed_items 조회
   const [invoiceModal, setInvoiceModal] = useState<{ purchase_date: string; supplier: string; product_name?: string } | null>(null);
+  // 2026-07-22 · 상품 매입 이력 모달 · 매입일 클릭 시 열림
+  const [purchaseHistoryModal, setPurchaseHistoryModal] = useState<{ product_code: string; product_name?: string; highlight_date?: string } | null>(null);
   // 계절 필터 · 지정 시 년도 무관 · from/to/preset 무시
   const [season, setSeason] = useState<SeasonKey | null>(null);
 
@@ -631,6 +634,7 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
         case "amount": return Number(r.total ?? r.amount ?? 0);
         case "cycle": return Number(r.cycle_days ?? 0);
         case "min_order": return Number(r.min_order ?? 0);
+        case "last_purchase": return String(r.last_purchase_date ?? "");
       }
     };
     return [...base].sort((a, b) => {
@@ -782,6 +786,8 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
                   { k: "name" as const,     label: "상품명",  w: "text-left",        bg: "" },
                   { k: "quantity" as const, label: "수량",    w: "w-12 text-right",  bg: "bg-slate-50/40" },
                   { k: "cycle" as const,    label: "매입주기", w: "w-14 text-right", bg: "bg-sky-50/40" },
+                  // 2026-07-22 · 최근매입일 컬럼 추가 (사용자 요청)
+                  { k: "last_purchase" as const, label: "최근매입", w: "w-14 text-right", bg: "bg-emerald-50/30" },
                   { k: "min_order" as const, label: "최소발주", w: "w-14 text-right", bg: "bg-sky-50/40" },
                   { k: "amount" as const,   label: "금액",    w: "w-20 text-right",  bg: "bg-emerald-50/40" },
                 ] as { k: PDSortKey; label: string; w: string; bg: string }[]).map(col => {
@@ -813,7 +819,7 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
             </thead>
             <tbody className="divide-y divide-slate-50">
               {filtered.length === 0 ? (
-                <tr><td colSpan={8} className="text-center text-[11px] text-slate-300 py-6">필터 조건에 맞는 매입 없음</td></tr>
+                <tr><td colSpan={9} className="text-center text-[11px] text-slate-300 py-6">필터 조건에 맞는 매입 없음</td></tr>
               ) : filtered.slice(0, 1000).map((r, i) => {
                 const md = r.purchase_date && /^\d{4}-\d{2}-\d{2}$/.test(String(r.purchase_date))
                   ? `${String(r.purchase_date).slice(5, 7)}/${String(r.purchase_date).slice(8, 10)}` : "-";
@@ -823,7 +829,22 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
                 return (
                   <tr key={r.id ?? i} className="hover:bg-orange-50/30 transition align-top">
                     <td className="px-0.5 py-1.5 text-orange-600 font-black text-[10px]">{i + 1}</td>
-                    <td className="px-0.5 py-1.5 font-mono text-slate-600 whitespace-nowrap" title={r.purchase_date ?? undefined}>{md}</td>
+                    <td className="px-0.5 py-1.5 font-mono whitespace-nowrap">
+                      {r.product_code && r.purchase_date ? (
+                        <button
+                          type="button"
+                          onClick={() => setPurchaseHistoryModal({
+                            product_code: String(r.product_code),
+                            product_name: r.product_name ?? undefined,
+                            highlight_date: String(r.purchase_date),
+                          })}
+                          className="text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer"
+                          title={`${r.purchase_date} · ${r.product_name ?? "-"} 매입 이력 보기`}
+                        >{md}</button>
+                      ) : (
+                        <span className="text-slate-600" title={r.purchase_date ?? undefined}>{md}</span>
+                      )}
+                    </td>
                     <td className="px-0.5 py-1.5 break-words whitespace-normal leading-tight" title={r.product_name ?? undefined}>
                       {onProductClick && r.product_code ? (
                         <button
@@ -838,6 +859,12 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
                     </td>
                     <td className="px-1 py-1.5 text-right font-mono font-black text-slate-700 bg-slate-50/40">{r.quantity != null ? r.quantity.toLocaleString() : "-"}</td>
                     <td className="px-1 py-1.5 text-right font-mono text-sky-600 bg-sky-50/40" title={cycle > 0 ? `${Number(r.purchase_count_total)}회 매입 · 평균 ${cycle}일 주기` : "2회 미만 · 계산 불가"}>{cycleLabel}</td>
+                    {/* 2026-07-22 · 최근매입일 (M/D 짧게 · 오늘 매입과 비교용) */}
+                    <td className="px-1 py-1.5 text-right font-mono text-emerald-600 bg-emerald-50/30" title={r.last_purchase_date ?? undefined}>
+                      {r.last_purchase_date && /^\d{4}-\d{2}-\d{2}$/.test(String(r.last_purchase_date))
+                        ? `${String(r.last_purchase_date).slice(5, 7)}/${String(r.last_purchase_date).slice(8, 10)}`
+                        : "-"}
+                    </td>
                     <td className="px-1 py-1.5 text-right font-mono text-sky-700 font-semibold bg-sky-50/40" title={minOrder > 0 ? `최소발주량 ${minOrder}` : "미지정"}>{minOrder > 0 ? minOrder.toLocaleString() : "-"}</td>
                     <td className="px-1 py-1.5 text-right font-mono font-black text-emerald-700 bg-emerald-50/40" title={(r.total ?? r.amount) != null ? Number(r.total ?? r.amount).toLocaleString() + "원" : undefined}>{(r.total ?? r.amount) != null ? fmtWon(Number(r.total ?? r.amount)) : "-"}</td>
                     <td className="px-1 py-1.5 text-center whitespace-nowrap">
@@ -908,6 +935,15 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
           supplier={invoiceModal.supplier}
           highlightProduct={invoiceModal.product_name}
           onClose={() => setInvoiceModal(null)}
+        />
+      )}
+      {/* 2026-07-22 · 상품 매입 이력 모달 · 매입일 클릭 시 · 이 상품의 전체 매입 이력 */}
+      {purchaseHistoryModal && (
+        <PurchaseHistoryModal
+          productCode={purchaseHistoryModal.product_code}
+          productName={purchaseHistoryModal.product_name}
+          highlightDate={purchaseHistoryModal.highlight_date}
+          onClose={() => setPurchaseHistoryModal(null)}
         />
       )}
     </div>
@@ -2708,7 +2744,20 @@ export const StockManagePage: React.FC = () => {
                                     </td>
                                     <td className="text-right px-1 py-1 font-mono text-amber-700">{fmt(Number(r.current_stock ?? 0))}</td>
                                     <td className="text-right px-1 py-1 font-mono text-slate-500">{detailCycleStr(r)}</td>
-                                    <td className="text-right px-1 py-1 font-mono text-slate-500">{fmtPurchaseDate(r.last_purchase_date)}</td>
+                                    <td className="text-right px-1 py-1 font-mono">
+                                      {r.product_code && r.last_purchase_date ? (
+                                        <button type="button"
+                                          onClick={() => setProductPurchaseModal({
+                                            product_code: String(r.product_code),
+                                            product_name: r.product_name ?? "",
+                                          })}
+                                          className="text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer"
+                                          title={`${r.last_purchase_date} · 매입 이력 보기`}
+                                        >{fmtPurchaseDate(r.last_purchase_date)}</button>
+                                      ) : (
+                                        <span className="text-slate-500">{fmtPurchaseDate(r.last_purchase_date)}</span>
+                                      )}
+                                    </td>
                                     <td className="text-right px-1 py-1 font-mono text-slate-700">{fmt(Number(r.purchase_total_qty ?? r.purchase_qty ?? 0))}</td>
                                     <td className="text-right px-1 py-1 font-mono text-sky-600">{minOrder > 0 ? `${fmt(minOrder)}개` : "-"}</td>
                                     <td className="text-right px-1 py-1 font-mono font-bold text-emerald-700">{fmtWon(Number(r.total_amount ?? 0))}</td>
@@ -3274,8 +3323,9 @@ export const StockManagePage: React.FC = () => {
                         </div>
                       )
                     ) : (
-                      <div className={`overflow-x-auto transition-opacity duration-200 ${loading ? "opacity-60" : "opacity-100"}`}>
-                      <table className="w-full text-[10px] sm:text-xs sm:min-w-[540px]">
+                      // 2026-07-22 · 한 화면 fit · overflow-hidden + table-fixed · 품명 줄바꿈 · min-w 제거
+                      <div className={`overflow-hidden transition-opacity duration-200 ${loading ? "opacity-60" : "opacity-100"}`}>
+                      <table className="w-full text-[11px] sm:text-xs" style={{ tableLayout: "fixed" }}>
                         <thead className="sticky top-0 bg-white z-10">
                           {selectedFlowCodes.size > 0 && (
                             <tr className="bg-rose-50 border-b border-rose-200">

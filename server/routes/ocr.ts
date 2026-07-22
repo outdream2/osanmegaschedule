@@ -755,6 +755,9 @@ router.delete("/api/ocr-templates/:supplier_name", async (req, res) => {
 
 router.post("/api/ocr", async (req, res) => {
   const { images, engine: reqEngine = "gemini" } = req.body ?? {};
+  // 2026-07-22 · parseMode: "auto"|"raw" · ONNX 엔진 전용 · raw 면 파싱 스테이지 스킵 (rawText만 반환)
+  //   Gemini 엔진 흐름은 완전히 미변경
+  const parseMode: "auto" | "raw" = req.body?.parseMode === "raw" ? "raw" : "auto";
   // ── 재추출 approach 파라미터 (2026-07-19 · 순환 재파싱) ─────────────────────
   //   ?approach=default        (첫 클릭 · 기존 동작)
   //   ?approach=rearrange      (2회차 · rawText 재파싱만 · OCR 스킵 · body.cachedRawTexts 필수)
@@ -954,15 +957,19 @@ router.post("/api/ocr", async (req, res) => {
       const diagnostics: any[] = [];
       const imgs = images as { data: string; mimeType: string }[];
 
-      // 파이프라인 조립 (한 번만)
-      const pipeline = buildOnnxPipeline({
-        matchVendorSupplier,
-        findVendorInText,
-        findOcrTemplate,
-        applyColumnMapping,
-        applyTemplateHeaders,
-        upsertOcrTemplate,
-      });
+      // 파이프라인 조립 (한 번만) · parseMode=raw 면 raw 파이프라인 (rawText 추출만)
+      const { buildRawOnnxPipeline } = await import("../ocr/pipeline");
+      const pipeline = parseMode === "raw"
+        ? buildRawOnnxPipeline()
+        : buildOnnxPipeline({
+            matchVendorSupplier,
+            findVendorInText,
+            findOcrTemplate,
+            applyColumnMapping,
+            applyTemplateHeaders,
+            upsertOcrTemplate,
+          });
+      console.log(`[OCR/ONNX] parseMode=${parseMode} · ${parseMode === "raw" ? "추출만 (파싱 스킵)" : "전체 파이프라인"}`);
 
       for (let i = 0; i < imgs.length; i++) {
         const startTs = Date.now();
@@ -1553,6 +1560,171 @@ router.post("/api/ocr", async (req, res) => {
       return;
     }
     res.status(500).json({ error: err?.message ?? "OCR 처리 중 오류" });
+  }
+});
+
+// 2026-07-22 · 로컬 파싱 · raw OCR 결과 → 로컬 파이프라인 (vendor-match/normalize/verify/totals)
+//   입력: { pages: [{page, rawText, headers, rows, meta, supplierHint?}, ...] }
+//     - headers/rows/meta 는 raw OCR (ocr-engine 스테이지) 결과 그대로
+//   출력: { pages: [{page, headers, rows, meta, rawText}, ...] }
+//   중요: rearrange 스테이지는 실행하지 않음 (approach="default") · 원래 ONNX 흐름과 동일
+router.post("/api/ocr/parse-local", async (req, res) => {
+  const reqStart = Date.now();
+  try {
+    const { buildPostParsePipeline } = await import("../ocr/pipeline");
+    const { pages } = req.body as {
+      pages: Array<{
+        page: number; rawText: string;
+        headers?: string[]; rows?: any[][]; meta?: any;
+        supplierHint?: string;
+      }>
+    };
+    if (!Array.isArray(pages) || pages.length === 0) {
+      return res.status(400).json({ error: "pages 배열이 비어있음" });
+    }
+    console.log(`\n╔══ [parse-local] 요청 · ${pages.length} 페이지 ══`);
+    pages.forEach(pg => console.log(`║ page ${pg.page}: rawText=${(pg.rawText ?? "").length}자 · rawHeaders=${(pg.headers ?? []).length}개 · rawRows=${(pg.rows ?? []).length}개 · hint="${pg.supplierHint ?? "-"}"`));
+    // post-parse 파이프라인 (vendor-match 부터 · rearrange 제외 · 원래 default 흐름)
+    const pipeline = buildPostParsePipeline({
+      matchVendorSupplier, findVendorInText, findOcrTemplate,
+      applyColumnMapping, applyTemplateHeaders, upsertOcrTemplate,
+    });
+    const out: any[] = [];
+    const summaries: Array<{ page: number; rows: number; supplier: string; total: any; timeMs: number }> = [];
+    for (const pg of pages) {
+      const pgStart = Date.now();
+      const ctx = makeInitialContext({
+        page: pg.page,
+        rawB64: "",
+        rawMime: "image/jpeg",
+        supplierHint: (pg.supplierHint ?? "").trim() || undefined,
+        approach: "default",       // 중요: default · rearrange 아님 → 원래 흐름과 동일
+      });
+      // ocr-engine 스테이지 결과를 직접 주입 (raw 추출에서 이미 얻은 값들)
+      ctx.rawText = pg.rawText ?? "";
+      ctx.headers = Array.isArray(pg.headers) ? pg.headers : [];
+      ctx.rows = Array.isArray(pg.rows) ? pg.rows : [];
+      ctx.meta = pg.meta ?? {};
+      ctx.raw = {
+        headers: ctx.headers.slice(),
+        rows: ctx.rows.map(r => r.slice()),
+        meta: { ...ctx.meta },
+        rawText: ctx.rawText,
+      };
+      await runPipeline(pipeline, ctx, { page: pg.page });
+      if (!ctx.headers || ctx.headers.length === 0) {
+        ctx.headers = ["품명", "규격", "수량", "단가", "금액", "유통기한", "비고"];
+      }
+      if (!ctx.rows || ctx.rows.length === 0) {
+        ctx.rows = [new Array(ctx.headers.length).fill(null)];
+      }
+      const pageTime = Date.now() - pgStart;
+      summaries.push({
+        page: pg.page, rows: ctx.rows.length,
+        supplier: String(ctx.meta?.supplier ?? "미상"),
+        total: ctx.meta?.total ?? null, timeMs: pageTime,
+      });
+      out.push({
+        page: ctx.page, headers: ctx.headers, rows: ctx.rows, meta: ctx.meta,
+        rawText: pg.rawText, _localParsed: true,
+      });
+      console.log(`║ ✓ page ${pg.page}: ${pageTime}ms · ${ctx.rows.length}행 · supplier="${summaries[summaries.length - 1].supplier}"`);
+    }
+    console.log(`╚══ [parse-local] 완료 · 총 ${Date.now() - reqStart}ms\n`);
+    res.json({ pages: out, _diag: { totalTimeMs: Date.now() - reqStart, summaries } });
+  } catch (err: any) {
+    console.error("[parse-local] 예외:", err);
+    res.status(500).json({ error: err?.message ?? "unknown" });
+  }
+});
+
+// 2026-07-22 · Gemini 텍스트 파싱 · rawText → Gemini → 표준 거래명세서 JSON
+//   입력: { pages: [{page, rawText}, ...] }
+//   출력: { pages: [{page, headers, rows, meta, rawText}, ...] }
+//   기존 Gemini 비전 OCR (engine=gemini) 흐름과 완전 분리 · gemini.ts 미변경
+router.post("/api/ocr/parse-gemini", async (req, res) => {
+  const reqStart = Date.now();
+  try {
+    const { callGeminiTextParse } = await import("../ocr/geminiTextParse");
+    const { getGeminiKeys, geminiState, parseGeminiText } = await import("../ocr/gemini");
+    void parseGeminiText;  // silence unused
+    const { pages } = req.body as { pages: Array<{ page: number; rawText: string }> };
+    if (!Array.isArray(pages) || pages.length === 0) {
+      return res.status(400).json({ error: "pages 배열이 비어있음" });
+    }
+    const keys = getGeminiKeys();
+    console.log(`\n╔══ [parse-gemini] 요청 · ${pages.length} 페이지 · 키 ${keys.length}개 ══`);
+    pages.forEach(pg => console.log(`║ page ${pg.page}: rawText=${(pg.rawText ?? "").length}자`));
+    if (keys.length === 0) {
+      console.error(`║ ✗ Gemini API 키 없음 (.env 의 GEMINI_API_KEY 확인)`);
+      console.log(`╚══════════════════════\n`);
+      return res.status(500).json({ error: "Gemini API 키 없음 · .env 의 GEMINI_API_KEY 확인" });
+    }
+    const out: any[] = [];
+    const summaries: Array<{ page: number; status: string; rows: number; supplier: string; total: any; timeMs: number; error?: string }> = [];
+    for (const pg of pages) {
+      const pgStart = Date.now();
+      let outPage: any = { page: pg.page, headers: [], rows: [], meta: {}, rawText: pg.rawText };
+      let status = "UNKNOWN";
+      let errMsg: string | undefined;
+      let tried = 0;
+      while (tried < keys.length) {
+        const keyIdx = geminiState.currentKeyIdx;
+        const key = keys[keyIdx];
+        console.log(`║ page ${pg.page}: 키#${keyIdx + 1}/${keys.length} 호출...`);
+        const r = await callGeminiTextParse(pg.rawText ?? "", key);
+        if (r.ok) {
+          try {
+            const parsed = JSON.parse(r.text);
+            outPage = {
+              page: pg.page,
+              headers: Array.isArray(parsed.headers) && parsed.headers.length > 0
+                ? parsed.headers
+                : ["품명", "규격", "수량", "단가", "금액", "유통기한", "비고"],
+              rows: Array.isArray(parsed.rows) ? parsed.rows : [],
+              meta: parsed.meta ?? {},
+              rawText: pg.rawText,
+              _geminiParsed: true,
+            };
+            status = "OK";
+            console.log(`║ ✓ page ${pg.page}: OK · ${outPage.rows.length}행 · supplier="${outPage.meta?.supplier ?? "?"}" · total=${outPage.meta?.total ?? "?"}`);
+          } catch (parseErr: any) {
+            status = "JSON_PARSE_FAIL";
+            errMsg = parseErr?.message;
+            console.warn(`║ ⚠ page ${pg.page}: JSON 파싱 실패 · Gemini 응답 첫 200자: ${r.text.slice(0, 200)}`);
+          }
+          break;
+        } else if ("quota" in r && r.quota) {
+          console.warn(`║ ⚠ page ${pg.page}: 키#${keyIdx + 1} quota 소진 · 다음 키`);
+          geminiState.currentKeyIdx = (geminiState.currentKeyIdx + 1) % keys.length;
+          tried++;
+          if (tried >= keys.length) { status = "QUOTA_EXHAUSTED"; errMsg = "모든 Gemini 키 quota 소진"; }
+          continue;
+        } else {
+          status = "API_ERROR";
+          errMsg = "error" in r ? r.error : "unknown";
+          console.warn(`║ ✗ page ${pg.page}: API 실패 · ${errMsg}`);
+          break;
+        }
+      }
+      // 안전망: 결과 비면 rawText 첫 라인이라도
+      if (!outPage.headers?.length) outPage.headers = ["품명", "규격", "수량", "단가", "금액", "유통기한", "비고"];
+      if (!outPage.rows?.length) outPage.rows = [new Array(outPage.headers.length).fill(null)];
+      summaries.push({
+        page: pg.page, status, rows: outPage.rows.length,
+        supplier: String(outPage.meta?.supplier ?? "미상"),
+        total: outPage.meta?.total ?? null,
+        timeMs: Date.now() - pgStart, error: errMsg,
+      });
+      out.push(outPage);
+    }
+    console.log(`╠══ [parse-gemini] 완료 · 총 ${Date.now() - reqStart}ms ══`);
+    summaries.forEach(s => console.log(`║ p${s.page}: ${s.status} · ${s.rows}행 · ${s.supplier} · ${s.total ?? "?"}${s.error ? ` · ERR=${s.error}` : ""}`));
+    console.log(`╚══════════════════════\n`);
+    res.json({ pages: out, _diag: { totalTimeMs: Date.now() - reqStart, summaries } });
+  } catch (err: any) {
+    console.error("[parse-gemini] 예외:", err);
+    res.status(500).json({ error: err?.message ?? "unknown" });
   }
 });
 

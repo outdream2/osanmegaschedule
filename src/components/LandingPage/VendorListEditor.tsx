@@ -121,15 +121,15 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ initialSelec
             className="pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 w-full sm:w-80"
           />
         </div>
-        <label className="flex items-center gap-1.5 text-[11px] text-slate-600 cursor-pointer">
+        <label className="flex items-center gap-1.5 text-[12px] text-slate-600 cursor-pointer">
           <input type="checkbox" checked={filterMissingBiz} onChange={e => setFilterMissingBiz(e.target.checked)} className="w-3.5 h-3.5 accent-teal-500" />
           사업자번호 미등록만 <span className="text-rose-500 font-bold">({missingCount})</span>
         </label>
-        <span className="text-[11px] font-mono text-slate-500">
+        <span className="text-[12px] font-mono text-slate-500">
           {loading ? <><Loader2 size={11} className="inline animate-spin mr-1" />로딩...</> : `${filtered.length} / ${vendors.length}건`}
         </span>
         <button onClick={loadVendors} disabled={loading}
-          className="ml-auto inline-flex items-center gap-1 text-[11px] px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 rounded-lg font-bold text-slate-600 cursor-pointer transition">
+          className="ml-auto inline-flex items-center gap-1 text-[12px] px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 rounded-lg font-bold text-slate-600 cursor-pointer transition">
           새로고침
         </button>
       </div>
@@ -149,13 +149,13 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ initialSelec
               className="w-full text-left px-3 py-2 hover:bg-teal-50 active:bg-teal-100 transition"
             >
               <div className="flex items-start gap-2">
-                <span className="text-[10px] text-slate-400 font-mono mt-0.5 w-6 shrink-0">{i + 1}</span>
+                <span className="text-[11px] text-slate-400 font-mono mt-0.5 w-6 shrink-0">{i + 1}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1 mb-0.5">
                     <Building2 size={11} className="text-teal-500 shrink-0" />
-                    <span className="text-[13px] font-bold text-slate-800 break-words">{v.company_name}</span>
+                    <span className="text-[14px] font-bold text-slate-800 break-words">{v.company_name}</span>
                   </div>
-                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5 flex-wrap">
+                  <div className="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap">
                     {v.business_number
                       ? <span className="font-mono">{formatBizNum(v.business_number)}</span>
                       : <span className="text-rose-500 font-semibold italic">사번없음</span>}
@@ -174,7 +174,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ initialSelec
         {/* 태블릿·데스크탑: 한 줄 테이블 · 2026-07-16 · compact 모드 지원 (공급사명+사업자번호+담당자만) */}
         <table className="hidden md:table w-full text-xs">
           <thead className="sticky top-0 bg-white z-10 border-b border-slate-200 shadow-sm">
-            <tr className="text-slate-500 uppercase text-[10px]">
+            <tr className="text-slate-500 uppercase text-[11px]">
               <th className="text-left px-3 py-2 w-10">#</th>
               <th className="text-left px-3 py-2 min-w-[160px]">회사명</th>
               <th className="text-left px-3 py-2 w-28">사업자번호</th>
@@ -196,7 +196,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ initialSelec
                 onClick={() => handleVendorClick(v.id)}
                 className="hover:bg-teal-50 cursor-pointer transition"
                 title="클릭하여 상세 · 편집">
-                <td className="px-3 py-1.5 text-orange-600 font-black text-[10px]">{i + 1}</td>
+                <td className="px-3 py-1.5 text-orange-600 font-black text-[11px]">{i + 1}</td>
                 <td className="px-3 py-1.5 font-bold text-slate-800">
                   <span className="inline-flex items-center gap-1">
                     <Building2 size={11} className="text-teal-500 shrink-0" />
@@ -209,7 +209,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ initialSelec
                 {!compact && <td className="px-3 py-1.5 text-slate-600 truncate hidden lg:table-cell" title={v.email ?? undefined}>{v.email ?? "-"}</td>}
                 {!compact && <td className="px-3 py-1.5 text-slate-500 truncate hidden xl:table-cell">{v.category ?? "-"}</td>}
                 {!compact && <td className="px-3 py-1.5 text-right font-mono font-black text-emerald-700 whitespace-nowrap">{v.latestBalance?.balance != null ? fmtWon(v.latestBalance.balance) : "-"}</td>}
-                {!compact && <td className="px-3 py-1.5 font-mono text-[10px] text-slate-400 hidden lg:table-cell">{v.created_at ? String(v.created_at).slice(0, 10) : "-"}</td>}
+                {!compact && <td className="px-3 py-1.5 font-mono text-[11px] text-slate-400 hidden lg:table-cell">{v.created_at ? String(v.created_at).slice(0, 10) : "-"}</td>}
               </tr>
             ))}
           </tbody>
@@ -309,12 +309,13 @@ export const VendorDetailModal: React.FC<{ vendor: Vendor; onClose: () => void; 
       const res = await fetch(`/api/vendors/${vendor.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        // 2026-07-22: 'email' 컬럼이 Supabase vendors 스키마에 없어 저장 실패 · 페이로드에서 제외
+        //   (UI 는 유지 · 나중에 DB 마이그레이션 시 다시 활성)
         body: JSON.stringify({
           company_name: draft.company_name.trim(),
           business_number: bnDigits || null,
           contact_name: draft.contact_name.trim() || null,
           phone: draft.phone.trim() || null,
-          email: draft.email.trim() || null,
           category: draft.category.trim() || null,
           note: draft.note.trim() || null,
         }),
@@ -344,7 +345,7 @@ export const VendorDetailModal: React.FC<{ vendor: Vendor; onClose: () => void; 
             <Building2 size={22} className="text-teal-600 shrink-0" />
             <div className="min-w-0">
               <div className="text-base sm:text-lg font-black text-slate-800 truncate">{vendor.company_name}</div>
-              <div className="text-[11px] text-slate-500 font-mono">
+              <div className="text-[12px] text-slate-500 font-mono">
                 {vendor.business_number ? formatBizNum(vendor.business_number) : <span className="text-rose-500 italic">사업자번호 없음</span>}
                 {vendor.created_at && <span className="ml-2 text-slate-400">· 등록 {String(vendor.created_at).slice(0, 10)}</span>}
               </div>
@@ -365,7 +366,7 @@ export const VendorDetailModal: React.FC<{ vendor: Vendor; onClose: () => void; 
               <Field label="사업자번호 (10자리)">
                 <input type="text" value={draft.business_number} onChange={e => setDraft({ ...draft, business_number: normalizeBizNum(e.target.value) })} placeholder="0000000000" className={`${inputCls} font-mono`} maxLength={10} />
                 {draft.business_number && draft.business_number.length === 10 && (
-                  <div className="text-[10px] text-slate-500 mt-1">표시: {formatBizNum(draft.business_number)}</div>
+                  <div className="text-[11px] text-slate-500 mt-1">표시: {formatBizNum(draft.business_number)}</div>
                 )}
               </Field>
               <div className="grid grid-cols-2 gap-2">
@@ -395,8 +396,8 @@ export const VendorDetailModal: React.FC<{ vendor: Vendor; onClose: () => void; 
                 ) : purchases.length === 0 ? (
                   <div className="p-4 text-center text-slate-400 text-xs">매입 이력 없음</div>
                 ) : (
-                  <table className="w-full text-[11px]">
-                    <thead className="sticky top-0 bg-slate-100 text-slate-500 text-[9px] uppercase">
+                  <table className="w-full text-[12px]">
+                    <thead className="sticky top-0 bg-slate-100 text-slate-500 text-[10px] uppercase">
                       <tr>
                         <th className="text-left px-2 py-1 w-16">일자</th>
                         <th className="text-left px-2 py-1">상품</th>
@@ -445,7 +446,7 @@ const inputCls = "w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-l
 
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
   <label className="block">
-    <div className="text-[11px] font-black text-slate-600 mb-0.5">{label}</div>
+    <div className="text-[12px] font-black text-slate-600 mb-0.5">{label}</div>
     {children}
   </label>
 );
@@ -453,8 +454,8 @@ const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, 
 const SectionTitle: React.FC<{ icon: string; title: string; hint?: string }> = ({ icon, title, hint }) => (
   <div className="flex items-center gap-1.5 pb-1 border-b border-slate-100">
     <span className="text-sm">{icon}</span>
-    <span className="text-[12px] font-black text-slate-700">{title}</span>
-    {hint && <span className="ml-auto text-[10px] text-slate-400 font-mono">{hint}</span>}
+    <span className="text-[13px] font-black text-slate-700">{title}</span>
+    {hint && <span className="ml-auto text-[11px] text-slate-400 font-mono">{hint}</span>}
   </div>
 );
 
@@ -467,11 +468,11 @@ const StatCard: React.FC<{ icon: React.ReactNode; color: "emerald" | "indigo" | 
   };
   return (
     <div className={`bg-gradient-to-br ${c[color]} border rounded-lg px-2.5 py-2 shadow-sm`}>
-      <div className="flex items-center gap-1 text-[10px] font-black opacity-70 uppercase tracking-wider">
+      <div className="flex items-center gap-1 text-[11px] font-black opacity-70 uppercase tracking-wider">
         {icon}<span>{label}</span>
       </div>
       <div className="text-sm sm:text-base font-black mt-0.5 font-mono truncate" title={value}>{value}</div>
-      {sub && <div className="text-[9px] font-semibold opacity-60 mt-0.5 truncate" title={sub}>{sub}</div>}
+      {sub && <div className="text-[10px] font-semibold opacity-60 mt-0.5 truncate" title={sub}>{sub}</div>}
     </div>
   );
 };

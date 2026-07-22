@@ -119,12 +119,35 @@ export async function learnVendorBusinessNumber(supplierName: string, bizNum: st
   if (!supplierName || !bizNum || bizNum.length !== 10) return { action: "skipped", reason: "invalid input" };
   try {
     const cleaned = supplierName.trim();
-    const { data: existing } = await supabase
-      .from("vendors")
-      .select("id, company_name, business_number")
-      .ilike("company_name", `%${cleaned}%`)
-      .limit(1)
-      .maybeSingle();
+    // 2026-07-22 · exact match 우선 · ilike 부분문자열은 오학습 유발
+    //   예전: ilike '%앤바이오%' → "엘앤바이오랩" 이 실제인데 "앤바이오" 로 오학습됨
+    //   지금: eq 우선 · 없으면 정확히 (주) 접두 유무만 다른 case 만 fallback (신중한 매칭)
+    let existing: { id: any; company_name: string; business_number: string | null } | null = null;
+    // 1) exact match
+    {
+      const { data } = await supabase
+        .from("vendors")
+        .select("id, company_name, business_number")
+        .eq("company_name", cleaned)
+        .limit(1)
+        .maybeSingle();
+      if (data) existing = data as any;
+    }
+    // 2) (주) prefix 유무만 다른 정확 매칭 (예: "(주)대웅제약" ↔ "대웅제약")
+    if (!existing) {
+      const noPrefix = cleaned.replace(/^\(주\)|^\(株\)|^주식회사\s*/, "").trim();
+      const withPrefix = `(주)${noPrefix}`;
+      const alt = cleaned === noPrefix ? withPrefix : noPrefix;
+      if (alt && alt !== cleaned) {
+        const { data } = await supabase
+          .from("vendors")
+          .select("id, company_name, business_number")
+          .eq("company_name", alt)
+          .limit(1)
+          .maybeSingle();
+        if (data) existing = data as any;
+      }
+    }
     if (existing) {
       if (existing.business_number === bizNum) return { action: "skipped", reason: "already set" };
       if (existing.business_number && existing.business_number !== bizNum) {

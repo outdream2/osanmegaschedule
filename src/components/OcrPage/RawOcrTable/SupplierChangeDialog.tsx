@@ -50,7 +50,7 @@ export const SupplierChangeDialog: React.FC<SupplierChangeDialogProps> = ({
             <span className="text-xs text-gray-600 leading-snug">
               <span className="font-bold text-indigo-700">동의어 일괄 추가</span> — 이 페이지 상품명을{" "}
               <span className="font-semibold text-sky-700">"{supplierConfirm.newVal}"</span> 공급사로 동의어 사전에 등록
-              <span className="block text-[10px] text-gray-400 mt-0.5">(DB 매칭 후 상품코드 포함 자동 등록)</span>
+              <span className="block text-[11px] text-gray-400 mt-0.5">(DB 매칭 후 상품코드 포함 자동 등록)</span>
             </span>
           </label>
         )}
