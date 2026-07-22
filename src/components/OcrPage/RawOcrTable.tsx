@@ -386,6 +386,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   //     첫 행 수량=1000 (4자리), 금액=508000 (6자리) 확정
   //     → 다른 행에서 각 행의 모든 숫자 셀 중 4자리 값 = 수량, 6자리 값 = 금액 채택
   //   장점: OCR 컬럼 밀림 · 셀 시프트가 있어도 값의 magnitude(자릿수)로 정확 매칭
+  // 2026-07-22 v3 · position-first: 첫 행에서 보정된 값의 위치(원본 raw 컬럼) 찾음 → 다른 행의 같은 raw 컬럼 값을 채택
+  //   사용자 스펙: "첫행에서 보정된 데이터의 위치를 찾고 · 다음 행에서 그 위치에 있는 데이터들 올려"
+  //   1) 첫 행의 보정된 값 refValue 를 dispRows[firstRi] 모든 셀에서 찾아 sourceCol 확정
+  //   2) 각 대상 행: dispRows[ri][sourceCol] 값을 파싱해서 채택 (숫자면)
+  //   3) 만약 같은 sourceCol 이 비어있으면 인접 셀 fallback (±1 col)
   const applyFirstRowPattern = useCallback((pn: number, colName: "수량" | "단가" | "금액") => {
     const colIdx = dispHeaders.indexOf(colName);
     if (colIdx < 0) return;
@@ -401,8 +406,24 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       alert(`첫 행 ${colName} 값이 유효한 숫자여야 합니다.`);
       return;
     }
-    const refDigits = String(Math.abs(Math.floor(refValue))).length;
-    // 대상 행
+
+    // 1) 첫 행의 raw 데이터에서 refValue 가 있는 컬럼 찾기 (사용자 편집으로 정한 "정답" 위치)
+    //    편집 자체가 dispHeaders 컬럼에 값을 넣은 것이라, colIdx 가 기본 sourceCol
+    //    다만 원본 raw 에도 refValue 가 있다면 그 위치 우선 (사용자가 원래 다른 컬럼에서 옮긴 경우)
+    const firstRow = dispRows[firstRi] ?? [];
+    let sourceCol = colIdx;
+    for (let ci = 0; ci < firstRow.length; ci++) {
+      const cell = firstRow[ci];
+      if (cell == null) continue;
+      const cellStr = String(cell).trim().replace(/[,\s]/g, "");
+      const n = parseInt(cellStr, 10);
+      if (Number.isFinite(n) && n === refValue) {
+        sourceCol = ci;
+        break;
+      }
+    }
+
+    // 2) 대상 행 목록
     const targetRows: number[] = [];
     dispRows.forEach((_, i) => {
       if (i === firstRi) return;
@@ -415,71 +436,41 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       alert(`이 페이지에 적용할 다른 행이 없습니다.`);
       return;
     }
-    // 각 대상 행에서: 모든 셀의 숫자 값 스캔 · 자릿수 = refDigits ±1 인 값 선호 · 컬럼 위치 근접도 가점
-    const previews: Array<{ ri: number; before: string; after: string; sourceCol: number; score: number }> = [];
+
+    // 3) 각 대상 행: sourceCol 위치의 값을 파싱해 채택 (없으면 ±1 컬럼 fallback)
+    const parseCell = (cell: any): number | null => {
+      if (cell == null) return null;
+      const s = String(cell).trim().replace(/[,\s]/g, "");
+      if (!/^\d+$/.test(s)) return null;
+      const n = parseInt(s, 10);
+      if (!Number.isFinite(n) || n <= 0) return null;
+      if (s.length >= 10) return null;                        // 사업자번호/전화번호 배제
+      if (/^20[2-4]\d/.test(s) && s.length >= 4 && s.length <= 8) return null; // 년도 배제
+      return n;
+    };
+
+    const previews: Array<{ ri: number; before: string; after: string; sourceColUsed: number }> = [];
     for (const ri of targetRows) {
       const row = dispRows[ri];
       if (!Array.isArray(row)) continue;
       const beforeVal = String(row[colIdx] ?? "");
-      let bestCandidate: { value: number; sourceCol: number; score: number } | null = null;
-      for (let ci = 0; ci < row.length; ci++) {
-        const cell = row[ci];
-        if (cell == null) continue;
-        const cellStr = String(cell).trim();
-        if (!cellStr) continue;
-        // 셀에서 숫자 후보 추출 (콤마·마침표 천단위 처리)
-        const numMatches = cellStr.matchAll(/\d[\d,.]*\d|\d+/g);
-        for (const m of numMatches) {
-          const clean = m[0].replace(/[,.]/g, "");
-          const n = parseInt(clean, 10);
-          if (!Number.isFinite(n) || n <= 0) continue;
-          const nDigits = String(n).length;
-          // 202X 로 시작 (년도) 배제
-          if (/^20[2-4]\d/.test(clean) && clean.length >= 4 && clean.length <= 8) continue;
-          // 사업자번호 배제 (10자리)
-          if (clean.length >= 10) continue;
-          // 자릿수 매칭 점수 (완전 일치 100 · ±1 = 50 · 그 외 감점)
-          let score = 0;
-          const digitDiff = Math.abs(nDigits - refDigits);
-          if (digitDiff === 0) score += 100;
-          else if (digitDiff === 1) score += 50;
-          else score -= digitDiff * 20;
-          // 컬럼 위치 근접도 (같은 컬럼 최우선 · 이웃 컬럼 가점)
-          const colDiff = Math.abs(ci - colIdx);
-          score += Math.max(0, 30 - colDiff * 10);
-          // 값 근접도 (magnitude · refValue 와 같은 order 이면 가점)
-          const refMag = Math.floor(Math.log10(refValue) || 0);
-          const nMag = Math.floor(Math.log10(n) || 0);
-          if (refMag === nMag) score += 40;
-          if (!bestCandidate || score > bestCandidate.score) {
-            bestCandidate = { value: n, sourceCol: ci, score };
-          }
-        }
+      // sourceCol 우선 · 값 없으면 ±1 컬럼 fallback
+      let chosen: { value: number; col: number } | null = null;
+      const tryCols = [sourceCol, sourceCol - 1, sourceCol + 1, sourceCol - 2, sourceCol + 2].filter(c => c >= 0 && c < row.length);
+      for (const ci of tryCols) {
+        const n = parseCell(row[ci]);
+        if (n !== null) { chosen = { value: n, col: ci }; break; }
       }
-      if (bestCandidate && bestCandidate.score > 30) {
-        previews.push({
-          ri,
-          before: beforeVal,
-          after: String(bestCandidate.value),
-          sourceCol: bestCandidate.sourceCol,
-          score: bestCandidate.score,
-        });
+      if (chosen) {
+        previews.push({ ri, before: beforeVal, after: String(chosen.value), sourceColUsed: chosen.col });
       }
     }
+
     if (previews.length === 0) {
-      alert(`다른 행에서 첫 행 ${colName}(${refValue.toLocaleString()}, ${refDigits}자리) 와 유사한 값을 찾지 못함.`);
+      alert(`다른 행에서 위치 ${sourceCol}(${dispHeaders[sourceCol] ?? "열"+sourceCol}) 의 유효한 값을 찾지 못함.`);
       return;
     }
-    const previewText = previews.slice(0, 8).map(p => {
-      const sourceColName = dispHeaders[p.sourceCol] ?? `열${p.sourceCol}`;
-      const posNote = p.sourceCol === colIdx ? "" : ` [원위치=${sourceColName}]`;
-      return `  행${p.ri + 1}: "${p.before}" → "${Number(p.after).toLocaleString()}"${posNote}`;
-    }).join("\n");
-    const moreText = previews.length > 8 ? `\n  ... 외 ${previews.length - 8}개` : "";
-    if (!window.confirm(
-      `첫 행 ${colName} 참조: ${refValue.toLocaleString()} (${refDigits}자리)\n\n` +
-      `다른 ${previews.length}개 행에서 자릿수·위치가 가장 비슷한 값 자동 선택:\n\n${previewText}${moreText}\n\n적용하시겠습니까?`
-    )) return;
+    console.log(`[first-row-position-v3] page ${pn} ${colName} · sourceCol=${sourceCol} (${dispHeaders[sourceCol] ?? "?"}) · ${previews.length}행 적용`);
     setCellEdits(prev => {
       const next = { ...prev };
       for (const p of previews) {
@@ -487,7 +478,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       }
       return next;
     });
-    console.log(`[first-row-pattern-v2] page ${pn} ${colName} (ref=${refValue}): ${previews.length}행 스마트 매칭 적용`);
   }, [dispHeaders, dispRows, cellEdits, pageNums, permanentlyDeletedRawRows, hiddenRawRows]);
 
   // 2026-07-22 · 가장 긴 상품행을 reference 로 · 다른 모든 행 셀을 값 타입별로 reference 컬럼에 재배치
@@ -2510,6 +2500,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   // handleMatch 의 페이지 한정 버전: targetPage 행만 /api/ocr-match POST
   const [matchingPage, setMatchingPage] = useState<Record<number, boolean>>({});
+  // 2026-07-22 · 확정 → 2차보정 완료 페이지 추적 · 버튼 색 변경 (사용자 요청)
+  const [confirmedPages, setConfirmedPages] = useState<Set<number>>(new Set());
 
   const handleMatchPage = useCallback(async (targetPage: number) => {
     if (nameIdx < 0) return;
@@ -2558,6 +2550,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         });
         return next;
       });
+      // 2026-07-22 · 확정 완료 페이지 마킹 (버튼 색 변경용)
+      setConfirmedPages(prev => new Set([...prev, targetPage]));
     } finally {
       setMatchingPage(prev => ({ ...prev, [targetPage]: false }));
     }
@@ -4279,9 +4273,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 applyFirstRowPattern(pn, "수량");
                                 applyFirstRowPattern(pn, "단가");
                               }}
-                              className="text-[10px] font-black text-white bg-sky-500 hover:bg-sky-600 rounded px-2 py-1 cursor-pointer shadow-sm whitespace-nowrap inline-flex items-center gap-1"
+                              className="text-[10px] font-black text-white bg-sky-500 hover:bg-sky-600 rounded px-2 py-1 cursor-pointer shadow-sm whitespace-nowrap"
                               title="윗행에서 보정한 수량·단가 위치를 기준으로 아래행들에 같은 위치의 값 자동 채움"
-                            >🔁 첫 행 형식 → 아래 채움 (수량·단가)</button>
+                            >첫행보정</button>
                           </td>
                         </tr>
                       )}
@@ -4469,22 +4463,34 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                 title="소계 금액 직접 입력"
                                               >✎ 수정</button>
                                               {/* 2026-07-22: 수량/금액 형식 · 전체 형식 맞춤 버튼 삭제 (사용자 요청) */}
-                                              {/* 2026-07-21: 페이지별 2차보정 확정 버튼 · 이 페이지 데이터를 매칭해서 2차보정 표로 전송 */}
-                                              {!hasMissingSupplier && (
+                                              {/* 2026-07-21: 페이지별 2차보정 확정 버튼 · 이 페이지 데이터를 매칭해서 2차보정 표로 전송
+                                                   2026-07-22: 확정 완료 시 색 변경 (emerald → violet + ✓ 완료) */}
+                                              {!hasMissingSupplier && (() => {
+                                                const isConfirmed = confirmedPages.has(pn);
+                                                return (
                                                 <button
                                                   type="button"
                                                   onClick={() => handleMatchPage(pn)}
                                                   disabled={!!matchingPage[pn]}
-                                                  className="text-[11px] font-black text-white bg-emerald-500 hover:bg-emerald-600 disabled:bg-slate-300 disabled:cursor-not-allowed border border-emerald-600 rounded px-2 py-0.5 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-sm"
-                                                  title={`${pn}번 명세서를 2차보정 표로 확정 전송`}
+                                                  className={`text-[11px] font-black text-white disabled:bg-slate-300 disabled:cursor-not-allowed border rounded px-2 py-0.5 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-sm ${
+                                                    isConfirmed
+                                                      ? "bg-violet-500 hover:bg-violet-600 border-violet-600"
+                                                      : "bg-emerald-500 hover:bg-emerald-600 border-emerald-600"
+                                                  }`}
+                                                  title={isConfirmed
+                                                    ? `${pn}번 명세서 · 확정 완료 · 다시 클릭하면 재매칭`
+                                                    : `${pn}번 명세서를 2차보정 표로 확정 전송`}
                                                 >
                                                   {matchingPage[pn] ? (
                                                     <><Loader2 size={11} className="animate-spin" /> 확정중...</>
+                                                  ) : isConfirmed ? (
+                                                    <><Check size={11} /> 확정 완료 (재매칭)</>
                                                   ) : (
                                                     <><Check size={11} /> 확정 → 2차보정</>
                                                   )}
                                                 </button>
-                                              )}
+                                                );
+                                              })()}
                                             </>
                                           )}
                                         </div>
