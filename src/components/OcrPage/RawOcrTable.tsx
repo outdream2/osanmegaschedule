@@ -1318,26 +1318,35 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   //   1순위: summary_rows 라벨 매칭 (서버 09-totals 이 채운 경우)
   //   2순위: meta.discount 직접 참조 (KV 파서 · extractDiscount 직접 감지)
   //   3순위: 교차검증 역산값 (meta.discountCrossCheck.discEst)
+  //   2026-07-22 · 첫 하나만 반환 (구버전 호환용)
   const getPageDiscount = (pn: number): { amount: number; label: string; isEstimated?: boolean } | null => {
+    const list = getPageDiscounts(pn);
+    return list.length > 0 ? list[0] : null;
+  };
+  // 2026-07-22 · 사용자 요청 "에누리랑 차액 항목 있는 경우 정산차액에 다 나와야" → 전체 리스트 반환
+  const getPageDiscounts = (pn: number): { amount: number; label: string; isEstimated?: boolean }[] => {
     const pageData = structuredPages.find(p => p.page === pn);
-    // 1순위: summary_rows
     const summary = pageData?.meta?.summary_rows ?? [];
     const discRe = /에누리|할인|차액|차감|DC|D\.C/i;
-    const hit = summary.find(s => {
+    const results: { amount: number; label: string; isEstimated?: boolean }[] = [];
+    const seenLabels = new Set<string>();
+    for (const s of summary) {
       const norm = String(s.label ?? "").replace(/\s+/g, "");
-      return discRe.test(norm);
-    });
-    if (hit && Math.abs(hit.amount) > 0) {
-      const label = String(hit.label ?? "에누리").trim();
-      return { amount: Math.abs(hit.amount), label, isEstimated: label.includes("역산") || label.includes("추정") };
+      if (!discRe.test(norm)) continue;
+      if (!(Math.abs(s.amount) > 0)) continue;
+      const label = String(s.label ?? "에누리").trim();
+      if (seenLabels.has(label)) continue;
+      seenLabels.add(label);
+      results.push({ amount: Math.abs(s.amount), label, isEstimated: label.includes("역산") || label.includes("추정") });
     }
-    // 2순위: meta.discount 직접
-    const metaDisc = pageData?.meta?.discount;
-    if (typeof metaDisc === "number" && metaDisc > 0) {
-      const label = String(pageData?.meta?.discountLabel ?? "에누리").trim();
-      return { amount: metaDisc, label, isEstimated: label.includes("역산") || label.includes("추정") };
+    if (results.length === 0) {
+      const metaDisc = pageData?.meta?.discount;
+      if (typeof metaDisc === "number" && metaDisc > 0) {
+        const label = String(pageData?.meta?.discountLabel ?? "에누리").trim();
+        results.push({ amount: metaDisc, label, isEstimated: label.includes("역산") || label.includes("추정") });
+      }
     }
-    return null;
+    return results;
   };
 
   // 페이지 교차검증: 공급가액 > 합계 이면서 에누리로 설명 안 되는 경우 경고
@@ -3764,6 +3773,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 className="ml-1 text-[10px] font-black text-white bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-300 disabled:cursor-not-allowed rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
                                 title="컬럼별 자동정리: 상품명 매칭+동의어 → 수량 → 단가(첫행+DB조회+큰차이 스왑) · 금액=Q*P 자동"
                               >{runningPipeline[pn] ? "⏳ 정리중..." : "🎯 자동정리"}</button>
+                              {/* 2026-07-22 · 명세서마다 행추가 (사용자 요청) */}
+                              <button type="button"
+                                onClick={() => addManualRow(pn)}
+                                className="ml-1 text-[10px] font-black text-white bg-emerald-500 hover:bg-emerald-600 rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
+                                title={`${pn}번 명세서 하단에 빈 상품 행 추가 · 수동 입력`}
+                              >➕ 행추가</button>
                             </span>
                           </td>
                         </tr>
@@ -4497,7 +4512,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                         const displayTotal = getPageDisplayTotal(pn);
                                         const isCustom = pageSubtotalChoices[pn] === "custom";
                                         const shown = isCustom ? displayTotal : rowSum;
-                                        const disc = getPageDiscount(pn);
+                                        const discs = getPageDiscounts(pn);
+                                        const balForShow = pageSupplierBalances[pn] ?? pageBalanceOverride[pn];
+                                        const manualBalForShow = pageBalanceModeManual.has(pn) ? parseNumber(pageBalanceManualInput[pn] ?? "") : 0;
+                                        const displayBalForShow = balForShow ?? (manualBalForShow > 0 ? manualBalForShow : null);
                                         return (
                                           <>
                                             <span className="text-[12px] font-bold text-amber-700 whitespace-nowrap">{pn}번</span>
@@ -4538,15 +4556,29 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                               </>
                                             )}
                                             <span className="text-[12px] font-semibold text-orange-700 ml-2">정산차액</span>
-                                            {disc ? (
-                                              <span className="text-[14px] font-black text-orange-800 whitespace-nowrap"
-                                                title={`${disc.label} · ${disc.isEstimated ? "역산 추정" : "명세서 표기"}`}
-                                              >
-                                                {fmt(disc.amount)}원
-                                                <span className="text-[10px] font-semibold text-orange-500 ml-1">({disc.label})</span>
+                                            {discs.length > 0 ? (
+                                              <span className="inline-flex items-center gap-1 flex-wrap">
+                                                {discs.map((d, i) => (
+                                                  <span key={i} className="text-[14px] font-black text-orange-800 whitespace-nowrap"
+                                                    title={`${d.label} · ${d.isEstimated ? "역산 추정" : "명세서 표기"}`}
+                                                  >
+                                                    {fmt(d.amount)}원
+                                                    <span className="text-[10px] font-semibold text-orange-500 ml-0.5">({d.label})</span>
+                                                    {i < discs.length - 1 && <span className="text-orange-400 mx-0.5">+</span>}
+                                                  </span>
+                                                ))}
                                               </span>
                                             ) : (
                                               <span className="text-[14px] font-bold text-slate-400" title="정산차액 없음">-</span>
+                                            )}
+                                            {/* 잔고 · 정산차액 옆 · 사용자 요청 */}
+                                            <span className="text-[12px] font-semibold text-rose-700 ml-2">잔고</span>
+                                            {displayBalForShow != null && displayBalForShow > 0 ? (
+                                              <span className="text-[14px] font-black text-rose-800 whitespace-nowrap" title="공급사 잔고">
+                                                {fmt(displayBalForShow)}원
+                                              </span>
+                                            ) : (
+                                              <span className="text-[14px] font-bold text-slate-400" title="잔고 없음">-</span>
                                             )}
                                           </>
                                         );
