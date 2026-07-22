@@ -1568,7 +1568,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const INV_COL_DEFAULT = 360;
   // 2026-07-21: 컴팩트 컬럼 폭 · 한 화면 유지 우선
   //   품명(140) + 수량(45) + 단가(60) + 금액(80) + 규격(50) + 유통기한(72) + 비고(32) = 479
-  const MIN_DATA_WIDTH = 500;
+  const MIN_DATA_WIDTH = 580;  // 2026-07-22: 500→580 (유통기한 포함 데이터 최소 폭 확보)
   const [invoiceColWidth, setInvoiceColWidth] = useState<number>(() => {
     try {
       const v = localStorage.getItem("ocr-invoice-col-width");
@@ -1644,7 +1644,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   //   3. 최소: INV_COL_MIN · 최대: containerWidth - MIN_DATA_WIDTH
   const invColMax = containerWidth > 0 ? Math.max(INV_COL_MIN, containerWidth - MIN_DATA_WIDTH) : Infinity;
   const isUserAdjusted = Math.abs(invoiceColWidth - INV_COL_DEFAULT) > 5;
-  const autoRatio = 0.33;  // 컨테이너 폭의 33% (반응형 기본값 · 데이터 영역 확보)
+  const autoRatio = 0.25;  // 2026-07-22: 33%→25% (유통기한 컬럼 잘림 방지 · 데이터 영역 확보)
   const responsiveDefault = containerWidth > 0
     ? Math.max(INV_COL_MIN, Math.min(containerWidth * autoRatio, invColMax))
     : INV_COL_DEFAULT;
@@ -1656,8 +1656,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   //   cw = containerWidth (0 이면 700 fallback)
   //   bp: xs(<500) sm(<700) md(<900) lg(≥900)
   const _cw = containerWidth || 700;
-  // 숫자 셀(수량/단가/금액/유통기한) 최소 폭: 좁을수록 작게 · 재추출버튼 인라인으로 줄임
+  // 숫자 셀(수량/단가/금액) 최소 폭: 좁을수록 작게 · 재추출버튼 인라인으로 줄임
   const numCellMinW = _cw < 500 ? 52 : _cw < 700 ? 68 : 90;
+  // 유통기한 전용 최소 폭: 날짜 8자리(20251201) + 여백 · 절대 잘리지 않도록 numCellMinW 보다 크게 보장
+  // 2026-07-22: 유통기한 컬럼 잘림 방지 전용 minGuard
+  const expCellMinW = _cw < 500 ? 72 : 82;
   // 편집 input 최소 폭 (숫자)
   const numInputMinW = _cw < 500 ? "4rem" : _cw < 700 ? "5rem" : "5.5rem";
   // 유통기한 편집 input 최소 폭
@@ -3419,8 +3422,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                         ? Math.round((weight / totalWeight) * autoAvail)
                         : Math.round(autoAvail / Math.max(autoColList.length, 1));
                       // 숫자/날짜 셀은 breakpoint 기반 최소 폭 보장 (사용자 리사이즈 없을 때만)
-                      const isCompactCell = NUM_COLS.has(h) || h === "유통기한" || h === "유효기한" || h === "유통기간";
-                      const minGuard = explicitW == null && isCompactCell ? numCellMinW : 0;
+                      // 유통기한 계열은 별도 expCellMinW(82px+) 로 더 넓게 보장
+                      const isExpCol = h === "유통기한" || h === "유효기한" || h === "유통기간";
+                      const isCompactCell = NUM_COLS.has(h) || isExpCol;
+                      const minGuard = explicitW == null
+                        ? isExpCol ? expCellMinW : isCompactCell ? numCellMinW : 0
+                        : 0;
                       const colW = explicitW ?? Math.max(computedW, minGuard);
                       return (
                         <th key={origIdx}
@@ -4107,7 +4114,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     const dbPrice = h === "단가" ? matchItemsRef.current?.[ri]?.matched?.masterPrice : null;
                                     const hasDbPrice = dbPrice != null && Number.isFinite(dbPrice) && dbPrice > 0;
                                     return (
-                                      <span className="inline-flex items-center gap-1 justify-end">
+                                      <span className="inline-flex items-center gap-1 justify-end max-w-full overflow-hidden flex-wrap">
                                         {hasDbPrice && (
                                           <button
                                             type="button"
@@ -4116,7 +4123,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                               setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [ci]: dbPrice as number } }));
                                               setDbFilledCells(prev => new Set(prev).add(`${ri}-${ci}`));
                                             }}
-                                            className="text-[10px] font-black text-white bg-indigo-500 hover:bg-indigo-600 rounded px-1.5 py-px cursor-pointer whitespace-nowrap transition"
+                                            className="text-[10px] font-black text-white bg-indigo-500 hover:bg-indigo-600 rounded px-1 py-px cursor-pointer transition"
                                             title={`사입단가 ${fmt(dbPrice as number)}원을 단가에 적용 (Q*P 자동 재계산)`}
                                           >사입적용</button>
                                         )}
