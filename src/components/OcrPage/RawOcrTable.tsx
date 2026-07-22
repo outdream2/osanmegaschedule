@@ -3260,23 +3260,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
               )}
               {/* 2026-07-22: "📄 행 클릭 → 이미지 보기" 배지 삭제 (사용자 요청) */}
             </div>
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                onClick={() => setShowRawDetail(v => !v)}
-                className={`flex items-center gap-1 text-[12px] font-bold px-2 py-1 rounded-lg border transition cursor-pointer ${
-                  showRawDetail
-                    ? "text-indigo-700 bg-indigo-50 border-indigo-300 hover:bg-indigo-100"
-                    : "text-gray-500 bg-white border-gray-200 hover:bg-gray-50"
-                }`}
-                title={showRawDetail ? "필수 컬럼만 표시" : "공급처·일자·규격·단위·비고 등 상세 컬럼까지 표시"}
-              >
-                {showRawDetail ? "상세정보 숨기기" : "상세정보"}
-              </button>
-              <button onClick={() => handleExport(dispHeaders, dispRows, "원본")}
-                className="flex items-center gap-1 text-[12px] font-bold text-amber-700 bg-amber-50 border border-amber-200 hover:bg-amber-100 px-2 py-1 rounded-lg transition cursor-pointer">
-                <Download size={11} />CSV
-              </button>
-            </div>
+            {/* 2026-07-22: 상세정보 토글 · CSV 다운로드 모두 삭제 (사용자 요청) · 다운로드는 3차 확정표에만 */}
           </div>
 
 
@@ -5944,6 +5928,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   <button onClick={handleExcelExport}
                     className="flex items-center gap-1 text-[12px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0">
                     <FileSpreadsheet size={11} />엑셀 다운로드
+                  </button>
+                  {/* 2026-07-22 · CSV 다운로드 · 3차 확정표에 통합 (사용자 요청) */}
+                  <button onClick={() => handleExport(CONF_HEADERS, confRows, "확정")}
+                    className="flex items-center gap-1 text-[12px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0">
+                    <Download size={11} />CSV
                   </button>
                 </div>
               </div>
