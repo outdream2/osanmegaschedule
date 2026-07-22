@@ -219,13 +219,18 @@ export function makeVendorMatchStage(_deps: {
         console.warn(`[vendor-match/⚠️biznum-무시] page ${ctx.page}: extract="${direct.supplier}" ≠ biznum="${biznumMatched.db}" (오학습 의심 · biznum 채택 스킵)`);
       }
 
-      // 2026-07-20: 엄격한 우선순위 (사용자 스펙 준수)
-      //   tier 1 = 사업자번호(biznum) | 2 = alias | 3 = exact | 4 = fuzzy
-      //   같은 tier 안에서는 score 최고점 채택
+      // 2026-07-22: 사업자번호 무조건 최우선 (사용자 재확인)
+      //   원문: "사업자번호로 공급사 먼저 찾아. ocr추출, 사업번호 확인, 상품 역검색"
+      //   biznum 이 vendors DB 매칭되면 · direct extract 와 다르더라도 채택 (biznum 은 정부 등록 고유 번호)
+      //   오학습 방어는 B-3 (eq exact match) + B-2 (근접 컨텍스트 검증) 에서 처리 · 여기서 스킵 X
       type MatchEntry = { db: string; score: number; from: string; via?: "alias" | "exact" | "fuzzy" };
       const allMatches: MatchEntry[] = [];
-      // biznum 은 direct 와 유사할 때만 포함 (또는 direct 없을 때)
-      if (biznumMatched && (!directTrusted || biznumMatchesDirect)) allMatches.push(biznumMatched);
+      if (biznumMatched) {
+        allMatches.push(biznumMatched);
+        if (directTrusted && !biznumMatchesDirect) {
+          console.warn(`[vendor-match/⚠️biznum-우선]  page ${ctx.page}: extract="${direct.supplier}" vs biznum="${biznumMatched.db}" 다르지만 · 사업자번호 우선 정책 · biznum 채택 (오학습 의심 시 vendors DB 수동 확인 필요)`);
+        }
+      }
       allMatches.push(...nameMatches);
       if (allMatches.length > 0) {
         const tierOf = (m: MatchEntry): number => {
