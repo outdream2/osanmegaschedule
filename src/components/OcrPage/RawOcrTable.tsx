@@ -3350,10 +3350,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   const pageRowCountRaw = isFirstInPage
                     ? effectiveDispRows.filter((_, i) => pageNums[i] === pn && !permanentlyDeletedRawRows.has(i) && !hiddenRawRows.has(i)).length
                     : 0;
-                  // 이미지 rowSpan: 헤더 행(1) + 렌더된 데이터 행(hiddenRawRows 포함, 취소선으로 표시됨) + 소계 행
+                  // 이미지 rowSpan: 헤더 행(1) + 렌더된 데이터 행(hiddenRawRows 포함, 취소선으로 표시됨) + 첫행보정 행(1) + 소계 행
                   // hiddenRawRows 는 return null 되지 않고 취소선으로 렌더됨 → rowSpan 에 포함해야 테이블 정합
+                  // 첫행보정 행: isFirstInPage 일 때 항상 1개 추가 렌더됨 → rowSpan 에 반드시 포함
                   const imgRowSpan = isFirstInPage
-                    ? 1 + effectiveDispRows.filter((_, i) => pageNums[i] === pn && !permanentlyDeletedRawRows.has(i) && !isRowDbDeleted(i)).length + (amtIdx >= 0 ? 1 : 0)
+                    ? 1 + effectiveDispRows.filter((_, i) => pageNums[i] === pn && !permanentlyDeletedRawRows.has(i) && !isRowDbDeleted(i)).length + 1 /* 첫행보정 행 */ + (amtIdx >= 0 ? 1 : 0)
                     : 0;
                   const pageSupplierHeadRaw = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
                   const rawColSpan = (() => {
