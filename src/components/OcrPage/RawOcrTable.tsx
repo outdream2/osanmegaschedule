@@ -2702,8 +2702,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     console.log(`\n╔══ [column-pipeline] page ${pn} 시작 ══`);
     try {
       // 1+2: 공급사·상품명 매칭 (서버측 동의어사전 활용)
-      console.log(`║ 1·2단계: 상품명 매칭 (동의어사전 포함)`);
+      //   2026-07-22: 사용자 요청 "1차보정 끝나기 전 2차보정 안 함" → 매칭만 하고 confirmedPages 는 추가 X
+      console.log(`║ 1·2단계: 상품명 매칭 (동의어사전 포함) · 2차 자동확정 없음`);
       await handleMatchPage(pn);
+      // 자동 확정 취소 (matchItems 는 유지 · 확정 마킹만 제거)
+      setConfirmedPages(prev => { const n = new Set(prev); n.delete(pn); return n; });
       // 3: 수량
       console.log(`║ 3단계: 수량 첫행보정`);
       applyFirstRowPattern(pn, "수량");
@@ -3350,8 +3353,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             return null;
           })}
 
-          {/* 2026-07-22 · 화면 넘어가는 문제 대응 · overflow-x-auto (좁으면 스크롤) · box-border pr-4 */}
-          <div className="w-full overflow-x-auto pr-4 box-border" ref={invTableWrapRef}>
+          {/* 2026-07-22 · 양쪽 여백 (사용자 요청 "양쪽에 여백") · px-3 */}
+          <div className="w-full overflow-x-auto px-3 box-border" ref={invTableWrapRef}>
             <table className={`w-full border-collapse ${_cw < 500 ? "text-[10px]" : "text-xs"}`} style={{ tableLayout: "fixed" }}>
               <thead>
                 <tr className="bg-amber-50 border-b-2 border-amber-200">
@@ -4522,8 +4525,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 <div className="flex flex-col gap-0 px-3 py-2">
 
                                   {/* ── 헤더 행: [번호+공급사명] ··· [소계금액+액션] ── */}
+                                  {/* 2026-07-22 · 사용자 요청: 총소계 가운데 · 아래 정산차액 · 그 아래 잔고 · 모두 가운데 정렬 */}
+                                  {/* 좌: 번호+공급사 · 우: 확정 버튼 (양끝) · 총소계는 아래 별도 줄 */}
                                   <div className="flex items-center justify-between gap-2 min-w-0">
-                                    {/* 좌: 번호 배지 + 공급사명 */}
                                     <div className="flex items-center gap-1.5 min-w-0 shrink">
                                       <span className="shrink-0 text-[10px] font-black text-amber-700 bg-amber-200 rounded px-1.5 py-px tracking-wide whitespace-nowrap">
                                         {pn}번
@@ -4540,107 +4544,102 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       ) : (
                                         <span className="text-[12px] font-bold text-amber-400 italic">공급사 미지정</span>
                                       )}
-                                      {/* 잔고 인라인 표시 (소형) */}
-                                      {(() => {
-                                        const bal = pageSupplierBalances[pn] ?? pageBalanceOverride[pn];
-                                        const manualBal = pageBalanceModeManual.has(pn) ? parseNumber(pageBalanceManualInput[pn] ?? "") : 0;
-                                        const displayBal = bal ?? (manualBal > 0 ? manualBal : null);
-                                        if (displayBal == null || displayBal <= 0) return null;
-                                        return (
-                                          <span className="shrink-0 text-[11px] font-bold text-rose-600 whitespace-nowrap" title="공급사 잔고">
-                                            잔 {fmt(displayBal)}원
-                                          </span>
-                                        );
-                                      })()}
                                     </div>
-
-                                    {/* 우: 소계금액 + 확정 버튼 */}
-                                    <div className="flex items-center gap-2 shrink-0">
-                                      {(() => {
-                                        const displayTotal = getPageDisplayTotal(pn);
-                                        const pageData = structuredPages.find(p => p.page === pn);
-                                        const stated = pageData?.meta?.total ?? null;
-                                        const disc = getPageDiscount(pn);
-                                        const isCustom = pageSubtotalChoices[pn] === "custom";
-                                        return isCustom ? (
-                                          <div className="flex items-center gap-1">
-                                            <input
-                                              type="text"
-                                              inputMode="numeric"
-                                              value={(() => {
-                                                const raw = String(pageSubtotalCustom[pn] ?? "");
-                                                const n = parseNumber(raw);
-                                                return n > 0 ? fmt(n) : raw;
-                                              })()}
-                                              onChange={e => {
-                                                const raw = e.target.value.replace(/[^\d-]/g, "");
-                                                setPageSubtotalCustom(prev => ({ ...prev, [pn]: parseNumber(raw) }));
-                                              }}
-                                              placeholder="금액"
-                                              className="w-[110px] text-[15px] font-black text-amber-900 bg-white border-2 border-amber-400 rounded px-2 py-0.5 focus:outline-none focus:border-amber-600 text-right"
-                                              autoFocus
-                                            />
-                                            <span className="font-black text-[15px] text-amber-900">원</span>
-                                            <button
-                                              type="button"
-                                              onClick={() => setPageSubtotalChoices(prev => { const n = { ...prev }; delete n[pn]; return n; })}
-                                              className="text-[10px] font-bold text-slate-500 hover:text-slate-700 bg-white/70 border border-slate-300 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap"
-                                              title="자동값으로 되돌리기"
-                                            >취소</button>
-                                          </div>
-                                        ) : (
-                                          <div className="flex items-center gap-1.5">
-                                            <span
-                                              className="text-[17px] font-black tracking-tight whitespace-nowrap text-amber-900"
-                                              title={disc
-                                                ? `명세서 합계 ${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원 (에누리 적용 전 금액)`
-                                                : `명세서 합계 ${fmt(displayTotal)}원`}
-                                            >
-                                              {fmt(displayTotal)}원
-                                            </span>
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                setPageSubtotalChoices(prev => ({ ...prev, [pn]: "custom" }));
-                                                setPageSubtotalCustom(prev => ({ ...prev, [pn]: displayTotal }));
-                                              }}
-                                              className="text-[10px] font-semibold text-amber-600 hover:text-amber-900 cursor-pointer transition whitespace-nowrap"
-                                              title="소계 금액 직접 입력"
-                                            >✎</button>
-                                          </div>
-                                        );
-                                      })()}
-                                      {/* 확정 → 2차보정 버튼 */}
-                                      {!hasMissingSupplier && (() => {
-                                        const isConfirmed = confirmedPages.has(pn);
-                                        return (
-                                          <button
-                                            type="button"
-                                            onClick={() => handleMatchPage(pn)}
-                                            disabled={!!matchingPage[pn]}
-                                            className={`text-[11px] font-black text-white disabled:bg-slate-300 disabled:cursor-not-allowed border rounded px-2.5 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-sm transition ${
-                                              isConfirmed
-                                                ? "bg-violet-500 hover:bg-violet-600 border-violet-600"
-                                                : "bg-emerald-500 hover:bg-emerald-600 border-emerald-600"
-                                            }`}
-                                            title={isConfirmed
-                                              ? `${pn}번 명세서 · 확정 완료 · 다시 클릭하면 재매칭`
-                                              : `${pn}번 명세서를 2차보정 표로 확정 전송`}
-                                          >
-                                            {matchingPage[pn] ? (
-                                              <><Loader2 size={11} className="animate-spin" /> 확정중...</>
-                                            ) : isConfirmed ? (
-                                              <><Check size={11} /> 완료</>
-                                            ) : (
-                                              <><Check size={11} /> 확정</>
-                                            )}
-                                          </button>
-                                        );
-                                      })()}
-                                    </div>
+                                    {!hasMissingSupplier && (() => {
+                                      const isConfirmed = confirmedPages.has(pn);
+                                      return (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleMatchPage(pn)}
+                                          disabled={!!matchingPage[pn]}
+                                          className={`text-[11px] font-black text-white disabled:bg-slate-300 disabled:cursor-not-allowed border rounded px-2.5 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-sm transition shrink-0 ${
+                                            isConfirmed
+                                              ? "bg-violet-500 hover:bg-violet-600 border-violet-600"
+                                              : "bg-emerald-500 hover:bg-emerald-600 border-emerald-600"
+                                          }`}
+                                          title={isConfirmed ? `${pn}번 · 확정 완료 · 재클릭 재매칭` : `${pn}번 · 2차보정 확정 전송`}
+                                        >
+                                          {matchingPage[pn] ? (<><Loader2 size={11} className="animate-spin" /> 확정중...</>)
+                                            : isConfirmed ? (<><Check size={11} /> 완료</>)
+                                            : (<><Check size={11} /> 확정</>)}
+                                        </button>
+                                      );
+                                    })()}
                                   </div>
 
-                                  {/* 2026-07-22 · 검증 행(에누리·관계식·CrossCheck) 삭제 · 소계 아래 요약 텍스트로 대체 */}
+                                  {/* 총소계 (가운데 · 큰글씨) · 사용자 요청: "총소계 **원 · 전체 금액 컬럼 다 더한 값" */}
+                                  <div className="flex items-center justify-center mt-1.5">
+                                    {(() => {
+                                      // 총소계 = effectivePageTotals (금액 컬럼 합) · 사용자 요청
+                                      const rowSum = effectivePageTotals.get(pn) ?? 0;
+                                      const displayTotal = getPageDisplayTotal(pn);
+                                      const isCustom = pageSubtotalChoices[pn] === "custom";
+                                      // 사용자 지정값 있으면 그 값 · 없으면 rowSum (금액 컬럼 합)
+                                      const shown = isCustom ? displayTotal : rowSum;
+                                      return isCustom ? (
+                                        <div className="flex items-center gap-1">
+                                          <input
+                                            type="text" inputMode="numeric"
+                                            value={(() => { const raw = String(pageSubtotalCustom[pn] ?? ""); const n = parseNumber(raw); return n > 0 ? fmt(n) : raw; })()}
+                                            onChange={e => { const raw = e.target.value.replace(/[^\d-]/g, ""); setPageSubtotalCustom(prev => ({ ...prev, [pn]: parseNumber(raw) })); }}
+                                            placeholder="금액"
+                                            className="w-[130px] text-[19px] font-black text-amber-900 bg-white border-2 border-amber-400 rounded px-2 py-0.5 focus:outline-none focus:border-amber-600 text-center"
+                                            autoFocus
+                                          />
+                                          <span className="font-black text-[19px] text-amber-900">원</span>
+                                          <button type="button" onClick={() => setPageSubtotalChoices(prev => { const n = { ...prev }; delete n[pn]; return n; })}
+                                            className="text-[10px] font-bold text-slate-500 hover:text-slate-700 bg-white/70 border border-slate-300 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap ml-1"
+                                          >취소</button>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-baseline gap-2">
+                                          <span className="text-[13px] font-bold text-amber-700">총소계</span>
+                                          <span className="text-[22px] font-black text-amber-900 tracking-tight whitespace-nowrap" title="전체 금액 컬럼 합">
+                                            {fmt(shown)}원
+                                          </span>
+                                          <button type="button"
+                                            onClick={() => { setPageSubtotalChoices(prev => ({ ...prev, [pn]: "custom" })); setPageSubtotalCustom(prev => ({ ...prev, [pn]: shown })); }}
+                                            className="text-[11px] font-semibold text-amber-600 hover:text-amber-900 cursor-pointer transition"
+                                            title="총소계 직접 입력"
+                                          >✎</button>
+                                        </div>
+                                      );
+                                    })()}
+                                  </div>
+
+                                  {/* 정산차액 · 있으면 (에누리·차액 등) · 가운데 정렬 */}
+                                  {(() => {
+                                    const disc = getPageDiscount(pn);
+                                    if (!disc) return null;
+                                    return (
+                                      <div className="flex items-center justify-center mt-0.5">
+                                        <span className="text-[13px] font-bold text-orange-700 whitespace-nowrap"
+                                          title={`정산차액 (${disc.label}) · ${disc.isEstimated ? "역산 추정값" : "명세서 표기값"}`}
+                                        >
+                                          정산차액 <span className="font-black text-orange-800">{fmt(disc.amount)}</span>원
+                                          <span className="text-[11px] font-semibold text-orange-500 ml-1">({disc.label})</span>
+                                        </span>
+                                      </div>
+                                    );
+                                  })()}
+
+                                  {/* 잔고 인라인 (참고용) — 정산차액 옆 · 소형 */}
+                                  {(() => {
+                                    const bal = pageSupplierBalances[pn] ?? pageBalanceOverride[pn];
+                                    const manualBal = pageBalanceModeManual.has(pn) ? parseNumber(pageBalanceManualInput[pn] ?? "") : 0;
+                                    const displayBal = bal ?? (manualBal > 0 ? manualBal : null);
+                                    if (displayBal == null || displayBal <= 0) return null;
+                                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                                    const disc = getPageDiscount(pn);
+                                    void disc;
+                                    return null;  // 잔고는 아래 잔고 기록 UI 에 자연스레 표시됨 · 여기 중복 X
+                                  })()}
+
+                                  {/* 옛 검증 텍스트 블록 (이제 미사용) */}
+                                  {(() => {
+                                    return null;
+                                  })()}
+
                                   {(() => {
                                     const disc = getPageDiscount(pn);
                                     const bal = pageSupplierBalances[pn] ?? pageBalanceOverride[pn];
@@ -4648,7 +4647,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     const displayBal = bal ?? (manualBal > 0 ? manualBal : null);
                                     if (!disc && (displayBal == null || displayBal <= 0)) return null;
                                     return (
-                                      <div className="flex items-center justify-end gap-4 mt-1 pr-1">
+                                      <div className="hidden">
                                         {disc && (
                                           <span className="text-[14px] font-bold text-amber-800 whitespace-nowrap"
                                             title={`정산차액 (${disc.label}) · ${disc.isEstimated ? "역산 추정값" : "명세서 표기값"}`}
@@ -4665,8 +4664,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     );
                                   })()}
 
-                                  {/* ── 잔고 행 ── */}
-                                  <div className="flex items-center gap-1.5 flex-wrap mt-1.5 pt-1.5 border-t border-amber-300/40">
+                                  {/* ── 잔고 기록 행 · 가운데 정렬 (사용자 요청) ── */}
+                                  <div className="flex items-center justify-center gap-1.5 flex-wrap mt-1.5 pt-1.5 border-t border-amber-300/40">
                                     <span className="text-[10px] font-semibold text-rose-500 whitespace-nowrap">잔고</span>
                                     {(() => {
                                       const allAmts = pageAmountCandidates.get(pn) ?? [];
