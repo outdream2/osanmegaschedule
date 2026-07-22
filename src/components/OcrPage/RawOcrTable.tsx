@@ -1304,13 +1304,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     });
     if (hit && Math.abs(hit.amount) > 0) {
       const label = String(hit.label ?? "에누리").trim();
-      return { amount: Math.abs(hit.amount), label, isEstimated: label.includes("역산") };
+      return { amount: Math.abs(hit.amount), label, isEstimated: label.includes("역산") || label.includes("추정") };
     }
     // 2순위: meta.discount 직접
     const metaDisc = pageData?.meta?.discount;
     if (typeof metaDisc === "number" && metaDisc > 0) {
       const label = String(pageData?.meta?.discountLabel ?? "에누리").trim();
-      return { amount: metaDisc, label, isEstimated: label.includes("역산") };
+      return { amount: metaDisc, label, isEstimated: label.includes("역산") || label.includes("추정") };
     }
     return null;
   };
