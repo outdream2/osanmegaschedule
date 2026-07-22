@@ -3323,9 +3323,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             return null;
           })}
 
-          {/* 2026-07-22 반응형: table-layout fixed + 가중치 비율 배분 · 가로 스크롤 없음
-               2026-07-22 · 우측 여백 (사용자 요청 "오른쪽에 여백 있어야해") · pr-3 */}
-          <div className="w-full overflow-x-hidden pr-3" ref={invTableWrapRef}>
+          {/* 2026-07-22 · 화면 넘어가는 문제 대응 · overflow-x-auto (좁으면 스크롤) · box-border pr-4 */}
+          <div className="w-full overflow-x-auto pr-4 box-border" ref={invTableWrapRef}>
             <table className={`w-full border-collapse ${_cw < 500 ? "text-[10px]" : "text-xs"}`} style={{ tableLayout: "fixed" }}>
               <thead>
                 <tr className="bg-amber-50 border-b-2 border-amber-200">
@@ -4597,65 +4596,27 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     </div>
                                   </div>
 
-                                  {/* ── 검증 행: 에누리 · 관계식 경고 · CrossCheckBadge ── */}
+                                  {/* 2026-07-22 · 검증 행(에누리·관계식·CrossCheck) 삭제 · 소계 아래 요약 텍스트로 대체 */}
                                   {(() => {
-                                    const displayTotal = getPageDisplayTotal(pn);
-                                    const pageData = structuredPages.find(p => p.page === pn);
-                                    const stated = pageData?.meta?.total ?? null;
                                     const disc = getPageDiscount(pn);
-                                    const warn = getPageCrossCheckWarning(pn);
-                                    const isCustom = pageSubtotalChoices[pn] === "custom";
-                                    const hasBadge = !isCustom;
-                                    if (!disc && !warn && !hasBadge) return null;
+                                    const bal = pageSupplierBalances[pn] ?? pageBalanceOverride[pn];
+                                    const manualBal = pageBalanceModeManual.has(pn) ? parseNumber(pageBalanceManualInput[pn] ?? "") : 0;
+                                    const displayBal = bal ?? (manualBal > 0 ? manualBal : null);
+                                    if (!disc && (displayBal == null || displayBal <= 0)) return null;
                                     return (
-                                      <div className="flex items-center gap-2 flex-wrap mt-0.5 pl-0.5">
-                                        {disc && (() => {
-                                          const mode = discountApplyMode[pn] ?? "before";
-                                          const isAfter = mode === "after";
-                                          return (
-                                            <button
-                                              type="button"
-                                              onClick={() => setDiscountApplyMode(prev => ({ ...prev, [pn]: isAfter ? "before" : "after" }))}
-                                              className={`text-[11px] font-semibold whitespace-nowrap cursor-pointer transition underline-offset-2 hover:underline ${
-                                                isAfter
-                                                  ? "text-slate-400"
-                                                  : disc.isEstimated
-                                                    ? "text-orange-500"
-                                                    : "text-amber-600"
-                                              }`}
-                                              title={isAfter
-                                                ? `현재: 에누리 적용 후 (${fmt(stated ?? 0)}원) · 클릭 시 적용 전으로 전환`
-                                                : `현재: 에누리 적용 전 (${fmt(stated ?? 0)}원 + ${disc.label} ${fmt(disc.amount)}원) · 클릭 시 적용 후로 전환`}
-                                            >
-                                              {disc.isEstimated ? "~" : ""}{disc.label} {fmt(disc.amount)}원 {isAfter ? "적용 후 ✓" : "적용 전"}
-                                            </button>
-                                          );
-                                        })()}
-                                        {warn && (
-                                          <span
-                                            className="text-[10px] font-semibold text-orange-500 whitespace-nowrap"
-                                            title={`관계식 불일치:\n${warn}\n\n공급가액 = 합계 + 세액 - 에누리 조건이 맞지 않습니다.\nOCR 오독 가능성: 세액이 공급가액과 같으면 세액 오독 의심`}
+                                      <div className="flex items-center justify-end gap-4 mt-1 pr-1">
+                                        {disc && (
+                                          <span className="text-[14px] font-bold text-amber-800 whitespace-nowrap"
+                                            title={`정산차액 (${disc.label}) · ${disc.isEstimated ? "역산 추정값" : "명세서 표기값"}`}
                                           >
-                                            관계식 불일치
+                                            정산차액 <span className="text-orange-700 font-black">{fmt(disc.amount)}</span>원
                                           </span>
                                         )}
-                                        {hasBadge && (() => {
-                                          const pageData2 = structuredPages.find(p => p.page === pn);
-                                          const stated2 = pageData2?.meta?.total ?? null;
-                                          return (
-                                            <CrossCheckBadge
-                                              pn={pn}
-                                              effectivePageTotals={effectivePageTotals}
-                                              effectivePageQtyPrice={effectivePageQtyPrice}
-                                              statedTotal={stated2}
-                                              pageQtyPriceAmtMismatch={pageQtyPriceAmtMismatch}
-                                              currentChoice={pageSubtotalChoices[pn]}
-                                              onChooseSubtotal={(pageN, choice) => {
-                                                setPageSubtotalChoices(prev => ({ ...prev, [pageN]: choice }));
-                                              }}
-                                            />
-                                          );
-                                        })()}
+                                        {displayBal != null && displayBal > 0 && (
+                                          <span className="text-[14px] font-bold text-rose-800 whitespace-nowrap" title="공급사 잔고">
+                                            잔고 <span className="text-rose-700 font-black">{fmt(displayBal)}</span>원
+                                          </span>
+                                        )}
                                       </div>
                                     );
                                   })()}
