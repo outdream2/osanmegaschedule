@@ -570,6 +570,8 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   const [statusMsg, setStatusMsg] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [extracting, setExtracting] = useState(false);
+  // 2026-07-22 · 클릭한 버튼만 로딩 표시 · 반대편 버튼 로딩 오해 방지
+  const [activeParser, setActiveParser] = useState<"local" | "gemini" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pages, setPages] = useState<OcrPageResult[]>([]);
   // OCR 엔진 선택 · 2가지
@@ -744,6 +746,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
     const images = imagesDataRef.current;
     if (images.length === 0 || extracting) return;
     setExtracting(true); setPages([]); setProcessed(0); setError(null);
+    setActiveParser(onnxParser);
     setStatusMsg(images.length > 1 ? `${images.length}장 처리 시작...` : "처리 중...");
     // 2026-07-22 · Gemini 파싱만 raw 모드 (rawText만 뽑고 Gemini 에 텍스트 전송)
     //   로컬 파싱은 raw 모드 안 씀 → 어제 그대로 전체 파이프라인 실행
@@ -866,6 +869,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
       setError(err?.response?.data?.error ?? err?.message ?? "OCR 처리 중 오류가 발생했습니다.");
     } finally {
       setExtracting(false);
+      setActiveParser(null);
       if (!useRawMode) setStatusMsg("");
     }
   }, [extracting, rotation, ocrEngine]);
@@ -1415,17 +1419,29 @@ return (
           {ocrEngine === "onnx" ? (
             <div className="flex flex-row gap-2">
               <button onClick={() => handleExtract("local")} disabled={extracting}
-                className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl text-[13px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm"
+                className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl text-[13px] font-bold text-white active:scale-[0.98] disabled:cursor-not-allowed transition cursor-pointer shadow-sm ${
+                  activeParser === "local"
+                    ? "bg-emerald-600 ring-2 ring-emerald-300"
+                    : extracting
+                      ? "bg-emerald-300"
+                      : "bg-emerald-500 hover:bg-emerald-600"
+                }`}
                 title="ONNX (PP-OCRv5) 로 rawText 추출 → 로컬 파이프라인 (vendor-match·normalize·verify) 으로 파싱/매칭">
-                {extracting
-                  ? <><Loader2 size={14} className="animate-spin" />처리 중...</>
+                {activeParser === "local"
+                  ? <><Loader2 size={14} className="animate-spin" />로컬 파싱 중...</>
                   : <><Zap size={14} />ONNX → 🔧 로컬 파싱/매칭{rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
               </button>
               <button onClick={() => handleExtract("gemini")} disabled={extracting}
-                className="flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl text-[13px] font-bold text-white bg-violet-500 hover:bg-violet-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm"
+                className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl text-[13px] font-bold text-white active:scale-[0.98] disabled:cursor-not-allowed transition cursor-pointer shadow-sm ${
+                  activeParser === "gemini"
+                    ? "bg-violet-600 ring-2 ring-violet-300"
+                    : extracting
+                      ? "bg-violet-300"
+                      : "bg-violet-500 hover:bg-violet-600"
+                }`}
                 title="ONNX (PP-OCRv5) 로 rawText 추출 → Gemini 에 텍스트 전송 · 이미지 X · 토큰 60-70% 절감">
-                {extracting
-                  ? <><Loader2 size={14} className="animate-spin" />처리 중...</>
+                {activeParser === "gemini"
+                  ? <><Loader2 size={14} className="animate-spin" />Gemini 파싱 중...</>
                   : <><Zap size={14} />ONNX → 🪄 Gemini 파싱/매칭{rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
               </button>
             </div>
