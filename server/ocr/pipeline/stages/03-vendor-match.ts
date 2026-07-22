@@ -1,7 +1,7 @@
 import { extractBusinessNumbersFromRawText, extractSupplierFromRawText } from "../../parse";
 import { getVendorNames, getVendorBizNumMap, learnVendorBusinessNumber, getSupplierAliasMap, learnSupplierAlias, getProductToSuppliersMap } from "../../../productCache";
 import { DEFAULT_EXCLUDED_SUPPLIERS, isExcludedBusinessNumber } from "../../excludedSuppliers";
-import { normSupplier, bigramSim, supplierSim } from "../../match";
+import { normSupplier, bigramSim } from "../../match";
 import { supabase } from "../../../../src/supabase/client";
 import type { Stage } from "../types";
 
@@ -90,8 +90,7 @@ export function makeVendorMatchStage(_deps: {
           let via: "exact" | "fuzzy";
           if (target === v.n) { s = 100; via = "exact"; }
           else {
-            // 2026-07-22 · supplierSim = max(diceSim, jaroWinkler, tokenSetRatio) · 회사명 정확도 향상
-            const bs = supplierSim(target, v.n);
+            const bs = bigramSim(target, v.n);
             const isSubstr = target.includes(v.n) || v.n.includes(target);
             s = isSubstr ? Math.max(substringScore(target, v.n), bs) : bs;
             via = "fuzzy";
@@ -154,7 +153,7 @@ export function makeVendorMatchStage(_deps: {
             let debugBest: { db: string; score: number } | null = null;
             for (const v of vendorNorms) {
               if (!v.n || v.n.length < 2) continue;
-              const bs = normCand === v.n ? 100 : supplierSim(normCand, v.n);
+              const bs = normCand === v.n ? 100 : bigramSim(normCand, v.n);
               if (debugBest === null || bs > debugBest.score) debugBest = { db: v.name, score: bs };
             }
             console.log(`[vendor-match/②이름매칭] 실패: "${cand}" (norm="${normCand}") · threshold=${MATCH_THRESHOLD} · 최고점 후보="${debugBest?.db ?? "없음"}" (score=${debugBest?.score ?? 0})`);
@@ -212,25 +211,20 @@ export function makeVendorMatchStage(_deps: {
       const directTrusted = direct.supplier && isTrustworthyMetaSup(direct.supplier);
       // biznum 결과가 direct extract 와 얼마나 유사한가 (다르면 오학습)
       const biznumMatchesDirect = biznumMatched && direct.supplier
-        ? supplierSim(normSupplier(biznumMatched.db).replace(/\(주\)|주식회사/g, ""),
+        ? bigramSim(normSupplier(biznumMatched.db).replace(/\(주\)|주식회사/g, ""),
           normSupplier(direct.supplier).replace(/\(주\)|주식회사/g, "")) >= 40
         : false;
       if (biznumMatched && directTrusted && !biznumMatchesDirect) {
         console.warn(`[vendor-match/⚠️biznum-무시] page ${ctx.page}: extract="${direct.supplier}" ≠ biznum="${biznumMatched.db}" (오학습 의심 · biznum 채택 스킵)`);
       }
 
-      // 2026-07-22: 사업자번호 무조건 최우선 (사용자 재확인)
-      //   원문: "사업자번호로 공급사 먼저 찾아. ocr추출, 사업번호 확인, 상품 역검색"
-      //   biznum 이 vendors DB 매칭되면 · direct extract 와 다르더라도 채택 (biznum 은 정부 등록 고유 번호)
-      //   오학습 방어는 B-3 (eq exact match) + B-2 (근접 컨텍스트 검증) 에서 처리 · 여기서 스킵 X
+      // 2026-07-20: 엄격한 우선순위 (사용자 스펙 준수)
+      //   tier 1 = 사업자번호(biznum) | 2 = alias | 3 = exact | 4 = fuzzy
+      //   같은 tier 안에서는 score 최고점 채택
       type MatchEntry = { db: string; score: number; from: string; via?: "alias" | "exact" | "fuzzy" };
       const allMatches: MatchEntry[] = [];
-      if (biznumMatched) {
-        allMatches.push(biznumMatched);
-        if (directTrusted && !biznumMatchesDirect) {
-          console.warn(`[vendor-match/⚠️biznum-우선]  page ${ctx.page}: extract="${direct.supplier}" vs biznum="${biznumMatched.db}" 다르지만 · 사업자번호 우선 정책 · biznum 채택 (오학습 의심 시 vendors DB 수동 확인 필요)`);
-        }
-      }
+      // biznum 은 direct 와 유사할 때만 포함 (또는 direct 없을 때)
+      if (biznumMatched && (!directTrusted || biznumMatchesDirect)) allMatches.push(biznumMatched);
       allMatches.push(...nameMatches);
       if (allMatches.length > 0) {
         const tierOf = (m: MatchEntry): number => {
@@ -620,42 +614,16 @@ export function makeVendorMatchStage(_deps: {
       // ④ 사업자번호 학습 (오학습 방어 강화)
       //   조건: (1) 이름 확정  (2) 사업자번호 있음  (3) DB 미등록
       //         (4) direct extract 결과가 신뢰 가능 (오학습 방지)
-      //         (5) 2026-07-22 · 근접 컨텍스트 검증 · rawText 에서 primaryBiz 위치 ±200자 안에 vendor 이름 실제 등장
-      //             (예전 오학습: 5848801771 이 "엘앤바이오랩" 라인에 있는데 "앤바이오" 로 잘못 학습된 케이스 방어)
+      //         (5) 이름이 사업자번호 근처 텍스트에 실제 등장 (같은 명세서 데이터임을 확인)
       //         (6) 수신처 blacklist 사업자번호가 아님 (핵심 안전장치)
-      const nearbyContextHasVendor = (rawText: string, biz: string, vendor: string): boolean => {
-        const bizFormatted = biz.length === 10
-          ? `${biz.slice(0, 3)}-${biz.slice(3, 5)}-${biz.slice(5)}`
-          : biz;
-        const patterns = [biz, bizFormatted];
-        for (const p of patterns) {
-          const idx = rawText.indexOf(p);
-          if (idx < 0) continue;
-          const context = rawText.slice(Math.max(0, idx - 200), idx + 200);
-          // vendor 이름 앞 3자 이상 (짧으면 전체) 근접 등장 확인
-          const key = vendor.replace(/\s+/g, "").replace(/^\(주\)|^\(株\)|^주식회사/, "").trim();
-          if (!key) return false;
-          const searchKey = key.length >= 4 ? key.slice(0, Math.min(6, key.length)) : key;
-          const contextNoSpace = context.replace(/\s+/g, "");
-          if (contextNoSpace.includes(searchKey)) return true;
-        }
-        return false;
-      };
-
       if (primaryBiz && isExcludedBusinessNumber(primaryBiz)) {
         console.warn(`[vendor-match/④학습-사업자번호] 스킵: ${primaryBiz} 은 수신처 blacklist (오학습 재발 방지)`);
       } else if (vendorMatched && primaryBiz && !bizMap.get(primaryBiz) && directTrusted) {
-        // 2026-07-22: 근접 컨텍스트 검증 추가
-        const nearby = nearbyContextHasVendor(ctx.rawText ?? "", primaryBiz, vendorMatched);
-        if (!nearby) {
-          console.warn(`[vendor-match/④학습-사업자번호] ⚠ 근접 컨텍스트 검증 실패: ${primaryBiz} 근처(±200자)에 "${vendorMatched}" 미등장 · 오학습 방지 · 학습 스킵`);
-        } else {
-          try {
-            const r = await learnVendorBusinessNumber(vendorMatched, primaryBiz);
-            console.log(`[vendor-match/④학습-사업자번호] "${vendorMatched}" ↔ ${primaryBiz} (${r.action}) · 근접검증 통과`);
-          } catch (e: any) {
-            console.warn(`[vendor-match/④학습-사업자번호] 실패:`, e?.message);
-          }
+        try {
+          const r = await learnVendorBusinessNumber(vendorMatched, primaryBiz);
+          console.log(`[vendor-match/④학습-사업자번호] "${vendorMatched}" ↔ ${primaryBiz} (${r.action})`);
+        } catch (e: any) {
+          console.warn(`[vendor-match/④학습-사업자번호] 실패:`, e?.message);
         }
       } else if (vendorMatched && primaryBiz && !bizMap.get(primaryBiz)) {
         console.log(`[vendor-match/④학습-사업자번호] 스킵 (direct 신뢰도 부족 · 오학습 방지) · "${vendorMatched}" ↔ ${primaryBiz}`);
