@@ -3258,11 +3258,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   동의어 추가 실패
                 </span>
               )}
-              {pageImages?.length ? (
-                <span className="text-[11px] text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded font-semibold">
-                  📄 행 클릭 → 이미지 보기
-                </span>
-              ) : null}
+              {/* 2026-07-22: "📄 행 클릭 → 이미지 보기" 배지 삭제 (사용자 요청) */}
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
               <button
