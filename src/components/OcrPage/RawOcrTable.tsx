@@ -1619,7 +1619,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   //   3. 최소: INV_COL_MIN · 최대: containerWidth - MIN_DATA_WIDTH
   const invColMax = containerWidth > 0 ? Math.max(INV_COL_MIN, containerWidth - MIN_DATA_WIDTH) : Infinity;
   const isUserAdjusted = Math.abs(invoiceColWidth - INV_COL_DEFAULT) > 5;
-  const autoRatio = 0.4;  // 컨테이너 폭의 40% (반응형 기본값)
+  const autoRatio = 0.33;  // 컨테이너 폭의 33% (반응형 기본값 · 데이터 영역 확보)
   const responsiveDefault = containerWidth > 0
     ? Math.max(INV_COL_MIN, Math.min(containerWidth * autoRatio, invColMax))
     : INV_COL_DEFAULT;
@@ -1631,16 +1631,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   //   cw = containerWidth (0 이면 700 fallback)
   //   bp: xs(<500) sm(<700) md(<900) lg(≥900)
   const _cw = containerWidth || 700;
-  // 숫자 셀(수량/단가/금액/유통기한) 최소 폭: 좁을수록 작게
-  const numCellMinW = _cw < 500 ? 60 : _cw < 700 ? 80 : 110;
+  // 숫자 셀(수량/단가/금액/유통기한) 최소 폭: 좁을수록 작게 · 재추출버튼 인라인으로 줄임
+  const numCellMinW = _cw < 500 ? 52 : _cw < 700 ? 68 : 90;
   // 편집 input 최소 폭 (숫자)
   const numInputMinW = _cw < 500 ? "4rem" : _cw < 700 ? "5rem" : "5.5rem";
   // 유통기한 편집 input 최소 폭
   const expInputMinW = _cw < 500 ? "6rem" : _cw < 700 ? "7rem" : "7.5rem";
   // 재추출 버튼 크기 (px): 좁으면 w-4 h-4, 넓으면 w-5 h-5
   const reextBtnCls = _cw < 500 ? "w-4 h-4 text-[10px]" : "w-5 h-5 text-[12px]";
-  // flex-col(값+버튼) → 좁을 때 flex-row inline 으로 fallback
-  const numCellInnerCls = _cw < 600 ? "flex flex-row items-center justify-end gap-1" : "flex flex-col items-end gap-0.5";
+  // flex-col(값+버튼) → 항상 flex-row inline · 행 높이 최소화
+  const numCellInnerCls = "flex flex-row items-center justify-end gap-1";
 
   useEffect(() => {
     try { localStorage.setItem("ocr-invoice-col-width", String(Math.round(invoiceColWidth))); } catch { /* empty */ }
@@ -4390,13 +4390,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     : "linear-gradient(90deg, #fef3c7 0%, #ffedd5 55%, #fed7aa 100%)"
                                 }}
                               >
-                                <div className="flex flex-col gap-1.5 px-3 py-1.5">
+                                <div className="flex flex-col gap-1 px-2 py-1">
 
-                                  {/* 1줄: 좌측 그룹 + 중앙 그룹 */}
-                                  {/* 좌측: [N번 명세서 소계] [명세서 보기] [공급사 잔고] [공급사] · 반응형 wrap */}
-                                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap min-w-0">
-                                    <span className="text-amber-700 font-black text-[11px] tracking-wide uppercase whitespace-nowrap bg-amber-200/60 border border-amber-300 rounded px-1.5 py-0.5">
-                                      {pn}번 명세서 소계
+                                  {/* 1줄: 소계 라벨 + 공급사 잔고 + 공급사명 */}
+                                  <div className="flex items-center gap-1 flex-wrap min-w-0">
+                                    <span className="text-amber-700 font-black text-[10px] tracking-wide whitespace-nowrap bg-amber-200/60 border border-amber-300 rounded px-1 py-px">
+                                      {pn}번 소계
                                     </span>
                                     {/* 2026-07-22: 거래명세서 보기 버튼 삭제 (사용자 요청) */}
                                     {/* 공급사 잔고 값 (있으면 · 공급사 앞에 표시) */}
@@ -4424,9 +4423,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     )}
                                   </div>
 
-                                  {/* 중앙: 소계 금액 — 명세서 합계 기준, 에누리 있으면 적용 전 금액 표시. 직접 입력 가능.
-                                       2026-07-22 · 사용자 요청 "한 줄로 나오게" · flex-wrap 제거 · flex-nowrap 유지 */}
-                                  <div className="flex items-center justify-start flex-nowrap gap-1.5 overflow-x-auto">
+                                  {/* 2줄: 소계 금액 + 교차검증 · flex-nowrap 유지 */}
+                                  <div className="flex items-center justify-start flex-nowrap gap-1 overflow-x-auto">
                                     {(() => {
                                       const displayTotal = getPageDisplayTotal(pn);
                                       const pageData = structuredPages.find(p => p.page === pn);
@@ -4434,7 +4432,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       const disc = getPageDiscount(pn);
                                       const isCustom = pageSubtotalChoices[pn] === "custom";
                                       return (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-1">
                                           {isCustom ? (
                                             <>
                                               <input
@@ -4563,8 +4561,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     })()}
                                   </div>
 
-                                  {/* 2줄: 공급사 잔고 드롭박스 + 직접입력 + 기록안함 + 확인 */}
-                                  <div className="flex items-center gap-1.5 flex-wrap justify-start border-t border-amber-300/50 pt-1">
+                                  {/* 3줄: 공급사 잔고 드롭박스 + 직접입력 + 기록안함 + 확인 */}
+                                  <div className="flex items-center gap-1 flex-wrap justify-start border-t border-amber-300/50 pt-0.5">
                                     <span className="text-rose-600 font-bold text-[11px] whitespace-nowrap">공급사 잔고</span>
                                     {(() => {
                                       const allAmts = pageAmountCandidates.get(pn) ?? [];
