@@ -3930,23 +3930,25 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 }`}
                                 title={isCellChecked ? "체크됨 (Alt+Click 해제)" : "클릭하여 수정 · Alt+Click 으로 선택"}
                               >
-                                <span className="flex items-center justify-end gap-1">
-                                  {isMismatch && isAmt && <AlertTriangle size={9} className="text-rose-400 shrink-0" />}
-                                  {(() => {
-                                    // 재추출 격리: 각 셀은 자기 값만 표시 · 자동 계산 없음 (2026-07-18)
-                                    if (cell == null || (typeof cell === "number" && cell <= 0 && !hasDirectEdit)) {
-                                      return <span className="text-gray-300">—</span>;
-                                    }
-                                    return (
-                                      <span className={hasDirectEdit ? "text-indigo-700" : isCorrectedAmt ? "text-emerald-700" : ""}>
-                                        {typeof cell === "number" ? fmt(cell) : String(cell)}
-                                      </span>
-                                    );
-                                  })()}
-                                  {hasDirectEdit && <span className="text-[10px] bg-indigo-100 text-indigo-600 px-1 rounded font-bold">수정</span>}
-                                  {isCorrectedAmt && <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>}
-                                  <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
-                                  {/* 수량·단가 셀 전용 재추출 아이콘 · 각 셀만 갱신 · 서로 연동 없음 (2026-07-18) */}
+                                <span className="flex flex-col items-end gap-0.5">
+                                  <span className="flex items-center justify-end gap-1">
+                                    {isMismatch && isAmt && <AlertTriangle size={9} className="text-rose-400 shrink-0" />}
+                                    {(() => {
+                                      // 재추출 격리: 각 셀은 자기 값만 표시 · 자동 계산 없음 (2026-07-18)
+                                      if (cell == null || (typeof cell === "number" && cell <= 0 && !hasDirectEdit)) {
+                                        return <span className="text-gray-300">—</span>;
+                                      }
+                                      return (
+                                        <span className={hasDirectEdit ? "text-indigo-700" : isCorrectedAmt ? "text-emerald-700" : ""}>
+                                          {typeof cell === "number" ? fmt(cell) : String(cell)}
+                                        </span>
+                                      );
+                                    })()}
+                                    {hasDirectEdit && <span className="text-[10px] bg-indigo-100 text-indigo-600 px-1 rounded font-bold">수정</span>}
+                                    {isCorrectedAmt && <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1 rounded font-bold">보정</span>}
+                                    <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
+                                  </span>
+                                  {/* 수량·단가 셀 전용 재추출 아이콘 · 셀 값 아래 배치 · 옆 셀 침범 없음 (2026-07-22) */}
                                   {(h === "수량" || h === "단가") && (() => {
                                     const cellKey = `${ri}-${ci}`;
                                     const cycleIdx = numericCellCycle[cellKey] ?? -1;
@@ -3959,7 +3961,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       <button
                                         type="button"
                                         onClick={(e) => { e.stopPropagation(); reextractOneCell(ri, ci, h as "수량" | "단가"); }}
-                                        className={`ml-1 shrink-0 w-5 h-5 flex items-center justify-center text-[12px] rounded transition cursor-pointer ${
+                                        className={`opacity-0 group-hover:opacity-100 shrink-0 w-5 h-5 flex items-center justify-center text-[12px] rounded transition cursor-pointer ${
                                           noCands
                                             ? "bg-rose-100 text-rose-500 hover:bg-rose-200"
                                             : cycleIdx >= 0
@@ -4219,14 +4221,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 }}
                                 className="px-2 py-2 text-gray-500 text-[11px] group cursor-pointer hover:bg-amber-50/60 text-right"
                                 title="클릭하여 유통기한 수정">
-                                <span className="flex items-center justify-end gap-1">
-                                  {cell == null ? <span className="text-gray-300">—</span> : String(cell)}
-                                  <Pencil size={8} className="text-amber-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
-                                  {/* 유통기한 재추출 아이콘 · 20xx 로 시작하는 rawText 날짜 순환 · 이 셀만 갱신 (2026-07-18) */}
+                                <span className="flex flex-col items-end gap-0.5">
+                                  <span className="flex items-center justify-end gap-1">
+                                    {cell == null ? <span className="text-gray-300">—</span> : String(cell)}
+                                    <Pencil size={8} className="text-amber-300 opacity-0 group-hover:opacity-100 transition shrink-0" />
+                                  </span>
+                                  {/* 유통기한 재추출 아이콘 · 셀 값 아래 배치 · 옆 셀 침범 없음 (2026-07-22) */}
                                   <button
                                     type="button"
                                     onClick={e => { e.stopPropagation(); reextractOneCell(ri, ci, "유통기한"); }}
-                                    className={`ml-0.5 shrink-0 w-5 h-5 flex items-center justify-center text-[12px] rounded transition cursor-pointer ${
+                                    className={`opacity-0 group-hover:opacity-100 shrink-0 w-5 h-5 flex items-center justify-center text-[12px] rounded transition cursor-pointer ${
                                       expNoCands
                                         ? "bg-rose-100 text-rose-500 hover:bg-rose-200"
                                         : expCycleIdx >= 0
