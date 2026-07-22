@@ -4095,7 +4095,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     {dbFilledCells.has(`${ri}-${ci}`) && <span className="text-[10px] bg-indigo-100 text-indigo-700 px-1 rounded font-black" title="products DB 에서 자동 채움">DB</span>}
                                     <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                   </span>
-                                  {/* 2026-07-22 · 단가 셀 아래 DB 사입가 참고 표시 (사용자 요청 "db에서 사입가 찾아서 단가 아래 표시해") */}
+                                  {/* 2026-07-22 · 단가 셀 아래 사입단가 · [적용] 버튼 (사용자 요청) */}
                                   {h === "단가" && (() => {
                                     const dbPrice = matchItems?.[ri]?.matched?.masterPrice;
                                     if (dbPrice == null || !Number.isFinite(dbPrice) || dbPrice <= 0) return null;
@@ -4103,10 +4103,22 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     const diffRatio = ocrPrice > 0 ? Math.abs(ocrPrice - dbPrice) / ocrPrice : 1;
                                     const isBigDiff = diffRatio > 0.5;
                                     return (
-                                      <span
-                                        className={`text-[9px] font-mono ${isBigDiff ? "text-rose-500" : "text-indigo-500"}`}
-                                        title={`DB 사입가: ${fmt(dbPrice)}원${isBigDiff && ocrPrice > 0 ? ` (OCR 값과 ${Math.round(diffRatio*100)}% 차이)` : ""}`}
-                                      >DB {fmt(dbPrice)}</span>
+                                      <span className="inline-flex items-center gap-1 justify-end">
+                                        <span
+                                          className={`text-[11px] font-bold font-mono ${isBigDiff ? "text-rose-500" : "text-indigo-600"}`}
+                                          title={`사입단가 ${fmt(dbPrice)}원${isBigDiff && ocrPrice > 0 ? ` (OCR 값과 ${Math.round(diffRatio*100)}% 차이)` : ""}`}
+                                        >사입 {fmt(dbPrice)}</span>
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [ci]: dbPrice } }));
+                                            setDbFilledCells(prev => new Set(prev).add(`${ri}-${ci}`));
+                                          }}
+                                          className="text-[10px] font-black text-white bg-indigo-500 hover:bg-indigo-600 rounded px-1.5 py-px cursor-pointer whitespace-nowrap transition"
+                                          title="이 사입단가를 단가에 적용 (Q*P 자동 재계산)"
+                                        >적용</button>
+                                      </span>
                                     );
                                   })()}
                                   {(h === "수량" || h === "단가") && (() => {
