@@ -55,7 +55,7 @@ export const CrossCheckBadge: React.FC<CrossCheckBadgeProps> = ({
   if (canChoose) {
     const chosen = currentChoice ?? "stated"; // stated 가 기본 (getPageDisplayTotal 참조)
     return (
-      <span className="inline-flex items-center gap-0.5 flex-wrap" title={commonTitle}>
+      <span className="inline-flex items-center gap-0.5 flex-nowrap whitespace-nowrap" title={commonTitle}>
         <span className="text-[10px] font-black text-rose-700 whitespace-nowrap">⚠</span>
         <button
           type="button"
@@ -67,7 +67,7 @@ export const CrossCheckBadge: React.FC<CrossCheckBadgeProps> = ({
           }`}
           title="행합을 이 페이지 소계로 채택"
         >
-          {chosen === "computed" ? "✓ " : ""}행합 {fmt(rowSum)}
+          {chosen === "computed" ? "✓ " : ""}금액합계 {fmt(rowSum)}
         </button>
         <span className="text-[10px] font-bold text-slate-500">≠</span>
         <button
@@ -97,7 +97,7 @@ export const CrossCheckBadge: React.FC<CrossCheckBadgeProps> = ({
       className="text-[10px] font-black border rounded px-1.5 py-0.5 whitespace-nowrap bg-rose-50 text-rose-700 border-rose-300"
       title={commonTitle}
     >
-      ⚠ 교차검증 · 행합 {fmt(rowSum)}{statedTotal != null && !rowSumOk ? ` ≠ OCR ${fmt(statedTotal)}` : ""}{qpaMismatchCount > 0 ? ` · 수식오탐 ${qpaMismatchCount}건` : ""}
+      ⚠ 교차검증 · 금액합계 {fmt(rowSum)}{statedTotal != null && !rowSumOk ? ` ≠ OCR ${fmt(statedTotal)}` : ""}{qpaMismatchCount > 0 ? ` · 수식오탐 ${qpaMismatchCount}건` : ""}
     </span>
   );
 };

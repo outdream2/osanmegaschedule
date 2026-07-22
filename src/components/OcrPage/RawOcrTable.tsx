@@ -4360,8 +4360,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     )}
                                   </div>
 
-                                  {/* 중앙: 소계 금액 — 명세서 합계 기준, 에누리 있으면 적용 전 금액 표시. 직접 입력 가능. */}
-                                  <div className="flex items-center justify-start flex-wrap gap-1.5">
+                                  {/* 중앙: 소계 금액 — 명세서 합계 기준, 에누리 있으면 적용 전 금액 표시. 직접 입력 가능.
+                                       2026-07-22 · 사용자 요청 "한 줄로 나오게" · flex-wrap 제거 · flex-nowrap 유지 */}
+                                  <div className="flex items-center justify-start flex-nowrap gap-1.5 overflow-x-auto">
                                     {(() => {
                                       const displayTotal = getPageDisplayTotal(pn);
                                       const pageData = structuredPages.find(p => p.page === pn);
