@@ -220,14 +220,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // ERP 상품코드 → 현재고 매핑 (products-map API 캐시)
   const [erpStockMap, setErpStockMap] = useState<Record<string, number | null>>({});
   const [erpStockLoaded, setErpStockLoaded] = useState(false);
-  // 1차보정(거래명세서 품목) 상세정보 표시 여부 — false면 필수 컬럼만 표시
-  const [showRawDetail, setShowRawDetail] = useState<boolean>(() => {
-    try { return localStorage.getItem("ocr_raw_show_detail") === "1"; }
-    catch { return false; }
-  });
-  useEffect(() => {
-    try { localStorage.setItem("ocr_raw_show_detail", showRawDetail ? "1" : "0"); } catch { /* empty */ }
-  }, [showRawDetail]);
+  // 2026-07-22 · 상세정보 토글 삭제 후 · 항상 compact 모드 강제 (사용자 요청 "유통기한 이후 비고 등 표시 X")
+  //   localStorage 잔여 값 무시 · false 상수
+  const showRawDetail = false;
+  const setShowRawDetail = (_: boolean) => { /* no-op · 토글 제거됨 */ };
+  void setShowRawDetail;
   // 1차보정 압축(기본) 모드에서 표시할 필수 컬럼 순서
   // 요구사항: 공급처 → 품명 → 수량 → 단가 → 금액 → 규격 → 유통기한
   const RAW_ESSENTIAL_COLS = ["공급처", "품명", "수량", "단가", "금액", "규격", "유통기한"];
