@@ -93,6 +93,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       return [md, ...r];
     });
   }
+  // 2026-07-23 · 사용자 요청 "유통기한 옆에 하나 추가해" · 비고 컬럼 강제 (없으면 빈 컬럼)
+  if (!dispHeaders.includes("비고")) {
+    dispHeaders = [...dispHeaders, "비고"];
+    dispRows = dispRows.map(r => [...r, null]);
+  }
 
   const amtIdx  = dispHeaders.indexOf("금액");
   const nameIdx = dispHeaders.indexOf("품명");
@@ -246,7 +251,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   void setShowRawDetail;
   // 1차보정 압축(기본) 모드에서 표시할 필수 컬럼 순서
   // 요구사항: 공급처 → 품명 → 수량 → 단가 → 금액 → 규격 → 유통기한
-  const RAW_ESSENTIAL_COLS = ["거래일", "공급처", "품명", "수량", "단가", "금액", "규격", "유통기한"];
+  const RAW_ESSENTIAL_COLS = ["거래일", "공급처", "품명", "수량", "단가", "금액", "규격", "유통기한", "비고"];
 
   // ── 컬럼 너비 조정 ────────────────────────────────────────────────────────────
   const [colWidths, setColWidths] = useState<Record<number, number>>({});
@@ -3356,8 +3361,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
           })}
 
           {/* 2026-07-22 · 양쪽 여백 (사용자 요청 "양쪽에 여백") · px-3 */}
-          {/* 2026-07-22 · 우측 여백 대폭 확대 · 마지막 컬럼(유통기한) 안 잘리게 · pl-3 pr-8 */}
-          <div className="w-full overflow-x-auto pl-3 pr-8 box-border" ref={invTableWrapRef}>
+          {/* 2026-07-23 · 최대 폭 제한 · 보기 좋게 (사용자 요청 "일정 넓이 이상 안 넓어지게") · max-w-[1400px] mx-auto */}
+          <div className="w-full max-w-[1400px] mx-auto overflow-x-auto pl-3 pr-8 box-border" ref={invTableWrapRef}>
             <table className={`w-full border-collapse ${_cw < 500 ? "text-[10px]" : "text-xs"}`} style={{ tableLayout: "fixed" }}>
               <thead>
                 <tr className="bg-amber-50 border-b-2 border-amber-200">
