@@ -206,6 +206,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const pageBalanceCandidatesForFormula = new Map<number, Map<string, number>>();
   // 페이지별 사용자 지정 잔고 (드롭박스로 OCR 추출 금액 중 선택) — 저장 버튼 클릭 시 확정
   const [pageBalanceOverride, setPageBalanceOverride] = useState<Record<number, number>>({});
+  // 2026-07-23 · 정산차액 사용자 override (사용자 요청 "정산차액도 입력가능")
+  const [pageDiscountOverride, setPageDiscountOverride] = useState<Record<number, { amount: number; label: string }>>({});
+  // 인라인 편집 UI · null = 편집 아님 · "discount"|"balance" = 편집 중
+  const [editingSummary, setEditingSummary] = useState<{ pn: number; kind: "discount" | "balance"; value: string } | null>(null);
   // "직접 입력" 모드: 사용자가 잔고 금액을 수동으로 입력
   const [pageBalanceManualInput, setPageBalanceManualInput] = useState<Record<number, string>>({});
   const [pageBalanceModeManual, setPageBalanceModeManual] = useState<Set<number>>(new Set());
@@ -1334,6 +1338,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   };
   // 2026-07-22 · 사용자 요청 "에누리랑 차액 항목 있는 경우 정산차액에 다 나와야" → 전체 리스트 반환
   const getPageDiscounts = (pn: number): { amount: number; label: string; isEstimated?: boolean }[] => {
+    // 2026-07-23 · 사용자 override 최우선 (있으면 그것만 반환)
+    const ov = pageDiscountOverride[pn];
+    if (ov && ov.amount > 0) return [{ amount: ov.amount, label: ov.label || "수정" }];
     const pageData = structuredPages.find(p => p.page === pn);
     const summary = pageData?.meta?.summary_rows ?? [];
     const discRe = /에누리|할인|차액|차감|DC|D\.C/i;
@@ -4565,30 +4572,71 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                 >✎</button>
                                               </>
                                             )}
+                                            {/* 2026-07-23 · 정산차액 · 클릭하면 인라인 편집 (사용자 요청) */}
                                             <span className="text-[12px] font-semibold text-orange-700 ml-2">정산차액</span>
-                                            {discs.length > 0 ? (
-                                              <span className="inline-flex items-center gap-1 flex-wrap">
-                                                {discs.map((d, i) => (
-                                                  <span key={i} className="text-[14px] font-black text-orange-800 whitespace-nowrap"
-                                                    title={`${d.label} · ${d.isEstimated ? "역산 추정" : "명세서 표기"}`}
-                                                  >
-                                                    {fmt(d.amount)}원
-                                                    <span className="text-[10px] font-semibold text-orange-500 ml-0.5">({d.label})</span>
-                                                    {i < discs.length - 1 && <span className="text-orange-400 mx-0.5">+</span>}
+                                            {editingSummary?.pn === pn && editingSummary.kind === "discount" ? (
+                                              <input type="text" inputMode="numeric" autoFocus
+                                                value={editingSummary.value}
+                                                onChange={e => setEditingSummary({ ...editingSummary, value: e.target.value })}
+                                                onBlur={() => {
+                                                  const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
+                                                  if (n > 0) setPageDiscountOverride(prev => ({ ...prev, [pn]: { amount: n, label: "수정" } }));
+                                                  else setPageDiscountOverride(prev => { const c = { ...prev }; delete c[pn]; return c; });
+                                                  setEditingSummary(null);
+                                                }}
+                                                onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
+                                                className="w-[100px] text-[14px] font-black text-orange-800 bg-white border-2 border-orange-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-orange-600 text-right"
+                                              />
+                                            ) : (
+                                              <button type="button"
+                                                onClick={() => setEditingSummary({ pn, kind: "discount", value: String(discs[0]?.amount ?? "") })}
+                                                className="inline-flex items-center gap-1 hover:bg-orange-50 rounded px-1 py-0.5 cursor-pointer transition"
+                                                title="클릭하여 정산차액 직접 입력">
+                                                {discs.length > 0 ? (
+                                                  <span className="inline-flex items-center gap-1 flex-wrap">
+                                                    {discs.map((d, i) => (
+                                                      <span key={i} className="text-[14px] font-black text-orange-800 whitespace-nowrap">
+                                                        {fmt(d.amount)}원<span className="text-[10px] font-semibold text-orange-500 ml-0.5">({d.label})</span>
+                                                        {i < discs.length - 1 && <span className="text-orange-400 mx-0.5">+</span>}
+                                                      </span>
+                                                    ))}
                                                   </span>
-                                                ))}
-                                              </span>
-                                            ) : (
-                                              <span className="text-[14px] font-bold text-slate-400" title="정산차액 없음">-</span>
+                                                ) : (
+                                                  <span className="text-[14px] font-bold text-slate-400">-</span>
+                                                )}
+                                              </button>
                                             )}
-                                            {/* 잔고 · 정산차액 옆 · 사용자 요청 */}
+                                            {/* 2026-07-23 · 잔고 · 클릭하면 인라인 편집 (사용자 요청) */}
                                             <span className="text-[12px] font-semibold text-rose-700 ml-2">잔고</span>
-                                            {displayBalForShow != null && displayBalForShow > 0 ? (
-                                              <span className="text-[14px] font-black text-rose-800 whitespace-nowrap" title="공급사 잔고">
-                                                {fmt(displayBalForShow)}원
-                                              </span>
+                                            {editingSummary?.pn === pn && editingSummary.kind === "balance" ? (
+                                              <input type="text" inputMode="numeric" autoFocus
+                                                value={editingSummary.value}
+                                                onChange={e => setEditingSummary({ ...editingSummary, value: e.target.value })}
+                                                onBlur={() => {
+                                                  const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
+                                                  if (n > 0) {
+                                                    setPageBalanceOverride(prev => ({ ...prev, [pn]: n }));
+                                                    setPageBalanceModeManual(prev => { const s = new Set(prev); s.delete(pn); return s; });
+                                                    setPageBalanceModeSkip(prev => { const s = new Set(prev); s.delete(pn); return s; });
+                                                  } else {
+                                                    setPageBalanceOverride(prev => { const c = { ...prev }; delete c[pn]; return c; });
+                                                  }
+                                                  setEditingSummary(null);
+                                                }}
+                                                onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
+                                                className="w-[100px] text-[14px] font-black text-rose-800 bg-white border-2 border-rose-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-rose-600 text-right"
+                                              />
                                             ) : (
-                                              <span className="text-[14px] font-bold text-slate-400" title="잔고 없음">-</span>
+                                              <button type="button"
+                                                onClick={() => setEditingSummary({ pn, kind: "balance", value: String(displayBalForShow ?? "") })}
+                                                className="inline-flex items-center gap-1 hover:bg-rose-50 rounded px-1 py-0.5 cursor-pointer transition"
+                                                title="클릭하여 잔고 직접 입력">
+                                                {displayBalForShow != null && displayBalForShow > 0 ? (
+                                                  <span className="text-[14px] font-black text-rose-800 whitespace-nowrap">{fmt(displayBalForShow)}원</span>
+                                                ) : (
+                                                  <span className="text-[14px] font-bold text-slate-400">-</span>
+                                                )}
+                                              </button>
                                             )}
                                           </>
                                         );
