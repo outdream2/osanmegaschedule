@@ -1800,6 +1800,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // ── 상품명 보정 ──────────────────────────────────────────────────────────
   const [matching,         setMatching        ] = useState(false);
   const [matchItems,       setMatchItems      ] = useState<MatchedItem[] | null>(null);
+  // 2026-07-22 · "1차보정 완료 · 2차보정 시작" 버튼 명시 클릭 후에만 2차 표 표시 (사용자 요청)
+  const [showSecondCorrection, setShowSecondCorrection] = useState(false);
   // 2026-07-22 · matchItems ref 동기화 (reextractOneCell forward reference용)
   useEffect(() => { matchItemsRef.current = matchItems; }, [matchItems]);
   // matchItems가 준비되면 products-map을 한 번 로드해서 code → current_stock 매핑 생성
@@ -3090,8 +3092,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   </span>
                 )}
               </span>
-              {/* DB 삭제 서명 필터 · 매치된 행이 안 보이는 원인 표시 · 리셋 가능 */}
-              {(() => {
+              {/* 2026-07-22 · 사용자 요청 삭제: 🔍 DB 필터 · ☑ 행 선택 · ↺ 원본 복원 배지들 제거 */}
+              {false && (() => {
                 const dbFilteredCount = allRows.filter((_, ri) => isRowDbDeleted(ri)).length;
                 if (dbFilteredCount === 0) return null;
                 return (
@@ -3101,9 +3103,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                       type="button"
                       onClick={async () => {
                         if (!confirm(`DB에 저장된 삭제 서명 ${dbDeletedSignatures.size}개를 모두 초기화합니다.\n이 세션의 필터가 해제되고, 서버 DB 기록도 삭제됩니다.\n계속?`)) return;
-                        // 로컬 필터 즉시 해제
                         setDbDeletedSignatures(new Set());
-                        // 서버 DB 전체 삭제 (개별 DELETE · 실패는 무시)
                         try {
                           const r = await fetch("/api/ocr-deleted-rows");
                           const data = await r.json();
@@ -3217,30 +3217,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   </button>
                 </>
               )}
-              {/* 체크박스 마킹된 행 · 재추출 / 원본복원 / 삭제 (2026-07-14 라벨 명확화) */}
+              {/* 2026-07-22 · 사용자 요청 삭제: ☑ 행 선택 배지 · ↺ 원본 복원 버튼 제거
+                   🗑 선택 삭제만 유지 (편집·삭제 기능 필요) */}
               {hiddenRawRows.size > 0 && (
-                <>
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 border border-rose-300 rounded px-2 py-0.5 whitespace-nowrap">
-                    ☑ {hiddenRawRows.size}행 선택
-                  </span>
-                  {/* 선택 재추출 버튼 제거 (2026-07-18 · 사용자 요청) */}
-                  <button
-                    type="button"
-                    onClick={revertSelectedRawRows}
-                    className="inline-flex items-center gap-1 text-[11px] font-black text-white bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 px-2 py-0.5 rounded shadow-sm transition cursor-pointer whitespace-nowrap"
-                    title="선택 행의 편집·보정 모두 초기화 · raw OCR 원본으로 복원"
-                  >
-                    ↺ 원본 복원
-                  </button>
-                  <button
-                    type="button"
-                    onClick={commitRawRowsDeletion}
-                    className="inline-flex items-center gap-1 text-[11px] font-black text-white bg-rose-500 hover:bg-rose-600 active:bg-rose-700 px-2 py-0.5 rounded shadow-sm transition cursor-pointer whitespace-nowrap"
-                    title="선택 행 완전 삭제 + DB 서명 저장 (다음 스캔에도 자동 필터)"
-                  >
-                    🗑 선택 삭제
-                  </button>
-                </>
+                <button
+                  type="button"
+                  onClick={commitRawRowsDeletion}
+                  className="inline-flex items-center gap-1 text-[11px] font-black text-white bg-rose-500 hover:bg-rose-600 active:bg-rose-700 px-2 py-0.5 rounded shadow-sm transition cursor-pointer whitespace-nowrap"
+                  title={`선택된 ${hiddenRawRows.size}행 완전 삭제 + DB 서명 저장 (다음 스캔에도 자동 필터)`}
+                >
+                  🗑 {hiddenRawRows.size}행 삭제
+                </button>
               )}
               {meta.date      && <span className="text-[11px] text-gray-400">{meta.date}</span>}
               {meta.supplier  && <span className="text-[11px] text-gray-400">공급: {meta.supplier}</span>}
@@ -4946,9 +4933,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       {/* ── 상품명 보정 ── */}
       {structuredPages.length > 0 && nameIdx >= 0 && (
         <>
-          {!matchItems && (
+          {/* 2026-07-22 · 사용자 요청: 명시적 "2차보정 시작" 버튼 클릭 후에만 2차 표 표시
+               matchItems 자동정리로 채워졌어도 · showSecondCorrection=false 면 표 숨김 */}
+          {!showSecondCorrection && (
             <div className="w-full flex flex-col sm:flex-row gap-2">
-              <button onClick={handleMatch} disabled={matching || hasMissingSupplier}
+              <button onClick={async () => {
+                  if (!matchItems) await handleMatch();
+                  setShowSecondCorrection(true);
+                }}
+                disabled={matching || hasMissingSupplier}
                 title={hasMissingSupplier ? `공급사 미입력 페이지 (${missingSupplierPages.join(", ")}번) 를 먼저 채워주세요` : "1차보정 완료 · 2차보정(ERP 상품 매칭) 시작"}
                 className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-black text-white bg-indigo-600 border border-indigo-700 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm">
                 {matching
@@ -4960,7 +4953,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
             </div>
           )}
 
-          {matchItems && (
+          {matchItems && showSecondCorrection && (
             <div className="w-full max-w-[1200px] ml-0 mr-8 sm:mr-24 lg:mr-56 bg-white border border-indigo-200 rounded-2xl overflow-hidden shadow-sm">
               <div className="px-4 py-2.5 border-b border-indigo-100 bg-indigo-50 flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2">
@@ -5758,11 +5751,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                   </span>
                                                 )}
                                               </div>
-                                              {mismatch2 && (
-                                                <span className="text-[10px] font-bold whitespace-nowrap px-1.5 py-0.5 rounded border bg-rose-50 text-rose-700 border-rose-300">
-                                                  ⚠ 수량×단가 합({fmt(sumQtyPrice2)}원) ≠ 합계금액({fmt(stated2!)}원)
-                                                </span>
-                                              )}
+                                              {/* 2026-07-22: 2차 합계 불일치 표시 제거 (1차에서 이미 검증 완료 · 사용자 요청) */}
                                             </div>
                                           );
                                         })()}
