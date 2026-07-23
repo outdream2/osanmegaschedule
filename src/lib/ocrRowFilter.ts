@@ -43,7 +43,9 @@ export function isNonProductText(text: string): boolean {
 
   // 사람 이름 패턴 (한글 2-4자 · 공백 없음 · 스페셜 문자 없음)
   //   예: "김충환", "한태호" — 상품명이면 최소 규격/단위 있을 것
-  if (/^[가-힣]{2,4}$/.test(t)) return true;
+  // 2026-07-23 · 약품 접미어(정·캡·액·포·환·산·겔·엘·정캡) 있으면 상품명으로 판정 · 사용자 사례 "이바내정 알지텍정 왜 취소돼?"
+  const pharmaSuffix = /(정|캡|액|포|환|산|겔|엘|시럽|크림|주|편|바|팜)$/;
+  if (/^[가-힣]{2,4}$/.test(t) && !pharmaSuffix.test(t)) return true;
 
   // "A20 1302" 같은 배치번호 · 로트번호 패턴 (알파벳+숫자+공백+숫자)
   if (/^[A-Z]{1,3}\d{1,4}\s+\d{3,}/.test(t)) return true;

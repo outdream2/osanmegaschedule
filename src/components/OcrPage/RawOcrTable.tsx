@@ -4381,6 +4381,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   title="클릭하여 상품명 수정">
                                   <div className="flex flex-col gap-0">
                                     <span className="flex items-center gap-1">
+                                      {/* 2026-07-23 · 사용자 요청 "db매칭 한 경우 품명에 db배지 표시해" */}
+                                      <span className="text-[9px] font-black bg-indigo-500 text-white px-1 py-px rounded shrink-0" title="products DB 에서 자동 매칭">DB</span>
                                       <BookOpen size={9} className="text-indigo-400 shrink-0" />
                                       <span className="font-semibold text-indigo-700 break-words whitespace-normal">{renderTextWithBreaks(autoMatch.name)}</span>
                                       <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
