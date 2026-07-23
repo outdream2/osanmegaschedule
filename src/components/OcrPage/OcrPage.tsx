@@ -574,6 +574,10 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   const [activeParser, setActiveParser] = useState<"local" | "gemini" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pages, setPages] = useState<OcrPageResult[]>([]);
+  // 2026-07-23 · 사용자 편집 감지 · 새 SSE/Gemini 결과가 편집 덮어쓰지 않도록
+  //   ref 사용 · useCallback deps 안바뀜 · 편집 트리거는 handleUserEdit 호출로
+  const hasUserEditsRef = useRef(false);
+  const handleUserEdit = useCallback(() => { hasUserEditsRef.current = true; }, []);
   // OCR 엔진 선택 · 2가지
   //   onnx   = PP-OCRv5 한국어 Node ONNX · Render 배포 · 완전 무료 · 셀프호스팅
   //   gemini = Gemini 비전 API · 정확도 최상 · 다중 키 로테이션 · Render 배포
@@ -687,7 +691,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
 
   const handleFiles = useCallback(async (files: File[]) => {
     if (files.length === 0) return;
-    setError(null); setPages([]); setProcessed(0); setPageCount(0); setStatusMsg("");
+    setError(null); setPages([]); setProcessed(0); setPageCount(0); setStatusMsg(""); hasUserEditsRef.current = false;
     setPageImages([]); setCurrentPageIdx(0);
     // 자동 회전 감지 결과가 도착하기 전까지는 원본 그대로 (0) 표시
     setLoading(true); setRotation(0);
@@ -745,7 +749,7 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
   const handleExtract = useCallback(async (onnxParser: "local" | "gemini" | null = null) => {
     const images = imagesDataRef.current;
     if (images.length === 0 || extracting) return;
-    setExtracting(true); setPages([]); setProcessed(0); setError(null);
+    setExtracting(true); setPages([]); setProcessed(0); setError(null); hasUserEditsRef.current = false;
     setActiveParser(onnxParser);
     setStatusMsg(images.length > 1 ? `${images.length}장 처리 시작...` : "처리 중...");
     // 2026-07-22 · Gemini 파싱만 raw 모드 (rawText만 뽑고 Gemini 에 텍스트 전송)
@@ -850,15 +854,21 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
           const resp = await axios.post("/api/ocr/parse-gemini", payload);
           const parsed = resp.data.pages as OcrPageResult[];
           if (Array.isArray(parsed) && parsed.length > 0) {
-            setPages(parsed);
-            const diag = resp.data?._diag?.summaries;
-            if (Array.isArray(diag)) {
-              const bad = diag.filter((d: any) => d.status && d.status !== "OK");
-              setStatusMsg(bad.length > 0
-                ? `Gemini 파싱 부분성공 · 실패 ${bad.length}개 (서버 로그 확인)`
-                : `Gemini 파싱 완료 (${parsed.length}페이지)`);
+            // 2026-07-23 · 사용자 편집 감지 시 · Gemini 재파싱 결과로 덮어쓰지 않음
+            if (hasUserEditsRef.current) {
+              console.warn("[Gemini reparse] 사용자 편집 감지 · setPages 스킵 (편집 보존)");
+              setStatusMsg(`Gemini 파싱 완료 · 편집중이라 표는 유지 (${parsed.length}페이지)`);
             } else {
-              setStatusMsg(`Gemini 파싱 완료 (${parsed.length}페이지)`);
+              setPages(parsed);
+              const diag = resp.data?._diag?.summaries;
+              if (Array.isArray(diag)) {
+                const bad = diag.filter((d: any) => d.status && d.status !== "OK");
+                setStatusMsg(bad.length > 0
+                  ? `Gemini 파싱 부분성공 · 실패 ${bad.length}개 (서버 로그 확인)`
+                  : `Gemini 파싱 완료 (${parsed.length}페이지)`);
+              } else {
+                setStatusMsg(`Gemini 파싱 완료 (${parsed.length}페이지)`);
+              }
             }
           }
         } catch (e: any) {
@@ -912,7 +922,7 @@ const handleReparsePage = useCallback(async (
 const rotDeg = ((rotation % 360) + 360) % 360;
 
 const clearFiles = () => {
-  setFileName(null); setPages([]); setPageImages([]);
+  setFileName(null); setPages([]); setPageImages([]); hasUserEditsRef.current = false;
   setCurrentPageIdx(0); imagesDataRef.current = [];
   setPageCount(0); setError(null); setRotation(0);
 };
@@ -1471,7 +1481,7 @@ return (
         </div>
       )}
 
-      {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} rotation={rotation} onReparsePage={handleReparsePage} balanceConfig={balanceConfig} onSaveConfirmed={handleSaveConfirmed} />}
+      {pages.length > 0 && <RawOcrTable pages={pages} pageImages={pageImages} rotation={rotation} onReparsePage={handleReparsePage} balanceConfig={balanceConfig} onSaveConfirmed={handleSaveConfirmed} onUserEdit={handleUserEdit} />}
     </div>
     )}
   </div>

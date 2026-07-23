@@ -43,7 +43,7 @@ import { CrossCheckBadge } from "./RawOcrTable/CrossCheckBadge";
 // 외부 소비자(OcrPage.tsx)가 `import { type ConfirmedItem } from "./RawOcrTable"` 로 사용 중 → re-export 유지
 export type { ConfirmedItem };
 
-export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp, onSaveConfirmed }) => {
+export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp, onSaveConfirmed, onUserEdit }) => {
   const structuredPages = pages.filter(p => !isFallback(p.headers) && Array.isArray(p.rows) && p.rows.length > 0);
   const fallbackPages   = pages.filter(p => isFallback(p.headers) || !Array.isArray(p.rows) || p.rows.length === 0);
 
@@ -319,6 +319,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // ── 셀 인라인 편집 (수량/단가/금액) ───────────────────────────────────────
   // 2026-07-15: shiftRowLeft 지원 위해 string 값도 허용 (품명·규격·유통기한 등 이동)
   const [cellEdits,      setCellEdits     ] = useState<Record<number, Record<number, string | number | null>>>({});
+  // 2026-07-23 · 편집 감지 · onUserEdit 콜백 호출 (부모가 이후 setPages 스킵)
+  //   cellEdits · autoSynonymMatches · rawSupplierByPage 변경 시 트리거
+  useEffect(() => {
+    if (!onUserEdit) return;
+    if (Object.keys(cellEdits).length > 0) onUserEdit();
+  }, [cellEdits, onUserEdit]);
   const [editingCell,    setEditingCell   ] = useState<{ ri: number; ci: number } | null>(null);
   const [editingCellVal, setEditingCellVal] = useState("");
   // ── 셀 재추출 순환 인덱스 (2026-07-16) ────────────────────────────────────
@@ -1220,6 +1226,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   // ── Feature 3: OCR 추출 후 자동 동의어 1차 보정 ──────────────────────────
   const [autoSynonymMatches, setAutoSynonymMatches] = useState<Record<number, { code: string; name: string }>>({});
+  useEffect(() => {
+    if (!onUserEdit) return;
+    if (Object.keys(autoSynonymMatches).length > 0) onUserEdit();
+  }, [autoSynonymMatches, onUserEdit]);
   const [autoSynonymLoading, setAutoSynonymLoading] = useState(false);
   const [barcodeAutoMap, setBarcodeAutoMap] = useState<Record<number, CandidateInfo>>({});
 

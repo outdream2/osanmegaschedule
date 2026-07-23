@@ -70,4 +70,6 @@ export interface RawOcrTableProps {
   barcodeMatches?: BarcodeProduct[];
   balanceConfig?: Record<string, string>;
   onSaveConfirmed?: (items: ConfirmedItem[]) => Promise<void>;
+  // 2026-07-23 · 사용자 편집 감지 · 부모에서 이후 SSE/Gemini 재파싱 시 setPages 스킵
+  onUserEdit?: () => void;
 }
