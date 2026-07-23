@@ -2809,9 +2809,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       scanText = rawText.slice(Math.max(0, idx - 100), Math.min(rawText.length, idx + 300));
     }
     // 한글 3자+ 토큰 (공백 제외) · 현재 이름 자체 제외 · 중복 제거
-    const tokens = Array.from(new Set(
-      (scanText.match(/[가-힣][가-힣0-9]{2,}/g) ?? []).filter(t => t !== currentName && t.length >= 3)
-    ));
+    const rawTokens = (scanText.match(/[가-힣][가-힣0-9]{2,}/g) ?? [])
+      .filter(t => t !== currentName && t.length >= 3);
+    const tokens: string[] = Array.from(new Set<string>(rawTokens));
     // 길이 내림차순 (가장 긴 토큰 = 상품명 확률 높음)
     tokens.sort((a, b) => b.length - a.length);
     if (tokens.length === 0) {
