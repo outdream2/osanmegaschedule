@@ -55,6 +55,17 @@ export function isNonProductText(text: string): boolean {
   return false;
 }
 
+// 2026-07-23 · 상품명 유효성 검사 · 한글 미포함 = 상품명 아님 (금액·헤더 잡문자 방어)
+//   사용자 요청: "금액이 품명으로 막 들어오네 · 한글만 품명에 들어가야지"
+//   룰: (1) 한글 1자 이상 · (2) isNonProductText 통과
+export function isValidProductName(text: string | null | undefined): boolean {
+  const t = String(text ?? "").trim();
+  if (!t) return false;
+  if (!/[가-힣]/.test(t)) return false;  // 한글 미포함 → 잡문자
+  if (isNonProductText(t)) return false;
+  return true;
+}
+
 // 공급사 힌트 유효성 검사 (상품명이나 잡문자로 판정되면 페이지 fallback)
 export function isValidSupplierHint(text: string): boolean {
   const t = String(text ?? "").trim();

@@ -1,7 +1,7 @@
 ﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { Download, Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, FileSpreadsheet, Upload as UploadIcon, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
-import { isNonProductText, isValidSupplierHint } from "../../lib/ocrRowFilter";
+import { isNonProductText, isValidSupplierHint, isValidProductName } from "../../lib/ocrRowFilter";
 import { reextractCellCandidates } from "../../lib/cellReextract";
 import { VendorDetailModal, type Vendor } from "../LandingPage/VendorListEditor";
 import type {
@@ -2602,6 +2602,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     if (nameIdx < 0) return;
     const nameSupplierPairs = dispRows.map((row, ri) => {
       if (pageNums[ri] !== targetPage) return null;
+      // 2026-07-23 · 사용자 편집·확정된 셀은 스킵 · 재로딩 시 원상복귀 방지
+      const userEdited = cellEdits[ri]?.[nameIdx] !== undefined;
+      const userAutoSyn = autoSynonymMatches[ri] !== undefined;
+      if (userEdited || userAutoSyn) return { rowIdx: ri, name: "", supplier: "", skip: true };
       const rawName = String(row[nameIdx] ?? "").trim();
       let sup = "";
       if (rawSupplierByPage[targetPage] !== undefined) sup = rawSupplierByPage[targetPage];
@@ -2616,7 +2620,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
               (globalSupplier && isValidSupplierHint(globalSupplier)) ? globalSupplier : "";
       }
       // 2026-07-19 · handleMatch 와 동일하게 삭제행 스킵
+      // 2026-07-23 · 한글 미포함 상품명도 스킵 (금액·헤더 잡문자 방어)
       const skip = !rawName || isNonProductText(rawName)
+        || !isValidProductName(rawName)
         || hiddenRawRows.has(ri)
         || permanentlyDeletedRawRows.has(ri)
         || isRowDbDeleted(ri);
@@ -2650,7 +2656,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     } finally {
       setMatchingPage(prev => ({ ...prev, [targetPage]: false }));
     }
-  }, [dispRows, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier]);
+  }, [dispRows, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier, cellEdits, autoSynonymMatches, hiddenRawRows, permanentlyDeletedRawRows, isRowDbDeleted]);
 
   // 2026-07-22 · 첫행보정 후 단가 비어있는 행에 대해 · 상품명+공급사로 products DB 조회 → 사입단가(purchase_price) 자동 채움
   //   사용자 원문: "단가가 정보가없는 경우 · 상품명과 공급사로 product db 에 정보를 찾아서 사입단가를 찾아"
@@ -4343,22 +4349,25 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                             }
 
                             // 일반 품명 (autoMatch 없음, barcodeMatch도 없음) → 클릭 편집
+                            // 2026-07-23 · 한글 미포함 = 잡문자 (금액·헤더 오인식) → 회색 흐리게 · 사용자 인지 후 편집 유도
                             const isCancelledAutoMap = cancelledAutoMap.has(ri);
+                            const cellStr = String(cell ?? "");
+                            const isJunkName = cell != null && cellStr.trim() !== "" && !isValidProductName(cellStr);
                             return (
                               <td key={ci}
                                 onClick={e => {
                                   e.stopPropagation();
                                   setEditingNameRow(ri);
-                                  setEditingNameVal(String(cell ?? ""));
+                                  setEditingNameVal(isJunkName ? "" : cellStr);
                                   setNameEditResults([]);
                                   setNameEditSearchDone(false);
                                   setNameDropdownRect(null);
                                 }}
                                 className="px-3 py-2 cursor-pointer hover:bg-indigo-50/60 group"
-                                title="클릭하여 상품명 수정">
+                                title={isJunkName ? "한글 미포함 · 상품명 아님 · 클릭하여 수정" : "클릭하여 상품명 수정"}>
                                 <span className="flex items-center gap-1">
-                                  <span className="font-semibold text-gray-900 break-words whitespace-normal">
-                                    {cell == null ? <span className="text-gray-300">—</span> : renderTextWithBreaks(String(cell))}
+                                  <span className={`font-semibold break-words whitespace-normal ${isJunkName ? "text-gray-300 italic line-through" : "text-gray-900"}`}>
+                                    {cell == null ? <span className="text-gray-300">—</span> : renderTextWithBreaks(cellStr)}
                                   </span>
                                   <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                   {isCancelledAutoMap && (
