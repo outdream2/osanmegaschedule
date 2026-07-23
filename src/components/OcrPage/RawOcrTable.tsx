@@ -2811,9 +2811,25 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     // 한글 3자+ 토큰 (공백 제외) · 현재 이름 자체 제외 · 중복 제거
     const rawTokens = (scanText.match(/[가-힣][가-힣0-9]{2,}/g) ?? [])
       .filter(t => t !== currentName && t.length >= 3);
-    const tokens: string[] = Array.from(new Set<string>(rawTokens));
-    // 길이 내림차순 (가장 긴 토큰 = 상품명 확률 높음)
-    tokens.sort((a, b) => b.length - a.length);
+    const uniqTokens: string[] = Array.from(new Set<string>(rawTokens));
+    // 2026-07-23 · 사용자 요청 "가장 길거나 · 길지 않다면 수량+단가가 같이 있는 행 위주"
+    //   scoring: 길이 (기본) + 근처 수량·단가 숫자 동반 여부 부스트
+    //   토큰 위치 앞뒤 60자 내에 숫자 토큰(2~7자리) 2개 이상 있으면 부스트 (수량·단가·금액 동반 힌트)
+    const scoreToken = (tok: string): number => {
+      let s = tok.length * 10;  // 길이 우선
+      const idx = scanText.indexOf(tok);
+      if (idx >= 0) {
+        const window = scanText.slice(Math.max(0, idx - 60), Math.min(scanText.length, idx + tok.length + 60));
+        const nums = window.match(/\b\d{2,7}(?:[,.]\d{3})*\b/g) ?? [];
+        if (nums.length >= 2) s += 15;  // 수량+단가 동반 힌트
+        else if (nums.length >= 1) s += 5;
+      }
+      return s;
+    };
+    const tokens: string[] = uniqTokens
+      .map(t => ({ t, s: scoreToken(t) }))
+      .sort((a, b) => b.s - a.s)
+      .map(x => x.t);
     if (tokens.length === 0) {
       alert("한글 토큰을 찾을 수 없습니다. 수동으로 편집하세요.");
       return;
