@@ -1253,7 +1253,7 @@ return (
       </div>
     ) : (
     /* ── OCR 추출 탭 ── */
-    <div className="flex-1 flex flex-col px-4 py-6 gap-5 max-w-none w-full">
+    <div className="flex-1 flex flex-col px-4 py-6 gap-5 w-full max-w-[1500px] mx-auto">
 
       {/* 파일 업로드 + 이미지 뷰어 */}
       <div className="w-full bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">

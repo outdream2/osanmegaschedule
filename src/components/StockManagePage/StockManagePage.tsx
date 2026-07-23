@@ -1670,6 +1670,25 @@ export const StockManagePage: React.FC = () => {
     itemCount: number; totalStockAmount: number;
   };
   const [xlsxSuppliers, setXlsxSuppliers] = useState<SupplierAgg[]>([]);
+  // 2026-07-23 · 공급사별 최신 잔고 (supplier_balances 최신값) — 우측 패널 재고자산 앞 표시
+  const [supplierBalanceMap, setSupplierBalanceMap] = useState<Record<string, { balance: number; invoice_date: string | null }>>({});
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/supplier-balances");
+        if (!res.ok) return;
+        const j = await res.json();
+        const rows: any[] = Array.isArray(j?.balances) ? j.balances : [];
+        const map: Record<string, { balance: number; invoice_date: string | null }> = {};
+        for (const r of rows) {
+          const name = String(r.supplier_name ?? "").trim();
+          if (!name) continue;
+          if (!(name in map)) map[name] = { balance: Number(r.balance ?? 0), invoice_date: r.invoice_date ?? null };
+        }
+        setSupplierBalanceMap(map);
+      } catch { /* ignore */ }
+    })();
+  }, []);
   // 2026-07-16 · supplier 우측 패널용 · xlsxSuppliers 선언 이후로 이동
   const supplierSelectedObj = useMemo(() => supplierSelectedKey ? xlsxSuppliers.find(s => `${s.supplier_code ?? "-"}::${s.supplier}` === supplierSelectedKey) ?? null : null, [supplierSelectedKey, xlsxSuppliers]);
   const [xlsxTopSupplier, setXlsxTopSupplier] = useState<SupplierAgg | null>(null);
@@ -2644,20 +2663,31 @@ export const StockManagePage: React.FC = () => {
                         <span className="text-base font-black text-slate-800 break-keep">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</span>
                         {supplierSelectedObj.supplier_code && <span className="text-[10px] font-mono text-slate-500 bg-slate-100 rounded px-1.5 py-0.5">#{supplierSelectedObj.supplier_code}</span>}
                       </div>
-                      <div className="grid grid-cols-3 gap-2">
-                        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-center">
-                          <div className="text-[10px] text-emerald-600 font-semibold">재고자산</div>
-                          <div className="text-sm font-black text-emerald-700 mt-0.5">{fmtWon(supplierSelectedObj.totalStockAmount)}</div>
-                        </div>
-                        <div className="bg-sky-50 border border-sky-200 rounded-lg p-2 text-center">
-                          <div className="text-[10px] text-sky-600 font-semibold">매입수량</div>
-                          <div className="text-sm font-black text-sky-700 mt-0.5">{fmt(supplierSelectedObj.purchaseQty)}</div>
-                        </div>
-                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-center">
-                          <div className="text-[10px] text-slate-500 font-semibold">취급상품</div>
-                          <div className="text-sm font-black text-slate-700 mt-0.5">{fmt(supplierSelectedObj.itemCount)}종</div>
-                        </div>
-                      </div>
+                      {(() => {
+                        // 2026-07-23 · supplier_balances 최신값 (재고자산 앞에 표시)
+                        const supName = supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
+                        const balInfo = supplierBalanceMap[supName] ?? supplierBalanceMap[supplierSelectedObj.supplier ?? ""] ?? null;
+                        return (
+                          <div className="grid grid-cols-4 gap-2">
+                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-center" title={balInfo?.invoice_date ? `기준일 ${balInfo.invoice_date}` : "최신 잔고 없음"}>
+                              <div className="text-[10px] text-amber-600 font-semibold">최신잔고</div>
+                              <div className="text-sm font-black text-amber-700 mt-0.5">{balInfo ? fmtWon(balInfo.balance) : "-"}</div>
+                            </div>
+                            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-center">
+                              <div className="text-[10px] text-emerald-600 font-semibold">재고자산</div>
+                              <div className="text-sm font-black text-emerald-700 mt-0.5">{fmtWon(supplierSelectedObj.totalStockAmount)}</div>
+                            </div>
+                            <div className="bg-sky-50 border border-sky-200 rounded-lg p-2 text-center">
+                              <div className="text-[10px] text-sky-600 font-semibold">매입수량</div>
+                              <div className="text-sm font-black text-sky-700 mt-0.5">{fmt(supplierSelectedObj.purchaseQty)}</div>
+                            </div>
+                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-center">
+                              <div className="text-[10px] text-slate-500 font-semibold">취급상품</div>
+                              <div className="text-sm font-black text-slate-700 mt-0.5">{fmt(supplierSelectedObj.itemCount)}종</div>
+                            </div>
+                          </div>
+                        );
+                      })()}
                       {/* 상품 리스트 (확장 리스트에서 가져옴) */}
                       {(() => {
                         const key = `${supplierSelectedObj.supplier_code ?? "-"}::${supplierSelectedObj.supplier}`;
