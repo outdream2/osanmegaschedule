@@ -66,6 +66,39 @@ export function isValidProductName(text: string | null | undefined): boolean {
   return true;
 }
 
+// 2026-07-23 · 행의 "상품행 확률" 스코어 (0~1)
+//   사용자 요청: "한 행에 수량·단가 있는지 · 한글 있는지 · 가장 긴 행인지 · 공급사 한글 매칭 확률"
+//   룰 (가점제 · 총합 1.0):
+//     · 수량 유효 숫자 (1~99999)       +0.30
+//     · 단가 유효 숫자 (50~9999999)   +0.30
+//     · 품명 한글 3자+                  +0.25
+//     · 품명이 페이지 최장 후보급         +0.10
+//     · 공급사 한글 접두 겹침            +0.05
+export interface ProductRowInput {
+  quantity: number | null | undefined;
+  price: number | null | undefined;
+  productName: string | null | undefined;
+  supplier?: string | null | undefined;
+  maxNameLen?: number;  // 페이지 내 품명 최대 길이 (있으면 최장가점 판정)
+}
+export function scoreProductRow(inp: ProductRowInput): { score: number; reasons: string[] } {
+  const reasons: string[] = [];
+  let score = 0;
+  const q = Number(inp.quantity ?? 0);
+  if (q >= 1 && q <= 99999) { score += 0.30; reasons.push("수량OK"); }
+  const p = Number(inp.price ?? 0);
+  if (p >= 50 && p <= 9999999) { score += 0.30; reasons.push("단가OK"); }
+  const name = String(inp.productName ?? "").trim();
+  const korLen = (name.match(/[가-힣]/g) ?? []).length;
+  if (korLen >= 3) { score += 0.25; reasons.push(`한글${korLen}자`); }
+  if (inp.maxNameLen && name.length >= inp.maxNameLen * 0.7) { score += 0.10; reasons.push("장문"); }
+  if (inp.supplier) {
+    const supKor = (String(inp.supplier).match(/[가-힣]/g) ?? []).join("");
+    if (supKor.length >= 2 && name.includes(supKor.slice(0, 2))) { score += 0.05; reasons.push("공급사겹침"); }
+  }
+  return { score: Math.min(1, +score.toFixed(3)), reasons };
+}
+
 // 공급사 힌트 유효성 검사 (상품명이나 잡문자로 판정되면 페이지 fallback)
 export function isValidSupplierHint(text: string): boolean {
   const t = String(text ?? "").trim();

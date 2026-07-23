@@ -1,7 +1,7 @@
 ﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { Download, Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, FileSpreadsheet, Upload as UploadIcon, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
-import { isNonProductText, isValidSupplierHint, isValidProductName } from "../../lib/ocrRowFilter";
+import { isNonProductText, isValidSupplierHint, isValidProductName, scoreProductRow } from "../../lib/ocrRowFilter";
 import { reextractCellCandidates } from "../../lib/cellReextract";
 import { VendorDetailModal, type Vendor } from "../LandingPage/VendorListEditor";
 import type {
@@ -2614,6 +2614,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   const handleMatchPage = useCallback(async (targetPage: number) => {
     if (nameIdx < 0) return;
+    // 2026-07-23 · 페이지 내 품명 최대 길이 · 스코어링용
+    const pageMaxNameLen = Math.max(0, ...dispRows
+      .filter((_, ri) => pageNums[ri] === targetPage)
+      .map(r => String(r[nameIdx] ?? "").trim().length));
+    const qtyIdxLocal = dispHeaders.indexOf("수량");
+    const priIdxLocal = dispHeaders.indexOf("단가");
     const nameSupplierPairs = dispRows.map((row, ri) => {
       if (pageNums[ri] !== targetPage) return null;
       // 2026-07-23 · 사용자 편집·확정된 셀은 스킵 · 재로딩 시 원상복귀 방지
@@ -2635,11 +2641,22 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       }
       // 2026-07-19 · handleMatch 와 동일하게 삭제행 스킵
       // 2026-07-23 · 한글 미포함 상품명도 스킵 (금액·헤더 잡문자 방어)
+      // 2026-07-23 · 행 스코어 계산 (사용자 요청 · 수량+단가+한글+장문+공급사겹침)
+      const qty = qtyIdxLocal >= 0 ? Number(cellEdits[ri]?.[qtyIdxLocal] ?? row[qtyIdxLocal] ?? 0) : 0;
+      const pri = priIdxLocal >= 0 ? Number(cellEdits[ri]?.[priIdxLocal] ?? row[priIdxLocal] ?? 0) : 0;
+      const { score, reasons } = scoreProductRow({
+        quantity: qty, price: pri, productName: rawName, supplier: sup, maxNameLen: pageMaxNameLen,
+      });
+      const lowScore = score < 0.30;  // 수량·단가·한글 셋 중 하나만 있어도 0.30 이상
       const skip = !rawName || isNonProductText(rawName)
         || !isValidProductName(rawName)
+        || lowScore
         || hiddenRawRows.has(ri)
         || permanentlyDeletedRawRows.has(ri)
         || isRowDbDeleted(ri);
+      if (skip && rawName && lowScore) {
+        console.log(`[handleMatchPage] 행 ${ri} 스킵 · 저스코어(${score}) · ${reasons.join(",")} · "${rawName.slice(0, 20)}"`);
+      }
       return { rowIdx: ri, name: rawName, supplier: sup, skip };
     }).filter((x): x is { rowIdx: number; name: string; supplier: string; skip: boolean } => x !== null);
 
@@ -2670,7 +2687,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     } finally {
       setMatchingPage(prev => ({ ...prev, [targetPage]: false }));
     }
-  }, [dispRows, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier, cellEdits, autoSynonymMatches, hiddenRawRows, permanentlyDeletedRawRows, isRowDbDeleted]);
+  }, [dispRows, dispHeaders, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier, cellEdits, autoSynonymMatches, hiddenRawRows, permanentlyDeletedRawRows, isRowDbDeleted]);
 
   // 2026-07-22 · 첫행보정 후 단가 비어있는 행에 대해 · 상품명+공급사로 products DB 조회 → 사입단가(purchase_price) 자동 채움
   //   사용자 원문: "단가가 정보가없는 경우 · 상품명과 공급사로 product db 에 정보를 찾아서 사입단가를 찾아"
