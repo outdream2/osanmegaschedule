@@ -3615,8 +3615,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   })()}
                 </tr>
               </thead>
-              <tbody className="[&_td]:max-lg:py-3 [&_td]:lg:py-1.5">
-                {/* 2026-07-23 · 사용자 요청 "반응형 행간격 더 넓게" · 모바일/태블릿 py-3 · 데스크탑 py-1.5 */}
+              <tbody className="[&_td]:max-lg:py-4 [&_td]:lg:py-3 [&_tr]:border-b [&_tr]:border-slate-100">
+                {/* 2026-07-23 · 사용자 요청 "행간격 충분히" · 모바일 py-4 · 데스크탑 py-3 · 행별 얇은 구분선 */}
                 {(() => {
                   // 페이지별 마지막 표시 행 인덱스 사전 계산 (완전삭제 · DB삭제 제외)
                   //   → 마지막 행이 삭제돼도 요약 행 안 사라지도록 (2026-07-10)
@@ -4505,34 +4505,38 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 }}
                                 className="px-3 py-2 cursor-pointer hover:bg-indigo-50/60 group"
                                 title={isJunkName ? "한글 미포함 · 상품명 아님 · 클릭하여 수정" : "클릭하여 상품명 수정"}>
-                                <span className="flex items-center gap-1">
-                                  <span className={`font-semibold break-words whitespace-normal ${isJunkName ? "text-gray-300 italic line-through" : "text-gray-900"}`}>
-                                    {cell == null ? <span className="text-gray-300">—</span> : renderTextWithBreaks(cellStr)}
+                                {/* 2026-07-23 · 사용자 요청 "재추출 버튼은 아래 배치" · flex-col 로 위(품명) 아래(버튼) 배치 */}
+                                <div className="flex flex-col gap-0.5 items-start">
+                                  <span className="flex items-center gap-1">
+                                    <span className={`font-semibold break-words whitespace-normal ${isJunkName ? "text-gray-300 italic line-through" : "text-gray-900"}`}>
+                                      {cell == null ? <span className="text-gray-300">—</span> : renderTextWithBreaks(cellStr)}
+                                    </span>
+                                    <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                   </span>
-                                  <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
-                                  {/* 2026-07-23 · 사용자 요청 "품명 재추출 · 수량·금액 있는 행의 한글 · 공급사 DB 매칭" */}
-                                  <button
-                                    type="button"
-                                    title="품명 재추출 · rawText 한글 토큰 → 공급사 DB 매칭"
-                                    onClick={e => {
-                                      e.stopPropagation();
-                                      reextractProductName(ri);
-                                    }}
-                                    disabled={reextractingName.has(ri)}
-                                    className="text-[10px] px-1 py-px rounded bg-sky-100 text-sky-700 hover:bg-sky-500 hover:text-white disabled:opacity-50 cursor-pointer shrink-0 transition"
-                                  >{reextractingName.has(ri) ? "⏳" : "🔄"}</button>
-                                  {isCancelledAutoMap && (
+                                  <span className="flex items-center gap-1">
                                     <button
                                       type="button"
-                                      title="ERP 자동보정 복원"
+                                      title="품명 재추출 · rawText 한글 토큰 → 공급사 DB 매칭"
                                       onClick={e => {
                                         e.stopPropagation();
-                                        setCancelledAutoMap(prev => { const s = new Set(prev); s.delete(ri); return s; });
+                                        reextractProductName(ri);
                                       }}
-                                      className="text-[10px] px-1 py-px rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 cursor-pointer shrink-0"
-                                    >↩ 복원</button>
-                                  )}
-                                </span>
+                                      disabled={reextractingName.has(ri)}
+                                      className="text-[10px] px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 hover:bg-sky-500 hover:text-white disabled:opacity-50 cursor-pointer shrink-0 transition font-bold"
+                                    >{reextractingName.has(ri) ? "⏳ 재추출중" : "🔄 재추출"}</button>
+                                    {isCancelledAutoMap && (
+                                      <button
+                                        type="button"
+                                        title="ERP 자동보정 복원"
+                                        onClick={e => {
+                                          e.stopPropagation();
+                                          setCancelledAutoMap(prev => { const s = new Set(prev); s.delete(ri); return s; });
+                                        }}
+                                        className="text-[10px] px-1 py-px rounded bg-emerald-100 text-emerald-700 hover:bg-emerald-200 cursor-pointer shrink-0"
+                                      >↩ 복원</button>
+                                    )}
+                                  </span>
+                                </div>
                               </td>
                             );
                           }
