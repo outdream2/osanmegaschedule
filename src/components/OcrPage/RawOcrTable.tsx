@@ -98,6 +98,20 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     dispHeaders = [...dispHeaders, "비고"];
     dispRows = dispRows.map(r => [...r, null]);
   }
+  // 2026-07-23 · 사용자 요청 "단가 옆에 VAT 계산 컬럼 추가 · VAT 금액 있으면 합산 · 없으면 단가*10%"
+  //   masterH 에 세액·부가세·VAT 계열이 있으면 그 값 · 없으면 단가*0.1 (표시 시 계산)
+  const vatVariants = ["세액", "부가세", "VAT", "vat", "부가가치세"];
+  const vatMasterIdx = masterH.findIndex(h => vatVariants.includes(h));
+  if (!dispHeaders.includes("VAT")) {
+    const priceIdxLocal = dispHeaders.indexOf("단가");
+    const insertAt = priceIdxLocal >= 0 ? priceIdxLocal + 1 : dispHeaders.length;
+    dispHeaders = [...dispHeaders.slice(0, insertAt), "VAT", ...dispHeaders.slice(insertAt)];
+    dispRows = dispRows.map((r, ri) => {
+      // masterH VAT 값 우선 · 없으면 null (렌더에서 단가*0.1 계산)
+      const vatVal = vatMasterIdx >= 0 ? rawRows[ri]?.[vatMasterIdx] ?? null : null;
+      return [...r.slice(0, insertAt), vatVal, ...r.slice(insertAt)];
+    });
+  }
 
   const amtIdx  = dispHeaders.indexOf("금액");
   const nameIdx = dispHeaders.indexOf("품명");
@@ -251,7 +265,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   void setShowRawDetail;
   // 1차보정 압축(기본) 모드에서 표시할 필수 컬럼 순서
   // 요구사항: 공급처 → 품명 → 수량 → 단가 → 금액 → 규격 → 유통기한
-  const RAW_ESSENTIAL_COLS = ["거래일", "공급처", "품명", "수량", "단가", "금액", "규격", "유통기한", "비고"];
+  const RAW_ESSENTIAL_COLS = ["거래일", "공급처", "품명", "수량", "단가", "VAT", "금액", "규격", "유통기한", "비고"];
 
   // ── 컬럼 너비 조정 ────────────────────────────────────────────────────────────
   const [colWidths, setColWidths] = useState<Record<number, number>>({});
@@ -3483,8 +3497,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           }}
                           className={`px-1.5 py-1.5 font-bold text-amber-900 select-none text-[11px] ${NUM_COLS.has(h) ? "text-right" : "text-left"} truncate`}>
                           {h}
+                          {/* 2026-07-23 · 사용자 요청 "헤더 넓이 조절 라인 안보여" · 항상 보이게 · hover 진하게 */}
                           <div
-                            style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 5, cursor: 'col-resize', zIndex: 1 }}
+                            style={{ position: 'absolute', right: 0, top: 4, bottom: 4, width: 4, cursor: 'col-resize', zIndex: 2 }}
+                            className="bg-amber-300/40 hover:bg-amber-600/80 active:bg-amber-700 transition-colors rounded-sm"
+                            title="드래그하여 컬럼 폭 조절"
                             draggable={false}
                             onDragStart={e => { e.preventDefault(); e.stopPropagation(); }}
                             onMouseDown={e => {
@@ -4092,6 +4109,28 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                   }}
                                   onBlur={() => commitCellEdit(ri, ci, editingCellVal)}
                                 />
+                              </td>
+                            );
+                          }
+
+                          // 2026-07-23 · VAT 컬럼 · OCR VAT 값 우선 · 없으면 단가*10% (자동계산)
+                          if (h === "VAT") {
+                            const priIdxLocal = dispHeaders.indexOf("단가");
+                            const priceEff = priIdxLocal >= 0 ? (cellEdits[ri]?.[priIdxLocal] ?? row[priIdxLocal]) : null;
+                            const priceNum = priceEff == null ? 0 : parseNumber(priceEff);
+                            const ocrVat = cell == null ? null : parseNumber(cell);
+                            const hasOcrVat = ocrVat != null && Number.isFinite(ocrVat) && ocrVat > 0;
+                            const autoVat = priceNum > 0 ? Math.round(priceNum * 0.1) : 0;
+                            const showVat = hasOcrVat ? ocrVat : autoVat;
+                            return (
+                              <td key={ci} className="px-1 py-2 whitespace-nowrap text-right text-slate-600 text-[11px]"
+                                title={hasOcrVat ? `OCR VAT ${fmt(ocrVat!)}원` : `단가 ${fmt(priceNum)} × 10% = ${fmt(autoVat)}원 (자동)`}>
+                                {showVat > 0 ? (
+                                  <span className={hasOcrVat ? "font-bold text-slate-700" : "text-slate-400"}>
+                                    {fmt(showVat)}
+                                    {!hasOcrVat && <span className="ml-0.5 text-[9px] text-slate-300">자동</span>}
+                                  </span>
+                                ) : <span className="text-gray-300">—</span>}
                               </td>
                             );
                           }
