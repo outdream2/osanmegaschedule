@@ -2776,6 +2776,79 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     console.log(`[verifyAndSwapPricesWithDB] page ${pn}: ${swapped} 행 · OCR vs DB 50%+ 차이 → DB 값으로 스왑`);
   }, [dispHeaders, matchItems, dispRows, pageNums, permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted]);
 
+  // 2026-07-23 · 사용자 요청 "품명 재추출 · 수량·금액 있는 행의 한글 · 공급사 DB 매칭되는 것으로"
+  //   1. 현재 행의 수량·금액 있는지 확인 (없으면 스킵 · 경고)
+  //   2. rawText 에서 현재 품명 앵커 앞뒤로 한글 토큰(3자+) 수집
+  //   3. 각 후보를 /api/products-search 에 공급사 필터로 조회
+  //   4. 첫 매칭 → autoSynonymMatches[ri] 저장 (동의어 자동 등록)
+  //   5. 매칭 실패 시 · 가장 긴 한글 토큰을 cellEdits 로 저장 (사용자 확인용)
+  const [reextractingName, setReextractingName] = useState<Set<number>>(new Set());
+  const reextractProductName = useCallback(async (ri: number) => {
+    if (reextractingName.has(ri)) return;
+    const pn = pageNums[ri];
+    const qtyIdxL = dispHeaders.indexOf("수량");
+    const amtIdxL = dispHeaders.indexOf("금액");
+    const row = dispRows[ri];
+    const qty = qtyIdxL >= 0 ? Number(cellEdits[ri]?.[qtyIdxL] ?? row?.[qtyIdxL] ?? 0) : 0;
+    const amt = amtIdxL >= 0 ? Number(cellEdits[ri]?.[amtIdxL] ?? row?.[amtIdxL] ?? 0) : 0;
+    if (!(qty > 0) && !(amt > 0)) {
+      alert("수량·금액 정보가 없는 행입니다. 먼저 수량이나 금액을 채워주세요.");
+      return;
+    }
+    const supplier = rawSupplierByPage[pn]
+      ?? structuredPages.find(p => p.page === pn)?.meta.supplier
+      ?? globalSupplier ?? "";
+    const pageObj = structuredPages.find(p => p.page === pn) ?? pages.find(p => p.page === pn);
+    const rawText = pageObj?.rawText ?? "";
+    const currentName = String(cellEdits[ri]?.[nameIdx] ?? row?.[nameIdx] ?? "").trim();
+    // 현재 이름 앵커: 한글 첫 3자 · rawText 위치 찾기 · 없으면 전체 rawText 사용
+    const anchorKor = (currentName.match(/[가-힣]/g) ?? []).slice(0, 3).join("");
+    let scanText = rawText;
+    if (anchorKor.length >= 2 && rawText.includes(anchorKor)) {
+      const idx = rawText.indexOf(anchorKor);
+      scanText = rawText.slice(Math.max(0, idx - 100), Math.min(rawText.length, idx + 300));
+    }
+    // 한글 3자+ 토큰 (공백 제외) · 현재 이름 자체 제외 · 중복 제거
+    const tokens = Array.from(new Set(
+      (scanText.match(/[가-힣][가-힣0-9]{2,}/g) ?? []).filter(t => t !== currentName && t.length >= 3)
+    ));
+    // 길이 내림차순 (가장 긴 토큰 = 상품명 확률 높음)
+    tokens.sort((a, b) => b.length - a.length);
+    if (tokens.length === 0) {
+      alert("한글 토큰을 찾을 수 없습니다. 수동으로 편집하세요.");
+      return;
+    }
+    setReextractingName(prev => new Set([...prev, ri]));
+    console.log(`[reextractName] ri=${ri} 후보 ${tokens.length}개 · 공급사="${supplier}" · 첫3개=`, tokens.slice(0, 3));
+    try {
+      // 각 후보를 순회하며 DB 매치 조회
+      for (const tok of tokens.slice(0, 10)) {
+        const params = new URLSearchParams({ q: tok });
+        if (supplier) params.set("supplier", supplier);
+        const res = await fetch(`/api/products-search?${params}`);
+        if (!res.ok) continue;
+        const data: any[] = await res.json();
+        const hit = Array.isArray(data) ? data[0] : null;
+        if (hit?.product_code && hit?.product_name) {
+          console.log(`[reextractName] ✓ 매칭 · "${tok}" → ${hit.product_name} (${hit.product_code})`);
+          setAutoSynonymMatches(prev => ({ ...prev, [ri]: { code: hit.product_code, name: hit.product_name } }));
+          setCancelledAutoSyn(prev => { const s = new Set(prev); s.delete(ri); return s; });
+          // 동의어 자동 저장 (다음 파싱부터 자동적용)
+          if (tok !== hit.product_name) {
+            saveSynonym(ri, tok, hit.product_code, supplier || undefined, hit.product_name);
+          }
+          return;
+        }
+      }
+      // 매칭 실패 · 가장 긴 한글 토큰 채택
+      const best = tokens[0];
+      console.log(`[reextractName] × DB 매칭 실패 · 가장 긴 토큰 채택 "${best}"`);
+      setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [nameIdx]: best } }));
+    } finally {
+      setReextractingName(prev => { const s = new Set(prev); s.delete(ri); return s; });
+    }
+  }, [reextractingName, dispHeaders, dispRows, cellEdits, pageNums, rawSupplierByPage, structuredPages, pages, globalSupplier, nameIdx, saveSynonym]);
+
   // 2026-07-22 · 컬럼별 자동정리 파이프라인
   // 2026-07-23 · 사용자 요청 "첫행보정 기능은 첫행보정 버튼쪽으로"
   //   → runColumnPipeline 은 매칭·DB 조회 전담 · applyFirstRowPattern 제거
@@ -4421,6 +4494,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     {cell == null ? <span className="text-gray-300">—</span> : renderTextWithBreaks(cellStr)}
                                   </span>
                                   <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
+                                  {/* 2026-07-23 · 사용자 요청 "품명 재추출 · 수량·금액 있는 행의 한글 · 공급사 DB 매칭" */}
+                                  <button
+                                    type="button"
+                                    title="품명 재추출 · rawText 한글 토큰 → 공급사 DB 매칭"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      reextractProductName(ri);
+                                    }}
+                                    disabled={reextractingName.has(ri)}
+                                    className="text-[10px] px-1 py-px rounded bg-sky-100 text-sky-700 hover:bg-sky-500 hover:text-white disabled:opacity-50 cursor-pointer shrink-0 transition"
+                                  >{reextractingName.has(ri) ? "⏳" : "🔄"}</button>
                                   {isCancelledAutoMap && (
                                     <button
                                       type="button"
