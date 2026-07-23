@@ -31,3 +31,8 @@ src/*.xlsx
 
 # 게시판 업로드 이미지
 uploads/board/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
