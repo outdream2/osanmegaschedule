@@ -17,6 +17,7 @@ export const PageImageViewer: React.FC<PageImageViewerProps> = ({
   const [zoom,        setZoom       ] = useState(1);
   const [offset,      setOffset     ] = useState({ x: 0, y: 0 });
   const [naturalSize, setNaturalSize] = useState<{ w: number; h: number } | null>(null);
+  const [isDragging,  setIsDragging ] = useState(false);
   const dragRef = useRef<{ startX: number; startY: number; ox: number; oy: number } | null>(null);
 
   const containerRef  = useRef<HTMLDivElement>(null);
@@ -51,10 +52,12 @@ export const PageImageViewer: React.FC<PageImageViewerProps> = ({
     return { x: Math.max(-m, Math.min(m, ox)), y: Math.max(-m, Math.min(m, oy)) };
   };
 
+  // 2026-07-23 · 사용자 요청: 손바닥 커서 항상 표시 · 드래그 pan · 휠 zoom
+  //   zoom=1 에서도 mousedown 허용 (clampOffset 이 0 으로 잡아 실제 이동은 안 함)
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (zoom <= 1) return;
     e.preventDefault();
     dragRef.current = { startX: e.clientX, startY: e.clientY, ox: offset.x, oy: offset.y };
+    setIsDragging(true);
   };
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!dragRef.current) return;
@@ -64,11 +67,11 @@ export const PageImageViewer: React.FC<PageImageViewerProps> = ({
       zoom,
     ));
   };
-  const handleMouseUp = () => { dragRef.current = null; };
+  const handleMouseUp = () => { dragRef.current = null; setIsDragging(false); };
 
   const containerStyle: React.CSSProperties = {
     overflow: "hidden",
-    cursor: zoom > 1 ? "grab" : "default",
+    cursor: isDragging ? "grabbing" : "grab",
     userSelect: "none",
   };
 
