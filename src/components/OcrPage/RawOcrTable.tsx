@@ -2776,44 +2776,36 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     console.log(`[verifyAndSwapPricesWithDB] page ${pn}: ${swapped} 행 · OCR vs DB 50%+ 차이 → DB 값으로 스왑`);
   }, [dispHeaders, matchItems, dispRows, pageNums, permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted]);
 
-  // 2026-07-22 · 컬럼별 자동정리 파이프라인 (사용자 최우선 요청)
-  //   1. 공급사 · 기존 서버 vendor-match 결과 그대로 (재추출 시 vendor 재계산)
-  //   2. 상품명 · handleMatchPage → /api/ocr-match (서버측 동의어사전 조회 포함) → matchItems 채움
-  //   3. 수량 · applyFirstRowPattern(수량) · 첫 행 위치 기반
-  //   4. 단가 · applyFirstRowPattern(단가) → fillMissingPricesFromDB → verifyAndSwapPricesWithDB
+  // 2026-07-22 · 컬럼별 자동정리 파이프라인
+  // 2026-07-23 · 사용자 요청 "첫행보정 기능은 첫행보정 버튼쪽으로"
+  //   → runColumnPipeline 은 매칭·DB 조회 전담 · applyFirstRowPattern 제거
+  //   1. 공급사·상품명 매칭 (handleMatchPage)
+  //   2. 빈 단가 DB 조회 (fillMissingPricesFromDB)
+  //   3. OCR vs DB 큰 차이 스왑 (verifyAndSwapPricesWithDB)
   //   금액 = Q*P (자동)
-  //   유통기한 = 기존 그대로
   const [runningPipeline, setRunningPipeline] = useState<Record<number, boolean>>({});
   const runColumnPipeline = useCallback(async (pn: number) => {
     if (runningPipeline[pn]) return;
     setRunningPipeline(prev => ({ ...prev, [pn]: true }));
-    console.log(`\n╔══ [column-pipeline] page ${pn} 시작 ══`);
+    console.log(`\n╔══ [column-pipeline] page ${pn} 시작 (매칭·DB 전용) ══`);
     try {
-      // 1+2: 공급사·상품명 매칭 (서버측 동의어사전 활용)
-      //   2026-07-22: 사용자 요청 "1차보정 끝나기 전 2차보정 안 함" → 매칭만 하고 confirmedPages 는 추가 X
-      console.log(`║ 1·2단계: 상품명 매칭 (동의어사전 포함) · 2차 자동확정 없음`);
+      // 1·2: 공급사·상품명 매칭
+      console.log(`║ 1단계: 상품명 매칭 (동의어사전 포함)`);
       await handleMatchPage(pn);
-      // 자동 확정 취소 (matchItems 는 유지 · 확정 마킹만 제거)
       setConfirmedPages(prev => { const n = new Set(prev); n.delete(pn); return n; });
-      // 3: 수량
-      console.log(`║ 3단계: 수량 첫행보정`);
-      applyFirstRowPattern(pn, "수량");
-      // 4a: 단가 첫행 위치 기반
-      console.log(`║ 4a단계: 단가 첫행보정`);
-      applyFirstRowPattern(pn, "단가");
-      // 4b: 빈 단가 DB 조회
-      console.log(`║ 4b단계: 빈 단가 DB 조회`);
+      // 3: 빈 단가 DB 조회 (첫행보정은 별도 버튼에서 실행)
+      console.log(`║ 2단계: 빈 단가 DB 조회`);
       await fillMissingPricesFromDB(pn);
-      // 4c: OCR vs DB 큰 차이 스왑
-      console.log(`║ 4c단계: OCR vs DB 큰 차이 스왑`);
+      // 4: OCR vs DB 큰 차이 스왑
+      console.log(`║ 3단계: OCR vs DB 큰 차이 스왑`);
       verifyAndSwapPricesWithDB(pn);
-      console.log(`╚══ [column-pipeline] page ${pn} 완료 · 금액=Q*P 자동재계산\n`);
+      console.log(`╚══ [column-pipeline] page ${pn} 완료 · 첫행보정은 별도 버튼 실행\n`);
     } catch (e: any) {
       console.error(`[column-pipeline] page ${pn} 예외:`, e?.message);
     } finally {
       setRunningPipeline(prev => ({ ...prev, [pn]: false }));
     }
-  }, [runningPipeline, handleMatchPage, applyFirstRowPattern, fillMissingPricesFromDB, verifyAndSwapPricesWithDB]);
+  }, [runningPipeline, handleMatchPage, fillMissingPricesFromDB, verifyAndSwapPricesWithDB]);
 
   // ── 확정 표 ──────────────────────────────────────────────────────────────
   const CONF_HEADERS = [
@@ -3534,7 +3526,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   })()}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="[&_td]:max-lg:py-3 [&_td]:lg:py-1.5">
+                {/* 2026-07-23 · 사용자 요청 "반응형 행간격 더 넓게" · 모바일/태블릿 py-3 · 데스크탑 py-1.5 */}
                 {(() => {
                   // 페이지별 마지막 표시 행 인덱스 사전 계산 (완전삭제 · DB삭제 제외)
                   //   → 마지막 행이 삭제돼도 요약 행 안 사라지도록 (2026-07-10)
@@ -3841,7 +3834,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 onClick={() => runColumnPipeline(pn)}
                                 disabled={!!runningPipeline[pn]}
                                 className="ml-1 text-[10px] font-black text-white bg-indigo-500 hover:bg-indigo-600 disabled:bg-slate-300 disabled:cursor-not-allowed rounded px-2 py-0.5 cursor-pointer shadow-sm whitespace-nowrap"
-                                title="컬럼별 자동정리: 상품명 매칭+동의어 → 수량 → 단가(첫행+DB조회+큰차이 스왑) · 금액=Q*P 자동"
+                                title="상품명 매칭 → 빈 단가 DB 조회 → OCR vs DB 큰차이 스왑 · 첫행보정은 별도 버튼"
                               >{runningPipeline[pn] ? "⏳ 정리중..." : "🎯 자동정리"}</button>
                               {/* 2026-07-22 · 명세서마다 행추가 (사용자 요청) */}
                               <button type="button"
