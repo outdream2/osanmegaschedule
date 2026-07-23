@@ -4597,9 +4597,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                               >
                                 {/* 2026-07-22 · 사용자 요청 한 줄 요약: "N번 공급사 총 XXX원 정산차액 YYY원 (없으면 -)" · 우측 [확정] */}
                                 <div className="flex flex-col gap-0 px-3 py-2">
-                                  <div className="flex items-center justify-between gap-3 min-w-0">
+                                  <div className="flex items-center justify-between gap-3 min-w-0 flex-wrap">
                                     {/* 좌: 번호 + 공급사 + 총소계 + 정산차액 · 한 줄 · 같은 톤 */}
-                                    <div className="flex items-baseline gap-2 min-w-0 flex-wrap">
+                                    <div className="flex items-center gap-2 min-w-0 flex-wrap">
                                       {(() => {
                                         const rowSum = effectivePageTotals.get(pn) ?? 0;
                                         const displayTotal = getPageDisplayTotal(pn);
@@ -4648,93 +4648,74 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                 >✎</button>
                                               </>
                                             )}
-                                            {/* 2026-07-23 · 정산차액 · 클릭하면 인라인 편집 (사용자 요청) */}
+                                            {/* 2026-07-23 · 사용자 요청 "정산차액·잔고는 입력박스로 보이게" · 항상 input 노출 */}
                                             <span className="text-[12px] font-semibold text-orange-700 ml-2">정산차액</span>
-                                            {editingSummary?.pn === pn && editingSummary.kind === "discount" ? (
-                                              <input type="text" inputMode="numeric" autoFocus
-                                                value={editingSummary.value}
-                                                onChange={e => setEditingSummary({ ...editingSummary, value: e.target.value })}
-                                                onBlur={() => {
-                                                  const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
-                                                  if (n > 0) setPageDiscountOverride(prev => ({ ...prev, [pn]: { amount: n, label: "수정" } }));
-                                                  else setPageDiscountOverride(prev => { const c = { ...prev }; delete c[pn]; return c; });
-                                                  setEditingSummary(null);
-                                                }}
-                                                onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
-                                                className="w-[100px] text-[14px] font-black text-orange-800 bg-white border-2 border-orange-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-orange-600 text-right"
-                                              />
-                                            ) : (
-                                              <button type="button"
-                                                onClick={() => setEditingSummary({ pn, kind: "discount", value: String(discs[0]?.amount ?? "") })}
-                                                className="inline-flex items-center gap-1 hover:bg-orange-50 rounded px-1 py-0.5 cursor-pointer transition"
-                                                title="클릭하여 정산차액 직접 입력">
-                                                {discs.length > 0 ? (
-                                                  <span className="inline-flex items-center gap-1 flex-wrap">
-                                                    {discs.map((d, i) => (
-                                                      <span key={i} className="text-[14px] font-black text-orange-800 whitespace-nowrap">
-                                                        {fmt(d.amount)}원<span className="text-[10px] font-semibold text-orange-500 ml-0.5">({d.label})</span>
-                                                        {i < discs.length - 1 && <span className="text-orange-400 mx-0.5">+</span>}
-                                                      </span>
-                                                    ))}
-                                                  </span>
-                                                ) : (
-                                                  <span className="text-[14px] font-bold text-slate-400">-</span>
-                                                )}
-                                              </button>
-                                            )}
-                                            {/* 2026-07-23 · 잔고 · 클릭하면 인라인 편집 (사용자 요청) */}
-                                            <span className="text-[12px] font-semibold text-rose-700 ml-2">잔고</span>
-                                            {editingSummary?.pn === pn && editingSummary.kind === "balance" ? (
-                                              <input type="text" inputMode="numeric" autoFocus
-                                                value={editingSummary.value}
-                                                onChange={e => setEditingSummary({ ...editingSummary, value: e.target.value })}
-                                                onBlur={() => {
-                                                  const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
-                                                  if (n > 0) {
-                                                    setPageBalanceOverride(prev => ({ ...prev, [pn]: n }));
-                                                    setPageBalanceModeManual(prev => { const s = new Set(prev); s.delete(pn); return s; });
-                                                    setPageBalanceModeSkip(prev => { const s = new Set(prev); s.delete(pn); return s; });
-                                                  } else {
-                                                    setPageBalanceOverride(prev => { const c = { ...prev }; delete c[pn]; return c; });
-                                                  }
-                                                  setEditingSummary(null);
-                                                }}
-                                                onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
-                                                className="w-[100px] text-[14px] font-black text-rose-800 bg-white border-2 border-rose-400 rounded px-1.5 py-0.5 focus:outline-none focus:border-rose-600 text-right"
-                                              />
-                                            ) : (
-                                              <button type="button"
-                                                onClick={() => setEditingSummary({ pn, kind: "balance", value: String(displayBalForShow ?? "") })}
-                                                className="inline-flex items-center gap-1 hover:bg-rose-50 rounded px-1 py-0.5 cursor-pointer transition"
-                                                title="클릭하여 잔고 직접 입력">
-                                                {displayBalForShow != null && displayBalForShow > 0 ? (
-                                                  <span className="text-[14px] font-black text-rose-800 whitespace-nowrap">{fmt(displayBalForShow)}원</span>
-                                                ) : (
-                                                  <span className="text-[14px] font-bold text-slate-400">-</span>
-                                                )}
-                                              </button>
-                                            )}
+                                            <input type="text" inputMode="numeric"
+                                              value={
+                                                editingSummary?.pn === pn && editingSummary.kind === "discount"
+                                                  ? editingSummary.value
+                                                  : (discs.length > 0 ? String(discs[0].amount) : "")
+                                              }
+                                              placeholder="0"
+                                              onFocus={() => setEditingSummary({ pn, kind: "discount", value: String(discs[0]?.amount ?? "") })}
+                                              onChange={e => setEditingSummary({ pn, kind: "discount", value: e.target.value })}
+                                              onBlur={() => {
+                                                if (!editingSummary || editingSummary.pn !== pn || editingSummary.kind !== "discount") return;
+                                                const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
+                                                if (n > 0) setPageDiscountOverride(prev => ({ ...prev, [pn]: { amount: n, label: "수정" } }));
+                                                else setPageDiscountOverride(prev => { const c = { ...prev }; delete c[pn]; return c; });
+                                                setEditingSummary(null);
+                                              }}
+                                              onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
+                                              className="w-[110px] text-[13px] font-black text-orange-800 bg-orange-50 border border-orange-300 hover:border-orange-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-orange-600 text-right"
+                                            />
+                                            {/* 2026-07-23 · 미수금(=잔고) · 사용자 요청 "미수금 = 잔고 · 잔고항목에 미수금 추가" */}
+                                            <span className="text-[12px] font-semibold text-rose-700 ml-2" title="잔고 = 미수금 (동의어)">미수금</span>
+                                            <input type="text" inputMode="numeric"
+                                              value={
+                                                editingSummary?.pn === pn && editingSummary.kind === "balance"
+                                                  ? editingSummary.value
+                                                  : (displayBalForShow != null && displayBalForShow > 0 ? String(displayBalForShow) : "")
+                                              }
+                                              placeholder="0"
+                                              onFocus={() => setEditingSummary({ pn, kind: "balance", value: String(displayBalForShow ?? "") })}
+                                              onChange={e => setEditingSummary({ pn, kind: "balance", value: e.target.value })}
+                                              onBlur={() => {
+                                                if (!editingSummary || editingSummary.pn !== pn || editingSummary.kind !== "balance") return;
+                                                const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
+                                                if (n > 0) {
+                                                  setPageBalanceOverride(prev => ({ ...prev, [pn]: n }));
+                                                  setPageBalanceModeManual(prev => { const s = new Set(prev); s.delete(pn); return s; });
+                                                  setPageBalanceModeSkip(prev => { const s = new Set(prev); s.delete(pn); return s; });
+                                                } else {
+                                                  setPageBalanceOverride(prev => { const c = { ...prev }; delete c[pn]; return c; });
+                                                }
+                                                setEditingSummary(null);
+                                              }}
+                                              onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
+                                              className="w-[110px] text-[13px] font-black text-rose-800 bg-rose-50 border border-rose-300 hover:border-rose-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-rose-600 text-right"
+                                            />
                                           </>
                                         );
                                       })()}
                                     </div>
-                                    {/* 우: 확정 버튼 */}
+                                    {/* 2026-07-23 · 사용자 요청 "확정 버튼 안 보이네 · 잘 보이는 곳으로" · 크게·진하게·항상 우측 노출 */}
                                     {!hasMissingSupplier && (() => {
                                       const isConfirmed = confirmedPages.has(pn);
                                       return (
                                         <button type="button"
                                           onClick={() => handleMatchPage(pn)}
                                           disabled={!!matchingPage[pn]}
-                                          className={`text-[11px] font-black text-white disabled:bg-slate-300 disabled:cursor-not-allowed border rounded px-2.5 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-sm transition shrink-0 ${
+                                          className={`text-[13px] font-black text-white disabled:bg-slate-300 disabled:cursor-not-allowed border-2 rounded-lg px-4 py-2 cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-lg ring-2 transition shrink-0 ${
                                             isConfirmed
-                                              ? "bg-violet-500 hover:bg-violet-600 border-violet-600"
-                                              : "bg-emerald-500 hover:bg-emerald-600 border-emerald-600"
+                                              ? "bg-violet-500 hover:bg-violet-600 border-violet-700 ring-violet-200"
+                                              : "bg-emerald-500 hover:bg-emerald-600 border-emerald-700 ring-emerald-200 animate-pulse"
                                           }`}
                                           title={isConfirmed ? `${pn}번 · 확정 완료 · 재클릭 재매칭` : `${pn}번 · 2차보정 확정 전송`}
                                         >
-                                          {matchingPage[pn] ? (<><Loader2 size={11} className="animate-spin" /> 확정중...</>)
-                                            : isConfirmed ? (<><Check size={11} /> 완료</>)
-                                            : (<><Check size={11} /> 확정</>)}
+                                          {matchingPage[pn] ? (<><Loader2 size={14} className="animate-spin" /> 확정중...</>)
+                                            : isConfirmed ? (<><Check size={14} /> 확정완료</>)
+                                            : (<><Check size={14} /> 확정</>)}
                                         </button>
                                       );
                                     })()}
