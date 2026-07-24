@@ -726,14 +726,41 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
       }
       imagesDataRef.current = imgs;
 
-      // Auto-detect text orientation from the first image
+      // Auto-detect text orientation · 2026-07-24 개선
+      //   사용자 문제 "이미지 자동회전이 안되"
+      //   기존: 첫 이미지만 검사 · 첫장이 표지·비어있음 등 예외 시 0 반환 → 회전 실패
+      //   개선: 여러 페이지 병렬 감지 · 다수결 (majority vote) · 로그로 원인 추적
       if (imgs.length > 0) {
         setDetectingOrient(true);
         try {
-          const firstDataUrl = `data:${imgs[0].mimeType};base64,${imgs[0].data}`;
-          const detected = await detectTextOrientation(firstDataUrl);
-          setRotation(detected);
-        } catch { /* keep default 0 */ } finally {
+          const sampleCount = Math.min(3, imgs.length);
+          const samples = imgs.slice(0, sampleCount);
+          const detections = await Promise.all(
+            samples.map(async (img, idx) => {
+              try {
+                const dataUrl = `data:${img.mimeType};base64,${img.data}`;
+                const d = await detectTextOrientation(dataUrl);
+                return { idx, deg: d };
+              } catch { return { idx, deg: 0 }; }
+            })
+          );
+          console.log(`[auto-rotation] ${sampleCount}개 페이지 감지:`, detections.map(d => `p${d.idx + 1}=${d.deg}°`).join(" · "));
+          // 다수결 · 가장 많이 나온 각도 선택 · 동률이면 첫 non-zero 값
+          const counts = new Map<number, number>();
+          for (const d of detections) counts.set(d.deg, (counts.get(d.deg) ?? 0) + 1);
+          let bestDeg = 0;
+          let bestCount = 0;
+          for (const [deg, c] of counts) {
+            if (c > bestCount || (c === bestCount && deg !== 0 && bestDeg === 0)) {
+              bestDeg = deg;
+              bestCount = c;
+            }
+          }
+          console.log(`[auto-rotation] → 최종 채택 ${bestDeg}° (${bestCount}/${sampleCount})`);
+          setRotation(bestDeg);
+        } catch (e: any) {
+          console.warn("[auto-rotation] 실패:", e?.message);
+        } finally {
           setDetectingOrient(false);
         }
       }
