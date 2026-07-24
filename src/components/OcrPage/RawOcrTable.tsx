@@ -2457,6 +2457,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     effectiveDispRows.forEach((row, ri) => {
       const pn = pageNums[ri];
       if (filterPage != null && pn !== filterPage) return;
+      // 2026-07-24 · 사용자 요청 "1차 삭제행 · 2차보정 절대 안 나오게 · 보정의 의미가 그런거잖아"
+      //   handleSaveConfirmed 도 · 삭제·숨김·DB필터 행 완전 배제
+      if (permanentlyDeletedRawRows.has(ri)) return;
+      if (isRowDbDeleted(ri)) return;
+      if (hiddenRawRows.has(ri)) return;
       const pageData = structuredPages.find(p => p.page === pn);
       // 공급처
       const rowSupp = ocrSuppIdx >= 0 ? String(row[ocrSuppIdx] ?? "").trim() : "";
