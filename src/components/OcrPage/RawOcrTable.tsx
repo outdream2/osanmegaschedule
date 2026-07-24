@@ -2873,25 +2873,33 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       const idx = rawText.indexOf(anchorKor);
       scanText = rawText.slice(Math.max(0, idx - 100), Math.min(rawText.length, idx + 300));
     }
-    // 2026-07-24 · 사용자 지적 "품명 재추출에 문제 · 재검토"
-    //   문제 1) 정규식 [가-힣][가-힣0-9]{2,} 는 특수문자 포함 상품명 놓침 (예: "코엔자임Q10" · "비타민D3")
-    //   문제 2) 3자+ 제한 → 짧은 상품명 (2자) 놓침
-    //   문제 3) 매칭 실패 시 · 이상한 토큰이 자동으로 채워짐 (사용자 원하지 않음)
-    //   개선:
-    //     · 정규식 관대하게 · 한글로 시작 · 뒤에 한글/영문/숫자/·+- 허용
-    //     · 최소 2자+ 허용 (한글 2자 필수)
-    //     · 매칭 실패 시 · currentName 유지 · 자동 채움 X
-    //     · 스코어 시 · 한글 문자수 가중 (금액 오인식 방어)
-    //     · currentName 도 후보에 포함 (DB 매치 가능성 · 현재 값이 정답일 수 있음)
+    // 2026-07-24 · 사용자 지적 · 개선사항:
+    //   · 정규식 관대하게 · 한글로 시작 · 한글/영문/숫자/·+- 허용
+    //   · 최소 한글 2자+ 필수
+    //   · currentName 도 후보에 포함
+    //   · **금액형(쉼표+숫자) 토큰 제외** (사용자 요청 "쉼표있는 숫자 있으면 제외")
+    //   · **"품명" 헤더 이후 데이터 부스트** (사용자 요청 "품명 헤더 이후 한글 위주 후보 추가")
     const NAME_RE = /[가-힣][가-힣A-Za-z0-9·+\-]{1,}/g;
+    const COMMA_NUM = /\d{1,3}(?:,\d{3})+/;  // 쉼표 있는 3자리 그룹 (금액 형태)
     const rawTokens = (scanText.match(NAME_RE) ?? [])
       .filter(t => {
         const korCnt = (t.match(/[가-힣]/g) ?? []).length;
-        return korCnt >= 2 && isValidProductName(t);
+        if (korCnt < 2) return false;
+        if (COMMA_NUM.test(t)) return false;  // 금액형 제외
+        if (!isValidProductName(t)) return false;
+        return true;
       });
     const uniqTokens: string[] = Array.from(new Set<string>(rawTokens));
-    if (currentName && isValidProductName(currentName)) uniqTokens.push(currentName);
-    // 2026-07-24 · scoring · 길이 + 한글 비율 + 근처 숫자 동반
+    if (currentName && isValidProductName(currentName) && !COMMA_NUM.test(currentName)) uniqTokens.push(currentName);
+    // 2026-07-24 · "품명" 헤더 위치 찾기 · 이 후에 나오는 토큰은 후보 강한 부스트
+    //   rawText 전체에서 "품명" 문자열 위치 (없으면 -1)
+    const nameHeaderVariants = ["품명", "상품명", "품 명", "상 품 명", "품목명", "제품명", "명칭"];
+    let headerIdx = -1;
+    for (const hv of nameHeaderVariants) {
+      const i = scanText.indexOf(hv);
+      if (i >= 0) { headerIdx = i; break; }
+    }
+    // 2026-07-24 · scoring · 길이 + 한글 비율 + 근처 숫자 동반 + 품명 헤더 이후 부스트
     const scoreToken = (tok: string): number => {
       let s = tok.length * 8;  // 길이
       const korCnt = (tok.match(/[가-힣]/g) ?? []).length;
@@ -2902,6 +2910,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         const nums = window.match(/\b\d{2,7}(?:[,.]\d{3})*\b/g) ?? [];
         if (nums.length >= 2) s += 15;  // 수량+단가 동반 힌트
         else if (nums.length >= 1) s += 5;
+        // "품명" 헤더 이후 위치 → 강한 부스트 (+30)
+        if (headerIdx >= 0 && idx > headerIdx) s += 30;
       }
       return s;
     };
