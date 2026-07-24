@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { Download, Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, FileSpreadsheet, Upload as UploadIcon, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
 import { isNonProductText, isValidSupplierHint, isValidProductName, scoreProductRow } from "../../lib/ocrRowFilter";
@@ -1719,16 +1719,26 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   }, [pageZoom, pagePan]);
 
   // 2026-07-21: 테이블 컨테이너 폭 추적 (ResizeObserver) · 이미지 컬럼 최대치 계산용
+  //   2026-07-24 · 사용자 문제 "자동조정 안됨" · 초기값 window.innerWidth 로 첫 렌더부터 계산 가능
   const invTableWrapRef = useRef<HTMLDivElement | null>(null);
-  const [containerWidth, setContainerWidth] = useState<number>(0);
-  useEffect(() => {
+  const [containerWidth, setContainerWidth] = useState<number>(() => {
+    if (typeof window === "undefined") return 0;
+    // 첫 렌더 · 뷰포트 * 0.85 로 근사 (실제 컨테이너 측정 후 정확한 값으로 교체됨)
+    return Math.max(600, window.innerWidth * 0.85);
+  });
+  useLayoutEffect(() => {
     const el = invTableWrapRef.current;
     if (!el) return;
-    const update = () => setContainerWidth(el.clientWidth);
+    const update = () => {
+      const w = el.clientWidth;
+      if (w > 0) setContainerWidth(w);
+    };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
-    return () => ro.disconnect();
+    // 백업 · window resize 도 감지
+    window.addEventListener("resize", update);
+    return () => { ro.disconnect(); window.removeEventListener("resize", update); };
   }, []);
   // 2026-07-21 완전 반응형:
   //   1. 사용자 드래그값이 있으면 우선 (단 캡 안에서 · 반응형 조건 통과 시)
@@ -1736,12 +1746,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   //   3. 최소: INV_COL_MIN · 최대: containerWidth - MIN_DATA_WIDTH
   //   2026-07-24 · 사용자 요청 "처음 나올 때 반응형에 맞게" · 사용자 값이 현재 컨테이너 대비 부적절하면 무시
   const invColMax = containerWidth > 0 ? Math.max(INV_COL_MIN, containerWidth - MIN_DATA_WIDTH) : Infinity;
-  const autoRatio = 0.25;
+  // 2026-07-24 · 화면 크기별 자연스러운 비율 (반응형 default)
+  //   < 800px: 30% (좁은 화면 · 데이터 우선)
+  //   800~1200px: 27%
+  //   1200~1600px: 25%
+  //   > 1600px: 22% (넓은 화면 · 데이터 더 우선)
+  const autoRatio = containerWidth < 800 ? 0.30
+    : containerWidth < 1200 ? 0.27
+    : containerWidth < 1600 ? 0.25
+    : 0.22;
   const responsiveDefault = containerWidth > 0
     ? Math.max(INV_COL_MIN, Math.min(containerWidth * autoRatio, invColMax))
     : INV_COL_DEFAULT;
-  // 사용자 값 유효성 · 컨테이너 대비 10%~60% 범위 안에 있어야 사용자값 존중 (드래그 자유도 확보)
-  //   너무 좁으면 (10% 미만) · 너무 넓어서 데이터 잘림 (60% 초과) 만 초기화
+  // 사용자 값 유효성 · 컨테이너 대비 10%~60% 범위 안에 있어야 사용자값 존중
   const userValidForContainer = containerWidth > 0
     && invoiceColWidth >= containerWidth * 0.10
     && invoiceColWidth <= containerWidth * 0.60
