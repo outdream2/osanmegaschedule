@@ -5864,14 +5864,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                         let amtVal: number | null;
                         if (amtEdit !== undefined) {
                           amtVal = parseNumber(amtEdit);
-                        } else if ((qtyEdit !== undefined || priEdit !== undefined) && qtyVal && priVal && qtyVal > 0 && priVal > 0) {
-                          // 2차보정 원복 (2026-07-18): 수량/단가 편집 시 금액 자동계산
-                          amtVal = Math.round(qtyVal * priVal);
                         } else {
-                          const rawAmt = amtIdx >= 0 ? parseNumber(row[amtIdx]) : 0;
-                          if (rawAmt > 0) amtVal = rawAmt;
-                          else if (qtyVal && priVal && qtyVal > 0 && priVal > 0) amtVal = Math.round(qtyVal * priVal);
-                          else amtVal = null;
+                          // 2026-07-24 · 사용자 요청 "확정 버튼 · 1차 화면에 보이는 그대로 2차 시작값으로"
+                          //   effectiveDispRows[amtIdx] 를 그대로 사용 (이미 Math.ceil(Q*P/10)*10 적용됨)
+                          const effAmt = amtIdx >= 0 ? parseNumber(row[amtIdx]) : 0;
+                          amtVal = effAmt > 0 ? effAmt : null;
                         }
 
                         // 잔고: 페이지 마지막 행에만 표시 + 편집값 우선
