@@ -181,9 +181,20 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (!container || !measure) return;
     const calc = () => {
       const containerW = container.clientWidth;
-      const btnW = 56; // ☰ 버튼 예약 폭 (오버플로 발생 시에만 사용)
-      const gap = 4; // gap-1
+      // 2026-07-24 · 사용자 문제 "화면이 커지는데 왜 삼선표시로 바뀌어"
+      //   원인: containerW = 0 (초기 측정 실패) 시에도 tabEls 폭 > 0 이면 오버플로 판정
+      //   → containerW 유효하지 않으면 skip · 다음 ResizeObserver 콜백 대기
+      if (containerW <= 0) return;
+      const btnW = 56;
+      const gap = 4;
       const tabEls = measure.querySelectorAll<HTMLElement>("[data-desktop-tab]");
+      if (tabEls.length === 0) return;
+      // 측정 실패 감지 · 모든 탭 offsetWidth 가 0 이면 skip (레이아웃 아직 안 됨)
+      let anyMeasured = false;
+      for (let i = 0; i < tabEls.length; i++) {
+        if (tabEls[i].offsetWidth > 0) { anyMeasured = true; break; }
+      }
+      if (!anyMeasured) return;
       // 1-pass · 버튼 예약 없이 전부 맞는지 확인
       let totalW = 0;
       for (let i = 0; i < tabEls.length; i++) {
@@ -208,7 +219,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     calc();
     const ro = new ResizeObserver(calc);
     ro.observe(container);
-    return () => ro.disconnect();
+    // 2026-07-24 · window resize 도 감지 (일부 브라우저 · 컨테이너 flex 만 변하면 RO 안 트리거)
+    window.addEventListener("resize", calc);
+    return () => { ro.disconnect(); window.removeEventListener("resize", calc); };
   }, [visibleTabs]);
 
   useEffect(() => {
