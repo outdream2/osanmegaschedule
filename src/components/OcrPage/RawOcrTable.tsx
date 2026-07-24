@@ -4443,10 +4443,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     const curPos = editableIdxs.indexOf(ci);
 
                                     if (e.key === "Enter") {
-                                      // Enter → 입력창만 빠져나옴 (다음 셀로 이동 없음 · 2026-07-16)
+                                      // 2026-07-24 · 사용자 요청 "엔터 후 방향키로 셀 이동" · Excel 스타일 · 다음 행 같은 컬럼 편집모드 유지
                                       e.preventDefault();
                                       commitCellEdit(ri, ci, editingCellVal);
-                                      setEditingCell(null);
+                                      let nextRi = ri + 1;
+                                      while (nextRi < effectiveDispRows.length
+                                        && (permanentlyDeletedRawRows.has(nextRi) || hiddenRawRows.has(nextRi) || isRowDbDeleted(nextRi))) {
+                                        nextRi++;
+                                      }
+                                      if (nextRi < effectiveDispRows.length) moveToCell(nextRi, ci);
+                                      else setEditingCell(null);
                                       return;
                                     }
                                     if (e.key === "Tab") {
