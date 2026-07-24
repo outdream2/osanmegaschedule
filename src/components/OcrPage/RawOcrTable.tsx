@@ -2959,12 +2959,27 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     const pageObj = structuredPages.find(p => p.page === pn) ?? pages.find(p => p.page === pn);
     const rawText = pageObj?.rawText ?? "";
     const currentName = String(cellEdits[ri]?.[nameIdx] ?? row?.[nameIdx] ?? "").trim();
-    // 현재 이름 앵커: 한글 첫 3자 · rawText 위치 찾기 · 없으면 전체 rawText 사용
-    const anchorKor = (currentName.match(/[가-힣]/g) ?? []).slice(0, 3).join("");
-    let scanText = rawText;
-    if (anchorKor.length >= 2 && rawText.includes(anchorKor)) {
-      const idx = rawText.indexOf(anchorKor);
-      scanText = rawText.slice(Math.max(0, idx - 100), Math.min(rawText.length, idx + 300));
+    // 2026-07-24 · 사용자 통찰 · "모든 품명은 공급사 데이터 이후 · 품명·수량·단가 헤더 다음에 표시"
+    //   → rawText 에서 표 헤더 위치(품명 or 상품명 · 등) 를 먼저 찾고 · 그 이후만 scanText 로 사용
+    //   → 헤더 못 찾으면 · 기존 앵커 로직 폴백
+    const nameHeaderVariants = ["품명", "상품명", "품 명", "상 품 명", "품목명", "제품명", "명칭"];
+    let headerIdx = -1;
+    for (const hv of nameHeaderVariants) {
+      const i = rawText.indexOf(hv);
+      if (i >= 0) { headerIdx = i; break; }
+    }
+    let scanText: string;
+    if (headerIdx >= 0) {
+      // 헤더 이후 전체 · 소계·합계·부가세 등 꼬리부는 그대로 두되 tokens 필터에서 배제됨
+      scanText = rawText.slice(headerIdx);
+    } else {
+      // 폴백 · 현재 이름 앵커 근처 (한글 첫 3자)
+      const anchorKor = (currentName.match(/[가-힣]/g) ?? []).slice(0, 3).join("");
+      scanText = rawText;
+      if (anchorKor.length >= 2 && rawText.includes(anchorKor)) {
+        const idx = rawText.indexOf(anchorKor);
+        scanText = rawText.slice(Math.max(0, idx - 100), Math.min(rawText.length, idx + 300));
+      }
     }
     // 2026-07-24 · 사용자 지적 · 개선사항:
     //   · 정규식 관대하게 · 한글로 시작 · 한글/영문/숫자/·+- 허용
@@ -2984,28 +2999,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       });
     const uniqTokens: string[] = Array.from(new Set<string>(rawTokens));
     if (currentName && isValidProductName(currentName) && !COMMA_NUM.test(currentName)) uniqTokens.push(currentName);
-    // 2026-07-24 · "품명" 헤더 위치 찾기 · 이 후에 나오는 토큰만 후보로 채택 (헤더 앞 데이터는 배제)
-    //   사용자 지적 · "DB 매칭 실패 후보가 전부 품명 헤더 앞 데이터" → 하드 필터
-    //   rawText 전체에서 "품명" 문자열 위치 (없으면 -1)
-    const nameHeaderVariants = ["품명", "상품명", "품 명", "상 품 명", "품목명", "제품명", "명칭"];
-    let headerIdx = -1;
-    for (const hv of nameHeaderVariants) {
-      const i = scanText.indexOf(hv);
-      if (i >= 0) { headerIdx = i; break; }
-    }
-    // 헤더 찾으면 · uniqTokens 을 헤더 이후 위치의 것만 남기고 필터
-    if (headerIdx >= 0) {
-      const filtered = uniqTokens.filter(t => {
-        const pos = scanText.indexOf(t);
-        return pos >= 0 && pos > headerIdx;
-      });
-      // 헤더 이후 후보 있으면 · 그것만 사용 · 없으면 (헤더가 rawText 끝 근처) 전체 유지
-      if (filtered.length > 0) {
-        uniqTokens.length = 0;
-        uniqTokens.push(...filtered);
-      }
-    }
-    // 2026-07-24 · scoring · 길이 + 한글 비율 + 근처 숫자 동반 + 품명 헤더 이후 부스트
+    // 2026-07-24 · scoring · 길이 + 한글 비율 + 근처 숫자 동반
+    //   scanText 는 이미 헤더 이후만 담고 있음 · 헤더 이후 부스트 별도 필요 X
     const scoreToken = (tok: string): number => {
       let s = tok.length * 8;  // 길이
       const korCnt = (tok.match(/[가-힣]/g) ?? []).length;
@@ -3016,8 +3011,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         const nums = window.match(/\b\d{2,7}(?:[,.]\d{3})*\b/g) ?? [];
         if (nums.length >= 2) s += 15;  // 수량+단가 동반 힌트
         else if (nums.length >= 1) s += 5;
-        // "품명" 헤더 이후 위치 → 강한 부스트 (+30)
-        if (headerIdx >= 0 && idx > headerIdx) s += 30;
       }
       return s;
     };
