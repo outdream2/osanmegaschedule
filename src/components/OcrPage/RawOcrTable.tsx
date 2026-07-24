@@ -1746,11 +1746,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   //   3. 최소: INV_COL_MIN · 최대: containerWidth - MIN_DATA_WIDTH
   //   2026-07-24 · 사용자 요청 "처음 나올 때 반응형에 맞게" · 사용자 값이 현재 컨테이너 대비 부적절하면 무시
   const invColMax = containerWidth > 0 ? Math.max(INV_COL_MIN, containerWidth - MIN_DATA_WIDTH) : Infinity;
-  // 2026-07-24 · 화면 크기별 자연스러운 비율 (반응형 default)
-  //   < 800px: 30% (좁은 화면 · 데이터 우선)
-  //   800~1200px: 27%
-  //   1200~1600px: 25%
-  //   > 1600px: 22% (넓은 화면 · 데이터 더 우선)
+  // 2026-07-24 · 화면 크기별 자연스러운 비율 (초기 default 만 · 이후 사용자 드래그값 존중)
   const autoRatio = containerWidth < 800 ? 0.30
     : containerWidth < 1200 ? 0.27
     : containerWidth < 1600 ? 0.25
@@ -1758,15 +1754,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   const responsiveDefault = containerWidth > 0
     ? Math.max(INV_COL_MIN, Math.min(containerWidth * autoRatio, invColMax))
     : INV_COL_DEFAULT;
-  // 사용자 값 유효성 · 컨테이너 대비 10%~60% 범위 안에 있어야 사용자값 존중
-  const userValidForContainer = containerWidth > 0
-    && invoiceColWidth >= containerWidth * 0.10
-    && invoiceColWidth <= containerWidth * 0.60
-    && invoiceColWidth <= invColMax;
-  const isUserAdjusted = Math.abs(invoiceColWidth - INV_COL_DEFAULT) > 5;
-  const effectiveInvColWidth = (isUserAdjusted && userValidForContainer)
+  // 2026-07-24 · 사용자 반복 요청 "이미지 너비 조정 안 됨" · 로직 단순화
+  //   invoiceColWidth 를 유일한 source · min/max bound 만 적용
+  //   드래그 → setInvoiceColWidth → 즉시 반영 (validation 방해 없음)
+  //   containerWidth 처음 측정 시 · invoiceColWidth 가 INV_COL_DEFAULT (사용자 미조정) 이면 responsiveDefault 로 교체
+  //   → useLayoutEffect 로 처리 (렌더 전)
+  const effectiveInvColWidth = containerWidth > 0
     ? Math.min(Math.max(INV_COL_MIN, invoiceColWidth), invColMax)
-    : responsiveDefault;
+    : invoiceColWidth;
 
   // 2026-07-22 반응형 breakpoint 파생값
   //   cw = containerWidth (0 이면 700 fallback)
@@ -1789,6 +1784,21 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   useEffect(() => {
     try { localStorage.setItem("ocr-invoice-col-width", String(Math.round(invoiceColWidth))); } catch { /* empty */ }
   }, [invoiceColWidth]);
+  // 2026-07-24 · 첫 렌더 후 containerWidth 측정되면 · invoiceColWidth 가 default (또는 컨테이너 대비 극단값) 이면 자연스러운 default 로 교체
+  //   드래그값 (10-60% 범위) 은 존중
+  const initialDefaultAppliedRef = useRef(false);
+  useEffect(() => {
+    if (initialDefaultAppliedRef.current) return;
+    if (containerWidth === 0) return;
+    // 사용자 저장값이 컨테이너 대비 부적절 (범위 밖) 시 · responsiveDefault 로 교체
+    const isDefault = Math.abs(invoiceColWidth - INV_COL_DEFAULT) < 5;
+    const inValidRange = invoiceColWidth >= containerWidth * 0.10 && invoiceColWidth <= containerWidth * 0.60;
+    if (isDefault || !inValidRange) {
+      setInvoiceColWidth(Math.round(responsiveDefault));
+      console.log(`[invColWidth] 자동 조정 · ${Math.round(invoiceColWidth)} → ${Math.round(responsiveDefault)} (컨테이너=${containerWidth}px · 비율=${autoRatio})`);
+    }
+    initialDefaultAppliedRef.current = true;
+  }, [containerWidth, invoiceColWidth, responsiveDefault, autoRatio]);
 
   // 2026-07-21: 리사이즈 · 뷰포트 초과 방지 (컨테이너 폭 - 데이터 최소 폭)
   const onInvColResizeStart = useCallback((e: React.MouseEvent) => {
