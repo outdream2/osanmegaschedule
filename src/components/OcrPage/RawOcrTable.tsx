@@ -267,7 +267,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // 2026-07-23 · 정산차액 사용자 override (사용자 요청 "정산차액도 입력가능")
   const [pageDiscountOverride, setPageDiscountOverride] = useState<Record<number, { amount: number; label: string }>>({});
   // 인라인 편집 UI · null = 편집 아님 · "discount"|"balance" = 편집 중
-  const [editingSummary, setEditingSummary] = useState<{ pn: number; kind: "discount" | "balance"; value: string; dirty?: boolean } | null>(null);
+  const [editingSummary, setEditingSummary] = useState<{ pn: number; kind: "discount" | "balance" | "subtotal"; value: string; dirty?: boolean } | null>(null);
   // "직접 입력" 모드: 사용자가 잔고 금액을 수동으로 입력
   const [pageBalanceManualInput, setPageBalanceManualInput] = useState<Record<number, string>>({});
   const [pageBalanceModeManual, setPageBalanceModeManual] = useState<Set<number>>(new Set());
@@ -5254,10 +5254,33 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                   const vatAmount = vatOn ? Math.round(shown * 0.1) : 0;
                                                   return (
                                                     <>
-                                                      <span className="text-[18px] font-black text-amber-900 tracking-tight whitespace-nowrap"
-                                                        title={vatOn ? `공급가액 ${fmt(shown)} + VAT ${fmt(vatAmount)}` : "금액 컬럼 합"}>
-                                                        {fmt(finalShown)}원
-                                                      </span>
+                                                      {/* 2026-07-24 · 사용자 요청 "총소계 금액도 수정 가능하게" · 클릭 시 인라인 입력 */}
+                                                      <input type="text" inputMode="numeric"
+                                                        value={(() => {
+                                                          if (editingSummary?.pn === pn && editingSummary.kind === "subtotal") return editingSummary.value;
+                                                          return fmt(finalShown);
+                                                        })()}
+                                                        placeholder={fmt(finalShown)}
+                                                        onFocus={() => setEditingSummary({ pn, kind: "subtotal", value: "", dirty: false })}
+                                                        onChange={e => setEditingSummary({ pn, kind: "subtotal", value: e.target.value, dirty: true })}
+                                                        onBlur={() => {
+                                                          if (!editingSummary || editingSummary.pn !== pn || (editingSummary.kind as string) !== "subtotal") { setEditingSummary(null); return; }
+                                                          if (!editingSummary.dirty) { setEditingSummary(null); return; }
+                                                          const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
+                                                          if (n > 0) {
+                                                            setPageSubtotalChoices(prev => ({ ...prev, [pn]: "custom" }));
+                                                            setPageSubtotalCustom(prev => ({ ...prev, [pn]: n }));
+                                                          } else {
+                                                            setPageSubtotalChoices(prev => { const c = { ...prev }; delete c[pn]; return c; });
+                                                            setPageSubtotalCustom(prev => { const c = { ...prev }; delete c[pn]; return c; });
+                                                          }
+                                                          setEditingSummary(null);
+                                                        }}
+                                                        onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
+                                                        className="w-[130px] text-[16px] font-black text-amber-900 bg-amber-50 border border-amber-300 hover:border-amber-500 focus:bg-white rounded px-2 py-0.5 focus:outline-none focus:border-amber-600 text-right tracking-tight"
+                                                        title={vatOn ? `공급가액 ${fmt(shown)} + VAT ${fmt(vatAmount)} · 클릭하여 수정` : "금액 컬럼 합 · 클릭하여 수정"}
+                                                      />
+                                                      <span className="text-[14px] font-black text-amber-900">원</span>
                                                       {vatOn && (
                                                         <span className="text-[10px] font-bold text-amber-600 bg-amber-100 border border-amber-300 rounded px-1 py-px whitespace-nowrap">
                                                           +VAT {fmt(vatAmount)}
@@ -5266,11 +5289,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                     </>
                                                   );
                                                 })()}
-                                                <button type="button"
-                                                  onClick={() => { setPageSubtotalChoices(prev => ({ ...prev, [pn]: "custom" })); setPageSubtotalCustom(prev => ({ ...prev, [pn]: shown })); }}
-                                                  className="text-[10px] font-semibold text-amber-500 hover:text-amber-800 transition cursor-pointer"
-                                                  title="총소계 직접 입력"
-                                                >✎</button>
                                                 {/* 2026-07-24 · 사용자 요청 "각 페이지 소계 부분 VAT 포함 체크박스 · 체크 시 금액계산 반영" */}
                                                 <label className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 cursor-pointer hover:text-amber-900 ml-1"
                                                   title="체크 시 · 소계에 VAT 10% 자동 합산 (매입총계 · 정산 반영)">
