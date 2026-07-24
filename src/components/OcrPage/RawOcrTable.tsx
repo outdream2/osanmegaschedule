@@ -3154,7 +3154,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                 m?.salePrice ?? bc?.salePrice ?? null,
                 m?.profitRate != null ? m.profitRate : (bc?.profitRate ?? null),
                 expiry, spec, pnBalance];
-      }).filter(r => r.length > 0)
+      })
+      // 2026-07-24 · filter 제거 · 빈 행은 map 렌더에서 return null · ri 를 effectiveDispRows 와 일치 유지
     : [];
 
   const confAmtIdx  = CONF_HEADERS.indexOf("매입총계");
@@ -6350,7 +6351,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                   <CheckCircle size={13} className="text-emerald-600" />
                   <span className="text-xs font-bold text-emerald-800">거래명세서 확정표</span>
                   <span className="text-[11px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded font-bold">
-                    {confRows.length}건 · {fmt(confTotal)}원
+                    {confRows.filter(r => r.length > 0).length}건 · {fmt(confTotal)}원
                   </span>
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
@@ -6444,6 +6445,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                   </thead>
                     <tbody>
                       {confRows.map((row, ri) => {
+                        // 2026-07-24 · 사용자 반복 요청 "1차보정 삭제행 2차보정 안 나타나야" · 3중 방어
+                        //   confRows 자체는 이미 필터되지만 · 렌더 시 안전 재확인
+                        if (permanentlyDeletedRawRows.has(ri)) return null;
+                        if (isRowDbDeleted(ri)) return null;
+                        if (hiddenRawRows.has(ri)) return null;
+                        // 빈 배열 (필터로 제거됐지만 잔여 케이스)
+                        if (!row || row.length === 0) return null;
                         const m        = cancelledRows.has(ri) ? null : (selectedCands[ri] ?? matchItems![ri]?.matched ?? null);
                         const score    = m?.score ?? 0;
                         const masterP  = m?.masterPrice ?? null;
@@ -6455,7 +6463,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                         const pn = pageNums[ri];
                         // 우측 명세서 접기 제거 (2026-07-19) · 항상 펼침
                         const isPageCollapsedConf = false;
-                        const pageRowCountConf = isFirstInPage ? confRows.filter((_, i) => pageNums[i] === pn).length : 0;
+                        const pageRowCountConf = isFirstInPage ? confRows.filter((r, i) => r.length > 0 && pageNums[i] === pn).length : 0;
                         const pageSupplierHeadConf = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
                         return (
                           <React.Fragment key={ri}>
