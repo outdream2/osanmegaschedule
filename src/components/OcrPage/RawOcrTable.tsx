@@ -3075,6 +3075,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   //   4. 첫 매칭 → autoSynonymMatches[ri] 저장 (동의어 자동 등록)
   //   5. 매칭 실패 시 · 가장 긴 한글 토큰을 cellEdits 로 저장 (사용자 확인용)
   const [reextractingName, setReextractingName] = useState<Set<number>>(new Set());
+  // 2026-07-24 · 사용자 요청 "재추출 순환 · 품명 헤더 이후 값 우선순위"
+  //   ri → 후보 배열 · 현재 순환 인덱스 (-1 = DB 매칭 시도 중, 0+ = 후보 순환)
+  const [nameCellCandidates, setNameCellCandidates] = useState<Record<number, string[]>>({});
+  const [nameCellCycle, setNameCellCycle] = useState<Record<number, number>>({});
   const reextractProductName = useCallback(async (ri: number) => {
     if (reextractingName.has(ri)) return;
     const pn = pageNums[ri];
@@ -3232,23 +3236,45 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         }
         return;
       }
-      // 2026-07-24 · 사용자 요청 "DB 매칭 안 되어도 재추출 시 한글 후보들 다 보여줘"
-      //   - 최대 20개까지 노출 (기존 5개)
-      //   - DB 히트가 있었다면 · 유사도 낮아도 참고용으로 최대 10개 표시
-      console.warn(`[reextractName] × DB 매칭 실패/저유사도 · 후보 전체:`, tokens);
-      if (scored.length > 0) {
-        console.warn(`[reextractName] DB 히트 (유사도 <35%):`, scored.map(s => `${s.tok}→${s.hit.product_name}(${(s.sim*100).toFixed(0)}%)`));
+      // 2026-07-24 · 사용자 요청 "수동으로 편집하세요 나오지 말고 재추출 순환시켜 · 품명 헤더 이후 우선"
+      //   DB 매칭 실패 → alert 없이 · 순환 방식으로 다음 후보 채택
+      //   nameCellCandidates[ri] 에 후보 배열 저장 · nameCellCycle[ri] 로 현재 인덱스
+      //   재추출 다시 누르면 · 다음 후보로 이동 · 끝까지 가면 원본 복원
+      console.log(`[reextractName] DB 매칭 실패 · 순환 모드 진입 · 후보 ${tokens.length}개`);
+      const existingCands = nameCellCandidates[ri];
+      const cycleIdx = nameCellCycle[ri] ?? -1;
+      let nextCands: string[];
+      let nextIdx: number;
+      if (!existingCands || existingCands.length === 0) {
+        // 첫 재추출 · tokens 저장 · 첫 후보 채택
+        nextCands = tokens.slice(0, 20);
+        nextIdx = 0;
+        setNameCellCandidates(prev => ({ ...prev, [ri]: nextCands }));
+      } else {
+        // 이후 재추출 · 다음 후보 (마지막이면 원본 복원)
+        nextCands = existingCands;
+        nextIdx = cycleIdx + 1;
+        if (nextIdx >= nextCands.length) {
+          // 원본 복원 · cellEdits[ri][nameIdx] 제거
+          console.log(`[reextractName] 순환 종료 · 원본 복원`);
+          setCellEdits(prev => {
+            const rowEdits = { ...(prev[ri] ?? {}) };
+            delete rowEdits[nameIdx];
+            return { ...prev, [ri]: rowEdits };
+          });
+          setNameCellCycle(prev => { const n = { ...prev }; delete n[ri]; return n; });
+          setNameCellCandidates(prev => { const n = { ...prev }; delete n[ri]; return n; });
+          return;
+        }
       }
-      const dbHitInfo = scored.length > 0
-        ? `\n\nDB 히트 (유사도 낮음 · 참고용):\n${scored.slice(0, 10).map(s => `· ${s.tok} → ${s.hit.product_name} (${(s.sim*100).toFixed(0)}%)`).join("\n")}`
-        : "";
-      const tokenList = tokens.slice(0, 20).map((t, i) => `${i + 1}. ${t}`).join("\n");
-      const moreInfo = tokens.length > 20 ? `\n... 외 ${tokens.length - 20}개 (콘솔에서 전체 확인)` : "";
-      alert(`DB 매칭 실패\n\n한글 후보 (rawText 스캔 · ${tokens.length}개):\n${tokenList}${moreInfo}${dbHitInfo}\n\n원본 값 유지 · 수동으로 편집하세요.`);
+      const chosen = nextCands[nextIdx];
+      setNameCellCycle(prev => ({ ...prev, [ri]: nextIdx }));
+      setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [nameIdx]: chosen } }));
+      console.log(`[reextractName] 후보 ${nextIdx + 1}/${nextCands.length} 채택 · "${chosen}"`);
     } finally {
       setReextractingName(prev => { const s = new Set(prev); s.delete(ri); return s; });
     }
-  }, [reextractingName, dispHeaders, dispRows, cellEdits, pageNums, rawSupplierByPage, structuredPages, pages, globalSupplier, nameIdx, saveSynonym]);
+  }, [reextractingName, dispHeaders, dispRows, cellEdits, pageNums, rawSupplierByPage, structuredPages, pages, globalSupplier, nameIdx, saveSynonym, nameCellCandidates, nameCellCycle]);
 
   // 2026-07-22 · 컬럼별 자동정리 파이프라인
   // 2026-07-23 · 사용자 요청 "첫행보정 기능은 첫행보정 버튼쪽으로"
@@ -4955,16 +4981,30 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     )}
                                   </span>
                                   <span className="flex items-center gap-1">
-                                    <button
-                                      type="button"
-                                      title="품명 재추출 · rawText 한글 토큰 → 공급사 DB 매칭"
-                                      onClick={e => {
-                                        e.stopPropagation();
-                                        reextractProductName(ri);
-                                      }}
-                                      disabled={reextractingName.has(ri)}
-                                      className="text-[10px] px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 hover:bg-sky-500 hover:text-white disabled:opacity-50 cursor-pointer shrink-0 transition font-bold"
-                                    >{reextractingName.has(ri) ? "⏳ 재추출중" : "🔄 재추출"}</button>
+                                    {(() => {
+                                      const cycleIdxN = nameCellCycle[ri];
+                                      const totalCandsN = nameCellCandidates[ri]?.length ?? 0;
+                                      const cycleLabel = cycleIdxN != null && totalCandsN > 0
+                                        ? ` (${cycleIdxN + 1}/${totalCandsN})`
+                                        : "";
+                                      const isCycling = cycleIdxN != null && totalCandsN > 0;
+                                      return (
+                                        <button
+                                          type="button"
+                                          title={isCycling ? `순환 재추출 · 클릭하면 다음 후보 · 마지막이면 원본 복원` : "품명 재추출 · rawText 한글 토큰 → 공급사 DB 매칭 · 실패 시 순환 모드"}
+                                          onClick={e => {
+                                            e.stopPropagation();
+                                            reextractProductName(ri);
+                                          }}
+                                          disabled={reextractingName.has(ri)}
+                                          className={`text-[10px] px-1.5 py-0.5 rounded disabled:opacity-50 cursor-pointer shrink-0 transition font-bold ${
+                                            isCycling
+                                              ? "bg-indigo-500 text-white hover:bg-indigo-600"
+                                              : "bg-sky-100 text-sky-700 hover:bg-sky-500 hover:text-white"
+                                          }`}
+                                        >{reextractingName.has(ri) ? "⏳ 재추출중" : `🔄 재추출${cycleLabel}`}</button>
+                                      );
+                                    })()}
                                     {isCancelledAutoMap && (
                                       <button
                                         type="button"
