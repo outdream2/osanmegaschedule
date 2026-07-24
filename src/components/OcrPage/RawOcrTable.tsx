@@ -353,59 +353,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [editingCellVal, setEditingCellVal] = useState("");
   // 2026-07-24 · 사용자 요청 "방향키가 셀로 이동" · 편집 종료 후에도 focus 유지 · 방향키로 셀간 이동
   const [focusedCell, setFocusedCell] = useState<{ ri: number; ci: number } | null>(null);
-  // document keydown · focusedCell 있고 editing 아닐 때만 방향키 인터셉트 → 다음 셀 편집모드 진입
-  useEffect(() => {
-    if (!focusedCell || editingCell) return;
-    const onKey = (e: KeyboardEvent) => {
-      // 다른 input/textarea 안에 있으면 무시
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-      const editableIdxs = [dispHeaders.indexOf("수량"), dispHeaders.indexOf("단가"), dispHeaders.indexOf("금액")].filter(i => i >= 0).sort((a, b) => a - b);
-      const { ri, ci } = focusedCell;
-      const curPos = editableIdxs.indexOf(ci);
-      const isVisibleRow = (r: number) =>
-        r >= 0 && r < effectiveDispRows.length
-        && !permanentlyDeletedRawRows.has(r)
-        && !hiddenRawRows.has(r)
-        && !isRowDbDeleted(r);
-      const findNext = (start: number, dir: 1 | -1) => {
-        let r = start;
-        while (r >= 0 && r < effectiveDispRows.length) {
-          if (isVisibleRow(r)) return r;
-          r += dir;
-        }
-        return -1;
-      };
-      let nextRi = ri, nextCi = ci;
-      if (e.key === "ArrowLeft") {
-        if (curPos > 0) nextCi = editableIdxs[curPos - 1];
-        else { const pr = findNext(ri - 1, -1); if (pr >= 0) { nextRi = pr; nextCi = editableIdxs[editableIdxs.length - 1]; } }
-      } else if (e.key === "ArrowRight") {
-        if (curPos < editableIdxs.length - 1) nextCi = editableIdxs[curPos + 1];
-        else { const nr = findNext(ri + 1, 1); if (nr >= 0) { nextRi = nr; nextCi = editableIdxs[0]; } }
-      } else if (e.key === "ArrowDown") {
-        const nr = findNext(ri + 1, 1); if (nr >= 0) nextRi = nr;
-      } else if (e.key === "ArrowUp") {
-        const pr = findNext(ri - 1, -1); if (pr >= 0) nextRi = pr;
-      } else if (e.key === "Enter") {
-        // Enter · 현재 focused cell 편집모드 진입
-        e.preventDefault();
-        setEditingCell({ ri, ci });
-        setEditingCellVal("");
-        return;
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        setFocusedCell(null);
-        return;
-      } else {
-        return;
-      }
-      e.preventDefault();
-      if (nextRi !== ri || nextCi !== ci) setFocusedCell({ ri: nextRi, ci: nextCi });
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [focusedCell, editingCell, dispHeaders, effectiveDispRows, permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted]);
+  // (document keydown 리스너는 · effectiveDispRows 등 의존 변수 선언 이후에 정의됨 · 아래 참조)
   // ── 셀 재추출 순환 인덱스 (2026-07-16) ────────────────────────────────────
   // numericCellCycle[`${ri}-${ci}`] = 현재 순환 인덱스 (-1 = 원본, 0+ = 후보)
   // numericCellCandidates[`${ri}-${ci}`] = 이 셀에 대해 캐싱된 후보 배열
@@ -1471,6 +1419,59 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       return n;
     });
   };
+
+  // 2026-07-24 · 방향키 셀 이동 리스너 · 여기서 정의 (effectiveDispRows · isRowDbDeleted 등 참조)
+  useEffect(() => {
+    if (!focusedCell || editingCell) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      const editableIdxs = [dispHeaders.indexOf("수량"), dispHeaders.indexOf("단가"), dispHeaders.indexOf("금액")].filter(i => i >= 0).sort((a, b) => a - b);
+      const { ri, ci } = focusedCell;
+      const curPos = editableIdxs.indexOf(ci);
+      const isVisibleRow = (r: number) =>
+        r >= 0 && r < effectiveDispRows.length
+        && !permanentlyDeletedRawRows.has(r)
+        && !hiddenRawRows.has(r)
+        && !isRowDbDeleted(r);
+      const findNext = (start: number, dir: 1 | -1) => {
+        let r = start;
+        while (r >= 0 && r < effectiveDispRows.length) {
+          if (isVisibleRow(r)) return r;
+          r += dir;
+        }
+        return -1;
+      };
+      let nextRi = ri, nextCi = ci;
+      if (e.key === "ArrowLeft") {
+        if (curPos > 0) nextCi = editableIdxs[curPos - 1];
+        else { const pr = findNext(ri - 1, -1); if (pr >= 0) { nextRi = pr; nextCi = editableIdxs[editableIdxs.length - 1]; } }
+      } else if (e.key === "ArrowRight") {
+        if (curPos < editableIdxs.length - 1) nextCi = editableIdxs[curPos + 1];
+        else { const nr = findNext(ri + 1, 1); if (nr >= 0) { nextRi = nr; nextCi = editableIdxs[0]; } }
+      } else if (e.key === "ArrowDown") {
+        const nr = findNext(ri + 1, 1); if (nr >= 0) nextRi = nr;
+      } else if (e.key === "ArrowUp") {
+        const pr = findNext(ri - 1, -1); if (pr >= 0) nextRi = pr;
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        setEditingCell({ ri, ci });
+        setEditingCellVal("");
+        return;
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setFocusedCell(null);
+        return;
+      } else {
+        return;
+      }
+      e.preventDefault();
+      if (nextRi !== ri || nextCi !== ci) setFocusedCell({ ri: nextRi, ci: nextCi });
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusedCell, editingCell, dispHeaders, effectiveDispRows, permanentlyDeletedRawRows, hiddenRawRows]);
 
   // 실제 "🗑 선택 삭제" 로직 (effectiveDispRows/makeRowSignature 참조를 위해 여기서 세팅)
   //   → 체크된 여러 행을 한 번의 확인 다이얼로그로 일괄 완전삭제 + DB 서명 저장
