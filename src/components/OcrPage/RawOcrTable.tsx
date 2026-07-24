@@ -44,77 +44,89 @@ import { CrossCheckBadge } from "./RawOcrTable/CrossCheckBadge";
 export type { ConfirmedItem };
 
 export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp, onSaveConfirmed, onUserEdit }) => {
-  const structuredPages = pages.filter(p => !isFallback(p.headers) && Array.isArray(p.rows) && p.rows.length > 0);
-  const fallbackPages   = pages.filter(p => isFallback(p.headers) || !Array.isArray(p.rows) || p.rows.length === 0);
-
-  const masterH     = buildMasterHeaders(structuredPages);
-  const supplierIdx = masterH.indexOf("공급처");
-
-  const allRows: { row: (string | number | null)[]; pageNum: number }[] = structuredPages.flatMap(p => {
-    const supplier = p.meta.supplier ?? null;
-    return p.rows.filter(row => Array.isArray(row)).map(row => {
-      const aligned = alignRow(row, p.headers, masterH);
-      if (supplierIdx >= 0) aligned[supplierIdx] = supplier;
-      return { row: aligned, pageNum: p.page };
-    });
-  });
-
-  const rawRows  = allRows.map(({ row }) => row);
-  const pageNums = allRows.map(({ pageNum }) => pageNum);
-  const keepCols = masterH.map((_, ci) =>
-    rawRows.some(r => r[ci] != null && String(r[ci]).trim() !== "")
-  );
-  // 2026-07-22 · 유통기한 컬럼 강제 표시 (사용자 요청 "1차보정에 유통기한 나오게")
-  //   데이터가 없어도 컬럼은 항상 렌더 · 사용자가 수동 입력 가능
+  // 2026-07-24 · 사용자 요청 "각 페이지 로딩 시 다른 페이지 리로딩 되지 않게" · A안 1단계 (파생값 memoize)
+  //   pages 가 실제로 변할 때만 파생값 재계산 · 다른 setState 로는 재계산 안 함
+  //   변경 시그니처: page 번호 + 헤더 길이 + 행 개수 + rawText 길이 조합
+  //   Types: 명시적으로 지정해서 이전 refactor 때 발생한 unknown[] 추론 방지
   const expiryVariants = ["유통기한", "유효기한", "유통기간"];
-  const hasExpiryInMaster = expiryVariants.some(v => masterH.indexOf(v) >= 0);
-  masterH.forEach((h, ci) => {
-    if (expiryVariants.includes(h)) keepCols[ci] = true;
-  });
-  // 2026-07-23 · 거래일 컬럼 강제 표시 (사용자 요청 "1차보정에 거래일 컬럼 추가 · 수정 가능")
   const dateVariants = ["거래일", "일자", "날짜", "거래일자", "거래날짜"];
-  const hasDateInMaster = dateVariants.some(v => masterH.indexOf(v) >= 0);
-  masterH.forEach((h, ci) => {
-    if (dateVariants.includes(h)) keepCols[ci] = true;
-  });
-  let dispHeaders: string[] = masterH.filter((_, ci) => keepCols[ci]);
-  let dispRows: (string | number | null)[][] = rawRows.map(r => r.filter((_, ci) => keepCols[ci]));
-  // masterH 에 유통기한 계열이 아예 없으면 · 강제로 추가 (빈 컬럼)
-  if (!hasExpiryInMaster) {
-    dispHeaders = [...dispHeaders, "유통기한"];
-    dispRows = dispRows.map(r => [...r, null]);
+  interface Derived {
+    structuredPages: typeof pages;
+    fallbackPages: typeof pages;
+    masterH: string[];
+    dispHeaders: string[];
+    dispRows: (string | number | null)[][];
+    rawRows: (string | number | null)[][];
+    pageNums: number[];
+    amtIdx: number;
+    nameIdx: number;
   }
-  // masterH 에 거래일 계열 없으면 · 첫번째 컬럼으로 강제 추가 (page.meta.date 값 채움)
-  if (!hasDateInMaster) {
-    dispHeaders = ["거래일", ...dispHeaders];
-    dispRows = dispRows.map((r, ri) => {
-      const pn = pageNums[ri];
-      const md = structuredPages.find(p => p.page === pn)?.meta?.date ?? null;
-      return [md, ...r];
+  const pagesSignature = pages.map(p => `${p.page}:${p.headers.length}:${p.rows.length}:${(p.rawText ?? "").length}:${p.meta?.supplier ?? ""}:${p.meta?.date ?? ""}:${p.meta?.total ?? ""}`).join("|");
+  const derived = React.useMemo<Derived>(() => {
+    const structuredPages = pages.filter(p => !isFallback(p.headers) && Array.isArray(p.rows) && p.rows.length > 0);
+    const fallbackPages   = pages.filter(p => isFallback(p.headers) || !Array.isArray(p.rows) || p.rows.length === 0);
+    const masterH     = buildMasterHeaders(structuredPages);
+    const supplierIdx = masterH.indexOf("공급처");
+    const allRows: { row: (string | number | null)[]; pageNum: number }[] = structuredPages.flatMap(p => {
+      const supplier = p.meta.supplier ?? null;
+      return p.rows.filter(row => Array.isArray(row)).map(row => {
+        const aligned = alignRow(row, p.headers, masterH);
+        if (supplierIdx >= 0) aligned[supplierIdx] = supplier;
+        return { row: aligned, pageNum: p.page };
+      });
     });
-  }
-  // 2026-07-23 · 사용자 요청 "유통기한 옆에 하나 추가해" · 비고 컬럼 강제 (없으면 빈 컬럼)
-  if (!dispHeaders.includes("비고")) {
-    dispHeaders = [...dispHeaders, "비고"];
-    dispRows = dispRows.map(r => [...r, null]);
-  }
-  // 2026-07-23 · 사용자 요청 "단가 옆에 VAT 계산 컬럼 추가 · VAT 금액 있으면 합산 · 없으면 단가*10%"
-  //   masterH 에 세액·부가세·VAT 계열이 있으면 그 값 · 없으면 단가*0.1 (표시 시 계산)
-  const vatVariants = ["세액", "부가세", "VAT", "vat", "부가가치세"];
-  const vatMasterIdx = masterH.findIndex(h => vatVariants.includes(h));
-  if (!dispHeaders.includes("VAT")) {
-    const priceIdxLocal = dispHeaders.indexOf("단가");
-    const insertAt = priceIdxLocal >= 0 ? priceIdxLocal + 1 : dispHeaders.length;
-    dispHeaders = [...dispHeaders.slice(0, insertAt), "VAT", ...dispHeaders.slice(insertAt)];
-    dispRows = dispRows.map((r, ri) => {
-      // masterH VAT 값 우선 · 없으면 null (렌더에서 단가*0.1 계산)
-      const vatVal = vatMasterIdx >= 0 ? rawRows[ri]?.[vatMasterIdx] ?? null : null;
-      return [...r.slice(0, insertAt), vatVal, ...r.slice(insertAt)];
-    });
-  }
-
-  const amtIdx  = dispHeaders.indexOf("금액");
-  const nameIdx = dispHeaders.indexOf("품명");
+    const rawRows: (string | number | null)[][] = allRows.map(({ row }) => row);
+    const pageNums: number[] = allRows.map(({ pageNum }) => pageNum);
+    const keepCols: boolean[] = masterH.map((_, ci) =>
+      rawRows.some(r => r[ci] != null && String(r[ci]).trim() !== "")
+    );
+    const hasExpiryInMaster = expiryVariants.some(v => masterH.indexOf(v) >= 0);
+    masterH.forEach((h, ci) => { if (expiryVariants.includes(h)) keepCols[ci] = true; });
+    const hasDateInMaster = dateVariants.some(v => masterH.indexOf(v) >= 0);
+    masterH.forEach((h, ci) => { if (dateVariants.includes(h)) keepCols[ci] = true; });
+    let dispHeaders: string[] = masterH.filter((_, ci) => keepCols[ci]);
+    let dispRows: (string | number | null)[][] = rawRows.map(r => r.filter((_, ci) => keepCols[ci]));
+    if (!hasExpiryInMaster) {
+      dispHeaders = [...dispHeaders, "유통기한"];
+      dispRows = dispRows.map(r => [...r, null]);
+    }
+    if (!hasDateInMaster) {
+      dispHeaders = ["거래일", ...dispHeaders];
+      dispRows = dispRows.map((r, ri) => {
+        const pn = pageNums[ri];
+        const md = structuredPages.find(p => p.page === pn)?.meta?.date ?? null;
+        return [md, ...r];
+      });
+    }
+    if (!dispHeaders.includes("비고")) {
+      dispHeaders = [...dispHeaders, "비고"];
+      dispRows = dispRows.map(r => [...r, null]);
+    }
+    const vatVariants = ["세액", "부가세", "VAT", "vat", "부가가치세"];
+    const vatMasterIdx = masterH.findIndex(h => vatVariants.includes(h));
+    if (!dispHeaders.includes("VAT")) {
+      const priceIdxLocal = dispHeaders.indexOf("단가");
+      const insertAt = priceIdxLocal >= 0 ? priceIdxLocal + 1 : dispHeaders.length;
+      dispHeaders = [...dispHeaders.slice(0, insertAt), "VAT", ...dispHeaders.slice(insertAt)];
+      dispRows = dispRows.map((r, ri) => {
+        const vatVal: string | number | null = vatMasterIdx >= 0 ? (rawRows[ri]?.[vatMasterIdx] ?? null) : null;
+        return [...r.slice(0, insertAt), vatVal, ...r.slice(insertAt)];
+      });
+    }
+    const amtIdx = dispHeaders.indexOf("금액");
+    const nameIdx = dispHeaders.indexOf("품명");
+    return { structuredPages, fallbackPages, masterH, dispHeaders, dispRows, rawRows, pageNums, amtIdx, nameIdx };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagesSignature]);
+  const structuredPages: typeof pages = derived.structuredPages;
+  const fallbackPages: typeof pages = derived.fallbackPages;
+  const masterH: string[] = derived.masterH;
+  const dispHeaders: string[] = derived.dispHeaders;
+  const dispRows: (string | number | null)[][] = derived.dispRows;
+  const rawRows: (string | number | null)[][] = derived.rawRows;
+  const pageNums: number[] = derived.pageNums;
+  const amtIdx: number = derived.amtIdx;
+  const nameIdx: number = derived.nameIdx;
 
   // ── 공급처 편집 상태 — supplierTotals 계산보다 먼저 선언해야 참조 가능
   const [rawSupplierByPage, setRawSupplierByPage] = useState<Record<number, string>>({});
@@ -3295,7 +3307,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
               <span className="text-[10px] font-black text-white bg-sky-500 px-1.5 py-0.5 rounded shrink-0">1차보정</span>
               <span className="text-xs font-bold text-gray-800">거래명세서 품목</span>
               <span className="text-[11px] bg-gray-200 text-gray-500 px-1.5 py-0.5 rounded font-bold">
-                {allRows.length - permanentlyDeletedRawRows.size - hiddenRawRows.size}행 · {structuredPages.length}페이지
+                {rawRows.length - permanentlyDeletedRawRows.size - hiddenRawRows.size}행 · {structuredPages.length}페이지
                 {(permanentlyDeletedRawRows.size + hiddenRawRows.size) > 0 && (
                   <span className="ml-1 text-rose-500">
                     ({permanentlyDeletedRawRows.size + hiddenRawRows.size}행 제외)
@@ -3304,7 +3316,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
               </span>
               {/* 2026-07-22 · 사용자 요청 삭제: 🔍 DB 필터 · ☑ 행 선택 · ↺ 원본 복원 배지들 제거 */}
               {false && (() => {
-                const dbFilteredCount = allRows.filter((_, ri) => isRowDbDeleted(ri)).length;
+                const dbFilteredCount = rawRows.filter((_, ri) => isRowDbDeleted(ri)).length;
                 if (dbFilteredCount === 0) return null;
                 return (
                   <span className="inline-flex items-center gap-1 text-[11px] bg-amber-100 text-amber-700 border border-amber-300 px-1.5 py-0.5 rounded font-bold">
