@@ -44,6 +44,7 @@ import { useAutoTemplateSave } from "./RawOcrTable/useAutoTemplateSave";
 import { useAutoBalanceLoad } from "./RawOcrTable/useAutoBalanceLoad";
 import { useEditMigration } from "./RawOcrTable/useEditMigration";
 import { useCellNavigation } from "./RawOcrTable/useCellNavigation";
+import { usePagesSnapshot } from "./RawOcrTable/usePagesSnapshot";
 import {
   findNameHeaderIdx,
   findRowPositionInRawText,
@@ -57,30 +58,9 @@ import {
 export type { ConfirmedItem };
 
 export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp, onSaveConfirmed, onUserEdit }) => {
-  // 2026-07-24 · 사용자 요청 "근본적으로 로딩되는 페이지와 추출이 연동이 안되게 · 이미 로딩된 페이지 리로드 금지"
-  //   props.pages 는 서버 SSE 로 계속 업데이트되므로 · RawOcrTable 내부에서 "snapshot" 유지
-  //   - 새 page 는 append · 기존 page 는 절대 교체 X
-  //   - dispRows/pageNums 등은 이 snapshot 기반 · 사용자 편집 항상 보존
-  const pagesSnapshotRef = useRef<typeof pagesFromProps>([]);
-  const [pages, setLocalPages] = useState<typeof pagesFromProps>([]);
-  useEffect(() => {
-    // props.pages 감지 · 없는 page 만 snapshot 에 추가 (기존 page 는 스킵)
-    const existing = new Set(pagesSnapshotRef.current.map(p => p.page));
-    const newPages = pagesFromProps.filter(p => !existing.has(p.page));
-    if (newPages.length === 0 && pagesFromProps.length === pagesSnapshotRef.current.length) return;
-    // props.pages 가 완전히 리셋되면 (예: 새 파일 업로드) snapshot 도 리셋
-    if (pagesFromProps.length === 0 && pagesSnapshotRef.current.length > 0) {
-      pagesSnapshotRef.current = [];
-      setLocalPages([]);
-      console.log("[pages snapshot] 리셋 · props.pages 가 비었음");
-      return;
-    }
-    if (newPages.length > 0) {
-      pagesSnapshotRef.current = [...pagesSnapshotRef.current, ...newPages];
-      setLocalPages([...pagesSnapshotRef.current]);
-      console.log(`[pages snapshot] +${newPages.length} 페이지 추가 · 총 ${pagesSnapshotRef.current.length}`);
-    }
-  }, [pagesFromProps]);
+  // 2026-07-24 · 리팩터 · 페이지 snapshot 은 usePagesSnapshot 훅으로 분리
+  //   props.pages (SSE 업데이트) → 내부 스냅샷 (append-only) → dispRows 파생
+  const pages = usePagesSnapshot(pagesFromProps);
   // 2026-07-24 · 리팩터 · 파생값 계산은 useOcrDerived 훅으로 분리 (원래 85줄 → 1줄)
   const derived = useOcrDerived(pages);
   const { structuredPages, fallbackPages, masterH, dispHeaders, dispRows, rawRows, pageNums, amtIdx, nameIdx } = derived;
