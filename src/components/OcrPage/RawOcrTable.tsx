@@ -198,6 +198,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // 2026-07-24 · 사용자 요청 "각 페이지 소계에 VAT 포함 체크박스 · 체크 시 금액계산 반영"
   //   true 이면 · 매입총계 · 정산 계산 시 소계 × 1.1 (또는 실제 VAT 합 반영)
   const [pageVatIncluded, setPageVatIncluded] = useState<Record<number, boolean>>({});
+  // 2026-07-24 · 사용자 요청 "정산차액 적용 체크박스 · 적용할지 안할지 선택"
+  //   기본 true (적용) · false 면 getPageDisplayTotal 에서 정산차액 제외
+  const [pageDiscountApplied, setPageDiscountApplied] = useState<Record<number, boolean>>({});
   // 2026-07-21: 에누리 적용 전/후 토글 · 기본 "before" (적용 전 · stated + 에누리)
   //   사용자가 "after" 선택 시 stated 그대로 (에누리 이미 반영된 최종금액 사용)
   const [discountApplyMode, setDiscountApplyMode] = useState<Record<number, "before" | "after">>(() => {
@@ -1474,10 +1477,15 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     // 4) 에누리/차액이 있으면 · 모드에 따라 처리
     //   "before" (기본): stated + 에누리 (에누리 적용 전 금액 표시)
     //   "after": stated 그대로 (에누리 이미 반영된 최종 금액)
-    const disc = getPageDiscount(pn);
-    if (disc) {
-      const mode = discountApplyMode[pn] ?? "before";
-      return mode === "after" ? base : base + disc.amount;
+    // 2026-07-24 · 사용자 요청 "정산차액 적용 체크박스" · pageDiscountApplied 가 false 면 스킵
+    //   기본 true (적용) · 명시적으로 false 인 경우만 무시
+    const applied = pageDiscountApplied[pn] !== false;
+    if (applied) {
+      const disc = getPageDiscount(pn);
+      if (disc) {
+        const mode = discountApplyMode[pn] ?? "before";
+        return mode === "after" ? base : base + disc.amount;
+      }
     }
 
     // 5) 명세서 합계 그대로
@@ -4812,27 +4820,41 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                 </label>
                                               </>
                                             )}
-                                            {/* 2026-07-23 · 사용자 요청 "정산차액·잔고는 입력박스로 보이게" · 항상 input 노출 */}
-                                            <span className="text-[12px] font-semibold text-orange-700 ml-2">정산차액</span>
-                                            <input type="text" inputMode="numeric"
-                                              value={
-                                                editingSummary?.pn === pn && editingSummary.kind === "discount"
-                                                  ? editingSummary.value
-                                                  : (discs.length > 0 ? String(discs[0].amount) : "")
-                                              }
-                                              placeholder="0"
-                                              onFocus={() => setEditingSummary({ pn, kind: "discount", value: String(discs[0]?.amount ?? "") })}
-                                              onChange={e => setEditingSummary({ pn, kind: "discount", value: e.target.value })}
-                                              onBlur={() => {
-                                                if (!editingSummary || editingSummary.pn !== pn || editingSummary.kind !== "discount") return;
-                                                const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
-                                                if (n > 0) setPageDiscountOverride(prev => ({ ...prev, [pn]: { amount: n, label: "수정" } }));
-                                                else setPageDiscountOverride(prev => { const c = { ...prev }; delete c[pn]; return c; });
-                                                setEditingSummary(null);
-                                              }}
-                                              onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
-                                              className="w-[110px] text-[13px] font-black text-orange-800 bg-orange-50 border border-orange-300 hover:border-orange-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-orange-600 text-right"
-                                            />
+                                            {/* 2026-07-24 · 사용자 요청 "정산차액 = 차액+에누리+할인 합 · 적용 체크박스" */}
+                                            <span className="text-[12px] font-semibold text-orange-700 ml-2"
+                                              title={discs.length > 0 ? discs.map(d => `${d.label}: ${fmt(d.amount)}`).join(" · ") : "차액·에누리·할인 자동 감지"}>정산차액</span>
+                                            {(() => {
+                                              const totalDisc = discs.reduce((s, d) => s + d.amount, 0);
+                                              return (
+                                                <input type="text" inputMode="numeric"
+                                                  value={
+                                                    editingSummary?.pn === pn && editingSummary.kind === "discount"
+                                                      ? editingSummary.value
+                                                      : (totalDisc > 0 ? String(totalDisc) : "")
+                                                  }
+                                                  placeholder="0"
+                                                  onFocus={() => setEditingSummary({ pn, kind: "discount", value: String(totalDisc || "") })}
+                                                  onChange={e => setEditingSummary({ pn, kind: "discount", value: e.target.value })}
+                                                  onBlur={() => {
+                                                    if (!editingSummary || editingSummary.pn !== pn || editingSummary.kind !== "discount") return;
+                                                    const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
+                                                    if (n > 0) setPageDiscountOverride(prev => ({ ...prev, [pn]: { amount: n, label: "수정" } }));
+                                                    else setPageDiscountOverride(prev => { const c = { ...prev }; delete c[pn]; return c; });
+                                                    setEditingSummary(null);
+                                                  }}
+                                                  onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
+                                                  className="w-[110px] text-[13px] font-black text-orange-800 bg-orange-50 border border-orange-300 hover:border-orange-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-orange-600 text-right"
+                                                />
+                                              );
+                                            })()}
+                                            <label className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-700 cursor-pointer hover:text-orange-900"
+                                              title="체크 시 · 매입총계에서 정산차액 반영 · 해제 시 소계 그대로">
+                                              <input type="checkbox"
+                                                checked={pageDiscountApplied[pn] !== false}
+                                                onChange={e => setPageDiscountApplied(prev => ({ ...prev, [pn]: e.target.checked }))}
+                                                className="w-3.5 h-3.5 accent-orange-500 cursor-pointer"
+                                              />적용
+                                            </label>
                                             {/* 2026-07-23 · 미수금(=잔고) · 사용자 요청 "미수금 = 잔고 · 잔고항목에 미수금 추가" */}
                                             <span className="text-[12px] font-semibold text-rose-700 ml-2" title="잔고 = 미수금 (동의어)">미수금</span>
                                             <input type="text" inputMode="numeric"
