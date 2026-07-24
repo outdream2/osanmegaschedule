@@ -2959,21 +2959,47 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     const pageObj = structuredPages.find(p => p.page === pn) ?? pages.find(p => p.page === pn);
     const rawText = pageObj?.rawText ?? "";
     const currentName = String(cellEdits[ri]?.[nameIdx] ?? row?.[nameIdx] ?? "").trim();
-    // 2026-07-24 · 사용자 통찰 · "모든 품명은 공급사 데이터 이후 · 품명·수량·단가 헤더 다음에 표시"
-    //   → rawText 에서 표 헤더 위치(품명 or 상품명 · 등) 를 먼저 찾고 · 그 이후만 scanText 로 사용
-    //   → 헤더 못 찾으면 · 기존 앵커 로직 폴백
+    // 2026-07-24 · 헤더 위치 찾기 (품명·상품명 등)
     const nameHeaderVariants = ["품명", "상품명", "품 명", "상 품 명", "품목명", "제품명", "명칭"];
     let headerIdx = -1;
     for (const hv of nameHeaderVariants) {
       const i = rawText.indexOf(hv);
       if (i >= 0) { headerIdx = i; break; }
     }
+    // 2026-07-24 · 개선 · 이 행의 rawText 위치 정확히 찾기 (수량+금액 조합)
+    //   → localScanText 로 우선 스캔 · 다른 행 데이터 오염 방지
+    let localScanText = "";
+    const qtyStr = qty > 0 ? String(Math.round(qty)) : "";
+    const amtStr = amt > 0 ? Math.round(amt).toLocaleString() : "";
+    const amtStrPlain = amt > 0 ? String(Math.round(amt)) : "";
+    if (qtyStr && (amtStr || amtStrPlain)) {
+      // rawText 에서 · qty 근처에 amt 나타나는 위치 찾기 (200자 window)
+      const searchStart = headerIdx >= 0 ? headerIdx : 0;
+      const searchArea = rawText.slice(searchStart);
+      const qtyRe = new RegExp(`(?<!\\d)${qtyStr}(?!\\d)`, "g");
+      let m: RegExpExecArray | null;
+      const positions: number[] = [];
+      while ((m = qtyRe.exec(searchArea)) !== null) {
+        const pos = m.index;
+        const window = searchArea.slice(Math.max(0, pos - 30), Math.min(searchArea.length, pos + 250));
+        if ((amtStr && window.includes(amtStr)) || (amtStrPlain && window.includes(amtStrPlain))) {
+          positions.push(searchStart + pos);
+        }
+      }
+      // 정확히 하나의 매치만 있으면 채택 (여러 개면 모호 · 스킵)
+      if (positions.length === 1) {
+        const rowPos = positions[0];
+        localScanText = rawText.slice(Math.max(0, rowPos - 30), Math.min(rawText.length, rowPos + 200));
+        console.log(`[reextractName] 행 위치 정확 매치 · pos=${rowPos} · local=${localScanText.slice(0, 60).replace(/\n/g, " ")}`);
+      }
+    }
+    // scanText 결정 · 우선순위: localScanText > 헤더 이후 > 앵커 근처 > 전체
     let scanText: string;
-    if (headerIdx >= 0) {
-      // 헤더 이후 전체 · 소계·합계·부가세 등 꼬리부는 그대로 두되 tokens 필터에서 배제됨
+    if (localScanText) {
+      scanText = localScanText;
+    } else if (headerIdx >= 0) {
       scanText = rawText.slice(headerIdx);
     } else {
-      // 폴백 · 현재 이름 앵커 근처 (한글 첫 3자)
       const anchorKor = (currentName.match(/[가-힣]/g) ?? []).slice(0, 3).join("");
       scanText = rawText;
       if (anchorKor.length >= 2 && rawText.includes(anchorKor)) {
@@ -3023,33 +3049,62 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       return;
     }
     setReextractingName(prev => new Set([...prev, ri]));
-    console.log(`[reextractName] ri=${ri} 후보 ${tokens.length}개 · 공급사="${supplier}" · 첫3개=`, tokens.slice(0, 3));
+    console.log(`[reextractName] ri=${ri} 후보 ${tokens.length}개 · 공급사="${supplier}" · 첫5개=`, tokens.slice(0, 5));
     try {
-      // 각 후보를 순회하며 DB 매치 조회
-      for (const tok of tokens.slice(0, 10)) {
+      // 2026-07-24 · 개선 · 병렬 조회 + 유사도 기반 최적 매치 선택
+      //   기존: 순차 조회 · 첫 매칭 종료 (스코어 낮은 후보가 흔한 이름과 매칭 되면 오답)
+      //   개선: 상위 10개 병렬 · 각 매칭 결과의 유사도 점수 · 종합점수 최고 선택
+      const topTokens = tokens.slice(0, 10);
+      const queries = topTokens.map(async tok => {
         const params = new URLSearchParams({ q: tok });
         if (supplier) params.set("supplier", supplier);
-        const res = await fetch(`/api/products-search?${params}`);
-        if (!res.ok) continue;
-        const data: any[] = await res.json();
-        const hit = Array.isArray(data) ? data[0] : null;
-        if (hit?.product_code && hit?.product_name) {
-          console.log(`[reextractName] ✓ 매칭 · "${tok}" → ${hit.product_name} (${hit.product_code})`);
-          setAutoSynonymMatches(prev => ({ ...prev, [ri]: { code: hit.product_code, name: hit.product_name } }));
-          setCancelledAutoSyn(prev => { const s = new Set(prev); s.delete(ri); return s; });
-          // 동의어 자동 저장 (다음 파싱부터 자동적용)
-          if (tok !== hit.product_name) {
-            saveSynonym(ri, tok, hit.product_code, supplier || undefined, hit.product_name);
-          }
-          return;
+        try {
+          const res = await fetch(`/api/products-search?${params}`);
+          if (!res.ok) return { tok, hit: null };
+          const data: any[] = await res.json();
+          const hit = Array.isArray(data) && data[0] ? data[0] : null;
+          return { tok, hit };
+        } catch { return { tok, hit: null }; }
+      });
+      const results = await Promise.all(queries);
+      // 유사도 계산 · 한글 문자 Jaccard (교집합/합집합)
+      const similarity = (a: string, b: string): number => {
+        const setA = new Set((a.match(/[가-힣]/g) ?? []));
+        const setB = new Set((b.match(/[가-힣]/g) ?? []));
+        if (setA.size === 0 || setB.size === 0) return 0;
+        let inter = 0;
+        setA.forEach(c => { if (setB.has(c)) inter++; });
+        return inter / (setA.size + setB.size - inter);
+      };
+      const scored = results
+        .filter(r => r.hit?.product_code && r.hit?.product_name)
+        .map(r => {
+          const tokScore = scoreToken(r.tok);
+          const sim = similarity(r.tok, r.hit!.product_name);
+          const combined = tokScore * (0.3 + 0.7 * sim);  // 유사도 0 이어도 30% 는 반영 (약칭 등)
+          return { tok: r.tok, hit: r.hit!, sim, tokScore, combined };
+        })
+        .sort((a, b) => b.combined - a.combined);
+      if (scored.length > 0 && scored[0].sim >= 0.35) {  // 최소 유사도 임계값
+        const best = scored[0];
+        console.log(`[reextractName] ✓ 매칭 · "${best.tok}" → ${best.hit.product_name} (유사도=${(best.sim * 100).toFixed(0)}%, 종합=${best.combined.toFixed(1)})`);
+        console.log(`[reextractName] 상위 3개 결과:`, scored.slice(0, 3).map(s => `${s.tok}→${s.hit.product_name}(${(s.sim*100).toFixed(0)}%)`));
+        setAutoSynonymMatches(prev => ({ ...prev, [ri]: { code: best.hit.product_code, name: best.hit.product_name } }));
+        setCancelledAutoSyn(prev => { const s = new Set(prev); s.delete(ri); return s; });
+        if (best.tok !== best.hit.product_name) {
+          saveSynonym(ri, best.tok, best.hit.product_code, supplier || undefined, best.hit.product_name);
         }
+        return;
       }
-      // 2026-07-24 · 사용자 지적 "재검토" · 매칭 실패 시 자동 채움 X (원치 않는 토큰 방지)
-      //   가장 스코어 높은 토큰만 콘솔 로그 · cellEdits 미변경 · 사용자 수동 편집 유도
-      const best = tokens[0];
-      console.warn(`[reextractName] × DB 매칭 실패 · 상위 후보:`, tokens.slice(0, 5));
-      alert(`DB 매칭 실패\n\n후보:\n${tokens.slice(0, 5).map((t, i) => `${i + 1}. ${t}`).join("\n")}\n\n원본 값 유지 · 수동으로 편집하세요.`);
-      void best;
+      // 매칭 실패 · 상위 후보 alert 표시 (자동 채움 X)
+      console.warn(`[reextractName] × DB 매칭 실패/저유사도 · 상위 후보:`, tokens.slice(0, 5));
+      if (scored.length > 0) {
+        console.warn(`[reextractName] DB 히트는 있으나 유사도 <35% · 상위 3개:`, scored.slice(0, 3).map(s => `${s.tok}→${s.hit.product_name}(${(s.sim*100).toFixed(0)}%)`));
+      }
+      const dbHitInfo = scored.length > 0
+        ? `\n\nDB 히트 있으나 유사도 낮음:\n${scored.slice(0, 3).map(s => `· ${s.tok} → ${s.hit.product_name} (${(s.sim*100).toFixed(0)}%)`).join("\n")}`
+        : "";
+      alert(`DB 매칭 실패\n\n후보 (rawText 스캔):\n${tokens.slice(0, 5).map((t, i) => `${i + 1}. ${t}`).join("\n")}${dbHitInfo}\n\n원본 값 유지 · 수동으로 편집하세요.`);
     } finally {
       setReextractingName(prev => { const s = new Set(prev); s.delete(ri); return s; });
     }
