@@ -1387,14 +1387,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     return list.length > 0 ? list[0] : null;
   };
   // 2026-07-22 · 사용자 요청 "에누리랑 차액 항목 있는 경우 정산차액에 다 나와야" → 전체 리스트 반환
-  const getPageDiscounts = (pn: number): { amount: number; label: string; isEstimated?: boolean }[] => {
+  // 2026-07-24 · 사용자 요청 "총 소계금액과 - 맞는 합계값이 있을 때만 에누리·차액 인정 · 수식 검증 고려"
+  //   검증식: rowsSum ≈ stated + discount(합계) · 오차 ≤ max(1, stated × 0.02)
+  //   맞으면 valid=true · 아니면 valid=false → UI 에서 회색 처리 · 적용 기본 X
+  const getPageDiscounts = (pn: number): { amount: number; label: string; isEstimated?: boolean; valid?: boolean }[] => {
     // 2026-07-23 · 사용자 override 최우선 (있으면 그것만 반환)
     const ov = pageDiscountOverride[pn];
-    if (ov && ov.amount > 0) return [{ amount: ov.amount, label: ov.label || "수정" }];
+    if (ov && ov.amount > 0) return [{ amount: ov.amount, label: ov.label || "수정", valid: true }];
     const pageData = structuredPages.find(p => p.page === pn);
     const summary = pageData?.meta?.summary_rows ?? [];
     const discRe = /에누리|할인|차액|차감|DC|D\.C/i;
-    const results: { amount: number; label: string; isEstimated?: boolean }[] = [];
+    const results: { amount: number; label: string; isEstimated?: boolean; valid?: boolean }[] = [];
     const seenLabels = new Set<string>();
     for (const s of summary) {
       const norm = String(s.label ?? "").replace(/\s+/g, "");
@@ -1410,6 +1413,21 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       if (typeof metaDisc === "number" && metaDisc > 0) {
         const label = String(pageData?.meta?.discountLabel ?? "에누리").trim();
         results.push({ amount: metaDisc, label, isEstimated: label.includes("역산") || label.includes("추정") });
+      }
+    }
+    // 2026-07-24 · 수식 검증 · rowsSum vs stated 차이가 discount 합 과 매치되어야 인정
+    if (results.length > 0) {
+      const rowsSum = effectivePageTotals.get(pn) ?? 0;
+      const stated = pageData?.meta?.total;
+      const totalDisc = results.reduce((s, d) => s + d.amount, 0);
+      if (typeof stated === "number" && stated > 0 && rowsSum > 0) {
+        const expectedDiff = rowsSum - stated;  // > 0 이면 에누리로 소계에서 차감된 것
+        const tol = Math.max(1, stated * 0.02);
+        const mathOk = Math.abs(expectedDiff - totalDisc) <= tol;
+        for (const r of results) r.valid = mathOk;
+      } else {
+        // stated 없으면 검증 불가 · 인정
+        for (const r of results) r.valid = true;
       }
     }
     return results;
@@ -1477,15 +1495,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     // 4) 에누리/차액이 있으면 · 모드에 따라 처리
     //   "before" (기본): stated + 에누리 (에누리 적용 전 금액 표시)
     //   "after": stated 그대로 (에누리 이미 반영된 최종 금액)
-    // 2026-07-24 · 사용자 요청 "정산차액 적용 체크박스" · pageDiscountApplied 가 false 면 스킵
-    //   기본 true (적용) · 명시적으로 false 인 경우만 무시
-    const applied = pageDiscountApplied[pn] !== false;
-    if (applied) {
-      const disc = getPageDiscount(pn);
-      if (disc) {
-        const mode = discountApplyMode[pn] ?? "before";
-        return mode === "after" ? base : base + disc.amount;
-      }
+    // 2026-07-24 · 사용자 요청 "정산차액 적용 체크박스" + "수식 검증":
+    //   - pageDiscountApplied 미지정 (undefined) · valid 만 자동 적용
+    //   - pageDiscountApplied 명시 true/false · 사용자 뜻 존중
+    const disc = getPageDiscount(pn);
+    const explicitApplied = pageDiscountApplied[pn];
+    const autoApplied = disc ? disc.valid !== false : false;  // valid=true 또는 undefined 이면 적용
+    const applied = explicitApplied !== undefined ? explicitApplied : autoApplied;
+    if (applied && disc) {
+      const mode = discountApplyMode[pn] ?? "before";
+      return mode === "after" ? base : base + disc.amount;
     }
 
     // 5) 명세서 합계 그대로
@@ -4847,14 +4866,25 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                 />
                                               );
                                             })()}
-                                            <label className="inline-flex items-center gap-1 text-[11px] font-bold text-orange-700 cursor-pointer hover:text-orange-900"
-                                              title="체크 시 · 매입총계에서 정산차액 반영 · 해제 시 소계 그대로">
-                                              <input type="checkbox"
-                                                checked={pageDiscountApplied[pn] !== false}
-                                                onChange={e => setPageDiscountApplied(prev => ({ ...prev, [pn]: e.target.checked }))}
-                                                className="w-3.5 h-3.5 accent-orange-500 cursor-pointer"
-                                              />적용
-                                            </label>
+                                            {(() => {
+                                              // 2026-07-24 · 수식 검증 반영 · valid=false 면 자동 적용 안 함 · 회색 경고 표시
+                                              const anyValid = discs.some(d => d.valid !== false);
+                                              const anyInvalid = discs.some(d => d.valid === false);
+                                              const explicit = pageDiscountApplied[pn];
+                                              const isChecked = explicit !== undefined ? explicit : anyValid;
+                                              return (
+                                                <label className={`inline-flex items-center gap-1 text-[11px] font-bold cursor-pointer transition ${anyInvalid ? "text-slate-400 hover:text-slate-600" : "text-orange-700 hover:text-orange-900"}`}
+                                                  title={anyInvalid
+                                                    ? "수식 미매칭 (rowsSum - stated ≠ 정산차액) · 자동 미적용 · 체크로 강제 적용 가능"
+                                                    : "체크 시 · 매입총계에서 정산차액 반영 · 해제 시 소계 그대로"}>
+                                                  <input type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={e => setPageDiscountApplied(prev => ({ ...prev, [pn]: e.target.checked }))}
+                                                    className={`w-3.5 h-3.5 cursor-pointer ${anyInvalid ? "accent-slate-400" : "accent-orange-500"}`}
+                                                  />{anyInvalid ? "적용(⚠수식×)" : "적용"}
+                                                </label>
+                                              );
+                                            })()}
                                             {/* 2026-07-23 · 미수금(=잔고) · 사용자 요청 "미수금 = 잔고 · 잔고항목에 미수금 추가" */}
                                             <span className="text-[12px] font-semibold text-rose-700 ml-2" title="잔고 = 미수금 (동의어)">미수금</span>
                                             <input type="text" inputMode="numeric"
