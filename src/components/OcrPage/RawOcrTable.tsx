@@ -3096,15 +3096,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         }
         return;
       }
-      // 매칭 실패 · 상위 후보 alert 표시 (자동 채움 X)
-      console.warn(`[reextractName] × DB 매칭 실패/저유사도 · 상위 후보:`, tokens.slice(0, 5));
+      // 2026-07-24 · 사용자 요청 "DB 매칭 안 되어도 재추출 시 한글 후보들 다 보여줘"
+      //   - 최대 20개까지 노출 (기존 5개)
+      //   - DB 히트가 있었다면 · 유사도 낮아도 참고용으로 최대 10개 표시
+      console.warn(`[reextractName] × DB 매칭 실패/저유사도 · 후보 전체:`, tokens);
       if (scored.length > 0) {
-        console.warn(`[reextractName] DB 히트는 있으나 유사도 <35% · 상위 3개:`, scored.slice(0, 3).map(s => `${s.tok}→${s.hit.product_name}(${(s.sim*100).toFixed(0)}%)`));
+        console.warn(`[reextractName] DB 히트 (유사도 <35%):`, scored.map(s => `${s.tok}→${s.hit.product_name}(${(s.sim*100).toFixed(0)}%)`));
       }
       const dbHitInfo = scored.length > 0
-        ? `\n\nDB 히트 있으나 유사도 낮음:\n${scored.slice(0, 3).map(s => `· ${s.tok} → ${s.hit.product_name} (${(s.sim*100).toFixed(0)}%)`).join("\n")}`
+        ? `\n\nDB 히트 (유사도 낮음 · 참고용):\n${scored.slice(0, 10).map(s => `· ${s.tok} → ${s.hit.product_name} (${(s.sim*100).toFixed(0)}%)`).join("\n")}`
         : "";
-      alert(`DB 매칭 실패\n\n후보 (rawText 스캔):\n${tokens.slice(0, 5).map((t, i) => `${i + 1}. ${t}`).join("\n")}${dbHitInfo}\n\n원본 값 유지 · 수동으로 편집하세요.`);
+      const tokenList = tokens.slice(0, 20).map((t, i) => `${i + 1}. ${t}`).join("\n");
+      const moreInfo = tokens.length > 20 ? `\n... 외 ${tokens.length - 20}개 (콘솔에서 전체 확인)` : "";
+      alert(`DB 매칭 실패\n\n한글 후보 (rawText 스캔 · ${tokens.length}개):\n${tokenList}${moreInfo}${dbHitInfo}\n\n원본 값 유지 · 수동으로 편집하세요.`);
     } finally {
       setReextractingName(prev => { const s = new Set(prev); s.delete(ri); return s; });
     }
