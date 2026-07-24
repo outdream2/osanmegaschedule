@@ -2873,10 +2873,21 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       });
       // 2026-07-22 · 확정 완료 페이지 마킹 (버튼 색 변경용)
       setConfirmedPages(prev => new Set([...prev, targetPage]));
+      // 2026-07-24 · 사용자 요청 "확정 누르면 공급사별로 잔고 저장"
+      //   이 페이지의 미수금(잔고) override 값을 supplier_balances DB 에 저장
+      const currentBal = pageBalanceOverride[targetPage] ?? pageSupplierBalances[targetPage];
+      if (currentBal != null && currentBal > 0) {
+        const supForBal = (rawSupplierByPage[targetPage] ?? structuredPages.find(p => p.page === targetPage)?.meta.supplier ?? "").trim();
+        const dateForBal = structuredPages.find(p => p.page === targetPage)?.meta.date ?? null;
+        if (supForBal) {
+          saveSupplierBalance(supForBal, currentBal, dateForBal);
+          console.log(`[확정→잔고저장] "${supForBal}" ${dateForBal ?? "날짜없음"} → ${currentBal}원`);
+        }
+      }
     } finally {
       setMatchingPage(prev => ({ ...prev, [targetPage]: false }));
     }
-  }, [dispRows, dispHeaders, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier, cellEdits, autoSynonymMatches, hiddenRawRows, permanentlyDeletedRawRows, isRowDbDeleted]);
+  }, [dispRows, dispHeaders, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier, cellEdits, autoSynonymMatches, hiddenRawRows, permanentlyDeletedRawRows, isRowDbDeleted, pageBalanceOverride, pageSupplierBalances, saveSupplierBalance]);
 
   // 2026-07-22 · 첫행보정 후 단가 비어있는 행에 대해 · 상품명+공급사로 products DB 조회 → 사입단가(purchase_price) 자동 채움
   //   사용자 원문: "단가가 정보가없는 경우 · 상품명과 공급사로 product db 에 정보를 찾아서 사입단가를 찾아"
@@ -5266,7 +5277,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     );
                                   })()}
 
-                                  {/* ── 잔고 기록 행 · 가운데 정렬 (사용자 요청) ── */}
+                                  {/* 2026-07-24 · 사용자 요청 "잔고 금액선택 재추출 부분 모두 제거 · 확정 시 공급사별 잔고 저장" */}
+                                  {/* ── 잔고 기록 행 (제거됨) · 확정 버튼 클릭 시 handleMatchPage 에서 자동 저장 ── */}
+                                  {false && (
                                   <div className="flex items-center justify-center gap-1.5 flex-wrap mt-1.5 pt-1.5 border-t border-amber-300/40">
                                     <span className="text-[10px] font-semibold text-rose-500 whitespace-nowrap">잔고</span>
                                     {(() => {
@@ -5507,6 +5520,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       </button>
                                     )}
                                   </div>
+                                  )}
+                                  {/* ── 잔고 기록 행 END ── */}
 
                                 </div>
                               </td>
