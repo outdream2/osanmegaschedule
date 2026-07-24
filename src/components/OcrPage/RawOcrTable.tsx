@@ -3615,10 +3615,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                         : Math.round(autoAvail / Math.max(autoColList.length, 1));
                       // 숫자/날짜 셀은 breakpoint 기반 최소 폭 보장 (사용자 리사이즈 없을 때만)
                       // 유통기한 계열은 별도 expCellMinW(82px+) 로 더 넓게 보장
+                      // 2026-07-24 · 사용자 문제 "2번째 페이지 나오면서 컬럼 확 줄어듬"
+                      //   원인 · 새 페이지가 새 컬럼 추가 시 totalWeight 증가 → 텍스트 컬럼도 shrink
+                      //   해결 · 텍스트 컬럼도 최소 폭 보장
                       const isExpCol = h === "유통기한" || h === "유효기한" || h === "유통기간";
                       const isCompactCell = NUM_COLS.has(h) || isExpCol;
+                      const TEXT_COL_MIN: Record<string, number> = {
+                        품명: 160, 공급처: 90, 규격: 60, 비고: 50, 단위: 40, 번호: 40, 순번: 40,
+                        배치번호: 80, "Batch.No": 80, 거래일: 82, 일자: 82, 날짜: 82,
+                      };
                       const minGuard = explicitW == null
-                        ? isExpCol ? expCellMinW : isCompactCell ? numCellMinW : 0
+                        ? (isExpCol ? expCellMinW
+                          : isCompactCell ? numCellMinW
+                          : (TEXT_COL_MIN[h] ?? 40))
                         : 0;
                       const colW = explicitW ?? Math.max(computedW, minGuard);
                       return (
