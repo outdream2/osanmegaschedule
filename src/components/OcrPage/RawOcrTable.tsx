@@ -2082,6 +2082,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // ── 품명 인라인 편집 (fixed-position 드롭다운) ──────────────────────────
   const [editingNameRow, setEditingNameRow] = useState<number | null>(null);
   const [editingNameVal, setEditingNameVal] = useState<string>("");
+  // 2026-07-24 · 사용자 문제 "품명 드롭다운 선택 안됨" · blur 로 state 지워도 · 최근 ri 보존
+  const editingNameRowRef = useRef<number | null>(null);
+  useEffect(() => { if (editingNameRow != null) editingNameRowRef.current = editingNameRow; }, [editingNameRow]);
   const nameEditSearchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [nameEditResults, setNameEditResults] = useState<any[]>([]);
   const [nameEditSearchDone, setNameEditSearchDone] = useState(false);
@@ -3478,8 +3481,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
           <button key={pi}
             onMouseDown={e => e.preventDefault()}
             onClick={() => {
-              if (editingNameRow == null) return;
-              const ri = editingNameRow;
+              // 2026-07-24 · state 지워졌으면 ref 폴백 · 클릭 항상 작동
+              const ri = editingNameRow ?? editingNameRowRef.current;
+              if (ri == null) { console.warn("[dropdown click] editingNameRow null · 무시"); return; }
               const origName = String(dispRows[ri]?.[nameIdx] ?? "");
               const pnLocal = pageNums[ri];
               const supplier = rawSupplierByPage[pnLocal] ?? structuredPages.find(pg => pg.page === pnLocal)?.meta.supplier ?? globalSupplier ?? "";
@@ -4803,11 +4807,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       }
                                     }}
                                     onBlur={() => setTimeout(() => {
+                                      // 2026-07-24 · 사용자 문제 "품명 리스트 아래쪽 선택 안됨"
+                                      //   dropdown 클릭 처리 시간 확보 · 150ms → 500ms 로 증가
+                                      //   preventDefault 만으로 완전 방어 어려운 브라우저 (Safari 등) 대비
                                       setEditingNameRow(null);
                                       setNameEditResults([]);
                                       setNameEditSearchDone(false);
                                       setNameDropdownRect(null);
-                                    }, 150)}
+                                    }, 500)}
                                   />
                                 </td>
                               );
