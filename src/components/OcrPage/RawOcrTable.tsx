@@ -4643,18 +4643,33 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                           {
                             const cellStr = cell == null ? "" : String(cell);
                             const hasEllipsis = !isNum && /\.{3}|…/.test(cellStr);
+                            // 2026-07-24 · 거래일·일자·날짜 표시 간단히 (저장은 풀로 · 표시는 MM/DD)
+                            //   사용자 요청: "1차보정 거래일 간단히 · 저장은 풀로 표시는 간단히"
+                            const isDateCol = dateVariants.includes(h);
+                            const dateShort = (() => {
+                              if (!isDateCol || cell == null) return null;
+                              const s = String(cell).trim();
+                              // 2026-07-24 · 2026-7-24 · 2026/07/24 · 26-07-24 등 → MM/DD 로 축약
+                              const m = s.match(/(\d{2,4})[-./](\d{1,2})[-./](\d{1,2})/);
+                              if (m) return `${m[2].padStart(2, "0")}/${m[3].padStart(2, "0")}`;
+                              return s.length > 6 ? s.slice(-5) : s;
+                            })();
                             return (
                               <td key={ci}
                                 className={`px-3 py-2 ${
                                   isAmt ? "text-right font-bold text-amber-800 whitespace-nowrap" :
                                   isNum ? "text-right text-gray-700 whitespace-nowrap" :
+                                  isDateCol ? "text-gray-500 text-[11px] font-mono whitespace-nowrap" :
                                   h === "품명" ? "font-semibold text-gray-900 break-words whitespace-normal align-top min-w-[180px] max-w-[240px]" :
                                   hasEllipsis ? "text-gray-600 break-words whitespace-normal" :
                                                 "text-gray-600 whitespace-nowrap"
-                                }`}>
+                                }`}
+                                title={isDateCol && cell != null ? `저장값: ${cellStr}` : undefined}>
                                 {h === "품명"
                                   ? <span className="block line-clamp-2">{cell == null ? <span className="text-gray-300">—</span> : renderTextWithBreaks(cellStr)}</span>
-                                  : (cell == null ? <span className="text-gray-300">—</span> : isNum ? fmt(cell) : renderTextWithBreaks(cellStr))}
+                                  : isDateCol
+                                    ? (cell == null ? <span className="text-gray-300">—</span> : <span>{dateShort}</span>)
+                                    : (cell == null ? <span className="text-gray-300">—</span> : isNum ? fmt(cell) : renderTextWithBreaks(cellStr))}
                               </td>
                             );
                           }
