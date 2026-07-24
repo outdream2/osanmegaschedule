@@ -1314,8 +1314,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     // autoSynonymMatches 재매핑
     setAutoSynonymMatches(prevMap => {
       const next: Record<number, { code: string; name: string }> = {};
-      for (const [prevRiStr, val] of Object.entries(prevMap)) {
+      for (const prevRiStr of Object.keys(prevMap)) {
         const prevRi = Number(prevRiStr);
+        const val = prevMap[prevRi];
+        if (!val) continue;
         const stableKey = prevStableKeyByRi[prevRi];
         if (!stableKey) continue;
         const newRi = newStableKeyByRi.indexOf(stableKey);
