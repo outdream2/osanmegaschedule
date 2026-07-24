@@ -3344,10 +3344,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
         // 확정일: erpCellEdits 우선, 없으면 batch confirmedAt
         const confirmedDateEdit = erpEdits?.["확정일"];
         const confirmedDateCell = confirmedDateEdit !== undefined ? confirmedDateEdit : (confirmedAt ?? null);
+        // 2026-07-24 · 사용자 요청 "거래명세서 저장할 때 그 날짜의 잔고도 넣어서 조회부분에서 보여줘"
+        //   공급사잔고 = pageBalanceOverride[pn] ?? pageSupplierBalances[pn] (현재 미수금)
+        const pnBalance = pageBalanceOverride[pn] ?? pageSupplierBalances[pn] ?? null;
         return [dateVal, confirmedDateCell, corrCode, corrName, m?.masterPrice ?? bc?.masterPrice ?? null, pri, supp, qty, amt,
                 m?.salePrice ?? bc?.salePrice ?? null,
                 m?.profitRate != null ? m.profitRate : (bc?.profitRate ?? null),
-                expiry, spec, null];
+                expiry, spec, pnBalance];
       }).filter(r => r.length > 0)
     : [];
 
