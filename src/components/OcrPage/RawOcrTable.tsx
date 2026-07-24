@@ -1254,80 +1254,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     if (!onUserEdit) return;
     if (Object.keys(autoSynonymMatches).length > 0) onUserEdit();
   }, [autoSynonymMatches, onUserEdit]);
-  // 2026-07-24 · 사용자 문제 "편집 유지 안돼" B안 (stable key 마이그레이션)
-  //   pages 새로 도착 · SSE 재파싱 등으로 pageNums/dispHeaders 구조 변경 시:
-  //   기존 cellEdits[ri][ci] / autoSynonymMatches[ri] 를 (pn, localRi, colName) 안정키로 변환한 후 · 새 (ri, ci) 로 재매핑
-  //   → 페이지 재로딩되어도 사용자 편집이 살아남음
-  const prevStructureRef = useRef<{ pageNums: number[]; dispHeaders: string[] } | null>(null);
-  useEffect(() => {
-    const prev = prevStructureRef.current;
-    prevStructureRef.current = { pageNums: [...pageNums], dispHeaders: [...dispHeaders] };
-    if (!prev) return;
-    // 구조 동일하면 스킵
-    const sameStruct = prev.pageNums.length === pageNums.length
-      && prev.pageNums.every((v, i) => v === pageNums[i])
-      && prev.dispHeaders.length === dispHeaders.length
-      && prev.dispHeaders.every((v, i) => v === dispHeaders[i]);
-    if (sameStruct) return;
-    // 새 ri → stableKey 매핑 · "pn|localRi"
-    const newLocalCount: Record<number, number> = {};
-    const newStableKeyByRi: string[] = pageNums.map(pn => {
-      const local = newLocalCount[pn] ?? 0;
-      newLocalCount[pn] = local + 1;
-      return `${pn}|${local}`;
-    });
-    // 이전 ri → stableKey
-    const prevLocalCount: Record<number, number> = {};
-    const prevStableKeyByRi: string[] = prev.pageNums.map(pn => {
-      const local = prevLocalCount[pn] ?? 0;
-      prevLocalCount[pn] = local + 1;
-      return `${pn}|${local}`;
-    });
-    // cellEdits 재매핑
-    setCellEdits(prevEdits => {
-      const next: Record<number, Record<number, string | number | null>> = {};
-      let migrated = 0;
-      for (const [prevRiStr, riEdits] of Object.entries(prevEdits)) {
-        const prevRi = Number(prevRiStr);
-        const stableKey = prevStableKeyByRi[prevRi];
-        if (!stableKey) continue;
-        const newRi = newStableKeyByRi.indexOf(stableKey);
-        if (newRi < 0) continue;
-        const remapped: Record<number, string | number | null> = {};
-        for (const [prevCiStr, val] of Object.entries(riEdits)) {
-          const prevCi = Number(prevCiStr);
-          const colName = prev.dispHeaders[prevCi];
-          if (!colName) continue;
-          const newCi = dispHeaders.indexOf(colName);
-          if (newCi < 0) continue;
-          remapped[newCi] = val;
-        }
-        if (Object.keys(remapped).length > 0) {
-          next[newRi] = remapped;
-          migrated++;
-        }
-      }
-      if (migrated === 0 && Object.keys(prevEdits).length === 0) return prevEdits;
-      console.log(`[cellEdits migration] ${Object.keys(prevEdits).length}행 → ${migrated}행 유지`);
-      return next;
-    });
-    // autoSynonymMatches 재매핑
-    setAutoSynonymMatches(prevMap => {
-      const next: Record<number, { code: string; name: string }> = {};
-      for (const prevRiStr of Object.keys(prevMap)) {
-        const prevRi = Number(prevRiStr);
-        const val = prevMap[prevRi];
-        if (!val) continue;
-        const stableKey = prevStableKeyByRi[prevRi];
-        if (!stableKey) continue;
-        const newRi = newStableKeyByRi.indexOf(stableKey);
-        if (newRi < 0) continue;
-        next[newRi] = val;
-      }
-      return next;
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageNums, dispHeaders]);
+  // 2026-07-24 · 사용자 문제 "편집 유지 안돼 · 다 날아갔어" · B안 마이그레이션 revert
+  //   → 마이그레이션이 오히려 edit 을 drop 시키는 케이스 있는 것으로 판단 · 로직 제거
+  //   대신 · pages 는 항상 페이지번호 순 정렬 (structuredPages 정렬 · 이미 반영됨)
+  //   → 페이지 append 순서에 상관없이 · page 1 rows 는 항상 dispRows 앞쪽 유지 · cellEdits[ri] 안정
+  //   재파싱으로 페이지 행수가 바뀌면 그 페이지 이후 rows 는 어긋날 수 있으나 · 그 케이스는 별도 처리
   const [autoSynonymLoading, setAutoSynonymLoading] = useState(false);
   const [barcodeAutoMap, setBarcodeAutoMap] = useState<Record<number, CandidateInfo>>({});
 
