@@ -3190,6 +3190,38 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       .then(d => { if (Array.isArray(d.balances)) setSupplierBalanceRecords(d.balances); })
       .catch(() => {});
   }, []);
+  // 2026-07-24 · 사용자 요청 "거래명세서 소계에 해당 공급사의 잔고가 처음에 조회되어야지"
+  //   supplierBalanceRecords (DB) + structuredPages (페이지별 공급사) → pageBalanceOverride 자동 채움
+  //   사용자가 수동으로 미수금 편집한 경우 (dirty=true 후 blur) 는 그것 유지 · 자동 덮어쓰기 X
+  useEffect(() => {
+    if (supplierBalanceRecords.length === 0 || structuredPages.length === 0) return;
+    // 공급사별 최신 잔고 (created_at DESC · 첫 등장 = 최신)
+    const latestBySupplier = new Map<string, number>();
+    for (const r of supplierBalanceRecords) {
+      const name = String(r.supplier_name ?? "").trim();
+      if (!name) continue;
+      if (!latestBySupplier.has(name)) latestBySupplier.set(name, Number(r.balance) || 0);
+    }
+    setPageBalanceOverride(prev => {
+      const next = { ...prev };
+      let changed = false;
+      for (const pageObj of structuredPages) {
+        const pn = pageObj.page;
+        // 이미 사용자 override 있으면 skip
+        if (prev[pn] !== undefined) continue;
+        const supplier = (rawSupplierByPage[pn] ?? pageObj.meta.supplier ?? "").trim();
+        if (!supplier) continue;
+        const bal = latestBySupplier.get(supplier);
+        if (bal != null && bal > 0) {
+          next[pn] = bal;
+          changed = true;
+        }
+      }
+      if (!changed) return prev;
+      console.log(`[balance auto-load] ${Object.keys(next).length}개 페이지에 공급사 최신 잔고 자동 채움`);
+      return next;
+    });
+  }, [supplierBalanceRecords, structuredPages, rawSupplierByPage]);
 
 
   const confRows: (string | number | null)[][] = matchItems
@@ -5115,6 +5147,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                   setPageBalanceOverride(prev => ({ ...prev, [pn]: n }));
                                                   setPageBalanceModeManual(prev => { const s = new Set(prev); s.delete(pn); return s; });
                                                   setPageBalanceModeSkip(prev => { const s = new Set(prev); s.delete(pn); return s; });
+                                                  // 2026-07-24 · 사용자 요청 "지금 잔고 저장돼?" · 편집 시 즉시 DB 저장
+                                                  const supForSave = (rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "").trim();
+                                                  const dateForSave = structuredPages.find(p => p.page === pn)?.meta.date ?? null;
+                                                  if (supForSave) {
+                                                    saveSupplierBalance(supForSave, n, dateForSave);
+                                                    console.log(`[미수금 저장] "${supForSave}" ${dateForSave ?? "날짜없음"} → ${n}원`);
+                                                  }
                                                 } else {
                                                   setPageBalanceOverride(prev => { const c = { ...prev }; delete c[pn]; return c; });
                                                 }
