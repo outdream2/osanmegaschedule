@@ -4466,16 +4466,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     const curPos = editableIdxs.indexOf(ci);
 
                                     if (e.key === "Enter") {
-                                      // 2026-07-24 · 사용자 요청 "엔터 후 방향키로 셀 이동" · Excel 스타일 · 다음 행 같은 컬럼 편집모드 유지
+                                      // 2026-07-24 · 사용자 요청 "엔터 치면 그자리에 · 방향키로만 셀 이동"
+                                      //   → commit 후 · 같은 셀 편집모드 유지 (빈값) · 방향키로 이동 가능
                                       e.preventDefault();
                                       commitCellEdit(ri, ci, editingCellVal);
-                                      let nextRi = ri + 1;
-                                      while (nextRi < effectiveDispRows.length
-                                        && (permanentlyDeletedRawRows.has(nextRi) || hiddenRawRows.has(nextRi) || isRowDbDeleted(nextRi))) {
-                                        nextRi++;
-                                      }
-                                      if (nextRi < effectiveDispRows.length) moveToCell(nextRi, ci);
-                                      else setEditingCell(null);
+                                      setEditingCell({ ri, ci });
+                                      setEditingCellVal("");
                                       return;
                                     }
                                     if (e.key === "Tab") {
