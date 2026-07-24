@@ -2873,15 +2873,29 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       const idx = rawText.indexOf(anchorKor);
       scanText = rawText.slice(Math.max(0, idx - 100), Math.min(rawText.length, idx + 300));
     }
-    // 한글 3자+ 토큰 (공백 제외) · 현재 이름 자체 제외 · 중복 제거
-    const rawTokens = (scanText.match(/[가-힣][가-힣0-9]{2,}/g) ?? [])
-      .filter(t => t !== currentName && t.length >= 3);
+    // 2026-07-24 · 사용자 지적 "품명 재추출에 문제 · 재검토"
+    //   문제 1) 정규식 [가-힣][가-힣0-9]{2,} 는 특수문자 포함 상품명 놓침 (예: "코엔자임Q10" · "비타민D3")
+    //   문제 2) 3자+ 제한 → 짧은 상품명 (2자) 놓침
+    //   문제 3) 매칭 실패 시 · 이상한 토큰이 자동으로 채워짐 (사용자 원하지 않음)
+    //   개선:
+    //     · 정규식 관대하게 · 한글로 시작 · 뒤에 한글/영문/숫자/·+- 허용
+    //     · 최소 2자+ 허용 (한글 2자 필수)
+    //     · 매칭 실패 시 · currentName 유지 · 자동 채움 X
+    //     · 스코어 시 · 한글 문자수 가중 (금액 오인식 방어)
+    //     · currentName 도 후보에 포함 (DB 매치 가능성 · 현재 값이 정답일 수 있음)
+    const NAME_RE = /[가-힣][가-힣A-Za-z0-9·+\-]{1,}/g;
+    const rawTokens = (scanText.match(NAME_RE) ?? [])
+      .filter(t => {
+        const korCnt = (t.match(/[가-힣]/g) ?? []).length;
+        return korCnt >= 2 && isValidProductName(t);
+      });
     const uniqTokens: string[] = Array.from(new Set<string>(rawTokens));
-    // 2026-07-23 · 사용자 요청 "가장 길거나 · 길지 않다면 수량+단가가 같이 있는 행 위주"
-    //   scoring: 길이 (기본) + 근처 수량·단가 숫자 동반 여부 부스트
-    //   토큰 위치 앞뒤 60자 내에 숫자 토큰(2~7자리) 2개 이상 있으면 부스트 (수량·단가·금액 동반 힌트)
+    if (currentName && isValidProductName(currentName)) uniqTokens.push(currentName);
+    // 2026-07-24 · scoring · 길이 + 한글 비율 + 근처 숫자 동반
     const scoreToken = (tok: string): number => {
-      let s = tok.length * 10;  // 길이 우선
+      let s = tok.length * 8;  // 길이
+      const korCnt = (tok.match(/[가-힣]/g) ?? []).length;
+      s += korCnt * 4;  // 한글 문자수 가중
       const idx = scanText.indexOf(tok);
       if (idx >= 0) {
         const window = scanText.slice(Math.max(0, idx - 60), Math.min(scanText.length, idx + tok.length + 60));
@@ -2921,10 +2935,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
           return;
         }
       }
-      // 매칭 실패 · 가장 긴 한글 토큰 채택
+      // 2026-07-24 · 사용자 지적 "재검토" · 매칭 실패 시 자동 채움 X (원치 않는 토큰 방지)
+      //   가장 스코어 높은 토큰만 콘솔 로그 · cellEdits 미변경 · 사용자 수동 편집 유도
       const best = tokens[0];
-      console.log(`[reextractName] × DB 매칭 실패 · 가장 긴 토큰 채택 "${best}"`);
-      setCellEdits(prev => ({ ...prev, [ri]: { ...(prev[ri] ?? {}), [nameIdx]: best } }));
+      console.warn(`[reextractName] × DB 매칭 실패 · 상위 후보:`, tokens.slice(0, 5));
+      alert(`DB 매칭 실패\n\n후보:\n${tokens.slice(0, 5).map((t, i) => `${i + 1}. ${t}`).join("\n")}\n\n원본 값 유지 · 수동으로 편집하세요.`);
+      void best;
     } finally {
       setReextractingName(prev => { const s = new Set(prev); s.delete(ri); return s; });
     }
