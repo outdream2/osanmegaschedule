@@ -289,7 +289,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   void setShowRawDetail;
   // 1차보정 압축(기본) 모드에서 표시할 필수 컬럼 순서
   // 요구사항: 공급처 → 품명 → 수량 → 단가 → 금액 → 규격 → 유통기한
-  const RAW_ESSENTIAL_COLS = ["거래일", "공급처", "품명", "수량", "단가", "VAT", "금액", "규격", "유통기한", "비고"];
+  const RAW_ESSENTIAL_COLS = ["거래일", "공급처", "품명", "수량", "단가", "VAT", "금액", "유통기한", "규격", "비고"];
 
   // ── 컬럼 너비 조정 ────────────────────────────────────────────────────────────
   const [colWidths, setColWidths] = useState<Record<number, number>>({});
@@ -3452,8 +3452,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     {/* ── 품명 검색 드롭다운 (position:fixed — overflow 클리핑 우회) ── */}
     {nameDropdownRect && (nameEditResults.length > 0 || nameEditSearchDone) && (
       <div
-        style={{ position: "fixed", top: nameDropdownRect.top, left: nameDropdownRect.left, width: nameDropdownRect.width, zIndex: 9999 }}
-        className="bg-white border border-indigo-200 rounded-xl shadow-2xl max-h-48 overflow-y-auto"
+        // 2026-07-24 · 사용자 문제 "아래쪽 항목 선택 안됨"
+        //   기존 max-h-48 (192px · 약 5개만) → max-h-[70vh] (뷰포트의 70%) 로 확장
+        //   화면 아래 짤리지 않게 · viewport 초과 시 스크롤
+        style={{ position: "fixed", top: nameDropdownRect.top, left: nameDropdownRect.left, width: nameDropdownRect.width, zIndex: 9999, maxHeight: "70vh" }}
+        className="bg-white border border-indigo-200 rounded-xl shadow-2xl overflow-y-auto"
         onMouseDown={e => e.preventDefault()}
       >
         {nameEditResults.length === 0 ? (
