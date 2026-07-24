@@ -351,6 +351,61 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   }, [cellEdits, onUserEdit]);
   const [editingCell,    setEditingCell   ] = useState<{ ri: number; ci: number } | null>(null);
   const [editingCellVal, setEditingCellVal] = useState("");
+  // 2026-07-24 · 사용자 요청 "방향키가 셀로 이동" · 편집 종료 후에도 focus 유지 · 방향키로 셀간 이동
+  const [focusedCell, setFocusedCell] = useState<{ ri: number; ci: number } | null>(null);
+  // document keydown · focusedCell 있고 editing 아닐 때만 방향키 인터셉트 → 다음 셀 편집모드 진입
+  useEffect(() => {
+    if (!focusedCell || editingCell) return;
+    const onKey = (e: KeyboardEvent) => {
+      // 다른 input/textarea 안에 있으면 무시
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      const editableIdxs = [dispHeaders.indexOf("수량"), dispHeaders.indexOf("단가"), dispHeaders.indexOf("금액")].filter(i => i >= 0).sort((a, b) => a - b);
+      const { ri, ci } = focusedCell;
+      const curPos = editableIdxs.indexOf(ci);
+      const isVisibleRow = (r: number) =>
+        r >= 0 && r < effectiveDispRows.length
+        && !permanentlyDeletedRawRows.has(r)
+        && !hiddenRawRows.has(r)
+        && !isRowDbDeleted(r);
+      const findNext = (start: number, dir: 1 | -1) => {
+        let r = start;
+        while (r >= 0 && r < effectiveDispRows.length) {
+          if (isVisibleRow(r)) return r;
+          r += dir;
+        }
+        return -1;
+      };
+      let nextRi = ri, nextCi = ci;
+      if (e.key === "ArrowLeft") {
+        if (curPos > 0) nextCi = editableIdxs[curPos - 1];
+        else { const pr = findNext(ri - 1, -1); if (pr >= 0) { nextRi = pr; nextCi = editableIdxs[editableIdxs.length - 1]; } }
+      } else if (e.key === "ArrowRight") {
+        if (curPos < editableIdxs.length - 1) nextCi = editableIdxs[curPos + 1];
+        else { const nr = findNext(ri + 1, 1); if (nr >= 0) { nextRi = nr; nextCi = editableIdxs[0]; } }
+      } else if (e.key === "ArrowDown") {
+        const nr = findNext(ri + 1, 1); if (nr >= 0) nextRi = nr;
+      } else if (e.key === "ArrowUp") {
+        const pr = findNext(ri - 1, -1); if (pr >= 0) nextRi = pr;
+      } else if (e.key === "Enter") {
+        // Enter · 현재 focused cell 편집모드 진입
+        e.preventDefault();
+        setEditingCell({ ri, ci });
+        setEditingCellVal("");
+        return;
+      } else if (e.key === "Escape") {
+        e.preventDefault();
+        setFocusedCell(null);
+        return;
+      } else {
+        return;
+      }
+      e.preventDefault();
+      if (nextRi !== ri || nextCi !== ci) setFocusedCell({ ri: nextRi, ci: nextCi });
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [focusedCell, editingCell, dispHeaders, effectiveDispRows, permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted]);
   // ── 셀 재추출 순환 인덱스 (2026-07-16) ────────────────────────────────────
   // numericCellCycle[`${ri}-${ci}`] = 현재 순환 인덱스 (-1 = 원본, 0+ = 후보)
   // numericCellCandidates[`${ri}-${ci}`] = 이 셀에 대해 캐싱된 후보 배열
@@ -4487,12 +4542,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     const curPos = editableIdxs.indexOf(ci);
 
                                     if (e.key === "Enter") {
-                                      // 2026-07-24 · 사용자 요청 "엔터 치면 값이 들어가야지 · 그자리에 · 방향키로 셀 이동"
-                                      //   → commit 후 · 편집 종료 (편집한 값이 셀에 표시됨) · 자동 이동 X
-                                      //   방향키로 이동 원하면 · 다시 셀 클릭해서 편집 시작
+                                      // 2026-07-24 · 사용자 요청 "엔터 치면 값이 들어가야지 · 방향키로 셀 이동"
+                                      //   commit + 편집 종료 + focusedCell 유지 · document keydown 리스너가 방향키 catch → 이동
                                       e.preventDefault();
                                       commitCellEdit(ri, ci, editingCellVal);
                                       setEditingCell(null);
+                                      setFocusedCell({ ri, ci });
                                       return;
                                     }
                                     if (e.key === "Tab") {
@@ -4620,15 +4675,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                     return;
                                   }
                                   setEditingCell({ ri, ci });
+                                  setFocusedCell({ ri, ci });
                                   // 입력창 오픈 시 값 비움 · 새로 입력받음 (2026-07-19 · 사용자 요청)
                                   setEditingCellVal("");
                                 }}
                                 style={{ minWidth: numCellMinW }}
                                 className={`px-1 py-2 whitespace-nowrap text-right cursor-pointer hover:bg-indigo-50/60 group ${
                                   isCellChecked ? "bg-sky-100 ring-1 ring-sky-400" :
+                                  focusedCell?.ri === ri && focusedCell?.ci === ci ? "ring-2 ring-indigo-500 bg-indigo-50/50" :
                                   isMismatch && isAmt ? "text-amber-700 font-bold" : "font-bold text-amber-800"
                                 }`}
-                                title={isCellChecked ? "체크됨 (Alt+Click 해제)" : "클릭하여 수정 · Alt+Click 으로 선택"}
+                                title={isCellChecked ? "체크됨 (Alt+Click 해제)" : "클릭하여 수정 · Alt+Click 으로 선택 · Enter/방향키 이동"}
                               >
                                 <span className={numCellInnerCls}>
                                   <span className="flex items-center justify-end gap-1">
