@@ -1382,9 +1382,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   //   2순위: meta.discount 직접 참조 (KV 파서 · extractDiscount 직접 감지)
   //   3순위: 교차검증 역산값 (meta.discountCrossCheck.discEst)
   //   2026-07-22 · 첫 하나만 반환 (구버전 호환용)
-  const getPageDiscount = (pn: number): { amount: number; label: string; isEstimated?: boolean } | null => {
+  const getPageDiscount = (pn: number): { amount: number; label: string; isEstimated?: boolean; valid?: boolean } | null => {
     const list = getPageDiscounts(pn);
-    return list.length > 0 ? list[0] : null;
+    if (list.length === 0) return null;
+    // 여러 항목 있으면 총합으로 · valid 는 하나라도 valid=true 있으면 true
+    const totalAmt = list.reduce((s, d) => s + d.amount, 0);
+    const anyValid = list.some(d => d.valid !== false);
+    return { amount: totalAmt, label: list.map(d => d.label).join("·"), isEstimated: list.some(d => d.isEstimated), valid: anyValid };
   };
   // 2026-07-22 · 사용자 요청 "에누리랑 차액 항목 있는 경우 정산차액에 다 나와야" → 전체 리스트 반환
   // 2026-07-24 · 사용자 요청 "총 소계금액과 - 맞는 합계값이 있을 때만 에누리·차액 인정 · 수식 검증 고려"
