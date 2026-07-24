@@ -2854,9 +2854,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     const row = dispRows[ri];
     const qty = qtyIdxL >= 0 ? Number(cellEdits[ri]?.[qtyIdxL] ?? row?.[qtyIdxL] ?? 0) : 0;
     const amt = amtIdxL >= 0 ? Number(cellEdits[ri]?.[amtIdxL] ?? row?.[amtIdxL] ?? 0) : 0;
-    if (!(qty > 0) && !(amt > 0)) {
-      alert("수량·금액 정보가 없는 행입니다. 먼저 수량이나 금액을 채워주세요.");
-      return;
+    // 2026-07-24 · 사용자 요청 "수량·단가 없으면 한글 위주로 재추출"
+    //   수량·금액 없어도 진행 · Korean-only 모드 · scoreToken 에서 숫자 부스트 스킵됨 (없으니 자연히)
+    const koreanOnlyMode = !(qty > 0) && !(amt > 0);
+    if (koreanOnlyMode) {
+      console.log(`[reextractName] ri=${ri} · 수량·금액 없음 → 한글 위주 모드`);
     }
     const supplier = rawSupplierByPage[pn]
       ?? structuredPages.find(p => p.page === pn)?.meta.supplier
