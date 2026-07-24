@@ -40,6 +40,14 @@ import {
 } from "./RawOcrTable/balanceHelpers";
 import { CrossCheckBadge } from "./RawOcrTable/CrossCheckBadge";
 import { useOcrDerived } from "./RawOcrTable/useOcrDerived";
+import {
+  findNameHeaderIdx,
+  findRowPositionInRawText,
+  computeScanText,
+  collectNameCandidates,
+  scoreProductNameToken,
+  koreanJaccardSimilarity,
+} from "./RawOcrTable/productNameReextract";
 
 // 외부 소비자(OcrPage.tsx)가 `import { type ConfirmedItem } from "./RawOcrTable"` 로 사용 중 → re-export 유지
 export type { ConfirmedItem };
@@ -3048,89 +3056,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     const pageObj = structuredPages.find(p => p.page === pn) ?? pages.find(p => p.page === pn);
     const rawText = pageObj?.rawText ?? "";
     const currentName = String(cellEdits[ri]?.[nameIdx] ?? row?.[nameIdx] ?? "").trim();
-    // 2026-07-24 · 헤더 위치 찾기 (품명·상품명 등)
-    const nameHeaderVariants = ["품명", "상품명", "품 명", "상 품 명", "품목명", "제품명", "명칭"];
-    let headerIdx = -1;
-    for (const hv of nameHeaderVariants) {
-      const i = rawText.indexOf(hv);
-      if (i >= 0) { headerIdx = i; break; }
+    // 2026-07-24 · 리팩터 · 헬퍼 함수로 이관 (productNameReextract.ts)
+    const headerIdx = findNameHeaderIdx(rawText);
+    const rowPosResult = findRowPositionInRawText(rawText, qty, amt, headerIdx);
+    const localScanText = rowPosResult?.localScanText ?? "";
+    if (rowPosResult) {
+      console.log(`[reextractName] 행 위치 정확 매치 · pos=${rowPosResult.pos}`);
     }
-    // 2026-07-24 · 개선 · 이 행의 rawText 위치 정확히 찾기 (수량+금액 조합)
-    //   → localScanText 로 우선 스캔 · 다른 행 데이터 오염 방지
-    let localScanText = "";
-    const qtyStr = qty > 0 ? String(Math.round(qty)) : "";
-    const amtStr = amt > 0 ? Math.round(amt).toLocaleString() : "";
-    const amtStrPlain = amt > 0 ? String(Math.round(amt)) : "";
-    if (qtyStr && (amtStr || amtStrPlain)) {
-      // rawText 에서 · qty 근처에 amt 나타나는 위치 찾기 (200자 window)
-      const searchStart = headerIdx >= 0 ? headerIdx : 0;
-      const searchArea = rawText.slice(searchStart);
-      const qtyRe = new RegExp(`(?<!\\d)${qtyStr}(?!\\d)`, "g");
-      let m: RegExpExecArray | null;
-      const positions: number[] = [];
-      while ((m = qtyRe.exec(searchArea)) !== null) {
-        const pos = m.index;
-        const window = searchArea.slice(Math.max(0, pos - 30), Math.min(searchArea.length, pos + 250));
-        if ((amtStr && window.includes(amtStr)) || (amtStrPlain && window.includes(amtStrPlain))) {
-          positions.push(searchStart + pos);
-        }
-      }
-      // 정확히 하나의 매치만 있으면 채택 (여러 개면 모호 · 스킵)
-      if (positions.length === 1) {
-        const rowPos = positions[0];
-        localScanText = rawText.slice(Math.max(0, rowPos - 30), Math.min(rawText.length, rowPos + 200));
-        console.log(`[reextractName] 행 위치 정확 매치 · pos=${rowPos} · local=${localScanText.slice(0, 60).replace(/\n/g, " ")}`);
-      }
-    }
-    // scanText 결정 · 우선순위: localScanText > 헤더 이후 > 앵커 근처 > 전체
-    let scanText: string;
-    if (localScanText) {
-      scanText = localScanText;
-    } else if (headerIdx >= 0) {
-      scanText = rawText.slice(headerIdx);
-    } else {
-      const anchorKor = (currentName.match(/[가-힣]/g) ?? []).slice(0, 3).join("");
-      scanText = rawText;
-      if (anchorKor.length >= 2 && rawText.includes(anchorKor)) {
-        const idx = rawText.indexOf(anchorKor);
-        scanText = rawText.slice(Math.max(0, idx - 100), Math.min(rawText.length, idx + 300));
-      }
-    }
-    // 2026-07-24 · 사용자 지적 · 개선사항:
-    //   · 정규식 관대하게 · 한글로 시작 · 한글/영문/숫자/·+- 허용
-    //   · 최소 한글 2자+ 필수
-    //   · currentName 도 후보에 포함
-    //   · **금액형(쉼표+숫자) 토큰 제외** (사용자 요청 "쉼표있는 숫자 있으면 제외")
-    //   · **"품명" 헤더 이후 데이터 부스트** (사용자 요청 "품명 헤더 이후 한글 위주 후보 추가")
-    const NAME_RE = /[가-힣][가-힣A-Za-z0-9·+\-]{1,}/g;
-    const COMMA_NUM = /\d{1,3}(?:,\d{3})+/;  // 쉼표 있는 3자리 그룹 (금액 형태)
-    const rawTokens = (scanText.match(NAME_RE) ?? [])
-      .filter(t => {
-        const korCnt = (t.match(/[가-힣]/g) ?? []).length;
-        if (korCnt < 2) return false;
-        if (COMMA_NUM.test(t)) return false;  // 금액형 제외
-        if (!isValidProductName(t)) return false;
-        return true;
-      });
-    const uniqTokens: string[] = Array.from(new Set<string>(rawTokens));
-    if (currentName && isValidProductName(currentName) && !COMMA_NUM.test(currentName)) uniqTokens.push(currentName);
-    // 2026-07-24 · scoring · 길이 + 한글 비율 + 근처 숫자 동반
-    //   scanText 는 이미 헤더 이후만 담고 있음 · 헤더 이후 부스트 별도 필요 X
-    const scoreToken = (tok: string): number => {
-      let s = tok.length * 8;  // 길이
-      const korCnt = (tok.match(/[가-힣]/g) ?? []).length;
-      s += korCnt * 4;  // 한글 문자수 가중
-      const idx = scanText.indexOf(tok);
-      if (idx >= 0) {
-        const window = scanText.slice(Math.max(0, idx - 60), Math.min(scanText.length, idx + tok.length + 60));
-        const nums = window.match(/\b\d{2,7}(?:[,.]\d{3})*\b/g) ?? [];
-        if (nums.length >= 2) s += 15;  // 수량+단가 동반 힌트
-        else if (nums.length >= 1) s += 5;
-      }
-      return s;
-    };
+    const scanText = computeScanText(rawText, headerIdx, currentName, localScanText);
+    const uniqTokens = collectNameCandidates(scanText, currentName);
     const tokens: string[] = uniqTokens
-      .map(t => ({ t, s: scoreToken(t) }))
+      .map(t => ({ t, s: scoreProductNameToken(t, scanText) }))
       .sort((a, b) => b.s - a.s)
       .map(x => x.t);
     if (tokens.length === 0) {
@@ -3156,21 +3092,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
         } catch { return { tok, hit: null }; }
       });
       const results = await Promise.all(queries);
-      // 유사도 계산 · 한글 문자 Jaccard (교집합/합집합)
-      const similarity = (a: string, b: string): number => {
-        const setA = new Set((a.match(/[가-힣]/g) ?? []));
-        const setB = new Set((b.match(/[가-힣]/g) ?? []));
-        if (setA.size === 0 || setB.size === 0) return 0;
-        let inter = 0;
-        setA.forEach(c => { if (setB.has(c)) inter++; });
-        return inter / (setA.size + setB.size - inter);
-      };
       const scored = results
         .filter(r => r.hit?.product_code && r.hit?.product_name)
         .map(r => {
-          const tokScore = scoreToken(r.tok);
-          const sim = similarity(r.tok, r.hit!.product_name);
-          const combined = tokScore * (0.3 + 0.7 * sim);  // 유사도 0 이어도 30% 는 반영 (약칭 등)
+          const tokScore = scoreProductNameToken(r.tok, scanText);
+          const sim = koreanJaccardSimilarity(r.tok, r.hit!.product_name);
+          const combined = tokScore * (0.3 + 0.7 * sim);
           return { tok: r.tok, hit: r.hit!, sim, tokScore, combined };
         })
         .sort((a, b) => b.combined - a.combined);
