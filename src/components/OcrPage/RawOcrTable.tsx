@@ -1254,11 +1254,98 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     if (!onUserEdit) return;
     if (Object.keys(autoSynonymMatches).length > 0) onUserEdit();
   }, [autoSynonymMatches, onUserEdit]);
-  // 2026-07-24 · 사용자 문제 "편집 유지 안돼 · 다 날아갔어" · B안 마이그레이션 revert
-  //   → 마이그레이션이 오히려 edit 을 drop 시키는 케이스 있는 것으로 판단 · 로직 제거
-  //   대신 · pages 는 항상 페이지번호 순 정렬 (structuredPages 정렬 · 이미 반영됨)
-  //   → 페이지 append 순서에 상관없이 · page 1 rows 는 항상 dispRows 앞쪽 유지 · cellEdits[ri] 안정
-  //   재파싱으로 페이지 행수가 바뀌면 그 페이지 이후 rows 는 어긋날 수 있으나 · 그 케이스는 별도 처리
+  // 2026-07-24 · 편집 손실 원인 · 새 페이지 도착 시 dispHeaders 컬럼 위치 변경으로 cellEdits[ri][ci] 어긋남
+  //   → 안정키 (pn, localRi, colName) 기반 저장으로 근본 해결
+  //   1) structureIdRef 로 (pn, localRi, colName) ↔ (ri, ci) 매핑 저장
+  //   2) setCellEdits / setAutoSynonymMatches 시 매번 안정키로 저장 검토
+  //   3) 구조 변경 감지 시 자동 remap (신중히 · 콘솔 로그 · 실패 시 원본 유지)
+  const prevStructureRef = useRef<{ pageNums: number[]; dispHeaders: string[] } | null>(null);
+  useEffect(() => {
+    const prev = prevStructureRef.current;
+    prevStructureRef.current = { pageNums: [...pageNums], dispHeaders: [...dispHeaders] };
+    if (!prev || prev.pageNums.length === 0) return;  // 첫 렌더 또는 최초 데이터 로드 · 스킵
+    // 구조 동일하면 스킵
+    const samePn = prev.pageNums.length === pageNums.length && prev.pageNums.every((v, i) => v === pageNums[i]);
+    const sameHd = prev.dispHeaders.length === dispHeaders.length && prev.dispHeaders.every((v, i) => v === dispHeaders[i]);
+    if (samePn && sameHd) return;
+    console.log(`[cellEdits migration] 구조 변경 감지 · prev: ${prev.pageNums.length}행 ${prev.dispHeaders.length}컬 → new: ${pageNums.length}행 ${dispHeaders.length}컬`);
+    // 이전/새 ri → "pn|localRi" 매핑
+    const buildStableKeys = (pns: number[]): string[] => {
+      const cnt: Record<number, number> = {};
+      return pns.map(pn => {
+        const local = cnt[pn] ?? 0;
+        cnt[pn] = local + 1;
+        return `${pn}|${local}`;
+      });
+    };
+    const prevKeys = buildStableKeys(prev.pageNums);
+    const newKeys = buildStableKeys(pageNums);
+    const prevHeaders = prev.dispHeaders;
+    // cellEdits 재매핑
+    setCellEdits(prevEdits => {
+      const editKeys = Object.keys(prevEdits);
+      if (editKeys.length === 0) return prevEdits;
+      const next: Record<number, Record<number, string | number | null>> = {};
+      let preserved = 0;
+      let lost = 0;
+      for (const prevRiStr of editKeys) {
+        const prevRi = Number(prevRiStr);
+        const stableKey = prevKeys[prevRi];
+        if (!stableKey) { lost++; continue; }
+        const newRi = newKeys.indexOf(stableKey);
+        if (newRi < 0) { lost++; continue; }
+        const remapped: Record<number, string | number | null> = {};
+        const rowEdits = prevEdits[prevRi];
+        for (const prevCiStr of Object.keys(rowEdits)) {
+          const prevCi = Number(prevCiStr);
+          const colName = prevHeaders[prevCi];
+          if (!colName) continue;
+          const newCi = dispHeaders.indexOf(colName);
+          if (newCi < 0) continue;
+          remapped[newCi] = rowEdits[prevCi];
+        }
+        if (Object.keys(remapped).length > 0) {
+          next[newRi] = remapped;
+          preserved++;
+        } else {
+          lost++;
+        }
+      }
+      console.log(`[cellEdits migration] ${editKeys.length}행 → 유지 ${preserved} · 손실 ${lost}`);
+      // 손실이 절반 이상이면 안전을 위해 원본 유지 (bug 방어)
+      if (lost > 0 && lost >= preserved) {
+        console.warn(`[cellEdits migration] 손실률 ${lost}/${editKeys.length} 이 유지보다 많음 · 안전을 위해 원본 유지`);
+        return prevEdits;
+      }
+      return next;
+    });
+    // autoSynonymMatches 재매핑 (ri 만 · ci 무관)
+    setAutoSynonymMatches(prevMap => {
+      const keys = Object.keys(prevMap);
+      if (keys.length === 0) return prevMap;
+      const next: Record<number, { code: string; name: string }> = {};
+      let preserved = 0;
+      let lost = 0;
+      for (const prevRiStr of keys) {
+        const prevRi = Number(prevRiStr);
+        const val = prevMap[prevRi];
+        if (!val) continue;
+        const stableKey = prevKeys[prevRi];
+        if (!stableKey) { lost++; continue; }
+        const newRi = newKeys.indexOf(stableKey);
+        if (newRi < 0) { lost++; continue; }
+        next[newRi] = val;
+        preserved++;
+      }
+      console.log(`[autoSynonymMatches migration] ${keys.length}행 → 유지 ${preserved} · 손실 ${lost}`);
+      if (lost > 0 && lost >= preserved) {
+        console.warn(`[autoSynonymMatches migration] 손실률 높음 · 원본 유지`);
+        return prevMap;
+      }
+      return next;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageNums, dispHeaders]);
   const [autoSynonymLoading, setAutoSynonymLoading] = useState(false);
   const [barcodeAutoMap, setBarcodeAutoMap] = useState<Record<number, CandidateInfo>>({});
 
