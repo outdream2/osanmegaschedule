@@ -43,6 +43,7 @@ import { useOcrDerived } from "./RawOcrTable/useOcrDerived";
 import { useAutoTemplateSave } from "./RawOcrTable/useAutoTemplateSave";
 import { useAutoBalanceLoad } from "./RawOcrTable/useAutoBalanceLoad";
 import { useEditMigration } from "./RawOcrTable/useEditMigration";
+import { useCellNavigation } from "./RawOcrTable/useCellNavigation";
 import {
   findNameHeaderIdx,
   findRowPositionInRawText,
@@ -1290,58 +1291,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     });
   };
 
-  // 2026-07-24 · 방향키 셀 이동 리스너 · 여기서 정의 (effectiveDispRows · isRowDbDeleted 등 참조)
-  useEffect(() => {
-    if (!focusedCell || editingCell) return;
-    const onKey = (e: KeyboardEvent) => {
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-      const editableIdxs = [dispHeaders.indexOf("수량"), dispHeaders.indexOf("단가"), dispHeaders.indexOf("금액")].filter(i => i >= 0).sort((a, b) => a - b);
-      const { ri, ci } = focusedCell;
-      const curPos = editableIdxs.indexOf(ci);
-      const isVisibleRow = (r: number) =>
-        r >= 0 && r < effectiveDispRows.length
-        && !permanentlyDeletedRawRows.has(r)
-        && !hiddenRawRows.has(r)
-        && !isRowDbDeleted(r);
-      const findNext = (start: number, dir: 1 | -1) => {
-        let r = start;
-        while (r >= 0 && r < effectiveDispRows.length) {
-          if (isVisibleRow(r)) return r;
-          r += dir;
-        }
-        return -1;
-      };
-      let nextRi = ri, nextCi = ci;
-      if (e.key === "ArrowLeft") {
-        if (curPos > 0) nextCi = editableIdxs[curPos - 1];
-        else { const pr = findNext(ri - 1, -1); if (pr >= 0) { nextRi = pr; nextCi = editableIdxs[editableIdxs.length - 1]; } }
-      } else if (e.key === "ArrowRight") {
-        if (curPos < editableIdxs.length - 1) nextCi = editableIdxs[curPos + 1];
-        else { const nr = findNext(ri + 1, 1); if (nr >= 0) { nextRi = nr; nextCi = editableIdxs[0]; } }
-      } else if (e.key === "ArrowDown") {
-        const nr = findNext(ri + 1, 1); if (nr >= 0) nextRi = nr;
-      } else if (e.key === "ArrowUp") {
-        const pr = findNext(ri - 1, -1); if (pr >= 0) nextRi = pr;
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        setEditingCell({ ri, ci });
-        setEditingCellVal("");
-        return;
-      } else if (e.key === "Escape") {
-        e.preventDefault();
-        setFocusedCell(null);
-        return;
-      } else {
-        return;
-      }
-      e.preventDefault();
-      if (nextRi !== ri || nextCi !== ci) setFocusedCell({ ri: nextRi, ci: nextCi });
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [focusedCell, editingCell, dispHeaders, effectiveDispRows, permanentlyDeletedRawRows, hiddenRawRows]);
+  // 2026-07-24 · 리팩터 · 방향키 셀 이동은 useCellNavigation 훅으로 분리
+  useCellNavigation({
+    focusedCell, editingCell, dispHeaders, effectiveDispRows,
+    permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted,
+    setFocusedCell, setEditingCell, setEditingCellVal,
+  });
 
   // 실제 "🗑 선택 삭제" 로직 (effectiveDispRows/makeRowSignature 참조를 위해 여기서 세팅)
   //   → 체크된 여러 행을 한 번의 확인 다이얼로그로 일괄 완전삭제 + DB 서명 저장
