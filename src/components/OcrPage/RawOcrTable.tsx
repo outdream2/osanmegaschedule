@@ -39,6 +39,7 @@ import {
   computePageBalanceFromConfig as _computePageBalanceFromConfig,
 } from "./RawOcrTable/balanceHelpers";
 import { CrossCheckBadge } from "./RawOcrTable/CrossCheckBadge";
+import { useOcrDerived } from "./RawOcrTable/useOcrDerived";
 
 // 외부 소비자(OcrPage.tsx)가 `import { type ConfirmedItem } from "./RawOcrTable"` 로 사용 중 → re-export 유지
 export type { ConfirmedItem };
@@ -68,95 +69,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
       console.log(`[pages snapshot] +${newPages.length} 페이지 추가 · 총 ${pagesSnapshotRef.current.length}`);
     }
   }, [pagesFromProps]);
-  // 2026-07-24 · 사용자 요청 "각 페이지 로딩 시 다른 페이지 리로딩 되지 않게" · A안 1단계 (파생값 memoize)
-  //   pages 가 실제로 변할 때만 파생값 재계산 · 다른 setState 로는 재계산 안 함
-  //   변경 시그니처: page 번호 + 헤더 길이 + 행 개수 + rawText 길이 조합
-  //   Types: 명시적으로 지정해서 이전 refactor 때 발생한 unknown[] 추론 방지
-  const expiryVariants = ["유통기한", "유효기한", "유통기간"];
-  const dateVariants = ["거래일", "일자", "날짜", "거래일자", "거래날짜"];
-  interface Derived {
-    structuredPages: typeof pages;
-    fallbackPages: typeof pages;
-    masterH: string[];
-    dispHeaders: string[];
-    dispRows: (string | number | null)[][];
-    rawRows: (string | number | null)[][];
-    pageNums: number[];
-    amtIdx: number;
-    nameIdx: number;
-  }
-  const pagesSignature = pages.map(p => `${p.page}:${p.headers.length}:${p.rows.length}:${(p.rawText ?? "").length}:${p.meta?.supplier ?? ""}:${p.meta?.date ?? ""}:${p.meta?.total ?? ""}`).join("|");
-  const derived = React.useMemo<Derived>(() => {
-    // 2026-07-24 · 사용자 문제 "편집 유지 안돼" · SSE 페이지 도착 순서 무관하게 · 페이지 번호 기준 정렬
-    //   → dispRows 안의 페이지 순서 안정화 · 페이지 1 rows 는 항상 [0..N-1] 유지 · cellEdits[ri] 보존
-    const structuredPages = pages
-      .filter(p => !isFallback(p.headers) && Array.isArray(p.rows) && p.rows.length > 0)
-      .slice().sort((a, b) => a.page - b.page);
-    const fallbackPages   = pages
-      .filter(p => isFallback(p.headers) || !Array.isArray(p.rows) || p.rows.length === 0)
-      .slice().sort((a, b) => a.page - b.page);
-    const masterH     = buildMasterHeaders(structuredPages);
-    const supplierIdx = masterH.indexOf("공급처");
-    const allRows: { row: (string | number | null)[]; pageNum: number }[] = structuredPages.flatMap(p => {
-      const supplier = p.meta.supplier ?? null;
-      return p.rows.filter(row => Array.isArray(row)).map(row => {
-        const aligned = alignRow(row, p.headers, masterH);
-        if (supplierIdx >= 0) aligned[supplierIdx] = supplier;
-        return { row: aligned, pageNum: p.page };
-      });
-    });
-    const rawRows: (string | number | null)[][] = allRows.map(({ row }) => row);
-    const pageNums: number[] = allRows.map(({ pageNum }) => pageNum);
-    const keepCols: boolean[] = masterH.map((_, ci) =>
-      rawRows.some(r => r[ci] != null && String(r[ci]).trim() !== "")
-    );
-    const hasExpiryInMaster = expiryVariants.some(v => masterH.indexOf(v) >= 0);
-    masterH.forEach((h, ci) => { if (expiryVariants.includes(h)) keepCols[ci] = true; });
-    const hasDateInMaster = dateVariants.some(v => masterH.indexOf(v) >= 0);
-    masterH.forEach((h, ci) => { if (dateVariants.includes(h)) keepCols[ci] = true; });
-    let dispHeaders: string[] = masterH.filter((_, ci) => keepCols[ci]);
-    let dispRows: (string | number | null)[][] = rawRows.map(r => r.filter((_, ci) => keepCols[ci]));
-    if (!hasExpiryInMaster) {
-      dispHeaders = [...dispHeaders, "유통기한"];
-      dispRows = dispRows.map(r => [...r, null]);
-    }
-    if (!hasDateInMaster) {
-      dispHeaders = ["거래일", ...dispHeaders];
-      dispRows = dispRows.map((r, ri) => {
-        const pn = pageNums[ri];
-        const md = structuredPages.find(p => p.page === pn)?.meta?.date ?? null;
-        return [md, ...r];
-      });
-    }
-    if (!dispHeaders.includes("비고")) {
-      dispHeaders = [...dispHeaders, "비고"];
-      dispRows = dispRows.map(r => [...r, null]);
-    }
-    const vatVariants = ["세액", "부가세", "VAT", "vat", "부가가치세"];
-    const vatMasterIdx = masterH.findIndex(h => vatVariants.includes(h));
-    if (!dispHeaders.includes("VAT")) {
-      const priceIdxLocal = dispHeaders.indexOf("단가");
-      const insertAt = priceIdxLocal >= 0 ? priceIdxLocal + 1 : dispHeaders.length;
-      dispHeaders = [...dispHeaders.slice(0, insertAt), "VAT", ...dispHeaders.slice(insertAt)];
-      dispRows = dispRows.map((r, ri) => {
-        const vatVal: string | number | null = vatMasterIdx >= 0 ? (rawRows[ri]?.[vatMasterIdx] ?? null) : null;
-        return [...r.slice(0, insertAt), vatVal, ...r.slice(insertAt)];
-      });
-    }
-    const amtIdx = dispHeaders.indexOf("금액");
-    const nameIdx = dispHeaders.indexOf("품명");
-    return { structuredPages, fallbackPages, masterH, dispHeaders, dispRows, rawRows, pageNums, amtIdx, nameIdx };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagesSignature]);
-  const structuredPages: typeof pages = derived.structuredPages;
-  const fallbackPages: typeof pages = derived.fallbackPages;
-  const masterH: string[] = derived.masterH;
-  const dispHeaders: string[] = derived.dispHeaders;
-  const dispRows: (string | number | null)[][] = derived.dispRows;
-  const rawRows: (string | number | null)[][] = derived.rawRows;
-  const pageNums: number[] = derived.pageNums;
-  const amtIdx: number = derived.amtIdx;
-  const nameIdx: number = derived.nameIdx;
+  // 2026-07-24 · 리팩터 · 파생값 계산은 useOcrDerived 훅으로 분리 (원래 85줄 → 1줄)
+  const derived = useOcrDerived(pages);
+  const { structuredPages, fallbackPages, masterH, dispHeaders, dispRows, rawRows, pageNums, amtIdx, nameIdx } = derived;
 
   // ── 공급처 편집 상태 — supplierTotals 계산보다 먼저 선언해야 참조 가능
   const [rawSupplierByPage, setRawSupplierByPage] = useState<Record<number, string>>({});
@@ -5160,7 +5075,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                             const hasEllipsis = !isNum && /\.{3}|…/.test(cellStr);
                             // 2026-07-24 · 거래일·일자·날짜 표시 간단히 (저장은 풀로 · 표시는 MM/DD)
                             //   사용자 요청: "1차보정 거래일 간단히 · 저장은 풀로 표시는 간단히"
-                            const isDateCol = dateVariants.includes(h);
+                            const isDateCol = ["거래일", "일자", "날짜", "거래일자", "거래날짜"].includes(h);
                             const dateShort = (() => {
                               if (!isDateCol || cell == null) return null;
                               const s = String(cell).trim();
