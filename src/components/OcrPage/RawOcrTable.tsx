@@ -43,7 +43,31 @@ import { CrossCheckBadge } from "./RawOcrTable/CrossCheckBadge";
 // 외부 소비자(OcrPage.tsx)가 `import { type ConfirmedItem } from "./RawOcrTable"` 로 사용 중 → re-export 유지
 export type { ConfirmedItem };
 
-export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp, onSaveConfirmed, onUserEdit }) => {
+export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps, pageImages, rotation = -90, onReparsePage, barcodeMatches, balanceConfig: balanceConfigProp, onSaveConfirmed, onUserEdit }) => {
+  // 2026-07-24 · 사용자 요청 "근본적으로 로딩되는 페이지와 추출이 연동이 안되게 · 이미 로딩된 페이지 리로드 금지"
+  //   props.pages 는 서버 SSE 로 계속 업데이트되므로 · RawOcrTable 내부에서 "snapshot" 유지
+  //   - 새 page 는 append · 기존 page 는 절대 교체 X
+  //   - dispRows/pageNums 등은 이 snapshot 기반 · 사용자 편집 항상 보존
+  const pagesSnapshotRef = useRef<typeof pagesFromProps>([]);
+  const [pages, setLocalPages] = useState<typeof pagesFromProps>([]);
+  useEffect(() => {
+    // props.pages 감지 · 없는 page 만 snapshot 에 추가 (기존 page 는 스킵)
+    const existing = new Set(pagesSnapshotRef.current.map(p => p.page));
+    const newPages = pagesFromProps.filter(p => !existing.has(p.page));
+    if (newPages.length === 0 && pagesFromProps.length === pagesSnapshotRef.current.length) return;
+    // props.pages 가 완전히 리셋되면 (예: 새 파일 업로드) snapshot 도 리셋
+    if (pagesFromProps.length === 0 && pagesSnapshotRef.current.length > 0) {
+      pagesSnapshotRef.current = [];
+      setLocalPages([]);
+      console.log("[pages snapshot] 리셋 · props.pages 가 비었음");
+      return;
+    }
+    if (newPages.length > 0) {
+      pagesSnapshotRef.current = [...pagesSnapshotRef.current, ...newPages];
+      setLocalPages([...pagesSnapshotRef.current]);
+      console.log(`[pages snapshot] +${newPages.length} 페이지 추가 · 총 ${pagesSnapshotRef.current.length}`);
+    }
+  }, [pagesFromProps]);
   // 2026-07-24 · 사용자 요청 "각 페이지 로딩 시 다른 페이지 리로딩 되지 않게" · A안 1단계 (파생값 memoize)
   //   pages 가 실제로 변할 때만 파생값 재계산 · 다른 setState 로는 재계산 안 함
   //   변경 시그니처: page 번호 + 헤더 길이 + 행 개수 + rawText 길이 조합
