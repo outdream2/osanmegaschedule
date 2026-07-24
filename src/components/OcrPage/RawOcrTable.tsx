@@ -1356,8 +1356,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       // 2026-07-24 · 사용자 요청 "금액 입력 시 수량 있으면 단가 역계산"
       //   commitCellEdit 에서 이미 P 를 A/Q 로 계산해 cellEdits 에 넣어놨음
       //   여기서는 · 사용자 편집한 금액은 그대로 유지 · Q*P 로 덮어쓰지 않음
+      // 2026-07-24 · 사용자 요청 "금액은 맨 마지막 1원자리에서 올림" · Math.ceil(x/10)*10
       if (q > 0 && p > 0 && !userEditedAmt) {
-        nr[amtIdx] = Math.round(q * p);
+        nr[amtIdx] = Math.ceil((q * p) / 10) * 10;
       } else if (!userEditedAmt) {
         // 사용자 직접 편집이 아니면서 Q 또는 P 없으면 · 금액 표시 X
         nr[amtIdx] = null;
@@ -1443,7 +1444,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     if (_qtyIdxForEff >= 0 && _priIdxForEff >= 0) {
       const q = parseNumber(row[_qtyIdxForEff]);
       const p = parseNumber(row[_priIdxForEff]);
-      if (q > 0 && p > 0) return Math.round(q * p);
+      // 2026-07-24 · 사용자 요청 "금액은 맨 마지막 1원자리에서 올림"
+      if (q > 0 && p > 0) return Math.ceil((q * p) / 10) * 10;
     }
     return 0;
   };
@@ -6375,7 +6377,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                             const pE = erpCellEdits[rii]?.["단가"];
                                             const q = qE !== undefined ? parseNumber(qE) : (_qtyIdxEarly >= 0 ? parseNumber(r[_qtyIdxEarly]) : 0);
                                             const p = pE !== undefined ? parseNumber(pE) : (_priIdxEarly >= 0 ? parseNumber(r[_priIdxEarly]) : 0);
-                                            if (q > 0 && p > 0) sumQtyPrice2 += Math.round(q * p);
+                                            if (q > 0 && p > 0) sumQtyPrice2 += Math.ceil((q * p) / 10) * 10;
                                           });
                                           const mismatch2 = stated2 != null && sumQtyPrice2 > 0 && Math.abs(sumQtyPrice2 - stated2) > 1;
                                           // 에누리·차액·할인 항목 (OCR summary_rows 에서 감지)
