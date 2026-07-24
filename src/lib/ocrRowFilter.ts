@@ -60,11 +60,25 @@ export function isNonProductText(text: string): boolean {
 // 2026-07-23 · 상품명 유효성 검사 · 한글 미포함 = 상품명 아님 (금액·헤더 잡문자 방어)
 //   사용자 요청: "금액이 품명으로 막 들어오네 · 한글만 품명에 들어가야지"
 //   룰: (1) 한글 1자 이상 · (2) isNonProductText 통과
+//   2026-07-24 · 사용자 사례 "121,600 · 8,400 형태의 금액이 품명에 들어가면 안됨"
+//     추가 룰: (3) 금액·통화 패턴 명확 (¥/₩/$ · 숫자,숫자,숫자 · N,NNN원 · 백/천/만원)
+//     추가 룰: (4) 한글 비율 < 30% → 잡문자 (숫자·기호 우세)
 export function isValidProductName(text: string | null | undefined): boolean {
   const t = String(text ?? "").trim();
   if (!t) return false;
   if (!/[가-힣]/.test(t)) return false;  // 한글 미포함 → 잡문자
   if (isNonProductText(t)) return false;
+  // 금액 패턴 (원/圓/₩/W + 숫자 · N,NNN 반복 · 백만원·천원 등)
+  const flat = t.replace(/\s+/g, "");
+  if (/^[\d,.\s]*(?:원|圓|₩|W|\$|¥)?\s*[\d,.]+/i.test(flat) && /[\d]{3}/.test(flat)) {
+    // 예: "121,600" · "121,600원" · "W8,400" · "8.400원"
+    const koreanChars = (flat.match(/[가-힣]/g) ?? []).length;
+    if (koreanChars <= 2) return false;  // 원/세 같은 접미어만 있는 경우
+  }
+  // 한글 비율 < 30% → 잡문자 (예: "#84,00세 W 8.400" 는 한글 1자 · 나머지 숫자·기호)
+  const nonSpaceLen = flat.length;
+  const korCount = (flat.match(/[가-힣]/g) ?? []).length;
+  if (nonSpaceLen >= 5 && korCount / nonSpaceLen < 0.3) return false;
   return true;
 }
 
