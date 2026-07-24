@@ -353,7 +353,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   //   cellEdits 크기 변화 감지 · 감소 시 경고 (편집 손실 추적)
   const prevCellEditsSizeRef = useRef(0);
   useEffect(() => {
-    const size = Object.values(cellEdits).reduce((s, row) => s + Object.keys(row).length, 0);
+    const size = Object.values(cellEdits).reduce<number>((s, row) => s + Object.keys(row as object).length, 0);
     if (size < prevCellEditsSizeRef.current) {
       console.warn(`[cellEdits 손실 감지] 이전 ${prevCellEditsSizeRef.current}개 → 현재 ${size}개 · 셀 편집이 줄어듬`);
     }
