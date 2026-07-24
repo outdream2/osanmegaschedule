@@ -5907,14 +5907,22 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
 
                                 // OCR 품명 (읽기 전용, 클릭 시 명세서 이미지 열기, 2줄 클램프)
                                 if (col === "OCR 품명") {
+                                  // 2026-07-24 · 사용자 요청 "2차보정 시작값이 1차보정 확정값이랑 틀려"
+                                  //   1차보정 확정값 (사용자 편집 or DB 매칭 반영) 을 그대로 노출
+                                  //   우선순위: cellEdits > autoSynonymMatches > row[nameIdx]
+                                  const finalName = String(
+                                    cellEdits[ri]?.[nameIdx]
+                                    ?? autoSynonymMatches[ri]?.name
+                                    ?? row[nameIdx]
+                                    ?? ""
+                                  ).trim();
                                   return (
                                     <td key={col}
                                       onClick={pageImages?.length ? () => openModal(ri) : undefined}
                                       className={`px-2 py-2 align-top ${pageImages?.length ? "cursor-pointer hover:bg-indigo-50/60" : ""}`}
                                       title={pageImages?.length ? "클릭하면 해당 거래명세서 이미지 열기" : undefined}>
-                                      {/* 2026-07-24 · 사용자 요청 "2차보정에서 왜 품명 취소선 · 그러면 안돼" · 취소선 제거 · 원본 값 그대로 표시 */}
                                       <span className="break-words whitespace-normal line-clamp-2 font-semibold text-gray-700">
-                                        {origName || <span className="text-gray-300">—</span>}
+                                        {finalName || <span className="text-gray-300">—</span>}
                                       </span>
                                     </td>
                                   );
