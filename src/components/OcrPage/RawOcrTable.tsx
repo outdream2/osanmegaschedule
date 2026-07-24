@@ -1740,7 +1740,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   const responsiveDefault = containerWidth > 0
     ? Math.max(INV_COL_MIN, Math.min(containerWidth * autoRatio, invColMax))
     : INV_COL_DEFAULT;
-  const isUserAdjusted = Math.abs(invoiceColWidth - INV_COL_DEFAULT) > 5;
   const effectiveInvColWidth = isUserAdjusted
     ? Math.min(Math.max(INV_COL_MIN, invoiceColWidth), invColMax)
     : responsiveDefault;
