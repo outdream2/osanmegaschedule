@@ -63,8 +63,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   }
   const pagesSignature = pages.map(p => `${p.page}:${p.headers.length}:${p.rows.length}:${(p.rawText ?? "").length}:${p.meta?.supplier ?? ""}:${p.meta?.date ?? ""}:${p.meta?.total ?? ""}`).join("|");
   const derived = React.useMemo<Derived>(() => {
-    const structuredPages = pages.filter(p => !isFallback(p.headers) && Array.isArray(p.rows) && p.rows.length > 0);
-    const fallbackPages   = pages.filter(p => isFallback(p.headers) || !Array.isArray(p.rows) || p.rows.length === 0);
+    // 2026-07-24 · 사용자 문제 "편집 유지 안돼" · SSE 페이지 도착 순서 무관하게 · 페이지 번호 기준 정렬
+    //   → dispRows 안의 페이지 순서 안정화 · 페이지 1 rows 는 항상 [0..N-1] 유지 · cellEdits[ri] 보존
+    const structuredPages = pages
+      .filter(p => !isFallback(p.headers) && Array.isArray(p.rows) && p.rows.length > 0)
+      .slice().sort((a, b) => a.page - b.page);
+    const fallbackPages   = pages
+      .filter(p => isFallback(p.headers) || !Array.isArray(p.rows) || p.rows.length === 0)
+      .slice().sort((a, b) => a.page - b.page);
     const masterH     = buildMasterHeaders(structuredPages);
     const supplierIdx = masterH.indexOf("공급처");
     const allRows: { row: (string | number | null)[]; pageNum: number }[] = structuredPages.flatMap(p => {
