@@ -249,10 +249,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const Icon = tab.icon;
     const isActive = tab.key === activePage;
     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
-    // 2026-07-24 · 사용자 요청 "가려서 안보이는 것만 삼선에 넣으라고" · 중간 넓이에서 탭 더 컴팩트하게
-    //   기존 · lg 에서 px-3.5, [13.5px] · md 이하에서도 px-2, [11px] 였으나 · 탭 폭 넓어 오버플로 자주 유발
-    //   개선 · md 까지 px-1.5, [11px] · lg 부터 px-3, [13px] · md-lg 사이는 모든 탭 표시 유도
-    const base = "flex items-center gap-0.5 md:gap-1 lg:gap-1.5 px-1.5 lg:px-3 py-1.5 lg:py-2 rounded-lg text-[11px] lg:text-[13px] font-medium border transition-all whitespace-nowrap";
+    // 2026-07-24 · sm 컴팩트 · md 중간 · lg 정상 (사용자 "모바일/PC 버전 바뀜" 대응)
+    //   sm (640-767): 매우 컴팩트 · md (768-1023): 중간 · lg (1024+): 원래대로
+    const base = "flex items-center gap-1 md:gap-1.5 px-1.5 md:px-2.5 lg:px-3.5 py-1.5 md:py-2 rounded-lg text-[11px] md:text-[12px] lg:text-[13.5px] font-medium border transition-all whitespace-nowrap";
     const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key);
     if (isActive) {
       return (
