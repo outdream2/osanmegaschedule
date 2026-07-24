@@ -40,6 +40,7 @@ import {
 } from "./RawOcrTable/balanceHelpers";
 import { CrossCheckBadge } from "./RawOcrTable/CrossCheckBadge";
 import { useOcrDerived } from "./RawOcrTable/useOcrDerived";
+import { useAutoTemplateSave } from "./RawOcrTable/useAutoTemplateSave";
 import {
   findNameHeaderIdx,
   findRowPositionInRawText,
@@ -2384,38 +2385,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     await handleSynonymBulkAdd(pageNum, supplierName);
   }, [structuredPages, handleSynonymBulkAdd]);
 
-  // 2026-07-24 · 사용자 요청 "공급사 템플릿 DB 에 없으면 새로 템플릿 저장"
-  //   1) /api/ocr-templates 목록 조회 · supplier_name 집합 구성
-  //   2) structuredPages 각 페이지의 공급사 확인
-  //   3) DB 에 없으면 · saveTemplate 자동 호출 (headers 는 그 페이지의 원본 headers)
-  //   4) 실행은 한 번만 · templateAutoSavedRef 로 중복 방지
-  const templateAutoSavedRef = useRef<Set<string>>(new Set());
-  useEffect(() => {
-    if (structuredPages.length === 0) return;
-    // supplier 있는 페이지만 수집
-    const pageSupplierPairs = structuredPages
-      .map(p => ({ pn: p.page, supplier: (rawSupplierByPage[p.page] ?? p.meta.supplier ?? "").trim() }))
-      .filter(x => x.supplier);
-    if (pageSupplierPairs.length === 0) return;
-    (async () => {
-      try {
-        const res = await fetch("/api/ocr-templates");
-        if (!res.ok) return;
-        const data = await res.json();
-        const templates: any[] = Array.isArray(data?.templates) ? data.templates : [];
-        const existingSuppliers = new Set(templates.map(t => String(t.supplier_name ?? "").trim()));
-        for (const { pn, supplier } of pageSupplierPairs) {
-          if (existingSuppliers.has(supplier)) continue;
-          if (templateAutoSavedRef.current.has(supplier)) continue;
-          templateAutoSavedRef.current.add(supplier);
-          console.log(`[템플릿 자동저장] "${supplier}" DB 에 없음 → 새 템플릿 저장 (page ${pn})`);
-          await saveTemplate(pn, supplier);
-        }
-      } catch (e: any) {
-        console.warn("[템플릿 자동저장] 실패:", e?.message);
-      }
-    })();
-  }, [structuredPages, rawSupplierByPage, saveTemplate]);
+  // 2026-07-24 · 리팩터 · 템플릿 자동 저장은 useAutoTemplateSave 훅으로 분리
+  useAutoTemplateSave({ structuredPages, rawSupplierByPage, saveTemplate });
 
   const saveSynonym = useCallback(async (
     ri: number,
