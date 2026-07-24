@@ -18,11 +18,23 @@ const DELIVERY_INFO_LABELS = [
   "합계", "소계", "총계", "공급가액", "부가세",
 ];
 
+// 표 헤더 키워드 (여러 개 포함 시 → 표 헤더 오인식 · 상품명 아님)
+const TABLE_HEADER_KEYWORDS = [
+  "코드", "일자", "품목", "규격", "단위", "수량", "단가", "금액", "세액",
+  "공급", "가액", "부가세", "비고", "품명", "상품명", "제품명", "번호",
+];
+
 // 상품과 무관한 텍스트 판정 (매칭 스킵 대상)
 export function isNonProductText(text: string): boolean {
   const t = String(text ?? "").trim();
   if (!t) return true;
   if (t.length < 3) return true;  // 2자 이하 → 상품명 아님 (예: "A2")
+  // 2026-07-24 · 사용자 사례 "코드/일자 품목/규격 단위 수량 단가 금액 세액 O1 엑토랍 S(2-" 은 헤더+데이터 병합
+  //   → 헤더 키워드 3개+ 포함 · 또는 "/" 있고 헤더 키워드 2개+ → 헤더 오인식
+  const flatNoSpace = t.replace(/\s+/g, "");
+  const headerHits = TABLE_HEADER_KEYWORDS.filter(kw => flatNoSpace.includes(kw)).length;
+  if (headerHits >= 3) return true;
+  if (t.includes("/") && headerHits >= 2) return true;
 
   // 배송·행정 라벨 포함
   const flat = t.replace(/\s+/g, "");
