@@ -38,12 +38,10 @@ html { font-size: 16px; }
 
 /* 2026-07-24 · 스크롤 문제 완전 해결 · 모든 오버플로 제약 제거
  *  이전 오래된 overflow-x:hidden · overscroll-behavior:none 이 세로 스크롤 막던 문제
- *  html/body 오버플로 자연 상태로 · #root 도 min-height 만 · 스크롤 완전 자유
- *  scrollbar-gutter · SSE 페이지 추가 시 스크롤바 생기면서 layout shift 방지 */
+ *  html/body 오버플로 자연 상태로 · #root 도 min-height 만 · 스크롤 완전 자유 */
 html, body {
   margin: 0;
   padding: 0;
-  scrollbar-gutter: stable;
 }
 #root { min-height: 100vh; }
 
