@@ -185,7 +185,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       //   원인: containerW = 0 (초기 측정 실패) 시에도 tabEls 폭 > 0 이면 오버플로 판정
       //   → containerW 유효하지 않으면 skip · 다음 ResizeObserver 콜백 대기
       if (containerW <= 0) return;
-      const btnW = 56;
+      // 2026-07-24 · 사용자 요청 · ☰ 버튼 예약 공간 축소 (56→40) · 더 많은 탭 표시 유도
+      const btnW = 40;
       const gap = 4;
       const tabEls = measure.querySelectorAll<HTMLElement>("[data-desktop-tab]");
       if (tabEls.length === 0) return;
@@ -248,8 +249,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const Icon = tab.icon;
     const isActive = tab.key === activePage;
     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
-    // 태블릿(md 이하)에서 tab 축약 · 데스크탑(lg+) 에서 넉넉하게
-    const base = "flex items-center gap-1 md:gap-1.5 px-2 lg:px-3.5 py-2 rounded-lg text-[11px] lg:text-[13.5px] font-medium border transition-all whitespace-nowrap";
+    // 2026-07-24 · 사용자 요청 "가려서 안보이는 것만 삼선에 넣으라고" · 중간 넓이에서 탭 더 컴팩트하게
+    //   기존 · lg 에서 px-3.5, [13.5px] · md 이하에서도 px-2, [11px] 였으나 · 탭 폭 넓어 오버플로 자주 유발
+    //   개선 · md 까지 px-1.5, [11px] · lg 부터 px-3, [13px] · md-lg 사이는 모든 탭 표시 유도
+    const base = "flex items-center gap-0.5 md:gap-1 lg:gap-1.5 px-1.5 lg:px-3 py-1.5 lg:py-2 rounded-lg text-[11px] lg:text-[13px] font-medium border transition-all whitespace-nowrap";
     const onClick = tab.key === "landing" ? (onBack ?? (() => onNavigate?.("landing"))) : () => onNavigate?.(tab.key);
     if (isActive) {
       return (

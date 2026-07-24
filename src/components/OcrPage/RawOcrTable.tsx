@@ -5764,6 +5764,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
               {erpViewTab === 'list' && (
               <div className="px-4 py-2 border-b border-indigo-50 flex flex-col gap-0.5">
                 {matchItems.map((item, ri) => {
+                  // 2026-07-24 · 사용자 요청 "1차보정에서 선택 삭제한 부분이 2차보정에 그대로 들어감" 재발 방지
+                  //   list view · confRows 와 동일하게 hiddenRawRows·permanentlyDeletedRawRows·isRowDbDeleted 제외
+                  if (permanentlyDeletedRawRows.has(ri) || isRowDbDeleted(ri) || hiddenRawRows.has(ri)) return null;
                   const bcMatch    = barcodeAutoMap[ri] ?? null;
                   const effMatch = selectedCands[ri] ?? (bcMatch ? { ...bcMatch, score: 100 } : null) ?? item.matched ?? null;
                   const score    = effMatch?.score ?? item.score ?? 0;
