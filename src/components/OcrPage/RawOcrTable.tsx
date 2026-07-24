@@ -3310,8 +3310,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
 
   const confRows: (string | number | null)[][] = matchItems
     ? effectiveDispRows.map((row, ri) => {
-        // 1차보정에서 삭제된 행 · DB 서명 매치 행은 확정표에서도 제외 (빈 배열로 마킹 후 하단 필터)
-        if (permanentlyDeletedRawRows.has(ri) || isRowDbDeleted(ri)) return [] as (string | number | null)[];
+        // 2026-07-24 · 사용자 요청 "1차보정에서 선택 삭제한 행은 2차보정에 안 들어감 · 확정 상태만"
+        //   permanentlyDeletedRawRows + isRowDbDeleted + hiddenRawRows (체크박스 숨김) 모두 제외
+        if (permanentlyDeletedRawRows.has(ri) || isRowDbDeleted(ri) || hiddenRawRows.has(ri)) return [] as (string | number | null)[];
         const m        = cancelledRows.has(ri) ? null : (selectedCands[ri] ?? matchItems[ri]?.matched ?? null);
         const autoSyn  = cancelledAutoMap.has(ri) ? undefined : autoSynonymMatches[ri];
         const bc       = cancelledAutoMap.has(ri) ? null : (barcodeAutoMap[ri] ?? null);
