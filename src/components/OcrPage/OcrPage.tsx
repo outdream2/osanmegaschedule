@@ -832,11 +832,17 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
         } else if (eventName === "page") {
           const pg = payload?.page;
           if (pg && typeof pg.page === "number") {
+            // 2026-07-24 · 사용자 요청 "이미 로딩된 페이지 리로드 금지"
+            //   collectedPages 는 Gemini 재파싱 chain 을 위해 최신 버전 유지 (내부용)
+            //   setPages 는 · 이미 있는 페이지는 SKIP (dispRows 재계산 방지 · 편집 보존)
             const existIdx = collectedPages.findIndex(p => p.page === pg.page);
             if (existIdx >= 0) collectedPages[existIdx] = pg as OcrPageResult;
             else collectedPages.push(pg as OcrPageResult);
             setPages(prev => {
-              if (prev.some(p => p.page === pg.page)) return prev.map(p => p.page === pg.page ? pg : p);
+              if (prev.some(p => p.page === pg.page)) {
+                console.log(`[SSE page ${pg.page}] 이미 로딩됨 · setPages skip (편집 보존)`);
+                return prev;
+              }
               return [...prev, pg as OcrPageResult];
             });
           }

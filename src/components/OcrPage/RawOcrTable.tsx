@@ -349,6 +349,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     if (!onUserEdit) return;
     if (Object.keys(cellEdits).length > 0) onUserEdit();
   }, [cellEdits, onUserEdit]);
+  // 2026-07-24 · 사용자 요청 "편집한 것은 저장되게 · 추출과 무관하게" 진단용 로그
+  //   cellEdits 크기 변화 감지 · 감소 시 경고 (편집 손실 추적)
+  const prevCellEditsSizeRef = useRef(0);
+  useEffect(() => {
+    const size = Object.values(cellEdits).reduce((s, row) => s + Object.keys(row).length, 0);
+    if (size < prevCellEditsSizeRef.current) {
+      console.warn(`[cellEdits 손실 감지] 이전 ${prevCellEditsSizeRef.current}개 → 현재 ${size}개 · 셀 편집이 줄어듬`);
+    }
+    prevCellEditsSizeRef.current = size;
+  }, [cellEdits]);
   const [editingCell,    setEditingCell   ] = useState<{ ri: number; ci: number } | null>(null);
   const [editingCellVal, setEditingCellVal] = useState("");
   // 2026-07-24 · 사용자 요청 "방향키가 셀로 이동" · 편집 종료 후에도 focus 유지 · 방향키로 셀간 이동
@@ -6219,9 +6229,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                     </thead>
                     <tbody>
                       {effectiveDispRows.map((row, ri) => {
-                        // 1차보정에서 삭제/DB필터된 행은 2차보정에서도 렌더 스킵
+                        // 1차보정에서 삭제/DB필터/숨김된 행은 2차보정에서도 렌더 스킵
                         if (permanentlyDeletedRawRows.has(ri)) return null;
                         if (isRowDbDeleted(ri)) return null;
+                        if (hiddenRawRows.has(ri)) return null;
+                        // 빈 행 (품명·수량·단가 모두 없음) 도 스킵
+                        {
+                          const _qtyIdxSkip2 = dispHeaders.indexOf("수량");
+                          const _priIdxSkip2 = dispHeaders.indexOf("단가");
+                          const nmValS = nameIdx >= 0 ? String(row[nameIdx] ?? "").trim() : "";
+                          const qtValS = _qtyIdxSkip2 >= 0 ? parseNumber(row[_qtyIdxSkip2]) : 0;
+                          const prValS = _priIdxSkip2 >= 0 ? parseNumber(row[_priIdxSkip2]) : 0;
+                          if (!nmValS && qtValS === 0 && prValS === 0) return null;
+                        }
                         const pn = pageNums[ri];
                         const isFirstInPage = ri === 0 || pageNums[ri - 1] !== pn;
                         const isLastInPage = ri === effectiveDispRows.length - 1 || pageNums[ri] !== pageNums[ri + 1];
@@ -6309,7 +6329,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                       onClick={pageImages?.length ? () => openModal(ri) : undefined}
                                       className={`px-2 py-2 align-top ${pageImages?.length ? "cursor-pointer hover:bg-indigo-50/60" : ""}`}
                                       title={pageImages?.length ? "클릭하면 해당 거래명세서 이미지 열기" : undefined}>
-                                      <span className={`break-words whitespace-normal line-clamp-2 ${isCorrected ? "text-gray-400 line-through" : "font-semibold text-gray-700"}`}>
+                                      {/* 2026-07-24 · 사용자 요청 "2차보정에서 왜 품명 취소선 · 그러면 안돼" · 취소선 제거 · 원본 값 그대로 표시 */}
+                                      <span className="break-words whitespace-normal line-clamp-2 font-semibold text-gray-700">
                                         {origName || <span className="text-gray-300">—</span>}
                                       </span>
                                     </td>
