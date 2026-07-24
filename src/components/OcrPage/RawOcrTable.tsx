@@ -1353,7 +1353,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       const q = parseNumber(nr[_qtyIdxER]);
       const p = parseNumber(nr[_priIdxER]);
       const userEditedAmt = edits && edits[amtIdx] != null;
-      if (q > 0 && p > 0) {
+      // 2026-07-24 · 사용자 요청 "금액 입력 시 수량 있으면 단가 역계산"
+      //   commitCellEdit 에서 이미 P 를 A/Q 로 계산해 cellEdits 에 넣어놨음
+      //   여기서는 · 사용자 편집한 금액은 그대로 유지 · Q*P 로 덮어쓰지 않음
+      if (q > 0 && p > 0 && !userEditedAmt) {
         nr[amtIdx] = Math.round(q * p);
       } else if (!userEditedAmt) {
         // 사용자 직접 편집이 아니면서 Q 또는 P 없으면 · 금액 표시 X
@@ -2450,10 +2453,20 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       if ((ci === qIdx || ci === pIdx) && aIdx >= 0) {
         delete rowEdits[aIdx];
       }
+      // 2026-07-24 · 사용자 요청 "금액 입력 시 수량 있으면 단가 역계산"
+      //   금액 편집 · 수량 유효 · 단가 없거나 자동값 → 단가 = 금액/수량 (반올림)
+      if (ci === aIdx && qIdx >= 0 && pIdx >= 0 && numVal != null && numVal > 0) {
+        const currentQty = Number(rowEdits[qIdx] ?? dispRows[ri]?.[qIdx] ?? 0);
+        if (currentQty > 0) {
+          const derivedPrice = Math.round(numVal / currentQty);
+          rowEdits[pIdx] = derivedPrice;
+          console.log(`[commitCellEdit] 금액 ${numVal} / 수량 ${currentQty} = 단가 ${derivedPrice} (역계산)`);
+        }
+      }
       return { ...prev, [ri]: rowEdits };
     });
     setEditingCell(null);
-  }, [dispHeaders]);
+  }, [dispHeaders, dispRows]);
 
   const handleRetry = useCallback(async (ri: number, inputName: string, supplierHint?: string) => {
     if (retryingRows.has(ri)) return;
