@@ -42,6 +42,7 @@ import { CrossCheckBadge } from "./RawOcrTable/CrossCheckBadge";
 import { useOcrDerived } from "./RawOcrTable/useOcrDerived";
 import { useAutoTemplateSave } from "./RawOcrTable/useAutoTemplateSave";
 import { useAutoBalanceLoad } from "./RawOcrTable/useAutoBalanceLoad";
+import { useEditMigration } from "./RawOcrTable/useEditMigration";
 import {
   findNameHeaderIdx,
   findRowPositionInRawText,
@@ -1216,98 +1217,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     if (!onUserEdit) return;
     if (Object.keys(autoSynonymMatches).length > 0) onUserEdit();
   }, [autoSynonymMatches, onUserEdit]);
-  // 2026-07-24 · 편집 손실 원인 · 새 페이지 도착 시 dispHeaders 컬럼 위치 변경으로 cellEdits[ri][ci] 어긋남
-  //   → 안정키 (pn, localRi, colName) 기반 저장으로 근본 해결
-  //   1) structureIdRef 로 (pn, localRi, colName) ↔ (ri, ci) 매핑 저장
-  //   2) setCellEdits / setAutoSynonymMatches 시 매번 안정키로 저장 검토
-  //   3) 구조 변경 감지 시 자동 remap (신중히 · 콘솔 로그 · 실패 시 원본 유지)
-  const prevStructureRef = useRef<{ pageNums: number[]; dispHeaders: string[] } | null>(null);
-  useEffect(() => {
-    const prev = prevStructureRef.current;
-    prevStructureRef.current = { pageNums: [...pageNums], dispHeaders: [...dispHeaders] };
-    if (!prev || prev.pageNums.length === 0) return;  // 첫 렌더 또는 최초 데이터 로드 · 스킵
-    // 구조 동일하면 스킵
-    const samePn = prev.pageNums.length === pageNums.length && prev.pageNums.every((v, i) => v === pageNums[i]);
-    const sameHd = prev.dispHeaders.length === dispHeaders.length && prev.dispHeaders.every((v, i) => v === dispHeaders[i]);
-    if (samePn && sameHd) return;
-    console.log(`[cellEdits migration] 구조 변경 감지 · prev: ${prev.pageNums.length}행 ${prev.dispHeaders.length}컬 → new: ${pageNums.length}행 ${dispHeaders.length}컬`);
-    // 이전/새 ri → "pn|localRi" 매핑
-    const buildStableKeys = (pns: number[]): string[] => {
-      const cnt: Record<number, number> = {};
-      return pns.map(pn => {
-        const local = cnt[pn] ?? 0;
-        cnt[pn] = local + 1;
-        return `${pn}|${local}`;
-      });
-    };
-    const prevKeys = buildStableKeys(prev.pageNums);
-    const newKeys = buildStableKeys(pageNums);
-    const prevHeaders = prev.dispHeaders;
-    // cellEdits 재매핑
-    setCellEdits(prevEdits => {
-      const editKeys = Object.keys(prevEdits);
-      if (editKeys.length === 0) return prevEdits;
-      const next: Record<number, Record<number, string | number | null>> = {};
-      let preserved = 0;
-      let lost = 0;
-      for (const prevRiStr of editKeys) {
-        const prevRi = Number(prevRiStr);
-        const stableKey = prevKeys[prevRi];
-        if (!stableKey) { lost++; continue; }
-        const newRi = newKeys.indexOf(stableKey);
-        if (newRi < 0) { lost++; continue; }
-        const remapped: Record<number, string | number | null> = {};
-        const rowEdits = prevEdits[prevRi];
-        for (const prevCiStr of Object.keys(rowEdits)) {
-          const prevCi = Number(prevCiStr);
-          const colName = prevHeaders[prevCi];
-          if (!colName) continue;
-          const newCi = dispHeaders.indexOf(colName);
-          if (newCi < 0) continue;
-          remapped[newCi] = rowEdits[prevCi];
-        }
-        if (Object.keys(remapped).length > 0) {
-          next[newRi] = remapped;
-          preserved++;
-        } else {
-          lost++;
-        }
-      }
-      console.log(`[cellEdits migration] ${editKeys.length}행 → 유지 ${preserved} · 손실 ${lost}`);
-      // 손실이 절반 이상이면 안전을 위해 원본 유지 (bug 방어)
-      if (lost > 0 && lost >= preserved) {
-        console.warn(`[cellEdits migration] 손실률 ${lost}/${editKeys.length} 이 유지보다 많음 · 안전을 위해 원본 유지`);
-        return prevEdits;
-      }
-      return next;
-    });
-    // autoSynonymMatches 재매핑 (ri 만 · ci 무관)
-    setAutoSynonymMatches(prevMap => {
-      const keys = Object.keys(prevMap);
-      if (keys.length === 0) return prevMap;
-      const next: Record<number, { code: string; name: string }> = {};
-      let preserved = 0;
-      let lost = 0;
-      for (const prevRiStr of keys) {
-        const prevRi = Number(prevRiStr);
-        const val = prevMap[prevRi];
-        if (!val) continue;
-        const stableKey = prevKeys[prevRi];
-        if (!stableKey) { lost++; continue; }
-        const newRi = newKeys.indexOf(stableKey);
-        if (newRi < 0) { lost++; continue; }
-        next[newRi] = val;
-        preserved++;
-      }
-      console.log(`[autoSynonymMatches migration] ${keys.length}행 → 유지 ${preserved} · 손실 ${lost}`);
-      if (lost > 0 && lost >= preserved) {
-        console.warn(`[autoSynonymMatches migration] 손실률 높음 · 원본 유지`);
-        return prevMap;
-      }
-      return next;
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pageNums, dispHeaders]);
+  // 2026-07-24 · 리팩터 · 편집 stable-key 마이그레이션은 useEditMigration 훅으로 분리
+  useEditMigration({ pageNums, dispHeaders, setCellEdits, setAutoSynonymMatches });
   const [autoSynonymLoading, setAutoSynonymLoading] = useState(false);
   const [barcodeAutoMap, setBarcodeAutoMap] = useState<Record<number, CandidateInfo>>({});
 
