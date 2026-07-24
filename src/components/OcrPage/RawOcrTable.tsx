@@ -1731,23 +1731,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     return () => ro.disconnect();
   }, []);
   // 2026-07-21 완전 반응형:
-  //   1. 사용자 드래그값이 있으면 우선 (단 캡 안에서 · 반응형 조건 통과 시)
-  //   2. 없으면 컨테이너 폭의 25% (반응형 · 화면 크기 따라 자동 확장·축소)
+  //   1. 사용자 드래그값이 있으면 우선 (단 캡 안에서)
+  //   2. 없으면 컨테이너 폭의 40% (반응형 · 화면 크기 따라 자동 확장·축소)
   //   3. 최소: INV_COL_MIN · 최대: containerWidth - MIN_DATA_WIDTH
-  //   2026-07-24 · 사용자 요청 "처음 나올 때 반응형에 맞게" · 사용자 값이 현재 컨테이너 대비 부적절하면 무시
   const invColMax = containerWidth > 0 ? Math.max(INV_COL_MIN, containerWidth - MIN_DATA_WIDTH) : Infinity;
-  const autoRatio = 0.25;
+  const isUserAdjusted = Math.abs(invoiceColWidth - INV_COL_DEFAULT) > 5;
+  const autoRatio = 0.25;  // 2026-07-22: 33%→25% (유통기한 컬럼 잘림 방지 · 데이터 영역 확보)
   const responsiveDefault = containerWidth > 0
     ? Math.max(INV_COL_MIN, Math.min(containerWidth * autoRatio, invColMax))
     : INV_COL_DEFAULT;
-  // 사용자 값 유효성 · 컨테이너 대비 10%~60% 범위 안에 있어야 사용자값 존중 (드래그 자유도 확보)
-  //   너무 좁으면 (10% 미만) · 너무 넓어서 데이터 잘림 (60% 초과) 만 초기화
-  const userValidForContainer = containerWidth > 0
-    && invoiceColWidth >= containerWidth * 0.10
-    && invoiceColWidth <= containerWidth * 0.60
-    && invoiceColWidth <= invColMax;
   const isUserAdjusted = Math.abs(invoiceColWidth - INV_COL_DEFAULT) > 5;
-  const effectiveInvColWidth = (isUserAdjusted && userValidForContainer)
+  const effectiveInvColWidth = isUserAdjusted
     ? Math.min(Math.max(INV_COL_MIN, invoiceColWidth), invColMax)
     : responsiveDefault;
 
