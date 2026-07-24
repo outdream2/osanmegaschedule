@@ -4083,6 +4083,16 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                   // 확정 삭제된 행 · DB 서명 매치 → 완전 스킵 (체크 상태는 취소선만 표시)
                   if (permanentlyDeletedRawRows.has(ri)) return null;
                   if (isRowDbDeleted(ri)) return null;
+                  // 2026-07-24 · 사용자 요청 "품명·단가·수량에 값이 없으면 행 만들지 마"
+                  //   세 필드 모두 비어있으면 렌더 스킵 (OCR 잡음 행 자동 배제)
+                  {
+                    const _qtyIdxSkip = dispHeaders.indexOf("수량");
+                    const _priIdxSkip = dispHeaders.indexOf("단가");
+                    const nmVal = nameIdx >= 0 ? String(row[nameIdx] ?? "").trim() : "";
+                    const qtVal = _qtyIdxSkip >= 0 ? parseNumber(row[_qtyIdxSkip]) : 0;
+                    const prVal = _priIdxSkip >= 0 ? parseNumber(row[_priIdxSkip]) : 0;
+                    if (!nmVal && qtVal === 0 && prVal === 0) return null;
+                  }
                   const isFirstInPage = ri === _firstVisibleByPage.get(pageNums[ri]);
                   const isLastInPage = ri === _lastVisibleByPage.get(pageNums[ri]);
                   const pn = pageNums[ri];
