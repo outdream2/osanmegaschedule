@@ -4753,10 +4753,19 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                 {/* 2026-07-23 · 사용자 요청 "재추출 버튼은 아래 배치" · flex-col 로 위(품명) 아래(버튼) 배치 */}
                                 <div className="flex flex-col gap-0.5 items-start">
                                   <span className="flex items-center gap-1">
-                                    <span className={`font-semibold break-words whitespace-normal ${isJunkName ? "text-gray-300 italic line-through" : "text-gray-900"}`}>
-                                      {cell == null ? <span className="text-gray-300">—</span> : renderTextWithBreaks(cellStr)}
-                                    </span>
-                                    <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
+                                    {/* 2026-07-24 · 사용자 요청 "이런건 품목에 나오면 안돼" · 잡문자면 본문 숨기고 경고 라벨만 표시 */}
+                                    {isJunkName ? (
+                                      <span className="text-[10px] font-bold text-rose-600 bg-rose-50 border border-rose-300 rounded px-1.5 py-0.5" title={`감지된 잡문자: "${cellStr.slice(0, 40)}${cellStr.length > 40 ? '…' : ''}"`}>
+                                        ⚠ 잡문자 (헤더 오인식) · 클릭하여 수정
+                                      </span>
+                                    ) : (
+                                      <>
+                                        <span className="font-semibold break-words whitespace-normal text-gray-900">
+                                          {cell == null ? <span className="text-gray-300">—</span> : renderTextWithBreaks(cellStr)}
+                                        </span>
+                                        <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
+                                      </>
+                                    )}
                                   </span>
                                   <span className="flex items-center gap-1">
                                     <button
