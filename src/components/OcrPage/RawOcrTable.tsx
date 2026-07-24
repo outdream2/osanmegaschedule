@@ -267,7 +267,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   // 2026-07-23 · 정산차액 사용자 override (사용자 요청 "정산차액도 입력가능")
   const [pageDiscountOverride, setPageDiscountOverride] = useState<Record<number, { amount: number; label: string }>>({});
   // 인라인 편집 UI · null = 편집 아님 · "discount"|"balance" = 편집 중
-  const [editingSummary, setEditingSummary] = useState<{ pn: number; kind: "discount" | "balance"; value: string } | null>(null);
+  const [editingSummary, setEditingSummary] = useState<{ pn: number; kind: "discount" | "balance"; value: string; dirty?: boolean } | null>(null);
   // "직접 입력" 모드: 사용자가 잔고 금액을 수동으로 입력
   const [pageBalanceManualInput, setPageBalanceManualInput] = useState<Record<number, string>>({});
   const [pageBalanceModeManual, setPageBalanceModeManual] = useState<Set<number>>(new Set());
@@ -4994,11 +4994,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                       ? editingSummary.value
                                                       : (totalDisc > 0 ? String(totalDisc) : "")
                                                   }
-                                                  placeholder="0"
-                                                  onFocus={() => setEditingSummary({ pn, kind: "discount", value: String(totalDisc || "") })}
-                                                  onChange={e => setEditingSummary({ pn, kind: "discount", value: e.target.value })}
+                                                  placeholder={totalDisc > 0 ? String(totalDisc) : "0"}
+                                                  // 2026-07-24 · 사용자 요청 "클릭하면 비어있게 · 아무것도 안하고 나오면 원래 금액"
+                                                  //   onFocus 에서 value=""로 비움 · dirty=false · onBlur 시 dirty 안하면 스킵
+                                                  onFocus={() => setEditingSummary({ pn, kind: "discount", value: "", dirty: false })}
+                                                  onChange={e => setEditingSummary({ pn, kind: "discount", value: e.target.value, dirty: true })}
                                                   onBlur={() => {
-                                                    if (!editingSummary || editingSummary.pn !== pn || editingSummary.kind !== "discount") return;
+                                                    if (!editingSummary || editingSummary.pn !== pn || editingSummary.kind !== "discount") { setEditingSummary(null); return; }
+                                                    if (!editingSummary.dirty) { setEditingSummary(null); return; }  // 아무것도 안 함 · 원본 유지
                                                     const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
                                                     if (n > 0) setPageDiscountOverride(prev => ({ ...prev, [pn]: { amount: n, label: "수정" } }));
                                                     else setPageDiscountOverride(prev => { const c = { ...prev }; delete c[pn]; return c; });
@@ -5036,11 +5039,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                                   ? editingSummary.value
                                                   : (displayBalForShow != null && displayBalForShow > 0 ? String(displayBalForShow) : "")
                                               }
-                                              placeholder="0"
-                                              onFocus={() => setEditingSummary({ pn, kind: "balance", value: String(displayBalForShow ?? "") })}
-                                              onChange={e => setEditingSummary({ pn, kind: "balance", value: e.target.value })}
+                                              placeholder={displayBalForShow != null && displayBalForShow > 0 ? String(displayBalForShow) : "0"}
+                                              // 2026-07-24 · 정산차액과 동일 정책 · 클릭 시 비우고 · 아무것도 안하면 원본 유지
+                                              onFocus={() => setEditingSummary({ pn, kind: "balance", value: "", dirty: false })}
+                                              onChange={e => setEditingSummary({ pn, kind: "balance", value: e.target.value, dirty: true })}
                                               onBlur={() => {
-                                                if (!editingSummary || editingSummary.pn !== pn || editingSummary.kind !== "balance") return;
+                                                if (!editingSummary || editingSummary.pn !== pn || editingSummary.kind !== "balance") { setEditingSummary(null); return; }
+                                                if (!editingSummary.dirty) { setEditingSummary(null); return; }
                                                 const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
                                                 if (n > 0) {
                                                   setPageBalanceOverride(prev => ({ ...prev, [pn]: n }));
