@@ -2984,13 +2984,26 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
       });
     const uniqTokens: string[] = Array.from(new Set<string>(rawTokens));
     if (currentName && isValidProductName(currentName) && !COMMA_NUM.test(currentName)) uniqTokens.push(currentName);
-    // 2026-07-24 · "품명" 헤더 위치 찾기 · 이 후에 나오는 토큰은 후보 강한 부스트
+    // 2026-07-24 · "품명" 헤더 위치 찾기 · 이 후에 나오는 토큰만 후보로 채택 (헤더 앞 데이터는 배제)
+    //   사용자 지적 · "DB 매칭 실패 후보가 전부 품명 헤더 앞 데이터" → 하드 필터
     //   rawText 전체에서 "품명" 문자열 위치 (없으면 -1)
     const nameHeaderVariants = ["품명", "상품명", "품 명", "상 품 명", "품목명", "제품명", "명칭"];
     let headerIdx = -1;
     for (const hv of nameHeaderVariants) {
       const i = scanText.indexOf(hv);
       if (i >= 0) { headerIdx = i; break; }
+    }
+    // 헤더 찾으면 · uniqTokens 을 헤더 이후 위치의 것만 남기고 필터
+    if (headerIdx >= 0) {
+      const filtered = uniqTokens.filter(t => {
+        const pos = scanText.indexOf(t);
+        return pos >= 0 && pos > headerIdx;
+      });
+      // 헤더 이후 후보 있으면 · 그것만 사용 · 없으면 (헤더가 rawText 끝 근처) 전체 유지
+      if (filtered.length > 0) {
+        uniqTokens.length = 0;
+        uniqTokens.push(...filtered);
+      }
     }
     // 2026-07-24 · scoring · 길이 + 한글 비율 + 근처 숫자 동반 + 품명 헤더 이후 부스트
     const scoreToken = (tok: string): number => {
