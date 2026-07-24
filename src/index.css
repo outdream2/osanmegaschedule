@@ -36,19 +36,12 @@ html, body {
 html { font-size: 16px; }
 @media (min-width: 640px) { html { font-size: 17.5px; } }
 
-/* 2026-07-24 · 사용자 문제 "전체화면 스크롤 안돼" 해결
- *  이전 · html+body 모두에 overflow-x:hidden 적용 → 일부 브라우저에서 세로 스크롤도 막힘
- *  수정 · html 은 완전 개방 · body 만 overflow-x 관리
- *  max-width 100vw · body 만 (html 은 자연 폭 유지) */
-html {
-  /* 세로 스크롤 확실히 · 다른 오버플로 지시 없음 */
-  overflow-y: auto;
-}
-body {
-  overflow-x: hidden;
-  max-width: 100vw;
-  /* rubber-band 바운스만 차단 · 세로 스크롤은 유지 */
-  overscroll-behavior-y: none;
+/* 2026-07-24 · 스크롤 문제 완전 해결 · 모든 오버플로 제약 제거
+ *  이전 오래된 overflow-x:hidden · overscroll-behavior:none 이 세로 스크롤 막던 문제
+ *  html/body 오버플로 자연 상태로 · #root 도 min-height 만 · 스크롤 완전 자유 */
+html, body {
+  margin: 0;
+  padding: 0;
 }
 #root { min-height: 100vh; }
 

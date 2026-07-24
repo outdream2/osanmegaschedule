@@ -894,6 +894,12 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
         }
       }
 
+      // 2026-07-24 · 사용자 요청 "수량·단가 재추출 시 작은 숫자부터 큰 숫자 순서로 보여줘"
+      //   기존 정렬 (DB 근접, 교차검증 등) 을 오름차순 정렬로 최종 재정렬
+      if ((colName === "수량" || colName === "단가") && candidateVals.length > 1) {
+        candidateVals = [...candidateVals].sort((a, b) => Number(a) - Number(b));
+        console.log(`[셀재추출/오름차순] ${colName} · ${candidateVals.length}개 (오름차순 정렬)`);
+      }
       if (candidateVals.length > 0) {
         setNumericCellCandidates(prev => ({ ...prev, [cellKey]: candidateVals }));
       }
@@ -1734,10 +1740,11 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   const responsiveDefault = containerWidth > 0
     ? Math.max(INV_COL_MIN, Math.min(containerWidth * autoRatio, invColMax))
     : INV_COL_DEFAULT;
-  // 사용자 값 유효성 · 컨테이너 대비 15%~40% 범위 안에 있어야 사용자값 존중 · 벗어나면 반응형 default
+  // 사용자 값 유효성 · 컨테이너 대비 10%~60% 범위 안에 있어야 사용자값 존중 (드래그 자유도 확보)
+  //   너무 좁으면 (10% 미만) · 너무 넓어서 데이터 잘림 (60% 초과) 만 초기화
   const userValidForContainer = containerWidth > 0
-    && invoiceColWidth >= containerWidth * 0.15
-    && invoiceColWidth <= containerWidth * 0.40
+    && invoiceColWidth >= containerWidth * 0.10
+    && invoiceColWidth <= containerWidth * 0.60
     && invoiceColWidth <= invColMax;
   const isUserAdjusted = Math.abs(invoiceColWidth - INV_COL_DEFAULT) > 5;
   const effectiveInvColWidth = (isUserAdjusted && userValidForContainer)
