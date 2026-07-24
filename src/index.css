@@ -40,12 +40,10 @@ html { font-size: 16px; }
 html, body {
   overflow-x: hidden;
   max-width: 100vw;
-  /* 2026-07-24 · 사용자 문제 "모바일 화면 밀 때 둥둥 떠다니는 느낌"
-   *  iOS Safari · Android Chrome rubber-band 바운스 차단
-   *  overscroll-behavior-y: none · 페이지 끝에서 튕기지 않음
-   *  touch-action pan-y · 수직 스크롤만 · 수평 pan 억제 (기울어짐 방지) */
+  /* 2026-07-24 · 모바일 rubber-band 바운스만 차단 · touch-action 은 원복
+   *  (touch-action pan-y 가 공통 헤더 등 수평 스크롤/드래그 UI 를 깨뜨림)
+   *  overscroll-behavior-y: none 만 유지 · 페이지 끝 튕김 방지 */
   overscroll-behavior-y: none;
-  touch-action: pan-y;
 }
 #root { min-height: 100vh; }
 
