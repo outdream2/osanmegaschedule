@@ -2870,7 +2870,20 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     }).filter((x): x is { rowIdx: number; name: string; supplier: string; skip: boolean } => x !== null);
 
     const activePairs = nameSupplierPairs.filter(p => !p.skip);
-    if (activePairs.length === 0) return;
+    // 2026-07-24 · 사용자 문제 "확정 눌렀는데 확정완료로 안 바뀜"
+    //   원인: activePairs 없으면 early return · confirmedPages 마킹 안됨
+    //   수정: activePairs 없어도 확정 상태 마킹 + 잔고 저장 · 매칭만 스킵
+    if (activePairs.length === 0) {
+      console.log(`[handleMatchPage] ${targetPage}번 · 매칭할 활성 행 없음 · 확정만 마킹`);
+      setConfirmedPages(prev => new Set([...prev, targetPage]));
+      const currentBal0 = pageBalanceOverride[targetPage] ?? pageSupplierBalances[targetPage];
+      if (currentBal0 != null && currentBal0 > 0) {
+        const supForBal0 = (rawSupplierByPage[targetPage] ?? structuredPages.find(p => p.page === targetPage)?.meta.supplier ?? "").trim();
+        const dateForBal0 = structuredPages.find(p => p.page === targetPage)?.meta.date ?? null;
+        if (supForBal0) saveSupplierBalance(supForBal0, currentBal0, dateForBal0);
+      }
+      return;
+    }
     const names = activePairs.map(p => p.name);
     const suppliers = activePairs.map(p => p.supplier);
     console.log(`[handleMatchPage] ${targetPage}번 명세서 · ${names.length}행 매칭 요청`);
