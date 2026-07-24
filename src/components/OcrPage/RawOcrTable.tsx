@@ -195,6 +195,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const [amountCorrections, setAmountCorrections] = useState<Record<number, number>>({});
   // 소계 불일치 시 사용자 선택: "stated" = 명세서 소계, "computed" = 인식된 합계, "custom" = 직접 선택
   const [pageSubtotalChoices, setPageSubtotalChoices] = useState<Record<number, "stated" | "computed" | "custom">>({});
+  // 2026-07-24 · 사용자 요청 "각 페이지 소계에 VAT 포함 체크박스 · 체크 시 금액계산 반영"
+  //   true 이면 · 매입총계 · 정산 계산 시 소계 × 1.1 (또는 실제 VAT 합 반영)
+  const [pageVatIncluded, setPageVatIncluded] = useState<Record<number, boolean>>({});
   // 2026-07-21: 에누리 적용 전/후 토글 · 기본 "before" (적용 전 · stated + 에누리)
   //   사용자가 "after" 선택 시 stated 그대로 (에누리 이미 반영된 최종금액 사용)
   const [discountApplyMode, setDiscountApplyMode] = useState<Record<number, "before" | "after">>(() => {
@@ -1478,6 +1481,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
     }
 
     // 5) 명세서 합계 그대로
+    return base;
+  };
+
+  // 2026-07-24 · VAT 포함 총액 (사용자 요청) · pageVatIncluded[pn] true 이면 base × 1.1
+  const getPageDisplayTotalWithVat = (pn: number): number => {
+    const base = getPageDisplayTotal(pn);
+    if (pageVatIncluded[pn]) return Math.round(base * 1.1);
     return base;
   };
 
@@ -3024,7 +3034,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
   const confPageTotals = new Map<number, number>();
   if (confAmtIdx >= 0) {
     uniquePageNums.forEach(pn => {
-      confPageTotals.set(pn, getPageDisplayTotal(pn));
+      confPageTotals.set(pn, getPageDisplayTotalWithVat(pn));
     });
   }
 
@@ -4767,14 +4777,39 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                               </>
                                             ) : (
                                               <>
-                                                <span className="text-[18px] font-black text-amber-900 tracking-tight whitespace-nowrap" title="금액 컬럼 합">
-                                                  {fmt(shown)}원
-                                                </span>
+                                                {(() => {
+                                                  const vatOn = !!pageVatIncluded[pn];
+                                                  const finalShown = vatOn ? Math.round(shown * 1.1) : shown;
+                                                  const vatAmount = vatOn ? Math.round(shown * 0.1) : 0;
+                                                  return (
+                                                    <>
+                                                      <span className="text-[18px] font-black text-amber-900 tracking-tight whitespace-nowrap"
+                                                        title={vatOn ? `공급가액 ${fmt(shown)} + VAT ${fmt(vatAmount)}` : "금액 컬럼 합"}>
+                                                        {fmt(finalShown)}원
+                                                      </span>
+                                                      {vatOn && (
+                                                        <span className="text-[10px] font-bold text-amber-600 bg-amber-100 border border-amber-300 rounded px-1 py-px whitespace-nowrap">
+                                                          +VAT {fmt(vatAmount)}
+                                                        </span>
+                                                      )}
+                                                    </>
+                                                  );
+                                                })()}
                                                 <button type="button"
                                                   onClick={() => { setPageSubtotalChoices(prev => ({ ...prev, [pn]: "custom" })); setPageSubtotalCustom(prev => ({ ...prev, [pn]: shown })); }}
                                                   className="text-[10px] font-semibold text-amber-500 hover:text-amber-800 transition cursor-pointer"
                                                   title="총소계 직접 입력"
                                                 >✎</button>
+                                                {/* 2026-07-24 · 사용자 요청 "각 페이지 소계 부분 VAT 포함 체크박스 · 체크 시 금액계산 반영" */}
+                                                <label className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-700 cursor-pointer hover:text-amber-900 ml-1"
+                                                  title="체크 시 · 소계에 VAT 10% 자동 합산 (매입총계 · 정산 반영)">
+                                                  <input type="checkbox"
+                                                    checked={!!pageVatIncluded[pn]}
+                                                    onChange={e => setPageVatIncluded(prev => ({ ...prev, [pn]: e.target.checked }))}
+                                                    className="w-3.5 h-3.5 accent-amber-500 cursor-pointer"
+                                                  />
+                                                  VAT 포함
+                                                </label>
                                               </>
                                             )}
                                             {/* 2026-07-23 · 사용자 요청 "정산차액·잔고는 입력박스로 보이게" · 항상 input 노출 */}
@@ -4824,30 +4859,30 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages, pageImages, rot
                                               onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
                                               className="w-[110px] text-[13px] font-black text-rose-800 bg-rose-50 border border-rose-300 hover:border-rose-500 focus:bg-white rounded px-1.5 py-0.5 focus:outline-none focus:border-rose-600 text-right"
                                             />
+                                            {/* 2026-07-24 · 사용자 요청 "확정 버튼 미수금 입력창 옆으로 이동" · 우측 배치 X · 인라인 */}
+                                            {!hasMissingSupplier && (() => {
+                                              const isConfirmed = confirmedPages.has(pn);
+                                              return (
+                                                <button type="button"
+                                                  onClick={() => handleMatchPage(pn)}
+                                                  disabled={!!matchingPage[pn]}
+                                                  className={`text-[13px] font-black text-white disabled:bg-slate-300 disabled:cursor-not-allowed border-2 rounded-lg px-3 py-1 cursor-pointer whitespace-nowrap inline-flex items-center gap-1 shadow-md ring-1 transition shrink-0 ml-2 ${
+                                                    isConfirmed
+                                                      ? "bg-violet-500 hover:bg-violet-600 border-violet-700 ring-violet-200"
+                                                      : "bg-emerald-500 hover:bg-emerald-600 border-emerald-700 ring-emerald-200 animate-pulse"
+                                                  }`}
+                                                  title={isConfirmed ? `${pn}번 · 확정 완료 · 재클릭 재매칭` : `${pn}번 · 2차보정 확정 전송`}
+                                                >
+                                                  {matchingPage[pn] ? (<><Loader2 size={12} className="animate-spin" /> 확정중...</>)
+                                                    : isConfirmed ? (<><Check size={12} /> 확정완료</>)
+                                                    : (<><Check size={12} /> 확정</>)}
+                                                </button>
+                                              );
+                                            })()}
                                           </>
                                         );
                                       })()}
                                     </div>
-                                    {/* 2026-07-23 · 사용자 요청 "확정 버튼 안 보이네 · 잘 보이는 곳으로" · 크게·진하게·항상 우측 노출 */}
-                                    {!hasMissingSupplier && (() => {
-                                      const isConfirmed = confirmedPages.has(pn);
-                                      return (
-                                        <button type="button"
-                                          onClick={() => handleMatchPage(pn)}
-                                          disabled={!!matchingPage[pn]}
-                                          className={`text-[13px] font-black text-white disabled:bg-slate-300 disabled:cursor-not-allowed border-2 rounded-lg px-4 py-2 cursor-pointer whitespace-nowrap inline-flex items-center gap-1.5 shadow-lg ring-2 transition shrink-0 ${
-                                            isConfirmed
-                                              ? "bg-violet-500 hover:bg-violet-600 border-violet-700 ring-violet-200"
-                                              : "bg-emerald-500 hover:bg-emerald-600 border-emerald-700 ring-emerald-200 animate-pulse"
-                                          }`}
-                                          title={isConfirmed ? `${pn}번 · 확정 완료 · 재클릭 재매칭` : `${pn}번 · 2차보정 확정 전송`}
-                                        >
-                                          {matchingPage[pn] ? (<><Loader2 size={14} className="animate-spin" /> 확정중...</>)
-                                            : isConfirmed ? (<><Check size={14} /> 확정완료</>)
-                                            : (<><Check size={14} /> 확정</>)}
-                                        </button>
-                                      );
-                                    })()}
                                   </div>
 
                                   {/* 잔고 인라인 (참고용) — 정산차액 옆 · 소형 */}
