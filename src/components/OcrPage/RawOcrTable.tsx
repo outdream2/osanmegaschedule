@@ -144,6 +144,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   const [amountCorrections, setAmountCorrections] = useState<Record<number, number>>({});
   // 소계 불일치 시 사용자 선택: "stated" = 명세서 소계, "computed" = 인식된 합계, "custom" = 직접 선택
   const [pageSubtotalChoices, setPageSubtotalChoices] = useState<Record<number, "stated" | "computed" | "custom">>({});
+  // 2026-07-27 · 사용자 요청 "1차보정 총소계금액도 편집가능하게" · grand total override
+  const [grandTotalOverride, setGrandTotalOverride] = useState<number | null>(null);
+  const [editingGrandTotal, setEditingGrandTotal] = useState<string | null>(null);
   // 2026-07-24 · 사용자 요청 "각 페이지 소계에 VAT 포함 체크박스 · 체크 시 금액계산 반영"
   //   true 이면 · 매입총계 · 정산 계산 시 소계 × 1.1 (또는 실제 VAT 합 반영)
   const [pageVatIncluded, setPageVatIncluded] = useState<Record<number, boolean>>({});
@@ -5329,10 +5332,35 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                         title={totalBreakdownTitle}
                       >합 계</td>
                     )}
-                    <td
-                      className="px-3 py-2.5 text-right font-black text-amber-700 text-sm whitespace-nowrap cursor-help"
-                      title={totalBreakdownTitle}
-                    >{fmt(total)}원</td>
+                    <td className="px-3 py-2.5 text-right font-black text-amber-700 text-sm whitespace-nowrap">
+                      {/* 2026-07-27 · 사용자 요청 "1차보정 총소계금액도 편집가능하게" · 클릭 인라인 입력 */}
+                      {editingGrandTotal !== null ? (
+                        <input type="text" inputMode="numeric" autoFocus
+                          value={editingGrandTotal}
+                          onChange={e => setEditingGrandTotal(e.target.value)}
+                          onBlur={() => {
+                            const n = parseNumber(editingGrandTotal.replace(/[^\d-]/g, ""));
+                            if (n > 0) setGrandTotalOverride(n);
+                            else setGrandTotalOverride(null);
+                            setEditingGrandTotal(null);
+                          }}
+                          onKeyDown={e => {
+                            if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                            if (e.key === "Escape") { setEditingGrandTotal(null); }
+                          }}
+                          className="w-[150px] text-right bg-white border-2 border-amber-400 rounded px-2 py-0.5 focus:outline-none focus:border-amber-600 text-amber-800"
+                        />
+                      ) : (
+                        <button type="button"
+                          onClick={() => setEditingGrandTotal(String(grandTotalOverride ?? total))}
+                          title={grandTotalOverride != null ? `수정값 · 원본 자동계산: ${fmt(total)}원 · ${totalBreakdownTitle}` : `클릭하여 총합계 수정 · ${totalBreakdownTitle}`}
+                          className={`cursor-pointer hover:underline ${grandTotalOverride != null ? "text-orange-700" : ""}`}
+                        >
+                          {fmt(grandTotalOverride ?? total)}원
+                          {grandTotalOverride != null && <span className="text-[10px] font-bold text-orange-500 ml-1">✎</span>}
+                        </button>
+                      )}
+                    </td>
                     {orderNow.slice(amtOrderIdx + 1).map((_, i) => <td key={i} />)}
                   </tr>
                 </tfoot>
