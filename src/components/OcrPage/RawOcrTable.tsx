@@ -6216,7 +6216,10 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                           );
                                         })()}
                                       </div>
-                                      {/* 우측: 공급사 잔고 드롭박스 + 직접입력/기록안함 + 확인 */}
+                                      {/* 2026-07-27 · 사용자 요청 "잔고 금액선택 재추출 부분 제거 · 확정 시 자동 저장"
+                                          기존 · 2차보정 소계 행에도 공급사 잔고 드롭박스 · 재추출 · 저장 UI
+                                          제거 · false 로 wrapping · 잔고는 1차의 미수금 input 및 확정 버튼 저장으로 처리 */}
+                                      {false && (
                                       <div className="flex items-center gap-1.5 flex-wrap justify-end">
                                         <span className="text-rose-600 font-bold text-[11px] whitespace-nowrap">공급사 잔고</span>
                                         <select
@@ -6334,6 +6337,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                           >{savedBalancePages.has(pn) ? "✓ 저장됨" : "잔고 저장"}</button>
                                         )}
                                       </div>
+                                      )}
+                                      {/* END false-wrapped 공급사 잔고 드롭박스 */}
                                     </div>
                                   </td>
                                 </tr>
