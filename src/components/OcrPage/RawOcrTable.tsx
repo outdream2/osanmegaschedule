@@ -3712,20 +3712,22 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                     ? effectiveDispRows.filter((_, i) => pageNums[i] === pn && !permanentlyDeletedRawRows.has(i) && !hiddenRawRows.has(i)).length
                     : 0;
                   // 2026-07-27 · 이미지 rowSpan · 실제 렌더될 행 수 정확히 계산
-                  //   phantom 페이지 필터·hiddenRawRows·empty 자동 스킵 반영해서 · rowSpan 미스매치 방지
-                  const imgRowSpan = isFirstInPage
-                    ? 1 + effectiveDispRows.filter((r, i) => {
+                  //   각 데이터 행 아래에 ERP 매칭 sub-row 도 렌더되므로 · 2배 카운트
+                  const visibleDataRows = isFirstInPage
+                    ? effectiveDispRows.filter((r, i) => {
                         if (pageNums[i] !== pn) return false;
                         if (permanentlyDeletedRawRows.has(i)) return false;
                         if (isRowDbDeleted(i)) return false;
                         if (hiddenRawRows.has(i)) return false;
-                        // 빈 행 (품명·수량·단가 모두 없음) 도 스킵
                         const _n = nameIdx >= 0 ? String(r[nameIdx] ?? "").trim() : "";
                         const _q = _qtyIdxSkip0 >= 0 ? parseNumber(r[_qtyIdxSkip0]) : 0;
                         const _p = _priIdxSkip0 >= 0 ? parseNumber(r[_priIdxSkip0]) : 0;
                         if (!_n && _q === 0 && _p === 0) return false;
                         return true;
-                      }).length + (amtIdx >= 0 ? 1 : 0)
+                      }).length
+                    : 0;
+                  const imgRowSpan = isFirstInPage
+                    ? 1 + (visibleDataRows * 2) + (amtIdx >= 0 ? 1 : 0)  // 헤더 + (데이터+ERP sub) + 소계
                     : 0;
                   const pageSupplierHeadRaw = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
                   const rawColSpan = (() => {
@@ -4764,6 +4766,52 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                         })}
                       </tr>
                       )}
+                      {/* 2026-07-27 · B안 · 각 데이터 행 아래에 ERP 매칭 정보 sub-row */}
+                      {!isPageCollapsedRaw && (() => {
+                        const m = cancelledRows.has(ri) ? null : (selectedCands[ri] ?? matchItems?.[ri]?.matched ?? null);
+                        const autoSyn = cancelledAutoMap.has(ri) ? undefined : autoSynonymMatches[ri];
+                        const bc = cancelledAutoMap.has(ri) ? null : (barcodeAutoMap[ri] ?? null);
+                        const erpName = m?.name ?? autoSyn?.name ?? bc?.name ?? null;
+                        const erpCode = m?.code ?? autoSyn?.code ?? bc?.code ?? null;
+                        const masterP = m?.masterPrice ?? bc?.masterPrice ?? null;
+                        const saleP = m?.salePrice ?? bc?.salePrice ?? null;
+                        const profitR = m?.profitRate ?? bc?.profitRate ?? null;
+                        const erpStock = erpCode ? (erpStockMap[erpCode] ?? erpStockMap[String(erpCode).replace(/^0+/, "")] ?? null) : null;
+                        const anyErpInfo = erpName || erpCode || masterP != null || saleP != null;
+                        return (
+                          <tr className={`border-b border-indigo-100/60 ${anyErpInfo ? "bg-indigo-50/25" : "bg-slate-50/30"}`}>
+                            {pageImages?.length ? null : null /* 이미지 컬럼은 rowSpan 처리 안 함 · 별도 td 안 넣음 */}
+                            <td className="w-14" />
+                            <td colSpan={rawColSpan - 1} className="px-3 py-1">
+                              {anyErpInfo ? (
+                                <div className="flex items-center gap-2 flex-wrap text-[10.5px]">
+                                  <span className="text-[9px] font-black bg-indigo-500 text-white rounded px-1 py-px">2차 ERP</span>
+                                  {erpCode && (
+                                    <span className="font-mono font-bold text-slate-700 bg-slate-100 border border-slate-300 rounded px-1.5 py-px" title="ERP 상품코드">#{erpCode}</span>
+                                  )}
+                                  {erpName && (
+                                    <span className="font-semibold text-indigo-800" title="ERP 매칭 상품명">{erpName}</span>
+                                  )}
+                                  {masterP != null && Number.isFinite(masterP) && masterP > 0 && (
+                                    <span className="text-emerald-700 font-semibold" title="사입단가">사입 {fmt(masterP)}원</span>
+                                  )}
+                                  {saleP != null && Number.isFinite(saleP) && saleP > 0 && (
+                                    <span className="text-sky-700 font-semibold" title="판매가">판매 {fmt(saleP)}원</span>
+                                  )}
+                                  {profitR != null && Number.isFinite(profitR) && (
+                                    <span className={`font-bold ${profitR >= 0 ? "text-emerald-600" : "text-rose-600"}`} title="이익률">이익률 {(profitR * 100).toFixed(1)}%</span>
+                                  )}
+                                  {erpStock != null && (
+                                    <span className={`font-bold ${erpStock > 0 ? "text-violet-700" : "text-rose-600"}`} title="ERP 현재고">재고 {fmt(erpStock)}</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-[10px] text-slate-400 italic">— ERP 매칭 없음 · 확정 버튼 클릭 후 자동 매칭 —</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })()}
                       {/* 2026-07-22 · 첫행보정·자동정리 버튼 → 명세서 시작 부분(페이지 헤더 행)으로 이동 · 여기 tr 삭제 */}
                       {isLastInPage && amtIdx >= 0 && (() => {
                         const pageSupplier = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
