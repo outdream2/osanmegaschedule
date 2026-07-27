@@ -1898,8 +1898,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   // ── 상품명 보정 ──────────────────────────────────────────────────────────
   const [matching,         setMatching        ] = useState(false);
   const [matchItems,       setMatchItems      ] = useState<MatchedItem[] | null>(null);
-  // 2026-07-27 · B안 (1차·2차 통합) · showSecondCorrection 기본 true · 2차 뷰 자동 노출
-  const [showSecondCorrection] = useState(true);
+  // 2026-07-22 · "1차보정 완료 · 2차보정 시작" 버튼 명시 클릭 후에만 2차 표 표시 (사용자 요청)
+  const [showSecondCorrection, setShowSecondCorrection] = useState(false);
   // 2026-07-22 · matchItems ref 동기화 (reextractOneCell forward reference용)
   useEffect(() => { matchItemsRef.current = matchItems; }, [matchItems]);
   // matchItems가 준비되면 products-map을 한 번 로드해서 code → current_stock 매핑 생성
