@@ -2679,11 +2679,14 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     const priIdxLocal = dispHeaders.indexOf("단가");
     const nameSupplierPairs = dispRows.map((row, ri) => {
       if (pageNums[ri] !== targetPage) return null;
-      // 2026-07-23 · 사용자 편집·확정된 셀은 스킵 · 재로딩 시 원상복귀 방지
-      const userEdited = cellEdits[ri]?.[nameIdx] !== undefined;
+      // 2026-07-27 · 사용자 지적 "2차보정 ERP 매칭 안 됨" · 편집 셀도 매칭 시도
+      //   autoSynonymMatches (이미 DB 매칭됨) 만 스킵
+      //   cellEdits (사용자 텍스트 편집) 은 → 그 편집값으로 매칭 시도 (사용자 의도: 수정한 이름으로 매칭)
       const userAutoSyn = autoSynonymMatches[ri] !== undefined;
-      if (userEdited || userAutoSyn) return { rowIdx: ri, name: "", supplier: "", skip: true };
-      const rawName = String(row[nameIdx] ?? "").trim();
+      if (userAutoSyn) return { rowIdx: ri, name: "", supplier: "", skip: true };
+      // 사용자 편집값 우선 · 없으면 원본
+      const editedName = cellEdits[ri]?.[nameIdx];
+      const rawName = String(editedName ?? row[nameIdx] ?? "").trim();
       let sup = "";
       if (rawSupplierByPage[targetPage] !== undefined) sup = rawSupplierByPage[targetPage];
       else if (ocrSuppIdx >= 0) {
