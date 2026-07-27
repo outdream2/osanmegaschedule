@@ -3672,8 +3672,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                   //   → 마지막 행이 삭제돼도 요약 행 안 사라지도록 (2026-07-10)
                   const _lastVisibleByPage = new Map<number, number>();
                   const _firstVisibleByPage = new Map<number, number>();
-                  effectiveDispRows.forEach((_, i) => {
-                    if (permanentlyDeletedRawRows.has(i) || isRowDbDeleted(i)) return;
+                  // 2026-07-27 · 사용자 요청 "거래명세표 사이에 없는 공급사 데이터 생겨 · 삭제도 안돼"
+                  //   유효 행이 하나도 없는 페이지는 · 페이지 헤더·소계도 렌더 안 함 (phantom page 완전 제거)
+                  //   유효 조건: 삭제·숨김 아니고 · 품명·수량·단가 중 하나라도 있음
+                  const _qtyIdxSkip0 = dispHeaders.indexOf("수량");
+                  const _priIdxSkip0 = dispHeaders.indexOf("단가");
+                  effectiveDispRows.forEach((row, i) => {
+                    if (permanentlyDeletedRawRows.has(i) || isRowDbDeleted(i) || hiddenRawRows.has(i)) return;
+                    const nmVal0 = nameIdx >= 0 ? String(row[nameIdx] ?? "").trim() : "";
+                    const qtVal0 = _qtyIdxSkip0 >= 0 ? parseNumber(row[_qtyIdxSkip0]) : 0;
+                    const prVal0 = _priIdxSkip0 >= 0 ? parseNumber(row[_priIdxSkip0]) : 0;
+                    if (!nmVal0 && qtVal0 === 0 && prVal0 === 0) return;  // 잡음 행 스킵
                     const pn = pageNums[i];
                     if (!_firstVisibleByPage.has(pn)) _firstVisibleByPage.set(pn, i);
                     _lastVisibleByPage.set(pn, i);
