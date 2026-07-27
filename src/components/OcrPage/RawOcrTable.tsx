@@ -5395,25 +5395,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
       {/* ── 상품명 보정 ── */}
       {structuredPages.length > 0 && nameIdx >= 0 && (
         <>
-          {/* 2026-07-22 · 사용자 요청: 명시적 "2차보정 시작" 버튼 클릭 후에만 2차 표 표시
-               matchItems 자동정리로 채워졌어도 · showSecondCorrection=false 면 표 숨김 */}
-          {!showSecondCorrection && (
-            <div className="w-full flex flex-col sm:flex-row gap-2">
-              <button onClick={async () => {
-                  if (!matchItems) await handleMatch();
-                  setShowSecondCorrection(true);
-                }}
-                disabled={matching || hasMissingSupplier}
-                title={hasMissingSupplier ? `공급사 미입력 페이지 (${missingSupplierPages.join(", ")}번) 를 먼저 채워주세요` : "1차보정 완료 · 2차보정(ERP 상품 매칭) 시작"}
-                className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-black text-white bg-indigo-600 border border-indigo-700 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm">
-                {matching
-                  ? <><Loader2 size={15} className="animate-spin" />상품명 매칭 중...</>
-                  : hasMissingSupplier
-                    ? <><AlertTriangle size={15} />공급사 입력 필요 ({missingSupplierPages.length}개 페이지)</>
-                    : <><Wand2 size={15} />1차보정 완료 · 2차보정 시작{autoSynonymCount > 0 ? ` (동의어 ${autoSynonymCount}건 포함)` : ""}</>}
-              </button>
-            </div>
-          )}
+          {/* 2026-07-27 · B안 · 1차·2차 통합 진행 · "2차보정 시작" 버튼 제거
+              페이지별 [확정] 버튼으로 매칭·저장 처리 · 별도 2차 뷰 진입 버튼 불필요 */}
 
           {matchItems && showSecondCorrection && (
             <div className="w-full max-w-[1200px] ml-0 mr-8 sm:mr-24 lg:mr-56 bg-white border border-indigo-200 rounded-2xl overflow-hidden shadow-sm">
