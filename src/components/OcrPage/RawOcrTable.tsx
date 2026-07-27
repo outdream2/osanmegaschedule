@@ -3711,12 +3711,21 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                   const pageRowCountRaw = isFirstInPage
                     ? effectiveDispRows.filter((_, i) => pageNums[i] === pn && !permanentlyDeletedRawRows.has(i) && !hiddenRawRows.has(i)).length
                     : 0;
-                  // 이미지 rowSpan: 헤더 행(1) + 렌더된 데이터 행(hiddenRawRows 포함, 취소선으로 표시됨) + 첫행보정 행(1) + 소계 행
-                  // hiddenRawRows 는 return null 되지 않고 취소선으로 렌더됨 → rowSpan 에 포함해야 테이블 정합
-                  // 첫행보정 행: isFirstInPage 일 때 항상 1개 추가 렌더됨 → rowSpan 에 반드시 포함
+                  // 2026-07-27 · 이미지 rowSpan · 실제 렌더될 행 수 정확히 계산
+                  //   phantom 페이지 필터·hiddenRawRows·empty 자동 스킵 반영해서 · rowSpan 미스매치 방지
                   const imgRowSpan = isFirstInPage
-                    ? 1 + effectiveDispRows.filter((_, i) => pageNums[i] === pn && !permanentlyDeletedRawRows.has(i) && !isRowDbDeleted(i)).length + (amtIdx >= 0 ? 1 : 0)
-                    /* 2026-07-22: 첫행보정 행 제거되어 +1 삭제 */
+                    ? 1 + effectiveDispRows.filter((r, i) => {
+                        if (pageNums[i] !== pn) return false;
+                        if (permanentlyDeletedRawRows.has(i)) return false;
+                        if (isRowDbDeleted(i)) return false;
+                        if (hiddenRawRows.has(i)) return false;
+                        // 빈 행 (품명·수량·단가 모두 없음) 도 스킵
+                        const _n = nameIdx >= 0 ? String(r[nameIdx] ?? "").trim() : "";
+                        const _q = _qtyIdxSkip0 >= 0 ? parseNumber(r[_qtyIdxSkip0]) : 0;
+                        const _p = _priIdxSkip0 >= 0 ? parseNumber(r[_priIdxSkip0]) : 0;
+                        if (!_n && _q === 0 && _p === 0) return false;
+                        return true;
+                      }).length + (amtIdx >= 0 ? 1 : 0)
                     : 0;
                   const pageSupplierHeadRaw = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
                   const rawColSpan = (() => {
