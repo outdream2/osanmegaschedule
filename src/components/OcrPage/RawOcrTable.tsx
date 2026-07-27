@@ -3892,39 +3892,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                 </button>
                               )}
                               <span className={pageHasQpaMismatch ? "text-rose-500 font-normal" : "text-amber-500 font-normal"}>· {pageRowCountRaw}건</span>
-                              {pageHasQpaMismatch && (() => {
-                                // 어떤 행들이 수식오탐인지 상세 · 각 행의 품명/수량/단가/금액 표시
-                                const qtyH = dispHeaders.indexOf("수량");
-                                const priH = dispHeaders.indexOf("단가");
-                                const amtHIdx = dispHeaders.indexOf("금액");
-                                const nameH = dispHeaders.indexOf("품명");
-                                const details: string[] = [];
-                                effectiveDispRows.forEach((row, i) => {
-                                  if (pageNums[i] !== pn) return;
-                                  if (isRowDeleted(i)) return;
-                                  const q = parseNumber(row[qtyH]);
-                                  const p = parseNumber(row[priH]);
-                                  const a = parseNumber(row[amtHIdx]);
-                                  if (q > 0 && p > 0 && a > 0) {
-                                    const expected = Math.round(q * p);
-                                    // 조건 완화 (2026-07-19): 절대차 5원 이상 AND 상대차 3% 이상 · 잔돈 오차 무시
-                                    const diff = Math.abs(expected - a);
-                                    if (diff > 5 && diff > a * 0.03) {
-                                      const name = String(row[nameH] ?? "").slice(0, 15);
-                                      details.push(`${name} · ${q}×${p}=${fmt(expected)} vs ${fmt(a)}`);
-                                    }
-                                  }
-                                });
-                                const tooltip = details.slice(0, 10).join("\n") + (details.length > 10 ? `\n… 외 ${details.length - 10}건` : "");
-                                return (
-                                  <span
-                                    className="ml-1 inline-flex items-center gap-1 text-[11px] font-black text-white bg-rose-500 border border-rose-600 rounded px-1.5 py-0.5 cursor-help"
-                                    title={`[수식오탐 ${pageQpaMismatchCount}건]\n${tooltip}`}
-                                  >
-                                    ⚠️ 수식오탐 {pageQpaMismatchCount}건 (마우스오버 · 상세)
-                                  </span>
-                                );
-                              })()}
+                              {/* 2026-07-27 · 사용자 요청 "수식오탐 배지 제거" · 시각 노이즈 감소 */}
                               {/* 페이지별 상품명 보정 버튼 제거 (2026-07-19 · 실수 클릭 방지)
                                   전체 매칭은 아래 "1차보정 완료 · 2차보정 시작" 버튼으로 진행 */}
                               {/* 2026-07-22: "이 명세서 재추출" 버튼 삭제 (사용자 요청) */}
@@ -4549,11 +4517,17 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                   className="px-3 py-2 max-w-[240px] cursor-pointer hover:bg-indigo-50/60 group"
                                   title="클릭하여 상품명 수정">
                                   <div className="flex flex-col gap-0">
-                                    <span className="flex items-center gap-1">
+                                    <span className="flex items-center gap-1 flex-wrap">
                                       {/* 2026-07-23 · 사용자 요청 "db매칭 한 경우 품명에 db배지 표시해" */}
                                       <span className="text-[9px] font-black bg-indigo-500 text-white px-1 py-px rounded shrink-0" title="products DB 에서 자동 매칭">DB</span>
                                       <BookOpen size={9} className="text-indigo-400 shrink-0" />
                                       <span className="font-semibold text-indigo-700 break-words whitespace-normal">{renderTextWithBreaks(autoMatch.name)}</span>
+                                      {/* 2026-07-27 · B안 · 1차·2차 통합 · ERP 코드 인라인 표시 */}
+                                      {autoMatch.code && (
+                                        <span className="text-[9px] font-mono font-bold bg-slate-100 text-slate-600 border border-slate-300 rounded px-1 py-px shrink-0" title={`ERP 상품코드: ${autoMatch.code}`}>
+                                          #{autoMatch.code}
+                                        </span>
+                                      )}
                                       <Pencil size={8} className="text-indigo-200 opacity-0 group-hover:opacity-100 transition shrink-0" />
                                       <button
                                         type="button"
@@ -4562,6 +4536,20 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                         className="text-[10px] px-1 py-px rounded bg-rose-100 text-rose-600 hover:bg-rose-200 cursor-pointer shrink-0"
                                       >✕</button>
                                     </span>
+                                    {/* 2026-07-27 · B안 · matchItems (서버 ERP 매칭) 인라인 표시 (autoMatch 와 다르면) */}
+                                    {(() => {
+                                      const serverMatch = matchItems?.[ri]?.matched;
+                                      if (!serverMatch || !serverMatch.name || serverMatch.name === autoMatch.name) return null;
+                                      return (
+                                        <span className="flex items-center gap-1 text-[10px] mt-0.5">
+                                          <span className="text-emerald-600 font-bold bg-emerald-50 border border-emerald-200 rounded px-1 py-px" title="서버 ERP 자동매칭">ERP</span>
+                                          <span className="text-emerald-700 truncate max-w-[160px]" title={serverMatch.name}>{serverMatch.name}</span>
+                                          {serverMatch.code && (
+                                            <span className="text-[9px] font-mono text-slate-500" title={`서버 매칭 코드: ${serverMatch.code}`}>#{serverMatch.code}</span>
+                                          )}
+                                        </span>
+                                      );
+                                    })()}
                                     <button
                                       type="button"
                                       onClick={e => { e.stopPropagation(); setDeleteSynConfirm({ ri, origName: String(origCell ?? "") }); }}
