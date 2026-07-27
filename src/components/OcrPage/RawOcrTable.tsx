@@ -5334,18 +5334,28 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                 const imgColOffset = pageImages?.length ? 1 : 0; // 이미지 컬럼 추가 시 colSpan 보정
                 return (
                 <tfoot>
-                  {supplierTotals.length >= 1 && supplierTotals.map(({ supplier, total: sTotal, count }) => (
+                  {supplierTotals.length >= 1 && supplierTotals.map(({ supplier, total: sTotal, count }) => {
+                    // 2026-07-27 · 사용자 요청 "각 공급사의 잔고도 같이 표시"
+                    const balRec = supplierBalanceRecords.find(r => String(r.supplier_name).trim() === supplier.trim());
+                    const balAmt = balRec ? Number(balRec.balance) : null;
+                    return (
                     <tr key={supplier} className="border-t border-amber-100 bg-amber-50/40">
                       {imgColOffset > 0 && <td />}
                       {amtOrderIdx > 0 && (
                         <td colSpan={Math.max(1, amtOrderIdx)} className="px-3 py-2 text-right font-semibold text-gray-500">
                           {supplier} <span className="text-gray-400">({count}매)</span>
+                          {balAmt != null && balAmt > 0 && (
+                            <span className="ml-2 text-[11px] text-rose-600 font-bold" title={`최신 미수금 · ${balRec?.invoice_date ?? ""}`}>
+                              미수 {fmt(balAmt)}원
+                            </span>
+                          )}
                         </td>
                       )}
                       <td className="px-3 py-2 text-right font-bold text-amber-600 whitespace-nowrap">{fmt(sTotal)}원</td>
                       {orderNow.slice(amtOrderIdx + 1).map((_, i) => <td key={i} />)}
                     </tr>
-                  ))}
+                    );
+                  })}
                   <tr className="bg-amber-50 border-t-2 border-amber-300">
                     {imgColOffset > 0 && <td />}
                     {amtOrderIdx > 0 && (
