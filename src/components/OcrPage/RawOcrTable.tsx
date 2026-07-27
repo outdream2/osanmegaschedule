@@ -6215,16 +6215,38 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                           return (
                                             <div className="flex flex-col items-center gap-0.5">
                                               <div className="flex items-center gap-1.5 flex-wrap justify-center">
-                                                <span
-                                                  className={`font-black text-base tracking-tight whitespace-nowrap ${
-                                                    mismatch2 ? "text-rose-600 underline decoration-wavy decoration-rose-400 underline-offset-2" : "text-violet-900"
+                                                {/* 2026-07-27 · 사용자 요청 "명세서 소계 총금액 입력창 변환 및 수정" · 2차 명세서 소계도 편집 가능 */}
+                                                <input type="text" inputMode="numeric"
+                                                  value={
+                                                    editingSummary?.pn === pn && editingSummary.kind === "subtotal"
+                                                      ? editingSummary.value
+                                                      : fmt(pageTotalEdited)
+                                                  }
+                                                  placeholder={fmt(pageTotalEdited)}
+                                                  onFocus={() => setEditingSummary({ pn, kind: "subtotal", value: "", dirty: false })}
+                                                  onChange={e => setEditingSummary({ pn, kind: "subtotal", value: e.target.value, dirty: true })}
+                                                  onBlur={() => {
+                                                    if (!editingSummary || editingSummary.pn !== pn || editingSummary.kind !== "subtotal") { setEditingSummary(null); return; }
+                                                    if (!editingSummary.dirty) { setEditingSummary(null); return; }
+                                                    const n = parseNumber(editingSummary.value.replace(/[^\d-]/g, ""));
+                                                    if (n > 0) {
+                                                      setPageSubtotalChoices(prev => ({ ...prev, [pn]: "custom" }));
+                                                      setPageSubtotalCustom(prev => ({ ...prev, [pn]: n }));
+                                                    } else {
+                                                      setPageSubtotalChoices(prev => { const c = { ...prev }; delete c[pn]; return c; });
+                                                      setPageSubtotalCustom(prev => { const c = { ...prev }; delete c[pn]; return c; });
+                                                    }
+                                                    setEditingSummary(null);
+                                                  }}
+                                                  onKeyDown={e => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); if (e.key === "Escape") setEditingSummary(null); }}
+                                                  className={`w-[140px] text-base font-black text-right bg-white/70 border border-violet-300 hover:border-violet-500 focus:bg-white rounded px-2 py-0.5 focus:outline-none focus:border-violet-600 tracking-tight ${
+                                                    mismatch2 ? "text-rose-600" : "text-violet-900"
                                                   }`}
                                                   title={mismatch2
-                                                    ? `수량×단가 합(${fmt(sumQtyPrice2)}원)이 명세서 소계(${fmt(stated2!)}원)와 다릅니다`
-                                                    : `수량×단가 합과 명세서 소계가 일치`}
-                                                >
-                                                  {fmt(pageTotalEdited)}원
-                                                </span>
+                                                    ? `수량×단가 합(${fmt(sumQtyPrice2)}원)이 명세서 소계(${fmt(stated2!)}원)와 다릅니다 · 클릭하여 수정`
+                                                    : `클릭하여 소계 수정`}
+                                                />
+                                                <span className="text-sm font-black text-violet-900">원</span>
                                                 {disc2 && (
                                                   <span
                                                     className="text-[10px] font-bold text-violet-700 bg-white/70 border border-violet-300 rounded px-1.5 py-0.5 whitespace-nowrap"
