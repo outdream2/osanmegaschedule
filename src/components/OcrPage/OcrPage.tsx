@@ -726,28 +726,33 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
       }
       imagesDataRef.current = imgs;
 
-      // Auto-detect text orientation · 2026-07-24 개선
-      //   사용자 문제 "이미지 자동회전이 안되"
-      //   기존: 첫 이미지만 검사 · 첫장이 표지·비어있음 등 예외 시 0 반환 → 회전 실패
-      //   개선: 여러 페이지 병렬 감지 · 다수결 (majority vote) · 로그로 원인 추적
+      // Auto-detect text orientation · 2026-07-27 개선
+      //   사용자 요청 "이미지 로딩 시 가로 글씨 읽는 방향으로 회전"
+      //   1) detectTextOrientation 결과 다수결 (5장 확대)
+      //   2) 감지 실패·0° 반환이지만 이미지가 세로형(portrait) 이면 aspect ratio 폴백 · -90° 로 가로화
       if (imgs.length > 0) {
         setDetectingOrient(true);
         try {
-          const sampleCount = Math.min(3, imgs.length);
+          const sampleCount = Math.min(5, imgs.length);
           const samples = imgs.slice(0, sampleCount);
-          const detections = await Promise.all(
-            samples.map(async (img, idx) => {
+          // 이미지 크기 · aspect ratio (portrait/landscape) 감지 병렬
+          const measured = await Promise.all(samples.map((img, idx) => new Promise<{ idx: number; deg: number; portrait: boolean }>(resolve => {
+            const dataUrl = `data:${img.mimeType};base64,${img.data}`;
+            const el = new Image();
+            el.onload = async () => {
+              const portrait = el.naturalHeight > el.naturalWidth * 1.15;
               try {
-                const dataUrl = `data:${img.mimeType};base64,${img.data}`;
                 const d = await detectTextOrientation(dataUrl);
-                return { idx, deg: d };
-              } catch { return { idx, deg: 0 }; }
-            })
-          );
-          console.log(`[auto-rotation] ${sampleCount}개 페이지 감지:`, detections.map(d => `p${d.idx + 1}=${d.deg}°`).join(" · "));
-          // 다수결 · 가장 많이 나온 각도 선택 · 동률이면 첫 non-zero 값
+                resolve({ idx, deg: d, portrait });
+              } catch { resolve({ idx, deg: 0, portrait }); }
+            };
+            el.onerror = () => resolve({ idx, deg: 0, portrait: false });
+            el.src = dataUrl;
+          })));
+          console.log(`[auto-rotation] ${sampleCount}장 감지:`, measured.map(m => `p${m.idx + 1}=${m.deg}°${m.portrait ? "(세로)" : ""}`).join(" · "));
+          // 다수결
           const counts = new Map<number, number>();
-          for (const d of detections) counts.set(d.deg, (counts.get(d.deg) ?? 0) + 1);
+          for (const m of measured) counts.set(m.deg, (counts.get(m.deg) ?? 0) + 1);
           let bestDeg = 0;
           let bestCount = 0;
           for (const [deg, c] of counts) {
@@ -756,7 +761,15 @@ export const OcrPage: React.FC<OcrPageProps> = ({ onBack, authSession, onNavigat
               bestCount = c;
             }
           }
-          console.log(`[auto-rotation] → 최종 채택 ${bestDeg}° (${bestCount}/${sampleCount})`);
+          // Aspect-ratio fallback · 감지가 0° 인데 · 다수가 세로형이면 -90° 로 강제 가로화
+          if (bestDeg === 0) {
+            const portraitCount = measured.filter(m => m.portrait).length;
+            if (portraitCount > sampleCount / 2) {
+              bestDeg = -90;
+              console.log(`[auto-rotation] → 폴백 · ${portraitCount}/${sampleCount} 세로형 · -90° 로 강제 가로화`);
+            }
+          }
+          console.log(`[auto-rotation] → 최종 채택 ${bestDeg}° (다수결 ${bestCount}/${sampleCount})`);
           setRotation(bestDeg);
         } catch (e: any) {
           console.warn("[auto-rotation] 실패:", e?.message);
