@@ -531,9 +531,10 @@ router.get("/api/ocr-synonyms", async (_req, res) => {
 router.post("/api/ocr-synonyms", async (req, res) => {
   try {
     const { prod_name_old, prod_name_new, supplier_old, supplier_new, product_code } = req.body ?? {};
-    if (!prod_name_old?.trim() || !product_code?.trim()) return res.status(400).json({ error: "prod_name_old, product_code 필요" });
+    // 2026-07-28 · 사용자 요청 · product_code 없어도 · 이름 매핑만 저장 허용 (수동 코드 링크는 나중에)
+    if (!prod_name_old?.trim()) return res.status(400).json({ error: "prod_name_old 필요" });
     const nameOldNorm = prod_name_old.trim().toLowerCase();
-    const codeNorm = product_code.trim();
+    const codeNorm = product_code?.trim() || null;  // 빈 문자열 → null 로 저장
     const supplierNewNorm = supplier_new?.trim() ? normSupplier(supplier_new.trim()) : null;
     const supplierOldNorm = supplier_old?.trim() || null;
     const nameNewVal = prod_name_new?.trim() || null;

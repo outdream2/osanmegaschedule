@@ -41,6 +41,7 @@ import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 //    초기 앱 번들에서 제외 · 사용자가 해당 탭 클릭 시에만 로드
 const StockManagePage = lazy(() => import("../StockManagePage").then(m => ({ default: m.StockManagePage })));
 const SalesTrendPage = lazy(() => import("../SalesTrendPage/SalesTrendPage").then(m => ({ default: m.SalesTrendPage })));
+// 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일은 보관 · 사이드바/라우팅만 해제
 import { StockArrivalPage } from "../StockArrivalPage";
 import { OcrPage } from "../OcrPage";
 import OrderManagePage from "../OrderManagePage/OrderManagePage";

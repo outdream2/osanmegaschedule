@@ -31,6 +31,10 @@ import supplierBalanceConfigRouter from "./server/routes/supplierBalanceConfig";
 import ocrConfirmedRouter from "./server/routes/ocrConfirmed";
 import { ocrDeletedRowsRouter } from "./server/routes/ocrDeletedRows";
 import boardRouter from "./server/routes/board";
+import invoiceImagesRouter from "./server/routes/invoiceImages";
+import purchaseHistoryRouter from "./server/routes/purchaseHistory";
+// 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일 보관 · 라우터 등록만 해제
+// import inventorySalesRouter from "./server/routes/inventorySales";
 import { loadStockCountModel } from "./server/stockCounter";
 
 async function startServer() {
@@ -83,6 +87,9 @@ async function startServer() {
   app.use(ocrConfirmedRouter);
   app.use(ocrDeletedRowsRouter);
   app.use(boardRouter);
+  app.use(invoiceImagesRouter);
+  app.use(purchaseHistoryRouter);
+  // app.use(inventorySalesRouter);
 
   // /products.json — 항상 DB에서 동적으로 제공 (브라우저 캐시 없음, 서버 메모리 캐시만 사용)
   app.get("/products.json", async (_req, res) => {

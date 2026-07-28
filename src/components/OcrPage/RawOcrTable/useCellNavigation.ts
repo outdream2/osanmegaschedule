@@ -64,6 +64,18 @@ export function useCellNavigation(args: Args) {
         e.preventDefault();
         setFocusedCell(null);
         return;
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        // 2026-07-28 · 사용자 요청 "방향키 이동 후 · 바로 입력" · 숫자·문자 키 · 즉시 편집 모드 진입 + 입력값 프리필
+        e.preventDefault();
+        setEditingCell({ ri, ci });
+        setEditingCellVal(e.key);
+        return;
+      } else if (e.key === "Backspace" || e.key === "Delete") {
+        // 삭제 키 · 즉시 편집 모드 · 빈 값
+        e.preventDefault();
+        setEditingCell({ ri, ci });
+        setEditingCellVal("");
+        return;
       } else {
         return;
       }

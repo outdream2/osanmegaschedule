@@ -677,7 +677,7 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
       }
 
       // products 매핑 (숨김 제외)
-      const productMap = new Map<string, { optimal_stock: number; sale_price: number; current_stock: number; last_purchase_date: string | null }>();
+      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number }>();
       const hiddenSet = new Set<string>();
       try {
         const OP_PAGE = 1000;
@@ -685,7 +685,7 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
         while (true) {
           const { data: page } = await supabase
             .from("products")
-            .select("product_code, optimal_stock, sale_price, current_stock, last_purchase_date, hidden")
+            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden")
             .range(opFrom, opFrom + OP_PAGE - 1);
           if (!page || page.length === 0) break;
           for (const p of page) {
@@ -695,8 +695,10 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
             productMap.set(code, {
               optimal_stock: Number((p as any).optimal_stock ?? 0) || 0,
               sale_price:    Number((p as any).sale_price    ?? 0) || 0,
+              purchase_price:Number((p as any).purchase_price?? 0) || 0,
               current_stock: Number((p as any).current_stock ?? 0) || 0,
               last_purchase_date: (p as any).last_purchase_date ?? null,
+              min_order:     Number((p as any).min_order ?? 0) || 0,
             });
           }
           if (page.length < OP_PAGE) break;
@@ -733,8 +735,13 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
             last_snap:     snap,
             optimal_stock: productMap.get(code)?.optimal_stock ?? 0,
             sale_price:    productMap.get(code)?.sale_price ?? 0,
+            purchase_price:productMap.get(code)?.purchase_price ?? 0,
             current_stock: productMap.get(code)?.current_stock ?? 0,
             last_purchase_date: productMap.get(code)?.last_purchase_date ?? null,
+            min_order:     productMap.get(code)?.min_order ?? 0,
+            // 2026-07-28 · 매입주기 계산용 · 매입 발생 스냅샷 카운트 · 최초 매입일
+            purchase_count: 0,
+            first_purchase_date: null as string | null,
           });
         }
         const agg = byCode.get(code)!;
@@ -752,9 +759,11 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           agg.last_snap = snap;
           agg.closing_stock = Number((r as any).closing_stock ?? 0) || 0;
         }
-        // last_purchase_date: purchase_qty > 0 인 스냅샷 날짜 중 최신
-        if ((Number((r as any).purchase_qty) || 0) > 0 && snap > (agg.last_purchase_date ?? "")) {
-          agg.last_purchase_date = snap;
+        // last_purchase_date · first_purchase_date · purchase_count: purchase_qty > 0 인 스냅샷 기반
+        if ((Number((r as any).purchase_qty) || 0) > 0) {
+          if (snap > (agg.last_purchase_date ?? "")) agg.last_purchase_date = snap;
+          if (!agg.first_purchase_date || snap < agg.first_purchase_date) agg.first_purchase_date = snap;
+          agg.purchase_count = (agg.purchase_count ?? 0) + 1;
         }
       }
       const aggRows = Array.from(byCode.values()).map(({ first_snap, last_snap, ...rest }) => rest);

@@ -107,6 +107,35 @@ export function isValidProductName(text: string | null | undefined): boolean {
   return true;
 }
 
+// 2026-07-28 · 사용자 요청 "잡문자 있는 경우 · 제거하고 다시 검색 · 그냥 제외 X"
+//   잡문자 (금액·헤더 키워드·배송라벨) 만 걷어내고 · 남은 한글 상품명 토큰으로 재시도
+//   결과가 여전히 isValidProductName 실패면 최종적으로 skip
+export function cleanProductName(text: string | null | undefined): string {
+  let t = String(text ?? "").trim();
+  if (!t) return "";
+  // 1) 금액 · 통화 접두/접미 제거
+  //    "121,600 이바네정" · "이바네정 121,600원" · "W8,400 이바네정" 등
+  t = t.replace(/[₩W$¥]?\s*[\d]{1,3}(?:[,.]\d{3})+\s*(?:원|圓)?/gi, " ");
+  t = t.replace(/\b\d{4,}\s*(?:원|圓)/gi, " ");
+  // 2) 전화·사업자·주소 조각 제거
+  t = t.replace(/0\d{1,2}-\d{3,4}-\d{4}/g, " ");
+  t = t.replace(/\d{3}-\d{2}-\d{5}/g, " ");
+  // 3) 표 헤더 키워드 제거 (단어 경계)
+  for (const kw of TABLE_HEADER_KEYWORDS) {
+    t = t.replace(new RegExp(kw, "g"), " ");
+  }
+  // 4) 배송·행정 라벨 제거
+  for (const kw of DELIVERY_INFO_LABELS) {
+    t = t.replace(new RegExp(kw, "g"), " ");
+  }
+  // 5) 배치·로트 패턴
+  t = t.replace(/\b[A-Z]{1,3}\d{4,}\b/g, " ");
+  // 6) 공백 정리 · 연속 특수문자 제거 (한글·영문·숫자·단위기호만 남김)
+  t = t.replace(/[^\w가-힣().,·×/\-\s]/g, " ");
+  t = t.replace(/\s+/g, " ").trim();
+  return t;
+}
+
 // 2026-07-23 · 행의 "상품행 확률" 스코어 (0~1)
 //   사용자 요청: "한 행에 수량·단가 있는지 · 한글 있는지 · 가장 긴 행인지 · 공급사 한글 매칭 확률"
 //   룰 (가점제 · 총합 1.0):

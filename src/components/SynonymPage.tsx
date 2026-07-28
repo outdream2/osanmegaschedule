@@ -250,28 +250,7 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-4 flex flex-col gap-4">
-        {/* 2026-07-28 · 검색 (사용자 요청) */}
-        <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            lang="ko"
-            placeholder={tab === "product" ? "상품명·코드·공급사 검색..." : "공급사 별칭 · 실제명 검색..."}
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-9 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:border-indigo-400 bg-white"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
-              title="검색어 지우기"
-            >
-              <X size={14} />
-            </button>
-          )}
-        </div>
+        {/* 2026-07-28 · 검색창 · 상단 공유 → 각 패널 헤더 안으로 이동 (사용자 요청) */}
         {tab === "product" ? (
           <>
             <div className="bg-white border border-indigo-100 rounded-2xl p-4 flex flex-col gap-3">
@@ -322,13 +301,35 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50/60">
-                <div className="flex items-center gap-1.5">
-                  <BookOpen size={14} className="text-indigo-600" />
-                  <span className="text-sm font-black text-slate-700">상품명 동의어</span>
-                  <span className="text-[10px] font-mono text-slate-400">
-                    {searchQuery ? `${filteredProductSynonyms.length}/${productSynonyms.length}건` : `(${productSynonyms.length}건)`}
-                  </span>
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-100 bg-slate-50/60">
+                <BookOpen size={14} className="text-indigo-600 shrink-0" />
+                <span className="text-sm font-black text-slate-700">상품명 동의어</span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {searchQuery ? `${filteredProductSynonyms.length}/${productSynonyms.length}건` : `(${productSynonyms.length}건)`}
+                </span>
+              </div>
+              {/* 2026-07-28 · 사용자 요청 · 상품코드·상품명(OCR)·상품명(보정후) 컬럼 헤더 바로 위에 검색창 배치 */}
+              <div className="px-4 py-2 border-b-2 border-indigo-100 bg-indigo-50/40">
+                <div className="relative">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-indigo-500 pointer-events-none" />
+                  <input
+                    type="text"
+                    lang="ko"
+                    placeholder="상품코드 · 상품명(OCR) · 상품명(보정후) · 공급사 검색..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-9 py-2 text-sm font-semibold border-2 border-indigo-300 rounded-lg outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 bg-white shadow-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
+                      title="검색어 지우기"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="max-h-[60vh] overflow-y-auto">
@@ -452,13 +453,34 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50/60">
-                <div className="flex items-center gap-1.5">
-                  <Building2 size={14} className="text-sky-600" />
-                  <span className="text-sm font-black text-slate-700">공급사 별칭</span>
-                  <span className="text-[10px] font-mono text-slate-400">
-                    {searchQuery ? `${filteredSupplierAliases.length}/${supplierAliases.length}건` : `(${supplierAliases.length}건)`}
-                  </span>
+              <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-100 bg-slate-50/60">
+                <Building2 size={14} className="text-sky-600 shrink-0" />
+                <span className="text-sm font-black text-slate-700">공급사 별칭</span>
+                <span className="text-[10px] font-mono text-slate-400">
+                  {searchQuery ? `${filteredSupplierAliases.length}/${supplierAliases.length}건` : `(${supplierAliases.length}건)`}
+                </span>
+              </div>
+              <div className="px-4 py-2 border-b-2 border-sky-100 bg-sky-50/40">
+                <div className="relative">
+                  <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-sky-500 pointer-events-none" />
+                  <input
+                    type="text"
+                    lang="ko"
+                    placeholder="공급사 별칭 · 실제 공급사명 검색..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-9 py-2 text-sm font-semibold border-2 border-sky-300 rounded-lg outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-200 bg-white shadow-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-rose-600 cursor-pointer"
+                      title="검색어 지우기"
+                    >
+                      <X size={14} />
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="max-h-[60vh] overflow-y-auto">

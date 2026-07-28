@@ -248,6 +248,7 @@ const BalanceConfigTab: React.FC<BalanceConfigTabProps> = ({ pages, config, onCo
 interface ConfirmedRecord {
   id: number;
   saved_at: string;
+  invoice_date: string | null;
   supplier: string;
   product_name: string;
   product_code: string | null;
@@ -257,6 +258,9 @@ interface ConfirmedRecord {
   balance: number | string | null;
   expiry_date: string | null;
   memo: string | null;
+  raw_json: Record<string, unknown> | null;
+  image_url: string | null;
+  image_public_id: string | null;
   created_at: string;
 }
 
@@ -283,6 +287,13 @@ const ConfirmedRecordsTab: React.FC = () => {
   // 공급처 잔고 히스토리 팝업 상태
   const [balanceHistory, setBalanceHistory] = React.useState<{ supplier: string; items: ConfirmedRecord[] } | null>(null);
   const [balanceHistoryLoading, setBalanceHistoryLoading] = React.useState(false);
+  // 2026-07-28 · 그룹핑 (invoice_date + supplier) · 상세보기 확장 · 이미지 모달 (사용자 요청)
+  const [expandedGroups, setExpandedGroups] = React.useState<Set<string>>(new Set());
+  const [imageModalUrl, setImageModalUrl] = React.useState<string | null>(null);
+  const [imageModalTitle, setImageModalTitle] = React.useState<string>("");
+  // 2026-07-28 · 사용자 요청 · 선택 삭제 (그룹 · 개별 record)
+  const [selectedIds, setSelectedIds] = React.useState<Set<number>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = React.useState(false);
 
   const fetchItems = React.useCallback(async () => {
     setLoading(true); setErr(null);
@@ -292,7 +303,18 @@ const ConfirmedRecordsTab: React.FC = () => {
       if (supplierFilter.trim()) params.set("supplier", supplierFilter.trim());
       if (showBalanceOnly) params.set("hasBalance", "true");
       const res = await axios.get(`/api/ocr-confirmed-items?${params.toString()}`);
-      setItems(Array.isArray(res.data?.items) ? res.data.items : []);
+      const items: ConfirmedRecord[] = Array.isArray(res.data?.items) ? res.data.items : [];
+      // 2026-07-28 · 진단 로그 (이미지 없음 원인 파악 · 이미지 있는/없는 건수 · 첫 3개 샘플)
+      const withImg = items.filter(x => !!x.image_url).length;
+      console.log(`[ConfirmedRecordsTab] 조회 완료 · 총 ${items.length}건 · image_url 있음 ${withImg}건 · 없음 ${items.length - withImg}건`);
+      if (items.length > 0) {
+        console.log(`[ConfirmedRecordsTab] 샘플 첫 항목:`, {
+          id: items[0].id, supplier: items[0].supplier, product_name: items[0].product_name,
+          image_url: items[0].image_url, image_public_id: items[0].image_public_id,
+          keys: Object.keys(items[0]),
+        });
+      }
+      setItems(items);
     } catch (e: any) {
       setErr(e?.response?.data?.error ?? e?.message ?? "조회 실패");
     } finally {
@@ -327,6 +349,7 @@ const ConfirmedRecordsTab: React.FC = () => {
     try {
       await axios.delete(`/api/ocr-confirmed-items/${id}`);
       setItems(prev => prev.filter(x => x.id !== id));
+      setSelectedIds(prev => { const n = new Set(prev); n.delete(id); return n; });
     } catch (e: any) {
       alert(e?.response?.data?.error ?? e?.message ?? "삭제 실패");
     } finally {
@@ -334,11 +357,91 @@ const ConfirmedRecordsTab: React.FC = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`선택한 ${selectedIds.size}건을 삭제하시겠습니까?`)) return;
+    setBulkDeleting(true);
+    const ids = [...selectedIds];
+    let ok = 0, fail = 0;
+    // 병렬 삭제 · 실패는 개별 카운트
+    await Promise.all(ids.map(async (id) => {
+      try {
+        await axios.delete(`/api/ocr-confirmed-items/${id}`);
+        ok++;
+      } catch { fail++; }
+    }));
+    setItems(prev => prev.filter(x => !selectedIds.has(x.id)));
+    setSelectedIds(new Set());
+    setBulkDeleting(false);
+    if (fail > 0) alert(`${ok}건 삭제 · ${fail}건 실패`);
+  };
+
+  const toggleSelectId = (id: number) => {
+    setSelectedIds(prev => {
+      const n = new Set(prev);
+      if (n.has(id)) n.delete(id); else n.add(id);
+      return n;
+    });
+  };
+
+  const toggleSelectGroup = (recordIds: number[], allSelected: boolean) => {
+    setSelectedIds(prev => {
+      const n = new Set(prev);
+      if (allSelected) recordIds.forEach(id => n.delete(id));
+      else recordIds.forEach(id => n.add(id));
+      return n;
+    });
+  };
+
+  const toggleSelectAll = (allIds: number[], allSelected: boolean) => {
+    setSelectedIds(allSelected ? new Set() : new Set(allIds));
+  };
+
   const supplierOptions = React.useMemo(
     () => [...new Set(items.map(x => x.supplier).filter(Boolean))].sort(),
     [items],
   );
   const grandTotal = items.reduce((s, x) => s + toNum(x.amount), 0);
+
+  // 2026-07-28 · 사용자 요청 · 명세서 단위 그룹핑 (invoice_date + supplier)
+  interface GroupInfo {
+    key: string;
+    invoiceDate: string;
+    supplier: string;
+    records: ConfirmedRecord[];
+    count: number;
+    total: number;
+    imageUrl: string | null;
+  }
+  const groups: GroupInfo[] = React.useMemo(() => {
+    const m = new Map<string, GroupInfo>();
+    for (const x of items) {
+      const invD = x.invoice_date || x.saved_at?.slice(0, 10) || "미상";
+      const supp = x.supplier || "미상";
+      const key = `${invD}||${supp}`;
+      if (!m.has(key)) {
+        m.set(key, {
+          key, invoiceDate: invD, supplier: supp,
+          records: [], count: 0, total: 0,
+          imageUrl: x.image_url || null,
+        });
+      }
+      const g = m.get(key)!;
+      g.records.push(x);
+      g.count += 1;
+      g.total += toNum(x.amount);
+      if (!g.imageUrl && x.image_url) g.imageUrl = x.image_url;
+    }
+    return [...m.values()].sort((a, b) => (b.invoiceDate + b.supplier).localeCompare(a.invoiceDate + a.supplier));
+  }, [items]);
+
+  const toggleGroup = (key: string) => {
+    setExpandedGroups(prev => {
+      const n = new Set(prev);
+      if (n.has(key)) n.delete(key); else n.add(key);
+      return n;
+    });
+  };
 
   return (
     <div className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 py-4 flex flex-col gap-3">
@@ -402,7 +505,19 @@ const ConfirmedRecordsTab: React.FC = () => {
             />
             <span className={showBalanceOnly ? "text-orange-700" : ""}>잔고만 보기</span>
           </label>
-          <span className="ml-auto text-[11px] text-gray-500 font-bold">
+          {selectedIds.size > 0 && (
+            <button
+              type="button"
+              onClick={handleBulkDelete}
+              disabled={bulkDeleting}
+              className="ml-auto inline-flex items-center gap-1 text-[11px] font-bold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-40 rounded px-2.5 py-1 cursor-pointer shadow-sm"
+              title={`선택한 ${selectedIds.size}건 삭제`}
+            >
+              {bulkDeleting ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+              선택삭제 <span className="bg-white text-rose-600 rounded px-1 ml-0.5">{selectedIds.size}</span>
+            </button>
+          )}
+          <span className={`text-[11px] text-gray-500 font-bold ${selectedIds.size > 0 ? "ml-2" : "ml-auto"}`}>
             {items.length}건{grandTotal > 0 && <span className="ml-2 text-rose-600">총 {fmtNum(grandTotal)}원</span>}
           </span>
         </div>
@@ -428,66 +543,173 @@ const ConfirmedRecordsTab: React.FC = () => {
           </div>
         ) : (
           <div className={`overflow-x-auto ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+            {/* 2026-07-28 · 사용자 요청 · 명세서 그룹핑 (date + supplier) · 상세보기 · 이미지보기 */}
             <table className="w-full text-xs border-collapse">
               <thead>
                 <tr className="bg-rose-50 border-b border-rose-100">
-                  <th className="px-2 py-2 text-left font-bold text-rose-900 whitespace-nowrap">저장일</th>
-                  <th className="px-2 py-2 text-left font-bold text-rose-900 whitespace-nowrap">공급처</th>
-                  <th className="px-2 py-2 text-left font-bold text-rose-900">품명</th>
-                  <th className="px-2 py-2 text-right font-bold text-rose-900 whitespace-nowrap">수량</th>
-                  <th className="px-2 py-2 text-right font-bold text-rose-900 whitespace-nowrap">단가</th>
-                  <th className="px-2 py-2 text-right font-bold text-rose-900 whitespace-nowrap">금액</th>
-                  <th className="px-2 py-2 text-right font-bold text-rose-900 whitespace-nowrap hidden sm:table-cell">잔고</th>
-                  <th className="px-2 py-2 text-left font-bold text-rose-900 whitespace-nowrap hidden md:table-cell">유통기한</th>
-                  <th className="px-2 py-2 w-10" />
+                  <th className="px-2 py-2 w-8 text-center">
+                    {/* 2026-07-28 · 전체 선택 · 사용자 요청 · 선택삭제 */}
+                    {(() => {
+                      const allIds = items.map(x => x.id);
+                      const allSelected = allIds.length > 0 && allIds.every(id => selectedIds.has(id));
+                      return (
+                        <input type="checkbox"
+                          checked={allSelected}
+                          onChange={() => toggleSelectAll(allIds, allSelected)}
+                          className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
+                          title={allSelected ? "전체 해제" : "전체 선택"}
+                        />
+                      );
+                    })()}
+                  </th>
+                  <th className="px-3 py-2 text-left font-bold text-rose-900 whitespace-nowrap w-28">거래일</th>
+                  <th className="px-3 py-2 text-left font-bold text-rose-900">공급사</th>
+                  <th className="px-3 py-2 text-right font-bold text-rose-900 whitespace-nowrap">건수</th>
+                  <th className="px-3 py-2 text-right font-bold text-rose-900 whitespace-nowrap">합계</th>
+                  <th className="px-3 py-2 text-center font-bold text-rose-900 whitespace-nowrap">이미지</th>
+                  <th className="px-3 py-2 text-center font-bold text-rose-900 whitespace-nowrap">상세</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map(x => (
-                  <tr key={x.id} className="border-t border-gray-50 hover:bg-rose-50/30">
-                    <td className="px-2 py-1.5 text-gray-500 whitespace-nowrap text-[11px]">{x.saved_at}</td>
-                    <td className="px-2 py-1.5 text-sky-700 font-semibold whitespace-nowrap text-[11px]">{x.supplier}</td>
-                    <td className="px-2 py-1.5 font-semibold text-gray-800">
-                      <div className="flex flex-col">
-                        <span className="break-words">{x.product_name}</span>
-                        {x.product_code && <span className="text-[10px] text-gray-400 font-mono">{x.product_code}</span>}
-                      </div>
-                    </td>
-                    <td className="px-2 py-1.5 text-right text-gray-700 whitespace-nowrap tabular-nums">{fmtNum(x.quantity)}</td>
-                    <td className="px-2 py-1.5 text-right text-gray-700 whitespace-nowrap tabular-nums">{fmtNum(x.unit_price)}</td>
-                    <td className="px-2 py-1.5 text-right font-bold text-amber-700 whitespace-nowrap tabular-nums">{fmtNum(x.amount)}</td>
-                    <td className="px-2 py-1.5 text-right font-bold text-orange-600 whitespace-nowrap tabular-nums hidden sm:table-cell">
-                      {toNum(x.balance) > 0 ? (
-                        <button
-                          type="button"
-                          onClick={() => openBalanceHistory(x.supplier)}
-                          className="hover:underline hover:text-orange-800 cursor-pointer"
-                          title={`${x.supplier} 잔고 히스토리 보기`}
-                        >
-                          {fmtNum(x.balance)}
-                        </button>
-                      ) : fmtNum(x.balance)}
-                    </td>
-                    <td className="px-2 py-1.5 text-gray-500 whitespace-nowrap text-[10px] hidden md:table-cell">{x.expiry_date ?? ""}</td>
-                    <td className="px-2 py-1.5 text-right">
-                      <button
-                        onClick={() => handleDelete(x.id)}
-                        disabled={deletingId === x.id}
-                        className="p-1 text-gray-300 hover:text-rose-500 cursor-pointer disabled:opacity-40"
-                        title="삭제"
-                      >
-                        {deletingId === x.id
-                          ? <Loader2 size={13} className="animate-spin" />
-                          : <Trash2 size={13} />}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {groups.map(g => {
+                  const isExpanded = expandedGroups.has(g.key);
+                  const recordIds = g.records.map(r => r.id);
+                  const groupAllSelected = recordIds.length > 0 && recordIds.every(id => selectedIds.has(id));
+                  const groupSomeSelected = !groupAllSelected && recordIds.some(id => selectedIds.has(id));
+                  return (
+                    <React.Fragment key={g.key}>
+                      <tr className={`border-t border-gray-100 hover:bg-rose-50/30 ${groupAllSelected ? "bg-rose-50/60" : "bg-white"}`}>
+                        <td className="px-2 py-2 text-center">
+                          <input type="checkbox"
+                            checked={groupAllSelected}
+                            ref={el => { if (el) el.indeterminate = groupSomeSelected; }}
+                            onChange={() => toggleSelectGroup(recordIds, groupAllSelected)}
+                            className="w-3.5 h-3.5 accent-rose-500 cursor-pointer"
+                            title={groupAllSelected ? "이 명세서 해제" : "이 명세서 전체 선택"}
+                          />
+                        </td>
+                        <td className="px-3 py-2 text-gray-700 whitespace-nowrap font-mono text-[12px]">{g.invoiceDate}</td>
+                        <td className="px-3 py-2 text-sky-700 font-black whitespace-nowrap">{g.supplier}</td>
+                        <td className="px-3 py-2 text-right text-gray-600 whitespace-nowrap tabular-nums">{g.count}건</td>
+                        <td className="px-3 py-2 text-right font-black text-amber-700 whitespace-nowrap tabular-nums">{fmtNum(g.total)}원</td>
+                        <td className="px-3 py-2 text-center">
+                          {g.imageUrl ? (
+                            <button type="button"
+                              onClick={() => { setImageModalUrl(g.imageUrl); setImageModalTitle(`${g.invoiceDate} · ${g.supplier}`); }}
+                              className="text-[11px] font-bold text-indigo-600 hover:text-white hover:bg-indigo-500 border border-indigo-300 rounded px-2 py-0.5 transition cursor-pointer"
+                              title="거래명세서 이미지 보기"
+                            >🖼 보기</button>
+                          ) : (
+                            <span className="text-gray-300 text-[10px] cursor-help"
+                              title="이미지 URL 이 저장되지 않은 항목입니다.&#10;가능 원인:&#10; · DB 컬럼 image_url 미존재 (Supabase ALTER TABLE 필요)&#10; · 컬럼 추가 이전에 저장된 오래된 항목&#10; · Cloudinary 업로드 실패 (원본 저장 시 콘솔 로그 확인)">이미지 없음</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-center">
+                          <button type="button"
+                            onClick={() => toggleGroup(g.key)}
+                            className={`text-[11px] font-bold rounded px-2 py-0.5 transition cursor-pointer ${isExpanded ? "text-white bg-rose-500 hover:bg-rose-600" : "text-rose-700 border border-rose-300 hover:bg-rose-50"}`}
+                          >
+                            {isExpanded ? "▲ 접기" : "▼ 상세보기"}
+                          </button>
+                        </td>
+                      </tr>
+                      {isExpanded && (
+                        <tr className="bg-slate-50/60 border-t border-slate-200">
+                          <td colSpan={7} className="px-3 py-2">
+                            {/* 명세서 메타 정보 요약 */}
+                            <div className="flex flex-wrap items-center gap-3 pb-2 mb-2 border-b border-slate-200 text-[11px]">
+                              <span className="font-bold text-slate-600">거래일 <span className="text-slate-900 font-mono">{g.invoiceDate}</span></span>
+                              <span className="font-bold text-slate-600">공급사 <span className="text-sky-700">{g.supplier}</span></span>
+                              <span className="font-bold text-slate-600">품목 <span className="text-gray-800">{g.count}건</span></span>
+                              <span className="font-bold text-slate-600">합계 <span className="text-amber-700">{fmtNum(g.total)}원</span></span>
+                              {g.records[0]?.saved_at && (
+                                <span className="font-bold text-slate-500">저장일 <span className="text-slate-700 font-mono">{g.records[0].saved_at.slice(0, 10)}</span></span>
+                              )}
+                              {g.imageUrl && (
+                                <button type="button"
+                                  onClick={() => { setImageModalUrl(g.imageUrl); setImageModalTitle(`${g.invoiceDate} · ${g.supplier}`); }}
+                                  className="ml-auto text-[10px] font-bold text-indigo-600 hover:text-white hover:bg-indigo-500 border border-indigo-300 rounded px-2 py-0.5 transition cursor-pointer"
+                                >🖼 이미지</button>
+                              )}
+                            </div>
+                            <table className="w-full text-[11px] border-collapse">
+                              <thead>
+                                <tr className="bg-slate-100 border-b border-slate-200">
+                                  <th className="px-2 py-1.5 w-8 text-center" />
+                                  <th className="px-2 py-1.5 text-left font-bold text-slate-700">품명·코드</th>
+                                  <th className="px-2 py-1.5 text-right font-bold text-slate-700 w-16">수량</th>
+                                  <th className="px-2 py-1.5 text-right font-bold text-slate-700 w-20">단가</th>
+                                  <th className="px-2 py-1.5 text-right font-bold text-slate-700 w-24">금액</th>
+                                  <th className="px-2 py-1.5 text-right font-bold text-slate-700 w-20">잔고</th>
+                                  <th className="px-2 py-1.5 text-left font-bold text-slate-700 w-28">유통기한</th>
+                                  <th className="px-2 py-1.5 text-left font-bold text-slate-700 w-36">메모</th>
+                                  <th className="px-2 py-1.5 w-8" />
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {g.records.map(x => (
+                                  <tr key={x.id} className={`border-t border-gray-100 ${selectedIds.has(x.id) ? "bg-rose-50/50" : "hover:bg-white"}`}>
+                                    <td className="px-2 py-1.5 text-center">
+                                      <input type="checkbox"
+                                        checked={selectedIds.has(x.id)}
+                                        onChange={() => toggleSelectId(x.id)}
+                                        className="w-3 h-3 accent-rose-500 cursor-pointer"
+                                      />
+                                    </td>
+                                    <td className="px-2 py-1.5 font-semibold text-gray-800">
+                                      <div className="flex flex-col">
+                                        <span className="break-words">{x.product_name}</span>
+                                        {x.product_code && <span className="text-[10px] text-gray-400 font-mono">{x.product_code}</span>}
+                                      </div>
+                                    </td>
+                                    <td className="px-2 py-1.5 text-right text-gray-700 whitespace-nowrap tabular-nums">{fmtNum(x.quantity)}</td>
+                                    <td className="px-2 py-1.5 text-right text-gray-700 whitespace-nowrap tabular-nums">{fmtNum(x.unit_price)}</td>
+                                    <td className="px-2 py-1.5 text-right font-bold text-amber-700 whitespace-nowrap tabular-nums">{fmtNum(x.amount)}</td>
+                                    <td className="px-2 py-1.5 text-right font-bold text-orange-600 whitespace-nowrap tabular-nums">
+                                      {toNum(x.balance) > 0 ? (
+                                        <button type="button" onClick={() => openBalanceHistory(x.supplier)} className="hover:underline hover:text-orange-800 cursor-pointer" title={`${x.supplier} 잔고 히스토리`}>
+                                          {fmtNum(x.balance)}
+                                        </button>
+                                      ) : fmtNum(x.balance)}
+                                    </td>
+                                    <td className="px-2 py-1.5 text-gray-500 whitespace-nowrap text-[10px] font-mono">{x.expiry_date ?? ""}</td>
+                                    <td className="px-2 py-1.5 text-gray-500 text-[10px] break-words">{x.memo ?? ""}</td>
+                                    <td className="px-2 py-1.5 text-right">
+                                      <button onClick={() => handleDelete(x.id)} disabled={deletingId === x.id} className="p-1 text-gray-300 hover:text-rose-500 cursor-pointer disabled:opacity-40" title="삭제">
+                                        {deletingId === x.id ? <Loader2 size={11} className="animate-spin" /> : <Trash2 size={11} />}
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
       </div>
+
+      {/* 2026-07-28 · 이미지 모달 · Cloudinary 저장된 거래명세서 이미지 */}
+      {imageModalUrl && (
+        <div className="fixed inset-0 z-[100] bg-black/70 flex items-center justify-center p-4" onClick={() => setImageModalUrl(null)}>
+          <div className="relative max-w-[95vw] max-h-[95vh]" onClick={e => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setImageModalUrl(null)}
+              className="absolute -top-8 right-0 text-white text-sm font-bold hover:text-gray-300"
+              title="닫기 (Esc · 배경 클릭)"
+            >✕ 닫기</button>
+            <div className="text-white text-sm font-bold mb-2">{imageModalTitle}</div>
+            <img src={imageModalUrl} alt="거래명세서" className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl" />
+          </div>
+        </div>
+      )}
 
       {/* ── 공급처 잔고 히스토리 모달 ── */}
       {balanceHistory && (
@@ -1471,36 +1693,21 @@ return (
             )}
           </div>
 
-          {/* 2026-07-22 · ONNX 는 2가지로 분기 · Gemini 엔진은 단일 (원래) */}
+          {/* 2026-07-28 · 사용자 요청 "ONNX → Gemini 파싱 기능 제거" · 로컬 파싱만 유지 */}
           {ocrEngine === "onnx" ? (
-            <div className="flex flex-row gap-2">
-              <button onClick={() => handleExtract("local")} disabled={extracting}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl text-[13px] font-bold text-white active:scale-[0.98] disabled:cursor-not-allowed transition cursor-pointer shadow-sm ${
-                  activeParser === "local"
-                    ? "bg-emerald-600 ring-2 ring-emerald-300"
-                    : extracting
-                      ? "bg-emerald-300"
-                      : "bg-emerald-500 hover:bg-emerald-600"
-                }`}
-                title="ONNX (PP-OCRv5) 로 rawText 추출 → 로컬 파이프라인 (vendor-match·normalize·verify) 으로 파싱/매칭">
-                {activeParser === "local"
-                  ? <><Loader2 size={14} className="animate-spin" />로컬 파싱 중...</>
-                  : <><Zap size={14} />ONNX → 🔧 로컬 파싱/매칭{rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
-              </button>
-              <button onClick={() => handleExtract("gemini")} disabled={extracting}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-3 rounded-2xl text-[13px] font-bold text-white active:scale-[0.98] disabled:cursor-not-allowed transition cursor-pointer shadow-sm ${
-                  activeParser === "gemini"
-                    ? "bg-violet-600 ring-2 ring-violet-300"
-                    : extracting
-                      ? "bg-violet-300"
-                      : "bg-violet-500 hover:bg-violet-600"
-                }`}
-                title="ONNX (PP-OCRv5) 로 rawText 추출 → Gemini 에 텍스트 전송 · 이미지 X · 토큰 60-70% 절감">
-                {activeParser === "gemini"
-                  ? <><Loader2 size={14} className="animate-spin" />Gemini 파싱 중...</>
-                  : <><Zap size={14} />ONNX → 🪄 Gemini 파싱/매칭{rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
-              </button>
-            </div>
+            <button onClick={() => handleExtract("local")} disabled={extracting}
+              className={`w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white active:scale-[0.98] disabled:cursor-not-allowed transition cursor-pointer shadow-sm ${
+                activeParser === "local"
+                  ? "bg-emerald-600 ring-2 ring-emerald-300"
+                  : extracting
+                    ? "bg-emerald-300"
+                    : "bg-emerald-500 hover:bg-emerald-600"
+              }`}
+              title="ONNX (PP-OCRv5) 로 rawText 추출 → 로컬 파이프라인 (vendor-match·normalize·verify) 으로 파싱/매칭">
+              {activeParser === "local"
+                ? <><Loader2 size={15} className="animate-spin" />{statusMsg || `로컬 파싱 중... (${processed}/${pageCount || "?"})`}</>
+                : <><Zap size={15} />ONNX → 🔧 로컬 파싱/매칭{rotDeg !== 0 ? ` · ${rotDeg}° 회전` : ""}</>}
+            </button>
           ) : (
             <button onClick={() => handleExtract(null)} disabled={extracting}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-bold text-white bg-amber-500 hover:bg-amber-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed transition cursor-pointer shadow-sm">
