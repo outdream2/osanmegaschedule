@@ -80,7 +80,10 @@ interface StockFlowRow {
   sale_price?: number;
   purchase_price?: number;
 }
-type SortKey = "name" | "opening" | "sale" | "purchase" | "amount" | "closing" | "current" | "loss";
+// 2026-07-28 · 사용자 요청 · 모든 컬럼 정렬 가능하게 확장
+type SortKey = "name" | "opening" | "sale" | "purchase" | "amount" | "closing" | "current" | "loss"
+  | "turnover" | "doh" | "cycle" | "last_purchase" | "min_order" | "last_purchase_price"
+  | "stock_value" | "sale_price" | "profit_rate";
 type SortDir = "asc" | "desc";
 
 function fmt(n: number): string {
@@ -2369,8 +2372,59 @@ export const StockManagePage: React.FC = () => {
     if (flowSort === "current") {
       return [...filtered].sort((a, b) => sign * (Number((a as any).current_stock ?? 0) - Number((b as any).current_stock ?? 0)));
     }
+    // 2026-07-28 · 사용자 요청 · 추가 컬럼 정렬 지원
+    // 각 필드 · 서버 응답 스키마 기반 · 정렬 값 추출
+    const periodDaysLocal = (flowMonths && flowMonths > 0) ? flowMonths * 30 : 30;
+    const getVal = (p: any): number | string => {
+      const openV = Number(p.opening_stock ?? 0);
+      const cur   = Number(p.current_stock ?? p.closing_stock ?? 0);
+      const saleV = Number(p.sale_qty ?? 0);
+      const purP  = Number(p.purchase_price ?? 0);
+      const saleP = Number(p.sale_price ?? 0);
+      switch (flowSort) {
+        case "turnover": {
+          const avgStock = (openV + cur) / 2;
+          return avgStock > 0 ? saleV / avgStock : 0;
+        }
+        case "doh": {
+          const avgStock = (openV + cur) / 2;
+          const turnover = avgStock > 0 ? saleV / avgStock : 0;
+          return turnover > 0 ? periodDaysLocal / turnover : 999999;
+        }
+        case "cycle": {
+          const cnt = Number(p.purchase_count ?? 0);
+          const first = p.first_purchase_date;
+          const last = p.last_purchase_date;
+          if (cnt < 2 || !first || !last || first === last) return 999999;
+          const days = Math.round((new Date(last).getTime() - new Date(first).getTime()) / (86400 * 1000));
+          return cnt > 1 ? Math.round(days / (cnt - 1)) : 999999;
+        }
+        case "last_purchase":
+          return String(p.last_purchase_date ?? "");
+        case "min_order":
+          return Number(p.min_order ?? 0);
+        case "last_purchase_price":
+          return purP;
+        case "stock_value":
+          return cur * purP;
+        case "sale_price":
+          return saleP;
+        case "profit_rate":
+          return saleP > 0 && purP > 0 ? ((saleP - purP) / saleP) * 100 : -999999;
+        default:
+          return 0;
+      }
+    };
+    const clientKeys: SortKey[] = ["turnover", "doh", "cycle", "last_purchase", "min_order", "last_purchase_price", "stock_value", "sale_price", "profit_rate"];
+    if (clientKeys.includes(flowSort as SortKey)) {
+      return [...filtered].sort((a, b) => {
+        const va = getVal(a), vb = getVal(b);
+        if (typeof va === "string" && typeof vb === "string") return sign * va.localeCompare(vb);
+        return sign * ((va as number) - (vb as number));
+      });
+    }
     return filtered;
-  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowSearch]);
+  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowSearch, flowMonths]);
 
   // 상품 이력을 일자별 매입 수량으로 집계 → 차트 데이터
   const chartData = useMemo(() => {
@@ -3436,16 +3490,7 @@ export const StockManagePage: React.FC = () => {
                                     className={`text-left px-1 py-1.5 min-w-[100px] cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}
                                     title="클릭: 상품명 가나다순 정렬"
                                   >상품명{arrowFor("name")}</th>
-                                  <th
-                                    onClick={() => toggleFlowSort("opening")}
-                                    className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-slate-50/60 hover:bg-slate-100 transition ${flowSort === "opening" ? "text-slate-800 font-black" : "text-slate-500"}`}
-                                    title="클릭: 시작재고 기준 정렬"
-                                  >시작{arrowFor("opening")}</th>
-                                  <th
-                                    onClick={() => toggleFlowSort("purchase")}
-                                    className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none bg-emerald-50/60 hover:bg-emerald-100 transition ${flowSort === "purchase" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
-                                    title="클릭: 매입 기준 정렬 (재클릭 시 방향 반전) · 옆 (M/D)는 최근 매입일"
-                                  >매입 <span className="text-[8px] font-normal text-slate-400">(M/D)</span>{arrowFor("purchase")}</th>
+                                  {/* 2026-07-28 · 사용자 요청 · 시작 컬럼 제거 · 매입 → 최근매입일 옆으로 이동 (라벨 · 최근매입량) */}
                                   <th
                                     onClick={() => toggleFlowSort("sale")}
                                     className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none bg-orange-50/60 hover:bg-orange-100 transition ${flowSort === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
@@ -3456,21 +3501,31 @@ export const StockManagePage: React.FC = () => {
                                     className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "current" ? "text-amber-800 font-black" : "text-amber-600 font-black"}`}
                                     title="클릭: ERP 현재고 기준 정렬 · products.current_stock"
                                   >현재고{arrowFor("current")}</th>
-                                  <th
-                                    onClick={() => toggleFlowSort("loss")}
-                                    className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-rose-50/60 hover:bg-rose-100 transition ${flowSort === "loss" ? "text-rose-700 font-black" : "text-rose-500"}`}
-                                    title="클릭: 손실 기준 정렬 (재클릭 시 방향 반전). 손실 = (시작재고 − 판매) − 종료재고"
-                                  >손실{arrowFor("loss")}</th>
-                                  {/* 2026-07-28 · 사용자 요청 · 공급사재고 리스트와 동일 헤더 순서 */}
-                                  <th className="text-right px-0.5 py-1.5 w-14 text-[12px] font-black text-teal-600 bg-teal-50/40" title="회전율 = 판매수량 / 평균재고">회전율</th>
-                                  <th className="text-right px-0.5 py-1.5 w-14 text-[12px] font-black text-teal-700 bg-teal-50/30" title="회전일수 = 기간 / 회전율">회전일수</th>
-                                  <th className="text-right px-0.5 py-1.5 w-14 text-[12px] font-black text-sky-600 bg-sky-50/40" title="매입주기 = (최근-최초 매입일) / (매입횟수-1)">매입주기</th>
-                                  <th className="text-right px-0.5 py-1.5 w-14 text-[12px] font-black text-emerald-600 bg-emerald-50/30" title="최근 매입일 (M/D)">최근매입일</th>
-                                  <th className="text-right px-0.5 py-1.5 w-14 text-[12px] font-black text-sky-700 bg-sky-50/30" title="products.min_order · 최소 발주량">최소발주</th>
-                                  <th className="text-right px-0.5 py-1.5 w-16 text-[12px] font-black text-slate-600 bg-slate-50/40" title="최근 매입 단가">최근매입가</th>
-                                  <th className="text-right px-0.5 py-1.5 w-20 text-[12px] font-black text-indigo-700 bg-indigo-50/40" title="재고금액 = 현재고 × 최근매입가">재고금액</th>
-                                  <th className="text-right px-0.5 py-1.5 w-16 text-[12px] font-black text-orange-600 bg-orange-50/30" title="판매 단가">판매가</th>
-                                  <th className="text-right px-0.5 py-1.5 w-14 text-[12px] font-black text-indigo-600 bg-indigo-50/30" title="이익률">이익률</th>
+                                  {/* 2026-07-28 · 사용자 요청 · 손실 컬럼 제거 */}
+                                  <th onClick={() => toggleFlowSort("cycle")}
+                                    className={`text-right px-0.5 py-1.5 w-14 text-[12px] font-black cursor-pointer select-none bg-sky-50/40 hover:bg-sky-100 transition ${flowSort === "cycle" ? "text-sky-800" : "text-sky-600"}`}
+                                    title="매입주기 · 클릭 정렬">매입주기{arrowFor("cycle")}</th>
+                                  <th onClick={() => toggleFlowSort("last_purchase")}
+                                    className={`text-right px-0.5 py-1.5 w-14 text-[12px] font-black cursor-pointer select-none bg-emerald-50/30 hover:bg-emerald-100 transition ${flowSort === "last_purchase" ? "text-emerald-800" : "text-emerald-600"}`}
+                                    title="최근 매입일 · 클릭 정렬">최근매입일{arrowFor("last_purchase")}</th>
+                                  <th onClick={() => toggleFlowSort("purchase")}
+                                    className={`text-right px-0.5 py-1.5 w-16 text-[12px] font-black cursor-pointer select-none bg-emerald-50/60 hover:bg-emerald-100 transition ${flowSort === "purchase" ? "text-emerald-700" : "text-emerald-500"}`}
+                                    title="최근매입량 · 클릭 정렬">최근매입량{arrowFor("purchase")}</th>
+                                  <th onClick={() => toggleFlowSort("min_order")}
+                                    className={`text-right px-0.5 py-1.5 w-14 text-[12px] font-black cursor-pointer select-none bg-sky-50/30 hover:bg-sky-100 transition ${flowSort === "min_order" ? "text-sky-800" : "text-sky-700"}`}
+                                    title="최소 발주량 · 클릭 정렬">최소발주{arrowFor("min_order")}</th>
+                                  <th onClick={() => toggleFlowSort("stock_value")}
+                                    className={`text-right px-0.5 py-1.5 w-20 text-[12px] font-black cursor-pointer select-none bg-indigo-50/40 hover:bg-indigo-100 transition ${flowSort === "stock_value" ? "text-indigo-800" : "text-indigo-700"}`}
+                                    title="재고금액 = 현재고 × 최근매입가 · 클릭 정렬">재고금액{arrowFor("stock_value")}</th>
+                                  <th onClick={() => toggleFlowSort("last_purchase_price")}
+                                    className={`text-right px-0.5 py-1.5 w-16 text-[12px] font-black cursor-pointer select-none bg-slate-50/40 hover:bg-slate-100 transition ${flowSort === "last_purchase_price" ? "text-slate-800" : "text-slate-600"}`}
+                                    title="ERP단가 = products.purchase_price · 클릭 정렬">ERP단가{arrowFor("last_purchase_price")}</th>
+                                  <th onClick={() => toggleFlowSort("sale_price")}
+                                    className={`text-right px-0.5 py-1.5 w-16 text-[12px] font-black cursor-pointer select-none bg-orange-50/30 hover:bg-orange-100 transition ${flowSort === "sale_price" ? "text-orange-800" : "text-orange-600"}`}
+                                    title="판매 단가 · 클릭 정렬">판매가{arrowFor("sale_price")}</th>
+                                  <th onClick={() => toggleFlowSort("profit_rate")}
+                                    className={`text-right px-0.5 py-1.5 w-14 text-[12px] font-black cursor-pointer select-none bg-indigo-50/30 hover:bg-indigo-100 transition ${flowSort === "profit_rate" ? "text-indigo-800" : "text-indigo-600"}`}
+                                    title="이익률 · 클릭 정렬">이익률{arrowFor("profit_rate")}</th>
                                 </>
                               );
                             })()}
@@ -3481,7 +3536,8 @@ export const StockManagePage: React.FC = () => {
                             const cur = Number((p as any).current_stock ?? 0);
                             const openV = Number(p.opening_stock ?? 0);
                             const saleV = Number(p.sale_qty ?? 0);
-                            const purchV = Number(p.purchase_qty ?? 0);
+                            // 2026-07-28 · 사용자 요청 · 공급사재고와 동일 데이터 · purchase_total_qty 우선 fallback purchase_qty
+                            const purchV = Number((p as any).purchase_total_qty ?? p.purchase_qty ?? 0);
                             const closeV = Number(p.closing_stock ?? 0);
                             const loss = (openV - saleV) - closeV;
                             const saleP = Number((p as any).sale_price ?? 0);
@@ -3539,15 +3595,7 @@ export const StockManagePage: React.FC = () => {
                                 </button>
                                 {p.supplier && <div className="text-[11px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
                               </td>
-                              {/* 2026-07-28 · 사용자 요청 · font-mono 제거 · 숫자 고딕(sans) 통일 */}
-                              <td className="text-right px-0.5 py-1.5 text-slate-500 text-[12px] bg-slate-50/40 align-top tabular-nums">{fmt(p.opening_stock)}</td>
-                              <td className="text-right px-0.5 py-1.5 text-emerald-600 text-[12px] bg-emerald-50/40 align-top tabular-nums" title={p.last_purchase_date ? `최근 매입: ${p.last_purchase_date}` : "매입 이력 없음"}>
-                                {fmt(p.purchase_qty)}
-                                {(() => {
-                                  const md = extractMonthDay(p.last_purchase_date);
-                                  return md ? <span className="text-[10px] text-slate-400 font-normal ml-0.5">({md})</span> : null;
-                                })()}
-                              </td>
+                              {/* 2026-07-28 · 시작·매입 셀 제거 (매입은 최근매입일 옆 · 최근매입량 셀로 이동) */}
                               <td
                                 className="text-right px-0.5 py-1.5 font-bold text-orange-700 text-[12px] bg-orange-50/40 align-top tabular-nums"
                                 title="판매출고계 · 실제 팔린 양"
@@ -3562,19 +3610,7 @@ export const StockManagePage: React.FC = () => {
                                   >{fmt(cur)}</td>
                                 );
                               })()}
-                              <td
-                                className={`text-right px-0.5 py-1.5 text-[12px] bg-rose-50/40 align-top tabular-nums ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
-                                title={`손실 = (시작${fmt(openV)} − 판매${fmt(saleV)}) − 종료${fmt(closeV)} = ${loss > 0 ? "-" + fmt(loss) : loss < 0 ? "+" + fmt(Math.abs(loss)) : "0"}${purchV > 0 ? `\n※ 입고 ${fmt(purchV)} 있음 (참고)` : ""}`}
-                              >{loss === 0 ? "0" : loss > 0 ? `-${fmt(loss)}` : `+${fmt(Math.abs(loss))}`}</td>
-                              {/* 회전율 · 회전일수 · 매입주기 · 최근매입일 · 최소발주 · 최근매입가 · 재고금액 · 판매가 · 이익률 */}
-                              <td className={`text-right px-0.5 py-1.5 text-[12px] font-black bg-teal-50/40 align-top tabular-nums ${turnover >= 2 ? "text-emerald-700" : turnover >= 1 ? "text-teal-700" : turnover > 0 ? "text-amber-700" : "text-slate-300"}`}
-                                title={turnover > 0 ? `판매${fmt(saleV)} / 평균재고${fmt(avgStock)} = ${turnover.toFixed(2)}회` : "판매 없음"}>
-                                {turnover > 0 ? turnover.toFixed(2) : "-"}
-                              </td>
-                              <td className={`text-right px-0.5 py-1.5 text-[12px] font-bold bg-teal-50/30 align-top tabular-nums ${doh == null ? "text-slate-300" : doh < 15 ? "text-emerald-700" : doh < 45 ? "text-teal-700" : doh < 90 ? "text-amber-700" : "text-rose-600"}`}
-                                title={doh != null ? `${periodDays}일 / 회전율 = ${doh}일` : "-"}>
-                                {doh != null ? `${doh}일` : "-"}
-                              </td>
+                              {/* 매입주기 · 최근매입일 · 최근매입량 · 최소발주 · 재고금액 · 판매가 · 이익률 (시작·매입·손실 제거) */}
                               <td className="text-right px-0.5 py-1.5 text-sky-600 text-[12px] bg-sky-50/40 align-top tabular-nums"
                                 title={purchaseCycle != null ? `${purchaseCount}회 매입 · 평균 ${purchaseCycle}일 주기` : "2회 미만 · 계산 불가"}>
                                 {purchaseCycle != null ? `${purchaseCycle}일` : "-"}
@@ -3583,15 +3619,19 @@ export const StockManagePage: React.FC = () => {
                                 title={lastPD ?? undefined}>
                                 {lastPDShort}
                               </td>
+                              <td className="text-right px-0.5 py-1.5 text-emerald-700 font-bold text-[12px] bg-emerald-50/40 align-top tabular-nums"
+                                title={purchV > 0 ? `최근매입량 ${fmt(purchV)}` : "매입 없음"}>
+                                {purchV > 0 ? fmt(purchV) : "-"}
+                              </td>
                               <td className="text-right px-0.5 py-1.5 text-sky-700 font-semibold text-[12px] bg-sky-50/30 align-top tabular-nums"
                                 title={minOrder > 0 ? `최소 발주량 ${minOrder}` : "미지정"}>
                                 {minOrder > 0 ? minOrder.toLocaleString() : "-"}
                               </td>
-                              <td className="text-right px-0.5 py-1.5 text-slate-700 text-[12px] bg-slate-50/40 align-top tabular-nums">{purP > 0 ? fmtWon(purP) : "-"}</td>
                               <td className="text-right px-0.5 py-1.5 text-indigo-700 font-bold text-[12px] bg-indigo-50/40 align-top tabular-nums"
-                                title={stockValue > 0 ? `현재고 ${fmt(cur)} × 최근매입가 ${fmtWon(purP)} = ${fmtWon(stockValue)}` : ""}>
+                                title={stockValue > 0 ? `현재고 ${fmt(cur)} × ERP단가 ${fmtWon(purP)} = ${fmtWon(stockValue)}` : ""}>
                                 {fmtMan(stockValue)}
                               </td>
+                              <td className="text-right px-0.5 py-1.5 text-slate-700 text-[12px] bg-slate-50/40 align-top tabular-nums" title="ERP 사입 단가 (products.purchase_price)">{purP > 0 ? fmtWon(purP) : "-"}</td>
                               <td className="text-right px-0.5 py-1.5 text-orange-700 font-bold text-[12px] bg-orange-50/30 align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
                               <td className={`text-right px-0.5 py-1.5 font-black text-[12px] bg-indigo-50/30 align-top tabular-nums ${profitRate == null ? "text-slate-300" : profitRate >= 30 ? "text-emerald-700" : profitRate >= 15 ? "text-sky-700" : profitRate >= 0 ? "text-amber-700" : "text-rose-600"}`}
                                 title={profitRate != null ? `(판매가 ${fmtWon(saleP)} − 최근매입가 ${fmtWon(purP)}) / 판매가 = ${profitRate}%` : "-"}>

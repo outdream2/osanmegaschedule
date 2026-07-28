@@ -766,6 +766,52 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           agg.purchase_count = (agg.purchase_count ?? 0) + 1;
         }
       }
+      // 2026-07-28 · 사용자 요청 "매입주기 이상 · 공급사재고와 동일하게" · purchase_details 조인 (기간 무관 · 상품별 총 이력 기준)
+      //   공급사재고 리스트가 사용하는 매입주기 로직 재사용
+      const codesInResult = Array.from(byCode.keys());
+      const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; count: number; totalQty: number; totalAmount: number; lastAmount: number }>();
+      try {
+        const CHUNK = 500;
+        for (let i = 0; i < codesInResult.length; i += CHUNK) {
+          const chunk = codesInResult.slice(i, i + CHUNK);
+          const { data: pdRows } = await supabase
+            .from("purchase_details")
+            .select("product_code, purchase_date, quantity, amount, total")
+            .in("product_code", chunk)
+            .order("purchase_date", { ascending: false });
+          for (const r of pdRows ?? []) {
+            const code = String((r as any).product_code ?? "").trim();
+            if (!code) continue;
+            const cur = purchaseInfoMap.get(code) ?? { lastDate: null, firstDate: null, count: 0, totalQty: 0, totalAmount: 0, lastAmount: 0 };
+            const d = String((r as any).purchase_date ?? "");
+            const amt = Number((r as any).total ?? (r as any).amount ?? 0) || 0;
+            const qty = Number((r as any).quantity ?? 0) || 0;
+            if (!cur.lastDate || d > cur.lastDate) { cur.lastDate = d; cur.lastAmount = amt; }
+            if (!cur.firstDate || d < cur.firstDate) { cur.firstDate = d; }
+            cur.totalQty += qty;
+            cur.totalAmount += amt;
+            cur.count++;
+            purchaseInfoMap.set(code, cur);
+          }
+        }
+        console.log(`[top-sales/months] purchase_details 조인: ${purchaseInfoMap.size}개 상품`);
+      } catch (e: any) {
+        console.warn(`[top-sales/months] purchase_details 조인 실패:`, e?.message);
+      }
+      // 각 상품 · purchase_details 값으로 purchase_count·first_purchase_date·last_purchase_date 덮어씀 (공급사재고와 동일)
+      for (const agg of byCode.values()) {
+        const info = purchaseInfoMap.get(agg.product_code);
+        if (info && info.count > 0) {
+          agg.purchase_count = info.count;
+          agg.first_purchase_date = info.firstDate;
+          if (info.lastDate && (!agg.last_purchase_date || String(info.lastDate) > String(agg.last_purchase_date))) {
+            agg.last_purchase_date = info.lastDate;
+          }
+          (agg as any).purchase_total_qty = info.totalQty;
+          (agg as any).purchase_total_amount = info.totalAmount;
+          (agg as any).purchase_last_amount = info.lastAmount;
+        }
+      }
       const aggRows = Array.from(byCode.values()).map(({ first_snap, last_snap, ...rest }) => rest);
       const sign = dir === "asc" ? 1 : -1;
       const sorted = aggRows.sort((a, b) => {
