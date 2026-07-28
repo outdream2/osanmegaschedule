@@ -1698,12 +1698,12 @@ export const StockManagePage: React.FC = () => {
     supplier_code: string | null;
     names?: string[];
     code_conflict?: boolean;
-    purchaseQty: number; purchaseAmount: number; saleQty: number;
+    purchaseQty: number; purchaseAmount: number; saleQty: number; saleAmount?: number;
     itemCount: number; totalStockAmount: number;
   };
   const [xlsxSuppliers, setXlsxSuppliers] = useState<SupplierAgg[]>([]);
-  // 2026-07-28 · 사용자 요청 · 공급사 리스트 정렬 (재고자산 · 판매량 · 매입 · 상품수)
-  type SupListSortKey = "totalStockAmount" | "saleQty" | "purchaseQty" | "itemCount" | "supplier";
+  // 2026-07-28 · 사용자 요청 · 공급사 리스트 정렬 (재고자산 · 판매량 · 판매액 · 매입 · 상품수 · 공급사명)
+  type SupListSortKey = "totalStockAmount" | "saleQty" | "saleAmount" | "purchaseQty" | "itemCount" | "supplier";
   const [supListSort, setSupListSort] = useState<{ key: SupListSortKey; dir: "asc" | "desc" }>({ key: "totalStockAmount", dir: "desc" });
   const toggleSupListSort = (k: SupListSortKey) => {
     setSupListSort(prev => prev.key === k ? { key: k, dir: prev.dir === "asc" ? "desc" : "asc" } : { key: k, dir: k === "supplier" ? "asc" : "desc" });
@@ -2328,7 +2328,8 @@ export const StockManagePage: React.FC = () => {
     (async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams({ limit: "20" });
+        // 2026-07-28 · 정확성 위주 · 전체 받아옴 · client Top N 필터로 slice (사용자 요청)
+        const params = new URLSearchParams({ limit: "50000" });
         // 계절 우선 · 지정 시 months/snapshot 무시 (년도 무관)
         if (supplierSeason) {
           params.set("season", supplierSeason);
@@ -2703,7 +2704,8 @@ export const StockManagePage: React.FC = () => {
                       <span className="text-slate-400 font-bold">정렬</span>
                       {([
                         { k: "totalStockAmount" as SupListSortKey, label: "재고자산" },
-                        { k: "saleQty" as SupListSortKey, label: "판매" },
+                        { k: "saleQty" as SupListSortKey, label: "판매량" },
+                        { k: "saleAmount" as SupListSortKey, label: "판매액" },
                         { k: "purchaseQty" as SupListSortKey, label: "매입" },
                         { k: "itemCount" as SupListSortKey, label: "상품수" },
                         { k: "supplier" as SupListSortKey, label: "공급사명" },
@@ -2764,11 +2766,13 @@ export const StockManagePage: React.FC = () => {
                                       >⚠</span>
                                     )}
                                   </div>
-                                  {/* 2026-07-28 · 사용자 요청 · 한 줄 · 재고자산·판매·매입·상품수 모두 표시 */}
-                                  <div className="flex items-center gap-2 shrink-0 tabular-nums text-[11px]">
+                                  {/* 2026-07-28 · 사용자 요청 · 한 줄 · 재고자산·판매량·판매액·매입·상품수 모두 표시 · 숫자 고딕(tabular-nums · font-mono 제거) */}
+                                  <div className="flex items-center gap-2 shrink-0 tabular-nums text-[12px]">
                                     <span className="font-black text-emerald-700" title="재고자산">{fmtWon(sup.totalStockAmount)}</span>
                                     <span className="text-slate-300">·</span>
                                     <span className="font-bold text-orange-700" title="판매수량">판매 {fmt(sup.saleQty)}</span>
+                                    <span className="text-slate-300">·</span>
+                                    <span className="font-bold text-rose-700" title="판매액 (proxy)">{fmtWon(Number(sup.saleAmount ?? 0))}</span>
                                     <span className="text-slate-300">·</span>
                                     <span className="font-bold text-sky-700" title="매입수량">매입 {fmt(sup.purchaseQty)}</span>
                                     <span className="text-slate-300">·</span>
@@ -2931,9 +2935,9 @@ export const StockManagePage: React.FC = () => {
                                     <td className="px-1 py-1 break-words whitespace-normal leading-tight">
                                       <button type="button" onClick={() => loadFlowSelectedProduct(r)} className="text-left font-bold text-indigo-700 hover:text-indigo-900 hover:underline cursor-pointer transition break-words whitespace-normal">{r.product_name}</button>
                                     </td>
-                                    <td className="text-right px-1 py-1 font-mono text-amber-700">{fmt(Number(r.current_stock ?? 0))}</td>
-                                    <td className="text-right px-1 py-1 font-mono text-slate-500">{detailCycleStr(r)}</td>
-                                    <td className="text-right px-1 py-1 font-mono">
+                                    <td className="text-right px-1 py-1 tabular-nums text-amber-700">{fmt(Number(r.current_stock ?? 0))}</td>
+                                    <td className="text-right px-1 py-1 tabular-nums text-slate-500">{detailCycleStr(r)}</td>
+                                    <td className="text-right px-1 py-1 tabular-nums">
                                       {r.product_code && r.last_purchase_date ? (
                                         <button type="button"
                                           onClick={() => setProductPurchaseModal({
@@ -2947,9 +2951,9 @@ export const StockManagePage: React.FC = () => {
                                         <span className="text-slate-500">{fmtPurchaseDate(r.last_purchase_date)}</span>
                                       )}
                                     </td>
-                                    <td className="text-right px-1 py-1 font-mono text-slate-700">{fmt(Number(r.purchase_total_qty ?? r.purchase_qty ?? 0))}</td>
-                                    <td className="text-right px-1 py-1 font-mono text-sky-600">{minOrder > 0 ? `${fmt(minOrder)}개` : "-"}</td>
-                                    <td className="text-right px-1 py-1 font-mono font-bold text-emerald-700">{fmtWon(Number(r.total_amount ?? 0))}</td>
+                                    <td className="text-right px-1 py-1 tabular-nums text-slate-700">{fmt(Number(r.purchase_total_qty ?? r.purchase_qty ?? 0))}</td>
+                                    <td className="text-right px-1 py-1 tabular-nums text-sky-600">{minOrder > 0 ? `${fmt(minOrder)}개` : "-"}</td>
+                                    <td className="text-right px-1 py-1 tabular-nums font-bold text-emerald-700">{fmtWon(Number(r.total_amount ?? 0))}</td>
                                   </tr>
                                   );
                                 })}
@@ -3542,7 +3546,7 @@ export const StockManagePage: React.FC = () => {
                                   <th className="text-left px-0.5 py-1.5 w-7 text-[12px]">#</th>
                                   <th
                                     onClick={() => toggleFlowSort("name")}
-                                    className={`text-left px-1 py-1.5 min-w-[160px] cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}
+                                    className={`text-left px-1 py-1.5 min-w-[200px] cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}
                                     title="클릭: 상품명 가나다순 정렬"
                                   >
                                     <span className="flex flex-col leading-tight items-start">

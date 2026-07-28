@@ -1442,44 +1442,61 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         onLogout={onLogout}
       />
 
-      {/* 서브탭 · 모바일: 가로 스크롤 한 줄 (전체 라벨 유지) · 데스크탑: 인라인 flex 한 줄 */}
+      {/* 서브탭 · 2026-07-28 재설계 · Vercel Ink underline 계열 + 색상 아이덴티티 강조 */}
+      {/* AppNavHeader gradient pill · StockManagePage underline 두 패턴을 분석 후           */}
+      {/* 이 레이어(2단계 nav)에는 underline 방식이 계층적으로 적합 · gradient는 최상위 nav 전용 */}
       {(dpCanSeeStockManage || dpCanSeeStockArrivals) && (() => {
-        // 모바일에서도 전체 라벨 유지 · 안 맞으면 가로 스크롤
-        // 순서: 재고 → 판매 → 발주 → 입고알림 → 구역도(구 매장관리) → 직원관리
-        // 옵션 1: 헤더는 무지개 유지 · 서브탭은 그레이톤 · 활성만 인디고 강조 → 시각 계층 명확
-        // 2026-07-15 · 연한 파스텔 톤 (사용자 요청 · 진한 gradient 대신 tinted bg)
-        //   active: bg-{color}-50 border border-{color}-200 text-{color}-700 (톤다운 · 시인성 유지)
-        //   inactive: text-slate-500 · hover 만 subtle bg
-        //   각 탭별 아이덴티티 색상 유지 · 촌스러운 채도 down
-        type TabDef = { key: string; label: string; icon: any; visible: boolean; activeCls: string; iconActiveCls: string; ringCls: string; hoverCls: string };
+        type TabDef = { key: string; label: string; icon: any; visible: boolean; color: string };
+        const SUBTAB_COLORS: Record<string, { bar: string; text: string; iconActive: string; iconInactive: string; hoverText: string; dotBg: string }> = {
+          emerald: { bar: "bg-emerald-500", text: "text-emerald-700", iconActive: "text-emerald-600", iconInactive: "text-slate-400", hoverText: "hover:text-emerald-700", dotBg: "bg-emerald-500" },
+          amber:   { bar: "bg-amber-500",   text: "text-amber-700",   iconActive: "text-amber-600",   iconInactive: "text-slate-400", hoverText: "hover:text-amber-700",   dotBg: "bg-amber-500"   },
+          sky:     { bar: "bg-sky-500",     text: "text-sky-700",     iconActive: "text-sky-600",     iconInactive: "text-slate-400", hoverText: "hover:text-sky-700",     dotBg: "bg-sky-500"     },
+          orange:  { bar: "bg-orange-500",  text: "text-orange-700",  iconActive: "text-orange-600",  iconInactive: "text-slate-400", hoverText: "hover:text-orange-700",  dotBg: "bg-orange-500"  },
+          rose:    { bar: "bg-rose-500",    text: "text-rose-700",    iconActive: "text-rose-600",    iconInactive: "text-slate-400", hoverText: "hover:text-rose-700",    dotBg: "bg-rose-500"    },
+          indigo:  { bar: "bg-indigo-500",  text: "text-indigo-700",  iconActive: "text-indigo-600",  iconInactive: "text-slate-400", hoverText: "hover:text-indigo-700",  dotBg: "bg-indigo-500"  },
+        };
         const tabs: Array<TabDef> = [
-          { key: "stock-manage", label: "재고관리", icon: Boxes, visible: dpCanSeeStockManage, activeCls: "bg-emerald-50 border border-emerald-200 text-emerald-700 shadow-sm", iconActiveCls: "text-emerald-600", ringCls: "focus-visible:ring-emerald-300", hoverCls: "hover:bg-emerald-50/60 hover:text-emerald-700" },
-          { key: "sales-trend", label: "판매추이", icon: TrendingUp, visible: dpCanSeeStockManage, activeCls: "bg-amber-50 border border-amber-200 text-amber-700 shadow-sm", iconActiveCls: "text-amber-600", ringCls: "focus-visible:ring-amber-300", hoverCls: "hover:bg-amber-50/60 hover:text-amber-700" },
-          { key: "order-manage", label: "발주/사입관리", icon: ClipboardList, visible: dpCanSeeStockManage, activeCls: "bg-sky-50 border border-sky-200 text-sky-700 shadow-sm", iconActiveCls: "text-sky-600", ringCls: "focus-visible:ring-sky-300", hoverCls: "hover:bg-sky-50/60 hover:text-sky-700" },
-          { key: "stock-arrivals", label: "입고알림", icon: Bell, visible: dpCanSeeStockArrivals, activeCls: "bg-orange-50 border border-orange-200 text-orange-700 shadow-sm", iconActiveCls: "text-orange-600", ringCls: "focus-visible:ring-orange-300", hoverCls: "hover:bg-orange-50/60 hover:text-orange-700" },
-          { key: "store", label: "구역도", icon: Store, visible: true, activeCls: "bg-rose-50 border border-rose-200 text-rose-700 shadow-sm", iconActiveCls: "text-rose-600", ringCls: "focus-visible:ring-rose-300", hoverCls: "hover:bg-rose-50/60 hover:text-rose-700" },
-          { key: "staff-manage", label: "직원관리", icon: Users, visible: true, activeCls: "bg-indigo-50 border border-indigo-200 text-indigo-700 shadow-sm", iconActiveCls: "text-indigo-600", ringCls: "focus-visible:ring-indigo-300", hoverCls: "hover:bg-indigo-50/60 hover:text-indigo-700" },
+          { key: "stock-manage",   label: "재고관리",     icon: Boxes,         visible: dpCanSeeStockManage,   color: "emerald" },
+          { key: "sales-trend",    label: "판매추이",     icon: TrendingUp,    visible: dpCanSeeStockManage,   color: "amber"   },
+          { key: "order-manage",   label: "발주/사입관리", icon: ClipboardList, visible: dpCanSeeStockManage,   color: "sky"     },
+          { key: "stock-arrivals", label: "입고알림",     icon: Bell,          visible: dpCanSeeStockArrivals, color: "orange"  },
+          { key: "store",          label: "구역도",       icon: Store,         visible: true,                  color: "rose"    },
+          { key: "staff-manage",   label: "직원관리",     icon: Users,         visible: true,                  color: "indigo"  },
         ];
-        const inactiveCls = "text-slate-500";
-        const iconInactive = "text-slate-400";
         const visibleTabs = tabs.filter(t => t.visible);
-        const tabBase = "flex flex-col sm:flex-row items-center sm:justify-start justify-center gap-0.5 sm:gap-2 px-2 sm:px-4 py-1.5 sm:py-2.5 text-[11px] sm:text-[14px] font-bold whitespace-nowrap transition-all duration-150 cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-offset-1 rounded-md sm:rounded-xl min-h-[48px] sm:min-h-0 active:scale-95 flex-1 sm:flex-initial sm:min-w-0";
         return (
-          <div className="bg-white border-b border-slate-200/70 px-1.5 sm:px-4 w-full">
-            <div className="max-w-[1360px] mx-auto py-1 sm:py-2 w-full flex justify-center sm:justify-start overflow-x-auto scrollbar-none">
-              <div className="flex flex-nowrap bg-slate-100 border border-slate-200 rounded-lg sm:rounded-xl p-0.5 sm:p-1 gap-0.5 sm:gap-1 shadow-sm w-full sm:w-auto">
+          <div className="bg-white border-b border-slate-200 w-full shrink-0">
+            <div className="max-w-[1360px] mx-auto px-2 sm:px-5 w-full overflow-x-auto scrollbar-none">
+              <div className="flex flex-nowrap items-stretch gap-0">
                 {visibleTabs.map(t => {
                   const active = dpSubTab === t.key;
                   const Icon = t.icon;
+                  const c = SUBTAB_COLORS[t.color];
                   return (
                     <button
                       key={t.key}
                       onClick={() => setDpSubTab(t.key as any)}
-                      className={`${tabBase} ${t.ringCls} ${active ? t.activeCls : `${inactiveCls} ${t.hoverCls}`}`}
+                      className={[
+                        "relative flex items-center gap-1.5 sm:gap-2",
+                        "px-3 sm:px-5 py-3 sm:py-3.5",
+                        "text-[14px] sm:text-[15px] font-black leading-none whitespace-nowrap",
+                        "transition-colors duration-150 cursor-pointer outline-none",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300",
+                        "active:opacity-70",
+                        active ? c.text : `text-slate-500 ${c.hoverText}`,
+                      ].join(" ")}
                       title={t.label}
                     >
-                      <Icon size={13} strokeWidth={2.2} className={`shrink-0 sm:size-[14px] ${active ? t.iconActiveCls : iconInactive}`} />
-                      <span className="leading-none">{t.label}</span>
+                      <Icon
+                        size={16}
+                        strokeWidth={active ? 2.4 : 2}
+                        className={`shrink-0 sm:size-[17px] transition-colors duration-150 ${active ? c.iconActive : "text-slate-400"}`}
+                      />
+                      <span>{t.label}</span>
+                      {/* 활성 underline · 색상 아이덴티티 */}
+                      {active && (
+                        <span className={`absolute left-0 right-0 -bottom-px h-[2.5px] ${c.bar} rounded-t-sm`} />
+                      )}
                     </button>
                   );
                 })}
