@@ -4513,14 +4513,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                       {/* 자동정리 버튼 · 명세서 시작 부분(페이지 헤더 행)에 배치 */}
                       {isLastInPage && amtIdx >= 0 && (() => {
                         const pageSupplier = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "";
-                        const configuredLabel = pageSupplier ? balanceConfig[pageSupplier] : undefined;
-                        const balanceCands = pageBalanceCandidates.get(pn) ?? [];
-                        const balanceAmount = configuredLabel
-                          ? (balanceCands.find(c => c.label === configuredLabel)?.amount
-                             ?? (configuredLabel && ["합계", "합계액", "총합계"].includes(configuredLabel) ? (structuredPages.find(p => p.page === pn)?.meta.total ?? null) : null))
-                          : null;
-                        // 다중 페이지가 아니면 소계 행은 생략, 잔고+드롭다운만 표시
-                        const isMultiPage = uniquePageNums.length > 1;
                         // 현재 렌더링 중인 컬럼 순서 (compact/detail 모드에 따라)
                         const baseOrder2 = dispHeaders.map((_, i) => i);
                         const orderNow: number[] = (() => {
@@ -4539,12 +4531,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                           return list;
                         })();
                         const totalColSpan = orderNow.length + 1; // +1 = 체크박스 컬럼
-                        const amtOrderIdx = orderNow.indexOf(amtIdx);
-                        const cands = pageBalanceCandidates.get(pn) ?? [];
-                        const overrideVal = pageBalanceOverride[pn];
-                        const effectiveBal = overrideVal ?? balanceAmount;
-                        const isMismatch = balanceAmount != null && overrideVal != null && overrideVal !== balanceAmount;
-                        // 2026-07-28 · 수식오탐 빨강 강조 완전 제거 (사용자 요청) · pageHasQpaErr 삭제 · amber 톤 통일
                         return (
                           <>
                             {/* ── 통합 소계+잔고 요약 행 ── */}
@@ -4793,49 +4779,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                     </div>
                                   </div>
 
-                                  {/* 잔고 인라인 (참고용) — 정산차액 옆 · 소형 */}
-                                  {(() => {
-                                    const bal = pageSupplierBalances[pn] ?? pageBalanceOverride[pn];
-                                    const manualBal = pageBalanceModeManual.has(pn) ? parseNumber(pageBalanceManualInput[pn] ?? "") : 0;
-                                    const displayBal = bal ?? (manualBal > 0 ? manualBal : null);
-                                    if (displayBal == null || displayBal <= 0) return null;
-                                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-                                    const disc = getPageDiscount(pn);
-                                    void disc;
-                                    return null;  // 잔고는 아래 잔고 기록 UI 에 자연스레 표시됨 · 여기 중복 X
-                                  })()}
 
-                                  {/* 옛 검증 텍스트 블록 (이제 미사용) */}
-                                  {(() => {
-                                    return null;
-                                  })()}
-
-                                  {(() => {
-                                    const disc = getPageDiscount(pn);
-                                    const bal = pageSupplierBalances[pn] ?? pageBalanceOverride[pn];
-                                    const manualBal = pageBalanceModeManual.has(pn) ? parseNumber(pageBalanceManualInput[pn] ?? "") : 0;
-                                    const displayBal = bal ?? (manualBal > 0 ? manualBal : null);
-                                    if (!disc && (displayBal == null || displayBal <= 0)) return null;
-                                    return (
-                                      <div className="hidden">
-                                        {disc && (
-                                          <span className="text-[14px] font-bold text-amber-800 whitespace-nowrap"
-                                            title={`정산차액 (${disc.label}) · ${disc.isEstimated ? "역산 추정값" : "명세서 표기값"}`}
-                                          >
-                                            정산차액 <span className="text-orange-700 font-black">{fmt(disc.amount)}</span>원
-                                          </span>
-                                        )}
-                                        {displayBal != null && displayBal > 0 && (
-                                          <span className="text-[14px] font-bold text-rose-800 whitespace-nowrap" title="공급사 잔고">
-                                            잔고 <span className="text-rose-700 font-black">{fmt(displayBal)}</span>원
-                                          </span>
-                                        )}
-                                      </div>
-                                    );
-                                  })()}
-
-                                  {/* 2026-07-24 · 사용자 요청 "잔고 금액선택 재추출 부분 모두 제거 · 확정 시 공급사별 잔고 저장" */}
-                                  {/* ── 잔고 기록 행 (제거됨) · 확정 버튼 클릭 시 handleMatchPage 에서 자동 저장 ── */}
+                                  {/* 잔고 기록 행 제거됨 (2026-07-24) · 확정 버튼 클릭 시 handleMatchPage 에서 자동 저장 */}
                                   {false && (
                                   <div className="flex items-center justify-center gap-1.5 flex-wrap mt-1.5 pt-1.5 border-t border-amber-300/40">
                                     <span className="text-[10px] font-semibold text-rose-500 whitespace-nowrap">잔고</span>
