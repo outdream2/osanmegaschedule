@@ -177,27 +177,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   const [pageSupplierBalances, setPageSupplierBalances] = useState<Record<number, number>>({});
   // 공급사 잔고 DB 기록
   const [supplierBalanceRecords, setSupplierBalanceRecords] = useState<{ id: number; supplier_name: string; invoice_date: string | null; balance: number; created_at: string }[]>([]);
-  // 공급사별 소계 공식 캐시: { "대웅제약": { subtotal: { positive: ["총합계액"], negative: ["에누리액"] }, resultLabel: "합계액" } }
-  // 서버 /api/supplier-balance-configs 응답의 column_layout.subtotal_formula에서 로드
-  const [supplierFormulaCache, setSupplierFormulaCache] = useState<Record<string, { subtotal?: { positive?: string[]; negative?: string[] }; resultLabel?: string }>>({});
-  useEffect(() => {
-    fetch("/api/supplier-balance-configs")
-      .then(r => r.json())
-      .then((rows: any[]) => {
-        if (!Array.isArray(rows)) return;
-        const cache: Record<string, any> = {};
-        for (const row of rows) {
-          const supp = String(row?.supplier_name ?? "").trim();
-          const layout = row?.column_layout;
-          if (!supp) continue;
-          if (layout && typeof layout === "object" && layout.subtotal_formula) {
-            cache[supp] = layout.subtotal_formula;
-          }
-        }
-        setSupplierFormulaCache(cache);
-      })
-      .catch(() => {});
-  }, []);
 
   // 페이지별 사용자 지정 잔고 (드롭박스로 OCR 추출 금액 중 선택) — 저장 버튼 클릭 시 확정
   const [pageBalanceOverride, setPageBalanceOverride] = useState<Record<number, number>>({});
@@ -232,10 +211,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   // "직접 입력" 모드: 사용자가 잔고 금액을 수동으로 입력
   const [pageBalanceManualInput, setPageBalanceManualInput] = useState<Record<number, string>>({});
   const [pageBalanceModeManual, setPageBalanceModeManual] = useState<Set<number>>(new Set());
-  // "기록 안 함" 모드: 이 페이지 잔고 저장 안 함
-  const [pageBalanceModeSkip, setPageBalanceModeSkip] = useState<Set<number>>(new Set());
-  // 저장 완료된 페이지 (시각 피드백)
-  const [savingBalance, setSavingBalance] = useState<Record<string, boolean>>({});
   // 2026-07-28 · 동의어 map · 재추출 시 · 로컬 캐시 우선 lookup
   // 사용자 요청 "재추출 버튼 누를때마다 동의어관리값 찾아서 매칭" · 아래 캐시 hit 시 즉시 적용
   const [synonymsMap, setSynonymsMap] = useState<Map<string, { name: string; code: string }>>(new Map());
@@ -257,9 +232,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     } catch { /* silent */ }
   }, []);
   useEffect(() => { loadSynonymsMap(); }, [loadSynonymsMap]);
-  // 2026-07-27 · 확정표 · 공급사별 미수금 인라인 편집 상태
-  const [editingSuppBal, setEditingSuppBal] = useState<string | null>(null);
-  const [editingSuppBalVal, setEditingSuppBalVal] = useState<string>("");
   // 확정표 컬럼 접기
   const [collapsedConfCols, setCollapsedConfCols] = useState<Set<string>>(new Set());
   // 페이지별 접기 상태 제거 (2026-07-19) · 우측 명세서는 항상 펼침
