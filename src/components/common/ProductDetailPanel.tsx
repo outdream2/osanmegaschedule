@@ -141,8 +141,10 @@ const StockFlowChart: React.FC<{ productCode: string }> = ({ productCode }) => {
           ),
           series: [
             { label: "매입",     color: "#10b981", kind: "bar"  as const, values: chartRows.map(r => Number(r.purchase_qty  ?? 0)), format: "count" as const },
+            // 2026-07-28 · 사용자 요청 · 판매 · 꺽은선 그래프 · 붉은색
+            { label: "판매",     color: "#dc2626", kind: "line" as const, values: chartRows.map(r => Number(r.sale_qty ?? 0)), format: "count" as const },
             ...(hasDisposal ? [{ label: "폐기", color: "#f43f5e", kind: "bar" as const, values: chartRows.map(r => Number(r.disposal_qty ?? 0)), format: "count" as const }] : []),
-            { label: "시작재고", color: "#94a3b8", kind: "line" as const, values: chartRows.map(r => Number(r.opening_stock ?? 0)), format: "count" as const },
+            // 2026-07-28 · 사용자 요청 · 시작재고 제거
             { label: "종료재고", color: "#6366f1", kind: "line" as const, values: chartRows.map(r => Number(r.closing_stock ?? 0)), format: "count" as const },
             { label: "손실(참고)", color: "#f59e0b", kind: "line" as const,
               values: chartRows.map(r => (Number(r.opening_stock ?? 0) - Number(r.sale_qty ?? 0)) - Number(r.closing_stock ?? 0)),
@@ -242,12 +244,43 @@ const ProductDetailChartMode: React.FC<{
 }> = ({ product, onProductUpdate, onRealMapUpdate, context, editable }) => {
   const [topCollapsed, setTopCollapsed] = useState(false);
   const [metaCollapsed, setMetaCollapsed] = useState(false);
+  // 2026-07-28 · 사용자 요청 · 매입이력 카드 분리 · 차트 아래 위치 · 기본 접힘
+  const [historyCollapsed, setHistoryCollapsed] = useState(true);
   return (
     <>
       {/* 기간 재고 흐름 차트 (2026-07-16 · 맨 위로 이동 · 사용자 요청) */}
       <StockFlowChart productCode={product.code} />
 
-      {/* 상단 카드: 헤더 + 재고현황 + 매입판매가 + 발주요청 + 배정구역 + 매입이력 · 접기 지원 */}
+      {/* 2026-07-28 · 매입이력 · 차트 바로 아래 · 기본 접힘 (사용자 요청) */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setHistoryCollapsed(c => !c)}
+          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-emerald-50 transition cursor-pointer border-b border-slate-100"
+          title={historyCollapsed ? "펼치기" : "접기"}
+        >
+          <span className={`text-slate-400 text-xs transition-transform ${historyCollapsed ? "" : "rotate-90"}`}>▶</span>
+          <TrendingUp size={12} className="text-emerald-600" />
+          <span className="text-[11px] font-black text-slate-600">매입이력</span>
+          {historyCollapsed && <span className="text-[10px] font-semibold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
+        </button>
+        {!historyCollapsed && (
+          <ProductInfoCard
+            product={product}
+            context={context}
+            editable={editable}
+            onRealMapUpdate={onRealMapUpdate}
+            onProductUpdate={onProductUpdate}
+            sections={{
+              header: false, zoneAssignment: false, stockStatus: false, actualStockInput: false,
+              orderRequest: false, financial: false, purchaseHistory: true,
+              productMeta: false, extraInfo: false,
+            }}
+          />
+        )}
+      </div>
+
+      {/* 상단 카드: 헤더 + 재고현황 + 매입판매가 + 발주요청 + 배정구역 · 접기 지원 (매입이력 분리됨) */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <button
           type="button"
@@ -257,7 +290,7 @@ const ProductDetailChartMode: React.FC<{
         >
           <span className={`text-slate-400 text-xs transition-transform ${topCollapsed ? "" : "rotate-90"}`}>▶</span>
           <Package size={12} className="text-slate-500" />
-          <span className="text-[11px] font-black text-slate-600">재고 · 매입판매가 · 발주 · 배정구역 · 매입이력</span>
+          <span className="text-[11px] font-black text-slate-600">재고 · 매입판매가 · 발주 · 배정구역</span>
           {topCollapsed && <span className="text-[10px] font-semibold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
         </button>
         {!topCollapsed && (
@@ -269,7 +302,7 @@ const ProductDetailChartMode: React.FC<{
             onProductUpdate={onProductUpdate}
             sections={{
               header: true, zoneAssignment: true, stockStatus: true, actualStockInput: true,
-              orderRequest: true, financial: true, purchaseHistory: true,
+              orderRequest: true, financial: true, purchaseHistory: false,
               productMeta: false, extraInfo: false,
             }}
           />

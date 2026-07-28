@@ -2019,7 +2019,8 @@ const MiniStoreZoneMap: React.FC = () => {
   );
 };
 
-const CategoryTab: React.FC = () => {
+// 2026-07-28 · 사용자 요청 · 카테고리별판매 재고관리로 이동 · export 추가
+export const CategoryTab: React.FC = () => {
   // 2026-07-15: 공급사분류 서브탭 제거 · 구역별만 유지 · 각 구역 설명 표시
   // 2026-07-16: 매장 구역도 미니맵 + 좌우 split 레이아웃
   return (
@@ -2132,7 +2133,8 @@ const _CategoryTabSupplier_deprecated: React.FC = () => {
 
 // ─── 손실추적 탭 (2026-07-15 · closing_stock > current_stock 상품) ─────────
 type LossSortKey = "name" | "supplier" | "opening" | "sale" | "current" | "expected" | "purchase" | "loss";
-const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> = ({ onOpenProductInfo }) => {
+// 2026-07-28 · 사용자 요청 · 손실추적 · 재고관리로 이동 · export 추가
+export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> = ({ onOpenProductInfo }) => {
   const [rows, setRows] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   // 매입 셀 클릭 시 매입 이력 모달 (2026-07-16)
@@ -2326,8 +2328,8 @@ const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> = ({ onO
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────
 export const SalesTrendPage: React.FC = () => {
   // 2026-07-16 · 4탭 (상품관리 재고관리로 이동 · 사용자 요청)
-  //   판매추이차트 (기본) · 공급사별 · 카테고리별 · 손실추적
-  type SalesTab = "chart" | "supplier" | "category" | "loss";
+  //   판매추이차트 (기본) · 공급사별 (카테고리별·손실추적 · 재고관리로 이동 · 2026-07-28)
+  type SalesTab = "chart" | "supplier";
   const [salesTab, setSalesTab] = useState<SalesTab>("chart");
   // 하위 컴포넌트 호환 · ProductTrendTab/SupplierTrendTab 에 넘길 activeTab
   const tab: "product" | "supplier" = salesTab === "supplier" ? "supplier" : "product";
@@ -2480,8 +2482,7 @@ export const SalesTrendPage: React.FC = () => {
           // 2026-07-16: "상품관리" 탭 재고관리 → 실재고차이 옆으로 이동 (사용자 요청)
           { k: "chart" as SalesTab, label: "판매추이차트", icon: Activity, color: "amber" },
           { k: "supplier" as SalesTab, label: "공급사별판매", icon: Building2, color: "sky" },
-          { k: "category" as SalesTab, label: "카테고리별판매", icon: PieChart, color: "violet" },
-          { k: "loss" as SalesTab, label: "손실추적", icon: AlertOctagon, color: "rose" },
+          // 2026-07-28 · 카테고리별판매·손실추적 · 재고관리 페이지로 이동
         ]).map(t => {
           const Icon = t.icon;
           const active = salesTab === t.k;
@@ -2528,34 +2529,7 @@ export const SalesTrendPage: React.FC = () => {
         </div>
         )}
 
-        {salesTab === "category" && <CategoryTab />}
-
-        {/* 손실추적 · 좌우 분할 레이아웃 */}
-        {salesTab === "loss" && (
-        <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
-          <div
-            className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
-            style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? lossPanelWidth : undefined }}
-          >
-            <LossTrackerTab onOpenProductInfo={loadLossSelectedProduct} />
-          </div>
-          <div onMouseDown={onLossResizeStart}
-            className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-rose-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
-            title="드래그하여 폭 조절">
-            <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
-          </div>
-          <ProductDetailRightPanel
-            selected={lossSelectedProduct}
-            onClose={() => setLossSelectedProduct(null)}
-            onProductUpdate={(u) => setLossSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
-            onRealMapUpdate={(v) => setLossSelectedProduct(prev => prev ? { ...prev, real_map: v } : prev)}
-            showChart={true}
-            context="stock-manage"
-            editable={true}
-            emptySub="상세 정보가 표시됩니다"
-          />
-        </div>
-        )}
+        {/* 2026-07-28 · 카테고리별판매·손실추적 · 재고관리 페이지로 이동 · 여기서 render 제거 */}
       </div>
 
       {/* 정보확인 모달 (판매리스트 상품명 클릭과 동일 · ProductInfoCard) */}

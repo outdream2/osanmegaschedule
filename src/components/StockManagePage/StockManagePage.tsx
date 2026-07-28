@@ -3,8 +3,11 @@
 // 좌측: ERP 현재고 + 수량 차이 추이 차트
 // 우측: 공급사별 매입 · Top 100 · 적정재고 이하
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Search, Package, TrendingUp, AlertTriangle, Building2, Info, EyeOff, Eye, Loader2 as LoaderIcon, Pencil, Check, X as XIcon, CheckSquare, Square, Boxes, Activity, Layers, FileText, LineChart } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, lazy } from "react";
+// 2026-07-28 · 카테고리별판매·손실추적 · 판매추이 페이지에서 이동 · lazy 로드
+const CategoryTabLazy = lazy(() => import("../SalesTrendPage/SalesTrendPage").then(m => ({ default: m.CategoryTab })));
+const LossTrackerTabLazy = lazy(() => import("../SalesTrendPage/SalesTrendPage").then(m => ({ default: m.LossTrackerTab })));
+import { Search, Package, TrendingUp, AlertTriangle, Building2, Info, EyeOff, Eye, Loader2 as LoaderIcon, Pencil, Check, X as XIcon, CheckSquare, Square, Boxes, Activity, Layers, FileText, LineChart, PieChart } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { PurchaseHistoryModal } from "../common/PurchaseHistoryModal";
@@ -1478,7 +1481,7 @@ export const StockManagePage: React.FC = () => {
   // 통합 탭 (2026-07-15) · 4개 섹션을 상단 탭으로 통합
   //   flow · supplier · low · diff
   //   기본: flow (재고흐름)
-  const [stockTab, setStockTab] = useState<"flow" | "supplier" | "purchase" | "low" | "diff" | "product">("flow");
+  const [stockTab, setStockTab] = useState<"flow" | "supplier" | "purchase" | "low" | "diff" | "category" | "loss">("flow");
   // 상품재고현황 매입 셀 클릭 시 팝업 (2026-07-16) · 해당 상품 매입 이력
   const [productPurchaseModal, setProductPurchaseModal] = useState<{ product_code: string; product_name: string } | null>(null);
 
@@ -1699,6 +1702,20 @@ export const StockManagePage: React.FC = () => {
     itemCount: number; totalStockAmount: number;
   };
   const [xlsxSuppliers, setXlsxSuppliers] = useState<SupplierAgg[]>([]);
+  // 2026-07-28 · 사용자 요청 · 공급사 리스트 정렬 (재고자산 · 판매량 · 매입 · 상품수)
+  type SupListSortKey = "totalStockAmount" | "saleQty" | "purchaseQty" | "itemCount" | "supplier";
+  const [supListSort, setSupListSort] = useState<{ key: SupListSortKey; dir: "asc" | "desc" }>({ key: "totalStockAmount", dir: "desc" });
+  const toggleSupListSort = (k: SupListSortKey) => {
+    setSupListSort(prev => prev.key === k ? { key: k, dir: prev.dir === "asc" ? "desc" : "asc" } : { key: k, dir: k === "supplier" ? "asc" : "desc" });
+  };
+  const sortedXlsxSuppliers = useMemo(() => {
+    const { key, dir } = supListSort;
+    const mult = dir === "asc" ? 1 : -1;
+    return [...xlsxSuppliers].sort((a, b) => {
+      if (key === "supplier") return mult * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
+      return mult * (Number(a[key] ?? 0) - Number(b[key] ?? 0));
+    });
+  }, [xlsxSuppliers, supListSort]);
   // 2026-07-23 · 공급사별 최신 잔고 (supplier_balances 최신값) — 우측 패널 재고자산 앞 표시
   const [supplierBalanceMap, setSupplierBalanceMap] = useState<Record<string, { balance: number; invoice_date: string | null }>>({});
   useEffect(() => {
@@ -2570,13 +2587,14 @@ export const StockManagePage: React.FC = () => {
           {/* 통합 탭 바 (2026-07-15) · Vercel Ink 스타일 · underline · 미니멀 */}
           <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-1 border-b border-slate-200 sm:overflow-x-auto sm:scrollbar-none">
             {[
-              { k: "flow" as const, label: "상품재고현황", icon: Activity, color: "teal" },
-              { k: "supplier" as const, label: "공급사재고", icon: Building2, color: "sky" },
+              { k: "flow" as const, label: "상품현황", icon: Activity, color: "teal" },
+              { k: "supplier" as const, label: "공급사", icon: Building2, color: "sky" },
               { k: "purchase" as const, label: "매입상세", icon: TrendingUp, color: "emerald" },
               { k: "low" as const, label: "적정재고↓", icon: AlertTriangle, color: "rose", badge: lowStock.length },
               { k: "diff" as const, label: "실재고차이", icon: Layers, color: "violet" },
-              // 상품관리 · 판매추이에서 이동 (2026-07-16 · 사용자 요청 · 실재고차이 옆)
-              { k: "product" as const, label: "상품관리", icon: Package, color: "indigo" },
+              // 2026-07-28 · 카테고리별판매·손실추적 · 판매추이에서 이동
+              { k: "category" as const, label: "카테고리별현황", icon: PieChart, color: "amber" },
+              { k: "loss" as const, label: "손실추적", icon: AlertTriangle, color: "rose" },
             ].map(t => {
               const Icon = t.icon;
               const active = stockTab === t.k;
@@ -2587,6 +2605,7 @@ export const StockManagePage: React.FC = () => {
                 rose: "text-rose-700",
                 violet: "text-violet-700",
                 indigo: "text-indigo-700",
+                amber: "text-amber-700",
               }[t.color]!;
               const activeBar = {
                 teal: "bg-teal-500",
@@ -2595,6 +2614,7 @@ export const StockManagePage: React.FC = () => {
                 rose: "bg-rose-500",
                 violet: "bg-violet-500",
                 indigo: "bg-indigo-500",
+                amber: "bg-amber-500",
               }[t.color]!;
               return (
                 <button key={t.k} onClick={() => setStockTab(t.k)}
@@ -2633,7 +2653,7 @@ export const StockManagePage: React.FC = () => {
                   <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-slate-200 bg-slate-50/50">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <Building2 size={14} className="text-sky-600" />
-                      <span className="text-[11px] font-black text-slate-600">공급사별 재고자산<span className="text-[10px] font-semibold text-slate-400 ml-1">(종료일)</span></span>
+                      <span className="text-[11px] font-black text-slate-600">공급사별 현황<span className="text-[10px] font-semibold text-slate-400 ml-1">(재고·매입·판매 · 종료일)</span></span>
                       {flowSnapshot && (
                         <span className="text-[10px] font-mono text-sky-600 bg-sky-50 border border-sky-200 rounded px-1.5 py-0.5">
                           {flowSnapshot}
@@ -2655,6 +2675,22 @@ export const StockManagePage: React.FC = () => {
                       <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
                     </div>
                     <p className="text-[10px] text-slate-500 font-semibold leading-tight">공급사 클릭 → 오른쪽에 상품 리스트 · 판매출고계 내림차순</p>
+                    {/* 2026-07-28 · 사용자 요청 · 정렬 헤더 (재고자산·판매·매입·상품수·공급사명) */}
+                    <div className="flex items-center gap-1 flex-wrap text-[10px]">
+                      <span className="text-slate-400 font-bold">정렬</span>
+                      {([
+                        { k: "totalStockAmount" as SupListSortKey, label: "재고자산" },
+                        { k: "saleQty" as SupListSortKey, label: "판매" },
+                        { k: "purchaseQty" as SupListSortKey, label: "매입" },
+                        { k: "itemCount" as SupListSortKey, label: "상품수" },
+                        { k: "supplier" as SupListSortKey, label: "공급사명" },
+                      ]).map(o => (
+                        <button key={o.k} onClick={() => toggleSupListSort(o.k)}
+                          className={`px-1.5 py-0.5 rounded font-black transition cursor-pointer ${supListSort.key === o.k ? "bg-sky-500 text-white" : "text-slate-500 hover:bg-slate-100 border border-slate-200"}`}>
+                          {o.label}{supListSort.key === o.k ? (supListSort.dir === "desc" ? " ▼" : " ▲") : ""}
+                        </button>
+                      ))}
+                    </div>
                   </div>
                   {!supplierCardCollapsed && (<>
                     {/* 순위 리스트 (재고자산 기준 내림차순) — 우측 스크롤바 여백 확보 */}
@@ -2676,7 +2712,7 @@ export const StockManagePage: React.FC = () => {
                         )
                       ) : (
                         <div className={`divide-y divide-slate-50 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                          {xlsxSuppliers.map((sup, i) => {
+                          {sortedXlsxSuppliers.map((sup, i) => {
                             const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
                             const isExpanded = expandedSuppliers.has(key);
                             const isLoading = supplierRowsLoading.has(key);
@@ -2705,14 +2741,17 @@ export const StockManagePage: React.FC = () => {
                                       >⚠</span>
                                     )}
                                   </div>
-                                  <span className="text-[11px] font-black text-emerald-700 shrink-0">{fmtWon(sup.totalStockAmount)}</span>
+                                  {/* 2026-07-28 · 사용자 요청 · 한 줄 · 재고자산·판매·매입·상품수 모두 표시 */}
+                                  <div className="flex items-center gap-2 shrink-0 tabular-nums text-[11px]">
+                                    <span className="font-black text-emerald-700" title="재고자산">{fmtWon(sup.totalStockAmount)}</span>
+                                    <span className="text-slate-300">·</span>
+                                    <span className="font-bold text-orange-700" title="판매수량">판매 {fmt(sup.saleQty)}</span>
+                                    <span className="text-slate-300">·</span>
+                                    <span className="font-bold text-sky-700" title="매입수량">매입 {fmt(sup.purchaseQty)}</span>
+                                    <span className="text-slate-300">·</span>
+                                    <span className="font-semibold text-slate-600" title="취급 상품 종수">상품 {sup.itemCount}</span>
+                                  </div>
                                 </button>
-                                <div className="flex items-center justify-end mt-0.5">
-                                  <span
-                                    className="text-[10px] text-slate-400 shrink-0 text-right"
-                                    title={`매입 ${fmt(sup.purchaseQty)}개 · 취급 상품 ${sup.itemCount}종`}
-                                  >매입 {fmt(sup.purchaseQty)}개 · <span className="text-slate-500 font-semibold">상품 {sup.itemCount}종</span></span>
-                                </div>
                             </div>
                           );
                         })}
@@ -3241,36 +3280,21 @@ export const StockManagePage: React.FC = () => {
               )}
             </div>
 
-            {/* 상품관리 탭 · 좌우 분할 레이아웃 */}
-            {stockTab === "product" && (
-            <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
-              {/* 좌측: ProductManageView */}
-              <div
-                className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
-                style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? productPanelWidth : undefined }}
-              >
-                <ProductManageView onProductClick={loadProductSelectedProduct} />
+            {/* 2026-07-28 · 사용자 요청 · 상품관리 탭 제거 · 카테고리별판매 (판매추이에서 이동) */}
+            {stockTab === "category" && (
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <React.Suspense fallback={<div className="text-center text-xs text-slate-400 py-8">카테고리별판매 로딩 중...</div>}>
+                  <CategoryTabLazy />
+                </React.Suspense>
               </div>
-
-              {/* 리사이즈 핸들 (데스크탑만) */}
-              <div onMouseDown={onProductResizeStart}
-                className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-indigo-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
-                title="드래그하여 폭 조절">
-                <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+            )}
+            {/* 2026-07-28 · 손실추적 (판매추이에서 이동) */}
+            {stockTab === "loss" && (
+              <div className="flex-1 min-h-0 overflow-y-auto">
+                <React.Suspense fallback={<div className="text-center text-xs text-slate-400 py-8">손실추적 로딩 중...</div>}>
+                  <LossTrackerTabLazy onOpenProductInfo={() => { /* TODO: 우측 상세 연결 · 다음 라운드 */ }} />
+                </React.Suspense>
               </div>
-
-              {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}
-              <ProductDetailRightPanel
-                selected={productSelectedProduct}
-                onClose={() => setProductSelectedProduct(null)}
-                onProductUpdate={(u) => setProductSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
-                onRealMapUpdate={(v) => setProductSelectedProduct(prev => prev ? { ...prev, real_map: v } : prev)}
-                showChart={true}
-                context="stock-manage"
-                editable={true}
-                emptySub="상세 정보가 표시됩니다"
-              />
-            </div>
             )}
 
             {/* 상품재고현황 탭 · 좌우 분할 레이아웃 (2026-07-16) · 좌: 재고리스트(원본) · 우: 제품정보(모바일 fullscreen 모달) */}
@@ -3497,7 +3521,12 @@ export const StockManagePage: React.FC = () => {
                                     onClick={() => toggleFlowSort("name")}
                                     className={`text-left px-1 py-1.5 min-w-[100px] cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}
                                     title="클릭: 상품명 가나다순 정렬"
-                                  >상품명{arrowFor("name")}</th>
+                                  >
+                                    <span className="flex flex-col leading-tight items-start">
+                                      <span>상품명</span>
+                                      <span className="text-[10px] opacity-70">{arrowFor("name")}</span>
+                                    </span>
+                                  </th>
                                   {/* 2026-07-28 · 사용자 요청 · 시작 컬럼 제거 · 매입 → 최근매입일 옆으로 이동 (라벨 · 최근매입량) */}
                                   <th
                                     onClick={() => toggleFlowSort("sale")}
@@ -3511,14 +3540,29 @@ export const StockManagePage: React.FC = () => {
                                   >현재고{arrowFor("current")}</th>
                                   {/* 2026-07-28 · 사용자 요청 · 손실 컬럼 제거 */}
                                   <th onClick={() => toggleFlowSort("cycle")}
-                                    className={`text-right px-0.5 py-1.5 w-14 text-[12px] font-black cursor-pointer select-none bg-sky-50/40 hover:bg-sky-100 transition ${flowSort === "cycle" ? "text-sky-800" : "text-sky-600"}`}
-                                    title="매입주기 · 클릭 정렬">매입주기{arrowFor("cycle")}</th>
+                                    className={`text-right px-0.5 py-1.5 w-12 text-[12px] font-black cursor-pointer select-none bg-sky-50/40 hover:bg-sky-100 transition ${flowSort === "cycle" ? "text-sky-800" : "text-sky-600"}`}
+                                    title="평균 매입주기 = (최근-최초 매입일) / (매입횟수-1) · 클릭 정렬">
+                                    <span className="flex flex-col leading-tight items-end">
+                                      <span className="text-[10px] font-semibold text-sky-500">평균</span>
+                                      <span>매입주기{arrowFor("cycle")}</span>
+                                    </span>
+                                  </th>
                                   <th onClick={() => toggleFlowSort("last_purchase")}
-                                    className={`text-right px-0.5 py-1.5 w-14 text-[12px] font-black cursor-pointer select-none bg-emerald-50/30 hover:bg-emerald-100 transition ${flowSort === "last_purchase" ? "text-emerald-800" : "text-emerald-600"}`}
-                                    title="최근 매입일 · 클릭 정렬">최근매입일{arrowFor("last_purchase")}</th>
+                                    className={`text-right px-0.5 py-1.5 w-11 text-[12px] font-black cursor-pointer select-none bg-emerald-50/30 hover:bg-emerald-100 transition ${flowSort === "last_purchase" ? "text-emerald-800" : "text-emerald-600"}`}
+                                    title="최근 매입일 · 클릭 정렬">
+                                    <span className="flex flex-col leading-tight items-end">
+                                      <span className="text-[10px] font-semibold text-emerald-500">최근</span>
+                                      <span>매입일{arrowFor("last_purchase")}</span>
+                                    </span>
+                                  </th>
                                   <th onClick={() => toggleFlowSort("purchase")}
-                                    className={`text-right px-0.5 py-1.5 w-16 text-[12px] font-black cursor-pointer select-none bg-emerald-50/60 hover:bg-emerald-100 transition ${flowSort === "purchase" ? "text-emerald-700" : "text-emerald-500"}`}
-                                    title="최근매입량 · 클릭 정렬">최근매입량{arrowFor("purchase")}</th>
+                                    className={`text-right px-0.5 py-1.5 w-12 text-[12px] font-black cursor-pointer select-none bg-emerald-50/60 hover:bg-emerald-100 transition ${flowSort === "purchase" ? "text-emerald-700" : "text-emerald-500"}`}
+                                    title="최근매입량 · 클릭 정렬">
+                                    <span className="flex flex-col leading-tight items-end">
+                                      <span className="text-[10px] font-semibold text-emerald-500">최근</span>
+                                      <span>매입량{arrowFor("purchase")}</span>
+                                    </span>
+                                  </th>
                                   {/* 2026-07-28 · 사용자 요청 · 매입주기 회전율 컬럼 제거 */}
                                   <th onClick={() => toggleFlowSort("stock_value")}
                                     className={`text-right px-0.5 py-1.5 w-20 text-[12px] font-black cursor-pointer select-none bg-indigo-50/40 hover:bg-indigo-100 transition ${flowSort === "stock_value" ? "text-indigo-800" : "text-indigo-700"}`}
