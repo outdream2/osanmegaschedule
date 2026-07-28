@@ -1716,6 +1716,12 @@ export const StockManagePage: React.FC = () => {
       return mult * (Number(a[key] ?? 0) - Number(b[key] ?? 0));
     });
   }, [xlsxSuppliers, supListSort]);
+  // 2026-07-28 · 사용자 요청 · Top N 필터 (기본 전체)
+  const [supListLimit, setSupListLimit] = useState<number>(999999);
+  const displayedXlsxSuppliers = useMemo(
+    () => sortedXlsxSuppliers.slice(0, supListLimit),
+    [sortedXlsxSuppliers, supListLimit]
+  );
   // 2026-07-23 · 공급사별 최신 잔고 (supplier_balances 최신값) — 우측 패널 재고자산 앞 표시
   const [supplierBalanceMap, setSupplierBalanceMap] = useState<Record<string, { balance: number; invoice_date: string | null }>>({});
   useEffect(() => {
@@ -2659,7 +2665,24 @@ export const StockManagePage: React.FC = () => {
                           {flowSnapshot}
                         </span>
                       )}
-                      <span className="text-[10px] font-mono text-slate-400">({xlsxSuppliers.length}개 사)</span>
+                      <span className="text-[10px] font-mono text-slate-400">
+                        ({displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사)
+                      </span>
+                      {/* 2026-07-28 · 사용자 요청 · Top N 필터 (기본 전체) */}
+                      <div className="flex items-center gap-1 ml-auto">
+                        {[
+                          { v: 100,    label: "Top 100" },
+                          { v: 300,    label: "Top 300" },
+                          { v: 1000,   label: "Top 1000" },
+                          { v: 999999, label: "전체" },
+                        ].map(o => (
+                          <button key={o.v} onClick={() => setSupListLimit(o.v)}
+                            className={`text-[10px] font-black px-1.5 py-0.5 rounded transition whitespace-nowrap cursor-pointer ${
+                              supListLimit === o.v ? "bg-sky-500 text-white" : "text-slate-500 hover:bg-slate-100"
+                            }`}
+                          >{o.label}</button>
+                        ))}
+                      </div>
                     </div>
                     {/* 2026-07-16 · 기간 필터 (재고리스트와 동일 UI) */}
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -2712,7 +2735,7 @@ export const StockManagePage: React.FC = () => {
                         )
                       ) : (
                         <div className={`divide-y divide-slate-50 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                          {sortedXlsxSuppliers.map((sup, i) => {
+                          {displayedXlsxSuppliers.map((sup, i) => {
                             const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
                             const isExpanded = expandedSuppliers.has(key);
                             const isLoading = supplierRowsLoading.has(key);

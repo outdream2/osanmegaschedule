@@ -137,15 +137,17 @@ router.get("/api/stock-manage/supplier-purchases", async (req, res) => {
     if (!targetDate) return res.json({ snapshot_date: null, top: null, rows: [] });
 
     // 전체 조회 (페이지네이션) — 공급사코드로 그룹핑 (코드 없으면 이름으로 폴백)
+    // 2026-07-28: itemCount 를 stock_history row 수가 아닌 distinct product 수로 계산
+    //   (기간 조회 시 상품마다 여러 스냅샷 row 존재 · itemCount 폭발 이슈 fix)
     const map = new Map<string, {
       supplier: string;
       supplier_code: string | null;
       names: Set<string>;          // 같은 코드에 여러 이름이 붙는 경우 감지
+      products: Set<string>;       // distinct product code · itemCount 계산용
       purchaseQty: number;
       purchaseAmount: number;
       saleQty: number;
       saleAmount: number;          // 판매액 (proxy: supply_amount × 판매/(매입+판매) 비율 합)
-      itemCount: number;
       totalStockAmount: number;
     }>();
     const PAGE = 1000;
@@ -153,7 +155,7 @@ router.get("/api/stock-manage/supplier-purchases", async (req, res) => {
     while (true) {
       let query = supabase
         .from("stock_history")
-        .select("supplier_code, supplier_name, purchase_qty, sale_qty, supply_amount, total_amount, snapshot_date");
+        .select("product_code, supplier_code, supplier_name, purchase_qty, sale_qty, supply_amount, total_amount, snapshot_date");
       if (seasonMonths) {
         // 전 데이터 스캔 · 후 필터 (Supabase 는 EXTRACT 미지원)
         // 필요 시 상위 range 로 페이징 · 계절 월 이외는 스킵
@@ -179,9 +181,13 @@ router.get("/api/stock-manage/supplier-purchases", async (req, res) => {
           supplier: supName || supCode,
           supplier_code: supCode || null,
           names: new Set<string>(),
-          purchaseQty: 0, purchaseAmount: 0, saleQty: 0, saleAmount: 0, itemCount: 0, totalStockAmount: 0,
+          products: new Set<string>(),
+          purchaseQty: 0, purchaseAmount: 0, saleQty: 0, saleAmount: 0, totalStockAmount: 0,
         };
         if (supName) cur.names.add(supName);
+        // 2026-07-28: distinct product code 만 카운트 (기간 조회 시 row 중복 제거)
+        const productCode = String((r as any).product_code ?? "").trim();
+        if (productCode) cur.products.add(productCode);
         const purchQty = Number(r.purchase_qty ?? 0) || 0;
         const saleQty  = Number(r.sale_qty ?? 0) || 0;
         const supplyAmt = Number(r.supply_amount ?? 0) || 0;
@@ -194,7 +200,6 @@ router.get("/api/stock-manage/supplier-purchases", async (req, res) => {
         const total = purchQty + saleQty;
         if (total > 0) cur.saleAmount += supplyAmt * (saleQty / total);
         cur.totalStockAmount += Number(r.total_amount ?? 0) || 0;
-        cur.itemCount++;
         map.set(key, cur);
       }
       if (data.length < PAGE) break;
@@ -222,7 +227,7 @@ router.get("/api/stock-manage/supplier-purchases", async (req, res) => {
       purchaseAmount: v.purchaseAmount,
       saleQty: v.saleQty,
       saleAmount: Math.round(v.saleAmount), // 판매액 proxy (2026-07-16)
-      itemCount: v.itemCount,
+      itemCount: v.products.size,           // 2026-07-28 · distinct product code 수
       totalStockAmount: v.totalStockAmount,
     })).sort((a, b) => b.totalStockAmount - a.totalStockAmount);
     const top = rows.length > 0 ? rows[0] : null;
