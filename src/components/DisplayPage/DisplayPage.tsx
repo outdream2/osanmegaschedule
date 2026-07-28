@@ -1477,9 +1477,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       key={t.key}
                       onClick={() => setDpSubTab(t.key as any)}
                       className={[
-                        "relative flex items-center gap-1.5 sm:gap-2",
-                        "px-3 sm:px-5 py-3 sm:py-3.5",
-                        "text-[14px] sm:text-[15px] font-black leading-none whitespace-nowrap",
+                        "relative flex items-center gap-2 sm:gap-2.5",
+                        "px-4 sm:px-6 py-3.5 sm:py-4",
+                        "text-[16px] sm:text-[18px] font-black leading-none whitespace-nowrap",
                         "transition-colors duration-150 cursor-pointer outline-none",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300",
                         "active:opacity-70",
@@ -1488,9 +1488,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       title={t.label}
                     >
                       <Icon
-                        size={16}
+                        size={19}
                         strokeWidth={active ? 2.4 : 2}
-                        className={`shrink-0 sm:size-[17px] transition-colors duration-150 ${active ? c.iconActive : "text-slate-400"}`}
+                        className={`shrink-0 sm:size-[20px] transition-colors duration-150 ${active ? c.iconActive : "text-slate-400"}`}
                       />
                       <span>{t.label}</span>
                       {/* 활성 underline · 색상 아이덴티티 */}
@@ -1578,8 +1578,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                           onClick={() => handleProductResultClick(p.realMap)}
                           className="flex-1 min-w-0 text-left hover:opacity-75 transition cursor-pointer"
                         >
-                          <div className="text-xs font-semibold text-slate-800 truncate">{p.name}</div>
-                          {p.spec && <div className="text-[10px] text-slate-400 truncate mt-0.5" title="전산배치구역">{p.spec}</div>}
+                          <div className="text-[13px] font-semibold text-slate-800 truncate">{p.name}</div>
+                          {p.spec && <div className="text-[11px] text-slate-400 truncate mt-0.5" title="전산배치구역">{p.spec}</div>}
                         </button>
                         <div className="flex items-center gap-1.5 shrink-0">
                           {p.realMap && (
@@ -1707,8 +1707,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                 onClick={() => handleProductResultClick(p.realMap)}
                                 className="flex-1 min-w-0 text-left cursor-pointer"
                               >
-                                <div className="text-xs font-semibold text-slate-800 truncate">{p.name}</div>
-                                {p.spec && <div className="text-[10px] text-slate-400 truncate mt-0.5" title="전산배치구역">{p.spec}</div>}
+                                <div className="text-[13px] font-semibold text-slate-800 truncate">{p.name}</div>
+                                {p.spec && <div className="text-[11px] text-slate-400 truncate mt-0.5" title="전산배치구역">{p.spec}</div>}
                               </button>
                               <div className="flex items-center gap-1.5 shrink-0">
                                 {p.realMap && (
@@ -2277,7 +2277,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                             {reqFilter === "done" ? "완료된 요청이 없습니다" : reqFilter === "pending" ? "대기 중인 요청이 없습니다" : "등록된 진열 요청이 없습니다"}
                           </div>
                         ) : (
-                          <table className="w-full text-left text-[11px] border-collapse">
+                          <table className="w-full text-left text-xs border-collapse">
                             <thead>
                               <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
                                 <th className="p-2 w-24">구역</th>
@@ -2292,9 +2292,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                 <tr key={req.id} className="hover:bg-slate-50 transition">
                                   <td className="p-2 font-bold text-slate-900">{req.zoneLabel}</td>
                                   <td className="p-2 font-bold text-slate-800">{req.assignedStaffName || "미배정"}</td>
-                                  <td className="p-2 text-slate-500 text-[10px]">{formatRel(req.requestedAt)}</td>
+                                  <td className="p-2 text-slate-500 text-[11px]">{formatRel(req.requestedAt)}</td>
                                   <td className="p-2 text-center">
-                                    <span className={`px-1.5 py-0.5 rounded-full text-[9px] font-bold border ${req.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-300" : "bg-emerald-50 text-emerald-700 border-emerald-300"}`}>
+                                    <span className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold border ${req.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-300" : "bg-emerald-50 text-emerald-700 border-emerald-300"}`}>
                                       {req.status === "pending" ? "대기" : "완료"}
                                     </span>
                                   </td>
@@ -2309,7 +2309,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                             body: JSON.stringify({ status: "done" }),
                                           }).catch(() => { });
                                         }}
-                                          className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer flex items-center gap-0.5">
+                                          className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer flex items-center gap-0.5">
                                           <CheckCircle2 size={9} />완료
                                         </button>
                                       )}
@@ -2317,7 +2317,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                         setRequests((prev) => prev.filter((r) => r.id !== req.id));
                                         fetch(`/api/display-requests/${req.id}`, { method: "DELETE" }).catch(() => { });
                                       }}
-                                        className="text-[9px] font-medium px-1.5 py-0.5 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer border border-slate-200">
+                                        className="text-[11px] font-medium px-1.5 py-0.5 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer border border-slate-200">
                                         삭제
                                       </button>
                                     </div>

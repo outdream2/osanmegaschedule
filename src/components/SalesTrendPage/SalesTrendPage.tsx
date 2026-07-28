@@ -720,7 +720,7 @@ const ProductTrendTab: React.FC<{
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-white z-10">
-                    <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+                    <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                       <th className="text-left px-2 py-1.5">기간</th>
                       <th className="text-right px-2 py-1.5 w-16 bg-emerald-50/60 text-emerald-500">매입</th>
                       <th className="text-right px-2 py-1.5 w-16 bg-orange-50/60 text-orange-500">판매</th>
@@ -731,25 +731,25 @@ const ProductTrendTab: React.FC<{
                     {filteredRows.map((r, i) => (
                       <tr key={`r-${i}`} className="hover:bg-teal-50/30 transition">
                         <td className="px-2 py-1.5 align-top">
-                          <div className="text-[13px] font-black text-slate-800 font-mono leading-tight">{periodLabel(r.period_start_date, r.snapshot_date)}</div>
-                          <div className="text-[9px] text-slate-400">{r.period_type === "early" ? "초순" : r.period_type === "mid" ? "중순" : r.period_type === "late" ? "하순" : "-"}</div>
+                          <div className="text-[13px] font-black text-slate-800 tabular-nums leading-tight">{periodLabel(r.period_start_date, r.snapshot_date)}</div>
+                          <div className="text-[11px] text-slate-400">{r.period_type === "early" ? "초순" : r.period_type === "mid" ? "중순" : r.period_type === "late" ? "하순" : "-"}</div>
                         </td>
-                        <td className="px-2 py-1.5 text-right font-mono text-[12px] font-bold text-emerald-700 bg-emerald-50/40 align-top">{fmt(r.purchase_qty ?? 0)}</td>
-                        <td className="px-2 py-1.5 text-right font-mono text-[12px] font-black text-orange-700 bg-orange-50/40 align-top">{fmt(r.sale_qty ?? 0)}</td>
-                        <td className="px-2 py-1.5 text-right font-mono text-[12px] font-bold text-indigo-700 bg-indigo-50/40 align-top">{fmt(r.closing_stock ?? 0)}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums text-[12px] font-bold text-emerald-700 bg-emerald-50/40 align-top">{fmt(r.purchase_qty ?? 0)}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums text-[12px] font-black text-orange-700 bg-orange-50/40 align-top">{fmt(r.sale_qty ?? 0)}</td>
+                        <td className="px-2 py-1.5 text-right tabular-nums text-[12px] font-bold text-indigo-700 bg-indigo-50/40 align-top">{fmt(r.closing_stock ?? 0)}</td>
                       </tr>
                     ))}
                   </tbody>
-                  <tfoot className="bg-slate-50 border-t-2 border-slate-200 text-[11px]">
+                  <tfoot className="bg-slate-50 border-t-2 border-slate-200 text-xs">
                     <tr>
                       <td className="px-2 py-1.5 text-right font-black text-slate-500 uppercase">합계</td>
-                      <td className="px-2 py-1.5 text-right font-mono font-black text-emerald-700 bg-emerald-50/40">
+                      <td className="px-2 py-1.5 text-right tabular-nums font-black text-emerald-700 bg-emerald-50/40">
                         {fmt(filteredRows.reduce((n, r) => n + Number(r.purchase_qty ?? 0), 0))}
                       </td>
-                      <td className="px-2 py-1.5 text-right font-mono font-black text-orange-700 bg-orange-50/40">
+                      <td className="px-2 py-1.5 text-right tabular-nums font-black text-orange-700 bg-orange-50/40">
                         {fmt(filteredRows.reduce((n, r) => n + Number(r.sale_qty ?? 0), 0))}
                       </td>
-                      <td className="px-2 py-1.5 text-right font-mono font-black text-indigo-700 bg-indigo-50/40">
+                      <td className="px-2 py-1.5 text-right tabular-nums font-black text-indigo-700 bg-indigo-50/40">
                         {/* 종료재고는 합계 개념이 없어서 최종값 표시 */}
                         {fmt(Number(filteredRows[filteredRows.length - 1]?.closing_stock ?? 0))}
                       </td>
@@ -1087,9 +1087,9 @@ const SupplierTrendTab: React.FC<{
                           <div className="text-center text-[11px] text-slate-300 py-6">상품 데이터 없음</div>
                         ) : (
                           <div className="max-h-[50vh] overflow-auto">
-                            <table className="w-full text-[10px] sm:text-xs sm:min-w-[520px]">
+                            <table className="w-full text-xs sm:min-w-[520px]">
                               <thead className="sticky top-0 bg-white z-10">
-                                <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+                                <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                                   <th className="text-left px-0.5 py-1.5 w-6">#</th>
                                   {([
                                     { k: "name" as SupRowsSortKey, label: "상품명", align: "text-left", color: "slate" as "slate" | "orange" | "emerald" },
@@ -1132,7 +1132,7 @@ const SupplierTrendTab: React.FC<{
                                   const profitRate = salePrice > 0 && purchasePrice > 0 ? ((salePrice - purchasePrice) / salePrice) * 100 : null;
                                   return (
                                     <tr key={`${key}-${r.product_code ?? ri}`} className="hover:bg-orange-50/30 transition align-top">
-                                      <td className="px-0.5 py-1.5 text-[10px] font-black text-orange-600">{ri + 1}</td>
+                                      <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600">{ri + 1}</td>
                                       <td className="px-0.5 py-1.5 break-words whitespace-normal leading-tight">
                                         <button
                                           type="button"
@@ -1141,11 +1141,11 @@ const SupplierTrendTab: React.FC<{
                                           title={`${r.product_name} — 클릭 시 상세 정보`}
                                         >{r.product_name}</button>
                                       </td>
-                                      <td className="text-right px-0.5 py-1.5 font-mono font-black text-orange-700 bg-orange-50/40">{fmt(saleQty)}</td>
-                                      <td className="text-right px-0.5 py-1.5 font-mono font-black text-orange-700 bg-orange-50/40" title={saleAmount > 0 ? `판매수량 × 판매가 = ${saleAmount.toLocaleString()}원` : undefined}>{saleAmount > 0 ? saleAmount.toLocaleString() : "-"}</td>
-                                      <td className="text-right px-0.5 py-1.5 font-mono text-slate-800" title={salePrice > 0 ? `${salePrice.toLocaleString()}원` : "판매가 없음"}>{salePrice > 0 ? salePrice.toLocaleString() : "-"}</td>
-                                      <td className="text-right px-0.5 py-1.5 font-mono text-emerald-700 bg-emerald-50/40" title={purchasePrice > 0 ? `${purchasePrice.toLocaleString()}원` : "사입가 없음"}>{purchasePrice > 0 ? purchasePrice.toLocaleString() : "-"}</td>
-                                      <td className={`text-right px-0.5 py-1.5 font-mono font-black bg-emerald-50/40 ${profitRate == null ? "text-slate-400" : profitRate >= 30 ? "text-emerald-700" : profitRate >= 10 ? "text-emerald-600" : "text-rose-600"}`} title={profitRate != null ? `(판매가 - 사입가) / 판매가 = ${profitRate.toFixed(2)}%` : "판매가 또는 사입가 없음"}>{profitRate == null ? "-" : `${profitRate.toFixed(1)}%`}</td>
+                                      <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-orange-700 bg-orange-50/40">{fmt(saleQty)}</td>
+                                      <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-orange-700 bg-orange-50/40" title={saleAmount > 0 ? `판매수량 × 판매가 = ${saleAmount.toLocaleString()}원` : undefined}>{saleAmount > 0 ? saleAmount.toLocaleString() : "-"}</td>
+                                      <td className="text-right px-0.5 py-1.5 tabular-nums text-slate-800" title={salePrice > 0 ? `${salePrice.toLocaleString()}원` : "판매가 없음"}>{salePrice > 0 ? salePrice.toLocaleString() : "-"}</td>
+                                      <td className="text-right px-0.5 py-1.5 tabular-nums text-emerald-700 bg-emerald-50/40" title={purchasePrice > 0 ? `${purchasePrice.toLocaleString()}원` : "사입가 없음"}>{purchasePrice > 0 ? purchasePrice.toLocaleString() : "-"}</td>
+                                      <td className={`text-right px-0.5 py-1.5 tabular-nums font-black bg-emerald-50/40 ${profitRate == null ? "text-slate-400" : profitRate >= 30 ? "text-emerald-700" : profitRate >= 10 ? "text-emerald-600" : "text-rose-600"}`} title={profitRate != null ? `(판매가 - 사입가) / 판매가 = ${profitRate.toFixed(2)}%` : "판매가 또는 사입가 없음"}>{profitRate == null ? "-" : `${profitRate.toFixed(1)}%`}</td>
                                     </tr>
                                   );
                                 })}
@@ -1520,7 +1520,7 @@ export const StockFlowPanel: React.FC<{
                   </td>
                 </tr>
               )}
-              <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+              <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                 <th className="text-center px-0.5 py-1.5 w-6">
                   <button onClick={() => {
                     if (selectedCodes.size === displayRows.length) setSelectedCodes(new Set());
@@ -1576,26 +1576,26 @@ export const StockFlowPanel: React.FC<{
                         ? <CheckSquare size={13} className="text-rose-500 inline" />
                         : <Square size={13} className="text-slate-300 hover:text-rose-500 inline" />}
                     </td>
-                    <td className="px-0.5 py-1.5 text-[10px] font-black text-orange-600 align-top">{i + 1}</td>
+                    <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600 align-top">{i + 1}</td>
                     <td className="px-1 py-1.5 align-top">
                       <div className="text-[13px] font-medium text-slate-800 break-words whitespace-normal leading-tight" title={p.product_name}>
                         {p.product_name}
                         {(p as any).min_order != null && (p as any).min_order > 0 && (
-                          <span className="inline-flex items-center ml-1 px-1 py-0.5 rounded text-[9px] font-black text-sky-700 bg-sky-100 border border-sky-300 align-middle" title={`최소주문량 ${(p as any).min_order}`}>
+                          <span className="inline-flex items-center ml-1 px-1 py-0.5 rounded text-[10px] font-black text-sky-700 bg-sky-100 border border-sky-300 align-middle" title={`최소주문량 ${(p as any).min_order}`}>
                             최소{(p as any).min_order}
                           </span>
                         )}
                       </div>
-                      {p.supplier && <div className="text-[9px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
+                      {p.supplier && <div className="text-[11px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
                     </td>
-                    <td className="text-right px-0.5 py-1.5 font-mono font-bold text-orange-700 text-[11px] bg-orange-50/40 align-top">{fmt(p.sale_qty)}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-orange-700 text-[12px] bg-orange-50/40 align-top">{fmt(p.sale_qty)}</td>
                     <td
-                      className={`text-right px-0.5 py-1.5 font-mono text-[11px] bg-rose-50/40 align-top ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
+                      className={`text-right px-0.5 py-1.5 tabular-nums text-[12px] bg-rose-50/40 align-top ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
                       title={`손실 = (시작${fmt(Number(p.opening_stock))} − 판매${fmt(Number(p.sale_qty))}) − 종료${fmt(close)} = ${loss > 0 ? "-" + fmt(loss) : loss < 0 ? "+" + fmt(Math.abs(loss)) : "0"}${Number(p.purchase_qty) > 0 ? `\n입고: ${fmt(Number(p.purchase_qty))} (참고)` : ""}${Number(p.disposal_qty ?? 0) > 0 ? `\n폐기: ${fmt(Number(p.disposal_qty ?? 0))} (참고)` : ""}`}
                     >{loss === 0 ? "0" : loss > 0 ? `-${fmt(loss)}` : `+${fmt(Math.abs(loss))}`}</td>
-                    <td className="text-right px-0.5 py-1.5 font-mono text-[10px] text-indigo-700 font-bold bg-indigo-50/40 align-top" title={salePrice > 0 ? `${salePrice.toLocaleString()}원` : undefined}>{salePrice > 0 ? fmtWon(salePrice) : "-"}</td>
-                    <td className="text-right px-0.5 py-1.5 font-mono text-[10px] text-slate-700 font-bold bg-slate-50/40 align-top" title={purchasePrice > 0 ? `${purchasePrice.toLocaleString()}원` : undefined}>{purchasePrice > 0 ? fmtWon(purchasePrice) : "-"}</td>
-                    <td className={`text-right px-0.5 py-1.5 font-mono text-[10px] font-black bg-emerald-50/40 align-top ${profitRate == null ? "text-slate-400" : profitRate >= 30 ? "text-emerald-700" : profitRate >= 10 ? "text-emerald-600" : "text-rose-600"}`} title={profitRate != null ? `(판매가 ${salePrice.toLocaleString()} - 사입가 ${purchasePrice.toLocaleString()}) / 판매가 = ${profitRate.toFixed(2)}%` : "판매가 또는 사입가 미설정"}>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums text-[12px] text-indigo-700 font-bold bg-indigo-50/40 align-top" title={salePrice > 0 ? `${salePrice.toLocaleString()}원` : undefined}>{salePrice > 0 ? fmtWon(salePrice) : "-"}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums text-[12px] text-slate-700 font-bold bg-slate-50/40 align-top" title={purchasePrice > 0 ? `${purchasePrice.toLocaleString()}원` : undefined}>{purchasePrice > 0 ? fmtWon(purchasePrice) : "-"}</td>
+                    <td className={`text-right px-0.5 py-1.5 tabular-nums text-[12px] font-black bg-emerald-50/40 align-top ${profitRate == null ? "text-slate-400" : profitRate >= 30 ? "text-emerald-700" : profitRate >= 10 ? "text-emerald-600" : "text-rose-600"}`} title={profitRate != null ? `(판매가 ${salePrice.toLocaleString()} - 사입가 ${purchasePrice.toLocaleString()}) / 판매가 = ${profitRate.toFixed(2)}%` : "판매가 또는 사입가 미설정"}>
                       {profitRate == null ? "-" : `${profitRate.toFixed(1)}%`}
                     </td>
                   </tr>
@@ -1744,9 +1744,9 @@ const ZoneCategoryContent: React.FC = () => {
         {/* 상품 테이블 */}
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1">
           <div className="overflow-auto max-h-[55vh]">
-            <table className="w-full text-[10px] sm:text-xs sm:min-w-[540px]">
+            <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
-                <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                   <th className="text-left px-0.5 py-1.5 w-6">#</th>
                   {sortableTh("name", "상품명", "text-left px-0.5 py-1.5")}
                   {sortableTh("sale", "판매", "text-right px-0.5 py-1.5 w-14 text-orange-500 bg-orange-50/40")}
@@ -1757,18 +1757,18 @@ const ZoneCategoryContent: React.FC = () => {
               <tbody className="divide-y divide-slate-50">
                 {sortedItems.slice(0, 200).map((it, i) => (
                   <tr key={`${g.zone}-${it.code}`} className="hover:bg-orange-50/30 align-top transition">
-                    <td className="px-0.5 py-1.5 text-[10px] font-black text-orange-600">{i + 1}</td>
+                    <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600">{i + 1}</td>
                     <td className="px-0.5 py-1.5 break-words whitespace-normal leading-tight">
                       <span className="text-[13px] font-medium text-slate-800 break-words whitespace-normal leading-tight" title={it.name}>{it.name}</span>
                     </td>
-                    <td className="text-right px-0.5 py-1.5 font-mono text-orange-700 font-black bg-orange-50/40">{fmt(it.saleQty)}</td>
-                    <td className="text-right px-0.5 py-1.5 font-mono text-amber-800 font-black bg-amber-50/40">{fmt(it.currentStock)}</td>
-                    <td className="text-right px-0.5 py-1.5 font-mono font-black text-emerald-700 bg-emerald-50/40">{fmtWon(it.amount)}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums text-orange-700 font-black bg-orange-50/40">{fmt(it.saleQty)}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums text-amber-800 font-black bg-amber-50/40">{fmt(it.currentStock)}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-emerald-700 bg-emerald-50/40">{fmtWon(it.amount)}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {g.items.length > 200 && <div className="text-[10px] text-slate-400 text-center py-1">상위 200개만 · 전체 {g.items.length}개</div>}
+            {g.items.length > 200 && <div className="text-[11px] text-slate-400 text-center py-1">상위 200개만 · 전체 {g.items.length}개</div>}
           </div>
         </div>
       </div>
@@ -2239,9 +2239,9 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
         <div className="text-center text-[11px] text-slate-300 py-6">손실 상품 없음</div>
       ) : (
         <div className={`overflow-auto max-h-[50vh] rounded-lg border border-slate-100 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-          <table className="w-full text-[10px] sm:text-xs sm:min-w-[540px]">
+          <table className="w-full text-xs sm:min-w-[540px]">
             <thead className="sticky top-0 bg-white z-10">
-              <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+              <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                 <th className="text-left px-0.5 py-1.5 w-6">#</th>
                 <th onClick={() => handleSort("name")}
                   className={`text-left px-0.5 py-1.5 cursor-pointer select-none hover:bg-slate-50 transition ${sortKey === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}>
@@ -2281,19 +2281,19 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
                 return (
                   <tr key={r.product_code ?? i} className="hover:bg-orange-50/30 transition align-top"
                     title={`예상 = 시작(${open}) − 판매(${sale}) = ${expected}\n실제 종료 = ${close}\n손실 = ${expected - close}${purch > 0 ? `\n※ 이 기간 입고 ${purch} 있음 (예상 계산에 미반영)` : ""}`}>
-                    <td className="px-0.5 py-1.5 text-[10px] font-black text-orange-600">{i + 1}</td>
+                    <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600">{i + 1}</td>
                     <td className="px-0.5 py-1.5 align-top">
                       <button onClick={() => onOpenProductInfo(r)} className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition">
                         {r.product_name}
                       </button>
-                      {r.supplier && <div className="text-[9px] text-slate-400 break-words whitespace-normal">{r.supplier}</div>}
+                      {r.supplier && <div className="text-[11px] text-slate-400 break-words whitespace-normal">{r.supplier}</div>}
                     </td>
-                    <td className="px-0.5 py-1.5 text-slate-500 text-[10px] hidden sm:table-cell truncate max-w-[160px] align-top">{r.supplier}</td>
-                    <td className="text-right px-0.5 py-1.5 font-mono text-slate-800 align-top">{fmt(open)}</td>
-                    <td className="text-right px-0.5 py-1.5 font-mono text-orange-700 font-black bg-orange-50/40 align-top">{fmt(sale)}</td>
-                    <td className="text-right px-0.5 py-1.5 font-mono text-amber-800 font-black bg-amber-50/40 align-top">{fmt(close)}</td>
-                    <td className="text-right px-0.5 py-1.5 font-mono text-slate-800 hidden md:table-cell align-top">{fmt(expected)}</td>
-                    <td className={`text-right px-0.5 py-1.5 font-mono hidden md:table-cell bg-emerald-50/40 align-top ${purch > 0 ? "text-emerald-700 font-black" : "text-slate-400"}`}>
+                    <td className="px-0.5 py-1.5 text-slate-500 text-[11px] hidden sm:table-cell truncate max-w-[160px] align-top">{r.supplier}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums text-slate-800 align-top">{fmt(open)}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums text-orange-700 font-black bg-orange-50/40 align-top">{fmt(sale)}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums text-amber-800 font-black bg-amber-50/40 align-top">{fmt(close)}</td>
+                    <td className="text-right px-0.5 py-1.5 tabular-nums text-slate-800 hidden md:table-cell align-top">{fmt(expected)}</td>
+                    <td className={`text-right px-0.5 py-1.5 tabular-nums hidden md:table-cell bg-emerald-50/40 align-top ${purch > 0 ? "text-emerald-700 font-black" : "text-slate-400"}`}>
                       {purch > 0 ? (
                         <button
                           type="button"
@@ -2303,7 +2303,7 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
                         >{fmt(purch)}</button>
                       ) : fmt(purch)}
                     </td>
-                    <td className={`text-right px-0.5 py-1.5 font-mono font-black bg-rose-50/40 align-top ${r.loss < 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                    <td className={`text-right px-0.5 py-1.5 tabular-nums font-black bg-rose-50/40 align-top ${r.loss < 0 ? "text-emerald-600" : "text-rose-600"}`}>
                       {r.loss > 0 ? `-${fmt(r.loss)}` : r.loss < 0 ? `+${fmt(-r.loss)}` : "0"}
                     </td>
                   </tr>

@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState, lazy } from "
 // 2026-07-28 · 카테고리별판매·손실추적 · 판매추이 페이지에서 이동 · lazy 로드
 const CategoryTabLazy = lazy(() => import("../SalesTrendPage/SalesTrendPage").then(m => ({ default: m.CategoryTab })));
 const LossTrackerTabLazy = lazy(() => import("../SalesTrendPage/SalesTrendPage").then(m => ({ default: m.LossTrackerTab })));
-import { Search, Package, TrendingUp, AlertTriangle, Building2, Info, EyeOff, Eye, Loader2 as LoaderIcon, Pencil, Check, X as XIcon, CheckSquare, Square, Boxes, Activity, Layers, FileText, LineChart, PieChart } from "lucide-react";
+import { Search, Package, TrendingUp, AlertTriangle, Building2, Info, EyeOff, Eye, Loader2 as LoaderIcon, Pencil, Check, X as XIcon, CheckSquare, Square, Boxes, Activity, Layers, FileText, LineChart, PieChart, ChevronRight, ChevronDown } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { PurchaseHistoryModal } from "../common/PurchaseHistoryModal";
@@ -786,9 +786,9 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
           )}
           <div className={`${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
           {/* 코드 컬럼 제거 · 매입일 간단(M/D) · 가로 스크롤 방지 (table-fixed) */}
-          <table className="w-full text-[10px] sm:text-xs table-fixed">
+          <table className="w-full text-xs table-fixed">
             <thead className="sticky top-0 bg-white z-10">
-              <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+              <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                 <th className="text-left px-0.5 py-1.5 w-7">#</th>
                 {([
                   { k: "date" as const,     label: "매입일",  w: "w-14 text-left",  bg: "" },
@@ -837,8 +837,8 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
                 const minOrder = Number(r.min_order ?? 0);
                 return (
                   <tr key={r.id ?? i} className="hover:bg-orange-50/30 transition align-top">
-                    <td className="px-0.5 py-1.5 text-orange-600 font-black text-[10px]">{i + 1}</td>
-                    <td className="px-0.5 py-1.5 font-mono whitespace-nowrap">
+                    <td className="px-0.5 py-1.5 text-orange-600 font-black text-[11px]">{i + 1}</td>
+                    <td className="px-0.5 py-1.5 tabular-nums whitespace-nowrap text-[12px]">
                       {r.product_code && r.purchase_date ? (
                         <button
                           type="button"
@@ -864,28 +864,28 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
                           {r.product_name ?? "-"}
                         </button>
                       ) : <span className="text-[13px] font-medium text-slate-800">{r.product_name ?? "-"}</span>}
-                      {r.supplier_name && <div className="text-[9px] text-slate-400 break-words whitespace-normal">{r.supplier_name}</div>}
+                      {r.supplier_name && <div className="text-[11px] text-slate-400 break-words whitespace-normal">{r.supplier_name}</div>}
                     </td>
-                    <td className="px-1 py-1.5 text-right font-mono font-black text-slate-700 bg-slate-50/40">{r.quantity != null ? r.quantity.toLocaleString() : "-"}</td>
-                    <td className="px-1 py-1.5 text-right font-mono text-sky-600 bg-sky-50/40" title={cycle > 0 ? `${Number(r.purchase_count_total)}회 매입 · 평균 ${cycle}일 주기` : "2회 미만 · 계산 불가"}>{cycleLabel}</td>
+                    <td className="px-1 py-1.5 text-right tabular-nums font-black text-slate-700 bg-slate-50/40">{r.quantity != null ? r.quantity.toLocaleString() : "-"}</td>
+                    <td className="px-1 py-1.5 text-right tabular-nums text-sky-600 bg-sky-50/40" title={cycle > 0 ? `${Number(r.purchase_count_total)}회 매입 · 평균 ${cycle}일 주기` : "2회 미만 · 계산 불가"}>{cycleLabel}</td>
                     {/* 2026-07-22 · 최근매입일 (M/D 짧게 · 오늘 매입과 비교용) */}
-                    <td className="px-1 py-1.5 text-right font-mono text-emerald-600 bg-emerald-50/30" title={r.last_purchase_date ?? undefined}>
+                    <td className="px-1 py-1.5 text-right tabular-nums text-emerald-600 bg-emerald-50/30" title={r.last_purchase_date ?? undefined}>
                       {r.last_purchase_date && /^\d{4}-\d{2}-\d{2}$/.test(String(r.last_purchase_date))
                         ? `${String(r.last_purchase_date).slice(5, 7)}/${String(r.last_purchase_date).slice(8, 10)}`
                         : "-"}
                     </td>
-                    <td className="px-1 py-1.5 text-right font-mono text-sky-700 font-semibold bg-sky-50/40" title={minOrder > 0 ? `최소발주량 ${minOrder}` : "미지정"}>{minOrder > 0 ? minOrder.toLocaleString() : "-"}</td>
-                    <td className="px-1 py-1.5 text-right font-mono font-black text-emerald-700 bg-emerald-50/40" title={(r.total ?? r.amount) != null ? Number(r.total ?? r.amount).toLocaleString() + "원" : undefined}>{(r.total ?? r.amount) != null ? fmtWon(Number(r.total ?? r.amount)) : "-"}</td>
+                    <td className="px-1 py-1.5 text-right tabular-nums text-sky-700 font-semibold bg-sky-50/40" title={minOrder > 0 ? `최소발주량 ${minOrder}` : "미지정"}>{minOrder > 0 ? minOrder.toLocaleString() : "-"}</td>
+                    <td className="px-1 py-1.5 text-right tabular-nums font-black text-emerald-700 bg-emerald-50/40" title={(r.total ?? r.amount) != null ? Number(r.total ?? r.amount).toLocaleString() + "원" : undefined}>{(r.total ?? r.amount) != null ? fmtWon(Number(r.total ?? r.amount)) : "-"}</td>
                     <td className="px-1 py-1.5 text-center whitespace-nowrap">
                       {r.purchase_date && r.supplier_name ? (
                         <button
                           type="button"
                           onClick={() => setInvoiceModal({ purchase_date: String(r.purchase_date), supplier: String(r.supplier_name), product_name: r.product_name ?? undefined })}
-                          className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[10px] font-black text-violet-700 bg-violet-50 border border-violet-200 hover:bg-violet-100 active:scale-95 cursor-pointer transition whitespace-nowrap leading-none"
+                          className="inline-flex items-center justify-center px-1.5 py-0.5 rounded text-[11px] font-black text-violet-700 bg-violet-50 border border-violet-200 hover:bg-violet-100 active:scale-95 cursor-pointer transition whitespace-nowrap leading-none"
                           title={`${r.purchase_date} · ${r.supplier_name} 거래명세서 조회`}
                         >명세서</button>
                       ) : (
-                        <span className="text-slate-300 text-[10px]">-</span>
+                        <span className="text-slate-300 text-[11px]">-</span>
                       )}
                     </td>
                   </tr>
@@ -904,12 +904,12 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
       {importBatches.length > 0 && (
         <div className="shrink-0 border-t border-slate-200 px-3 pt-2 pb-2 bg-slate-50/40">
           <div className="flex items-center gap-2 mb-1.5">
-            <span className="text-[11px] font-black text-slate-600">📋 임포트 이력</span>
-            <span className="text-[9px] text-slate-400">최근 {importBatches.length}건</span>
+            <span className="text-[12px] font-black text-slate-600">임포트 이력</span>
+            <span className="text-[11px] text-slate-400">최근 {importBatches.length}건</span>
           </div>
           <div className="max-h-32 overflow-y-auto">
-            <table className="w-full text-[10px]">
-              <thead className="text-slate-400 uppercase text-[9px]">
+            <table className="w-full text-[11px]">
+              <thead className="text-slate-400 uppercase text-[10px]">
                 <tr>
                   <th className="text-left px-2 py-1">임포트 시각</th>
                   <th className="text-left px-2 py-1">기간</th>
@@ -924,10 +924,10 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
                   const ptLabel = b.periodType === "early" ? "초순" : b.periodType === "mid" ? "중순" : b.periodType === "late" ? "하순" : "-";
                   return (
                     <tr key={i} className="hover:bg-white">
-                      <td className="px-2 py-0.5 font-mono text-slate-600">{ts}</td>
-                      <td className="px-2 py-0.5 font-mono text-slate-500">{b.periodStart ?? b.startDate} ~ {b.endDate}</td>
-                      <td className="text-right px-2 py-0.5 font-mono font-black text-emerald-700">{b.count.toLocaleString()}</td>
-                      <td className="px-2 py-0.5 text-slate-500">{ptLabel !== "-" && <span className="font-mono">{ptLabel}</span>}</td>
+                      <td className="px-2 py-0.5 tabular-nums text-slate-600">{ts}</td>
+                      <td className="px-2 py-0.5 tabular-nums text-slate-500">{b.periodStart ?? b.startDate} ~ {b.endDate}</td>
+                      <td className="text-right px-2 py-0.5 tabular-nums font-black text-emerald-700">{b.count.toLocaleString()}</td>
+                      <td className="px-2 py-0.5 text-slate-500">{ptLabel !== "-" && <span>{ptLabel}</span>}</td>
                     </tr>
                   );
                 })}
@@ -1053,8 +1053,8 @@ const InvoiceLookupModal: React.FC<{ purchaseDate: string; supplier: string; hig
                 <span className="text-slate-500 font-mono">수량 {totalQty.toLocaleString()} · 금액 <span className="text-violet-700 font-black">{totalAmount.toLocaleString()}원</span></span>
               </div>
               <div className="rounded-lg border border-slate-200 overflow-auto">
-                <table className="w-full text-[11px] min-w-[560px]">
-                  <thead className="sticky top-0 bg-slate-100 text-slate-500 text-[9px] uppercase">
+                <table className="w-full text-xs min-w-[560px]">
+                  <thead className="sticky top-0 bg-slate-100 text-slate-500 text-[11px] uppercase">
                     <tr>
                       <th className="text-left px-2 py-1 w-16">저장일</th>
                       <th className="text-left px-2 py-1">품명</th>
@@ -1069,22 +1069,22 @@ const InvoiceLookupModal: React.FC<{ purchaseDate: string; supplier: string; hig
                       const isHighlight = highlightProduct && x.product_name && String(x.product_name).includes(String(highlightProduct).slice(0, 6));
                       return (
                         <tr key={x.id ?? i} className={`align-top ${isHighlight ? "bg-violet-50 hover:bg-violet-100" : "hover:bg-slate-50"}`}>
-                          <td className="px-2 py-1 font-mono text-slate-500 whitespace-nowrap">{String(x.saved_at).slice(5)}</td>
+                          <td className="px-2 py-1 tabular-nums text-slate-500 whitespace-nowrap">{String(x.saved_at).slice(5)}</td>
                           <td className="px-2 py-1 text-slate-800 break-words leading-tight font-semibold" title={x.memo ?? undefined}>
                             {x.product_name}
-                            {x.product_code && <span className="ml-1 text-[9px] font-mono text-slate-400">[{x.product_code}]</span>}
+                            {x.product_code && <span className="ml-1 text-[11px] text-slate-400">[{x.product_code}]</span>}
                           </td>
-                          <td className="text-right px-2 py-1 font-mono text-slate-700">{x.quantity != null ? Number(x.quantity).toLocaleString() : "-"}</td>
-                          <td className="text-right px-2 py-1 font-mono text-slate-600">{x.unit_price != null ? Number(x.unit_price).toLocaleString() : "-"}</td>
-                          <td className="text-right px-2 py-1 font-mono font-black text-emerald-700 whitespace-nowrap">{x.amount != null ? Number(x.amount).toLocaleString() : "-"}</td>
-                          <td className="px-2 py-1 font-mono text-slate-500 text-[10px] whitespace-nowrap">{x.expiry_date ?? "-"}</td>
+                          <td className="text-right px-2 py-1 tabular-nums text-slate-700">{x.quantity != null ? Number(x.quantity).toLocaleString() : "-"}</td>
+                          <td className="text-right px-2 py-1 tabular-nums text-slate-600">{x.unit_price != null ? Number(x.unit_price).toLocaleString() : "-"}</td>
+                          <td className="text-right px-2 py-1 tabular-nums font-black text-emerald-700 whitespace-nowrap">{x.amount != null ? Number(x.amount).toLocaleString() : "-"}</td>
+                          <td className="px-2 py-1 tabular-nums text-slate-500 text-[11px] whitespace-nowrap">{x.expiry_date ?? "-"}</td>
                         </tr>
                       );
                     })}
                   </tbody>
                 </table>
               </div>
-              <div className="mt-2 text-[10px] text-slate-400">
+              <div className="mt-2 text-[11px] text-slate-400">
                 <span className="font-black text-slate-500">데이터 소스:</span> ocr_confirmed_items · 사입(OCR거래명세서 등록)에서 저장된 항목
               </div>
             </>
@@ -1171,25 +1171,25 @@ export const ProductPurchaseHistoryModal: React.FC<{ productCode: string; produc
             <>
               <div className="grid grid-cols-3 gap-2 mb-3">
                 <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/60 border border-emerald-200 rounded-lg px-3 py-2">
-                  <div className="text-[10px] font-black text-emerald-800 opacity-70 uppercase">총 매입 건수</div>
-                  <div className="text-lg font-black text-emerald-800 font-mono">{rows.length.toLocaleString()}건</div>
+                  <div className="text-[11px] font-black text-emerald-800 opacity-70 uppercase">총 매입 건수</div>
+                  <div className="text-lg font-black text-emerald-800 tabular-nums">{rows.length.toLocaleString()}건</div>
                 </div>
                 <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/60 border border-indigo-200 rounded-lg px-3 py-2">
-                  <div className="text-[10px] font-black text-indigo-800 opacity-70 uppercase">총 매입 수량</div>
-                  <div className="text-lg font-black text-indigo-800 font-mono">{totalQty.toLocaleString()}</div>
+                  <div className="text-[11px] font-black text-indigo-800 opacity-70 uppercase">총 매입 수량</div>
+                  <div className="text-lg font-black text-indigo-800 tabular-nums">{totalQty.toLocaleString()}</div>
                 </div>
                 <div className="bg-gradient-to-br from-violet-50 to-violet-100/60 border border-violet-200 rounded-lg px-3 py-2">
-                  <div className="text-[10px] font-black text-violet-800 opacity-70 uppercase">총 매입 금액</div>
-                  <div className="text-lg font-black text-violet-800 font-mono">{totalAmount.toLocaleString()}<span className="text-xs ml-0.5">원</span></div>
+                  <div className="text-[11px] font-black text-violet-800 opacity-70 uppercase">총 매입 금액</div>
+                  <div className="text-lg font-black text-violet-800 tabular-nums">{totalAmount.toLocaleString()}<span className="text-xs ml-0.5">원</span></div>
                 </div>
               </div>
-              <div className="text-[10px] text-slate-500 mb-1 flex items-center gap-2">
+              <div className="text-[11px] text-slate-500 mb-1 flex items-center gap-2">
                 <span className="font-black">공급사 종류:</span>
-                <span className="font-mono text-slate-700">{uniqueSuppliers}개 사</span>
+                <span className="tabular-nums text-slate-700">{uniqueSuppliers}개 사</span>
               </div>
               <div className="rounded-lg border border-slate-200 overflow-auto max-h-[50vh]">
-                <table className="w-full text-[11px] min-w-[520px]">
-                  <thead className="sticky top-0 bg-slate-100 text-slate-500 text-[9px] uppercase">
+                <table className="w-full text-xs min-w-[520px]">
+                  <thead className="sticky top-0 bg-slate-100 text-slate-500 text-[11px] uppercase">
                     <tr>
                       <th className="text-left px-2 py-1 w-16">매입일</th>
                       <th className="text-left px-2 py-1">공급사</th>
@@ -1201,17 +1201,17 @@ export const ProductPurchaseHistoryModal: React.FC<{ productCode: string; produc
                   <tbody className="divide-y divide-slate-100">
                     {rows.map((r, i) => (
                       <tr key={r.id ?? i} className="hover:bg-emerald-50/30 align-top">
-                        <td className="px-2 py-1 font-mono text-slate-500 whitespace-nowrap">{String(r.purchase_date).slice(5)}</td>
+                        <td className="px-2 py-1 tabular-nums text-slate-500 whitespace-nowrap">{String(r.purchase_date).slice(5)}</td>
                         <td className="px-2 py-1 text-slate-700 break-words leading-tight font-semibold">{r.supplier_name ?? "-"}</td>
-                        <td className="text-right px-2 py-1 font-mono text-slate-700">{r.quantity != null ? Number(r.quantity).toLocaleString() : "-"}</td>
-                        <td className="text-right px-2 py-1 font-mono text-slate-600">{r.unit_price != null ? Number(r.unit_price).toLocaleString() : "-"}</td>
-                        <td className="text-right px-2 py-1 font-mono font-black text-emerald-700 whitespace-nowrap">{r.total != null ? Number(r.total).toLocaleString() : r.amount != null ? Number(r.amount).toLocaleString() : "-"}</td>
+                        <td className="text-right px-2 py-1 tabular-nums text-slate-700">{r.quantity != null ? Number(r.quantity).toLocaleString() : "-"}</td>
+                        <td className="text-right px-2 py-1 tabular-nums text-slate-600">{r.unit_price != null ? Number(r.unit_price).toLocaleString() : "-"}</td>
+                        <td className="text-right px-2 py-1 tabular-nums font-black text-emerald-700 whitespace-nowrap">{r.total != null ? Number(r.total).toLocaleString() : r.amount != null ? Number(r.amount).toLocaleString() : "-"}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-              <div className="mt-2 text-[10px] text-slate-400">
+              <div className="mt-2 text-[11px] text-slate-400">
                 <span className="font-black text-slate-500">데이터 소스:</span> purchase_details · 매입상세 xlsx 임포트에서 저장된 이력
               </div>
             </>
@@ -2657,16 +2657,16 @@ export const StockManagePage: React.FC = () => {
               {/* 공급사별 재고자산 (종료일 시점, xlsx 합계 컬럼 합산) — 최상위 공급사 하이라이트 + 순위 리스트 */}
               {true && (
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-slate-200 bg-slate-50/50">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <Building2 size={14} className="text-sky-600" />
-                      <span className="text-[11px] font-black text-slate-600">공급사별 현황<span className="text-[10px] font-semibold text-slate-400 ml-1">(재고·매입·판매 · 종료일)</span></span>
+                  <div className="flex flex-col gap-2 px-3 py-2.5 border-b border-slate-200 bg-slate-50/50">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Building2 size={16} className="text-sky-600" />
+                      <span className="text-[13px] font-black text-slate-700">공급사별 현황<span className="text-[11px] font-semibold text-slate-400 ml-1">(재고·매입·판매 · 종료일)</span></span>
                       {flowSnapshot && (
-                        <span className="text-[10px] font-mono text-sky-600 bg-sky-50 border border-sky-200 rounded px-1.5 py-0.5">
+                        <span className="text-[11px] font-bold tabular-nums text-sky-700 bg-sky-50 border border-sky-200 rounded px-2 py-0.5">
                           {flowSnapshot}
                         </span>
                       )}
-                      <span className="text-[10px] font-mono text-slate-400">
+                      <span className="text-[11px] tabular-nums text-slate-500">
                         ({displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사)
                       </span>
                       {/* 2026-07-28 · 사용자 요청 · Top N 필터 (기본 전체) */}
@@ -2678,30 +2678,30 @@ export const StockManagePage: React.FC = () => {
                           { v: 999999, label: "전체" },
                         ].map(o => (
                           <button key={o.v} onClick={() => setSupListLimit(o.v)}
-                            className={`text-[10px] font-black px-1.5 py-0.5 rounded transition whitespace-nowrap cursor-pointer ${
-                              supListLimit === o.v ? "bg-sky-500 text-white" : "text-slate-500 hover:bg-slate-100"
+                            className={`text-[12px] font-black px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${
+                              supListLimit === o.v ? "bg-sky-500 text-white" : "text-slate-600 hover:bg-slate-100"
                             }`}
                           >{o.label}</button>
                         ))}
                       </div>
                     </div>
                     {/* 2026-07-16 · 기간 필터 (재고리스트와 동일 UI) */}
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[10px] font-black text-slate-500">기간</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[12px] font-black text-slate-600">기간</span>
                       <div className="inline-flex bg-slate-100/80 border border-slate-200/60 rounded-lg p-0.5 shadow-inner">
                         <button onClick={() => { setSupplierSeason(null); setSupplierMonths(0); }}
-                          className={`px-2 py-1 text-[10px] font-black rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-white text-sky-700 shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-800"}`}>10일</button>
+                          className={`px-2.5 py-1 text-[12px] font-black rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-white text-sky-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>10일</button>
                         {[1, 2, 3, 4, 5, 6].map(m => (
                           <button key={m} onClick={() => { setSupplierSeason(null); setSupplierMonths(m as any); }}
-                            className={`px-2 py-1 text-[10px] font-black rounded transition cursor-pointer ${!supplierSeason && supplierMonths === m ? "bg-white text-sky-700 shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-800"}`}>{m}개월</button>
+                            className={`px-2.5 py-1 text-[12px] font-black rounded transition cursor-pointer ${!supplierSeason && supplierMonths === m ? "bg-white text-sky-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>{m}개월</button>
                         ))}
                       </div>
                       <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
                     </div>
-                    <p className="text-[10px] text-slate-500 font-semibold leading-tight">공급사 클릭 → 오른쪽에 상품 리스트 · 판매출고계 내림차순</p>
+                    <p className="text-[12px] text-slate-500 font-semibold leading-tight">💡 공급사 행을 클릭하면 오른쪽 패널에 해당 공급사의 상품 리스트가 나타납니다 (판매출고계 내림차순)</p>
                     {/* 2026-07-28 · 사용자 요청 · 정렬 헤더 (재고자산·판매·매입·상품수·공급사명) */}
-                    <div className="flex items-center gap-1 flex-wrap text-[10px]">
-                      <span className="text-slate-400 font-bold">정렬</span>
+                    <div className="flex items-center gap-1.5 flex-wrap text-[12px]">
+                      <span className="text-slate-500 font-black">정렬</span>
                       {([
                         { k: "totalStockAmount" as SupListSortKey, label: "재고자산" },
                         { k: "saleQty" as SupListSortKey, label: "판매량" },
@@ -2711,80 +2711,100 @@ export const StockManagePage: React.FC = () => {
                         { k: "supplier" as SupListSortKey, label: "공급사명" },
                       ]).map(o => (
                         <button key={o.k} onClick={() => toggleSupListSort(o.k)}
-                          className={`px-1.5 py-0.5 rounded font-black transition cursor-pointer ${supListSort.key === o.k ? "bg-sky-500 text-white" : "text-slate-500 hover:bg-slate-100 border border-slate-200"}`}>
+                          className={`px-2 py-1 rounded font-black transition cursor-pointer ${supListSort.key === o.k ? "bg-sky-500 text-white" : "text-slate-600 hover:bg-slate-100 border border-slate-200"}`}>
                           {o.label}{supListSort.key === o.k ? (supListSort.dir === "desc" ? " ▼" : " ▲") : ""}
                         </button>
                       ))}
                     </div>
                   </div>
                   {!supplierCardCollapsed && (<>
-                    {/* 순위 리스트 (재고자산 기준 내림차순) — 우측 스크롤바 여백 확보 */}
-                    <div className="relative flex-1 overflow-y-auto px-3 py-2">
+                    {/* 순위 표 (재고자산 기준 내림차순) — 표 형식 · 컬럼: 확장·순위·공급사·재고자산·판매량·판매액·매입·상품수 */}
+                    <div className="relative flex-1 overflow-auto">
                       {/* 2026-07-20: 로딩 UI 통일 · 판매추이 공급사별판매 패턴 */}
                       {loading && xlsxSuppliers.length > 0 && (
-                        <div className="flex items-center justify-center gap-1.5 text-[10px] text-sky-600 font-bold py-1.5 mb-1 bg-sky-50 border border-sky-200 rounded-md">
-                          <LoaderIcon size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+                        <div className="flex items-center justify-center gap-1.5 text-[12px] text-sky-700 font-bold py-2 mx-3 mt-2 bg-sky-50 border border-sky-200 rounded-md">
+                          <LoaderIcon size={13} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
                         </div>
                       )}
                       {xlsxSuppliers.length === 0 ? (
                         loading ? (
                           <div className="flex flex-col items-center justify-center gap-3 py-8">
                             <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
-                            <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
+                            <div className="text-[13px] font-black text-slate-600">데이터 로딩중...</div>
                           </div>
                         ) : (
-                          <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
+                          <div className="text-center text-[13px] text-slate-400 py-8 font-bold">데이터 없음</div>
                         )
                       ) : (
-                        <div className={`divide-y divide-slate-50 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                          {displayedXlsxSuppliers.map((sup, i) => {
-                            const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
-                            const isExpanded = expandedSuppliers.has(key);
-                            const isLoading = supplierRowsLoading.has(key);
-                            const rows = supplierRowsMap[key];
-                            return (
-                              <div key={key} className="py-2">
-                                {/* 헤더 행 · 클릭시 상세 접기/펼치기 */}
-                                <button
-                                  type="button"
+                        <table className={`w-full text-[13px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                          <thead className="sticky top-0 bg-slate-50 z-10 border-b-2 border-slate-200">
+                            <tr className="text-[12px] font-black text-slate-500 tracking-tight">
+                              <th className="text-center w-8 py-2"></th>
+                              <th className="text-center w-10 py-2">#</th>
+                              <th className="text-left px-2 py-2">공급사</th>
+                              <th className="text-right px-2 py-2 w-24">재고자산</th>
+                              <th className="text-right px-2 py-2 w-20">판매량</th>
+                              <th className="text-right px-2 py-2 w-24">판매액</th>
+                              <th className="text-right px-2 py-2 w-20">매입</th>
+                              <th className="text-right px-2 py-2 w-16">상품수</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {displayedXlsxSuppliers.map((sup, i) => {
+                              const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
+                              const isExpanded = expandedSuppliers.has(key);
+                              const isSelected = supplierSelectedKey === key;
+                              return (
+                                <tr key={key}
                                   onClick={() => { toggleSupplierExpand(sup); setSupplierSelectedKey(key); }}
-                                  className={`w-full flex items-center justify-between gap-2 -mx-1 px-1 py-0.5 rounded-lg transition cursor-pointer ${supplierSelectedKey === key ? "bg-sky-100/80 hover:bg-sky-100" : "hover:bg-orange-50/30"}`}
-                                  title={isExpanded ? "상세 접기" : "상세 펼치기 (판매출고계 내림차순)"}
+                                  className={`cursor-pointer transition ${isSelected ? "bg-sky-100/70 hover:bg-sky-100" : "hover:bg-orange-50/30"}`}
+                                  title="클릭 → 오른쪽 패널에 상세 (판매출고계 내림차순 상품 리스트)"
                                 >
-                                  <div className="flex items-center gap-1.5 min-w-0">
-                                    <span className={`text-slate-400 text-xs transition-transform shrink-0 ${isExpanded ? "rotate-90" : ""}`}>▶</span>
-                                    <span className="text-[10px] font-black text-orange-600 shrink-0">{i + 1}</span>
-                                    <Building2 size={11} className="text-sky-500 shrink-0" />
-                                    <span className="text-[13px] font-medium text-slate-800 truncate">{sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</span>
-                                    {sup.supplier_code && (
-                                      <span className="text-[9px] font-mono text-slate-400 shrink-0" title="공급사코드">#{sup.supplier_code}</span>
-                                    )}
-                                    {sup.code_conflict && (
-                                      <span
-                                        className="text-[9px] font-bold text-amber-700 bg-amber-100 border border-amber-300 rounded px-1 shrink-0"
-                                        title="같은 이름에 여러 공급사코드가 존재 — 중복 의심"
-                                      >⚠</span>
-                                    )}
-                                  </div>
-                                  {/* 2026-07-28 · 사용자 요청 · 한 줄 · 재고자산·판매량·판매액·매입·상품수 모두 표시 · 숫자 고딕(tabular-nums · font-mono 제거) */}
-                                  <div className="flex items-center gap-2 shrink-0 tabular-nums text-[12px]">
-                                    <span className="font-black text-emerald-700" title="재고자산">{fmtWon(sup.totalStockAmount)}</span>
-                                    <span className="text-slate-300">·</span>
-                                    <span className="font-bold text-orange-700" title="판매수량">판매 {fmt(sup.saleQty)}</span>
-                                    <span className="text-slate-300">·</span>
-                                    <span className="font-bold text-rose-700" title="판매액 (proxy)">{fmtWon(Number(sup.saleAmount ?? 0))}</span>
-                                    <span className="text-slate-300">·</span>
-                                    <span className="font-bold text-sky-700" title="매입수량">매입 {fmt(sup.purchaseQty)}</span>
-                                    <span className="text-slate-300">·</span>
-                                    <span className="font-semibold text-slate-600" title="취급 상품 종수">상품 {sup.itemCount}</span>
-                                  </div>
-                                </button>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                                  <td className="text-center align-middle py-2.5">
+                                    {isExpanded
+                                      ? <ChevronDown size={16} className="text-sky-600 mx-auto" />
+                                      : <ChevronRight size={16} className="text-slate-400 mx-auto" />}
+                                  </td>
+                                  <td className="text-center align-middle py-2.5 text-[13px] font-black text-orange-600 tabular-nums">{i + 1}</td>
+                                  <td className="text-left px-2 py-2.5 align-middle">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <Building2 size={13} className="text-sky-500 shrink-0" />
+                                      <span className="text-[14px] font-bold text-slate-800 break-words whitespace-normal leading-tight">
+                                        {sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
+                                      </span>
+                                      {sup.supplier_code && (
+                                        <span className="text-[11px] tabular-nums text-slate-500 shrink-0" title="공급사코드">#{sup.supplier_code}</span>
+                                      )}
+                                      {sup.code_conflict && (
+                                        <span
+                                          className="text-[11px] font-black text-amber-700 shrink-0"
+                                          title="같은 이름에 여러 공급사코드가 존재 — 중복 의심"
+                                        >⚠</span>
+                                      )}
+                                    </div>
+                                  </td>
+                                  <td className="text-right px-2 py-2.5 align-middle text-[13px] font-black text-emerald-700 tabular-nums" title="재고자산">
+                                    {fmtWon(sup.totalStockAmount)}
+                                  </td>
+                                  <td className="text-right px-2 py-2.5 align-middle text-[13px] font-bold text-orange-700 tabular-nums" title="판매수량">
+                                    {fmt(sup.saleQty)}
+                                  </td>
+                                  <td className="text-right px-2 py-2.5 align-middle text-[13px] font-bold text-rose-700 tabular-nums" title="판매액 (proxy)">
+                                    {fmtWon(Number(sup.saleAmount ?? 0))}
+                                  </td>
+                                  <td className="text-right px-2 py-2.5 align-middle text-[13px] font-bold text-sky-700 tabular-nums" title="매입수량">
+                                    {fmt(sup.purchaseQty)}
+                                  </td>
+                                  <td className="text-right px-2 py-2.5 align-middle text-[13px] font-semibold text-slate-700 tabular-nums" title="취급 상품 종수">
+                                    {sup.itemCount}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
                 </>)}
                 </div>
               )}
@@ -2885,9 +2905,9 @@ export const StockManagePage: React.FC = () => {
                         };
                         return (
                           <div className="overflow-auto max-h-[60vh] rounded-lg border border-slate-100">
-                            <table className="w-full text-[10px] min-w-[560px]">
+                            <table className="w-full text-xs min-w-[560px]">
                               <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
-                                <tr className="text-[10px] text-slate-400 uppercase tracking-wider">
+                                <tr className="text-[11px] text-slate-400 uppercase tracking-wider">
                                   <th className="text-left px-1 py-1.5 w-6">#</th>
                                   <th
                                     onClick={() => toggleSupDetailSort("name")}
@@ -3056,9 +3076,9 @@ export const StockManagePage: React.FC = () => {
                         <div className="text-center text-[11px] text-slate-300 py-6">해당 상품 없음</div>
                       ) : (
                         <div className="overflow-x-auto">
-                          <table className="w-full text-[10px] sm:text-xs sm:min-w-[480px]">
+                          <table className="w-full text-xs sm:min-w-[480px]">
                             <thead className="sticky top-0 bg-white z-10">
-                              <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+                              <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                                 <th className="text-left px-0.5 py-1.5 w-7">#</th>
                                 <th className="text-left px-0.5 py-1.5">상품명</th>
                                 <th className="text-right px-0.5 py-1.5 w-14 text-amber-500 cursor-pointer hover:bg-slate-50" title="ERP 현재고 (products.current_stock)">ERP</th>
@@ -3079,7 +3099,7 @@ export const StockManagePage: React.FC = () => {
                                 const isSelected = lowSelectedProduct?.code === String(p.product_code ?? "");
                                 return (
                                   <tr key={`low-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
-                                    <td className="px-0.5 py-1.5 text-orange-600 font-black text-[10px] align-top">{i + 1}</td>
+                                    <td className="px-0.5 py-1.5 text-orange-600 font-black text-[12px] align-top">{i + 1}</td>
                                     <td className="px-0.5 py-1.5 align-top">
                                       <button
                                         onClick={() => loadLowSelectedProduct(p)}
@@ -3088,13 +3108,13 @@ export const StockManagePage: React.FC = () => {
                                       >
                                         {p.product_name}
                                       </button>
-                                      {p.supplier && <div className="text-[9px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
+                                      {p.supplier && <div className="text-[11px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
                                     </td>
-                                    <td className={`text-right px-0.5 py-1.5 font-mono font-black text-[10px] align-top ${cur <= 0 ? "text-red-600" : "text-amber-700"}`} title="ERP 현재고 (products.current_stock)">{fmt(cur)}</td>
-                                    <td className={`text-right px-0.5 py-1.5 font-mono font-black text-[10px] bg-cyan-50/40 align-top ${wh != null ? "text-cyan-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 창고 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "창고 실재고 미입력"}>
+                                    <td className={`text-right px-0.5 py-1.5 tabular-nums font-black align-top ${cur <= 0 ? "text-red-600" : "text-amber-700"}`} title="ERP 현재고 (products.current_stock)">{fmt(cur)}</td>
+                                    <td className={`text-right px-0.5 py-1.5 tabular-nums font-black bg-cyan-50/40 align-top ${wh != null ? "text-cyan-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 창고 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "창고 실재고 미입력"}>
                                       {wh != null ? fmt(Number(wh)) : "—"}
                                     </td>
-                                    <td className={`text-right px-0.5 py-1.5 font-mono font-black text-[10px] bg-violet-50/40 align-top ${st != null ? "text-violet-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 매장 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "매장 실재고 미입력"}>
+                                    <td className={`text-right px-0.5 py-1.5 tabular-nums font-black bg-violet-50/40 align-top ${st != null ? "text-violet-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 매장 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "매장 실재고 미입력"}>
                                       {st != null ? fmt(Number(st)) : "—"}
                                     </td>
                                     {(() => {
@@ -3104,12 +3124,12 @@ export const StockManagePage: React.FC = () => {
                                       const mismatch = realTotal != null && realTotal !== cur;
                                       return (
                                         <td
-                                          className={`text-right px-0.5 py-1.5 font-mono font-black text-[10px] align-top ${realTotal == null ? "text-slate-300" : mismatch ? "text-red-600" : "text-emerald-700"}`}
+                                          className={`text-right px-0.5 py-1.5 tabular-nums font-black align-top ${realTotal == null ? "text-slate-300" : mismatch ? "text-red-600" : "text-emerald-700"}`}
                                           title={realTotal == null ? "실재고 미입력" : mismatch ? `실재고 ${realTotal} ≠ ERP ${cur} · 불일치` : "실재고 = 창고 + 매장"}
                                         >{realTotal != null ? fmt(realTotal) : "—"}</td>
                                       );
                                     })()}
-                                    <td className="text-right px-0.5 py-1.5 font-mono text-[10px] text-slate-600 align-top">
+                                    <td className="text-right px-0.5 py-1.5 tabular-nums text-slate-600 align-top">
                                       {optimalEditCode === String(p.product_code) ? (
                                         <div className="flex items-center justify-end gap-0.5">
                                           <input
@@ -3124,7 +3144,7 @@ export const StockManagePage: React.FC = () => {
                                               else if (e.key === "Escape") { e.preventDefault(); cancelOptimalEdit(); }
                                             }}
                                             disabled={optimalEditSaving}
-                                            className="w-12 text-right font-mono text-[12px] font-black border-2 border-indigo-400 rounded-md px-1 py-1 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 bg-white"
+                                            className="w-12 text-right tabular-nums text-[12px] font-black border-2 border-indigo-400 rounded-md px-1 py-1 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 bg-white"
                                           />
                                           <button
                                             type="button"
@@ -3150,7 +3170,7 @@ export const StockManagePage: React.FC = () => {
                                         <button
                                           type="button"
                                           onClick={() => startOptimalEdit(String(p.product_code), opt)}
-                                          className="w-full min-h-[32px] flex items-center justify-end gap-1 text-right font-mono text-[12px] font-bold hover:bg-indigo-50 active:bg-indigo-100 border border-transparent hover:border-indigo-200 rounded-md px-2 py-1.5 cursor-pointer transition"
+                                          className="w-full min-h-[32px] flex items-center justify-end gap-1 text-right tabular-nums text-[12px] font-bold hover:bg-indigo-50 active:bg-indigo-100 border border-transparent hover:border-indigo-200 rounded-md px-2 py-1.5 cursor-pointer transition"
                                           title="탭하여 적정재고 편집"
                                         >
                                           <span className={opt > 0 ? "text-slate-800" : "text-slate-400"}>{opt > 0 ? fmt(opt) : "입력"}</span>
@@ -3158,7 +3178,7 @@ export const StockManagePage: React.FC = () => {
                                         </button>
                                       )}
                                     </td>
-                                    <td className="text-right px-0.5 py-1.5 font-mono font-bold text-[10px] text-rose-600 align-top">{need > 0 ? `+${fmt(need)}` : "-"}</td>
+                                    <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-rose-600 align-top">{need > 0 ? `+${fmt(need)}` : "-"}</td>
                                   </tr>
                                 );
                               })}
@@ -3240,9 +3260,9 @@ export const StockManagePage: React.FC = () => {
                           <div className="text-center text-[11px] text-slate-300 py-6">차이 있는 상품 없음</div>
                         ) : (
                           <div className="overflow-x-auto">
-                            <table className="w-full text-[10px] sm:text-xs sm:min-w-[280px]">
+                            <table className="w-full text-xs sm:min-w-[280px]">
                               <thead className="sticky top-0 bg-white z-10">
-                                <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+                                <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                                   <th className="text-left px-0.5 py-1.5 w-7">#</th>
                                   <th className="text-left px-0.5 py-1.5">상품명</th>
                                   <th className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-amber-500 cursor-pointer hover:bg-amber-100/40">ERP</th>
@@ -3255,7 +3275,7 @@ export const StockManagePage: React.FC = () => {
                                   const isSelected = diffSelectedProduct?.code === String(p.product_code ?? "");
                                   return (
                                   <tr key={`diff-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
-                                    <td className="px-0.5 py-1.5 text-orange-600 font-black text-[10px] align-top">{i + 1}</td>
+                                    <td className="px-0.5 py-1.5 text-orange-600 font-black text-[12px] align-top">{i + 1}</td>
                                     <td className="px-0.5 py-1.5 align-top">
                                       <button
                                         onClick={() => loadDiffSelectedProduct(p)}
@@ -3264,11 +3284,11 @@ export const StockManagePage: React.FC = () => {
                                       >
                                         {p.product_name}
                                       </button>
-                                      {p.supplier && <div className="text-[9px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
+                                      {p.supplier && <div className="text-[11px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
                                     </td>
-                                    <td className="text-right px-0.5 py-1.5 font-mono font-black text-[10px] bg-amber-50/40 text-amber-700 align-top">{fmt(p.cur)}</td>
-                                    <td className="text-right px-0.5 py-1.5 font-mono font-black text-[10px] bg-violet-50/40 text-violet-700 align-top">{fmt(p.actual)}</td>
-                                    <td className={`text-right px-0.5 py-1.5 font-mono font-black text-[10px] align-top ${p.diff > 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                                    <td className="text-right px-0.5 py-1.5 tabular-nums font-black bg-amber-50/40 text-amber-700 align-top">{fmt(p.cur)}</td>
+                                    <td className="text-right px-0.5 py-1.5 tabular-nums font-black bg-violet-50/40 text-violet-700 align-top">{fmt(p.actual)}</td>
+                                    <td className={`text-right px-0.5 py-1.5 tabular-nums font-black align-top ${p.diff > 0 ? "text-emerald-600" : "text-rose-600"}`}>
                                       {p.diff > 0 ? `+${fmt(p.diff)}` : fmt(p.diff)}
                                     </td>
                                   </tr>
@@ -3966,7 +3986,7 @@ export const StockManagePage: React.FC = () => {
                           key={`sup-modal-${p.product_code}-${i}`}
                           className="hover:bg-orange-50/30 transition"
                         >
-                          <td className="px-0.5 py-1.5 text-orange-600 font-black text-[10px] font-mono align-top">{i + 1}</td>
+                          <td className="px-0.5 py-1.5 text-orange-600 font-black text-[12px] align-top">{i + 1}</td>
                           <td className="px-0.5 py-1.5 align-top" style={{ width: supplierModalNameWidth }}>
                             <button
                               type="button"
@@ -3975,24 +3995,24 @@ export const StockManagePage: React.FC = () => {
                               title={`${p.product_name} · 클릭하면 상세 정보`}
                             >{p.product_name}</button>
                           </td>
-                          <td className="px-0.5 py-1.5 font-mono text-slate-500 text-[10px] text-right bg-slate-50/40 align-top">{fmt(p.opening_stock)}</td>
-                          <td className="px-0.5 py-1.5 font-mono text-emerald-700 text-[10px] text-right bg-emerald-50/40 align-top" title={p.last_purchase_date ? `최근 매입: ${p.last_purchase_date}` : "매입 이력 없음"}>
+                          <td className="px-0.5 py-1.5 tabular-nums text-slate-500 text-right bg-slate-50/40 align-top">{fmt(p.opening_stock)}</td>
+                          <td className="px-0.5 py-1.5 tabular-nums text-emerald-700 text-right bg-emerald-50/40 align-top" title={p.last_purchase_date ? `최근 매입: ${p.last_purchase_date}` : "매입 이력 없음"}>
                             {fmt(p.purchase_qty)}
                             {(() => {
                               const md = extractMonthDay(p.last_purchase_date);
-                              return md ? <span className="text-[8px] text-slate-400 font-normal ml-0.5">({md})</span> : null;
+                              return md ? <span className="text-[9px] text-slate-400 font-normal ml-0.5">({md})</span> : null;
                             })()}
                           </td>
-                          <td className="px-0.5 py-1.5 font-mono font-black text-orange-700 text-[10px] text-right bg-orange-50/40 align-top">{fmt(p.sale_qty)}</td>
+                          <td className="px-0.5 py-1.5 tabular-nums font-black text-orange-700 text-right bg-orange-50/40 align-top">{fmt(p.sale_qty)}</td>
                           <td
-                            className={`px-0.5 py-1.5 font-mono font-black text-[10px] text-right bg-amber-50/40 align-top ${cur <= 0 ? "text-red-600" : cur !== Number(p.closing_stock ?? 0) ? "text-red-600" : "text-amber-700"}`}
+                            className={`px-0.5 py-1.5 tabular-nums font-black text-right bg-amber-50/40 align-top ${cur <= 0 ? "text-red-600" : cur !== Number(p.closing_stock ?? 0) ? "text-red-600" : "text-amber-700"}`}
                             title={cur !== Number(p.closing_stock ?? 0) ? `현재고(${fmt(cur)}) ≠ 스냅샷 종료재고(${fmt(p.closing_stock)}) · 스냅샷 이후 변동 있음` : "ERP 현재고 (= 스냅샷 종료재고)"}
                           >{fmt(cur)}</td>
                           <td
-                            className={`px-0.5 py-1.5 font-mono text-[10px] text-right bg-rose-50/40 align-top ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
+                            className={`px-0.5 py-1.5 tabular-nums text-right bg-rose-50/40 align-top ${loss > 0 ? "text-rose-600 font-black" : loss < 0 ? "text-emerald-600 font-bold" : "text-slate-400"}`}
                             title={`손실 = (시작${fmt(openV)} − 판매${fmt(saleV)}) − 종료${fmt(closeV)} = ${loss > 0 ? "-" + fmt(loss) : loss < 0 ? "+" + fmt(Math.abs(loss)) : "0"}${Number(p.purchase_qty ?? 0) > 0 ? `\n※ 입고 ${fmt(Number(p.purchase_qty ?? 0))} 있음 (참고)` : ""}`}
                           >{loss === 0 ? "0" : loss > 0 ? `-${fmt(loss)}` : `+${fmt(Math.abs(loss))}`}</td>
-                          <td className="px-0.5 py-1.5 font-mono text-slate-500 font-bold text-[10px] text-right align-top">{p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</td>
+                          <td className="px-0.5 py-1.5 tabular-nums text-slate-500 font-bold text-right align-top">{p.sale_price > 0 ? fmtWon(p.sale_price) : "-"}</td>
                         </tr>
                       );
                     })}
@@ -4150,19 +4170,19 @@ export const StockManagePage: React.FC = () => {
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         <div className="bg-white border border-indigo-200 rounded-xl p-4 shadow-sm">
                           <div className="text-xs font-black text-indigo-500 uppercase tracking-wider">현재고</div>
-                          <div className={`text-3xl font-black mt-1 font-mono ${currentStock < 0 ? "text-red-600" : "text-indigo-700"}`}>{fmt(currentStock)}</div>
+                          <div className={`text-3xl font-black mt-1 tabular-nums ${currentStock < 0 ? "text-red-600" : "text-indigo-700"}`}>{fmt(currentStock)}</div>
                           <div className="text-xs text-slate-500 mt-1 font-semibold">
                             {optimalStock > 0 ? `적정 ${fmt(optimalStock)}` : "적정재고 없음"}
                           </div>
                         </div>
                         <div className="bg-white border border-orange-200 rounded-xl p-4 shadow-sm">
                           <div className="text-xs font-black text-orange-500 uppercase tracking-wider">일평균 판매</div>
-                          <div className="text-3xl font-black text-orange-700 mt-1 font-mono">{avgSalePerDay.toFixed(1)}</div>
+                          <div className="text-3xl font-black text-orange-700 mt-1 tabular-nums">{avgSalePerDay.toFixed(1)}</div>
                           <div className="text-xs text-slate-500 mt-1 font-semibold">최근 {history.length}스냅샷 기준</div>
                         </div>
                         <div className={`bg-white border rounded-xl p-4 shadow-sm ${daysRemaining !== null && daysRemaining < 7 ? "border-red-300" : "border-emerald-200"}`}>
                           <div className={`text-xs font-black uppercase tracking-wider ${daysRemaining !== null && daysRemaining < 7 ? "text-red-500" : "text-emerald-500"}`}>재고 잔여일</div>
-                          <div className={`text-3xl font-black mt-1 font-mono ${daysRemaining !== null && daysRemaining < 7 ? "text-red-700" : "text-emerald-700"}`}>
+                          <div className={`text-3xl font-black mt-1 tabular-nums ${daysRemaining !== null && daysRemaining < 7 ? "text-red-700" : "text-emerald-700"}`}>
                             {daysRemaining !== null ? `${daysRemaining}일` : "-"}
                           </div>
                           <div className="text-xs text-slate-500 mt-1 font-semibold">
@@ -4376,19 +4396,19 @@ export const StockManagePage: React.FC = () => {
                           <div className="grid grid-cols-4 gap-3 text-center">
                             <div className="bg-cyan-50 border border-cyan-200 rounded-lg p-3">
                               <div className="text-xs font-semibold text-cyan-500">창고</div>
-                              <div className="text-2xl font-black text-cyan-700 font-mono mt-1">{latestInv.warehouse_stock != null ? fmt(Number(latestInv.warehouse_stock)) : "-"}</div>
+                              <div className="text-2xl font-black text-cyan-700 tabular-nums mt-1">{latestInv.warehouse_stock != null ? fmt(Number(latestInv.warehouse_stock)) : "-"}</div>
                             </div>
                             <div className="bg-violet-50 border border-violet-200 rounded-lg p-3">
                               <div className="text-xs font-semibold text-violet-500">매장</div>
-                              <div className="text-2xl font-black text-violet-700 font-mono mt-1">{latestInv.store_stock != null ? fmt(Number(latestInv.store_stock)) : "-"}</div>
+                              <div className="text-2xl font-black text-violet-700 tabular-nums mt-1">{latestInv.store_stock != null ? fmt(Number(latestInv.store_stock)) : "-"}</div>
                             </div>
                             <div className="bg-slate-100 border border-slate-300 rounded-lg p-3">
                               <div className="text-xs font-semibold text-slate-500">실재고 합</div>
-                              <div className="text-2xl font-black text-slate-700 font-mono mt-1">{invActual !== null ? fmt(invActual) : "-"}</div>
+                              <div className="text-2xl font-black text-slate-700 tabular-nums mt-1">{invActual !== null ? fmt(invActual) : "-"}</div>
                             </div>
                             <div className={`border rounded-lg p-3 ${invDiff !== null && invDiff !== 0 ? "bg-rose-50 border-rose-300" : "bg-emerald-50 border-emerald-300"}`}>
                               <div className={`text-xs font-semibold ${invDiff !== null && invDiff !== 0 ? "text-rose-500" : "text-emerald-500"}`}>차이 (실-시스)</div>
-                              <div className={`text-2xl font-black font-mono mt-1 ${invDiff !== null && invDiff !== 0 ? "text-rose-700" : "text-emerald-700"}`}>{invDiff !== null ? (invDiff > 0 ? `+${fmt(invDiff)}` : fmt(invDiff)) : "-"}</div>
+                              <div className={`text-2xl font-black tabular-nums mt-1 ${invDiff !== null && invDiff !== 0 ? "text-rose-700" : "text-emerald-700"}`}>{invDiff !== null ? (invDiff > 0 ? `+${fmt(invDiff)}` : fmt(invDiff)) : "-"}</div>
                             </div>
                           </div>
                           <div className="text-xs text-slate-500 text-center mt-3">
@@ -4422,13 +4442,13 @@ export const StockManagePage: React.FC = () => {
                                 <tr key={`sh-${s.snapshot_date}-${i}`} className="hover:bg-slate-50">
                                   <td className="px-2 py-1 font-mono text-[11px] text-slate-700">{s.snapshot_date}</td>
                                   <td className="px-2 py-1.5 text-xs text-slate-600 font-semibold">{s.period_type === "early" ? "초순" : s.period_type === "mid" ? "중순" : s.period_type === "late" ? "하순" : (s.period_type ?? "-")}</td>
-                                  <td className="text-right px-2 py-1 font-mono text-[11px] text-slate-600">{fmt(Number(s.opening_stock ?? 0))}</td>
-                                  <td className="text-right px-2 py-1.5 font-mono font-bold text-sm text-emerald-700">{fmt(Number(s.purchase_qty ?? 0))}</td>
-                                  <td className="text-right px-2 py-1.5 font-mono font-black text-sm text-orange-700">{fmt(Number(s.sale_qty ?? 0))}</td>
-                                  <td className={`text-right px-2 py-1 font-mono text-[11px] ${Number(s.disposal_qty ?? 0) > 0 ? "text-rose-600 font-bold" : "text-slate-400"}`}>{fmt(Number(s.disposal_qty ?? 0))}</td>
-                                  <td className={`text-right px-2 py-1 font-mono text-[11px] ${Math.abs(Number(s.adjustment_qty ?? 0)) > 0 ? "text-purple-600 font-bold" : "text-slate-400"}`}>{fmt(Number(s.adjustment_qty ?? 0))}</td>
-                                  <td className={`text-right px-2 py-1 font-mono text-[11px] ${Number(s.closing_stock ?? 0) < 0 ? "text-red-600 font-bold" : "text-slate-700"}`}>{fmt(Number(s.closing_stock ?? 0))}</td>
-                                  <td className="text-right px-2 py-1.5 font-mono text-xs text-slate-600">{fmtWon(Number(s.total_amount ?? 0))}</td>
+                                  <td className="text-right px-2 py-1 tabular-nums text-xs text-slate-600">{fmt(Number(s.opening_stock ?? 0))}</td>
+                                  <td className="text-right px-2 py-1.5 tabular-nums font-bold text-sm text-emerald-700">{fmt(Number(s.purchase_qty ?? 0))}</td>
+                                  <td className="text-right px-2 py-1.5 tabular-nums font-black text-sm text-orange-700">{fmt(Number(s.sale_qty ?? 0))}</td>
+                                  <td className={`text-right px-2 py-1 tabular-nums text-xs ${Number(s.disposal_qty ?? 0) > 0 ? "text-rose-600 font-bold" : "text-slate-400"}`}>{fmt(Number(s.disposal_qty ?? 0))}</td>
+                                  <td className={`text-right px-2 py-1 tabular-nums text-xs ${Math.abs(Number(s.adjustment_qty ?? 0)) > 0 ? "text-purple-600 font-bold" : "text-slate-400"}`}>{fmt(Number(s.adjustment_qty ?? 0))}</td>
+                                  <td className={`text-right px-2 py-1 tabular-nums text-xs ${Number(s.closing_stock ?? 0) < 0 ? "text-red-600 font-bold" : "text-slate-700"}`}>{fmt(Number(s.closing_stock ?? 0))}</td>
+                                  <td className="text-right px-2 py-1.5 tabular-nums text-xs text-slate-600">{fmtWon(Number(s.total_amount ?? 0))}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -4459,9 +4479,9 @@ export const StockManagePage: React.FC = () => {
                                     <td className="px-2 py-1.5 text-xs font-mono text-slate-700">
                                       {c.checked_at ? new Date(c.checked_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-"}
                                     </td>
-                                    <td className="text-right px-2 py-1.5 font-mono font-bold text-sm text-cyan-700">{c.warehouse_stock != null ? fmt(Number(c.warehouse_stock)) : "-"}</td>
-                                    <td className="text-right px-2 py-1.5 font-mono font-bold text-sm text-violet-700">{c.store_stock != null ? fmt(Number(c.store_stock)) : "-"}</td>
-                                    <td className="text-right px-2 py-1 font-mono text-[11px] text-slate-600">{c.system_stock != null ? fmt(Number(c.system_stock)) : "-"}</td>
+                                    <td className="text-right px-2 py-1.5 tabular-nums font-bold text-sm text-cyan-700">{c.warehouse_stock != null ? fmt(Number(c.warehouse_stock)) : "-"}</td>
+                                    <td className="text-right px-2 py-1.5 tabular-nums font-bold text-sm text-violet-700">{c.store_stock != null ? fmt(Number(c.store_stock)) : "-"}</td>
+                                    <td className="text-right px-2 py-1 tabular-nums text-xs text-slate-600">{c.system_stock != null ? fmt(Number(c.system_stock)) : "-"}</td>
                                     <td className="px-2 py-1.5 text-xs text-slate-700 truncate max-w-[120px]">{c.checked_by ?? "-"}</td>
                                   </tr>
                                 ))}

@@ -802,13 +802,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             <span className="text-amber-400">▶</span> 발주필요 리스트 <span className="text-slate-400 font-normal">({lowStockFiltered.length}건)</span>
           </p>
           <div className={`max-h-[50vh] overflow-auto relative ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-            <table className="w-full text-[10px] sm:text-xs sm:min-w-[540px]">
+            <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
-                <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                   <th className="text-left px-0.5 py-1.5 w-24 cursor-default">공급사</th>
                   <th className="text-left px-0.5 py-1.5 w-20 cursor-default">담당자</th>
                   <th className="text-left px-0.5 py-1.5 min-w-[120px] cursor-default">상품명</th>
-                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/40 text-slate-500"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[9px] text-slate-400 font-normal">(현재고)</span></div></th>
+                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/40 text-slate-500"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
                   <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500">실재고</th>
                   <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/40 text-slate-500">적정</th>
                   <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500">부족</th>
@@ -827,8 +827,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   const busy = requestingOrder.has(code);
                   return (
                     <tr key={code} className="hover:bg-orange-50/30 transition">
-                      <td className="px-0.5 py-1.5 text-[11px] text-sky-600 font-semibold break-words whitespace-normal align-top">{p.supplier || "-"}</td>
-                      <td className="px-0.5 py-1.5 text-[11px] text-slate-600 break-words whitespace-normal align-top">
+                      <td className="px-0.5 py-1.5 text-[12px] text-sky-600 font-semibold break-words whitespace-normal align-top">{p.supplier || "-"}</td>
+                      <td className="px-0.5 py-1.5 text-[12px] text-slate-600 break-words whitespace-normal align-top">
                         {vendor ? (
                           <button
                             type="button"
@@ -851,28 +851,28 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           title="상품 상세정보 조회"
                         >{name || "(상품명 없음)"}</button>
                       </td>
-                      <td className="text-right px-0.5 py-1.5 font-mono font-bold text-[11px] text-slate-700 bg-slate-50/40 align-top">{cur}</td>
+                      <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{cur}</td>
                       <td
-                        className={`text-right px-0.5 py-1.5 font-mono font-black text-[11px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
+                        className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
                         title={inv ? `창고 ${inv.warehouse ?? "-"} + 매장 ${inv.store ?? "-"} = ${inv.total}` : "실재고 미입력"}
                       >
                         {inv ? inv.total : "—"}
                         {inv && (
-                          <span className="block text-[9px] font-normal text-slate-400 leading-none mt-0.5">
+                          <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">
                             창{inv.warehouse ?? "-"}·매{inv.store ?? "-"}
                           </span>
                         )}
                       </td>
-                      <td className="text-right px-0.5 py-1.5 font-mono font-bold text-[11px] text-slate-700 bg-slate-50/40 align-top">{opt}</td>
+                      <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{opt}</td>
                       <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
-                        <span className="font-mono font-black text-[11px] text-rose-600">-{opt - cur}</span>
+                        <span className="tabular-nums font-black text-[12px] text-rose-600">-{opt - cur}</span>
                       </td>
                       <td className="text-center px-0.5 py-1.5 align-top">
                         {alreadyRequested ? (
-                          <button onClick={() => handleRequestOrder(p)} className="text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg cursor-pointer hover:bg-emerald-100 transition">요청됨</button>
+                          <button onClick={() => handleRequestOrder(p)} className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg cursor-pointer hover:bg-emerald-100 transition">요청됨</button>
                         ) : (
                           <button onClick={() => handleRequestOrder(p)} disabled={busy}
-                            className="text-[10px] font-bold text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded-lg transition cursor-pointer disabled:opacity-50 flex items-center gap-1 mx-auto">
+                            className="text-[11px] font-bold text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded-lg transition cursor-pointer disabled:opacity-50 flex items-center gap-1 mx-auto">
                             <ShoppingCart size={10} />{busy ? "..." : "리스트에 추가"}
                           </button>
                         )}
@@ -998,14 +998,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         <td className="px-2 py-1.5">
                           <div className="flex flex-col leading-tight">
                             <span className="font-semibold text-slate-800">{x.product_name}</span>
-                            <span className="text-[10px] text-slate-400 font-mono">{x.product_code}</span>
+                            <span className="text-[11px] text-slate-400">{x.product_code}</span>
                           </div>
                         </td>
                         <td className="px-2 py-1.5 text-slate-600 truncate">{x.supplier ?? "-"}</td>
                         <td className="px-2 py-1.5 text-right text-slate-800 font-bold tabular-nums">{x.current_stock.toLocaleString()}</td>
                         <td className="px-2 py-1.5 text-right text-rose-700 font-bold tabular-nums">{x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}</td>
                         <td className="px-2 py-1.5 text-right text-amber-700 font-bold tabular-nums">{x.sale_qty_cycle.toLocaleString()}개</td>
-                        <td className="px-2 py-1.5 text-slate-600 font-mono text-[10px]">{x.last_purchase_date ?? "-"}</td>
+                        <td className="px-2 py-1.5 text-slate-600 tabular-nums text-[11px]">{x.last_purchase_date ?? "-"}</td>
                         <td className="px-2 py-1.5 text-right text-indigo-700 font-bold tabular-nums">
                           {x.current_stock > 0 && x.purchase_price > 0 ? (x.current_stock * x.purchase_price).toLocaleString() : "-"}
                         </td>
@@ -1122,9 +1122,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </div>
           ) : (
             <div className="border-t border-b border-slate-200 overflow-x-auto">
-              <table className="w-full text-[11px]">
+              <table className="w-full text-xs">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wide text-[10px]">
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wide text-[11px]">
                     <th className="text-left p-2 w-32">발주번호</th>
                     <th className="text-left p-2 w-28">공급사</th>
                     <th className="text-left p-2 w-24">담당자</th>
@@ -1148,28 +1148,28 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       const overdue = r.status === "pending" && (Date.now() - new Date(r.dispatched_at).getTime()) > 7 * 86400000;
                       return (
                         <tr key={r.id} className={`hover:bg-slate-50/70 transition ${overdue ? "bg-rose-50/30" : ""}`}>
-                          <td className="p-2 font-mono text-[10px] text-slate-500">{r.order_number}</td>
+                          <td className="p-2 tabular-nums text-[11px] text-slate-500">{r.order_number}</td>
                           <td className="p-2 text-sky-600 font-semibold truncate">{r.supplier}</td>
                           <td className="p-2 text-slate-600 truncate">{r.supplier_contact || "-"}</td>
-                          <td className="p-2 text-right font-bold text-slate-700 font-mono">{r.item_count}</td>
+                          <td className="p-2 text-right font-bold text-slate-700 tabular-nums">{r.item_count}</td>
                           <td className="p-2 text-center">
-                            <span className={`inline-flex items-center gap-1 text-[10px] font-black px-1.5 py-0.5 rounded border ${statusColor}`}>
+                            <span className={`inline-flex items-center gap-1 text-[11px] font-black px-1.5 py-0.5 rounded border ${statusColor}`}>
                               {statusLabel}
                               {overdue && <AlertTriangle size={9} className="text-rose-500" />}
                             </span>
                           </td>
-                          <td className="p-2 text-right text-slate-500 text-[10px]">{fmtDate(r.dispatched_at)}</td>
-                          <td className="p-2 text-right text-slate-500 text-[10px]">{r.received_at ? fmtDate(r.received_at) : "-"}</td>
+                          <td className="p-2 text-right text-slate-500 text-[11px]">{fmtDate(r.dispatched_at)}</td>
+                          <td className="p-2 text-right text-slate-500 text-[11px]">{r.received_at ? fmtDate(r.received_at) : "-"}</td>
                           <td className="p-2 text-center">
                             {r.status === "pending" || r.status === "partial" ? (
                               <button
                                 onClick={() => markReceived(r)}
-                                className="text-[10px] font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded px-2 py-1 cursor-pointer flex items-center gap-1 mx-auto"
+                                className="text-[11px] font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded px-2 py-1 cursor-pointer flex items-center gap-1 mx-auto"
                               >
                                 <PackageCheck size={10} /> 입고확정
                               </button>
                             ) : (
-                              <span className="text-[10px] text-slate-300">-</span>
+                              <span className="text-[11px] text-slate-300">-</span>
                             )}
                           </td>
                         </tr>
@@ -1270,14 +1270,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             <span className="text-red-400">▶</span> 발주요청 리스트 <span className="text-slate-400 font-normal">({orderReqsFiltered.length}건)</span>
           </p>
           <div className={`max-h-[50vh] overflow-auto relative ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-            <table className="w-full text-[10px] sm:text-xs sm:min-w-[540px]">
+            <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
-                <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
+                <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                   <th className="text-center px-0.5 py-1.5 w-6"></th>
                   <th className="text-left px-0.5 py-1.5 w-24 cursor-default">공급사</th>
                   <th className="text-left px-0.5 py-1.5 w-20 cursor-default">담당자</th>
                   <th className="text-left px-0.5 py-1.5 min-w-[120px] cursor-default">상품명</th>
-                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/40 text-slate-500"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[9px] text-slate-400 font-normal">(현재고)</span></div></th>
+                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/40 text-slate-500"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
                   <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500">실재고</th>
                   <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/40 text-slate-500">적정</th>
                   <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500">부족</th>
@@ -1333,15 +1333,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           const secondLine = suffix || extraFromProduct || "";
                           return (
                             <>
-                              <div className="text-[11px] text-sky-600 font-semibold break-words whitespace-normal leading-tight">{mainName || "-"}</div>
+                              <div className="text-[12px] text-sky-600 font-semibold break-words whitespace-normal leading-tight">{mainName || "-"}</div>
                               {secondLine && (
-                                <div className="text-[9px] text-slate-400 font-normal break-words whitespace-normal leading-tight mt-0.5">{secondLine}</div>
+                                <div className="text-[10px] text-slate-400 font-normal break-words whitespace-normal leading-tight mt-0.5">{secondLine}</div>
                               )}
                             </>
                           );
                         })()}
                       </td>
-                      <td className="px-0.5 py-1.5 text-[11px] text-slate-600 break-words whitespace-normal align-top">
+                      <td className="px-0.5 py-1.5 text-[12px] text-slate-600 break-words whitespace-normal align-top">
                         {vendor ? (
                           <button
                             type="button"
@@ -1365,32 +1365,32 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         >{r.product_name || "(상품명 없음)"}</button>
                       </td>
                       <td
-                        className={`text-right px-0.5 py-1.5 font-mono font-bold text-[11px] bg-slate-50/40 align-top ${stockChanged ? "text-orange-600" : "text-slate-700"}`}
+                        className={`text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] bg-slate-50/40 align-top ${stockChanged ? "text-orange-600" : "text-slate-700"}`}
                         title={stockChanged ? `요청 당시 ${r.current_stock ?? "-"} → 현재 ${displayCurrentStock ?? "-"} (변동)` : "현재 ERP 재고 (실시간)"}
                       >
                         {displayCurrentStock ?? "-"}
-                        {stockChanged && <span className="block text-[8px] font-normal text-slate-400 leading-none mt-0.5">전 {r.current_stock}</span>}
+                        {stockChanged && <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">전 {r.current_stock}</span>}
                       </td>
                       <td
-                        className={`text-right px-0.5 py-1.5 font-mono font-black text-[11px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
+                        className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
                         title={inv ? `창고 ${inv.warehouse ?? "-"} + 매장 ${inv.store ?? "-"} = ${inv.total}` : "실재고 미입력"}
                       >
                         {inv ? inv.total : "—"}
                         {inv && (
-                          <span className="block text-[9px] font-normal text-slate-400 leading-none mt-0.5">
+                          <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">
                             창{inv.warehouse ?? "-"}·매{inv.store ?? "-"}
                           </span>
                         )}
                       </td>
-                      <td className="text-right px-0.5 py-1.5 font-mono font-bold text-[11px] text-slate-700 bg-slate-50/40 align-top">{displayOptimal ?? "-"}</td>
+                      <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{displayOptimal ?? "-"}</td>
                       <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
-                        <span className="font-mono font-black text-[11px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
+                        <span className="tabular-nums font-black text-[12px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
                       </td>
                       <td className="text-center px-0.5 py-1.5 align-top">
                         <button
                           onClick={() => handleSingleOrder(r)}
                           disabled={sendingBulk}
-                          className="text-[10px] font-black text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 rounded px-1.5 py-0.5 cursor-pointer disabled:opacity-40 inline-flex items-center gap-0.5"
+                          className="text-[11px] font-black text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 rounded px-1.5 py-0.5 cursor-pointer disabled:opacity-40 inline-flex items-center gap-0.5"
                           title="이 상품만 개별 발주"
                         >
                           <Send size={9} />발주

@@ -401,21 +401,21 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
                     <Package size={13} className="text-sky-400 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-xs font-bold text-gray-800 truncate">{a.title}</span>
+                        <span className="text-[13px] font-bold text-gray-800 truncate">{a.title}</span>
                         {pending && (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 py-0.5 shrink-0">
+                          <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 py-0.5 shrink-0">
                             <Clock size={9} /> 예약
                           </span>
                         )}
                         {!a.scheduled_at && !a.broadcast_sent && (
-                          <span className="text-[10px] text-gray-300 font-semibold shrink-0">미발송</span>
+                          <span className="text-[11px] text-gray-300 font-semibold shrink-0">미발송</span>
                         )}
                         {a.broadcast_sent && (
-                          <span className="text-[10px] text-emerald-600 font-semibold shrink-0">발송됨</span>
+                          <span className="text-[11px] text-emerald-600 font-semibold shrink-0">발송됨</span>
                         )}
                       </div>
-                      {a.body && <p className="text-[11px] text-gray-400 truncate leading-snug">{a.body}</p>}
-                      <p className="text-[10px] text-gray-300 mt-0.5">
+                      {a.body && <p className="text-[12px] text-gray-400 truncate leading-snug">{a.body}</p>}
+                      <p className="text-[11px] text-gray-300 mt-0.5">
                         {fmtDT(a.created_at)}
                         {pending && a.scheduled_at && (
                           <span className="ml-1.5 text-amber-500">→ {fmtDT(a.scheduled_at)}</span>

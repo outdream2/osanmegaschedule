@@ -241,91 +241,119 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             {items.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-2 py-14 sm:py-20 text-slate-400">
                 <PackagePlus size={36} className="text-slate-300" />
-                <p className="text-[13px] font-black">스캔한 상품이 여기에 표시됩니다</p>
-                <p className="text-[12px] text-slate-400">바코드 스캔 → 자동 등록</p>
+                <p className="text-[14px] font-black">스캔한 상품이 여기에 표시됩니다</p>
+                <p className="text-[13px] text-slate-400">바코드 스캔 → 자동 등록</p>
               </div>
             ) : (
-              <ul className="flex-1 overflow-y-auto max-h-[62vh] lg:max-h-[68vh] divide-y divide-slate-100">
-                {items.map((it) => {
-                  const isRecent = it.key === lastAddedKey;
-                  const meta = STATUS_META[it.status];
-                  return (
-                    <li key={it.key}
-                      className={`px-3 sm:px-4 py-3 transition ${isRecent ? "bg-sky-50/70" : "hover:bg-slate-50/60"} ${
-                        it.status === "match"    ? "border-l-4 border-l-emerald-400" :
-                        it.status === "mismatch" ? "border-l-4 border-l-rose-400" :
-                        it.status === "expiring" ? "border-l-4 border-l-amber-400" :
-                                                   "border-l-4 border-l-transparent"
-                      }`}>
-                      <div className="flex items-start gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[14px] sm:text-[15px] font-black text-slate-800 break-words leading-snug">
-                            {it.product?.name ?? "(미등록 상품)"}
-                          </p>
-                          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                            {it.product?.spec && (
-                              <span className="text-[11px] text-slate-600 font-bold bg-slate-100 border border-slate-200 rounded-md px-1.5 py-0.5">{it.product.spec}</span>
-                            )}
-                            <span className="text-[11px] font-mono text-slate-400">#{it.code}</span>
-                            {it.status !== "pending" && (
-                              <span className={`inline-flex items-center gap-1 text-[11px] font-black rounded-full px-1.5 py-0.5 border ${meta.bg} ${meta.color} ${meta.border}`}>
-                                {meta.icon} {meta.label}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => removeItem(it.key)}
-                          className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer"
-                          title="삭제"
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
-
-                      {/* 수량 조절 + 상태 선택 · 모바일 터치 타겟 확대 */}
-                      <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-                        <div className="inline-flex items-center bg-slate-50 border border-slate-200 rounded-xl">
-                          <button onClick={() => updateQty(it.key, -1)}
-                            className="w-9 h-9 flex items-center justify-center rounded-l-xl text-slate-700 hover:bg-white hover:text-slate-900 active:bg-slate-100 transition cursor-pointer"
-                            title="수량 -1">
-                            <Minus size={14} />
-                          </button>
-                          <input
-                            type="number"
-                            inputMode="numeric"
-                            value={it.qty}
-                            onChange={(e) => setQtyDirect(it.key, Number(e.target.value) || 0)}
-                            className="w-14 text-center bg-transparent text-[15px] font-black tabular-nums focus:outline-none focus:bg-white"
-                          />
-                          <button onClick={() => updateQty(it.key, 1)}
-                            className="w-9 h-9 flex items-center justify-center rounded-r-xl text-slate-700 hover:bg-white hover:text-slate-900 active:bg-slate-100 transition cursor-pointer"
-                            title="수량 +1">
-                            <Plus size={14} />
-                          </button>
-                        </div>
-                        <div className="flex items-center gap-1 flex-wrap">
-                          {(["match", "mismatch", "expiring"] as ItemStatus[]).map((s) => {
-                            const sMeta = STATUS_META[s];
-                            const active = it.status === s;
-                            return (
-                              <button key={s} onClick={() => setStatus(it.key, active ? "pending" : s)}
-                                className={`inline-flex items-center gap-1 min-h-[32px] text-[12px] font-black rounded-full px-2.5 py-1 border-2 transition cursor-pointer active:scale-95 ${
-                                  active
-                                    ? `${sMeta.bg} ${sMeta.color} ${sMeta.border} shadow-sm`
-                                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700"
-                                }`}
-                              >
-                                {sMeta.icon} <span className="hidden xs:inline">{sMeta.label}</span><span className="xs:hidden">{sMeta.label.replace("수량","").replace("유통기한","기한")}</span>
+              <div className="flex-1 overflow-auto max-h-[62vh] lg:max-h-[68vh]">
+                <table className="w-full text-[13px]">
+                  <thead className="sticky top-0 bg-slate-50 z-10 border-b-2 border-slate-200">
+                    <tr className="text-[12px] font-black text-slate-500 tracking-tight">
+                      <th className="text-left px-2 py-2 w-16">입고일</th>
+                      <th className="text-left px-2 py-2 w-20 sm:w-28">공급사</th>
+                      <th className="text-left px-2 py-2">상품명</th>
+                      <th className="text-center px-2 py-2 w-24">갯수</th>
+                      <th className="text-center px-2 py-2 w-16">일치</th>
+                      <th className="text-center px-2 py-2 w-16">불일치</th>
+                      <th className="text-center px-2 py-2 w-20">기한임박</th>
+                      <th className="text-center px-1 py-2 w-8"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {items.map((it) => {
+                      const isRecent = it.key === lastAddedKey;
+                      const d = new Date(it.addedAt);
+                      const arrivedAt = `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                      return (
+                        <tr key={it.key}
+                          className={`transition ${isRecent ? "bg-sky-50/70" : "hover:bg-slate-50/60"} ${
+                            it.status === "match"    ? "border-l-4 border-l-emerald-400" :
+                            it.status === "mismatch" ? "border-l-4 border-l-rose-400" :
+                            it.status === "expiring" ? "border-l-4 border-l-amber-400" :
+                                                       "border-l-4 border-l-transparent"
+                          }`}>
+                          {/* 입고일 */}
+                          <td className="px-2 py-2.5 align-top text-[12px] font-bold text-slate-600 tabular-nums leading-tight break-words whitespace-normal">
+                            {arrivedAt}
+                          </td>
+                          {/* 공급사 */}
+                          <td className="px-2 py-2.5 align-top text-[12px] font-bold text-sky-700 leading-tight break-words whitespace-normal">
+                            {it.product?.supplier ?? "-"}
+                          </td>
+                          {/* 상품명 · 규격 · 코드 */}
+                          <td className="px-2 py-2.5 align-top">
+                            <p className="text-[13px] sm:text-[14px] font-black text-slate-800 break-words whitespace-normal leading-snug">
+                              {it.product?.name ?? "(미등록 상품)"}
+                            </p>
+                            <div className="flex items-center gap-1 mt-1 flex-wrap">
+                              {it.product?.spec && (
+                                <span className="text-[11px] text-slate-600 font-bold break-words whitespace-normal">{it.product.spec}</span>
+                              )}
+                              <span className="text-[11px] text-slate-400 tabular-nums">#{it.code}</span>
+                            </div>
+                          </td>
+                          {/* 갯수 입력 · - N + */}
+                          <td className="px-2 py-2.5 align-top">
+                            <div className="inline-flex items-center bg-slate-50 border border-slate-200 rounded-lg">
+                              <button onClick={() => updateQty(it.key, -1)}
+                                className="w-7 h-8 flex items-center justify-center rounded-l-lg text-slate-700 hover:bg-white active:bg-slate-100 transition cursor-pointer"
+                                title="수량 -1">
+                                <Minus size={13} />
                               </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
+                              <input
+                                type="number"
+                                inputMode="numeric"
+                                value={it.qty}
+                                onChange={(e) => setQtyDirect(it.key, Number(e.target.value) || 0)}
+                                className="w-10 h-8 text-center bg-transparent text-[14px] font-black tabular-nums focus:outline-none focus:bg-white"
+                              />
+                              <button onClick={() => updateQty(it.key, 1)}
+                                className="w-7 h-8 flex items-center justify-center rounded-r-lg text-slate-700 hover:bg-white active:bg-slate-100 transition cursor-pointer"
+                                title="수량 +1">
+                                <Plus size={13} />
+                              </button>
+                            </div>
+                          </td>
+                          {/* 일치 on/off */}
+                          <td className="px-2 py-2.5 text-center align-top">
+                            <StatusToggle
+                              status="match"
+                              active={it.status === "match"}
+                              onToggle={() => setStatus(it.key, it.status === "match" ? "pending" : "match")}
+                            />
+                          </td>
+                          {/* 불일치 on/off */}
+                          <td className="px-2 py-2.5 text-center align-top">
+                            <StatusToggle
+                              status="mismatch"
+                              active={it.status === "mismatch"}
+                              onToggle={() => setStatus(it.key, it.status === "mismatch" ? "pending" : "mismatch")}
+                            />
+                          </td>
+                          {/* 유통기한 임박 on/off */}
+                          <td className="px-2 py-2.5 text-center align-top">
+                            <StatusToggle
+                              status="expiring"
+                              active={it.status === "expiring"}
+                              onToggle={() => setStatus(it.key, it.status === "expiring" ? "pending" : "expiring")}
+                            />
+                          </td>
+                          {/* 삭제 */}
+                          <td className="px-1 py-2.5 text-center align-top">
+                            <button
+                              onClick={() => removeItem(it.key)}
+                              className="w-7 h-7 flex items-center justify-center rounded-md text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer mx-auto"
+                              title="삭제"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
 
@@ -392,7 +420,28 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 interface SummaryPillProps { label: string; value: number; valueClass: string }
 const SummaryPill: React.FC<SummaryPillProps> = ({ label, value, valueClass }) => (
   <div className="flex flex-col items-center gap-0.5">
-    <span className="text-[10px] font-bold text-slate-500">{label}</span>
-    <span className={`text-[15px] font-black tabular-nums ${valueClass}`}>{value}</span>
+    <span className="text-[11px] font-bold text-slate-500">{label}</span>
+    <span className={`text-[16px] font-black tabular-nums ${valueClass}`}>{value}</span>
   </div>
 );
+
+interface StatusToggleProps {
+  status: ItemStatus;
+  active: boolean;
+  onToggle: () => void;
+}
+const StatusToggle: React.FC<StatusToggleProps> = ({ status, active, onToggle }) => {
+  const meta = STATUS_META[status];
+  return (
+    <button onClick={onToggle}
+      className={`inline-flex items-center justify-center w-9 h-9 rounded-full border-2 transition cursor-pointer active:scale-95 ${
+        active
+          ? `${meta.bg} ${meta.color} ${meta.border} shadow-sm`
+          : "bg-white text-slate-300 border-slate-200 hover:border-slate-300 hover:text-slate-500"
+      }`}
+      title={`${meta.label} ${active ? "on" : "off"}`}
+    >
+      {meta.icon}
+    </button>
+  );
+};
