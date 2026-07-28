@@ -36,10 +36,7 @@ import {
   writeXlsxFresh as _writeXlsxFresh,
   writeErpUploadXlsx as _writeErpUploadXlsx,
 } from "./RawOcrTable/exportHelpers";
-import {
-  computePageBalanceCandidates as _computePageBalanceCandidates,
-  computePageBalanceFromConfig as _computePageBalanceFromConfig,
-} from "./RawOcrTable/balanceHelpers";
+import { computePageBalanceFromConfig as _computePageBalanceFromConfig } from "./RawOcrTable/balanceHelpers";
 import { CrossCheckBadge } from "./RawOcrTable/CrossCheckBadge";
 import { useOcrDerived } from "./RawOcrTable/useOcrDerived";
 import { useAutoTemplateSave } from "./RawOcrTable/useAutoTemplateSave";
@@ -202,8 +199,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
       .catch(() => {});
   }, []);
 
-  // 페이지별 label → amount map (formula 계산용)
-  const pageBalanceCandidatesForFormula = new Map<number, Map<string, number>>();
   // 페이지별 사용자 지정 잔고 (드롭박스로 OCR 추출 금액 중 선택) — 저장 버튼 클릭 시 확정
   const [pageBalanceOverride, setPageBalanceOverride] = useState<Record<number, number>>({});
   // 2026-07-27 · 사용자 요청 "OCR 거래일 없으면 입력가능하게" · 페이지별 사용자 지정 거래일
@@ -240,7 +235,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   // "기록 안 함" 모드: 이 페이지 잔고 저장 안 함
   const [pageBalanceModeSkip, setPageBalanceModeSkip] = useState<Set<number>>(new Set());
   // 저장 완료된 페이지 (시각 피드백)
-  const [savedBalancePages, setSavedBalancePages] = useState<Set<number>>(new Set());
   const [savingBalance, setSavingBalance] = useState<Record<string, boolean>>({});
   // 2026-07-28 · 동의어 map · 재추출 시 · 로컬 캐시 우선 lookup
   // 사용자 요청 "재추출 버튼 누를때마다 동의어관리값 찾아서 매칭" · 아래 캐시 hit 시 즉시 적용
@@ -398,8 +392,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   }, [hiddenRawRows]);
   // 각 행별 재추출 회전 인덱스 (같은 행 재추출 클릭시 다른 후보로 순환)
   const [reextractCycle, setReextractCycle] = useState<Record<number, number>>({});
-  // 공급사 잔고 재추출 회전 인덱스 (페이지별)
-  const [balanceReextractCycle, setBalanceReextractCycle] = useState<Record<number, number>>({});
   // ── DB에 저장된 삭제 서명 (매치되는 행은 자동 필터) ───────────────────────
   const [dbDeletedSignatures, setDbDeletedSignatures] = useState<Set<string>>(new Set());
   const normNameForSig = useCallback((s: string) => {
@@ -1437,24 +1429,9 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   }
   const uniquePageNums = [...new Set(pageNums)].sort((a, b) => a - b);
 
-  // 2026-07-20: 잔고 후보 계산 로직 → ./RawOcrTable/balanceHelpers.ts 로 추출
-  // 2026-07-21: useMemo 로 감쌈 · 매 렌더마다 재계산되어 로그 스팸 + 성능 낭비되던 문제 해결
-  const _balResult = React.useMemo(
-    () => _computePageBalanceCandidates(structuredPages, uniquePageNums, balanceConfig),
-    [structuredPages, uniquePageNums, balanceConfig],
-  );
-  const pageBalanceCandidates = _balResult.pageBalanceCandidates;
-  _balResult.pageBalanceCandidatesForFormula.forEach((v, k) => pageBalanceCandidatesForFormula.set(k, v));
   const pageBalanceFromConfig = React.useMemo(
     () => _computePageBalanceFromConfig(structuredPages, uniquePageNums, rawSupplierByPage, balanceConfig ?? {}),
     [structuredPages, uniquePageNums, rawSupplierByPage, balanceConfig],
-  );
-  // JSX 에서 참조하는 learnedLabels (원래 inline 이었음 · helpers 로 이동 후에도 UI 정렬에 필요)
-  const _normalizeLabelStr = (s: string): string => s.replace(/[\s.·:/\\-]+/g, "");
-  const learnedLabels: Set<string> = new Set(
-    Object.values(balanceConfig ?? {})
-      .filter((v): v is string => typeof v === "string" && v.trim() !== "" && v !== "(없음)" && v !== "직접입력")
-      .map(v => _normalizeLabelStr(v)),
   );
 
   // 공급사별 OCR 잔고 합산
@@ -1518,31 +1495,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     const effective = effectivePageTotals.get(pn) ?? 0;
     return stated > 0 && Math.abs(stated - effective) <= 1;
   };
-
-  // "둘 다 아님" 드롭다운용 금액 후보 — 페이지의 OCR 행에서 큰 숫자들을 추출
-  const pageAmountCandidates = new Map<number, number[]>();
-  if (amtIdx >= 0) {
-    for (const pn of uniquePageNums) {
-      const pageData = structuredPages.find(p => p.page === pn);
-      if (!pageData) continue;
-      const seen = new Set<number>();
-      const candidates: number[] = [];
-      for (const row of pageData.rows) {
-        if (!Array.isArray(row)) continue;
-        for (const cell of row) {
-          if (cell == null) continue;
-          const n = typeof cell === "number" ? cell : parseNumber(cell);
-          if (n >= 1000 && !seen.has(n)) { seen.add(n); candidates.push(n); }
-        }
-      }
-      const stated = pageData.meta?.total;
-      if (stated != null && stated >= 1000 && !seen.has(stated)) { seen.add(stated); candidates.push(stated); }
-      const computed = pageTotals.get(pn) ?? 0;
-      if (computed >= 1000 && !seen.has(computed)) candidates.push(computed);
-      candidates.sort((a, b) => b - a);
-      pageAmountCandidates.set(pn, candidates.slice(0, 10));
-    }
-  }
 
   // ── 명세서별 이미지 컬럼 폭 (드래그 리사이즈) ─────────────────────────────
   const INV_COL_MIN = 150;
@@ -1784,8 +1736,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   // ── 상품명 보정 ──────────────────────────────────────────────────────────
   const [matching,         setMatching        ] = useState(false);
   const [matchItems,       setMatchItems      ] = useState<MatchedItem[] | null>(null);
-  // 2026-07-22 · "1차보정 완료 · 2차보정 시작" 버튼 명시 클릭 후에만 2차 표 표시 (사용자 요청)
-  const [showSecondCorrection, setShowSecondCorrection] = useState(false);
   // 2026-07-27 · 페이지별 "ERP 매칭" 버튼 클릭 후 · 해당 페이지 1차 표에 ERP sub-row 노출
   //   기존 flow 그대로 · 확정 버튼은 유지 · 이 flag 는 sub-row 표시 여부만 제어
   const [erpSubRowPages, setErpSubRowPages] = useState<Set<number>>(new Set());
