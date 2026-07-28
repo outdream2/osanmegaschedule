@@ -9,6 +9,7 @@ import { LandingPage } from "./components/LandingPage";
 import { ReservationPage } from "./components/ReservationPage";
 import { DisplayPage } from "./components/DisplayPage";
 import { ScanPage } from "./components/ScanPage";
+import { ProductArrivalPage } from "./components/ProductArrivalPage";
 import { OcrPage } from "./components/OcrPage";
 import { RequestsPage } from "./components/RequestsPage";
 import { LeavePage } from "./components/LeavePage/LeavePage";
@@ -26,7 +27,7 @@ import { usePushSubscription } from "./hooks/usePushSubscription";
 import type { AuthSession } from "./types";
 import { prefetchProducts } from "./lib/productsCache";
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage";
 
 export default function App() {
   // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
@@ -46,7 +47,7 @@ export default function App() {
   //   나머지 페이지: 상품 데이터 안 씀 → prefetch 스킵으로 초기 로딩 부하 감소
   useEffect(() => {
     if (!authSession) return;
-    const needsProducts: Page[] = ["scan", "display", "stockcheck", "synonyms", "stockarrivals"];
+    const needsProducts: Page[] = ["scan", "productarrival", "display", "stockcheck", "synonyms", "stockarrivals"];
     if (needsProducts.includes(page)) prefetchProducts();
   }, [authSession, page]);
 
@@ -76,7 +77,7 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage", auth?: AuthSession) => {
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage", auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
     navigate(next);
   };
@@ -102,7 +103,7 @@ export default function App() {
 
   // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
   // The user is already authenticated here, so no AuthSession is required.
-  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "ocr" | "lunch" | "board" | "mypage") => navigate(next);
+  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "productarrival" | "ocr" | "lunch" | "board" | "mypage") => navigate(next);
 
   let pageContent: React.ReactElement;
 
@@ -122,6 +123,15 @@ export default function App() {
   } else if (page === "scan") {
     pageContent = (
       <ScanPage
+        onBack={goBack}
+        authSession={authSession}
+        onNavigate={navigateInner}
+        onLogout={handleLogout}
+      />
+    );
+  } else if (page === "productarrival") {
+    pageContent = (
+      <ProductArrivalPage
         onBack={goBack}
         authSession={authSession}
         onNavigate={navigateInner}

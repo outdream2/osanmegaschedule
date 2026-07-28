@@ -15,6 +15,7 @@ import {
   Menu,
   MessageSquare,
   MessageCircleQuestion,
+  PackagePlus,
   ScanBarcode,
   UtensilsCrossed,
 } from "lucide-react";
@@ -30,6 +31,7 @@ export type AppNavPage =
   | "requests"
   | "leave"
   | "scan"
+  | "productarrival"
   | "ocr"
   | "lunch"
   | "permissions"
@@ -63,6 +65,7 @@ const TABS: TabDef[] = [
   { key: "landing",  label: "홈",         mobileLabel: "홈",     icon: Home,          managerOnly: false, color: "slate"   },
   { key: "display",  label: "매장관리",   mobileLabel: "매장",    icon: LayoutGrid,    managerOnly: true,  color: "red"     },
   { key: "scan",     label: "실재고입력", mobileLabel: "실재고",  icon: ScanBarcode,   managerOnly: true,  color: "orange"  },
+  { key: "productarrival", label: "상품입고", mobileLabel: "상품입고", icon: PackagePlus, managerOnly: true, color: "sky"    },
   { key: "schedule", label: "스케줄관리", mobileLabel: "스케줄",  icon: Calendar,      managerOnly: false, color: "amber"   },
   { key: "board",    label: "이슈공유",   mobileLabel: "이슈",    icon: MessageCircleQuestion, managerOnly: false, color: "emerald" },
   { key: "requests", label: "요청목록",   mobileLabel: "요청",    icon: MessageSquare, managerOnly: false, color: "cyan"    },
