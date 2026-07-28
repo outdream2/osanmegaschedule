@@ -83,7 +83,7 @@ interface StockFlowRow {
 // 2026-07-28 · 사용자 요청 · 모든 컬럼 정렬 가능하게 확장
 type SortKey = "name" | "opening" | "sale" | "purchase" | "amount" | "closing" | "current" | "loss"
   | "turnover" | "doh" | "cycle" | "last_purchase" | "min_order" | "last_purchase_price"
-  | "stock_value" | "sale_price" | "profit_rate";
+  | "stock_value" | "sale_price" | "profit_rate" | "turnover_3m";
 type SortDir = "asc" | "desc";
 
 function fmt(n: number): string {
@@ -2411,11 +2411,13 @@ export const StockManagePage: React.FC = () => {
           return saleP;
         case "profit_rate":
           return saleP > 0 && purP > 0 ? ((saleP - purP) / saleP) * 100 : -999999;
+        case "turnover_3m":
+          return Number(p.turnover_3m ?? 0);
         default:
           return 0;
       }
     };
-    const clientKeys: SortKey[] = ["turnover", "doh", "cycle", "last_purchase", "min_order", "last_purchase_price", "stock_value", "sale_price", "profit_rate"];
+    const clientKeys: SortKey[] = ["turnover", "doh", "cycle", "last_purchase", "min_order", "last_purchase_price", "stock_value", "sale_price", "profit_rate", "turnover_3m"];
     if (clientKeys.includes(flowSort as SortKey)) {
       return [...filtered].sort((a, b) => {
         const va = getVal(a), vb = getVal(b);
@@ -2493,6 +2495,20 @@ export const StockManagePage: React.FC = () => {
               {flowDateRange}
             </span>
           )}
+          {/* 2026-07-28 · 사용자 요청 · 재고관리 페이지 상단 · 별도 관리자 액션 버튼 (적정재고 일괄 업데이트) */}
+          <button
+            type="button"
+            onClick={handleRefillOptimalStock}
+            disabled={refillingOptimalStock}
+            className="ml-auto inline-flex items-center gap-1.5 text-[11px] font-black text-white bg-gradient-to-b from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 disabled:from-slate-300 disabled:to-slate-400 disabled:cursor-not-allowed border border-teal-700 rounded-lg px-3 py-1.5 cursor-pointer shadow-sm whitespace-nowrap transition-all hover:shadow-md active:scale-95"
+            title="적정재고 (products.optimal_stock) 를 최근 30일 판매량으로 일괄 업데이트 · 관리자 기능"
+          >
+            {refillingOptimalStock ? (
+              <><LoaderIcon size={12} className="animate-spin" /> 계산 중...</>
+            ) : (
+              <>🔄 <span>적정재고 = 30일 판매량</span></>
+            )}
+          </button>
         </div>
         {/* 2행: 기간 선택 + 검색 */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -3333,16 +3349,7 @@ export const StockManagePage: React.FC = () => {
                       </div>
                       {/* 2026-07-16 · 계절 조회 · 지정 시 flowMonths 무시 */}
                       <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) { setPendingFlowMonths(0); setFlowMonths(0); } }} size="sm" hideLabel />
-                      {/* 2026-07-28 · 사용자 요청 · 적정재고 = 최근 30일 판매량 일괄 업데이트 */}
-                      <button
-                        type="button"
-                        onClick={handleRefillOptimalStock}
-                        disabled={refillingOptimalStock}
-                        className="ml-2 inline-flex items-center gap-1 text-[10px] font-black text-white bg-teal-500 hover:bg-teal-600 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-full px-2.5 py-1 cursor-pointer shadow-sm whitespace-nowrap"
-                        title="적정재고를 최근 30일 판매량으로 일괄 업데이트 (products.optimal_stock)"
-                      >
-                        {refillingOptimalStock ? "⏳ 계산중..." : "🔄 적정재고=30일 판매량"}
-                      </button>
+                      {/* 2026-07-28 · 적정재고 버튼 · 페이지 상단으로 이동 (사용자 요청 A안) */}
                       {/* 2026-07-20: loading 인디케이터를 리스트 내부로 이동 (아래 shimmer 배너 · 헤더 자리 확보) */}
                       {/* 실제 조회 날짜 범위 표시 (현재 적용된 flowMonths 기준) */}
                       {flowMonths > 0 && (() => {
@@ -3511,9 +3518,15 @@ export const StockManagePage: React.FC = () => {
                                   <th onClick={() => toggleFlowSort("purchase")}
                                     className={`text-right px-0.5 py-1.5 w-16 text-[12px] font-black cursor-pointer select-none bg-emerald-50/60 hover:bg-emerald-100 transition ${flowSort === "purchase" ? "text-emerald-700" : "text-emerald-500"}`}
                                     title="최근매입량 · 클릭 정렬">최근매입량{arrowFor("purchase")}</th>
-                                  <th onClick={() => toggleFlowSort("min_order")}
-                                    className={`text-right px-0.5 py-1.5 w-14 text-[12px] font-black cursor-pointer select-none bg-sky-50/30 hover:bg-sky-100 transition ${flowSort === "min_order" ? "text-sky-800" : "text-sky-700"}`}
-                                    title="최소 발주량 · 클릭 정렬">최소발주{arrowFor("min_order")}</th>
+                                  {/* 2026-07-28 · 사용자 요청 · 최소발주 컬럼 제거 · 3개월 회전율 컬럼 추가 (아래 별도) */}
+                                  <th onClick={() => toggleFlowSort("turnover_3m")}
+                                    className={`text-right px-0.5 py-1.5 w-14 text-[12px] font-black cursor-pointer select-none bg-emerald-50/50 hover:bg-emerald-100 transition ${flowSort === "turnover_3m" ? "text-emerald-800" : "text-emerald-700"}`}
+                                    title="3개월 판매량 / 3개월 평균재고 · 클릭 정렬">
+                                    <span className="flex flex-col leading-tight items-end">
+                                      <span className="text-[10px] font-semibold text-emerald-500">3개월</span>
+                                      <span>회전율{arrowFor("turnover_3m")}</span>
+                                    </span>
+                                  </th>
                                   <th onClick={() => toggleFlowSort("stock_value")}
                                     className={`text-right px-0.5 py-1.5 w-20 text-[12px] font-black cursor-pointer select-none bg-indigo-50/40 hover:bg-indigo-100 transition ${flowSort === "stock_value" ? "text-indigo-800" : "text-indigo-700"}`}
                                     title="재고금액 = 현재고 × 최근매입가 · 클릭 정렬">재고금액{arrowFor("stock_value")}</th>
@@ -3623,9 +3636,24 @@ export const StockManagePage: React.FC = () => {
                                 title={purchV > 0 ? `최근매입량 ${fmt(purchV)}` : "매입 없음"}>
                                 {purchV > 0 ? fmt(purchV) : "-"}
                               </td>
-                              <td className="text-right px-0.5 py-1.5 text-sky-700 font-semibold text-[12px] bg-sky-50/30 align-top tabular-nums"
-                                title={minOrder > 0 ? `최소 발주량 ${minOrder}` : "미지정"}>
-                                {minOrder > 0 ? minOrder.toLocaleString() : "-"}
+                              {/* 2026-07-28 · 3개월 회전율 셀 · 3개월 판매/평균재고 (서버 계산 · 항상 3개월 기준) */}
+                              <td className={`text-right px-0.5 py-1.5 text-[12px] font-black bg-emerald-50/50 align-top tabular-nums ${(() => {
+                                const t3 = Number((p as any).turnover_3m ?? 0);
+                                if (t3 <= 0) return "text-slate-300";
+                                if (t3 >= 3) return "text-emerald-800";
+                                if (t3 >= 1) return "text-emerald-600";
+                                return "text-amber-600";
+                              })()}`}
+                                title={(() => {
+                                  const t3 = Number((p as any).turnover_3m ?? 0);
+                                  const s3 = Number((p as any).sale_qty_3m ?? 0);
+                                  const a3 = Number((p as any).avg_stock_3m ?? 0);
+                                  return t3 > 0 ? `3개월 판매 ${fmt(s3)} / 평균재고 ${fmt(a3)} = ${t3.toFixed(2)}회` : "3개월 판매 없음";
+                                })()}>
+                                {(() => {
+                                  const t3 = Number((p as any).turnover_3m ?? 0);
+                                  return t3 > 0 ? t3.toFixed(2) : "-";
+                                })()}
                               </td>
                               <td className="text-right px-0.5 py-1.5 text-indigo-700 font-bold text-[12px] bg-indigo-50/40 align-top tabular-nums"
                                 title={stockValue > 0 ? `현재고 ${fmt(cur)} × ERP단가 ${fmtWon(purP)} = ${fmtWon(stockValue)}` : ""}>

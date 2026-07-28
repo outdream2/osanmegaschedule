@@ -823,6 +823,77 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           default:         return sign * (a.sale_qty      - b.sale_qty);
         }
       });
+      // 2026-07-28 · 사용자 요청 · 3개월 재고회전율 · 항상 별도 3개월 aggregation 계산
+      //   monthsParam === 3 이면 기존 값 재사용 · 아니면 별도 3개월 stock_history 조회
+      //   sale_qty_3m · avg_stock_3m · turnover_3m 필드 추가
+      const compute3mMap = new Map<string, { sale_qty_3m: number; opening_3m: number; closing_3m: number }>();
+      if (monthsParam === 3) {
+        // 기존 aggregation 결과 재사용
+        for (const agg of aggRows) {
+          compute3mMap.set(agg.product_code, {
+            sale_qty_3m: agg.sale_qty,
+            opening_3m: agg.opening_stock,
+            closing_3m: agg.closing_stock,
+          });
+        }
+      } else {
+        // 별도 3개월 aggregation
+        const today3 = new Date();
+        const cutoff3 = new Date(today3.getFullYear(), today3.getMonth() - 3, today3.getDate());
+        const cutoff3Str = `${cutoff3.getFullYear()}-${String(cutoff3.getMonth() + 1).padStart(2, "0")}-${String(cutoff3.getDate()).padStart(2, "0")}`;
+        try {
+          const rows3: any[] = [];
+          const PAGE3 = 1000;
+          let from3 = 0;
+          while (true) {
+            let q3 = supabase.from("stock_history")
+              .select("snapshot_date, product_code, opening_stock, sale_qty, closing_stock")
+              .gte("snapshot_date", cutoff3Str)
+              .order("snapshot_date", { ascending: true });
+            if (supplierFilter)     q3 = q3.eq("supplier_name", supplierFilter);
+            if (supplierCodeFilter) q3 = q3.eq("supplier_code", supplierCodeFilter);
+            const { data, error } = await q3.range(from3, from3 + PAGE3 - 1);
+            if (error || !data || data.length === 0) break;
+            rows3.push(...data);
+            if (data.length < PAGE3) break;
+            from3 += PAGE3;
+          }
+          const by3 = new Map<string, { first_snap: string; last_snap: string; opening: number; closing: number; sale_qty: number }>();
+          for (const r of rows3) {
+            const code = String((r as any).product_code ?? "").trim();
+            if (!code) continue;
+            const snap = String((r as any).snapshot_date ?? "");
+            if (!by3.has(code)) {
+              by3.set(code, {
+                first_snap: snap, last_snap: snap,
+                opening: Number((r as any).opening_stock ?? 0) || 0,
+                closing: Number((r as any).closing_stock ?? 0) || 0,
+                sale_qty: 0,
+              });
+            }
+            const agg3 = by3.get(code)!;
+            agg3.sale_qty += Number((r as any).sale_qty ?? 0) || 0;
+            if (snap < agg3.first_snap) { agg3.first_snap = snap; agg3.opening = Number((r as any).opening_stock ?? 0) || 0; }
+            if (snap > agg3.last_snap)  { agg3.last_snap  = snap; agg3.closing = Number((r as any).closing_stock ?? 0) || 0; }
+          }
+          for (const [code, v] of by3) {
+            compute3mMap.set(code, { sale_qty_3m: v.sale_qty, opening_3m: v.opening, closing_3m: v.closing });
+          }
+        } catch { /* silent */ }
+      }
+      // 각 행에 3개월 필드 추가
+      for (const agg of aggRows as any[]) {
+        const m3 = compute3mMap.get(agg.product_code);
+        if (m3) {
+          agg.sale_qty_3m = m3.sale_qty_3m;
+          agg.avg_stock_3m = (m3.opening_3m + m3.closing_3m) / 2;
+          agg.turnover_3m = agg.avg_stock_3m > 0 ? m3.sale_qty_3m / agg.avg_stock_3m : 0;
+        } else {
+          agg.sale_qty_3m = 0;
+          agg.avg_stock_3m = 0;
+          agg.turnover_3m = 0;
+        }
+      }
       const datesArr = Array.from(snapshotSet).sort((a, b) => b.localeCompare(a));
       const payload = {
         snapshot_date: latestSnapshot || null,
