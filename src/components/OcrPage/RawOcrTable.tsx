@@ -1,6 +1,6 @@
 ﻿import React, { useCallback, useEffect, useRef, useState } from "react";
 import * as XLSX from "xlsx";
-import { Download, Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, FileSpreadsheet, Upload as UploadIcon, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
+import { Wand2, Loader2, CheckCircle, AlertTriangle, XCircle, X, Bookmark, BookmarkCheck, Search, Pencil, BookmarkPlus, BookOpen, Check, Save } from "lucide-react";
 import { isNonProductText, isValidSupplierHint, isValidProductName, scoreProductRow, cleanProductName } from "../../lib/ocrRowFilter";
 import { reextractCellCandidates } from "../../lib/cellReextract";
 import { VendorDetailModal, type Vendor } from "../LandingPage/VendorListEditor";
@@ -59,6 +59,7 @@ import {
   scoreProductNameToken,
   koreanJaccardSimilarity,
 } from "./RawOcrTable/productNameReextract";
+import { XlsxExportSection } from "./RawOcrTable/XlsxExportSection";
 
 // 외부 소비자(OcrPage.tsx)가 `import { type ConfirmedItem } from "./RawOcrTable"` 로 사용 중 → re-export 유지
 export type { ConfirmedItem };
@@ -6362,64 +6363,20 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                     </button>
                   ) : null}
                 </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <input ref={xlsInputRef} type="file" accept=".xlsx,.xls" className="hidden"
-                    onChange={e => { const f = e.target.files?.[0]; if (f) { handleTemplateUpload(f); setXlsTemplateSaved(false); e.target.value = ""; } }} />
-                  {/* 서식 파일 저장 버튼 */}
-                  {xlsTemplate && (
-                    <button
-                      onClick={() => {
-                        if (!xlsTemplate || !xlsTemplateName || !xlsTemplateHdrs) return;
-                        try {
-                          const bytes = new Uint8Array(xlsTemplate);
-                          const b64 = btoa(String.fromCharCode(...bytes));
-                          localStorage.setItem("ocr_xls_template", JSON.stringify({ name: xlsTemplateName, hdrs: xlsTemplateHdrs, data: b64 }));
-                          setXlsTemplateSaved(true);
-                        } catch { /* silent */ }
-                      }}
-                      title="서식 파일을 브라우저에 저장 (다음 방문 시 자동 복원)"
-                      className={`flex items-center gap-1 text-[12px] font-bold px-2 py-1 rounded-lg transition cursor-pointer shrink-0 border ${
-                        xlsTemplateSaved
-                          ? "text-emerald-600 bg-emerald-50 border-emerald-200"
-                          : "text-indigo-600 bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
-                      }`}
-                    >
-                      <Bookmark size={11} />
-                      {xlsTemplateSaved ? "저장됨" : "저장"}
-                    </button>
-                  )}
-                  <button
-                    onClick={() => xlsInputRef.current?.click()}
-                    title={xlsTemplateName ?? "엑셀 서식 파일 업로드"}
-                    className={`flex items-center gap-1 text-[12px] font-bold px-2 py-1 rounded-lg transition cursor-pointer shrink-0 border ${
-                      xlsTemplateName
-                        ? "text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
-                        : "text-gray-500 bg-white border-gray-200 hover:bg-gray-50"
-                    }`}
-                  >
-                    <UploadIcon size={11} />
-                    {xlsTemplateName ? <span className="max-w-[80px] truncate">{xlsTemplateName}</span> : "서식 파일"}
-                  </button>
-                  {/* 2026-07-28 · ERP 업로드 전용 서식 · 고정 컬럼 순서 · 소비기한=유통기한 */}
-                  <button onClick={handleErpUploadExport}
-                    className="flex items-center gap-1 text-[12px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0"
-                    title="ERP 시스템 업로드용 엑셀 서식 (상품코드·상품명·규격·마스터매입단가·공급처·전표매입단가·매입수량·매입총계·판매단가·이익률·소비기한)">
-                    <FileSpreadsheet size={11} />ERP업로드 엑셀
-                  </button>
-                  {/* 사용자 정의 서식 (엑셀 서식 파일 업로드된 경우만) */}
-                  {xlsTemplate && (
-                    <button onClick={handleExcelExport}
-                      className="flex items-center gap-1 text-[12px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0"
-                      title="사용자 서식 파일로 엑셀 다운로드">
-                      <FileSpreadsheet size={11} />서식별 엑셀
-                    </button>
-                  )}
-                  {/* 2026-07-22 · CSV 다운로드 · 3차 확정표에 통합 (사용자 요청) */}
-                  <button onClick={() => handleExport(CONF_HEADERS, confRows, "확정")}
-                    className="flex items-center gap-1 text-[12px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition cursor-pointer shrink-0">
-                    <Download size={11} />CSV
-                  </button>
-                </div>
+                <XlsxExportSection
+                  xlsInputRef={xlsInputRef}
+                  handleTemplateUpload={handleTemplateUpload}
+                  xlsTemplateSaved={xlsTemplateSaved}
+                  setXlsTemplateSaved={setXlsTemplateSaved}
+                  xlsTemplate={xlsTemplate}
+                  xlsTemplateName={xlsTemplateName}
+                  xlsTemplateHdrs={xlsTemplateHdrs}
+                  handleErpUploadExport={handleErpUploadExport}
+                  handleExcelExport={handleExcelExport}
+                  handleExport={handleExport}
+                  confHeaders={CONF_HEADERS}
+                  confRows={confRows}
+                />
               </div>
 
               <div className="overflow-x-auto">
