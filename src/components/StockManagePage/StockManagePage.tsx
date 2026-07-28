@@ -1232,6 +1232,29 @@ export const StockManagePage: React.FC = () => {
     }
   };
   const [flowLimit, setFlowLimit] = useState<number>(100);
+  // 2026-07-28 · 적정재고 자동 계산 (최근 30일 판매량) · 사용자 요청
+  const [refillingOptimalStock, setRefillingOptimalStock] = useState(false);
+  const handleRefillOptimalStock = async () => {
+    if (refillingOptimalStock) return;
+    if (!window.confirm("적정재고를 최근 30일 판매량으로 일괄 업데이트합니다.\n\n · 기존 적정재고 값은 덮어써집니다.\n · 백업 컬럼(optimal_stock_backup)에는 함께 저장됩니다.\n\n계속하시겠습니까?")) return;
+    setRefillingOptimalStock(true);
+    try {
+      const res = await fetch("/api/products/refill-optimal-stock", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ days: 30 }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
+      alert(`✅ 적정재고 업데이트 완료\n · ${data.updated}건 업데이트\n · ${data.failed}건 실패\n · 기준일: ${data.from} ~ 오늘 (${data.days}일)${data.note ? `\n · ${data.note}` : ""}`);
+      // 리스트 갱신 트리거
+      window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
+    } catch (e: any) {
+      alert(`❌ 적정재고 업데이트 실패: ${e?.message ?? "알 수 없는 오류"}`);
+    } finally {
+      setRefillingOptimalStock(false);
+    }
+  };
   // 재고흐름 리스트 · 상품명/코드 검색 (필터)
   const [flowSearch, setFlowSearch] = useState<string>("");
   // 재고흐름 리스트 · 벌크 숨김 · 판매추이와 동일 패턴
@@ -3256,6 +3279,16 @@ export const StockManagePage: React.FC = () => {
                       </div>
                       {/* 2026-07-16 · 계절 조회 · 지정 시 flowMonths 무시 */}
                       <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) { setPendingFlowMonths(0); setFlowMonths(0); } }} size="sm" hideLabel />
+                      {/* 2026-07-28 · 사용자 요청 · 적정재고 = 최근 30일 판매량 일괄 업데이트 */}
+                      <button
+                        type="button"
+                        onClick={handleRefillOptimalStock}
+                        disabled={refillingOptimalStock}
+                        className="ml-2 inline-flex items-center gap-1 text-[10px] font-black text-white bg-teal-500 hover:bg-teal-600 disabled:bg-slate-300 disabled:cursor-not-allowed rounded-full px-2.5 py-1 cursor-pointer shadow-sm whitespace-nowrap"
+                        title="적정재고를 최근 30일 판매량으로 일괄 업데이트 (products.optimal_stock)"
+                      >
+                        {refillingOptimalStock ? "⏳ 계산중..." : "🔄 적정재고=30일 판매량"}
+                      </button>
                       {/* 2026-07-20: loading 인디케이터를 리스트 내부로 이동 (아래 shimmer 배너 · 헤더 자리 확보) */}
                       {/* 실제 조회 날짜 범위 표시 (현재 적용된 flowMonths 기준) */}
                       {flowMonths > 0 && (() => {

@@ -47,6 +47,9 @@ import { useAutoBalanceLoad } from "./RawOcrTable/useAutoBalanceLoad";
 import { useEditMigration } from "./RawOcrTable/useEditMigration";
 import { useCellNavigation } from "./RawOcrTable/useCellNavigation";
 import { usePagesSnapshot } from "./RawOcrTable/usePagesSnapshot";
+import { usePurchaseHistoryMatch } from "./RawOcrTable/usePurchaseHistoryMatch";
+import { useAutoPipeline } from "./RawOcrTable/useAutoPipeline";
+import { useHandleMatchPage } from "./RawOcrTable/useHandleMatchPage";
 import { ErpMatchSubRow } from "./RawOcrTable/ErpMatchSubRow";
 import {
   findNameHeaderIdx,
@@ -2526,351 +2529,28 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     } finally { setMatching(false); }
   }, [dispRows, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier, missingSupplierPages]);
 
-  // handleMatch 의 페이지 한정 버전: targetPage 행만 /api/ocr-match POST
-  const [matchingPage, setMatchingPage] = useState<Record<number, boolean>>({});
+  // 2026-07-28 · 리팩터 · handleMatchPage · fillMissingPricesFromDB · verifyAndSwapPricesWithDB
+  //   → useHandleMatchPage 훅으로 분리
   // 2026-07-22 · 확정 → 2차보정 완료 페이지 추적 · 버튼 색 변경 (사용자 요청)
   const [confirmedPages, setConfirmedPages] = useState<Set<number>>(new Set());
   // 2026-07-22 · DB 에서 채워진 셀 추적 (사용자 요청: "옆에 표시해")
   const [dbFilledCells, setDbFilledCells] = useState<Set<string>>(new Set()); // key: `${ri}-${ci}`
 
-  const handleMatchPage = useCallback(async (targetPage: number) => {
-    if (nameIdx < 0) return;
-    // 2026-07-23 · 페이지 내 품명 최대 길이 · 스코어링용
-    const pageMaxNameLen = Math.max(0, ...dispRows
-      .filter((_, ri) => pageNums[ri] === targetPage)
-      .map(r => String(r[nameIdx] ?? "").trim().length));
-    const qtyIdxLocal = dispHeaders.indexOf("수량");
-    const priIdxLocal = dispHeaders.indexOf("단가");
-    const nameSupplierPairs = dispRows.map((row, ri) => {
-      if (pageNums[ri] !== targetPage) return null;
-      // 2026-07-28 · 사용자 요청 (재확정) "ERP 매칭 버튼 누를 때마다 다시 반영"
-      //   우선순위 · autoSynonymMatches.name (DB 보정) > cellEdits (직접 편집) > 원본 OCR
-      //   skip 최적화 · 완전 제거 · 매 클릭마다 API 재호출 · setMatchItems 는 autoSyn 유지하면서 서버 값 갱신
-      const editedName = cellEdits[ri]?.[nameIdx];
-      const autoSynName = autoSynonymMatches[ri]?.name;
-      let rawName = String(autoSynName ?? editedName ?? row[nameIdx] ?? "").trim();
-      // 2026-07-28 · 사용자 요청 "잡문자 제거 후 재검색 · 그냥 제외 X"
-      //   1) 원본이 유효 상품명이 아니면 · 잡문자 제거 시도
-      //   2) 청소된 결과가 유효하면 · cleaned name 으로 검색 (skip 안 함)
-      //   3) 청소해도 유효 안 하면 · 최종 skip
-      if (rawName && !isValidProductName(rawName)) {
-        const cleaned = cleanProductName(rawName);
-        if (cleaned && isValidProductName(cleaned)) {
-          console.log(`[handleMatchPage] 행 ${ri} 잡문자 제거 · "${rawName.slice(0, 30)}" → "${cleaned.slice(0, 30)}"`);
-          rawName = cleaned;
-        }
-      }
-      let sup = "";
-      if (rawSupplierByPage[targetPage] !== undefined) sup = rawSupplierByPage[targetPage];
-      else if (ocrSuppIdx >= 0) {
-        const cell = String(dispRows[ri]?.[ocrSuppIdx] ?? "").trim();
-        if (cell) sup = cell;
-      }
-      if (!sup) sup = structuredPages.find(p => p.page === targetPage)?.meta.supplier ?? globalSupplier ?? "";
-      if (!isValidSupplierHint(sup)) {
-        const pageSup = structuredPages.find(p => p.page === targetPage)?.meta.supplier;
-        sup = (pageSup && isValidSupplierHint(pageSup)) ? pageSup :
-              (globalSupplier && isValidSupplierHint(globalSupplier)) ? globalSupplier : "";
-      }
-      // 2026-07-19 · handleMatch 와 동일하게 삭제행 스킵
-      // 2026-07-23 · 한글 미포함 상품명도 스킵 (금액·헤더 잡문자 방어)
-      // 2026-07-23 · 행 스코어 계산 (사용자 요청 · 수량+단가+한글+장문+공급사겹침)
-      const qty = qtyIdxLocal >= 0 ? Number(cellEdits[ri]?.[qtyIdxLocal] ?? row[qtyIdxLocal] ?? 0) : 0;
-      const pri = priIdxLocal >= 0 ? Number(cellEdits[ri]?.[priIdxLocal] ?? row[priIdxLocal] ?? 0) : 0;
-      const { score, reasons } = scoreProductRow({
-        quantity: qty, price: pri, productName: rawName, supplier: sup, maxNameLen: pageMaxNameLen,
-      });
-      const lowScore = score < 0.30;  // 수량·단가·한글 셋 중 하나만 있어도 0.30 이상
-      const skip = !rawName || isNonProductText(rawName)
-        || !isValidProductName(rawName)
-        || lowScore
-        || hiddenRawRows.has(ri)
-        || permanentlyDeletedRawRows.has(ri)
-        || isRowDbDeleted(ri);
-      if (skip && rawName && lowScore) {
-        console.log(`[handleMatchPage] 행 ${ri} 스킵 · 저스코어(${score}) · ${reasons.join(",")} · "${rawName.slice(0, 20)}"`);
-      }
-      return { rowIdx: ri, name: rawName, supplier: sup, skip };
-    }).filter((x): x is { rowIdx: number; name: string; supplier: string; skip: boolean } => x !== null);
+  const { matchingPage, handleMatchPage, fillMissingPricesFromDB, verifyAndSwapPricesWithDB } = useHandleMatchPage({
+    dispHeaders, dispRows, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx,
+    structuredPages, globalSupplier, cellEdits, autoSynonymMatches,
+    hiddenRawRows, permanentlyDeletedRawRows, isRowDbDeleted,
+    pageBalanceOverride, pageSupplierBalances, saveSupplierBalance,
+    matchItems, setMatchItems, setConfirmedPages,
+    setCellEdits, setDbFilledCells, setSaveConfirmedToast, matchItemsRef,
+  });
 
-    const activePairs = nameSupplierPairs.filter(p => !p.skip);
-    // 2026-07-24 · 사용자 문제 "확정 눌렀는데 확정완료로 안 바뀜"
-    //   원인: activePairs 없으면 early return · confirmedPages 마킹 안됨
-    //   수정: activePairs 없어도 확정 상태 마킹 + 잔고 저장 · 매칭만 스킵
-    if (activePairs.length === 0) {
-      console.log(`[handleMatchPage] ${targetPage}번 · 매칭할 활성 행 없음 · 확정만 마킹`);
-      setConfirmedPages(prev => new Set([...prev, targetPage]));
-      const currentBal0 = pageBalanceOverride[targetPage] ?? pageSupplierBalances[targetPage];
-      if (currentBal0 != null && currentBal0 > 0) {
-        const supForBal0 = (rawSupplierByPage[targetPage] ?? structuredPages.find(p => p.page === targetPage)?.meta.supplier ?? "").trim();
-        const dateForBal0 = structuredPages.find(p => p.page === targetPage)?.meta.date ?? null;
-        if (supForBal0) saveSupplierBalance(supForBal0, currentBal0, dateForBal0);
-      }
-      // 2026-07-28 · 사용자 요청 "ERP 매칭 다시 눌러도 변화 없음" · 토스트 피드백
-      setSaveConfirmedToast({ type: "error", msg: `⚠ ${targetPage}번 · 매칭 가능한 행 없음 (품명 없음/저스코어)` });
-      setTimeout(() => setSaveConfirmedToast(null), 3000);
-      return;
-    }
-    const names = activePairs.map(p => p.name);
-    const suppliers = activePairs.map(p => p.supplier);
-    console.log(`[handleMatchPage] ${targetPage}번 명세서 · ${names.length}행 매칭 요청`);
-    setSaveConfirmedToast({ type: "success", msg: `⏳ ${targetPage}번 · ERP 매칭 요청 (${names.length}행)...` });
-
-    setMatchingPage(prev => ({ ...prev, [targetPage]: true }));
-    // 2026-07-28 · 매칭 결과 카운터 · 완료 토스트용
-    let matchedCount = 0;
-    let lowScoreCount = 0;
-    let autoSynPreservedCount = 0;
-    try {
-      const res = await fetch("/api/ocr-match", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names, suppliers }),
-      });
-      const data = await res.json();
-      const returned: MatchedItem[] = data.matches ?? [];
-      // 2026-07-28 · 사용자 요청 "상품명을 정확히 줬는데 ERP 를 못찾는건 말이 안돼"
-      //   서버 반환 · 저스코어 (< 60) 매칭 · 오히려 혼란만 유발 · null 로 처리
-      //   → 이 경우 · autoSyn (1차 DB 보정) 이 있으면 · 그것을 ERP 결과로 대체 세팅 (사용자 선택 최우선)
-      const MIN_ERP_SCORE = 60;
-      setMatchItems(prev => {
-        const next = prev ? [...prev] : dispRows.map(() => ({ input: "", matched: null }));
-        activePairs.forEach((p, ai) => {
-          const serverItem = returned[ai];
-          const svrScore = serverItem?.matched?.score ?? serverItem?.score ?? 0;
-          const uAutoSyn = autoSynonymMatches[p.rowIdx];
-          if (uAutoSyn?.code) {
-            const prevMatched = matchItemsRef.current?.[p.rowIdx]?.matched;
-            next[p.rowIdx] = {
-              input: p.name,
-              matched: {
-                code: uAutoSyn.code,
-                name: uAutoSyn.name,
-                spec: prevMatched?.spec ?? serverItem?.matched?.spec ?? "",
-                score: 100,
-                masterPrice: serverItem?.matched?.masterPrice ?? prevMatched?.masterPrice ?? null,
-                salePrice: serverItem?.matched?.salePrice ?? prevMatched?.salePrice ?? null,
-                profitRate: serverItem?.matched?.profitRate ?? prevMatched?.profitRate ?? null,
-                expiryDate: serverItem?.matched?.expiryDate ?? prevMatched?.expiryDate ?? null,
-                supplier: serverItem?.matched?.supplier ?? prevMatched?.supplier ?? null,
-              },
-            };
-            autoSynPreservedCount++;
-            matchedCount++;
-            return;
-          }
-          if (!serverItem?.matched || svrScore < MIN_ERP_SCORE) {
-            console.log(`[handleMatchPage] 저스코어 ${svrScore} · "${p.name}" 매칭 안 함 (임계 ${MIN_ERP_SCORE})`);
-            next[p.rowIdx] = { input: p.name, matched: null };
-            lowScoreCount++;
-            return;
-          }
-          next[p.rowIdx] = serverItem;
-          matchedCount++;
-        });
-        return next;
-      });
-      // 2026-07-28 · 사용자 요청 · ERP 매칭 결과 토스트 (매번 명확한 피드백)
-      const msg = matchedCount > 0
-        ? `✅ ${targetPage}번 · 매칭 ${matchedCount}건 (autoSyn 유지 ${autoSynPreservedCount}) · 저스코어 ${lowScoreCount}건`
-        : `⚠ ${targetPage}번 · 매칭 없음 · 요청 ${activePairs.length}건 모두 저스코어`;
-      setSaveConfirmedToast({ type: matchedCount > 0 ? "success" : "error", msg });
-      setTimeout(() => setSaveConfirmedToast(null), 3500);
-      // 2026-07-22 · 확정 완료 페이지 마킹 (버튼 색 변경용)
-      setConfirmedPages(prev => new Set([...prev, targetPage]));
-      // 2026-07-24 · 사용자 요청 "확정 누르면 공급사별로 잔고 저장"
-      //   이 페이지의 미수금(잔고) override 값을 supplier_balances DB 에 저장
-      const currentBal = pageBalanceOverride[targetPage] ?? pageSupplierBalances[targetPage];
-      if (currentBal != null && currentBal > 0) {
-        const supForBal = (rawSupplierByPage[targetPage] ?? structuredPages.find(p => p.page === targetPage)?.meta.supplier ?? "").trim();
-        const dateForBal = structuredPages.find(p => p.page === targetPage)?.meta.date ?? null;
-        if (supForBal) {
-          saveSupplierBalance(supForBal, currentBal, dateForBal);
-          console.log(`[확정→잔고저장] "${supForBal}" ${dateForBal ?? "날짜없음"} → ${currentBal}원`);
-        }
-      }
-    } finally {
-      setMatchingPage(prev => ({ ...prev, [targetPage]: false }));
-    }
-  }, [dispRows, dispHeaders, nameIdx, pageNums, rawSupplierByPage, ocrSuppIdx, structuredPages, globalSupplier, cellEdits, autoSynonymMatches, hiddenRawRows, permanentlyDeletedRawRows, isRowDbDeleted, pageBalanceOverride, pageSupplierBalances, saveSupplierBalance]);
-
-  // 단가 비어있는 행 · 상품명+공급사로 products DB 조회 → 사입단가(purchase_price) 자동 채움
-  //   사용자 원문: "단가가 정보가없는 경우 · 상품명과 공급사로 product db 에 정보를 찾아서 사입단가를 찾아"
-  //   호출: 자동정리(runColumnPipeline) 파이프라인 3단계 · 이미 채워진 단가는 skip
-  const fillMissingPricesFromDB = useCallback(async (pn: number) => {
-    const priIdx = dispHeaders.indexOf("단가");
-    if (priIdx < 0 || nameIdx < 0) return;
-    // 대상: 이 페이지 · 삭제 X · 단가 없음 · 품명 있음
-    const targets: { rowIdx: number; name: string; supplier: string }[] = [];
-    dispRows.forEach((row, ri) => {
-      if (pageNums[ri] !== pn) return;
-      if (permanentlyDeletedRawRows.has(ri) || hiddenRawRows.has(ri) || isRowDbDeleted(ri)) return;
-      // 현재 유효 단가: cellEdits 우선, 없으면 dispRows
-      const effective = cellEdits[ri]?.[priIdx] ?? row[priIdx];
-      const n = effective == null ? 0 : parseNumber(effective);
-      if (n > 0) return;  // 이미 단가 있음 · skip
-      const rawName = String(row[nameIdx] ?? "").trim();
-      if (!rawName || isNonProductText(rawName)) return;
-      const sup = rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? globalSupplier ?? "";
-      targets.push({ rowIdx: ri, name: rawName, supplier: sup });
-    });
-    if (targets.length === 0) return;
-    try {
-      const res = await fetch("/api/ocr-match", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ names: targets.map(t => t.name), suppliers: targets.map(t => t.supplier) }),
-      });
-      const data = await res.json();
-      const matches: MatchedItem[] = data.matches ?? [];
-      let filled = 0;
-      const dbCellKeys: string[] = [];
-      setCellEdits(prev => {
-        const next = { ...prev };
-        targets.forEach((t, ai) => {
-          const mp = matches[ai]?.matched?.masterPrice;
-          if (mp != null && Number.isFinite(mp) && mp > 0) {
-            next[t.rowIdx] = { ...(next[t.rowIdx] ?? {}), [priIdx]: mp };
-            dbCellKeys.push(`${t.rowIdx}-${priIdx}`);
-            filled++;
-          }
-        });
-        return next;
-      });
-      // DB 채운 셀 마킹 (렌더에서 "DB" 배지 표시)
-      if (dbCellKeys.length > 0) {
-        setDbFilledCells(prev => new Set([...prev, ...dbCellKeys]));
-      }
-      // matchItems 도 채워두면 2차보정 재사용
-      setMatchItems(prev => {
-        const arr = prev ? [...prev] : dispRows.map(() => ({ input: "", matched: null }));
-        targets.forEach((t, ai) => { if (matches[ai]) arr[t.rowIdx] = matches[ai]; });
-        return arr;
-      });
-      console.log(`[fillMissingPricesFromDB] page ${pn}: ${filled}/${targets.length} 행 사입단가 DB 채움`);
-    } catch (e: any) {
-      console.warn(`[fillMissingPricesFromDB] page ${pn}: DB 조회 실패`, e?.message);
-    }
-  }, [dispHeaders, nameIdx, dispRows, pageNums, permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted, cellEdits, rawSupplierByPage, structuredPages, globalSupplier]);
-
-  // 2026-07-22 · OCR 단가 vs DB 사입가 큰 차이 스왑 (사용자 원문: "금액 차이 너무 많이 나면 단가에서 제외 다른 후보 찾아")
-  //   현재 있는 matchItems 활용 · 새 API 호출 X · 50% 이상 차이면 DB 값으로 스왑
-  const verifyAndSwapPricesWithDB = useCallback((pn: number) => {
-    const priIdx = dispHeaders.indexOf("단가");
-    if (priIdx < 0 || !matchItems) return;
-    let swapped = 0;
-    const dbKeys: string[] = [];
-    setCellEdits(prev => {
-      const next = { ...prev };
-      dispRows.forEach((row, ri) => {
-        if (pageNums[ri] !== pn) return;
-        if (permanentlyDeletedRawRows.has(ri) || hiddenRawRows.has(ri) || isRowDbDeleted(ri)) return;
-        const dbPrice = matchItems[ri]?.matched?.masterPrice;
-        if (dbPrice == null || !Number.isFinite(dbPrice) || dbPrice <= 0) return;
-        const cur = parseNumber(next[ri]?.[priIdx] ?? row[priIdx]);
-        if (cur <= 0) return;
-        const diffRatio = Math.abs(cur - dbPrice) / Math.max(cur, 1);
-        if (diffRatio > 0.5) {  // 50% 이상 차이 → 스왑
-          next[ri] = { ...(next[ri] ?? {}), [priIdx]: dbPrice };
-          dbKeys.push(`${ri}-${priIdx}`);
-          swapped++;
-        }
-      });
-      return next;
-    });
-    if (dbKeys.length > 0) setDbFilledCells(prev => new Set([...prev, ...dbKeys]));
-    console.log(`[verifyAndSwapPricesWithDB] page ${pn}: ${swapped} 행 · OCR vs DB 50%+ 차이 → DB 값으로 스왑`);
-  }, [dispHeaders, matchItems, dispRows, pageNums, permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted]);
-
-  // 2026-07-28 · 사용자 요청 "매입 이력 DB 기반 · raw data 최근 매입 유사값 매칭"
-  //   흐름 · 상품명 확정된 행 (matched.code 있음) → 서버 매입이력 API 조회 →
-  //          raw dispRow 셀 숫자 후보들 중 · 예상 수량·단가와 가장 가까운 값 선택 → cellEdits
-  //   임계 · 수량 ±50% · 단가 ±30% · 이내 후보 중 가장 근접
-  //   방어 · 사용자가 이미 편집한 셀 (cellEdits) 은 건드리지 않음
-  const matchRawToPurchaseHistory = useCallback(async (pn: number) => {
-    const qtyIdx = dispHeaders.indexOf("수량");
-    const priIdx = dispHeaders.indexOf("단가");
-    if (qtyIdx < 0 || priIdx < 0 || !matchItems) return;
-    // 이 페이지 · matched.code 있는 행 수집
-    const targets: { ri: number; code: string; rawCells: (string | number | null)[] }[] = [];
-    dispRows.forEach((row, ri) => {
-      if (pageNums[ri] !== pn) return;
-      if (permanentlyDeletedRawRows.has(ri) || hiddenRawRows.has(ri) || isRowDbDeleted(ri)) return;
-      const code = matchItems[ri]?.matched?.code;
-      if (!code) return;
-      targets.push({ ri, code: String(code), rawCells: row });
-    });
-    if (targets.length === 0) return;
-    const codes = [...new Set(targets.map(t => t.code))];
-    try {
-      const res = await fetch(`/api/products/purchase-history?codes=${encodeURIComponent(codes.join(","))}&limit=5`);
-      if (!res.ok) throw new Error(`API ${res.status}`);
-      const data = await res.json();
-      const history: Record<string, any> = data.history ?? {};
-      // raw 숫자 후보 추출 · 셀 내부 공백 분리 · 사업자·전화·년도 배제
-      const extractCandidates = (cells: (string | number | null)[]): number[] => {
-        const tokens: string[] = [];
-        for (const c of cells) {
-          if (c == null) continue;
-          const s = String(c).trim();
-          if (!s) continue;
-          s.split(/[\s,]+/).forEach(t => { if (t) tokens.push(t); });
-        }
-        const nums: number[] = [];
-        for (const t of tokens) {
-          const cleaned = t.replace(/[^\d.-]/g, "");
-          if (!cleaned || cleaned.length >= 10) continue;  // 사업자번호·전화 배제
-          if (/^20[2-4]\d/.test(cleaned) && cleaned.length <= 8) continue;  // 년도 배제
-          const n = parseFloat(cleaned);
-          if (Number.isFinite(n) && n > 0) nums.push(n);
-        }
-        return nums;
-      };
-      const findNearest = (candidates: number[], expected: number, tolerance: number): number | null => {
-        if (expected <= 0 || candidates.length === 0) return null;
-        const within = candidates.filter(c => Math.abs(c - expected) / expected <= tolerance);
-        if (within.length === 0) return null;
-        return within.reduce((best, c) => Math.abs(c - expected) < Math.abs(best - expected) ? c : best, within[0]);
-      };
-      let matchedQty = 0, matchedPri = 0;
-      const dbKeys: string[] = [];
-      setCellEdits(prev => {
-        const next = { ...prev };
-        for (const t of targets) {
-          const h = history[t.code];
-          if (!h || h.count === 0) continue;
-          const expectedQty = h.latest_qty ?? h.avg_qty;
-          const expectedPri = h.latest_unit_price ?? h.avg_unit_price;
-          const rawCands = extractCandidates(t.rawCells);
-          // 수량 · 사용자 편집 없고 · 현재 값 없거나 매우 다름 → 후보 채움
-          if (expectedQty && (next[t.ri]?.[qtyIdx] === undefined)) {
-            const nearest = findNearest(rawCands, expectedQty, 0.5);
-            if (nearest != null) {
-              next[t.ri] = { ...(next[t.ri] ?? {}), [qtyIdx]: nearest };
-              dbKeys.push(`${t.ri}-${qtyIdx}`);
-              matchedQty++;
-            }
-          }
-          if (expectedPri && (next[t.ri]?.[priIdx] === undefined)) {
-            const nearest = findNearest(rawCands, expectedPri, 0.3);
-            if (nearest != null) {
-              next[t.ri] = { ...(next[t.ri] ?? {}), [priIdx]: nearest };
-              dbKeys.push(`${t.ri}-${priIdx}`);
-              matchedPri++;
-            }
-          }
-        }
-        return next;
-      });
-      if (dbKeys.length > 0) setDbFilledCells(prev => new Set([...prev, ...dbKeys]));
-      console.log(`[matchRawToPurchaseHistory] page ${pn}: ${targets.length}행 대상 · 수량 매칭 ${matchedQty} · 단가 매칭 ${matchedPri}`);
-      if (matchedQty + matchedPri > 0) {
-        setSaveConfirmedToast({ type: "success", msg: `📚 매입이력 매칭 · ${pn}번 · 수량 ${matchedQty}건 · 단가 ${matchedPri}건 자동 채움` });
-        setTimeout(() => setSaveConfirmedToast(null), 3000);
-      }
-    } catch (e: any) {
-      console.warn(`[matchRawToPurchaseHistory] page ${pn}: 실패`, e?.message);
-    }
-  }, [dispHeaders, matchItems, dispRows, pageNums, permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted]);
+  // 2026-07-28 · 리팩터 · matchRawToPurchaseHistory → usePurchaseHistoryMatch 훅으로 분리
+  const { matchRawToPurchaseHistory } = usePurchaseHistoryMatch({
+    dispHeaders, matchItems, dispRows, pageNums,
+    permanentlyDeletedRawRows, hiddenRawRows, isRowDbDeleted,
+    setCellEdits, setDbFilledCells, setSaveConfirmedToast,
+  });
 
   // 2026-07-23 · 사용자 요청 "품명 재추출 · 수량·금액 있는 행의 한글 · 공급사 DB 매칭되는 것으로"
   //   1. 현재 행의 수량·금액 있는지 확인 (없으면 스킵 · 경고)
@@ -3057,90 +2737,13 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
     }
   }, [reextractingName, dispHeaders, dispRows, cellEdits, pageNums, rawSupplierByPage, structuredPages, pages, globalSupplier, nameIdx, saveSynonym, nameCellCandidates, nameCellCycle]);
 
-  // 2026-07-22 · 컬럼별 자동정리 파이프라인 (매칭·DB 조회 전담)
-  //   1. 공급사·상품명 매칭 (handleMatchPage)
-  //   2. 빈 단가 DB 조회 (fillMissingPricesFromDB)
-  //   3. OCR vs DB 큰 차이 스왑 (verifyAndSwapPricesWithDB)
-  //   금액 = Q*P (자동)
-  const [runningPipeline, setRunningPipeline] = useState<Record<number, boolean>>({});
-  const runColumnPipeline = useCallback(async (pn: number) => {
-    if (runningPipeline[pn]) return;
-    setRunningPipeline(prev => ({ ...prev, [pn]: true }));
-    console.log(`\n╔══ [column-pipeline] page ${pn} 시작 ══`);
-    // 2026-07-28 · 사용자 요청 "자동정리 안하는 것 같음" · 시작·완료 토스트 표시
-    setSaveConfirmedToast({ type: "success", msg: `⏳ ${pn}번 명세서 자동정리 중...` });
-    // 이전 상태 snapshot (변경 여부 판단용)
-    const beforeCellEditsCount = Object.values(cellEdits).reduce((s, r) => s + Object.keys(r ?? {}).length, 0);
-    const beforeMatchCount = Object.keys(autoSynonymMatches).length;
-    try {
-      console.log(`║ 1단계: 상품명 매칭 (동의어사전 포함)`);
-      await handleMatchPage(pn);
-      setConfirmedPages(prev => { const n = new Set(prev); n.delete(pn); return n; });
-      console.log(`║ 2단계: 빈 단가 DB 조회`);
-      await fillMissingPricesFromDB(pn);
-      console.log(`║ 3단계: OCR vs DB 큰 차이 스왑`);
-      verifyAndSwapPricesWithDB(pn);
-      console.log(`║ 4단계: 매입이력 기반 raw 데이터 매칭 (수량·단가)`);
-      await matchRawToPurchaseHistory(pn);
-      console.log(`╚══ [column-pipeline] page ${pn} 완료\n`);
-      // 변경 개수 계산 · 토스트 갱신
-      setTimeout(() => {
-        setCellEdits(latestCellEdits => {
-          setAutoSynonymMatches(latestMatches => {
-            const afterCellEditsCount = Object.values(latestCellEdits).reduce((s, r) => s + Object.keys(r ?? {}).length, 0);
-            const afterMatchCount = Object.keys(latestMatches).length;
-            const cellDelta = afterCellEditsCount - beforeCellEditsCount;
-            const matchDelta = afterMatchCount - beforeMatchCount;
-            const changed = cellDelta + matchDelta;
-            const msg = changed > 0
-              ? `✅ ${pn}번 자동정리 완료 · 매칭 +${matchDelta}건 · 셀 +${cellDelta}건`
-              : `ℹ️ ${pn}번 자동정리 완료 · 변경 없음 (이미 매칭됨)`;
-            setSaveConfirmedToast({ type: "success", msg });
-            setTimeout(() => setSaveConfirmedToast(null), 3000);
-            return latestMatches;
-          });
-          return latestCellEdits;
-        });
-      }, 100);
-    } catch (e: any) {
-      console.error(`[column-pipeline] page ${pn} 예외:`, e?.message);
-      setSaveConfirmedToast({ type: "error", msg: `❌ 자동정리 실패: ${e?.message ?? "알 수 없는 오류"}` });
-      setTimeout(() => setSaveConfirmedToast(null), 4000);
-    } finally {
-      setRunningPipeline(prev => ({ ...prev, [pn]: false }));
-    }
-  }, [runningPipeline, handleMatchPage, fillMissingPricesFromDB, verifyAndSwapPricesWithDB, matchRawToPurchaseHistory, cellEdits, autoSynonymMatches]);
-
-  // 2026-07-28 · 사용자 요청 "자동정리를 각 페이지 로딩 후 자동 적용"
-  //   SSE 로 새 페이지 도착 → useEffect 감지 → 자동 파이프라인 1회 실행
-  //   guard · autoPipelineRanRef (페이지 당 1회) · confirmedPages (사용자 확정 시 skip)
-  //   수동 "🎯 자동정리" 버튼은 유지 · 재실행 원할 때 사용
-  const autoPipelineRanRef = useRef<Set<number>>(new Set());
-  const runColumnPipelineRef = useRef(runColumnPipeline);
-  useEffect(() => { runColumnPipelineRef.current = runColumnPipeline; }, [runColumnPipeline]);
-  useEffect(() => {
-    if (structuredPages.length === 0) {
-      autoPipelineRanRef.current = new Set();
-      return;
-    }
-    const toRun: number[] = [];
-    for (const p of structuredPages) {
-      if (autoPipelineRanRef.current.has(p.page)) continue;
-      if (confirmedPages.has(p.page)) continue;
-      const hasRows = pageNums.some(pn => pn === p.page);
-      if (!hasRows) continue;
-      autoPipelineRanRef.current.add(p.page);
-      toRun.push(p.page);
-    }
-    if (toRun.length === 0) return;
-    console.log(`[auto-pipeline] 자동 실행 대기 ${toRun.length}개 페이지 · pn:`, toRun);
-    (async () => {
-      for (const pn of toRun) {
-        await runColumnPipelineRef.current(pn);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [structuredPages, confirmedPages, pageNums]);
+  // 2026-07-28 · 리팩터 · runColumnPipeline + 자동파이프라인 → useAutoPipeline 훅으로 분리
+  const { runColumnPipeline, runningPipeline } = useAutoPipeline({
+    structuredPages, confirmedPages, pageNums,
+    cellEdits, autoSynonymMatches,
+    handleMatchPage, fillMissingPricesFromDB, verifyAndSwapPricesWithDB, matchRawToPurchaseHistory,
+    setConfirmedPages, setCellEdits, setAutoSynonymMatches, setSaveConfirmedToast,
+  });
 
   // 2026-07-28 · 사용자 요청 "이미지 갯수 ≠ 페이지 갯수 · 명세서 소계 0 → 재추출"
   //   조건 · (a) pageImages.length !== structuredPages.length OR (b) 페이지 소계 = 0
