@@ -3133,36 +3133,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                   </span>
                 )}
               </span>
-              {/* 2026-07-22 · 사용자 요청 삭제: 🔍 DB 필터 · ☑ 행 선택 · ↺ 원본 복원 배지들 제거 */}
-              {false && (() => {
-                const dbFilteredCount = rawRows.filter((_, ri) => isRowDbDeleted(ri)).length;
-                if (dbFilteredCount === 0) return null;
-                return (
-                  <span className="inline-flex items-center gap-1 text-[11px] bg-amber-100 text-amber-700 border border-amber-300 px-1.5 py-0.5 rounded font-bold">
-                    🔍 DB 필터 {dbFilteredCount}행 숨김
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!confirm(`DB에 저장된 삭제 서명 ${dbDeletedSignatures.size}개를 모두 초기화합니다.\n이 세션의 필터가 해제되고, 서버 DB 기록도 삭제됩니다.\n계속?`)) return;
-                        setDbDeletedSignatures(new Set());
-                        try {
-                          const r = await fetch("/api/ocr-deleted-rows");
-                          const data = await r.json();
-                          if (Array.isArray(data?.rows)) {
-                            await Promise.all(data.rows.map((row: any) =>
-                              fetch(`/api/ocr-deleted-rows/${row.id}`, { method: "DELETE" }).catch(() => {})
-                            ));
-                          }
-                        } catch { /* silent */ }
-                      }}
-                      className="text-white bg-amber-600 hover:bg-amber-700 rounded px-1 text-[10px]"
-                      title="DB 저장된 삭제 서명 전체 초기화 · 모든 숨겨진 행 복원"
-                    >
-                      리셋
-                    </button>
-                  </span>
-                );
-              })()}
+              {/* DB 필터·행선택·원본복원 배지 제거됨 (2026-07-22) */}
               {/* 2026-07-24 · 사용자 요청 "헤더 쪽 선택 재추출 버튼 제거 · 필요없음"
                   기존 · Alt+Click 셀 체크 → 선택 재추출 / 지우기 / 취소 버튼 표시
                   대체 · 각 셀에 재추출 버튼(🔄) 이미 있음 · 개별 재추출로 충분 */}
