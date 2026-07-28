@@ -187,8 +187,8 @@ export const ProductDetailMobileHeader: React.FC<{
         <X size={16} strokeWidth={2.4} />
       </button>
       <div className="flex-1 min-w-0">
-        <div className="text-[13px] font-black text-slate-800 truncate leading-tight">{product.name}</div>
-        <div className="text-[10px] font-mono text-slate-500 truncate">
+        <div className="text-[13px] font-black text-slate-800 break-keep whitespace-normal leading-tight">{product.name}</div>
+        <div className="text-[10px] tabular-nums text-slate-500 break-words whitespace-normal leading-tight">
           #{product.code} · {product.supplier ?? "-"}
         </div>
       </div>

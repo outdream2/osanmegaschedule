@@ -462,7 +462,7 @@ export const ProductManageView: React.FC<{ onProductClick: (p: any) => void }> =
         <div className="flex items-center gap-2 flex-wrap">
           <Package size={14} className="text-indigo-600" />
           <span className="text-[11px] font-black text-slate-600">상품관리</span>
-          <span className="text-[10px] font-mono text-slate-400">
+          <span className="text-[10px] tabular-nums text-slate-400">
             ({loading ? <><LoaderIcon size={10} className="inline animate-spin mr-1" />로딩...</> : `${filtered.length.toLocaleString()} / ${allProducts.length.toLocaleString()}개`})
           </span>
           <div className="relative min-w-[160px] flex-1 max-w-sm">
@@ -530,11 +530,11 @@ export const ProductManageView: React.FC<{ onProductClick: (p: any) => void }> =
                   {p.hidden === true && <span className="ml-1 text-[9px] text-amber-600 font-black">숨김</span>}
                   {p.supplier && <div className="text-[9px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
                 </td>
-                <td className="px-0.5 py-1.5 font-mono text-slate-500 text-[10px] align-top">{p.product_code ?? p.code ?? "-"}</td>
-                <td className="px-0.5 py-1.5 text-slate-500 text-[10px] truncate max-w-[140px] align-top" title={p.supplier ?? undefined}>{p.supplier ?? "-"}</td>
-                <td className="px-0.5 py-1.5 text-right font-mono font-black text-amber-700 bg-amber-50/40 align-top">{p.current_stock != null ? p.current_stock.toLocaleString() : "-"}</td>
-                <td className="px-0.5 py-1.5 text-right font-mono text-slate-600 bg-slate-50/40 align-top">{p.optimal_stock != null ? p.optimal_stock.toLocaleString() : "-"}</td>
-                <td className="px-0.5 py-1.5 text-right font-mono text-orange-600 font-bold bg-orange-50/40 align-top">{p.sale_price != null && p.sale_price > 0 ? `₩${p.sale_price.toLocaleString()}` : "-"}</td>
+                <td className="px-0.5 py-1.5 tabular-nums text-slate-500 text-[11px] align-top">{p.product_code ?? p.code ?? "-"}</td>
+                <td className="px-0.5 py-1.5 text-slate-500 text-[11px] break-words whitespace-normal leading-tight align-top">{p.supplier ?? "-"}</td>
+                <td className="px-0.5 py-1.5 text-right tabular-nums font-black text-amber-700 bg-amber-50/40 align-top">{p.current_stock != null ? p.current_stock.toLocaleString() : "-"}</td>
+                <td className="px-0.5 py-1.5 text-right tabular-nums text-slate-600 bg-slate-50/40 align-top">{p.optimal_stock != null ? p.optimal_stock.toLocaleString() : "-"}</td>
+                <td className="px-0.5 py-1.5 text-right tabular-nums text-orange-600 font-bold bg-orange-50/40 align-top">{p.sale_price != null && p.sale_price > 0 ? `₩${p.sale_price.toLocaleString()}` : "-"}</td>
               </tr>
             ))}
           </tbody>
@@ -679,11 +679,11 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
       <div className="flex items-center justify-between px-3 py-2 border-b border-slate-200 bg-slate-50/50 shrink-0">
         <div className="flex items-center gap-1.5">
           <TrendingUp size={14} className="text-emerald-600" />
-          <span className="text-[11px] font-black text-slate-600">
-            매입상세<span className="text-[10px] font-semibold text-slate-400 ml-1">(기간별)</span>
+          <span className="text-[13px] font-black text-slate-700">
+            매입상세<span className="text-[11px] font-semibold text-slate-400 ml-1">(기간별)</span>
           </span>
           {periodBadge && (
-            <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5">
+            <span className="text-[10px] tabular-nums text-emerald-600 bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5">
               {periodBadge}
             </span>
           )}
@@ -694,7 +694,7 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
             </span>
           )}
         </div>
-        <span className="text-[10px] font-mono text-slate-400">{filtered.length.toLocaleString()}건</span>
+        <span className="text-[10px] tabular-nums text-slate-400">{filtered.length.toLocaleString()}건</span>
       </div>
 
       {/* 필터 바 · 재고리스트 표준 패딩 px-3 py-2 */}
@@ -764,7 +764,7 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
       </div>
 
       {/* 힌트 · 재고리스트 표준 스타일 */}
-      <p className="text-[10px] text-slate-500 font-semibold leading-tight px-3 py-1.5 border-b border-slate-200 shrink-0">
+      <p className="text-[11px] text-slate-500 font-semibold leading-tight px-3 py-1.5 border-b border-slate-200 shrink-0">
         상품명 클릭 → 상세 정보 + 재고 상황 · 매입 숫자 클릭 → 상세 매입현황
       </p>
       {/* 2026-07-20: 로딩 UI 통일 · 판매추이 공급사별판매 패턴 */}
@@ -1023,7 +1023,7 @@ const InvoiceLookupModal: React.FC<{ purchaseDate: string; supplier: string; hig
             <FileText size={20} className="text-violet-600 shrink-0" />
             <div className="min-w-0">
               <div className="text-base sm:text-lg font-black text-slate-800 truncate">거래명세서 조회</div>
-              <div className="text-[11px] text-slate-500 font-mono">
+              <div className="text-[11px] text-slate-500 tabular-nums">
                 {purchaseDate} · <span className="font-bold">{supplier}</span>
                 {supplierFallback && <span className="ml-2 text-amber-600 font-black">· 일자 매칭 없음 · 공급사 전체 이력 표시</span>}
               </div>
@@ -1050,7 +1050,7 @@ const InvoiceLookupModal: React.FC<{ purchaseDate: string; supplier: string; hig
             <>
               <div className="mb-2 flex items-center justify-between text-[11px]">
                 <span className="text-slate-600 font-black">{items.length}건</span>
-                <span className="text-slate-500 font-mono">수량 {totalQty.toLocaleString()} · 금액 <span className="text-violet-700 font-black">{totalAmount.toLocaleString()}원</span></span>
+                <span className="text-slate-500 tabular-nums">수량 {totalQty.toLocaleString()} · 금액 <span className="text-violet-700 font-black">{totalAmount.toLocaleString()}원</span></span>
               </div>
               <div className="rounded-lg border border-slate-200 overflow-auto">
                 <table className="w-full text-xs min-w-[560px]">
@@ -1145,7 +1145,7 @@ export const ProductPurchaseHistoryModal: React.FC<{ productCode: string; produc
             <TrendingUp size={20} className="text-emerald-600 shrink-0" />
             <div className="min-w-0">
               <div className="text-base sm:text-lg font-black text-slate-800 break-words leading-tight">{productName}</div>
-              <div className="text-[11px] text-slate-500 font-mono">
+              <div className="text-[11px] text-slate-500 tabular-nums">
                 코드 <span className="font-black">{productCode}</span>
                 <span className="ml-2 text-slate-400">· 매입 이력 조회</span>
               </div>
@@ -2698,7 +2698,7 @@ export const StockManagePage: React.FC = () => {
                       </div>
                       <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
                     </div>
-                    <p className="text-[12px] text-slate-500 font-semibold leading-tight">💡 공급사 행을 클릭하면 오른쪽 패널에 해당 공급사의 상품 리스트가 나타납니다 (판매출고계 내림차순)</p>
+                    <p className="text-[12px] text-slate-500 font-semibold leading-tight">공급사 행을 클릭하면 오른쪽 패널에 해당 공급사의 상품 리스트가 나타납니다 (판매출고계 내림차순)</p>
                     {/* 2026-07-28 · 사용자 요청 · 정렬 헤더 (재고자산·판매·매입·상품수·공급사명) */}
                     <div className="flex items-center gap-1.5 flex-wrap text-[12px]">
                       <span className="text-slate-500 font-black">정렬</span>
@@ -2827,8 +2827,8 @@ export const StockManagePage: React.FC = () => {
                           <XIcon size={16} strokeWidth={2.4} />
                         </button>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[13px] font-black text-slate-800 truncate leading-tight">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</div>
-                          <div className="text-[10px] font-mono text-slate-500 truncate">{supplierSelectedObj.supplier_code ? `#${supplierSelectedObj.supplier_code}` : ""} · 재고자산 {fmtWon(supplierSelectedObj.totalStockAmount)}</div>
+                          <div className="text-[13px] font-black text-slate-800 break-keep whitespace-normal leading-tight">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</div>
+                          <div className="text-[10px] tabular-nums text-slate-500 break-words whitespace-normal leading-tight">{supplierSelectedObj.supplier_code ? `#${supplierSelectedObj.supplier_code}` : ""} · 재고자산 {fmtWon(supplierSelectedObj.totalStockAmount)}</div>
                         </div>
                       </div>
                     </div>
@@ -2844,7 +2844,7 @@ export const StockManagePage: React.FC = () => {
                       <div className="flex items-center gap-2 flex-wrap">
                         <Building2 size={16} className="text-sky-600 shrink-0" />
                         <span className="text-base font-black text-slate-800 break-keep">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</span>
-                        {supplierSelectedObj.supplier_code && <span className="text-[10px] font-mono text-slate-500 bg-slate-100 rounded px-1.5 py-0.5">#{supplierSelectedObj.supplier_code}</span>}
+                        {supplierSelectedObj.supplier_code && <span className="text-[10px] tabular-nums text-slate-500 bg-slate-100 rounded px-1.5 py-0.5">#{supplierSelectedObj.supplier_code}</span>}
                       </div>
                       {(() => {
                         // 2026-07-23 · supplier_balances 최신값 (재고자산 앞에 표시)
@@ -3015,8 +3015,8 @@ export const StockManagePage: React.FC = () => {
                           <XIcon size={16} strokeWidth={2.4} />
                         </button>
                         <div className="flex-1 min-w-0">
-                          <div className="text-[13px] font-black text-slate-800 truncate leading-tight">{purchaseSelectedProduct.name}</div>
-                          <div className="text-[10px] font-mono text-slate-500 truncate">#{purchaseSelectedProduct.code} · {purchaseSelectedProduct.supplier ?? "-"}</div>
+                          <div className="text-[13px] font-black text-slate-800 break-keep whitespace-normal leading-tight">{purchaseSelectedProduct.name}</div>
+                          <div className="text-[10px] tabular-nums text-slate-500 break-words whitespace-normal leading-tight">#{purchaseSelectedProduct.code} · {purchaseSelectedProduct.supplier ?? "-"}</div>
                         </div>
                       </div>
                     </div>
@@ -3054,11 +3054,11 @@ export const StockManagePage: React.FC = () => {
                   <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-slate-200 bg-slate-50/50">
                     <div className="flex items-center gap-1.5">
                       <AlertTriangle size={14} className="text-rose-500" />
-                      <span className="text-[11px] font-black text-slate-600">적정재고 이하</span>
-                      <span className="text-[10px] text-slate-400 font-semibold">현재고 &lt; 적정재고</span>
-                      <span className="text-[10px] font-mono text-slate-400">({lowStock.length}개)</span>
+                      <span className="text-[13px] font-black text-slate-700">적정재고 이하</span>
+                      <span className="text-[11px] text-slate-400 font-semibold">현재고 &lt; 적정재고</span>
+                      <span className="text-[11px] tabular-nums text-slate-400">({lowStock.length}개)</span>
                     </div>
-                    <p className="text-[10px] text-slate-500 font-semibold leading-tight">상품명 클릭 → 상세 정보 · 실재고 스캔 현황</p>
+                    <p className="text-[11px] text-slate-500 font-semibold leading-tight">상품명 클릭 → 상세 정보 · 실재고 스캔 현황</p>
                   </div>
                   {!lowStockCollapsed && (
                     <div className="flex-1 overflow-y-auto relative">
@@ -3238,11 +3238,11 @@ export const StockManagePage: React.FC = () => {
                     <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-slate-200 bg-slate-50/50">
                       <div className="flex items-center gap-1.5">
                         <AlertTriangle size={14} className="text-purple-500" />
-                        <span className="text-[11px] font-black text-slate-600">실재고 ↔ ERP 차이</span>
-                        <span className="text-[10px] text-slate-400 font-semibold">창고+매장 ≠ 현재고</span>
-                        <span className="text-[10px] font-mono text-slate-400">({diffList.length}개)</span>
+                        <span className="text-[13px] font-black text-slate-700">실재고 ↔ ERP 차이</span>
+                        <span className="text-[11px] text-slate-400 font-semibold">창고+매장 ≠ 현재고</span>
+                        <span className="text-[11px] tabular-nums text-slate-400">({diffList.length}개)</span>
                       </div>
-                      <p className="text-[10px] text-slate-500 font-semibold leading-tight">상품명 클릭 → 상세 정보 · 실재고 스캔 현황</p>
+                      <p className="text-[11px] text-slate-500 font-semibold leading-tight">상품명 클릭 → 상세 정보 · 실재고 스캔 현황</p>
                     </div>
                     {!stockDiffCollapsed && (
                       <div className="flex-1 overflow-y-auto relative">
@@ -3495,7 +3495,7 @@ export const StockManagePage: React.FC = () => {
                 {/* 리스트 · 재고리스트 · 10개 넘으면 세로 스크롤 */}
                 <div className="px-1 pt-2 pb-1 flex items-center gap-2 border-t border-slate-100">
                   <span className="text-[12px] font-black text-slate-700">{topTab === "sale" ? "재고리스트" : "매입리스트"}</span>
-                  <span className="text-[11px] font-mono text-slate-400">
+                  <span className="text-[11px] tabular-nums text-slate-400">
                     ({topTab === "sale" ? filteredFlow.length : topProducts.length}건)
                   </span>
                 </div>
@@ -3794,11 +3794,11 @@ export const StockManagePage: React.FC = () => {
                             <tr key={`top-${p.product_name}-${i}`} className="hover:bg-emerald-50/30 transition">
                               <td className="px-1 py-1.5 text-[10px] font-black text-emerald-600">{i + 1}</td>
                               <td className="px-1 py-1.5">
-                                <div className="font-bold text-slate-700 truncate max-w-[220px]" title={p.product_name}>{p.product_name}</div>
-                                {p.supplier && <div className="text-[9px] text-slate-400">{p.supplier}</div>}
+                                <div className="font-bold text-slate-700 break-words whitespace-normal leading-tight">{p.product_name}</div>
+                                {p.supplier && <div className="text-[10px] text-slate-400 break-words whitespace-normal leading-tight">{p.supplier}</div>}
                               </td>
-                              <td className="text-right px-1 py-1.5 font-mono text-slate-600">{fmt(p.totalQty)}</td>
-                              <td className="text-right px-1 py-1.5 font-mono font-bold text-slate-800">{fmtWon(p.totalAmount)}</td>
+                              <td className="text-right px-1 py-1.5 tabular-nums text-slate-600">{fmt(p.totalQty)}</td>
+                              <td className="text-right px-1 py-1.5 tabular-nums font-bold text-slate-800">{fmtWon(p.totalAmount)}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -3868,7 +3868,7 @@ export const StockManagePage: React.FC = () => {
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-base font-black text-slate-800 break-keep">{supplierModal.supplier}</span>
                     {supplierModal.code && (
-                      <span className="text-[10px] font-mono text-slate-600 bg-white border border-slate-200 rounded-full px-2 py-0.5 shrink-0">
+                      <span className="text-[10px] tabular-nums text-slate-600 bg-white border border-slate-200 rounded-full px-2 py-0.5 shrink-0">
                         #{supplierModal.code}
                       </span>
                     )}
@@ -3876,7 +3876,7 @@ export const StockManagePage: React.FC = () => {
                   <div className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
                     <span className="font-bold text-orange-600">판매출고계</span>
                     <span>내림차순</span>
-                    {flowSnapshot && <span className="font-mono text-slate-400">· {flowSnapshot}</span>}
+                    {flowSnapshot && <span className="tabular-nums text-slate-400">· {flowSnapshot}</span>}
                   </div>
                 </div>
               </div>
@@ -4058,8 +4058,8 @@ export const StockManagePage: React.FC = () => {
                   <TrendingUp size={20} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-base font-black text-slate-800 truncate">{infoModal.name}</div>
-                  <div className="text-[11px] font-mono text-slate-500 mt-0.5 flex items-center gap-1.5">
+                  <div className="text-base font-black text-slate-800 break-words leading-tight">{infoModal.name}</div>
+                  <div className="text-[11px] tabular-nums text-slate-500 mt-0.5 flex items-center gap-1.5 flex-wrap">
                     <span>#{infoModal.code}</span>
                     {infoModalData?.product?.supplier && (
                       <>· <span className="text-slate-600">{infoModalData.product.supplier}</span></>
@@ -4240,8 +4240,8 @@ export const StockManagePage: React.FC = () => {
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
                           <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">전산배치구역</span><span className="text-sm font-bold text-slate-800 break-keep">{prod.spec ?? "-"}</span></div>
-                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">공급처</span><span className="text-sm font-bold text-slate-800 truncate block">{prod.supplier ?? "-"}</span></div>
-                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">실제배치구역</span><span className="text-sm font-bold text-slate-800 truncate block">{prod.real_map ?? prod.display_location ?? "-"}</span></div>
+                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">공급처</span><span className="text-sm font-bold text-slate-800 break-words whitespace-normal leading-tight">{prod.supplier ?? "-"}</span></div>
+                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">실제배치구역</span><span className="text-sm font-bold text-slate-800 break-words whitespace-normal leading-tight">{prod.real_map ?? prod.display_location ?? "-"}</span></div>
                           <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">판매상태</span><span className="text-sm font-bold text-slate-800">{prod.sale_status ?? "-"}</span></div>
                           <div>
                             <span className="text-xs text-slate-500 font-semibold block mb-0.5">적정재고</span>
@@ -4288,13 +4288,13 @@ export const StockManagePage: React.FC = () => {
                                 className="inline-flex items-center gap-1.5 min-h-[36px] px-2 py-1 rounded-md border border-transparent hover:border-indigo-300 hover:bg-indigo-50 active:bg-indigo-100 transition cursor-pointer"
                                 title="탭하여 적정재고 편집"
                               >
-                                <span className={`text-base font-mono font-black ${optimalStock > 0 ? "text-slate-700" : "text-slate-400"}`}>{optimalStock > 0 ? fmt(optimalStock) : "입력"}</span>
+                                <span className={`text-base tabular-nums font-black ${optimalStock > 0 ? "text-slate-700" : "text-slate-400"}`}>{optimalStock > 0 ? fmt(optimalStock) : "입력"}</span>
                                 <Pencil size={12} className="text-indigo-500" />
                               </button>
                             )}
                           </div>
-                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">최소발주</span><span className="text-base font-mono font-black text-sky-700">{prod.min_order ?? "-"}</span></div>
-                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">필요재고</span><span className="text-base font-mono font-black text-rose-600">{optimalStock > 0 && currentStock < optimalStock ? `+${fmt(optimalStock - currentStock)}` : "-"}</span></div>
+                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">최소발주</span><span className="text-base tabular-nums font-black text-sky-700">{prod.min_order ?? "-"}</span></div>
+                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">필요재고</span><span className="text-base tabular-nums font-black text-rose-600">{optimalStock > 0 && currentStock < optimalStock ? `+${fmt(optimalStock - currentStock)}` : "-"}</span></div>
                           <div>
                             <span className="text-xs text-slate-500 font-semibold block mb-0.5">유통기한</span>
                             <span className={`text-sm font-mono font-bold ${daysToExpiry !== null && daysToExpiry < 30 ? "text-red-600" : "text-slate-700"}`}>
@@ -4322,10 +4322,10 @@ export const StockManagePage: React.FC = () => {
                           <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-300 rounded-full px-2 py-0.5">ERP</span>
                         </div>
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
-                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">매입가</span><span className="text-base font-mono font-black text-slate-800">{purchasePrice > 0 ? fmtWon(purchasePrice) : "-"}</span></div>
-                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">판매가</span><span className="text-base font-mono font-black text-slate-800">{salePrice > 0 ? fmtWon(salePrice) : "-"}</span></div>
-                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">이익률</span><span className="text-base font-mono font-black text-emerald-700">{profitRate != null ? `${profitRate}%` : "-"}</span></div>
-                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">개당 이익</span><span className="text-base font-mono font-black text-emerald-700">{(salePrice > 0 && purchasePrice > 0) ? fmtWon(salePrice - purchasePrice) : "-"}</span></div>
+                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">매입가</span><span className="text-base tabular-nums font-black text-slate-800">{purchasePrice > 0 ? fmtWon(purchasePrice) : "-"}</span></div>
+                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">판매가</span><span className="text-base tabular-nums font-black text-slate-800">{salePrice > 0 ? fmtWon(salePrice) : "-"}</span></div>
+                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">이익률</span><span className="text-base tabular-nums font-black text-emerald-700">{profitRate != null ? `${profitRate}%` : "-"}</span></div>
+                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">개당 이익</span><span className="text-base tabular-nums font-black text-emerald-700">{(salePrice > 0 && purchasePrice > 0) ? fmtWon(salePrice - purchasePrice) : "-"}</span></div>
                         </div>
                       </div>
 
@@ -4348,9 +4348,9 @@ export const StockManagePage: React.FC = () => {
                                 const h = (v / maxSale) * 100;
                                 return (
                                   <div key={`bar-${i}`} className="flex-1 flex flex-col items-center gap-1" title={`${r.snapshot_date}: ${fmt(v)}개`}>
-                                    <div className="text-[11px] font-mono text-orange-600 font-black">{v}</div>
+                                    <div className="text-[11px] tabular-nums text-orange-600 font-black">{v}</div>
                                     <div className="w-full bg-gradient-to-t from-orange-500 to-orange-300 rounded-t" style={{ height: `${h}%`, minHeight: "3px" }} />
-                                    <div className="text-[10px] text-slate-500 font-mono">{String(r.snapshot_date).slice(5)}</div>
+                                    <div className="text-[10px] text-slate-500 tabular-nums">{String(r.snapshot_date).slice(5)}</div>
                                     {r.period_type && (
                                       <div className="text-[10px] text-slate-600 font-bold">
                                         {r.period_type === "early" ? "초순" : r.period_type === "mid" ? "중순" : r.period_type === "late" ? "하순" : r.period_type}
@@ -4372,12 +4372,12 @@ export const StockManagePage: React.FC = () => {
                             <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-300 rounded-full px-2 py-0.5">ERP 스냅샷</span>
                           </div>
                           <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">누적 판매</span><span className="text-base font-mono font-black text-orange-700">{fmt(totalSale)}개</span></div>
-                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">누적 매입</span><span className="text-base font-mono font-black text-emerald-700">{fmt(totalPurchase)}개</span></div>
-                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">누적 폐기</span><span className={`text-base font-mono font-black ${totalDisposal > 0 ? "text-rose-700" : "text-slate-500"}`}>{fmt(totalDisposal)}개</span></div>
-                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">사내소비</span><span className="text-base font-mono font-black text-slate-700">{fmt(totalInternal)}개</span></div>
-                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">평균 종료재고</span><span className="text-base font-mono font-bold text-slate-700">{avgStock.toFixed(1)}개</span></div>
-                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">스냅샷 수</span><span className="text-base font-mono font-bold text-slate-700">{history.length}회</span></div>
+                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">누적 판매</span><span className="text-base tabular-nums font-black text-orange-700">{fmt(totalSale)}개</span></div>
+                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">누적 매입</span><span className="text-base tabular-nums font-black text-emerald-700">{fmt(totalPurchase)}개</span></div>
+                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">누적 폐기</span><span className={`text-base tabular-nums font-black ${totalDisposal > 0 ? "text-rose-700" : "text-slate-500"}`}>{fmt(totalDisposal)}개</span></div>
+                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">사내소비</span><span className="text-base tabular-nums font-black text-slate-700">{fmt(totalInternal)}개</span></div>
+                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">평균 종료재고</span><span className="text-base tabular-nums font-bold text-slate-700">{avgStock.toFixed(1)}개</span></div>
+                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">스냅샷 수</span><span className="text-base tabular-nums font-bold text-slate-700">{history.length}회</span></div>
                             <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">최초 스냅샷</span><span className="text-sm font-mono text-slate-600">{oldestSnap?.snapshot_date ?? "-"}</span></div>
                             <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">최근 스냅샷</span><span className="text-sm font-mono text-slate-600">{latestSnap?.snapshot_date ?? "-"}</span></div>
                           </div>
@@ -4482,7 +4482,7 @@ export const StockManagePage: React.FC = () => {
                                     <td className="text-right px-2 py-1.5 tabular-nums font-bold text-sm text-cyan-700">{c.warehouse_stock != null ? fmt(Number(c.warehouse_stock)) : "-"}</td>
                                     <td className="text-right px-2 py-1.5 tabular-nums font-bold text-sm text-violet-700">{c.store_stock != null ? fmt(Number(c.store_stock)) : "-"}</td>
                                     <td className="text-right px-2 py-1 tabular-nums text-xs text-slate-600">{c.system_stock != null ? fmt(Number(c.system_stock)) : "-"}</td>
-                                    <td className="px-2 py-1.5 text-xs text-slate-700 truncate max-w-[120px]">{c.checked_by ?? "-"}</td>
+                                    <td className="px-2 py-1.5 text-xs text-slate-700 break-words whitespace-normal">{c.checked_by ?? "-"}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -4523,8 +4523,8 @@ export const StockManagePage: React.FC = () => {
                   <Package size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <div className="text-base font-black text-slate-800 truncate">{scanProductModal.name}</div>
-                  <div className="text-[11px] font-mono text-slate-500 mt-0.5">#{scanProductModal.code}</div>
+                  <div className="text-base font-black text-slate-800 break-words leading-tight">{scanProductModal.name}</div>
+                  <div className="text-[11px] tabular-nums text-slate-500 mt-0.5">#{scanProductModal.code}</div>
                 </div>
               </div>
               <button
@@ -4608,8 +4608,8 @@ export const StockManagePage: React.FC = () => {
                     return (
                       <li key={`hidden-${code}`} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50/30 transition">
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-black text-slate-800 truncate" title={p.product_name}>{p.product_name}</div>
-                          <div className="text-[10px] font-mono text-slate-400 truncate">
+                          <div className="text-sm font-black text-slate-800 break-words leading-tight">{p.product_name}</div>
+                          <div className="text-[10px] tabular-nums text-slate-400 break-words whitespace-normal leading-tight">
                             #{code}
                             {p.supplier ? ` · ${p.supplier}` : ""}
                             {p.real_map ? ` · ${p.real_map}` : ""}

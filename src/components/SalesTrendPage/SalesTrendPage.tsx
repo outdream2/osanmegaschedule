@@ -2218,11 +2218,11 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
         <input type="number" value={minLoss} onChange={e => setMinLoss(e.target.value)}
           placeholder="최소"
           title="음수 허용 (예: -5 → 재고 남는 상품도 표시)"
-          className="w-16 border border-slate-200 rounded-lg px-1.5 py-1 font-mono text-right focus:outline-none focus:border-rose-400" />
+          className="w-16 border border-slate-200 rounded-lg px-1.5 py-1 tabular-nums text-right focus:outline-none focus:border-rose-400" />
         <span className="text-slate-400">~</span>
         <input type="number" value={maxLoss} onChange={e => setMaxLoss(e.target.value)}
           placeholder="최대"
-          className="w-14 border border-slate-200 rounded-lg px-1.5 py-1 font-mono text-right focus:outline-none focus:border-rose-400" />
+          className="w-14 border border-slate-200 rounded-lg px-1.5 py-1 tabular-nums text-right focus:outline-none focus:border-rose-400" />
         <span className="text-slate-400">개</span>
       </div>
       {loading && filtered.length > 0 && (
@@ -2288,7 +2288,7 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
                       </button>
                       {r.supplier && <div className="text-[11px] text-slate-400 break-words whitespace-normal">{r.supplier}</div>}
                     </td>
-                    <td className="px-0.5 py-1.5 text-slate-500 text-[11px] hidden sm:table-cell truncate max-w-[160px] align-top">{r.supplier}</td>
+                    <td className="px-0.5 py-1.5 text-slate-500 text-[11px] hidden sm:table-cell break-words whitespace-normal leading-tight align-top">{r.supplier}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-slate-800 align-top">{fmt(open)}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-orange-700 font-black bg-orange-50/40 align-top">{fmt(sale)}</td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums text-amber-800 font-black bg-amber-50/40 align-top">{fmt(close)}</td>

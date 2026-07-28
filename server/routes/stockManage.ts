@@ -775,7 +775,9 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
       //   공급사재고 리스트가 사용하는 매입주기 로직 재사용
       //   추가 · dates 배열 저장 (사용자 요청 · 최근·그 전 매입일 사이 판매량 계산용)
       const codesInResult = Array.from(byCode.keys());
-      const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; count: number; totalQty: number; totalAmount: number; lastAmount: number; dates: string[] }>();
+      // 2026-07-29 · 매입주기 계산 정확화 · dateSet 으로 distinct dates 관리 (같은 날짜 여러 row 는 1회로)
+      // 이전 로직: cur.count++ 로 row 수 카운트 → 같은 날짜 중복 매입 시 count>=2 여도 firstPD===lastPD 여서 클라에서 null 반환
+      const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; count: number; totalQty: number; totalAmount: number; lastAmount: number; dates: string[]; dateSet: Set<string> }>();
       try {
         const CHUNK = 500;
         for (let i = 0; i < codesInResult.length; i += CHUNK) {
@@ -788,20 +790,24 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           for (const r of pdRows ?? []) {
             const code = String((r as any).product_code ?? "").trim();
             if (!code) continue;
-            const cur = purchaseInfoMap.get(code) ?? { lastDate: null, firstDate: null, count: 0, totalQty: 0, totalAmount: 0, lastAmount: 0, dates: [] };
+            const cur = purchaseInfoMap.get(code) ?? { lastDate: null, firstDate: null, count: 0, totalQty: 0, totalAmount: 0, lastAmount: 0, dates: [], dateSet: new Set<string>() };
             const d = String((r as any).purchase_date ?? "");
             const amt = Number((r as any).total ?? (r as any).amount ?? 0) || 0;
             const qty = Number((r as any).quantity ?? 0) || 0;
-            if (!cur.lastDate || d > cur.lastDate) { cur.lastDate = d; cur.lastAmount = amt; }
-            if (!cur.firstDate || d < cur.firstDate) { cur.firstDate = d; }
+            if (d && !cur.lastDate) { cur.lastDate = d; cur.lastAmount = amt; }
+            else if (d && d > (cur.lastDate ?? "")) { cur.lastDate = d; cur.lastAmount = amt; }
+            if (d && (!cur.firstDate || d < cur.firstDate)) { cur.firstDate = d; }
             cur.totalQty += qty;
             cur.totalAmount += amt;
-            cur.count++;
-            if (d) cur.dates.push(d);
+            if (d) { cur.dates.push(d); cur.dateSet.add(d); }
             purchaseInfoMap.set(code, cur);
           }
         }
-        console.log(`[top-sales/months] purchase_details 조인: ${purchaseInfoMap.size}개 상품`);
+        // count = distinct date 수 (매입주기 계산에 사용) · row 수가 아님
+        for (const info of purchaseInfoMap.values()) {
+          info.count = info.dateSet.size;
+        }
+        console.log(`[top-sales/months] purchase_details 조인: ${purchaseInfoMap.size}개 상품 · distinct date 카운트`);
       } catch (e: any) {
         console.warn(`[top-sales/months] purchase_details 조인 실패:`, e?.message);
       }
