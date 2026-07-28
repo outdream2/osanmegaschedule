@@ -229,7 +229,7 @@ export const InventorySalesPage: React.FC = () => {
         m.set(supp, {
           supplier: supp, products: [], total_amount: 0, stock_value: 0,
           sku_count: 0, total_stock_qty: 0, total_sale_qty: 0,
-          balance: balMap.get(supp) ?? 0,
+          balance: Number(balMap.get(supp) ?? 0),
         });
       }
       const g = m.get(supp)!;

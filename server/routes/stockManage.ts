@@ -768,8 +768,9 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
       }
       // 2026-07-28 · 사용자 요청 "매입주기 이상 · 공급사재고와 동일하게" · purchase_details 조인 (기간 무관 · 상품별 총 이력 기준)
       //   공급사재고 리스트가 사용하는 매입주기 로직 재사용
+      //   추가 · dates 배열 저장 (사용자 요청 · 최근·그 전 매입일 사이 판매량 계산용)
       const codesInResult = Array.from(byCode.keys());
-      const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; count: number; totalQty: number; totalAmount: number; lastAmount: number }>();
+      const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; count: number; totalQty: number; totalAmount: number; lastAmount: number; dates: string[] }>();
       try {
         const CHUNK = 500;
         for (let i = 0; i < codesInResult.length; i += CHUNK) {
@@ -782,7 +783,7 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           for (const r of pdRows ?? []) {
             const code = String((r as any).product_code ?? "").trim();
             if (!code) continue;
-            const cur = purchaseInfoMap.get(code) ?? { lastDate: null, firstDate: null, count: 0, totalQty: 0, totalAmount: 0, lastAmount: 0 };
+            const cur = purchaseInfoMap.get(code) ?? { lastDate: null, firstDate: null, count: 0, totalQty: 0, totalAmount: 0, lastAmount: 0, dates: [] };
             const d = String((r as any).purchase_date ?? "");
             const amt = Number((r as any).total ?? (r as any).amount ?? 0) || 0;
             const qty = Number((r as any).quantity ?? 0) || 0;
@@ -791,6 +792,7 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
             cur.totalQty += qty;
             cur.totalAmount += amt;
             cur.count++;
+            if (d) cur.dates.push(d);
             purchaseInfoMap.set(code, cur);
           }
         }
@@ -798,7 +800,22 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
       } catch (e: any) {
         console.warn(`[top-sales/months] purchase_details 조인 실패:`, e?.message);
       }
-      // 각 상품 · purchase_details 값으로 purchase_count·first_purchase_date·last_purchase_date 덮어씀 (공급사재고와 동일)
+      // 2026-07-28 · 사용자 요청 · 회전율 = 최근매입일 ~ 그 전매입일 사이 판매량
+      //   각 상품 · 최근 2건 매입일 사이 (배타적) 의 stock_history sale_qty 합산 → sale_qty_cycle
+      //   전체 rawRows 를 상품별·날짜별로 그룹 · 두 매입일 사이 판매만 집계
+      const salesByCodeByDate = new Map<string, Map<string, number>>();
+      for (const r of rawRows) {
+        const code = String((r as any).product_code ?? "").trim();
+        if (!code) continue;
+        const snap = String((r as any).snapshot_date ?? "");
+        if (!snap) continue;
+        const q = Number((r as any).sale_qty ?? 0) || 0;
+        if (q <= 0) continue;
+        const bySup = salesByCodeByDate.get(code) ?? new Map<string, number>();
+        bySup.set(snap, (bySup.get(snap) ?? 0) + q);
+        salesByCodeByDate.set(code, bySup);
+      }
+      // 각 상품 · purchase_details 값 반영 + sale_qty_cycle 계산
       for (const agg of byCode.values()) {
         const info = purchaseInfoMap.get(agg.product_code);
         if (info && info.count > 0) {
@@ -810,6 +827,30 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           (agg as any).purchase_total_qty = info.totalQty;
           (agg as any).purchase_total_amount = info.totalAmount;
           (agg as any).purchase_last_amount = info.lastAmount;
+          // sale_qty_cycle · 최근2건 매입 사이 판매
+          const sortedDates = [...new Set(info.dates)].sort().reverse();
+          if (sortedDates.length >= 2) {
+            const latest = sortedDates[0];
+            const prev = sortedDates[1];
+            const bySup = salesByCodeByDate.get(agg.product_code);
+            let cycleSales = 0;
+            if (bySup) {
+              for (const [snap, q] of bySup) {
+                if (snap > prev && snap <= latest) cycleSales += q;
+              }
+            }
+            (agg as any).sale_qty_cycle = cycleSales;
+            (agg as any).cycle_from = prev;
+            (agg as any).cycle_to = latest;
+          } else {
+            (agg as any).sale_qty_cycle = 0;
+            (agg as any).cycle_from = null;
+            (agg as any).cycle_to = null;
+          }
+        } else {
+          (agg as any).sale_qty_cycle = 0;
+          (agg as any).cycle_from = null;
+          (agg as any).cycle_to = null;
         }
       }
       const aggRows = Array.from(byCode.values()).map(({ first_snap, last_snap, ...rest }) => rest);

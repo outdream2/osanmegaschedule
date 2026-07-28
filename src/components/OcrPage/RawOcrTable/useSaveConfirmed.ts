@@ -11,7 +11,7 @@
  *   filterData · 삭제/숨김 필터
  */
 import { useCallback } from "react";
-import type { ConfirmedItem, MatchedItem, BarcodeProduct } from "./types";
+import type { ConfirmedItem, MatchedItem, BarcodeProduct, CandidateInfo } from "./types";
 import { parseNumber } from "./utils";
 
 // ── 타입 정의 ──────────────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ interface SupplierData {
 interface MatchData {
   matchItems: (MatchedItem | null)[] | null;
   cancelledRows: Set<number>;
-  selectedCands: Record<number, { code: string; name: string } | undefined>;
+  selectedCands: Record<number, CandidateInfo | undefined>;
   cancelledAutoMap: Set<number>;
   autoSynonymMatches: Record<number, { code: string; name: string } | undefined>;
   barcodeAutoMap: Record<number, BarcodeProduct | null | undefined>;

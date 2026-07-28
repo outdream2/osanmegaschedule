@@ -2412,7 +2412,8 @@ export const StockManagePage: React.FC = () => {
         case "profit_rate":
           return saleP > 0 && purP > 0 ? ((saleP - purP) / saleP) * 100 : -999999;
         case "turnover_3m":
-          return Number(p.turnover_3m ?? 0);
+          // 사용자 요청 · 매입주기 회전율 (sale_qty_cycle) 로 대체
+          return Number(p.sale_qty_cycle ?? 0);
         default:
           return 0;
       }
@@ -3518,15 +3519,7 @@ export const StockManagePage: React.FC = () => {
                                   <th onClick={() => toggleFlowSort("purchase")}
                                     className={`text-right px-0.5 py-1.5 w-16 text-[12px] font-black cursor-pointer select-none bg-emerald-50/60 hover:bg-emerald-100 transition ${flowSort === "purchase" ? "text-emerald-700" : "text-emerald-500"}`}
                                     title="최근매입량 · 클릭 정렬">최근매입량{arrowFor("purchase")}</th>
-                                  {/* 2026-07-28 · 사용자 요청 · 최소발주 컬럼 제거 · 3개월 회전율 컬럼 추가 (아래 별도) */}
-                                  <th onClick={() => toggleFlowSort("turnover_3m")}
-                                    className={`text-right px-0.5 py-1.5 w-14 text-[12px] font-black cursor-pointer select-none bg-emerald-50/50 hover:bg-emerald-100 transition ${flowSort === "turnover_3m" ? "text-emerald-800" : "text-emerald-700"}`}
-                                    title="3개월 판매량 / 3개월 평균재고 · 클릭 정렬">
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span className="text-[10px] font-semibold text-emerald-500">3개월</span>
-                                      <span>회전율{arrowFor("turnover_3m")}</span>
-                                    </span>
-                                  </th>
+                                  {/* 2026-07-28 · 사용자 요청 · 매입주기 회전율 컬럼 제거 */}
                                   <th onClick={() => toggleFlowSort("stock_value")}
                                     className={`text-right px-0.5 py-1.5 w-20 text-[12px] font-black cursor-pointer select-none bg-indigo-50/40 hover:bg-indigo-100 transition ${flowSort === "stock_value" ? "text-indigo-800" : "text-indigo-700"}`}
                                     title="재고금액 = 현재고 × 최근매입가 · 클릭 정렬">재고금액{arrowFor("stock_value")}</th>
@@ -3636,25 +3629,7 @@ export const StockManagePage: React.FC = () => {
                                 title={purchV > 0 ? `최근매입량 ${fmt(purchV)}` : "매입 없음"}>
                                 {purchV > 0 ? fmt(purchV) : "-"}
                               </td>
-                              {/* 2026-07-28 · 3개월 회전율 셀 · 3개월 판매/평균재고 (서버 계산 · 항상 3개월 기준) */}
-                              <td className={`text-right px-0.5 py-1.5 text-[12px] font-black bg-emerald-50/50 align-top tabular-nums ${(() => {
-                                const t3 = Number((p as any).turnover_3m ?? 0);
-                                if (t3 <= 0) return "text-slate-300";
-                                if (t3 >= 3) return "text-emerald-800";
-                                if (t3 >= 1) return "text-emerald-600";
-                                return "text-amber-600";
-                              })()}`}
-                                title={(() => {
-                                  const t3 = Number((p as any).turnover_3m ?? 0);
-                                  const s3 = Number((p as any).sale_qty_3m ?? 0);
-                                  const a3 = Number((p as any).avg_stock_3m ?? 0);
-                                  return t3 > 0 ? `3개월 판매 ${fmt(s3)} / 평균재고 ${fmt(a3)} = ${t3.toFixed(2)}회` : "3개월 판매 없음";
-                                })()}>
-                                {(() => {
-                                  const t3 = Number((p as any).turnover_3m ?? 0);
-                                  return t3 > 0 ? t3.toFixed(2) : "-";
-                                })()}
-                              </td>
+                              {/* 2026-07-28 · 매입주기 회전율 셀 제거 (사용자 요청) */}
                               <td className="text-right px-0.5 py-1.5 text-indigo-700 font-bold text-[12px] bg-indigo-50/40 align-top tabular-nums"
                                 title={stockValue > 0 ? `현재고 ${fmt(cur)} × ERP단가 ${fmtWon(purP)} = ${fmtWon(stockValue)}` : ""}>
                                 {fmtMan(stockValue)}

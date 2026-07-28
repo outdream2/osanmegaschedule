@@ -62,7 +62,7 @@ interface TabDef {
 const TABS: TabDef[] = [
   { key: "landing",  label: "홈",         mobileLabel: "홈",     icon: Home,          managerOnly: false, color: "slate"   },
   { key: "display",  label: "매장관리",   mobileLabel: "매장",    icon: LayoutGrid,    managerOnly: true,  color: "red"     },
-  { key: "scan",     label: "상품검색",   mobileLabel: "상품",    icon: ScanBarcode,   managerOnly: true,  color: "orange"  },
+  { key: "scan",     label: "실재고입력", mobileLabel: "실재고",  icon: ScanBarcode,   managerOnly: true,  color: "orange"  },
   { key: "schedule", label: "스케줄관리", mobileLabel: "스케줄",  icon: Calendar,      managerOnly: false, color: "amber"   },
   { key: "board",    label: "이슈공유",   mobileLabel: "이슈",    icon: MessageCircleQuestion, managerOnly: false, color: "emerald" },
   { key: "requests", label: "요청목록",   mobileLabel: "요청",    icon: MessageSquare, managerOnly: false, color: "cyan"    },
@@ -344,9 +344,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 if (!el.dataset.retried) { el.dataset.retried = "1"; el.src = "/src/images/logo.png"; }
               }}
             />
-            <span className="font-black tracking-tight leading-none select-none flex flex-col sm:flex-row sm:items-baseline sm:gap-1">
+            {/* 2026-07-28 · 사용자 요청 · OSAN 줄바꿈 MEGATOWN · 항상 2줄 세로 배치 */}
+            <span className="font-black tracking-tight leading-none select-none flex flex-col gap-0.5">
               <span className="text-red-500 text-lg sm:text-xl leading-none">OSAN</span>
-              <span className="text-gray-900 text-sm sm:text-base leading-none mt-0.5 sm:mt-0">MEGATOWN</span>
+              <span className="text-gray-900 text-sm sm:text-base leading-none">MEGATOWN</span>
             </span>
           </button>
 

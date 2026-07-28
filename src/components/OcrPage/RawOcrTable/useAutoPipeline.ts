@@ -69,9 +69,9 @@ export function useAutoPipeline({
       console.log(`╚══ [column-pipeline] page ${pn} 완료\n`);
       // 변경 개수 계산 · 토스트 갱신
       setTimeout(() => {
-        setCellEdits(latestCellEdits => {
-          setAutoSynonymMatches(latestMatches => {
-            const afterCellEditsCount = Object.values(latestCellEdits).reduce((s, r) => s + Object.keys(r ?? {}).length, 0);
+        setCellEdits((latestCellEdits: Record<number, Record<number, string | number | null>>) => {
+          setAutoSynonymMatches((latestMatches: Record<number, { code: string; name: string }>) => {
+            const afterCellEditsCount = Object.values(latestCellEdits).reduce((s: number, r) => s + Object.keys(r ?? {}).length, 0);
             const afterMatchCount = Object.keys(latestMatches).length;
             const cellDelta = afterCellEditsCount - beforeCellEditsCount;
             const matchDelta = afterMatchCount - beforeMatchCount;

@@ -2103,7 +2103,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   }, []);
 
   const saveSupplierBalance = useCallback(async (supplierName: string, amount: number, invoiceDate: string | null) => {
-    setSavingBalance(prev => ({ ...prev, [supplierName]: true }));
+    // 2026-07-28 · setSavingBalance / savingBalance state · dead code 정리에서 제거됨 · 여기서는 fire-and-forget
     try {
       const res = await fetch("/api/supplier-balances", {
         method: "POST",
@@ -2113,7 +2113,6 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
       const d = await res.json();
       if (d.balance) setSupplierBalanceRecords(prev => [d.balance, ...prev]);
     } catch { /* silent */ }
-    finally { setSavingBalance(prev => ({ ...prev, [supplierName]: false })); }
   }, []);
 
   const commitCellEdit = useCallback((ri: number, ci: number, rawVal: string) => {
@@ -4599,7 +4598,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                                                 if (n > 0) {
                                                   setPageBalanceOverride(prev => ({ ...prev, [pn]: n }));
                                                   setPageBalanceModeManual(prev => { const s = new Set(prev); s.delete(pn); return s; });
-                                                  setPageBalanceModeSkip(prev => { const s = new Set(prev); s.delete(pn); return s; });
+                                                  // 2026-07-28 · setPageBalanceModeSkip · dead state 정리에서 제거됨
                                                   // 2026-07-24 · 사용자 요청 "지금 잔고 저장돼?" · 편집 시 즉시 DB 저장
                                                   const supForSave = (rawSupplierByPage[pn] ?? structuredPages.find(p => p.page === pn)?.meta.supplier ?? "").trim();
                                                   const dateForSave = structuredPages.find(p => p.page === pn)?.meta.date ?? null;

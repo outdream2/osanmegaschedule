@@ -80,8 +80,57 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   ocrTabOnNavigate,
   ocrTabOnLogout,
 }) => {
-  // 상단 탭 (발주요청 / 발주필요 / 사입(OCR거래명세서 등록) / 공급사관리) · Vercel Ink underline 스타일
-  const [topTab, setTopTab] = useState<"order" | "need" | "receipt" | "reconciliation" | "vendor">("order");
+  // 상단 탭 (발주요청 / 발주필요 / 반품필요 / 사입(OCR거래명세서 등록) / 공급사관리) · Vercel Ink underline 스타일
+  const [topTab, setTopTab] = useState<"order" | "need" | "return" | "receipt" | "reconciliation" | "vendor">("order");
+  // 2026-07-28 · 사용자 요청 · 반품필요 리스트 · 매입주기 길고 판매량 적은 상품
+  const [returnList, setReturnList] = useState<Array<{ product_code: string; product_name: string; supplier: string | null; purchase_cycle: number | null; sale_qty_cycle: number; last_purchase_date: string | null; current_stock: number; purchase_price: number; }>>([]);
+  const [returnLoading, setReturnLoading] = useState(false);
+  const [returnCycleMin, setReturnCycleMin] = useState<number>(90); // 매입주기 90일 이상
+  const [returnSalesMax, setReturnSalesMax] = useState<number>(5);  // 매입주기 판매량 5 이하
+  const loadReturnList = useCallback(async () => {
+    setReturnLoading(true);
+    try {
+      const res = await fetch("/api/stock-manage/top-sales?months=6&limit=50000&sort=sale&dir=desc");
+      if (!res.ok) throw new Error(String(res.status));
+      const data = await res.json();
+      const rows: any[] = Array.isArray(data?.rows) ? data.rows : [];
+      // 매입주기 · (last-first)/(count-1) 일 · 없으면 999
+      const items = rows.map(r => {
+        const cnt = Number(r.purchase_count ?? 0);
+        const first = String(r.first_purchase_date ?? "");
+        const last = String(r.last_purchase_date ?? "");
+        let cycle: number | null = null;
+        if (cnt >= 2 && first && last && first !== last) {
+          const days = Math.round((new Date(last).getTime() - new Date(first).getTime()) / (86400 * 1000));
+          cycle = cnt > 1 ? Math.round(days / (cnt - 1)) : null;
+        }
+        return {
+          product_code: String(r.product_code ?? ""),
+          product_name: String(r.product_name ?? ""),
+          supplier: r.supplier ?? null,
+          purchase_cycle: cycle,
+          sale_qty_cycle: Number(r.sale_qty_cycle ?? 0),
+          last_purchase_date: r.last_purchase_date ?? null,
+          current_stock: Number(r.current_stock ?? r.closing_stock ?? 0),
+          purchase_price: Number(r.purchase_price ?? 0),
+        };
+      });
+      // 필터 · 매입주기 ≥ threshold AND 판매량 ≤ threshold (또는 매입 2회 미만 · 매입 있고 판매 없음)
+      const filtered = items.filter(x => {
+        if (x.current_stock <= 0) return false; // 재고 없으면 반품 대상 X
+        if (x.purchase_cycle != null && x.purchase_cycle >= returnCycleMin && x.sale_qty_cycle <= returnSalesMax) return true;
+        return false;
+      });
+      filtered.sort((a, b) => (b.purchase_cycle ?? 0) - (a.purchase_cycle ?? 0));
+      setReturnList(filtered);
+    } catch (e: any) {
+      console.warn("[반품필요] 로드 실패:", e?.message);
+      setReturnList([]);
+    } finally {
+      setReturnLoading(false);
+    }
+  }, [returnCycleMin, returnSalesMax]);
+  useEffect(() => { if (topTab === "return") loadReturnList(); }, [topTab, loadReturnList]);
   // 공급사관리 서브 pill (재고관리 스타일 · 대시보드/원본데이터)
   // (removed 2026-07-16) vendorPageTab — VendorListEditor 를 한 줄 리스트 + 모달 방식으로 통일
   // 원본데이터 → 대시보드 전환 시 자동 선택될 공급사 id
@@ -661,9 +710,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         {[
           { k: "order"   as const, label: "발주요청", icon: ShoppingCart, color: "sky" },
           { k: "need"    as const, label: "발주필요", icon: ClipboardList, color: "amber", badge: lowStock.length },
+          // 2026-07-28 · 사용자 요청 · 반품필요 탭 추가 · 매입주기 길고 판매 적은 상품
+          { k: "return"  as const, label: "반품필요", icon: PackageCheck, color: "rose", badge: returnList.length },
           // 라벨 반응형: 데스크탑 lg+ 은 풀네임 · 태블릿·모바일은 축약 (2026-07-16)
           { k: "receipt" as const, label: "사입(OCR거래명세서 등록)", shortLabel: "사입·OCR", icon: PackageCheck, color: "violet" },
-          { k: "reconciliation" as const, label: "입고/사입/ERP 검증", shortLabel: "입고/사입/ERP", icon: CheckSquare, color: "emerald" },
+          // 2026-07-28 · 사용자 요청 · 입고/사입/ERP 검증 탭 제거
           { k: "vendor"  as const, label: "공급사관리", icon: Building2, color: "teal" },
         ].map(t => {
           const Icon = t.icon;
@@ -671,6 +722,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           const activeText = {
             sky:     "text-sky-700",
             amber:   "text-amber-700",
+            rose:    "text-rose-700",
             violet:  "text-violet-700",
             emerald: "text-emerald-700",
             teal:    "text-teal-700",
@@ -678,6 +730,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           const activeBar = {
             sky:     "bg-sky-500",
             amber:   "bg-amber-500",
+            rose:    "bg-rose-500",
             violet:  "bg-violet-500",
             emerald: "bg-emerald-500",
             teal:    "bg-teal-500",
@@ -893,13 +946,76 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           />
         </div>
       )}
-      {/* ── 입고/사입/ERP 검증 탭 (2026-07-19 복원) ── */}
-      {topTab === "reconciliation" && (
-        <div className="flex-1 flex flex-col min-h-0">
-          <StockReconciliationTab
-            authSession={ocrTabAuthSession ?? null}
-            onOpenOcr={() => setTopTab("receipt")}
-          />
+      {/* 2026-07-28 · 사용자 요청 · 입고/사입/ERP 검증 탭 및 render 제거 */}
+      {/* 2026-07-28 · 사용자 요청 · 반품필요 탭 · 매입주기 길고 판매량 적은 상품 */}
+      {topTab === "return" && (
+        <div className="flex-1 flex flex-col min-h-0 gap-3">
+          <div className="bg-white border border-rose-200 rounded-xl shadow-sm p-3">
+            <div className="flex items-center gap-2 flex-wrap text-xs">
+              <span className="font-black text-rose-700">반품필요 조건</span>
+              <label className="inline-flex items-center gap-1">
+                매입주기 ≥
+                <input type="number" value={returnCycleMin} onChange={e => setReturnCycleMin(Math.max(0, Number(e.target.value) || 0))}
+                  className="w-16 px-2 py-1 text-xs border border-slate-300 rounded outline-none focus:border-rose-400 tabular-nums text-right" /> 일
+              </label>
+              <span className="text-slate-400">AND</span>
+              <label className="inline-flex items-center gap-1">
+                매입주기 판매량 ≤
+                <input type="number" value={returnSalesMax} onChange={e => setReturnSalesMax(Math.max(0, Number(e.target.value) || 0))}
+                  className="w-16 px-2 py-1 text-xs border border-slate-300 rounded outline-none focus:border-rose-400 tabular-nums text-right" /> 개
+              </label>
+              <button type="button" onClick={loadReturnList} disabled={returnLoading}
+                className="ml-auto inline-flex items-center gap-1 px-3 py-1 text-[11px] font-black text-white bg-rose-500 hover:bg-rose-600 disabled:bg-slate-300 rounded-lg shadow-sm">
+                {returnLoading ? "조회 중..." : "🔄 다시 조회"}
+              </button>
+              <span className="text-[11px] font-bold text-slate-500 ml-2">{returnList.length}건</span>
+            </div>
+          </div>
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            {returnList.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 text-xs">
+                {returnLoading ? "불러오는 중..." : "조건에 맞는 반품필요 상품 없음"}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-[12px] border-collapse">
+                  <thead className="bg-rose-50 border-b border-rose-100 sticky top-0 z-10">
+                    <tr>
+                      <th className="px-2 py-2 text-left font-bold text-rose-800 w-10">#</th>
+                      <th className="px-2 py-2 text-left font-bold text-rose-800 min-w-[220px]">상품</th>
+                      <th className="px-2 py-2 text-left font-bold text-rose-800 w-28">공급사</th>
+                      <th className="px-2 py-2 text-right font-bold text-rose-800 w-16">현재고</th>
+                      <th className="px-2 py-2 text-right font-bold text-rose-800 w-20">매입주기</th>
+                      <th className="px-2 py-2 text-right font-bold text-rose-800 w-24">주기판매</th>
+                      <th className="px-2 py-2 text-left font-bold text-rose-800 w-24">최근매입</th>
+                      <th className="px-2 py-2 text-right font-bold text-rose-800 w-24">재고금액</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {returnList.map((x, i) => (
+                      <tr key={x.product_code} className="border-t border-slate-100 hover:bg-rose-50/40">
+                        <td className="px-2 py-1.5 text-slate-400 tabular-nums">{i + 1}</td>
+                        <td className="px-2 py-1.5">
+                          <div className="flex flex-col leading-tight">
+                            <span className="font-semibold text-slate-800">{x.product_name}</span>
+                            <span className="text-[10px] text-slate-400 font-mono">{x.product_code}</span>
+                          </div>
+                        </td>
+                        <td className="px-2 py-1.5 text-slate-600 truncate">{x.supplier ?? "-"}</td>
+                        <td className="px-2 py-1.5 text-right text-slate-800 font-bold tabular-nums">{x.current_stock.toLocaleString()}</td>
+                        <td className="px-2 py-1.5 text-right text-rose-700 font-bold tabular-nums">{x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}</td>
+                        <td className="px-2 py-1.5 text-right text-amber-700 font-bold tabular-nums">{x.sale_qty_cycle.toLocaleString()}개</td>
+                        <td className="px-2 py-1.5 text-slate-600 font-mono text-[10px]">{x.last_purchase_date ?? "-"}</td>
+                        <td className="px-2 py-1.5 text-right text-indigo-700 font-bold tabular-nums">
+                          {x.current_stock > 0 && x.purchase_price > 0 ? (x.current_stock * x.purchase_price).toLocaleString() : "-"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
       {/* ── 공급사관리 탭 · 좌우 split 레이아웃 (2026-07-16) ── */}
