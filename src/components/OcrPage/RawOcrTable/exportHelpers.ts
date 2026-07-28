@@ -86,6 +86,58 @@ export function writeXlsxWithTemplate(params: {
 }
 
 /**
+ * ERP 업로드 전용 엑셀 서식 · 컬럼 순서·라벨 고정 (2026-07-28 사용자 요청)
+ *   상품코드(*) · 상품명(*) · 규격 · 마스터 매입단가 · 공급처 · 전표 매입단가 ·
+ *   매입수량(*) · 매입총계 · 판매단가 · 이익률 · 소비기한
+ *   ( ) 안 (*)  ERP 시스템 필수 컬럼 표시 · 소비기한 = 유통기한 값 매핑
+ */
+export const ERP_UPLOAD_HEADERS = [
+  "상품코드(*)", "상품명(*)", "규격", "마스터 매입단가", "공급처",
+  "전표 매입단가", "매입수량(*)", "매입총계", "판매단가", "이익률", "소비기한",
+] as const;
+
+/** ERP 업로드용 각 행 · confRows 개별 항목 + spec (matchItems 참조) */
+export interface ErpUploadRow {
+  code: string | number | null;
+  name: string | number | null;
+  spec: string | number | null;
+  masterPrice: number | null;
+  supplier: string | number | null;
+  invoicePrice: number | null;
+  qty: number | null;
+  amount: number | null;
+  salePrice: number | null;
+  profitRate: number | null;
+  expiry: string | number | null;
+}
+
+export function writeErpUploadXlsx(params: {
+  rows: ErpUploadRow[];
+  filename: string;
+}): void {
+  const { rows, filename } = params;
+  const wsData: (string | number | null)[][] = [ERP_UPLOAD_HEADERS.slice()];
+  rows.forEach(r => {
+    wsData.push([
+      r.code, r.name, r.spec, r.masterPrice, r.supplier,
+      r.invoicePrice, r.qty, r.amount, r.salePrice, r.profitRate, r.expiry,
+    ]);
+  });
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  ws["!cols"] = ERP_UPLOAD_HEADERS.map(h => ({
+    wch: h === "상품명(*)" ? 32 :
+         h === "공급처" ? 14 :
+         h === "상품코드(*)" ? 15 :
+         h === "규격" ? 12 :
+         h === "소비기한" ? 13 :
+         h.includes("단가") || h === "매입총계" ? 13 : 10,
+  }));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "ERP 업로드");
+  XLSX.writeFile(wb, filename);
+}
+
+/**
  * 템플릿 없이 확정표 xlsx 처음부터 생성 (페이지별 소계 · 합계 포함)
  */
 export function writeXlsxFresh(params: {

@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Trash2, Plus, BookOpen, Building2, RefreshCw, Pencil, Check, X, Loader2 } from "lucide-react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Trash2, Plus, BookOpen, Building2, RefreshCw, Pencil, Check, X, Loader2, Search } from "lucide-react";
 import type { AuthSession } from "../types";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
 
@@ -61,6 +61,29 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
   const [editingSuppId, setEditingSuppId] = useState<number | null>(null);
   const [editingSupp, setEditingSupp] = useState<SuppEditState | null>(null);
   const [editSaving, setEditSaving] = useState(false);
+  // 2026-07-28 · 사용자 요청 · 검색 기능
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredProductSynonyms = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return productSynonyms;
+    return productSynonyms.filter(s =>
+      s.prod_name_old?.toLowerCase().includes(q) ||
+      s.prod_name_new?.toLowerCase().includes(q) ||
+      s.product_code?.toLowerCase().includes(q) ||
+      s.supplier_new?.toLowerCase().includes(q) ||
+      s.supplier_old?.toLowerCase().includes(q)
+    );
+  }, [productSynonyms, searchQuery]);
+
+  const filteredSupplierAliases = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return supplierAliases;
+    return supplierAliases.filter(a =>
+      a.alias?.toLowerCase().includes(q) ||
+      a.supplier_name?.toLowerCase().includes(q)
+    );
+  }, [supplierAliases, searchQuery]);
 
   const fetchAll = useCallback(async () => {
     setLoading(true);
@@ -227,6 +250,28 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
       </div>
 
       <div className="max-w-3xl mx-auto px-4 py-4 flex flex-col gap-4">
+        {/* 2026-07-28 · 검색 (사용자 요청) */}
+        <div className="relative">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            lang="ko"
+            placeholder={tab === "product" ? "상품명·코드·공급사 검색..." : "공급사 별칭 · 실제명 검색..."}
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-9 py-2 text-sm border border-slate-300 rounded-lg outline-none focus:border-indigo-400 bg-white"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-700 cursor-pointer"
+              title="검색어 지우기"
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
         {tab === "product" ? (
           <>
             <div className="bg-white border border-indigo-100 rounded-2xl p-4 flex flex-col gap-3">
@@ -281,7 +326,9 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
                 <div className="flex items-center gap-1.5">
                   <BookOpen size={14} className="text-indigo-600" />
                   <span className="text-sm font-black text-slate-700">상품명 동의어</span>
-                  <span className="text-[10px] font-mono text-slate-400">({productSynonyms.length}건)</span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    {searchQuery ? `${filteredProductSynonyms.length}/${productSynonyms.length}건` : `(${productSynonyms.length}건)`}
+                  </span>
                 </div>
               </div>
               <div className="max-h-[60vh] overflow-y-auto">
@@ -306,7 +353,10 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
                   </tr>
                 </thead>
                 <tbody>
-                  {productSynonyms.map(s => {
+                  {filteredProductSynonyms.length === 0 && searchQuery && (
+                    <tr><td colSpan={5} className="px-3 py-6 text-center text-[11px] text-slate-400">검색 결과 없음 · "{searchQuery}"</td></tr>
+                  )}
+                  {filteredProductSynonyms.map(s => {
                     const isEditing = editingProdId === s.id && editingProd;
                     return (
                       <tr key={s.id} className={`border-t border-gray-50 ${isEditing ? "bg-indigo-50/40" : "hover:bg-gray-50"}`}>
@@ -406,7 +456,9 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
                 <div className="flex items-center gap-1.5">
                   <Building2 size={14} className="text-sky-600" />
                   <span className="text-sm font-black text-slate-700">공급사 별칭</span>
-                  <span className="text-[10px] font-mono text-slate-400">({supplierAliases.length}건)</span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    {searchQuery ? `${filteredSupplierAliases.length}/${supplierAliases.length}건` : `(${supplierAliases.length}건)`}
+                  </span>
                 </div>
               </div>
               <div className="max-h-[60vh] overflow-y-auto">
@@ -430,10 +482,12 @@ export const SynonymPage: React.FC<SynonymPageProps> = ({ authSession, onBack, o
                   </tr>
                 </thead>
                 <tbody>
-                  {supplierAliases.length === 0 && (
+                  {filteredSupplierAliases.length === 0 && searchQuery ? (
+                    <tr><td colSpan={4} className="px-3 py-6 text-center text-[11px] text-slate-400">검색 결과 없음 · "{searchQuery}"</td></tr>
+                  ) : supplierAliases.length === 0 && (
                     <tr><td colSpan={4} className="px-3 py-8 text-center text-gray-400">등록된 공급사 별칭 없음</td></tr>
                   )}
-                  {supplierAliases.map(a => {
+                  {filteredSupplierAliases.map(a => {
                     const isEditing = editingSuppId === a.id && editingSupp;
                     return (
                       <tr key={a.id} className={`border-t border-gray-50 ${isEditing ? "bg-sky-50/40" : "hover:bg-gray-50"}`}>

@@ -15,6 +15,7 @@ interface Props {
   autoSyn?: { code: string; name: string };
   barcode: BarcodeProduct | null;
   ocrQty: number | null;    // ERP 금액 계산용 (masterPrice × ocrQty)
+  pageSupplier?: string;    // ERP 매칭에서 supplier 못 얻을 때 페이지 공급사 폴백 (2026-07-28)
   onCancel?: () => void;
 }
 
@@ -25,12 +26,19 @@ function getErpCellValue(
   autoSyn: { code: string; name: string } | undefined,
   barcode: BarcodeProduct | null,
   ocrQty: number | null,
-): { text: React.ReactNode; align: "left" | "right" } {
+  pageSupplier?: string,
+): { text: React.ReactNode; align: "left" | "right" | "center" } {
   const dash = <span className="text-slate-300">—</span>;
   const erpName    = matched?.name ?? autoSyn?.name ?? barcode?.name ?? null;
   const erpCode    = matched?.code ?? autoSyn?.code ?? barcode?.code ?? null;
   const erpMasterP = matched?.masterPrice ?? barcode?.masterPrice ?? null;
-  const erpSup     = matched?.supplier ?? barcode?.supplier ?? null;
+  const erpSaleP   = matched?.salePrice ?? barcode?.salePrice ?? null;
+  // 2026-07-28 · 사용자 요청 "판매가와 단가값 계산해서" · 이익률 = (판매가 - 사입단가) / 판매가 × 100 (%)
+  const erpProfit  = (erpSaleP != null && erpSaleP > 0 && erpMasterP != null && erpMasterP > 0)
+    ? ((erpSaleP - erpMasterP) / erpSaleP) * 100
+    : null;
+  // 2026-07-28 · 공급사 · ERP 매칭 결과 없으면 페이지 공급사(=OCR/사용자 확인) 로 폴백
+  const erpSup     = matched?.supplier ?? barcode?.supplier ?? pageSupplier ?? null;
   const erpExp     = matched?.expiryDate ?? barcode?.expiryDate ?? null;
   const erpSpec    = matched?.spec ?? barcode?.spec ?? null;
   const erpAmt = (erpMasterP != null && erpMasterP > 0 && ocrQty != null && ocrQty > 0)
@@ -38,18 +46,17 @@ function getErpCellValue(
 
   switch (header) {
     case "품명":
+      // 2026-07-28 · 사용자 요청 · 상품코드 → 줄바꿈 → 상품명 (두 줄)
       if (!erpName && !erpCode) return { text: dash, align: "left" };
       return {
         text: (
-          <span className="inline-flex items-center gap-1 min-w-0">
+          <span className="inline-flex flex-col leading-tight gap-0.5 items-start">
             {erpCode && (
-              <span className="font-mono text-[10px] font-bold bg-slate-100 text-slate-700 border border-slate-300 rounded px-1 py-px shrink-0">
-                #{erpCode}
-              </span>
+              <span className="font-mono text-[10px] font-bold text-slate-500">#{erpCode}</span>
             )}
-            {erpName ? (
-              <span className="font-semibold text-violet-800 truncate">{erpName}</span>
-            ) : null}
+            {erpName && (
+              <span className="font-semibold text-violet-800 text-[12px] leading-snug break-words">{erpName}</span>
+            )}
           </span>
         ),
         align: "left",
@@ -60,32 +67,54 @@ function getErpCellValue(
     case "수량":
       return { text: dash, align: "right" };  // ERP 자체 수량 없음
     case "단가":
+      // 2026-07-28 · 사용자 요청 · "ERP 단가" 라벨 명시 (사입가/OCR단가와 구분)
       return {
         text: erpMasterP != null && erpMasterP > 0
-          ? <span className="text-violet-800 font-mono font-bold">{fmt(erpMasterP)}</span>
+          ? <span className="inline-flex flex-col leading-tight items-center">
+              <span className="text-[9px] text-violet-500 font-bold">ERP단가</span>
+              <span className="text-violet-800 font-mono font-bold">{fmt(erpMasterP)}</span>
+            </span>
           : dash,
-        align: "right",
+        align: "center" as const,
       };
     case "금액":
-      return {
-        text: erpAmt != null
-          ? <span className="text-violet-800 font-mono font-bold">{fmt(erpAmt)}</span>
-          : dash,
-        align: "right",
-      };
+      // 2026-07-28 · 사용자 요청 "ERP 에서 가져온 값만" · ERP에는 금액 필드 없음 · 대시
+      return { text: dash, align: "right" };
     case "유통기한":
     case "유효기한":
     case "유통기간":
-      return { text: erpExp ? <span className="text-violet-800">{erpExp}</span> : dash, align: "right" };
+      // 2026-07-28 · 사용자 요청 · 유통기한 자리에 이익률 (소수점 1자리 · 버림)
+      return {
+        text: erpProfit != null && Number.isFinite(erpProfit)
+          ? <span className="inline-flex flex-col leading-tight items-center">
+              <span className="text-[9px] text-emerald-500 font-bold">이익률</span>
+              <span className={`font-bold ${erpProfit >= 0 ? "text-emerald-700" : "text-rose-700"}`}>
+                {Math.trunc(erpProfit)}%
+              </span>
+            </span>
+          : dash,
+        align: "center" as const,
+      };
     case "규격":
       return { text: erpSpec ? <span className="text-violet-700">{erpSpec}</span> : dash, align: "left" };
+    // 2026-07-28 · 사용자 요청 · 단가와 금액 사이 VAT 자리 아래에 · ERP 판매가
+    case "VAT":
+      return {
+        text: erpSaleP != null && erpSaleP > 0
+          ? <span className="inline-flex flex-col leading-tight items-center">
+              <span className="text-[9px] text-sky-500 font-bold">판매가</span>
+              <span className="text-sky-700 font-mono font-bold">{fmt(erpSaleP)}</span>
+            </span>
+          : dash,
+        align: "center" as const,
+      };
     default:
       return { text: dash, align: "right" };
   }
 }
 
 export const ErpMatchSubRow: React.FC<Props> = ({
-  colList, dispHeaders, colWidthPx, matched, autoSyn, barcode, ocrQty, onCancel,
+  colList, dispHeaders, colWidthPx, matched, autoSyn, barcode, ocrQty, pageSupplier, onCancel,
 }) => {
   const anyErpInfo = (matched?.name || matched?.code || autoSyn?.name || barcode?.name);
   const nameIdx = dispHeaders.indexOf("품명");
@@ -107,12 +136,12 @@ export const ErpMatchSubRow: React.FC<Props> = ({
       {colList.map(({ origIdx }) => {
         const h = dispHeaders[origIdx];
         const w = colWidthPx(origIdx);
-        const { text, align } = getErpCellValue(h, matched, autoSyn, barcode, ocrQty);
+        const { text, align } = getErpCellValue(h, matched, autoSyn, barcode, ocrQty, pageSupplier);
         const isNameCol = origIdx === nameIdx;
         return (
           <td key={origIdx}
             style={w != null ? { width: w, overflow: "hidden" } : undefined}
-            className={`px-1.5 py-1 text-[11px] ${align === "right" ? "text-right" : "text-left"} ${isNameCol ? "" : "truncate"}`}>
+            className={`px-1.5 py-1 text-[11px] ${align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left"} ${isNameCol ? "" : "truncate"}`}>
             {text}
           </td>
         );

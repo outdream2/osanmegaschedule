@@ -12,6 +12,26 @@ export const NUM_COLS     = new Set(["수량","단가","금액","세액"]);
 // ── 숫자 포맷 ─────────────────────────────────────────────────────────────────
 export function fmt(v: number) { return v.toLocaleString("ko-KR"); }
 
+// ── 유통기한 정규화 · 사용자 입력 "20261212" · "20261231" · "2026.12.31" · "2026/12/31" 등 → "2026-12-31" (2026-07-28)
+export function normalizeExpiryDate(input: string): string {
+  const s = String(input ?? "").trim();
+  if (!s) return "";
+  // 8자리 숫자 (YYYYMMDD) → YYYY-MM-DD
+  const m1 = s.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if (m1) return `${m1[1]}-${m1[2]}-${m1[3]}`;
+  // 6자리 (YYMMDD) → 20YY-MM-DD (2020년대 가정)
+  const m2 = s.match(/^(\d{2})(\d{2})(\d{2})$/);
+  if (m2) return `20${m2[1]}-${m2[2]}-${m2[3]}`;
+  // YYYY.MM.DD / YYYY/MM/DD → YYYY-MM-DD
+  const m3 = s.match(/^(\d{4})[./](\d{1,2})[./](\d{1,2})$/);
+  if (m3) return `${m3[1]}-${String(m3[2]).padStart(2, "0")}-${String(m3[3]).padStart(2, "0")}`;
+  // YYYY-M-D → YYYY-MM-DD (zero pad)
+  const m4 = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (m4) return `${m4[1]}-${String(m4[2]).padStart(2, "0")}-${String(m4[3]).padStart(2, "0")}`;
+  // 그 외 · 원문 유지
+  return s;
+}
+
 // ── fallback 페이지 판별 ──────────────────────────────────────────────────────
 export function isFallback(headers: string[]) {
   return headers.length <= 1 &&
