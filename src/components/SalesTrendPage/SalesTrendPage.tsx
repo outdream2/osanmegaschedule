@@ -1908,52 +1908,69 @@ function classifySupplier(name: string): { category: string; color: string } {
   return { category: "기타", color: "slate" };
 }
 
-// ─── 매장구역도 미니맵 (읽기 전용 · 참고용 2026-07-16) ───────────────
-//   실제 L-shape(ㄱ자) 배치 재현:
-//   좌측 가로 블록: [상단벽면 21→9] / [중앙진열대 22·8→1] / [하단벽면 23→34]
-//   우측 수직 윙: 35(냉장)→42(이벤트) 위→아래
+// ─── 매장구역도 미니맵 (읽기 전용 · 2026-07-29 · 상위 매장 구역도와 동일 레이아웃) ─────
+//   공용 상수 · src/constants/storeMapLayout.ts (STORE_TOP_WALL 등)
+//   레이아웃 · 상위 map 과 100% 일치 (상단벽 · 중앙진열대 22+8B/8A→1B/1A · 하단벽 · 수직윙)
+//   차이 · 읽기 전용 · 컴팩트 사이즈 · 편집·드래그드롭 없음
+import {
+  STORE_TOP_WALL, STORE_AISLE_CENTER, STORE_AISLE_PAIRS, STORE_BOTTOM_WALL, STORE_VERTICAL_WING,
+  CAT_A_COLORS, CAT_B_COLORS,
+} from "../../constants/storeMapLayout";
+
 const MiniStoreZoneMap: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
-  // 좌측 가로 블록 — 실제 매장 좌→우 배치 순서 유지
-  const topWall    = [21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9];  // 13개
-  const aisleOrder = [22, 8, 7, 6, 5, 4, 3, 2, 1];                          // 9개
-  const bottomWall = [23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34];      // 12개
-  // 우측 수직 윙 — 위→아래
-  const wing = [35, 36, 37, 38, 39, 40, 41, 42];                            // 8개
 
-  // 카테고리 섹션별 색상 (section 기반)
-  const sectionColor: Record<string, string> = {
-    top_wall:    "bg-emerald-100 text-emerald-800 border-emerald-300/60",
-    aisle:       "bg-blue-100 text-blue-800 border-blue-300/60",
-    bottom_wall: "bg-amber-100 text-amber-800 border-amber-300/60",
-    wing:        "bg-violet-100 text-violet-800 border-violet-300/60",
-    event:       "bg-rose-100 text-rose-800 border-rose-300/60",
-  };
-  // 진열대 1~8 개별 accent (구별 용이성)
-  const aisleAccent: Record<number, string> = {
-    1: "bg-blue-500 text-white border-blue-600/60",
-    2: "bg-yellow-400 text-yellow-950 border-yellow-500/60",
-    3: "bg-red-500 text-white border-red-600/60",
-    4: "bg-pink-500 text-white border-pink-600/60",
-    5: "bg-lime-500 text-lime-950 border-lime-600/60",
-    6: "bg-sky-500 text-white border-sky-600/60",
-    7: "bg-indigo-500 text-white border-indigo-600/60",
-    8: "bg-purple-500 text-white border-purple-600/60",
-  };
-
-  const zoneCard = (num: number) => {
+  // 벽면·수직윙 셀 · 상위 map 의 renderWallZoneCard 와 동일 스타일 (stone/amber)
+  const wallCell = (num: number) => {
     const zd = ZONE_DEFS.find(z => z.num === num);
-    if (!zd) return null;
-    const bg = aisleAccent[num] ?? sectionColor[zd.section] ?? "bg-slate-100 text-slate-700 border-slate-300/60";
-    const short = zd.category.split(" / ")[0].slice(0, 10);
+    const cat = zd?.category ?? "";
     return (
-      <div
-        key={num}
-        className={`rounded border shadow-sm ${bg} px-0.5 py-0.5 flex flex-col items-center justify-center leading-tight min-w-0 min-h-[28px]`}
-        title={`${zd.label} · ${zd.category}`}
-      >
-        <span className="font-black leading-none text-[9px]">{num}</span>
-        <span className="text-center mt-0.5 line-clamp-2 font-semibold opacity-90 text-[7px] break-all">{short}</span>
+      <div key={num}
+        className="rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center min-h-[38px]"
+        title={`${zd?.label ?? num} · ${cat}`}>
+        <div className="w-full bg-stone-50 px-0.5 py-0.5 flex flex-col items-center gap-0.5">
+          <span className="text-[8px] font-black text-white bg-amber-700 rounded px-1 leading-none">{num}</span>
+          <span className="text-[7px] font-bold text-stone-800 leading-tight text-center line-clamp-2 break-all">{cat}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // 중앙 진열대 B/A pair 셀 · 상위와 동일 catA/catB 색상 사용
+  const pairCell = (num: number) => {
+    const ca = CAT_A_COLORS[num];
+    const cb = CAT_B_COLORS[num];
+    const zd = ZONE_DEFS.find(z => z.num === num);
+    const subB = zd?.subB ?? "";
+    const subA = zd?.subA ?? "";
+    return (
+      <div key={`pair-${num}`} className="flex flex-col items-stretch gap-0.5 flex-[2] min-w-0">
+        {/* B (연한 톤) */}
+        <div className={`w-full text-[8px] font-black ${cb.text} ${cb.bg} border ${cb.border} rounded px-0.5 py-0.5 leading-tight text-center min-h-[36px] flex flex-col items-center justify-center overflow-hidden`}
+          title={`${num}B · ${subB}`}>
+          <span className={`text-[8px] font-black text-white ${cb.labelBg} rounded px-1 leading-none mb-0.5`}>{num}B</span>
+          <span className="line-clamp-2 text-[8px] break-all">{subB.slice(0, 10)}</span>
+        </div>
+        {/* A (진한 톤) */}
+        <div className={`w-full text-[8px] font-black ${ca.text} ${ca.bg} border ${ca.border} rounded px-0.5 py-0.5 leading-tight text-center min-h-[36px] flex flex-col items-center justify-center overflow-hidden`}
+          title={`${num}A · ${subA}`}>
+          <span className={`text-[8px] font-black text-white ${ca.labelBg} rounded px-1 leading-none mb-0.5`}>{num}A</span>
+          <span className="line-clamp-2 text-[8px] break-all">{subA.slice(0, 10)}</span>
+        </div>
+      </div>
+    );
+  };
+
+  // 중앙 22 (단독) 셀
+  const centerCell = () => {
+    const zd = ZONE_DEFS.find(z => z.num === STORE_AISLE_CENTER);
+    return (
+      <div className="flex flex-col items-center gap-0.5 flex-none w-[36px] min-w-[36px]">
+        <div className="w-full text-[8px] font-black text-slate-700 bg-white border border-slate-300 rounded px-0.5 py-0.5 leading-tight text-center min-h-[76px] flex items-center justify-center overflow-hidden"
+          title={`${STORE_AISLE_CENTER} · ${zd?.category ?? ""}`}>
+          <span className="line-clamp-4">{zd?.category ?? ""}</span>
+        </div>
+        <div className="w-full text-[8px] font-black text-white bg-slate-600 rounded px-0.5 leading-none py-0.5 text-center">22</div>
       </div>
     );
   };
@@ -1965,53 +1982,46 @@ const MiniStoreZoneMap: React.FC = () => {
         onClick={() => setCollapsed(v => !v)}
         className="w-full flex items-center justify-between px-3 py-2 hover:bg-violet-100/40 transition cursor-pointer"
       >
-        <span className="text-[11px] font-black text-violet-700 inline-flex items-center gap-1">🗺️ 매장 구역도 · L-shape (참고)</span>
+        <span className="text-[11px] font-black text-violet-700 inline-flex items-center gap-1">🗺️ 매장 구역도 · 상위 map 동일 (참고)</span>
         <span className="text-[10px] font-black text-violet-600">{collapsed ? "펼치기 ▼" : "접기 ▲"}</span>
       </button>
       {!collapsed && (
         <div className="p-2">
-          {/* ── L-shape 레이아웃: 좌측 가로블록 + 우측 수직윙 ── */}
+          {/* L-shape · 좌측 가로블록 + 우측 수직윙 */}
           <div className="flex gap-1.5 items-stretch">
 
-            {/* 좌측: 가로 블록 (상단벽 / 중앙진열대 / 하단벽) */}
+            {/* 좌측 · 상위 map 과 동일 구조 (상단벽 · 중앙 22+8B/8A→1B/1A · 하단벽) */}
             <div className="flex-1 min-w-0 flex flex-col gap-1">
-              {/* 상단 벽면 — emerald */}
+              {/* 상단 벽면 */}
               <div>
-                <div className="text-[7px] font-black text-emerald-600 uppercase tracking-wider mb-0.5 px-0.5">상단 벽면 21→9</div>
+                <div className="text-[7px] font-black text-emerald-600 uppercase tracking-wider mb-0.5 px-0.5">상단 벽면 (21→9)</div>
                 <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
-                  {topWall.map(n => zoneCard(n))}
+                  {STORE_TOP_WALL.map(n => wallCell(n))}
                 </div>
               </div>
-              {/* 중앙 진열대 — blue accent */}
+              {/* 중앙 진열대 · 22 + 8B/8A→1B/1A (16셀 · 상위와 동일 catA/catB) */}
               <div>
-                <div className="text-[7px] font-black text-blue-600 uppercase tracking-wider mb-0.5 px-0.5">중앙 진열대 22 · 8→1</div>
-                <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(9, minmax(0, 1fr))" }}>
-                  {aisleOrder.map(n => zoneCard(n))}
+                <div className="text-[7px] font-black text-blue-600 uppercase tracking-wider mb-0.5 px-0.5">중앙 진열대 (22 · 8B|8A → 1B|1A)</div>
+                <div className="flex items-stretch justify-start gap-1 bg-slate-50 border border-slate-200 py-1 px-1 rounded-lg">
+                  {centerCell()}
+                  {STORE_AISLE_PAIRS.map(n => pairCell(n))}
                 </div>
               </div>
-              {/* 하단 벽면 — amber */}
+              {/* 하단 벽면 */}
               <div>
-                <div className="text-[7px] font-black text-amber-600 uppercase tracking-wider mb-0.5 px-0.5">하단 벽면 23→34</div>
+                <div className="text-[7px] font-black text-amber-600 uppercase tracking-wider mb-0.5 px-0.5">하단 벽면 (23→34)</div>
                 <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}>
-                  {bottomWall.map(n => zoneCard(n))}
+                  {STORE_BOTTOM_WALL.map(n => wallCell(n))}
                 </div>
               </div>
             </div>
 
-            {/* 우측: 수직 윙 (35→42 위→아래) */}
-            <div className="flex flex-col gap-0.5 w-[52px] shrink-0">
+            {/* 우측 · 수직윙 */}
+            <div className="flex flex-col gap-0.5 w-[48px] shrink-0">
               <div className="text-[7px] font-black text-violet-600 uppercase tracking-wider mb-0.5 px-0.5 text-center whitespace-nowrap">수직윙</div>
-              {wing.map(n => zoneCard(n))}
+              {STORE_VERTICAL_WING.map(n => wallCell(n))}
             </div>
 
-          </div>
-
-          {/* 범례 */}
-          <div className="flex flex-wrap gap-1.5 mt-1.5 pt-1.5 border-t border-violet-100/70">
-            <span className="inline-flex items-center gap-0.5 text-[7px] font-semibold text-emerald-700"><span className="w-2 h-2 rounded-sm bg-emerald-200 border border-emerald-300 inline-block"></span>상단벽</span>
-            <span className="inline-flex items-center gap-0.5 text-[7px] font-semibold text-blue-700"><span className="w-2 h-2 rounded-sm bg-blue-400 border border-blue-500 inline-block"></span>진열대</span>
-            <span className="inline-flex items-center gap-0.5 text-[7px] font-semibold text-amber-700"><span className="w-2 h-2 rounded-sm bg-amber-200 border border-amber-300 inline-block"></span>하단벽</span>
-            <span className="inline-flex items-center gap-0.5 text-[7px] font-semibold text-violet-700"><span className="w-2 h-2 rounded-sm bg-violet-200 border border-violet-300 inline-block"></span>수직윙</span>
           </div>
         </div>
       )}
