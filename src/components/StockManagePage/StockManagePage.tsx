@@ -2698,15 +2698,7 @@ export const StockManagePage: React.FC = () => {
               </span>
             );
           })()}
-          {flowDateRange && (
-            <span className={`text-[11px] font-black rounded-full px-2.5 py-1 border font-mono hidden sm:inline ${flowPeriodType === "초순" || flowPeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
-              flowPeriodType === "중순" || flowPeriodType === "mid" ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
-                flowPeriodType === "하순" || flowPeriodType === "late" ? "text-purple-700 bg-purple-50 border-purple-300" :
-                  "text-slate-700 bg-slate-100 border-slate-300"
-              }`}>
-              {flowDateRange}
-            </span>
-          )}
+          {/* 2026-07-29 · 사용자 요청 · 날짜범위 배지 제거 (재고리스트 헤더에도 나옴 · 중복) */}
           {/* 2026-07-28 · 사용자 요청 · 재고관리 페이지 상단 · 별도 관리자 액션 버튼 (적정재고 일괄 업데이트) */}
           <button
             type="button"
