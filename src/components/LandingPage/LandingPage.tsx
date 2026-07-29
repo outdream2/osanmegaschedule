@@ -2,39 +2,39 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
 import axios from "axios";
 import {
-  Calendar,
-  CalendarCheck,
-  CalendarDays,
   ChevronRight,
   MapPin,
   Clock,
-  LayoutGrid,
   Lock,
   X,
-  Shield,
-  User,
   LogOut,
   AlertCircle,
-  ScanLine,
   Upload,
-  FileSpreadsheet,
-  FileText,
-  CheckCircle2,
-  List,
   Eye,
   EyeOff,
-  UtensilsCrossed,
-  Package,
   Bell,
   BellOff,
   Plus,
-  BookOpen,
-  Megaphone,
-  MessageSquare,
-  MessageCircleQuestion,
   Search,
   Loader2,
 } from "lucide-react";
+import {
+  SquaresFour,
+  ShieldCheck,
+  User,
+  CalendarDots,
+  CalendarCheck,
+  Calendar,
+  Scan,
+  Table,
+  FileText,
+  CheckCircle,
+  ForkKnife,
+  Package,
+  List,
+  Chat,
+  ChatCircle,
+} from "@phosphor-icons/react";
 import type { AuthSession, AuthRole } from "../../types";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 // VendorListEditor 는 발주관리 공급사관리 에서만 사용 (LandingPage 데이터 업로드 에서 제거됨 · 2026-07-15)
@@ -933,7 +933,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             <div className="w-full mb-7">
               <div className="flex items-center gap-2 mb-3.5">
                 <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #7c3aed, #8b5cf6)" }}>
-                  <Shield size={10} className="text-white" />
+                  <ShieldCheck size={10} className="text-white" weight="fill" />
                 </div>
                 <span className="text-[11px] font-bold text-violet-600 uppercase tracking-widest">관리자 도구</span>
                 <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #ddd6fe, transparent)" }} />
@@ -946,7 +946,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,242,254,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #7dd3fc" }}>
-                      <LayoutGrid size={16} className="text-sky-600 sm:hidden" /><LayoutGrid size={20} className="text-sky-600 hidden sm:block" />
+                      <SquaresFour size={16} className="text-sky-600 sm:hidden" weight="fill" /><SquaresFour size={20} className="text-sky-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">
                       관리메뉴
@@ -973,7 +973,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105 mt-5 sm:mt-6" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)", border: "1px solid #a5b4fc" }}>
-                      <List size={16} className="text-indigo-600 sm:hidden" /><List size={20} className="text-indigo-600 hidden sm:block" />
+                      <List size={16} className="text-indigo-600 sm:hidden" weight="fill" /><List size={20} className="text-indigo-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">요청목록 조회</div>
                     <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">진열·발주요청 및 배치구역 불일치 확인</div>
@@ -992,7 +992,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
                     <div className="relative">
                       <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffedd5, #fed7aa)", border: "1px solid #fdba74" }}>
-                        <FileSpreadsheet size={16} className="text-orange-500 sm:hidden" /><FileSpreadsheet size={20} className="text-orange-500 hidden sm:block" />
+                        <Table size={16} className="text-orange-500 sm:hidden" weight="fill" /><Table size={20} className="text-orange-500 hidden sm:block" weight="fill" />
                       </div>
                       <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">데이터 업로드</div>
                       <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">상품목록 · 재고리스트 xlsx 업로드</div>
@@ -1010,7 +1010,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(254,243,199,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #fef9c3, #fef08a)", border: "1px solid #fde047" }}>
-                      <FileText size={16} className="text-yellow-600 sm:hidden" /><FileText size={20} className="text-yellow-600 hidden sm:block" />
+                      <FileText size={16} className="text-yellow-600 sm:hidden" weight="fill" /><FileText size={20} className="text-yellow-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">거래명세서 OCR</div>
                     <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">PDF 업로드로 거래명세서 자동 추출</div>
@@ -1032,7 +1032,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   )}
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ccfbf1, #99f6e4)", border: "1px solid #5eead4" }}>
-                      <CalendarDays size={16} className="text-teal-600 sm:hidden" /><CalendarDays size={20} className="text-teal-600 hidden sm:block" />
+                      <CalendarDots size={16} className="text-teal-600 sm:hidden" weight="fill" /><CalendarDots size={20} className="text-teal-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">연차 승인</div>
                     <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">직원 휴가·연차 신청 승인 처리</div>
@@ -1050,7 +1050,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(253,244,255,0.7) 0%, transparent 60%)" }} />
                     <div className="relative">
                       <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #fdf4ff, #fae8ff)", border: "1px solid #e879f9" }}>
-                        <Shield size={16} className="text-fuchsia-600 sm:hidden" /><Shield size={20} className="text-fuchsia-600 hidden sm:block" />
+                        <ShieldCheck size={16} className="text-fuchsia-600 sm:hidden" weight="fill" /><ShieldCheck size={20} className="text-fuchsia-600 hidden sm:block" weight="fill" />
                       </div>
                       <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">설정</div>
                       <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">권한 · 근무 유형 · 시급 등 앱 전체 설정</div>
@@ -1071,7 +1071,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             <div className="w-full mb-7">
               <div className="flex items-center gap-2 mb-3.5">
                 <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #4338ca, #6366f1)" }}>
-                  <User size={10} className="text-white" />
+                  <User size={10} className="text-white" weight="fill" />
                 </div>
                 <span className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest">직원용</span>
                 <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #c7d2fe, transparent)" }} />
@@ -1084,7 +1084,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(219,234,254,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #dbeafe, #bfdbfe)", border: "1px solid #93c5fd" }}>
-                      <Calendar size={16} className="text-blue-600 sm:hidden" /><Calendar size={20} className="text-blue-600 hidden sm:block" />
+                      <Calendar size={16} className="text-blue-600 sm:hidden" weight="fill" /><Calendar size={20} className="text-blue-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">스케줄표 조회</div>
                     <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">직원 월간 근무 스케줄 확인 및 관리</div>
@@ -1101,7 +1101,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(237,233,254,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ede9fe, #ddd6fe)", border: "1px solid #c4b5fd" }}>
-                      <ScanLine size={16} className="text-violet-600 sm:hidden" /><ScanLine size={20} className="text-violet-600 hidden sm:block" />
+                      <Scan size={16} className="text-violet-600 sm:hidden" weight="fill" /><Scan size={20} className="text-violet-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품검색</div>
                     <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">바코드 스캔으로 진열 보충 요청</div>
@@ -1118,7 +1118,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(209,250,229,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #d1fae5, #a7f3d0)", border: "1px solid #6ee7b7" }}>
-                      <Package size={16} className="text-emerald-600 sm:hidden" /><Package size={20} className="text-emerald-600 hidden sm:block" />
+                      <Package size={16} className="text-emerald-600 sm:hidden" weight="fill" /><Package size={20} className="text-emerald-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품입고</div>
                     <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">바코드 스캔으로 입고 상품 등록</div>
@@ -1135,7 +1135,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,228,230,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffe4e6, #fecdd3)", border: "1px solid #fda4af" }}>
-                      <CalendarDays size={16} className="text-rose-500 sm:hidden" /><CalendarDays size={20} className="text-rose-500 hidden sm:block" />
+                      <CalendarDots size={16} className="text-rose-500 sm:hidden" weight="fill" /><CalendarDots size={20} className="text-rose-500 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">연차 신청</div>
                     <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">휴가·연차 신청 및 내역 조회</div>
@@ -1152,7 +1152,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ffedd5, #fed7aa)", border: "1px solid #fdba74" }}>
-                      <UtensilsCrossed size={16} className="text-red-500 sm:hidden" /><UtensilsCrossed size={20} className="text-red-500 hidden sm:block" />
+                      <ForkKnife size={16} className="text-red-500 sm:hidden" weight="fill" /><ForkKnife size={20} className="text-red-500 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">점심 불참</div>
                     <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">오늘의 점심 불참 신청</div>
@@ -1190,8 +1190,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                           background: "linear-gradient(135deg, #ef4444 0%, #f97316 20%, #eab308 40%, #22c55e 60%, #06b6d4 80%, #8b5cf6 100%)"
                         }}
                       >
-                        <MessageSquare size={16} className="text-white sm:hidden" strokeWidth={2.6} />
-                        <MessageSquare size={20} className="text-white hidden sm:block" strokeWidth={2.6} />
+                        <Chat size={16} className="text-white sm:hidden" weight="fill" />
+                        <Chat size={20} className="text-white hidden sm:block" weight="fill" />
                       </div>
                       <div
                         className="font-black text-xs sm:text-sm mb-0.5 tracking-tight bg-clip-text text-transparent"
@@ -1221,7 +1221,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(254,243,199,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #fef3c7, #fde68a)", border: "1px solid #fcd34d" }}>
-                      <MessageCircleQuestion size={16} className="text-amber-600 sm:hidden" /><MessageCircleQuestion size={20} className="text-amber-600 hidden sm:block" />
+                      <ChatCircle size={16} className="text-amber-600 sm:hidden" weight="fill" /><ChatCircle size={20} className="text-amber-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">이슈공유</div>
                     <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">질문·이슈·메모 · 사진 첨부 · 담당자 지정</div>
@@ -1245,7 +1245,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <div className="px-5 py-4 flex items-center gap-3 border-b border-blue-400/30">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                     style={{ background: "rgba(255,255,255,0.15)", border: "1.5px solid rgba(255,255,255,0.3)" }}>
-                    <Package size={18} className="text-white" />
+                    <Package size={18} className="text-white" weight="fill" />
                   </div>
                   <div className="text-left flex-1 min-w-0">
                     <div className="text-white font-black text-base sm:text-lg tracking-tight leading-tight">재고 확인</div>
@@ -1333,7 +1333,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   style={{ background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)" }}
                 >
                   <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" style={{ background: "linear-gradient(135deg, #dcfce7, #bbf7d0)" }} />
-                  <CalendarCheck size={14} className="relative text-emerald-600" />
+                  <CalendarCheck size={14} className="relative text-emerald-600" weight="fill" />
                   <span className="relative text-emerald-700 font-bold text-sm">거래처 로그인</span>
                 </button>
               </div>
@@ -1345,7 +1345,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             <div className="w-full">
               <div className="flex items-center gap-2 mb-3.5">
                 <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #059669, #10b981)" }}>
-                  <CalendarCheck size={10} className="text-white" />
+                  <CalendarCheck size={10} className="text-white" weight="fill" />
                 </div>
                 <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest">거래처용</span>
                 <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #a7f3d0, transparent)" }} />
@@ -1356,7 +1356,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(209,250,229,0.6) 0%, transparent 60%)" }} />
                   <div className="relative">
                     <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #d1fae5, #a7f3d0)", border: "1px solid #6ee7b7" }}>
-                      <CalendarCheck size={16} className="text-emerald-600 sm:hidden" /><CalendarCheck size={20} className="text-emerald-600 hidden sm:block" />
+                      <CalendarCheck size={16} className="text-emerald-600 sm:hidden" weight="fill" /><CalendarCheck size={20} className="text-emerald-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">방문예약</div>
                     <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">상담 및 방문 일정을 간편하게 예약</div>
@@ -1374,7 +1374,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           <div className="w-full mb-6 mt-2">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: "linear-gradient(135deg, #0ea5e9, #38bdf8)" }}>
-                <Package size={10} className="text-white" />
+                <Package size={10} className="text-white" weight="fill" />
               </div>
               <span className="text-[11px] font-bold text-sky-600 uppercase tracking-widest">입고 알림</span>
               <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #bae6fd, transparent)" }} />
@@ -1407,7 +1407,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               <div className={`bg-white border border-slate-200 rounded-xl overflow-hidden divide-y divide-slate-100 shadow-sm ${arrivalsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {stockArrivals.slice(0, 5).map(a => (
                   <div key={a.id} className="flex items-center gap-2.5 px-3.5 py-2.5">
-                    <Package size={12} className="text-sky-500 shrink-0" />
+                    <Package size={12} className="text-sky-500 shrink-0" weight="fill" />
                     <span className="flex-1 text-sm font-medium text-slate-700 truncate">{a.title}</span>
                     <span className="text-[11px] text-slate-400 shrink-0 whitespace-nowrap">
                       {new Date(a.created_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })}
@@ -1428,7 +1428,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                  <FileSpreadsheet size={15} className="text-orange-600" />
+                  <Table size={15} className="text-orange-600" weight="fill" />
                 </div>
                 <span className="text-gray-900 font-bold text-sm">데이터 업로드</span>
               </div>
@@ -1484,7 +1484,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </p>
                 {uploadResult?.ok ? (
                   <div className="flex flex-col items-center gap-3 py-4">
-                    <CheckCircle2 size={36} className="text-emerald-500" />
+                    <CheckCircle size={36} className="text-emerald-500" weight="fill" />
                     <p className="text-sm font-bold text-emerald-700">업로드 완료</p>
                     <p className="text-xs text-gray-500">{uploadResult.count?.toLocaleString()}개 상품 등록됨</p>
                     <button onClick={() => { setUploadResult(null); setUploadFile(null); }} className="mt-2 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition cursor-pointer">확인</button>
@@ -1556,7 +1556,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <PeriodCoverageWidget endpoint="/api/stock-manage/period-coverage" label="재고 스냅샷 커버리지" color="indigo" refreshTrigger={stockUploadResult} />
                 {stockUploadResult?.ok ? (
                   <div className="flex flex-col items-center gap-3 py-4">
-                    <CheckCircle2 size={36} className="text-emerald-500" />
+                    <CheckCircle size={36} className="text-emerald-500" weight="fill" />
                     <p className="text-sm font-bold text-emerald-700">임포트 완료</p>
                     <p className="text-sm text-gray-700">
                       <span className="font-black text-emerald-700">{(stockUploadResult.history ?? 0).toLocaleString()}</span>
@@ -1756,7 +1756,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 {/* xlsx 임포트 영역 — VendorListEditor 위에 배치해야 스크롤 없이 접근 가능 */}
                 {vendorUploadResult?.ok ? (
                   <div className="flex flex-col items-center gap-3 py-4 mb-4">
-                    <CheckCircle2 size={36} className="text-emerald-500" />
+                    <CheckCircle size={36} className="text-emerald-500" weight="fill" />
                     <p className="text-sm font-bold text-emerald-700">공급사 임포트 완료</p>
                     <p className="text-xs text-gray-500">
                       총 {vendorUploadResult.count?.toLocaleString()}건 · 신규 {vendorUploadResult.inserted ?? 0} · 갱신 {vendorUploadResult.updated ?? 0}
@@ -1812,7 +1812,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <PeriodCoverageWidget endpoint="/api/purchase-details/coverage" label="매입 데이터 커버리지" color="sky" refreshTrigger={purchaseUploadResult} />
                 {purchaseUploadResult?.ok ? (
                   <div className="flex flex-col items-center gap-3 py-4">
-                    <CheckCircle2 size={36} className="text-emerald-500" />
+                    <CheckCircle size={36} className="text-emerald-500" weight="fill" />
                     <p className="text-sm font-bold text-emerald-700">매입 임포트 완료</p>
                     <p className="text-xs text-gray-500">
                       총 {(purchaseUploadResult.total ?? 0).toLocaleString()}행 · 저장 {(purchaseUploadResult.inserted ?? 0).toLocaleString()}행
@@ -2181,7 +2181,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               </button>
               <div className="relative flex items-center gap-4 mb-3">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg shrink-0" style={{ background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)" }}>
-                  <CalendarCheck size={28} className="text-white" />
+                  <CalendarCheck size={28} className="text-white" weight="fill" />
                 </div>
                 <div>
                   <div className="text-white/60 text-[10px] font-semibold tracking-widest uppercase mb-0.5">Vendor Portal</div>
@@ -2196,7 +2196,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <div className="flex flex-col gap-1.5">
                   <label className="text-slate-600 text-xs font-semibold pl-1">전화번호</label>
                   <div className="relative">
-                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none"><User size={14} className="text-slate-400" /></div>
+                    <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none"><User size={14} className="text-slate-400" weight="fill" /></div>
                     <input
                       ref={vendorPhoneRef}
                       type="tel" inputMode="numeric"
@@ -2327,7 +2327,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
-                      <User size={14} className="text-slate-400" />
+                      <User size={14} className="text-slate-400" weight="fill" />
                     </div>
                     <input
                       ref={empNumberRef}

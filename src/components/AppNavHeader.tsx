@@ -4,21 +4,19 @@
 //   - 모바일: 균등 분할 · 넘치는 탭 삼선(☰) 드롭다운 처리
 //   - 로고 클릭 → 홈(랜딩) 이동
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
+import { Lock, LogOut, Menu } from "lucide-react";
 import {
+  House,
+  SquaresFour,
+  Barcode,
+  Package,
   Calendar,
+  ChatCircle,
+  Chat,
   CheckCircle,
+  ForkKnife,
   FileText,
-  Home,
-  LayoutGrid,
-  Lock,
-  LogOut,
-  Menu,
-  MessageSquare,
-  MessageCircleQuestion,
-  PackagePlus,
-  ScanBarcode,
-  UtensilsCrossed,
-} from "lucide-react";
+} from "@phosphor-icons/react";
 import type { AuthSession } from "../types";
 import { NotificationBell } from "./NotificationBell";
 import { NotificationToggle } from "./NotificationToggle";
@@ -54,7 +52,7 @@ interface TabDef {
   key: AppNavPage;
   label: string;
   mobileLabel: string;
-  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
+  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number; weight?: string }>;
   managerOnly: boolean;
   iconClassName?: string;
   color?: "slate" | "blue" | "red" | "sky" | "indigo" | "orange" | "emerald" | "violet" | "amber" | "cyan";
@@ -62,16 +60,16 @@ interface TabDef {
 
 // 무지개 순서: 홈 → 매장(빨) → 상품(주) → 스케줄(amber) → 이슈(초) → 요청(청록) → 연차(파) → 점심(남) → OCR(보라)
 const TABS: TabDef[] = [
-  { key: "landing",  label: "홈",         mobileLabel: "홈",     icon: Home,          managerOnly: false, color: "slate"   },
-  { key: "display",  label: "매장관리",   mobileLabel: "매장",    icon: LayoutGrid,    managerOnly: true,  color: "red"     },
-  { key: "scan",     label: "실재고입력", mobileLabel: "실재고",  icon: ScanBarcode,   managerOnly: true,  color: "orange"  },
-  { key: "productarrival", label: "상품입고", mobileLabel: "상품입고", icon: PackagePlus, managerOnly: true, color: "sky"    },
-  { key: "schedule", label: "스케줄관리", mobileLabel: "스케줄",  icon: Calendar,      managerOnly: false, color: "amber"   },
-  { key: "board",    label: "이슈공유",   mobileLabel: "이슈",    icon: MessageCircleQuestion, managerOnly: false, color: "emerald" },
-  { key: "requests", label: "요청목록",   mobileLabel: "요청",    icon: MessageSquare, managerOnly: false, color: "cyan"    },
-  { key: "leave",    label: "연차승인",   mobileLabel: "연차",    icon: CheckCircle,   managerOnly: true,  color: "blue"    },
-  { key: "lunch",    label: "점심불참",   mobileLabel: "불참",    icon: UtensilsCrossed, managerOnly: false, color: "indigo"  },
-  { key: "ocr",      label: "거래명세서", mobileLabel: "OCR",     icon: FileText,      managerOnly: true,  color: "violet"  },
+  { key: "landing",  label: "홈",         mobileLabel: "홈",     icon: House,             managerOnly: false, color: "slate"   },
+  { key: "display",  label: "매장관리",   mobileLabel: "매장",    icon: SquaresFour,       managerOnly: true,  color: "red"     },
+  { key: "scan",     label: "실재고입력", mobileLabel: "실재고",  icon: Barcode,           managerOnly: true,  color: "orange"  },
+  { key: "productarrival", label: "상품입고", mobileLabel: "상품입고", icon: Package,       managerOnly: true,  color: "sky"     },
+  { key: "schedule", label: "스케줄관리", mobileLabel: "스케줄",  icon: Calendar,          managerOnly: false, color: "amber"   },
+  { key: "board",    label: "이슈공유",   mobileLabel: "이슈",    icon: ChatCircle, managerOnly: false, color: "emerald" },
+  { key: "requests", label: "요청목록",   mobileLabel: "요청",    icon: Chat,        managerOnly: false, color: "cyan"    },
+  { key: "leave",    label: "연차승인",   mobileLabel: "연차",    icon: CheckCircle,       managerOnly: true,  color: "blue"    },
+  { key: "lunch",    label: "점심불참",   mobileLabel: "불참",    icon: ForkKnife,         managerOnly: false, color: "indigo"  },
+  { key: "ocr",      label: "거래명세서", mobileLabel: "OCR",     icon: FileText,          managerOnly: true,  color: "violet"  },
 ];
 
 const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inactiveText: string; inactiveHoverText: string; }> = {
@@ -182,7 +180,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (isActive) {
       return (
         <span key={tab.key} className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} border-transparent shadow-sm font-bold`}>
-          <Icon size={15} strokeWidth={2.2} /> {tab.label}
+          <Icon size={15} weight="fill" /> {tab.label}
         </span>
       );
     }
@@ -193,7 +191,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         disabled={!onNavigate && !onBack}
         className={`${base} bg-white ${c.inactiveText} ${c.inactiveHoverText} border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-40`}
       >
-        <Icon size={15} strokeWidth={1.8} /> {tab.label}
+        <Icon size={15} weight="fill" /> {tab.label}
       </button>
     );
   };
@@ -207,7 +205,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (isActive) {
       return (
         <span key={tab.key} className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} shadow-md font-black`}>
-          <Icon size={18} strokeWidth={2.6} />
+          <Icon size={18} weight="fill" />
           <span className="leading-tight text-center">
             {(() => {
               const L = tab.label;
@@ -234,7 +232,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         disabled={!onNavigate && !onBack}
         className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white cursor-pointer disabled:opacity-40`}
       >
-        <Icon size={18} strokeWidth={2.2} />
+        <Icon size={18} weight="fill" />
         <span className="leading-tight text-center">
           {tab.label.length > 2 ? (
             <>
@@ -375,7 +373,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                               : `${c.inactiveText} hover:bg-slate-50 cursor-pointer`
                           }`}
                         >
-                          <Icon size={15} strokeWidth={isActive ? 2.4 : 1.9} />
+                          <Icon size={15} weight="fill" />
                           {tab.label}
                         </button>
                       );
