@@ -698,26 +698,13 @@ const PurchaseDetailsView: React.FC<{ onProductClick?: (p: any) => void }> = ({ 
       </div>
 
       {/* 필터 바 · 재고리스트 표준 패딩 px-3 py-2 */}
+      {/* 2026-07-29 · 사용자 요청 · 상품/공급사/코드 검색 input 제거 (페이지 상단 검색과 중복) */}
       <div className="flex items-center gap-1.5 px-3 py-2 flex-wrap text-[11px] border-b border-slate-200 shrink-0">
-        <div className="relative flex-1 min-w-[160px]">
-          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="상품·공급사·코드 검색"
-            className="w-full pl-7 pr-6 py-1.5 border border-slate-200 rounded-lg text-[12px] focus:outline-none focus:border-emerald-400 bg-white"
-          />
-          {search && (
-            <button onClick={() => setSearch("")}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-black text-rose-500 hover:text-rose-700 cursor-pointer">✕</button>
-          )}
-        </div>
         <input
           value={supplierFilter}
           onChange={e => setSupplierFilter(e.target.value)}
           placeholder="공급사 정확일치"
-          className="px-2 py-1.5 text-[12px] border border-slate-200 rounded-lg w-32 focus:outline-none focus:border-emerald-400 bg-white"
+          className="px-2 py-1.5 text-[12px] border border-slate-200 rounded-lg w-40 focus:outline-none focus:border-emerald-400 bg-white"
         />
         {/* 프리셋 기간 (재고흐름·판매추이와 UI 통일 · 2026-07-16) */}
         <div className="inline-flex bg-slate-100/80 border border-slate-200/60 rounded-lg p-0.5 shadow-inner">
@@ -2845,7 +2832,7 @@ export const StockManagePage: React.FC = () => {
               }[t.color]!;
               return (
                 <button key={t.k} onClick={() => setStockTab(t.k)}
-                  className={`relative basis-1/3 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 text-[12px] sm:text-[13px] font-bold leading-tight transition-colors duration-150 ${active ? activeText : "text-slate-400 hover:text-slate-700"
+                  className={`relative basis-1/3 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 text-[13px] sm:text-[14px] font-bold leading-tight transition-colors duration-150 ${active ? activeText : "text-slate-400 hover:text-slate-700"
                     }`}>
                   <Icon size={13} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
                   <span>{t.label}</span>
