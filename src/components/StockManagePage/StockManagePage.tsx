@@ -2262,12 +2262,17 @@ export const StockManagePage: React.FC = () => {
                       <span className="text-[11px] tabular-nums text-slate-400">
                         {displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사
                       </span>
-                      {/* 2026-07-28 · 사용자 요청 · Top N 필터 (기본 전체) */}
-                      <div className="flex items-center gap-0.5 ml-auto bg-slate-50 border border-slate-200 rounded-md p-0.5">
+                      {/* 2026-07-30 · 사용자 요청 · Top N 필터 앞에 안내 문구 */}
+                      <span className="text-[11px] font-semibold text-slate-500 ml-auto whitespace-nowrap">
+                        상품명을 누르면 상세 정보와 재고 상황이 나옵니다
+                      </span>
+                      {/* 2026-07-28 · 사용자 요청 · Top N 필터 (기본 전체) · 2026-07-30 · Top 2000 추가 */}
+                      <div className="flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md p-0.5">
                         {[
                           { v: 100,    label: "Top 100" },
                           { v: 300,    label: "Top 300" },
                           { v: 1000,   label: "Top 1000" },
+                          { v: 2000,   label: "Top 2000" },
                           { v: 999999, label: "전체" },
                         ].map(o => (
                           <button key={o.v} onClick={() => setSupListLimit(o.v)}
@@ -2926,9 +2931,12 @@ export const StockManagePage: React.FC = () => {
               {/* 2026-07-29 · 사용자 요청 · 산만한 헤더 재구성 · 조회기간 옆에 날짜범위 · 기간 버튼 다음줄 */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
                 <div className="flex flex-col gap-3 px-4 py-3 border-b border-slate-100 bg-white">
-                  {/* Top N 필터 (우측 정렬) */}
+                  {/* Top N 필터 (우측 정렬) · 2026-07-30 · 사용자 요청 · 안내 문구 앞에 */}
                   {topTab === "sale" && !flowCardCollapsed && (
-                    <div className="flex items-center gap-1 flex-wrap justify-end">
+                    <div className="flex items-center gap-2 flex-wrap justify-end">
+                      <span className="text-[11px] font-semibold text-slate-500 whitespace-nowrap">
+                        상품명을 누르면 상세 정보와 재고 상황이 나옵니다
+                      </span>
                       <div className="flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md p-0.5">
                         {[
                           { v: 100,   label: "Top 100" },
