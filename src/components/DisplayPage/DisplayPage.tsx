@@ -1,6 +1,11 @@
 // src/components/DisplayPage/DisplayPage.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from "react";
 import { ZONE_DEFS, ZONES_STORAGE_KEY, type ZoneSection } from "../../constants/displayZones";
+// 2026-07-29 · shared constants · CategoryTab MiniStoreZoneMap 과 동일 소스 (사용자 요청 통합)
+import {
+  STORE_TOP_WALL, STORE_AISLE_CENTER, STORE_AISLE_PAIRS, STORE_BOTTOM_WALL, STORE_VERTICAL_WING,
+  CAT_A_COLORS, CAT_B_COLORS,
+} from "../../constants/storeMapLayout";
 import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import {
   Bell,
@@ -1923,7 +1928,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                         <div className="w-full bg-white border-2 border-emerald-600 rounded-xl p-2 shadow-sm">
                           <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">상단 벽면 (21→9)</div>
                           <div className="grid grid-cols-[repeat(13,minmax(0,1fr))] gap-1 bg-slate-100 p-1 rounded">
-                            {[21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9].map((num) => renderWallZoneCard(num, "top"))}
+                            {STORE_TOP_WALL.map((num) => renderWallZoneCard(num, "top"))}
                           </div>
 
                           {/* 중앙 진열대: 22 + 8B|8A → 1B|1A · 데스크탑과 동일 카테고리 라벨/색깔/테두리 */}
@@ -1933,36 +1938,17 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                               {/* 진열대 22 (단독) */}
                               <div className="flex flex-col items-center gap-0.5 flex-none w-[40px] min-w-[40px] mr-1">
                                 <div className="w-full text-[10px] font-black text-slate-700 bg-white border-2 border-slate-300 rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex items-center justify-center overflow-hidden">
-                                  <span className="line-clamp-4">{ZONE_DEFS.find(z => z.num === 22)?.category ?? ""}</span>
+                                  <span className="line-clamp-4">{ZONE_DEFS.find(z => z.num === STORE_AISLE_CENTER)?.category ?? ""}</span>
                                 </div>
                                 <div className="w-full text-[9px] font-black text-white bg-slate-600 rounded px-0.5 py-0.5 text-center leading-none">22</div>
                                 {renderZoneCell(22, "w-full h-[80px] flex flex-col justify-between items-center py-1 px-0.5 text-[9px]", "", true)}
                               </div>
                               {/* 8→1 pair · 데스크탑 catA/catB 컬러맵 그대로 */}
                               {(() => {
-                                const catA: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
-                                  1: { bg: "bg-blue-500", border: "border-blue-700", text: "text-white", labelBg: "bg-blue-800" },
-                                  2: { bg: "bg-yellow-400", border: "border-yellow-700", text: "text-yellow-950", labelBg: "bg-yellow-700" },
-                                  3: { bg: "bg-red-500", border: "border-red-700", text: "text-white", labelBg: "bg-red-800" },
-                                  4: { bg: "bg-pink-500", border: "border-pink-700", text: "text-white", labelBg: "bg-pink-800" },
-                                  5: { bg: "bg-lime-500", border: "border-lime-700", text: "text-lime-950", labelBg: "bg-lime-800" },
-                                  6: { bg: "bg-sky-500", border: "border-sky-700", text: "text-white", labelBg: "bg-sky-800" },
-                                  7: { bg: "bg-indigo-500", border: "border-indigo-700", text: "text-white", labelBg: "bg-indigo-800" },
-                                  8: { bg: "bg-purple-500", border: "border-purple-700", text: "text-white", labelBg: "bg-purple-800" },
-                                };
-                                const catB: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
-                                  1: { bg: "bg-blue-100", border: "border-blue-300", text: "text-blue-900", labelBg: "bg-blue-400" },
-                                  2: { bg: "bg-yellow-100", border: "border-yellow-300", text: "text-yellow-900", labelBg: "bg-yellow-400" },
-                                  3: { bg: "bg-red-100", border: "border-red-300", text: "text-red-900", labelBg: "bg-red-400" },
-                                  4: { bg: "bg-pink-100", border: "border-pink-300", text: "text-pink-900", labelBg: "bg-pink-400" },
-                                  5: { bg: "bg-lime-100", border: "border-lime-300", text: "text-lime-900", labelBg: "bg-lime-400" },
-                                  6: { bg: "bg-sky-100", border: "border-sky-300", text: "text-sky-900", labelBg: "bg-sky-400" },
-                                  7: { bg: "bg-indigo-100", border: "border-indigo-300", text: "text-indigo-900", labelBg: "bg-indigo-400" },
-                                  8: { bg: "bg-purple-100", border: "border-purple-300", text: "text-purple-900", labelBg: "bg-purple-400" },
-                                };
-                                return [8, 7, 6, 5, 4, 3, 2, 1].map(num => {
-                                  const ca = catA[num];
-                                  const cb = catB[num];
+                                // 2026-07-29 · shared CAT_A_COLORS/CAT_B_COLORS 사용 (storeMapLayout.ts)
+                                return STORE_AISLE_PAIRS.map(num => {
+                                  const ca = CAT_A_COLORS[num];
+                                  const cb = CAT_B_COLORS[num];
                                   const zd = ZONE_DEFS.find(z => z.num === num);
                                   const subB = zd?.subB ?? "";
                                   const subA = zd?.subA ?? "";
@@ -1998,7 +1984,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                           <div className="w-full">
                             <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">하단 벽면 (23→34)</div>
                             <div className="grid grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
-                              {[23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34].map((num) => renderWallZoneCard(num, "bottom"))}
+                              {STORE_BOTTOM_WALL.map((num) => renderWallZoneCard(num, "bottom"))}
                             </div>
                           </div>
                         </div>
@@ -2113,7 +2099,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       <div className="w-full">
                         <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">상단 벽면 (21→9)</div>
                         <div className="grid grid-cols-4 md:grid-cols-[repeat(13,minmax(0,1fr))] gap-1 bg-slate-100 p-1 rounded">
-                          {[21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9].map((num) => renderWallZoneCard(num, "top"))}
+                          {STORE_TOP_WALL.map((num) => renderWallZoneCard(num, "top"))}
                         </div>
                       </div>
 
@@ -2127,18 +2113,18 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                             <button
                               type="button"
                               onClick={() => {
-                                const zd = ZONE_DEFS.find(z => z.num === 22);
+                                const zd = ZONE_DEFS.find(z => z.num === STORE_AISLE_CENTER);
                                 setZoneProductsModal({ zoneId: "22", zoneNum: 22, zoneLabel: `진열대 22`, category: zd?.category ?? "" });
                                 setZoneProductsFilter("all"); setZoneProductsSearch("");
                               }}
                               title="22 카테고리 클릭 → 상품 리스트 보기"
                               className="w-full text-[10px] font-black text-slate-700 bg-white border-2 border-slate-300 rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex items-center justify-center overflow-hidden cursor-pointer hover:bg-slate-50 transition">
-                              <span className="line-clamp-4">{ZONE_DEFS.find(z => z.num === 22)?.category ?? ""}</span>
+                              <span className="line-clamp-4">{ZONE_DEFS.find(z => z.num === STORE_AISLE_CENTER)?.category ?? ""}</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => {
-                                const zd = ZONE_DEFS.find(z => z.num === 22);
+                                const zd = ZONE_DEFS.find(z => z.num === STORE_AISLE_CENTER);
                                 setZoneProductsModal({ zoneId: "22", zoneNum: 22, zoneLabel: `진열대 22`, category: zd?.category ?? "" });
                                 setZoneProductsFilter("all"); setZoneProductsSearch("");
                               }}
@@ -2152,29 +2138,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                           {(() => {
                             // A=진한 톤 (셀 색상 = bg-{color}-600) / B=연한 톤 (셀 색상 = bg-{color}-300)
                             // 대비가 명확히 보이도록 A는 진한 배경, B는 연한 배경
-                            const catA: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
-                              1: { bg: "bg-blue-500", border: "border-blue-700", text: "text-white", labelBg: "bg-blue-800" },
-                              2: { bg: "bg-yellow-400", border: "border-yellow-700", text: "text-yellow-950", labelBg: "bg-yellow-700" },
-                              3: { bg: "bg-red-500", border: "border-red-700", text: "text-white", labelBg: "bg-red-800" },
-                              4: { bg: "bg-pink-500", border: "border-pink-700", text: "text-white", labelBg: "bg-pink-800" },
-                              5: { bg: "bg-lime-500", border: "border-lime-700", text: "text-lime-950", labelBg: "bg-lime-800" },
-                              6: { bg: "bg-sky-500", border: "border-sky-700", text: "text-white", labelBg: "bg-sky-800" },
-                              7: { bg: "bg-indigo-500", border: "border-indigo-700", text: "text-white", labelBg: "bg-indigo-800" },
-                              8: { bg: "bg-purple-500", border: "border-purple-700", text: "text-white", labelBg: "bg-purple-800" },
-                            };
-                            const catB: Record<number, { bg: string; border: string; text: string; labelBg: string }> = {
-                              1: { bg: "bg-blue-100", border: "border-blue-300", text: "text-blue-900", labelBg: "bg-blue-400" },
-                              2: { bg: "bg-yellow-100", border: "border-yellow-300", text: "text-yellow-900", labelBg: "bg-yellow-400" },
-                              3: { bg: "bg-red-100", border: "border-red-300", text: "text-red-900", labelBg: "bg-red-400" },
-                              4: { bg: "bg-pink-100", border: "border-pink-300", text: "text-pink-900", labelBg: "bg-pink-400" },
-                              5: { bg: "bg-lime-100", border: "border-lime-300", text: "text-lime-900", labelBg: "bg-lime-400" },
-                              6: { bg: "bg-sky-100", border: "border-sky-300", text: "text-sky-900", labelBg: "bg-sky-400" },
-                              7: { bg: "bg-indigo-100", border: "border-indigo-300", text: "text-indigo-900", labelBg: "bg-indigo-400" },
-                              8: { bg: "bg-purple-100", border: "border-purple-300", text: "text-purple-900", labelBg: "bg-purple-400" },
-                            };
-                            return [8, 7, 6, 5, 4, 3, 2, 1].map((num) => {
-                              const ca = catA[num];
-                              const cb = catB[num];
+                            // 2026-07-29 · shared CAT_A_COLORS/CAT_B_COLORS 사용 (storeMapLayout.ts)
+                            return STORE_AISLE_PAIRS.map((num) => {
+                              const ca = CAT_A_COLORS[num];
+                              const cb = CAT_B_COLORS[num];
                               const zd = ZONE_DEFS.find(z => z.num === num);
                               const subB = zd?.subB ?? "";
                               const subA = zd?.subA ?? "";
@@ -2226,7 +2193,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                       <div className="w-full">
                         <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">하단 벽면 (23→34)</div>
                         <div className="grid grid-cols-4 md:grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
-                          {[23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34].map((num) => renderWallZoneCard(num, "bottom"))}
+                          {STORE_BOTTOM_WALL.map((num) => renderWallZoneCard(num, "bottom"))}
                         </div>
                       </div>
 

@@ -1827,13 +1827,19 @@ const ZoneCategoryContent: React.FC = () => {
               const barCls = { sky: "bg-sky-400", emerald: "bg-emerald-400", amber: "bg-amber-400", rose: "bg-rose-400", indigo: "bg-indigo-400", teal: "bg-teal-400", violet: "bg-violet-400", orange: "bg-orange-400" }[color]!;
               const textCls = { sky: "text-sky-700", emerald: "text-emerald-700", amber: "text-amber-700", rose: "text-rose-700", indigo: "text-indigo-700", teal: "text-teal-700", violet: "text-violet-700", orange: "text-orange-700" }[color]!;
               const selectedBorder = isSelected ? "border-violet-400 bg-violet-50/60 shadow-sm" : "border-slate-200 hover:bg-slate-50";
-              // 2026-07-29 · 사용자 요청 · 깔끔·세련
-              // Top 3 · 금색 · Top 4~10 · 실버 · 그 외 · 슬레이트 (아웃라인)
-              const rankCls = rank <= 3
-                ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-yellow-600 shadow-sm"
-                : rank <= 10
-                  ? "bg-gradient-to-r from-slate-200 to-slate-300 text-slate-900 border-slate-400"
-                  : "bg-white text-slate-500 border-slate-200";
+              // 2026-07-29 · 사용자 요청 · 순위별 색상 · 눈에 띄게
+              //   1·2 빨강 · 3·4 파랑 · 5·6 초록 · 7·8 보라 · 9·10 슬레이트
+              const rankCls = rank <= 2
+                ? "bg-gradient-to-r from-rose-500 to-red-600 text-white border-red-700 shadow-md"
+                : rank <= 4
+                  ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white border-blue-700 shadow-md"
+                  : rank <= 6
+                    ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white border-green-700 shadow-md"
+                    : rank <= 8
+                      ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white border-purple-700 shadow-md"
+                      : rank <= 10
+                        ? "bg-gradient-to-r from-slate-400 to-slate-500 text-white border-slate-600 shadow-sm"
+                        : "bg-white text-slate-500 border-slate-200";
               return (
                 <button
                   key={g.zone}
@@ -1962,15 +1968,22 @@ interface MiniStoreZoneMapProps {
   zoneRankMap?: Record<string, number>;
 }
 const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zoneRankMap }) => {
-  // rank 배지 · Top 10 · "★ BEST1" 형식 · 구역 위쪽 별도 라인 (사용자 요청)
+  // rank 배지 · Top 10 · "★ BEST N" · 순위별 색상 (사용자 요청 · 눈에 띄게)
+  //   1·2위 · 빨강 · 3·4위 · 파랑 · 5·6위 · 초록 · 7·8위 · 보라 · 9·10위 · 슬레이트
   const rankBadge = (zoneId: string) => {
     const rank = zoneRankMap?.[zoneId];
     if (!rank || rank > 10) return null;
-    const cls = rank <= 3
-      ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-yellow-600"
-      : "bg-gradient-to-r from-slate-300 to-slate-400 text-slate-900 border-slate-500";
+    const cls = rank <= 2
+      ? "bg-gradient-to-r from-rose-500 to-red-600 text-white border-red-700 shadow-md"
+      : rank <= 4
+        ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white border-blue-700 shadow-md"
+        : rank <= 6
+          ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white border-green-700 shadow-md"
+          : rank <= 8
+            ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white border-purple-700 shadow-md"
+            : "bg-gradient-to-r from-slate-400 to-slate-500 text-white border-slate-600 shadow-sm";
     return (
-      <span className={`inline-flex items-center gap-0.5 text-[10px] font-black border rounded px-1.5 py-0.5 leading-none tabular-nums shadow-sm ${cls}`}
+      <span className={`inline-flex items-center gap-0.5 text-[10px] font-black border rounded px-1.5 py-0.5 leading-none tabular-nums ${cls}`}
         title={`판매 BEST ${rank}위`}>
         ★ BEST{rank}
       </span>
