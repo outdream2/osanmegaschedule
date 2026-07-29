@@ -549,8 +549,9 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
       }
 
       // products 매핑 (숨김 제외) — 결과 code 만 조회
+      // 2026-07-29 · 사용자 원칙: 상품 관련만 products 조회 · 매입 관련은 purchase_details
       const codesRaw = Array.from(new Set(rawRows.map(r => String((r as any).product_code ?? "").trim()).filter(Boolean)));
-      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; last_purchase_date: string | null; min_order: number }>();
+      const productMap = new Map<string, { optimal_stock: number; sale_price: number; purchase_price: number; current_stock: number; min_order: number }>();
       const hiddenSet = new Set<string>();
       try {
         const CHUNK = 500;
@@ -558,7 +559,7 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           const chunk = codesRaw.slice(i, i + CHUNK);
           const { data: page } = await supabase
             .from("products")
-            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, last_purchase_date, min_order, hidden")
+            .select("product_code, optimal_stock, sale_price, purchase_price, current_stock, min_order, hidden")
             .in("product_code", chunk);
           for (const p of page ?? []) {
             const code = String((p as any).product_code ?? "").trim();
@@ -569,7 +570,6 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
               sale_price:    Number((p as any).sale_price    ?? 0) || 0,
               purchase_price:Number((p as any).purchase_price?? 0) || 0,
               current_stock: Number((p as any).current_stock ?? 0) || 0,
-              last_purchase_date: (p as any).last_purchase_date ?? null,
               min_order:     Number((p as any).min_order     ?? 0) || 0,
             });
           }
@@ -604,7 +604,9 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
             sale_price:    prod?.sale_price ?? 0,
             purchase_price:prod?.purchase_price ?? 0,
             current_stock: prod?.current_stock ?? 0,
-            last_purchase_date: prod?.last_purchase_date ?? null,
+            last_purchase_date: null as string | null,   // purchase_details 조인에서 세팅
+            first_purchase_date: null as string | null,  // purchase_details 조인에서 세팅
+            purchase_count: 0,                            // purchase_details 조인에서 세팅
             min_order:     prod?.min_order ?? 0,
           });
         }
@@ -621,10 +623,64 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           agg.last_snap = snap;
           agg.closing_stock = Number((r as any).closing_stock ?? 0) || 0;
         }
-        if ((Number((r as any).purchase_qty) || 0) > 0 && snap > (agg.last_purchase_date ?? "")) {
-          agg.last_purchase_date = snap;
-        }
+        // 2026-07-29 · 매입일 stock_history fallback 완전 제거 · 아래 purchase_details 조인만 신뢰
       }
+
+      // ═══ purchase_details 조인 (season 모드 신규 · 2026-07-29) ═══
+      //   이전 · 이 경로에 purchase_details 조회가 아예 없어서 매입일/횟수 = null 또는 stock_history fallback
+      //   원칙 · 매입 관련은 무조건 purchase_details
+      try {
+        const codesInResult = Array.from(byCode.keys());
+        const CHUNK = 200;
+        const PAGE = 1000;
+        const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; totalQty: number; totalAmount: number; lastAmount: number; dateSet: Set<string> }>();
+        for (let i = 0; i < codesInResult.length; i += CHUNK) {
+          const chunk = codesInResult.slice(i, i + CHUNK);
+          let fromRow = 0;
+          while (true) {
+            const { data: pdRows, error: pdError } = await supabase
+              .from("purchase_details")
+              .select("product_code, purchase_date, quantity, amount, total")
+              .in("product_code", chunk)
+              .order("purchase_date", { ascending: false })
+              .range(fromRow, fromRow + PAGE - 1);
+            if (pdError) throw new Error(pdError.message);
+            if (!pdRows || pdRows.length === 0) break;
+            for (const r of pdRows) {
+              const code = String((r as any).product_code ?? "").trim();
+              if (!code) continue;
+              const cur = purchaseInfoMap.get(code) ?? { lastDate: null, firstDate: null, totalQty: 0, totalAmount: 0, lastAmount: 0, dateSet: new Set<string>() };
+              const d = String((r as any).purchase_date ?? "");
+              const amt = Number((r as any).total ?? (r as any).amount ?? 0) || 0;
+              const qty = Number((r as any).quantity ?? 0) || 0;
+              if (d && (!cur.lastDate || d > cur.lastDate)) { cur.lastDate = d; cur.lastAmount = amt; }
+              if (d && (!cur.firstDate || d < cur.firstDate)) { cur.firstDate = d; }
+              cur.totalQty += qty;
+              cur.totalAmount += amt;
+              if (d) cur.dateSet.add(d);
+              purchaseInfoMap.set(code, cur);
+            }
+            if (pdRows.length < PAGE) break;
+            fromRow += PAGE;
+          }
+        }
+        // 각 agg 에 반영 · 무조건 purchase_details 값 사용
+        for (const agg of byCode.values()) {
+          const info = purchaseInfoMap.get(agg.product_code);
+          if (info && info.dateSet.size > 0) {
+            agg.last_purchase_date = info.lastDate;
+            agg.first_purchase_date = info.firstDate;
+            agg.purchase_count = info.dateSet.size;
+            (agg as any).purchase_total_qty = info.totalQty;
+            (agg as any).purchase_total_amount = info.totalAmount;
+            (agg as any).purchase_last_amount = info.lastAmount;
+          }
+        }
+        console.log(`[top-sales/season] purchase_details 조인: ${purchaseInfoMap.size}개 상품 · distinct date 카운트`);
+      } catch (e: any) {
+        console.warn(`[top-sales/season] purchase_details 조인 실패:`, e?.message);
+      }
+
       const aggRows = Array.from(byCode.values()).map(({ first_snap: _fs, last_snap: _ls, ...rest }) => rest);
       const sign = dir === "asc" ? 1 : -1;
       const sorted = aggRows.sort((a, b) => {

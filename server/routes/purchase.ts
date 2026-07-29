@@ -568,28 +568,38 @@ router.get("/api/purchase-details", async (req, res) => {
 
     // 매입주기 계산: 각 product_code 별 전체 이력 조회 → (last - first) / (count - 1)
     //   결과 rows 의 각 행에 cycle_days · purchase_count 부착
+    //   2026-07-29 · CHUNK 500→200 축소 + .range() 페이지네이션 + distinct dates count
     if (codes.length > 0) {
       try {
         const cycleMap = new Map<string, { firstDate: string; lastDate: string; count: number; days: number }>();
-        const PCHUNK = 500;
+        const PCHUNK = 200;
+        const PAGE = 1000;
         for (let i = 0; i < codes.length; i += PCHUNK) {
           const chunk = codes.slice(i, i + PCHUNK);
-          const { data: hist } = await supabase
-            .from("purchase_details")
-            .select("product_code, purchase_date")
-            .in("product_code", chunk);
-          const byCode = new Map<string, string[]>();
-          for (const r of hist ?? []) {
-            const c = String((r as any).product_code ?? "");
-            const d = String((r as any).purchase_date ?? "");
-            if (!c || !d) continue;
-            const arr = byCode.get(c) ?? [];
-            arr.push(d);
-            byCode.set(c, arr);
+          const byCode = new Map<string, Set<string>>();
+          let fromRow = 0;
+          while (true) {
+            const { data: hist, error: histErr } = await supabase
+              .from("purchase_details")
+              .select("product_code, purchase_date")
+              .in("product_code", chunk)
+              .range(fromRow, fromRow + PAGE - 1);
+            if (histErr) throw new Error(histErr.message);
+            if (!hist || hist.length === 0) break;
+            for (const r of hist) {
+              const c = String((r as any).product_code ?? "");
+              const d = String((r as any).purchase_date ?? "");
+              if (!c || !d) continue;
+              const set = byCode.get(c) ?? new Set<string>();
+              set.add(d);
+              byCode.set(c, set);
+            }
+            if (hist.length < PAGE) break;
+            fromRow += PAGE;
           }
-          for (const [c, dates] of byCode) {
+          for (const [c, dateSet] of byCode) {
+            const dates = Array.from(dateSet).sort();
             if (dates.length < 2) { cycleMap.set(c, { firstDate: dates[0] ?? "", lastDate: dates[0] ?? "", count: dates.length, days: 0 }); continue; }
-            dates.sort();
             const first = dates[0], last = dates[dates.length - 1];
             const days = Math.round((new Date(last).getTime() - new Date(first).getTime()) / (86400 * 1000));
             const cycle = dates.length > 1 ? Math.round(days / (dates.length - 1)) : 0;
@@ -625,17 +635,28 @@ router.get("/api/purchase-details/summary", async (req, res) => {
     const productCode = String(req.query.product_code ?? "").trim();
     if (!productCode) return res.status(400).json({ error: "product_code 필요" });
 
-    const { data, error } = await supabase
-      .from("purchase_details")
-      .select("purchase_date, quantity, amount, total, supplier_name")
-      .eq("product_code", productCode)
-      .order("purchase_date", { ascending: false })
-      .limit(1000);
-    if (error) {
-      if (/relation .* does not exist/i.test(error.message)) return res.json({ latest: null, totalQty: 0, totalAmount: 0, count: 0 });
-      throw new Error(error.message);
+    // 2026-07-29 · 페이지네이션 · limit 1000 고정 제거 (매입 1000건 초과 상품 총계 오차 방지)
+    const rows: any[] = [];
+    {
+      const PAGE = 1000;
+      let fromRow = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("purchase_details")
+          .select("purchase_date, quantity, amount, total, supplier_name")
+          .eq("product_code", productCode)
+          .order("purchase_date", { ascending: false })
+          .range(fromRow, fromRow + PAGE - 1);
+        if (error) {
+          if (/relation .* does not exist/i.test(error.message)) return res.json({ latest: null, totalQty: 0, totalAmount: 0, count: 0 });
+          throw new Error(error.message);
+        }
+        if (!data || data.length === 0) break;
+        rows.push(...data);
+        if (data.length < PAGE) break;
+        fromRow += PAGE;
+      }
     }
-    const rows = data ?? [];
     const totalQty = rows.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
     const totalAmount = rows.reduce((s, r) => s + (Number(r.total ?? r.amount) || 0), 0);
     res.json({

@@ -101,52 +101,74 @@ async function fetchStockFlow(days: number): Promise<StockFlowRow[]> {
   const fromStr = from.toISOString().slice(0, 10);
   const toStr = now.toISOString().slice(0, 10);
 
-  const { data: latest, error: latestErr } = await supabase
-    .from("stock_history")
-    .select("*")
-    .lte("snapshot_date", toStr)
-    .order("snapshot_date", { ascending: false })
-    .limit(5000);
-  if (latestErr || !latest) return [];
-
+  // 2026-07-29 · 페이지네이션 · limit 5000 고정 제거 (상품 5000+ 시 잘림)
   const byCode = new Map<string, any>();
-  for (const r of latest) {
-    const code = String((r as any).product_code ?? "").trim();
-    if (!code) continue;
-    if (!byCode.has(code)) byCode.set(code, r);
-  }
-
-  const { data: opening } = await supabase
-    .from("stock_history")
-    .select("*")
-    .gte("snapshot_date", fromStr)
-    .lte("snapshot_date", fromStr)
-    .limit(5000);
-  const openingByCode = new Map<string, any>();
-  if (Array.isArray(opening)) {
-    for (const r of opening) {
-      const code = String((r as any).product_code ?? "").trim();
-      if (code && !openingByCode.has(code)) openingByCode.set(code, r);
+  {
+    const PAGE = 1000;
+    let fromRow = 0;
+    while (true) {
+      const { data: pg, error: pgErr } = await supabase
+        .from("stock_history")
+        .select("*")
+        .lte("snapshot_date", toStr)
+        .order("snapshot_date", { ascending: false })
+        .range(fromRow, fromRow + PAGE - 1);
+      if (pgErr) return [];
+      if (!pg || pg.length === 0) break;
+      for (const r of pg) {
+        const code = String((r as any).product_code ?? "").trim();
+        if (!code) continue;
+        if (!byCode.has(code)) byCode.set(code, r);
+      }
+      if (pg.length < PAGE) break;
+      fromRow += PAGE;
     }
   }
 
-  // ocr_confirmed_items · 매입이력 (product_code · invoice_date · unit_price)
-  //   최근매입일 · MAX(invoice_date)
-  //   매입주기 · invoice_date 간격들의 평균
-  //   단가 · 최신 unit_price
+  const openingByCode = new Map<string, any>();
+  {
+    const PAGE = 1000;
+    let fromRow = 0;
+    while (true) {
+      const { data: pg } = await supabase
+        .from("stock_history")
+        .select("*")
+        .gte("snapshot_date", fromStr)
+        .lte("snapshot_date", fromStr)
+        .range(fromRow, fromRow + PAGE - 1);
+      if (!pg || pg.length === 0) break;
+      for (const r of pg) {
+        const code = String((r as any).product_code ?? "").trim();
+        if (code && !openingByCode.has(code)) openingByCode.set(code, r);
+      }
+      if (pg.length < PAGE) break;
+      fromRow += PAGE;
+    }
+  }
+
+  // 2026-07-29 · 사용자 원칙 · 매입 관련은 무조건 purchase_details (매입 테이블)
+  //   이전 · ocr_confirmed_items (OCR 확정 · 부분집합) · limit 10000 고정
+  //   현재 · purchase_details 페이지네이션 조회
+  //   최근매입일 · MAX(purchase_date)
+  //   매입주기 · distinct purchase_date 간격 평균
+  //   단가 · 최신 unit_price (purchase_details)
   const purchaseByCode = new Map<string, { dates: string[]; latestUnit: number | null }>();
   try {
-    const { data: purchases } = await supabase
-      .from("ocr_confirmed_items")
-      .select("product_code, invoice_date, unit_price, saved_at")
-      .not("product_code", "is", null)
-      .order("invoice_date", { ascending: false })
-      .limit(10000);
-    if (Array.isArray(purchases)) {
+    const PAGE = 1000;
+    let fromRow = 0;
+    while (true) {
+      const { data: purchases, error: pdErr } = await supabase
+        .from("purchase_details")
+        .select("product_code, purchase_date, unit_price")
+        .not("product_code", "is", null)
+        .order("purchase_date", { ascending: false })
+        .range(fromRow, fromRow + PAGE - 1);
+      if (pdErr) throw new Error(pdErr.message);
+      if (!purchases || purchases.length === 0) break;
       for (const p of purchases) {
         const code = String((p as any).product_code ?? "").trim();
         if (!code) continue;
-        const date = ((p as any).invoice_date ?? (p as any).saved_at ?? "").slice(0, 10);
+        const date = String((p as any).purchase_date ?? "").slice(0, 10);
         if (!date) continue;
         if (!purchaseByCode.has(code)) purchaseByCode.set(code, { dates: [], latestUnit: null });
         const rec = purchaseByCode.get(code)!;
@@ -156,6 +178,8 @@ async function fetchStockFlow(days: number): Promise<StockFlowRow[]> {
           if (up > 0) rec.latestUnit = up;
         }
       }
+      if (purchases.length < PAGE) break;
+      fromRow += PAGE;
     }
   } catch { /* 조회 실패 시 빈 map · fallback 처리됨 */ }
 

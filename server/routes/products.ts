@@ -134,21 +134,30 @@ router.get("/api/products-search", async (req, res) => {
           });
         }
       } catch { /* silent */ }
-      // stock_history — 최근 매입 스냅샷
+      // 2026-07-29 · 사용자 원칙: 매입 관련은 매입 테이블(purchase_details) · stock_history fallback 제거
+      // last_purchase_date · last_purchase_qty 모두 purchase_details 에서 조회
       try {
-        const { data: sh } = await supabase
-          .from("stock_history")
-          .select("product_code, snapshot_date, purchase_qty")
-          .in("product_code", codes)
-          .gt("purchase_qty", 0)
-          .order("snapshot_date", { ascending: false });
-        for (const r of sh ?? []) {
-          const c = String((r as any).product_code ?? "").trim();
-          if (!c || histByCode.has(c)) continue;
-          histByCode.set(c, {
-            last_snapshot: (r as any).snapshot_date ?? null,
-            last_purchase_qty: (r as any).purchase_qty != null ? Number((r as any).purchase_qty) : null,
-          });
+        const PAGE = 1000;
+        let fromRow = 0;
+        while (true) {
+          const { data: pd, error: pdErr } = await supabase
+            .from("purchase_details")
+            .select("product_code, purchase_date, quantity")
+            .in("product_code", codes)
+            .order("purchase_date", { ascending: false })
+            .range(fromRow, fromRow + PAGE - 1);
+          if (pdErr) throw new Error(pdErr.message);
+          if (!pd || pd.length === 0) break;
+          for (const r of pd) {
+            const c = String((r as any).product_code ?? "").trim();
+            if (!c || histByCode.has(c)) continue;  // 최근 매입일 우선 (desc 정렬)
+            histByCode.set(c, {
+              last_snapshot: (r as any).purchase_date ?? null,
+              last_purchase_qty: (r as any).quantity != null ? Number((r as any).quantity) : null,
+            });
+          }
+          if (pd.length < PAGE) break;
+          fromRow += PAGE;
         }
       } catch { /* silent */ }
     }
@@ -161,8 +170,8 @@ router.get("/api/products-search", async (req, res) => {
         warehouse_stock: inv?.warehouse_stock ?? null,
         store_stock: inv?.store_stock ?? null,
         inv_checked_at: inv?.checked_at ?? null,
-        // last_purchase_date fallback: products 값이 없으면 stock_history 사용
-        last_purchase_date: p.last_purchase_date ?? hist?.last_snapshot ?? null,
+        // 2026-07-29 · purchase_details 만 신뢰 · products.last_purchase_date fallback 제거
+        last_purchase_date: hist?.last_snapshot ?? null,
         last_snapshot_qty: hist?.last_purchase_qty ?? null,
       };
     });
@@ -312,24 +321,21 @@ router.get("/api/products/:code", async (req, res) => {
       }
     } catch { /* silent */ }
 
-    // stock_history — 최근 매입 스냅샷 (last_purchase_date fallback)
-    let lastPurchase: string | null = (data as any).last_purchase_date ?? null;
-    let lastSnapshot: string | null = null;
-    if (!lastPurchase) {
-      try {
-        const { data: hist } = await supabase
-          .from("stock_history")
-          .select("snapshot_date")
-          .eq("product_code", productCode)
-          .gt("purchase_qty", 0)
-          .order("snapshot_date", { ascending: false })
-          .limit(1);
-        if (hist && hist.length > 0) {
-          lastSnapshot = (hist[0] as any).snapshot_date ?? null;
-          lastPurchase = lastSnapshot;
-        }
-      } catch { /* silent */ }
-    }
+    // 2026-07-29 · 사용자 원칙 · 매입 관련은 purchase_details (매입 테이블)
+    //   이전 · products.last_purchase_date → 없으면 stock_history 이중 fallback
+    //   현재 · purchase_details 만 조회 · 항상 원본 신뢰
+    let lastPurchase: string | null = null;
+    try {
+      const { data: pd } = await supabase
+        .from("purchase_details")
+        .select("purchase_date")
+        .eq("product_code", productCode)
+        .order("purchase_date", { ascending: false })
+        .limit(1);
+      if (pd && pd.length > 0) {
+        lastPurchase = (pd[0] as any).purchase_date ?? null;
+      }
+    } catch { /* silent */ }
 
     res.json({
       ...data,
@@ -338,9 +344,9 @@ router.get("/api/products/:code", async (req, res) => {
       warehouse_stock: (data as any).warehouse_stock ?? warehouseStock,
       store_stock: (data as any).store_stock ?? storeStock,
       inv_checked_at: invCheckedAt,
-      // last_purchase_date fallback
+      // 매입 · purchase_details 만 신뢰
       last_purchase_date: lastPurchase,
-      last_snapshot_date: lastSnapshot,
+      last_snapshot_date: null,  // deprecated · 하위 호환용
     });
   } catch (err: any) { res.status(500).json({ error: err.message }); }
 });
