@@ -1523,7 +1523,6 @@ export const StockManagePage: React.FC = () => {
   const [availableSnapshots, setAvailableSnapshots] = useState<string[]>([]);
   const [snapshotPeriods, setSnapshotPeriods] = useState<Record<string, string | null>>({});
   const [flowPeriodType, setFlowPeriodType] = useState<string | null>(null);
-  const [lastImportAt, setLastImportAt] = useState<string | null>(null);
   const [supplierCardCollapsed, setSupplierCardCollapsed] = useState(false);
   const [lowStockCollapsed, setLowStockCollapsed] = useState(false);
   const [stockDiffCollapsed, setStockDiffCollapsed] = useState(false);
@@ -2562,21 +2561,6 @@ export const StockManagePage: React.FC = () => {
     })();
   }, [flowSnapshot, supplierMonths, supplierSeason]);
 
-  // 상품 DB 임포트 최신 이력 조회 (상단 배지에 표시)
-  useEffect(() => {
-    (async () => {
-      try {
-        const res = await fetch("/api/settings?key=product_import_log");
-        if (res.ok) {
-          const j = await res.json();
-          const logs = Array.isArray(j?.value) ? j.value : [];
-          const latest = logs[0]?.timestamp ?? null;
-          setLastImportAt(latest);
-        }
-      } catch { /* ignore */ }
-    })();
-  }, []);
-
   // 판매수량 범위 필터링 (판매 X개 ~ Y개)
   const filteredFlow = useMemo(() => {
     const minN = salesQtyMin.trim() === "" ? null : parseInt(salesQtyMin, 10);
@@ -2694,24 +2678,8 @@ export const StockManagePage: React.FC = () => {
         {/* 1행: 제목 + 서브탭 + 날짜범위 배지 · 아이콘은 상단 네비 탭(재고관리=Boxes)과 통일 */}
         <div className="flex items-center gap-2 flex-wrap min-w-0">
           <Boxes size={18} className="text-slate-500 shrink-0" />
-          <h2 className="text-lg font-black text-slate-800">재고/판매관리</h2>
-          {/* 2026-07-29 · 사용자 요청 · "ERP 데이터 기준" · 대시보드/원본 데이터 pill 제거 */}
-          {lastImportAt && (() => {
-            const d = new Date(lastImportAt);
-            if (isNaN(d.getTime())) return null;
-            const m = String(d.getMonth() + 1).padStart(2, "0");
-            const day = String(d.getDate()).padStart(2, "0");
-            const hh = String(d.getHours()).padStart(2, "0");
-            const mm = String(d.getMinutes()).padStart(2, "0");
-            return (
-              <span
-                className="text-[9px] sm:text-[10px] font-semibold font-mono text-slate-400 ml-1 whitespace-nowrap"
-                title={`상품 DB 최근 임포트 시각: ${d.toLocaleString()}`}
-              >
-                DB {m}/{day} {hh}:{mm}
-              </span>
-            );
-          })()}
+          <h2 className="text-sm sm:text-base font-black text-slate-800">재고/판매관리</h2>
+          {/* 2026-07-29 · 사용자 요청 · DB 임포트 시각 배지 제거 */}
           {/* 2026-07-29 · 사용자 요청 · 날짜범위 배지 제거 (재고리스트 헤더에도 나옴 · 중복) */}
           {/* 2026-07-28 · 사용자 요청 · 재고관리 페이지 상단 · 별도 관리자 액션 버튼 (적정재고 일괄 업데이트) */}
           <button
