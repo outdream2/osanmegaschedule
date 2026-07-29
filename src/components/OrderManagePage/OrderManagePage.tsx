@@ -3,7 +3,7 @@
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
 // 사입(OCR거래명세서 등록) 탭에서는 거래명세서 OCR(OcrPage) 노출
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle, Upload, Building2, ClipboardList, Bell } from "lucide-react";
+import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle, Upload, Building2, ClipboardList, Bell, CheckCircle2 } from "lucide-react";
 import * as XLSX from "xlsx";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -406,6 +406,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // 우측 패널용 선택된 공급사 (vendor 탭)
   const [vendorSelected, setVendorSelected] = useState<Vendor | null>(null);
   const [vendorReloadKey, setVendorReloadKey] = useState(0);
+  // 2026-07-30 · 사용자 요청 · 발주요청/발주필요 리스트에서 공급사 클릭 시 모달로 공급사 정보 조회/수정
+  const [supplierInfoModal, setSupplierInfoModal] = useState<Vendor | null>(null);
+  // findVendor 는 아래에서 정의 (line 481) · closure 캡처 OK
+  const openSupplierInfo = (supplierName: string | null | undefined) => {
+    if (!supplierName) return;
+    const found = findVendor(supplierName);
+    if (found) setSupplierInfoModal(found);
+    else alert(`공급사 정보 없음: ${supplierName}`);
+  };
   // 공급사 클릭 → API 로 전체 목록 fetch 후 해당 id 의 vendor 우측 패널 표시
   const handleVendorEditRequest = useCallback(async (vendorId: number) => {
     try {
@@ -1078,15 +1087,21 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           <div className={`max-h-[50vh] overflow-auto relative ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
+                {/* 2026-07-30 · 사용자 요청 · 재고리스트 카테고리 그룹 헤더 스타일 · 3그룹 색상 헤더 */}
+                <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
+                  <th colSpan={3} className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100">상품 정보</th>
+                  <th colSpan={4} className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100">재고 현황</th>
+                  <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-slate-100">발주 액션</th>
+                </tr>
                 <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
-                  <th onClick={() => handleNeedSort("supplier")} title="공급사 정렬" className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-slate-50 select-none">공급사{needArrow("supplier")}</th>
-                  <th onClick={() => handleNeedSort("contact")} title="담당자 정렬" className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-slate-50 select-none">담당자{needArrow("contact")}</th>
-                  <th onClick={() => handleNeedSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 min-w-[120px] cursor-pointer hover:bg-slate-50 select-none">상품명{needArrow("name")}</th>
-                  <th onClick={() => handleNeedSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-slate-50/40 text-slate-500 cursor-pointer hover:bg-slate-100 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
+                  <th onClick={() => handleNeedSort("supplier")} title="공급사 정렬" className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">공급사{needArrow("supplier")}</th>
+                  <th onClick={() => handleNeedSort("contact")} title="담당자 정렬" className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">담당자{needArrow("contact")}</th>
+                  <th onClick={() => handleNeedSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 min-w-[120px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">상품명{needArrow("name")}</th>
+                  <th onClick={() => handleNeedSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
                   <th onClick={() => handleNeedSort("inv")} title="실재고 정렬" className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">실재고{needArrow("inv")}</th>
-                  <th onClick={() => handleNeedSort("optimal")} title="적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-slate-50/40 text-slate-500 cursor-pointer hover:bg-slate-100 select-none">적정{needArrow("optimal")}</th>
+                  <th onClick={() => handleNeedSort("optimal")} title="적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">적정{needArrow("optimal")}</th>
                   <th onClick={() => handleNeedSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{needArrow("short")}</th>
-                  <th className="text-center px-0.5 py-1.5 w-14 cursor-default">발주</th>
+                  <th className="text-center px-0.5 py-1.5 w-20 cursor-default bg-emerald-50/30 text-emerald-600">발주</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -1119,7 +1134,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   const busy = requestingOrder.has(code);
                   return (
                     <tr key={code} className="hover:bg-orange-50/30 transition">
-                      <td className="px-0.5 py-1.5 text-[12px] text-sky-600 font-semibold break-words whitespace-normal align-top">{p.supplier || "-"}</td>
+                      {/* 2026-07-30 · 사용자 요청 · 공급사 클릭 → 공급사 정보 모달 */}
+                      <td className="px-0.5 py-1.5 text-[12px] font-semibold break-words whitespace-normal align-top">
+                        {p.supplier ? (
+                          <button type="button"
+                            onClick={(e) => { e.stopPropagation(); openSupplierInfo(p.supplier); }}
+                            className="text-sky-600 hover:text-sky-800 hover:underline cursor-pointer text-left w-full"
+                            title="공급사 정보 조회·수정">{p.supplier}</button>
+                        ) : "-"}
+                      </td>
                       <td className="px-0.5 py-1.5 text-[12px] text-slate-600 break-words whitespace-normal align-top">
                         {vendor ? (
                           <button
@@ -1161,11 +1184,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       </td>
                       <td className="text-center px-0.5 py-1.5 align-top">
                         {alreadyRequested ? (
-                          <button onClick={() => handleRequestOrder(p)} className="text-[11px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-lg cursor-pointer hover:bg-emerald-100 transition">요청됨</button>
+                          <button onClick={() => handleRequestOrder(p)} className="text-[11px] font-black text-emerald-700 bg-emerald-50 border border-emerald-300 px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-emerald-100 transition inline-flex items-center gap-1 mx-auto shadow-sm">
+                            <CheckCircle2 size={11} strokeWidth={2.4} /> 요청됨
+                          </button>
                         ) : (
                           <button onClick={() => handleRequestOrder(p)} disabled={busy}
-                            className="text-[11px] font-bold text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded-lg transition cursor-pointer disabled:opacity-50 flex items-center gap-1 mx-auto">
-                            <ShoppingCart size={10} />{busy ? "..." : "리스트에 추가"}
+                            className="text-[11px] font-black text-white bg-gradient-to-b from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 border border-red-700 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1 mx-auto shadow-sm hover:shadow-md active:scale-95">
+                            <ShoppingCart size={11} strokeWidth={2.4} />{busy ? "..." : "리스트 추가"}
                           </button>
                         )}
                       </td>
@@ -1592,16 +1617,23 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           <div className={`max-h-[50vh] overflow-auto relative ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
+                {/* 2026-07-30 · 사용자 요청 · 재고리스트 카테고리 그룹 헤더 스타일 · 3그룹 색상 헤더 */}
+                <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
+                  <th className="bg-slate-50"></th>
+                  <th colSpan={3} className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100">상품 정보</th>
+                  <th colSpan={4} className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100">재고 현황</th>
+                  <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-slate-100">발주 액션</th>
+                </tr>
                 <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                   <th className="text-center px-0.5 py-1.5 w-6"></th>
-                  <th onClick={() => handleOrderSort("supplier")} title="공급사 정렬" className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-slate-50 select-none">공급사{orderArrow("supplier")}</th>
-                  <th onClick={() => handleOrderSort("contact")} title="담당자 정렬" className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-slate-50 select-none">담당자{orderArrow("contact")}</th>
-                  <th onClick={() => handleOrderSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 min-w-[120px] cursor-pointer hover:bg-slate-50 select-none">상품명{orderArrow("name")}</th>
-                  <th onClick={() => handleOrderSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-slate-50/40 text-slate-500 cursor-pointer hover:bg-slate-100 select-none"><div className="leading-tight">ERP<br/>재고{orderArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
+                  <th onClick={() => handleOrderSort("supplier")} title="공급사 정렬" className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">공급사{orderArrow("supplier")}</th>
+                  <th onClick={() => handleOrderSort("contact")} title="담당자 정렬" className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">담당자{orderArrow("contact")}</th>
+                  <th onClick={() => handleOrderSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 min-w-[120px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">상품명{orderArrow("name")}</th>
+                  <th onClick={() => handleOrderSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{orderArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
                   <th onClick={() => handleOrderSort("inv")} title="실재고 정렬" className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">실재고{orderArrow("inv")}</th>
-                  <th onClick={() => handleOrderSort("optimal")} title="적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-slate-50/40 text-slate-500 cursor-pointer hover:bg-slate-100 select-none">적정{orderArrow("optimal")}</th>
+                  <th onClick={() => handleOrderSort("optimal")} title="적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">적정{orderArrow("optimal")}</th>
                   <th onClick={() => handleOrderSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{orderArrow("short")}</th>
-                  <th className="text-center px-0.5 py-1.5 w-14 cursor-default">발주</th>
+                  <th className="text-center px-0.5 py-1.5 w-14 cursor-default bg-emerald-50/30 text-emerald-600">발주</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -1681,7 +1713,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           const secondLine = suffix || extraFromProduct || "";
                           return (
                             <>
-                              <div className="text-[12px] text-sky-600 font-semibold break-words whitespace-normal leading-tight">{mainName || "-"}</div>
+                              {/* 2026-07-30 · 사용자 요청 · 공급사 클릭 → 정보 모달 */}
+                              {mainName ? (
+                                <button type="button"
+                                  onClick={(e) => { e.stopPropagation(); openSupplierInfo(mainName); }}
+                                  className="text-[12px] text-sky-600 hover:text-sky-800 hover:underline font-semibold break-words whitespace-normal leading-tight text-left w-full cursor-pointer"
+                                  title="공급사 정보 조회·수정">{mainName}</button>
+                              ) : (
+                                <div className="text-[12px] text-slate-400 font-semibold">-</div>
+                              )}
                               {secondLine && (
                                 <div className="text-[10px] text-slate-400 font-normal break-words whitespace-normal leading-tight mt-0.5">{secondLine}</div>
                               )}
@@ -2151,6 +2191,19 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             >닫기</button>
           </div>
         </>
+      )}
+
+      {/* 2026-07-30 · 사용자 요청 · 공급사 정보 모달 (발주요청/발주필요 리스트 공급사 클릭 시) */}
+      {supplierInfoModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierInfoModal(null)}>
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+            <VendorDetailModal
+              vendor={supplierInfoModal}
+              onClose={() => setSupplierInfoModal(null)}
+              onSaved={() => setSupplierInfoModal(null)}
+            />
+          </div>
+        </div>
       )}
     </main>
   );
