@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Package, Search, X } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession } from "../../types";
@@ -57,10 +57,14 @@ const STATE_META: Record<StockState, { label: string; bg: string; text: string; 
   out:     { label: "재고없음",  bg: "bg-red-100",     text: "text-red-600",     dot: "bg-red-400"     },
 };
 
+type StockSortKey = "product_name" | "current_stock" | "real_map" | "supplier";
+
 export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
   const isLoggedIn = !!(authSession && (authSession.role === "employee" || authSession.role === "manager" || authSession.role === "admin" || authSession.role === "superadmin"));
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<StockItem[] | null>(null);
+  const [sortKey, setSortKey] = useState<StockSortKey>("product_name");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -101,6 +105,35 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
     setLoading(true);
     debounceRef.current = setTimeout(() => doSearch(val), 300);
   };
+
+  const handleSort = (k: StockSortKey) => {
+    if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(k); setSortDir("asc"); }
+  };
+  const arrow = (k: StockSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
+
+  const sortedResults = useMemo(() => {
+    if (!results) return null;
+    return results.slice().sort((a, b) => {
+      const sign = sortDir === "asc" ? 1 : -1;
+      let va: string | number, vb: string | number;
+      if (sortKey === "current_stock") {
+        va = Number(a.current_stock ?? ""); vb = Number(b.current_stock ?? "");
+        if (!Number.isFinite(va)) va = -Infinity;
+        if (!Number.isFinite(vb)) vb = -Infinity;
+        return sign * ((va as number) - (vb as number));
+      }
+      va = (a[sortKey] ?? ""); vb = (b[sortKey] ?? "");
+      return sign * String(va).localeCompare(String(vb), "ko");
+    });
+  }, [results, sortKey, sortDir]);
+
+  const sortBtnCls = (k: StockSortKey) =>
+    `px-2 py-0.5 rounded text-[11px] font-bold border cursor-pointer transition ${
+      sortKey === k
+        ? "bg-indigo-600 text-white border-indigo-600"
+        : "bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
+    }`;
 
   const clear = () => {
     setQuery("");
@@ -149,6 +182,19 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
           )}
         </div>
 
+        {/* Sort toolbar — 결과 있을 때만 표시 */}
+        {results && results.length > 0 && (
+          <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+            <span className="text-[10px] text-slate-400 font-bold shrink-0">정렬:</span>
+            <button onClick={() => handleSort("product_name")} className={sortBtnCls("product_name")} title="상품명 정렬">상품명{arrow("product_name")}</button>
+            <button onClick={() => handleSort("current_stock")} className={sortBtnCls("current_stock")} title="재고수량 정렬">재고{arrow("current_stock")}</button>
+            {isLoggedIn && <>
+              <button onClick={() => handleSort("real_map")} className={sortBtnCls("real_map")} title="실제배치구역 정렬">구역{arrow("real_map")}</button>
+              <button onClick={() => handleSort("supplier")} className={sortBtnCls("supplier")} title="공급처 정렬">공급처{arrow("supplier")}</button>
+            </>}
+          </div>
+        )}
+
         {/* Status legend — 비로그인: 재고있음·판매중 / 로그인: 재고있음·판매중·재고없음 */}
         <div className="flex items-center gap-3 mb-4 px-1">
           {(Object.entries(STATE_META) as [StockState, typeof STATE_META[StockState]][])
@@ -162,13 +208,13 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         </div>
 
         {/* Loading · 배너+dim 패턴 */}
-        {loading && results && results.length > 0 && (
+        {loading && sortedResults && sortedResults.length > 0 && (
           <div className="flex items-center justify-center gap-1.5 text-[10px] text-indigo-600 font-bold py-1.5 mb-1 bg-indigo-50 border border-indigo-200 rounded-md sticky top-0 z-10">
             <div className="w-2.5 h-2.5 rounded-full border-2 border-indigo-200 border-t-indigo-500 animate-spin shrink-0" />
             검색 중...
           </div>
         )}
-        {loading && (!results || results.length === 0) && (
+        {loading && (!sortedResults || sortedResults.length === 0) && (
           <div className="flex items-center gap-2 py-4 px-1 text-slate-400 text-xs font-medium">
             <div className="w-3.5 h-3.5 rounded-full border-2 border-slate-200 border-t-indigo-500 animate-spin shrink-0" />
             검색 중...
@@ -183,7 +229,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         )}
 
         {/* Empty */}
-        {!loading && !error && results?.length === 0 && (
+        {!loading && !error && sortedResults?.length === 0 && (
           <div className="text-center py-12 text-slate-400">
             <Package size={28} className="mx-auto mb-2 text-slate-200" />
             <p className="text-sm font-semibold text-slate-500">검색 결과가 없습니다</p>
@@ -192,16 +238,16 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
         )}
 
         {/* Results list */}
-        {results && results.length > 0 && (
+        {sortedResults && sortedResults.length > 0 && (
           <div className={`bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             {/* 결과 수 표시: 직원(로그인)만 · 일반 사용자는 숨김 */}
             {isLoggedIn && (
               <div className="px-4 py-2.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-                <span className="text-[11px] font-bold text-slate-500">검색 결과 {results.length}건</span>
+                <span className="text-[11px] font-bold text-slate-500">검색 결과 {sortedResults.length}건</span>
               </div>
             )}
             <div className="divide-y divide-slate-50">
-              {results
+              {sortedResults
                 // 비로그인: 재고있음 & 판매중 상품만 노출
                 .filter(item => {
                   if (isLoggedIn) return true;

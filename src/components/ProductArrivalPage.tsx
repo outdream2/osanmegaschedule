@@ -164,6 +164,30 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     setLastScannedCode(null);
   };
 
+  // 헤더 정렬 state
+  type ArrivalSortKey = "addedAt" | "supplier" | "name" | "qty" | "status";
+  const [sortKey, setSortKey] = useState<ArrivalSortKey>("addedAt");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const handleSort = (k: ArrivalSortKey) => {
+    if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(k); setSortDir("desc"); }
+  };
+  const arrow = (k: ArrivalSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
+
+  const sortedItems = useMemo(() => {
+    const sign = sortDir === "asc" ? 1 : -1;
+    return items.slice().sort((a, b) => {
+      switch (sortKey) {
+        case "addedAt":  return sign * (a.addedAt - b.addedAt);
+        case "supplier": return sign * (a.product?.supplier ?? "").localeCompare(b.product?.supplier ?? "", "ko");
+        case "name":     return sign * (a.product?.name ?? "").localeCompare(b.product?.name ?? "", "ko");
+        case "qty":      return sign * (a.qty - b.qty);
+        case "status":   return sign * a.status.localeCompare(b.status);
+        default:         return 0;
+      }
+    });
+  }, [items, sortKey, sortDir]);
+
   const counts = useMemo(() => {
     const c = { total: items.length, match: 0, mismatch: 0, expiring: 0, pending: 0, totalQty: 0 };
     for (const it of items) {
@@ -321,16 +345,16 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 <table className="w-full text-[13px]">
                   <thead className="sticky top-0 bg-slate-50 z-10 border-b-2 border-slate-200 shadow-sm">
                     <tr className="text-[12px] font-black text-slate-500 tracking-tight">
-                      <th className="text-left px-2 py-2 w-16">입고일</th>
-                      <th className="text-left px-2 py-2 w-20 sm:w-28">공급사</th>
-                      <th className="text-left px-2 py-2">상품명</th>
-                      <th className="text-center px-2 py-2 w-24">갯수</th>
-                      <th className="text-center px-2 py-2 w-40">상태</th>
+                      <th className="text-left px-2 py-2 w-16 cursor-pointer select-none hover:bg-slate-100 transition" onClick={() => handleSort("addedAt")} title="입고일 정렬">입고일{arrow("addedAt")}</th>
+                      <th className="text-left px-2 py-2 w-20 sm:w-28 cursor-pointer select-none hover:bg-slate-100 transition" onClick={() => handleSort("supplier")} title="공급사 정렬">공급사{arrow("supplier")}</th>
+                      <th className="text-left px-2 py-2 cursor-pointer select-none hover:bg-slate-100 transition" onClick={() => handleSort("name")} title="상품명 정렬">상품명{arrow("name")}</th>
+                      <th className="text-center px-2 py-2 w-24 cursor-pointer select-none hover:bg-slate-100 transition" onClick={() => handleSort("qty")} title="갯수 정렬">갯수{arrow("qty")}</th>
+                      <th className="text-center px-2 py-2 w-40 cursor-pointer select-none hover:bg-slate-100 transition" onClick={() => handleSort("status")} title="상태 정렬">상태{arrow("status")}</th>
                       <th className="text-center px-1 py-2 w-8"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {items.map((it) => {
+                    {sortedItems.map((it) => {
                       const isRecent = it.key === lastAddedKey;
                       const d = new Date(it.addedAt);
                       const arrivedAt = `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;

@@ -93,6 +93,7 @@ interface ArrivalMatchRow {
   status: "match" | "partial" | "missing";
   arrival_items: any[];
 }
+type ArrivalSortKey = "product_name" | "supplier" | "requested_at" | "order_qty" | "arrived_qty" | "status" | "assigned_staff_name";
 const ArrivalMatchTab: React.FC = () => {
   const [rows, setRows] = useState<ArrivalMatchRow[]>([]);
   const [meta, setMeta] = useState<{ days: number; order_count: number; arrival_count: number } | null>(null);
@@ -102,6 +103,13 @@ const ArrivalMatchTab: React.FC = () => {
   const [notifying, setNotifying] = useState<Set<number>>(new Set());
   const [notified, setNotified] = useState<Set<number>>(new Set());
   const [notifyError, setNotifyError] = useState<Record<number, string>>({});
+  const [arrSortKey, setArrSortKey] = useState<ArrivalSortKey>("requested_at");
+  const [arrSortDir, setArrSortDir] = useState<"asc" | "desc">("desc");
+  const handleArrSort = (k: ArrivalSortKey) => {
+    if (arrSortKey === k) setArrSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setArrSortKey(k); setArrSortDir("asc"); }
+  };
+  const arrArrow = (k: ArrivalSortKey) => arrSortKey !== k ? " ⇅" : arrSortDir === "asc" ? " ▲" : " ▼";
 
   useEffect(() => {
     setLoading(true);
@@ -115,9 +123,22 @@ const ArrivalMatchTab: React.FC = () => {
       .finally(() => setLoading(false));
   }, [days]);
 
-  const filtered = useMemo(() =>
-    statusFilter === "all" ? rows : rows.filter(r => r.status === statusFilter)
-  , [rows, statusFilter]);
+  const filtered = useMemo(() => {
+    const base = statusFilter === "all" ? rows : rows.filter(r => r.status === statusFilter);
+    return [...base].sort((a, b) => {
+      const dir = arrSortDir === "asc" ? 1 : -1;
+      switch (arrSortKey) {
+        case "product_name": return dir * String(a.product_name).localeCompare(String(b.product_name), "ko");
+        case "supplier":     return dir * String(a.supplier).localeCompare(String(b.supplier), "ko");
+        case "assigned_staff_name": return dir * String(a.assigned_staff_name ?? "").localeCompare(String(b.assigned_staff_name ?? ""), "ko");
+        case "status":       return dir * String(a.status).localeCompare(String(b.status), "ko");
+        case "requested_at": return dir * String(a.requested_at).localeCompare(String(b.requested_at));
+        case "order_qty":    return dir * (a.order_qty - b.order_qty);
+        case "arrived_qty":  return dir * (a.arrived_qty - b.arrived_qty);
+        default:             return 0;
+      }
+    });
+  }, [rows, statusFilter, arrSortKey, arrSortDir]);
 
   const notify = async (r: ArrivalMatchRow) => {
     if (!r.assigned_staff_id) return;
@@ -212,12 +233,12 @@ const ArrivalMatchTab: React.FC = () => {
             <table className="w-full text-[13px]">
               <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm">
                 <tr className="text-slate-600 text-[12px] font-black">
-                  <th className="text-left px-2 py-2 min-w-[220px]">상품 · 공급사</th>
-                  <th className="text-left px-2 py-2 w-20">발주일</th>
-                  <th className="text-right px-2 py-2 w-16">발주량</th>
-                  <th className="text-right px-2 py-2 w-16">입고량</th>
-                  <th className="text-center px-2 py-2 w-20">상태</th>
-                  <th className="text-left px-2 py-2 w-24">담당자</th>
+                  <th onClick={() => handleArrSort("product_name")} title="상품명 정렬" className="text-left px-2 py-2 min-w-[220px] cursor-pointer hover:bg-slate-100 select-none">상품 · 공급사{arrArrow("product_name")}</th>
+                  <th onClick={() => handleArrSort("requested_at")} title="발주일 정렬" className="text-left px-2 py-2 w-20 cursor-pointer hover:bg-slate-100 select-none">발주일{arrArrow("requested_at")}</th>
+                  <th onClick={() => handleArrSort("order_qty")} title="발주량 정렬" className="text-right px-2 py-2 w-16 cursor-pointer hover:bg-slate-100 select-none">발주량{arrArrow("order_qty")}</th>
+                  <th onClick={() => handleArrSort("arrived_qty")} title="입고량 정렬" className="text-right px-2 py-2 w-16 cursor-pointer hover:bg-slate-100 select-none">입고량{arrArrow("arrived_qty")}</th>
+                  <th onClick={() => handleArrSort("status")} title="상태 정렬" className="text-center px-2 py-2 w-20 cursor-pointer hover:bg-slate-100 select-none">상태{arrArrow("status")}</th>
+                  <th onClick={() => handleArrSort("assigned_staff_name")} title="담당자 정렬" className="text-left px-2 py-2 w-24 cursor-pointer hover:bg-slate-100 select-none">담당자{arrArrow("assigned_staff_name")}</th>
                   <th className="text-center px-2 py-2 w-28">알림</th>
                 </tr>
               </thead>
@@ -306,6 +327,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [returnLoading, setReturnLoading] = useState(false);
   const [returnCycleMin, setReturnCycleMin] = useState<number>(90); // 매입주기 90일 이상
   const [returnSalesMax, setReturnSalesMax] = useState<number>(5);  // 매입주기 판매량 5 이하
+  type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "purchase_cycle" | "sale_qty_cycle" | "sale_qty_month" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
+  const [returnSortKey, setReturnSortKey] = useState<ReturnSortKey>("purchase_cycle");
+  const [returnSortDir, setReturnSortDir] = useState<"asc" | "desc">("desc");
+  const handleReturnSort = (k: ReturnSortKey) => {
+    if (returnSortKey === k) setReturnSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setReturnSortKey(k); setReturnSortDir("asc"); }
+  };
+  const retArrow = (k: ReturnSortKey) => returnSortKey !== k ? " ⇅" : returnSortDir === "asc" ? " ▲" : " ▼";
   const loadReturnList = useCallback(async () => {
     setReturnLoading(true);
     try {
@@ -398,6 +427,26 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [orderError, setOrderError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Set<string>>(new Set());
   const [orderSearch, setOrderSearch] = useState("");
+
+  // ── 발주필요(need) 탭 정렬 ──
+  type NeedSortKey = "supplier" | "contact" | "name" | "current" | "inv" | "optimal" | "short";
+  const [needSortKey, setNeedSortKey] = useState<NeedSortKey>("short");
+  const [needSortDir, setNeedSortDir] = useState<"asc" | "desc">("desc");
+  const handleNeedSort = (k: NeedSortKey) => {
+    if (needSortKey === k) setNeedSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setNeedSortKey(k); setNeedSortDir("asc"); }
+  };
+  const needArrow = (k: NeedSortKey) => needSortKey !== k ? " ⇅" : needSortDir === "asc" ? " ▲" : " ▼";
+
+  // ── 발주요청(order) 탭 정렬 ──
+  type OrderSortKey = "supplier" | "contact" | "name" | "current" | "inv" | "optimal" | "short";
+  const [orderSortKey, setOrderSortKey] = useState<OrderSortKey>("short");
+  const [orderSortDir, setOrderSortDir] = useState<"asc" | "desc">("desc");
+  const handleOrderSort = (k: OrderSortKey) => {
+    if (orderSortKey === k) setOrderSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setOrderSortKey(k); setOrderSortDir("asc"); }
+  };
+  const orderArrow = (k: OrderSortKey) => orderSortKey !== k ? " ⇅" : orderSortDir === "asc" ? " ▲" : " ▼";
 
   const [products, setProducts] = useState<ProductInfo[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
@@ -1029,18 +1078,36 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
                 <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
-                  <th className="text-left px-0.5 py-1.5 w-24 cursor-default">공급사</th>
-                  <th className="text-left px-0.5 py-1.5 w-20 cursor-default">담당자</th>
-                  <th className="text-left px-0.5 py-1.5 min-w-[120px] cursor-default">상품명</th>
-                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/40 text-slate-500"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
-                  <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500">실재고</th>
-                  <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/40 text-slate-500">적정</th>
-                  <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500">부족</th>
+                  <th onClick={() => handleNeedSort("supplier")} title="공급사 정렬" className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-slate-50 select-none">공급사{needArrow("supplier")}</th>
+                  <th onClick={() => handleNeedSort("contact")} title="담당자 정렬" className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-slate-50 select-none">담당자{needArrow("contact")}</th>
+                  <th onClick={() => handleNeedSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 min-w-[120px] cursor-pointer hover:bg-slate-50 select-none">상품명{needArrow("name")}</th>
+                  <th onClick={() => handleNeedSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-slate-50/40 text-slate-500 cursor-pointer hover:bg-slate-100 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
+                  <th onClick={() => handleNeedSort("inv")} title="실재고 정렬" className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">실재고{needArrow("inv")}</th>
+                  <th onClick={() => handleNeedSort("optimal")} title="적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-slate-50/40 text-slate-500 cursor-pointer hover:bg-slate-100 select-none">적정{needArrow("optimal")}</th>
+                  <th onClick={() => handleNeedSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{needArrow("short")}</th>
                   <th className="text-center px-0.5 py-1.5 w-14 cursor-default">발주</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {lowStockFiltered.map(p => {
+                {[...lowStockFiltered].sort((a, b) => {
+                  const dir = needSortDir === "asc" ? 1 : -1;
+                  const aCode = getCode(a), bCode = getCode(b);
+                  const aInv = invStockMap.get(aCode); const bInv = invStockMap.get(bCode);
+                  const aVendor = a.supplier ? findVendor(a.supplier) : undefined;
+                  const bVendor = b.supplier ? findVendor(b.supplier) : undefined;
+                  const aContact = aVendor?.contact_name || (a as any).supplier_contact || "";
+                  const bContact = bVendor?.contact_name || (b as any).supplier_contact || "";
+                  switch (needSortKey) {
+                    case "supplier": return dir * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
+                    case "contact":  return dir * aContact.localeCompare(bContact, "ko");
+                    case "name":     return dir * getName(a).localeCompare(getName(b), "ko");
+                    case "current":  return dir * (Number(a.current_stock ?? 0) - Number(b.current_stock ?? 0));
+                    case "inv":      return dir * ((aInv?.total ?? -1) - (bInv?.total ?? -1));
+                    case "optimal":  return dir * (Number(a.optimal_stock ?? 0) - Number(b.optimal_stock ?? 0));
+                    case "short":    return dir * ((Number(a.optimal_stock ?? 0) - Number(a.current_stock ?? 0)) - (Number(b.optimal_stock ?? 0) - Number(b.current_stock ?? 0)));
+                    default:         return 0;
+                  }
+                }).map(p => {
                   const cur = Number(p.current_stock), opt = Number(p.optimal_stock);
                   const code = getCode(p);
                   const name = getName(p);
@@ -1212,19 +1279,33 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   <thead className="bg-rose-50 border-b border-rose-100 sticky top-0 z-10">
                     <tr>
                       <th className="px-2 py-2 text-left font-bold text-rose-800 w-10">#</th>
-                      <th className="px-2 py-2 text-left font-bold text-rose-800 min-w-[220px]">상품</th>
-                      <th className="px-2 py-2 text-left font-bold text-rose-800 w-28">공급사</th>
-                      <th className="px-2 py-2 text-right font-bold text-rose-800 w-16">현재고</th>
-                      <th className="px-2 py-2 text-right font-bold text-rose-800 w-20">매입주기</th>
-                      <th className="px-2 py-2 text-right font-bold text-rose-800 w-24">주기판매</th>
-                      <th className="px-2 py-2 text-right font-bold text-rose-800 w-24" title="최근 30일 판매량">최근 한달 판매</th>
-                      <th className="px-2 py-2 text-left font-bold text-rose-800 w-24">최근매입일</th>
-                      <th className="px-2 py-2 text-right font-bold text-rose-800 w-20" title="최근 매입일의 매입량">최근 매입량</th>
-                      <th className="px-2 py-2 text-right font-bold text-rose-800 w-24">재고금액</th>
+                      <th onClick={() => handleReturnSort("product_name")} title="상품명 정렬" className="px-2 py-2 text-left font-bold text-rose-800 min-w-[220px] cursor-pointer hover:bg-rose-100 select-none">상품{retArrow("product_name")}</th>
+                      <th onClick={() => handleReturnSort("supplier")} title="공급사 정렬" className="px-2 py-2 text-left font-bold text-rose-800 w-28 cursor-pointer hover:bg-rose-100 select-none">공급사{retArrow("supplier")}</th>
+                      <th onClick={() => handleReturnSort("current_stock")} title="현재고 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-16 cursor-pointer hover:bg-rose-100 select-none">현재고{retArrow("current_stock")}</th>
+                      <th onClick={() => handleReturnSort("purchase_cycle")} title="매입주기 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-20 cursor-pointer hover:bg-rose-100 select-none">매입주기{retArrow("purchase_cycle")}</th>
+                      <th onClick={() => handleReturnSort("sale_qty_cycle")} title="주기판매 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">주기판매{retArrow("sale_qty_cycle")}</th>
+                      <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 판매량 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">최근 한달 판매{retArrow("sale_qty_month")}</th>
+                      <th onClick={() => handleReturnSort("last_purchase_date")} title="최근매입일 정렬" className="px-2 py-2 text-left font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">최근매입일{retArrow("last_purchase_date")}</th>
+                      <th onClick={() => handleReturnSort("last_purchase_qty")} title="최근 매입일의 매입량 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-20 cursor-pointer hover:bg-rose-100 select-none">최근 매입량{retArrow("last_purchase_qty")}</th>
+                      <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">재고금액{retArrow("stock_value")}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {returnList.map((x, i) => (
+                    {[...returnList].sort((a, b) => {
+                      const dir = returnSortDir === "asc" ? 1 : -1;
+                      switch (returnSortKey) {
+                        case "product_name":    return dir * String(a.product_name).localeCompare(String(b.product_name), "ko");
+                        case "supplier":        return dir * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
+                        case "current_stock":   return dir * (a.current_stock - b.current_stock);
+                        case "purchase_cycle":  return dir * ((a.purchase_cycle ?? 0) - (b.purchase_cycle ?? 0));
+                        case "sale_qty_cycle":  return dir * (a.sale_qty_cycle - b.sale_qty_cycle);
+                        case "sale_qty_month":  return dir * ((a.sale_qty_month ?? 0) - (b.sale_qty_month ?? 0));
+                        case "last_purchase_date": return dir * String(a.last_purchase_date ?? "").localeCompare(String(b.last_purchase_date ?? ""));
+                        case "last_purchase_qty":  return dir * ((a.last_purchase_qty ?? 0) - (b.last_purchase_qty ?? 0));
+                        case "stock_value":     return dir * ((a.current_stock * a.purchase_price) - (b.current_stock * b.purchase_price));
+                        default:                return 0;
+                      }
+                    }).map((x, i) => (
                       <tr key={x.product_code} className="border-t border-slate-100 hover:bg-rose-50/40">
                         <td className="px-2 py-1.5 text-slate-400 tabular-nums">{i + 1}</td>
                         <td className="px-2 py-1.5">
@@ -1513,18 +1594,46 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <thead className="sticky top-0 bg-white z-10">
                 <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                   <th className="text-center px-0.5 py-1.5 w-6"></th>
-                  <th className="text-left px-0.5 py-1.5 w-24 cursor-default">공급사</th>
-                  <th className="text-left px-0.5 py-1.5 w-20 cursor-default">담당자</th>
-                  <th className="text-left px-0.5 py-1.5 min-w-[120px] cursor-default">상품명</th>
-                  <th className="text-right px-0.5 py-1.5 w-14 bg-slate-50/40 text-slate-500"><div className="leading-tight">ERP<br/>재고<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
-                  <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500">실재고</th>
-                  <th className="text-right px-0.5 py-1.5 w-12 bg-slate-50/40 text-slate-500">적정</th>
-                  <th className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500">부족</th>
+                  <th onClick={() => handleOrderSort("supplier")} title="공급사 정렬" className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-slate-50 select-none">공급사{orderArrow("supplier")}</th>
+                  <th onClick={() => handleOrderSort("contact")} title="담당자 정렬" className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-slate-50 select-none">담당자{orderArrow("contact")}</th>
+                  <th onClick={() => handleOrderSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 min-w-[120px] cursor-pointer hover:bg-slate-50 select-none">상품명{orderArrow("name")}</th>
+                  <th onClick={() => handleOrderSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-slate-50/40 text-slate-500 cursor-pointer hover:bg-slate-100 select-none"><div className="leading-tight">ERP<br/>재고{orderArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
+                  <th onClick={() => handleOrderSort("inv")} title="실재고 정렬" className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">실재고{orderArrow("inv")}</th>
+                  <th onClick={() => handleOrderSort("optimal")} title="적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-slate-50/40 text-slate-500 cursor-pointer hover:bg-slate-100 select-none">적정{orderArrow("optimal")}</th>
+                  <th onClick={() => handleOrderSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{orderArrow("short")}</th>
                   <th className="text-center px-0.5 py-1.5 w-14 cursor-default">발주</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {orderReqsFiltered.map(r => {
+                {[...orderReqsFiltered].sort((a, b) => {
+                  const dir = orderSortDir === "asc" ? 1 : -1;
+                  const aCodeVars = [a.product_code, a.product_code.replace(/^0+/, ""), a.product_code.padStart(8, "0")];
+                  const bCodeVars = [b.product_code, b.product_code.replace(/^0+/, ""), b.product_code.padStart(8, "0")];
+                  const aProd = aCodeVars.map(c => allProductsMap[c]).find(Boolean);
+                  const bProd = bCodeVars.map(c => allProductsMap[c]).find(Boolean);
+                  const aSupplier = (aProd as any)?.supplier || a.supplier || "";
+                  const bSupplier = (bProd as any)?.supplier || b.supplier || "";
+                  const aVendor = findVendor((aProd as any)?.supplier) || findVendor(a.supplier) || undefined;
+                  const bVendor = findVendor((bProd as any)?.supplier) || findVendor(b.supplier) || undefined;
+                  const aContact = aVendor?.contact_name || a.supplier_contact || (aProd as any)?.supplier_contact || "";
+                  const bContact = bVendor?.contact_name || b.supplier_contact || (bProd as any)?.supplier_contact || "";
+                  const aInv = aCodeVars.map(c => invStockMap.get(c)).find(Boolean);
+                  const bInv = bCodeVars.map(c => invStockMap.get(c)).find(Boolean);
+                  const aCur = Number((aProd as any)?.current_stock ?? a.current_stock ?? 0);
+                  const bCur = Number((bProd as any)?.current_stock ?? b.current_stock ?? 0);
+                  const aOpt = Number((aProd as any)?.optimal_stock ?? a.optimal_stock ?? 0);
+                  const bOpt = Number((bProd as any)?.optimal_stock ?? b.optimal_stock ?? 0);
+                  switch (orderSortKey) {
+                    case "supplier": return dir * aSupplier.localeCompare(bSupplier, "ko");
+                    case "contact":  return dir * aContact.localeCompare(bContact, "ko");
+                    case "name":     return dir * a.product_name.localeCompare(b.product_name, "ko");
+                    case "current":  return dir * (aCur - bCur);
+                    case "inv":      return dir * ((aInv?.total ?? -1) - (bInv?.total ?? -1));
+                    case "optimal":  return dir * (aOpt - bOpt);
+                    case "short":    return dir * ((aOpt - aCur) - (bOpt - bCur));
+                    default:         return 0;
+                  }
+                }).map(r => {
                   // short 계산은 아래 displayShort 로 대체됨 (실시간 재고 반영)
                   const codeVariants = [
                     r.product_code,

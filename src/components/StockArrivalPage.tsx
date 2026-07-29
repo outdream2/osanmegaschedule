@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell, BellOff, Calendar, Check, Clock,
   Package, Pencil, RefreshCw, Send, Trash2, X, Loader2,
@@ -38,9 +38,13 @@ function fmtDT(iso: string) {
   return new Date(iso).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
+type ArrivalSortKey = "created_at" | "scheduled_at" | "title" | "broadcast_sent";
+
 export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession, onBack, onNavigate, onLogout, embedded = false }) => {
   const [arrivals, setArrivals] = useState<StockArrival[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sortKey, setSortKey] = useState<ArrivalSortKey>("created_at");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   // 작성 폼
   const [newTitle, setNewTitle] = useState("");
@@ -208,6 +212,30 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     setArrivals(prev => prev.filter(a => a.id !== id));
   };
 
+  const handleSort = (k: ArrivalSortKey) => {
+    if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(k); setSortDir(k === "title" ? "asc" : "desc"); }
+  };
+  const arrow = (k: ArrivalSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
+
+  const sortedArrivals = useMemo(() => {
+    return arrivals.slice().sort((a, b) => {
+      const sign = sortDir === "asc" ? 1 : -1;
+      if (sortKey === "broadcast_sent") {
+        return sign * (Number(a.broadcast_sent) - Number(b.broadcast_sent));
+      }
+      const va = (a[sortKey] ?? ""); const vb = (b[sortKey] ?? "");
+      return sign * String(va).localeCompare(String(vb), "ko");
+    });
+  }, [arrivals, sortKey, sortDir]);
+
+  const sortBtnCls = (k: ArrivalSortKey) =>
+    `px-2 py-0.5 rounded text-[11px] font-bold border cursor-pointer transition ${
+      sortKey === k
+        ? "bg-sky-600 text-white border-sky-600"
+        : "bg-white text-slate-500 border-slate-200 hover:border-sky-300 hover:text-sky-600"
+    }`;
+
   const isPending = (a: StockArrival) =>
     !!a.scheduled_at && !a.broadcast_sent && new Date(a.scheduled_at) > new Date();
 
@@ -344,6 +372,17 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
           </div>
         )}
 
+        {/* ── 정렬 툴바 ───────────────────────────────────────────────────── */}
+        {arrivals.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] text-slate-400 font-bold shrink-0">정렬:</span>
+            <button onClick={() => handleSort("created_at")} className={sortBtnCls("created_at")} title="등록일 정렬">등록일{arrow("created_at")}</button>
+            <button onClick={() => handleSort("scheduled_at")} className={sortBtnCls("scheduled_at")} title="예약발송일 정렬">예약일{arrow("scheduled_at")}</button>
+            <button onClick={() => handleSort("title")} className={sortBtnCls("title")} title="제목 정렬">제목{arrow("title")}</button>
+            <button onClick={() => handleSort("broadcast_sent")} className={sortBtnCls("broadcast_sent")} title="발송여부 정렬">발송여부{arrow("broadcast_sent")}</button>
+          </div>
+        )}
+
         {/* ── 리스트 ──────────────────────────────────────────────────────── */}
         <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
           {loading && arrivals.length > 0 && (
@@ -359,7 +398,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
           )}
 
           <div className={loading && arrivals.length > 0 ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
-          {arrivals.map((a, idx) => {
+          {sortedArrivals.map((a, idx) => {
             const isEditing = editId === a.id;
             const pending   = isPending(a);
             const schedOpen = schedPickerId === a.id;
