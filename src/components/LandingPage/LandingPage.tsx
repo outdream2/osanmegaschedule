@@ -1112,6 +1112,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 </button>
 
+                {/* 상품입고 — emerald · 2026-07-29 · 사용자 요청 · 직원 랜딩 추가 */}
+                <button onClick={() => onNavigate("productarrival", authSession!)}
+                  className="order-4 group relative bg-white border border-slate-200/80 hover:border-emerald-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(209,250,229,0.7) 0%, transparent 60%)" }} />
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #d1fae5, #a7f3d0)", border: "1px solid #6ee7b7" }}>
+                      <Package size={16} className="text-emerald-600 sm:hidden" /><Package size={20} className="text-emerald-600 hidden sm:block" />
+                    </div>
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">상품입고</div>
+                    <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">바코드 스캔으로 입고 상품 등록</div>
+                    <div className="flex items-center gap-1 mt-2 text-emerald-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">입고하기</span>
+                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
+
                 {/* 연차 신청 — rose · 뒤로 배치 */}
                 <button onClick={() => onNavigate("leave", authSession!)}
                   className="order-5 group relative bg-white border border-slate-200/80 hover:border-rose-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
