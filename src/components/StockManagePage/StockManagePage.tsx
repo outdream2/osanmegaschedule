@@ -1547,32 +1547,7 @@ export const StockManagePage: React.FC = () => {
   const [supplierSelectedKey, setSupplierSelectedKey] = useState<string | null>(null);
   // supplierSelectedObj 는 xlsxSuppliers 선언(line 1636+) 이후에 계산되어야 함 · 아래에서 정의
 
-  // purchase 탭
-  const [purchasePanelWidth, setPurchasePanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_stockmanage_purchase_w")); return Number.isFinite(v) && v > 0 ? v : 600; } catch { return 600; }
-  });
-  useEffect(() => { try { localStorage.setItem("megatown_stockmanage_purchase_w", String(purchasePanelWidth)); } catch { /**/ } }, [purchasePanelWidth]);
-  const purchasePanelWidthRef = useRef(purchasePanelWidth);
-  useEffect(() => { purchasePanelWidthRef.current = purchasePanelWidth; }, [purchasePanelWidth]);
-  const purchaseResizeRef = useRef<{ startX: number; startW: number } | null>(null);
-  const onPurchaseResizeStart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    purchaseResizeRef.current = { startX: e.clientX, startW: purchasePanelWidthRef.current };
-    const move = (ev: MouseEvent) => { const r = purchaseResizeRef.current; if (!r) return; setPurchasePanelWidth(Math.min(1000, Math.max(320, r.startW + (ev.clientX - r.startX)))); };
-    const up = () => { purchaseResizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
-    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
-  };
-  const [purchaseSelectedProduct, setPurchaseSelectedProduct] = useState<ProductInfo | null>(null);
-  const loadPurchaseSelectedProduct = useCallback(async (p: any) => {
-    const code = String(p.product_code ?? "").trim();
-    const partial: ProductInfo = { code, name: String(p.product_name ?? ""), spec: String(p.spec ?? ""), current_stock: p.current_stock ?? null, optimal_stock: p.optimal_stock ?? null, supplier: p.supplier ?? null, real_map: p.real_map ?? null };
-    setPurchaseSelectedProduct(partial);
-    try {
-      let full = lookupProduct(code);
-      if (!full) { const map = await getProductsMap(); full = map[code] ?? map[code.replace(/^0+/, "")] ?? null; }
-      if (full) setPurchaseSelectedProduct(prev => { if (!prev || prev.code !== code) return prev; const o: Record<string, any> = {}; for (const [k, v] of Object.entries(prev)) if (v !== null && v !== undefined) o[k] = v; return { ...full, ...o, code, name: full.name || prev.name }; });
-    } catch { /**/ }
-  }, []);
+  // 2026-07-29 · 사용자 요청 · 매입상세 탭 삭제 · purchase state/callback 제거
 
   // low 탭
   const [lowPanelWidth, setLowPanelWidth] = useState<number>(() => {
@@ -1658,7 +1633,7 @@ export const StockManagePage: React.FC = () => {
   //   flow · supplier · low · diff
   //   기본: flow (재고흐름)
   // 2026-07-29 · 사용자 요청 · 손실추적 → 실재고차이(diff) 로 통합 · "loss" 타입 제거
-  const [stockTab, setStockTab] = useState<"flow" | "supplier" | "purchase" | "low" | "diff" | "category" | "trending">("flow");
+  const [stockTab, setStockTab] = useState<"flow" | "supplier" | "low" | "diff" | "category" | "trending">("flow");
   // 상품재고현황 매입 셀 클릭 시 팝업 (2026-07-16) · 해당 상품 매입 이력
   const [productPurchaseModal, setProductPurchaseModal] = useState<{ product_code: string; product_name: string } | null>(null);
 
@@ -2523,7 +2498,6 @@ export const StockManagePage: React.FC = () => {
 
   // 2026-07-20: 탭 전환 시 각 리스트의 기간·검색 필터 초기화 (프레시 시작)
   //   재고흐름/공급사재고 state 는 StockManagePage 스코프라 탭 스위치 시 유지되던 문제 해결
-  //   매입상세는 PurchaseDetailsView 컴포넌트가 조건부 언마운트되어 자동 리셋됨
   useEffect(() => {
     setFlowMonths(0);
     setFlowSeason(null);
@@ -2707,7 +2681,7 @@ export const StockManagePage: React.FC = () => {
             {[
               { k: "flow" as const, label: "상품현황", icon: Activity, color: "teal" },
               { k: "supplier" as const, label: "공급사", icon: Building2, color: "sky" },
-              { k: "purchase" as const, label: "매입상세", icon: TrendingUp, color: "emerald" },
+              // 2026-07-29 · 사용자 요청 · 매입상세 탭 삭제 (기간별 상품흐름의 매입 이력이 대체)
               { k: "low" as const, label: "적정재고↓", icon: AlertTriangle, color: "rose", badge: lowStock.length },
               { k: "diff" as const, label: "손실추적", icon: Layers, color: "violet" },
               // 2026-07-28 · 카테고리별판매 · 판매추이에서 이동
@@ -2738,7 +2712,7 @@ export const StockManagePage: React.FC = () => {
               }[t.color]!;
               return (
                 <button key={t.k} onClick={() => setStockTab(t.k)}
-                  className={`relative basis-1/3 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-2 sm:px-5 py-2.5 sm:py-3 text-[14px] sm:text-[15px] font-black leading-tight transition-colors duration-150 ${active ? activeText : "text-slate-400 hover:text-slate-700"
+                  className={`relative basis-1/3 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-2 sm:px-5 py-2.5 sm:py-3 text-[15px] sm:text-[17px] font-black leading-tight transition-colors duration-150 ${active ? activeText : "text-slate-400 hover:text-slate-700"
                     }`}>
                   <Icon size={13} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
                   <span>{t.label}</span>
@@ -3103,57 +3077,7 @@ export const StockManagePage: React.FC = () => {
               </div>
               )}
 
-              {/* 매입상세 리스트 (2026-07-15) · purchase_details 조회 · 검색·기간·공급사·헤더정렬 · 상품명 클릭 → 상세 모달 */}
-              {stockTab === "purchase" && (
-              <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
-                <div
-                  className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
-                  style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? purchasePanelWidth : undefined }}
-                >
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <PurchaseDetailsView onProductClick={loadPurchaseSelectedProduct} />
-                </div>
-                </div>
-                <div onMouseDown={onPurchaseResizeStart}
-                  className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-emerald-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
-                  title="드래그하여 폭 조절">
-                  <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
-                </div>
-                <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0 transition-transform duration-150 ${purchaseSelectedProduct ? "fixed inset-0 z-50 bg-slate-50 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible" : ""}`}>
-                  {purchaseSelectedProduct && (
-                    <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md">
-                      <div className="flex items-center gap-2 px-3 py-2">
-                        <button type="button" onClick={() => setPurchaseSelectedProduct(null)}
-                          className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
-                          <XIcon size={16} strokeWidth={2.4} />
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[13px] font-black text-slate-800 break-keep whitespace-normal leading-tight">{purchaseSelectedProduct.name}</div>
-                          <div className="text-[10px] tabular-nums text-slate-500 break-words whitespace-normal leading-tight">#{purchaseSelectedProduct.code} · {purchaseSelectedProduct.supplier ?? "-"}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {!purchaseSelectedProduct ? (
-                    <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-                      <Package size={40} className="mb-3 opacity-30" />
-                      <div className="text-sm font-bold">리스트에서 항목을 클릭하세요</div>
-                      <div className="text-[11px] mt-1">상세 정보가 표시됩니다</div>
-                    </div>
-                  ) : (
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                      <ProductInfoCard
-                        product={purchaseSelectedProduct}
-                        context="stock-manage"
-                        editable={true}
-                        onRealMapUpdate={(v) => setPurchaseSelectedProduct(prev => prev ? { ...prev, real_map: v } : prev)}
-                        onProductUpdate={(u) => setPurchaseSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
-                      />
-                    </div>
-                  )}
-                </div>
-              </div>
-              )}
+              {/* 2026-07-29 · 사용자 요청 · 매입상세 탭 삭제 · 관련 JSX 제거 */}
 
               {/* 적정재고 이하 리스트 · 좌우 분할 레이아웃 */}
               {stockTab === "low" && (
