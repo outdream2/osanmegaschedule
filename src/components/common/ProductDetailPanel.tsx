@@ -103,10 +103,12 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
             {totalSaleQty > 0 && !collapsed && (
               <span className="text-[11px] tabular-nums font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-1.5 py-0.5"
                 title={`stock_history.sale_qty 합계 ${totalSaleQty.toLocaleString()} / ${monthSpan}개월 = 월평균 ${avgMonthlySale}개`}>
-                📉 월평균 판매 <span className="font-black">{avgMonthlySale.toLocaleString()}</span>개
+                월평균 판매 <span className="font-black">{avgMonthlySale.toLocaleString()}</span>개
               </span>
             )}
-            <span className={`ml-auto text-slate-400 text-xs transition-transform shrink-0 ${collapsed ? "" : "rotate-90"}`}>▶</span>
+            {collapsed
+              ? <ChevronRight size={14} className="ml-auto text-slate-400 shrink-0" />
+              : <ChevronDown size={14} className="ml-auto text-slate-600 shrink-0" />}
           </button>
         );
       })()}
@@ -312,15 +314,15 @@ const ProductDetailChartMode: React.FC<{
         <button
           type="button"
           onClick={() => setTopCollapsed(c => !c)}
-          className="w-full flex items-center gap-2 px-3.5 py-2.5 hover:bg-slate-50 transition cursor-pointer border-b border-slate-100"
+          className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-slate-50 transition cursor-pointer border-b border-slate-100"
           title={topCollapsed ? "펼치기" : "접기"}
         >
           {topCollapsed
-            ? <ChevronRight size={15} className="text-slate-400 shrink-0" />
-            : <ChevronDown size={15} className="text-slate-600 shrink-0" />}
+            ? <ChevronRight size={14} className="text-slate-400 shrink-0" />
+            : <ChevronDown size={14} className="text-slate-600 shrink-0" />}
           <Package size={14} className="text-slate-500 shrink-0" />
-          <span className="text-[13px] font-black text-slate-700">재고 · 매입판매가 · 발주 · 배정구역</span>
-          {topCollapsed && <span className="text-[11px] font-semibold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
+          <span className="text-[13px] font-black text-slate-800">재고 · 매입판매가 · 발주 · 배정구역</span>
+          {topCollapsed && <span className="text-[11px] font-bold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
         </button>
         {!topCollapsed && (
           <ProductInfoCard
@@ -343,15 +345,15 @@ const ProductDetailChartMode: React.FC<{
         <button
           type="button"
           onClick={() => setMetaCollapsed(c => !c)}
-          className="w-full flex items-center gap-2 px-3.5 py-2.5 hover:bg-slate-50 transition cursor-pointer border-b border-slate-100"
+          className="w-full flex items-center gap-2 px-3 py-2.5 hover:bg-slate-50 transition cursor-pointer border-b border-slate-100"
           title={metaCollapsed ? "펼치기" : "접기"}
         >
           {metaCollapsed
-            ? <ChevronRight size={15} className="text-slate-400 shrink-0" />
-            : <ChevronDown size={15} className="text-slate-600 shrink-0" />}
+            ? <ChevronRight size={14} className="text-slate-400 shrink-0" />
+            : <ChevronDown size={14} className="text-slate-600 shrink-0" />}
           <Package size={14} className="text-slate-500 shrink-0" />
-          <span className="text-[13px] font-black text-slate-700 break-words whitespace-normal leading-tight text-left">상품 정보 (코드 · 공급처 · 판매상태 · 브랜드 · 제조사 · 바코드 · 유효기간 · 메모)</span>
-          {metaCollapsed && <span className="text-[11px] font-semibold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
+          <span className="text-[13px] font-black text-slate-800 break-words whitespace-normal leading-tight text-left">상품 정보 · 추가 정보</span>
+          {metaCollapsed && <span className="text-[11px] font-bold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
         </button>
         {!metaCollapsed && (
           <ProductInfoCard

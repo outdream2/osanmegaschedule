@@ -335,7 +335,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
     return (
       <div className="min-w-0">
-        <p className="text-[10px] font-bold text-gray-400 mb-0.5">{label}</p>
+        <p className="text-[11px] font-bold text-slate-500 mb-0.5">{label}</p>
         {isEditing ? (
           <div className="flex items-center gap-1">
             <input
@@ -345,7 +345,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               onKeyDown={e => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
               disabled={editSaving}
               autoFocus
-              className="flex-1 min-w-0 text-sm font-semibold border-2 border-indigo-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              className="flex-1 min-w-0 text-[13px] font-black border-2 border-indigo-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-100"
             />
             <button onClick={commitEdit} disabled={editSaving} className="shrink-0 w-6 h-6 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 disabled:opacity-40 cursor-pointer">
               {editSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={12} />}
@@ -356,7 +356,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           </div>
         ) : (
           <div className="flex items-center gap-1 group">
-            <p className={`text-sm font-semibold ${accentClass} truncate flex-1`}>{displayValue}</p>
+            <p className={`text-[13px] font-black ${accentClass} break-words leading-tight flex-1`}>{displayValue}</p>
             {inlineEditEnabled && (
               <button
                 onClick={() => startEdit(fieldKey, value)}
@@ -377,17 +377,17 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
   return (
     <>
-      <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
         {/* 상품명 */}
         {S.header && (<>
-          <div className="flex items-start justify-between gap-2 mb-0.5">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">상품 정보</p>
+          <div className="flex items-start justify-between gap-2 mb-1">
+            <p className="text-[13px] font-black text-slate-800 break-words whitespace-normal leading-tight flex-1">{product.name}</p>
             <button
               type="button"
               onClick={toggleHidden}
               disabled={hideSaving}
               title={isHidden ? "숨김 해제 · 검색·발주 리스트에 다시 표시" : "이 상품 숨김 · 검색·발주 리스트에서 제외"}
-              className={`shrink-0 inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg border transition cursor-pointer ${
+              className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md border transition cursor-pointer ${
                 isHidden
                   ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100"
                   : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-700"
@@ -397,40 +397,37 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               {isHidden ? "숨김 해제" : "숨기기"}
             </button>
           </div>
-          <div className="flex items-center gap-2 mb-2">
-            <p className="text-base font-black text-gray-900 leading-tight">{product.name}</p>
-            {isHidden && (
-              <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-300 whitespace-nowrap">
-                숨김
-              </span>
-            )}
-          </div>
-          {hideError && <p className="text-[10px] text-rose-600 mb-1.5 -mt-1.5">{hideError}</p>}
+          {isHidden && (
+            <span className="inline-flex text-[11px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-300 mb-1.5">
+              숨김
+            </span>
+          )}
+          {hideError && <p className="text-[10px] text-rose-600 mb-1.5">{hideError}</p>}
         </>)}
 
         {/* ── 배정 구역: 전산/실제 인라인 ── */}
         {S.zoneAssignment && (<>
-        <div className="flex items-center gap-1.5 mb-2 px-2.5 py-2 rounded-xl border border-gray-200 bg-gray-50/60">
+        <div className="flex items-center gap-1.5 mb-2 px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50/60">
           {/* 전산배치구역 */}
           <div className="min-w-0 flex-1">
-            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide leading-none mb-0.5">전산</p>
-            <p className="text-sm font-black text-gray-800 leading-tight truncate">{specZone}</p>
+            <p className="text-[11px] font-bold text-slate-500 leading-none mb-0.5">전산</p>
+            <p className="text-[13px] font-black text-slate-800 leading-tight break-words whitespace-normal">{specZone}</p>
           </div>
 
           {/* 화살표 */}
-          <ArrowRight size={13} className={`shrink-0 ${hasMismatch ? "text-orange-400" : "text-gray-300"}`} />
+          <ArrowRight size={13} className={`shrink-0 ${hasMismatch ? "text-orange-400" : "text-slate-300"}`} />
 
           {/* 실제배치구역 */}
           <div className={`min-w-0 flex-1 rounded-lg px-2 py-1 ${
-            hasMismatch ? "bg-orange-50" : realMap ? "bg-teal-50" : "bg-white border border-dashed border-gray-300"
+            hasMismatch ? "bg-orange-50" : realMap ? "bg-teal-50" : "bg-white border border-dashed border-slate-300"
           }`}>
-            <p className={`text-[9px] font-bold uppercase tracking-wide leading-none mb-0.5 ${
-              hasMismatch ? "text-orange-500" : realMap ? "text-teal-600" : "text-gray-400"
+            <p className={`text-[11px] font-bold leading-none mb-0.5 ${
+              hasMismatch ? "text-orange-500" : realMap ? "text-teal-600" : "text-slate-400"
             }`}>실제</p>
             {realMap ? (
-              <p className={`text-sm font-black leading-tight truncate ${hasMismatch ? "text-red-500" : "text-teal-700"}`}>{realMap}</p>
+              <p className={`text-[13px] font-black leading-tight break-words whitespace-normal ${hasMismatch ? "text-red-500" : "text-teal-700"}`}>{realMap}</p>
             ) : (
-              <p className="text-xs text-gray-400">미등록</p>
+              <p className="text-[11px] font-bold text-slate-400">미등록</p>
             )}
           </div>
 
@@ -438,9 +435,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           <button
             onClick={() => setMapSelectorOpen(true)}
             disabled={saving}
-            className={`shrink-0 flex items-center gap-0.5 px-2 py-1.5 rounded-lg border text-[10px] font-bold transition cursor-pointer ${
+            className={`shrink-0 flex items-center gap-0.5 px-2 py-1.5 rounded-lg border text-[11px] font-black transition cursor-pointer ${
               realMap
-                ? "bg-white border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600"
+                ? "bg-white border-slate-300 text-slate-500 hover:border-teal-400 hover:text-teal-600"
                 : "bg-teal-500 border-teal-600 text-white hover:bg-teal-600"
             }`}
           >
@@ -456,13 +453,13 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             {hasMismatch && (
               <div className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-50 border border-orange-200 rounded-lg">
                 <AlertTriangle size={10} className="text-orange-500 shrink-0" />
-                <p className="text-[10px] font-bold text-orange-600">전산배치구역과 실제배치구역이 다릅니다</p>
+                <p className="text-[11px] font-bold text-orange-600">전산배치구역과 실제배치구역이 다릅니다</p>
               </div>
             )}
             {saveError && (
               <div className="flex items-start gap-1.5 px-2.5 py-1.5 bg-red-50 border border-red-200 rounded-lg">
                 <AlertTriangle size={10} className="text-red-500 shrink-0 mt-0.5" />
-                <p className="text-[10px] font-bold text-red-600 whitespace-pre-wrap">{saveError}</p>
+                <p className="text-[11px] font-bold text-red-600 whitespace-pre-wrap">{saveError}</p>
               </div>
             )}
           </div>
@@ -483,24 +480,26 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                   className="flex items-center gap-1.5 hover:bg-white/40 -mx-1 px-1 py-0.5 rounded transition cursor-pointer"
                   title={stockSectionCollapsed ? "펼치기" : "접기"}
                 >
-                  <span className={`text-slate-400 text-xs transition-transform ${stockSectionCollapsed ? "" : "rotate-90"}`}>▶</span>
+                  {stockSectionCollapsed
+                    ? <ChevronRight size={13} className="text-slate-400 shrink-0" />
+                    : <ChevronDown size={13} className="text-slate-500 shrink-0" />}
                   <Package size={11} className={isLow ? "text-red-500" : "text-slate-500"} />
-                  <p className="text-[10px] font-bold text-slate-600 uppercase tracking-wide">재고현황</p>
+                  <p className="text-[13px] font-black text-slate-800">재고현황</p>
                   {isLow && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 bg-red-100 text-red-600 text-[9px] font-black rounded">
+                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-red-100 text-red-600 text-[11px] font-black rounded-md border border-red-200">
                       <AlertTriangle size={9} /> 부족
                     </span>
                   )}
                   {stockSectionCollapsed && (
-                    <span className="text-[10px] font-mono text-slate-500 ml-1">현재고 {cur ?? "-"} · 적정 {opt ?? "-"}</span>
+                    <span className="text-[11px] tabular-nums font-bold text-slate-500 ml-1">현재고 {cur ?? "-"} · 적정 {opt ?? "-"}</span>
                   )}
                 </button>
                 {S.actualStockInput && !stockSectionCollapsed && (
                   <button
                     onClick={() => setStockCounterOpen(true)}
-                    className="flex items-center gap-1 px-2 py-0.5 bg-green-500 hover:bg-green-600 text-white text-[10px] font-bold rounded-lg transition cursor-pointer shadow-sm"
+                    className="flex items-center gap-1 px-2 py-1 min-h-9 bg-green-500 hover:bg-green-600 text-white text-[12px] font-black rounded-lg transition cursor-pointer shadow-sm"
                   >
-                    <ScanLine size={10} /> 재고 세기
+                    <ScanLine size={11} /> 재고 세기
                   </button>
                 )}
               </div>
@@ -628,19 +627,19 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           const stockAsset = pp != null && cur != null ? (pp * cur).toLocaleString() + "원" : null;
           return (
             <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 px-3 py-2 mb-2.5">
-              <p className="text-[9px] font-bold text-indigo-500 uppercase tracking-wide mb-1.5 flex items-center gap-1">
-                <DollarSign size={10}/>매입 · 판매가
+              <p className="text-[13px] font-black text-slate-800 mb-2 flex items-center gap-1.5">
+                <DollarSign size={14} className="text-indigo-500"/>매입 · 판매가
               </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-2">
                 <InlineField label="매입가" fieldKey="purchase_price" value={pp} type="number" accent="emerald" format={v => Number(v).toLocaleString() + "원"} />
                 <InlineField label="판매가" fieldKey="sale_price" value={sp} type="number" accent="indigo" format={v => Number(v).toLocaleString() + "원"} />
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 mb-0.5">마진율</p>
-                  <p className="text-sm font-semibold text-emerald-700">{margin != null ? `${margin}%` : "-"}</p>
+                  <p className="text-[11px] font-bold text-slate-500 mb-0.5">마진율</p>
+                  <p className="text-[13px] font-black text-emerald-700">{margin != null ? `${margin}%` : "-"}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-gray-400 mb-0.5">재고 자산</p>
-                  <p className="text-sm font-semibold text-slate-800 truncate" title={stockAsset ?? undefined}>{stockAsset ?? "-"}</p>
+                  <p className="text-[11px] font-bold text-slate-500 mb-0.5">재고 자산</p>
+                  <p className="text-[13px] font-black text-slate-800 break-words leading-tight" title={stockAsset ?? undefined}>{stockAsset ?? "-"}</p>
                 </div>
               </div>
             </div>
@@ -651,19 +650,19 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         {S.orderRequest && (
         <div className="mb-2.5">
           {existingOrder && orderStatus !== "done" && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 mb-1.5 bg-orange-50 border border-orange-200 rounded-xl text-[10px] text-orange-700 font-bold">
-              <ShoppingCart size={10} className="shrink-0" />
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 mb-1.5 bg-orange-50 border border-orange-200 rounded-xl text-[11px] text-orange-700 font-bold">
+              <ShoppingCart size={11} className="shrink-0" />
               <span>기존 발주요청 있음 — 현재고 {existingOrder.current_stock ?? "—"} ({new Date(existingOrder.requested_at).toLocaleDateString("ko-KR")} 요청)</span>
             </div>
           )}
           {orderConfirm ? (
             <div className="flex items-center gap-2">
-              <span className="text-[11px] text-gray-600 font-bold flex-1">기존 요청을 덮어쓸까요?</span>
-              <button onClick={submitOrderRequest} className="text-[11px] font-bold text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-lg transition cursor-pointer">덮어쓰기</button>
-              <button onClick={() => setOrderConfirm(false)} className="text-[11px] font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-lg transition cursor-pointer">취소</button>
+              <span className="text-[12px] text-slate-700 font-black flex-1">기존 요청을 덮어쓸까요?</span>
+              <button onClick={submitOrderRequest} className="text-[12px] font-black text-white bg-red-500 hover:bg-red-600 px-3 py-1.5 min-h-9 rounded-lg transition cursor-pointer">덮어쓰기</button>
+              <button onClick={() => setOrderConfirm(false)} className="text-[12px] font-black text-slate-600 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 min-h-9 rounded-lg transition cursor-pointer">취소</button>
             </div>
           ) : orderStatus === "done" ? (
-            <div className="flex items-center justify-center gap-2 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm font-bold">
+            <div className="flex items-center justify-center gap-2 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-[12px] font-black">
               <CheckCircle2 size={14} />
               발주 요청이 등록되었습니다
             </div>
@@ -671,10 +670,10 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             <button
               onClick={handleOrderRequest}
               disabled={orderStatus === "loading"}
-              className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-bold transition cursor-pointer disabled:opacity-60 ${
+              className={`w-full flex items-center justify-center gap-2 min-h-9 py-2 rounded-xl text-[12px] font-black transition cursor-pointer disabled:opacity-60 ${
                 isLow
                   ? "bg-red-500 hover:bg-red-600 text-white shadow-sm shadow-red-200"
-                  : "bg-white border border-gray-300 hover:border-indigo-400 hover:text-indigo-600 text-gray-600"
+                  : "bg-white border border-slate-300 hover:border-indigo-400 hover:text-indigo-600 text-slate-600"
               }`}
             >
               {orderStatus === "loading"
@@ -684,7 +683,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             </button>
           )}
           {orderStatus === "error" && (
-            <p className="text-[10px] text-red-500 text-center mt-1">요청 실패 — 다시 시도해주세요</p>
+            <p className="text-[11px] text-red-500 text-center mt-1">요청 실패 — 다시 시도해주세요</p>
           )}
         </div>
         )}
@@ -693,24 +692,29 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         {(S.productMeta || S.extraInfo) && (
         <div className="rounded-xl border border-slate-200 bg-slate-50/30 px-3 py-2 mb-2.5">
           {S.productMeta && (
-            <div className="grid grid-cols-2 gap-x-3 gap-y-2 mb-2">
-              {([
-                ["상품코드", product.code, "font-mono text-xs"],
-                ["공급처", product.supplier ?? "-", ""],
-                ["판매상태", product.sale_status ?? "-", ""],
-                ["최근매입일", product.last_purchase_date ?? "-", ""],
-              ] as [string, string, string][]).map(([label, value, extra]) => (
-                <div key={label}>
-                  <p className="text-[10px] font-bold text-gray-400 mb-0.5">{label}</p>
-                  <p className={`text-sm font-semibold text-gray-800 truncate ${extra}`}>{value}</p>
-                </div>
-              ))}
-            </div>
+            <>
+              <p className="text-[13px] font-black text-slate-800 mb-2 flex items-center gap-1.5">
+                <Info size={14} className="text-slate-500"/>상품 정보
+              </p>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2 mb-2">
+                {([
+                  ["상품코드", product.code],
+                  ["공급처", product.supplier ?? "-"],
+                  ["판매상태", product.sale_status ?? "-"],
+                  ["최근매입일", product.last_purchase_date ?? "-"],
+                ] as [string, string][]).map(([label, value]) => (
+                  <div key={label}>
+                    <p className="text-[11px] font-bold text-slate-500 mb-0.5">{label}</p>
+                    <p className="text-[13px] font-black text-slate-800 break-words leading-tight tabular-nums">{value}</p>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
-          {S.productMeta && S.extraInfo && <div className="border-t border-slate-200 mb-2" />}
+          {S.productMeta && S.extraInfo && <div className="border-t border-slate-100 mb-2" />}
           {S.extraInfo && (<>
-            <p className="text-[9px] font-bold text-slate-500 uppercase tracking-wide mb-1.5 flex items-center gap-1">
-              <Info size={10}/>추가 정보
+            <p className="text-[13px] font-black text-slate-800 mb-2 flex items-center gap-1.5">
+              <Info size={14} className="text-slate-500"/>추가 정보
             </p>
             <div className="grid grid-cols-2 gap-x-3 gap-y-2">
               <InlineField label="브랜드" fieldKey="brand" value={(product as any).brand} />
@@ -719,7 +723,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               <InlineField label="유효기간" fieldKey="expiry_date" value={(product as any).expiry_date} type="date" />
             </div>
             <div className="mt-2">
-              <p className="text-[10px] font-bold text-gray-400 mb-0.5">메모</p>
+              <p className="text-[11px] font-bold text-slate-500 mb-0.5">메모</p>
               {editingKey === "memo" ? (
                 <div className="flex flex-col gap-1">
                   <textarea
@@ -729,13 +733,13 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                     disabled={editSaving}
                     autoFocus
                     rows={2}
-                    className="w-full text-sm border-2 border-indigo-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-100 resize-none"
+                    className="w-full text-[13px] font-black border-2 border-indigo-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-100 resize-none"
                   />
                   <div className="flex items-center gap-1 justify-end">
-                    <button onClick={commitEdit} disabled={editSaving} className="text-[11px] font-bold text-white bg-emerald-500 hover:bg-emerald-600 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
+                    <button onClick={commitEdit} disabled={editSaving} className="text-[12px] font-black text-white bg-emerald-500 hover:bg-emerald-600 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
                       {editSaving ? <Loader2 size={11} className="animate-spin"/> : <Check size={11}/>}저장
                     </button>
-                    <button onClick={cancelEdit} disabled={editSaving} className="text-[11px] font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
+                    <button onClick={cancelEdit} disabled={editSaving} className="text-[12px] font-black text-slate-600 bg-slate-200 hover:bg-slate-300 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
                       <X size={11}/>취소
                     </button>
                   </div>
@@ -743,7 +747,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                 </div>
               ) : (
                 <div className="flex items-start gap-1 group">
-                  <p className={`text-sm text-slate-700 flex-1 whitespace-pre-wrap ${!(product as any).memo ? "text-slate-300 italic" : ""}`}>
+                  <p className={`text-[13px] font-black text-slate-800 flex-1 whitespace-pre-wrap leading-tight ${!(product as any).memo ? "text-slate-300 font-bold italic" : ""}`}>
                     {(product as any).memo || "(메모 없음)"}
                   </p>
                   {inlineEditEnabled && (
@@ -852,7 +856,9 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
             </span>
           )}
           <span className="text-[12px] font-black text-emerald-700">· 매입 이력</span>
-          <span className={`ml-auto text-slate-400 text-xs transition-transform shrink-0 ${collapsed ? "" : "rotate-180"}`}>▲</span>
+          {collapsed
+            ? <ChevronRight size={14} className="ml-auto text-slate-400 shrink-0" />
+            : <ChevronDown size={14} className="ml-auto text-slate-600 shrink-0" />}
         </div>
         {/* 2행 · 통계 (건수 · 총량 · 총액 · 평균 · 주기) */}
         {loading ? (

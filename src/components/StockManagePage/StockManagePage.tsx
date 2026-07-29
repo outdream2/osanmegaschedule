@@ -3531,10 +3531,10 @@ export const StockManagePage: React.FC = () => {
                         </div>
                       )
                     ) : (
-                      // 2026-07-22 · 한 화면 fit · overflow-hidden + table-fixed · 품명 줄바꿈 · min-w 제거
-                      <div className={`overflow-hidden transition-opacity duration-200 ${loading ? "opacity-60" : "opacity-100"}`}>
+                      // 2026-07-29 · sticky thead 활성화 · 내부 overflow-hidden 제거 (sticky 를 막던 이슈)
+                      <div className={`transition-opacity duration-200 ${loading ? "opacity-60" : "opacity-100"}`}>
                       <table className="w-full text-[11px] sm:text-xs" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
-                        <thead className="sticky top-0 bg-white z-20">
+                        <thead className="sticky top-0 bg-white z-20 shadow-sm">
                           {selectedFlowCodes.size > 0 && (
                             <tr className="bg-rose-50 border-b border-rose-200">
                               <td colSpan={10} className="px-2 py-1.5">
@@ -3771,27 +3771,27 @@ export const StockManagePage: React.FC = () => {
                                   ? <CheckSquare size={13} className="text-rose-500 inline cursor-pointer" />
                                   : <Square size={13} className="text-slate-300 hover:text-rose-500 inline cursor-pointer" />}
                               </td>
-                              <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600 align-top">{i + 1}</td>
-                              <td className="px-1 py-1.5 align-top">
+                              <td className="px-0.5 py-2 text-[13px] font-black text-orange-600 align-top tabular-nums">{i + 1}</td>
+                              <td className="px-1.5 py-2 align-top">
                                 <button
                                   type="button"
                                   onClick={() => loadFlowSelectedProduct(p)}
-                                  className="text-left text-[13px] font-semibold text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
+                                  className="text-left text-[15px] font-black text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
                                   title={`${p.product_name} · 클릭하면 오른쪽에 상세 정보 (모바일 · 모달)`}
                                 >
                                   {p.product_name}
                                   {(p as any).min_order != null && (p as any).min_order > 0 && (
-                                    <span className="inline-flex items-center ml-1 px-1 py-0.5 rounded text-[10px] font-black text-sky-700 bg-sky-100 border border-sky-300 align-middle" title={`최소주문량 ${(p as any).min_order}`}>
+                                    <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded text-[11px] font-black text-sky-700 bg-sky-100 border border-sky-300 align-middle" title={`최소주문량 ${(p as any).min_order}`}>
                                       최소{(p as any).min_order}
                                     </span>
                                   )}
                                 </button>
-                                {p.supplier && <div className="text-[11px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
+                                {p.supplier && <div className="text-[12px] text-slate-500 font-semibold break-words whitespace-normal mt-0.5">{p.supplier}</div>}
                               </td>
                               {/* === 재고현황 그룹 (판매량 · 현재고 · 적정재고) === */}
                               {!isFlowGroupCollapsed("stock") && <>
                               <td
-                                className="text-right px-0.5 py-1.5 font-bold text-orange-700 text-[12px] bg-orange-50/40 align-top tabular-nums"
+                                className="text-right px-0.5 py-1.5 font-bold text-orange-700 text-[14px] bg-orange-50/40 align-top tabular-nums"
                                 title="판매출고계 · 실제 팔린 양"
                               >{fmt(saleV)}</td>
                               {(() => {
@@ -3799,7 +3799,7 @@ export const StockManagePage: React.FC = () => {
                                 const mismatch = close !== cur;
                                 return (
                                   <td
-                                    className={`text-right px-0.5 py-1.5 font-black text-[12px] bg-amber-50/40 align-top tabular-nums ${cur <= 0 ? "text-red-600" : mismatch ? "text-red-600" : "text-amber-700"}`}
+                                    className={`text-right px-0.5 py-1.5 font-black text-[14px] bg-amber-50/40 align-top tabular-nums ${cur <= 0 ? "text-red-600" : mismatch ? "text-red-600" : "text-amber-700"}`}
                                     title={mismatch ? `현재고(${fmt(cur)}) ≠ 스냅샷 종료재고(${fmt(close)}) · 스냅샷 이후 변동 있음` : "ERP 현재고 (= 스냅샷 종료재고)"}
                                   >{fmt(cur)}</td>
                                 );
@@ -3808,7 +3808,7 @@ export const StockManagePage: React.FC = () => {
                                 const opt = Number((p as any).optimal_stock ?? 0);
                                 const below = opt > 0 && cur < opt;
                                 return (
-                                  <td className={`text-right px-0.5 py-1.5 font-bold text-[12px] bg-teal-50/40 align-top tabular-nums ${opt <= 0 ? "text-slate-300" : below ? "text-rose-600" : "text-teal-700"}`}
+                                  <td className={`text-right px-0.5 py-1.5 font-bold text-[14px] bg-teal-50/40 align-top tabular-nums ${opt <= 0 ? "text-slate-300" : below ? "text-rose-600" : "text-teal-700"}`}
                                     title={opt > 0 ? `적정재고 ${fmt(opt)}${below ? ` · 현재고 부족 (${cur}/${opt})` : ""}` : "적정재고 미설정"}>
                                     {opt > 0 ? fmt(opt) : "-"}
                                   </td>
@@ -3819,7 +3819,7 @@ export const StockManagePage: React.FC = () => {
                               {isFlowGroupCollapsed("stock") && <td className="bg-orange-50/20"></td>}
                               {/* === 매입현황 그룹 (매입주기 · 최근매입일 · 최근매입량) === */}
                               {!isFlowGroupCollapsed("purchase") && <>
-                              <td className={`text-right px-0.5 py-1.5 text-[12px] bg-sky-50/40 align-top tabular-nums ${
+                              <td className={`text-right px-0.5 py-1.5 text-[14px] bg-sky-50/40 align-top tabular-nums ${
                                 purchaseCycle != null ? "text-sky-600" :
                                 purchaseCount === 1 ? "text-slate-500" :
                                 purchaseCount >= 2 && firstPD === lastPD ? "text-amber-600" :
@@ -3842,11 +3842,11 @@ export const StockManagePage: React.FC = () => {
                                       ? "동일일"
                                       : "-"}
                               </td>
-                              <td className="text-right px-0.5 py-1.5 text-emerald-600 text-[12px] bg-emerald-50/30 align-top tabular-nums"
+                              <td className="text-right px-0.5 py-1.5 text-emerald-600 text-[14px] bg-emerald-50/30 align-top tabular-nums"
                                 title={lastPD ?? undefined}>
                                 {lastPDShort}
                               </td>
-                              <td className="text-right px-0.5 py-1.5 text-emerald-700 font-bold text-[12px] bg-emerald-50/40 align-top tabular-nums"
+                              <td className="text-right px-0.5 py-1.5 text-emerald-700 font-bold text-[14px] bg-emerald-50/40 align-top tabular-nums"
                                 title={purchV > 0 ? `최근매입량 ${fmt(purchV)}` : "매입 없음"}>
                                 {purchV > 0 ? fmt(purchV) : "-"}
                               </td>
@@ -3854,13 +3854,13 @@ export const StockManagePage: React.FC = () => {
                               {isFlowGroupCollapsed("purchase") && <td className="bg-emerald-50/20"></td>}
                               {/* === 판매현황 그룹 (재고금액 · ERP단가 · 판매가 · 이익률) === */}
                               {!isFlowGroupCollapsed("sales") && <>
-                              <td className="text-right px-0.5 py-1.5 text-indigo-700 font-bold text-[12px] bg-indigo-50/40 align-top tabular-nums"
+                              <td className="text-right px-0.5 py-1.5 text-indigo-700 font-bold text-[14px] bg-indigo-50/40 align-top tabular-nums"
                                 title={stockValue > 0 ? `현재고 ${fmt(cur)} × ERP단가 ${fmtWon(purP)} = ${fmtWon(stockValue)}` : ""}>
                                 {fmtMan(stockValue)}
                               </td>
-                              <td className="text-right px-0.5 py-1.5 text-slate-700 text-[12px] bg-slate-50/40 align-top tabular-nums" title="ERP 사입 단가 (products.purchase_price)">{purP > 0 ? fmtWon(purP) : "-"}</td>
-                              <td className="text-right px-0.5 py-1.5 text-orange-700 font-bold text-[12px] bg-orange-50/30 align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
-                              <td className={`text-right px-0.5 py-1.5 font-black text-[12px] bg-indigo-50/30 align-top tabular-nums ${profitRate == null ? "text-slate-300" : profitRate >= 30 ? "text-emerald-700" : profitRate >= 15 ? "text-sky-700" : profitRate >= 0 ? "text-amber-700" : "text-rose-600"}`}
+                              <td className="text-right px-0.5 py-1.5 text-slate-700 text-[14px] bg-slate-50/40 align-top tabular-nums" title="ERP 사입 단가 (products.purchase_price)">{purP > 0 ? fmtWon(purP) : "-"}</td>
+                              <td className="text-right px-0.5 py-1.5 text-orange-700 font-bold text-[14px] bg-orange-50/30 align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
+                              <td className={`text-right px-0.5 py-1.5 font-black text-[14px] bg-indigo-50/30 align-top tabular-nums ${profitRate == null ? "text-slate-300" : profitRate >= 30 ? "text-emerald-700" : profitRate >= 15 ? "text-sky-700" : profitRate >= 0 ? "text-amber-700" : "text-rose-600"}`}
                                 title={profitRate != null ? `(판매가 ${fmtWon(saleP)} − 최근매입가 ${fmtWon(purP)}) / 판매가 = ${profitRate}%` : "-"}>
                                 {profitRate != null ? `${profitRate}%` : "-"}
                               </td>
