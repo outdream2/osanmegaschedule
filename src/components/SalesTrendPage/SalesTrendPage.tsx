@@ -1775,19 +1775,26 @@ const ZoneCategoryContent: React.FC = () => {
     );
   };
 
+  // 2026-07-29 · 사용자 요청 · MiniStoreZoneMap 을 상단으로 이동 (가로 full width)
+  //   아래 · 좌측 구역 리스트 + 우측 상세 split (기존 유지)
+  const zoneItemCounts = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const g of grouped) m[g.zone] = g.items.length;
+    return m;
+  }, [grouped]);
+
   return (
-    <div className="flex flex-col lg:flex-row gap-0 min-h-[520px]">
+    <div className="flex flex-col gap-3 min-h-[520px]">
+      {/* 상단 · 매장 구역도 (가로 full width) */}
+      <MiniStoreZoneMap zoneItemCounts={zoneItemCounts} />
+
+      {/* 하단 · 좌측 구역 리스트 + 우측 상세 split */}
+      <div className="flex flex-col lg:flex-row gap-0 flex-1">
       {/* ── 좌측: 구역 리스트 ── */}
       <div
         className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-2"
         style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? categoryPanelWidth : undefined }}
       >
-        {/* MiniStoreZoneMap · 여기에서 렌더 · grouped 로 zoneItemCounts 계산 */}
-        {(() => {
-          const zoneItemCounts: Record<string, number> = {};
-          for (const g of grouped) zoneItemCounts[g.zone] = g.items.length;
-          return <MiniStoreZoneMap zoneItemCounts={zoneItemCounts} />;
-        })()}
         {/* 계절 조회 필터 */}
         <div className="flex items-center gap-1.5">
           <SeasonButtons value={season} onChange={setSeason} size="sm" />
@@ -1894,6 +1901,7 @@ const ZoneCategoryContent: React.FC = () => {
           renderDetailPanel(selectedGroup)
         ) : null}
       </div>
+      </div>{/* 하단 split close */}
     </div>
   );
 };
