@@ -3639,7 +3639,7 @@ export const StockManagePage: React.FC = () => {
                 )}
                 {/* 리스트 · 재고리스트 · 10개 넘으면 세로 스크롤 */}
                 <div className="px-1 pt-2.5 pb-1.5 flex items-center gap-2 border-t border-slate-100">
-                  <span className="text-[14px] font-black text-slate-800">{topTab === "sale" ? "재고리스트" : "매입리스트"}</span>
+                  <span className="text-[14px] font-black text-slate-800">{topTab === "sale" ? "상품현황리스트" : "매입리스트"}</span>
                   <span className="text-[13px] tabular-nums text-slate-500 font-bold">
                     ({topTab === "sale" ? filteredFlow.length : topProducts.length}건)
                   </span>
