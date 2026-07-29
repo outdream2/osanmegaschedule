@@ -6,7 +6,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, lazy } from "react";
 // 2026-07-28 · 카테고리별판매·손실추적 · 판매추이 페이지에서 이동 · lazy 로드
 const CategoryTabLazy = lazy(() => import("../SalesTrendPage/SalesTrendPage").then(m => ({ default: m.CategoryTab })));
-const LossTrackerTabLazy = lazy(() => import("../SalesTrendPage/SalesTrendPage").then(m => ({ default: m.LossTrackerTab })));
+// 2026-07-29 · LossTrackerTabLazy 제거 · 손실추적 탭이 실재고차이로 통합됨 (사용자 요청)
 import { Search, Package, TrendingUp, AlertTriangle, Building2, Info, EyeOff, Eye, Loader2 as LoaderIcon, Pencil, Check, X as XIcon, CheckSquare, Square, Boxes, Activity, Layers, FileText, LineChart, PieChart, ChevronRight, ChevronDown } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -3530,7 +3530,7 @@ export const StockManagePage: React.FC = () => {
                 </React.Suspense>
               </div>
             )}
-            {/* 2026-07-29 · 손실추적 탭 제거 (사용자 요청) · 실재고차이(diff) 탭이 커버 · LossTrackerTabLazy import 는 유지 (사용 X · 다음 정리 라운드 dead code 삭제) */}
+            {/* 2026-07-29 · 손실추적 탭 및 LossTrackerTabLazy 완전 제거 · 실재고차이 탭이 커버 */}
             {/* 2026-07-29 · 급상승 탭 · 최근 window일 판매 vs 이전 window일 판매 비교 */}
             {stockTab === "trending" && (
               <div className="flex-1 min-h-0 overflow-y-auto">
