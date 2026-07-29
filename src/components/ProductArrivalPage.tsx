@@ -53,6 +53,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   const [notFoundCode, setNotFoundCode] = useState<string | null>(null);
   const [finalDecision, setFinalDecision] = useState<"all_match" | "has_mismatch" | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  // 2026-07-29 · 사용자 요청 · 실재고입력 페이지처럼 스캔한 상품 정보 좌측 표시
+  const [lastScannedProduct, setLastScannedProduct] = useState<ProductInfo | null>(null);
+  const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
 
   useEffect(() => { loadZBar(); }, []);
   useEffect(() => {
@@ -78,9 +81,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     const found = lookupProduct(result);
     if (!found) {
       setNotFoundCode(result);
+      setLastScannedProduct(null);
+      setLastScannedCode(result);
       showToast("등록되지 않은 상품");
       return;
     }
+    setLastScannedProduct(found);
+    setLastScannedCode(result);
     // 이미 리스트에 있으면 수량 증가 (같은 코드 · pending 상태 우선)
     // 2026-07-29 · React 원칙 · updater 내 side-effect setState 금지 (StrictMode 2회 실행 방지)
     let addedKey: string;
@@ -139,6 +146,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     setFinalDecision(null);
     setNotFoundCode(null);
     setLastAddedKey(null);
+    setLastScannedProduct(null);
+    setLastScannedCode(null);
   };
 
   const counts = useMemo(() => {
@@ -205,13 +214,54 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               {mapLoading ? <Loader2 size={18} className="animate-spin" /> : <ScanLine size={18} />}
               {mapLoading ? "상품 정보 로딩..." : "바코드 스캔"}
             </button>
-            {notFoundCode && (
+            {notFoundCode && !lastScannedProduct && (
               <div className="w-full flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
                 <AlertCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
                 <div className="text-[12px] leading-tight min-w-0">
                   <p className="font-black text-amber-800">미등록 상품 코드</p>
-                  <p className="font-mono text-amber-700 break-all mt-0.5">{notFoundCode}</p>
+                  <p className="tabular-nums text-amber-700 break-all mt-0.5">{notFoundCode}</p>
                 </div>
+              </div>
+            )}
+            {/* 2026-07-29 · 사용자 요청 · 스캔한 상품 정보 좌측 표시 (실재고입력 페이지 패턴) */}
+            {lastScannedProduct && (
+              <div className="w-full flex flex-col gap-2 px-3.5 py-3 bg-emerald-50 border-2 border-emerald-200 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
+                  <span className="text-[11px] font-black text-emerald-700 uppercase tracking-wider">최근 스캔</span>
+                  {lastScannedCode && (
+                    <span className="text-[11px] tabular-nums text-emerald-600 ml-auto">#{lastScannedCode}</span>
+                  )}
+                </div>
+                <p className="text-[15px] font-black text-slate-800 break-words whitespace-normal leading-snug">
+                  {lastScannedProduct.name}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 text-[12px]">
+                  {lastScannedProduct.spec && (
+                    <span className="font-bold text-slate-600 break-words whitespace-normal">
+                      {lastScannedProduct.spec}
+                    </span>
+                  )}
+                  {lastScannedProduct.supplier && (
+                    <span className="inline-flex items-center gap-1 font-bold text-sky-700 bg-white border border-sky-200 rounded-md px-2 py-0.5">
+                      🏢 {lastScannedProduct.supplier}
+                    </span>
+                  )}
+                </div>
+                {(lastScannedProduct.current_stock != null || lastScannedProduct.sale_price != null) && (
+                  <div className="flex flex-wrap items-center gap-3 pt-2 mt-1 border-t border-emerald-200 text-[12px]">
+                    {lastScannedProduct.current_stock != null && (
+                      <span className="text-slate-600 font-semibold">
+                        현재고 <span className="font-black text-amber-700 tabular-nums text-[13px]">{Number(lastScannedProduct.current_stock).toLocaleString()}</span>
+                      </span>
+                    )}
+                    {lastScannedProduct.sale_price != null && Number(lastScannedProduct.sale_price) > 0 && (
+                      <span className="text-slate-600 font-semibold">
+                        판매가 <span className="font-black text-orange-700 tabular-nums text-[13px]">₩{Number(lastScannedProduct.sale_price).toLocaleString()}</span>
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -251,114 +301,95 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 <p className="text-[13px] text-slate-400">바코드 스캔 → 자동 등록</p>
               </div>
             ) : (
-              <div className="flex-1 overflow-auto max-h-[62vh] lg:max-h-[68vh]">
-                <table className="w-full text-[13px]">
-                  <thead className="sticky top-0 bg-slate-50 z-10 border-b-2 border-slate-200">
-                    <tr className="text-[12px] font-black text-slate-500 tracking-tight">
-                      <th className="text-left px-2 py-2 w-16">입고일</th>
-                      <th className="text-left px-2 py-2 w-20 sm:w-28">공급사</th>
-                      <th className="text-left px-2 py-2">상품명</th>
-                      <th className="text-center px-2 py-2 w-24">갯수</th>
-                      <th className="text-center px-2 py-2 w-16">일치</th>
-                      <th className="text-center px-2 py-2 w-16">불일치</th>
-                      <th className="text-center px-2 py-2 w-20">기한임박</th>
-                      <th className="text-center px-1 py-2 w-8"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {items.map((it) => {
-                      const isRecent = it.key === lastAddedKey;
-                      const d = new Date(it.addedAt);
-                      const arrivedAt = `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-                      return (
-                        <tr key={it.key}
-                          className={`transition ${isRecent ? "bg-sky-50/70" : "hover:bg-slate-50/60"} ${
-                            it.status === "match"    ? "border-l-4 border-l-emerald-400" :
-                            it.status === "mismatch" ? "border-l-4 border-l-rose-400" :
-                            it.status === "expiring" ? "border-l-4 border-l-amber-400" :
-                                                       "border-l-4 border-l-transparent"
-                          }`}>
-                          {/* 입고일 */}
-                          <td className="px-2 py-2.5 align-top text-[12px] font-bold text-slate-600 tabular-nums leading-tight break-words whitespace-normal">
-                            {arrivedAt}
-                          </td>
-                          {/* 공급사 */}
-                          <td className="px-2 py-2.5 align-top text-[12px] font-bold text-sky-700 leading-tight break-words whitespace-normal">
-                            {it.product?.supplier ?? "-"}
-                          </td>
-                          {/* 상품명 · 규격 · 코드 */}
-                          <td className="px-2 py-2.5 align-top">
-                            <p className="text-[13px] sm:text-[14px] font-black text-slate-800 break-words whitespace-normal leading-snug">
-                              {it.product?.name ?? "(미등록 상품)"}
-                            </p>
-                            <div className="flex items-center gap-1 mt-1 flex-wrap">
-                              {it.product?.spec && (
-                                <span className="text-[11px] text-slate-600 font-bold break-words whitespace-normal">{it.product.spec}</span>
-                              )}
-                              <span className="text-[11px] text-slate-400 tabular-nums">#{it.code}</span>
-                            </div>
-                          </td>
-                          {/* 갯수 입력 · - N + */}
-                          <td className="px-2 py-2.5 align-top">
-                            <div className="inline-flex items-center bg-slate-50 border border-slate-200 rounded-lg">
-                              <button onClick={() => updateQty(it.key, -1)}
-                                className="w-7 h-8 flex items-center justify-center rounded-l-lg text-slate-700 hover:bg-white active:bg-slate-100 transition cursor-pointer"
-                                title="수량 -1">
-                                <Minus size={13} />
-                              </button>
-                              <input
-                                type="number"
-                                inputMode="numeric"
-                                value={it.qty}
-                                onChange={(e) => setQtyDirect(it.key, Number(e.target.value) || 0)}
-                                className="w-10 h-8 text-center bg-transparent text-[14px] font-black tabular-nums focus:outline-none focus:bg-white"
-                              />
-                              <button onClick={() => updateQty(it.key, 1)}
-                                className="w-7 h-8 flex items-center justify-center rounded-r-lg text-slate-700 hover:bg-white active:bg-slate-100 transition cursor-pointer"
-                                title="수량 +1">
-                                <Plus size={13} />
-                              </button>
-                            </div>
-                          </td>
-                          {/* 일치 on/off */}
-                          <td className="px-2 py-2.5 text-center align-top">
-                            <StatusToggle
-                              status="match"
-                              active={it.status === "match"}
-                              onToggle={() => setStatus(it.key, it.status === "match" ? "pending" : "match")}
-                            />
-                          </td>
-                          {/* 불일치 on/off */}
-                          <td className="px-2 py-2.5 text-center align-top">
-                            <StatusToggle
-                              status="mismatch"
-                              active={it.status === "mismatch"}
-                              onToggle={() => setStatus(it.key, it.status === "mismatch" ? "pending" : "mismatch")}
-                            />
-                          </td>
-                          {/* 유통기한 임박 on/off */}
-                          <td className="px-2 py-2.5 text-center align-top">
-                            <StatusToggle
-                              status="expiring"
-                              active={it.status === "expiring"}
-                              onToggle={() => setStatus(it.key, it.status === "expiring" ? "pending" : "expiring")}
-                            />
-                          </td>
-                          {/* 삭제 */}
-                          <td className="px-1 py-2.5 text-center align-top">
-                            <button
-                              onClick={() => removeItem(it.key)}
-                              className="w-7 h-7 flex items-center justify-center rounded-md text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer mx-auto"
-                              title="삭제"
+              /* 2026-07-29 · 카드 형식 (사용자 요청 · 표 형식은 시인성 부족) */
+              <div className="flex-1 overflow-auto max-h-[62vh] lg:max-h-[68vh] p-3 sm:p-4 flex flex-col gap-3">
+                {items.map((it) => {
+                  const isRecent = it.key === lastAddedKey;
+                  const d = new Date(it.addedAt);
+                  const arrivedAt = `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                  const stripeCls =
+                    it.status === "match"    ? "border-l-8 border-l-emerald-500" :
+                    it.status === "mismatch" ? "border-l-8 border-l-rose-500" :
+                    it.status === "expiring" ? "border-l-8 border-l-amber-500" :
+                                               "border-l-8 border-l-slate-200";
+                  return (
+                    <div key={it.key}
+                      className={`bg-white rounded-2xl border border-slate-200 shadow-sm ${stripeCls} p-3.5 sm:p-4 transition ${isRecent ? "ring-2 ring-sky-300 bg-sky-50/40" : "hover:shadow-md"}`}>
+                      {/* 1행 · 입고일 · 공급사 · 삭제 (우측) */}
+                      <div className="flex items-center gap-2 flex-wrap mb-2">
+                        <span className="inline-flex items-center gap-1 text-[12px] font-black text-slate-600 bg-slate-100 border border-slate-200 rounded-md px-2 py-0.5 tabular-nums">
+                          🕐 {arrivedAt}
+                        </span>
+                        <span className="inline-flex items-center gap-1 text-[12px] font-black text-sky-700 bg-sky-50 border border-sky-200 rounded-md px-2 py-0.5">
+                          🏢 {it.product?.supplier ?? "-"}
+                        </span>
+                        <button
+                          onClick={() => removeItem(it.key)}
+                          className="ml-auto w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer"
+                          title="삭제"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                      {/* 2행 · 상품명 (크게) */}
+                      <p className="text-[16px] sm:text-[17px] font-black text-slate-900 break-words whitespace-normal leading-snug mb-1">
+                        {it.product?.name ?? "(미등록 상품)"}
+                      </p>
+                      {/* 규격·코드 */}
+                      <div className="flex items-center gap-2 flex-wrap mb-3">
+                        {it.product?.spec && (
+                          <span className="text-[12px] text-slate-600 font-bold break-words whitespace-normal">{it.product.spec}</span>
+                        )}
+                        <span className="text-[12px] text-slate-400 tabular-nums">#{it.code}</span>
+                      </div>
+
+                      {/* 3행 · 갯수 입력 + 상태 3버튼 (한 줄, wrap 가능) */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {/* 갯수 */}
+                        <div className="inline-flex items-center bg-slate-50 border-2 border-slate-200 rounded-xl">
+                          <button onClick={() => updateQty(it.key, -1)}
+                            className="w-10 h-10 flex items-center justify-center rounded-l-xl text-slate-700 hover:bg-white active:bg-slate-100 transition cursor-pointer"
+                            title="수량 -1">
+                            <Minus size={16} />
+                          </button>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            value={it.qty}
+                            onChange={(e) => setQtyDirect(it.key, Number(e.target.value) || 0)}
+                            className="w-14 h-10 text-center bg-transparent text-[17px] font-black tabular-nums focus:outline-none focus:bg-white"
+                          />
+                          <button onClick={() => updateQty(it.key, 1)}
+                            className="w-10 h-10 flex items-center justify-center rounded-r-xl text-slate-700 hover:bg-white active:bg-slate-100 transition cursor-pointer"
+                            title="수량 +1">
+                            <Plus size={16} />
+                          </button>
+                        </div>
+
+                        {/* 상태 3버튼 · 텍스트 라벨 포함 */}
+                        {(["match", "mismatch", "expiring"] as ItemStatus[]).map((s) => {
+                          const meta = STATUS_META[s];
+                          const active = it.status === s;
+                          return (
+                            <button key={s}
+                              onClick={() => setStatus(it.key, active ? "pending" : s)}
+                              className={`inline-flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 rounded-xl border-2 font-black text-[13px] transition cursor-pointer active:scale-95 ${
+                                active
+                                  ? `${meta.bg} ${meta.color} ${meta.border} shadow-sm`
+                                  : "bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700"
+                              }`}
+                              title={`${meta.label} ${active ? "on" : "off"}`}
                             >
-                              <Trash2 size={14} />
+                              {meta.icon}
+                              <span>{meta.label}</span>
                             </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
