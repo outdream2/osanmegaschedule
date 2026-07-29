@@ -3120,10 +3120,11 @@ export const StockManagePage: React.FC = () => {
                           <tr className="border-b border-slate-200 text-[10px] font-black tracking-wider">
                             <th colSpan={2} className="bg-slate-50"></th>{/* 체크박스+# 통합 셀 + 상품명 */}
                             {(() => {
+                              // 2026-07-30 · 사용자 요청 · 재고현황 파란 · 매입현황 주황 · 판매현황 붉은 계열
                               const GROUP_COLOR: Record<FlowGroup, { bg: string; text: string; hover: string }> = {
-                                stock:    { bg: "bg-sky-50",     text: "text-sky-700",     hover: "hover:bg-sky-100" },
-                                purchase: { bg: "bg-amber-50",   text: "text-amber-700",   hover: "hover:bg-amber-100" },
-                                sales:    { bg: "bg-emerald-50", text: "text-emerald-700", hover: "hover:bg-emerald-100" },
+                                stock:    { bg: "bg-sky-50",   text: "text-sky-700",   hover: "hover:bg-sky-100" },
+                                purchase: { bg: "bg-amber-50", text: "text-amber-700", hover: "hover:bg-amber-100" },
+                                sales:    { bg: "bg-rose-50",  text: "text-rose-700",  hover: "hover:bg-rose-100" },
                               };
                               const groupHeader = (g: FlowGroup, label: string, span: number) => {
                                 const collapsed = isFlowGroupCollapsed(g);
@@ -3184,12 +3185,12 @@ export const StockManagePage: React.FC = () => {
                                     </span>
                                   </th>
                                   {/* 2026-07-28 · 사용자 요청 · 시작 컬럼 제거 · 매입 → 최근매입일 옆으로 이동 (라벨 · 최근매입량) */}
-                                  {/* === 재고현황 그룹 (판매량 · 현재고 · 적정재고) === */}
-                                  {isFlowGroupCollapsed("stock") && <th className="bg-orange-50/20"></th>}
+                                  {/* === 재고현황 그룹 (판매량 · 현재고 · 적정재고) · sky 톤 통일 · 2026-07-30 · 사용자 요청 */}
+                                  {isFlowGroupCollapsed("stock") && <th className="bg-sky-50/20"></th>}
                                   {!isFlowGroupCollapsed("stock") && <>
                                   <th
                                     onClick={() => toggleFlowSort("sale")}
-                                    className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none bg-orange-50/60 hover:bg-orange-100 transition ${flowSort === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
+                                    className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "sale" ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
                                     title="클릭: 판매출고계 기준 정렬 · 실제 팔린 양"
                                   >
                                     <span className="flex flex-col leading-tight items-end">
@@ -3199,7 +3200,7 @@ export const StockManagePage: React.FC = () => {
                                   </th>
                                   <th
                                     onClick={() => toggleFlowSort("current")}
-                                    className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "current" ? "text-amber-800 font-black" : "text-amber-600 font-black"}`}
+                                    className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "current" ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
                                     title="클릭: ERP 현재고 기준 정렬 · products.current_stock"
                                   >
                                     <span className="flex flex-col leading-tight items-end">
@@ -3208,70 +3209,70 @@ export const StockManagePage: React.FC = () => {
                                     </span>
                                   </th>
                                   <th onClick={() => toggleFlowSort("optimal" as any)}
-                                    className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-teal-50/60 hover:bg-teal-100 transition ${flowSort === ("optimal" as any) ? "text-teal-800 font-black" : "text-teal-600 font-black"}`}
+                                    className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === ("optimal" as any) ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
                                     title="적정재고 = 최근 30일 판매 총합 (관리자가 상단 '적정재고 = 30일 판매량' 버튼 실행 시점 · products.optimal_stock)"
                                   >
                                     <span className="flex flex-col leading-tight items-end">
                                       <span>적정재고</span>
-                                      <span className="text-[9px] font-semibold text-teal-500">최근 30일</span>
+                                      <span className="text-[9px] font-semibold text-sky-500">최근 30일</span>
                                       <span className="text-[9px] opacity-70">{arrowFor("optimal" as any)}</span>
                                     </span>
                                   </th>
                                   </>}
-                                  {/* === 매입현황 그룹 (평균매입주기 · 최근매입일 · 최근매입량) === */}
-                                  {isFlowGroupCollapsed("purchase") && <th className="bg-emerald-50/20"></th>}
+                                  {/* === 매입현황 그룹 (평균매입주기 · 최근매입일 · 최근매입량) · amber 톤 통일 */}
+                                  {isFlowGroupCollapsed("purchase") && <th className="bg-amber-50/20"></th>}
                                   {!isFlowGroupCollapsed("purchase") && <>
                                   <th onClick={() => toggleFlowSort("cycle")}
-                                    className={`text-right px-0.5 py-1.5 w-12 text-[12px] font-black cursor-pointer select-none bg-sky-50/40 hover:bg-sky-100 transition ${flowSort === "cycle" ? "text-sky-800" : "text-sky-600"}`}
+                                    className={`text-right px-0.5 py-1.5 w-12 text-[12px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "cycle" ? "text-amber-800" : "text-amber-600"}`}
                                     title="평균 매입주기 = (최근-최초 매입일) / (매입횟수-1) · 클릭 정렬">
                                     <span className="flex flex-col leading-tight items-end">
-                                      <span className="text-[10px] font-semibold text-sky-500">평균</span>
+                                      <span className="text-[10px] font-semibold text-amber-500">평균</span>
                                       <span>매입주기</span>
                                       <span className="text-[9px] opacity-70">{arrowFor("cycle")}</span>
                                     </span>
                                   </th>
                                   <th onClick={() => toggleFlowSort("last_purchase")}
-                                    className={`text-right px-0.5 py-1.5 w-11 text-[12px] font-black cursor-pointer select-none bg-emerald-50/30 hover:bg-emerald-100 transition ${flowSort === "last_purchase" ? "text-emerald-800" : "text-emerald-600"}`}
+                                    className={`text-right px-0.5 py-1.5 w-11 text-[12px] font-black cursor-pointer select-none bg-amber-50/40 hover:bg-amber-100 transition ${flowSort === "last_purchase" ? "text-amber-800" : "text-amber-600"}`}
                                     title="최근 매입일 · 클릭 정렬">
                                     <span className="flex flex-col leading-tight items-end">
-                                      <span className="text-[10px] font-semibold text-emerald-500">최근</span>
+                                      <span className="text-[10px] font-semibold text-amber-500">최근</span>
                                       <span>매입일</span>
                                       <span className="text-[9px] opacity-70">{arrowFor("last_purchase")}</span>
                                     </span>
                                   </th>
                                   <th onClick={() => toggleFlowSort("purchase")}
-                                    className={`text-right px-0.5 py-1.5 w-12 text-[12px] font-black cursor-pointer select-none bg-emerald-50/60 hover:bg-emerald-100 transition ${flowSort === "purchase" ? "text-emerald-700" : "text-emerald-500"}`}
+                                    className={`text-right px-0.5 py-1.5 w-12 text-[12px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "purchase" ? "text-amber-800" : "text-amber-600"}`}
                                     title="최근매입량 · 클릭 정렬">
                                     <span className="flex flex-col leading-tight items-end">
-                                      <span className="text-[10px] font-semibold text-emerald-500">최근</span>
+                                      <span className="text-[10px] font-semibold text-amber-500">최근</span>
                                       <span>매입량</span>
                                       <span className="text-[9px] opacity-70">{arrowFor("purchase")}</span>
                                     </span>
                                   </th>
                                   </>}
-                                  {/* === 판매현황 그룹 (재고금액 · ERP단가 · 판매가 · 이익률) === */}
-                                  {isFlowGroupCollapsed("sales") && <th className="bg-indigo-50/20"></th>}
+                                  {/* === 판매현황 그룹 (재고금액 · ERP단가 · 판매가 · 이익률) · rose 톤 통일 · 2026-07-30 · 사용자 요청 */}
+                                  {isFlowGroupCollapsed("sales") && <th className="bg-rose-50/20"></th>}
                                   {!isFlowGroupCollapsed("sales") && <>
                                   <th onClick={() => toggleFlowSort("stock_value")}
-                                    className={`text-right px-0.5 py-1.5 w-20 text-[12px] font-black cursor-pointer select-none bg-indigo-50/40 hover:bg-indigo-100 transition ${flowSort === "stock_value" ? "text-indigo-800" : "text-indigo-700"}`}
+                                    className={`text-right px-0.5 py-1.5 w-20 text-[12px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "stock_value" ? "text-rose-800" : "text-rose-700"}`}
                                     title="재고금액 = 현재고 × 최근매입가 · 클릭 정렬">
                                     <span className="flex flex-col leading-tight items-end">
-                                      <span className="font-semibold text-indigo-500">재고</span>
+                                      <span className="font-semibold text-rose-500">재고</span>
                                       <span>금액</span>
                                       <span className="text-[9px] opacity-70">{arrowFor("stock_value")}</span>
                                     </span>
                                   </th>
                                   <th onClick={() => toggleFlowSort("last_purchase_price")}
-                                    className={`text-right px-0.5 py-1.5 w-16 text-[12px] font-black cursor-pointer select-none bg-slate-50/40 hover:bg-slate-100 transition ${flowSort === "last_purchase_price" ? "text-slate-800" : "text-slate-600"}`}
+                                    className={`text-right px-0.5 py-1.5 w-16 text-[12px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "last_purchase_price" ? "text-rose-800" : "text-rose-600"}`}
                                     title="ERP단가 = products.purchase_price · 클릭 정렬">
                                     <span className="flex flex-col leading-tight items-end">
-                                      <span className="font-semibold text-slate-500">ERP</span>
+                                      <span className="font-semibold text-rose-500">ERP</span>
                                       <span>단가</span>
                                       <span className="text-[9px] opacity-70">{arrowFor("last_purchase_price")}</span>
                                     </span>
                                   </th>
                                   <th onClick={() => toggleFlowSort("sale_price")}
-                                    className={`text-right px-0.5 py-1.5 w-16 text-[12px] font-black cursor-pointer select-none bg-orange-50/30 hover:bg-orange-100 transition ${flowSort === "sale_price" ? "text-orange-800" : "text-orange-600"}`}
+                                    className={`text-right px-0.5 py-1.5 w-16 text-[12px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale_price" ? "text-rose-800" : "text-rose-600"}`}
                                     title="판매 단가 · 클릭 정렬">
                                     <span className="flex flex-col leading-tight items-end">
                                       <span>판매가</span>
@@ -3279,7 +3280,7 @@ export const StockManagePage: React.FC = () => {
                                     </span>
                                   </th>
                                   <th onClick={() => toggleFlowSort("profit_rate")}
-                                    className={`text-right px-0.5 py-1.5 w-14 text-[12px] font-black cursor-pointer select-none bg-indigo-50/30 hover:bg-indigo-100 transition ${flowSort === "profit_rate" ? "text-indigo-800" : "text-indigo-600"}`}
+                                    className={`text-right px-0.5 py-1.5 w-14 text-[12px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "profit_rate" ? "text-rose-800" : "text-rose-600"}`}
                                     title="이익률 · 클릭 정렬">
                                     <span className="flex flex-col leading-tight items-end">
                                       <span>이익률</span>
