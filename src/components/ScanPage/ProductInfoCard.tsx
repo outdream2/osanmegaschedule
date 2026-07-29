@@ -883,15 +883,16 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
           </div>
         )}
       </button>
-      {/* 2026-07-29 · 제목 아래 공급사 (반복이라 컬럼에서 제거하고 여기로) + 월평균 주문 수량 */}
+      {/* 2026-07-29 · 제목 아래 공급사 (반복이라 컬럼에서 제거하고 여기로) + 월평균 주문 수량 · 이모지·배지 지양 */}
       {!collapsed && (supplierSummary || avgMonthlyQty != null) && (
-        <div className="-mx-2 px-2 pb-1.5 flex items-center gap-2 flex-wrap">
+        <div className="-mx-2 px-2 pb-1.5 flex items-center gap-2 flex-wrap text-[11px]">
           {supplierSummary && (
-            <span className="text-[11px] font-bold text-sky-700">🏢 {supplierSummary}</span>
+            <span className="text-slate-500 font-semibold">공급사 <span className="font-black text-sky-700">{supplierSummary}</span></span>
           )}
+          {supplierSummary && avgMonthlyQty != null && <span className="text-slate-300">·</span>}
           {avgMonthlyQty != null && (
-            <span className="text-[11px] tabular-nums font-semibold text-slate-600" title="월평균 주문 수량 = 총 매입 수량 / (최초 매입일부터 최근 매입일까지의 개월수)">
-              📦 월평균 <span className="font-black text-indigo-700">{fmt(avgMonthlyQty)}개</span>
+            <span className="tabular-nums text-slate-500 font-semibold" title="월평균 주문 수량 = 총 매입 수량 / (최초 매입일부터 최근 매입일까지의 개월수)">
+              월평균 주문 <span className="font-black text-indigo-700">{fmt(avgMonthlyQty)}</span>개
             </span>
           )}
         </div>

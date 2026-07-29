@@ -101,9 +101,9 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
               </span>
             )}
             {totalSaleQty > 0 && !collapsed && (
-              <span className="text-[11px] tabular-nums font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-1.5 py-0.5"
+              <span className="text-[11px] tabular-nums text-slate-500 font-semibold"
                 title={`stock_history.sale_qty 합계 ${totalSaleQty.toLocaleString()} / ${monthSpan}개월 = 월평균 ${avgMonthlySale}개`}>
-                월평균 판매 <span className="font-black">{avgMonthlySale.toLocaleString()}</span>개
+                · 월평균 판매 <span className="font-black text-rose-700">{avgMonthlySale.toLocaleString()}</span>개
               </span>
             )}
             {collapsed

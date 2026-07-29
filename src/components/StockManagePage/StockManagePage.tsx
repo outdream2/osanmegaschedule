@@ -1237,7 +1237,8 @@ export const StockManagePage: React.FC = () => {
       setFlowDir("desc");
     }
   };
-  const [flowLimit, setFlowLimit] = useState<number>(100);
+  // 2026-07-29 · 사용자 요청 · 재고리스트 기본 전체 (Top 100 → 전체)
+  const [flowLimit, setFlowLimit] = useState<number>(50000);
   // 2026-07-28 · 적정재고 자동 계산 (최근 30일 판매량) · 사용자 요청
   const [refillingOptimalStock, setRefillingOptimalStock] = useState(false);
   const handleRefillOptimalStock = async () => {
@@ -1289,9 +1290,10 @@ export const StockManagePage: React.FC = () => {
     setSelectedFlowCodes(new Set());
   };
   // 기간 aggregation: 0=단일 스냅샷 · N=최근 N개월 aggregation
-  const [flowMonths, setFlowMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
+  // 2026-07-29 · 사용자 요청 · 기본 조회기간 6개월 (0=10일 → 6=6개월)
+  const [flowMonths, setFlowMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(6);
   // 기간 선택 · 확인 버튼 누르기 전 임시 값 (자동 fetch 방지)
-  const [pendingFlowMonths, setPendingFlowMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(0);
+  const [pendingFlowMonths, setPendingFlowMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(6);
   // 2026-07-16 · 재고리스트 계절 필터 (봄/여름/가을/겨울) · 지정 시 flowMonths/snapshot 무시 · 년도 무관 · 해당 월 전체
   const [flowSeason, setFlowSeason] = useState<SeasonKey | null>(null);
   // 2026-07-16 · 좌우 split 레이아웃 · 좌측 리스트 폭 (localStorage 저장)
@@ -3595,7 +3597,7 @@ export const StockManagePage: React.FC = () => {
                               };
                               return (
                                 <>
-                                  <th className="text-center px-0.5 py-1.5 w-6">
+                                  <th className="text-center px-0.5 py-1.5" style={{ width: 28, minWidth: 28, maxWidth: 28 }}>
                                     <button onClick={() => {
                                       if (selectedFlowCodes.size === filteredFlow.length) setSelectedFlowCodes(new Set());
                                       else setSelectedFlowCodes(new Set(filteredFlow.map(r => String(r.product_code))));
@@ -3605,7 +3607,7 @@ export const StockManagePage: React.FC = () => {
                                         : <Square size={13} />}
                                     </button>
                                   </th>
-                                  <th className="text-left px-0.5 py-1.5 w-7 text-[12px]">#</th>
+                                  <th className="text-center px-0.5 py-1.5 text-[12px]" style={{ width: 36, minWidth: 36, maxWidth: 36 }}>#</th>
                                   <th
                                     onClick={() => toggleFlowSort("name")}
                                     className={`text-left px-1 py-1.5 min-w-[200px] cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}
@@ -3642,10 +3644,11 @@ export const StockManagePage: React.FC = () => {
                                   </th>
                                   <th onClick={() => toggleFlowSort("optimal" as any)}
                                     className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-teal-50/60 hover:bg-teal-100 transition ${flowSort === ("optimal" as any) ? "text-teal-800 font-black" : "text-teal-600 font-black"}`}
-                                    title="적정재고 · products.optimal_stock · 클릭 정렬"
+                                    title="적정재고 = 최근 30일 판매 총합 (관리자가 상단 '적정재고 = 30일 판매량' 버튼 실행 시점 · products.optimal_stock)"
                                   >
                                     <span className="flex flex-col leading-tight items-end">
                                       <span>적정재고</span>
+                                      <span className="text-[9px] font-semibold text-teal-500">최근 30일</span>
                                       <span className="text-[9px] opacity-70">{arrowFor("optimal" as any)}</span>
                                     </span>
                                   </th>
@@ -3766,12 +3769,12 @@ export const StockManagePage: React.FC = () => {
                             const minOrder = Number((p as any).min_order ?? 0);
                             return (
                             <tr key={`flow-${p.product_code}-${i}`} className={`transition ${selectedFlowCodes.has(String(p.product_code)) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
-                              <td className="text-center px-0.5 py-1.5 align-top" onClick={(e) => { e.stopPropagation(); toggleSelectFlow(String(p.product_code)); }}>
+                              <td className="text-center px-0.5 py-1.5 align-top" style={{ width: 28, minWidth: 28, maxWidth: 28 }} onClick={(e) => { e.stopPropagation(); toggleSelectFlow(String(p.product_code)); }}>
                                 {selectedFlowCodes.has(String(p.product_code))
                                   ? <CheckSquare size={13} className="text-rose-500 inline cursor-pointer" />
                                   : <Square size={13} className="text-slate-300 hover:text-rose-500 inline cursor-pointer" />}
                               </td>
-                              <td className="px-0.5 py-2 text-[13px] font-black text-orange-600 align-top tabular-nums">{i + 1}</td>
+                              <td className="text-center px-0.5 py-2 text-[13px] font-black text-orange-600 align-top tabular-nums" style={{ width: 36, minWidth: 36, maxWidth: 36 }}>{i + 1}</td>
                               <td className="px-1.5 py-2 align-top">
                                 <button
                                   type="button"
