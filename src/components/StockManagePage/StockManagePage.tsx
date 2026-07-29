@@ -314,7 +314,7 @@ const RawDataView: React.FC = () => {
         <label className="flex items-center gap-1 text-xs font-semibold text-slate-600">
           스냅샷 날짜
           <select value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
-            className="px-2 py-1 border border-slate-200 rounded text-xs font-mono focus:outline-none focus:border-indigo-400">
+            className="px-2 py-1 border border-slate-200 rounded text-xs tabular-nums focus:outline-none focus:border-indigo-400">
             {dates.length === 0 && <option value="">(데이터 없음)</option>}
             {dates.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
@@ -385,7 +385,7 @@ const RawDataView: React.FC = () => {
                   const extraCls = c.cellClass ? c.cellClass(r) : "";
                   return (
                     <td key={c.key}
-                      className={`px-2 py-1 border-r border-slate-100 truncate ${isNumeric ? "text-right font-mono" : ""
+                      className={`px-2 py-1 border-r border-slate-100 truncate ${isNumeric ? "text-right tabular-nums" : ""
                         } ${extraCls} ${!isNumeric && !extraCls ? "text-slate-600" : ""}`}
                       title={String(v ?? "")}
                     >
@@ -3536,7 +3536,7 @@ export const StockManagePage: React.FC = () => {
                   value={modalQtyMin}
                   onChange={(e) => setModalQtyMin(e.target.value)}
                   placeholder="최소"
-                  className="w-20 text-[11px] font-mono border border-slate-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-sky-400"
+                  className="w-20 text-[11px] tabular-nums border border-slate-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-sky-400"
                 />
                 <span className="text-[10px] text-slate-400">~</span>
                 <input
@@ -3544,7 +3544,7 @@ export const StockManagePage: React.FC = () => {
                   value={modalQtyMax}
                   onChange={(e) => setModalQtyMax(e.target.value)}
                   placeholder="최대"
-                  className="w-20 text-[11px] font-mono border border-slate-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-sky-400"
+                  className="w-20 text-[11px] tabular-nums border border-slate-300 rounded px-1.5 py-0.5 focus:outline-none focus:border-sky-400"
                 />
                 {(modalQtyMin !== "" || modalQtyMax !== "") && (
                   <button
@@ -3887,7 +3887,7 @@ export const StockManagePage: React.FC = () => {
                                     else if (e.key === "Escape") { e.preventDefault(); cancelOptimalEdit(); }
                                   }}
                                   disabled={optimalEditSaving}
-                                  className="w-20 text-right font-mono text-base font-black border-2 border-indigo-400 rounded-md px-2 py-1 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 bg-white"
+                                  className="w-20 text-right tabular-nums text-base font-black border-2 border-indigo-400 rounded-md px-2 py-1 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 bg-white"
                                 />
                                 <button
                                   type="button"
@@ -3925,17 +3925,17 @@ export const StockManagePage: React.FC = () => {
                           <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">필요재고</span><span className="text-base tabular-nums font-black text-rose-600">{optimalStock > 0 && currentStock < optimalStock ? `+${fmt(optimalStock - currentStock)}` : "-"}</span></div>
                           <div>
                             <span className="text-xs text-slate-500 font-semibold block mb-0.5">유통기한</span>
-                            <span className={`text-sm font-mono font-bold ${daysToExpiry !== null && daysToExpiry < 30 ? "text-red-600" : "text-slate-700"}`}>
+                            <span className={`text-sm tabular-nums font-bold ${daysToExpiry !== null && daysToExpiry < 30 ? "text-red-600" : "text-slate-700"}`}>
                               {expIso ?? "-"}
                             </span>
                           </div>
                           <div>
                             <span className="text-xs text-slate-500 font-semibold block mb-0.5">최근 매입일</span>
-                            <span className="text-sm font-mono font-bold text-slate-700">{lastPurchaseISO ?? "-"}</span>
+                            <span className="text-sm tabular-nums font-bold text-slate-700">{lastPurchaseISO ?? "-"}</span>
                           </div>
                           <div>
                             <span className="text-xs text-slate-500 font-semibold block mb-0.5">최근 판매일</span>
-                            <span className={`text-sm font-mono font-bold ${daysSinceLastSale !== null && daysSinceLastSale >= 90 ? "text-rose-600" : "text-slate-700"}`}>
+                            <span className={`text-sm tabular-nums font-bold ${daysSinceLastSale !== null && daysSinceLastSale >= 90 ? "text-rose-600" : "text-slate-700"}`}>
                               {lastSaleISO ?? "-"}
                               {daysSinceLastSale !== null && lastSaleISO && <span className="text-[10px] font-semibold text-slate-500 ml-1">(D+{daysSinceLastSale})</span>}
                             </span>
@@ -4006,8 +4006,8 @@ export const StockManagePage: React.FC = () => {
                             <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">사내소비</span><span className="text-base tabular-nums font-black text-slate-700">{fmt(totalInternal)}개</span></div>
                             <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">평균 종료재고</span><span className="text-base tabular-nums font-bold text-slate-700">{avgStock.toFixed(1)}개</span></div>
                             <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">스냅샷 수</span><span className="text-base tabular-nums font-bold text-slate-700">{history.length}회</span></div>
-                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">최초 스냅샷</span><span className="text-sm font-mono text-slate-600">{oldestSnap?.snapshot_date ?? "-"}</span></div>
-                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">최근 스냅샷</span><span className="text-sm font-mono text-slate-600">{latestSnap?.snapshot_date ?? "-"}</span></div>
+                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">최초 스냅샷</span><span className="text-sm tabular-nums text-slate-600">{oldestSnap?.snapshot_date ?? "-"}</span></div>
+                            <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">최근 스냅샷</span><span className="text-sm tabular-nums text-slate-600">{latestSnap?.snapshot_date ?? "-"}</span></div>
                           </div>
                         </div>
                       </div>
@@ -4068,7 +4068,7 @@ export const StockManagePage: React.FC = () => {
                             <tbody className="divide-y divide-slate-50">
                               {[...history].reverse().map((s, i) => (
                                 <tr key={`sh-${s.snapshot_date}-${i}`} className="hover:bg-slate-50">
-                                  <td className="px-2 py-1 font-mono text-[11px] text-slate-700">{s.snapshot_date}</td>
+                                  <td className="px-2 py-1 tabular-nums text-[11px] text-slate-700">{s.snapshot_date}</td>
                                   <td className="px-2 py-1.5 text-xs text-slate-600 font-semibold">{s.period_type === "early" ? "초순" : s.period_type === "mid" ? "중순" : s.period_type === "late" ? "하순" : (s.period_type ?? "-")}</td>
                                   <td className="text-right px-2 py-1 tabular-nums text-xs text-slate-600">{fmt(Number(s.opening_stock ?? 0))}</td>
                                   <td className="text-right px-2 py-1.5 tabular-nums font-bold text-sm text-emerald-700">{fmt(Number(s.purchase_qty ?? 0))}</td>
@@ -4104,7 +4104,7 @@ export const StockManagePage: React.FC = () => {
                               <tbody className="divide-y divide-slate-50">
                                 {infoModalData.inventory_checks.map((c, i) => (
                                   <tr key={`ic-${c.id ?? i}`} className="hover:bg-slate-50">
-                                    <td className="px-2 py-1.5 text-xs font-mono text-slate-700">
+                                    <td className="px-2 py-1.5 text-xs tabular-nums text-slate-700">
                                       {c.checked_at ? new Date(c.checked_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-"}
                                     </td>
                                     <td className="text-right px-2 py-1.5 tabular-nums font-bold text-sm text-cyan-700">{c.warehouse_stock != null ? fmt(Number(c.warehouse_stock)) : "-"}</td>

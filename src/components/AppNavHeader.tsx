@@ -169,84 +169,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   const mobileShownTabs = mobileOrderedTabs.slice(0, mobileVisibleCount);
   const mobileOverflowTabs = mobileOrderedTabs.slice(mobileVisibleCount);
 
-  // ── 데스크탑 오버플로 처리 (2026-07-19 · 2-pass 계산) ────────────
-  //   1-pass: 버튼 예약 없이 전부 맞는지 확인 (맞으면 삼선 안 뜸)
-  //   2-pass: 오버플로 발생 시에만 ☰ 공간 확보 후 재계산
-  const desktopContainerRef = useRef<HTMLDivElement>(null);
-  const desktopMeasureRef = useRef<HTMLDivElement>(null);
-  const desktopOverflowBtnRef = useRef<HTMLDivElement>(null);
-  const [desktopVisibleCount, setDesktopVisibleCount] = useState(visibleTabs.length);
-  const [desktopOverflowOpen, setDesktopOverflowOpen] = useState(false);
-
-  useLayoutEffect(() => {
-    const container = desktopContainerRef.current;
-    const measure = desktopMeasureRef.current;
-    if (!container || !measure) return;
-    const calc = () => {
-      const containerW = container.clientWidth;
-      // 2026-07-24 · 사용자 문제 "화면이 커지는데 왜 삼선표시로 바뀌어"
-      //   원인: containerW = 0 (초기 측정 실패) 시에도 tabEls 폭 > 0 이면 오버플로 판정
-      //   → containerW 유효하지 않으면 skip · 다음 ResizeObserver 콜백 대기
-      if (containerW <= 0) return;
-      // 2026-07-24 · 사용자 요청 · ☰ 버튼 예약 공간 축소 (56→40) · 더 많은 탭 표시 유도
-      const btnW = 40;
-      const gap = 4;
-      const tabEls = measure.querySelectorAll<HTMLElement>("[data-desktop-tab]");
-      if (tabEls.length === 0) return;
-      // 측정 실패 감지 · 모든 탭 offsetWidth 가 0 이면 skip (레이아웃 아직 안 됨)
-      let anyMeasured = false;
-      for (let i = 0; i < tabEls.length; i++) {
-        if (tabEls[i].offsetWidth > 0) { anyMeasured = true; break; }
-      }
-      if (!anyMeasured) return;
-      // 1-pass · 버튼 예약 없이 전부 맞는지 확인
-      let totalW = 0;
-      for (let i = 0; i < tabEls.length; i++) {
-        totalW += tabEls[i].offsetWidth + (i > 0 ? gap : 0);
-      }
-      if (totalW <= containerW) {
-        setDesktopVisibleCount(tabEls.length);
-        return;
-      }
-      // 2-pass · ☰ 공간 확보 후 재계산
-      const limit = containerW - btnW - gap;
-      let used = 0;
-      let count = 0;
-      for (let i = 0; i < tabEls.length; i++) {
-        const w = tabEls[i].offsetWidth + (i > 0 ? gap : 0);
-        if (used + w > limit) break;
-        used += w;
-        count++;
-      }
-      setDesktopVisibleCount(Math.max(1, count));
-    };
-    calc();
-    const ro = new ResizeObserver(calc);
-    ro.observe(container);
-    // 2026-07-24 · window resize 도 감지 (일부 브라우저 · 컨테이너 flex 만 변하면 RO 안 트리거)
-    window.addEventListener("resize", calc);
-    return () => { ro.disconnect(); window.removeEventListener("resize", calc); };
-  }, [visibleTabs]);
-
-  useEffect(() => {
-    if (!desktopOverflowOpen) return;
-    const onDoc = (e: MouseEvent) => {
-      if (!desktopOverflowBtnRef.current?.contains(e.target as Node)) setDesktopOverflowOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [desktopOverflowOpen]);
-
-  const desktopOrderedTabs = useMemo(() => {
-    const activeIdx = visibleTabs.findIndex(t => t.key === activePage);
-    if (activeIdx < 0 || activeIdx < desktopVisibleCount) return visibleTabs;
-    const arr = visibleTabs.slice();
-    const [active] = arr.splice(activeIdx, 1);
-    arr.splice(Math.max(0, desktopVisibleCount - 1), 0, active);
-    return arr;
-  }, [visibleTabs, activePage, desktopVisibleCount]);
-  const desktopShownTabs = desktopOrderedTabs.slice(0, desktopVisibleCount);
-  const desktopOverflowTabs = desktopOrderedTabs.slice(desktopVisibleCount);
+  // 2026-07-29 · 사용자 요청 · 데스크탑(sm+) 은 오버플로 로직 없이 전부 노출 (flex-wrap)
 
   const renderDesktopTab = (tab: TabDef) => {
     const Icon = tab.icon;
@@ -354,69 +277,9 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             </span>
           </button>
 
-          {/* Desktop/태블릿 nav tabs — sm(640px)+ 노출 · 넘치는 탭은 ☰ 드롭다운 (2026-07-19) */}
-          <div ref={desktopContainerRef} className="hidden sm:flex items-center gap-1 ml-3 min-w-0 relative flex-1">
-            {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
-            <div
-              ref={desktopMeasureRef}
-              aria-hidden="true"
-              className="absolute flex items-center gap-1 opacity-0 pointer-events-none"
-              style={{ left: "-9999px", top: 0 }}
-            >
-              {visibleTabs.map(t => (
-                <div key={`dmeasure-${t.key}`} data-desktop-tab>{renderDesktopTab(t)}</div>
-              ))}
-            </div>
-            {/* 실제 노출 탭 */}
-            {desktopShownTabs.map(renderDesktopTab)}
-            {/* 오버플로 · 삼선 ☰ 드롭다운 */}
-            {desktopOverflowTabs.length > 0 && (
-              <div ref={desktopOverflowBtnRef} className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setDesktopOverflowOpen(v => !v)}
-                  className={`flex items-center gap-1 px-2.5 py-2 rounded-lg text-[13px] font-bold border transition-all active:scale-95 cursor-pointer ${
-                    desktopOverflowOpen
-                      ? "bg-slate-800 text-white border-transparent shadow-md"
-                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm"
-                  }`}
-                  title={`더보기 (${desktopOverflowTabs.length}개)`}
-                  aria-label="더보기 메뉴"
-                  aria-expanded={desktopOverflowOpen}
-                >
-                  <Menu size={16} strokeWidth={2.2} />
-                </button>
-                {desktopOverflowOpen && (
-                  <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-xl border border-slate-200 py-1 min-w-[180px] z-50 max-h-[70vh] overflow-y-auto">
-                    {desktopOverflowTabs.map(tab => {
-                      const Icon = tab.icon;
-                      const c = TAB_COLOR_MAP[tab.color ?? "slate"];
-                      const isActive = tab.key === activePage;
-                      const onClickTab = () => {
-                        setDesktopOverflowOpen(false);
-                        if (tab.key === "landing" && onBack) onBack();
-                        else onNavigate?.(tab.key);
-                      };
-                      return (
-                        <button
-                          key={tab.key}
-                          type="button"
-                          onClick={onClickTab}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-bold transition ${
-                            isActive
-                              ? `bg-gradient-to-r ${c.activeBg} ${c.activeText}`
-                              : `${c.inactiveText} hover:bg-slate-50 cursor-pointer`
-                          }`}
-                        >
-                          <Icon size={15} strokeWidth={isActive ? 2.4 : 1.9} />
-                          {tab.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
+          {/* Desktop/태블릿 nav tabs — sm(640px)+ 전부 노출 · 좁으면 wrap · 2026-07-29 · 사용자 요청 · "PC 는 메뉴가 다 보여야" */}
+          <div className="hidden sm:flex flex-wrap items-center gap-1 ml-3 min-w-0 flex-1">
+            {visibleTabs.map(renderDesktopTab)}
           </div>
         </div>
 
