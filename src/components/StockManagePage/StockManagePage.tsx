@@ -3570,32 +3570,17 @@ export const StockManagePage: React.FC = () => {
                       </div>
                       <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) { setPendingFlowMonths(0); setFlowMonths(0); } }} size="sm" hideLabel />
                     </div>
-                    {/* 2026-07-29 · 상단에서 이동 · 통합 검색 (리스트 필터 + 정보확인 + 숨김관리) */}
+                    {/* 2026-07-29 · 리스트 내 검색 제거 (사용자 요청) · 전체 DB 검색 + 정보확인 + 숨김관리만 유지 */}
                     <div className="flex items-center gap-2 mb-2.5 flex-wrap text-[14px]">
-                      {/* 리스트 필터 검색 */}
-                      <div className="relative flex-1 min-w-[200px]">
-                        <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        <input
-                          type="text"
-                          value={flowSearch}
-                          onChange={e => setFlowSearch(e.target.value)}
-                          placeholder="리스트 내 상품명·코드 검색"
-                          className="w-full pl-8 pr-8 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-orange-400 bg-white"
-                        />
-                        {flowSearch && (
-                          <button onClick={() => setFlowSearch("")}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[13px] font-black text-rose-500 hover:text-rose-700 cursor-pointer">✕</button>
-                        )}
-                      </div>
                       {/* 정보확인 검색 (전체 DB) */}
-                      <div className="relative">
+                      <div className="relative flex-1 min-w-[240px]">
                         <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sky-400 pointer-events-none" />
                         <input
                           value={infoSearchQuery}
                           onChange={(e) => setInfoSearchQuery(e.target.value)}
                           onKeyDown={(e) => { if (e.key === "Enter") runInfoSearch(); }}
                           placeholder="전체 DB 검색 (정보확인)"
-                          className="w-64 pl-8 pr-2 py-2 border border-sky-200 rounded-lg text-[14px] focus:outline-none focus:border-sky-400 bg-sky-50/30"
+                          className="w-full pl-8 pr-2 py-2 border border-sky-200 rounded-lg text-[14px] focus:outline-none focus:border-sky-400 bg-sky-50/30"
                         />
                         {infoSearchResults.length > 0 && (
                           <div className="absolute left-0 top-full mt-1 max-h-64 overflow-y-auto border border-slate-200 bg-white rounded-lg shadow-lg z-30 divide-y divide-slate-100 min-w-full sm:min-w-[500px]">
