@@ -3799,11 +3799,14 @@ export const StockManagePage: React.FC = () => {
                               >{fmt(saleV)}</td>
                               {(() => {
                                 const close = Number(p.closing_stock ?? 0);
+                                const opt = Number((p as any).optimal_stock ?? 0);
                                 const mismatch = close !== cur;
+                                const belowOptimal = opt > 0 && cur < opt;
+                                // 2026-07-29 · 현재고 < 적정재고 시 빨간색 (사용자 요청)
                                 return (
                                   <td
-                                    className={`text-right px-0.5 py-1.5 font-black text-[14px] bg-amber-50/40 align-top tabular-nums ${cur <= 0 ? "text-red-600" : mismatch ? "text-red-600" : "text-amber-700"}`}
-                                    title={mismatch ? `현재고(${fmt(cur)}) ≠ 스냅샷 종료재고(${fmt(close)}) · 스냅샷 이후 변동 있음` : "ERP 현재고 (= 스냅샷 종료재고)"}
+                                    className={`text-right px-0.5 py-1.5 font-black text-[14px] bg-amber-50/40 align-top tabular-nums ${cur <= 0 || mismatch || belowOptimal ? "text-red-600" : "text-amber-700"}`}
+                                    title={belowOptimal ? `현재고 부족 · ${cur} < 적정재고 ${opt}` : mismatch ? `현재고(${fmt(cur)}) ≠ 스냅샷 종료재고(${fmt(close)}) · 스냅샷 이후 변동 있음` : "ERP 현재고 (= 스냅샷 종료재고)"}
                                   >{fmt(cur)}</td>
                                 );
                               })()}

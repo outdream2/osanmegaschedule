@@ -335,7 +335,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 
     return (
       <div className="min-w-0">
-        <p className="text-[11px] font-bold text-slate-500 mb-0.5">{label}</p>
+        <p className="text-[13px] font-bold text-slate-500 mb-0.5">{label}</p>
         {isEditing ? (
           <div className="flex items-center gap-1">
             <input
@@ -345,7 +345,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               onKeyDown={e => { if (e.key === "Enter") commitEdit(); if (e.key === "Escape") cancelEdit(); }}
               disabled={editSaving}
               autoFocus
-              className="flex-1 min-w-0 text-[13px] font-black border-2 border-indigo-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-100"
+              className="flex-1 min-w-0 text-[15px] font-black border-2 border-indigo-400 rounded px-1.5 py-0.5 focus:outline-none focus:ring-2 focus:ring-indigo-100"
             />
             <button onClick={commitEdit} disabled={editSaving} className="shrink-0 w-6 h-6 rounded bg-emerald-500 text-white flex items-center justify-center hover:bg-emerald-600 disabled:opacity-40 cursor-pointer">
               {editSaving ? <Loader2 size={11} className="animate-spin" /> : <Check size={12} />}
@@ -356,7 +356,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           </div>
         ) : (
           <div className="flex items-center gap-1 group">
-            <p className={`text-[13px] font-black ${accentClass} break-words leading-tight flex-1`}>{displayValue}</p>
+            <p className={`text-[15px] font-black ${accentClass} break-words leading-tight flex-1`}>{displayValue}</p>
             {inlineEditEnabled && (
               <button
                 onClick={() => startEdit(fieldKey, value)}
@@ -369,7 +369,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           </div>
         )}
         {isEditing && editError && (
-          <p className="text-[10px] text-red-500 mt-0.5">{editError}</p>
+          <p className="text-[12px] text-red-500 mt-0.5">{editError}</p>
         )}
       </div>
     );
@@ -381,13 +381,13 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         {/* 상품명 */}
         {S.header && (<>
           <div className="flex items-start justify-between gap-2 mb-1">
-            <p className="text-[13px] font-black text-slate-800 break-words whitespace-normal leading-tight flex-1">{product.name}</p>
+            <p className="text-[15px] font-black text-slate-800 break-words whitespace-normal leading-tight flex-1">{product.name}</p>
             <button
               type="button"
               onClick={toggleHidden}
               disabled={hideSaving}
               title={isHidden ? "숨김 해제 · 검색·발주 리스트에 다시 표시" : "이 상품 숨김 · 검색·발주 리스트에서 제외"}
-              className={`shrink-0 inline-flex items-center gap-1 text-[11px] font-black px-2 py-0.5 rounded-md border transition cursor-pointer ${
+              className={`shrink-0 inline-flex items-center gap-1 text-[13px] font-black px-2 py-0.5 rounded-md border transition cursor-pointer ${
                 isHidden
                   ? "bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100"
                   : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:border-slate-400 hover:text-slate-700"
@@ -398,7 +398,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             </button>
           </div>
           {isHidden && (
-            <span className="inline-flex text-[11px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-300 mb-1.5">
+            <span className="inline-flex text-[13px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-300 mb-1.5">
               숨김
             </span>
           )}
@@ -410,8 +410,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         <div className="flex items-center gap-1.5 mb-2 px-2.5 py-2 rounded-xl border border-slate-200 bg-slate-50/60">
           {/* 전산배치구역 */}
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-bold text-slate-500 leading-none mb-0.5">전산</p>
-            <p className="text-[13px] font-black text-slate-800 leading-tight break-words whitespace-normal">{specZone}</p>
+            <p className="text-[13px] font-bold text-slate-500 leading-none mb-0.5">전산</p>
+            <p className="text-[15px] font-black text-slate-800 leading-tight break-words whitespace-normal">{specZone}</p>
           </div>
 
           {/* 화살표 */}
@@ -421,13 +421,13 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           <div className={`min-w-0 flex-1 rounded-lg px-2 py-1 ${
             hasMismatch ? "bg-orange-50" : realMap ? "bg-teal-50" : "bg-white border border-dashed border-slate-300"
           }`}>
-            <p className={`text-[11px] font-bold leading-none mb-0.5 ${
+            <p className={`text-[13px] font-bold leading-none mb-0.5 ${
               hasMismatch ? "text-orange-500" : realMap ? "text-teal-600" : "text-slate-400"
             }`}>실제</p>
             {realMap ? (
-              <p className={`text-[13px] font-black leading-tight break-words whitespace-normal ${hasMismatch ? "text-red-500" : "text-teal-700"}`}>{realMap}</p>
+              <p className={`text-[15px] font-black leading-tight break-words whitespace-normal ${hasMismatch ? "text-red-500" : "text-teal-700"}`}>{realMap}</p>
             ) : (
-              <p className="text-[11px] font-bold text-slate-400">미등록</p>
+              <p className="text-[13px] font-bold text-slate-400">미등록</p>
             )}
           </div>
 
@@ -435,7 +435,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           <button
             onClick={() => setMapSelectorOpen(true)}
             disabled={saving}
-            className={`shrink-0 flex items-center gap-0.5 px-2 py-1.5 rounded-lg border text-[11px] font-black transition cursor-pointer ${
+            className={`shrink-0 flex items-center gap-0.5 px-2 py-1.5 rounded-lg border text-[13px] font-black transition cursor-pointer ${
               realMap
                 ? "bg-white border-slate-300 text-slate-500 hover:border-teal-400 hover:text-teal-600"
                 : "bg-teal-500 border-teal-600 text-white hover:bg-teal-600"
@@ -453,13 +453,13 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             {hasMismatch && (
               <div className="flex items-center gap-1.5 px-2.5 py-1 bg-orange-50 border border-orange-200 rounded-lg">
                 <AlertTriangle size={10} className="text-orange-500 shrink-0" />
-                <p className="text-[11px] font-bold text-orange-600">전산배치구역과 실제배치구역이 다릅니다</p>
+                <p className="text-[13px] font-bold text-orange-600">전산배치구역과 실제배치구역이 다릅니다</p>
               </div>
             )}
             {saveError && (
               <div className="flex items-start gap-1.5 px-2.5 py-1.5 bg-red-50 border border-red-200 rounded-lg">
                 <AlertTriangle size={10} className="text-red-500 shrink-0 mt-0.5" />
-                <p className="text-[11px] font-bold text-red-600 whitespace-pre-wrap">{saveError}</p>
+                <p className="text-[13px] font-bold text-red-600 whitespace-pre-wrap">{saveError}</p>
               </div>
             )}
           </div>
@@ -484,14 +484,14 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                     ? <ChevronRight size={13} className="text-slate-400 shrink-0" />
                     : <ChevronDown size={13} className="text-slate-500 shrink-0" />}
                   <Package size={11} className={isLow ? "text-red-500" : "text-slate-500"} />
-                  <p className="text-[13px] font-black text-slate-800">재고현황</p>
+                  <p className="text-[15px] font-black text-slate-800">재고현황</p>
                   {isLow && (
-                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-red-100 text-red-600 text-[11px] font-black rounded-md border border-red-200">
+                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 bg-red-100 text-red-600 text-[13px] font-black rounded-md border border-red-200">
                       <AlertTriangle size={9} /> 부족
                     </span>
                   )}
                   {stockSectionCollapsed && (
-                    <span className="text-[11px] tabular-nums font-bold text-slate-500 ml-1">현재고 {cur ?? "-"} · 적정 {opt ?? "-"}</span>
+                    <span className="text-[12px] tabular-nums font-bold text-slate-500 ml-1">현재고 {cur ?? "-"} · 적정 {opt ?? "-"}</span>
                   )}
                 </button>
                 {S.actualStockInput && !stockSectionCollapsed && (
@@ -606,14 +606,14 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               )}
               {/* 편집 에러 표시 */}
               {editingKey === "optimal_stock" && editError && (
-                <p className="text-[10px] text-red-500 mt-1">{editError}</p>
+                <p className="text-[12px] text-red-500 mt-1">{editError}</p>
               )}
               {/* 창고/매장 저장 에러 */}
               {S.actualStockInput && (whStatus === "error" && whError) && (
-                <p className="text-[10px] text-red-500 text-center mt-1">창고: {whError}</p>
+                <p className="text-[12px] text-red-500 text-center mt-1">창고: {whError}</p>
               )}
               {S.actualStockInput && (stStatus === "error" && stError) && (
-                <p className="text-[10px] text-red-500 text-center mt-1">매장: {stError}</p>
+                <p className="text-[12px] text-red-500 text-center mt-1">매장: {stError}</p>
               )}
             </div>
           );
@@ -627,19 +627,19 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           const stockAsset = pp != null && cur != null ? (pp * cur).toLocaleString() + "원" : null;
           return (
             <div className="rounded-xl border border-indigo-200 bg-indigo-50/40 px-3 py-2 mb-2.5">
-              <p className="text-[13px] font-black text-slate-800 mb-2 flex items-center gap-1.5">
+              <p className="text-[15px] font-black text-slate-800 mb-2 flex items-center gap-1.5">
                 <DollarSign size={14} className="text-indigo-500"/>매입 · 판매가
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2 gap-y-2">
                 <InlineField label="매입가" fieldKey="purchase_price" value={pp} type="number" accent="emerald" format={v => Number(v).toLocaleString() + "원"} />
                 <InlineField label="판매가" fieldKey="sale_price" value={sp} type="number" accent="indigo" format={v => Number(v).toLocaleString() + "원"} />
                 <div>
-                  <p className="text-[11px] font-bold text-slate-500 mb-0.5">마진율</p>
-                  <p className="text-[13px] font-black text-emerald-700">{margin != null ? `${margin}%` : "-"}</p>
+                  <p className="text-[13px] font-bold text-slate-500 mb-0.5">마진율</p>
+                  <p className="text-[15px] font-black text-emerald-700">{margin != null ? `${margin}%` : "-"}</p>
                 </div>
                 <div>
-                  <p className="text-[11px] font-bold text-slate-500 mb-0.5">재고 자산</p>
-                  <p className="text-[13px] font-black text-slate-800 break-words leading-tight" title={stockAsset ?? undefined}>{stockAsset ?? "-"}</p>
+                  <p className="text-[13px] font-bold text-slate-500 mb-0.5">재고 자산</p>
+                  <p className="text-[15px] font-black text-slate-800 break-words leading-tight" title={stockAsset ?? undefined}>{stockAsset ?? "-"}</p>
                 </div>
               </div>
             </div>
@@ -650,7 +650,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         {S.orderRequest && (
         <div className="mb-2.5">
           {existingOrder && orderStatus !== "done" && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 mb-1.5 bg-orange-50 border border-orange-200 rounded-xl text-[11px] text-orange-700 font-bold">
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 mb-1.5 bg-orange-50 border border-orange-200 rounded-xl text-[12px] text-orange-700 font-bold">
               <ShoppingCart size={11} className="shrink-0" />
               <span>기존 발주요청 있음 — 현재고 {existingOrder.current_stock ?? "—"} ({new Date(existingOrder.requested_at).toLocaleDateString("ko-KR")} 요청)</span>
             </div>
@@ -683,7 +683,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             </button>
           )}
           {orderStatus === "error" && (
-            <p className="text-[11px] text-red-500 text-center mt-1">요청 실패 — 다시 시도해주세요</p>
+            <p className="text-[12px] text-red-500 text-center mt-1">요청 실패 — 다시 시도해주세요</p>
           )}
         </div>
         )}
@@ -693,7 +693,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
         <div className="rounded-xl border border-slate-200 bg-slate-50/30 px-3 py-2 mb-2.5">
           {S.productMeta && (
             <>
-              <p className="text-[13px] font-black text-slate-800 mb-2 flex items-center gap-1.5">
+              <p className="text-[15px] font-black text-slate-800 mb-2 flex items-center gap-1.5">
                 <Info size={14} className="text-slate-500"/>상품 정보
               </p>
               <div className="grid grid-cols-2 gap-x-3 gap-y-2 mb-2">
@@ -704,8 +704,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                   ["최근매입일", product.last_purchase_date ?? "-"],
                 ] as [string, string][]).map(([label, value]) => (
                   <div key={label}>
-                    <p className="text-[11px] font-bold text-slate-500 mb-0.5">{label}</p>
-                    <p className="text-[13px] font-black text-slate-800 break-words leading-tight tabular-nums">{value}</p>
+                    <p className="text-[13px] font-bold text-slate-500 mb-0.5">{label}</p>
+                    <p className="text-[15px] font-black text-slate-800 break-words leading-tight tabular-nums">{value}</p>
                   </div>
                 ))}
               </div>
@@ -713,7 +713,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           )}
           {S.productMeta && S.extraInfo && <div className="border-t border-slate-100 mb-2" />}
           {S.extraInfo && (<>
-            <p className="text-[13px] font-black text-slate-800 mb-2 flex items-center gap-1.5">
+            <p className="text-[15px] font-black text-slate-800 mb-2 flex items-center gap-1.5">
               <Info size={14} className="text-slate-500"/>추가 정보
             </p>
             <div className="grid grid-cols-2 gap-x-3 gap-y-2">
@@ -723,7 +723,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               <InlineField label="유효기간" fieldKey="expiry_date" value={(product as any).expiry_date} type="date" />
             </div>
             <div className="mt-2">
-              <p className="text-[11px] font-bold text-slate-500 mb-0.5">메모</p>
+              <p className="text-[13px] font-bold text-slate-500 mb-0.5">메모</p>
               {editingKey === "memo" ? (
                 <div className="flex flex-col gap-1">
                   <textarea
@@ -733,7 +733,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                     disabled={editSaving}
                     autoFocus
                     rows={2}
-                    className="w-full text-[13px] font-black border-2 border-indigo-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-100 resize-none"
+                    className="w-full text-[15px] font-black border-2 border-indigo-400 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-100 resize-none"
                   />
                   <div className="flex items-center gap-1 justify-end">
                     <button onClick={commitEdit} disabled={editSaving} className="text-[12px] font-black text-white bg-emerald-500 hover:bg-emerald-600 rounded px-2 py-1 flex items-center gap-1 disabled:opacity-40 cursor-pointer">
@@ -743,11 +743,11 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                       <X size={11}/>취소
                     </button>
                   </div>
-                  {editError && <p className="text-[10px] text-red-500">{editError}</p>}
+                  {editError && <p className="text-[12px] text-red-500">{editError}</p>}
                 </div>
               ) : (
                 <div className="flex items-start gap-1 group">
-                  <p className={`text-[13px] font-black text-slate-800 flex-1 whitespace-pre-wrap leading-tight ${!(product as any).memo ? "text-slate-300 font-bold italic" : ""}`}>
+                  <p className={`text-[15px] font-black text-slate-800 flex-1 whitespace-pre-wrap leading-tight ${!(product as any).memo ? "text-slate-300 font-bold italic" : ""}`}>
                     {(product as any).memo || "(메모 없음)"}
                   </p>
                   {inlineEditEnabled && (
@@ -851,7 +851,7 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
         <div className="flex items-center gap-1.5 flex-wrap">
           <TrendingUp size={13} className="text-emerald-600 shrink-0" />
           {productName && (
-            <span className="text-[13px] font-black text-slate-800 break-words whitespace-normal leading-tight">
+            <span className="text-[15px] font-black text-slate-800 break-words whitespace-normal leading-tight">
               {productName}
             </span>
           )}
@@ -862,11 +862,11 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
         </div>
         {/* 2행 · 통계 (건수 · 총량 · 총액 · 평균 · 주기) */}
         {loading ? (
-          <span className="text-[11px] text-slate-400"><Loader2 size={11} className="inline animate-spin mr-1"/>로딩...</span>
+          <span className="text-[12px] text-slate-400"><Loader2 size={11} className="inline animate-spin mr-1"/>로딩...</span>
         ) : rows.length === 0 ? (
-          <span className="text-[11px] text-slate-400 italic">이력 없음</span>
+          <span className="text-[12px] text-slate-400 italic">이력 없음</span>
         ) : (
-          <div className="text-[11px] tabular-nums text-slate-600 flex items-center gap-1.5 flex-wrap">
+          <div className="text-[12px] tabular-nums text-slate-600 flex items-center gap-1.5 flex-wrap">
             <span className="font-bold">{rows.length}건</span>
             <span className="text-slate-300">·</span>
             <span>총 <span className="font-black text-slate-800">{fmt(totalQty)}</span>개</span>
