@@ -82,14 +82,19 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
       return;
     }
     // 이미 리스트에 있으면 수량 증가 (같은 코드 · pending 상태 우선)
-    setItems(prev => {
-      const idx = prev.findIndex(it => it.code === result);
-      if (idx >= 0) {
+    // 2026-07-29 · React 원칙 · updater 내 side-effect setState 금지 (StrictMode 2회 실행 방지)
+    let addedKey: string;
+    const existingIdx = items.findIndex(it => it.code === result);
+    if (existingIdx >= 0) {
+      addedKey = items[existingIdx].key;
+      setItems(prev => {
+        const idx = prev.findIndex(it => it.code === result);
+        if (idx < 0) return prev;
         const updated = [...prev];
         updated[idx] = { ...updated[idx], qty: updated[idx].qty + 1 };
-        setLastAddedKey(updated[idx].key);
         return updated;
-      }
+      });
+    } else {
       const newItem: ArrivalItem = {
         key: `${result}-${Date.now()}`,
         code: result,
@@ -98,9 +103,10 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         status: "pending",
         addedAt: Date.now(),
       };
-      setLastAddedKey(newItem.key);
-      return [newItem, ...prev];
-    });
+      addedKey = newItem.key;
+      setItems(prev => [newItem, ...prev]);
+    }
+    setLastAddedKey(addedKey);
     setFinalDecision(null);
   };
 

@@ -4,7 +4,7 @@
 // 사용처: StockManagePage(flow/low/diff/product/supplier), SalesTrendPage(supplier/loss), OrderManagePage(order/need)
 
 import React, { useEffect, useRef, useState } from "react";
-import { X, Package, TrendingUp } from "lucide-react";
+import { X, Package, TrendingUp, ChevronRight, ChevronDown } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { type ProductInfo } from "../../lib/productsCache";
 import { SeasonButtons } from "./SeasonButtons";
@@ -252,17 +252,20 @@ const ProductDetailChartMode: React.FC<{
       <StockFlowChart productCode={product.code} />
 
       {/* 2026-07-28 · 매입이력 · 차트 바로 아래 · 기본 접힘 (사용자 요청) */}
+      {/* 2026-07-29 · UI 개선 · ▶ 텍스트 → ChevronRight/Down 아이콘 · 폰트 상향 · 통일성 */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
         <button
           type="button"
           onClick={() => setHistoryCollapsed(c => !c)}
-          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-emerald-50 transition cursor-pointer border-b border-slate-100"
+          className="w-full flex items-center gap-2 px-3.5 py-2.5 hover:bg-emerald-50 transition cursor-pointer border-b border-slate-100"
           title={historyCollapsed ? "펼치기" : "접기"}
         >
-          <span className={`text-slate-400 text-xs transition-transform ${historyCollapsed ? "" : "rotate-90"}`}>▶</span>
-          <TrendingUp size={12} className="text-emerald-600" />
-          <span className="text-[11px] font-black text-slate-600">매입이력</span>
-          {historyCollapsed && <span className="text-[10px] font-semibold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
+          {historyCollapsed
+            ? <ChevronRight size={15} className="text-slate-400 shrink-0" />
+            : <ChevronDown size={15} className="text-emerald-600 shrink-0" />}
+          <TrendingUp size={14} className="text-emerald-600 shrink-0" />
+          <span className="text-[13px] font-black text-slate-700">매입이력</span>
+          {historyCollapsed && <span className="text-[11px] font-semibold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
         </button>
         {!historyCollapsed && (
           <ProductInfoCard
@@ -285,13 +288,15 @@ const ProductDetailChartMode: React.FC<{
         <button
           type="button"
           onClick={() => setTopCollapsed(c => !c)}
-          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition cursor-pointer border-b border-slate-100"
+          className="w-full flex items-center gap-2 px-3.5 py-2.5 hover:bg-slate-50 transition cursor-pointer border-b border-slate-100"
           title={topCollapsed ? "펼치기" : "접기"}
         >
-          <span className={`text-slate-400 text-xs transition-transform ${topCollapsed ? "" : "rotate-90"}`}>▶</span>
-          <Package size={12} className="text-slate-500" />
-          <span className="text-[11px] font-black text-slate-600">재고 · 매입판매가 · 발주 · 배정구역</span>
-          {topCollapsed && <span className="text-[10px] font-semibold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
+          {topCollapsed
+            ? <ChevronRight size={15} className="text-slate-400 shrink-0" />
+            : <ChevronDown size={15} className="text-slate-600 shrink-0" />}
+          <Package size={14} className="text-slate-500 shrink-0" />
+          <span className="text-[13px] font-black text-slate-700">재고 · 매입판매가 · 발주 · 배정구역</span>
+          {topCollapsed && <span className="text-[11px] font-semibold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
         </button>
         {!topCollapsed && (
           <ProductInfoCard
@@ -314,13 +319,15 @@ const ProductDetailChartMode: React.FC<{
         <button
           type="button"
           onClick={() => setMetaCollapsed(c => !c)}
-          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-slate-50 transition cursor-pointer border-b border-slate-100"
+          className="w-full flex items-center gap-2 px-3.5 py-2.5 hover:bg-slate-50 transition cursor-pointer border-b border-slate-100"
           title={metaCollapsed ? "펼치기" : "접기"}
         >
-          <span className={`text-slate-400 text-xs transition-transform ${metaCollapsed ? "" : "rotate-90"}`}>▶</span>
-          <TrendingUp size={12} className="text-slate-500" />
-          <span className="text-[11px] font-black text-slate-600">상품 정보 (코드 · 공급처 · 판매상태 · 브랜드 · 제조사 · 바코드 · 유효기간 · 메모)</span>
-          {metaCollapsed && <span className="text-[10px] font-semibold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
+          {metaCollapsed
+            ? <ChevronRight size={15} className="text-slate-400 shrink-0" />
+            : <ChevronDown size={15} className="text-slate-600 shrink-0" />}
+          <Package size={14} className="text-slate-500 shrink-0" />
+          <span className="text-[13px] font-black text-slate-700 break-words whitespace-normal leading-tight text-left">상품 정보 (코드 · 공급처 · 판매상태 · 브랜드 · 제조사 · 바코드 · 유효기간 · 메모)</span>
+          {metaCollapsed && <span className="text-[11px] font-semibold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
         </button>
         {!metaCollapsed && (
           <ProductInfoCard
