@@ -2186,40 +2186,53 @@ export const StockManagePage: React.FC = () => {
       {pageTab === "raw" ? <RawDataView /> : (
         <>
 
-          {/* 통합 탭 바 (2026-07-15) · Vercel Ink 스타일 · underline · 미니멀 */}
-          <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-0.5 border-b border-slate-200 sm:overflow-x-auto sm:scrollbar-none">
-            {[
-              { k: "flow" as const, label: "상품현황", icon: Activity, color: "slate" },
-              { k: "supplier" as const, label: "공급사", icon: Building2, color: "slate" },
-              // 2026-07-29 · 사용자 요청 · 매입상세 탭 삭제 (기간별 상품흐름의 매입 이력이 대체)
-              { k: "low" as const, label: "적정재고↓", icon: AlertTriangle, color: "rose", badge: lowStock.length },
-              { k: "diff" as const, label: "손실추적", icon: Layers, color: "slate" },
-              // 2026-07-28 · 카테고리별판매 · 판매추이에서 이동
-              { k: "category" as const, label: "카테고리별현황", icon: PieChart, color: "slate" },
-              // 2026-07-29 · 손실추적 탭 제거 · 실재고차이 탭이 커버 (사용자 요청 통합)
-              // 2026-07-29 · 판매 급상승 상품 리스트 (사용자 요청)
-              { k: "trending" as const, label: "급상승", icon: TrendingUp, color: "slate" },
-            ].map(t => {
-              const Icon = t.icon;
-              const active = stockTab === t.k;
-              return (
-                <button key={t.k} onClick={() => setStockTab(t.k)}
-                  className={`relative basis-1/3 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1.5 sm:gap-1.5 px-2 sm:px-4 py-2.5 sm:py-2.5 text-[12px] sm:text-[13px] font-medium leading-tight transition-colors duration-150 ${active ? "text-slate-900" : "text-slate-400 hover:text-slate-600"
+          {/* 2026-07-30 · 서브탭 리디자인 · 사용자 요청 "밋밋 개선 · 세련 · 폰트 확대"
+              - 각 탭 고유 색상 accent · 활성 시 bg tint + colored underline · 아이콘 컬러 채움
+              - 폰트 확대 · text-[14-15px] · 아이콘 15-16px · gap·padding 여유
+              - 배경 · rounded-t-lg · 활성 시 미묘한 tint · 비활성 hover 도 tint */}
+          <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-1 border-b-2 border-slate-200 sm:overflow-x-auto sm:scrollbar-none px-1 pt-1">
+            {(() => {
+              type TabDef = { k: "flow" | "supplier" | "low" | "diff" | "category" | "trending"; label: string; icon: any; color: "teal" | "sky" | "rose" | "violet" | "amber" | "indigo"; badge?: number };
+              const tabs: TabDef[] = [
+                { k: "flow", label: "상품현황", icon: Activity, color: "teal" },
+                { k: "supplier", label: "공급사", icon: Building2, color: "sky" },
+                { k: "low", label: "적정재고↓", icon: AlertTriangle, color: "rose", badge: lowStock.length },
+                { k: "diff", label: "손실추적", icon: Layers, color: "violet" },
+                { k: "category", label: "카테고리별현황", icon: PieChart, color: "amber" },
+                { k: "trending", label: "급상승", icon: TrendingUp, color: "indigo" },
+              ];
+              const COLOR_MAP: Record<TabDef["color"], { activeText: string; activeBg: string; activeUnderline: string; activeIcon: string; inactiveHover: string; badgeActive: string; badgeInactive: string }> = {
+                teal:   { activeText: "text-teal-700",    activeBg: "bg-teal-50/70",    activeUnderline: "bg-teal-500",    activeIcon: "text-teal-600",    inactiveHover: "hover:bg-teal-50/40 hover:text-teal-700",    badgeActive: "bg-teal-100 text-teal-700",    badgeInactive: "bg-slate-100 text-slate-500" },
+                sky:    { activeText: "text-sky-700",     activeBg: "bg-sky-50/70",     activeUnderline: "bg-sky-500",     activeIcon: "text-sky-600",     inactiveHover: "hover:bg-sky-50/40 hover:text-sky-700",     badgeActive: "bg-sky-100 text-sky-700",     badgeInactive: "bg-slate-100 text-slate-500" },
+                rose:   { activeText: "text-rose-700",    activeBg: "bg-rose-50/70",    activeUnderline: "bg-rose-500",    activeIcon: "text-rose-600",    inactiveHover: "hover:bg-rose-50/40 hover:text-rose-700",    badgeActive: "bg-rose-500 text-white",       badgeInactive: "bg-rose-100 text-rose-600" },
+                violet: { activeText: "text-violet-700",  activeBg: "bg-violet-50/70",  activeUnderline: "bg-violet-500",  activeIcon: "text-violet-600",  inactiveHover: "hover:bg-violet-50/40 hover:text-violet-700",  badgeActive: "bg-violet-100 text-violet-700", badgeInactive: "bg-slate-100 text-slate-500" },
+                amber:  { activeText: "text-amber-700",   activeBg: "bg-amber-50/70",   activeUnderline: "bg-amber-500",   activeIcon: "text-amber-600",   inactiveHover: "hover:bg-amber-50/40 hover:text-amber-700",   badgeActive: "bg-amber-100 text-amber-700",  badgeInactive: "bg-slate-100 text-slate-500" },
+                indigo: { activeText: "text-indigo-700",  activeBg: "bg-indigo-50/70",  activeUnderline: "bg-indigo-500",  activeIcon: "text-indigo-600",  inactiveHover: "hover:bg-indigo-50/40 hover:text-indigo-700", badgeActive: "bg-indigo-100 text-indigo-700", badgeInactive: "bg-slate-100 text-slate-500" },
+              };
+              return tabs.map(t => {
+                const Icon = t.icon;
+                const active = stockTab === t.k;
+                const c = COLOR_MAP[t.color];
+                return (
+                  <button key={t.k} type="button" onClick={() => setStockTab(t.k)}
+                    className={`relative basis-1/3 sm:basis-auto flex-grow-0 inline-flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-t-lg text-[14px] sm:text-[15px] font-bold leading-tight whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                      active ? `${c.activeText} ${c.activeBg}` : `text-slate-500 ${c.inactiveHover}`
                     }`}>
-                  <Icon size={13} strokeWidth={active ? 2.2 : 1.7} className="hidden sm:inline-block shrink-0" />
-                  <span>{t.label}</span>
-                  {"badge" in t && t.badge != null && t.badge > 0 && (
-                    <span className={`inline-flex items-center justify-center min-w-[16px] px-1 h-4 rounded-full text-[9px] font-semibold ${active ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-400"}`}>
-                      {t.badge}
-                    </span>
-                  )}
-                  {/* 밑줄 · 활성 탭만 */}
-                  {active && (
-                    <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-slate-800 rounded-t-sm" />
-                  )}
-                </button>
-              );
-            })}
+                    <Icon size={16} strokeWidth={active ? 2.4 : 2.0} className={`hidden sm:inline-block shrink-0 ${active ? c.activeIcon : "text-slate-400"}`} />
+                    <span>{t.label}</span>
+                    {t.badge != null && t.badge > 0 && (
+                      <span className={`inline-flex items-center justify-center min-w-[20px] px-1.5 h-[18px] rounded-full text-[10px] font-black tabular-nums ${active ? c.badgeActive : c.badgeInactive}`}>
+                        {t.badge}
+                      </span>
+                    )}
+                    {/* 활성 탭 · underline · 컬러 */}
+                    {active && (
+                      <span className={`absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full ${c.activeUnderline}`} />
+                    )}
+                  </button>
+                );
+              });
+            })()}
           </div>
 
           <div className="flex flex-col gap-2 flex-1 min-h-0">

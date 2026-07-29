@@ -120,6 +120,24 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
     ocrCanvasRef: state.ocrCanvasRef,
   });
 
+  // 2026-07-30 · 사용자 요청 · 바코드 스캔 삑 소리 · iOS Audio unlock
+  //   iOS 는 user gesture 후 · silent audio 재생하여 AudioContext 활성화 필요
+  //   스캐너 오픈 (user gesture) 시점 · 무음 오디오 재생 후 즉시 stop · unlock 유지
+  useEffect(() => {
+    try {
+      const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (!AC) return;
+      const ctx = new AC();
+      if (ctx.state === "suspended") { try { ctx.resume(); } catch {} }
+      const buf = ctx.createBuffer(1, 1, 22050);
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      src.connect(ctx.destination);
+      src.start(0);
+      setTimeout(() => { try { ctx.close(); } catch {} }, 100);
+    } catch { /* silent */ }
+  }, []);
+
   // Android: playing 이벤트 시점에 최적 카메라 자동 선택.
   // 캐시된 deviceId가 현재 스트림과 일치하면 enumerateDevices 생략 — 불필요한 async 비용 제거.
   // facingMode:"environment"는 초광각 렌즈를 선택할 수 있어 1D 바코드 초점이 안 잡힘.
