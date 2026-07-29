@@ -1926,11 +1926,11 @@ const MiniStoreZoneMap: React.FC = () => {
     const cat = zd?.category ?? "";
     return (
       <div key={num}
-        className="rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center min-h-[38px]"
+        className="rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center min-h-[48px]"
         title={`${zd?.label ?? num} · ${cat}`}>
-        <div className="w-full bg-stone-50 px-0.5 py-0.5 flex flex-col items-center gap-0.5">
-          <span className="text-[8px] font-black text-white bg-amber-700 rounded px-1 leading-none">{num}</span>
-          <span className="text-[7px] font-bold text-stone-800 leading-tight text-center line-clamp-2 break-all">{cat}</span>
+        <div className="w-full bg-stone-50 px-1 py-1 flex flex-col items-center gap-0.5">
+          <span className="text-[10px] font-black text-white bg-amber-700 rounded px-1.5 leading-none">{num}</span>
+          <span className="text-[9px] font-bold text-stone-800 leading-tight text-center line-clamp-2 break-all">{cat}</span>
         </div>
       </div>
     );
@@ -1944,18 +1944,18 @@ const MiniStoreZoneMap: React.FC = () => {
     const subB = zd?.subB ?? "";
     const subA = zd?.subA ?? "";
     return (
-      <div key={`pair-${num}`} className="flex flex-col items-stretch gap-0.5 flex-[2] min-w-0">
+      <div key={`pair-${num}`} className="flex flex-col items-stretch gap-0.5 flex-1 min-w-[64px]">
         {/* B (연한 톤) */}
-        <div className={`w-full text-[8px] font-black ${cb.text} ${cb.bg} border ${cb.border} rounded px-0.5 py-0.5 leading-tight text-center min-h-[36px] flex flex-col items-center justify-center overflow-hidden`}
+        <div className={`w-full font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-1 leading-tight text-center min-h-[48px] flex flex-col items-center justify-center overflow-hidden`}
           title={`${num}B · ${subB}`}>
-          <span className={`text-[8px] font-black text-white ${cb.labelBg} rounded px-1 leading-none mb-0.5`}>{num}B</span>
-          <span className="line-clamp-2 text-[8px] break-all">{subB.slice(0, 10)}</span>
+          <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1.5 leading-none mb-0.5`}>{num}B</span>
+          <span className="line-clamp-2 text-[9px] break-all">{subB}</span>
         </div>
         {/* A (진한 톤) */}
-        <div className={`w-full text-[8px] font-black ${ca.text} ${ca.bg} border ${ca.border} rounded px-0.5 py-0.5 leading-tight text-center min-h-[36px] flex flex-col items-center justify-center overflow-hidden`}
+        <div className={`w-full font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-1 leading-tight text-center min-h-[48px] flex flex-col items-center justify-center overflow-hidden`}
           title={`${num}A · ${subA}`}>
-          <span className={`text-[8px] font-black text-white ${ca.labelBg} rounded px-1 leading-none mb-0.5`}>{num}A</span>
-          <span className="line-clamp-2 text-[8px] break-all">{subA.slice(0, 10)}</span>
+          <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1.5 leading-none mb-0.5`}>{num}A</span>
+          <span className="line-clamp-2 text-[9px] break-all">{subA}</span>
         </div>
       </div>
     );
@@ -1965,12 +1965,12 @@ const MiniStoreZoneMap: React.FC = () => {
   const centerCell = () => {
     const zd = ZONE_DEFS.find(z => z.num === STORE_AISLE_CENTER);
     return (
-      <div className="flex flex-col items-center gap-0.5 flex-none w-[36px] min-w-[36px]">
-        <div className="w-full text-[8px] font-black text-slate-700 bg-white border border-slate-300 rounded px-0.5 py-0.5 leading-tight text-center min-h-[76px] flex items-center justify-center overflow-hidden"
+      <div className="flex flex-col items-center gap-0.5 flex-none w-[46px] min-w-[46px]">
+        <div className="w-full text-[9px] font-bold text-slate-700 bg-white border border-slate-300 rounded px-0.5 py-1 leading-tight text-center min-h-[92px] flex items-center justify-center overflow-hidden"
           title={`${STORE_AISLE_CENTER} · ${zd?.category ?? ""}`}>
           <span className="line-clamp-4">{zd?.category ?? ""}</span>
         </div>
-        <div className="w-full text-[8px] font-black text-white bg-slate-600 rounded px-0.5 leading-none py-0.5 text-center">22</div>
+        <div className="w-full text-[10px] font-black text-white bg-slate-600 rounded px-0.5 leading-none py-0.5 text-center">22</div>
       </div>
     );
   };
@@ -1986,39 +1986,39 @@ const MiniStoreZoneMap: React.FC = () => {
         <span className="text-[10px] font-black text-violet-600">{collapsed ? "펼치기 ▼" : "접기 ▲"}</span>
       </button>
       {!collapsed && (
-        <div className="p-2">
-          {/* L-shape · 좌측 가로블록 + 우측 수직윙 */}
-          <div className="flex gap-1.5 items-stretch">
+        <div className="p-2 overflow-x-auto">
+          {/* L-shape · min-width 로 찌그러짐 방지 · 좁으면 가로 스크롤 */}
+          <div className="flex gap-1.5 items-stretch min-w-[720px]">
 
             {/* 좌측 · 상위 map 과 동일 구조 (상단벽 · 중앙 22+8B/8A→1B/1A · 하단벽) */}
-            <div className="flex-1 min-w-0 flex flex-col gap-1">
+            <div className="flex-1 min-w-0 flex flex-col gap-1.5">
               {/* 상단 벽면 */}
               <div>
-                <div className="text-[7px] font-black text-emerald-600 uppercase tracking-wider mb-0.5 px-0.5">상단 벽면 (21→9)</div>
+                <div className="text-[8px] font-black text-emerald-600 uppercase tracking-wider mb-0.5 px-0.5">상단 벽면 (21→9)</div>
                 <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
                   {STORE_TOP_WALL.map(n => wallCell(n))}
                 </div>
               </div>
-              {/* 중앙 진열대 · 22 + 8B/8A→1B/1A (16셀 · 상위와 동일 catA/catB) */}
+              {/* 중앙 진열대 · 22 + 8B/8A→1B/1A (17셀 · 상위와 동일 catA/catB) */}
               <div>
-                <div className="text-[7px] font-black text-blue-600 uppercase tracking-wider mb-0.5 px-0.5">중앙 진열대 (22 · 8B|8A → 1B|1A)</div>
-                <div className="flex items-stretch justify-start gap-1 bg-slate-50 border border-slate-200 py-1 px-1 rounded-lg">
+                <div className="text-[8px] font-black text-blue-600 uppercase tracking-wider mb-0.5 px-0.5">중앙 진열대 (22 · 8B|8A → 1B|1A · 17구역)</div>
+                <div className="flex items-stretch justify-start gap-1.5 bg-slate-100 border border-slate-200 py-1.5 px-1.5 rounded-lg">
                   {centerCell()}
                   {STORE_AISLE_PAIRS.map(n => pairCell(n))}
                 </div>
               </div>
               {/* 하단 벽면 */}
               <div>
-                <div className="text-[7px] font-black text-amber-600 uppercase tracking-wider mb-0.5 px-0.5">하단 벽면 (23→34)</div>
+                <div className="text-[8px] font-black text-amber-600 uppercase tracking-wider mb-0.5 px-0.5">하단 벽면 (23→34)</div>
                 <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}>
                   {STORE_BOTTOM_WALL.map(n => wallCell(n))}
                 </div>
               </div>
             </div>
 
-            {/* 우측 · 수직윙 */}
-            <div className="flex flex-col gap-0.5 w-[48px] shrink-0">
-              <div className="text-[7px] font-black text-violet-600 uppercase tracking-wider mb-0.5 px-0.5 text-center whitespace-nowrap">수직윙</div>
+            {/* 우측 · 수직윙 · min-w 로 폭 확보 */}
+            <div className="flex flex-col gap-0.5 w-[54px] shrink-0">
+              <div className="text-[8px] font-black text-violet-600 uppercase tracking-wider mb-0.5 px-0.5 text-center whitespace-nowrap">수직윙 (35→42)</div>
               {STORE_VERTICAL_WING.map(n => wallCell(n))}
             </div>
 
