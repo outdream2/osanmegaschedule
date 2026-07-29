@@ -53,6 +53,24 @@ export function useBarcodeScannerHandlers({
     if (scannedRef.current || !mountedRef.current) return;
     scannedRef.current = true;
 
+    // 2026-07-29 · 사용자 요청 · 바코드 인식 시 삑 소리
+    try {
+      const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (AC) {
+        const ctx = new AC();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = "sine";
+        osc.frequency.value = 1000;   // 1kHz · POS 스캐너 톤
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.15);
+        setTimeout(() => { try { ctx.close(); } catch {} }, 300);
+      }
+    } catch { /* silent */ }
+
     // Turn off torch on recognition
     if (mountedRef.current) setTorchOn(false);
 
