@@ -37,6 +37,17 @@ html, body {
 html { font-size: 19px !important; }
 @media (min-width: 640px) { html { font-size: 22px !important; } }
 
+/* 2026-07-29 · 사용자 요청 · 모든 텍스트 input 한글 입력 기본 (IME 활성)
+ * ime-mode 는 Firefox/구형 브라우저에서만 작동 · Chromium 은 OS 설정 우선
+ * lang="ko" 는 index.html <html lang="ko"> 로 이미 상속됨
+ * 브라우저/OS 제약 상 완전 강제는 불가 · 힌트만 제공 */
+input[type="text"],
+input[type="search"],
+input:not([type]),
+textarea {
+  ime-mode: active;
+}
+
 /* Tailwind 표준 text-* 클래스도 명시적 상향 (rem 기반이지만 확실히 반영) */
 .text-xs   { font-size: 0.85rem !important; }  /* 기존 · 0.75rem */
 .text-sm   { font-size: 1rem !important; }     /* 기존 · 0.875rem */

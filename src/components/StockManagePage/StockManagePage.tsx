@@ -3614,10 +3614,17 @@ export const StockManagePage: React.FC = () => {
                         )}
                       </div>
                       <button
-                        onClick={() => openProductInfoModal()}
+                        onClick={() => {
+                          // 2026-07-29 · 사용자 요청 · 정보확인 클릭 시 오른쪽 상품 상세 패널에 표시
+                          const target = infoSelected ?? infoSearchResults[0] ?? null;
+                          if (target) {
+                            loadFlowSelectedProduct(target);
+                            setInfoSearchResults([]);
+                          }
+                        }}
                         disabled={!infoSelected && !infoSearchQuery.trim() && infoSearchResults.length === 0}
                         className="flex items-center gap-1.5 text-[14px] font-black text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-2 cursor-pointer transition shadow-sm shrink-0"
-                        title="상품 선택 후 클릭 (미선택 시 검색결과 첫번째 사용)">
+                        title="검색 후 클릭 → 오른쪽 상세 패널에 상품 정보 표시">
                         <Info size={15} /> 정보확인
                       </button>
                       <button
