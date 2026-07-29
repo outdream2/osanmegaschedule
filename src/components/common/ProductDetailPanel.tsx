@@ -282,35 +282,14 @@ const ProductDetailChartMode: React.FC<{
 }> = ({ product, onProductUpdate, onRealMapUpdate, context, editable }) => {
   const [topCollapsed, setTopCollapsed] = useState(false);
   const [metaCollapsed, setMetaCollapsed] = useState(false);
-  // 2026-07-28 · 사용자 요청 · 매입이력 카드 분리 · 차트 아래 위치 · 기본 접힘
-  const [historyCollapsed, setHistoryCollapsed] = useState(true);
   return (
     <>
       {/* 기간 재고 흐름 차트 (2026-07-16 · 맨 위로 이동 · 사용자 요청) */}
       <StockFlowChart productCode={product.code} productName={product.name} />
 
-      {/* 2026-07-28 · 매입이력 · 차트 바로 아래 · 기본 접힘 (사용자 요청) */}
-      {/* 2026-07-29 · UI 개선 · ▶ 텍스트 → ChevronRight/Down 아이콘 · 폰트 상향 · 통일성 */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <button
-          type="button"
-          onClick={() => setHistoryCollapsed(c => !c)}
-          className="w-full flex items-center gap-2 px-3.5 py-2.5 hover:bg-emerald-50 transition cursor-pointer border-b border-slate-100"
-          title={historyCollapsed ? "펼치기" : "접기"}
-        >
-          {historyCollapsed
-            ? <ChevronRight size={15} className="text-slate-400 shrink-0" />
-            : <ChevronDown size={15} className="text-emerald-600 shrink-0" />}
-          <TrendingUp size={14} className="text-emerald-600 shrink-0" />
-          <span className="text-[13px] font-black text-slate-700">매입이력</span>
-          {historyCollapsed && <span className="text-[11px] font-semibold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
-        </button>
-        {!historyCollapsed && (
-          <div className="px-3 py-2">
-            {/* 2026-07-29 · 이중 카드 제거 · PurchaseHistorySection 직접 사용 (noBorderTop) */}
-            <PurchaseHistorySection productCode={product.code} productName={product.name} noBorderTop />
-          </div>
-        )}
+      {/* 2026-07-29 · 매입이력 · 이중 헤더 제거 · PurchaseHistorySection 자체 collapse 사용 */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden px-3 py-2">
+        <PurchaseHistorySection productCode={product.code} productName={product.name} noBorderTop />
       </div>
 
       {/* 상단 카드: 헤더 + 재고현황 + 매입판매가 + 발주요청 + 배정구역 · 접기 지원 (매입이력 분리됨) */}
