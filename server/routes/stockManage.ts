@@ -493,7 +493,7 @@ router.get("/api/sales-trend/overview", async (_req, res) => {
 
 // ── top-sales in-memory 캐시 (heavy aggregation · TTL 3분) ─────────────────
 const topSalesCache = new Map<string, { data: any; expiresAt: number }>();
-const TOP_SALES_TTL = 3 * 60 * 1000; // 3분
+const TOP_SALES_TTL = 10 * 60 * 1000; // 2026-07-29 · 3분 → 10분 (Phase 1 · 로딩 속도 개선)
 
 // GET /api/stock-manage/top-sales?snapshot_date=YYYY-MM-DD&sort=sale|purchase|amount|closing&dir=asc|desc&limit=100&supplier=<이름>&supplier_code=<코드>
 // 재고 스냅샷의 상품별 흐름 (xlsx 각 행) — 정렬·limit·범위 필터는 클라이언트에서

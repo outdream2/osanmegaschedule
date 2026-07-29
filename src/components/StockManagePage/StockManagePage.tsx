@@ -1396,6 +1396,9 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
   );
 };
 
+// 2026-07-29 · Phase 1 · module-level cache · 페이지 이동해도 유지 (5분)
+const GLOBAL_STOCK_FLOW_CACHE = new Map<string, { data: any; ts: number }>();
+
 export const StockManagePage: React.FC = () => {
   const [pageTab, setPageTab] = useState<"dashboard" | "raw">("dashboard");
   const [range, setRange] = useState<Range>("week");
@@ -1464,10 +1467,10 @@ export const StockManagePage: React.FC = () => {
     setSelectedFlowCodes(new Set());
   };
   // 기간 aggregation: 0=단일 스냅샷 · N=최근 N개월 aggregation
-  // 2026-07-29 · 사용자 요청 · 기본 조회기간 6개월 (0=10일 → 6=6개월)
-  const [flowMonths, setFlowMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(6);
+  // 2026-07-29 · 사용자 요청 · 기본 조회기간 1개월 (Phase 1 로딩 속도 개선)
+  const [flowMonths, setFlowMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
   // 기간 선택 · 확인 버튼 누르기 전 임시 값 (자동 fetch 방지)
-  const [pendingFlowMonths, setPendingFlowMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(6);
+  const [pendingFlowMonths, setPendingFlowMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
   // 2026-07-16 · 재고리스트 계절 필터 (봄/여름/가을/겨울) · 지정 시 flowMonths/snapshot 무시 · 년도 무관 · 해당 월 전체
   const [flowSeason, setFlowSeason] = useState<SeasonKey | null>(null);
   // 2026-07-16 · 좌우 split 레이아웃 · 좌측 리스트 폭 (localStorage 저장)
@@ -2398,9 +2401,10 @@ export const StockManagePage: React.FC = () => {
   }, []);
 
   // C 캐시 (2026-07-15): 재고흐름 결과를 params key 로 캐싱 · 재방문 즉시 표시
-  //   TTL 60초 · 캐시 hit 시 backgound 로 갱신 (stale-while-revalidate)
-  const stockFlowCacheRef = useRef<Map<string, { data: any; ts: number }>>(new Map());
-  const STOCK_FLOW_CACHE_TTL = 60000;
+  //   TTL 5분 (2026-07-29 · Phase 1 · 60초 → 5분 · SWR 패턴 · 서버 캐시 10분과 병행)
+  //   module-level 로 상향 · 다른 탭 갔다와도 유지 (컴포넌트 unmount 시 캐시 유지)
+  const stockFlowCacheRef = useRef<Map<string, { data: any; ts: number }>>(GLOBAL_STOCK_FLOW_CACHE);
+  const STOCK_FLOW_CACHE_TTL = 5 * 60 * 1000;
   // 재고 흐름 조회 (스냅샷·정렬·limit·flowMonths 변경 시 자동 재조회)
   const fetchStockFlow = useCallback(async () => {
     setLoading(true);
@@ -3731,7 +3735,7 @@ export const StockManagePage: React.FC = () => {
                               };
                               return (
                                 <>
-                                  <th className="text-center p-0 py-1.5" style={{ width: 20, minWidth: 20, maxWidth: 20 }}>
+                                  <th className="text-center px-1 py-1.5" style={{ width: 24, minWidth: 24, maxWidth: 24 }}>
                                     <button onClick={() => {
                                       if (selectedFlowCodes.size === filteredFlow.length) setSelectedFlowCodes(new Set());
                                       else setSelectedFlowCodes(new Set(filteredFlow.map(r => String(r.product_code))));
@@ -3741,7 +3745,7 @@ export const StockManagePage: React.FC = () => {
                                         : <Square size={12} />}
                                     </button>
                                   </th>
-                                  <th className="text-center p-0 py-1.5 text-[11px]" style={{ width: 26, minWidth: 26, maxWidth: 26 }}>#</th>
+                                  <th className="text-center px-1 py-1.5 text-[11px]" style={{ width: 30, minWidth: 30, maxWidth: 30 }}>#</th>
                                   <th
                                     onClick={() => toggleFlowSort("name")}
                                     className={`text-left px-1 py-1.5 min-w-[200px] cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}
@@ -3903,12 +3907,12 @@ export const StockManagePage: React.FC = () => {
                             const minOrder = Number((p as any).min_order ?? 0);
                             return (
                             <tr key={`flow-${p.product_code}-${i}`} className={`transition ${selectedFlowCodes.has(String(p.product_code)) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
-                              <td className="text-center p-0 py-1.5 align-top" style={{ width: 20, minWidth: 20, maxWidth: 20 }} onClick={(e) => { e.stopPropagation(); toggleSelectFlow(String(p.product_code)); }}>
+                              <td className="text-center px-1 py-1.5 align-top" style={{ width: 24, minWidth: 24, maxWidth: 24 }} onClick={(e) => { e.stopPropagation(); toggleSelectFlow(String(p.product_code)); }}>
                                 {selectedFlowCodes.has(String(p.product_code))
                                   ? <CheckSquare size={12} className="text-rose-500 inline cursor-pointer" />
                                   : <Square size={12} className="text-slate-300 hover:text-rose-500 inline cursor-pointer" />}
                               </td>
-                              <td className="text-center p-0 py-2 text-[12px] font-black text-orange-600 align-top tabular-nums" style={{ width: 26, minWidth: 26, maxWidth: 26 }}>{i + 1}</td>
+                              <td className="text-center px-1 py-2 text-[12px] font-black text-orange-600 align-top tabular-nums" style={{ width: 30, minWidth: 30, maxWidth: 30 }}>{i + 1}</td>
                               <td className="px-1.5 py-2 align-top">
                                 <button
                                   type="button"
