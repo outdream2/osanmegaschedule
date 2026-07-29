@@ -1265,6 +1265,17 @@ export const StockManagePage: React.FC = () => {
   const [flowSearch, setFlowSearch] = useState<string>("");
   // 재고흐름 리스트 · 벌크 숨김 · 판매추이와 동일 패턴
   const [selectedFlowCodes, setSelectedFlowCodes] = useState<Set<string>>(new Set());
+  // 2026-07-29 · 사용자 요청 · 재고리스트 컬럼 3그룹 접기/펼치기 (기본 재고현황만 노출)
+  type FlowGroup = "stock" | "purchase" | "sales";
+  const [flowGroupCollapsed, setFlowGroupCollapsed] = useState<Set<FlowGroup>>(new Set(["purchase", "sales"]));
+  const toggleFlowGroup = (g: FlowGroup) => {
+    setFlowGroupCollapsed(prev => {
+      const n = new Set(prev);
+      if (n.has(g)) n.delete(g); else n.add(g);
+      return n;
+    });
+  };
+  const isFlowGroupCollapsed = (g: FlowGroup) => flowGroupCollapsed.has(g);
   const [flowBulkHiding, setFlowBulkHiding] = useState(false);
   const toggleSelectFlow = (code: string) => setSelectedFlowCodes(prev => {
     const next = new Set(prev);
@@ -3542,6 +3553,39 @@ export const StockManagePage: React.FC = () => {
                               </td>
                             </tr>
                           )}
+                          {/* 2026-07-29 · 사용자 요청 · 컬럼 3그룹 접기/펼치기 헤더 (재고현황·매입현황·판매현황) */}
+                          <tr className="border-b border-slate-100 bg-slate-50/40 text-[11px] font-black text-slate-600 tracking-tight">
+                            <th colSpan={3}></th>
+                            {(() => {
+                              const groupHeader = (g: FlowGroup, label: string, span: number, color: string) => {
+                                const collapsed = isFlowGroupCollapsed(g);
+                                const cls = {
+                                  stock:    "bg-orange-100/50 hover:bg-orange-100 text-orange-800",
+                                  purchase: "bg-emerald-100/50 hover:bg-emerald-100 text-emerald-800",
+                                  sales:    "bg-indigo-100/50 hover:bg-indigo-100 text-indigo-800",
+                                }[g];
+                                return (
+                                  <th colSpan={collapsed ? 1 : span}
+                                    className={`text-center py-1.5 border-l-2 border-r-2 border-slate-100 cursor-pointer select-none transition ${cls}`}
+                                    onClick={() => toggleFlowGroup(g)}
+                                    title={collapsed ? `${label} 펼치기` : `${label} 접기`}
+                                  >
+                                    <span className="inline-flex items-center gap-1 font-black text-[12px]">
+                                      {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+                                      {collapsed ? label.slice(0, 2) : label}
+                                    </span>
+                                  </th>
+                                );
+                              };
+                              return (
+                                <>
+                                  {groupHeader("stock",    "재고현황", 3, "orange")}
+                                  {groupHeader("purchase", "매입현황", 3, "emerald")}
+                                  {groupHeader("sales",    "판매현황", 4, "indigo")}
+                                </>
+                              );
+                            })()}
+                          </tr>
                           {/* 2026-07-28 · 사용자 요청 · 리스트 폰트 통일 · 헤더 12px (기존 10px) · 데이터 셀과 동일 */}
                           <tr className="border-b border-slate-100 text-[12px] font-bold text-slate-500 tracking-tight">
                             {(() => {
@@ -3573,6 +3617,8 @@ export const StockManagePage: React.FC = () => {
                                     </span>
                                   </th>
                                   {/* 2026-07-28 · 사용자 요청 · 시작 컬럼 제거 · 매입 → 최근매입일 옆으로 이동 (라벨 · 최근매입량) */}
+                                  {/* === 재고현황 그룹 (판매량 · 현재고 · 적정재고) === */}
+                                  {!isFlowGroupCollapsed("stock") && <>
                                   <th
                                     onClick={() => toggleFlowSort("sale")}
                                     className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none bg-orange-50/60 hover:bg-orange-100 transition ${flowSort === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
@@ -3593,7 +3639,6 @@ export const StockManagePage: React.FC = () => {
                                       <span className="text-[9px] opacity-70">{arrowFor("current")}</span>
                                     </span>
                                   </th>
-                                  {/* 2026-07-29 · 사용자 요청 · 적정재고 컬럼 추가 · products.optimal_stock */}
                                   <th onClick={() => toggleFlowSort("optimal" as any)}
                                     className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-teal-50/60 hover:bg-teal-100 transition ${flowSort === ("optimal" as any) ? "text-teal-800 font-black" : "text-teal-600 font-black"}`}
                                     title="적정재고 · products.optimal_stock · 클릭 정렬"
@@ -3603,7 +3648,9 @@ export const StockManagePage: React.FC = () => {
                                       <span className="text-[9px] opacity-70">{arrowFor("optimal" as any)}</span>
                                     </span>
                                   </th>
-                                  {/* 2026-07-28 · 사용자 요청 · 손실 컬럼 제거 */}
+                                  </>}
+                                  {/* === 매입현황 그룹 (평균매입주기 · 최근매입일 · 최근매입량) === */}
+                                  {!isFlowGroupCollapsed("purchase") && <>
                                   <th onClick={() => toggleFlowSort("cycle")}
                                     className={`text-right px-0.5 py-1.5 w-12 text-[12px] font-black cursor-pointer select-none bg-sky-50/40 hover:bg-sky-100 transition ${flowSort === "cycle" ? "text-sky-800" : "text-sky-600"}`}
                                     title="평균 매입주기 = (최근-최초 매입일) / (매입횟수-1) · 클릭 정렬">
@@ -3631,7 +3678,9 @@ export const StockManagePage: React.FC = () => {
                                       <span className="text-[9px] opacity-70">{arrowFor("purchase")}</span>
                                     </span>
                                   </th>
-                                  {/* 2026-07-28 · 사용자 요청 · 매입주기 회전율 컬럼 제거 */}
+                                  </>}
+                                  {/* === 판매현황 그룹 (재고금액 · ERP단가 · 판매가 · 이익률) === */}
+                                  {!isFlowGroupCollapsed("sales") && <>
                                   <th onClick={() => toggleFlowSort("stock_value")}
                                     className={`text-right px-0.5 py-1.5 w-20 text-[12px] font-black cursor-pointer select-none bg-indigo-50/40 hover:bg-indigo-100 transition ${flowSort === "stock_value" ? "text-indigo-800" : "text-indigo-700"}`}
                                     title="재고금액 = 현재고 × 최근매입가 · 클릭 정렬">
@@ -3666,6 +3715,7 @@ export const StockManagePage: React.FC = () => {
                                       <span className="text-[9px] opacity-70">{arrowFor("profit_rate")}</span>
                                     </span>
                                   </th>
+                                  </>}
                                 </>
                               );
                             })()}
@@ -3735,7 +3785,8 @@ export const StockManagePage: React.FC = () => {
                                 </button>
                                 {p.supplier && <div className="text-[11px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
                               </td>
-                              {/* 2026-07-28 · 시작·매입 셀 제거 (매입은 최근매입일 옆 · 최근매입량 셀로 이동) */}
+                              {/* === 재고현황 그룹 (판매량 · 현재고 · 적정재고) === */}
+                              {!isFlowGroupCollapsed("stock") && <>
                               <td
                                 className="text-right px-0.5 py-1.5 font-bold text-orange-700 text-[12px] bg-orange-50/40 align-top tabular-nums"
                                 title="판매출고계 · 실제 팔린 양"
@@ -3750,7 +3801,6 @@ export const StockManagePage: React.FC = () => {
                                   >{fmt(cur)}</td>
                                 );
                               })()}
-                              {/* 2026-07-29 · 사용자 요청 · 적정재고 셀 (products.optimal_stock) */}
                               {(() => {
                                 const opt = Number((p as any).optimal_stock ?? 0);
                                 const below = opt > 0 && cur < opt;
@@ -3761,7 +3811,11 @@ export const StockManagePage: React.FC = () => {
                                   </td>
                                 );
                               })()}
-                              {/* 매입주기 · 최근매입일 · 최근매입량 · 최소발주 · 재고금액 · 판매가 · 이익률 (시작·매입·손실 제거) */}
+                              </>}
+                              {/* 그룹 접힘 시 빈 셀 placeholder (colSpan 맞춤용) */}
+                              {isFlowGroupCollapsed("stock") && <td className="bg-orange-50/20"></td>}
+                              {/* === 매입현황 그룹 (매입주기 · 최근매입일 · 최근매입량) === */}
+                              {!isFlowGroupCollapsed("purchase") && <>
                               <td className="text-right px-0.5 py-1.5 text-sky-600 text-[12px] bg-sky-50/40 align-top tabular-nums"
                                 title={purchaseCycle != null ? `${purchaseCount}회 매입 · 평균 ${purchaseCycle}일 주기` : "2회 미만 · 계산 불가"}>
                                 {purchaseCycle != null ? `${purchaseCycle}일` : "-"}
@@ -3774,7 +3828,10 @@ export const StockManagePage: React.FC = () => {
                                 title={purchV > 0 ? `최근매입량 ${fmt(purchV)}` : "매입 없음"}>
                                 {purchV > 0 ? fmt(purchV) : "-"}
                               </td>
-                              {/* 2026-07-28 · 매입주기 회전율 셀 제거 (사용자 요청) */}
+                              </>}
+                              {isFlowGroupCollapsed("purchase") && <td className="bg-emerald-50/20"></td>}
+                              {/* === 판매현황 그룹 (재고금액 · ERP단가 · 판매가 · 이익률) === */}
+                              {!isFlowGroupCollapsed("sales") && <>
                               <td className="text-right px-0.5 py-1.5 text-indigo-700 font-bold text-[12px] bg-indigo-50/40 align-top tabular-nums"
                                 title={stockValue > 0 ? `현재고 ${fmt(cur)} × ERP단가 ${fmtWon(purP)} = ${fmtWon(stockValue)}` : ""}>
                                 {fmtMan(stockValue)}
@@ -3785,6 +3842,8 @@ export const StockManagePage: React.FC = () => {
                                 title={profitRate != null ? `(판매가 ${fmtWon(saleP)} − 최근매입가 ${fmtWon(purP)}) / 판매가 = ${profitRate}%` : "-"}>
                                 {profitRate != null ? `${profitRate}%` : "-"}
                               </td>
+                              </>}
+                              {isFlowGroupCollapsed("sales") && <td className="bg-indigo-50/20"></td>}
                             </tr>
                             );
                           })}
