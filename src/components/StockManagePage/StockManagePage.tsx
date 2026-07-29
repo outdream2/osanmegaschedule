@@ -3548,48 +3548,27 @@ export const StockManagePage: React.FC = () => {
                 style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? flowPanelWidth : undefined }}
               >
               {/* 재고 흐름 카드 · 판매추이 StockFlowPanel 과 동일 레이아웃 */}
+              {/* 2026-07-29 · 사용자 요청 · 산만한 헤더 재구성 · 조회기간 옆에 날짜범위 · 기간 버튼 다음줄 */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-                {/* 헤더 · 세그먼트 탭 + 스냅샷 날짜 + 접기 버튼 · 안내 */}
-                <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-slate-200 bg-slate-50/50">
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {/* 접기/펴기 화살표 · 세그먼트 탭 제거 (2026-07-15) · 상단 통합 탭이 대체 */}
-                      {/* 스냅샷 날짜 pill */}
-                      {topTab === "sale" && flowSnapshot && (
-                        <span className="text-[10px] font-mono font-black text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
-                          {flowSnapshot}
-                        </span>
-                      )}
-                      {topTab === "sale" && flowDateRange && (
-                        <span className={`text-[12px] font-black rounded-full px-2.5 py-1 border tabular-nums ${
-                          flowPeriodType === "초순" || flowPeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
-                          flowPeriodType === "중순" || flowPeriodType === "mid"   ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
-                          flowPeriodType === "하순" || flowPeriodType === "late"  ? "text-purple-700 bg-purple-50 border-purple-300" :
-                          "text-slate-600 bg-slate-100 border-slate-300"
-                        }`}>
-                          {flowDateRange}
-                        </span>
-                      )}
+                <div className="flex flex-col gap-2 px-3 py-2.5 border-b border-slate-200 bg-slate-50/50">
+                  {/* Top N 필터 (우측 정렬) */}
+                  {topTab === "sale" && !flowCardCollapsed && (
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      {[
+                        { v: 100,   label: "Top 100" },
+                        { v: 300,   label: "Top 300" },
+                        { v: 1000,  label: "Top 1000" },
+                        { v: 2000,  label: "Top 2000" },
+                        { v: 50000, label: "전체" },
+                      ].map(o => (
+                        <button key={o.v} onClick={() => setFlowLimit(o.v)}
+                          className={`text-[13px] font-black px-2.5 py-1 rounded transition whitespace-nowrap ${
+                            flowLimit === o.v ? "bg-teal-500 text-white" : "text-slate-600 hover:bg-slate-100"
+                          }`}
+                        >{o.label}</button>
+                      ))}
                     </div>
-                    {/* 재고흐름 상위 리스트 조회 · 판매추이와 동일 pill 스타일 (2026-07-15 복원) */}
-                    {topTab === "sale" && !flowCardCollapsed && (
-                      <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto scrollbar-none">
-                        {[
-                          { v: 100,   label: "Top 100" },
-                          { v: 300,   label: "Top 300" },
-                          { v: 1000,  label: "Top 1000" },
-                          { v: 2000,  label: "Top 2000" },
-                          { v: 50000, label: "전체" },
-                        ].map(o => (
-                          <button key={o.v} onClick={() => setFlowLimit(o.v)}
-                            className={`text-[13px] font-black px-2.5 py-1 rounded transition whitespace-nowrap ${
-                              flowLimit === o.v ? "bg-teal-500 text-white" : "text-slate-600 hover:bg-slate-100"
-                            }`}
-                          >{o.label}</button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  )}
                   {!flowCardCollapsed && (
                     <p className="text-[12px] text-slate-600 font-semibold leading-tight">
                       💡 상품명을 누르면 상세 정보와 재고 상황이 나옵니다
@@ -3599,9 +3578,35 @@ export const StockManagePage: React.FC = () => {
                 <div className={`flex-1 min-h-0 flex flex-col p-3 ${flowCardCollapsed ? "hidden" : "flex"}`}>
                 {topTab === "sale" && (
                   <>
-                    {/* 조회기간 · 버튼 클릭 즉시 자동 조회 · 계절 지정 시 년도 무관 · 2026-07-29 폰트 상향 */}
-                    <div className="flex items-center gap-2 mb-2.5 flex-wrap text-[14px]">
+                    {/* 1행 · 조회기간 라벨 + 날짜범위 배지 */}
+                    <div className="flex items-center gap-2 mb-1.5 flex-wrap text-[14px]">
                       <span className="text-slate-700 font-black text-[14px] shrink-0">조회기간</span>
+                      {/* 스냅샷 (10일 모드) */}
+                      {flowMonths === 0 && !flowSeason && flowSnapshot && (
+                        <span className={`text-[12px] tabular-nums font-black rounded-full px-2.5 py-1 border ${
+                          flowPeriodType === "초순" || flowPeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
+                          flowPeriodType === "중순" || flowPeriodType === "mid"   ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
+                          flowPeriodType === "하순" || flowPeriodType === "late"  ? "text-purple-700 bg-purple-50 border-purple-300" :
+                          "text-slate-600 bg-slate-100 border-slate-300"
+                        }`}>
+                          {flowDateRange ?? flowSnapshot}
+                        </span>
+                      )}
+                      {/* 개월 모드 · 실제 날짜 범위 */}
+                      {flowMonths > 0 && (() => {
+                        const today = new Date();
+                        const start = new Date(today.getFullYear(), today.getMonth() - flowMonths, 1);
+                        const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
+                        const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                        return (
+                          <span className="text-[12px] tabular-nums font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
+                            {s} ~ {e}
+                          </span>
+                        );
+                      })()}
+                    </div>
+                    {/* 2행 · 기간 선택 버튼 (10일 · 1~6개월 · 계절) */}
+                    <div className="flex items-center gap-2 mb-2.5 flex-wrap text-[14px]">
                       <div className="inline-flex bg-slate-100/80 border border-slate-200/60 rounded-lg p-0.5 shadow-inner">
                         <button onClick={() => { setFlowSeason(null); setPendingFlowMonths(0); setFlowMonths(0); }}
                           className={`px-3 py-1.5 text-[14px] font-black rounded transition cursor-pointer ${
@@ -3614,20 +3619,7 @@ export const StockManagePage: React.FC = () => {
                             }`}>{m}개월</button>
                         ))}
                       </div>
-                      {/* 2026-07-16 · 계절 조회 · 지정 시 flowMonths 무시 */}
                       <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) { setPendingFlowMonths(0); setFlowMonths(0); } }} size="sm" hideLabel />
-                      {/* 실제 조회 날짜 범위 표시 (현재 적용된 flowMonths 기준) */}
-                      {flowMonths > 0 && (() => {
-                        const today = new Date();
-                        const start = new Date(today.getFullYear(), today.getMonth() - flowMonths, 1);
-                        const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
-                        const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-                        return (
-                          <span className="text-[12px] tabular-nums font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
-                            {s} ~ {e}
-                          </span>
-                        );
-                      })()}
                     </div>
                     {/* 조회기간 다음 줄: TOP 리스트 내 검색 + 정보확인 + 숨김관리 */}
                     <div className="flex items-center gap-2 mb-2.5 flex-wrap text-[14px]">

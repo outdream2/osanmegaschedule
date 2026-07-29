@@ -16,7 +16,6 @@ import {
   Send,
   Sparkles,
   Store,
-  TrendingUp,
   User,
   X,
   XCircle,
@@ -40,7 +39,7 @@ import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 // A. code splitting (2026-07-15) · StockManage/SalesTrend 큰 컴포넌트 lazy 로드
 //    초기 앱 번들에서 제외 · 사용자가 해당 탭 클릭 시에만 로드
 const StockManagePage = lazy(() => import("../StockManagePage").then(m => ({ default: m.StockManagePage })));
-const SalesTrendPage = lazy(() => import("../SalesTrendPage/SalesTrendPage").then(m => ({ default: m.SalesTrendPage })));
+// 2026-07-29 · 판매추이 탭 제거 (사용자 요청) · CategoryTab · LossTrackerTab 은 재고관리 안에서만 lazy import (SalesTrendPage 파일에 남아있음)
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일은 보관 · 사이드바/라우팅만 해제
 import { StockArrivalPage } from "../StockArrivalPage";
 import { OcrPage } from "../OcrPage";
@@ -320,7 +319,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
-  const [dpSubTab, setDpSubTab] = useState<"store" | "stock-manage" | "sales-trend" | "stock-arrivals" | "order-manage" | "staff-manage">(
+  const [dpSubTab, setDpSubTab] = useState<"store" | "stock-manage" | "stock-arrivals" | "order-manage" | "staff-manage">(
     dpCanSeeStockManage ? "stock-manage" : "store"
   );
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
@@ -1457,7 +1456,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         };
         const tabs: Array<TabDef> = [
           { key: "stock-manage",   label: "재고관리",     icon: Boxes,         visible: dpCanSeeStockManage,   color: "emerald" },
-          { key: "sales-trend",    label: "판매추이",     icon: TrendingUp,    visible: dpCanSeeStockManage,   color: "amber"   },
+          // 2026-07-29 · 판매추이 탭 제거 (사용자 요청) · 관련 카테고리별현황·손실추적은 재고관리 안에 이미 있음
           { key: "order-manage",   label: "발주/사입관리", icon: ClipboardList, visible: dpCanSeeStockManage,   color: "sky"     },
           { key: "stock-arrivals", label: "입고알림",     icon: Bell,          visible: dpCanSeeStockArrivals, color: "orange"  },
           { key: "store",          label: "구역도",       icon: Store,         visible: true,                  color: "rose"    },
@@ -1510,12 +1509,6 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         <main className="flex-1 flex flex-col min-h-0">
           <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">재고관리 로딩 중...</div>}>
             <StockManagePage />
-          </Suspense>
-        </main>
-      ) : dpSubTab === "sales-trend" && dpCanSeeStockManage ? (
-        <main className="flex-1 flex flex-col min-h-0">
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">판매추이 로딩 중...</div>}>
-            <SalesTrendPage />
           </Suspense>
         </main>
       ) : dpSubTab === "stock-arrivals" && dpCanSeeStockArrivals ? (
