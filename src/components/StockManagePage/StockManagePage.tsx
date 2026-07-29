@@ -3377,7 +3377,7 @@ export const StockManagePage: React.FC = () => {
                         </span>
                       )}
                       {topTab === "sale" && flowDateRange && (
-                        <span className={`text-[10px] font-black rounded-full px-2 py-0.5 border font-mono ${
+                        <span className={`text-[12px] font-black rounded-full px-2.5 py-1 border tabular-nums ${
                           flowPeriodType === "초순" || flowPeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
                           flowPeriodType === "중순" || flowPeriodType === "mid"   ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
                           flowPeriodType === "하순" || flowPeriodType === "late"  ? "text-purple-700 bg-purple-50 border-purple-300" :
@@ -3389,7 +3389,7 @@ export const StockManagePage: React.FC = () => {
                     </div>
                     {/* 재고흐름 상위 리스트 조회 · 판매추이와 동일 pill 스타일 (2026-07-15 복원) */}
                     {topTab === "sale" && !flowCardCollapsed && (
-                      <div className="flex items-center gap-1 shrink-0 overflow-x-auto scrollbar-none">
+                      <div className="flex items-center gap-1.5 shrink-0 overflow-x-auto scrollbar-none">
                         {[
                           { v: 100,   label: "Top 100" },
                           { v: 300,   label: "Top 300" },
@@ -3398,8 +3398,8 @@ export const StockManagePage: React.FC = () => {
                           { v: 50000, label: "전체" },
                         ].map(o => (
                           <button key={o.v} onClick={() => setFlowLimit(o.v)}
-                            className={`text-[10px] font-black px-1.5 py-0.5 rounded transition whitespace-nowrap ${
-                              flowLimit === o.v ? "bg-teal-500 text-white" : "text-slate-500 hover:bg-slate-100"
+                            className={`text-[13px] font-black px-2.5 py-1 rounded transition whitespace-nowrap ${
+                              flowLimit === o.v ? "bg-teal-500 text-white" : "text-slate-600 hover:bg-slate-100"
                             }`}
                           >{o.label}</button>
                         ))}
@@ -3407,7 +3407,7 @@ export const StockManagePage: React.FC = () => {
                     )}
                   </div>
                   {!flowCardCollapsed && (
-                    <p className="text-[10px] text-slate-500 font-semibold leading-tight">
+                    <p className="text-[12px] text-slate-600 font-semibold leading-tight">
                       💡 상품명을 누르면 상세 정보와 재고 상황이 나옵니다
                     </p>
                   )}

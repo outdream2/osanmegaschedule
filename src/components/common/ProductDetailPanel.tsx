@@ -94,7 +94,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
             title={collapsed ? "펼치기" : "접기"}
           >
             <TrendingUp size={14} className="text-teal-600 shrink-0" />
-            <span className="text-[13px] font-black text-slate-800">기간별 재고 흐름</span>
+            <span className="text-[13px] font-black text-slate-800">기간별 상품흐름</span>
             {productName && (
               <span className="text-[12px] font-bold text-slate-700 break-words whitespace-normal leading-tight">
                 · {productName}
@@ -142,7 +142,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
               <button onClick={() => setXAxisMode("10day")}
                 className={`px-2.5 py-0.5 text-[11px] font-black rounded-md transition cursor-pointer ${xAxisMode === "10day" ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>10일 (초·중·하순)</button>
             </div>
-            <span className="text-[10px] font-semibold text-slate-400 ml-auto">매입 · 폐기 · 시작 · 종료 · 손실</span>
+            <span className="text-[10px] font-semibold text-slate-400 ml-auto">매입 · 판매 · 폐기 · 손실</span>
           </div>
         </>
       )}
@@ -198,7 +198,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
             { label: "판매",     color: "#dc2626", kind: "line" as const, values: chartRows.map(r => Number(r.sale_qty ?? 0)), format: "count" as const },
             ...(hasDisposal ? [{ label: "폐기", color: "#f43f5e", kind: "bar" as const, values: chartRows.map(r => Number(r.disposal_qty ?? 0)), format: "count" as const }] : []),
             // 2026-07-28 · 사용자 요청 · 시작재고 제거
-            { label: "종료재고", color: "#6366f1", kind: "line" as const, values: chartRows.map(r => Number(r.closing_stock ?? 0)), format: "count" as const },
+            // 2026-07-29 · 종료재고 라인 제거 (사용자 요청)
             { label: "손실(참고)", color: "#f59e0b", kind: "line" as const,
               values: chartRows.map(r => (Number(r.opening_stock ?? 0) - Number(r.sale_qty ?? 0)) - Number(r.closing_stock ?? 0)),
               format: "count" as const },
