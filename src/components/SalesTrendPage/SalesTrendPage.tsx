@@ -1938,29 +1938,29 @@ interface MiniStoreZoneMapProps {
 const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts }) => {
   const [collapsed, setCollapsed] = useState(false);
 
-  // 벽면·수직윙 셀 · 상위 map 의 renderWallZoneCard 와 동일 스타일 (stone/amber)
+  // 벽면·수직윙 셀 · 상위 map 의 renderWallZoneCard 와 동일 aspect ratio (~ 1:1.6)
   const wallCell = (num: number) => {
     const zd = ZONE_DEFS.find(z => z.num === num);
     const cat = zd?.category ?? "";
     const count = zoneItemCounts?.[String(num)] ?? 0;
     return (
       <div key={num}
-        className="rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center min-h-[48px]"
+        className="rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center min-h-[64px]"
         title={`${zd?.label ?? num} · ${cat}${count > 0 ? ` · ${count}개 상품` : ""}`}>
-        <div className="w-full bg-stone-50 px-1 py-1 flex flex-col items-center gap-0.5">
+        <div className="w-full bg-stone-50 px-1 py-1 flex flex-col items-center gap-0.5 flex-1 justify-center">
           <div className="flex items-center gap-1">
             <span className="text-[10px] font-black text-white bg-amber-700 rounded px-1.5 leading-none">{num}</span>
             {count > 0 && (
               <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 rounded px-1 leading-none tabular-nums">{count}</span>
             )}
           </div>
-          <span className="text-[9px] font-bold text-stone-800 leading-tight text-center line-clamp-2 break-all">{cat}</span>
+          <span className="text-[10px] font-bold text-stone-800 leading-tight text-center line-clamp-2 break-all">{cat}</span>
         </div>
       </div>
     );
   };
 
-  // 중앙 진열대 B/A pair 셀 · 상위와 동일 catA/catB 색상 사용
+  // 중앙 진열대 B/A pair 셀 · 상위 map 과 동일 aspect ratio · pair 세로 폭 확대
   const pairCell = (num: number) => {
     const ca = CAT_A_COLORS[num];
     const cb = CAT_B_COLORS[num];
@@ -1971,41 +1971,41 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts }) =
     const countA = zoneItemCounts?.[`${num}A`] ?? 0;
     return (
       <div key={`pair-${num}`} className="flex flex-col items-stretch gap-0.5 flex-1 min-w-[64px]">
-        {/* B (연한 톤) */}
-        <div className={`w-full font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-1 leading-tight text-center min-h-[48px] flex flex-col items-center justify-center overflow-hidden`}
+        {/* B (연한 톤) · min-h 상향 · 상위 map 과 유사 비율 */}
+        <div className={`w-full font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-1 leading-tight text-center min-h-[80px] flex flex-col items-center justify-center overflow-hidden`}
           title={`${num}B · ${subB}${countB > 0 ? ` · ${countB}개 상품` : ""}`}>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 mb-0.5">
             <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1.5 leading-none`}>{num}B</span>
             {countB > 0 && (
               <span className="text-[10px] font-black text-white bg-slate-700 rounded px-1 leading-none tabular-nums">{countB}</span>
             )}
           </div>
-          <span className="line-clamp-2 text-[9px] break-all mt-0.5">{subB}</span>
+          <span className="line-clamp-3 text-[10px] break-all">{subB}</span>
         </div>
         {/* A (진한 톤) */}
-        <div className={`w-full font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-1 leading-tight text-center min-h-[48px] flex flex-col items-center justify-center overflow-hidden`}
+        <div className={`w-full font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-1 leading-tight text-center min-h-[80px] flex flex-col items-center justify-center overflow-hidden`}
           title={`${num}A · ${subA}${countA > 0 ? ` · ${countA}개 상품` : ""}`}>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 mb-0.5">
             <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1.5 leading-none`}>{num}A</span>
             {countA > 0 && (
               <span className="text-[10px] font-black text-white bg-slate-800 rounded px-1 leading-none tabular-nums">{countA}</span>
             )}
           </div>
-          <span className="line-clamp-2 text-[9px] break-all mt-0.5">{subA}</span>
+          <span className="line-clamp-3 text-[10px] break-all">{subA}</span>
         </div>
       </div>
     );
   };
 
-  // 중앙 22 (단독) 셀
+  // 중앙 22 (단독) 셀 · min-h 상향 (B+A 합계에 맞춤)
   const centerCell = () => {
     const zd = ZONE_DEFS.find(z => z.num === STORE_AISLE_CENTER);
     const count = zoneItemCounts?.["22"] ?? 0;
     return (
       <div className="flex flex-col items-center gap-0.5 flex-none w-[46px] min-w-[46px]">
-        <div className="w-full text-[9px] font-bold text-slate-700 bg-white border border-slate-300 rounded px-0.5 py-1 leading-tight text-center min-h-[92px] flex items-center justify-center overflow-hidden"
+        <div className="w-full text-[10px] font-bold text-slate-700 bg-white border border-slate-300 rounded px-0.5 py-1 leading-tight text-center min-h-[160px] flex items-center justify-center overflow-hidden"
           title={`${STORE_AISLE_CENTER} · ${zd?.category ?? ""}${count > 0 ? ` · ${count}개 상품` : ""}`}>
-          <span className="line-clamp-4">{zd?.category ?? ""}</span>
+          <span className="line-clamp-6">{zd?.category ?? ""}</span>
         </div>
         <div className="w-full flex items-center justify-center gap-0.5">
           <span className="text-[10px] font-black text-white bg-slate-600 rounded px-1 leading-none py-0.5">22</span>
