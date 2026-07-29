@@ -716,6 +716,77 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
       const today = new Date();
       const cutoff = new Date(today.getFullYear(), today.getMonth() - monthsParam, today.getDate());
       const cutoffStr = `${cutoff.getFullYear()}-${String(cutoff.getMonth() + 1).padStart(2, "0")}-${String(cutoff.getDate()).padStart(2, "0")}`;
+      const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+      // 2026-07-29 · Phase 3 (A) · Supabase RPC get_stock_flow 사용 · 단일 SQL 조인 · 훨씬 빠름
+      //   supplier 필터 없을 때만 RPC (RPC 함수에 supplier 필터 없어서)
+      //   조인·집계·purchase_details 모두 DB에서 한 번에 처리
+      if (!supplierFilter && !supplierCodeFilter) {
+        try {
+          const t0 = Date.now();
+          const { data: rpcData, error: rpcError } = await supabase.rpc("get_stock_flow", {
+            p_from: cutoffStr,
+            p_to: todayStr,
+          });
+          if (!rpcError && Array.isArray(rpcData)) {
+            const rpcMs = Date.now() - t0;
+            // hidden 필터는 이미 함수에서 처리됨
+            const rows = rpcData.map((r: any) => ({
+              product_code:  r.product_code,
+              product_name:  r.product_name,
+              supplier:      r.supplier,
+              spec:          r.spec,
+              opening_stock: r.opening_stock,
+              purchase_qty:  r.purchase_qty,
+              sale_qty:      r.sale_qty,
+              disposal_qty:  r.disposal_qty,
+              closing_stock: r.closing_stock,
+              total_amount:  r.total_amount,
+              optimal_stock: r.optimal_stock,
+              sale_price:    r.sale_price,
+              purchase_price:r.purchase_price,
+              current_stock: r.current_stock,
+              min_order:     r.min_order,
+              last_purchase_date:  r.last_purchase_date,
+              first_purchase_date: r.first_purchase_date,
+              purchase_count:      r.purchase_count ?? 0,
+              purchase_total_qty:  r.purchase_total_qty ?? 0,
+              purchase_total_amount: r.purchase_total_amount ?? 0,
+            }));
+            // 클라이언트 정렬
+            const sign = dir === "asc" ? 1 : -1;
+            const sorted = rows.sort((a: any, b: any) => {
+              switch (sort) {
+                case "purchase": return sign * (a.purchase_qty  - b.purchase_qty);
+                case "amount":   return sign * (a.sale_price    - b.sale_price);
+                case "closing":  return sign * (a.closing_stock - b.closing_stock);
+                case "sale":
+                default:         return sign * (a.sale_qty      - b.sale_qty);
+              }
+            });
+            const payload = {
+              snapshot_date: todayStr,
+              period_type: null,
+              months: monthsParam,
+              season: null,
+              dates: [],
+              dates_with_period: [],
+              rows: sorted.slice(0, limit),
+              _rpc_ms: rpcMs,
+            };
+            topSalesCache.set(cacheKey, { data: payload, expiresAt: Date.now() + TOP_SALES_TTL });
+            res.setHeader("X-Cache", "MISS");
+            res.setHeader("X-Source", "rpc-fast");
+            console.log(`[top-sales/rpc] months=${monthsParam} · ${rows.length} rows · ${rpcMs}ms`);
+            return res.json(payload);
+          } else if (rpcError) {
+            console.warn(`[top-sales/rpc] RPC 실패 · fallback:`, rpcError.message);
+          }
+        } catch (e: any) {
+          console.warn(`[top-sales/rpc] 예외 · fallback:`, e?.message);
+        }
+      }
+      // fallback · 기존 로직 (supplier 필터 또는 RPC 실패 시)
 
       // stock_history 페이지네이션 조회
       const rawRows: any[] = [];
