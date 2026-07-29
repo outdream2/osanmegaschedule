@@ -301,7 +301,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // 상단 탭 (발주요청 / 발주필요 / 반품필요 / 사입(OCR거래명세서 등록) / 공급사관리) · Vercel Ink underline 스타일
   const [topTab, setTopTab] = useState<"order" | "need" | "return" | "receipt" | "reconciliation" | "vendor" | "arrival_match">("order");
   // 2026-07-28 · 사용자 요청 · 반품필요 리스트 · 매입주기 길고 판매량 적은 상품
-  const [returnList, setReturnList] = useState<Array<{ product_code: string; product_name: string; supplier: string | null; purchase_cycle: number | null; sale_qty_cycle: number; last_purchase_date: string | null; current_stock: number; purchase_price: number; }>>([]);
+  // 2026-07-29 · 사용자 요청 · 컬럼 추가 (sale_qty_month · last_purchase_qty)
+  const [returnList, setReturnList] = useState<Array<{ product_code: string; product_name: string; supplier: string | null; purchase_cycle: number | null; sale_qty_cycle: number; sale_qty_month: number | null; last_purchase_date: string | null; last_purchase_qty: number | null; current_stock: number; purchase_price: number; }>>([]);
   const [returnLoading, setReturnLoading] = useState(false);
   const [returnCycleMin, setReturnCycleMin] = useState<number>(90); // 매입주기 90일 이상
   const [returnSalesMax, setReturnSalesMax] = useState<number>(5);  // 매입주기 판매량 5 이하
@@ -328,7 +329,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           supplier: r.supplier ?? null,
           purchase_cycle: cycle,
           sale_qty_cycle: Number(r.sale_qty_cycle ?? 0),
+          // 2026-07-29 · 사용자 요청 · 최근 한달 판매량 · 최근 매입량 (backend 지원 시 자동 표시)
+          sale_qty_month: r.sale_qty_month != null ? Number(r.sale_qty_month) : (r.sale_qty_1m != null ? Number(r.sale_qty_1m) : null),
           last_purchase_date: r.last_purchase_date ?? null,
+          last_purchase_qty: r.last_purchase_qty != null ? Number(r.last_purchase_qty) : (r.last_snapshot_qty != null ? Number(r.last_snapshot_qty) : null),
           current_stock: Number(r.current_stock ?? r.closing_stock ?? 0),
           purchase_price: Number(r.purchase_price ?? 0),
         };
@@ -1192,6 +1196,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </div>
           </div>
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            {/* 2026-07-29 · 사용자 요청 · '반품필요리스트' 제목 · 컬럼 확장 */}
+            <div className="px-3 py-2 bg-rose-50/50 border-b border-rose-100 flex items-center gap-2">
+              <PackageCheck size={14} className="text-rose-600" />
+              <span className="text-[13px] font-black text-rose-700">반품필요리스트</span>
+              <span className="text-[11px] font-bold text-slate-500 tabular-nums">{returnList.length}건</span>
+            </div>
             {returnList.length === 0 ? (
               <div className="py-12 text-center text-slate-400 text-xs">
                 {returnLoading ? "불러오는 중..." : "조건에 맞는 반품필요 상품 없음"}
@@ -1207,7 +1217,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       <th className="px-2 py-2 text-right font-bold text-rose-800 w-16">현재고</th>
                       <th className="px-2 py-2 text-right font-bold text-rose-800 w-20">매입주기</th>
                       <th className="px-2 py-2 text-right font-bold text-rose-800 w-24">주기판매</th>
-                      <th className="px-2 py-2 text-left font-bold text-rose-800 w-24">최근매입</th>
+                      <th className="px-2 py-2 text-right font-bold text-rose-800 w-24" title="최근 30일 판매량">최근 한달 판매</th>
+                      <th className="px-2 py-2 text-left font-bold text-rose-800 w-24">최근매입일</th>
+                      <th className="px-2 py-2 text-right font-bold text-rose-800 w-20" title="최근 매입일의 매입량">최근 매입량</th>
                       <th className="px-2 py-2 text-right font-bold text-rose-800 w-24">재고금액</th>
                     </tr>
                   </thead>
@@ -1225,7 +1237,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         <td className="px-2 py-1.5 text-right text-slate-800 font-bold tabular-nums">{x.current_stock.toLocaleString()}</td>
                         <td className="px-2 py-1.5 text-right text-rose-700 font-bold tabular-nums">{x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}</td>
                         <td className="px-2 py-1.5 text-right text-amber-700 font-bold tabular-nums">{x.sale_qty_cycle.toLocaleString()}개</td>
+                        <td className="px-2 py-1.5 text-right text-orange-600 font-bold tabular-nums">{x.sale_qty_month != null ? `${x.sale_qty_month.toLocaleString()}개` : "-"}</td>
                         <td className="px-2 py-1.5 text-slate-600 tabular-nums text-[11px]">{x.last_purchase_date ?? "-"}</td>
+                        <td className="px-2 py-1.5 text-right text-emerald-700 font-bold tabular-nums">{x.last_purchase_qty != null ? `${x.last_purchase_qty.toLocaleString()}개` : "-"}</td>
                         <td className="px-2 py-1.5 text-right text-indigo-700 font-bold tabular-nums">
                           {x.current_stock > 0 && x.purchase_price > 0 ? (x.current_stock * x.purchase_price).toLocaleString() : "-"}
                         </td>
