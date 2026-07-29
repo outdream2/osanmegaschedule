@@ -2405,23 +2405,20 @@ export const StockManagePage: React.FC = () => {
   //   module-level 로 상향 · 다른 탭 갔다와도 유지 (컴포넌트 unmount 시 캐시 유지)
   const stockFlowCacheRef = useRef<Map<string, { data: any; ts: number }>>(GLOBAL_STOCK_FLOW_CACHE);
   const STOCK_FLOW_CACHE_TTL = 5 * 60 * 1000;
-  // 재고 흐름 조회 (스냅샷·정렬·limit·flowMonths 변경 시 자동 재조회)
+  // 재고 흐름 조회 · 2026-07-29 · Phase 2 Lazy Loading (사용자 요청)
+  //   1단계 · skip_purchase=1 로 즉시 응답 (purchase_details 조인 SKIP · 빠름)
+  //   2단계 · purchase-info-batch 로 매입 정보 병렬 조회 · rows 에 병합 · 재렌더
   const fetchStockFlow = useCallback(async () => {
     setLoading(true);
     try {
-      // 서버가 지원하는 정렬 key 만 전달 (나머지는 클라이언트에서 정렬)
       const serverSort = (["sale", "purchase", "amount", "closing"] as SortKey[]).includes(flowSort) ? flowSort : "sale";
       const params = new URLSearchParams({ sort: serverSort, dir: flowDir, limit: String(flowLimit) });
-      // 2026-07-16 · 계절 지정 시 우선 · flowMonths/snapshot 무시 (년도 무관 · 해당 월 전체)
-      if (flowSeason) {
-        params.set("season", flowSeason);
-      } else if (flowMonths > 0) {
-        params.set("months", String(flowMonths));
-      } else if (flowSnapshot) {
-        params.set("snapshot_date", flowSnapshot);
-      }
+      if (flowSeason) params.set("season", flowSeason);
+      else if (flowMonths > 0) params.set("months", String(flowMonths));
+      else if (flowSnapshot) params.set("snapshot_date", flowSnapshot);
       const cacheKey = params.toString();
-      // 캐시 hit → 즉시 표시 (백그라운드 갱신은 아래 fetch 계속)
+
+      // 캐시 hit → 즉시 표시 (SWR · 백그라운드 갱신)
       const cached = stockFlowCacheRef.current.get(cacheKey);
       if (cached && Date.now() - cached.ts < STOCK_FLOW_CACHE_TTL) {
         const d = cached.data;
@@ -2429,10 +2426,13 @@ export const StockManagePage: React.FC = () => {
         setAvailableSnapshots(Array.isArray(d.dates) ? d.dates : []);
         setFlowPeriodType(d.period_type ?? null);
       }
-      const res = await fetch(`/api/stock-manage/top-sales?${params}`);
+
+      // 1단계 · skip_purchase=1 로 basic 데이터 즉시 fetch
+      const basicParams = new URLSearchParams(params);
+      basicParams.set("skip_purchase", "1");
+      const res = await fetch(`/api/stock-manage/top-sales?${basicParams}`);
       if (res.ok) {
         const data = await res.json();
-        stockFlowCacheRef.current.set(cacheKey, { data, ts: Date.now() });
         setStockFlow(Array.isArray(data.rows) ? data.rows : []);
         setAvailableSnapshots(Array.isArray(data.dates) ? data.dates : []);
         setFlowPeriodType(data.period_type ?? null);
@@ -2441,14 +2441,49 @@ export const StockManagePage: React.FC = () => {
           for (const d of data.dates_with_period) map[d.snapshot_date] = d.period_type ?? null;
           setSnapshotPeriods(map);
         }
-        // B 픽스 (2026-07-15): 첫 로드 시 snapshot 자동 세팅으로 재fetch 되던 문제
-        //   서버 반환값을 ref 로 표시 · state 세팅은 최초 1회만
         if (flowMonths === 0 && !flowSnapshotAutoSet.current && data.snapshot_date) {
           flowSnapshotAutoSet.current = true;
           if (!flowSnapshot) setFlowSnapshot(data.snapshot_date);
         }
+        // 1단계 완료 즉시 loading 해제 · 사용자에게 표시
+        setLoading(false);
+
+        // 2단계 · purchase 정보 병렬 fetch · 백그라운드
+        const rows: any[] = Array.isArray(data.rows) ? data.rows : [];
+        const codes = rows.map(r => String(r.product_code ?? "")).filter(Boolean);
+        if (codes.length > 0) {
+          try {
+            // codes 를 여러 chunk 로 나눠 병렬 fetch (URL 길이 제한 회피)
+            const URL_CHUNK = 200;
+            const fetchPromises: Promise<Record<string, any>>[] = [];
+            for (let i = 0; i < codes.length; i += URL_CHUNK) {
+              const chunk = codes.slice(i, i + URL_CHUNK);
+              fetchPromises.push(
+                fetch(`/api/stock-manage/purchase-info-batch?codes=${encodeURIComponent(chunk.join(","))}`)
+                  .then(r => r.ok ? r.json() : { items: {} })
+                  .then(j => j.items ?? {})
+                  .catch(() => ({}))
+              );
+            }
+            const results = await Promise.all(fetchPromises);
+            const merged: Record<string, any> = {};
+            for (const items of results) Object.assign(merged, items);
+            // rows 에 병합 · setState 로 재렌더
+            const enrichedRows = rows.map(r => {
+              const info = merged[String(r.product_code ?? "")];
+              return info ? { ...r, ...info } : r;
+            });
+            const fullData = { ...data, rows: enrichedRows };
+            stockFlowCacheRef.current.set(cacheKey, { data: fullData, ts: Date.now() });
+            setStockFlow(enrichedRows);
+          } catch { /* ignore · basic 데이터는 이미 표시됨 */ }
+        } else {
+          stockFlowCacheRef.current.set(cacheKey, { data, ts: Date.now() });
+        }
+      } else {
+        setLoading(false);
       }
-    } catch { /* ignore */ } finally { setLoading(false); }
+    } catch { setLoading(false); }
   }, [flowSnapshot, flowSort, flowDir, flowLimit, flowMonths, flowSeason]);
   const flowSnapshotAutoSet = useRef(false);
   useEffect(() => { fetchStockFlow(); }, [fetchStockFlow]);

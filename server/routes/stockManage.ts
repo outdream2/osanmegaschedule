@@ -513,9 +513,13 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
   //   season 이 우선 · months/snapshot_date 무시 (전 기간 대상)
   const seasonParam = String(req.query.season ?? "").trim().toLowerCase();
   const seasonMonths = await resolveSeasonMonths(seasonParam);
+  // 2026-07-29 · Phase 2 · Lazy Loading (사용자 요청 · 조인 안하고 빠르게)
+  //   skip_purchase=1 지정 시 · purchase_details 조인 SKIP · 매입주기·최근매입일 등은 null 반환
+  //   클라이언트가 이후 별도 API 로 lazy fetch
+  const skipPurchase = String(req.query.skip_purchase ?? "").trim() === "1";
 
   // 캐시 조회 (반복 요청 · 정렬/limit 변경 즉시 응답)
-  const cacheKey = `${dateParam}::${monthsParam}::${seasonParam}::${sort}::${dir}::${limit}::${supplierFilter}::${supplierCodeFilter}`;
+  const cacheKey = `${dateParam}::${monthsParam}::${seasonParam}::${sort}::${dir}::${limit}::${supplierFilter}::${supplierCodeFilter}::${skipPurchase ? "basic" : "full"}`;
   const cached = topSalesCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) {
     res.setHeader("X-Cache", "HIT");
@@ -627,9 +631,8 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
       }
 
       // ═══ purchase_details 조인 (season 모드 신규 · 2026-07-29) ═══
-      //   이전 · 이 경로에 purchase_details 조회가 아예 없어서 매입일/횟수 = null 또는 stock_history fallback
-      //   원칙 · 매입 관련은 무조건 purchase_details
-      try {
+      //   2026-07-29 · Phase 2 · Lazy Loading · skip_purchase 시 조인 SKIP (빠른 응답)
+      if (!skipPurchase) try {
         const codesInResult = Array.from(byCode.keys());
         const CHUNK = 200;
         const PAGE = 1000;
@@ -827,12 +830,10 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
       // 2026-07-28 · 사용자 요청 "매입주기 이상 · 공급사재고와 동일하게" · purchase_details 조인 (기간 무관 · 상품별 총 이력 기준)
       //   공급사재고 리스트가 사용하는 매입주기 로직 재사용
       //   추가 · dates 배열 저장 (사용자 요청 · 최근·그 전 매입일 사이 판매량 계산용)
+      //   2026-07-29 · Phase 2 · Lazy Loading · skip_purchase 시 조인 SKIP
       const codesInResult = Array.from(byCode.keys());
-      // 2026-07-29 · 매입주기 계산 정확화 · dateSet 으로 distinct dates 관리 (같은 날짜 여러 row 는 1회로)
-      // 이전 로직: cur.count++ 로 row 수 카운트 → 같은 날짜 중복 매입 시 count>=2 여도 firstPD===lastPD 여서 클라에서 null 반환
-      // 2026-07-29 · 페이지네이션 추가 · Supabase 기본 limit 1000 → chunk 500 codes × 평균 매입 수 초과 시 데이터 잘림 (예 · 8회 매입 중 최신 2건만 남음 → cycle 오계산)
       const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; count: number; totalQty: number; totalAmount: number; lastAmount: number; dates: string[]; dateSet: Set<string> }>();
-      try {
+      if (!skipPurchase) try {
         const CHUNK = 200;   // codes chunk 축소
         const PAGE = 1000;   // row 페이지네이션
         for (let i = 0; i < codesInResult.length; i += CHUNK) {
@@ -1179,9 +1180,9 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
 
     // ═══ purchase_details 조인 · 최근/최초 매입일 + 매입 금액 + 횟수 병합 (2026-07-15) ═══
     //   2026-07-29 · 페이지네이션 + distinct dates 카운트 (months 모드와 동일 fix)
-    //     이전 · CHUNK 500 + no range → 1000행 초과 시 잘림 · count = row 수 → cycle 오계산
+    //   2026-07-29 · Phase 2 · Lazy Loading · skip_purchase 시 조인 SKIP
     const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; lastAmount: number; totalQty: number; totalAmount: number; count: number; dateSet: Set<string> }>();
-    try {
+    if (!skipPurchase) try {
       const CHUNK = 200;
       const PAGE = 1000;
       for (let i = 0; i < codesInResult.length; i += CHUNK) {
@@ -1812,6 +1813,74 @@ router.get("/api/stock-manage/period-coverage", async (_req, res) => {
     res.json({ periods, missing });
   } catch (err: any) {
     res.status(500).json({ error: err?.message ?? "커버리지 조회 실패" });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// GET /api/stock-manage/purchase-info-batch?codes=CODE1,CODE2,...  (2026-07-29 · Phase 2 Lazy Loading)
+//   특정 상품들의 purchase_details 집계값만 반환 (last_purchase_date · first_purchase_date · purchase_count · totalQty · totalAmount · lastAmount)
+//   상품현황리스트 · 공급사탭 등의 매입주기·최근매입일 컬럼을 첫 로드 후 background 로 채우는 용도
+// ═══════════════════════════════════════════════════════════════════════
+router.get("/api/stock-manage/purchase-info-batch", async (req, res) => {
+  const codesParam = String(req.query.codes ?? "").trim();
+  if (!codesParam) return res.json({ items: {} });
+  const codes = codesParam.split(",").map(c => c.trim()).filter(Boolean).slice(0, 5000);
+  if (codes.length === 0) return res.json({ items: {} });
+  try {
+    const CHUNK = 200;
+    const PAGE = 1000;
+    const infoMap = new Map<string, { lastDate: string | null; firstDate: string | null; count: number; totalQty: number; totalAmount: number; lastAmount: number; dateSet: Set<string> }>();
+    // 병렬 chunk 처리 · Phase 2 성능 개선
+    const chunkPromises: Promise<void>[] = [];
+    for (let i = 0; i < codes.length; i += CHUNK) {
+      const chunk = codes.slice(i, i + CHUNK);
+      chunkPromises.push((async () => {
+        let fromRow = 0;
+        while (true) {
+          const { data: pdRows, error } = await supabase
+            .from("purchase_details")
+            .select("product_code, purchase_date, quantity, amount, total")
+            .in("product_code", chunk)
+            .order("purchase_date", { ascending: false })
+            .range(fromRow, fromRow + PAGE - 1);
+          if (error) throw new Error(error.message);
+          if (!pdRows || pdRows.length === 0) break;
+          for (const r of pdRows) {
+            const code = String((r as any).product_code ?? "").trim();
+            if (!code) continue;
+            const cur = infoMap.get(code) ?? { lastDate: null, firstDate: null, count: 0, totalQty: 0, totalAmount: 0, lastAmount: 0, dateSet: new Set<string>() };
+            const d = String((r as any).purchase_date ?? "");
+            const amt = Number((r as any).total ?? (r as any).amount ?? 0) || 0;
+            const qty = Number((r as any).quantity ?? 0) || 0;
+            if (d && (!cur.lastDate || d > cur.lastDate)) { cur.lastDate = d; cur.lastAmount = amt; }
+            if (d && (!cur.firstDate || d < cur.firstDate)) { cur.firstDate = d; }
+            cur.totalQty += qty;
+            cur.totalAmount += amt;
+            if (d) cur.dateSet.add(d);
+            infoMap.set(code, cur);
+          }
+          if (pdRows.length < PAGE) break;
+          fromRow += PAGE;
+        }
+      })());
+    }
+    await Promise.all(chunkPromises);
+    // items: { code: { last_purchase_date, first_purchase_date, purchase_count, purchase_total_qty, purchase_total_amount, purchase_last_amount } }
+    const items: Record<string, any> = {};
+    for (const [code, info] of infoMap) {
+      items[code] = {
+        last_purchase_date: info.lastDate,
+        first_purchase_date: info.firstDate,
+        purchase_count: info.dateSet.size,
+        purchase_total_qty: info.totalQty,
+        purchase_total_amount: info.totalAmount,
+        purchase_last_amount: info.lastAmount,
+      };
+    }
+    res.json({ items });
+  } catch (err: any) {
+    console.error("[purchase-info-batch] 오류:", err?.message);
+    res.status(500).json({ error: err?.message ?? "조회 실패" });
   }
 });
 
