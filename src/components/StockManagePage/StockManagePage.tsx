@@ -2741,7 +2741,7 @@ export const StockManagePage: React.FC = () => {
               { k: "supplier" as const, label: "공급사", icon: Building2, color: "sky" },
               { k: "purchase" as const, label: "매입상세", icon: TrendingUp, color: "emerald" },
               { k: "low" as const, label: "적정재고↓", icon: AlertTriangle, color: "rose", badge: lowStock.length },
-              { k: "diff" as const, label: "실재고차이", icon: Layers, color: "violet" },
+              { k: "diff" as const, label: "손실추적", icon: Layers, color: "violet" },
               // 2026-07-28 · 카테고리별판매 · 판매추이에서 이동
               { k: "category" as const, label: "카테고리별현황", icon: PieChart, color: "amber" },
               // 2026-07-29 · 손실추적 탭 제거 · 실재고차이 탭이 커버 (사용자 요청 통합)
@@ -3383,10 +3383,13 @@ export const StockManagePage: React.FC = () => {
                     <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-slate-200 bg-slate-50/50">
                       <div className="flex items-center gap-1.5">
                         <AlertTriangle size={14} className="text-purple-500" />
-                        <span className="text-[13px] font-black text-slate-700">실재고 ↔ ERP 차이</span>
-                        <span className="text-[11px] text-slate-400 font-semibold">창고+매장 ≠ 현재고</span>
+                        <span className="text-[13px] font-black text-slate-700">손실추적 · 실재고 ↔ ERP 차이</span>
                         <span className="text-[11px] tabular-nums text-slate-400">({diffList.length}개)</span>
                       </div>
+                      <p className="text-[12px] text-slate-600 font-semibold leading-relaxed">
+                        💡 <b className="text-purple-700">실재고</b> (스캔한 창고+매장 실사 수량) 과 <b className="text-purple-700">ERP 현재고</b> (products.current_stock) 가 다른 상품 리스트입니다.
+                        차이가 있으면 <b>도난·파손·미기록 판매·재고 오류</b> 등의 손실 원인이 있을 수 있어요.
+                      </p>
                       <p className="text-[11px] text-slate-500 font-semibold leading-tight">상품명 클릭 → 상세 정보 · 실재고 스캔 현황</p>
                     </div>
                     {!stockDiffCollapsed && (

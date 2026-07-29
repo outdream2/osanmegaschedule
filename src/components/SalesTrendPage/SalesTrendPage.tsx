@@ -1782,11 +1782,17 @@ const ZoneCategoryContent: React.FC = () => {
     for (const g of grouped) m[g.zone] = g.items.length;
     return m;
   }, [grouped]);
+  // 2026-07-29 · 사용자 요청 · 판매순위 rank map · grouped 는 totalAmount desc 정렬됨
+  const zoneRankMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    grouped.forEach((g, i) => { m[g.zone] = i + 1; });
+    return m;
+  }, [grouped]);
 
   return (
     <div className="flex flex-col gap-3 min-h-[520px]">
-      {/* 상단 · 매장 구역도 (가로 full width) */}
-      <MiniStoreZoneMap zoneItemCounts={zoneItemCounts} />
+      {/* 상단 · 매장 구역도 (가로 full width) · 판매 rank ★배지 · 상품수 배지 */}
+      <MiniStoreZoneMap zoneItemCounts={zoneItemCounts} zoneRankMap={zoneRankMap} />
 
       {/* 하단 · 좌측 구역 리스트 + 우측 상세 split */}
       <div className="flex flex-col lg:flex-row gap-0 flex-1">
@@ -1813,13 +1819,20 @@ const ZoneCategoryContent: React.FC = () => {
           <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
         ) : (
           <div className={`overflow-y-auto max-h-[65vh] pr-1 flex flex-col gap-1 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-            {grouped.map(g => {
+            {grouped.map((g, idx) => {
+              const rank = idx + 1;
               const pct = total > 0 ? (g.totalAmount / total) * 100 : 0;
               const isSelected = selectedZone === g.zone;
               const color = colorForZone(g.zone);
               const barCls = { sky: "bg-sky-400", emerald: "bg-emerald-400", amber: "bg-amber-400", rose: "bg-rose-400", indigo: "bg-indigo-400", teal: "bg-teal-400", violet: "bg-violet-400", orange: "bg-orange-400" }[color]!;
               const textCls = { sky: "text-sky-700", emerald: "text-emerald-700", amber: "text-amber-700", rose: "text-rose-700", indigo: "text-indigo-700", teal: "text-teal-700", violet: "text-violet-700", orange: "text-orange-700" }[color]!;
               const selectedBorder = isSelected ? "border-violet-400 bg-violet-50/60 shadow-sm" : "border-slate-200 hover:bg-slate-50";
+              // 2026-07-29 · Top 3 · 금색 · Top 4~10 · 실버 · 나머지 · slate
+              const rankCls = rank <= 3
+                ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-white border-yellow-600"
+                : rank <= 10
+                  ? "bg-gradient-to-br from-slate-300 to-slate-400 text-slate-900 border-slate-500"
+                  : "bg-slate-100 text-slate-500 border-slate-200";
               return (
                 <button
                   key={g.zone}
@@ -1829,19 +1842,20 @@ const ZoneCategoryContent: React.FC = () => {
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-1.5 min-w-0">
+                      <span className={`text-[11px] font-black rounded-md border px-1.5 py-0.5 tabular-nums shrink-0 ${rankCls}`} title={`판매 순위 ${rank}위`}>{rank}</span>
                       <span className={`text-slate-400 text-xs transition-transform shrink-0 ${isSelected ? "rotate-90" : ""}`}>▶</span>
-                      <span className={`text-sm font-black ${textCls} font-mono shrink-0`}>{g.zone}</span>
+                      <span className={`text-sm font-black ${textCls} tabular-nums shrink-0`}>{g.zone}</span>
                       {zoneCategoryLabel(g.zone) && (
                         <span className={`text-[11px] font-semibold ${textCls} truncate`} title={zoneCategoryLabel(g.zone)}>
                           {zoneCategoryLabel(g.zone)}
                         </span>
                       )}
-                      <span className="text-[10px] font-mono text-slate-400 shrink-0">· {g.items.length}개</span>
+                      <span className="text-[10px] tabular-nums text-slate-400 shrink-0">· {g.items.length}개</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[11px] font-mono text-slate-600">{fmt(g.saleQty)}판매</span>
+                      <span className="text-[11px] tabular-nums text-slate-600">{fmt(g.saleQty)}판매</span>
                       <span className="text-xs font-black text-emerald-700">{fmtWon(g.totalAmount)}</span>
-                      <span className="text-[10px] font-mono text-slate-400">{pct.toFixed(1)}%</span>
+                      <span className="text-[10px] tabular-nums text-slate-400">{pct.toFixed(1)}%</span>
                     </div>
                   </div>
                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -1932,10 +1946,27 @@ import {
 } from "../../constants/storeMapLayout";
 
 interface MiniStoreZoneMapProps {
-  /** 구역별 상품 수 · key = 구역 id (예: "1A", "9B", "22") · 사용자 요청 · 카테고리별 상품갯수 표시 */
+  /** 구역별 상품 수 · key = 구역 id (예: "1A", "9B", "22") */
   zoneItemCounts?: Record<string, number>;
+  /** 구역별 판매순위 rank (1부터 · 낮을수록 상위) · Top 10 만 ★ BEST 배지 표시 */
+  zoneRankMap?: Record<string, number>;
 }
-const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts }) => {
+const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zoneRankMap }) => {
+  // rank 배지 렌더 헬퍼 · Top 10 만 노출
+  const rankBadge = (zoneId: string) => {
+    const rank = zoneRankMap?.[zoneId];
+    if (!rank || rank > 10) return null;
+    // Top 3 · 금색 · Top 4-10 · 실버 pastel
+    const cls = rank <= 3
+      ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-white border-yellow-600"
+      : "bg-gradient-to-br from-slate-300 to-slate-400 text-slate-900 border-slate-500";
+    return (
+      <span className={`inline-flex items-center gap-0.5 text-[10px] font-black border rounded px-1 leading-none tabular-nums ${cls}`}
+        title={`판매 BEST ${rank}위`}>
+        ★{rank}
+      </span>
+    );
+  };
   const [collapsed, setCollapsed] = useState(false);
 
   // 벽면·수직윙 셀 · 상위 map 의 renderWallZoneCard 와 동일 aspect ratio (~ 1:1.6)
@@ -1945,14 +1976,15 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts }) =
     const count = zoneItemCounts?.[String(num)] ?? 0;
     return (
       <div key={num}
-        className="rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center min-h-[64px]"
+        className="rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center min-h-[76px]"
         title={`${zd?.label ?? num} · ${cat}${count > 0 ? ` · ${count}개 상품` : ""}`}>
         <div className="w-full bg-stone-50 px-1 py-1 flex flex-col items-center gap-0.5 flex-1 justify-center">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap justify-center">
             <span className="text-[10px] font-black text-white bg-amber-700 rounded px-1.5 leading-none">{num}</span>
             {count > 0 && (
               <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 rounded px-1 leading-none tabular-nums">{count}</span>
             )}
+            {rankBadge(String(num))}
           </div>
           <span className="text-[10px] font-bold text-stone-800 leading-tight text-center line-clamp-2 break-all">{cat}</span>
         </div>
@@ -1974,22 +2006,24 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts }) =
         {/* B (연한 톤) · min-h 상향 · 상위 map 과 유사 비율 */}
         <div className={`w-full font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-1 leading-tight text-center min-h-[80px] flex flex-col items-center justify-center overflow-hidden`}
           title={`${num}B · ${subB}${countB > 0 ? ` · ${countB}개 상품` : ""}`}>
-          <div className="flex items-center gap-1 mb-0.5">
+          <div className="flex items-center gap-1 flex-wrap justify-center mb-0.5">
             <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1.5 leading-none`}>{num}B</span>
             {countB > 0 && (
               <span className="text-[10px] font-black text-white bg-slate-700 rounded px-1 leading-none tabular-nums">{countB}</span>
             )}
+            {rankBadge(`${num}B`)}
           </div>
           <span className="line-clamp-3 text-[10px] break-all">{subB}</span>
         </div>
         {/* A (진한 톤) */}
         <div className={`w-full font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-1 leading-tight text-center min-h-[80px] flex flex-col items-center justify-center overflow-hidden`}
           title={`${num}A · ${subA}${countA > 0 ? ` · ${countA}개 상품` : ""}`}>
-          <div className="flex items-center gap-1 mb-0.5">
+          <div className="flex items-center gap-1 flex-wrap justify-center mb-0.5">
             <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1.5 leading-none`}>{num}A</span>
             {countA > 0 && (
               <span className="text-[10px] font-black text-white bg-slate-800 rounded px-1 leading-none tabular-nums">{countA}</span>
             )}
+            {rankBadge(`${num}A`)}
           </div>
           <span className="line-clamp-3 text-[10px] break-all">{subA}</span>
         </div>
@@ -2007,9 +2041,10 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts }) =
           title={`${STORE_AISLE_CENTER} · ${zd?.category ?? ""}${count > 0 ? ` · ${count}개 상품` : ""}`}>
           <span className="line-clamp-6">{zd?.category ?? ""}</span>
         </div>
-        <div className="w-full flex items-center justify-center gap-0.5">
+        <div className="w-full flex items-center justify-center gap-0.5 flex-wrap">
           <span className="text-[10px] font-black text-white bg-slate-600 rounded px-1 leading-none py-0.5">22</span>
           {count > 0 && <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 rounded px-1 leading-none tabular-nums">{count}</span>}
+          {rankBadge("22")}
         </div>
       </div>
     );
