@@ -1049,23 +1049,40 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? needPanelWidth : undefined }}
         >
       <section className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+        {/* 발주필요 섹션 헤더 */}
         <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-          <button onClick={() => setLowStockCollapsed(!lowStockCollapsed)} className="flex items-center gap-1.5 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-1 py-0.5 transition" title={lowStockCollapsed ? "펼치기" : "접기"}>
-            <span className={`text-slate-400 text-xs transition-transform ${lowStockCollapsed ? "" : "rotate-90"}`}>▶</span>
-            <Package size={14} className="text-amber-600" />
-            <span className="text-sm font-black text-slate-700">발주 필요 상품<span className="text-[10px] font-semibold text-slate-400 ml-1">(현재고 &lt; 적정재고)</span></span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">{lowStock.length}개</span>
+          {/* 좌: 타이틀 토글 */}
+          <button
+            onClick={() => setLowStockCollapsed(!lowStockCollapsed)}
+            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-2 py-1 transition-colors"
+            title={lowStockCollapsed ? "펼치기" : "접기"}
+          >
+            <span className={`text-slate-400 text-[10px] transition-transform duration-200 ${lowStockCollapsed ? "" : "rotate-90"}`}>▶</span>
+            <Package size={14} className="text-amber-500 shrink-0" />
+            <span className="text-sm font-bold text-slate-700">발주 필요 상품</span>
+            <span className="text-[10px] text-slate-400 font-normal hidden sm:inline">(현재고 &lt; 적정재고)</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-600 border border-amber-200">
+              {lowStock.length}개
+            </span>
           </button>
-          <div className="flex items-center gap-1.5">
-            <input
-              type="text"
-              value={lowStockSearch}
-              onChange={e => setLowStockSearch(e.target.value)}
-              placeholder="상품·코드·공급사 검색"
-              className="text-[11px] border border-slate-200 rounded-lg px-2 py-1 w-40 focus:outline-none focus:border-amber-400"
-            />
-            <button onClick={loadProducts} disabled={productsLoading} className="text-[11px] font-bold text-slate-500 border border-slate-200 rounded-lg px-2 py-1 hover:bg-slate-50 cursor-pointer flex items-center gap-1">
-              <RefreshCw size={12} className={productsLoading ? "animate-spin" : ""} />
+          {/* 우: 검색 + 새로고침 */}
+          <div className="flex items-center gap-2">
+            <div className="relative">
+              <input
+                type="text"
+                value={lowStockSearch}
+                onChange={e => setLowStockSearch(e.target.value)}
+                placeholder="상품·코드·공급사"
+                className="text-[12px] border border-slate-200 rounded-lg pl-3 pr-3 h-8 w-36 focus:outline-none focus:ring-1 focus:ring-amber-400 focus:border-amber-400 transition"
+              />
+            </div>
+            <button
+              onClick={loadProducts}
+              disabled={productsLoading}
+              className="inline-flex items-center justify-center h-8 w-8 border border-slate-200 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors cursor-pointer"
+              title="새로고침"
+            >
+              <RefreshCw size={13} className={productsLoading ? "animate-spin" : ""} />
             </button>
           </div>
         </div>
@@ -1081,9 +1098,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           <div className="text-center text-[11px] text-slate-300 py-6">발주 필요 상품 없음</div>
         ) : (
           <>
-          <p className="text-[10px] text-amber-600 font-semibold mb-2 flex items-center gap-1">
-            <span className="text-amber-400">▶</span> 발주필요 리스트 <span className="text-slate-400 font-normal">({lowStockFiltered.length}건)</span>
-          </p>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-block w-1 h-3.5 rounded-full bg-amber-400 shrink-0"></span>
+            <span className="text-[11px] font-semibold text-slate-500">발주필요 리스트</span>
+            <span className="text-[11px] text-slate-400 font-normal">{lowStockFiltered.length}건</span>
+          </div>
           <div className={`max-h-[50vh] overflow-auto relative ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
@@ -1182,15 +1201,21 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
                         <span className="tabular-nums font-black text-[12px] text-rose-600">-{opt - cur}</span>
                       </td>
-                      <td className="text-center px-0.5 py-1.5 align-top">
+                      <td className="text-center px-1 py-1.5 align-top">
                         {alreadyRequested ? (
-                          <button onClick={() => handleRequestOrder(p)} className="text-[11px] font-black text-emerald-700 bg-emerald-50 border border-emerald-300 px-2.5 py-1.5 rounded-lg cursor-pointer hover:bg-emerald-100 transition inline-flex items-center gap-1 mx-auto shadow-sm">
-                            <CheckCircle2 size={11} strokeWidth={2.4} /> 요청됨
+                          <button
+                            onClick={() => handleRequestOrder(p)}
+                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                          >
+                            <CheckCircle2 size={11} strokeWidth={2} /> 요청됨
                           </button>
                         ) : (
-                          <button onClick={() => handleRequestOrder(p)} disabled={busy}
-                            className="text-[11px] font-black text-white bg-gradient-to-b from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 border border-red-700 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1 mx-auto shadow-sm hover:shadow-md active:scale-95">
-                            <ShoppingCart size={11} strokeWidth={2.4} />{busy ? "..." : "리스트 추가"}
+                          <button
+                            onClick={() => handleRequestOrder(p)}
+                            disabled={busy}
+                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-semibold text-white bg-amber-500 hover:bg-amber-600 border border-amber-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                          >
+                            <ShoppingCart size={11} strokeWidth={2} />{busy ? "..." : "추가"}
                           </button>
                         )}
                       </td>
@@ -1535,60 +1560,111 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? orderPanelWidth : undefined }}
         >
-      {/* 발주 요청 목록 · 재고관리 스타일 통일 (2026-07-16) */}
+      {/* 발주 요청 목록 */}
       <section className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+        {/* 발주요청 섹션 헤더 */}
         <div className="flex items-center justify-between mb-3 gap-2 flex-wrap">
-          <button onClick={() => setOrderReqCollapsed(!orderReqCollapsed)} className="flex items-center gap-1.5 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-1 py-0.5 transition" title={orderReqCollapsed ? "펼치기" : "접기"}>
-            <span className={`text-slate-400 text-xs transition-transform ${orderReqCollapsed ? "" : "rotate-90"}`}>▶</span>
-            <ShoppingCart size={14} className="text-red-600" />
-            <span className="text-sm font-black text-slate-700">발주 요청 목록</span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 border border-red-200">{orderReqs.length}건</span>
+          {/* 좌: 타이틀 토글 */}
+          <button
+            onClick={() => setOrderReqCollapsed(!orderReqCollapsed)}
+            className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg -mx-1 px-2 py-1 transition-colors"
+            title={orderReqCollapsed ? "펼치기" : "접기"}
+          >
+            <span className={`text-slate-400 text-[10px] transition-transform duration-200 ${orderReqCollapsed ? "" : "rotate-90"}`}>▶</span>
+            <ShoppingCart size={14} className="text-rose-500 shrink-0" />
+            <span className="text-sm font-bold text-slate-700">발주 요청 목록</span>
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-600 border border-rose-200">
+              {orderReqs.length}건
+            </span>
             {selectedOrder.size > 0 && (
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 border border-rose-300">선택 {selectedOrder.size}건</span>
+              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-500 text-white">
+                선택 {selectedOrder.size}
+              </span>
             )}
           </button>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 flex-wrap">
-            <div className="flex items-center gap-1.5 flex-wrap">
+
+          {/* 우: 툴바 (3그룹 분리) */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* 그룹1: 검색 */}
+            <div className="relative">
               <input
                 type="text"
                 value={orderSearch}
                 onChange={e => setOrderSearch(e.target.value)}
-                placeholder="상품·코드·공급사 검색"
-                className="text-[11px] border border-slate-200 rounded-lg px-2 py-1 w-36 min-w-0 focus:outline-none focus:border-rose-400"
+                placeholder="상품·코드·공급사"
+                className="text-[12px] border border-slate-200 rounded-lg pl-3 pr-3 h-8 w-36 min-w-0 focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
               />
-              {/* 발송 채널 선택 */}
-              <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 shrink-0 ${bulkChannels.email ? "bg-emerald-50 text-emerald-700 border-emerald-300" : "bg-white text-slate-400 border-slate-200"}`}>
-                <input type="checkbox" checked={bulkChannels.email} onChange={e => setBulkChannels(p => ({ ...p, email: e.target.checked }))} className="w-3 h-3" />
-                <Mail size={11} /> 이메일
+            </div>
+
+            {/* 구분선 */}
+            <div className="h-5 w-px bg-slate-200 shrink-0 hidden sm:block" />
+
+            {/* 그룹2: 발송 채널 (chip 토글) */}
+            <div className="flex items-center gap-1.5">
+              <label
+                className={`inline-flex items-center gap-1 h-8 px-2.5 rounded-lg border text-[11px] font-medium cursor-pointer transition-colors select-none ${
+                  bulkChannels.email
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                    : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <input type="checkbox" checked={bulkChannels.email} onChange={e => setBulkChannels(p => ({ ...p, email: e.target.checked }))} className="sr-only" />
+                <Mail size={12} /> 이메일
               </label>
-              <label className={`text-[11px] font-bold border rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 shrink-0 ${bulkChannels.sms ? "bg-sky-50 text-sky-700 border-sky-300" : "bg-white text-slate-400 border-slate-200"}`}>
-                <input type="checkbox" checked={bulkChannels.sms} onChange={e => setBulkChannels(p => ({ ...p, sms: e.target.checked }))} className="w-3 h-3" />
-                <MessageSquare size={11} /> 문자
+              <label
+                className={`inline-flex items-center gap-1 h-8 px-2.5 rounded-lg border text-[11px] font-medium cursor-pointer transition-colors select-none ${
+                  bulkChannels.sms
+                    ? "bg-sky-50 text-sky-700 border-sky-300"
+                    : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                <input type="checkbox" checked={bulkChannels.sms} onChange={e => setBulkChannels(p => ({ ...p, sms: e.target.checked }))} className="sr-only" />
+                <MessageSquare size={12} /> 문자
               </label>
             </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
+
+            {/* 구분선 */}
+            <div className="h-5 w-px bg-slate-200 shrink-0 hidden sm:block" />
+
+            {/* 그룹3: 액션 버튼 */}
+            <div className="flex items-center gap-1.5">
+              {/* 일괄발주 — primary accent */}
               <button
                 onClick={handleBulkOrder}
                 disabled={sendingBulk || selectedOrder.size === 0}
-                className="text-[11px] font-black text-white bg-gradient-to-r from-rose-500 to-red-600 hover:from-rose-600 hover:to-red-700 border border-red-700 rounded-lg px-3 py-1 cursor-pointer disabled:opacity-40 flex items-center gap-1 shadow-sm shrink-0"
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0"
                 title="선택한 발주요청을 공급사별로 그룹핑 후 이메일/문자 발송"
               >
-                {sendingBulk ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
-                일괄 발주 {selectedOrder.size > 0 && `(${selectedOrder.size})`}
+                {sendingBulk ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}
+                일괄 발주{selectedOrder.size > 0 && ` (${selectedOrder.size})`}
               </button>
-              <button onClick={toggleAll} className="text-[11px] font-bold text-slate-500 hover:text-slate-800 border border-slate-200 rounded-lg px-2 py-1 cursor-pointer flex items-center gap-1 shrink-0">
-                {allChecked ? <CheckSquare size={12} className="text-rose-500" /> : <Square size={12} />}
+
+              {/* 전체선택 — ghost */}
+              <button
+                onClick={toggleAll}
+                className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[11px] font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer shrink-0"
+              >
+                {allChecked ? <CheckSquare size={13} className="text-rose-500" /> : <Square size={13} />}
                 전체선택
               </button>
+
+              {/* 삭제 — ghost danger */}
               <button
                 onClick={() => selectedOrder.size > 0 && confirm(`${selectedOrder.size}건 삭제할까요?`) && deleteOrder([...selectedOrder])}
                 disabled={selectedOrder.size === 0}
-                className="text-[11px] font-bold text-red-600 border border-red-200 rounded-lg px-2 py-1 hover:bg-red-50 disabled:opacity-40 cursor-pointer flex items-center gap-1 shrink-0"
+                className="inline-flex items-center gap-1 h-8 px-2.5 rounded-lg text-[11px] font-medium text-slate-500 border border-slate-200 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0"
               >
-                <Trash2 size={12} /> 삭제
+                <Trash2 size={13} />
               </button>
-              <button onClick={loadOrderReqs} disabled={orderLoading} className="text-[11px] font-bold text-slate-500 border border-slate-200 rounded-lg px-2 py-1 hover:bg-slate-50 cursor-pointer flex items-center gap-1 shrink-0">
-                <RefreshCw size={12} className={orderLoading ? "animate-spin" : ""} />
+
+              {/* 새로고침 — icon only */}
+              <button
+                onClick={loadOrderReqs}
+                disabled={orderLoading}
+                className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-slate-400 border border-slate-200 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-50 transition-colors cursor-pointer shrink-0"
+                title="새로고침"
+              >
+                <RefreshCw size={13} className={orderLoading ? "animate-spin" : ""} />
               </button>
             </div>
           </div>
@@ -1611,9 +1687,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           <div className="text-center text-[11px] text-slate-300 py-6">발주 요청 내역 없음</div>
         ) : (
           <>
-          <p className="text-[10px] text-red-600 font-semibold mb-2 flex items-center gap-1">
-            <span className="text-red-400">▶</span> 발주요청 리스트 <span className="text-slate-400 font-normal">({orderReqsFiltered.length}건)</span>
-          </p>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-block w-1 h-3.5 rounded-full bg-rose-400 shrink-0"></span>
+            <span className="text-[11px] font-semibold text-slate-500">발주요청 리스트</span>
+            <span className="text-[11px] text-slate-400 font-normal">{orderReqsFiltered.length}건</span>
+          </div>
           <div className={`max-h-[50vh] overflow-auto relative ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
@@ -1774,14 +1852,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
                         <span className="tabular-nums font-black text-[12px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
                       </td>
-                      <td className="text-center px-0.5 py-1.5 align-top">
+                      <td className="text-center px-1 py-1.5 align-top">
                         <button
                           onClick={() => handleSingleOrder(r)}
                           disabled={sendingBulk}
-                          className="text-[11px] font-black text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 rounded px-1.5 py-0.5 cursor-pointer disabled:opacity-40 inline-flex items-center gap-0.5"
+                          className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
                           title="이 상품만 개별 발주"
                         >
-                          <Send size={9} />발주
+                          <Send size={10} />발주
                         </button>
                       </td>
                     </tr>
