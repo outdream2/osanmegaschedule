@@ -30,7 +30,8 @@ router.post("/api/product-arrivals", async (req, res) => {
       const st = String(it.status ?? "pending");
       if (st === "match") match++;
       else if (st === "mismatch") mismatch++;
-      else if (st === "expiring") expiring++;
+      // 2026-07-29 · 사용자 요청 · expiring 은 boolean 필드로 분리 (status 와 독립)
+      if (it.expiring === true) expiring++;
       totalQty += Number(it.qty ?? 0) || 0;
       if (it.supplier) supplierSet.add(String(it.supplier));
     }

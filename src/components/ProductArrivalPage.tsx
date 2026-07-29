@@ -53,6 +53,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   const [lastAddedKey, setLastAddedKey] = useState<string | null>(null);
   const [notFoundCode, setNotFoundCode] = useState<string | null>(null);
   const [finalDecision, setFinalDecision] = useState<"all_match" | "has_mismatch" | null>(null);
+  // 2026-07-29 · 사용자 요청 · 품목 불일치 시 메모 (뭐가 모자란지 등)
+  const [mismatchMemo, setMismatchMemo] = useState<string>("");
   // 2026-07-29 · 사용자 요청 · DB 저장
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -480,6 +482,21 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                 <ClipboardX size={17} /> 품목 불일치 있음
               </button>
             </div>
+            {/* 2026-07-29 · 사용자 요청 · 품목 불일치 시 메모칸 · 뭐가 모자란지 · POST body.note 로 전달 */}
+            {finalDecision === "has_mismatch" && (
+              <div className="mt-3 flex flex-col gap-1.5">
+                <label className="text-[12px] font-black text-rose-700 flex items-center gap-1">
+                  <ClipboardX size={13} /> 품목이상 상세 · 뭐가 모자란지 · 수량이 얼마나 다른지 등
+                </label>
+                <textarea
+                  value={mismatchMemo}
+                  onChange={(e) => setMismatchMemo(e.target.value)}
+                  rows={2}
+                  placeholder="예) 박카스디 10병 · 3개 부족 · 명세표 20 실물 17"
+                  className="w-full px-3 py-2 border-2 border-rose-200 rounded-lg text-[13px] focus:outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 resize-none"
+                />
+              </div>
+            )}
             {finalDecision && (
               <div className={`mt-3 flex items-center gap-2 px-3 py-2.5 rounded-xl text-[12px] sm:text-[13px] font-black border-2 ${
                 finalDecision === "all_match"
@@ -505,6 +522,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                           checked_by: authSession?.employeeName ?? "익명",
                           checked_by_id: authSession?.employeeId ?? null,
                           final_decision: finalDecision,
+                          // 2026-07-29 · 사용자 요청 · 품목이상 메모 · 서버 note 컬럼 재사용
+                          note: finalDecision === "has_mismatch" ? mismatchMemo.trim() : null,
                           items: items.map(it => ({
                             product_code: it.code,
                             product_name: it.product?.name ?? "",
@@ -537,10 +556,10 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                         : "bg-sky-600 hover:bg-sky-700 text-white"
                   }`}
                 >
-                  {saveStatus === "saving" ? "저장 중..." :
-                   saveStatus === "done"   ? `✅ 저장됨 (ID: ${savedId ?? "-"})` :
-                   saveStatus === "error"  ? "다시 저장" :
-                   "💾 DB에 저장"}
+                  {saveStatus === "saving" ? "등록 중..." :
+                   saveStatus === "done"   ? `✅ 등록됨 (ID: ${savedId ?? "-"})` :
+                   saveStatus === "error"  ? "다시 등록" :
+                   "📦 전체 등록"}
                 </button>
                 {saveError && (
                   <p className="text-[12px] text-rose-600 font-semibold">{saveError}</p>
