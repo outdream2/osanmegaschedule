@@ -324,10 +324,8 @@ const ProductDetailChartMode: React.FC<{
       {/* 기간 재고 흐름 차트 (2026-07-16 · 맨 위로 이동 · 사용자 요청) */}
       <StockFlowChart productCode={product.code} productName={product.name} />
 
-      {/* 2026-07-29 · 매입이력 · 이중 헤더 제거 · PurchaseHistorySection 자체 collapse 사용 */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden px-3 py-2">
-        <PurchaseHistorySection productCode={product.code} productName={product.name} noBorderTop />
-      </div>
+      {/* 2026-07-29 · 사용자 요청 · 매입이력 · 발주내역 탭 전환 · 두가지 정보 볼 수 있게 */}
+      <PurchaseOrderTabs productCode={product.code} productName={product.name} />
 
       {/* 상단 카드: 헤더 + 재고현황 + 매입판매가 + 발주요청 + 배정구역 · 접기 지원 (매입이력 분리됨) */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
@@ -455,3 +453,101 @@ export const ProductDetailRightPanel: React.FC<ProductDetailRightPanelProps> = (
     )}
   </div>
 );
+
+// 2026-07-29 · 사용자 요청 · 매입이력 · 발주내역 탭 전환 컴포넌트
+//   두 정보를 한 곳에서 볼 수 있도록 · 기존 PurchaseHistorySection 감쌈
+interface OrderRequestRow {
+  id: string;
+  product_code: string;
+  product_name: string;
+  supplier?: string | null;
+  current_stock?: number | null;
+  optimal_stock?: number | null;
+  requested_at?: string | null;
+  status?: string | null;
+  memo?: string | null;
+}
+const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }> = ({ productCode, productName }) => {
+  const [tab, setTab] = useState<"purchase" | "order">("purchase");
+  const [orders, setOrders] = useState<OrderRequestRow[]>([]);
+  const [ordersLoading, setOrdersLoading] = useState(false);
+  useEffect(() => {
+    if (tab !== "order" || !productCode) return;
+    setOrdersLoading(true);
+    fetch(`/api/order-requests?product_code=${encodeURIComponent(productCode)}`)
+      .then(r => r.ok ? r.json() : { rows: [] })
+      .then(j => {
+        const rows: any = j?.rows ?? j;
+        setOrders(Array.isArray(rows) ? rows : []);
+      })
+      .catch(() => setOrders([]))
+      .finally(() => setOrdersLoading(false));
+  }, [tab, productCode]);
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="flex border-b border-slate-200 bg-slate-50/50">
+        {(["purchase", "order"] as const).map(k => {
+          const active = tab === k;
+          const label = k === "purchase" ? "매입 이력" : "발주내역";
+          const cls = active
+            ? (k === "purchase" ? "text-emerald-700 border-emerald-500" : "text-sky-700 border-sky-500")
+            : "text-slate-500 border-transparent hover:text-slate-700";
+          return (
+            <button key={k} type="button" onClick={() => setTab(k)}
+              className={`flex-1 py-2 px-3 text-[13px] font-black border-b-2 transition cursor-pointer ${cls}`}>
+              {label}
+            </button>
+          );
+        })}
+      </div>
+      {tab === "purchase" ? (
+        <div className="px-3 py-2">
+          <PurchaseHistorySection productCode={productCode} productName={productName} noBorderTop />
+        </div>
+      ) : (
+        <div className="px-3 py-2">
+          {ordersLoading ? (
+            <div className="py-6 text-center text-[12px] text-slate-400">발주내역 로딩...</div>
+          ) : orders.length === 0 ? (
+            <div className="py-6 text-center text-[12px] text-slate-400">이 상품의 발주내역이 없습니다</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-[12px]">
+                <thead className="text-[11px] text-slate-500 border-b border-slate-100">
+                  <tr>
+                    <th className="text-left px-2 py-1.5 w-24">요청일시</th>
+                    <th className="text-left px-2 py-1.5">공급사</th>
+                    <th className="text-right px-2 py-1.5 w-14">현재고</th>
+                    <th className="text-right px-2 py-1.5 w-14">적정</th>
+                    <th className="text-center px-2 py-1.5 w-14">상태</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {orders.map(o => (
+                    <tr key={o.id} className="hover:bg-sky-50/40">
+                      <td className="px-2 py-1.5 tabular-nums text-slate-600 text-[11px]">
+                        {o.requested_at ? new Date(o.requested_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-"}
+                      </td>
+                      <td className="px-2 py-1.5 text-slate-700">{o.supplier ?? "-"}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums text-amber-700 font-bold">{o.current_stock ?? "-"}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums text-slate-600">{o.optimal_stock ?? "-"}</td>
+                      <td className="px-2 py-1.5 text-center">
+                        <span className={`text-[10px] font-black rounded-full px-2 py-0.5 border ${
+                          o.status === "done" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
+                          o.status === "sent" ? "bg-sky-50 text-sky-700 border-sky-300" :
+                          "bg-amber-50 text-amber-700 border-amber-300"
+                        }`}>
+                          {o.status ?? "대기"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
