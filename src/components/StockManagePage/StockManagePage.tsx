@@ -2667,7 +2667,7 @@ export const StockManagePage: React.FC = () => {
         {/* 1행: 제목 + 서브탭 + 날짜범위 배지 · 아이콘은 상단 네비 탭(재고관리=Boxes)과 통일 */}
         <div className="flex items-center gap-2 flex-wrap min-w-0">
           <Boxes size={18} className="text-slate-500 shrink-0" />
-          <h2 className="text-lg font-black text-slate-800">재고관리</h2>
+          <h2 className="text-lg font-black text-slate-800">재고/판매관리</h2>
           <span className="text-[11px] font-semibold text-slate-400 hidden sm:inline">ERP 데이터 기준</span>
           {/* 페이지 서브탭 pill */}
           <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
@@ -3614,39 +3614,7 @@ export const StockManagePage: React.FC = () => {
                       <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) { setPendingFlowMonths(0); setFlowMonths(0); } }} size="sm" hideLabel />
                     </div>
                     {/* 조회기간 다음 줄: TOP 리스트 내 검색 + 정보확인 + 숨김관리 */}
-                    <div className="flex items-center gap-2 mb-2.5 flex-wrap text-[14px]">
-                      <div className="relative flex-1 min-w-[160px]">
-                        <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        <input
-                          type="text"
-                          value={flowSearch}
-                          onChange={e => setFlowSearch(e.target.value)}
-                          placeholder="TOP 리스트 내 검색 (상품명·코드)"
-                          className="w-full pl-8 pr-8 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-orange-400 bg-white"
-                        />
-                        {flowSearch && (
-                          <button onClick={() => setFlowSearch("")}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[13px] font-black text-rose-500 hover:text-rose-700 cursor-pointer">✕</button>
-                        )}
-                      </div>
-                      {pageTab === "dashboard" && (
-                        <>
-                          <button
-                            onClick={() => openProductInfoModal()}
-                            disabled={!infoSelected && !infoSearchQuery.trim() && infoSearchResults.length === 0 && !flowSearch.trim()}
-                            title="선택 상품의 상세 정보"
-                            className="shrink-0 inline-flex items-center gap-1.5 text-[14px] font-black text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-2 cursor-pointer transition shadow-sm active:scale-95">
-                            <Info size={15} /> 정보확인
-                          </button>
-                          <button
-                            onClick={() => openHiddenManagerModal()}
-                            title="숨김 처리된 상품 관리"
-                            className="shrink-0 inline-flex items-center gap-1.5 text-[14px] font-black text-amber-700 bg-white border border-amber-300 hover:bg-amber-50 rounded-lg px-3 py-2 cursor-pointer transition shadow-sm active:scale-95">
-                            <EyeOff size={15} /> 숨김 관리
-                          </button>
-                        </>
-                      )}
-                    </div>
+                    {/* 2026-07-29 · 사용자 요청 · TOP 리스트 검색·정보확인·숨김관리 제거 (페이지 상단에 이미 있음 · 중복) */}
                     {/* 판매수량 범위 필터 (모바일 최적화) */}
                     <div className="flex items-center gap-2 mb-2.5 flex-wrap text-[14px]">
                       <span className="text-slate-700 font-black text-[14px] shrink-0">판매출고계</span>

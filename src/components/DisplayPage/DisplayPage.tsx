@@ -1455,7 +1455,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           indigo:  { bar: "bg-indigo-500",  text: "text-indigo-700",  iconActive: "text-indigo-600",  iconInactive: "text-slate-400", hoverText: "hover:text-indigo-700",  dotBg: "bg-indigo-500"  },
         };
         const tabs: Array<TabDef> = [
-          { key: "stock-manage",   label: "재고관리",     icon: Boxes,         visible: dpCanSeeStockManage,   color: "emerald" },
+          { key: "stock-manage",   label: "재고/판매관리", icon: Boxes,         visible: dpCanSeeStockManage,   color: "emerald" },
           // 2026-07-29 · 판매추이 탭 제거 (사용자 요청) · 관련 카테고리별현황·손실추적은 재고관리 안에 이미 있음
           { key: "order-manage",   label: "발주/사입관리", icon: ClipboardList, visible: dpCanSeeStockManage,   color: "sky"     },
           { key: "stock-arrivals", label: "입고알림",     icon: Bell,          visible: dpCanSeeStockArrivals, color: "orange"  },
