@@ -1045,6 +1045,38 @@ export const StockManagePage: React.FC = () => {
     window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
   };
   const [lowSelectedProduct, setLowSelectedProduct] = useState<ProductInfo | null>(null);
+  // 2026-07-29 · 사용자 요청 · 적정재고 이하 각 행에 '발주요청' 버튼 · confirm 후 POST /api/order-requests
+  const [orderRequestingCode, setOrderRequestingCode] = useState<string | null>(null);
+  const [orderRequestedCodes, setOrderRequestedCodes] = useState<Set<string>>(new Set());
+  const requestOrderFromLow = useCallback(async (p: any) => {
+    const code = String(p.product_code ?? "").trim();
+    if (!code) return;
+    if (!window.confirm(`'${p.product_name}' 을(를) 발주요청 리스트에 추가하시겠습니까?`)) return;
+    setOrderRequestingCode(code);
+    try {
+      const res = await fetch("/api/order-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_code: code,
+          product_name: String(p.product_name ?? ""),
+          current_stock: p.current_stock ?? 0,
+          optimal_stock: p.optimal_stock ?? 0,
+          supplier: p.supplier ?? null,
+          requested_at: new Date().toISOString(),
+        }),
+      });
+      if (res.ok) {
+        setOrderRequestedCodes(prev => { const n = new Set(prev); n.add(code); return n; });
+      } else {
+        alert(`발주요청 실패 (${res.status})`);
+      }
+    } catch (e: any) {
+      alert(`발주요청 실패: ${e?.message ?? "네트워크 오류"}`);
+    } finally {
+      setOrderRequestingCode(null);
+    }
+  }, []);
   const loadLowSelectedProduct = useCallback(async (p: any) => {
     const code = String(p.product_code ?? "").trim();
     const partial: ProductInfo = { code, name: String(p.product_name ?? ""), spec: String(p.spec ?? ""), current_stock: p.current_stock ?? null, optimal_stock: p.optimal_stock ?? null, supplier: p.supplier ?? null, real_map: p.real_map ?? null, warehouse_stock: p.warehouse_stock ?? null, store_stock: p.store_stock ?? null };
@@ -2604,6 +2636,8 @@ export const StockManagePage: React.FC = () => {
                                 <th className="text-right px-0.5 py-1.5 w-14 text-emerald-500 font-black cursor-pointer hover:bg-slate-50" title="실재고 합계 (창고+매장)">실재고</th>
                                 <th className="text-right px-0.5 py-1.5 w-14 text-slate-500 cursor-pointer hover:bg-slate-50">적정</th>
                                 <th className="text-right px-0.5 py-1.5 w-14 text-rose-500 cursor-pointer hover:bg-slate-50">필요</th>
+                                {/* 2026-07-29 · 사용자 요청 · 발주요청 액션 */}
+                                <th className="text-center px-0.5 py-1.5 w-20 text-sky-600" title="발주요청 리스트에 추가">발주요청</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
@@ -2696,6 +2730,31 @@ export const StockManagePage: React.FC = () => {
                                       )}
                                     </td>
                                     <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-rose-600 align-top">{need > 0 ? `+${fmt(need)}` : "-"}</td>
+                                    {/* 2026-07-29 · 사용자 요청 · 발주요청 버튼 · confirm 후 POST */}
+                                    <td className="text-center px-0.5 py-1.5 align-top">
+                                      {(() => {
+                                        const code = String(p.product_code ?? "");
+                                        const busy = orderRequestingCode === code;
+                                        const done = orderRequestedCodes.has(code);
+                                        return (
+                                          <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); requestOrderFromLow(p); }}
+                                            disabled={busy || done}
+                                            className={`inline-flex items-center justify-center gap-1 min-h-[26px] px-2 py-1 rounded-md text-[11px] font-black border transition cursor-pointer active:scale-95 disabled:cursor-not-allowed ${
+                                              done
+                                                ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                                                : busy
+                                                  ? "bg-slate-100 text-slate-500 border-slate-300"
+                                                  : "bg-sky-50 text-sky-700 border-sky-300 hover:bg-sky-100"
+                                            }`}
+                                            title={done ? "발주요청 리스트에 추가됨" : "발주요청 리스트에 추가"}
+                                          >
+                                            {busy ? "..." : done ? "✓ 추가됨" : "발주요청"}
+                                          </button>
+                                        );
+                                      })()}
+                                    </td>
                                   </tr>
                                 );
                               })}
