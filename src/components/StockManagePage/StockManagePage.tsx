@@ -310,11 +310,11 @@ const RawDataView: React.FC = () => {
   return (
     <div className="flex-1 flex flex-col gap-3 min-h-0">
       {/* 컨트롤 바 */}
-      <div className="flex items-center gap-2 flex-wrap bg-white border border-slate-200 rounded-xl p-3 shadow-sm">
-        <label className="flex items-center gap-1 text-xs font-semibold text-slate-600">
+      <div className="flex items-center gap-3 flex-wrap bg-white border border-slate-200 rounded-xl px-4 py-3 shadow-sm">
+        <label className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500">
           스냅샷 날짜
           <select value={selectedDate} onChange={e => setSelectedDate(e.target.value)}
-            className="px-2 py-1 border border-slate-200 rounded text-xs tabular-nums focus:outline-none focus:border-indigo-400">
+            className="px-2 py-1.5 border border-slate-200 rounded-md text-[11px] tabular-nums focus:outline-none focus:border-slate-400 bg-white">
             {dates.length === 0 && <option value="">(데이터 없음)</option>}
             {dates.map(d => <option key={d} value={d}>{d}</option>)}
           </select>
@@ -324,19 +324,19 @@ const RawDataView: React.FC = () => {
           value={rawSearch}
           onChange={e => setRawSearch(e.target.value)}
           placeholder="상품명·공급사·코드 검색..."
-          className="flex-1 min-w-[200px] px-3 py-1 text-xs border border-slate-200 rounded focus:outline-none focus:border-indigo-400"
+          className="flex-1 min-w-[200px] px-3 py-1.5 text-[11px] border border-slate-200 rounded-md focus:outline-none focus:border-slate-400"
         />
-        <span className="text-[11px] font-bold text-slate-500">
+        <span className="text-[11px] text-slate-400">
           {rawLoading ? "불러오는 중..." : `${filtered.length}건 / 전체 ${rows.length}건`}
         </span>
         {sortKey && (
           <button onClick={() => { setSortKey(null); }}
-            className="text-[10px] font-semibold text-slate-400 hover:text-rose-500 px-1.5 py-0.5 rounded hover:bg-rose-50 transition">
-            ✕ 정렬 해제
+            className="text-[10px] font-medium text-slate-400 hover:text-rose-500 px-2 py-1 rounded-md hover:bg-rose-50 transition border border-slate-200">
+            정렬 해제
           </button>
         )}
         <button onClick={() => setColWidths(Object.fromEntries(RAW_COLS.map(c => [c.key, c.width])))}
-          className="text-[10px] font-semibold text-slate-400 hover:text-indigo-500 px-1.5 py-0.5 rounded hover:bg-indigo-50 transition">
+          className="text-[10px] font-medium text-slate-400 hover:text-slate-600 px-2 py-1 rounded-md hover:bg-slate-50 transition border border-slate-200">
           컬럼 폭 초기화
         </button>
       </div>
@@ -349,15 +349,15 @@ const RawDataView: React.FC = () => {
               <col key={c.key} style={{ width: `${colWidths[c.key]}px` }} />
             ))}
           </colgroup>
-          <thead className="sticky top-0 bg-slate-100 z-10 text-slate-600">
+          <thead className="sticky top-0 bg-slate-50 z-10 text-slate-500">
             <tr>
               {RAW_COLS.map(c => {
                 const active = sortKey === c.key;
                 return (
                   <th key={c.key}
                     onClick={() => handleHeaderClick(c.key)}
-                    className={`relative px-2 py-1.5 border-r border-slate-200 whitespace-nowrap cursor-pointer select-none hover:bg-slate-200 transition ${c.align === "right" ? "text-right" : "text-left"
-                      } ${active ? "text-indigo-700 font-black" : ""}`}
+                    className={`relative px-2 py-2 border-r border-slate-200 whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition text-[10px] font-medium tracking-wider ${c.align === "right" ? "text-right" : "text-left"
+                      } ${active ? "text-slate-800 font-semibold" : ""}`}
                     title={`클릭: ${c.label} 기준 정렬 (재클릭: 방향 반전)`}
                   >
                     <span className="pointer-events-none">
@@ -378,7 +378,7 @@ const RawDataView: React.FC = () => {
           </thead>
           <tbody className="divide-y divide-slate-50">
             {filtered.map((r, i) => (
-              <tr key={`raw-${r.snapshot_date}-${r.product_code}-${i}`} className="hover:bg-indigo-50/30">
+              <tr key={`raw-${r.snapshot_date}-${r.product_code}-${i}`} className="hover:bg-slate-50/60">
                 {RAW_COLS.map(c => {
                   const v = r[c.key];
                   const isNumeric = c.numeric;
@@ -458,49 +458,49 @@ export const ProductManageView: React.FC<{ onProductClick: (p: any) => void }> =
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-      <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-slate-200 bg-slate-50/50">
+      <div className="flex flex-col gap-2 px-4 py-3 border-b border-slate-100 bg-white">
         <div className="flex items-center gap-2 flex-wrap">
-          <Package size={14} className="text-indigo-600" />
-          <span className="text-[11px] font-black text-slate-600">상품관리</span>
+          <Package size={13} className="text-slate-400" />
+          <span className="text-[12px] font-semibold text-slate-600">상품관리</span>
           <span className="text-[10px] tabular-nums text-slate-400">
             ({loading ? <><LoaderIcon size={10} className="inline animate-spin mr-1" />로딩...</> : `${filtered.length.toLocaleString()} / ${allProducts.length.toLocaleString()}개`})
           </span>
           <div className="relative min-w-[160px] flex-1 max-w-sm">
-            <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="상품명 · 코드 · 공급사 검색"
-              className="w-full pl-7 pr-6 py-1.5 border border-slate-200 rounded-lg text-[12px] focus:outline-none focus:border-orange-400 bg-white"
+              className="w-full pl-8 pr-6 py-1.5 border border-slate-200 rounded-md text-[11px] focus:outline-none focus:border-slate-400 bg-white"
             />
             {search && (
               <button onClick={() => setSearch("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-black text-rose-500 hover:text-rose-700 cursor-pointer">✕</button>
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-medium text-slate-400 hover:text-slate-600 cursor-pointer">✕</button>
             )}
           </div>
-          <label className="flex items-center gap-1 text-[11px] text-slate-500 cursor-pointer">
+          <label className="flex items-center gap-1.5 text-[11px] text-slate-500 cursor-pointer">
             <input type="checkbox" checked={showHidden} onChange={(e) => setShowHidden(e.target.checked)} className="cursor-pointer" />
-            <EyeOff size={10} className={showHidden ? "text-slate-700" : "text-slate-400"} />
+            <EyeOff size={10} className={showHidden ? "text-slate-600" : "text-slate-400"} />
             숨김 포함
           </label>
         </div>
-        <p className="text-[10px] text-slate-500 font-semibold leading-tight">상품명 클릭 → 상세 정보 · 판매가 · 재고 상황</p>
+        <p className="text-[10px] text-slate-400 leading-tight">상품명 클릭 → 상세 정보 · 판매가 · 재고 상황</p>
       </div>
       <div className="flex-1 overflow-auto">
         <table className="w-full text-[10px] sm:text-xs sm:min-w-[540px]">
           <thead className="sticky top-0 bg-white z-10">
-            <tr className="border-b border-slate-100 text-[10px] text-slate-400 uppercase tracking-wider">
-              <th className="text-left px-0.5 py-1.5 w-7">#</th>
+            <tr className="border-b border-slate-100 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+              <th className="text-left px-1 py-2 w-7">#</th>
               {([
-                { k: "name" as const,     label: "상품명", w: "text-left",         activeColor: "text-slate-800 font-black",   inactiveColor: "text-slate-500",   bg: "" },
-                { k: "code" as const,     label: "코드",   w: "w-24 text-left",    activeColor: "text-slate-800 font-black",   inactiveColor: "text-slate-500",   bg: "" },
-                { k: "supplier" as const, label: "공급사", w: "w-24 text-left",    activeColor: "text-slate-800 font-black",   inactiveColor: "text-slate-500",   bg: "" },
-                { k: "current" as const,  label: "현재고", w: "w-16 text-right",   activeColor: "text-amber-800 font-black",   inactiveColor: "text-amber-600 font-black", bg: "bg-amber-50/40" },
-                { k: "optimal" as const,  label: "적정",   w: "w-14 text-right",   activeColor: "text-slate-800 font-black",   inactiveColor: "text-slate-500",   bg: "bg-slate-50/40" },
-                { k: "price" as const,    label: "판매가", w: "w-20 text-right",   activeColor: "text-orange-700 font-black",  inactiveColor: "text-orange-500",  bg: "bg-orange-50/40" },
+                { k: "name" as const,     label: "상품명", w: "text-left",         activeColor: "text-slate-700 font-semibold",  inactiveColor: "text-slate-400",   bg: "" },
+                { k: "code" as const,     label: "코드",   w: "w-24 text-left",    activeColor: "text-slate-700 font-semibold",  inactiveColor: "text-slate-400",   bg: "" },
+                { k: "supplier" as const, label: "공급사", w: "w-24 text-left",    activeColor: "text-slate-700 font-semibold",  inactiveColor: "text-slate-400",   bg: "" },
+                { k: "current" as const,  label: "현재고", w: "w-16 text-right",   activeColor: "text-slate-700 font-semibold",  inactiveColor: "text-slate-400",  bg: "bg-slate-50/40" },
+                { k: "optimal" as const,  label: "적정",   w: "w-14 text-right",   activeColor: "text-slate-700 font-semibold",  inactiveColor: "text-slate-400",   bg: "bg-slate-50/40" },
+                { k: "price" as const,    label: "판매가", w: "w-20 text-right",   activeColor: "text-slate-700 font-semibold",  inactiveColor: "text-slate-400",   bg: "" },
               ]).map(col => (
                 <th key={col.k} onClick={() => handleSort(col.k)}
-                  className={`px-0.5 py-1.5 ${col.w} cursor-pointer select-none hover:bg-slate-50 transition ${col.bg} ${sortKey === col.k ? col.activeColor : col.inactiveColor}`}>
+                  className={`px-1 py-2 ${col.w} cursor-pointer select-none hover:bg-slate-50 transition ${col.bg} ${sortKey === col.k ? col.activeColor : col.inactiveColor}`}>
                   {col.label}{arrow(col.k)}
                 </th>
               ))}
@@ -521,20 +521,20 @@ export const ProductManageView: React.FC<{ onProductClick: (p: any) => void }> =
             ) : filtered.slice(0, 500).map((p, i) => (
               <tr key={String(p.product_code ?? p.code ?? i)}
                 onClick={() => onProductClick(p)}
-                className="hover:bg-orange-50/30 transition cursor-pointer">
-                <td className="px-0.5 py-1.5 text-orange-600 font-black text-[10px] align-top">{i + 1}</td>
-                <td className="px-0.5 py-1.5 align-top">
-                  <button type="button" className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition">
+                className="hover:bg-slate-50/60 transition cursor-pointer">
+                <td className="px-1 py-2 text-slate-400 font-medium text-[10px] align-top">{i + 1}</td>
+                <td className="px-1 py-2 align-top">
+                  <button type="button" className="text-left text-[12px] font-medium text-slate-700 hover:text-slate-900 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition">
                     {p.product_name ?? p.name ?? "-"}
                   </button>
-                  {p.hidden === true && <span className="ml-1 text-[9px] text-amber-600 font-black">숨김</span>}
-                  {p.supplier && <div className="text-[9px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
+                  {p.hidden === true && <span className="ml-1 text-[9px] text-slate-500 font-medium">숨김</span>}
+                  {p.supplier && <div className="text-[9px] text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
                 </td>
-                <td className="px-0.5 py-1.5 tabular-nums text-slate-500 text-[11px] align-top">{p.product_code ?? p.code ?? "-"}</td>
-                <td className="px-0.5 py-1.5 text-slate-500 text-[11px] break-words whitespace-normal leading-tight align-top">{p.supplier ?? "-"}</td>
-                <td className="px-0.5 py-1.5 text-right tabular-nums font-black text-amber-700 bg-amber-50/40 align-top">{p.current_stock != null ? p.current_stock.toLocaleString() : "-"}</td>
-                <td className="px-0.5 py-1.5 text-right tabular-nums text-slate-600 bg-slate-50/40 align-top">{p.optimal_stock != null ? p.optimal_stock.toLocaleString() : "-"}</td>
-                <td className="px-0.5 py-1.5 text-right tabular-nums text-orange-600 font-bold bg-orange-50/40 align-top">{p.sale_price != null && p.sale_price > 0 ? `₩${p.sale_price.toLocaleString()}` : "-"}</td>
+                <td className="px-1 py-2 tabular-nums text-slate-400 text-[10px] align-top">{p.product_code ?? p.code ?? "-"}</td>
+                <td className="px-1 py-2 text-slate-400 text-[10px] break-words whitespace-normal leading-tight align-top">{p.supplier ?? "-"}</td>
+                <td className="px-1 py-2 text-right tabular-nums font-medium text-slate-700 bg-slate-50/40 align-top">{p.current_stock != null ? p.current_stock.toLocaleString() : "-"}</td>
+                <td className="px-1 py-2 text-right tabular-nums text-slate-500 bg-slate-50/40 align-top">{p.optimal_stock != null ? p.optimal_stock.toLocaleString() : "-"}</td>
+                <td className="px-1 py-2 text-right tabular-nums text-slate-600 align-top">{p.sale_price != null && p.sale_price > 0 ? `₩${p.sale_price.toLocaleString()}` : "-"}</td>
               </tr>
             ))}
           </tbody>
@@ -733,31 +733,31 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
   return (
     <div className="p-3 sm:p-4 flex flex-col gap-3">
       {/* 헤더 · 설명 + 컨트롤 */}
-      <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-sm">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
         <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <TrendingUp size={16} className="text-indigo-600 shrink-0" />
-          <span className="text-[15px] font-black text-slate-800">판매 급상승 상품</span>
+          <TrendingUp size={14} className="text-slate-400 shrink-0" />
+          <span className="text-[13px] font-semibold text-slate-700">판매 급상승 상품</span>
           {meta && (
-            <span className="text-[12px] tabular-nums text-slate-500 font-semibold">
-              최근 {windowDays}일 ({meta.recent_from} ~) · 총 <span className="font-black text-indigo-700">{fmt(meta.total)}</span>건
+            <span className="text-[11px] tabular-nums text-slate-400">
+              최근 {windowDays}일 ({meta.recent_from} ~) · 총 <span className="font-semibold text-slate-600">{fmt(meta.total)}</span>건
             </span>
           )}
         </div>
-        <p className="text-[13px] text-slate-600 leading-relaxed mb-3">
+        <p className="text-[11px] text-slate-400 leading-relaxed mb-4">
           최근 {windowDays}일 판매량과 이전 {windowDays}일 판매량을 비교해 급상승 상품을 보여줍니다. 신규 진입 상품(이전 기간 판매 0)이 상단에 나옵니다.
         </p>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[13px] font-black text-slate-700 shrink-0">비교 기간</span>
-          <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-[11px] font-medium text-slate-500 shrink-0">비교 기간</span>
+          <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
             {([7, 14, 30, 60, 90] as const).map(w => (
               <button key={w} onClick={() => setWindowDays(w)}
-                className={`px-3 py-1 text-[13px] font-black rounded transition cursor-pointer ${windowDays === w ? "bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>
+                className={`px-2.5 py-1.5 text-[11px] font-medium rounded transition cursor-pointer ${windowDays === w ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                 {w}일
               </button>
             ))}
           </div>
-          <span className="text-[13px] font-black text-slate-700 shrink-0 ml-2">정렬</span>
-          <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5">
+          <span className="text-[11px] font-medium text-slate-500 shrink-0">정렬</span>
+          <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
             {([
               { k: "growth" as const, label: "성장률" },
               { k: "delta" as const, label: "증가량" },
@@ -765,13 +765,13 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
               { k: "shortage" as const, label: "재고부족" },
             ]).map(o => (
               <button key={o.k} onClick={() => setSortKey(o.k)}
-                className={`px-3 py-1 text-[13px] font-black rounded transition cursor-pointer ${sortKey === o.k ? "bg-white text-indigo-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>
+                className={`px-2.5 py-1.5 text-[11px] font-medium rounded transition cursor-pointer ${sortKey === o.k ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                 {o.label}
               </button>
             ))}
           </div>
-          <label className="inline-flex items-center gap-1.5 text-[13px] font-black text-slate-700 cursor-pointer ml-2">
-            <input type="checkbox" checked={onlyShortage} onChange={e => setOnlyShortage(e.target.checked)} className="w-4 h-4 accent-rose-500" />
+          <label className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-600 cursor-pointer">
+            <input type="checkbox" checked={onlyShortage} onChange={e => setOnlyShortage(e.target.checked)} className="w-3.5 h-3.5" />
             재고 부족만
           </label>
         </div>
@@ -791,52 +791,50 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
         ) : (
           <div className="overflow-auto max-h-[70vh]">
             <table className="w-full text-[13px]">
-              <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm">
-                <tr className="text-slate-600 text-[12px] font-black">
-                  <th className="text-center px-1 py-2 w-10">#</th>
-                  <th className="text-left px-2 py-2 min-w-[200px]">상품명</th>
-                  <th className="text-right px-2 py-2 w-16">최근<br/>{windowDays}일</th>
-                  <th className="text-right px-2 py-2 w-16">이전<br/>{windowDays}일</th>
-                  <th className="text-right px-2 py-2 w-16">성장률</th>
-                  <th className="text-right px-2 py-2 w-16">증가량</th>
-                  <th className="text-right px-2 py-2 w-14">현재고</th>
-                  <th className="text-right px-2 py-2 w-14">적정</th>
+              <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
+                <tr className="text-slate-400 text-[10px] font-medium uppercase tracking-wider">
+                  <th className="text-center px-2 py-2.5 w-10">#</th>
+                  <th className="text-left px-2 py-2.5 min-w-[200px]">상품명</th>
+                  <th className="text-right px-2 py-2.5 w-16">최근<br/>{windowDays}일</th>
+                  <th className="text-right px-2 py-2.5 w-16">이전<br/>{windowDays}일</th>
+                  <th className="text-right px-2 py-2.5 w-16">성장률</th>
+                  <th className="text-right px-2 py-2.5 w-16">증가량</th>
+                  <th className="text-right px-2 py-2.5 w-14">현재고</th>
+                  <th className="text-right px-2 py-2.5 w-14">적정</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-50">
                 {displayed.map((r, i) => (
-                  <tr key={r.product_code} className={`hover:bg-indigo-50/30 transition ${r.newly_trending ? "bg-emerald-50/40" : ""}`}>
-                    <td className="text-center px-1 py-2 text-[13px] font-black text-indigo-600 tabular-nums align-top">{i + 1}</td>
-                    <td className="text-left px-2 py-2 align-top">
+                  <tr key={r.product_code} className={`hover:bg-slate-50/70 transition ${r.newly_trending ? "bg-slate-50/40" : ""}`}>
+                    <td className="text-center px-2 py-2.5 text-[11px] font-medium text-slate-400 tabular-nums align-top">{i + 1}</td>
+                    <td className="text-left px-2 py-2.5 align-top">
                       <button onClick={() => onProductClick?.({ product_code: r.product_code, product_name: r.product_name, supplier: r.supplier })}
-                        className="text-left text-[15px] font-black text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition">
+                        className="text-left text-[13px] font-medium text-slate-700 hover:text-slate-900 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition">
                         {r.product_name}
                       </button>
                       <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        {r.supplier && <span className="text-[12px] text-slate-500 font-semibold">{r.supplier}</span>}
-                        {r.newly_trending && <span className="text-[11px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 rounded-md px-1.5 py-0.5">🆕 신규진입</span>}
+                        {r.supplier && <span className="text-[11px] text-slate-400">{r.supplier}</span>}
+                        {r.newly_trending && <span className="text-[10px] font-medium text-slate-600 bg-slate-100 border border-slate-200 rounded px-1.5 py-0.5">신규진입</span>}
                       </div>
                     </td>
-                    <td className="text-right px-2 py-2 text-[14px] font-black text-rose-700 tabular-nums align-top">{fmt(r.recent_sale)}</td>
-                    <td className="text-right px-2 py-2 text-[13px] text-slate-500 tabular-nums align-top">{fmt(r.prior_sale)}</td>
-                    <td className={`text-right px-2 py-2 text-[14px] font-black tabular-nums align-top ${
-                      r.newly_trending ? "text-emerald-700" :
-                      (r.growth_rate ?? 0) >= 100 ? "text-rose-700" :
-                      (r.growth_rate ?? 0) >= 50 ? "text-orange-700" :
-                      (r.growth_rate ?? 0) >= 20 ? "text-amber-700" :
-                      (r.growth_rate ?? 0) > 0 ? "text-sky-700" :
-                      "text-slate-500"
+                    <td className="text-right px-2 py-2.5 text-[13px] font-semibold text-slate-700 tabular-nums align-top">{fmt(r.recent_sale)}</td>
+                    <td className="text-right px-2 py-2.5 text-[12px] text-slate-400 tabular-nums align-top">{fmt(r.prior_sale)}</td>
+                    <td className={`text-right px-2 py-2.5 text-[13px] font-semibold tabular-nums align-top ${
+                      r.newly_trending ? "text-slate-600" :
+                      (r.growth_rate ?? 0) >= 50 ? "text-slate-800" :
+                      (r.growth_rate ?? 0) > 0 ? "text-slate-600" :
+                      "text-slate-400"
                     }`}>
                       {r.newly_trending ? "NEW" : r.growth_rate != null ? `${r.growth_rate > 0 ? "+" : ""}${r.growth_rate}%` : "-"}
                     </td>
-                    <td className={`text-right px-2 py-2 text-[13px] font-bold tabular-nums align-top ${r.absolute_delta > 0 ? "text-emerald-700" : r.absolute_delta < 0 ? "text-rose-500" : "text-slate-500"}`}>
+                    <td className={`text-right px-2 py-2.5 text-[13px] tabular-nums align-top ${r.absolute_delta > 0 ? "text-slate-700 font-medium" : r.absolute_delta < 0 ? "text-rose-500" : "text-slate-400"}`}>
                       {r.absolute_delta > 0 ? `+${fmt(r.absolute_delta)}` : fmt(r.absolute_delta)}
                     </td>
-                    <td className={`text-right px-2 py-2 text-[13px] font-bold tabular-nums align-top ${r.below_optimal ? "text-red-600" : "text-slate-700"}`}
+                    <td className={`text-right px-2 py-2.5 text-[13px] tabular-nums align-top ${r.below_optimal ? "text-rose-500 font-medium" : "text-slate-600"}`}
                       title={r.below_optimal ? `현재고 부족 · ${r.current_stock} < 적정 ${r.optimal_stock}` : ""}>
                       {fmt(r.current_stock)}
                     </td>
-                    <td className="text-right px-2 py-2 text-[13px] text-slate-500 tabular-nums align-top">{r.optimal_stock > 0 ? fmt(r.optimal_stock) : "-"}</td>
+                    <td className="text-right px-2 py-2.5 text-[12px] text-slate-400 tabular-nums align-top">{r.optimal_stock > 0 ? fmt(r.optimal_stock) : "-"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -2158,13 +2156,13 @@ export const StockManagePage: React.FC = () => {
   const totalPurchase = supplierAggs.reduce((s, x) => s + (x.purchaseAmount || 0), 0);
 
   return (
-    <div className="flex-1 flex flex-col max-w-[1360px] mx-auto w-full px-3 sm:px-6 py-2 sm:py-4 gap-2 sm:gap-4">
+    <div className="flex-1 flex flex-col max-w-[1360px] mx-auto w-full px-4 sm:px-6 py-3 sm:py-5 gap-3 sm:gap-5">
       {/* 페이지 상단 탭: 대시보드 / 원본 데이터 */}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         {/* 1행: 제목 + 서브탭 + 날짜범위 배지 · 아이콘은 상단 네비 탭(재고관리=Boxes)과 통일 */}
-        <div className="flex items-center gap-2 flex-wrap min-w-0">
-          <Boxes size={18} className="text-slate-500 shrink-0" />
-          <h2 className="text-sm sm:text-base font-black text-slate-800">재고/판매관리</h2>
+        <div className="flex items-center gap-3 flex-wrap min-w-0">
+          <Boxes size={17} className="text-slate-400 shrink-0" />
+          <h2 className="text-sm font-semibold text-slate-700 tracking-tight">재고/판매관리</h2>
           {/* 2026-07-29 · 사용자 요청 · DB 임포트 시각 배지 제거 */}
           {/* 2026-07-29 · 사용자 요청 · 날짜범위 배지 제거 (재고리스트 헤더에도 나옴 · 중복) */}
           {/* 2026-07-28 · 사용자 요청 · 재고관리 페이지 상단 · 별도 관리자 액션 버튼 (적정재고 일괄 업데이트) */}
@@ -2172,13 +2170,13 @@ export const StockManagePage: React.FC = () => {
             type="button"
             onClick={handleRefillOptimalStock}
             disabled={refillingOptimalStock}
-            className="ml-auto inline-flex items-center gap-1.5 text-[11px] font-black text-white bg-gradient-to-b from-teal-500 to-teal-600 hover:from-teal-400 hover:to-teal-500 disabled:from-slate-300 disabled:to-slate-400 disabled:cursor-not-allowed border border-teal-700 rounded-lg px-3 py-1.5 cursor-pointer shadow-sm whitespace-nowrap transition-all hover:shadow-md active:scale-95"
+            className="ml-auto inline-flex items-center gap-1.5 text-[11px] font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed border border-teal-200 hover:border-teal-300 rounded-md px-3 py-1.5 cursor-pointer whitespace-nowrap transition-colors"
             title="적정재고 (products.optimal_stock) 를 최근 30일 판매량으로 일괄 업데이트 · 관리자 기능"
           >
             {refillingOptimalStock ? (
               <><LoaderIcon size={12} className="animate-spin" /> 계산 중...</>
             ) : (
-              <>🔄 <span>적정재고 = 30일 판매량</span></>
+              <span>적정재고 = 30일 판매량</span>
             )}
           </button>
         </div>
@@ -2189,53 +2187,35 @@ export const StockManagePage: React.FC = () => {
         <>
 
           {/* 통합 탭 바 (2026-07-15) · Vercel Ink 스타일 · underline · 미니멀 */}
-          <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-1 border-b border-slate-200 sm:overflow-x-auto sm:scrollbar-none">
+          <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-0.5 border-b border-slate-200 sm:overflow-x-auto sm:scrollbar-none">
             {[
-              { k: "flow" as const, label: "상품현황", icon: Activity, color: "teal" },
-              { k: "supplier" as const, label: "공급사", icon: Building2, color: "sky" },
+              { k: "flow" as const, label: "상품현황", icon: Activity, color: "slate" },
+              { k: "supplier" as const, label: "공급사", icon: Building2, color: "slate" },
               // 2026-07-29 · 사용자 요청 · 매입상세 탭 삭제 (기간별 상품흐름의 매입 이력이 대체)
               { k: "low" as const, label: "적정재고↓", icon: AlertTriangle, color: "rose", badge: lowStock.length },
-              { k: "diff" as const, label: "손실추적", icon: Layers, color: "violet" },
+              { k: "diff" as const, label: "손실추적", icon: Layers, color: "slate" },
               // 2026-07-28 · 카테고리별판매 · 판매추이에서 이동
-              { k: "category" as const, label: "카테고리별현황", icon: PieChart, color: "amber" },
+              { k: "category" as const, label: "카테고리별현황", icon: PieChart, color: "slate" },
               // 2026-07-29 · 손실추적 탭 제거 · 실재고차이 탭이 커버 (사용자 요청 통합)
               // 2026-07-29 · 판매 급상승 상품 리스트 (사용자 요청)
-              { k: "trending" as const, label: "급상승", icon: TrendingUp, color: "indigo" },
+              { k: "trending" as const, label: "급상승", icon: TrendingUp, color: "slate" },
             ].map(t => {
               const Icon = t.icon;
               const active = stockTab === t.k;
-              const activeText = {
-                teal: "text-teal-700",
-                sky: "text-sky-700",
-                emerald: "text-emerald-700",
-                rose: "text-rose-700",
-                violet: "text-violet-700",
-                indigo: "text-indigo-700",
-                amber: "text-amber-700",
-              }[t.color]!;
-              const activeBar = {
-                teal: "bg-teal-500",
-                sky: "bg-sky-500",
-                emerald: "bg-emerald-500",
-                rose: "bg-rose-500",
-                violet: "bg-violet-500",
-                indigo: "bg-indigo-500",
-                amber: "bg-amber-500",
-              }[t.color]!;
               return (
                 <button key={t.k} onClick={() => setStockTab(t.k)}
-                  className={`relative basis-1/3 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-2 px-2 sm:px-5 py-2.5 sm:py-3 text-[15px] sm:text-[17px] font-black leading-tight transition-colors duration-150 ${active ? activeText : "text-slate-400 hover:text-slate-700"
+                  className={`relative basis-1/3 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1.5 sm:gap-1.5 px-2 sm:px-4 py-2.5 sm:py-2.5 text-[12px] sm:text-[13px] font-medium leading-tight transition-colors duration-150 ${active ? "text-slate-900" : "text-slate-400 hover:text-slate-600"
                     }`}>
-                  <Icon size={13} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
+                  <Icon size={13} strokeWidth={active ? 2.2 : 1.7} className="hidden sm:inline-block shrink-0" />
                   <span>{t.label}</span>
                   {"badge" in t && t.badge != null && t.badge > 0 && (
-                    <span className={`inline-flex items-center justify-center min-w-[14px] sm:min-w-[18px] px-1 h-4 rounded-full text-[9px] font-black ${active ? "bg-rose-100 text-rose-700" : "bg-slate-100 text-slate-500"}`}>
+                    <span className={`inline-flex items-center justify-center min-w-[16px] px-1 h-4 rounded-full text-[9px] font-semibold ${active ? "bg-rose-100 text-rose-600" : "bg-slate-100 text-slate-400"}`}>
                       {t.badge}
                     </span>
                   )}
                   {/* 밑줄 · 활성 탭만 */}
                   {active && (
-                    <span className={`absolute left-0 right-0 -bottom-px h-[2px] ${activeBar} rounded-t-sm`} />
+                    <span className="absolute left-0 right-0 -bottom-px h-[2px] bg-slate-800 rounded-t-sm" />
                   )}
                 </button>
               );
@@ -2256,20 +2236,21 @@ export const StockManagePage: React.FC = () => {
               {/* 공급사별 재고자산 (종료일 시점, xlsx 합계 컬럼 합산) — 최상위 공급사 하이라이트 + 순위 리스트 */}
               {true && (
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <div className="flex flex-col gap-2 px-3 py-2.5 border-b border-slate-200 bg-slate-50/50">
+                  <div className="flex flex-col gap-3 px-4 py-3 border-b border-slate-100 bg-white">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Building2 size={16} className="text-sky-600" />
-                      <span className="text-[13px] font-black text-slate-700">공급사별 현황<span className="text-[11px] font-semibold text-slate-400 ml-1">(재고·매입·판매 · 종료일)</span></span>
+                      <Building2 size={14} className="text-slate-400" />
+                      <span className="text-[13px] font-semibold text-slate-700">공급사별 현황</span>
+                      <span className="text-[11px] text-slate-400">(재고·매입·판매)</span>
                       {flowSnapshot && (
-                        <span className="text-[11px] font-bold tabular-nums text-sky-700 bg-sky-50 border border-sky-200 rounded px-2 py-0.5">
+                        <span className="text-[11px] tabular-nums text-slate-500 bg-slate-50 border border-slate-200 rounded px-2 py-0.5">
                           {flowSnapshot}
                         </span>
                       )}
-                      <span className="text-[11px] tabular-nums text-slate-500">
-                        ({displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사)
+                      <span className="text-[11px] tabular-nums text-slate-400">
+                        {displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사
                       </span>
                       {/* 2026-07-28 · 사용자 요청 · Top N 필터 (기본 전체) */}
-                      <div className="flex items-center gap-1 ml-auto">
+                      <div className="flex items-center gap-0.5 ml-auto bg-slate-50 border border-slate-200 rounded-md p-0.5">
                         {[
                           { v: 100,    label: "Top 100" },
                           { v: 300,    label: "Top 300" },
@@ -2277,8 +2258,8 @@ export const StockManagePage: React.FC = () => {
                           { v: 999999, label: "전체" },
                         ].map(o => (
                           <button key={o.v} onClick={() => setSupListLimit(o.v)}
-                            className={`text-[12px] font-black px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${
-                              supListLimit === o.v ? "bg-sky-500 text-white" : "text-slate-600 hover:bg-slate-100"
+                            className={`text-[11px] font-medium px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${
+                              supListLimit === o.v ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
                             }`}
                           >{o.label}</button>
                         ))}
@@ -2286,21 +2267,21 @@ export const StockManagePage: React.FC = () => {
                     </div>
                     {/* 2026-07-16 · 기간 필터 (재고리스트와 동일 UI) */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[12px] font-black text-slate-600">기간</span>
-                      <div className="inline-flex bg-slate-100/80 border border-slate-200/60 rounded-lg p-0.5 shadow-inner">
+                      <span className="text-[11px] font-medium text-slate-500">기간</span>
+                      <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
                         <button onClick={() => { setSupplierSeason(null); setSupplierMonths(0); }}
-                          className={`px-2.5 py-1 text-[12px] font-black rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-white text-sky-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>10일</button>
+                          className={`px-2.5 py-1 text-[11px] font-medium rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
                         {[1, 2, 3, 4, 5, 6].map(m => (
                           <button key={m} onClick={() => { setSupplierSeason(null); setSupplierMonths(m as any); }}
-                            className={`px-2.5 py-1 text-[12px] font-black rounded transition cursor-pointer ${!supplierSeason && supplierMonths === m ? "bg-white text-sky-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>{m}개월</button>
+                            className={`px-2.5 py-1 text-[11px] font-medium rounded transition cursor-pointer ${!supplierSeason && supplierMonths === m ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
                         ))}
                       </div>
                       <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
                     </div>
-                    <p className="text-[12px] text-slate-500 font-semibold leading-tight">공급사 행을 클릭하면 오른쪽 패널에 해당 공급사의 상품 리스트가 나타납니다 (판매출고계 내림차순)</p>
+                    <p className="text-[11px] text-slate-400 leading-tight">공급사 행을 클릭하면 오른쪽 패널에 상품 리스트가 나타납니다</p>
                     {/* 2026-07-28 · 사용자 요청 · 정렬 헤더 (재고자산·판매·매입·상품수·공급사명) */}
-                    <div className="flex items-center gap-1.5 flex-wrap text-[12px]">
-                      <span className="text-slate-500 font-black">정렬</span>
+                    <div className="flex items-center gap-1 flex-wrap text-[11px]">
+                      <span className="text-slate-400 font-medium mr-0.5">정렬</span>
                       {([
                         { k: "totalStockAmount" as SupListSortKey, label: "재고자산" },
                         { k: "saleQty" as SupListSortKey, label: "판매량" },
@@ -2310,7 +2291,7 @@ export const StockManagePage: React.FC = () => {
                         { k: "supplier" as SupListSortKey, label: "공급사명" },
                       ]).map(o => (
                         <button key={o.k} onClick={() => toggleSupListSort(o.k)}
-                          className={`px-2 py-1 rounded font-black transition cursor-pointer ${supListSort.key === o.k ? "bg-sky-500 text-white" : "text-slate-600 hover:bg-slate-100 border border-slate-200"}`}>
+                          className={`px-2 py-1 rounded-md font-medium transition cursor-pointer ${supListSort.key === o.k ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-50 border border-slate-200"}`}>
                           {o.label}{supListSort.key === o.k ? (supListSort.dir === "desc" ? " ▼" : " ▲") : ""}
                         </button>
                       ))}
@@ -2336,19 +2317,19 @@ export const StockManagePage: React.FC = () => {
                         )
                       ) : (
                         <table className={`w-full text-[13px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                          <thead className="sticky top-0 bg-slate-50 z-10 border-b-2 border-slate-200">
-                            <tr className="text-[12px] font-black text-slate-500 tracking-tight">
-                              <th className="text-center w-8 py-2"></th>
-                              <th className="text-center w-10 py-2">#</th>
-                              <th className="text-left px-2 py-2">공급사</th>
-                              <th className="text-right px-2 py-2 w-24">재고자산</th>
-                              <th className="text-right px-2 py-2 w-20">판매량</th>
-                              <th className="text-right px-2 py-2 w-24">판매액</th>
-                              <th className="text-right px-2 py-2 w-20">매입</th>
-                              <th className="text-right px-2 py-2 w-16">상품수</th>
+                          <thead className="sticky top-0 bg-slate-50 z-10 border-b border-slate-200">
+                            <tr className="text-[11px] font-medium text-slate-400 uppercase tracking-wider">
+                              <th className="text-center w-8 py-2.5"></th>
+                              <th className="text-center w-10 py-2.5">#</th>
+                              <th className="text-left px-3 py-2.5">공급사</th>
+                              <th className="text-right px-3 py-2.5 w-24">재고자산</th>
+                              <th className="text-right px-3 py-2.5 w-20">판매량</th>
+                              <th className="text-right px-3 py-2.5 w-24">판매액</th>
+                              <th className="text-right px-3 py-2.5 w-20">매입</th>
+                              <th className="text-right px-3 py-2.5 w-16">상품수</th>
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-slate-100">
+                          <tbody className="divide-y divide-slate-50">
                             {displayedXlsxSuppliers.map((sup, i) => {
                               const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
                               const isExpanded = expandedSuppliers.has(key);
@@ -2356,45 +2337,44 @@ export const StockManagePage: React.FC = () => {
                               return (
                                 <tr key={key}
                                   onClick={() => { toggleSupplierExpand(sup); setSupplierSelectedKey(key); }}
-                                  className={`cursor-pointer transition ${isSelected ? "bg-sky-100/70 hover:bg-sky-100" : "hover:bg-orange-50/30"}`}
+                                  className={`cursor-pointer transition ${isSelected ? "bg-slate-50 hover:bg-slate-100" : "hover:bg-slate-50/60"}`}
                                   title="클릭 → 오른쪽 패널에 상세 (판매출고계 내림차순 상품 리스트)"
                                 >
-                                  <td className="text-center align-middle py-2.5">
+                                  <td className="text-center align-middle py-3">
                                     {isExpanded
-                                      ? <ChevronDown size={16} className="text-sky-600 mx-auto" />
-                                      : <ChevronRight size={16} className="text-slate-400 mx-auto" />}
+                                      ? <ChevronDown size={14} className="text-slate-400 mx-auto" />
+                                      : <ChevronRight size={14} className="text-slate-300 mx-auto" />}
                                   </td>
-                                  <td className="text-center align-middle py-2.5 text-[13px] font-black text-orange-600 tabular-nums">{i + 1}</td>
-                                  <td className="text-left px-2 py-2.5 align-middle">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <Building2 size={13} className="text-sky-500 shrink-0" />
-                                      <span className="text-[14px] font-bold text-slate-800 break-words whitespace-normal leading-tight">
+                                  <td className="text-center align-middle py-3 text-[12px] font-medium text-slate-400 tabular-nums">{i + 1}</td>
+                                  <td className="text-left px-3 py-3 align-middle">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-[13px] font-medium text-slate-700 break-words whitespace-normal leading-tight">
                                         {sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
                                       </span>
                                       {sup.supplier_code && (
-                                        <span className="text-[11px] tabular-nums text-slate-500 shrink-0" title="공급사코드">#{sup.supplier_code}</span>
+                                        <span className="text-[10px] tabular-nums text-slate-400 shrink-0 font-mono" title="공급사코드">#{sup.supplier_code}</span>
                                       )}
                                       {sup.code_conflict && (
                                         <span
-                                          className="text-[11px] font-black text-amber-700 shrink-0"
+                                          className="text-[10px] font-medium text-amber-600 shrink-0"
                                           title="같은 이름에 여러 공급사코드가 존재 — 중복 의심"
                                         >⚠</span>
                                       )}
                                     </div>
                                   </td>
-                                  <td className="text-right px-2 py-2.5 align-middle text-[13px] font-black text-emerald-700 tabular-nums" title="재고자산">
+                                  <td className="text-right px-3 py-3 align-middle text-[13px] font-semibold text-slate-700 tabular-nums" title="재고자산">
                                     {fmtWon(sup.totalStockAmount)}
                                   </td>
-                                  <td className="text-right px-2 py-2.5 align-middle text-[13px] font-bold text-orange-700 tabular-nums" title="판매수량">
+                                  <td className="text-right px-3 py-3 align-middle text-[13px] text-slate-600 tabular-nums" title="판매수량">
                                     {fmt(sup.saleQty)}
                                   </td>
-                                  <td className="text-right px-2 py-2.5 align-middle text-[13px] font-bold text-rose-700 tabular-nums" title="판매액 (proxy)">
+                                  <td className="text-right px-3 py-3 align-middle text-[13px] text-slate-600 tabular-nums" title="판매액 (proxy)">
                                     {fmtWon(Number(sup.saleAmount ?? 0))}
                                   </td>
-                                  <td className="text-right px-2 py-2.5 align-middle text-[13px] font-bold text-sky-700 tabular-nums" title="매입수량">
+                                  <td className="text-right px-3 py-3 align-middle text-[13px] text-slate-600 tabular-nums" title="매입수량">
                                     {fmt(sup.purchaseQty)}
                                   </td>
-                                  <td className="text-right px-2 py-2.5 align-middle text-[13px] font-semibold text-slate-700 tabular-nums" title="취급 상품 종수">
+                                  <td className="text-right px-3 py-3 align-middle text-[13px] text-slate-500 tabular-nums" title="취급 상품 종수">
                                     {sup.itemCount}
                                   </td>
                                 </tr>
@@ -2600,14 +2580,14 @@ export const StockManagePage: React.FC = () => {
                   style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? lowPanelWidth : undefined }}
                 >
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-slate-200 bg-slate-50/50">
-                    <div className="flex items-center gap-1.5">
-                      <AlertTriangle size={14} className="text-rose-500" />
-                      <span className="text-[13px] font-black text-slate-700">적정재고 이하</span>
-                      <span className="text-[11px] text-slate-400 font-semibold">현재고 &lt; 적정재고</span>
-                      <span className="text-[11px] tabular-nums text-slate-400">({lowStock.length}개)</span>
+                  <div className="flex flex-col gap-2 px-4 py-3 border-b border-slate-100 bg-white">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle size={14} className="text-rose-400" />
+                      <span className="text-[13px] font-semibold text-slate-700">적정재고 이하</span>
+                      <span className="text-[11px] text-slate-400">현재고 &lt; 적정재고</span>
+                      <span className="text-[11px] tabular-nums text-slate-400 ml-1">({lowStock.length}개)</span>
                     </div>
-                    <p className="text-[11px] text-slate-500 font-semibold leading-tight">상품명 클릭 → 상세 정보 · 실재고 스캔 현황</p>
+                    <p className="text-[11px] text-slate-400 leading-tight">상품명 클릭 → 상세 정보 · 실재고 스캔 현황</p>
                   </div>
                   {!lowStockCollapsed && (
                     <div className="flex-1 overflow-y-auto relative">
@@ -2627,17 +2607,17 @@ export const StockManagePage: React.FC = () => {
                         <div className="overflow-x-auto">
                           <table className="w-full text-xs sm:min-w-[480px]">
                             <thead className="sticky top-0 bg-white z-10">
-                              <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
-                                <th className="text-left px-0.5 py-1.5 w-7">#</th>
-                                <th className="text-left px-0.5 py-1.5">상품명</th>
-                                <th className="text-right px-0.5 py-1.5 w-14 text-amber-500 cursor-pointer hover:bg-slate-50" title="ERP 현재고 (products.current_stock)">ERP</th>
-                                <th className="text-right px-0.5 py-1.5 w-16 bg-cyan-50/40 text-cyan-600 font-black cursor-pointer hover:bg-cyan-100/40" title="실재고 · 바코드스캔 창고">창고</th>
-                                <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-600 font-black cursor-pointer hover:bg-violet-100/40" title="실재고 · 바코드스캔 매장">매장</th>
-                                <th className="text-right px-0.5 py-1.5 w-14 text-emerald-500 font-black cursor-pointer hover:bg-slate-50" title="실재고 합계 (창고+매장)">실재고</th>
-                                <th className="text-right px-0.5 py-1.5 w-14 text-slate-500 cursor-pointer hover:bg-slate-50">적정</th>
-                                <th className="text-right px-0.5 py-1.5 w-14 text-rose-500 cursor-pointer hover:bg-slate-50">필요</th>
+                              <tr className="border-b border-slate-100 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                                <th className="text-left px-1 py-2 w-7">#</th>
+                                <th className="text-left px-1 py-2">상품명</th>
+                                <th className="text-right px-1 py-2 w-14" title="ERP 현재고 (products.current_stock)">ERP</th>
+                                <th className="text-right px-1 py-2 w-16 bg-slate-50/60" title="실재고 · 바코드스캔 창고">창고</th>
+                                <th className="text-right px-1 py-2 w-16 bg-slate-50/60" title="실재고 · 바코드스캔 매장">매장</th>
+                                <th className="text-right px-1 py-2 w-14" title="실재고 합계 (창고+매장)">실재고</th>
+                                <th className="text-right px-1 py-2 w-14">적정</th>
+                                <th className="text-right px-1 py-2 w-14 text-rose-400">필요</th>
                                 {/* 2026-07-29 · 사용자 요청 · 발주요청 액션 */}
-                                <th className="text-center px-0.5 py-1.5 w-20 text-sky-600" title="발주요청 리스트에 추가">발주요청</th>
+                                <th className="text-center px-1 py-2 w-20" title="발주요청 리스트에 추가">발주요청</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-50">
@@ -2649,23 +2629,23 @@ export const StockManagePage: React.FC = () => {
                                 const st = p.store_stock;
                                 const isSelected = lowSelectedProduct?.code === String(p.product_code ?? "");
                                 return (
-                                  <tr key={`low-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
-                                    <td className="px-0.5 py-1.5 text-orange-600 font-black text-[12px] align-top">{i + 1}</td>
-                                    <td className="px-0.5 py-1.5 align-top">
+                                  <tr key={`low-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-slate-50" : "hover:bg-slate-50/60"}`}>
+                                    <td className="px-1 py-2 text-slate-400 font-medium text-[11px] align-top">{i + 1}</td>
+                                    <td className="px-1 py-2 align-top">
                                       <button
                                         onClick={() => loadLowSelectedProduct(p)}
-                                        className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
+                                        className="text-left text-[13px] font-medium text-slate-700 hover:text-slate-900 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
                                         title={`${p.product_name} — 클릭 시 상세 정보`}
                                       >
                                         {p.product_name}
                                       </button>
-                                      {p.supplier && <div className="text-[11px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
+                                      {p.supplier && <div className="text-[10px] text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
                                     </td>
-                                    <td className={`text-right px-0.5 py-1.5 tabular-nums font-black align-top ${cur <= 0 ? "text-red-600" : "text-amber-700"}`} title="ERP 현재고 (products.current_stock)">{fmt(cur)}</td>
-                                    <td className={`text-right px-0.5 py-1.5 tabular-nums font-black bg-cyan-50/40 align-top ${wh != null ? "text-cyan-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 창고 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "창고 실재고 미입력"}>
+                                    <td className={`text-right px-1 py-2 tabular-nums font-semibold align-top ${cur <= 0 ? "text-rose-600" : "text-slate-700"}`} title="ERP 현재고 (products.current_stock)">{fmt(cur)}</td>
+                                    <td className={`text-right px-1 py-2 tabular-nums font-semibold bg-slate-50/60 align-top ${wh != null ? "text-slate-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 창고 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "창고 실재고 미입력"}>
                                       {wh != null ? fmt(Number(wh)) : "—"}
                                     </td>
-                                    <td className={`text-right px-0.5 py-1.5 tabular-nums font-black bg-violet-50/40 align-top ${st != null ? "text-violet-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 매장 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "매장 실재고 미입력"}>
+                                    <td className={`text-right px-1 py-2 tabular-nums font-semibold bg-slate-50/60 align-top ${st != null ? "text-slate-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 매장 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "매장 실재고 미입력"}>
                                       {st != null ? fmt(Number(st)) : "—"}
                                     </td>
                                     {(() => {
@@ -2741,16 +2721,16 @@ export const StockManagePage: React.FC = () => {
                                             type="button"
                                             onClick={(e) => { e.stopPropagation(); requestOrderFromLow(p); }}
                                             disabled={busy || done}
-                                            className={`inline-flex items-center justify-center gap-1 min-h-[26px] px-2 py-1 rounded-md text-[11px] font-black border transition cursor-pointer active:scale-95 disabled:cursor-not-allowed ${
+                                            className={`inline-flex items-center justify-center gap-1 min-h-[26px] px-2 py-1 rounded-md text-[10px] font-medium border transition cursor-pointer active:scale-95 disabled:cursor-not-allowed ${
                                               done
-                                                ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                                                ? "bg-slate-50 text-slate-500 border-slate-200"
                                                 : busy
-                                                  ? "bg-slate-100 text-slate-500 border-slate-300"
-                                                  : "bg-sky-50 text-sky-700 border-sky-300 hover:bg-sky-100"
+                                                  ? "bg-slate-50 text-slate-400 border-slate-200"
+                                                  : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50 hover:border-slate-400"
                                             }`}
                                             title={done ? "발주요청 리스트에 추가됨" : "발주요청 리스트에 추가"}
                                           >
-                                            {busy ? "..." : done ? "✓ 추가됨" : "발주요청"}
+                                            {busy ? "..." : done ? "추가됨" : "발주요청"}
                                           </button>
                                         );
                                       })()}
@@ -2811,17 +2791,16 @@ export const StockManagePage: React.FC = () => {
                     .filter(Boolean) as Array<any>;
                   return (
                   <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-                    <div className="flex flex-col gap-1.5 px-3 py-2 border-b border-slate-200 bg-slate-50/50">
-                      <div className="flex items-center gap-1.5">
-                        <AlertTriangle size={14} className="text-purple-500" />
-                        <span className="text-[13px] font-black text-slate-700">손실추적 · 실재고 ↔ ERP 차이</span>
+                    <div className="flex flex-col gap-2 px-4 py-3 border-b border-slate-100 bg-white">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle size={14} className="text-slate-400" />
+                        <span className="text-[13px] font-semibold text-slate-700">손실추적 · 실재고 ↔ ERP 차이</span>
                         <span className="text-[11px] tabular-nums text-slate-400">({diffList.length}개)</span>
                       </div>
-                      <p className="text-[12px] text-slate-600 font-semibold leading-relaxed">
-                        💡 <b className="text-purple-700">실재고</b> (스캔한 창고+매장 실사 수량) 과 <b className="text-purple-700">ERP 현재고</b> (products.current_stock) 가 다른 상품 리스트입니다.
-                        차이가 있으면 <b>도난·파손·미기록 판매·재고 오류</b> 등의 손실 원인이 있을 수 있어요.
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        실재고 (창고+매장 실사) 와 ERP 현재고가 다른 상품 리스트입니다. 도난·파손·미기록 판매·재고 오류 등의 원인이 있을 수 있습니다.
                       </p>
-                      <p className="text-[11px] text-slate-500 font-semibold leading-tight">상품명 클릭 → 상세 정보 · 실재고 스캔 현황</p>
+                      <p className="text-[11px] text-slate-400 leading-tight">상품명 클릭 → 상세 정보 · 실재고 스캔 현황</p>
                     </div>
                     {!stockDiffCollapsed && (
                       <div className="flex-1 overflow-y-auto relative">
@@ -2841,33 +2820,33 @@ export const StockManagePage: React.FC = () => {
                           <div className="overflow-x-auto">
                             <table className="w-full text-xs sm:min-w-[280px]">
                               <thead className="sticky top-0 bg-white z-10">
-                                <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
-                                  <th className="text-left px-0.5 py-1.5 w-7">#</th>
-                                  <th className="text-left px-0.5 py-1.5">상품명</th>
-                                  <th className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-amber-500 cursor-pointer hover:bg-amber-100/40">ERP</th>
-                                  <th className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-600 font-black cursor-pointer hover:bg-violet-100/40">실재고</th>
-                                  <th className="text-right px-0.5 py-1.5 w-14 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100/40">차이</th>
+                                <tr className="border-b border-slate-100 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
+                                  <th className="text-left px-1 py-2 w-7">#</th>
+                                  <th className="text-left px-1 py-2">상품명</th>
+                                  <th className="text-right px-1 py-2 w-14 bg-slate-50/40">ERP</th>
+                                  <th className="text-right px-1 py-2 w-16 bg-slate-50/40">실재고</th>
+                                  <th className="text-right px-1 py-2 w-14">차이</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-slate-50">
                                 {diffList.slice(0, 100).map((p: any, i: number) => {
                                   const isSelected = diffSelectedProduct?.code === String(p.product_code ?? "");
                                   return (
-                                  <tr key={`diff-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
-                                    <td className="px-0.5 py-1.5 text-orange-600 font-black text-[12px] align-top">{i + 1}</td>
-                                    <td className="px-0.5 py-1.5 align-top">
+                                  <tr key={`diff-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-slate-50" : "hover:bg-slate-50/60"}`}>
+                                    <td className="px-1 py-2 text-slate-400 font-medium text-[11px] align-top">{i + 1}</td>
+                                    <td className="px-1 py-2 align-top">
                                       <button
                                         onClick={() => loadDiffSelectedProduct(p)}
-                                        className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
+                                        className="text-left text-[13px] font-medium text-slate-700 hover:text-slate-900 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
                                         title={p.product_name}
                                       >
                                         {p.product_name}
                                       </button>
-                                      {p.supplier && <div className="text-[11px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
+                                      {p.supplier && <div className="text-[10px] text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
                                     </td>
-                                    <td className="text-right px-0.5 py-1.5 tabular-nums font-black bg-amber-50/40 text-amber-700 align-top">{fmt(p.cur)}</td>
-                                    <td className="text-right px-0.5 py-1.5 tabular-nums font-black bg-violet-50/40 text-violet-700 align-top">{fmt(p.actual)}</td>
-                                    <td className={`text-right px-0.5 py-1.5 tabular-nums font-black align-top ${p.diff > 0 ? "text-emerald-600" : "text-rose-600"}`}>
+                                    <td className="text-right px-1 py-2 tabular-nums font-semibold bg-slate-50/40 text-slate-600 align-top">{fmt(p.cur)}</td>
+                                    <td className="text-right px-1 py-2 tabular-nums font-semibold bg-slate-50/40 text-slate-700 align-top">{fmt(p.actual)}</td>
+                                    <td className={`text-right px-1 py-2 tabular-nums font-semibold align-top ${p.diff > 0 ? "text-slate-600" : "text-rose-500"}`}>
                                       {p.diff > 0 ? `+${fmt(p.diff)}` : fmt(p.diff)}
                                     </td>
                                   </tr>
@@ -2933,28 +2912,30 @@ export const StockManagePage: React.FC = () => {
               {/* 재고 흐름 카드 · 판매추이 StockFlowPanel 과 동일 레이아웃 */}
               {/* 2026-07-29 · 사용자 요청 · 산만한 헤더 재구성 · 조회기간 옆에 날짜범위 · 기간 버튼 다음줄 */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-                <div className="flex flex-col gap-2 px-3 py-2.5 border-b border-slate-200 bg-slate-50/50">
+                <div className="flex flex-col gap-3 px-4 py-3 border-b border-slate-100 bg-white">
                   {/* Top N 필터 (우측 정렬) */}
                   {topTab === "sale" && !flowCardCollapsed && (
-                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                      {[
-                        { v: 100,   label: "Top 100" },
-                        { v: 300,   label: "Top 300" },
-                        { v: 1000,  label: "Top 1000" },
-                        { v: 2000,  label: "Top 2000" },
-                        { v: 50000, label: "전체" },
-                      ].map(o => (
-                        <button key={o.v} onClick={() => setFlowLimit(o.v)}
-                          className={`text-[13px] font-black px-2.5 py-1 rounded transition whitespace-nowrap ${
-                            flowLimit === o.v ? "bg-teal-500 text-white" : "text-slate-600 hover:bg-slate-100"
-                          }`}
-                        >{o.label}</button>
-                      ))}
+                    <div className="flex items-center gap-1 flex-wrap justify-end">
+                      <div className="flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md p-0.5">
+                        {[
+                          { v: 100,   label: "Top 100" },
+                          { v: 300,   label: "Top 300" },
+                          { v: 1000,  label: "Top 1000" },
+                          { v: 2000,  label: "Top 2000" },
+                          { v: 50000, label: "전체" },
+                        ].map(o => (
+                          <button key={o.v} onClick={() => setFlowLimit(o.v)}
+                            className={`text-[11px] font-medium px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${
+                              flowLimit === o.v ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                            }`}
+                          >{o.label}</button>
+                        ))}
+                      </div>
                     </div>
                   )}
                   {!flowCardCollapsed && (
-                    <p className="text-[12px] text-slate-600 font-semibold leading-tight">
-                      💡 상품명을 누르면 상세 정보와 재고 상황이 나옵니다
+                    <p className="text-[11px] text-slate-400 leading-tight">
+                      상품명을 누르면 상세 정보와 재고 상황이 나옵니다
                     </p>
                   )}
                 </div>
@@ -2962,16 +2943,11 @@ export const StockManagePage: React.FC = () => {
                 {topTab === "sale" && (
                   <>
                     {/* 1행 · 조회기간 라벨 + 날짜범위 배지 */}
-                    <div className="flex items-center gap-2 mb-1.5 flex-wrap text-[14px]">
-                      <span className="text-slate-700 font-black text-[14px] shrink-0">조회기간</span>
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <span className="text-[11px] font-medium text-slate-500 shrink-0">조회기간</span>
                       {/* 스냅샷 (10일 모드) */}
                       {flowMonths === 0 && !flowSeason && flowSnapshot && (
-                        <span className={`text-[12px] tabular-nums font-black rounded-full px-2.5 py-1 border ${
-                          flowPeriodType === "초순" || flowPeriodType === "early" ? "text-sky-700 bg-sky-50 border-sky-300" :
-                          flowPeriodType === "중순" || flowPeriodType === "mid"   ? "text-indigo-700 bg-indigo-50 border-indigo-300" :
-                          flowPeriodType === "하순" || flowPeriodType === "late"  ? "text-purple-700 bg-purple-50 border-purple-300" :
-                          "text-slate-600 bg-slate-100 border-slate-300"
-                        }`}>
+                        <span className="text-[11px] tabular-nums font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1">
                           {flowDateRange ?? flowSnapshot}
                         </span>
                       )}
@@ -2982,39 +2958,39 @@ export const StockManagePage: React.FC = () => {
                         const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
                         const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
                         return (
-                          <span className="text-[12px] tabular-nums font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-1">
+                          <span className="text-[11px] tabular-nums font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1">
                             {s} ~ {e}
                           </span>
                         );
                       })()}
                     </div>
                     {/* 2행 · 기간 선택 버튼 (10일 · 1~6개월 · 계절) */}
-                    <div className="flex items-center gap-2 mb-2.5 flex-wrap text-[14px]">
-                      <div className="inline-flex bg-slate-100/80 border border-slate-200/60 rounded-lg p-0.5 shadow-inner">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
                         <button onClick={() => { setFlowSeason(null); setPendingFlowMonths(0); setFlowMonths(0); }}
-                          className={`px-3 py-1.5 text-[14px] font-black rounded transition cursor-pointer ${
-                            !flowSeason && flowMonths === 0 ? "bg-white text-orange-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"
+                          className={`px-2.5 py-1.5 text-[12px] font-medium rounded transition cursor-pointer ${
+                            !flowSeason && flowMonths === 0 ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
                           }`}>10일</button>
                         {[1, 2, 3, 4, 5, 6].map(m => (
                           <button key={m} onClick={() => { setFlowSeason(null); setPendingFlowMonths(m as any); setFlowMonths(m as any); }}
-                            className={`px-3 py-1.5 text-[14px] font-black rounded transition cursor-pointer ${
-                              !flowSeason && flowMonths === m ? "bg-white text-orange-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"
+                            className={`px-2.5 py-1.5 text-[12px] font-medium rounded transition cursor-pointer ${
+                              !flowSeason && flowMonths === m ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
                             }`}>{m}개월</button>
                         ))}
                       </div>
                       <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) { setPendingFlowMonths(0); setFlowMonths(0); } }} size="sm" hideLabel />
                     </div>
                     {/* 2026-07-29 · 리스트 내 검색 제거 (사용자 요청) · 전체 DB 검색 + 정보확인 + 숨김관리만 유지 */}
-                    <div className="flex items-center gap-2 mb-2.5 flex-wrap text-[14px]">
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
                       {/* 정보확인 검색 (전체 DB) */}
                       <div className="relative flex-1 min-w-[240px]">
-                        <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sky-400 pointer-events-none" />
+                        <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                         <input
                           value={infoSearchQuery}
                           onChange={(e) => setInfoSearchQuery(e.target.value)}
                           onKeyDown={(e) => { if (e.key === "Enter") runInfoSearch(); }}
                           placeholder="전체 DB 검색 (정보확인)"
-                          className="w-full pl-8 pr-2 py-2 border border-sky-200 rounded-lg text-[14px] focus:outline-none focus:border-sky-400 bg-sky-50/30"
+                          className="w-full pl-8 pr-2 py-1.5 border border-slate-200 rounded-md text-[12px] focus:outline-none focus:border-slate-400 bg-white"
                         />
                         {infoSearchResults.length > 0 && (
                           <div className="absolute left-0 top-full mt-1 max-h-64 overflow-y-auto border border-slate-200 bg-white rounded-lg shadow-lg z-30 divide-y divide-slate-100 min-w-full sm:min-w-[500px]">
@@ -3042,43 +3018,43 @@ export const StockManagePage: React.FC = () => {
                           }
                         }}
                         disabled={!infoSelected && !infoSearchQuery.trim() && infoSearchResults.length === 0}
-                        className="flex items-center gap-1.5 text-[14px] font-black text-white bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg px-3 py-2 cursor-pointer transition shadow-sm shrink-0"
+                        className="flex items-center gap-1.5 text-[12px] font-medium text-white bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed rounded-md px-3 py-1.5 cursor-pointer transition shrink-0"
                         title="검색 후 클릭 → 오른쪽 상세 패널에 상품 정보 표시">
-                        <Info size={15} /> 정보확인
+                        <Info size={13} /> 정보확인
                       </button>
                       <button
                         onClick={() => openHiddenManagerModal()}
-                        className="flex items-center gap-1.5 text-[14px] font-black text-amber-700 bg-white border border-amber-300 hover:bg-amber-50 rounded-lg px-3 py-2 cursor-pointer transition shadow-sm shrink-0"
+                        className="flex items-center gap-1.5 text-[12px] font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-md px-3 py-1.5 cursor-pointer transition shrink-0"
                         title="숨김 처리된 상품을 확인/해제">
-                        <EyeOff size={15} /> 숨김 관리
+                        <EyeOff size={13} /> 숨김 관리
                       </button>
                     </div>
                     {/* 판매수량 범위 필터 (모바일 최적화) */}
-                    <div className="flex items-center gap-2 mb-2.5 flex-wrap text-[14px]">
-                      <span className="text-slate-700 font-black text-[14px] shrink-0">판매출고계</span>
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      <span className="text-[11px] font-medium text-slate-500 shrink-0">판매출고계</span>
                       <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0">
                         <input type="number" min={0} value={salesQtyMin}
                           onChange={e => setSalesQtyMin(e.target.value)} placeholder="최소"
-                          className="flex-1 sm:w-24 min-w-0 px-2.5 py-1.5 border border-slate-200 rounded text-[14px] tabular-nums text-right focus:outline-none focus:border-orange-400" />
-                        <span className="text-slate-500 shrink-0">~</span>
+                          className="flex-1 sm:w-20 min-w-0 px-2 py-1.5 border border-slate-200 rounded-md text-[12px] tabular-nums text-right focus:outline-none focus:border-slate-400" />
+                        <span className="text-slate-400 shrink-0 text-[11px]">~</span>
                         <input type="number" min={0} value={salesQtyMax}
                           onChange={e => setSalesQtyMax(e.target.value)} placeholder="최대"
-                          className="flex-1 sm:w-24 min-w-0 px-2.5 py-1.5 border border-slate-200 rounded text-[14px] tabular-nums text-right focus:outline-none focus:border-orange-400" />
-                        <span className="text-slate-500 shrink-0">개</span>
+                          className="flex-1 sm:w-20 min-w-0 px-2 py-1.5 border border-slate-200 rounded-md text-[12px] tabular-nums text-right focus:outline-none focus:border-slate-400" />
+                        <span className="text-slate-400 shrink-0 text-[11px]">개</span>
                       </div>
                       {(salesQtyMin || salesQtyMax) && (
                         <button onClick={() => { setSalesQtyMin(""); setSalesQtyMax(""); }}
-                          className="text-[13px] font-black text-rose-500 hover:text-rose-700 px-2.5 py-1.5 rounded-lg hover:bg-rose-50 transition cursor-pointer shrink-0">
-                          ✕ 초기화
+                          className="text-[11px] font-medium text-rose-500 hover:text-rose-700 px-2 py-1.5 rounded-md hover:bg-rose-50 transition cursor-pointer shrink-0 border border-rose-200">
+                          초기화
                         </button>
                       )}
                     </div>
                   </>
                 )}
                 {/* 리스트 · 재고리스트 · 10개 넘으면 세로 스크롤 */}
-                <div className="px-1 pt-2.5 pb-1.5 flex items-center gap-2 border-t border-slate-100">
-                  <span className="text-[14px] font-black text-slate-800">{topTab === "sale" ? "상품현황리스트" : "매입리스트"}</span>
-                  <span className="text-[13px] tabular-nums text-slate-500 font-bold">
+                <div className="px-1 pt-3 pb-2 flex items-center gap-2 border-t border-slate-100">
+                  <span className="text-[12px] font-semibold text-slate-700">{topTab === "sale" ? "상품현황리스트" : "매입리스트"}</span>
+                  <span className="text-[11px] tabular-nums text-slate-400">
                     ({topTab === "sale" ? filteredFlow.length : topProducts.length}건)
                   </span>
                 </div>
@@ -3128,24 +3104,19 @@ export const StockManagePage: React.FC = () => {
                             </tr>
                           )}
                           {/* 2026-07-29 · 사용자 요청 · 컬럼 3그룹 접기/펼치기 헤더 (재고현황·매입현황·판매현황) */}
-                          <tr className="border-b border-slate-100 bg-slate-50/40 text-[11px] font-black text-slate-600 tracking-tight">
+                          <tr className="border-b border-slate-100 bg-slate-50 text-[10px] font-medium text-slate-500 tracking-wider">
                             <th colSpan={2}></th>{/* 체크박스+# 통합 셀 + 상품명 */}
                             {(() => {
-                              const groupHeader = (g: FlowGroup, label: string, span: number, color: string) => {
+                              const groupHeader = (g: FlowGroup, label: string, span: number) => {
                                 const collapsed = isFlowGroupCollapsed(g);
-                                const cls = {
-                                  stock:    "bg-orange-100/50 hover:bg-orange-100 text-orange-800",
-                                  purchase: "bg-emerald-100/50 hover:bg-emerald-100 text-emerald-800",
-                                  sales:    "bg-indigo-100/50 hover:bg-indigo-100 text-indigo-800",
-                                }[g];
                                 return (
                                   <th colSpan={collapsed ? 1 : span}
-                                    className={`text-center py-1.5 border-l-2 border-r-2 border-slate-100 cursor-pointer select-none transition ${cls}`}
+                                    className="text-center py-2 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-slate-100 transition text-slate-500 uppercase"
                                     onClick={() => toggleFlowGroup(g)}
                                     title={collapsed ? `${label} 펼치기` : `${label} 접기`}
                                   >
-                                    <span className="inline-flex items-center gap-1 font-black text-[12px] whitespace-nowrap">
-                                      {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+                                    <span className="inline-flex items-center gap-1 font-medium text-[10px] whitespace-nowrap">
+                                      {collapsed ? <ChevronRight size={11} /> : <ChevronDown size={11} />}
                                       {label}
                                     </span>
                                   </th>
@@ -3153,15 +3124,15 @@ export const StockManagePage: React.FC = () => {
                               };
                               return (
                                 <>
-                                  {groupHeader("stock",    "재고현황", 3, "orange")}
-                                  {groupHeader("purchase", "매입현황", 3, "emerald")}
-                                  {groupHeader("sales",    "판매현황", 4, "indigo")}
+                                  {groupHeader("stock",    "재고현황", 3)}
+                                  {groupHeader("purchase", "매입현황", 3)}
+                                  {groupHeader("sales",    "판매현황", 4)}
                                 </>
                               );
                             })()}
                           </tr>
                           {/* 2026-07-28 · 사용자 요청 · 리스트 폰트 통일 · 헤더 12px (기존 10px) · 데이터 셀과 동일 */}
-                          <tr className="border-b border-slate-100 text-[12px] font-bold text-slate-500 tracking-tight">
+                          <tr className="border-b border-slate-100 text-[11px] font-medium text-slate-400 tracking-tight bg-white">
                             {(() => {
                               const arrowFor = (key: SortKey): string => {
                                 if (flowSort !== key) return "⇅";
@@ -3343,39 +3314,39 @@ export const StockManagePage: React.FC = () => {
                             };
                             const minOrder = Number((p as any).min_order ?? 0);
                             return (
-                            <tr key={`flow-${p.product_code}-${i}`} className={`transition ${selectedFlowCodes.has(String(p.product_code)) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
+                            <tr key={`flow-${p.product_code}-${i}`} className={`transition ${selectedFlowCodes.has(String(p.product_code)) ? "bg-slate-50" : "hover:bg-slate-50/70"}`}>
                               {/* 2026-07-29 · 체크박스 + 순위 한 셀 통합 (사용자 요청) */}
-                              <td className="text-center px-1 py-1.5 align-top" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>
+                              <td className="text-center px-1 py-2 align-top" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>
                                 <div className="flex items-center justify-center gap-1.5">
                                   <span onClick={(e) => { e.stopPropagation(); toggleSelectFlow(String(p.product_code)); }}
                                     className="cursor-pointer inline-flex items-center justify-center">
                                     {selectedFlowCodes.has(String(p.product_code))
-                                      ? <CheckSquare size={13} className="text-rose-500" />
-                                      : <Square size={13} className="text-slate-300 hover:text-rose-500" />}
+                                      ? <CheckSquare size={13} className="text-slate-500" />
+                                      : <Square size={13} className="text-slate-300 hover:text-slate-500" />}
                                   </span>
-                                  <span className="text-[14px] font-black text-orange-600 tabular-nums">{i + 1}</span>
+                                  <span className="text-[11px] font-medium text-slate-400 tabular-nums">{i + 1}</span>
                                 </div>
                               </td>
-                              <td className="px-1.5 py-2 align-top">
+                              <td className="px-2 py-2.5 align-top">
                                 <button
                                   type="button"
                                   onClick={() => loadFlowSelectedProduct(p)}
-                                  className="text-left text-[15px] font-black text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
+                                  className="text-left text-[13px] font-medium text-slate-700 hover:text-slate-900 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
                                   title={`${p.product_name} · 클릭하면 오른쪽에 상세 정보 (모바일 · 모달)`}
                                 >
                                   {p.product_name}
                                   {(p as any).min_order != null && (p as any).min_order > 0 && (
-                                    <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded text-[11px] font-black text-sky-700 bg-sky-100 border border-sky-300 align-middle" title={`최소주문량 ${(p as any).min_order}`}>
+                                    <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-sm text-[10px] font-medium text-slate-500 bg-slate-100 border border-slate-200 align-middle" title={`최소주문량 ${(p as any).min_order}`}>
                                       최소{(p as any).min_order}
                                     </span>
                                   )}
                                 </button>
-                                {p.supplier && <div className="text-[12px] text-slate-500 font-semibold break-words whitespace-normal mt-0.5">{p.supplier}</div>}
+                                {p.supplier && <div className="text-[11px] text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
                               </td>
                               {/* === 재고현황 그룹 (판매량 · 현재고 · 적정재고) === */}
                               {!isFlowGroupCollapsed("stock") && <>
                               <td
-                                className="text-right px-0.5 py-1.5 font-bold text-orange-700 text-[14px] bg-orange-50/40 align-top tabular-nums"
+                                className="text-right px-1.5 py-2.5 font-semibold text-[13px] bg-slate-50/60 align-top tabular-nums text-slate-700"
                                 title="판매출고계 · 실제 팔린 양"
                               >{fmt(saleV)}</td>
                               {(() => {
@@ -3386,7 +3357,7 @@ export const StockManagePage: React.FC = () => {
                                 // 2026-07-29 · 현재고 < 적정재고 시 빨간색 (사용자 요청)
                                 return (
                                   <td
-                                    className={`text-right px-0.5 py-1.5 font-black text-[14px] bg-amber-50/40 align-top tabular-nums ${cur <= 0 || mismatch || belowOptimal ? "text-red-600" : "text-amber-700"}`}
+                                    className={`text-right px-1.5 py-2.5 font-semibold text-[13px] align-top tabular-nums ${cur <= 0 || mismatch || belowOptimal ? "text-rose-500" : "text-slate-700"}`}
                                     title={belowOptimal ? `현재고 부족 · ${cur} < 적정재고 ${opt}` : mismatch ? `현재고(${fmt(cur)}) ≠ 스냅샷 종료재고(${fmt(close)}) · 스냅샷 이후 변동 있음` : "ERP 현재고 (= 스냅샷 종료재고)"}
                                   >{fmt(cur)}</td>
                                 );
@@ -3395,7 +3366,7 @@ export const StockManagePage: React.FC = () => {
                                 const opt = Number((p as any).optimal_stock ?? 0);
                                 const below = opt > 0 && cur < opt;
                                 return (
-                                  <td className={`text-right px-0.5 py-1.5 font-bold text-[14px] bg-teal-50/40 align-top tabular-nums ${opt <= 0 ? "text-slate-300" : below ? "text-rose-600" : "text-teal-700"}`}
+                                  <td className={`text-right px-1.5 py-2.5 font-medium text-[13px] align-top tabular-nums ${opt <= 0 ? "text-slate-300" : below ? "text-rose-400" : "text-slate-500"}`}
                                     title={opt > 0 ? `적정재고 ${fmt(opt)}${below ? ` · 현재고 부족 (${cur}/${opt})` : ""}` : "적정재고 미설정"}>
                                     {opt > 0 ? fmt(opt) : "-"}
                                   </td>
@@ -3403,13 +3374,13 @@ export const StockManagePage: React.FC = () => {
                               })()}
                               </>}
                               {/* 그룹 접힘 시 빈 셀 placeholder (colSpan 맞춤용) */}
-                              {isFlowGroupCollapsed("stock") && <td className="bg-orange-50/20"></td>}
+                              {isFlowGroupCollapsed("stock") && <td className="bg-slate-50/20"></td>}
                               {/* === 매입현황 그룹 (매입주기 · 최근매입일 · 최근매입량) === */}
                               {!isFlowGroupCollapsed("purchase") && <>
-                              <td className={`text-right px-0.5 py-1.5 text-[14px] bg-sky-50/40 align-top tabular-nums ${
-                                purchaseCycle != null ? "text-sky-600" :
-                                purchaseCount === 1 ? "text-slate-500" :
-                                purchaseCount >= 2 && firstPD === lastPD ? "text-amber-600" :
+                              <td className={`text-right px-1.5 py-2.5 text-[13px] align-top tabular-nums ${
+                                purchaseCycle != null ? "text-slate-600" :
+                                purchaseCount === 1 ? "text-slate-400" :
+                                purchaseCount >= 2 && firstPD === lastPD ? "text-slate-400" :
                                 "text-slate-300"
                               }`}
                                 title={
@@ -3429,30 +3400,30 @@ export const StockManagePage: React.FC = () => {
                                       ? "동일일"
                                       : "-"}
                               </td>
-                              <td className="text-right px-0.5 py-1.5 text-emerald-600 text-[14px] bg-emerald-50/30 align-top tabular-nums"
+                              <td className="text-right px-1.5 py-2.5 text-slate-500 text-[13px] align-top tabular-nums"
                                 title={lastPD ?? undefined}>
                                 {lastPDShort}
                               </td>
-                              <td className="text-right px-0.5 py-1.5 text-emerald-700 font-bold text-[14px] bg-emerald-50/40 align-top tabular-nums"
+                              <td className="text-right px-1.5 py-2.5 text-slate-600 font-medium text-[13px] align-top tabular-nums"
                                 title={purchV > 0 ? `최근매입량 ${fmt(purchV)}` : "매입 없음"}>
                                 {purchV > 0 ? fmt(purchV) : "-"}
                               </td>
                               </>}
-                              {isFlowGroupCollapsed("purchase") && <td className="bg-emerald-50/20"></td>}
+                              {isFlowGroupCollapsed("purchase") && <td className="bg-slate-50/20"></td>}
                               {/* === 판매현황 그룹 (재고금액 · ERP단가 · 판매가 · 이익률) === */}
                               {!isFlowGroupCollapsed("sales") && <>
-                              <td className="text-right px-0.5 py-1.5 text-indigo-700 font-bold text-[14px] bg-indigo-50/40 align-top tabular-nums"
+                              <td className="text-right px-1.5 py-2.5 text-slate-700 font-semibold text-[13px] align-top tabular-nums"
                                 title={stockValue > 0 ? `현재고 ${fmt(cur)} × ERP단가 ${fmtWon(purP)} = ${fmtWon(stockValue)}` : ""}>
                                 {fmtMan(stockValue)}
                               </td>
-                              <td className="text-right px-0.5 py-1.5 text-slate-700 text-[14px] bg-slate-50/40 align-top tabular-nums" title="ERP 사입 단가 (products.purchase_price)">{purP > 0 ? fmtWon(purP) : "-"}</td>
-                              <td className="text-right px-0.5 py-1.5 text-orange-700 font-bold text-[14px] bg-orange-50/30 align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
-                              <td className={`text-right px-0.5 py-1.5 font-black text-[14px] bg-indigo-50/30 align-top tabular-nums ${profitRate == null ? "text-slate-300" : profitRate >= 30 ? "text-emerald-700" : profitRate >= 15 ? "text-sky-700" : profitRate >= 0 ? "text-amber-700" : "text-rose-600"}`}
+                              <td className="text-right px-1.5 py-2.5 text-slate-500 text-[13px] align-top tabular-nums" title="ERP 사입 단가 (products.purchase_price)">{purP > 0 ? fmtWon(purP) : "-"}</td>
+                              <td className="text-right px-1.5 py-2.5 text-slate-600 text-[13px] align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
+                              <td className={`text-right px-1.5 py-2.5 font-semibold text-[13px] align-top tabular-nums ${profitRate == null ? "text-slate-300" : profitRate >= 30 ? "text-slate-700" : profitRate >= 15 ? "text-slate-600" : profitRate >= 0 ? "text-slate-500" : "text-rose-500"}`}
                                 title={profitRate != null ? `(판매가 ${fmtWon(saleP)} − 최근매입가 ${fmtWon(purP)}) / 판매가 = ${profitRate}%` : "-"}>
                                 {profitRate != null ? `${profitRate}%` : "-"}
                               </td>
                               </>}
-                              {isFlowGroupCollapsed("sales") && <td className="bg-indigo-50/20"></td>}
+                              {isFlowGroupCollapsed("sales") && <td className="bg-slate-50/20"></td>}
                             </tr>
                             );
                           })}
