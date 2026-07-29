@@ -742,9 +742,10 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
             sale_price:    productMap.get(code)?.sale_price ?? 0,
             purchase_price:productMap.get(code)?.purchase_price ?? 0,
             current_stock: productMap.get(code)?.current_stock ?? 0,
-            last_purchase_date: productMap.get(code)?.last_purchase_date ?? null,
+            // 2026-07-29 · 사용자 요청 · 매입 관련 필드는 모두 purchase_details 조인에서만 세팅
+            //   (products.last_purchase_date 및 stock_history snapshot 기반 fallback 모두 제거)
+            last_purchase_date: null as string | null,
             min_order:     productMap.get(code)?.min_order ?? 0,
-            // 2026-07-28 · 매입주기 계산용 · 매입 발생 스냅샷 카운트 · 최초 매입일
             purchase_count: 0,
             first_purchase_date: null as string | null,
           });
@@ -764,12 +765,8 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           agg.last_snap = snap;
           agg.closing_stock = Number((r as any).closing_stock ?? 0) || 0;
         }
-        // last_purchase_date · first_purchase_date · purchase_count: purchase_qty > 0 인 스냅샷 기반
-        if ((Number((r as any).purchase_qty) || 0) > 0) {
-          if (snap > (agg.last_purchase_date ?? "")) agg.last_purchase_date = snap;
-          if (!agg.first_purchase_date || snap < agg.first_purchase_date) agg.first_purchase_date = snap;
-          agg.purchase_count = (agg.purchase_count ?? 0) + 1;
-        }
+        // 2026-07-29 · 사용자 요청 "매입이력은 모두 매입db 에서 가져오게" · stock_history fallback 제거
+        // (매입 관련 필드는 purchase_details 조인에서만 세팅 · 아래 참고)
       }
       // 2026-07-28 · 사용자 요청 "매입주기 이상 · 공급사재고와 동일하게" · purchase_details 조인 (기간 무관 · 상품별 총 이력 기준)
       //   공급사재고 리스트가 사용하는 매입주기 로직 재사용
@@ -777,16 +774,30 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
       const codesInResult = Array.from(byCode.keys());
       // 2026-07-29 · 매입주기 계산 정확화 · dateSet 으로 distinct dates 관리 (같은 날짜 여러 row 는 1회로)
       // 이전 로직: cur.count++ 로 row 수 카운트 → 같은 날짜 중복 매입 시 count>=2 여도 firstPD===lastPD 여서 클라에서 null 반환
+      // 2026-07-29 · 페이지네이션 추가 · Supabase 기본 limit 1000 → chunk 500 codes × 평균 매입 수 초과 시 데이터 잘림 (예 · 8회 매입 중 최신 2건만 남음 → cycle 오계산)
       const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; count: number; totalQty: number; totalAmount: number; lastAmount: number; dates: string[]; dateSet: Set<string> }>();
       try {
-        const CHUNK = 500;
+        const CHUNK = 200;   // codes chunk 축소
+        const PAGE = 1000;   // row 페이지네이션
         for (let i = 0; i < codesInResult.length; i += CHUNK) {
           const chunk = codesInResult.slice(i, i + CHUNK);
-          const { data: pdRows } = await supabase
-            .from("purchase_details")
-            .select("product_code, purchase_date, quantity, amount, total")
-            .in("product_code", chunk)
-            .order("purchase_date", { ascending: false });
+          // 페이지네이션 · 1000행 초과 시 다음 range 조회
+          let fromRow = 0;
+          const allPdRows: any[] = [];
+          while (true) {
+            const { data: pdRows, error: pdError } = await supabase
+              .from("purchase_details")
+              .select("product_code, purchase_date, quantity, amount, total")
+              .in("product_code", chunk)
+              .order("purchase_date", { ascending: false })
+              .range(fromRow, fromRow + PAGE - 1);
+            if (pdError) throw new Error(pdError.message);
+            if (!pdRows || pdRows.length === 0) break;
+            allPdRows.push(...pdRows);
+            if (pdRows.length < PAGE) break;
+            fromRow += PAGE;
+          }
+          const pdRows = allPdRows;
           for (const r of pdRows ?? []) {
             const code = String((r as any).product_code ?? "").trim();
             if (!code) continue;
@@ -833,14 +844,13 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
         salesByCodeByDate.set(code, bySup);
       }
       // 각 상품 · purchase_details 값 반영 + sale_qty_cycle 계산
+      // 2026-07-29 · 사용자 요청 · 매입 관련 필드는 무조건 purchase_details 값 사용 (조건부 override X)
       for (const agg of byCode.values()) {
         const info = purchaseInfoMap.get(agg.product_code);
         if (info && info.count > 0) {
           agg.purchase_count = info.count;
           agg.first_purchase_date = info.firstDate;
-          if (info.lastDate && (!agg.last_purchase_date || String(info.lastDate) > String(agg.last_purchase_date))) {
-            agg.last_purchase_date = info.lastDate;
-          }
+          agg.last_purchase_date = info.lastDate;   // 무조건 purchase_details lastDate 사용
           (agg as any).purchase_total_qty = info.totalQty;
           (agg as any).purchase_total_amount = info.totalAmount;
           (agg as any).purchase_last_amount = info.lastAmount;

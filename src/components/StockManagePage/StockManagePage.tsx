@@ -3533,8 +3533,8 @@ export const StockManagePage: React.FC = () => {
                     ) : (
                       // 2026-07-22 · 한 화면 fit · overflow-hidden + table-fixed · 품명 줄바꿈 · min-w 제거
                       <div className={`overflow-hidden transition-opacity duration-200 ${loading ? "opacity-60" : "opacity-100"}`}>
-                      <table className="w-full text-[11px] sm:text-xs" style={{ tableLayout: "fixed" }}>
-                        <thead className="sticky top-0 bg-white z-10">
+                      <table className="w-full text-[11px] sm:text-xs" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
+                        <thead className="sticky top-0 bg-white z-20">
                           {selectedFlowCodes.size > 0 && (
                             <tr className="bg-rose-50 border-b border-rose-200">
                               <td colSpan={10} className="px-2 py-1.5">
