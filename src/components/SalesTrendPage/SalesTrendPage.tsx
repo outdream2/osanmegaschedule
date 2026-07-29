@@ -1827,35 +1827,45 @@ const ZoneCategoryContent: React.FC = () => {
               const barCls = { sky: "bg-sky-400", emerald: "bg-emerald-400", amber: "bg-amber-400", rose: "bg-rose-400", indigo: "bg-indigo-400", teal: "bg-teal-400", violet: "bg-violet-400", orange: "bg-orange-400" }[color]!;
               const textCls = { sky: "text-sky-700", emerald: "text-emerald-700", amber: "text-amber-700", rose: "text-rose-700", indigo: "text-indigo-700", teal: "text-teal-700", violet: "text-violet-700", orange: "text-orange-700" }[color]!;
               const selectedBorder = isSelected ? "border-violet-400 bg-violet-50/60 shadow-sm" : "border-slate-200 hover:bg-slate-50";
-              // 2026-07-29 · Top 3 · 금색 · Top 4~10 · 실버 · 나머지 · slate
+              // 2026-07-29 · 사용자 요청 · 깔끔·세련
+              // Top 3 · 금색 · Top 4~10 · 실버 · 그 외 · 슬레이트 (아웃라인)
               const rankCls = rank <= 3
-                ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-white border-yellow-600"
+                ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-yellow-600 shadow-sm"
                 : rank <= 10
-                  ? "bg-gradient-to-br from-slate-300 to-slate-400 text-slate-900 border-slate-500"
-                  : "bg-slate-100 text-slate-500 border-slate-200";
+                  ? "bg-gradient-to-r from-slate-200 to-slate-300 text-slate-900 border-slate-400"
+                  : "bg-white text-slate-500 border-slate-200";
               return (
                 <button
                   key={g.zone}
                   type="button"
                   onClick={() => setSelectedZone(prev => prev === g.zone ? null : g.zone)}
-                  className={`w-full flex flex-col gap-1 p-2 rounded-lg border cursor-pointer text-left transition ${selectedBorder}`}
+                  className={`w-full flex flex-col gap-1.5 p-2.5 rounded-xl border cursor-pointer text-left transition ${selectedBorder}`}
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className={`text-[11px] font-black rounded-md border px-1.5 py-0.5 tabular-nums shrink-0 ${rankCls}`} title={`판매 순위 ${rank}위`}>{rank}</span>
-                      <span className={`text-slate-400 text-xs transition-transform shrink-0 ${isSelected ? "rotate-90" : ""}`}>▶</span>
-                      <span className={`text-sm font-black ${textCls} tabular-nums shrink-0`}>{g.zone}</span>
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className={`inline-flex items-center justify-center min-w-[24px] h-[22px] text-[12px] font-black rounded-md border px-1.5 tabular-nums shrink-0 ${rankCls}`}
+                        title={`판매 순위 ${rank}위`}>
+                        {rank}
+                      </span>
+                      <span className={`text-[15px] font-black ${textCls} tabular-nums shrink-0`}>{g.zone}</span>
                       {zoneCategoryLabel(g.zone) && (
-                        <span className={`text-[11px] font-semibold ${textCls} truncate`} title={zoneCategoryLabel(g.zone)}>
+                        <span className={`text-[12px] font-bold ${textCls} break-words whitespace-normal leading-tight`}
+                          title={zoneCategoryLabel(g.zone)}>
                           {zoneCategoryLabel(g.zone)}
                         </span>
                       )}
-                      <span className="text-[10px] tabular-nums text-slate-400 shrink-0">· {g.items.length}개</span>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[11px] tabular-nums text-slate-600">{fmt(g.saleQty)}판매</span>
-                      <span className="text-xs font-black text-emerald-700">{fmtWon(g.totalAmount)}</span>
-                      <span className="text-[10px] tabular-nums text-slate-400">{pct.toFixed(1)}%</span>
+                    <span className={`text-slate-400 text-[11px] transition-transform shrink-0 ${isSelected ? "rotate-90" : ""}`}>▶</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 flex-wrap text-[12px] tabular-nums">
+                    <div className="flex items-center gap-2 text-slate-500 font-semibold">
+                      <span>상품 <span className="font-black text-slate-700">{g.items.length}</span>종</span>
+                      <span className="text-slate-300">·</span>
+                      <span>판매 <span className="font-black text-orange-700">{fmt(g.saleQty)}</span></span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-black text-emerald-700 text-[13px]">{fmtWon(g.totalAmount)}</span>
+                      <span className="text-[11px] font-bold text-slate-400">{pct.toFixed(1)}%</span>
                     </div>
                   </div>
                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -1952,18 +1962,17 @@ interface MiniStoreZoneMapProps {
   zoneRankMap?: Record<string, number>;
 }
 const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zoneRankMap }) => {
-  // rank 배지 렌더 헬퍼 · Top 10 만 노출
+  // rank 배지 · Top 10 · "★ BEST1" 형식 · 구역 위쪽 별도 라인 (사용자 요청)
   const rankBadge = (zoneId: string) => {
     const rank = zoneRankMap?.[zoneId];
     if (!rank || rank > 10) return null;
-    // Top 3 · 금색 · Top 4-10 · 실버 pastel
     const cls = rank <= 3
-      ? "bg-gradient-to-br from-yellow-400 to-orange-500 text-white border-yellow-600"
-      : "bg-gradient-to-br from-slate-300 to-slate-400 text-slate-900 border-slate-500";
+      ? "bg-gradient-to-r from-yellow-400 to-orange-500 text-white border-yellow-600"
+      : "bg-gradient-to-r from-slate-300 to-slate-400 text-slate-900 border-slate-500";
     return (
-      <span className={`inline-flex items-center gap-0.5 text-[10px] font-black border rounded px-1 leading-none tabular-nums ${cls}`}
+      <span className={`inline-flex items-center gap-0.5 text-[10px] font-black border rounded px-1.5 py-0.5 leading-none tabular-nums shadow-sm ${cls}`}
         title={`판매 BEST ${rank}위`}>
-        ★{rank}
+        ★ BEST{rank}
       </span>
     );
   };
@@ -1976,15 +1985,18 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
     const count = zoneItemCounts?.[String(num)] ?? 0;
     return (
       <div key={num}
-        className="rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center min-h-[76px]"
+        className="rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center min-h-[92px]"
         title={`${zd?.label ?? num} · ${cat}${count > 0 ? ` · ${count}개 상품` : ""}`}>
+        {/* 상단 · ★ BEST 배지 (Top 10) · 별도 라인 · 사용자 요청 */}
+        <div className="w-full min-h-[18px] flex items-center justify-center pt-0.5">
+          {rankBadge(String(num))}
+        </div>
         <div className="w-full bg-stone-50 px-1 py-1 flex flex-col items-center gap-0.5 flex-1 justify-center">
           <div className="flex items-center gap-1 flex-wrap justify-center">
             <span className="text-[10px] font-black text-white bg-amber-700 rounded px-1.5 leading-none">{num}</span>
             {count > 0 && (
               <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 rounded px-1 leading-none tabular-nums">{count}</span>
             )}
-            {rankBadge(String(num))}
           </div>
           <span className="text-[10px] font-bold text-stone-800 leading-tight text-center line-clamp-2 break-all">{cat}</span>
         </div>
@@ -2002,49 +2014,53 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
     const countB = zoneItemCounts?.[`${num}B`] ?? 0;
     const countA = zoneItemCounts?.[`${num}A`] ?? 0;
     return (
-      <div key={`pair-${num}`} className="flex flex-col items-stretch gap-0.5 flex-1 min-w-[64px]">
-        {/* B (연한 톤) · min-h 상향 · 상위 map 과 유사 비율 */}
-        <div className={`w-full font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-1 leading-tight text-center min-h-[80px] flex flex-col items-center justify-center overflow-hidden`}
-          title={`${num}B · ${subB}${countB > 0 ? ` · ${countB}개 상품` : ""}`}>
-          <div className="flex items-center gap-1 flex-wrap justify-center mb-0.5">
-            <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1.5 leading-none`}>{num}B</span>
-            {countB > 0 && (
-              <span className="text-[10px] font-black text-white bg-slate-700 rounded px-1 leading-none tabular-nums">{countB}</span>
-            )}
-            {rankBadge(`${num}B`)}
+      <div key={`pair-${num}`} className="flex flex-col items-stretch gap-1 flex-1 min-w-[64px]">
+        {/* B 셀 · 위 ★BEST 배지 · 안 라벨/카운트 · 아래 서브카테 */}
+        <div className="flex flex-col items-stretch gap-0.5">
+          <div className="min-h-[18px] flex items-center justify-center">{rankBadge(`${num}B`)}</div>
+          <div className={`w-full font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-1 leading-tight text-center min-h-[76px] flex flex-col items-center justify-center overflow-hidden`}
+            title={`${num}B · ${subB}${countB > 0 ? ` · ${countB}개 상품` : ""}`}>
+            <div className="flex items-center gap-1 flex-wrap justify-center mb-0.5">
+              <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1.5 leading-none`}>{num}B</span>
+              {countB > 0 && (
+                <span className="text-[10px] font-black text-white bg-slate-700 rounded px-1 leading-none tabular-nums">{countB}</span>
+              )}
+            </div>
+            <span className="line-clamp-3 text-[10px] break-all">{subB}</span>
           </div>
-          <span className="line-clamp-3 text-[10px] break-all">{subB}</span>
         </div>
-        {/* A (진한 톤) */}
-        <div className={`w-full font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-1 leading-tight text-center min-h-[80px] flex flex-col items-center justify-center overflow-hidden`}
-          title={`${num}A · ${subA}${countA > 0 ? ` · ${countA}개 상품` : ""}`}>
-          <div className="flex items-center gap-1 flex-wrap justify-center mb-0.5">
-            <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1.5 leading-none`}>{num}A</span>
-            {countA > 0 && (
-              <span className="text-[10px] font-black text-white bg-slate-800 rounded px-1 leading-none tabular-nums">{countA}</span>
-            )}
-            {rankBadge(`${num}A`)}
+        {/* A 셀 */}
+        <div className="flex flex-col items-stretch gap-0.5">
+          <div className="min-h-[18px] flex items-center justify-center">{rankBadge(`${num}A`)}</div>
+          <div className={`w-full font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-1 leading-tight text-center min-h-[76px] flex flex-col items-center justify-center overflow-hidden`}
+            title={`${num}A · ${subA}${countA > 0 ? ` · ${countA}개 상품` : ""}`}>
+            <div className="flex items-center gap-1 flex-wrap justify-center mb-0.5">
+              <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1.5 leading-none`}>{num}A</span>
+              {countA > 0 && (
+                <span className="text-[10px] font-black text-white bg-slate-800 rounded px-1 leading-none tabular-nums">{countA}</span>
+              )}
+            </div>
+            <span className="line-clamp-3 text-[10px] break-all">{subA}</span>
           </div>
-          <span className="line-clamp-3 text-[10px] break-all">{subA}</span>
         </div>
       </div>
     );
   };
 
-  // 중앙 22 (단독) 셀 · min-h 상향 (B+A 합계에 맞춤)
+  // 중앙 22 (단독) 셀 · 상단 ★BEST + 카테고리 + 번호+상품수
   const centerCell = () => {
     const zd = ZONE_DEFS.find(z => z.num === STORE_AISLE_CENTER);
     const count = zoneItemCounts?.["22"] ?? 0;
     return (
-      <div className="flex flex-col items-center gap-0.5 flex-none w-[46px] min-w-[46px]">
-        <div className="w-full text-[10px] font-bold text-slate-700 bg-white border border-slate-300 rounded px-0.5 py-1 leading-tight text-center min-h-[160px] flex items-center justify-center overflow-hidden"
+      <div className="flex flex-col items-center gap-0.5 flex-none w-[54px] min-w-[54px]">
+        <div className="min-h-[18px] flex items-center justify-center">{rankBadge("22")}</div>
+        <div className="w-full text-[10px] font-bold text-slate-700 bg-white border border-slate-300 rounded px-0.5 py-1 leading-tight text-center min-h-[140px] flex items-center justify-center overflow-hidden"
           title={`${STORE_AISLE_CENTER} · ${zd?.category ?? ""}${count > 0 ? ` · ${count}개 상품` : ""}`}>
           <span className="line-clamp-6">{zd?.category ?? ""}</span>
         </div>
-        <div className="w-full flex items-center justify-center gap-0.5 flex-wrap">
+        <div className="w-full flex items-center justify-center gap-0.5 flex-wrap mt-0.5">
           <span className="text-[10px] font-black text-white bg-slate-600 rounded px-1 leading-none py-0.5">22</span>
           {count > 0 && <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 rounded px-1 leading-none tabular-nums">{count}</span>}
-          {rankBadge("22")}
         </div>
       </div>
     );
