@@ -78,58 +78,73 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
 
   return (
     <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-sm">
-      <div className="flex items-center gap-2 mb-3 flex-wrap">
-        <button
-          type="button"
-          onClick={() => setCollapsed(c => !c)}
-          className="flex items-center gap-1.5 shrink-0 hover:bg-slate-50 -mx-1 px-1 py-0.5 rounded transition cursor-pointer"
-          title={collapsed ? "펼치기" : "접기"}
-        >
-          <span className={`text-slate-400 text-xs transition-transform ${collapsed ? "" : "rotate-90"}`}>▶</span>
-          <TrendingUp size={14} className="text-teal-600" />
-          <span className="text-sm font-black text-slate-700">기간별 재고 흐름</span>
-          {!collapsed && <span className="text-[10px] font-semibold text-slate-400">(매입 · 폐기 · 시작 · 종료 · 손실)</span>}
-        </button>
-        {!collapsed && (
-        <div className="flex items-center gap-1.5 ml-auto flex-wrap">
-          <div className="inline-flex items-center gap-1">
-            <span className="text-[9px] font-black text-teal-700 uppercase tracking-wider">기간</span>
+      {/* 2026-07-29 · 헤더 재정리 · 3영역으로 명확히 분리 */}
+      {/* 월평균 판매량 · stock_history.sale_qty 합계 / 월수 (사용자 요청) */}
+      {(() => { return null; })()}
+      {/* 1행 · 제목 · 상품명 · 월평균 판매량 · 화살표 */}
+      {(() => {
+        const totalSaleQty = rows.reduce((s, r) => s + (Number(r.sale_qty) || 0), 0);
+        const monthSpan = season ? 12 : months;
+        const avgMonthlySale = monthSpan > 0 ? Math.round(totalSaleQty / monthSpan) : 0;
+        return (
+          <button
+            type="button"
+            onClick={() => setCollapsed(c => !c)}
+            className="w-full flex items-center gap-1.5 hover:bg-slate-50 -mx-1 px-1 py-1 rounded transition cursor-pointer mb-2 flex-wrap"
+            title={collapsed ? "펼치기" : "접기"}
+          >
+            <TrendingUp size={14} className="text-teal-600 shrink-0" />
+            <span className="text-[13px] font-black text-slate-800">기간별 재고 흐름</span>
+            {productName && (
+              <span className="text-[12px] font-bold text-slate-700 break-words whitespace-normal leading-tight">
+                · {productName}
+              </span>
+            )}
+            {totalSaleQty > 0 && !collapsed && (
+              <span className="text-[11px] tabular-nums font-bold text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-1.5 py-0.5"
+                title={`stock_history.sale_qty 합계 ${totalSaleQty.toLocaleString()} / ${monthSpan}개월 = 월평균 ${avgMonthlySale}개`}>
+                📉 월평균 판매 <span className="font-black">{avgMonthlySale.toLocaleString()}</span>개
+              </span>
+            )}
+            <span className={`ml-auto text-slate-400 text-xs transition-transform shrink-0 ${collapsed ? "" : "rotate-90"}`}>▶</span>
+          </button>
+        );
+      })()}
+      {!collapsed && (
+        <>
+          {/* 2행 · 조회기간 (개월 · 계절) */}
+          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span className="text-[11px] font-black text-teal-700 shrink-0">조회기간</span>
             <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5">
               {([1, 2, 3, 4, 5, 6] as const).map(m => {
-                const active = months === m;
+                const active = !season && months === m;
                 return (
                   <button
                     key={m}
                     onClick={() => { setSeason(null); setMonths(m); }}
-                    className={`min-w-[24px] px-1.5 py-0.5 text-[10px] font-black rounded-md transition cursor-pointer ${active
+                    className={`min-w-[28px] px-2 py-0.5 text-[11px] font-black rounded-md transition cursor-pointer ${active
                       ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-sm"
-                      : "text-slate-500 hover:text-slate-800 hover:bg-white"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-white"
                     }`}
                   >{m}</button>
                 );
               })}
-              <span className="text-[9px] font-bold text-slate-400 self-center px-1">개월</span>
+              <span className="text-[10px] font-bold text-slate-500 self-center px-1">개월</span>
             </div>
+            <SeasonButtons value={season} onChange={setSeason} size="sm" hideLabel />
           </div>
-          <SeasonButtons value={season} onChange={setSeason} size="sm" hideLabel />
-          {/* 2026-07-29 · x축 그룹 선택 (월중 · 10일=초순/중순/하순) */}
-          <div className="inline-flex items-center gap-1">
-            <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">단위</span>
+          {/* 3행 · 단위 (월중 · 10일) */}
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <span className="text-[11px] font-black text-slate-600 shrink-0">단위</span>
             <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5">
               <button onClick={() => setXAxisMode("month")}
-                className={`px-2 py-0.5 text-[10px] font-black rounded-md transition cursor-pointer ${xAxisMode === "month" ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-800"}`}>월중</button>
+                className={`px-2.5 py-0.5 text-[11px] font-black rounded-md transition cursor-pointer ${xAxisMode === "month" ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>월중</button>
               <button onClick={() => setXAxisMode("10day")}
-                className={`px-2 py-0.5 text-[10px] font-black rounded-md transition cursor-pointer ${xAxisMode === "10day" ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-800"}`}>10일</button>
+                className={`px-2.5 py-0.5 text-[11px] font-black rounded-md transition cursor-pointer ${xAxisMode === "10day" ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>10일 (초·중·하순)</button>
             </div>
+            <span className="text-[10px] font-semibold text-slate-400 ml-auto">매입 · 폐기 · 시작 · 종료 · 손실</span>
           </div>
-        </div>
-        )}
-      </div>
-      {/* 2026-07-29 · 상품명 표시 (제목 아래) */}
-      {productName && !collapsed && (
-        <div className="text-[13px] font-bold text-slate-800 mb-2 break-words whitespace-normal leading-tight">
-          {productName}
-        </div>
+        </>
       )}
       {collapsed ? null : loading ? (
         <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
