@@ -1122,57 +1122,59 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
     }
 
     // ═══ purchase_details 조인 · 최근/최초 매입일 + 매입 금액 + 횟수 병합 (2026-07-15) ═══
-    //   상품 코드별: 최근 매입일 · 최초 매입일(매입주기 계산용) · 총 매입 금액 · 매입 횟수
-    const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; lastAmount: number; totalQty: number; totalAmount: number; count: number }>();
+    //   2026-07-29 · 페이지네이션 + distinct dates 카운트 (months 모드와 동일 fix)
+    //     이전 · CHUNK 500 + no range → 1000행 초과 시 잘림 · count = row 수 → cycle 오계산
+    const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; lastAmount: number; totalQty: number; totalAmount: number; count: number; dateSet: Set<string> }>();
     try {
-      const CHUNK = 500;
+      const CHUNK = 200;
+      const PAGE = 1000;
       for (let i = 0; i < codesInResult.length; i += CHUNK) {
         const chunk = codesInResult.slice(i, i + CHUNK);
-        const { data: pdRows } = await supabase
-          .from("purchase_details")
-          .select("product_code, purchase_date, quantity, amount, total")
-          .in("product_code", chunk)
-          .order("purchase_date", { ascending: false });
-        for (const r of pdRows ?? []) {
+        let fromRow = 0;
+        const allPdRows: any[] = [];
+        while (true) {
+          const { data: pdRows, error: pdError } = await supabase
+            .from("purchase_details")
+            .select("product_code, purchase_date, quantity, amount, total")
+            .in("product_code", chunk)
+            .order("purchase_date", { ascending: false })
+            .range(fromRow, fromRow + PAGE - 1);
+          if (pdError) throw new Error(pdError.message);
+          if (!pdRows || pdRows.length === 0) break;
+          allPdRows.push(...pdRows);
+          if (pdRows.length < PAGE) break;
+          fromRow += PAGE;
+        }
+        for (const r of allPdRows) {
           const code = String((r as any).product_code ?? "").trim();
           if (!code) continue;
-          const cur = purchaseInfoMap.get(code) ?? { lastDate: null, firstDate: null, lastAmount: 0, totalQty: 0, totalAmount: 0, count: 0 };
+          const cur = purchaseInfoMap.get(code) ?? { lastDate: null, firstDate: null, lastAmount: 0, totalQty: 0, totalAmount: 0, count: 0, dateSet: new Set<string>() };
           const d = String((r as any).purchase_date ?? "");
           const amt = Number((r as any).total ?? (r as any).amount ?? 0) || 0;
           const qty = Number((r as any).quantity ?? 0) || 0;
-          if (!cur.lastDate || d > cur.lastDate) { cur.lastDate = d; cur.lastAmount = amt; }
-          if (!cur.firstDate || d < cur.firstDate) { cur.firstDate = d; }
+          if (d && (!cur.lastDate || d > cur.lastDate)) { cur.lastDate = d; cur.lastAmount = amt; }
+          if (d && (!cur.firstDate || d < cur.firstDate)) { cur.firstDate = d; }
           cur.totalQty += qty;
           cur.totalAmount += amt;
-          cur.count++;
+          if (d) cur.dateSet.add(d);
           purchaseInfoMap.set(code, cur);
         }
       }
-      console.log(`[top-sales] purchase_details 조인: ${purchaseInfoMap.size}개 상품 매입 이력 매칭`);
+      // count = distinct dates (row 수 X)
+      for (const info of purchaseInfoMap.values()) info.count = info.dateSet.size;
+      console.log(`[top-sales] purchase_details 조인: ${purchaseInfoMap.size}개 상품 · distinct date 카운트`);
     } catch (e: any) {
       console.warn("[top-sales] purchase_details 조인 실패 (계속 진행):", e?.message);
     }
 
-    // last_purchase_date 보강: products.last_purchase_date가 null이거나
-    // 현재 스냅샷보다 오래된 경우, 이 스냅샷의 purchase_qty > 0이면
-    // 현재 스냅샷 날짜를 최근 매입일로 대체 (더 최신 정보 반영)
+    // 2026-07-29 · 매입이력 필드는 무조건 purchase_details 만 사용
+    //   이전 · products.last_purchase_date + stock_history snapshot fallback 로 오염
+    //   현재 · purchase_details 만 사용 · 없으면 null
     const rows = (data ?? []).filter(r => !hiddenSet.has(String(r.product_code ?? ""))).map(r => {
       const prod = productMap.get(String(r.product_code ?? ""));
       const purchaseQty = Number(r.purchase_qty ?? 0) || 0;
-      let lastPurchase = prod?.last_purchase_date ?? null;
-      // 이 스냅샷에서 실제 매입이 있고, 기존 last_purchase_date가 없거나 이보다 오래되었다면 대체
-      if (purchaseQty > 0) {
-        if (!lastPurchase || String(lastPurchase) < String(targetDate)) {
-          lastPurchase = targetDate;
-        }
-      }
-      // purchase_details 조인 · 최근 매입일이 더 최신이면 그걸로 대체
       const purchaseInfo = purchaseInfoMap.get(String(r.product_code ?? ""));
-      if (purchaseInfo?.lastDate) {
-        if (!lastPurchase || String(purchaseInfo.lastDate) > String(lastPurchase)) {
-          lastPurchase = purchaseInfo.lastDate;
-        }
-      }
+      const lastPurchase = purchaseInfo?.lastDate ?? null;
       return {
         product_code:  String(r.product_code ?? ""),
         product_name:  String(r.product_name ?? r.product_code ?? ""),

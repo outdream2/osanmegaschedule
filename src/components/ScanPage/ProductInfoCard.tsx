@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info, EyeOff, Eye, TrendingUp } from "lucide-react";
+import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2, Warehouse, Store, ClipboardCheck, ScanLine, Check, X, DollarSign, Package, Info, EyeOff, Eye, TrendingUp, ChevronRight, ChevronDown } from "lucide-react";
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
 import { StockCounterModal } from "../StockCounterModal";
@@ -820,61 +820,74 @@ const PurchaseHistorySection: React.FC<{ productCode: string }> = ({ productCode
   })();
   return (
     <div className="mt-3 border-t border-slate-200 pt-3">
-      <button
-        type="button"
-        onClick={() => setCollapsed(c => !c)}
-        className="w-full flex items-center gap-2 pb-2 text-left hover:bg-slate-50 -mx-2 px-2 py-1 rounded transition cursor-pointer"
-      >
-        <TrendingUp size={12} className="text-emerald-600" />
-        <span className="text-xs font-black text-slate-700">매입 이력</span>
-        {loading ? (
-          <span className="text-[10px] text-slate-400"><Loader2 size={10} className="inline animate-spin mr-1"/>로딩...</span>
-        ) : rows.length === 0 ? (
-          <span className="text-[10px] text-slate-400 italic">이력 없음</span>
-        ) : (
-          <span className="text-[10px] font-mono text-slate-500 flex items-center gap-1 flex-wrap">
-            <span>{rows.length}건 · 총 {fmt(totalQty)}개 · <span className="text-emerald-700 font-black">{fmtWon(totalAmt)}</span></span>
-            <span className="text-slate-300">·</span>
-            <span title="건당 평균 매입액 (총 매입액 ÷ 건수)">평균 <span className="text-indigo-600 font-black">{fmtWon(avgAmt)}</span></span>
-            {avgCycleDays != null && (<>
+      {/* 2026-07-29 · 헤더 · 제목·요약통계·화살표 한 줄 · 카드형 안에 표 나오게 */}
+      <div className="bg-white border border-emerald-200 rounded-xl overflow-hidden shadow-sm">
+        <button
+          type="button"
+          onClick={() => setCollapsed(c => !c)}
+          className="w-full flex items-center gap-2 px-3 py-2.5 bg-emerald-50/60 hover:bg-emerald-50 transition cursor-pointer border-b border-emerald-100"
+        >
+          <TrendingUp size={14} className="text-emerald-600 shrink-0" />
+          <span className="text-[13px] font-black text-slate-800">매입 이력</span>
+          {loading ? (
+            <span className="text-[11px] text-slate-500 flex items-center gap-1"><Loader2 size={12} className="animate-spin"/>로딩...</span>
+          ) : rows.length === 0 ? (
+            <span className="text-[11px] text-slate-400 font-semibold">이력 없음</span>
+          ) : (
+            <span className="text-[11px] tabular-nums text-slate-600 flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
+              <span className="font-bold">{rows.length}건</span>
               <span className="text-slate-300">·</span>
-              <span title="평균 매입주기 (연속 매입일 간격 평균)">주기 <span className="text-sky-600 font-black">{avgCycleDays}일</span></span>
-            </>)}
-          </span>
-        )}
-        <span className={`ml-auto text-slate-400 text-xs transition-transform ${collapsed ? "" : "rotate-180"}`}>▲</span>
-      </button>
-      {!collapsed && rows.length > 0 && (
-        <div className="overflow-auto max-h-48 border border-slate-200 rounded-lg">
-          <table className="w-full text-[11px]">
-            <thead className="sticky top-0 bg-slate-50 border-b border-slate-200">
-              <tr className="text-slate-500 text-[9px] uppercase">
-                <th className="text-left px-2 py-1">매입일</th>
-                <th className="text-left px-2 py-1">공급사</th>
-                <th className="text-right px-2 py-1 w-14">수량</th>
-                <th className="text-right px-2 py-1 w-16">단가</th>
-                <th className="text-right px-2 py-1 w-20">금액</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {rows.slice(0, 20).map((r, i) => (
-                <tr key={i} className="hover:bg-emerald-50/30">
-                  <td className="px-2 py-1 font-mono text-slate-600 whitespace-nowrap">{r.purchase_date}</td>
-                  <td className="px-2 py-1 text-slate-700 truncate max-w-[120px]" title={r.supplier_name ?? undefined}>{r.supplier_name ?? "-"}</td>
-                  <td className="text-right px-2 py-1 font-mono font-bold">{fmt(Number(r.quantity) || 0)}</td>
-                  <td className="text-right px-2 py-1 font-mono text-slate-500">{r.unit_price ? fmt(r.unit_price) : "-"}</td>
-                  <td className="text-right px-2 py-1 font-mono font-black text-emerald-700">{fmtWon(Number(r.total ?? r.amount) || 0)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {rows.length > 20 && (
-            <div className="text-[9px] text-slate-400 text-center py-1 bg-slate-50 border-t border-slate-100">
-              최근 20건만 표시 · 전체 {rows.length}건
-            </div>
+              <span>총 <span className="font-black text-slate-800">{fmt(totalQty)}</span>개</span>
+              <span className="text-slate-300">·</span>
+              <span className="text-emerald-700 font-black">{fmtWon(totalAmt)}</span>
+              {avgAmt > 0 && (<>
+                <span className="text-slate-300">·</span>
+                <span title="건당 평균 매입액">평균 <span className="text-indigo-600 font-black">{fmtWon(avgAmt)}</span></span>
+              </>)}
+              {avgCycleDays != null && (<>
+                <span className="text-slate-300">·</span>
+                <span title="평균 매입주기">주기 <span className="text-sky-600 font-black">{avgCycleDays}일</span></span>
+              </>)}
+            </span>
           )}
-        </div>
-      )}
+          <span className="ml-auto shrink-0">
+            {collapsed
+              ? <ChevronRight size={14} className="text-emerald-600" />
+              : <ChevronDown size={14} className="text-emerald-600" />}
+          </span>
+        </button>
+        {!collapsed && rows.length > 0 && (
+          <div className="overflow-auto max-h-64">
+            <table className="w-full text-[12px]">
+              <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10">
+                <tr className="text-slate-600 text-[11px] font-black">
+                  <th className="text-left px-2 py-2">매입일</th>
+                  <th className="text-left px-2 py-2">공급사</th>
+                  <th className="text-right px-2 py-2 w-14">수량</th>
+                  <th className="text-right px-2 py-2 w-16">단가</th>
+                  <th className="text-right px-2 py-2 w-20">금액</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rows.slice(0, 20).map((r, i) => (
+                  <tr key={i} className="hover:bg-emerald-50/30">
+                    <td className="px-2 py-1.5 tabular-nums text-slate-600 whitespace-nowrap">{r.purchase_date}</td>
+                    <td className="px-2 py-1.5 text-slate-700 break-words whitespace-normal leading-tight">{r.supplier_name ?? "-"}</td>
+                    <td className="text-right px-2 py-1.5 tabular-nums font-bold">{fmt(Number(r.quantity) || 0)}</td>
+                    <td className="text-right px-2 py-1.5 tabular-nums text-slate-500">{r.unit_price ? fmt(r.unit_price) : "-"}</td>
+                    <td className="text-right px-2 py-1.5 tabular-nums font-black text-emerald-700 whitespace-nowrap">{fmtWon(Number(r.total ?? r.amount) || 0)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {rows.length > 20 && (
+              <div className="text-[11px] font-semibold text-slate-500 text-center py-1.5 bg-slate-50 border-t border-slate-200">
+                최근 20건만 표시 · 전체 {rows.length}건
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
