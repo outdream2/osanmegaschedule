@@ -3695,7 +3695,7 @@ export const StockManagePage: React.FC = () => {
                           )}
                           {/* 2026-07-29 · 사용자 요청 · 컬럼 3그룹 접기/펼치기 헤더 (재고현황·매입현황·판매현황) */}
                           <tr className="border-b border-slate-100 bg-slate-50/40 text-[11px] font-black text-slate-600 tracking-tight">
-                            <th colSpan={3}></th>
+                            <th colSpan={2}></th>{/* 체크박스+# 통합 셀 + 상품명 */}
                             {(() => {
                               const groupHeader = (g: FlowGroup, label: string, span: number, color: string) => {
                                 const collapsed = isFlowGroupCollapsed(g);
@@ -3735,20 +3735,23 @@ export const StockManagePage: React.FC = () => {
                               };
                               return (
                                 <>
-                                  <th className="text-center px-1 py-1.5" style={{ width: 24, minWidth: 24, maxWidth: 24 }}>
-                                    <button onClick={() => {
-                                      if (selectedFlowCodes.size === filteredFlow.length) setSelectedFlowCodes(new Set());
-                                      else setSelectedFlowCodes(new Set(filteredFlow.map(r => String(r.product_code))));
-                                    }} className="text-slate-400 hover:text-rose-500 transition inline-flex items-center justify-center" title="전체 선택/해제">
-                                      {selectedFlowCodes.size === filteredFlow.length && filteredFlow.length > 0
-                                        ? <CheckSquare size={12} className="text-rose-500" />
-                                        : <Square size={12} />}
-                                    </button>
+                                  {/* 2026-07-29 · 체크박스 + # 한 셀 통합 (사용자 요청) */}
+                                  <th className="text-center px-1 py-1.5" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>
+                                    <div className="flex items-center justify-center gap-1.5">
+                                      <button onClick={() => {
+                                        if (selectedFlowCodes.size === filteredFlow.length) setSelectedFlowCodes(new Set());
+                                        else setSelectedFlowCodes(new Set(filteredFlow.map(r => String(r.product_code))));
+                                      }} className="text-slate-400 hover:text-rose-500 transition inline-flex items-center justify-center" title="전체 선택/해제">
+                                        {selectedFlowCodes.size === filteredFlow.length && filteredFlow.length > 0
+                                          ? <CheckSquare size={13} className="text-rose-500" />
+                                          : <Square size={13} />}
+                                      </button>
+                                      <span className="text-[12px] font-black text-slate-500">#</span>
+                                    </div>
                                   </th>
-                                  <th className="text-center px-1 py-1.5 text-[11px]" style={{ width: 30, minWidth: 30, maxWidth: 30 }}>#</th>
                                   <th
                                     onClick={() => toggleFlowSort("name")}
-                                    className={`text-left px-1 py-1.5 min-w-[200px] cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}
+                                    className={`text-left px-1 py-1.5 min-w-[260px] cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}
                                     title="클릭: 상품명 가나다순 정렬"
                                   >
                                     <span className="flex flex-col leading-tight items-start">
@@ -3907,12 +3910,18 @@ export const StockManagePage: React.FC = () => {
                             const minOrder = Number((p as any).min_order ?? 0);
                             return (
                             <tr key={`flow-${p.product_code}-${i}`} className={`transition ${selectedFlowCodes.has(String(p.product_code)) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
-                              <td className="text-center px-1 py-1.5 align-top" style={{ width: 24, minWidth: 24, maxWidth: 24 }} onClick={(e) => { e.stopPropagation(); toggleSelectFlow(String(p.product_code)); }}>
-                                {selectedFlowCodes.has(String(p.product_code))
-                                  ? <CheckSquare size={12} className="text-rose-500 inline cursor-pointer" />
-                                  : <Square size={12} className="text-slate-300 hover:text-rose-500 inline cursor-pointer" />}
+                              {/* 2026-07-29 · 체크박스 + 순위 한 셀 통합 (사용자 요청) */}
+                              <td className="text-center px-1 py-1.5 align-top" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>
+                                <div className="flex items-center justify-center gap-1.5">
+                                  <span onClick={(e) => { e.stopPropagation(); toggleSelectFlow(String(p.product_code)); }}
+                                    className="cursor-pointer inline-flex items-center justify-center">
+                                    {selectedFlowCodes.has(String(p.product_code))
+                                      ? <CheckSquare size={13} className="text-rose-500" />
+                                      : <Square size={13} className="text-slate-300 hover:text-rose-500" />}
+                                  </span>
+                                  <span className="text-[14px] font-black text-orange-600 tabular-nums">{i + 1}</span>
+                                </div>
                               </td>
-                              <td className="text-center px-1 py-2 text-[12px] font-black text-orange-600 align-top tabular-nums" style={{ width: 30, minWidth: 30, maxWidth: 30 }}>{i + 1}</td>
                               <td className="px-1.5 py-2 align-top">
                                 <button
                                   type="button"
