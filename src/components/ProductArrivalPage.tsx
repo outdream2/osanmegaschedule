@@ -52,6 +52,10 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   const [lastAddedKey, setLastAddedKey] = useState<string | null>(null);
   const [notFoundCode, setNotFoundCode] = useState<string | null>(null);
   const [finalDecision, setFinalDecision] = useState<"all_match" | "has_mismatch" | null>(null);
+  // 2026-07-29 · 사용자 요청 · DB 저장
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [savedId, setSavedId] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   // 2026-07-29 · 사용자 요청 · 실재고입력 페이지처럼 스캔한 상품 정보 좌측 표시
   const [lastScannedProduct, setLastScannedProduct] = useState<ProductInfo | null>(null);
@@ -446,6 +450,65 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               }`}>
                 {finalDecision === "all_match" ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
                 최종 판정: {finalDecision === "all_match" ? "거래명세표와 실제 입고 물품 완전 일치" : "거래명세표와 실제 입고 불일치 존재"}
+              </div>
+            )}
+            {/* 2026-07-29 · DB 저장 버튼 (사용자 요청) */}
+            {finalDecision && (
+              <div className="mt-3 flex flex-col gap-2">
+                <button
+                  onClick={async () => {
+                    if (saveStatus === "saving") return;
+                    setSaveStatus("saving"); setSaveError(null);
+                    try {
+                      const res = await fetch("/api/product-arrivals", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          checked_by: authSession?.employeeName ?? "익명",
+                          checked_by_id: authSession?.employeeId ?? null,
+                          final_decision: finalDecision,
+                          items: items.map(it => ({
+                            product_code: it.code,
+                            product_name: it.product?.name ?? "",
+                            supplier: it.product?.supplier ?? "",
+                            qty: it.qty,
+                            status: it.status,
+                          })),
+                        }),
+                      });
+                      if (!res.ok) {
+                        const b = await res.json().catch(() => ({}));
+                        throw new Error(b.error ?? `저장 실패 (${res.status})`);
+                      }
+                      const j = await res.json();
+                      setSavedId(j.id ?? null);
+                      setSaveStatus("done");
+                      showToast("✅ DB에 저장 완료");
+                    } catch (e: any) {
+                      setSaveError(e?.message ?? "저장 실패");
+                      setSaveStatus("error");
+                    }
+                  }}
+                  disabled={saveStatus === "saving" || saveStatus === "done"}
+                  className={`w-full min-h-[56px] py-3.5 rounded-xl font-black text-[15px] sm:text-[16px] transition cursor-pointer disabled:cursor-not-allowed active:scale-95 shadow-md ${
+                    saveStatus === "done"
+                      ? "bg-emerald-500 text-white"
+                      : saveStatus === "error"
+                        ? "bg-rose-500 text-white hover:bg-rose-600"
+                        : "bg-sky-600 hover:bg-sky-700 text-white"
+                  }`}
+                >
+                  {saveStatus === "saving" ? "저장 중..." :
+                   saveStatus === "done"   ? `✅ 저장됨 (ID: ${savedId ?? "-"})` :
+                   saveStatus === "error"  ? "다시 저장" :
+                   "💾 DB에 저장"}
+                </button>
+                {saveError && (
+                  <p className="text-[12px] text-rose-600 font-semibold">{saveError}</p>
+                )}
+                {saveStatus === "done" && (
+                  <p className="text-[12px] text-slate-500">저장 완료. 발주/사입관리 · 입고매칭 탭에서 발주 대비 확인 가능.</p>
+                )}
               </div>
             )}
           </div>

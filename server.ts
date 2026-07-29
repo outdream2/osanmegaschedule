@@ -26,6 +26,7 @@ import stockCountRouter  from "./server/routes/stockCount";
 import stockManageRouter from "./server/routes/stockManage";
 import purchaseRouter    from "./server/routes/purchase";
 import stockArrivalsRouter from "./server/routes/stockArrivals";
+import productArrivalsRouter from "./server/routes/productArrivals";
 import zoneAssignmentsRouter from "./server/routes/zoneAssignments";
 import supplierBalanceConfigRouter from "./server/routes/supplierBalanceConfig";
 import ocrConfirmedRouter from "./server/routes/ocrConfirmed";
@@ -82,6 +83,7 @@ async function startServer() {
   app.use(stockManageRouter);
   app.use(purchaseRouter);
   app.use(stockArrivalsRouter);
+  app.use(productArrivalsRouter);
   app.use(zoneAssignmentsRouter);
   app.use(supplierBalanceConfigRouter);
   app.use(ocrConfirmedRouter);
