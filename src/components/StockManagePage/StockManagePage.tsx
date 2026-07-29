@@ -918,7 +918,7 @@ export const StockManagePage: React.FC = () => {
     //   각 상품 PATCH { hidden: true } 병렬 호출 후 · 리스트에서 제외 · 다른 페이지 리스트도 갱신 이벤트
     setFlowBulkHiding(true);
     try {
-      const codes = Array.from(selectedFlowCodes);
+      const codes: string[] = Array.from(selectedFlowCodes);
       await Promise.all(codes.map(code =>
         fetch(`/api/products/${encodeURIComponent(code)}`, {
           method: "PATCH",

@@ -25,14 +25,16 @@ interface ProductArrivalPageProps {
   onLogout?: () => void;
 }
 
-type ItemStatus = "pending" | "match" | "mismatch" | "expiring";
+// 2026-07-29 · 사용자 요청 · 일치/불일치는 배타 (하나만) · 유통기한임박은 독립 toggle
+type ItemStatus = "pending" | "match" | "mismatch";
 
 interface ArrivalItem {
   key: string;              // 리스트 key (barcode + timestamp)
   code: string;             // 스캔된 바코드
   product: ProductInfo | null;
   qty: number;              // 실제 입고 수량
-  status: ItemStatus;
+  status: ItemStatus;       // 일치/불일치 (배타)
+  expiring: boolean;        // 유통기한 임박 (독립 toggle)
   addedAt: number;
 }
 
@@ -40,7 +42,6 @@ const STATUS_META: Record<ItemStatus, { label: string; color: string; bg: string
   pending:   { label: "미확인",       color: "text-slate-500",   bg: "bg-slate-100",   border: "border-slate-300",   icon: <ClipboardCheck size={12} /> },
   match:     { label: "수량일치",     color: "text-emerald-700", bg: "bg-emerald-100", border: "border-emerald-400", icon: <CheckCircle2 size={12} /> },
   mismatch:  { label: "수량불일치",   color: "text-rose-700",    bg: "bg-rose-100",    border: "border-rose-400",    icon: <XCircle size={12} /> },
-  expiring:  { label: "유통기한임박", color: "text-amber-700",   bg: "bg-amber-100",   border: "border-amber-400",   icon: <Clock size={12} /> },
 };
 
 export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
@@ -112,6 +113,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         product: found,
         qty: 1,
         status: "pending",
+        expiring: false,
         addedAt: Date.now(),
       };
       addedKey = newItem.key;
@@ -139,6 +141,12 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     ));
   };
 
+  const toggleExpiring = (key: string) => {
+    setItems(prev => prev.map(it =>
+      it.key === key ? { ...it, expiring: !it.expiring } : it
+    ));
+  };
+
   const removeItem = (key: string) => {
     setItems(prev => prev.filter(it => it.key !== key));
   };
@@ -158,6 +166,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
     const c = { total: items.length, match: 0, mismatch: 0, expiring: 0, pending: 0, totalQty: 0 };
     for (const it of items) {
       c[it.status]++;
+      if (it.expiring) c.expiring++;
       c.totalQty += it.qty;
     }
     return c;
@@ -326,7 +335,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       const stripeCls =
                         it.status === "match"    ? "border-l-4 border-l-emerald-500" :
                         it.status === "mismatch" ? "border-l-4 border-l-rose-500" :
-                        it.status === "expiring" ? "border-l-4 border-l-amber-500" :
+                        it.expiring              ? "border-l-4 border-l-amber-500" :
                                                    "border-l-4 border-l-transparent";
                       return (
                         <tr key={it.key}
@@ -373,10 +382,10 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                               </button>
                             </div>
                           </td>
-                          {/* 상태 3버튼 · 한 셀 안에서 flex-wrap · 좁으면 줄바꿈 */}
+                          {/* 상태 · match/mismatch 배타 (하나만) + expiring 독립 toggle */}
                           <td className="px-2 py-2 align-top">
                             <div className="flex flex-wrap gap-1 items-stretch">
-                              {(["match", "mismatch", "expiring"] as ItemStatus[]).map((s) => {
+                              {(["match", "mismatch"] as ItemStatus[]).map((s) => {
                                 const meta = STATUS_META[s];
                                 const active = it.status === s;
                                 return (
@@ -387,13 +396,26 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                         ? `${meta.bg} ${meta.color} ${meta.border} shadow-sm`
                                         : "bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700"
                                     }`}
-                                    title={`${meta.label} ${active ? "on" : "off"}`}
+                                    title={`${meta.label} ${active ? "on" : "off"} · 일치/불일치 하나만 선택`}
                                   >
                                     {meta.icon}
                                     <span>{meta.label}</span>
                                   </button>
                                 );
                               })}
+                              {/* 유통기한 임박 · 독립 toggle · match/mismatch 와 병행 가능 */}
+                              <button
+                                onClick={() => toggleExpiring(it.key)}
+                                className={`inline-flex items-center gap-1 min-h-[32px] px-2 py-1 rounded-md border-2 font-black text-[11px] transition cursor-pointer active:scale-95 ${
+                                  it.expiring
+                                    ? "bg-amber-100 text-amber-700 border-amber-400 shadow-sm"
+                                    : "bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700"
+                                }`}
+                                title={`유통기한임박 ${it.expiring ? "on" : "off"} · 독립 toggle`}
+                              >
+                                <Clock size={12} />
+                                <span>유통기한임박</span>
+                              </button>
                             </div>
                           </td>
                           {/* 삭제 */}
@@ -489,6 +511,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                             supplier: it.product?.supplier ?? "",
                             qty: it.qty,
                             status: it.status,
+                            expiring: it.expiring,
                           })),
                         }),
                       });
