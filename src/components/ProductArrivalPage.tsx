@@ -344,9 +344,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                         <span className="text-[12px] text-slate-400 tabular-nums">#{it.code}</span>
                       </div>
 
-                      {/* 3행 · 갯수 입력 + 상태 3버튼 (한 줄, wrap 가능) */}
-                      <div className="flex items-center gap-2 flex-wrap">
-                        {/* 갯수 */}
+                      {/* 3행 · 갯수 입력 (별도 행) · 4행 · 상태 3버튼 (모바일: 아래로 wrap) */}
+                      {/* 2026-07-29 · 모바일 · 갯수 위에 · 상태 3버튼 아래에 별도 라인 (사용자 요청) */}
+                      <div className="flex items-center gap-2">
                         <div className="inline-flex items-center bg-slate-50 border-2 border-slate-200 rounded-xl">
                           <button onClick={() => updateQty(it.key, -1)}
                             className="w-10 h-10 flex items-center justify-center rounded-l-xl text-slate-700 hover:bg-white active:bg-slate-100 transition cursor-pointer"
@@ -366,15 +366,16 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                             <Plus size={16} />
                           </button>
                         </div>
-
-                        {/* 상태 3버튼 · 텍스트 라벨 포함 */}
+                      </div>
+                      {/* 상태 3버튼 · 갯수 아래 · 반응형 wrap · sm 이상은 오른쪽 옆으로 확장 가능 */}
+                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                         {(["match", "mismatch", "expiring"] as ItemStatus[]).map((s) => {
                           const meta = STATUS_META[s];
                           const active = it.status === s;
                           return (
                             <button key={s}
                               onClick={() => setStatus(it.key, active ? "pending" : s)}
-                              className={`inline-flex items-center gap-1.5 min-h-[40px] px-3 py-1.5 rounded-xl border-2 font-black text-[13px] transition cursor-pointer active:scale-95 ${
+                              className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-1.5 min-h-[40px] px-3 py-1.5 rounded-xl border-2 font-black text-[13px] transition cursor-pointer active:scale-95 ${
                                 active
                                   ? `${meta.bg} ${meta.color} ${meta.border} shadow-sm`
                                   : "bg-white text-slate-500 border-slate-200 hover:border-slate-300 hover:text-slate-700"
