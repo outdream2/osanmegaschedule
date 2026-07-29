@@ -3570,9 +3570,9 @@ export const StockManagePage: React.FC = () => {
                                     onClick={() => toggleFlowGroup(g)}
                                     title={collapsed ? `${label} 펼치기` : `${label} 접기`}
                                   >
-                                    <span className="inline-flex items-center gap-1 font-black text-[12px]">
+                                    <span className="inline-flex items-center gap-1 font-black text-[12px] whitespace-nowrap">
                                       {collapsed ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
-                                      {collapsed ? label.slice(0, 2) : label}
+                                      {label}
                                     </span>
                                   </th>
                                 );
@@ -3618,6 +3618,7 @@ export const StockManagePage: React.FC = () => {
                                   </th>
                                   {/* 2026-07-28 · 사용자 요청 · 시작 컬럼 제거 · 매입 → 최근매입일 옆으로 이동 (라벨 · 최근매입량) */}
                                   {/* === 재고현황 그룹 (판매량 · 현재고 · 적정재고) === */}
+                                  {isFlowGroupCollapsed("stock") && <th className="bg-orange-50/20"></th>}
                                   {!isFlowGroupCollapsed("stock") && <>
                                   <th
                                     onClick={() => toggleFlowSort("sale")}
@@ -3650,6 +3651,7 @@ export const StockManagePage: React.FC = () => {
                                   </th>
                                   </>}
                                   {/* === 매입현황 그룹 (평균매입주기 · 최근매입일 · 최근매입량) === */}
+                                  {isFlowGroupCollapsed("purchase") && <th className="bg-emerald-50/20"></th>}
                                   {!isFlowGroupCollapsed("purchase") && <>
                                   <th onClick={() => toggleFlowSort("cycle")}
                                     className={`text-right px-0.5 py-1.5 w-12 text-[12px] font-black cursor-pointer select-none bg-sky-50/40 hover:bg-sky-100 transition ${flowSort === "cycle" ? "text-sky-800" : "text-sky-600"}`}
@@ -3680,6 +3682,7 @@ export const StockManagePage: React.FC = () => {
                                   </th>
                                   </>}
                                   {/* === 판매현황 그룹 (재고금액 · ERP단가 · 판매가 · 이익률) === */}
+                                  {isFlowGroupCollapsed("sales") && <th className="bg-indigo-50/20"></th>}
                                   {!isFlowGroupCollapsed("sales") && <>
                                   <th onClick={() => toggleFlowSort("stock_value")}
                                     className={`text-right px-0.5 py-1.5 w-20 text-[12px] font-black cursor-pointer select-none bg-indigo-50/40 hover:bg-indigo-100 transition ${flowSort === "stock_value" ? "text-indigo-800" : "text-indigo-700"}`}
