@@ -3816,9 +3816,28 @@ export const StockManagePage: React.FC = () => {
                               {isFlowGroupCollapsed("stock") && <td className="bg-orange-50/20"></td>}
                               {/* === 매입현황 그룹 (매입주기 · 최근매입일 · 최근매입량) === */}
                               {!isFlowGroupCollapsed("purchase") && <>
-                              <td className="text-right px-0.5 py-1.5 text-sky-600 text-[12px] bg-sky-50/40 align-top tabular-nums"
-                                title={purchaseCycle != null ? `${purchaseCount}회 매입 · 평균 ${purchaseCycle}일 주기` : "2회 미만 · 계산 불가"}>
-                                {purchaseCycle != null ? `${purchaseCycle}일` : "-"}
+                              <td className={`text-right px-0.5 py-1.5 text-[12px] bg-sky-50/40 align-top tabular-nums ${
+                                purchaseCycle != null ? "text-sky-600" :
+                                purchaseCount === 1 ? "text-slate-500" :
+                                purchaseCount >= 2 && firstPD === lastPD ? "text-amber-600" :
+                                "text-slate-300"
+                              }`}
+                                title={
+                                  purchaseCycle != null
+                                    ? `${purchaseCount}회 매입 · 평균 ${purchaseCycle}일 주기`
+                                    : purchaseCount === 1 && lastPD
+                                      ? `1회만 매입됨 (${lastPD}) · 주기 계산 불가`
+                                      : purchaseCount >= 2 && firstPD === lastPD
+                                        ? `${purchaseCount}회 매입 모두 같은 날짜 (${lastPD}) · 주기 계산 불가`
+                                        : "매입 이력 없음 (purchase_details 미조인 가능성)"
+                                }>
+                                {purchaseCycle != null
+                                  ? `${purchaseCycle}일`
+                                  : purchaseCount === 1
+                                    ? "1회"
+                                    : purchaseCount >= 2 && firstPD === lastPD
+                                      ? "동일일"
+                                      : "-"}
                               </td>
                               <td className="text-right px-0.5 py-1.5 text-emerald-600 text-[12px] bg-emerald-50/30 align-top tabular-nums"
                                 title={lastPD ?? undefined}>

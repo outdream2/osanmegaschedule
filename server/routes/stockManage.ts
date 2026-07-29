@@ -807,7 +807,13 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
         for (const info of purchaseInfoMap.values()) {
           info.count = info.dateSet.size;
         }
-        console.log(`[top-sales/months] purchase_details 조인: ${purchaseInfoMap.size}개 상품 · distinct date 카운트`);
+        // 2026-07-29 · 매치 누락 디버그 (사용자 지적: 매입이력 있는데 주기 안 나옴)
+        const missingCodes = codesInResult.filter(c => !purchaseInfoMap.has(c));
+        const singleDate = [...purchaseInfoMap.entries()].filter(([, v]) => v.count === 1);
+        console.log(`[top-sales/months] purchase_details 조인: ${purchaseInfoMap.size}/${codesInResult.length}개 매치 · 누락 ${missingCodes.length}개 · 1회만 매입 ${singleDate.length}개`);
+        if (missingCodes.length > 0 && missingCodes.length <= 20) {
+          console.log(`[top-sales/months] 누락 codes 샘플:`, missingCodes.slice(0, 10));
+        }
       } catch (e: any) {
         console.warn(`[top-sales/months] purchase_details 조인 실패:`, e?.message);
       }
