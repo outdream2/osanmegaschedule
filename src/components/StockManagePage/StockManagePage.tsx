@@ -2845,7 +2845,7 @@ export const StockManagePage: React.FC = () => {
               }[t.color]!;
               return (
                 <button key={t.k} onClick={() => setStockTab(t.k)}
-                  className={`relative basis-1/3 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-3 py-2 sm:py-2 text-[11px] sm:text-[12px] font-bold leading-tight transition-colors duration-150 ${active ? activeText : "text-slate-400 hover:text-slate-700"
+                  className={`relative basis-1/3 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-3.5 py-2 sm:py-2.5 text-[12px] sm:text-[13px] font-bold leading-tight transition-colors duration-150 ${active ? activeText : "text-slate-400 hover:text-slate-700"
                     }`}>
                   <Icon size={13} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
                   <span>{t.label}</span>
