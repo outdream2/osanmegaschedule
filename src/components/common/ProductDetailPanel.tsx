@@ -41,12 +41,14 @@ export interface ProductDetailPanelProps {
 
 // ── 내부: 기간 재고 흐름 차트 ──────────────────────────────────────────────
 
-const StockFlowChart: React.FC<{ productCode: string }> = ({ productCode }) => {
+const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = ({ productCode, productName }) => {
   const [rows, setRows] = useState<PeriodRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [months, setMonths] = useState<1 | 2 | 3 | 4 | 5 | 6>(6);
   const [season, setSeason] = useState<SeasonKey | null>(null);
   const [collapsed, setCollapsed] = useState(false);
+  // 2026-07-29 · 사용자 요청 · x축 그룹 · month(월중) / 10day(초순·중순·하순)
+  const [xAxisMode, setXAxisMode] = useState<"month" | "10day">("month");
   const cache = useRef<Map<string, PeriodRow[]>>(new Map());
 
   useEffect(() => {
@@ -110,9 +112,25 @@ const StockFlowChart: React.FC<{ productCode: string }> = ({ productCode }) => {
             </div>
           </div>
           <SeasonButtons value={season} onChange={setSeason} size="sm" hideLabel />
+          {/* 2026-07-29 · x축 그룹 선택 (월중 · 10일=초순/중순/하순) */}
+          <div className="inline-flex items-center gap-1">
+            <span className="text-[9px] font-black text-slate-500 uppercase tracking-wider">단위</span>
+            <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5">
+              <button onClick={() => setXAxisMode("month")}
+                className={`px-2 py-0.5 text-[10px] font-black rounded-md transition cursor-pointer ${xAxisMode === "month" ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-800"}`}>월중</button>
+              <button onClick={() => setXAxisMode("10day")}
+                className={`px-2 py-0.5 text-[10px] font-black rounded-md transition cursor-pointer ${xAxisMode === "10day" ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-200" : "text-slate-500 hover:text-slate-800"}`}>10일</button>
+            </div>
+          </div>
         </div>
         )}
       </div>
+      {/* 2026-07-29 · 상품명 표시 (제목 아래) */}
+      {productName && !collapsed && (
+        <div className="text-[13px] font-bold text-slate-800 mb-2 break-words whitespace-normal leading-tight">
+          {productName}
+        </div>
+      )}
       {collapsed ? null : loading ? (
         <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
           <div className="w-8 h-8 border-4 border-slate-200 border-t-teal-500 rounded-full animate-spin" />
@@ -131,14 +149,34 @@ const StockFlowChart: React.FC<{ productCode: string }> = ({ productCode }) => {
             opening_stock: 0, purchase_qty: 0, sale_qty: 0, disposal_qty: 0, closing_stock: 0,
           }),
         );
-        const isMonthly = !season;
-        const chartRows = season ? filled : aggregateToMonths(filled).slice(-months * 3);
+        // 2026-07-29 · x축 그룹 · month(월중) / 10day(초순·중순·하순)
+        //   month · aggregateToMonths (기존) · "N월"
+        //   10day · filled 그대로 · "N월 초순/중순/하순"
+        const useMonthly = !season && xAxisMode === "month";
+        const chartRows = season
+          ? filled
+          : (useMonthly ? aggregateToMonths(filled).slice(-months * 3) : filled.slice(-months * 3));
         const hasDisposal = chartRows.some(r => (r.disposal_qty ?? 0) > 0);
+        // 10day 라벨 · period_type "early|mid|late" → 초순/중순/하순
+        const partLabel = (pt: string | null | undefined): string => {
+          if (pt === "early" || pt === "초순") return "초순";
+          if (pt === "mid" || pt === "중순") return "중순";
+          if (pt === "late" || pt === "하순") return "하순";
+          return "";
+        };
         const chartData = {
-          labels: chartRows.map(r => isMonthly
-            ? (() => { const m = /^(\d{4})-(\d{2})/.exec(r.period_start_date); return m ? `${Number(m[2])}월` : r.period_start_date; })()
-            : periodLabel(r.period_start_date, r.snapshot_date)
-          ),
+          labels: chartRows.map(r => {
+            if (season) return periodLabel(r.period_start_date, r.snapshot_date);
+            if (useMonthly) {
+              const m = /^(\d{4})-(\d{2})/.exec(r.period_start_date);
+              return m ? `${Number(m[2])}월` : r.period_start_date;
+            }
+            // 10day 모드 · N월 초순/중순/하순
+            const m = /^(\d{4})-(\d{2})/.exec(r.period_start_date);
+            const monthLabel = m ? `${Number(m[2])}월` : r.period_start_date;
+            const part = partLabel(r.period_type as any);
+            return part ? `${monthLabel} ${part}` : monthLabel;
+          }),
           series: [
             { label: "매입",     color: "#10b981", kind: "bar"  as const, values: chartRows.map(r => Number(r.purchase_qty  ?? 0)), format: "count" as const },
             // 2026-07-28 · 사용자 요청 · 판매 · 꺽은선 그래프 · 붉은색
@@ -249,7 +287,7 @@ const ProductDetailChartMode: React.FC<{
   return (
     <>
       {/* 기간 재고 흐름 차트 (2026-07-16 · 맨 위로 이동 · 사용자 요청) */}
-      <StockFlowChart productCode={product.code} />
+      <StockFlowChart productCode={product.code} productName={product.name} />
 
       {/* 2026-07-28 · 매입이력 · 차트 바로 아래 · 기본 접힘 (사용자 요청) */}
       {/* 2026-07-29 · UI 개선 · ▶ 텍스트 → ChevronRight/Down 아이콘 · 폰트 상향 · 통일성 */}

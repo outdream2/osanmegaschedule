@@ -764,7 +764,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
       </div>
 
       {/* ─── 매입 이력 (2026-07-15) · purchase_details 조회 · 이 상품의 최근 매입 20건 · 2026-07-16 section flag ─── */}
-      {S.purchaseHistory && <PurchaseHistorySection productCode={product.code} />}
+      {S.purchaseHistory && <PurchaseHistorySection productCode={product.code} productName={product.name} />}
 
       {mapSelectorOpen && (
         <RealMapSelector
@@ -787,7 +787,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 // ═══════════════════════════════════════════════════════════════════════
 // 매입 이력 섹션 (2026-07-15) · purchase_details 조회 · 최근 20건 매입 · 총합
 // ═══════════════════════════════════════════════════════════════════════
-const PurchaseHistorySection: React.FC<{ productCode: string }> = ({ productCode }) => {
+const PurchaseHistorySection: React.FC<{ productCode: string; productName?: string }> = ({ productCode, productName }) => {
   const [rows, setRows] = useState<Array<{ purchase_date: string; supplier_name: string | null; quantity: number; amount: number; total: number; unit_price: number }>>([]);
   const [loading, setLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -818,76 +818,90 @@ const PurchaseHistorySection: React.FC<{ productCode: string }> = ({ productCode
     for (let i = 1; i < dates.length; i++) sum += (dates[i] - dates[i - 1]);
     return Math.round(sum / (dates.length - 1) / (1000 * 60 * 60 * 24));
   })();
+  // 2026-07-29 · 공급사 컬럼 중복 제거 · 제목 아래 요약 표시 (반복 정보)
+  const distinctSuppliers = Array.from(new Set(rows.map(r => (r.supplier_name ?? "").trim()).filter(Boolean)));
+  const supplierSummary = distinctSuppliers.length === 0 ? null
+    : distinctSuppliers.length === 1 ? distinctSuppliers[0]
+    : `${distinctSuppliers[0]} 외 ${distinctSuppliers.length - 1}개사`;
   return (
     <div className="mt-3 border-t border-slate-200 pt-3">
-      {/* 2026-07-29 · 헤더 · 제목·요약통계·화살표 한 줄 · 카드형 안에 표 나오게 */}
-      <div className="bg-white border border-emerald-200 rounded-xl overflow-hidden shadow-sm">
-        <button
-          type="button"
-          onClick={() => setCollapsed(c => !c)}
-          className="w-full flex items-center gap-2 px-3 py-2.5 bg-emerald-50/60 hover:bg-emerald-50 transition cursor-pointer border-b border-emerald-100"
-        >
-          <TrendingUp size={14} className="text-emerald-600 shrink-0" />
-          <span className="text-[13px] font-black text-slate-800">매입 이력</span>
-          {loading ? (
-            <span className="text-[11px] text-slate-500 flex items-center gap-1"><Loader2 size={12} className="animate-spin"/>로딩...</span>
-          ) : rows.length === 0 ? (
-            <span className="text-[11px] text-slate-400 font-semibold">이력 없음</span>
-          ) : (
-            <span className="text-[11px] tabular-nums text-slate-600 flex items-center gap-1.5 whitespace-nowrap overflow-hidden">
-              <span className="font-bold">{rows.length}건</span>
-              <span className="text-slate-300">·</span>
-              <span>총 <span className="font-black text-slate-800">{fmt(totalQty)}</span>개</span>
-              <span className="text-slate-300">·</span>
-              <span className="text-emerald-700 font-black">{fmtWon(totalAmt)}</span>
-              {avgAmt > 0 && (<>
-                <span className="text-slate-300">·</span>
-                <span title="건당 평균 매입액">평균 <span className="text-indigo-600 font-black">{fmtWon(avgAmt)}</span></span>
-              </>)}
-              {avgCycleDays != null && (<>
-                <span className="text-slate-300">·</span>
-                <span title="평균 매입주기">주기 <span className="text-sky-600 font-black">{avgCycleDays}일</span></span>
-              </>)}
-            </span>
-          )}
-          <span className="ml-auto shrink-0">
-            {collapsed
-              ? <ChevronRight size={14} className="text-emerald-600" />
-              : <ChevronDown size={14} className="text-emerald-600" />}
+      <button
+        type="button"
+        onClick={() => setCollapsed(c => !c)}
+        className="w-full flex items-center gap-2 text-left hover:bg-slate-50 -mx-2 px-2 py-1 rounded transition cursor-pointer"
+      >
+        <TrendingUp size={12} className="text-emerald-600" />
+        {productName && (
+          <span className="text-[12px] font-bold text-slate-800 break-words whitespace-normal leading-tight">
+            {productName}
           </span>
-        </button>
-        {!collapsed && rows.length > 0 && (
-          <div className="overflow-auto max-h-64">
-            <table className="w-full text-[12px]">
-              <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10">
-                <tr className="text-slate-600 text-[11px] font-black">
-                  <th className="text-left px-2 py-2">매입일</th>
-                  <th className="text-left px-2 py-2">공급사</th>
-                  <th className="text-right px-2 py-2 w-14">수량</th>
-                  <th className="text-right px-2 py-2 w-16">단가</th>
-                  <th className="text-right px-2 py-2 w-20">금액</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {rows.slice(0, 20).map((r, i) => (
-                  <tr key={i} className="hover:bg-emerald-50/30">
-                    <td className="px-2 py-1.5 tabular-nums text-slate-600 whitespace-nowrap">{r.purchase_date}</td>
-                    <td className="px-2 py-1.5 text-slate-700 break-words whitespace-normal leading-tight">{r.supplier_name ?? "-"}</td>
-                    <td className="text-right px-2 py-1.5 tabular-nums font-bold">{fmt(Number(r.quantity) || 0)}</td>
-                    <td className="text-right px-2 py-1.5 tabular-nums text-slate-500">{r.unit_price ? fmt(r.unit_price) : "-"}</td>
-                    <td className="text-right px-2 py-1.5 tabular-nums font-black text-emerald-700 whitespace-nowrap">{fmtWon(Number(r.total ?? r.amount) || 0)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {rows.length > 20 && (
-              <div className="text-[11px] font-semibold text-slate-500 text-center py-1.5 bg-slate-50 border-t border-slate-200">
-                최근 20건만 표시 · 전체 {rows.length}건
-              </div>
-            )}
-          </div>
         )}
-      </div>
+        <span className="text-xs font-black text-slate-700">· 매입 이력</span>
+        {loading ? (
+          <span className="text-[10px] text-slate-400"><Loader2 size={10} className="inline animate-spin mr-1"/>로딩...</span>
+        ) : rows.length === 0 ? (
+          <span className="text-[10px] text-slate-400 italic">이력 없음</span>
+        ) : (
+          <span className="text-[10px] font-mono text-slate-500 flex items-center gap-1 flex-wrap">
+            <span>{rows.length}건 · 총 {fmt(totalQty)}개 · <span className="text-emerald-700 font-black">{fmtWon(totalAmt)}</span></span>
+            <span className="text-slate-300">·</span>
+            <span title="건당 평균 매입액 (총 매입액 ÷ 건수)">평균 <span className="text-indigo-600 font-black">{fmtWon(avgAmt)}</span></span>
+            {avgCycleDays != null && (<>
+              <span className="text-slate-300">·</span>
+              <span title="평균 매입주기 (연속 매입일 간격 평균)">주기 <span className="text-sky-600 font-black">{avgCycleDays}일</span></span>
+            </>)}
+          </span>
+        )}
+        <span className={`ml-auto text-slate-400 text-xs transition-transform ${collapsed ? "" : "rotate-180"}`}>▲</span>
+      </button>
+      {/* 2026-07-29 · 제목 아래 공급사 (반복이라 컬럼에서 제거하고 여기로) */}
+      {!collapsed && supplierSummary && (
+        <div className="text-[11px] font-bold text-sky-700 -mx-2 px-2 pb-1.5">
+          🏢 {supplierSummary}
+        </div>
+      )}
+      {!collapsed && rows.length > 0 && (
+        <div className="overflow-auto max-h-48 border border-slate-200 rounded-lg">
+          <table className="w-full text-[11px]">
+            <thead className="sticky top-0 bg-slate-50 border-b border-slate-200">
+              <tr className="text-slate-500 text-[9px] uppercase">
+                <th className="text-left px-2 py-1">매입일</th>
+                <th className="text-right px-1 py-1 w-10" title="이전 매입일과의 일수 차이">간격</th>
+                <th className="text-right px-2 py-1 w-14">수량</th>
+                <th className="text-right px-2 py-1 w-16">단가</th>
+                <th className="text-right px-2 py-1 w-20">금액</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {rows.slice(0, 20).map((r, i, arr) => {
+                // 2026-07-29 · 매입일 간격 (desc 정렬 · 다음 행 = 이전 매입) · 마지막 행은 "-"
+                const nextR = arr[i + 1];
+                const curT = r.purchase_date ? new Date(r.purchase_date).getTime() : NaN;
+                const nextT = nextR?.purchase_date ? new Date(nextR.purchase_date).getTime() : NaN;
+                const gapDays = Number.isFinite(curT) && Number.isFinite(nextT) && curT > nextT
+                  ? Math.round((curT - nextT) / (86400 * 1000))
+                  : null;
+                return (
+                <tr key={i} className="hover:bg-emerald-50/30">
+                  <td className="px-2 py-1 font-mono text-slate-600 whitespace-nowrap">{r.purchase_date}</td>
+                  <td className="text-right px-1 py-1 font-mono text-sky-600" title={gapDays != null ? `${gapDays}일 만에 재매입` : "이전 매입 없음"}>
+                    {gapDays != null ? `${gapDays}일` : "-"}
+                  </td>
+                  <td className="text-right px-2 py-1 font-mono font-bold">{fmt(Number(r.quantity) || 0)}</td>
+                  <td className="text-right px-2 py-1 font-mono text-slate-500">{r.unit_price ? fmt(r.unit_price) : "-"}</td>
+                  <td className="text-right px-2 py-1 font-mono font-black text-emerald-700">{fmtWon(Number(r.total ?? r.amount) || 0)}</td>
+                </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {rows.length > 20 && (
+            <div className="text-[9px] text-slate-400 text-center py-1 bg-slate-50 border-t border-slate-100">
+              최근 20건만 표시 · 전체 {rows.length}건
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
