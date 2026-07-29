@@ -903,7 +903,8 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
       //   추가 · dates 배열 저장 (사용자 요청 · 최근·그 전 매입일 사이 판매량 계산용)
       //   2026-07-29 · Phase 2 · Lazy Loading · skip_purchase 시 조인 SKIP
       const codesInResult = Array.from(byCode.keys());
-      const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; count: number; totalQty: number; totalAmount: number; lastAmount: number; dates: string[]; dateSet: Set<string> }>();
+      // 2026-07-30 · 사용자 요청 · lastQty 추가 (최근 매입일의 수량 · 반품필요 리스트 컬럼)
+      const purchaseInfoMap = new Map<string, { lastDate: string | null; firstDate: string | null; count: number; totalQty: number; totalAmount: number; lastAmount: number; lastQty: number; dates: string[]; dateSet: Set<string> }>();
       if (!skipPurchase) try {
         const CHUNK = 200;   // codes chunk 축소
         const PAGE = 1000;   // row 페이지네이션
@@ -929,12 +930,12 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           for (const r of pdRows ?? []) {
             const code = String((r as any).product_code ?? "").trim();
             if (!code) continue;
-            const cur = purchaseInfoMap.get(code) ?? { lastDate: null, firstDate: null, count: 0, totalQty: 0, totalAmount: 0, lastAmount: 0, dates: [], dateSet: new Set<string>() };
+            const cur = purchaseInfoMap.get(code) ?? { lastDate: null, firstDate: null, count: 0, totalQty: 0, totalAmount: 0, lastAmount: 0, lastQty: 0, dates: [], dateSet: new Set<string>() };
             const d = String((r as any).purchase_date ?? "");
             const amt = Number((r as any).total ?? (r as any).amount ?? 0) || 0;
             const qty = Number((r as any).quantity ?? 0) || 0;
-            if (d && !cur.lastDate) { cur.lastDate = d; cur.lastAmount = amt; }
-            else if (d && d > (cur.lastDate ?? "")) { cur.lastDate = d; cur.lastAmount = amt; }
+            if (d && !cur.lastDate) { cur.lastDate = d; cur.lastAmount = amt; cur.lastQty = qty; }
+            else if (d && d > (cur.lastDate ?? "")) { cur.lastDate = d; cur.lastAmount = amt; cur.lastQty = qty; }
             if (d && (!cur.firstDate || d < cur.firstDate)) { cur.firstDate = d; }
             cur.totalQty += qty;
             cur.totalAmount += amt;
@@ -971,9 +972,24 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
         bySup.set(snap, (bySup.get(snap) ?? 0) + q);
         salesByCodeByDate.set(code, bySup);
       }
+      // 2026-07-30 · 사용자 요청 · 반품필요 · 최근 한달 판매량 (sale_qty_month) 계산
+      //   salesByCodeByDate 재사용 · 오늘 - 30일 이내 snapshot 판매 합산
+      const _todayIso = new Date().toISOString().slice(0, 10);
+      const _monthAgo = new Date(Date.now() - 30 * 86400 * 1000).toISOString().slice(0, 10);
       // 각 상품 · purchase_details 값 반영 + sale_qty_cycle 계산
       // 2026-07-29 · 사용자 요청 · 매입 관련 필드는 무조건 purchase_details 값 사용 (조건부 override X)
       for (const agg of byCode.values()) {
+        // 2026-07-30 · sale_qty_month · 최근 30일 판매량 (독립 계산 · purchase 유무 무관)
+        {
+          const bySup = salesByCodeByDate.get(agg.product_code);
+          let salesMonth = 0;
+          if (bySup) {
+            for (const [snap, q] of bySup) {
+              if (snap >= _monthAgo && snap <= _todayIso) salesMonth += q;
+            }
+          }
+          (agg as any).sale_qty_month = salesMonth;
+        }
         const info = purchaseInfoMap.get(agg.product_code);
         if (info && info.count > 0) {
           agg.purchase_count = info.count;
@@ -982,6 +998,8 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           (agg as any).purchase_total_qty = info.totalQty;
           (agg as any).purchase_total_amount = info.totalAmount;
           (agg as any).purchase_last_amount = info.lastAmount;
+          // 2026-07-30 · 사용자 요청 · 반품필요 리스트 컬럼용
+          (agg as any).last_purchase_qty = info.lastQty;
           // sale_qty_cycle · 최근2건 매입 사이 판매
           const sortedDates = [...new Set(info.dates)].sort().reverse();
           if (sortedDates.length >= 2) {

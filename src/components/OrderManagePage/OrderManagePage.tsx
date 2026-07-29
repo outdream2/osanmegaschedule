@@ -327,7 +327,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [returnLoading, setReturnLoading] = useState(false);
   const [returnCycleMin, setReturnCycleMin] = useState<number>(90); // 매입주기 90일 이상
   const [returnSalesMax, setReturnSalesMax] = useState<number>(5);  // 매입주기 판매량 5 이하
-  type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "purchase_cycle" | "sale_qty_cycle" | "sale_qty_month" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
+  // 2026-07-30 · sale_qty_cycle 컬럼 표시 제거 (필터 조건에서만 사용)
+  type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "purchase_cycle" | "sale_qty_month" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
   const [returnSortKey, setReturnSortKey] = useState<ReturnSortKey>("purchase_cycle");
   const [returnSortDir, setReturnSortDir] = useState<"asc" | "desc">("desc");
   const handleReturnSort = (k: ReturnSortKey) => {
@@ -1283,7 +1284,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       <th onClick={() => handleReturnSort("supplier")} title="공급사 정렬" className="px-2 py-2 text-left font-bold text-rose-800 w-28 cursor-pointer hover:bg-rose-100 select-none">공급사{retArrow("supplier")}</th>
                       <th onClick={() => handleReturnSort("current_stock")} title="현재고 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-16 cursor-pointer hover:bg-rose-100 select-none">현재고{retArrow("current_stock")}</th>
                       <th onClick={() => handleReturnSort("purchase_cycle")} title="매입주기 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-20 cursor-pointer hover:bg-rose-100 select-none">매입주기{retArrow("purchase_cycle")}</th>
-                      <th onClick={() => handleReturnSort("sale_qty_cycle")} title="주기판매 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">주기판매{retArrow("sale_qty_cycle")}</th>
+                      {/* 2026-07-30 · 사용자 요청 · 주기판매 컬럼 제거 */}
                       <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 판매량 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">최근 한달 판매{retArrow("sale_qty_month")}</th>
                       <th onClick={() => handleReturnSort("last_purchase_date")} title="최근매입일 정렬" className="px-2 py-2 text-left font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">최근매입일{retArrow("last_purchase_date")}</th>
                       <th onClick={() => handleReturnSort("last_purchase_qty")} title="최근 매입일의 매입량 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-20 cursor-pointer hover:bg-rose-100 select-none">최근 매입량{retArrow("last_purchase_qty")}</th>
@@ -1298,7 +1299,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         case "supplier":        return dir * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
                         case "current_stock":   return dir * (a.current_stock - b.current_stock);
                         case "purchase_cycle":  return dir * ((a.purchase_cycle ?? 0) - (b.purchase_cycle ?? 0));
-                        case "sale_qty_cycle":  return dir * (a.sale_qty_cycle - b.sale_qty_cycle);
                         case "sale_qty_month":  return dir * ((a.sale_qty_month ?? 0) - (b.sale_qty_month ?? 0));
                         case "last_purchase_date": return dir * String(a.last_purchase_date ?? "").localeCompare(String(b.last_purchase_date ?? ""));
                         case "last_purchase_qty":  return dir * ((a.last_purchase_qty ?? 0) - (b.last_purchase_qty ?? 0));
@@ -1317,7 +1317,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         <td className="px-2 py-1.5 text-slate-600 truncate">{x.supplier ?? "-"}</td>
                         <td className="px-2 py-1.5 text-right text-slate-800 font-bold tabular-nums">{x.current_stock.toLocaleString()}</td>
                         <td className="px-2 py-1.5 text-right text-rose-700 font-bold tabular-nums">{x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}</td>
-                        <td className="px-2 py-1.5 text-right text-amber-700 font-bold tabular-nums">{x.sale_qty_cycle.toLocaleString()}개</td>
+                        {/* 2026-07-30 · 사용자 요청 · 주기판매 컬럼 제거 (셀) */}
                         <td className="px-2 py-1.5 text-right text-orange-600 font-bold tabular-nums">{x.sale_qty_month != null ? `${x.sale_qty_month.toLocaleString()}개` : "-"}</td>
                         <td className="px-2 py-1.5 text-slate-600 tabular-nums text-[11px]">{x.last_purchase_date ?? "-"}</td>
                         <td className="px-2 py-1.5 text-right text-emerald-700 font-bold tabular-nums">{x.last_purchase_qty != null ? `${x.last_purchase_qty.toLocaleString()}개` : "-"}</td>
