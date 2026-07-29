@@ -19,6 +19,7 @@ import {
   LockOpen,
 } from "lucide-react";
 import type { AuthSession } from "../../types";
+import { AppNavHeader } from "../AppNavHeader";
 
 interface ReservationPageProps {
   onBack: () => void;
@@ -321,31 +322,8 @@ export const ReservationPage: React.FC<ReservationPageProps> = ({ onBack, authSe
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
 
-      {/* Header */}
-      <header className="bg-white border-b border-[#e2e8f0] h-14 flex items-center justify-between px-4 sm:px-6 shrink-0 shadow-sm">
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={onBack}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 border border-gray-200 text-gray-500 hover:text-gray-900 transition cursor-pointer mr-1 text-xs font-semibold shrink-0"
-          >
-            <ChevronLeft size={13} />
-            <span className="hidden sm:inline">메인</span>
-          </button>
-          <div className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center shadow-sm">
-            <Home size={14} className="text-white" />
-          </div>
-          <span className="font-black tracking-tight leading-none">
-            <span className="text-red-500 text-xl">OSAN</span>
-            <span className="text-gray-900 text-base hidden sm:inline"> MEGATOWN</span>
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
-            <Calendar size={11} />
-            <span>방문예약</span>
-          </div>
-        </div>
-      </header>
+      {/* 2026-07-29 · 사용자 요청 · 공통 헤더 (AppNavHeader) 로 통일 · reservation 은 AppNavPage 에 없어서 landing 표시 */}
+      <AppNavHeader activePage="landing" authSession={authSession ?? null} onBack={onBack} />
 
       <div className="flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden">
 
