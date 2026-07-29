@@ -5,7 +5,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { X, Package, TrendingUp, ChevronRight, ChevronDown } from "lucide-react";
-import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
+import { ProductInfoCard, PurchaseHistorySection } from "../ScanPage/ProductInfoCard";
 import { type ProductInfo } from "../../lib/productsCache";
 import { SeasonButtons } from "./SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -306,18 +306,10 @@ const ProductDetailChartMode: React.FC<{
           {historyCollapsed && <span className="text-[11px] font-semibold text-slate-400 ml-1">— 클릭하여 펼치기</span>}
         </button>
         {!historyCollapsed && (
-          <ProductInfoCard
-            product={product}
-            context={context}
-            editable={editable}
-            onRealMapUpdate={onRealMapUpdate}
-            onProductUpdate={onProductUpdate}
-            sections={{
-              header: false, zoneAssignment: false, stockStatus: false, actualStockInput: false,
-              orderRequest: false, financial: false, purchaseHistory: true,
-              productMeta: false, extraInfo: false,
-            }}
-          />
+          <div className="px-3 py-2">
+            {/* 2026-07-29 · 이중 카드 제거 · PurchaseHistorySection 직접 사용 (noBorderTop) */}
+            <PurchaseHistorySection productCode={product.code} productName={product.name} noBorderTop />
+          </div>
         )}
       </div>
 

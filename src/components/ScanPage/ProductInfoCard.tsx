@@ -787,7 +787,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 // ═══════════════════════════════════════════════════════════════════════
 // 매입 이력 섹션 (2026-07-15) · purchase_details 조회 · 최근 20건 매입 · 총합
 // ═══════════════════════════════════════════════════════════════════════
-const PurchaseHistorySection: React.FC<{ productCode: string; productName?: string }> = ({ productCode, productName }) => {
+export const PurchaseHistorySection: React.FC<{ productCode: string; productName?: string; noBorderTop?: boolean }> = ({ productCode, productName, noBorderTop }) => {
   const [rows, setRows] = useState<Array<{ purchase_date: string; supplier_name: string | null; quantity: number; amount: number; total: number; unit_price: number }>>([]);
   const [loading, setLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -823,41 +823,71 @@ const PurchaseHistorySection: React.FC<{ productCode: string; productName?: stri
   const supplierSummary = distinctSuppliers.length === 0 ? null
     : distinctSuppliers.length === 1 ? distinctSuppliers[0]
     : `${distinctSuppliers[0]} 외 ${distinctSuppliers.length - 1}개사`;
+  // 2026-07-29 · 월평균 주문 수량 (총 매입 수량 / 개월 수) · 첫~마지막 매입일 사이의 개월 수 기준
+  const avgMonthlyQty = (() => {
+    if (rows.length < 2) return null;
+    const times = rows.map(r => r.purchase_date ? new Date(String(r.purchase_date)).getTime() : NaN).filter(t => Number.isFinite(t));
+    if (times.length < 2) return null;
+    const minT = Math.min(...times);
+    const maxT = Math.max(...times);
+    const spanDays = Math.max(1, Math.round((maxT - minT) / (86400 * 1000)));
+    const spanMonths = spanDays / 30;
+    if (spanMonths <= 0) return null;
+    return Math.round(totalQty / spanMonths);
+  })();
   return (
-    <div className="mt-3 border-t border-slate-200 pt-3">
+    <div className={noBorderTop ? "" : "mt-3 border-t border-slate-200 pt-3"}>
+      {/* 2026-07-29 · 헤더 · 상품명·통계·화살표 별도 라인으로 정리 */}
       <button
         type="button"
         onClick={() => setCollapsed(c => !c)}
-        className="w-full flex items-center gap-2 text-left hover:bg-slate-50 -mx-2 px-2 py-1 rounded transition cursor-pointer"
+        className="w-full flex flex-col gap-1 text-left hover:bg-slate-50 -mx-2 px-2 py-1 rounded transition cursor-pointer"
       >
-        <TrendingUp size={12} className="text-emerald-600" />
-        {productName && (
-          <span className="text-[12px] font-bold text-slate-800 break-words whitespace-normal leading-tight">
-            {productName}
-          </span>
-        )}
-        <span className="text-xs font-black text-slate-700">· 매입 이력</span>
+        {/* 1행 · 아이콘 · 상품명 · "매입 이력" · 화살표 */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <TrendingUp size={13} className="text-emerald-600 shrink-0" />
+          {productName && (
+            <span className="text-[13px] font-black text-slate-800 break-words whitespace-normal leading-tight">
+              {productName}
+            </span>
+          )}
+          <span className="text-[12px] font-black text-emerald-700">· 매입 이력</span>
+          <span className={`ml-auto text-slate-400 text-xs transition-transform shrink-0 ${collapsed ? "" : "rotate-180"}`}>▲</span>
+        </div>
+        {/* 2행 · 통계 (건수 · 총량 · 총액 · 평균 · 주기) */}
         {loading ? (
-          <span className="text-[10px] text-slate-400"><Loader2 size={10} className="inline animate-spin mr-1"/>로딩...</span>
+          <span className="text-[11px] text-slate-400"><Loader2 size={11} className="inline animate-spin mr-1"/>로딩...</span>
         ) : rows.length === 0 ? (
-          <span className="text-[10px] text-slate-400 italic">이력 없음</span>
+          <span className="text-[11px] text-slate-400 italic">이력 없음</span>
         ) : (
-          <span className="text-[10px] font-mono text-slate-500 flex items-center gap-1 flex-wrap">
-            <span>{rows.length}건 · 총 {fmt(totalQty)}개 · <span className="text-emerald-700 font-black">{fmtWon(totalAmt)}</span></span>
+          <div className="text-[11px] tabular-nums text-slate-600 flex items-center gap-1.5 flex-wrap">
+            <span className="font-bold">{rows.length}건</span>
             <span className="text-slate-300">·</span>
-            <span title="건당 평균 매입액 (총 매입액 ÷ 건수)">평균 <span className="text-indigo-600 font-black">{fmtWon(avgAmt)}</span></span>
+            <span>총 <span className="font-black text-slate-800">{fmt(totalQty)}</span>개</span>
+            <span className="text-slate-300">·</span>
+            <span className="text-emerald-700 font-black">{fmtWon(totalAmt)}</span>
+            {avgAmt > 0 && (<>
+              <span className="text-slate-300">·</span>
+              <span title="건당 평균 매입액">평균 <span className="text-indigo-600 font-black">{fmtWon(avgAmt)}</span></span>
+            </>)}
             {avgCycleDays != null && (<>
               <span className="text-slate-300">·</span>
-              <span title="평균 매입주기 (연속 매입일 간격 평균)">주기 <span className="text-sky-600 font-black">{avgCycleDays}일</span></span>
+              <span title="평균 매입주기">주기 <span className="text-sky-600 font-black">{avgCycleDays}일</span></span>
             </>)}
-          </span>
+          </div>
         )}
-        <span className={`ml-auto text-slate-400 text-xs transition-transform ${collapsed ? "" : "rotate-180"}`}>▲</span>
       </button>
-      {/* 2026-07-29 · 제목 아래 공급사 (반복이라 컬럼에서 제거하고 여기로) */}
-      {!collapsed && supplierSummary && (
-        <div className="text-[11px] font-bold text-sky-700 -mx-2 px-2 pb-1.5">
-          🏢 {supplierSummary}
+      {/* 2026-07-29 · 제목 아래 공급사 (반복이라 컬럼에서 제거하고 여기로) + 월평균 주문 수량 */}
+      {!collapsed && (supplierSummary || avgMonthlyQty != null) && (
+        <div className="-mx-2 px-2 pb-1.5 flex items-center gap-2 flex-wrap">
+          {supplierSummary && (
+            <span className="text-[11px] font-bold text-sky-700">🏢 {supplierSummary}</span>
+          )}
+          {avgMonthlyQty != null && (
+            <span className="text-[11px] tabular-nums font-semibold text-slate-600" title="월평균 주문 수량 = 총 매입 수량 / (최초 매입일부터 최근 매입일까지의 개월수)">
+              📦 월평균 <span className="font-black text-indigo-700">{fmt(avgMonthlyQty)}개</span>
+            </span>
+          )}
         </div>
       )}
       {!collapsed && rows.length > 0 && (
