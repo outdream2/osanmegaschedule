@@ -347,8 +347,8 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                 if (!el.dataset.retried) { el.dataset.retried = "1"; el.src = "/src/images/logo.png"; }
               }}
             />
-            {/* 2026-07-28 · 사용자 요청 · OSAN 줄바꿈 MEGATOWN · 항상 2줄 세로 배치 */}
-            <span className="font-black tracking-tight leading-none select-none flex flex-col gap-0.5">
+            {/* 2026-07-28 · OSAN 줄바꿈 MEGATOWN · 2026-07-29 · 사용자 요청 · 모바일(sm 미만) 로고만 · 텍스트 숨김 */}
+            <span className="font-black tracking-tight leading-none select-none hidden sm:flex flex-col gap-0.5">
               <span className="text-red-500 text-lg sm:text-xl leading-none">OSAN</span>
               <span className="text-gray-900 text-sm sm:text-base leading-none">MEGATOWN</span>
             </span>
