@@ -3620,8 +3620,23 @@ export const StockManagePage: React.FC = () => {
                       </div>
                       <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) { setPendingFlowMonths(0); setFlowMonths(0); } }} size="sm" hideLabel />
                     </div>
-                    {/* 조회기간 다음 줄: TOP 리스트 내 검색 + 정보확인 + 숨김관리 */}
-                    {/* 2026-07-29 · 사용자 요청 · TOP 리스트 검색·정보확인·숨김관리 제거 (페이지 상단에 이미 있음 · 중복) */}
+                    {/* 리스트 내 상품명 검색 · 2026-07-29 복원 (사용자 요청 · 리스트쪽에 위치) */}
+                    <div className="flex items-center gap-2 mb-2.5 flex-wrap text-[14px]">
+                      <div className="relative flex-1 min-w-[200px]">
+                        <Search size={15} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={flowSearch}
+                          onChange={e => setFlowSearch(e.target.value)}
+                          placeholder="리스트에서 상품명·코드 검색"
+                          className="w-full pl-8 pr-8 py-2 border border-slate-200 rounded-lg text-[14px] focus:outline-none focus:border-orange-400 bg-white"
+                        />
+                        {flowSearch && (
+                          <button onClick={() => setFlowSearch("")}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[13px] font-black text-rose-500 hover:text-rose-700 cursor-pointer">✕</button>
+                        )}
+                      </div>
+                    </div>
                     {/* 판매수량 범위 필터 (모바일 최적화) */}
                     <div className="flex items-center gap-2 mb-2.5 flex-wrap text-[14px]">
                       <span className="text-slate-700 font-black text-[14px] shrink-0">판매출고계</span>
