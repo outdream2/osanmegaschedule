@@ -2005,11 +2005,9 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
           {rankBadge(String(num))}
         </div>
         <div className="w-full bg-stone-50 px-1 py-1 flex flex-col items-center gap-0.5 flex-1 justify-center">
-          <div className="flex items-center gap-1 flex-wrap justify-center">
+          {/* 2026-07-30 · 사용자 요청 · 상위 구역도와 통일 · 라벨만 · 개수 배지 제거 (툴팁 유지) */}
+          <div className="flex items-center justify-center">
             <span className="text-[10px] font-black text-white bg-amber-700 rounded px-1.5 leading-none">{num}</span>
-            {count > 0 && (
-              <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 rounded px-1 leading-none tabular-nums">{count}</span>
-            )}
           </div>
           <span className="text-[10px] font-bold text-stone-800 leading-tight text-center line-clamp-2 break-all">{cat}</span>
         </div>
@@ -2033,11 +2031,9 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
           <div className="min-h-[18px] flex items-center justify-center">{rankBadge(`${num}B`)}</div>
           <div className={`w-full font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-1 leading-tight text-center min-h-[76px] flex flex-col items-center justify-center overflow-hidden`}
             title={`${num}B · ${subB}${countB > 0 ? ` · ${countB}개 상품` : ""}`}>
-            <div className="flex items-center gap-1 flex-wrap justify-center mb-0.5">
+            {/* 2026-07-30 · 사용자 요청 · 상위 구역도와 통일 · 라벨만 · 상품 개수 배지 제거 (호버 툴팁에는 유지) */}
+            <div className="flex items-center justify-center mb-0.5">
               <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1.5 leading-none`}>{num}B</span>
-              {countB > 0 && (
-                <span className="text-[10px] font-black text-white bg-slate-700 rounded px-1 leading-none tabular-nums">{countB}</span>
-              )}
             </div>
             <span className="line-clamp-3 text-[10px] break-all">{subB}</span>
           </div>
@@ -2047,11 +2043,8 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
           <div className="min-h-[18px] flex items-center justify-center">{rankBadge(`${num}A`)}</div>
           <div className={`w-full font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-1 leading-tight text-center min-h-[76px] flex flex-col items-center justify-center overflow-hidden`}
             title={`${num}A · ${subA}${countA > 0 ? ` · ${countA}개 상품` : ""}`}>
-            <div className="flex items-center gap-1 flex-wrap justify-center mb-0.5">
+            <div className="flex items-center justify-center mb-0.5">
               <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1.5 leading-none`}>{num}A</span>
-              {countA > 0 && (
-                <span className="text-[10px] font-black text-white bg-slate-800 rounded px-1 leading-none tabular-nums">{countA}</span>
-              )}
             </div>
             <span className="line-clamp-3 text-[10px] break-all">{subA}</span>
           </div>
