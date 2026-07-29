@@ -1658,7 +1658,8 @@ export const StockManagePage: React.FC = () => {
   // 통합 탭 (2026-07-15) · 4개 섹션을 상단 탭으로 통합
   //   flow · supplier · low · diff
   //   기본: flow (재고흐름)
-  const [stockTab, setStockTab] = useState<"flow" | "supplier" | "purchase" | "low" | "diff" | "category" | "loss" | "trending">("flow");
+  // 2026-07-29 · 사용자 요청 · 손실추적 → 실재고차이(diff) 로 통합 · "loss" 타입 제거
+  const [stockTab, setStockTab] = useState<"flow" | "supplier" | "purchase" | "low" | "diff" | "category" | "trending">("flow");
   // 상품재고현황 매입 셀 클릭 시 팝업 (2026-07-16) · 해당 상품 매입 이력
   const [productPurchaseModal, setProductPurchaseModal] = useState<{ product_code: string; product_name: string } | null>(null);
 
@@ -2791,9 +2792,9 @@ export const StockManagePage: React.FC = () => {
               { k: "purchase" as const, label: "매입상세", icon: TrendingUp, color: "emerald" },
               { k: "low" as const, label: "적정재고↓", icon: AlertTriangle, color: "rose", badge: lowStock.length },
               { k: "diff" as const, label: "실재고차이", icon: Layers, color: "violet" },
-              // 2026-07-28 · 카테고리별판매·손실추적 · 판매추이에서 이동
+              // 2026-07-28 · 카테고리별판매 · 판매추이에서 이동
               { k: "category" as const, label: "카테고리별현황", icon: PieChart, color: "amber" },
-              { k: "loss" as const, label: "손실추적", icon: AlertTriangle, color: "rose" },
+              // 2026-07-29 · 손실추적 탭 제거 · 실재고차이 탭이 커버 (사용자 요청 통합)
               // 2026-07-29 · 판매 급상승 상품 리스트 (사용자 요청)
               { k: "trending" as const, label: "급상승", icon: TrendingUp, color: "indigo" },
             ].map(t => {
@@ -3529,14 +3530,7 @@ export const StockManagePage: React.FC = () => {
                 </React.Suspense>
               </div>
             )}
-            {/* 2026-07-28 · 손실추적 (판매추이에서 이동) */}
-            {stockTab === "loss" && (
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <React.Suspense fallback={<div className="text-center text-xs text-slate-400 py-8">손실추적 로딩 중...</div>}>
-                  <LossTrackerTabLazy onOpenProductInfo={() => { /* TODO: 우측 상세 연결 · 다음 라운드 */ }} />
-                </React.Suspense>
-              </div>
-            )}
+            {/* 2026-07-29 · 손실추적 탭 제거 (사용자 요청) · 실재고차이(diff) 탭이 커버 · LossTrackerTabLazy import 는 유지 (사용 X · 다음 정리 라운드 dead code 삭제) */}
             {/* 2026-07-29 · 급상승 탭 · 최근 window일 판매 vs 이전 window일 판매 비교 */}
             {stockTab === "trending" && (
               <div className="flex-1 min-h-0 overflow-y-auto">
