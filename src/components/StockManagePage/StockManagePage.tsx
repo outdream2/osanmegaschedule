@@ -914,9 +914,24 @@ export const StockManagePage: React.FC = () => {
   });
   const bulkHideFlow = async () => {
     if (selectedFlowCodes.size === 0) return;
-    // 로컬 리스트에서만 제외 · DB 수정 · 다른 페이지 연동 없음 (2026-07-15 · 사용자 정책)
-    setStockFlow(prev => prev.filter(r => !selectedFlowCodes.has(String(r.product_code))));
-    setSelectedFlowCodes(new Set());
+    // 2026-07-29 · 사용자 지적 버그 fix · 로컬만 필터하고 DB PATCH 를 안 해서 리로드 시 다시 나오던 문제
+    //   각 상품 PATCH { hidden: true } 병렬 호출 후 · 리스트에서 제외 · 다른 페이지 리스트도 갱신 이벤트
+    setFlowBulkHiding(true);
+    try {
+      const codes = Array.from(selectedFlowCodes);
+      await Promise.all(codes.map(code =>
+        fetch(`/api/products/${encodeURIComponent(code)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ hidden: true }),
+        }).catch(() => { /* 개별 실패 무시 · 나머지 진행 */ })
+      ));
+      setStockFlow(prev => prev.filter(r => !selectedFlowCodes.has(String(r.product_code))));
+      setSelectedFlowCodes(new Set());
+      try { window.dispatchEvent(new CustomEvent("products-hidden-changed")); } catch { /* ignore */ }
+    } finally {
+      setFlowBulkHiding(false);
+    }
   };
   // 기간 aggregation: 0=단일 스냅샷 · N=최근 N개월 aggregation
   // 2026-07-29 · 사용자 요청 · 기본 조회기간 1개월 (Phase 1 로딩 속도 개선)
