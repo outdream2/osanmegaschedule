@@ -294,14 +294,14 @@ export const MultiLineChartInner: React.FC<LineChartProps> = ({ labels, series, 
             }
             <span className="font-bold text-slate-600">{s.label}</span>
             {hoverIdx != null && (
-              <span className="font-mono text-slate-800">
+              <span className="tabular-numstext-slate-800">
                 {s.format === "won" ? fmtWon(s.values[hoverIdx]) : fmt(s.values[hoverIdx])}
               </span>
             )}
           </div>
         ))}
         {hoverIdx != null && (
-          <span className="ml-auto text-slate-500 font-mono font-bold">{labels[hoverIdx]}</span>
+          <span className="ml-auto text-slate-500 tabular-numsfont-bold">{labels[hoverIdx]}</span>
         )}
       </div>
     </div>
@@ -596,7 +596,7 @@ const ProductTrendTab: React.FC<{
                 <div className="text-[13px] font-black text-slate-800 truncate leading-tight">
                   {rows[0]?.product_name ?? selected.product_name}
                 </div>
-                <div className="text-[10px] font-mono text-slate-500 truncate">
+                <div className="text-[10px] tabular-numstext-slate-500 truncate">
                   #{selected.product_code} · {rows[0]?.supplier_name ?? selected.supplier ?? "-"}
                 </div>
               </div>
@@ -647,7 +647,7 @@ const ProductTrendTab: React.FC<{
                       <Info size={11} /> 정보확인
                     </button>
                   </div>
-                  <div className="text-[11px] font-mono text-slate-500">
+                  <div className="text-[11px] tabular-numstext-slate-500">
                     #{selected.product_code} · {rows[0]?.supplier_name ?? selected.supplier ?? "-"}
                     {rows[0]?.spec ? ` · ${rows[0].spec}` : ""}
                   </div>
@@ -779,7 +779,7 @@ const ProductTrendTab: React.FC<{
                 </div>
                 <div className="min-w-0">
                   <div className="text-base font-black text-slate-800 truncate">{scanProductModal.name}</div>
-                  <div className="text-[11px] font-mono text-slate-500 mt-0.5">#{scanProductModal.code}</div>
+                  <div className="text-[11px] tabular-numstext-slate-500 mt-0.5">#{scanProductModal.code}</div>
                 </div>
               </div>
               <button
@@ -1061,7 +1061,7 @@ const SupplierTrendTab: React.FC<{
                         <Building2 size={11} className="text-sky-500 shrink-0" />
                         <span className="text-xs font-bold text-slate-700 break-words whitespace-normal leading-tight">{sup.supplier}</span>
                         {sup.supplier_code && (
-                          <span className="text-[9px] font-mono text-slate-400 shrink-0" title="공급사코드">#{sup.supplier_code}</span>
+                          <span className="text-[9px] tabular-numstext-slate-400 shrink-0" title="공급사코드">#{sup.supplier_code}</span>
                         )}
                         {sup.code_conflict && (
                           <span className="text-[9px] font-bold text-amber-700 bg-amber-100 border border-amber-300 rounded px-1 shrink-0"
@@ -1327,7 +1327,7 @@ export const StockFlowPanel: React.FC<{
             <TrendingUp size={14} className="text-orange-600" />
             {/* 스냅샷 날짜 · 재고관리와 동일 형식 */}
             {snapshot && (
-              <span className="text-[10px] font-mono font-black text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
+              <span className="text-[10px] tabular-numsfont-black text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
                 {snapshot}
               </span>
             )}
@@ -1349,7 +1349,7 @@ export const StockFlowPanel: React.FC<{
                 cls = "text-purple-700 bg-purple-50 border-purple-300";
               }
               return (
-                <span className={`text-[10px] font-black rounded-full px-2 py-0.5 border font-mono ${cls}`}>
+                <span className={`text-[10px] font-black rounded-full px-2 py-0.5 border tabular-nums${cls}`}>
                   {label}
                 </span>
               );
@@ -1409,7 +1409,7 @@ export const StockFlowPanel: React.FC<{
           const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
           const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
           return (
-            <span className="text-[10px] font-mono font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 ml-1">
+            <span className="text-[10px] tabular-numsfont-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 ml-1">
               {s} ~ {e}
             </span>
           );
@@ -1467,11 +1467,11 @@ export const StockFlowPanel: React.FC<{
           <span className="text-slate-500 font-black shrink-0">판매</span>
           <input type="number" min={0} value={saleMin}
             onChange={(e) => setSaleMin(e.target.value)} placeholder="최소"
-            className="flex-1 min-w-0 px-1.5 py-1 border border-slate-200 rounded text-[11px] font-mono text-right focus:outline-none focus:border-orange-400" />
+            className="flex-1 min-w-0 px-1.5 py-1 border border-slate-200 rounded text-[11px] tabular-numstext-right focus:outline-none focus:border-orange-400" />
           <span className="text-slate-400 shrink-0">~</span>
           <input type="number" min={0} value={saleMax}
             onChange={(e) => setSaleMax(e.target.value)} placeholder="최대"
-            className="flex-1 min-w-0 px-1.5 py-1 border border-slate-200 rounded text-[11px] font-mono text-right focus:outline-none focus:border-orange-400" />
+            className="flex-1 min-w-0 px-1.5 py-1 border border-slate-200 rounded text-[11px] tabular-numstext-right focus:outline-none focus:border-orange-400" />
           {(saleMin || saleMax) && (
             <button onClick={() => { setSaleMin(""); setSaleMax(""); }}
               className="text-[10px] font-black text-rose-500 hover:text-rose-700 px-1.5 py-1 rounded hover:bg-rose-50 transition cursor-pointer shrink-0">✕</button>
@@ -1486,7 +1486,7 @@ export const StockFlowPanel: React.FC<{
       >
         <span className={`text-slate-400 text-xs transition-transform ${saleListCollapsed ? "" : "rotate-90"}`}>▶</span>
         <span className="text-[11px] font-black text-slate-600">{listLabel}</span>
-        <span className="text-[10px] font-mono text-slate-400">({displayRows.length}건)</span>
+        <span className="text-[10px] tabular-numstext-slate-400">({displayRows.length}건)</span>
       </div>
       <div className={`flex-1 overflow-auto relative max-h-[50vh] ${saleListCollapsed ? "hidden" : ""}`}>
         {loading && (
@@ -1720,7 +1720,7 @@ const ZoneCategoryContent: React.FC = () => {
         <div className={`bg-gradient-to-r from-violet-50 to-slate-50 border border-violet-200 rounded-xl p-3`}>
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
-              <span className={`text-base font-black ${textCls} font-mono`}>{g.zone}</span>
+              <span className={`text-[15px] font-black ${textCls} tabular-nums`}>{g.zone}</span>
               {zoneCategoryLabel(g.zone) && (
                 <span className={`text-sm font-semibold ${textCls}`}>{zoneCategoryLabel(g.zone)}</span>
               )}
@@ -1761,9 +1761,9 @@ const ZoneCategoryContent: React.FC = () => {
                     <td className="px-0.5 py-1.5 break-words whitespace-normal leading-tight">
                       <span className="text-[13px] font-medium text-slate-800 break-words whitespace-normal leading-tight" title={it.name}>{it.name}</span>
                     </td>
-                    <td className="text-right px-0.5 py-1.5 tabular-nums text-orange-700 font-black bg-orange-50/40">{fmt(it.saleQty)}</td>
-                    <td className="text-right px-0.5 py-1.5 tabular-nums text-amber-800 font-black bg-amber-50/40">{fmt(it.currentStock)}</td>
-                    <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-emerald-700 bg-emerald-50/40">{fmtWon(it.amount)}</td>
+                    <td className="text-right px-0.5 py-1.5 text-[12px] tabular-nums text-orange-700 font-bold bg-orange-50/40">{fmt(it.saleQty)}</td>
+                    <td className="text-right px-0.5 py-1.5 text-[12px] tabular-nums text-amber-800 font-bold bg-amber-50/40">{fmt(it.currentStock)}</td>
+                    <td className="text-right px-0.5 py-1.5 text-[12px] tabular-nums font-bold text-emerald-700 bg-emerald-50/40">{fmtWon(it.amount)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1830,16 +1830,16 @@ const ZoneCategoryContent: React.FC = () => {
               // 2026-07-29 · 사용자 요청 · 순위별 색상 · 눈에 띄게
               //   1·2 빨강 · 3·4 파랑 · 5·6 초록 · 7·8 보라 · 9·10 슬레이트
               const rankCls = rank <= 2
-                ? "bg-gradient-to-r from-rose-500 to-red-600 text-white border-red-700 shadow-md"
+                ? "bg-rose-500 text-white border-rose-600"
                 : rank <= 4
-                  ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white border-blue-700 shadow-md"
+                  ? "bg-sky-500 text-white border-sky-600"
                   : rank <= 6
-                    ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white border-green-700 shadow-md"
+                    ? "bg-emerald-500 text-white border-emerald-600"
                     : rank <= 8
-                      ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white border-purple-700 shadow-md"
+                      ? "bg-violet-500 text-white border-violet-600"
                       : rank <= 10
-                        ? "bg-gradient-to-r from-slate-400 to-slate-500 text-white border-slate-600 shadow-sm"
-                        : "bg-white text-slate-500 border-slate-200";
+                        ? "bg-slate-400 text-white border-slate-500"
+                        : "bg-white text-slate-400 border-slate-200";
               return (
                 <button
                   key={g.zone}
@@ -1849,29 +1849,29 @@ const ZoneCategoryContent: React.FC = () => {
                 >
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2 min-w-0">
-                      <span className={`inline-flex items-center justify-center min-w-[24px] h-[22px] text-[12px] font-black rounded-md border px-1.5 tabular-nums shrink-0 ${rankCls}`}
+                      <span className={`inline-flex items-center justify-center w-[20px] h-[20px] text-[12px] font-black rounded-md border tabular-nums shrink-0 ${rankCls}`}
                         title={`판매 순위 ${rank}위`}>
                         {rank}
                       </span>
-                      <span className={`text-[15px] font-black ${textCls} tabular-nums shrink-0`}>{g.zone}</span>
+                      <span className={`text-[13px] font-black ${textCls} tabular-nums shrink-0`}>{g.zone}</span>
                       {zoneCategoryLabel(g.zone) && (
-                        <span className={`text-[12px] font-bold ${textCls} break-words whitespace-normal leading-tight`}
+                        <span className={`text-[11px] font-bold ${textCls} break-words whitespace-normal leading-tight`}
                           title={zoneCategoryLabel(g.zone)}>
                           {zoneCategoryLabel(g.zone)}
                         </span>
                       )}
                     </div>
-                    <span className={`text-slate-400 text-[11px] transition-transform shrink-0 ${isSelected ? "rotate-90" : ""}`}>▶</span>
+                    <span className={`text-slate-400 text-[10px] transition-transform shrink-0 ${isSelected ? "rotate-90" : ""}`}>▶</span>
                   </div>
-                  <div className="flex items-center justify-between gap-2 flex-wrap text-[12px] tabular-nums">
-                    <div className="flex items-center gap-2 text-slate-500 font-semibold">
+                  <div className="flex items-center justify-between gap-2 flex-wrap text-[11px] tabular-nums">
+                    <div className="flex items-center gap-1.5 text-slate-500 font-semibold">
                       <span>상품 <span className="font-black text-slate-700">{g.items.length}</span>종</span>
                       <span className="text-slate-300">·</span>
                       <span>판매 <span className="font-black text-orange-700">{fmt(g.saleQty)}</span></span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-black text-emerald-700 text-[13px]">{fmtWon(g.totalAmount)}</span>
-                      <span className="text-[11px] font-bold text-slate-400">{pct.toFixed(1)}%</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-black text-emerald-700 text-[12px]">{fmtWon(g.totalAmount)}</span>
+                      <span className="text-[10px] font-bold text-slate-400">{pct.toFixed(1)}%</span>
                     </div>
                   </div>
                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -1914,7 +1914,7 @@ const ZoneCategoryContent: React.FC = () => {
                 <div className="text-[13px] font-black text-slate-800 truncate leading-tight">
                   구역 {selectedZone}{zoneCategoryLabel(selectedZone) ? ` · ${zoneCategoryLabel(selectedZone)}` : ""}
                 </div>
-                <div className="text-[10px] font-mono text-slate-500 truncate">
+                <div className="text-[10px] tabular-numstext-slate-500 truncate">
                   {grouped.find(g => g.zone === selectedZone)?.items.length ?? 0}개 상품
                 </div>
               </div>
@@ -2091,11 +2091,11 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
       </button>
       {!collapsed && (
         <div className="p-2 overflow-x-auto">
-          {/* L-shape · min-width 로 찌그러짐 방지 · 좁으면 가로 스크롤 */}
-          <div className="flex gap-1.5 items-stretch min-w-[720px]">
+          {/* 2026-07-29 · 사용자 요청 · 동측 wing 을 상위 구역도처럼 수평 배치 · main map 아래에 8셀 한 줄 */}
+          <div className="flex flex-col gap-1.5 min-w-[720px]">
 
-            {/* 좌측 · 상위 map 과 동일 구조 (상단벽 · 중앙 22+8B/8A→1B/1A · 하단벽) */}
-            <div className="flex-1 min-w-0 flex flex-col gap-1.5">
+            {/* 상단 · main map (상단벽 · 중앙 22+8B/8A→1B/1A · 하단벽) */}
+            <div className="flex flex-col gap-1.5">
               {/* 상단 벽면 */}
               <div>
                 <div className="text-[8px] font-black text-emerald-600 uppercase tracking-wider mb-0.5 px-0.5">상단 벽면 (21→9)</div>
@@ -2120,10 +2120,12 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
               </div>
             </div>
 
-            {/* 우측 · 수직윙 · min-w 로 폭 확보 */}
-            <div className="flex flex-col gap-0.5 w-[54px] shrink-0">
-              <div className="text-[8px] font-black text-violet-600 uppercase tracking-wider mb-0.5 px-0.5 text-center whitespace-nowrap">수직윙 (35→42)</div>
-              {STORE_VERTICAL_WING.map(n => wallCell(n))}
+            {/* 하단 · 동측 wing · 수평 8셀 · 상위 구역도의 동측 wing 과 방향 통일 */}
+            <div className="border-t border-violet-200 pt-1.5">
+              <div className="text-[8px] font-black text-violet-600 uppercase tracking-wider mb-0.5 px-0.5">동측 wing (35→42) · 이벤트 · 카운터 · 조제실</div>
+              <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
+                {STORE_VERTICAL_WING.map(n => wallCell(n))}
+              </div>
             </div>
 
           </div>
@@ -2213,12 +2215,12 @@ const _CategoryTabSupplier_deprecated: React.FC = () => {
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className={`text-slate-400 text-xs transition-transform shrink-0 ${isOpen ? "rotate-90" : ""}`}>▶</span>
                       <span className={`text-sm font-black ${textCls}`}>{g.name}</span>
-                      <span className="text-[10px] font-mono text-slate-400">{g.suppliers.length}개 사</span>
+                      <span className="text-[10px] tabular-numstext-slate-400">{g.suppliers.length}개 사</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[11px] font-mono text-slate-600">{fmt(g.saleQty)}판매</span>
+                      <span className="text-[11px] tabular-numstext-slate-600">{fmt(g.saleQty)}판매</span>
                       <span className="text-xs font-black text-emerald-700">{fmtWon(g.purchaseAmount)}</span>
-                      <span className="text-[10px] font-mono text-slate-400">{pct.toFixed(1)}%</span>
+                      <span className="text-[10px] tabular-numstext-slate-400">{pct.toFixed(1)}%</span>
                     </div>
                   </div>
                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -2229,7 +2231,7 @@ const _CategoryTabSupplier_deprecated: React.FC = () => {
                   <div className="mt-1 ml-4 p-2 border-l-2 border-slate-200 bg-slate-50/50 rounded-r-lg">
                     <div className="flex flex-wrap gap-1">
                       {g.suppliers.slice(0, 30).map(s => (
-                        <span key={s} className="text-[10px] font-mono text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-0.5">{s}</span>
+                        <span key={s} className="text-[10px] tabular-numstext-slate-600 bg-white border border-slate-200 rounded px-1.5 py-0.5">{s}</span>
                       ))}
                       {g.suppliers.length > 30 && <span className="text-[10px] text-slate-400">+{g.suppliers.length - 30}...</span>}
                     </div>
@@ -2656,7 +2658,7 @@ export const SalesTrendPage: React.FC = () => {
                 </div>
                 <div className="min-w-0">
                   <div className="text-base font-black text-slate-800 truncate">{scanProductModal.name}</div>
-                  <div className="text-[11px] font-mono text-slate-500 mt-0.5">#{scanProductModal.code}</div>
+                  <div className="text-[11px] tabular-numstext-slate-500 mt-0.5">#{scanProductModal.code}</div>
                 </div>
               </div>
               <button onClick={() => setScanProductModal(null)} className="text-slate-400 hover:text-slate-700 text-3xl leading-none font-black w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0">×</button>
@@ -2717,7 +2719,7 @@ export const SalesTrendPage: React.FC = () => {
                       <li key={`st-hidden-${code}`} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50/30 transition">
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-black text-slate-800 truncate" title={p.product_name}>{p.product_name}</div>
-                          <div className="text-[10px] font-mono text-slate-400 truncate">
+                          <div className="text-[10px] tabular-numstext-slate-400 truncate">
                             #{code}
                             {p.supplier ? ` · ${p.supplier}` : ""}
                             {p.real_map ? ` · ${p.real_map}` : ""}
