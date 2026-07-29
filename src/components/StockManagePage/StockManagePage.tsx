@@ -2694,20 +2694,7 @@ export const StockManagePage: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap min-w-0">
           <Boxes size={18} className="text-slate-500 shrink-0" />
           <h2 className="text-lg font-black text-slate-800">재고/판매관리</h2>
-          <span className="text-[11px] font-semibold text-slate-400 hidden sm:inline">ERP 데이터 기준</span>
-          {/* 페이지 서브탭 pill */}
-          <div className="inline-flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5">
-            <button onClick={() => setPageTab("dashboard")}
-              className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${pageTab === "dashboard"
-                ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
-                : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-                }`}>대시보드</button>
-            <button onClick={() => setPageTab("raw")}
-              className={`px-4 py-1.5 text-xs font-black rounded-lg transition-all duration-200 cursor-pointer ${pageTab === "raw"
-                ? "bg-white text-slate-900 ring-1 ring-slate-200/70 shadow-sm"
-                : "text-slate-500 hover:text-slate-800 hover:bg-white/50"
-                }`}>원본 데이터</button>
-          </div>
+          {/* 2026-07-29 · 사용자 요청 · "ERP 데이터 기준" · 대시보드/원본 데이터 pill 제거 */}
           {lastImportAt && (() => {
             const d = new Date(lastImportAt);
             if (isNaN(d.getTime())) return null;
