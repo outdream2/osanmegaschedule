@@ -3116,20 +3116,26 @@ export const StockManagePage: React.FC = () => {
                               </td>
                             </tr>
                           )}
-                          {/* 2026-07-29 · 사용자 요청 · 컬럼 3그룹 접기/펼치기 헤더 (재고현황·매입현황·판매현황) */}
-                          <tr className="border-b border-slate-100 bg-slate-50 text-[10px] font-medium text-slate-500 tracking-wider">
-                            <th colSpan={2}></th>{/* 체크박스+# 통합 셀 + 상품명 */}
+                          {/* 2026-07-30 · 사용자 요청 · 3그룹 헤더 색상 (재고현황 sky · 매입현황 amber · 판매현황 emerald) */}
+                          <tr className="border-b border-slate-200 text-[10px] font-black tracking-wider">
+                            <th colSpan={2} className="bg-slate-50"></th>{/* 체크박스+# 통합 셀 + 상품명 */}
                             {(() => {
+                              const GROUP_COLOR: Record<FlowGroup, { bg: string; text: string; hover: string }> = {
+                                stock:    { bg: "bg-sky-50",     text: "text-sky-700",     hover: "hover:bg-sky-100" },
+                                purchase: { bg: "bg-amber-50",   text: "text-amber-700",   hover: "hover:bg-amber-100" },
+                                sales:    { bg: "bg-emerald-50", text: "text-emerald-700", hover: "hover:bg-emerald-100" },
+                              };
                               const groupHeader = (g: FlowGroup, label: string, span: number) => {
                                 const collapsed = isFlowGroupCollapsed(g);
+                                const c = GROUP_COLOR[g];
                                 return (
                                   <th colSpan={collapsed ? 1 : span}
-                                    className="text-center py-2 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-slate-100 transition text-slate-500 uppercase"
+                                    className={`text-center py-2 border-l border-r border-slate-100 cursor-pointer select-none transition uppercase ${c.bg} ${c.text} ${c.hover}`}
                                     onClick={() => toggleFlowGroup(g)}
                                     title={collapsed ? `${label} 펼치기` : `${label} 접기`}
                                   >
-                                    <span className="inline-flex items-center gap-1 font-medium text-[10px] whitespace-nowrap">
-                                      {collapsed ? <ChevronRight size={11} /> : <ChevronDown size={11} />}
+                                    <span className="inline-flex items-center gap-1 font-black text-[11px] whitespace-nowrap">
+                                      {collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
                                       {label}
                                     </span>
                                   </th>
