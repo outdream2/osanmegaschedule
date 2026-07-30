@@ -12,6 +12,7 @@ import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { PurchaseHistoryModal } from "../common/PurchaseHistoryModal";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
+import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { useHiddenManager } from "../../hooks/useHiddenManager";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
@@ -1741,8 +1742,34 @@ export const StockManagePage: React.FC = () => {
       } catch { /* ignore */ }
     })();
   }, []);
-  // 2026-07-30 · 공급사 분류 맵 (vendor category 배지 표시용)
+  // 2026-07-30 · 공급사 분류 맵 (vendor category 배지 표시용) + 상세 모달
   const [vendorCategoryMap, setVendorCategoryMap] = useState<Record<string, string | null>>({});
+  const [supplierDetailModal, setSupplierDetailModal] = useState<any | null>(null);
+  const openSupplierDetailModal = useCallback(async (supplierName: string) => {
+    if (!supplierName) return;
+    const name = supplierName.trim();
+    try {
+      const res = await fetch("/api/vendors?withBalances=1");
+      if (!res.ok) { alert(`공급사 정보 조회 실패 (${res.status})`); return; }
+      const list: any[] = await res.json();
+      const exact = list.find(v => String(v.company_name ?? "").trim() === name);
+      if (exact) { setSupplierDetailModal(exact); return; }
+      const stripped = name.replace(/\s*\(.*?\)\s*/g, "").trim();
+      const strippedMatch = stripped ? list.find(v => {
+        const vn = String(v.company_name ?? "").trim();
+        return vn === stripped || vn.includes(stripped);
+      }) : undefined;
+      if (strippedMatch) { setSupplierDetailModal(strippedMatch); return; }
+      const partial = list.find(v => {
+        const vn = String(v.company_name ?? "").trim();
+        return vn && (vn.includes(name) || name.includes(vn));
+      });
+      if (partial) { setSupplierDetailModal(partial); return; }
+      alert(`공급사 정보 없음: ${supplierName}`);
+    } catch (e: any) {
+      alert(`공급사 정보 조회 실패: ${e?.message ?? "네트워크 오류"}`);
+    }
+  }, []);
   useEffect(() => {
     (async () => {
       try {
@@ -2852,6 +2879,18 @@ export const StockManagePage: React.FC = () => {
                             return <VendorCategoryBadge category={vendorCategoryMap[nm] ?? vendorCategoryMap[supplierSelectedObj.supplier ?? ""] ?? null} />;
                           })()}
                           {supplierSelectedObj.supplier_code && <span className="text-[10px] tabular-nums text-slate-500 bg-slate-100 rounded px-1.5 py-0.5">#{supplierSelectedObj.supplier_code}</span>}
+                          {/* 2026-07-30 · 사용자 요청 · 공급사 정보 조회 · 공급사관리 모달 오픈 */}
+                          {(() => {
+                            const nm = supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
+                            return (
+                              <button type="button"
+                                onClick={() => openSupplierDetailModal(nm || supplierSelectedObj.supplier || "")}
+                                className="ml-auto inline-flex items-center gap-1 h-6 px-2 rounded-md text-[10px] font-black text-sky-700 bg-sky-50 border border-sky-300 hover:bg-sky-100 cursor-pointer transition"
+                                title="공급사 정보 조회·수정">
+                                <Building2 size={11} /> 조회
+                              </button>
+                            );
+                          })()}
                         </div>
                         {(() => {
                           // 2026-07-23 · supplier_balances 최신값 (재고자산 앞에 표시)
@@ -3997,6 +4036,19 @@ export const StockManagePage: React.FC = () => {
           productName={productPurchaseModal.product_name}
           onClose={() => setProductPurchaseModal(null)}
         />
+      )}
+
+      {/* 2026-07-30 · 사용자 요청 · 공급사 정보 조회·수정 모달 */}
+      {supplierDetailModal && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierDetailModal(null)}>
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+            <VendorDetailModal
+              vendor={supplierDetailModal}
+              onClose={() => setSupplierDetailModal(null)}
+              onSaved={() => setSupplierDetailModal(null)}
+            />
+          </div>
+        </div>
       )}
 
       {/* ── 공급사별 상품 상세 모달 (판매출고계 내림차순) ── */}
