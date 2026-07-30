@@ -207,6 +207,23 @@ function initials(name: string) {
   return name ? name.charAt(0) : "?";
 }
 
+// ─── 섹션 그룹 컬러 맵 ──────────────────────────────────────────────────────
+// 4그룹: 인적사항(sky) · 근무·계약(amber) · 경력·자격(emerald) · 임금·보험(rose)
+type SectionGroup = "personal" | "work" | "career" | "wage";
+
+const GROUP_HEADER: Record<SectionGroup, string> = {
+  personal: "bg-sky-50    border-sky-100   text-sky-700",
+  work:     "bg-amber-50  border-amber-100  text-amber-700",
+  career:   "bg-emerald-50 border-emerald-100 text-emerald-700",
+  wage:     "bg-rose-50   border-rose-100   text-rose-700",
+};
+const GROUP_ICON: Record<SectionGroup, string> = {
+  personal: "text-sky-400",
+  work:     "text-amber-400",
+  career:   "text-emerald-400",
+  wage:     "text-rose-400",
+};
+
 // ─── 서브컴포넌트: 아바타 ────────────────────────────────────────────────────
 const Avatar: React.FC<{
   name: string;
@@ -248,7 +265,7 @@ const InlineField: React.FC<{
   wide?: boolean;
 }> = ({ label, value, editing, icon, type = "text", placeholder, onChange, monospace, wide }) => (
   <div className={`flex flex-col gap-0.5 ${wide ? "col-span-2" : ""}`}>
-    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
+    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
       {icon}
       {label}
     </span>
@@ -258,50 +275,53 @@ const InlineField: React.FC<{
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`border border-indigo-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-indigo-50/40 ${monospace ? "font-mono" : ""}`}
+        className={`border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 bg-indigo-50/40 ${monospace ? "font-mono" : ""}`}
       />
     ) : (
       <span
-        className={`text-sm py-1 min-h-[26px] ${monospace ? "font-mono" : ""} ${!value ? "text-slate-300 italic" : "text-slate-800"}`}
+        className={`text-[12px] py-1 min-h-[24px] ${monospace ? "font-mono" : ""} ${!value ? "text-slate-300 italic" : "text-slate-700"}`}
       >
-        {value || "(등록 없음)"}
+        {value || "(없음)"}
       </span>
     )}
   </div>
 );
 
-// ─── 서브컴포넌트: 섹션 카드 (아코디언) ─────────────────────────────────────
+// ─── 서브컴포넌트: 섹션 카드 (아코디언) — 그룹 컬러 헤더 ─────────────────────
 const SectionCard: React.FC<{
   title: string;
   icon: React.ReactNode;
   children: React.ReactNode;
   defaultOpen?: boolean;
-}> = ({ title, icon, children, defaultOpen = true }) => {
+  group?: SectionGroup;
+}> = ({ title, icon, children, defaultOpen = true, group = "personal" }) => {
   const [open, setOpen] = useState(defaultOpen);
+  const headerCls = GROUP_HEADER[group];
+  const iconCls   = GROUP_ICON[group];
   return (
-    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="w-full px-4 py-3 bg-white hover:bg-slate-50 border-b border-slate-100 flex items-center justify-between cursor-pointer transition-colors"
+        className={`w-full px-3.5 py-2.5 border-b ${headerCls} flex items-center justify-between cursor-pointer transition-colors`}
       >
-        <span className="flex items-center gap-2 text-[11px] font-black text-slate-700 uppercase tracking-widest">
-          <span className="text-indigo-400">{icon}</span>
+        <span className={`flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider ${headerCls.split(" ").find(c => c.startsWith("text-")) ?? ""}`}>
+          <span className={iconCls}>{icon}</span>
           {title}
         </span>
-        <span className={`text-slate-300 transition-transform duration-150 ${open ? "rotate-180" : ""}`}>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+        <span className={`transition-transform duration-150 opacity-50 ${open ? "rotate-180" : ""} ${headerCls.split(" ").find(c => c.startsWith("text-")) ?? ""}`}>
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor">
             <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
           </svg>
         </span>
       </button>
-      {open && <div className="p-4">{children}</div>}
+      {open && <div className="p-3.5">{children}</div>}
     </div>
   );
 };
 
 // ─── 서브컴포넌트: 빈 상태 행 ───────────────────────────────────────────────
 const EmptyRow: React.FC<{ label: string }> = ({ label }) => (
-  <p className="text-[12px] text-slate-300 italic py-1">{label}</p>
+  <p className="text-[11px] text-slate-300 italic py-1">{label}</p>
 );
 
 // ─── 서브컴포넌트: 신규 등록 모달 ────────────────────────────────────────────
@@ -319,25 +339,26 @@ const CreateModal: React.FC<{
       onClick={() => !saving && onClose()}
     >
       <div
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-hidden flex flex-col"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[92vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-violet-50 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow">
-              <UserPlus size={15} className="text-white" />
+        {/* 모달 헤더 */}
+        <div className="px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-violet-50 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
+              <UserPlus size={13} className="text-white" />
             </div>
-            <span className="text-sm font-black text-slate-800">직원 신규 등록</span>
+            <span className="text-sm font-semibold text-slate-800">직원 신규 등록</span>
           </div>
           <button
             onClick={() => !saving && onClose()}
             disabled={saving}
-            className="text-slate-400 hover:text-slate-700 w-8 h-8 rounded-lg hover:bg-white/70 cursor-pointer flex items-center justify-center disabled:opacity-40"
+            className="text-slate-400 hover:text-slate-700 w-7 h-7 rounded-md hover:bg-white/70 cursor-pointer flex items-center justify-center disabled:opacity-40"
           >
-            <X size={18} />
+            <X size={15} />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-5 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {(
             [
               { label: "이름 *", key: "name", type: "text", placeholder: "" },
@@ -347,52 +368,52 @@ const CreateModal: React.FC<{
             ] as { label: string; key: keyof Employee; type: string; placeholder: string }[]
           ).map(({ label, key, type, placeholder }) => (
             <div key={key}>
-              <label className="text-[11px] font-black text-slate-600 uppercase tracking-wide block mb-1">{label}</label>
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">{label}</label>
               <input
                 type={type}
                 value={String(draft[key] ?? "")}
                 onChange={(e) => set(key, e.target.value)}
                 placeholder={placeholder}
-                className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-indigo-400"
+                className="w-full border border-slate-200 rounded-md px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-200"
               />
             </div>
           ))}
           <div>
-            <label className="text-[11px] font-black text-slate-600 uppercase tracking-wide block mb-1">직책</label>
+            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">직책</label>
             <select
               value={String(draft.position ?? "")}
               onChange={(e) => set("position", e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-indigo-400"
+              className="w-full border border-slate-200 rounded-md px-2.5 py-1.5 text-[12px] bg-white focus:outline-none focus:border-indigo-400"
             >
               <option value="">선택 안 함</option>
               {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-[11px] font-black text-slate-600 uppercase tracking-wide block mb-1">메모</label>
+            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">메모</label>
             <textarea
               value={String(draft.memo ?? "")}
               onChange={(e) => set("memo", e.target.value)}
               placeholder="(선택) 근무 특이사항 · 알러지 등"
               rows={2}
-              className="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-indigo-400 resize-none"
+              className="w-full border border-slate-200 rounded-md px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-indigo-400 resize-none"
             />
           </div>
         </div>
-        <div className="px-5 py-3 border-t border-slate-200 bg-slate-50/70 flex items-center justify-end gap-2">
+        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50/70 flex items-center justify-end gap-2">
           <button
             onClick={onClose}
             disabled={saving}
-            className="text-[12px] font-bold text-slate-600 bg-white border border-slate-300 rounded-lg px-4 py-1.5 hover:bg-slate-50 cursor-pointer disabled:opacity-40"
+            className="text-[11px] font-semibold text-slate-600 bg-white border border-slate-300 rounded-md h-7 px-3 hover:bg-slate-50 cursor-pointer disabled:opacity-40"
           >
             취소
           </button>
           <button
             onClick={() => onSave(draft)}
             disabled={saving}
-            className="text-[12px] font-black text-white bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 rounded-lg px-5 py-1.5 cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shadow-sm"
+            className="text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md h-7 px-3.5 cursor-pointer disabled:opacity-40 flex items-center gap-1.5 shadow-sm"
           >
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+            {saving ? <Loader2 size={11} className="animate-spin" /> : <Save size={11} />}
             {saving ? "저장 중..." : "저장"}
           </button>
         </div>
@@ -403,13 +424,13 @@ const CreateModal: React.FC<{
 
 // ─── 서브컴포넌트: 직원 없음 (우측 빈 상태) ─────────────────────────────────
 const EmptyDetail: React.FC = () => (
-  <div className="flex-1 flex flex-col items-center justify-center gap-4 text-slate-300 select-none">
-    <div className="w-20 h-20 rounded-2xl bg-slate-100 flex items-center justify-center">
-      <Users size={36} className="text-slate-300" />
+  <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-300 select-none">
+    <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center">
+      <Users size={30} className="text-slate-300" />
     </div>
     <div className="text-center">
-      <p className="text-sm font-bold text-slate-400">직원을 선택하세요</p>
-      <p className="text-xs text-slate-300 mt-1">좌측 목록에서 직원을 클릭하면 이력서가 표시됩니다</p>
+      <p className="text-sm font-semibold text-slate-400">직원을 선택하세요</p>
+      <p className="text-[11px] text-slate-300 mt-0.5">좌측 목록에서 직원을 클릭하면 인사카드가 표시됩니다</p>
     </div>
   </div>
 );
@@ -599,43 +620,40 @@ const StaffManagePage: React.FC = () => {
     return (
       <button
         onClick={() => handleSelect(emp)}
-        className={`w-full text-left flex items-center h-14 px-3 gap-2.5 relative transition-colors cursor-pointer group ${
+        className={`w-full text-left flex items-center h-[52px] px-3 gap-2.5 relative transition-colors cursor-pointer group ${
           isSelected
-            ? "bg-rose-50/50"
-            : "hover:bg-orange-50/30"
+            ? "bg-indigo-50/70"
+            : "hover:bg-slate-50/60"
         }`}
       >
         {/* 선택 강조선 */}
         <span
-          className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full transition-opacity ${
+          className={`absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full transition-opacity ${
             isSelected ? "bg-indigo-500 opacity-100" : "opacity-0"
           }`}
         />
-        {/* 아바타 32px */}
+        {/* 아바타 */}
         <div className="shrink-0 ml-1">
           <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
         </div>
         {/* 이름 + 메타 */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-          <span className="text-[14px] font-medium text-slate-800 leading-tight truncate">
+        <div className="flex-1 min-w-0 flex flex-col justify-center gap-px">
+          <span className={`text-[13px] font-semibold leading-tight truncate ${isSelected ? "text-indigo-800" : "text-slate-800"}`}>
             {emp.name}
           </span>
-          <div className="flex items-center gap-1 flex-wrap">
-            {emp.role && (
-              <span className="text-[9px] font-bold text-slate-400 truncate max-w-[44px]">{emp.role}</span>
-            )}
+          <div className="flex items-center gap-1">
             {emp.position && (
-              <span className={`text-[9px] font-bold px-1 py-px rounded border leading-tight ${positionColor(emp.position)}`}>
+              <span className={`text-[9px] font-semibold px-1 py-px rounded border leading-tight ${positionColor(emp.position)}`}>
                 {emp.position}
               </span>
             )}
             {schedType && (
-              <span className={`text-[9px] font-bold px-1 py-px rounded border leading-tight ${scheduleTypeColor(schedType)}`}>
+              <span className={`text-[9px] font-semibold px-1 py-px rounded border leading-tight ${scheduleTypeColor(schedType)}`}>
                 {schedType}
               </span>
             )}
             {emp.level != null && (
-              <span className="text-[9px] text-slate-300 font-mono">Lv.{emp.level}</span>
+              <span className="text-[9px] text-slate-300 font-mono ml-auto">Lv.{emp.level}</span>
             )}
           </div>
         </div>
@@ -646,93 +664,96 @@ const StaffManagePage: React.FC = () => {
   // ── 렌더링 ──────────────────────────────────────────────────────────────────
   return (
     <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-0 min-h-0">
-      {/* 페이지 헤더 */}
-      <div className="bg-white border border-slate-200 rounded-t-xl border-b-0 px-4 py-3 flex items-center justify-between flex-wrap gap-2">
+
+      {/* ── 페이지 헤더 툴바 (h-8 버튼 · shadcn 스타일) ── */}
+      <div className="bg-white border border-slate-200 rounded-t-xl border-b-0 px-4 h-12 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <Users size={17} className="text-indigo-500" />
-          <h2 className="text-sm font-black text-slate-800">직원관리</h2>
-          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200">
-            총 {employees.length}명
+          <Users size={15} className="text-indigo-500 shrink-0" />
+          <h2 className="text-sm font-semibold text-slate-800">직원관리</h2>
+          <span className="text-[10px] font-semibold px-1.5 py-px rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 tabular-nums">
+            {employees.length}명
           </span>
         </div>
         <div className="flex items-center gap-1.5">
+          {/* icon-only 새로고침 */}
           <button
             onClick={loadEmployees}
             disabled={loading}
             title="새로고침"
-            className="text-[11px] font-bold text-slate-500 border border-slate-200 rounded-lg px-2 py-1.5 hover:bg-slate-50 cursor-pointer flex items-center gap-1 disabled:opacity-50"
+            className="w-8 h-8 flex items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 cursor-pointer disabled:opacity-40 transition-colors"
           >
-            <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
           </button>
+          {/* 신규 등록 */}
           <button
             onClick={() => setCreateOpen(true)}
-            className="text-[11px] font-black text-white bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 rounded-lg px-3 py-1.5 cursor-pointer flex items-center gap-1 shadow-sm"
+            className="h-8 px-3 flex items-center gap-1.5 text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md cursor-pointer shadow-sm transition-colors"
           >
-            <UserPlus size={12} /> 신규 등록
+            <UserPlus size={12} />
+            신규 등록
           </button>
         </div>
       </div>
 
-      {/* 마스터-디테일 */}
+      {/* ── 마스터-디테일 ── */}
       <div
         className="flex flex-col lg:flex-row flex-1 bg-white border border-slate-200 rounded-b-xl shadow-sm overflow-hidden"
         style={{ minHeight: "calc(100vh - 160px)" }}
       >
-        {/* ════ 좌측: 슬림 원라인 리스트 ════ */}
-        <aside className="w-full lg:w-72 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col bg-white max-h-[40vh] lg:max-h-none">
-          {/* 검색 + 필터 */}
-          <div className="px-3 pt-3 pb-2 border-b border-slate-100 space-y-2">
+        {/* ════ 좌측: 슬림 리스트 ════ */}
+        <aside className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col bg-white max-h-[40vh] lg:max-h-none">
+
+          {/* 검색 */}
+          <div className="px-2.5 pt-2.5 pb-2 border-b border-slate-100">
             <div className="relative">
-              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <input
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="이름 · 직책 · 연락처 검색"
-                className="w-full pl-7 pr-2 py-1.5 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 bg-slate-50"
+                placeholder="이름 · 직책 · 연락처"
+                className="w-full pl-7 pr-2 h-7 text-[11px] border border-slate-200 rounded-md focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 bg-slate-50 placeholder:text-slate-350"
               />
-            </div>
-            <div className="flex gap-1 flex-wrap">
-              <button
-                onClick={() => setFilterPosition("")}
-                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border transition-colors cursor-pointer ${
-                  filterPosition === "" ? "bg-indigo-600 text-white border-indigo-600" : "bg-white text-slate-400 border-slate-200 hover:border-indigo-300"
-                }`}
-              >
-                전체
-              </button>
-              {POSITIONS.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setFilterPosition(filterPosition === p ? "" : p)}
-                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full border transition-colors cursor-pointer ${
-                    filterPosition === p
-                      ? `${positionColor(p)} border-current`
-                      : "bg-white text-slate-400 border-slate-200 hover:border-indigo-300"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
             </div>
           </div>
 
+          {/* 직책 segment 필터 */}
+          <div className="px-2.5 py-1.5 border-b border-slate-100 flex gap-1 flex-wrap">
+            <button
+              onClick={() => setFilterPosition("")}
+              className={`text-[9px] font-semibold h-5 px-1.5 rounded border transition-colors cursor-pointer ${
+                filterPosition === ""
+                  ? "bg-indigo-600 text-white border-indigo-600"
+                  : "bg-white text-slate-400 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
+              }`}
+            >
+              전체
+            </button>
+            {POSITIONS.map((p) => (
+              <button
+                key={p}
+                onClick={() => setFilterPosition(filterPosition === p ? "" : p)}
+                className={`text-[9px] font-semibold h-5 px-1.5 rounded border transition-colors cursor-pointer ${
+                  filterPosition === p
+                    ? `${positionColor(p)} border-current`
+                    : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+
           {/* 직원 목록 */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
-            {loading && filtered.length > 0 && (
-              <div className="flex items-center justify-center gap-1.5 py-1.5 mx-3 mb-1 bg-sky-50 border border-sky-200 rounded-md shrink-0">
-                <Loader2 size={11} className="animate-spin text-sky-600" />
-                <span className="text-[10px] font-bold text-sky-700">조건 변경 · 새로 불러오는 중...</span>
-              </div>
-            )}
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-100/70">
             {loading && filtered.length === 0 ? (
-              <div className="flex items-center justify-center py-8 text-slate-400 text-xs font-bold gap-2">
-                <Loader2 size={14} className="animate-spin" />로딩 중...
+              <div className="flex items-center justify-center py-8 text-slate-400 text-[11px] font-semibold gap-1.5">
+                <Loader2 size={13} className="animate-spin" />로딩 중...
               </div>
             ) : error ? (
-              <div className="m-3 p-3 text-[11px] text-red-600 font-bold bg-red-50 rounded-lg border border-red-200">
+              <div className="m-2.5 p-2.5 text-[11px] text-red-600 font-semibold bg-red-50 rounded-md border border-red-200">
                 {error}
-                <button onClick={loadEmployees} className="ml-2 underline cursor-pointer">재시도</button>
+                <button onClick={loadEmployees} className="ml-1.5 underline cursor-pointer">재시도</button>
               </div>
             ) : !loading && filtered.length === 0 ? (
               <div className="text-center text-[11px] text-slate-300 py-6">해당 조건의 직원이 없습니다</div>
@@ -744,24 +765,24 @@ const StaffManagePage: React.FC = () => {
           </div>
 
           {/* 하단 신규 등록 */}
-          <div className="p-3 border-t border-slate-100">
+          <div className="px-2.5 py-2 border-t border-slate-100">
             <button
               onClick={() => setCreateOpen(true)}
-              className="w-full text-[11px] font-black text-indigo-600 border border-indigo-200 rounded-lg py-2 hover:bg-indigo-50 cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
+              className="w-full h-7 text-[11px] font-semibold text-indigo-600 border border-indigo-200 rounded-md hover:bg-indigo-50 cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
             >
-              <UserPlus size={12} /> 신규 직원 등록
+              <UserPlus size={11} /> 신규 직원 등록
             </button>
           </div>
         </aside>
 
-        {/* ════ 우측: 이력서 패널 ════ */}
-        <section className="flex-1 flex flex-col min-w-0 bg-slate-50/40">
+        {/* ════ 우측: 인사카드 패널 ════ */}
+        <section className="flex-1 flex flex-col min-w-0 bg-slate-50/30">
           {!displayEmp ? (
             <EmptyDetail />
           ) : (
             <>
-              {/* ── 프로필 헤더 ── */}
-              <div className="bg-white border-b border-slate-200 px-6 py-5">
+              {/* ── 프로필 헤더 — 인디고 tint 배너 ── */}
+              <div className="bg-gradient-to-r from-indigo-50/80 to-violet-50/60 border-b border-indigo-100/60 px-5 py-4">
                 <div className="flex items-start gap-4">
                   {/* 사진 */}
                   <div className="relative group shrink-0">
@@ -772,7 +793,7 @@ const StaffManagePage: React.FC = () => {
                         title="사진 변경"
                         className="absolute inset-0 rounded-full bg-slate-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                       >
-                        <Camera size={18} className="text-white" />
+                        <Camera size={16} className="text-white" />
                       </button>
                     )}
                     <input
@@ -794,10 +815,10 @@ const StaffManagePage: React.FC = () => {
                       <input
                         value={draft?.name ?? ""}
                         onChange={(e) => setField("name", e.target.value)}
-                        className="text-xl font-black text-slate-800 border-b-2 border-indigo-400 bg-transparent focus:outline-none w-full mb-2"
+                        className="text-lg font-semibold text-slate-800 border-b-2 border-indigo-400 bg-transparent focus:outline-none w-full mb-1.5"
                       />
                     ) : (
-                      <h3 className="text-xl font-black text-slate-800 leading-tight mb-2">{displayEmp.name}</h3>
+                      <h3 className="text-lg font-semibold text-slate-800 leading-tight mb-1.5">{displayEmp.name}</h3>
                     )}
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {/* 직책 */}
@@ -805,13 +826,13 @@ const StaffManagePage: React.FC = () => {
                         <select
                           value={draft?.position ?? ""}
                           onChange={(e) => setField("position", e.target.value)}
-                          className="text-[12px] border border-slate-300 rounded-lg px-2 py-0.5 bg-white focus:outline-none focus:border-indigo-400"
+                          className="text-[11px] border border-slate-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-indigo-400"
                         >
                           <option value="">직책 없음</option>
                           {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
                         </select>
                       ) : (
-                        <span className={`text-[11px] font-black px-2 py-0.5 rounded-lg border ${positionColor(displayEmp.position)}`}>
+                        <span className={`text-[10px] font-semibold px-1.5 py-px rounded border ${positionColor(displayEmp.position)}`}>
                           {displayEmp.position || "직책 없음"}
                         </span>
                       )}
@@ -820,43 +841,43 @@ const StaffManagePage: React.FC = () => {
                         <select
                           value={draft?.schedule_type ?? ""}
                           onChange={(e) => setField("schedule_type", e.target.value)}
-                          className="text-[12px] border border-slate-300 rounded-lg px-2 py-0.5 bg-white focus:outline-none focus:border-indigo-400"
+                          className="text-[11px] border border-slate-300 rounded-md px-2 h-6 bg-white focus:outline-none focus:border-indigo-400"
                         >
                           <option value="">근무타입 없음</option>
                           {SCHEDULE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                         </select>
                       ) : displayEmp.schedule_type ? (
-                        <span className={`text-[11px] font-black px-2 py-0.5 rounded-lg border ${scheduleTypeColor(displayEmp.schedule_type)}`}>
+                        <span className={`text-[10px] font-semibold px-1.5 py-px rounded border ${scheduleTypeColor(displayEmp.schedule_type)}`}>
                           {displayEmp.schedule_type}
                         </span>
                       ) : null}
                       {/* 레벨 */}
                       {displayEmp.level != null && (
-                        <span className="text-[11px] font-bold text-slate-400 flex items-center gap-0.5">
-                          <Award size={10} /> Lv.{editing ? draft?.level : displayEmp.level}
+                        <span className="text-[10px] font-semibold text-slate-400 flex items-center gap-0.5">
+                          <Award size={9} /> Lv.{editing ? draft?.level : displayEmp.level}
                         </span>
                       )}
-                      <span className="text-[10px] text-slate-300 font-mono ml-auto">ID #{displayEmp.id}</span>
+                      <span className="text-[9px] text-slate-300 font-mono ml-auto">#{displayEmp.id}</span>
                     </div>
                   </div>
 
-                  {/* 편집 / 저장 / 삭제 버튼 */}
-                  <div className="flex items-center gap-2 shrink-0">
+                  {/* 편집 / 저장 / 삭제 버튼 — h-7 통일 */}
+                  <div className="flex items-center gap-1.5 shrink-0">
                     {editing ? (
                       <>
                         <button
                           onClick={cancelEdit}
                           disabled={saving}
-                          className="text-[12px] font-bold text-slate-600 bg-white border border-slate-300 rounded-xl px-3 py-1.5 hover:bg-slate-50 cursor-pointer flex items-center gap-1 disabled:opacity-40"
+                          className="h-7 px-2.5 text-[11px] font-semibold text-slate-600 bg-white border border-slate-300 rounded-md hover:bg-slate-50 cursor-pointer flex items-center gap-1 disabled:opacity-40 transition-colors"
                         >
-                          <X size={13} /> 취소
+                          <X size={12} /> 취소
                         </button>
                         <button
                           onClick={saveEdit}
                           disabled={saving}
-                          className="text-[12px] font-black text-white bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 rounded-xl px-4 py-1.5 cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-40"
+                          className="h-7 px-2.5 text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-40 transition-colors"
                         >
-                          {saving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
+                          {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                           {saving ? "저장 중..." : "저장"}
                         </button>
                       </>
@@ -864,15 +885,15 @@ const StaffManagePage: React.FC = () => {
                       <>
                         <button
                           onClick={() => selectedEmp && startEdit(selectedEmp)}
-                          className="text-[12px] font-bold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-xl px-3 py-1.5 hover:bg-indigo-100 cursor-pointer flex items-center gap-1"
+                          className="h-7 px-2.5 text-[11px] font-semibold text-indigo-600 bg-white border border-indigo-200 rounded-md hover:bg-indigo-50 cursor-pointer flex items-center gap-1 transition-colors"
                         >
-                          <Edit2 size={13} /> 편집
+                          <Edit2 size={12} /> 편집
                         </button>
                         <button
                           onClick={() => selectedEmp && deleteEmployee(selectedEmp)}
-                          className="text-[12px] font-bold text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-1.5 hover:bg-red-100 cursor-pointer flex items-center gap-1"
+                          className="h-7 px-2.5 text-[11px] font-semibold text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 cursor-pointer flex items-center gap-1 transition-colors"
                         >
-                          <Trash2 size={13} /> 삭제
+                          <Trash2 size={12} /> 삭제
                         </button>
                       </>
                     )}
@@ -880,132 +901,132 @@ const StaffManagePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* ── 이력서 섹션들 ── */}
-              <div className="flex-1 overflow-y-auto p-5 space-y-3">
+              {/* ── 인사카드 섹션들 ── */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
 
-                {/* §1 인적사항 */}
-                <SectionCard title="인적사항" icon={<User size={12} />} defaultOpen>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                {/* §1 인적사항 — sky 그룹 */}
+                <SectionCard title="인적사항" icon={<User size={11} />} group="personal" defaultOpen>
+                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
                     <InlineField
                       label="연락처" value={editing ? (draft?.phone ?? "") : (displayEmp.phone ?? "")}
-                      editing={editing} icon={<Phone size={10} />} placeholder="010-0000-0000" monospace
+                      editing={editing} icon={<Phone size={9} />} placeholder="010-0000-0000" monospace
                       onChange={(v) => setField("phone", v)}
                     />
                     <InlineField
                       label="이메일" value={editing ? (draft?.email ?? "") : (displayEmp.email ?? "")}
-                      editing={editing} icon={<Mail size={10} />} type="email" placeholder="name@example.com"
+                      editing={editing} icon={<Mail size={9} />} type="email" placeholder="name@example.com"
                       onChange={(v) => setField("email", v)}
                     />
                     <InlineField
                       label="생년월일" value={editing ? (draft?.birth_date ?? "") : (displayEmp.birth_date ?? "")}
-                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      editing={editing} icon={<Calendar size={9} />} type="date"
                       onChange={(v) => setField("birth_date", v)}
                     />
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                        <User size={10} /> 성별
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        <User size={9} /> 성별
                       </span>
                       {editing ? (
                         <select
                           value={draft?.gender ?? ""}
                           onChange={(e) => setField("gender", e.target.value)}
-                          className="border border-indigo-300 rounded-lg px-2.5 py-1.5 text-sm bg-white focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                          className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] bg-white focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
                         >
                           <option value="">선택 안 함</option>
                           {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
                         </select>
                       ) : (
-                        <span className={`text-sm py-1 ${displayEmp.gender ? "text-slate-800" : "text-slate-300 italic"}`}>
-                          {displayEmp.gender || "(등록 없음)"}
+                        <span className={`text-[12px] py-1 ${displayEmp.gender ? "text-slate-700" : "text-slate-300 italic"}`}>
+                          {displayEmp.gender || "(없음)"}
                         </span>
                       )}
                     </div>
                     <InlineField
                       label="주소" value={editing ? (draft?.address ?? "") : (displayEmp.address ?? "")}
-                      editing={editing} icon={<MapPin size={10} />} placeholder="주소 입력"
+                      editing={editing} icon={<MapPin size={9} />} placeholder="주소 입력"
                       onChange={(v) => setField("address", v)} wide
                     />
                   </div>
                 </SectionCard>
 
-                {/* §2 근무 정보 */}
-                <SectionCard title="근무 정보" icon={<Building size={12} />} defaultOpen>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                {/* §2 근무 정보 — amber 그룹 */}
+                <SectionCard title="근무 정보" icon={<Building size={11} />} group="work" defaultOpen>
+                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
                     <InlineField
                       label="직책" value={editing ? (draft?.position ?? "") : (displayEmp.position ?? "")}
-                      editing={editing} icon={<Award size={10} />} placeholder="직책 입력"
+                      editing={editing} icon={<Award size={9} />} placeholder="직책 입력"
                       onChange={(v) => setField("position", v)}
                     />
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                        <Users size={10} /> 구분 / 역할
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        <Users size={9} /> 구분 / 역할
                       </span>
                       {editing ? (
-                        <div className="flex gap-2">
+                        <div className="flex gap-1.5">
                           <input
                             type="number" min={1} max={9}
                             value={draft?.level ?? ""}
                             onChange={(e) => setField("level", e.target.value === "" ? null : Number(e.target.value))}
                             placeholder="Lv"
-                            className="w-14 border border-indigo-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none bg-indigo-50/40"
+                            className="w-12 border border-indigo-300 rounded-md px-2 py-1 text-[12px] focus:outline-none bg-indigo-50/40"
                           />
                           <input
                             type="text" value={draft?.role ?? ""}
                             onChange={(e) => setField("role", e.target.value)}
                             placeholder="역할 (예: admin)"
-                            className="flex-1 border border-indigo-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none bg-indigo-50/40"
+                            className="flex-1 border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] focus:outline-none bg-indigo-50/40"
                           />
                         </div>
                       ) : (
-                        <span className="text-sm py-1 text-slate-800">
+                        <span className="text-[12px] py-1 text-slate-700">
                           {displayEmp.level != null ? `Lv.${displayEmp.level}` : ""}
-                          {displayEmp.role && <span className="text-slate-500 ml-1">({displayEmp.role})</span>}
-                          {displayEmp.level == null && !displayEmp.role && <span className="text-slate-300 italic">(등록 없음)</span>}
+                          {displayEmp.role && <span className="text-slate-400 ml-1">({displayEmp.role})</span>}
+                          {displayEmp.level == null && !displayEmp.role && <span className="text-slate-300 italic">(없음)</span>}
                         </span>
                       )}
                     </div>
                     <InlineField
                       label="입사일" value={editing ? (draft?.hire_date ?? "") : (displayEmp.hire_date ?? "")}
-                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      editing={editing} icon={<Calendar size={9} />} type="date"
                       onChange={(v) => setField("hire_date", v)}
                     />
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                        <ClipboardList size={10} /> 근무 타입
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        <ClipboardList size={9} /> 근무 타입
                       </span>
                       {editing ? (
                         <select
                           value={draft?.schedule_type ?? ""}
                           onChange={(e) => setField("schedule_type", e.target.value)}
-                          className="border border-indigo-300 rounded-lg px-2.5 py-1.5 text-sm bg-white focus:outline-none bg-indigo-50/40"
+                          className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] bg-white focus:outline-none bg-indigo-50/40"
                         >
                           <option value="">선택 안 함</option>
                           {SCHEDULE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                         </select>
                       ) : (
-                        <span className={`text-sm py-1 ${displayEmp.schedule_type ? "text-slate-800" : "text-slate-300 italic"}`}>
-                          {displayEmp.schedule_type || "(등록 없음)"}
+                        <span className={`text-[12px] py-1 ${displayEmp.schedule_type ? "text-slate-700" : "text-slate-300 italic"}`}>
+                          {displayEmp.schedule_type || "(없음)"}
                         </span>
                       )}
                     </div>
                     <InlineField
                       label="담당 구역" value={editing ? (draft?.work_area ?? "") : (displayEmp.work_area ?? "")}
-                      editing={editing} icon={<MapPin size={10} />} placeholder="예: 1구역 / 냉장"
+                      editing={editing} icon={<MapPin size={9} />} placeholder="예: 1구역 / 냉장"
                       onChange={(v) => setField("work_area", v)} wide
                     />
                   </div>
                 </SectionCard>
 
-                {/* §3 경력 */}
-                <SectionCard title="경력" icon={<Briefcase size={12} />} defaultOpen={false}>
+                {/* §3 경력 — emerald 그룹 */}
+                <SectionCard title="경력" icon={<Briefcase size={11} />} group="career" defaultOpen={false}>
                   {Array.isArray(displayEmp.careers) && displayEmp.careers.length > 0 ? (
-                    <ul className="space-y-2">
+                    <ul className="space-y-1.5">
                       {displayEmp.careers.map((c: CareerItem) => (
                         <li key={c.id} className="flex items-start gap-2 py-1.5 border-b border-slate-100 last:border-0">
-                          <Briefcase size={13} className="text-indigo-300 mt-0.5 shrink-0" />
+                          <Briefcase size={12} className="text-emerald-300 mt-0.5 shrink-0" />
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-bold text-slate-800">{c.company}</p>
-                            <p className="text-[11px] text-slate-400">{c.period}{c.desc ? ` · ${c.desc}` : ""}</p>
+                            <p className="text-[12px] font-semibold text-slate-700">{c.company}</p>
+                            <p className="text-[10px] text-slate-400">{c.period}{c.desc ? ` · ${c.desc}` : ""}</p>
                           </div>
                         </li>
                       ))}
@@ -1015,16 +1036,16 @@ const StaffManagePage: React.FC = () => {
                   )}
                 </SectionCard>
 
-                {/* §4 학력 */}
-                <SectionCard title="학력" icon={<GraduationCap size={12} />} defaultOpen={false}>
+                {/* §4 학력 — emerald 그룹 */}
+                <SectionCard title="학력" icon={<GraduationCap size={11} />} group="career" defaultOpen={false}>
                   {Array.isArray(displayEmp.educations) && displayEmp.educations.length > 0 ? (
-                    <ul className="space-y-2">
+                    <ul className="space-y-1.5">
                       {displayEmp.educations.map((edu: EducationItem) => (
                         <li key={edu.id} className="flex items-start gap-2 py-1.5 border-b border-slate-100 last:border-0">
-                          <GraduationCap size={13} className="text-violet-300 mt-0.5 shrink-0" />
+                          <GraduationCap size={12} className="text-emerald-300 mt-0.5 shrink-0" />
                           <div>
-                            <p className="text-sm font-bold text-slate-800">{edu.school}</p>
-                            <p className="text-[11px] text-slate-400">
+                            <p className="text-[12px] font-semibold text-slate-700">{edu.school}</p>
+                            <p className="text-[10px] text-slate-400">
                               {[edu.major, edu.grad].filter(Boolean).join(" · ")}
                             </p>
                           </div>
@@ -1036,16 +1057,16 @@ const StaffManagePage: React.FC = () => {
                   )}
                 </SectionCard>
 
-                {/* §5 자격증 */}
-                <SectionCard title="자격증 · 면허" icon={<Award size={12} />} defaultOpen={false}>
+                {/* §5 자격증 — emerald 그룹 */}
+                <SectionCard title="자격증 · 면허" icon={<Award size={11} />} group="career" defaultOpen={false}>
                   {Array.isArray(displayEmp.certifications) && displayEmp.certifications.length > 0 ? (
-                    <ul className="space-y-2">
+                    <ul className="space-y-1.5">
                       {displayEmp.certifications.map((cert: CertItem) => (
                         <li key={cert.id} className="flex items-center gap-2 py-1 border-b border-slate-100 last:border-0">
-                          <Award size={13} className="text-amber-300 shrink-0" />
+                          <Award size={12} className="text-amber-300 shrink-0" />
                           <div>
-                            <p className="text-sm font-bold text-slate-800">{cert.name}</p>
-                            <p className="text-[11px] text-slate-400">
+                            <p className="text-[12px] font-semibold text-slate-700">{cert.name}</p>
+                            <p className="text-[10px] text-slate-400">
                               {[cert.issuer, cert.date].filter(Boolean).join(" · ")}
                             </p>
                           </div>
@@ -1057,17 +1078,17 @@ const StaffManagePage: React.FC = () => {
                   )}
                 </SectionCard>
 
-                {/* §6 계약 · 서류 */}
-                <SectionCard title="계약 · 서류" icon={<FileText size={12} />} defaultOpen>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                {/* §6 계약 · 서류 — amber 그룹 */}
+                <SectionCard title="계약 · 서류" icon={<FileText size={11} />} group="work" defaultOpen>
+                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
                     <InlineField
                       label="계약 시작일" value={editing ? (draft?.contract_start ?? "") : (displayEmp.contract_start ?? "")}
-                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      editing={editing} icon={<Calendar size={9} />} type="date"
                       onChange={(v) => setField("contract_start", v)}
                     />
                     <InlineField
                       label="계약 종료일" value={editing ? (draft?.contract_end ?? "") : (displayEmp.contract_end ?? "")}
-                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      editing={editing} icon={<Calendar size={9} />} type="date"
                       onChange={(v) => setField("contract_end", v)}
                     />
                     <InlineField
@@ -1077,8 +1098,8 @@ const StaffManagePage: React.FC = () => {
                     />
                     {/* 계약서 링크 */}
                     <div className="col-span-2 flex flex-col gap-0.5">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                        <FileText size={10} /> 계약서 파일
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        <FileText size={9} /> 계약서 파일
                       </span>
                       {editing ? (
                         <input
@@ -1086,27 +1107,27 @@ const StaffManagePage: React.FC = () => {
                           value={draft?.contract_file_url ?? ""}
                           onChange={(e) => setField("contract_file_url", e.target.value)}
                           placeholder="계약서 URL 입력 (https://...)"
-                          className="border border-indigo-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                          className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
                         />
                       ) : displayEmp.contract_file_url ? (
                         <a
                           href={displayEmp.contract_file_url}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-sm font-bold text-indigo-600 hover:underline py-1 truncate"
+                          className="text-[12px] font-semibold text-indigo-600 hover:underline py-1 truncate"
                         >
                           계약서 다운로드
                         </a>
                       ) : (
-                        <span className="text-sm text-slate-300 italic py-1">(등록 없음)</span>
+                        <span className="text-[12px] text-slate-300 italic py-1">(없음)</span>
                       )}
                     </div>
                   </div>
                 </SectionCard>
 
-                {/* §7 근로조건 (근기법 §17 서면교부 대상) */}
-                <SectionCard title="근로조건" icon={<Calendar size={12} />} defaultOpen={false}>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                {/* §7 근로조건 — amber 그룹 */}
+                <SectionCard title="근로조건" icon={<Calendar size={11} />} group="work" defaultOpen={false}>
+                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
                     <InlineField
                       label="주 소정근로시간"
                       value={editing ? String(draft?.working_hours_per_week ?? "") : String(displayEmp.working_hours_per_week ?? "")}
@@ -1146,16 +1167,16 @@ const StaffManagePage: React.FC = () => {
                   </div>
                 </SectionCard>
 
-                {/* §8 임금 정보 (민감 - 관리자만 편집) */}
-                <SectionCard title="임금 정보" icon={<Briefcase size={12} />} defaultOpen={false}>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                {/* §8 임금 정보 — rose 그룹 */}
+                <SectionCard title="임금 정보" icon={<Briefcase size={11} />} group="wage" defaultOpen={false}>
+                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">임금 유형</span>
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">임금 유형</span>
                       {editing ? (
                         <select
                           value={draft?.wage_calc_type ?? ""}
                           onChange={(e) => setField("wage_calc_type", e.target.value || null)}
-                          className="border border-indigo-300 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                          className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
                         >
                           <option value="">선택 안 함</option>
                           <option value="hourly">시급</option>
@@ -1164,8 +1185,8 @@ const StaffManagePage: React.FC = () => {
                           <option value="annual">연봉</option>
                         </select>
                       ) : (
-                        <span className="text-sm text-slate-800 py-1">
-                          {({ hourly: "시급", daily: "일급", monthly: "월급", annual: "연봉" } as any)[displayEmp.wage_calc_type ?? ""] ?? <span className="text-slate-300 italic">(미지정)</span>}
+                        <span className="text-[12px] text-slate-700 py-1">
+                          {({ hourly: "시급", daily: "일급", monthly: "월급", annual: "연봉" } as Record<string, string>)[displayEmp.wage_calc_type ?? ""] ?? <span className="text-slate-300 italic">(미지정)</span>}
                         </span>
                       )}
                     </div>
@@ -1204,54 +1225,54 @@ const StaffManagePage: React.FC = () => {
                   </div>
                 </SectionCard>
 
-                {/* §9 4대보험 */}
-                <SectionCard title="4대보험" icon={<ClipboardList size={12} />} defaultOpen={false}>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                {/* §9 4대보험 — rose 그룹 */}
+                <SectionCard title="4대보험" icon={<ClipboardList size={11} />} group="wage" defaultOpen={false}>
+                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
                     <InlineField
                       label="국민연금 취득일"
                       value={editing ? (draft?.insurance_nps_date ?? "") : (displayEmp.insurance_nps_date ?? "")}
-                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      editing={editing} icon={<Calendar size={9} />} type="date"
                       onChange={(v) => setField("insurance_nps_date", v)}
                     />
                     <InlineField
                       label="건강보험 취득일"
                       value={editing ? (draft?.insurance_nhis_date ?? "") : (displayEmp.insurance_nhis_date ?? "")}
-                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      editing={editing} icon={<Calendar size={9} />} type="date"
                       onChange={(v) => setField("insurance_nhis_date", v)}
                     />
                     <InlineField
                       label="고용보험 취득일"
                       value={editing ? (draft?.insurance_ei_date ?? "") : (displayEmp.insurance_ei_date ?? "")}
-                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      editing={editing} icon={<Calendar size={9} />} type="date"
                       onChange={(v) => setField("insurance_ei_date", v)}
                     />
                     <InlineField
                       label="산재보험 취득일"
                       value={editing ? (draft?.insurance_wcia_date ?? "") : (displayEmp.insurance_wcia_date ?? "")}
-                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      editing={editing} icon={<Calendar size={9} />} type="date"
                       onChange={(v) => setField("insurance_wcia_date", v)}
                     />
                     <div className="col-span-2 flex items-center gap-2 mt-1">
                       {editing ? (
-                        <label className="flex items-center gap-2 text-[11px] font-bold text-slate-700 cursor-pointer">
+                        <label className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 cursor-pointer">
                           <input
                             type="checkbox"
                             checked={!!draft?.insurance_excluded}
                             onChange={(e) => setField("insurance_excluded", e.target.checked)}
-                            className="w-4 h-4 rounded"
+                            className="w-3.5 h-3.5 rounded"
                           />
                           4대보험 제외 대상
                         </label>
                       ) : displayEmp.insurance_excluded ? (
-                        <span className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-1 rounded-lg">⚠ 4대보험 제외 대상</span>
+                        <span className="text-[10px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-2 py-px rounded-md">4대보험 제외 대상</span>
                       ) : null}
                     </div>
                   </div>
                 </SectionCard>
 
-                {/* §10 약국 특수 자격 */}
-                <SectionCard title="약국 특수 자격" icon={<Award size={12} />} defaultOpen={false}>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                {/* §10 약국 특수 자격 — emerald 그룹 */}
+                <SectionCard title="약국 특수 자격" icon={<Award size={11} />} group="career" defaultOpen={false}>
+                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
                     <InlineField
                       label="약사 면허번호"
                       value={editing ? (draft?.pharmacist_license_no ?? "") : (displayEmp.pharmacist_license_no ?? "")}
@@ -1262,25 +1283,25 @@ const StaffManagePage: React.FC = () => {
                     <InlineField
                       label="보건증 만료일"
                       value={editing ? (draft?.health_check_expiry ?? "") : (displayEmp.health_check_expiry ?? "")}
-                      editing={editing} icon={<Calendar size={10} />} type="date"
+                      editing={editing} icon={<Calendar size={9} />} type="date"
                       onChange={(v) => setField("health_check_expiry", v)}
                     />
                   </div>
                 </SectionCard>
 
-                {/* §11 메모 */}
-                <SectionCard title="메모" icon={<ClipboardList size={12} />} defaultOpen>
+                {/* §11 메모 — personal 그룹 */}
+                <SectionCard title="메모" icon={<ClipboardList size={11} />} group="personal" defaultOpen>
                   {editing ? (
                     <textarea
                       value={draft?.memo ?? ""}
                       onChange={(e) => setField("memo", e.target.value)}
                       placeholder="근무 특이사항 · 알러지 · 기타 참고 사항"
                       rows={3}
-                      className="w-full border border-indigo-300 rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-indigo-50/40 resize-none"
+                      className="w-full border border-indigo-300 rounded-md px-2.5 py-2 text-[12px] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-100 bg-indigo-50/40 resize-none"
                     />
                   ) : (
-                    <p className={`text-sm whitespace-pre-wrap ${displayEmp.memo ? "text-slate-700" : "text-slate-300 italic"}`}>
-                      {displayEmp.memo || "(등록 없음)"}
+                    <p className={`text-[12px] whitespace-pre-wrap ${displayEmp.memo ? "text-slate-700" : "text-slate-300 italic"}`}>
+                      {displayEmp.memo || "(없음)"}
                     </p>
                   )}
                 </SectionCard>
@@ -1299,25 +1320,25 @@ const StaffManagePage: React.FC = () => {
           onClick={() => setMobileDetail(false)}
         >
           <div
-            className="bg-white w-full max-w-lg rounded-t-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            className="bg-white w-full max-w-lg rounded-t-xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-3 border-b border-slate-200">
-              <div className="flex items-center gap-3">
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 bg-gradient-to-r from-indigo-50/70 to-violet-50/50">
+              <div className="flex items-center gap-2.5">
                 <Avatar name={selectedEmp.name} photoUrl={selectedEmp.photo_url} size="xs" />
                 <div>
-                  <span className="text-sm font-black text-slate-800">{selectedEmp.name}</span>
-                  <span className={`ml-2 text-[10px] font-bold px-1.5 py-px rounded border ${positionColor(selectedEmp.position)}`}>
+                  <span className="text-sm font-semibold text-slate-800">{selectedEmp.name}</span>
+                  <span className={`ml-2 text-[9px] font-semibold px-1.5 py-px rounded border ${positionColor(selectedEmp.position)}`}>
                     {selectedEmp.position || "직책 없음"}
                   </span>
                 </div>
               </div>
-              <button onClick={() => setMobileDetail(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer">
-                <X size={18} />
+              <button onClick={() => setMobileDetail(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/60">
+                <X size={15} />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-4 bg-slate-50/30 space-y-3">
-              <div className="grid grid-cols-2 gap-3 bg-white rounded-xl border border-slate-200 p-4">
+            <div className="flex-1 overflow-y-auto p-3.5 bg-slate-50/30 space-y-2.5">
+              <div className="grid grid-cols-2 gap-2.5 bg-white rounded-lg border border-slate-200 p-3.5">
                 {(
                   [
                     ["연락처", selectedEmp.phone],
@@ -1330,31 +1351,31 @@ const StaffManagePage: React.FC = () => {
                 ).map(([label, val]) =>
                   val ? (
                     <div key={label} className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</span>
-                      <span className="text-xs text-slate-800">{val}</span>
+                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">{label}</span>
+                      <span className="text-[11px] text-slate-700">{val}</span>
                     </div>
                   ) : null
                 )}
               </div>
               {selectedEmp.memo && (
-                <div className="bg-white rounded-xl border border-slate-200 p-4">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-1">메모</span>
-                  <p className="text-xs text-slate-700 whitespace-pre-wrap">{selectedEmp.memo}</p>
+                <div className="bg-white rounded-lg border border-slate-200 p-3.5">
+                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">메모</span>
+                  <p className="text-[11px] text-slate-700 whitespace-pre-wrap">{selectedEmp.memo}</p>
                 </div>
               )}
             </div>
-            <div className="px-4 py-3 border-t border-slate-200 bg-white flex gap-2">
+            <div className="px-3.5 py-2.5 border-t border-slate-200 bg-white flex gap-1.5">
               <button
                 onClick={() => { setMobileDetail(false); startEdit(selectedEmp); }}
-                className="flex-1 text-[12px] font-black text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-xl py-2 flex items-center justify-center gap-1.5 cursor-pointer"
+                className="flex-1 h-8 text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-md flex items-center justify-center gap-1.5 cursor-pointer hover:bg-indigo-100 transition-colors"
               >
-                <Edit2 size={13} /> 편집
+                <Edit2 size={12} /> 편집
               </button>
               <button
                 onClick={() => { setMobileDetail(false); deleteEmployee(selectedEmp); }}
-                className="text-[12px] font-black text-red-600 bg-red-50 border border-red-200 rounded-xl px-4 py-2 flex items-center gap-1 cursor-pointer"
+                className="h-8 px-3 text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-md flex items-center gap-1 cursor-pointer hover:bg-red-100 transition-colors"
               >
-                <Trash2 size={13} /> 삭제
+                <Trash2 size={12} /> 삭제
               </button>
             </div>
           </div>

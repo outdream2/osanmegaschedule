@@ -852,7 +852,7 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
         <div className="flex items-center gap-1.5 flex-wrap">
           <TrendingUp size={13} className="text-emerald-600 shrink-0" />
           {productName && (
-            <span className="text-[17px] font-black text-slate-800 break-words whitespace-normal leading-tight">
+            <span className="text-[15px] font-black text-slate-800 break-words whitespace-normal leading-tight">
               {productName}
             </span>
           )}
@@ -901,9 +901,9 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
       {!collapsed && rows.length > 0 && (
         // overflow-x-auto · min-w 로 5개 컬럼 겹침 방지
         <div className="overflow-auto max-h-48 border border-slate-200 rounded-lg">
-          <table className="w-full text-[14px] min-w-[300px]">
+          <table className="w-full text-[12px] min-w-[300px]">
             <thead className="sticky top-0 bg-slate-50 border-b border-slate-200">
-              <tr className="text-slate-500 text-[13px] uppercase">
+              <tr className="text-slate-500 text-[10px] uppercase">
                 <th className="text-left px-2 py-1 whitespace-nowrap">매입일</th>
                 <th className="text-right px-1 py-1 w-10 whitespace-nowrap" title="이전 매입일과의 일수 차이">간격</th>
                 <th className="text-right px-2 py-1 w-12 whitespace-nowrap">수량</th>
@@ -935,7 +935,7 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
             </tbody>
           </table>
           {rows.length > 20 && (
-            <div className="text-[13px] text-slate-400 text-center py-1 bg-slate-50 border-t border-slate-100">
+            <div className="text-[10px] text-slate-400 text-center py-1 bg-slate-50 border-t border-slate-100">
               최근 20건만 표시 · 전체 {rows.length}건
             </div>
           )}

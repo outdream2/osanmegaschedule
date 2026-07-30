@@ -53,35 +53,42 @@ export function useBarcodeScannerHandlers({
     if (scannedRef.current || !mountedRef.current) return;
     scannedRef.current = true;
 
-    // 2026-07-30 · 사용자 요청 · 벨소리·설정 무관 · 무조건 소리 나게 강화
-    //   1) Web Audio · gain 최대 (1.0) · square 파형 · POS 스캐너 톤 (더블 비프)
-    //   2) resume() · iOS · suspended 컨텍스트 강제 재개
-    //   3) Vibration API · 진동 fallback (silent 모드 대비)
-    //   4) HTMLAudioElement fallback · Web Audio 실패 시
+    // 2026-07-30 (2nd) · 사용자 재요청 · 확실하게 · 인식 시 삑 (POS 스캐너 톤)
+    //   1) HTMLAudioElement + 실제 WAV 파일 (public/beep.wav · 1.2kHz · 150ms)
+    //   2) Web Audio 백업 (WAV 재생 실패 시)
+    //   3) Vibration API (silent 모드 대비)
+    let played = false;
     try {
-      const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
-      if (AC) {
-        const ctx = new AC();
-        // iOS Safari · silent switch 무관 · playback 카테고리
-        if (ctx.state === "suspended") { try { ctx.resume(); } catch {} }
-        const playBeep = (freq: number, startAt: number, durMs: number) => {
+      const audio = new Audio("/beep.wav");
+      audio.volume = 1.0;
+      const p = audio.play();
+      if (p && typeof p.then === "function") {
+        p.then(() => { played = true; }).catch(() => { /* fallback below */ });
+      } else {
+        played = true;
+      }
+    } catch { /* fallback below */ }
+    // Web Audio 백업 · WAV 재생 실패 시 즉시 삑
+    if (!played) {
+      try {
+        const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (AC) {
+          const ctx = new AC();
+          if (ctx.state === "suspended") { try { ctx.resume(); } catch {} }
           const osc = ctx.createOscillator();
           const gainNode = ctx.createGain();
           osc.connect(gainNode); gainNode.connect(ctx.destination);
-          osc.type = "square";  // 스퀘어 파형 · sine 보다 명확한 POS 톤
-          osc.frequency.value = freq;
-          const t0 = ctx.currentTime + startAt;
-          gainNode.gain.setValueAtTime(1.0, t0);  // 최대 볼륨
-          gainNode.gain.exponentialRampToValueAtTime(0.001, t0 + durMs / 1000);
-          osc.start(t0);
-          osc.stop(t0 + durMs / 1000);
-        };
-        playBeep(1200, 0, 90);       // 첫 비프
-        playBeep(1500, 0.11, 90);    // 두번째 비프 (POS 스캐너 확인 톤)
-        setTimeout(() => { try { ctx.close(); } catch {} }, 400);
-      }
-    } catch { /* silent */ }
-    // 2) 진동 fallback · 모바일 무음 모드 대비 (Android 위주)
+          osc.type = "square";
+          osc.frequency.value = 1200;
+          gainNode.gain.setValueAtTime(1.0, ctx.currentTime);
+          gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+          osc.start(ctx.currentTime);
+          osc.stop(ctx.currentTime + 0.15);
+          setTimeout(() => { try { ctx.close(); } catch {} }, 300);
+        }
+      } catch { /* silent */ }
+    }
+    // 진동 fallback · 무음 모드 대비
     try { (navigator as any).vibrate?.(60); } catch { /* silent */ }
 
     // Turn off torch on recognition
