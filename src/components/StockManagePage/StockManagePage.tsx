@@ -693,6 +693,230 @@ interface TrendingRow {
   sale_price: number;
   below_optimal: boolean;
 }
+// ───────────────────────────────────────────────────────────────────────
+// 급상승 버킷 타입 정의 (월별 / 순별 공용)
+// ───────────────────────────────────────────────────────────────────────
+interface PeriodBucketRow {
+  product_code: string;
+  product_name: string;
+  supplier: string | null;
+  recent_sale: number;
+  prior_sale: number;
+  growth_rate: number | null;
+  absolute_delta: number;
+  newly_trending: boolean;
+  current_stock: number;
+}
+interface PeriodBucket {
+  label: string;          // "2026-07"
+  sublabel: string;       // "7/1 ~ 7/31"
+  vsLabel: string;        // "vs 2026-06"
+  from: string;           // "2026-07-01"
+  to: string;             // "2026-07-31"
+  prior_from: string;     // "2026-06-01"
+  prior_to: string;       // "2026-06-30"
+  rows: PeriodBucketRow[];
+  total: number;
+  loading: boolean;
+  error: boolean;
+}
+
+// 날짜 헬퍼
+function lastDayOfMonth(year: number, month: number): number {
+  return new Date(year, month, 0).getDate(); // month is 1-based
+}
+// 월별 버킷 생성 (최근 6개월)
+function buildMonthlyBuckets(): Omit<PeriodBucket, "rows" | "total" | "loading" | "error">[] {
+  const today = new Date();
+  const buckets: Omit<PeriodBucket, "rows" | "total" | "loading" | "error">[] = [];
+  for (let i = 0; i < 6; i++) {
+    const refDate = new Date(today.getFullYear(), today.getMonth() - i, 1);
+    const y = refDate.getFullYear();
+    const m = refDate.getMonth() + 1; // 1-based
+    const from = `${y}-${String(m).padStart(2, "0")}-01`;
+    const lastDay = lastDayOfMonth(y, m);
+    const to = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    // 이전 월
+    const prevDate = new Date(y, m - 2, 1);
+    const py = prevDate.getFullYear();
+    const pm = prevDate.getMonth() + 1;
+    const prior_from = `${py}-${String(pm).padStart(2, "0")}-01`;
+    const priorLast = lastDayOfMonth(py, pm);
+    const prior_to = `${py}-${String(pm).padStart(2, "0")}-${String(priorLast).padStart(2, "0")}`;
+    const mLabel = `${y}-${String(m).padStart(2, "0")}`;
+    const pmLabel = `${py}-${String(pm).padStart(2, "0")}`;
+    buckets.push({
+      label: mLabel,
+      sublabel: `${m}/1 ~ ${m}/${lastDay}`,
+      vsLabel: `vs ${pmLabel}`,
+      from,
+      to,
+      prior_from,
+      prior_to,
+    });
+  }
+  return buckets;
+}
+// 순별 버킷 생성 (최근 2개월 · 6순)
+function buildDecadalBuckets(): Omit<PeriodBucket, "rows" | "total" | "loading" | "error">[] {
+  const today = new Date();
+  type Decade = { year: number; month: number; decade: 1 | 2 | 3 };
+  const decades: Decade[] = [];
+  // 현재 월 3순 + 이전 월 3순 = 6순
+  for (let mi = 0; mi < 2; mi++) {
+    const refDate = new Date(today.getFullYear(), today.getMonth() - mi, 1);
+    const y = refDate.getFullYear();
+    const m = refDate.getMonth() + 1;
+    for (const d of [3, 2, 1] as const) {
+      decades.push({ year: y, month: m, decade: d });
+    }
+  }
+  const decadeLabel = (d: 1 | 2 | 3) => d === 1 ? "초순" : d === 2 ? "중순" : "하순";
+  const decadeRange = (y: number, m: number, d: 1 | 2 | 3): { from: string; to: string } => {
+    const mm = String(m).padStart(2, "0");
+    if (d === 1) return { from: `${y}-${mm}-01`, to: `${y}-${mm}-10` };
+    if (d === 2) return { from: `${y}-${mm}-11`, to: `${y}-${mm}-20` };
+    const last = lastDayOfMonth(y, m);
+    return { from: `${y}-${mm}-21`, to: `${y}-${mm}-${String(last).padStart(2, "0")}` };
+  };
+  // 이전 순 계산
+  const prevDecade = (d: Decade): Decade => {
+    if (d.decade === 1) {
+      // 이전 월 하순
+      const prev = new Date(d.year, d.month - 2, 1);
+      return { year: prev.getFullYear(), month: prev.getMonth() + 1, decade: 3 };
+    }
+    return { year: d.year, month: d.month, decade: (d.decade - 1) as 1 | 2 | 3 };
+  };
+  return decades.map(d => {
+    const cur = decadeRange(d.year, d.month, d.decade);
+    const prev = prevDecade(d);
+    const pr = decadeRange(prev.year, prev.month, prev.decade);
+    const pmLabel = `${prev.year}-${String(prev.month).padStart(2, "0")}`;
+    return {
+      label: `${d.month}월 ${decadeLabel(d.decade)}`,
+      sublabel: `${d.month}/${cur.from.slice(8)} ~ ${d.month}/${cur.to.slice(8)}`,
+      vsLabel: `vs ${prev.month}월 ${decadeLabel(prev.decade)} (${pmLabel})`,
+      from: cur.from,
+      to: cur.to,
+      prior_from: pr.from,
+      prior_to: pr.to,
+    };
+  });
+}
+
+// ───────────────────────────────────────────────────────────────────────
+// PeriodBucketCard · 단일 버킷 카드
+// ───────────────────────────────────────────────────────────────────────
+const PeriodBucketCard: React.FC<{
+  bucket: PeriodBucket;
+  onProductClick?: (p: any) => void;
+}> = ({ bucket, onProductClick }) => {
+  const fmt = (n: number) => n.toLocaleString();
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+      {/* 카드 헤더 */}
+      <div className="px-4 py-3 bg-indigo-50/50 border-b border-indigo-100 flex items-start justify-between gap-2">
+        <div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[13px] font-bold text-slate-800">{bucket.label}</span>
+            <span className="text-[11px] text-slate-500">({bucket.sublabel})</span>
+            {!bucket.loading && !bucket.error && (
+              <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded-full px-2 py-0.5 tabular-nums">
+                {bucket.total}건
+              </span>
+            )}
+          </div>
+          <div className="text-[11px] text-slate-400 mt-0.5">{bucket.vsLabel}</div>
+        </div>
+      </div>
+      {/* 카드 바디 */}
+      {bucket.loading ? (
+        <div className="flex items-center justify-center py-8 gap-2 text-slate-400">
+          <div className="w-5 h-5 border-2 border-indigo-100 border-t-indigo-400 rounded-full animate-spin" />
+          <span className="text-[11px]">불러오는 중...</span>
+        </div>
+      ) : bucket.error ? (
+        <div className="flex items-center justify-center py-8 text-[11px] text-rose-400 gap-1.5">
+          <AlertTriangle size={14} />
+          <span>데이터 로드 실패</span>
+        </div>
+      ) : bucket.rows.length === 0 ? (
+        <div className="flex items-center justify-center py-8 text-[11px] text-slate-400 gap-1.5">
+          <TrendingUp size={14} className="opacity-30" />
+          <span>급상승 상품 없음</span>
+        </div>
+      ) : (
+        <ol className="divide-y divide-slate-50">
+          {bucket.rows.map((r, i) => (
+            <li key={r.product_code}
+              className="flex items-start gap-2 px-4 py-2.5 hover:bg-indigo-50/20 transition">
+              <span className="text-[11px] font-semibold text-slate-400 tabular-nums w-4 shrink-0 mt-0.5">{i + 1}</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => onProductClick?.({ product_code: r.product_code, product_name: r.product_name, supplier: r.supplier })}
+                    className="text-[12px] font-semibold text-slate-700 hover:text-indigo-700 hover:underline text-left break-words cursor-pointer transition"
+                  >
+                    {r.product_name}
+                  </button>
+                  {r.newly_trending && (
+                    <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded px-1.5 py-0.5 shrink-0">신규</span>
+                  )}
+                </div>
+                {r.supplier && <div className="text-[10px] text-slate-400 mt-0.5">{r.supplier}</div>}
+                <div className="flex items-center gap-2 mt-1 flex-wrap text-[11px] tabular-nums">
+                  <span className="font-semibold text-indigo-700">현재 {fmt(r.recent_sale)}</span>
+                  <span className="text-slate-300">·</span>
+                  <span className="text-slate-400">이전 {fmt(r.prior_sale)}</span>
+                  <span className="text-slate-300">·</span>
+                  <span className={`font-bold ${r.newly_trending ? "text-indigo-600" : (r.growth_rate ?? 0) > 0 ? "text-indigo-600" : "text-slate-400"}`}>
+                    {r.newly_trending ? "NEW" : r.growth_rate != null ? `+${r.growth_rate}%` : "-"}
+                  </span>
+                  {r.current_stock > 0 && (
+                    <>
+                      <span className="text-slate-300">·</span>
+                      <span className="text-slate-400">재고 {fmt(r.current_stock)}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
+  );
+};
+
+// ───────────────────────────────────────────────────────────────────────
+// PeriodTrendingSection · 월별 or 순별 섹션 (버킷 그리드)
+// ───────────────────────────────────────────────────────────────────────
+const PeriodTrendingSection: React.FC<{
+  title: string;
+  icon: React.ReactNode;
+  buckets: PeriodBucket[];
+  onProductClick?: (p: any) => void;
+}> = ({ title, icon, buckets, onProductClick }) => {
+  return (
+    <div className="flex flex-col gap-3">
+      {/* 섹션 헤더 */}
+      <div className="flex items-center gap-2 px-1">
+        <span className="text-indigo-500 shrink-0">{icon}</span>
+        <span className="text-[13px] font-bold text-slate-700">{title}</span>
+        <div className="flex-1 h-px bg-indigo-100" />
+      </div>
+      {/* 버킷 그리드 · 모바일 1열 · lg 2열 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {buckets.map((b, i) => (
+          <PeriodBucketCard key={i} bucket={b} onProductClick={onProductClick} />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProductClick }) => {
   const [rows, setRows] = useState<TrendingRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -700,6 +924,11 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
   const [sortKey, setSortKey] = useState<"growth" | "delta" | "recent" | "shortage">("growth");
   const [onlyShortage, setOnlyShortage] = useState(false);
   const [meta, setMeta] = useState<{ recent_from: string; prior_from: string; total: number } | null>(null);
+
+  // ── 월별 / 순별 버킷 state ──
+  const [monthlyBuckets, setMonthlyBuckets] = useState<PeriodBucket[]>([]);
+  const [decadalBuckets, setDecadalBuckets] = useState<PeriodBucket[]>([]);
+  const [bucketsLoaded, setBucketsLoaded] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -712,6 +941,57 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
       .catch(() => { setRows([]); setMeta(null); })
       .finally(() => setLoading(false));
   }, [windowDays]);
+
+  // ── 월별 / 순별 버킷 fetch (마운트 1회) ──
+  useEffect(() => {
+    if (bucketsLoaded) return;
+
+    const metas = buildMonthlyBuckets();
+    const dMetas = buildDecadalBuckets();
+
+    // 초기 loading 상태
+    const initBucket = (m: Omit<PeriodBucket, "rows" | "total" | "loading" | "error">): PeriodBucket =>
+      ({ ...m, rows: [], total: 0, loading: true, error: false });
+
+    setMonthlyBuckets(metas.map(initBucket));
+    setDecadalBuckets(dMetas.map(initBucket));
+
+    const fetchBucket = async (
+      m: Omit<PeriodBucket, "rows" | "total" | "loading" | "error">,
+      setter: React.Dispatch<React.SetStateAction<PeriodBucket[]>>,
+      idx: number
+    ) => {
+      const params = new URLSearchParams({
+        from: m.from, to: m.to,
+        prior_from: m.prior_from, prior_to: m.prior_to,
+        limit: "10",
+      });
+      try {
+        const res = await fetch(`/api/stock-manage/trending-period?${params}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const j = await res.json();
+        setter(prev => {
+          const next = [...prev];
+          next[idx] = { ...next[idx], rows: Array.isArray(j.rows) ? j.rows : [], total: Number(j.total ?? 0), loading: false, error: false };
+          return next;
+        });
+      } catch {
+        setter(prev => {
+          const next = [...prev];
+          next[idx] = { ...next[idx], rows: [], total: 0, loading: false, error: true };
+          return next;
+        });
+      }
+    };
+
+    // Promise.all 병렬 fetch (월별)
+    Promise.all(metas.map((m, i) => fetchBucket(m, setMonthlyBuckets, i)));
+    // Promise.all 병렬 fetch (순별)
+    Promise.all(dMetas.map((m, i) => fetchBucket(m, setDecadalBuckets, i)));
+
+    setBucketsLoaded(true);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const displayed = useMemo(() => {
     let arr = onlyShortage ? rows.filter(r => r.below_optimal) : rows;
@@ -875,6 +1155,22 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
           </div>
         )}
       </div>
+
+      {/* ── 섹션 1 · 월별 급상승 ── */}
+      <PeriodTrendingSection
+        title="월별 급상승"
+        icon={<TrendingUp size={14} />}
+        buckets={monthlyBuckets}
+        onProductClick={onProductClick}
+      />
+
+      {/* ── 섹션 2 · 순별 급상승 ── */}
+      <PeriodTrendingSection
+        title="순별 급상승 (초순/중순/하순)"
+        icon={<Activity size={14} />}
+        buckets={decadalBuckets}
+        onProductClick={onProductClick}
+      />
     </div>
   );
 };
