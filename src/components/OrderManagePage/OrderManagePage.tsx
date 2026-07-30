@@ -327,8 +327,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [returnLoading, setReturnLoading] = useState(false);
   const [returnCycleMin, setReturnCycleMin] = useState<number>(90); // 매입주기 90일 이상
   const [returnSalesMax, setReturnSalesMax] = useState<number>(5);  // 매입주기 판매량 5 이하
-  // 2026-07-30 · sale_qty_cycle 컬럼 표시 제거 (필터 조건에서만 사용)
-  type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "purchase_cycle" | "sale_qty_month" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
+  // 2026-07-30 (2nd) · 사용자 요청 · 매입주기·주기판매 컬럼 복원
+  type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "purchase_cycle" | "sale_qty_cycle" | "sale_qty_month" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
   const [returnSortKey, setReturnSortKey] = useState<ReturnSortKey>("purchase_cycle");
   const [returnSortDir, setReturnSortDir] = useState<"asc" | "desc">("desc");
   const handleReturnSort = (k: ReturnSortKey) => {
@@ -408,6 +408,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [vendorReloadKey, setVendorReloadKey] = useState(0);
   // 2026-07-30 · 사용자 요청 · 발주요청/발주필요 리스트에서 공급사 클릭 시 모달로 공급사 정보 조회/수정
   const [supplierInfoModal, setSupplierInfoModal] = useState<Vendor | null>(null);
+  // 2026-07-30 (2nd) · 사용자 요청 · 반품요청 모달 (개별 · 임시 · 별도 세션에서 모달 UI 확장)
+  const [returnRequestItem, setReturnRequestItem] = useState<any | null>(null);
   // 2026-07-30 · 사용자 요청 · 공급사 관리 페이지와 동일 방식으로 공급사 정보 조회
   //   findVendor (로컬 캐시) 우선 · 실패 시 API 재조회 (이름 부분 매칭 fallback)
   // findVendor 는 아래에서 정의 (line 481) · closure 캡처 OK
@@ -1358,11 +1360,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       <th onClick={() => handleReturnSort("supplier")} title="공급사 정렬" className="px-2 py-2 text-left font-bold text-rose-800 w-28 cursor-pointer hover:bg-rose-100 select-none">공급사{retArrow("supplier")}</th>
                       <th onClick={() => handleReturnSort("current_stock")} title="현재고 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-16 cursor-pointer hover:bg-rose-100 select-none">현재고{retArrow("current_stock")}</th>
                       <th onClick={() => handleReturnSort("purchase_cycle")} title="매입주기 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-20 cursor-pointer hover:bg-rose-100 select-none">매입주기{retArrow("purchase_cycle")}</th>
-                      {/* 2026-07-30 · 사용자 요청 · 주기판매 컬럼 제거 */}
+                      {/* 2026-07-30 (2nd) · 사용자 요청 · 매입주기 판매량 컬럼 복원 */}
+                      <th onClick={() => handleReturnSort("sale_qty_cycle")} title="매입주기 판매량 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">주기판매{retArrow("sale_qty_cycle")}</th>
                       <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 판매량 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">최근 한달 판매{retArrow("sale_qty_month")}</th>
                       <th onClick={() => handleReturnSort("last_purchase_date")} title="최근매입일 정렬" className="px-2 py-2 text-left font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">최근매입일{retArrow("last_purchase_date")}</th>
                       <th onClick={() => handleReturnSort("last_purchase_qty")} title="최근 매입일의 매입량 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-20 cursor-pointer hover:bg-rose-100 select-none">최근 매입량{retArrow("last_purchase_qty")}</th>
                       <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">재고금액{retArrow("stock_value")}</th>
+                      {/* 2026-07-30 (2nd) · 사용자 요청 · 반품요청 액션 */}
+                      <th className="px-2 py-2 text-center font-bold text-rose-800 w-24 select-none">반품요청</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1373,6 +1378,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         case "supplier":        return dir * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
                         case "current_stock":   return dir * (a.current_stock - b.current_stock);
                         case "purchase_cycle":  return dir * ((a.purchase_cycle ?? 0) - (b.purchase_cycle ?? 0));
+                        case "sale_qty_cycle":  return dir * (a.sale_qty_cycle - b.sale_qty_cycle);
                         case "sale_qty_month":  return dir * ((a.sale_qty_month ?? 0) - (b.sale_qty_month ?? 0));
                         case "last_purchase_date": return dir * String(a.last_purchase_date ?? "").localeCompare(String(b.last_purchase_date ?? ""));
                         case "last_purchase_qty":  return dir * ((a.last_purchase_qty ?? 0) - (b.last_purchase_qty ?? 0));
@@ -1391,12 +1397,23 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         <td className="px-2 py-1.5 text-slate-600 truncate">{x.supplier ?? "-"}</td>
                         <td className="px-2 py-1.5 text-right text-slate-800 font-bold tabular-nums">{x.current_stock.toLocaleString()}</td>
                         <td className="px-2 py-1.5 text-right text-rose-700 font-bold tabular-nums">{x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}</td>
-                        {/* 2026-07-30 · 사용자 요청 · 주기판매 컬럼 제거 (셀) */}
+                        {/* 2026-07-30 (2nd) · 사용자 요청 · 주기판매 셀 복원 */}
+                        <td className="px-2 py-1.5 text-right text-amber-700 font-bold tabular-nums">{x.sale_qty_cycle > 0 ? `${x.sale_qty_cycle.toLocaleString()}개` : "-"}</td>
                         <td className="px-2 py-1.5 text-right text-orange-600 font-bold tabular-nums">{x.sale_qty_month != null ? `${x.sale_qty_month.toLocaleString()}개` : "-"}</td>
                         <td className="px-2 py-1.5 text-slate-600 tabular-nums text-[11px]">{x.last_purchase_date ?? "-"}</td>
                         <td className="px-2 py-1.5 text-right text-emerald-700 font-bold tabular-nums">{x.last_purchase_qty != null ? `${x.last_purchase_qty.toLocaleString()}개` : "-"}</td>
                         <td className="px-2 py-1.5 text-right text-indigo-700 font-bold tabular-nums">
                           {x.current_stock > 0 && x.purchase_price > 0 ? (x.current_stock * x.purchase_price).toLocaleString() : "-"}
+                        </td>
+                        {/* 2026-07-30 (2nd) · 사용자 요청 · 반품요청 버튼 · 클릭 → 모달 (별도 구현 예정) */}
+                        <td className="px-2 py-1.5 text-center align-top">
+                          <button type="button"
+                            onClick={(e) => { e.stopPropagation(); setReturnRequestItem(x); }}
+                            className="inline-flex items-center justify-center gap-1 min-h-[28px] px-2.5 py-1 rounded-md text-[12px] font-black text-white bg-gradient-to-b from-rose-500 to-rose-600 hover:from-rose-400 hover:to-rose-500 border border-rose-700 shadow-sm hover:shadow-md active:scale-95 transition cursor-pointer"
+                            title="반품요청 리스트에 추가"
+                          >
+                            <Truck size={11} strokeWidth={2.4} /> 반품요청
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -2304,6 +2321,32 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               onClose={() => setSupplierInfoModal(null)}
               onSaved={() => setSupplierInfoModal(null)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* 2026-07-30 (2nd) · 사용자 요청 · 반품요청 임시 모달 · 별도 세션에서 API·공급사별·일괄 반품 확장 예정 */}
+      {returnRequestItem && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setReturnRequestItem(null)}>
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-5 flex flex-col gap-3" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2">
+              <Truck size={20} className="text-rose-600" />
+              <h3 className="text-[17px] font-black text-slate-800">반품요청</h3>
+            </div>
+            <div className="text-[14px] text-slate-700 leading-relaxed">
+              <p className="font-black text-slate-900">{returnRequestItem.product_name}</p>
+              <p className="text-[12px] text-slate-500 tabular-nums">#{returnRequestItem.product_code} · {returnRequestItem.supplier ?? "-"}</p>
+              <p className="mt-2">현재고 <span className="font-black tabular-nums">{returnRequestItem.current_stock?.toLocaleString()}</span>개 · 재고금액 <span className="font-black tabular-nums text-rose-700">{(returnRequestItem.current_stock * returnRequestItem.purchase_price).toLocaleString()}원</span></p>
+            </div>
+            <p className="text-[13px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+              반품요청 API · 공급사별 조회 · 일괄 반품 기능은 별도 세션에서 확장 예정입니다.
+            </p>
+            <div className="flex justify-end gap-2 mt-1">
+              <button type="button" onClick={() => setReturnRequestItem(null)}
+                className="px-4 py-2 rounded-lg text-[13px] font-black text-slate-600 border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                닫기
+              </button>
+            </div>
           </div>
         </div>
       )}
