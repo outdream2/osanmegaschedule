@@ -753,6 +753,70 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
               purchase_total_qty:  r.purchase_total_qty ?? 0,
               purchase_total_amount: r.purchase_total_amount ?? 0,
             }));
+            // 2026-07-30 · 사용자 지적 · 반품필요 리스트 · sale_qty_month · last_purchase_qty 안 나옴
+            //   RPC 반환에 이 두 필드 없음 · 서버에서 batch fetch 로 보강
+            //   대상 · rows.slice(0, limit) 만 (전체 · 성능 부담)
+            try {
+              const targetCodes = rows.slice(0, limit).map(r => String(r.product_code ?? "").trim()).filter(Boolean);
+              if (targetCodes.length > 0) {
+                // ── 1) purchase_details · last_purchase_qty · 각 상품 최근 매입일의 수량
+                const lastQtyMap = new Map<string, number>();
+                const CHUNK = 200; const PAGE = 1000;
+                for (let i = 0; i < targetCodes.length; i += CHUNK) {
+                  const chunk = targetCodes.slice(i, i + CHUNK);
+                  let fromRow = 0;
+                  while (true) {
+                    const { data: pd } = await supabase
+                      .from("purchase_details")
+                      .select("product_code, purchase_date, quantity")
+                      .in("product_code", chunk)
+                      .order("purchase_date", { ascending: false })
+                      .range(fromRow, fromRow + PAGE - 1);
+                    if (!pd || pd.length === 0) break;
+                    for (const r of pd) {
+                      const code = String((r as any).product_code ?? "").trim();
+                      if (!code || lastQtyMap.has(code)) continue;
+                      lastQtyMap.set(code, Number((r as any).quantity ?? 0) || 0);
+                    }
+                    if (pd.length < PAGE) break;
+                    fromRow += PAGE;
+                  }
+                }
+                // ── 2) stock_history · sale_qty_month · 최근 30일 판매 합
+                const monthAgo = new Date(Date.now() - 30 * 86400 * 1000).toISOString().slice(0, 10);
+                const monthSalesMap = new Map<string, number>();
+                for (let i = 0; i < targetCodes.length; i += CHUNK) {
+                  const chunk = targetCodes.slice(i, i + CHUNK);
+                  let fromRow = 0;
+                  while (true) {
+                    const { data: sh } = await supabase
+                      .from("stock_history")
+                      .select("product_code, sale_qty, snapshot_date")
+                      .in("product_code", chunk)
+                      .gte("snapshot_date", monthAgo)
+                      .lte("snapshot_date", todayStr)
+                      .range(fromRow, fromRow + PAGE - 1);
+                    if (!sh || sh.length === 0) break;
+                    for (const r of sh) {
+                      const code = String((r as any).product_code ?? "").trim();
+                      if (!code) continue;
+                      const q = Number((r as any).sale_qty ?? 0) || 0;
+                      monthSalesMap.set(code, (monthSalesMap.get(code) ?? 0) + q);
+                    }
+                    if (sh.length < PAGE) break;
+                    fromRow += PAGE;
+                  }
+                }
+                // 3) rows 에 필드 주입
+                for (const r of rows) {
+                  const code = String((r as any).product_code ?? "").trim();
+                  (r as any).last_purchase_qty = lastQtyMap.get(code) ?? null;
+                  (r as any).sale_qty_month    = monthSalesMap.get(code) ?? 0;
+                }
+              }
+            } catch (e: any) {
+              console.warn(`[top-sales/rpc] boost fetch 실패:`, e?.message);
+            }
             // 클라이언트 정렬
             const sign = dir === "asc" ? 1 : -1;
             const sorted = rows.sort((a: any, b: any) => {
