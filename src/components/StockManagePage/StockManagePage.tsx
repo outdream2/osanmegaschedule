@@ -2914,11 +2914,10 @@ export const StockManagePage: React.FC = () => {
                                       className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-slate-50 transition ${supDetailSort.key === "purchase_qty" ? "text-slate-800 font-black" : ""}`}
                                       title="매입수량 정렬"
                                     >매입수량{supDetailArrow("purchase_qty")}</th>
-                                    <th
-                                      onClick={() => toggleSupDetailSort("min_order")}
-                                      className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-sky-50/60 transition ${supDetailSort.key === "min_order" ? "text-sky-700 font-black" : "text-sky-400"}`}
-                                      title="최소발주 정렬"
-                                    >최소발주{supDetailArrow("min_order")}</th>
+                                    {/* 2026-07-30 · 사용자 요청 · 최소발주 제거 · 매입단가·판매량·판매금액 추가 */}
+                                    <th className="text-right px-1 py-1.5 w-14 text-amber-600 select-none" title="매입단가 (products.purchase_price)">매입단가</th>
+                                    <th className="text-right px-1 py-1.5 w-14 text-rose-600 select-none" title="판매량 · 조회기간 합계">판매량</th>
+                                    <th className="text-right px-1 py-1.5 w-16 text-rose-700 select-none" title="판매금액 · 조회기간 합계">판매금액</th>
                                     <th
                                       onClick={() => toggleSupDetailSort("total_amount")}
                                       className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-emerald-50/60 transition ${supDetailSort.key === "total_amount" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
@@ -2928,14 +2927,18 @@ export const StockManagePage: React.FC = () => {
                                 </thead>
                                 <tbody className="divide-y divide-sky-100">
                                   {sortedDetail.slice(0, 200).map((r, ri) => {
-                                    const minOrder = Number(r.min_order ?? 0);
+                                    const purchPrice = Number(r.purchase_price ?? 0);
+                                    const saleQty = Number(r.sale_qty ?? 0);
+                                    const saleAmt = Number(r.total_amount ?? 0);
+                                    const curStock = Number(r.current_stock ?? 0);
+                                    const stockValue = curStock > 0 && purchPrice > 0 ? curStock * purchPrice : 0;
                                     return (
                                       <tr key={`supdet-${r.product_code ?? ri}`} className="hover:bg-orange-50/30 transition align-top">
                                         <td className="px-1 py-1 text-slate-400">{ri + 1}</td>
                                         <td className="px-1 py-1 break-words whitespace-normal leading-tight">
                                           <button type="button" onClick={() => loadFlowSelectedProduct(r)} className="text-left font-bold text-indigo-700 hover:text-indigo-900 hover:underline cursor-pointer transition break-words whitespace-normal">{r.product_name}</button>
                                         </td>
-                                        <td className="text-right px-1 py-1 tabular-nums text-amber-700">{fmt(Number(r.current_stock ?? 0))}</td>
+                                        <td className="text-right px-1 py-1 tabular-nums text-amber-700">{fmt(curStock)}</td>
                                         <td className="text-right px-1 py-1 tabular-nums text-slate-500">{detailCycleStr(r)}</td>
                                         <td className="text-right px-1 py-1 tabular-nums">
                                           {r.product_code && r.last_purchase_date ? (
@@ -2952,8 +2955,11 @@ export const StockManagePage: React.FC = () => {
                                           )}
                                         </td>
                                         <td className="text-right px-1 py-1 tabular-nums text-slate-700">{fmt(Number(r.purchase_total_qty ?? r.purchase_qty ?? 0))}</td>
-                                        <td className="text-right px-1 py-1 tabular-nums text-sky-600">{minOrder > 0 ? `${fmt(minOrder)}개` : "-"}</td>
-                                        <td className="text-right px-1 py-1 tabular-nums font-bold text-emerald-700">{fmtWon(Number(r.total_amount ?? 0))}</td>
+                                        {/* 2026-07-30 · 매입단가 · 판매량 · 판매금액 (최소발주 제거) */}
+                                        <td className="text-right px-1 py-1 tabular-nums text-amber-700 font-semibold">{purchPrice > 0 ? purchPrice.toLocaleString() : "-"}</td>
+                                        <td className="text-right px-1 py-1 tabular-nums text-rose-600 font-semibold">{saleQty > 0 ? fmt(saleQty) : "-"}</td>
+                                        <td className="text-right px-1 py-1 tabular-nums text-rose-700 font-semibold">{saleAmt > 0 ? fmtWon(saleAmt) : "-"}</td>
+                                        <td className="text-right px-1 py-1 tabular-nums font-bold text-emerald-700">{stockValue > 0 ? fmtWon(stockValue) : "-"}</td>
                                       </tr>
                                     );
                                   })}
