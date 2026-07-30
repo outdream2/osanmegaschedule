@@ -323,12 +323,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [topTab, setTopTab] = useState<"order" | "need" | "return" | "receipt" | "reconciliation" | "vendor" | "arrival_match" | "arrival_history">("order");
   // 2026-07-28 · 사용자 요청 · 반품필요 리스트 · 매입주기 길고 판매량 적은 상품
   // 2026-07-29 · 사용자 요청 · 컬럼 추가 (sale_qty_month · last_purchase_qty)
-  const [returnList, setReturnList] = useState<Array<{ product_code: string; product_name: string; supplier: string | null; purchase_cycle: number | null; sale_qty_cycle: number; sale_qty_month: number | null; last_purchase_date: string | null; last_purchase_qty: number | null; current_stock: number; purchase_price: number; }>>([]);
+  // 2026-07-30 · 사용자 요청 · sale_amount_month 추가 (최근 한달 판매액)
+  const [returnList, setReturnList] = useState<Array<{ product_code: string; product_name: string; supplier: string | null; purchase_cycle: number | null; sale_qty_cycle: number; sale_qty_month: number | null; sale_amount_month: number | null; last_purchase_date: string | null; last_purchase_qty: number | null; current_stock: number; purchase_price: number; }>>([]);
   const [returnLoading, setReturnLoading] = useState(false);
   const [returnCycleMin, setReturnCycleMin] = useState<number>(90); // 매입주기 90일 이상
   const [returnSalesMax, setReturnSalesMax] = useState<number>(5);  // 매입주기 판매량 5 이하
   // 2026-07-30 (3rd) · sale_qty_cycle 컬럼 제거 · SortKey에서도 제거
-  type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "purchase_cycle" | "sale_qty_month" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
+  type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "purchase_cycle" | "sale_qty_month" | "sale_amount_month" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
   const [returnSortKey, setReturnSortKey] = useState<ReturnSortKey>("purchase_cycle");
   const [returnSortDir, setReturnSortDir] = useState<"asc" | "desc">("desc");
   const handleReturnSort = (k: ReturnSortKey) => {
@@ -362,6 +363,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           sale_qty_cycle: Number(r.sale_qty_cycle ?? 0),
           // 2026-07-29 · 사용자 요청 · 최근 한달 판매량 · 최근 매입량 (backend 지원 시 자동 표시)
           sale_qty_month: r.sale_qty_month != null ? Number(r.sale_qty_month) : (r.sale_qty_1m != null ? Number(r.sale_qty_1m) : null),
+          sale_amount_month: r.sale_amount_month != null ? Number(r.sale_amount_month) : null,
           last_purchase_date: r.last_purchase_date ?? null,
           last_purchase_qty: r.last_purchase_qty != null ? Number(r.last_purchase_qty) : (r.last_snapshot_qty != null ? Number(r.last_snapshot_qty) : null),
           current_stock: Number(r.current_stock ?? r.closing_stock ?? 0),
@@ -1543,9 +1545,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           ) : (
                             <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-r border-slate-100">매입</th>
                           )}
-                          {/* 판매정보 (rose) */}
+                          {/* 판매정보 (rose) · 한달판매·한달판매액 2컬럼 */}
                           {retColSalesOpen && (
-                            <th className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-r border-slate-100">판매정보</th>
+                            <th colSpan={2} className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-r border-slate-100">판매정보</th>
                           )}
                           {/* 재고금액 (indigo) */}
                           <th className="text-center py-1.5 bg-indigo-50 text-indigo-700 border-l border-r border-slate-100">재고금액</th>
@@ -1579,12 +1581,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               <span>주기{retArrow("purchase_cycle")}</span>
                             )}
                           </th>
-                          {/* 판매정보: 최근한달 판매 */}
+                          {/* 판매정보: 최근한달 판매량 · 판매액 */}
                           {retColSalesOpen && (
-                            <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 판매량 정렬"
-                              className="text-right px-1 py-1.5 w-20 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none">
-                              최근한달{retArrow("sale_qty_month")}
-                            </th>
+                            <>
+                              <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 판매량 정렬"
+                                className="text-right px-1 py-1.5 w-20 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none">
+                                한달판매{retArrow("sale_qty_month")}
+                              </th>
+                              <th onClick={() => handleReturnSort("sale_amount_month")} title="최근 30일 판매액 정렬"
+                                className="text-right px-1 py-1.5 w-24 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none">
+                                한달판매액{retArrow("sale_amount_month")}
+                              </th>
+                            </>
                           )}
                           <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬"
                             className="text-right px-1 py-1.5 w-22 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none">
@@ -1604,6 +1612,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             case "current_stock":   return dir * (a.current_stock - b.current_stock);
                             case "purchase_cycle":  return dir * ((a.purchase_cycle ?? 0) - (b.purchase_cycle ?? 0));
                             case "sale_qty_month":  return dir * ((a.sale_qty_month ?? 0) - (b.sale_qty_month ?? 0));
+                        case "sale_amount_month": return dir * ((a.sale_amount_month ?? 0) - (b.sale_amount_month ?? 0));
                             case "last_purchase_date": return dir * String(a.last_purchase_date ?? "").localeCompare(String(b.last_purchase_date ?? ""));
                             case "last_purchase_qty":  return dir * ((a.last_purchase_qty ?? 0) - (b.last_purchase_qty ?? 0));
                             case "stock_value":     return dir * ((a.current_stock * a.purchase_price) - (b.current_stock * b.purchase_price));
@@ -1656,17 +1665,28 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                   </span>
                                 )}
                               </td>
-                              {/* 최근한달 판매 — 클릭 시 sales 탭 */}
+                              {/* 최근한달 판매량 · 판매액 — 클릭 시 sales 탭 */}
                               {retColSalesOpen && (
-                                <td
-                                  className="text-right px-1 py-1.5 tabular-nums bg-rose-50/20 align-top cursor-pointer"
-                                  onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
-                                  title="판매정보 보기"
-                                >
-                                  <span className="font-black text-[12px] text-rose-600 hover:underline">
-                                    {x.sale_qty_month != null ? `${x.sale_qty_month.toLocaleString()}개` : "-"}
-                                  </span>
-                                </td>
+                                <>
+                                  <td
+                                    className="text-right px-1 py-1.5 tabular-nums bg-rose-50/20 align-top cursor-pointer"
+                                    onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
+                                    title="판매정보 보기"
+                                  >
+                                    <span className="font-black text-[12px] text-rose-600 hover:underline">
+                                      {x.sale_qty_month != null ? `${x.sale_qty_month.toLocaleString()}개` : "-"}
+                                    </span>
+                                  </td>
+                                  <td
+                                    className="text-right px-1 py-1.5 tabular-nums bg-rose-50/20 align-top cursor-pointer"
+                                    onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
+                                    title="판매정보 보기"
+                                  >
+                                    <span className="font-black text-[12px] text-rose-700 hover:underline">
+                                      {x.sale_amount_month != null && x.sale_amount_month > 0 ? `${x.sale_amount_month.toLocaleString()}` : "-"}
+                                    </span>
+                                  </td>
+                                </>
                               )}
                               {/* 재고금액 */}
                               <td className="text-right px-1 py-1.5 tabular-nums font-black text-[12px] text-indigo-700 bg-indigo-50/20 align-top">
