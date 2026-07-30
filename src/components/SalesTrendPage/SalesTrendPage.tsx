@@ -1658,15 +1658,23 @@ const ZoneCategoryContent: React.FC = () => {
       .finally(() => setLoading(false));
   }, [season, months]);
   const grouped = useMemo(() => {
-    // real_map 앞부분 (예: "1A", "2B", "9B") 로 그룹핑
+    // 2026-07-30 · 사용자 지적 · real_map "8A/냉" 같은 "/" 분리 상품 · 첫 부분(primary)만 카운트
+    //   - 앞 부분 파싱 · "1A-01" → "1A" · "8A/냉" → "8A"
+    //   - "-" / "_" / "/" · 모두 구분자로 처리 · 첫 4자만
+    const parsePrimaryZone = (raw: string): string => {
+      if (!raw) return "미배치";
+      const t = String(raw).trim();
+      if (!t) return "미배치";
+      // "/" · "-" · "_" · 공백 · 어느 것이 먼저 · 앞 부분만
+      const primary = t.split(/[\/\-_\s]/)[0];
+      return (primary ?? "").slice(0, 4) || "미배치";
+    };
     const map = new Map<string, { zone: string; saleQty: number; totalAmount: number; items: Array<{ code: string; name: string; saleQty: number; amount: number; currentStock: number }> }>();
     for (const r of sales) {
       const code = String(r.product_code ?? "");
       const p = products[code] ?? {};
-      let zone = String(p.real_map ?? "").trim();
-      if (!zone) zone = "미배치";
-      // 앞 3자만 (예: "1A-01" → "1A")
-      const key = zone.replace(/[-_].*$/, "").slice(0, 4) || "미배치";
+      const zone = String(p.real_map ?? "").trim();
+      const key = parsePrimaryZone(zone);
       const cur = map.get(key) ?? { zone: key, saleQty: 0, totalAmount: 0, items: [] };
       const saleQty = Number(r.sale_qty ?? 0) || 0;
       const amount = Number(r.total_amount ?? 0) || 0;

@@ -103,28 +103,28 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
             {/* 1행 · 아이콘 · 제목 · 화살표 */}
             <div className="flex items-center gap-1.5">
               <TrendingUp size={14} className="text-teal-600 shrink-0" />
-              <span className="text-[15px] font-black text-slate-800">기간별 상품흐름</span>
+              <span className="text-[13px] font-black text-slate-800">기간별 상품흐름</span>
               {collapsed
                 ? <ChevronRight size={14} className="ml-auto text-slate-400 shrink-0" />
                 : <ChevronDown size={14} className="ml-auto text-slate-600 shrink-0" />}
             </div>
             {/* 2행 · 상품명 (줄바꿈 · 크게) */}
             {productName && (
-              <div className="text-[16px] font-black text-slate-900 break-words whitespace-normal leading-snug pl-5">
+              <div className="text-[14px] font-black text-slate-900 break-words whitespace-normal leading-snug pl-5">
                 {productName}
               </div>
             )}
             {/* 3행 · 판매량 통계 (상품명 아래 · 큰 글씨) */}
             {!collapsed && (totalSaleQty > 0 || last30Sale > 0) && (
-              <div className="flex items-center gap-3 flex-wrap pl-5 text-[14px] tabular-nums font-semibold text-slate-600">
+              <div className="flex items-center gap-3 flex-wrap pl-5 text-[12px] tabular-nums font-semibold text-slate-600">
                 {totalSaleQty > 0 && (
                   <span title={`stock_history.sale_qty 합계 ${totalSaleQty.toLocaleString()} / ${monthSpan}개월 = 월평균 ${avgMonthlySale}개`}>
-                    월평균 판매 <span className="font-black text-rose-700 text-[16px]">{avgMonthlySale.toLocaleString()}</span>개
+                    월평균 판매 <span className="font-black text-rose-700 text-[14px]">{avgMonthlySale.toLocaleString()}</span>개
                   </span>
                 )}
                 {last30Sale > 0 && (
                   <span title="최근 30일 판매량 (stock_history · snapshot_date >= 30일 전)">
-                    최근 한달 판매 <span className="font-black text-teal-700 text-[16px]">{last30Sale.toLocaleString()}</span>개
+                    최근 한달 판매 <span className="font-black text-teal-700 text-[14px]">{last30Sale.toLocaleString()}</span>개
                   </span>
                 )}
               </div>
@@ -136,7 +136,7 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
         <>
           {/* 조회기간 행 · 개월 버튼 + 계절 버튼 · 넘칠 때 flex-wrap으로 다음 줄 */}
           <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="text-[14px] font-black text-teal-700 shrink-0">조회기간</span>
+            <span className="text-[12px] font-black text-teal-700 shrink-0">조회기간</span>
             {/* 개월 버튼 그룹 · shrink-0 으로 버튼 뭉침 방지 */}
             <div className="inline-flex shrink-0 bg-slate-100 border border-slate-200 rounded-lg p-0.5">
               {([1, 2, 3, 4, 5, 6] as const).map(m => {
@@ -145,14 +145,14 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
                   <button
                     key={m}
                     onClick={() => { setSeason(null); setMonths(m); }}
-                    className={`min-w-[28px] min-h-[32px] px-2 py-0.5 text-[13px] font-black rounded-md transition cursor-pointer ${active
+                    className={`min-w-[28px] min-h-[32px] px-2 py-0.5 text-[11px] font-black rounded-md transition cursor-pointer ${active
                       ? "bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-sm"
                       : "text-slate-600 hover:text-slate-900 hover:bg-white"
                     }`}
                   >{m}</button>
                 );
               })}
-              <span className="text-[14px] font-bold text-slate-500 self-center px-1">개월</span>
+              <span className="text-[12px] font-bold text-slate-500 self-center px-1">개월</span>
             </div>
             {/* 계절 버튼 · shrink-0 으로 좁아져도 유지 */}
             <div className="shrink-0">
@@ -161,25 +161,25 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
           </div>
           {/* 단위 행 · 월중/10일 · 범례 좁을 때 자동 wrap */}
           <div className="flex items-center gap-2 mb-2 flex-wrap">
-            <span className="text-[14px] font-black text-slate-600 shrink-0">단위</span>
+            <span className="text-[12px] font-black text-slate-600 shrink-0">단위</span>
             <div className="inline-flex shrink-0 bg-slate-100 border border-slate-200 rounded-lg p-0.5">
               <button onClick={() => setXAxisMode("month")}
-                className={`min-h-[32px] px-2.5 py-0.5 text-[13px] font-black rounded-md transition cursor-pointer ${xAxisMode === "month" ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>월중</button>
+                className={`min-h-[32px] px-2.5 py-0.5 text-[11px] font-black rounded-md transition cursor-pointer ${xAxisMode === "month" ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>월중</button>
               <button onClick={() => setXAxisMode("10day")}
-                className={`min-h-[32px] px-2.5 py-0.5 text-[13px] font-black rounded-md transition cursor-pointer ${xAxisMode === "10day" ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>10일 (초·중·하순)</button>
+                className={`min-h-[32px] px-2.5 py-0.5 text-[11px] font-black rounded-md transition cursor-pointer ${xAxisMode === "10day" ? "bg-white text-teal-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>10일 (초·중·하순)</button>
             </div>
             {/* 범례 · sm+ 에서 우측 정렬 · 좁으면 다음 줄 */}
-            <span className="text-[13px] font-semibold text-slate-400 sm:ml-auto">매입 · 판매 · 폐기 · 손실</span>
+            <span className="text-[11px] font-semibold text-slate-400 sm:ml-auto">매입 · 판매 · 폐기 · 손실</span>
           </div>
         </>
       )}
       {collapsed ? null : loading ? (
         <div className="flex flex-col items-center justify-center py-10 text-slate-400 gap-2">
           <div className="w-8 h-8 border-4 border-slate-200 border-t-teal-500 rounded-full animate-spin" />
-          <div className="text-base font-black">로딩 중...</div>
+          <div className="text-sm font-black">로딩 중...</div>
         </div>
       ) : rows.length === 0 ? (
-        <div className="text-center text-[14px] text-slate-300 py-8">기간 데이터 없음</div>
+        <div className="text-center text-[12px] text-slate-300 py-8">기간 데이터 없음</div>
       ) : (() => {
         const filled = fillPeriodsWithRows(
           rows,
@@ -277,8 +277,8 @@ export const ProductDetailMobileHeader: React.FC<{
         <X size={18} strokeWidth={2.4} />
       </button>
       <div className="flex-1 min-w-0">
-        <div className="text-[16px] font-black text-slate-800 break-keep whitespace-normal leading-tight">{product.name}</div>
-        <div className="text-[13px] tabular-nums text-slate-500 break-words whitespace-normal leading-tight">
+        <div className="text-[14px] font-black text-slate-800 break-keep whitespace-normal leading-tight">{product.name}</div>
+        <div className="text-[11px] tabular-nums text-slate-500 break-words whitespace-normal leading-tight">
           #{product.code} · {product.supplier ?? "-"}
         </div>
       </div>
@@ -354,8 +354,8 @@ const ProductDetailChartMode: React.FC<{
             ? <ChevronRight size={14} className="text-slate-400 shrink-0" />
             : <ChevronDown size={14} className="text-slate-600 shrink-0" />}
           <Package size={16} className="text-slate-500 shrink-0" />
-          <span className="text-[15px] font-black text-slate-800 break-keep whitespace-normal leading-tight text-left">재고 · 매입판매가 · 발주 · 배정구역</span>
-          {topCollapsed && <span className="text-[14px] font-bold text-slate-400 ml-1 shrink-0">— 펼치기</span>}
+          <span className="text-[13px] font-black text-slate-800 break-keep whitespace-normal leading-tight text-left">재고 · 매입판매가 · 발주 · 배정구역</span>
+          {topCollapsed && <span className="text-[12px] font-bold text-slate-400 ml-1 shrink-0">— 펼치기</span>}
         </button>
         {!topCollapsed && (
           <ProductInfoCard
@@ -385,8 +385,8 @@ const ProductDetailChartMode: React.FC<{
             ? <ChevronRight size={14} className="text-slate-400 shrink-0" />
             : <ChevronDown size={14} className="text-slate-600 shrink-0" />}
           <Package size={16} className="text-slate-500 shrink-0" />
-          <span className="text-[15px] font-black text-slate-800 break-keep whitespace-normal leading-tight text-left">상품 정보 · 추가 정보</span>
-          {metaCollapsed && <span className="text-[14px] font-bold text-slate-400 ml-1 shrink-0">— 펼치기</span>}
+          <span className="text-[13px] font-black text-slate-800 break-keep whitespace-normal leading-tight text-left">상품 정보 · 추가 정보</span>
+          {metaCollapsed && <span className="text-[12px] font-bold text-slate-400 ml-1 shrink-0">— 펼치기</span>}
         </button>
         {!metaCollapsed && (
           <ProductInfoCard
@@ -516,7 +516,7 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
             : "text-slate-500 border-transparent hover:text-slate-700";
           return (
             <button key={k} type="button" onClick={() => setTab(k)}
-              className={`flex-1 min-h-[44px] py-2 px-3 text-[16px] font-black border-b-2 transition cursor-pointer ${cls}`}>
+              className={`flex-1 min-h-[44px] py-2 px-3 text-[14px] font-black border-b-2 transition cursor-pointer ${cls}`}>
               {label}
             </button>
           );
@@ -529,14 +529,14 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
       ) : (
         <div className="px-3 py-2">
           {ordersLoading ? (
-            <div className="py-6 text-center text-[15px] text-slate-400">발주내역 로딩...</div>
+            <div className="py-6 text-center text-[13px] text-slate-400">발주내역 로딩...</div>
           ) : orders.length === 0 ? (
-            <div className="py-6 text-center text-[15px] text-slate-400">이 상품의 발주내역이 없습니다</div>
+            <div className="py-6 text-center text-[13px] text-slate-400">이 상품의 발주내역이 없습니다</div>
           ) : (
             // 발주내역 테이블 · 가로 스크롤 허용 · min-width 로 컬럼 겹침 방지
             <div className="overflow-x-auto -mx-1 px-1">
-              <table className="w-full text-[15px] min-w-[320px]">
-                <thead className="text-[15px] font-bold text-slate-500 border-b border-slate-100">
+              <table className="w-full text-[13px] min-w-[320px]">
+                <thead className="text-[13px] font-bold text-slate-500 border-b border-slate-100">
                   <tr>
                     <th className="text-left px-2 py-1.5 whitespace-nowrap">요청일시</th>
                     <th className="text-left px-2 py-1.5">공급사</th>
@@ -548,14 +548,14 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
                 <tbody className="divide-y divide-slate-100">
                   {orders.map(o => (
                     <tr key={o.id} className="hover:bg-sky-50/40">
-                      <td className="px-2 py-1.5 tabular-nums text-slate-600 text-[14px] whitespace-nowrap">
+                      <td className="px-2 py-1.5 tabular-nums text-slate-600 text-[12px] whitespace-nowrap">
                         {o.requested_at ? new Date(o.requested_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-"}
                       </td>
                       <td className="px-2 py-1.5 text-slate-700 break-words">{o.supplier ?? "-"}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums text-amber-700 font-bold">{o.current_stock ?? "-"}</td>
                       <td className="px-2 py-1.5 text-right tabular-nums text-slate-600">{o.optimal_stock ?? "-"}</td>
                       <td className="px-2 py-1.5 text-center">
-                        <span className={`text-[14px] font-black rounded-full px-2 py-0.5 border whitespace-nowrap ${
+                        <span className={`text-[12px] font-black rounded-full px-2 py-0.5 border whitespace-nowrap ${
                           o.status === "done" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
                           o.status === "sent" ? "bg-sky-50 text-sky-700 border-sky-300" :
                           "bg-amber-50 text-amber-700 border-amber-300"

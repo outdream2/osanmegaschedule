@@ -1,21 +1,27 @@
-// 실재고입력 (ScanPage) · 2026-07-29 좌우분할 재구성 (사용자 요청)
-// 좌: 바코드 스캐너 + 최근 스캔 상품 정보 + 진열구역 매칭·요청
-// 우: 스캔한 상품들 자동 등록 리스트 (실재고 카드) · 창고/매장 실재고 입력·저장
-//
-// 목적: 상품입고와 동일 UX 패턴 · 배치 실재고 입력 편의성
+// 실재고입력 (ScanPage) · 2026-07-30 리팩터
+// 좌: 바코드 스캐너 + 최근 스캔 상품 + notFoundCode
+// 우: 스캔한 상품 테이블 · 창고/매장1/매장2 입력 · 전체 등록
+// real_map "/" 분할 → 매장1·매장2 컬럼 (없으면 매장1만)
 
-import React, { useEffect, useState, useCallback } from "react";
-import { ZONE_DEFS } from "../constants/displayZones";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
+import {
+  ScanLine, Loader2, AlertCircle, Package,
+  CheckCircle2, Trash2, RotateCcw, Warehouse, Store,
+  Hash, Building2, Box, MapPin, ArrowUpDown, ArrowUp, ArrowDown,
+  SaveAll, Sparkles,
+} from "lucide-react";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { loadZBar } from "./BarcodeScanner/zbar";
 import {
-  ScanLine, Bell, CheckCircle2, Package, Loader2, RotateCcw, AlertCircle,
-  Warehouse, Store, Trash2, X as XIcon,
-} from "lucide-react";
-import { getProductsMap, lookupProduct, isProductsLoaded, updateCachedProduct, type ProductInfo } from "../lib/productsCache";
+  getProductsMap, lookupProduct, isProductsLoaded,
+  type ProductInfo,
+} from "../lib/productsCache";
 import { AppNavHeader, type AppNavPage } from "./AppNavHeader";
 import type { AuthSession } from "../types";
 
+// ─────────────────────────────────────────────────────────────
+// Props
+// ─────────────────────────────────────────────────────────────
 interface ScanPageProps {
   onBack: () => void;
   authSession?: AuthSession | null;
@@ -23,128 +29,136 @@ interface ScanPageProps {
   onLogout?: () => void;
 }
 
-type ZoneStatus = "normal" | "low" | "empty";
-const STATUS_LABEL: Record<ZoneStatus, string> = { normal: "정상", low: "부족", empty: "품절" };
-
-interface Zone {
-  id: string;
-  num: number;
-  label: string;
-  category: string;
-  assignedStaffId: number | null;
-  assignedStaffName: string;
-  status: ZoneStatus;
-  products: string;
+// ─────────────────────────────────────────────────────────────
+// real_map 파싱 · "/" 기준 분할 → 매장1 / 매장2
+// 예: "8A/냉" → ["8A", "냉"] · "9B" → ["9B", null]
+// ─────────────────────────────────────────────────────────────
+function parseRealMap(realMap: string | null | undefined): [string | null, string | null] {
+  if (!realMap) return [null, null];
+  const idx = realMap.indexOf("/");
+  if (idx < 0) return [realMap.trim() || null, null];
+  const a = realMap.slice(0, idx).trim();
+  const b = realMap.slice(idx + 1).trim();
+  return [a || null, b || null];
 }
 
-// 우측 리스트 아이템 (실재고 입력 카드)
-interface StockCard {
-  key: string;                 // barcode + timestamp
+// ─────────────────────────────────────────────────────────────
+// StockRow · 우측 테이블 한 행
+// ─────────────────────────────────────────────────────────────
+interface StockRow {
+  key: string;                    // code + timestamp
   code: string;
   product: ProductInfo;
   addedAt: number;
-  warehouseStock: number | "";
-  storeStock: number | "";
-  whStatus: "idle" | "loading" | "done" | "error";
-  stStatus: "idle" | "loading" | "done" | "error";
-  whError: string | null;
-  stError: string | null;
+  warehouseQty: number | "";
+  store1Qty:    number | "";
+  store2Qty:    number | "";     // real_map "/" 있을 때만 의미 있음
+  store1Label:  string | null;   // real_map 첫 번째 위치명
+  store2Label:  string | null;   // real_map 두 번째 위치명 (없으면 null)
 }
 
-const STAFF_COLORS = [
-  "bg-violet-100 text-violet-800 border-violet-300",
-  "bg-sky-100 text-sky-800 border-sky-300",
-  "bg-rose-100 text-rose-800 border-rose-300",
-  "bg-teal-100 text-teal-800 border-teal-300",
-  "bg-orange-100 text-orange-800 border-orange-300",
-  "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300",
-];
+// ─────────────────────────────────────────────────────────────
+// Toast
+// ─────────────────────────────────────────────────────────────
+interface ToastProps { message: string }
+const Toast: React.FC<ToastProps> = ({ message }) => (
+  <div
+    role="status"
+    aria-live="polite"
+    className="fixed top-4 right-4 z-[9999] flex items-center gap-2.5 px-4 py-3 rounded-xl
+      bg-slate-900/95 backdrop-blur-sm text-white text-xs font-bold
+      shadow-[0_8px_32px_rgba(0,0,0,0.32)] border border-white/10"
+  >
+    <span className="w-1.5 h-1.5 rounded-full bg-teal-400 shrink-0" />
+    {message}
+  </div>
+);
 
-// 규격에서 구역 번호 추출: "9B" → [9], "2A/24" → [2, 24], "21" → [21]
-function extractZoneNums(spec: string): number[] {
-  return [...new Set(
-    spec.split("/").map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0)
-  )];
+// ─────────────────────────────────────────────────────────────
+// SortIcon
+// ─────────────────────────────────────────────────────────────
+type SortDir = "asc" | "desc";
+const SortIcon: React.FC<{ active: boolean; dir: SortDir }> = ({ active, dir }) => {
+  if (!active) return <ArrowUpDown size={10} className="text-slate-300 ml-0.5 inline" />;
+  return dir === "asc"
+    ? <ArrowUp size={10} className="text-teal-500 ml-0.5 inline" />
+    : <ArrowDown size={10} className="text-teal-500 ml-0.5 inline" />;
+};
+
+// ─────────────────────────────────────────────────────────────
+// NumberInput · 수량 입력 공통
+// ─────────────────────────────────────────────────────────────
+interface NumberInputProps {
+  value: number | "";
+  onChange: (v: number | "") => void;
+  placeholder?: string;
+  disabled?: boolean;
+  accent?: string;
 }
+const NumberInput: React.FC<NumberInputProps> = ({
+  value, onChange, placeholder = "0", disabled = false, accent = "focus:border-teal-400",
+}) => (
+  <input
+    type="number"
+    inputMode="numeric"
+    value={value}
+    disabled={disabled}
+    onChange={e => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+    placeholder={placeholder}
+    className={`w-full h-9 text-right px-2 bg-white border border-slate-200 rounded-lg
+      text-[13px] font-black tabular-nums focus:outline-none transition
+      disabled:bg-slate-100 disabled:text-slate-300 disabled:cursor-not-allowed
+      ${accent}`}
+  />
+);
 
-export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [loading, setLoading] = useState(true);      // zones loading
-  const [mapLoading, setMapLoading] = useState(false);
-  const [scannerOpen, setScannerOpen] = useState(false);
-  const [scanResult, setScanResult] = useState<string | null>(null);
-  const [product, setProduct] = useState<ProductInfo | null>(null);
-  const [productNotFound, setProductNotFound] = useState(false);
-  const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
-  const [toast, setToast] = useState<string | null>(null);
-  // 2026-07-29 · 우측 리스트 · 스캔한 상품들 카드로 자동 등록
-  const [stockCards, setStockCards] = useState<StockCard[]>([]);
-  const [lastAddedKey, setLastAddedKey] = useState<string | null>(null);
+// ─────────────────────────────────────────────────────────────
+// Main Component
+// ─────────────────────────────────────────────────────────────
+export const ScanPage: React.FC<ScanPageProps> = ({
+  onBack, authSession, onNavigate, onLogout,
+}) => {
+  // ── scanner
+  const [scannerOpen, setScannerOpen]           = useState(false);
+  const [mapLoading, setMapLoading]             = useState(false);
+  const [toast, setToast]                       = useState<string | null>(null);
+
+  // ── 좌측 마지막 스캔 상태
+  const [lastProduct, setLastProduct]           = useState<ProductInfo | null>(null);
+  const [lastCode, setLastCode]                 = useState<string | null>(null);
+  const [notFoundCode, setNotFoundCode]         = useState<string | null>(null);
+
+  // ── 우측 테이블
+  const [rows, setRows]                         = useState<StockRow[]>([]);
+  const [lastAddedKey, setLastAddedKey]         = useState<string | null>(null);
+
+  // ── 전체 저장
+  const [saveStatus, setSaveStatus]             = useState<"idle" | "saving" | "done" | "error">("idle");
+  const [saveError, setSaveError]               = useState<string | null>(null);
+  const [savedCount, setSavedCount]             = useState<number>(0);
+
+  // ── 정렬
+  type SortKey = "addedAt" | "name" | "supplier" | "realMap";
+  const [sortKey, setSortKey]                   = useState<SortKey>("addedAt");
+  const [sortDir, setSortDir]                   = useState<SortDir>("desc");
 
   useEffect(() => { loadZBar(); }, []);
-
   useEffect(() => {
     if (!isProductsLoaded()) {
       setMapLoading(true);
       getProductsMap().then(() => setMapLoading(false));
     }
-    (async () => {
-      try {
-        const res = await fetch("/api/zones");
-        if (!res.ok) throw new Error();
-        const rows: Array<{ zone_id: string; employee_id: number | null; employee_name: string; status: string; products: string }> = await res.json();
-        const mapped: Zone[] = ZONE_DEFS.map((def) => {
-          const row = rows.find((r) => r.zone_id === String(def.num));
-          return {
-            id: String(def.num),
-            num: def.num,
-            label: def.label,
-            category: def.category,
-            assignedStaffId: row?.employee_id ?? null,
-            assignedStaffName: row?.employee_name ?? "",
-            status: (row?.status as ZoneStatus) ?? "normal",
-            products: row?.products ?? "",
-          };
-        });
-        setZones(mapped);
-      } catch { /* fallback empty */ }
-      finally { setLoading(false); }
-    })();
   }, []);
 
-  const showToast = (msg: string, ms = 2000) => {
+  const showToast = useCallback((msg: string, ms = 2200) => {
     setToast(msg);
     setTimeout(() => setToast(null), ms);
-  };
+  }, []);
 
-  const specZones: Zone[] = (() => {
-    if (!product) return [];
-    const spec: string = product.spec ?? "";
-    const nums = extractZoneNums(spec);
-    if (nums.length > 0) return zones.filter(z => nums.includes(z.num));
-    const q = spec.toLowerCase();
-    if (!q) return [];
-    return zones.filter(z =>
-      z.products.toLowerCase().includes(q) || z.category.toLowerCase().includes(q)
-    );
-  })();
-
-  const realMapZone: Zone | null = (() => {
-    if (!product) return null;
-    const rm: string | null = product.realMap ?? product.real_map ?? null;
-    if (!rm) return null;
-    const m = rm.match(/^(\d+)번/);
-    if (!m) return null;
-    return zones.find(z => z.num === parseInt(m[1])) ?? null;
-  })();
-
-  const handleScan = async (result: string) => {
-    setScanResult(result);
-    setProduct(null);
-    setProductNotFound(false);
-    setRequestedIds(new Set());
+  // ── 스캔 핸들러
+  const handleScan = useCallback(async (result: string) => {
     setScannerOpen(false);
-
+    setNotFoundCode(null);
     if (!isProductsLoaded()) {
       setMapLoading(true);
       await getProductsMap();
@@ -152,166 +166,159 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavig
     }
     const found = lookupProduct(result);
     if (!found) {
-      setProductNotFound(true);
+      setNotFoundCode(result);
+      setLastProduct(null);
+      setLastCode(result);
       showToast("등록되지 않은 상품");
       return;
     }
-    setProduct(found);
-    // 2026-07-29 · 우측 카드 리스트에 등록 · 중복 방지
-    let addedKey: string;
-    const existingIdx = stockCards.findIndex(c => c.code === result);
+    setLastProduct(found);
+    setLastCode(result);
+
+    // 중복 코드면 기존 행 하이라이트
+    const existingIdx = rows.findIndex(r => r.code === result);
     if (existingIdx >= 0) {
-      addedKey = stockCards[existingIdx].key;
-    } else {
-      const newCard: StockCard = {
-        key: `${result}-${Date.now()}`,
-        code: result,
-        product: found,
-        addedAt: Date.now(),
-        warehouseStock: "",
-        storeStock: "",
-        whStatus: "idle",
-        stStatus: "idle",
-        whError: null,
-        stError: null,
-      };
-      addedKey = newCard.key;
-      setStockCards(prev => [newCard, ...prev]);
-      // 기존 실재고 자동 로드
-      fetch(`/api/inventory-checks?product_code=${encodeURIComponent(result)}`)
-        .then(r => r.ok ? r.json() : [])
-        .then((list: any[]) => {
-          const last = list[0];
-          if (last) {
-            setStockCards(prev => prev.map(c => c.key === newCard.key
-              ? {
-                  ...c,
-                  warehouseStock: last.warehouse_stock != null ? Number(last.warehouse_stock) : "",
-                  storeStock: last.store_stock != null ? Number(last.store_stock) : "",
-                }
-              : c));
-          }
-        }).catch(() => {});
+      setLastAddedKey(rows[existingIdx].key);
+      showToast("이미 등록된 상품 (기존 행 활성화)");
+      return;
     }
-    setLastAddedKey(addedKey);
-  };
 
-  const handleRequest = async (zone: Zone) => {
-    if (!zone.assignedStaffId) return;
-    const productNote = product ? `${product.name} (${product.spec})` : "바코드 스캔 요청";
-    fetch("/api/display-requests", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        zone_id: zone.id,
-        zone_label: `${zone.num}번 ${zone.label}`,
-        category: zone.category,
-        requested_at: new Date().toISOString(),
-        assigned_staff_id: zone.assignedStaffId,
-        assigned_staff_name: zone.assignedStaffName,
-        note: productNote,
-      }),
-    }).catch(() => {});
-    fetch("/api/push-send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        employeeId: zone.assignedStaffId,
-        title: "📦 진열 보충 요청",
-        body: product
-          ? `[${product.name}] ${zone.num}번 ${zone.label} 보충 필요`
-          : `${zone.num}번 ${zone.label} (${zone.category}) 보충 필요`,
-        url: "/",
-      }),
-    }).catch(() => {});
-    setRequestedIds((prev) => new Set([...prev, zone.id]));
-    showToast(`${zone.assignedStaffName}님께 요청 전송됨`);
-  };
+    // real_map 파싱
+    const rm = found.realMap ?? (found as any).real_map ?? null;
+    const [s1Label, s2Label] = parseRealMap(rm);
 
-  const reset = () => {
-    setScanResult(null);
-    setProduct(null);
-    setProductNotFound(false);
-    setRequestedIds(new Set());
-  };
+    const newRow: StockRow = {
+      key: `${result}-${Date.now()}`,
+      code: result,
+      product: found,
+      addedAt: Date.now(),
+      warehouseQty: "",
+      store1Qty: "",
+      store2Qty: "",
+      store1Label: s1Label,
+      store2Label: s2Label,
+    };
 
-  const resetAllCards = () => {
-    if (stockCards.length === 0) return;
-    if (!window.confirm(`등록된 ${stockCards.length}개 카드를 모두 초기화할까요?`)) return;
-    setStockCards([]);
+    setRows(prev => [newRow, ...prev]);
+    setLastAddedKey(newRow.key);
+    setSaveStatus("idle");
+
+    // 기존 실재고 자동 로드
+    fetch(`/api/inventory-checks?product_code=${encodeURIComponent(result)}`)
+      .then(r => r.ok ? r.json() : [])
+      .then((list: any[]) => {
+        const last = list[0];
+        if (!last) return;
+        setRows(prev => prev.map(r => r.key === newRow.key
+          ? {
+              ...r,
+              warehouseQty: last.warehouse_stock != null ? Number(last.warehouse_stock) : "",
+              store1Qty:    last.store_stock      != null ? Number(last.store_stock)     : "",
+              store2Qty:    last.store_stock_2    != null ? Number(last.store_stock_2)   : "",
+            }
+          : r
+        ));
+      })
+      .catch(() => {});
+  }, [rows, showToast]);
+
+  // ── 행 필드 업데이트
+  const patchRow = useCallback((key: string, patch: Partial<StockRow>) => {
+    setRows(prev => prev.map(r => r.key === key ? { ...r, ...patch } : r));
+  }, []);
+
+  const removeRow = useCallback((key: string) => {
+    setRows(prev => prev.filter(r => r.key !== key));
+  }, []);
+
+  const resetAll = () => {
+    if (rows.length === 0) return;
+    if (!window.confirm(`등록된 ${rows.length}개 항목을 모두 초기화할까요?`)) return;
+    setRows([]);
     setLastAddedKey(null);
+    setLastProduct(null);
+    setLastCode(null);
+    setNotFoundCode(null);
+    setSaveStatus("idle");
+    setSaveError(null);
   };
 
-  const removeCard = (key: string) => {
-    setStockCards(prev => prev.filter(c => c.key !== key));
-  };
-
-  const updateCardField = (key: string, patch: Partial<StockCard>) => {
-    setStockCards(prev => prev.map(c => c.key === key ? { ...c, ...patch } : c));
-  };
-
-  // 창고 실재고 저장
-  const saveWarehouseStock = useCallback(async (card: StockCard) => {
-    const v = card.warehouseStock;
-    if (v === "" || v == null) { updateCardField(card.key, { whError: "숫자 입력 필요", whStatus: "error" }); return; }
-    updateCardField(card.key, { whStatus: "loading", whError: null });
+  // ── 전체 저장
+  const handleBulkSave = async () => {
+    if (rows.length === 0) return;
+    if (saveStatus === "saving") return;
+    setSaveStatus("saving");
+    setSaveError(null);
     try {
-      const res = await fetch("/api/inventory-checks", {
+      const res = await fetch("/api/inventory-checks/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          product_code: card.code,
-          warehouse_stock: Number(v),
           checked_by: authSession?.employeeName ?? "익명",
+          items: rows.map(r => ({
+            product_code:    r.code,
+            product_name:    r.product.name,
+            warehouse_stock: r.warehouseQty !== "" ? Number(r.warehouseQty) : null,
+            store_stock:     r.store1Qty    !== "" ? Number(r.store1Qty)    : null,
+            store_stock_2:   r.store2Qty    !== "" ? Number(r.store2Qty)    : null,
+          })),
         }),
       });
       if (!res.ok) {
         const b = await res.json().catch(() => ({}));
-        updateCardField(card.key, { whStatus: "error", whError: b.error ?? `저장 실패 (${res.status})` });
-        return;
+        throw new Error((b as any).error ?? `저장 실패 (${res.status})`);
       }
-      updateCardField(card.key, { whStatus: "done", whError: null });
-    } catch (e: any) {
-      updateCardField(card.key, { whStatus: "error", whError: e?.message ?? "네트워크 오류" });
+      const j = await res.json() as { saved?: number; failed?: number };
+      setSavedCount(j.saved ?? rows.length);
+      setSaveStatus("done");
+      showToast(`${j.saved ?? rows.length}건 저장 완료`);
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "저장 실패";
+      setSaveError(msg);
+      setSaveStatus("error");
     }
-  }, [authSession]);
-
-  // 매장 실재고 저장
-  const saveStoreStock = useCallback(async (card: StockCard) => {
-    const v = card.storeStock;
-    if (v === "" || v == null) { updateCardField(card.key, { stError: "숫자 입력 필요", stStatus: "error" }); return; }
-    updateCardField(card.key, { stStatus: "loading", stError: null });
-    try {
-      const res = await fetch("/api/inventory-checks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          product_code: card.code,
-          store_stock: Number(v),
-          checked_by: authSession?.employeeName ?? "익명",
-        }),
-      });
-      if (!res.ok) {
-        const b = await res.json().catch(() => ({}));
-        updateCardField(card.key, { stStatus: "error", stError: b.error ?? `저장 실패 (${res.status})` });
-        return;
-      }
-      updateCardField(card.key, { stStatus: "done", stError: null });
-    } catch (e: any) {
-      updateCardField(card.key, { stStatus: "error", stError: e?.message ?? "네트워크 오류" });
-    }
-  }, [authSession]);
-
-  const handleRealMapUpdate = (newVal: string) => {
-    setProduct((prev) => (prev ? { ...prev, realMap: newVal } : prev));
-    if (scanResult) updateCachedProduct(scanResult, { realMap: newVal || null });
   };
 
-  const staffIds = [...new Set(zones.map((z) => z.assignedStaffId).filter(Boolean))] as number[];
-  const staffColorMap = new Map(staffIds.map((id, i) => [id, i]));
+  // ── 정렬
+  const handleSort = (k: SortKey) => {
+    if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortKey(k); setSortDir("desc"); }
+  };
 
+  const sortedRows = useMemo(() => {
+    const sign = sortDir === "asc" ? 1 : -1;
+    return rows.slice().sort((a, b) => {
+      switch (sortKey) {
+        case "addedAt":  return sign * (a.addedAt - b.addedAt);
+        case "name":     return sign * a.product.name.localeCompare(b.product.name, "ko");
+        case "supplier": return sign * (a.product.supplier ?? "").localeCompare(b.product.supplier ?? "", "ko");
+        case "realMap": {
+          const ra = a.product.realMap ?? (a.product as any).real_map ?? "";
+          const rb = b.product.realMap ?? (b.product as any).real_map ?? "";
+          return sign * ra.localeCompare(rb, "ko");
+        }
+        default: return 0;
+      }
+    });
+  }, [rows, sortKey, sortDir]);
+
+  // 합계 계산 헬퍼
+  const total = (r: StockRow): number => {
+    const w  = r.warehouseQty !== "" ? Number(r.warehouseQty) : 0;
+    const s1 = r.store1Qty    !== "" ? Number(r.store1Qty)    : 0;
+    const s2 = r.store2Qty    !== "" ? Number(r.store2Qty)    : 0;
+    return w + s1 + s2;
+  };
+
+  const hasDualStore = sortedRows.some(r => r.store2Label !== null);
+
+  // ─────────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
+    <div className="min-h-screen bg-[#f8f9fb] flex flex-col">
+
+      {/* ── AppNavHeader ── */}
       <AppNavHeader
         activePage="scan"
         authSession={authSession ?? null}
@@ -319,285 +326,523 @@ export const ScanPage: React.FC<ScanPageProps> = ({ onBack, authSession, onNavig
         onNavigate={onNavigate}
         onLogout={onLogout}
         rightSlot={
-          (scanResult || stockCards.length > 0) ? (
-            <div className="flex items-center gap-1.5">
-              {scanResult && (
-                <button onClick={reset}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-gray-500 hover:text-gray-800 bg-gray-100 border border-gray-200 hover:bg-gray-200 transition cursor-pointer">
-                  <RotateCcw size={12} /> 좌측 초기화
-                </button>
-              )}
-              {stockCards.length > 0 && (
-                <button onClick={resetAllCards}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-rose-500 hover:text-rose-800 bg-rose-50 border border-rose-200 hover:bg-rose-100 transition cursor-pointer">
-                  <RotateCcw size={12} /> 리스트 초기화
-                </button>
-              )}
-            </div>
+          rows.length > 0 ? (
+            <button
+              onClick={resetAll}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
+                text-slate-500 hover:text-slate-800 bg-white border border-slate-200
+                hover:bg-slate-50 hover:border-slate-300 shadow-sm
+                transition-all duration-150 cursor-pointer"
+            >
+              <RotateCcw size={12} />
+              초기화
+            </button>
           ) : undefined
         }
       />
 
-      {toast && (
-        <div className="fixed top-5 right-4 z-50 bg-slate-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-xl">
-          {toast}
-        </div>
-      )}
+      {/* ── Toast ── */}
+      {toast && <Toast message={toast} />}
 
+      {/* ── BarcodeScanner overlay ── */}
       {scannerOpen && (
         <BarcodeScanner
           onScan={handleScan}
           onClose={() => setScannerOpen(false)}
-          title="상품 바코드 스캔"
+          title="실재고 바코드 스캔"
         />
       )}
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 py-3 sm:py-4 flex flex-col lg:flex-row gap-3 sm:gap-4">
-        {/* ─── 좌측 · 스캐너 + 상품정보 + 진열구역 ─── */}
-        <section className="lg:w-[380px] lg:shrink-0 flex flex-col gap-3 lg:sticky lg:top-3 lg:self-start">
-          {/* 스캐너 카드 */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col items-center gap-3">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-teal-50 border-2 border-teal-200 flex items-center justify-center shrink-0">
-              <ScanLine size={30} className="text-teal-500" />
+      {/* ── Page header strip ── */}
+      <div className="bg-white border-b border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600
+            flex items-center justify-center shadow-sm shrink-0">
+            <ScanLine size={16} className="text-white" />
+          </div>
+          <div>
+            <h1 className="text-sm sm:text-base font-black text-slate-900 leading-none">실재고 입력</h1>
+            <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 leading-none">
+              바코드 스캔 후 창고·매장 수량 입력 · 전체 저장
+            </p>
+          </div>
+          {rows.length > 0 && (
+            <div className="ml-auto flex items-center gap-2">
+              <span className="text-[11px] sm:text-xs font-bold text-slate-400">{rows.length}건</span>
             </div>
-            <div className="text-center">
-              <p className="text-base sm:text-lg font-black text-slate-800">실재고 입력</p>
-              <p className="text-[12px] sm:text-[13px] text-slate-500 mt-1 leading-relaxed">
-                상품 바코드를 스캔하면<br />오른쪽 카드로 자동 등록됩니다
-              </p>
-            </div>
-            <button
-              onClick={() => setScannerOpen(true)}
-              disabled={mapLoading || loading}
-              className="w-full min-h-[52px] flex items-center justify-center gap-2 py-3.5 bg-teal-600 hover:bg-teal-700 active:bg-teal-800 disabled:opacity-50 text-white font-black rounded-2xl shadow-md transition cursor-pointer text-[15px]"
-            >
-              {mapLoading || loading ? <Loader2 size={18} className="animate-spin" /> : <ScanLine size={18} />}
-              {mapLoading ? "상품 정보 로딩..." : loading ? "구역 정보 로딩..." : "바코드 스캔"}
-            </button>
-            {productNotFound && scanResult && (
-              <div className="w-full flex items-start gap-2 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl">
-                <AlertCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
-                <div className="text-[12px] leading-tight min-w-0">
-                  <p className="font-black text-amber-800">미등록 상품 코드</p>
-                  <p className="tabular-nums text-amber-700 break-all mt-0.5">{scanResult}</p>
+          )}
+        </div>
+      </div>
+
+      {/* ── Main layout ── */}
+      <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5
+        flex flex-col lg:flex-row gap-4 lg:gap-5">
+
+        {/* ══════════════════════════════════════════════════════
+            LEFT PANEL · 스캐너 + 마지막 스캔 상품
+        ══════════════════════════════════════════════════════ */}
+        <aside className="lg:w-[320px] xl:w-[340px] lg:shrink-0 flex flex-col gap-4
+          lg:sticky lg:top-4 lg:self-start">
+
+          {/* ── 스캔 카드 ── */}
+          <div className="bg-white rounded-2xl border border-slate-200/80
+            shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
+
+            {/* 헤더 그라디언트 */}
+            <div className="relative px-5 pt-4 pb-3 bg-gradient-to-b from-teal-50/70 to-transparent">
+              <div className="absolute top-3 right-3 w-12 h-12 rounded-full bg-teal-100/50 border border-teal-200/40" />
+              <div className="relative flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600
+                  flex items-center justify-center shadow-md shrink-0 relative">
+                  <ScanLine size={17} className="text-white" />
+                  <span className="absolute top-1 left-1 w-1.5 h-1.5 border-t-2 border-l-2 border-white/60 rounded-tl-sm" />
+                  <span className="absolute top-1 right-1 w-1.5 h-1.5 border-t-2 border-r-2 border-white/60 rounded-tr-sm" />
+                  <span className="absolute bottom-1 left-1 w-1.5 h-1.5 border-b-2 border-l-2 border-white/60 rounded-bl-sm" />
+                  <span className="absolute bottom-1 right-1 w-1.5 h-1.5 border-b-2 border-r-2 border-white/60 rounded-br-sm" />
+                </div>
+                <div>
+                  <p className="text-sm font-black text-slate-800 leading-tight">바코드 스캔</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-none">
+                    스캔 시 우측 리스트에 자동 등록
+                  </p>
                 </div>
               </div>
-            )}
+            </div>
+
+            <div className="px-4 pb-5 flex flex-col gap-3">
+              {/* 스캔 버튼 */}
+              <button
+                onClick={() => setScannerOpen(true)}
+                disabled={mapLoading}
+                className="relative w-full min-h-[52px] flex items-center justify-center gap-2.5
+                  py-3.5 rounded-xl font-black text-[14px] sm:text-[15px] text-white
+                  bg-gradient-to-r from-teal-500 to-teal-600
+                  hover:from-teal-600 hover:to-teal-700
+                  active:from-teal-700 active:to-teal-800
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                  shadow-[0_4px_14px_rgba(20,184,166,0.4)]
+                  hover:shadow-[0_4px_20px_rgba(20,184,166,0.5)]
+                  transition-all duration-200 cursor-pointer overflow-hidden"
+              >
+                <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
+                {mapLoading
+                  ? <><Loader2 size={18} className="animate-spin" /> 상품 정보 로딩...</>
+                  : <><ScanLine size={18} /> 바코드 스캔</>
+                }
+              </button>
+
+              {/* 미등록 코드 경고 */}
+              {notFoundCode && !lastProduct && (
+                <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl
+                  bg-amber-50 border border-amber-200/80">
+                  <AlertCircle size={15} className="text-amber-500 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-black text-amber-800 leading-none">미등록 상품 코드</p>
+                    <p className="text-[11px] font-mono tabular-nums text-amber-700 break-all mt-1.5
+                      bg-amber-100/60 px-2 py-1 rounded-md">
+                      {notFoundCode}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* 마지막 스캔 상품 */}
+              {lastProduct && (
+                <div className="flex flex-col gap-2.5 px-3.5 py-3.5 rounded-xl
+                  bg-gradient-to-b from-teal-50 to-teal-50/30
+                  border border-teal-200/80
+                  shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+
+                  <div className="flex items-center gap-2">
+                    <div className="w-5 h-5 rounded-full bg-teal-500 flex items-center justify-center shrink-0">
+                      <CheckCircle2 size={11} className="text-white" />
+                    </div>
+                    <span className="text-[10px] font-black text-teal-700 uppercase tracking-wider">최근 스캔</span>
+                    {lastCode && (
+                      <span className="ml-auto text-[10px] font-mono tabular-nums text-teal-500
+                        bg-teal-100 px-1.5 py-0.5 rounded-md border border-teal-200/60">
+                        #{lastCode}
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-[14px] sm:text-[15px] font-black text-slate-800
+                    break-words whitespace-normal leading-snug -mt-0.5">
+                    {lastProduct.name}
+                  </p>
+
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {lastProduct.spec && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600
+                        bg-white/80 border border-slate-200/60 rounded-lg px-2 py-1">
+                        <Box size={10} className="text-slate-400" />
+                        {lastProduct.spec}
+                      </span>
+                    )}
+                    {lastProduct.supplier && (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-700
+                        bg-sky-50 border border-sky-200/70 rounded-lg px-2 py-1">
+                        <Building2 size={10} className="text-sky-500" />
+                        {lastProduct.supplier}
+                      </span>
+                    )}
+                    {(() => {
+                      const rm = lastProduct.realMap ?? (lastProduct as any).real_map ?? null;
+                      if (!rm) return null;
+                      return (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-bold text-violet-700
+                          bg-violet-50 border border-violet-200/70 rounded-lg px-2 py-1">
+                          <MapPin size={10} className="text-violet-400" />
+                          {rm}
+                        </span>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* 최근 스캔 상품 정보 */}
-          {product && (
-            <div className="bg-white rounded-2xl border-2 border-teal-200 shadow-sm p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <CheckCircle2 size={16} className="text-teal-600 shrink-0" />
-                <span className="text-[11px] font-black text-teal-700 uppercase tracking-wider">최근 스캔</span>
-                {scanResult && (
-                  <span className="text-[11px] tabular-nums text-teal-600 ml-auto">#{scanResult}</span>
-                )}
-              </div>
-              <p className="text-[15px] font-black text-slate-800 break-words whitespace-normal leading-snug mb-1">
-                {product.name}
-              </p>
-              <div className="flex flex-wrap items-center gap-2 text-[12px]">
-                {product.spec && (
-                  <span className="font-bold text-slate-600 break-words whitespace-normal">{product.spec}</span>
-                )}
-                {product.supplier && (
-                  <span className="inline-flex items-center gap-1 font-bold text-sky-700 bg-sky-50 border border-sky-200 rounded-md px-2 py-0.5">
-                    {product.supplier}
+          {/* ── 도움말 ── */}
+          <div className="bg-teal-50/60 rounded-2xl border border-teal-200/60 px-4 py-3.5 flex flex-col gap-1.5">
+            <p className="text-[11px] font-black text-teal-700">입력 안내</p>
+            <ul className="text-[11px] text-teal-600 leading-relaxed space-y-1">
+              <li>창고·매장1·매장2 수량을 입력</li>
+              <li>실재고 합계는 자동 계산됩니다</li>
+              <li>매장2는 real_map "/" 있을 때만 활성</li>
+              <li>하단 "전체 등록" 버튼으로 일괄 저장</li>
+            </ul>
+          </div>
+        </aside>
+
+        {/* ══════════════════════════════════════════════════════
+            RIGHT PANEL · 스캔 리스트 테이블
+        ══════════════════════════════════════════════════════ */}
+        <section className="flex-1 min-w-0 flex flex-col gap-4">
+
+          {/* ── 리스트 카드 ── */}
+          <div className="bg-white rounded-2xl border border-slate-200/80
+            shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col min-h-[320px] overflow-hidden">
+
+            {/* 테이블 헤더 바 */}
+            <div className="flex items-center justify-between
+              px-4 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200/80
+              bg-gradient-to-r from-slate-50/80 to-white rounded-t-2xl">
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center">
+                  <Package size={14} className="text-teal-600" />
+                </div>
+                <span className="text-sm font-black text-slate-800">스캔한 상품 · 실재고 입력</span>
+                {rows.length > 0 && (
+                  <span className="text-[11px] font-black text-teal-700
+                    bg-teal-50 border border-teal-200 rounded-full px-2 py-0.5 tabular-nums">
+                    {rows.length}건
                   </span>
                 )}
               </div>
             </div>
-          )}
 
-          {/* 진열구역 매칭 · 실제/전산 */}
-          {!mapLoading && (product || productNotFound) && (() => {
-            const renderZoneCard = (zone: Zone) => {
-              const colorIdx = zone.assignedStaffId !== null ? (staffColorMap.get(zone.assignedStaffId) ?? 0) : 0;
-              const requested = requestedIds.has(zone.id);
-              return (
-                <div key={zone.id} className="bg-white border border-gray-200 rounded-2xl p-3 shadow-sm flex items-center gap-3">
-                  <div className={`w-12 h-12 rounded-xl flex flex-col items-center justify-center shrink-0 border-2 ${
-                    zone.status === "empty" ? "bg-red-100 border-red-300" :
-                    zone.status === "low"   ? "bg-amber-100 border-amber-300" :
-                                              "bg-teal-100 border-teal-300"
-                  }`}>
-                    <span className="text-[11px] font-black text-gray-700 leading-tight">{zone.num}번</span>
-                    <span className={`text-[9px] font-bold ${
-                      zone.status === "empty" ? "text-red-600" :
-                      zone.status === "low"   ? "text-amber-600" :
-                                                "text-teal-600"
-                    }`}>{STATUS_LABEL[zone.status]}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-bold text-gray-800 break-words leading-tight">{zone.label}</p>
-                    <p className="text-[11px] text-gray-400 break-words">{zone.category}</p>
-                  </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0">
-                    {zone.assignedStaffId ? (
-                      <>
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${STAFF_COLORS[colorIdx % STAFF_COLORS.length]}`}>
-                          {zone.assignedStaffName}
-                        </span>
-                        {requested ? (
-                          <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 px-2 py-1 bg-emerald-50 border border-emerald-200 rounded-lg">
-                            <CheckCircle2 size={11} /> 요청됨
-                          </span>
-                        ) : (
-                          <button onClick={() => handleRequest(zone)}
-                            className="flex items-center gap-1 text-[11px] font-black px-2.5 py-1 bg-red-500 hover:bg-red-600 text-white rounded-lg transition cursor-pointer shadow-sm">
-                            <Bell size={11} /> 진열요청
-                          </button>
-                        )}
-                      </>
-                    ) : (
-                      <span className="text-[11px] text-gray-400 font-medium">담당자 미배정</span>
-                    )}
-                  </div>
+            {/* 빈 상태 */}
+            {rows.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 sm:py-24 select-none">
+                <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
+                  <Package size={28} className="text-slate-300" />
                 </div>
-              );
-            };
-
-            if (specZones.length === 0 && !realMapZone) return null;
-            return (
-              <div className="flex flex-col gap-2">
-                {realMapZone && (
-                  <div className="flex flex-col gap-1.5">
-                    <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest px-1">실제배치구역</p>
-                    {renderZoneCard(realMapZone)}
-                  </div>
-                )}
-                {specZones.length > 0 && (
-                  <div className="flex flex-col gap-1.5">
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">전산배치구역</p>
-                    {specZones.map(renderZoneCard)}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-        </section>
-
-        {/* ─── 우측 · 실재고 카드 리스트 ─── */}
-        <section className="flex-1 min-w-0 flex flex-col gap-3">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col min-h-[320px]">
-            <div className="flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 border-b border-slate-200 bg-slate-50/60 rounded-t-2xl">
-              <div className="flex items-center gap-2">
-                <Package size={15} className="text-teal-600" />
-                <span className="text-[14px] font-black text-slate-800">등록된 상품 · 실재고 입력</span>
-                <span className="text-[12px] tabular-nums font-bold text-teal-700 bg-teal-50 border border-teal-200 rounded-full px-2 py-0.5">
-                  {stockCards.length}건
-                </span>
-              </div>
-            </div>
-
-            {stockCards.length === 0 ? (
-              <div className="flex-1 flex flex-col items-center justify-center gap-2 py-14 sm:py-20 text-slate-400">
-                <Package size={36} className="text-slate-300" />
-                <p className="text-[13px] font-black">스캔한 상품이 여기에 카드로 등록됩니다</p>
-                <p className="text-[12px] text-slate-400">각 카드에서 창고·매장 실재고 저장</p>
+                <div className="text-center">
+                  <p className="text-sm font-black text-slate-400">스캔한 상품이 여기에 표시됩니다</p>
+                  <p className="text-xs text-slate-300 mt-1">좌측 바코드 스캔 후 자동 등록</p>
+                </div>
               </div>
             ) : (
-              <div className="flex-1 overflow-auto max-h-[68vh] p-3 sm:p-4 flex flex-col gap-3">
-                {stockCards.map(card => {
-                  const isRecent = card.key === lastAddedKey;
-                  const d = new Date(card.addedAt);
-                  const arrivedAt = `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-                  return (
-                    <div key={card.key}
-                      className={`bg-white rounded-2xl border shadow-sm p-3.5 sm:p-4 transition ${isRecent ? "border-teal-400 ring-2 ring-teal-200 bg-teal-50/30" : "border-slate-200 hover:shadow-md"}`}>
-                      {/* 1행 · 스캔 시각 · 공급사 · 삭제 */}
-                      <div className="flex items-center gap-2 flex-wrap mb-2">
-                        <span className="text-[11px] tabular-nums font-bold text-slate-500">
-                          {arrivedAt}
+              <div className="flex-1 overflow-auto max-h-[56vh] lg:max-h-[62vh]">
+                <table className="w-full border-collapse text-[12px] sm:text-[13px]">
+                  <thead className="sticky top-0 z-10">
+                    <tr className="bg-slate-50/95 backdrop-blur-sm border-b border-slate-200/60">
+                      {/* 시각 */}
+                      <th
+                        className="text-left px-3 py-2.5 w-[64px] sm:w-[72px] font-bold text-slate-400
+                          cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors whitespace-nowrap"
+                        onClick={() => handleSort("addedAt")}
+                      >
+                        시각 <SortIcon active={sortKey === "addedAt"} dir={sortDir} />
+                      </th>
+                      {/* 상품명 */}
+                      <th
+                        className="text-left px-2 py-2.5 font-bold text-slate-400
+                          cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors"
+                        onClick={() => handleSort("name")}
+                      >
+                        상품명 <SortIcon active={sortKey === "name"} dir={sortDir} />
+                      </th>
+                      {/* 구역 */}
+                      <th
+                        className="text-left px-2 py-2.5 w-[70px] font-bold text-slate-400
+                          cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors whitespace-nowrap"
+                        onClick={() => handleSort("realMap")}
+                      >
+                        구역 <SortIcon active={sortKey === "realMap"} dir={sortDir} />
+                      </th>
+                      {/* 창고 */}
+                      <th className="text-center px-2 py-2.5 w-[76px] sm:w-[86px] font-bold text-slate-400 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
+                          <Warehouse size={11} className="text-orange-400" /> 창고
                         </span>
-                        {card.product.supplier && (
-                          <span className="text-[12px] font-bold text-sky-700">
-                            공급사 {card.product.supplier}
+                      </th>
+                      {/* 매장1 */}
+                      <th className="text-center px-2 py-2.5 w-[76px] sm:w-[86px] font-bold text-slate-400 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
+                          <Store size={11} className="text-emerald-500" /> 매장1
+                        </span>
+                      </th>
+                      {/* 매장2 (dual store 있을 때만) */}
+                      {hasDualStore && (
+                        <th className="text-center px-2 py-2.5 w-[76px] sm:w-[86px] font-bold text-slate-400 whitespace-nowrap">
+                          <span className="inline-flex items-center gap-1">
+                            <Store size={11} className="text-violet-500" /> 매장2
                           </span>
-                        )}
-                        <button onClick={() => removeCard(card.key)}
-                          className="ml-auto w-8 h-8 flex items-center justify-center rounded-lg text-slate-300 hover:text-rose-500 hover:bg-rose-50 transition cursor-pointer"
-                          title="카드 삭제">
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-
-                      {/* 2행 · 상품명 (크게) */}
-                      <p className="text-[16px] sm:text-[17px] font-black text-slate-900 break-words whitespace-normal leading-snug mb-1">
-                        {card.product.name}
-                      </p>
-                      {/* 규격·코드 */}
-                      <div className="flex items-center gap-2 flex-wrap mb-3">
-                        {card.product.spec && (
-                          <span className="text-[12px] text-slate-600 font-bold break-words whitespace-normal">{card.product.spec}</span>
-                        )}
-                        <span className="text-[12px] text-slate-400 tabular-nums">#{card.code}</span>
-                      </div>
-
-                      {/* 3행 · 창고 · 매장 실재고 입력 */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {/* 창고 */}
-                        <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-2">
-                          <Warehouse size={16} className="text-orange-600 shrink-0" />
-                          <span className="text-[12px] font-black text-slate-600 shrink-0">창고</span>
-                          <input
-                            type="number"
-                            inputMode="numeric"
-                            value={card.warehouseStock}
-                            onChange={e => updateCardField(card.key, { warehouseStock: e.target.value === "" ? "" : Number(e.target.value), whStatus: "idle" })}
-                            placeholder="0"
-                            className="flex-1 min-w-0 h-9 text-right px-2 bg-white border border-slate-200 rounded-lg text-[15px] font-black tabular-nums focus:outline-none focus:border-orange-400"
-                          />
-                          <button onClick={() => saveWarehouseStock(card)}
-                            disabled={card.whStatus === "loading" || card.warehouseStock === ""}
-                            className={`h-9 px-3 rounded-lg text-[12px] font-black transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                              card.whStatus === "done" ? "bg-emerald-500 text-white" :
-                              card.whStatus === "error" ? "bg-rose-500 text-white" :
-                              "bg-orange-500 hover:bg-orange-600 text-white"
-                            }`}>
-                            {card.whStatus === "loading" ? <Loader2 size={13} className="animate-spin" /> :
-                             card.whStatus === "done" ? "✓" : "저장"}
-                          </button>
-                        </div>
-                        {/* 매장 */}
-                        <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl p-2">
-                          <Store size={16} className="text-emerald-600 shrink-0" />
-                          <span className="text-[12px] font-black text-slate-600 shrink-0">매장</span>
-                          <input
-                            type="number"
-                            inputMode="numeric"
-                            value={card.storeStock}
-                            onChange={e => updateCardField(card.key, { storeStock: e.target.value === "" ? "" : Number(e.target.value), stStatus: "idle" })}
-                            placeholder="0"
-                            className="flex-1 min-w-0 h-9 text-right px-2 bg-white border border-slate-200 rounded-lg text-[15px] font-black tabular-nums focus:outline-none focus:border-emerald-400"
-                          />
-                          <button onClick={() => saveStoreStock(card)}
-                            disabled={card.stStatus === "loading" || card.storeStock === ""}
-                            className={`h-9 px-3 rounded-lg text-[12px] font-black transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed ${
-                              card.stStatus === "done" ? "bg-emerald-500 text-white" :
-                              card.stStatus === "error" ? "bg-rose-500 text-white" :
-                              "bg-emerald-600 hover:bg-emerald-700 text-white"
-                            }`}>
-                            {card.stStatus === "loading" ? <Loader2 size={13} className="animate-spin" /> :
-                             card.stStatus === "done" ? "✓" : "저장"}
-                          </button>
-                        </div>
-                      </div>
-                      {/* 오류 표시 */}
-                      {(card.whError || card.stError) && (
-                        <div className="mt-1.5 text-[11px] text-rose-600 font-semibold">
-                          {card.whError && <div>창고: {card.whError}</div>}
-                          {card.stError && <div>매장: {card.stError}</div>}
-                        </div>
+                        </th>
                       )}
-                    </div>
-                  );
-                })}
+                      {/* 합계 */}
+                      <th className="text-center px-2 py-2.5 w-[60px] font-bold text-slate-400 whitespace-nowrap">
+                        합계
+                      </th>
+                      {/* 삭제 */}
+                      <th className="px-2 py-2.5 w-9" />
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {sortedRows.map((row, idx) => {
+                      const isRecent = row.key === lastAddedKey;
+                      const d = new Date(row.addedAt);
+                      const addedAt = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                      const rm = row.product.realMap ?? (row.product as any).real_map ?? null;
+                      const rowTotal = total(row);
+                      const hasAnyValue = row.warehouseQty !== "" || row.store1Qty !== "" || row.store2Qty !== "";
+
+                      const rowBg = isRecent
+                        ? "bg-teal-50/60"
+                        : idx % 2 === 0
+                          ? "bg-white hover:bg-slate-50/50"
+                          : "bg-slate-50/30 hover:bg-slate-50/60";
+
+                      const accentColor = isRecent ? "border-l-teal-400" : "border-l-transparent";
+
+                      return (
+                        <tr
+                          key={row.key}
+                          className={`border-l-[3px] border-b border-slate-100/70 transition-colors duration-100
+                            ${accentColor} ${rowBg}`}
+                        >
+                          {/* 시각 */}
+                          <td className="px-3 py-2 align-middle tabular-nums font-mono text-[11px]
+                            text-slate-400 whitespace-nowrap">
+                            {addedAt}
+                          </td>
+
+                          {/* 상품명 · 규격 · 코드 */}
+                          <td className="px-2 py-2 align-middle min-w-[120px]">
+                            <p className="text-[12px] sm:text-[13px] font-black text-slate-800
+                              break-words whitespace-normal leading-snug">
+                              {row.product.name}
+                            </p>
+                            <div className="flex items-center gap-1 mt-0.5 flex-wrap">
+                              {row.product.spec && (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold
+                                  text-slate-500 bg-slate-100/80 rounded px-1.5 py-0.5">
+                                  <Box size={8} className="text-slate-400" />
+                                  {row.product.spec}
+                                </span>
+                              )}
+                              <span className="inline-flex items-center gap-0.5 text-[10px] font-mono
+                                text-slate-400 bg-slate-100/60 rounded px-1.5 py-0.5">
+                                <Hash size={8} className="text-slate-300" />
+                                {row.code}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* 구역 */}
+                          <td className="px-2 py-2 align-middle">
+                            {rm ? (
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold
+                                text-violet-700 bg-violet-50 border border-violet-200/60 rounded-md px-1.5 py-0.5
+                                whitespace-nowrap">
+                                <MapPin size={9} className="text-violet-400 shrink-0" />
+                                {rm}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-slate-300">-</span>
+                            )}
+                          </td>
+
+                          {/* 창고 수량 */}
+                          <td className="px-1.5 py-2 align-middle">
+                            <NumberInput
+                              value={row.warehouseQty}
+                              onChange={v => patchRow(row.key, { warehouseQty: v })}
+                              accent="focus:border-orange-400"
+                            />
+                          </td>
+
+                          {/* 매장1 수량 */}
+                          <td className="px-1.5 py-2 align-middle">
+                            <div className="flex flex-col gap-0.5">
+                              <NumberInput
+                                value={row.store1Qty}
+                                onChange={v => patchRow(row.key, { store1Qty: v })}
+                                accent="focus:border-emerald-400"
+                              />
+                              {row.store1Label && (
+                                <span className="text-[9px] text-center text-emerald-600 font-bold leading-none">
+                                  {row.store1Label}
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* 매장2 수량 (hasDualStore 열이 있을 때) */}
+                          {hasDualStore && (
+                            <td className="px-1.5 py-2 align-middle">
+                              {row.store2Label !== null ? (
+                                <div className="flex flex-col gap-0.5">
+                                  <NumberInput
+                                    value={row.store2Qty}
+                                    onChange={v => patchRow(row.key, { store2Qty: v })}
+                                    accent="focus:border-violet-400"
+                                  />
+                                  <span className="text-[9px] text-center text-violet-600 font-bold leading-none">
+                                    {row.store2Label}
+                                  </span>
+                                </div>
+                              ) : (
+                                <div className="h-9 rounded-lg bg-slate-100/60 border border-slate-200/40 flex items-center justify-center">
+                                  <span className="text-[10px] text-slate-300">-</span>
+                                </div>
+                              )}
+                            </td>
+                          )}
+
+                          {/* 합계 */}
+                          <td className="px-2 py-2 align-middle text-center">
+                            {hasAnyValue ? (
+                              <span className={`text-[13px] font-black tabular-nums
+                                ${rowTotal > 0 ? "text-teal-700" : "text-slate-400"}`}>
+                                {rowTotal}
+                              </span>
+                            ) : (
+                              <span className="text-[11px] text-slate-300">-</span>
+                            )}
+                          </td>
+
+                          {/* 삭제 */}
+                          <td className="px-2 py-2 text-center align-middle">
+                            <button
+                              onClick={() => removeRow(row.key)}
+                              className="w-7 h-7 flex items-center justify-center rounded-lg mx-auto
+                                text-slate-300 hover:text-rose-500 hover:bg-rose-50
+                                transition-all duration-150 cursor-pointer"
+                              title="삭제"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
+
+          {/* ── 전체 저장 카드 ── */}
+          {rows.length > 0 && (
+            <div className={`bg-white rounded-2xl border-2 overflow-hidden transition-all duration-300 ${
+              saveStatus === "done"
+                ? "border-emerald-300/80 shadow-[0_0_0_4px_rgba(16,185,129,0.08),0_4px_16px_rgba(0,0,0,0.08)]"
+                : "border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
+            }`}>
+              <div className={`px-5 py-3.5 border-b border-slate-100/80 flex items-center justify-between gap-2 ${
+                saveStatus === "done" ? "bg-gradient-to-r from-emerald-50/60 to-transparent" : "bg-slate-50/40"
+              }`}>
+                <div className="flex items-center gap-2.5">
+                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-colors ${
+                    saveStatus === "done" ? "bg-emerald-100" : "bg-slate-100"
+                  }`}>
+                    <SaveAll size={14} className={saveStatus === "done" ? "text-emerald-600" : "text-slate-400"} />
+                  </div>
+                  <span className="text-sm font-black text-slate-800">전체 등록</span>
+                </div>
+                <span className="text-[11px] font-bold text-slate-400 tabular-nums">
+                  {rows.length}건 · 총 {rows.reduce((acc, r) => acc + total(r), 0)}개
+                </span>
+              </div>
+
+              <div className="px-5 py-4 flex flex-col gap-3">
+                <p className="text-[12px] text-slate-500 leading-relaxed">
+                  리스트의 모든 항목을 한 번에 저장합니다.
+                  창고·매장 수량을 입력한 뒤 아래 버튼을 누르세요.
+                </p>
+
+                {/* 저장 버튼 */}
+                <button
+                  onClick={handleBulkSave}
+                  disabled={saveStatus === "saving" || saveStatus === "done"}
+                  className={[
+                    "relative w-full min-h-[56px] py-3.5 rounded-xl",
+                    "font-black text-[14px] sm:text-[15px] text-white",
+                    "transition-all duration-200 cursor-pointer disabled:cursor-not-allowed",
+                    "active:scale-[0.99] overflow-hidden",
+                    saveStatus === "done"
+                      ? "bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-[0_4px_14px_rgba(16,185,129,0.35)]"
+                      : saveStatus === "error"
+                        ? "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 shadow-[0_4px_14px_rgba(239,68,68,0.35)]"
+                        : saveStatus === "saving"
+                          ? "bg-slate-400"
+                          : "bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 shadow-[0_4px_20px_rgba(20,184,166,0.45)] hover:shadow-[0_4px_24px_rgba(20,184,166,0.55)]",
+                  ].join(" ")}
+                >
+                  <span className="absolute inset-0 bg-gradient-to-b from-white/15 to-transparent pointer-events-none" />
+                  <span className="relative flex items-center justify-center gap-2.5">
+                    {saveStatus === "saving" && <Loader2 size={17} className="animate-spin" />}
+                    {saveStatus === "done"    && <Sparkles size={17} />}
+                    {saveStatus === "error"   && <AlertCircle size={17} />}
+                    {saveStatus === "idle"    && <SaveAll size={17} />}
+                    {saveStatus === "saving" ? "저장 중..." :
+                     saveStatus === "done"   ? `저장 완료 (${savedCount}건)` :
+                     saveStatus === "error"  ? "다시 시도" :
+                     `전체 등록 (${rows.length}건)`}
+                  </span>
+                </button>
+
+                {saveError && (
+                  <p className="text-[12px] text-rose-600 font-semibold px-1">{saveError}</p>
+                )}
+
+                {saveStatus === "done" && (
+                  <div className="flex items-center gap-2">
+                    <p className="text-[12px] text-emerald-600 font-semibold flex-1">
+                      저장 완료. 재고관리 탭에서 실재고 현황을 확인할 수 있습니다.
+                    </p>
+                    <button
+                      onClick={() => {
+                        setRows([]);
+                        setLastAddedKey(null);
+                        setSaveStatus("idle");
+                        setSaveError(null);
+                      }}
+                      className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-bold
+                        text-slate-500 bg-white border border-slate-200 hover:bg-slate-50
+                        transition cursor-pointer shrink-0"
+                    >
+                      <RotateCcw size={11} /> 목록 초기화
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </section>
       </main>
     </div>
