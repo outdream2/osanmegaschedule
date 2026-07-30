@@ -129,7 +129,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
   }, [results, sortKey, sortDir]);
 
   const sortBtnCls = (k: StockSortKey) =>
-    `px-2 py-0.5 rounded text-[11px] font-bold border cursor-pointer transition ${
+    `px-2 py-0.5 rounded-md text-[11px] font-semibold border cursor-pointer transition-all duration-150 ${
       sortKey === k
         ? "bg-indigo-600 text-white border-indigo-600"
         : "bg-white text-slate-500 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
@@ -172,7 +172,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
             onChange={e => handleChange(e.target.value)}
             placeholder="약품·제품명 검색 (예: 타이레놀, 판콜에이…)"
             autoFocus
-            className="w-full rounded-2xl pl-11 pr-10 py-3.5 text-slate-900 text-sm font-semibold placeholder:text-slate-300 placeholder:font-normal focus:outline-none border-2 border-slate-200 bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 shadow-sm transition-all"
+            className="w-full rounded-xl pl-11 pr-10 py-3.5 text-slate-900 text-sm font-semibold placeholder:text-slate-300 placeholder:font-normal focus:outline-none border-2 border-slate-200 bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 shadow-sm transition-all"
           />
           {query && (
             <button type="button" onClick={clear}
@@ -262,17 +262,17 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                     && Number.isFinite(stockNum) && stockNum > 0 && stockNum < 3;
                   return (
                     <div key={`${item.product_name}-${item.spec ?? ""}-${i}`}
-                      className="px-4 py-3 flex items-center gap-3">
+                      className="px-4 py-3 flex items-center gap-3 hover:bg-slate-50/60 transition-all duration-150">
                       {/* Status badges — 재고 · 판매 두 축 나란히 (로그인 무관) */}
                       <div className="shrink-0 flex flex-col gap-0.5">
-                        <span className={`text-[11px] font-black px-2 py-0.5 rounded-lg whitespace-nowrap ${
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${
                           stockAxis === "in-stock"
                             ? "bg-emerald-100 text-emerald-700"
                             : "bg-red-100 text-red-600"
                         }`}>
                           {stockAxis === "in-stock" ? "재고있음" : "재고없음"}
                         </span>
-                        <span className={`text-[11px] font-black px-2 py-0.5 rounded-lg whitespace-nowrap ${
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap ${
                           sellingAxis === "selling"
                             ? "bg-sky-100 text-sky-700"
                             : "bg-slate-200 text-slate-500"
@@ -281,7 +281,7 @@ export const StockCheckPage: React.FC<StockCheckPageProps> = ({ onBack, authSess
                         </span>
                         {/* 3개 미만 재고 → 품절임박 (재고있음 상태일 때만) */}
                         {lowStock && (
-                          <span className="text-[10px] font-black px-2 py-0.5 rounded-lg whitespace-nowrap bg-amber-100 text-amber-700 border border-amber-200 animate-pulse">
+                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-md whitespace-nowrap bg-amber-100 text-amber-700 border border-amber-200 animate-pulse">
                             품절임박
                           </span>
                         )}

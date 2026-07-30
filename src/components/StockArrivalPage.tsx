@@ -246,7 +246,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
     `flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold border transition cursor-pointer shrink-0 ${color}`;
 
   const embeddedToolbar = (
-    <div className="flex items-center gap-2 justify-end px-4 py-2 bg-white border-b border-gray-200">
+    <div className="flex items-center gap-2 justify-end px-4 py-2 bg-white border-b border-slate-200 h-12">
       <button
         onClick={handleSubscribe} disabled={pushLoading}
         className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold border transition cursor-pointer disabled:cursor-default"
@@ -259,14 +259,14 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
           : pushSubscribed ? <BellOff size={10} /> : <Bell size={10} />}
         {pushSubscribed ? "알림 설정됨" : "알림 받기"}
       </button>
-      <button onClick={fetchArrivals} className="p-1.5 rounded-lg hover:bg-gray-100 cursor-pointer">
-        <RefreshCw size={14} className={`text-gray-400 ${loading ? "animate-spin" : ""}`} />
+      <button onClick={fetchArrivals} className="w-8 h-8 flex items-center justify-center rounded-md hover:bg-slate-100 transition-all duration-150 cursor-pointer">
+        <RefreshCw size={13} className={`text-slate-400 ${loading ? "animate-spin" : ""}`} />
       </button>
     </div>
   );
 
   return (
-    <div className={embedded ? "flex-1 bg-gray-50" : "min-h-screen bg-gray-50"}>
+    <div className={embedded ? "flex-1 bg-slate-50" : "min-h-screen bg-slate-50"}>
       {embedded ? embeddedToolbar : (
       <AppNavHeader
         activePage="stockarrivals"
@@ -300,17 +300,17 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
 
         {/* ── 작성 폼 ─────────────────────────────────────────────────────── */}
         {canWrite && (
-          <div className="bg-white border border-sky-100 rounded-2xl p-4 flex flex-col gap-3">
+          <div className="bg-white border border-sky-200 rounded-xl p-4 shadow-sm flex flex-col gap-3">
             <input
               ref={titleRef}
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-sky-400"
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-sky-400"
               placeholder="제목 (필수)"
               maxLength={80}
               value={newTitle}
               onChange={e => setNewTitle(e.target.value)}
             />
             <textarea
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-sky-400 resize-none"
+              className="border border-slate-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-sky-400 resize-none"
               placeholder="내용 (선택)"
               maxLength={200}
               rows={2}
@@ -340,7 +340,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
               <button
                 onClick={handleSave}
                 disabled={!newTitle.trim() || submitting}
-                className={actionBtn("bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100 disabled:opacity-40")}
+                className={actionBtn("bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 disabled:opacity-40")}
               >
                 저장
               </button>
@@ -410,14 +410,14 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
                 {isEditing ? (
                   <div className="px-3 py-2.5 bg-sky-50/40 flex flex-col gap-2">
                     <input
-                      className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-sky-400 w-full"
+                      className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-sky-400 w-full"
                       value={editTitle}
                       onChange={e => setEditTitle(e.target.value)}
                       placeholder="제목"
                       autoFocus
                     />
                     <input
-                      className="border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-sky-400 w-full"
+                      className="border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs outline-none focus:border-sky-400 w-full"
                       value={editBody}
                       onChange={e => setEditBody(e.target.value)}
                       placeholder="내용 (선택)"
@@ -435,26 +435,26 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
                   </div>
                 ) : (
                   /* ── 일반 행 ── */
-                  <div className="flex items-start gap-2 px-0.5 py-1.5 hover:bg-orange-50/30 transition">
+                  <div className="flex items-start gap-2 px-2 py-1.5 hover:bg-slate-50/60 transition-all duration-150">
                     {/* 내용 */}
                     <Package size={13} className="text-sky-400 shrink-0 mt-0.5" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-[13px] font-bold text-gray-800 truncate">{a.title}</span>
+                        <span className="text-[13px] font-semibold text-slate-800 truncate">{a.title}</span>
                         {pending && (
                           <span className="inline-flex items-center gap-0.5 text-[11px] font-bold text-amber-700 bg-amber-50 border border-amber-200 rounded px-1 py-0.5 shrink-0">
                             <Clock size={9} /> 예약
                           </span>
                         )}
                         {!a.scheduled_at && !a.broadcast_sent && (
-                          <span className="text-[11px] text-gray-300 font-semibold shrink-0">미발송</span>
+                          <span className="text-[11px] text-slate-300 font-semibold shrink-0">미발송</span>
                         )}
                         {a.broadcast_sent && (
                           <span className="text-[11px] text-emerald-600 font-semibold shrink-0">발송됨</span>
                         )}
                       </div>
-                      {a.body && <p className="text-[12px] text-gray-400 truncate leading-snug">{a.body}</p>}
-                      <p className="text-[11px] text-gray-300 mt-0.5">
+                      {a.body && <p className="text-[12px] text-slate-400 truncate leading-snug">{a.body}</p>}
+                      <p className="text-[11px] text-slate-400 mt-0.5">
                         {fmtDT(a.created_at)}
                         {pending && a.scheduled_at && (
                           <span className="ml-1.5 text-amber-500">→ {fmtDT(a.scheduled_at)}</span>
@@ -466,7 +466,7 @@ export const StockArrivalPage: React.FC<StockArrivalPageProps> = ({ authSession,
                     {canWrite && (
                       <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
                         <button onClick={() => startEdit(a)}
-                          className={actionBtn("bg-gray-50 border-gray-200 text-gray-500 hover:bg-gray-100")}>
+                          className={actionBtn("bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100")}>
                           <Pencil size={10} /> 수정
                         </button>
                         <button onClick={() => handleBroadcast(a.id)}

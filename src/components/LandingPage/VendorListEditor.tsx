@@ -505,31 +505,47 @@ export const VendorDetailModal: React.FC<{
             <div className="space-y-3">
               <SectionTitle icon={<Building2 size={13} />} title="기본 정보" color="sky" />
 
-              <Field label="회사명 *">
-                <input
-                  type="text"
-                  value={draft.company_name}
-                  onChange={e => setDraft({ ...draft, company_name: e.target.value })}
-                  className={inputCls}
-                />
-              </Field>
+              {/* 2026-07-30 · 사용자 요청 · 회사명 + 분류 + 사업자번호 · 한 줄 (3열 grid) */}
+              <div className="grid grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1.5fr)] gap-3">
+                <Field label="회사명 *">
+                  <input
+                    type="text"
+                    value={draft.company_name}
+                    onChange={e => setDraft({ ...draft, company_name: e.target.value })}
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="분류">
+                  <select
+                    value={draft.category}
+                    onChange={e => setDraft({ ...draft, category: e.target.value })}
+                    className={inputCls}
+                  >
+                    <option value="">(없음)</option>
+                    <option value="위탁">위탁</option>
+                    <option value="선결제">선결제</option>
+                    <option value="회전">회전</option>
+                    <option value="기타">기타</option>
+                  </select>
+                </Field>
+                <Field label="사업자번호 (10자리)">
+                  <input
+                    type="text"
+                    value={draft.business_number}
+                    onChange={e => setDraft({ ...draft, business_number: normalizeBizNum(e.target.value) })}
+                    placeholder="0000000000"
+                    className={`${inputCls} font-mono tracking-widest`}
+                    maxLength={10}
+                  />
+                  {draft.business_number && draft.business_number.length === 10 && (
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      표시: <span className="font-mono font-semibold text-slate-600">{formatBizNum(draft.business_number)}</span>
+                    </p>
+                  )}
+                </Field>
+              </div>
 
-              <Field label="사업자번호 (10자리)">
-                <input
-                  type="text"
-                  value={draft.business_number}
-                  onChange={e => setDraft({ ...draft, business_number: normalizeBizNum(e.target.value) })}
-                  placeholder="0000000000"
-                  className={`${inputCls} font-mono tracking-widest`}
-                  maxLength={10}
-                />
-                {draft.business_number && draft.business_number.length === 10 && (
-                  <p className="text-[11px] text-slate-400 mt-1">
-                    표시: <span className="font-mono font-semibold text-slate-600">{formatBizNum(draft.business_number)}</span>
-                  </p>
-                )}
-              </Field>
-
+              {/* 담당자 · 전화 (2열) */}
               <div className="grid grid-cols-2 gap-3">
                 <Field label="담당자">
                   <input type="text" value={draft.contact_name} onChange={e => setDraft({ ...draft, contact_name: e.target.value })} className={inputCls} />
@@ -539,6 +555,7 @@ export const VendorDetailModal: React.FC<{
                 </Field>
               </div>
 
+              {/* 이메일 (single row) */}
               <Field label="이메일">
                 <input
                   type="email"
@@ -549,20 +566,7 @@ export const VendorDetailModal: React.FC<{
                 />
               </Field>
 
-              <Field label="분류">
-                <select
-                  value={draft.category}
-                  onChange={e => setDraft({ ...draft, category: e.target.value })}
-                  className={inputCls}
-                >
-                  <option value="">(없음)</option>
-                  <option value="위탁">위탁</option>
-                  <option value="선결제">선결제</option>
-                  <option value="회전">회전</option>
-                  <option value="기타">기타</option>
-                </select>
-              </Field>
-
+              {/* 비고 (single row) */}
               <Field label="비고">
                 <textarea
                   value={draft.note}

@@ -3,7 +3,7 @@
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
 // 사입(OCR거래명세서 등록) 탭에서는 거래명세서 OCR(OcrPage) 노출
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle, Upload, Building2, ClipboardList, Bell, CheckCircle2 } from "lucide-react";
+import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle, Upload, Building2, ClipboardList, Bell, CheckCircle2, ChevronRight, ChevronDown } from "lucide-react";
 import * as XLSX from "xlsx";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -517,9 +517,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     const up = () => { returnResizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
     window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
   };
-  // 컬럼 그룹 접기 state (매입정보 · 판매정보 기본 펼침)
-  const [retColPurchaseOpen, setRetColPurchaseOpen] = useState(true);
-  const [retColSalesOpen, setRetColSalesOpen] = useState(true);
+  // ── 그룹 헤더 클릭 접기 · 발주필요 탭 (needCollapsed) ──
+  const [needCollapsed, setNeedCollapsed] = useState<Set<string>>(new Set());
+  const toggleNeedGroup = (g: string) => setNeedCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
+  const isNeedCollapsed = (g: string) => needCollapsed.has(g);
+  // ── 그룹 헤더 클릭 접기 · 발주요청 탭 (orderCollapsed) ──
+  const [orderGroupCollapsed, setOrderGroupCollapsed] = useState<Set<string>>(new Set());
+  const toggleOrderGroup = (g: string) => setOrderGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
+  const isOrderGroupCollapsed = (g: string) => orderGroupCollapsed.has(g);
+  // ── 그룹 헤더 클릭 접기 · 반품필요 탭 (returnGroupCollapsed) ──
+  const [returnGroupCollapsed, setReturnGroupCollapsed] = useState<Set<string>>(new Set());
+  const toggleReturnGroup = (g: string) => setReturnGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
+  const isReturnGroupCollapsed = (g: string) => returnGroupCollapsed.has(g);
   // 우측 패널 상품 fetch
   useEffect(() => {
     if (!returnSelectedProduct) { setReturnPanelFull(null); setReturnPanelError(null); return; }
@@ -1276,20 +1285,46 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           <div className={`max-h-[50vh] overflow-auto relative ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
-                {/* 2026-07-30 · 사용자 요청 · 재고리스트 카테고리 그룹 헤더 스타일 · 3그룹 색상 헤더 */}
+                {/* 그룹 카테고리 헤더 · 클릭으로 접기/펼치기 */}
                 <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
-                  <th colSpan={3} className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100">상품 정보</th>
-                  <th colSpan={4} className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100">재고 현황</th>
+                  <th colSpan={isNeedCollapsed("info") ? 1 : 3}
+                    className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-sky-100 transition"
+                    onClick={() => toggleNeedGroup("info")}
+                    title={isNeedCollapsed("info") ? "상품 정보 펼치기" : "상품 정보 접기"}>
+                    <span className="inline-flex items-center gap-1">
+                      {isNeedCollapsed("info") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}상품 정보
+                    </span>
+                  </th>
+                  <th colSpan={isNeedCollapsed("stock") ? 1 : 4}
+                    className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-amber-100 transition"
+                    onClick={() => toggleNeedGroup("stock")}
+                    title={isNeedCollapsed("stock") ? "재고 현황 펼치기" : "재고 현황 접기"}>
+                    <span className="inline-flex items-center gap-1">
+                      {isNeedCollapsed("stock") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}재고 현황
+                    </span>
+                  </th>
                   <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-slate-100">발주 액션</th>
                 </tr>
                 <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
-                  <th onClick={() => handleNeedSort("supplier")} title="공급사 정렬" className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">공급사{needArrow("supplier")}</th>
-                  <th onClick={() => handleNeedSort("contact")} title="담당자 정렬" className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">담당자{needArrow("contact")}</th>
-                  <th onClick={() => handleNeedSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 min-w-[120px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">상품명{needArrow("name")}</th>
-                  <th onClick={() => handleNeedSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
-                  <th onClick={() => handleNeedSort("inv")} title="실재고 정렬" className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">실재고{needArrow("inv")}</th>
-                  <th onClick={() => handleNeedSort("optimal")} title="적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">적정{needArrow("optimal")}</th>
-                  <th onClick={() => handleNeedSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{needArrow("short")}</th>
+                  {isNeedCollapsed("info") ? (
+                    <th className="bg-sky-50/20 w-4"></th>
+                  ) : (
+                    <>
+                      <th onClick={() => handleNeedSort("supplier")} title="공급사 정렬" className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">공급사{needArrow("supplier")}</th>
+                      <th onClick={() => handleNeedSort("contact")} title="담당자 정렬" className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">담당자{needArrow("contact")}</th>
+                      <th onClick={() => handleNeedSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 min-w-[120px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">상품명{needArrow("name")}</th>
+                    </>
+                  )}
+                  {isNeedCollapsed("stock") ? (
+                    <th className="bg-amber-50/20 w-4"></th>
+                  ) : (
+                    <>
+                      <th onClick={() => handleNeedSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
+                      <th onClick={() => handleNeedSort("inv")} title="실재고 정렬" className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">실재고{needArrow("inv")}</th>
+                      <th onClick={() => handleNeedSort("optimal")} title="적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">적정{needArrow("optimal")}</th>
+                      <th onClick={() => handleNeedSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{needArrow("short")}</th>
+                    </>
+                  )}
                   <th className="text-center px-0.5 py-1.5 w-20 cursor-default bg-emerald-50/30 text-emerald-600">발주</th>
                 </tr>
               </thead>
@@ -1323,57 +1358,70 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   const busy = requestingOrder.has(code);
                   return (
                     <tr key={code} className="hover:bg-orange-50/30 transition">
-                      {/* 2026-07-30 · 사용자 요청 · 공급사 클릭 → 공급사 정보 모달 */}
-                      <td className="px-0.5 py-1.5 text-[12px] font-semibold break-words whitespace-normal align-top">
-                        {p.supplier ? (
-                          <div className="flex items-center gap-1 flex-wrap">
-                            <button type="button"
-                              onClick={(e) => { e.stopPropagation(); openSupplierInfo(p.supplier); }}
-                              className="text-sky-600 hover:text-sky-800 hover:underline cursor-pointer text-left"
-                              title="공급사 정보 조회·수정">{p.supplier}</button>
-                            <VendorCategoryBadge category={vendorCategoryMap[String(p.supplier).trim()] ?? null} />
-                          </div>
-                        ) : "-"}
-                      </td>
-                      <td className="px-0.5 py-1.5 text-[12px] text-slate-600 break-words whitespace-normal align-top">
-                        {vendor ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const rect = (e.target as HTMLElement).getBoundingClientRect();
-                              setContactPopover({ anchor: rect, name: contactName, phone: vendor.phone, email: vendor.email });
-                            }}
-                            className="hover:text-indigo-700 hover:underline cursor-pointer text-left w-full"
-                            title="클릭 시 전화·이메일 표시"
-                          >{contactName}</button>
-                        ) : (
-                          <span>{contactName}</span>
-                        )}
-                      </td>
-                      <td className="px-0.5 py-1.5 align-top">
-                        <button
-                          onClick={() => setNeedPanelProduct({ code, name })}
-                          className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
-                          title="상품 상세정보 조회"
-                        >{name || "(상품명 없음)"}</button>
-                      </td>
-                      <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{cur}</td>
-                      <td
-                        className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
-                        title={inv ? `창고 ${inv.warehouse ?? "-"} + 매장 ${inv.store ?? "-"} = ${inv.total}` : "실재고 미입력"}
-                      >
-                        {inv ? inv.total : "—"}
-                        {inv && (
-                          <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">
-                            창{inv.warehouse ?? "-"}·매{inv.store ?? "-"}
-                          </span>
-                        )}
-                      </td>
-                      <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{opt}</td>
-                      <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
-                        <span className="tabular-nums font-black text-[12px] text-rose-600">-{opt - cur}</span>
-                      </td>
+                      {/* 상품정보 그룹 */}
+                      {isNeedCollapsed("info") ? (
+                        <td className="bg-sky-50/10 w-4"></td>
+                      ) : (
+                        <>
+                          <td className="px-0.5 py-1.5 text-[12px] font-semibold break-words whitespace-normal align-top">
+                            {p.supplier ? (
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <button type="button"
+                                  onClick={(e) => { e.stopPropagation(); openSupplierInfo(p.supplier); }}
+                                  className="text-sky-600 hover:text-sky-800 hover:underline cursor-pointer text-left"
+                                  title="공급사 정보 조회·수정">{p.supplier}</button>
+                                <VendorCategoryBadge category={vendorCategoryMap[String(p.supplier).trim()] ?? null} />
+                              </div>
+                            ) : "-"}
+                          </td>
+                          <td className="px-0.5 py-1.5 text-[12px] text-slate-600 break-words whitespace-normal align-top">
+                            {vendor ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const rect = (e.target as HTMLElement).getBoundingClientRect();
+                                  setContactPopover({ anchor: rect, name: contactName, phone: vendor.phone, email: vendor.email });
+                                }}
+                                className="hover:text-indigo-700 hover:underline cursor-pointer text-left w-full"
+                                title="클릭 시 전화·이메일 표시"
+                              >{contactName}</button>
+                            ) : (
+                              <span>{contactName}</span>
+                            )}
+                          </td>
+                          <td className="px-0.5 py-1.5 align-top">
+                            <button
+                              onClick={() => setNeedPanelProduct({ code, name })}
+                              className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
+                              title="상품 상세정보 조회"
+                            >{name || "(상품명 없음)"}</button>
+                          </td>
+                        </>
+                      )}
+                      {/* 재고현황 그룹 */}
+                      {isNeedCollapsed("stock") ? (
+                        <td className="bg-amber-50/10 w-4"></td>
+                      ) : (
+                        <>
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{cur}</td>
+                          <td
+                            className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
+                            title={inv ? `창고 ${inv.warehouse ?? "-"} + 매장 ${inv.store ?? "-"} = ${inv.total}` : "실재고 미입력"}
+                          >
+                            {inv ? inv.total : "—"}
+                            {inv && (
+                              <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">
+                                창{inv.warehouse ?? "-"}·매{inv.store ?? "-"}
+                              </span>
+                            )}
+                          </td>
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{opt}</td>
+                          <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
+                            <span className="tabular-nums font-black text-[12px] text-rose-600">-{opt - cur}</span>
+                          </td>
+                        </>
+                      )}
                       <td className="text-center px-1 py-1.5 align-top">
                         {alreadyRequested ? (
                           <button
@@ -1527,27 +1575,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             >
               <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-0">
                 {/* 카드 헤더 */}
-                <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-100 shrink-0">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-block w-1 h-3.5 rounded-full bg-rose-400 shrink-0" />
-                    <span className="text-[11px] font-semibold text-slate-500">반품필요 리스트</span>
-                    <span className="text-[11px] text-slate-400 font-normal tabular-nums">{returnList.length}건</span>
-                  </div>
-                  {/* 컬럼 그룹 토글 */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => setRetColPurchaseOpen(v => !v)}
-                      className={`h-6 px-2 rounded text-[10px] font-bold border transition cursor-pointer ${retColPurchaseOpen ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" : "bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100"}`}
-                      title={retColPurchaseOpen ? "매입정보 접기" : "매입정보 펼치기"}
-                    >매입{retColPurchaseOpen ? " ▾" : " ▸"}</button>
-                    <button
-                      type="button"
-                      onClick={() => setRetColSalesOpen(v => !v)}
-                      className={`h-6 px-2 rounded text-[10px] font-bold border transition cursor-pointer ${retColSalesOpen ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100" : "bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100"}`}
-                      title={retColSalesOpen ? "판매정보 접기" : "판매정보 펼치기"}
-                    >판매{retColSalesOpen ? " ▾" : " ▸"}</button>
-                  </div>
+                <div className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-100 shrink-0">
+                  <span className="inline-block w-1 h-3.5 rounded-full bg-rose-400 shrink-0" />
+                  <span className="text-[11px] font-semibold text-slate-500">반품필요 리스트</span>
+                  <span className="text-[11px] text-slate-400 font-normal tabular-nums">{returnList.length}건</span>
+                  <span className="text-[10px] text-slate-300 ml-1">· 그룹 헤더 클릭으로 접기</span>
                 </div>
 
                 {/* 로딩 / 빈 상태 */}
@@ -1563,57 +1595,82 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   <div className={`overflow-auto flex-1 min-h-0 ${returnLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                     <table className="w-full text-xs">
                       <thead className="sticky top-0 bg-white z-10">
-                        {/* 그룹 컬러 헤더 */}
+                        {/* 그룹 컬러 헤더 · flow 탭과 동일한 클릭 접기 방식 */}
                         <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
                           <th className="bg-slate-50 w-7" />
                           {/* 상품정보 (sky) */}
-                          <th colSpan={2} className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100">상품정보</th>
+                          <th colSpan={isReturnGroupCollapsed("info") ? 1 : 2}
+                            className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-sky-100 transition"
+                            onClick={() => toggleReturnGroup("info")}
+                            title={isReturnGroupCollapsed("info") ? "상품정보 펼치기" : "상품정보 접기"}>
+                            <span className="inline-flex items-center gap-1">
+                              {isReturnGroupCollapsed("info") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}상품정보
+                            </span>
+                          </th>
                           {/* 재고 (amber) */}
                           <th className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100">재고</th>
-                          {/* 매입정보 (emerald) — 접기 시 1칸 */}
-                          {retColPurchaseOpen ? (
-                            <th colSpan={1} className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-r border-slate-100">매입정보</th>
-                          ) : (
-                            <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-r border-slate-100">매입</th>
-                          )}
-                          {/* 판매정보 (rose) · 한달판매·한달판매액 2컬럼 */}
-                          {retColSalesOpen && (
-                            <th colSpan={2} className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-r border-slate-100">판매정보</th>
-                          )}
+                          {/* 매입정보 (emerald) · 클릭 접기 */}
+                          <th colSpan={isReturnGroupCollapsed("purchase") ? 1 : 1}
+                            className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-emerald-100 transition"
+                            onClick={() => toggleReturnGroup("purchase")}
+                            title={isReturnGroupCollapsed("purchase") ? "매입정보 펼치기" : "매입정보 접기"}>
+                            <span className="inline-flex items-center gap-1">
+                              {isReturnGroupCollapsed("purchase") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}매입정보
+                            </span>
+                          </th>
+                          {/* 판매정보 (rose) · 클릭 접기 · 2컬럼 */}
+                          <th colSpan={isReturnGroupCollapsed("sales") ? 1 : 2}
+                            className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-rose-100 transition"
+                            onClick={() => toggleReturnGroup("sales")}
+                            title={isReturnGroupCollapsed("sales") ? "판매정보 펼치기" : "판매정보 접기"}>
+                            <span className="inline-flex items-center gap-1">
+                              {isReturnGroupCollapsed("sales") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}판매정보
+                            </span>
+                          </th>
                           {/* 재고금액 (indigo) */}
                           <th className="text-center py-1.5 bg-indigo-50 text-indigo-700 border-l border-r border-slate-100">재고금액</th>
                           {/* 액션 (slate) */}
                           <th className="text-center py-1.5 bg-slate-100 text-slate-600 border-l border-slate-100">액션</th>
                         </tr>
-                        {/* 서브 헤더 */}
+                        {/* 서브 헤더 · 접힘 시 placeholder 셀 */}
                         <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                           <th className="text-center px-0.5 py-1.5 w-7 bg-slate-50/60">#</th>
-                          <th onClick={() => handleReturnSort("product_name")} title="상품명 정렬"
-                            className="text-left px-1 py-1.5 min-w-[130px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">
-                            상품{retArrow("product_name")}
-                          </th>
-                          <th onClick={() => handleReturnSort("supplier")} title="공급사 정렬"
-                            className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">
-                            공급사{retArrow("supplier")}
-                          </th>
+                          {/* 상품정보 그룹 */}
+                          {isReturnGroupCollapsed("info") ? (
+                            <th className="bg-sky-50/20 w-4"></th>
+                          ) : (
+                            <>
+                              <th onClick={() => handleReturnSort("product_name")} title="상품명 정렬"
+                                className="text-left px-1 py-1.5 min-w-[130px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">
+                                상품{retArrow("product_name")}
+                              </th>
+                              <th onClick={() => handleReturnSort("supplier")} title="공급사 정렬"
+                                className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">
+                                공급사{retArrow("supplier")}
+                              </th>
+                            </>
+                          )}
+                          {/* 재고 그룹 (항상 표시) */}
                           <th onClick={() => handleReturnSort("current_stock")} title="현재고 정렬"
                             className="text-right px-1 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">
                             현재고{retArrow("current_stock")}
                           </th>
-                          {/* 매입주기 (항상) + 최근매입일·매입량 sub (펼침 시) */}
-                          <th onClick={() => handleReturnSort("purchase_cycle")} title="매입주기 정렬"
-                            className={`text-right px-1 py-1.5 bg-emerald-50/40 text-emerald-700 cursor-pointer hover:bg-emerald-100 select-none ${retColPurchaseOpen ? "w-28" : "w-16"}`}>
-                            {retColPurchaseOpen ? (
+                          {/* 매입정보 그룹 · 접힘 시 placeholder */}
+                          {isReturnGroupCollapsed("purchase") ? (
+                            <th className="bg-emerald-50/20 w-4"></th>
+                          ) : (
+                            <th onClick={() => handleReturnSort("purchase_cycle")} title="매입주기 정렬"
+                              className="text-right px-1 py-1.5 w-28 bg-emerald-50/40 text-emerald-700 cursor-pointer hover:bg-emerald-100 select-none">
                               <span className="flex flex-col items-end leading-none gap-0.5">
                                 <span>매입주기{retArrow("purchase_cycle")}</span>
                                 <span className="text-[9px] text-slate-400 font-normal">최근매입일·량</span>
                               </span>
-                            ) : (
-                              <span>주기{retArrow("purchase_cycle")}</span>
-                            )}
-                          </th>
-                          {/* 판매정보: 최근한달 판매량 · 판매액 */}
-                          {retColSalesOpen && (
+                            </th>
+                          )}
+                          {/* 판매정보 그룹 · 접힘 시 placeholder */}
+                          {isReturnGroupCollapsed("sales") ? (
+                            <th className="bg-rose-50/20 w-4"></th>
+                          ) : (
                             <>
                               <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 판매량 정렬"
                                 className="text-right px-1 py-1.5 w-20 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none">
@@ -1625,6 +1682,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               </th>
                             </>
                           )}
+                          {/* 재고금액 · 액션 (항상 표시) */}
                           <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬"
                             className="text-right px-1 py-1.5 w-22 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none">
                             재고금액{retArrow("stock_value")}
@@ -1662,47 +1720,58 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             >
                               {/* # */}
                               <td className="px-0.5 py-1.5 text-center text-slate-400 tabular-nums text-[11px] bg-slate-50/60 align-top">{i + 1}</td>
-                              {/* 상품명 + 코드 — 클릭 시 info 탭 */}
-                              <td className="px-1 py-1.5 align-top bg-sky-50/20">
-                                <div className="flex flex-col leading-tight">
-                                  <button
-                                    type="button"
-                                    className="text-[12px] font-semibold text-sky-700 hover:underline text-left break-words whitespace-normal cursor-pointer"
-                                    onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("info"); }}
-                                    title="상품정보 보기"
-                                  >{x.product_name}</button>
-                                  <span className="text-[10px] text-slate-400 tabular-nums">{x.product_code}</span>
-                                </div>
-                              </td>
-                              {/* 공급사 */}
-                              <td className="px-0.5 py-1.5 align-top bg-sky-50/10">
-                                <div className="flex items-center gap-1 flex-wrap">
-                                  <span className="text-[11px] font-semibold text-sky-600 break-words whitespace-normal">{x.supplier ?? "-"}</span>
-                                  {x.supplier && <VendorCategoryBadge category={vendorCategoryMap[x.supplier.trim()] ?? null} />}
-                                </div>
-                              </td>
-                              {/* 현재고 */}
+                              {/* 상품정보 그룹 · 접힘 시 placeholder */}
+                              {isReturnGroupCollapsed("info") ? (
+                                <td className="bg-sky-50/10 w-4"></td>
+                              ) : (
+                                <>
+                                  {/* 상품명 + 코드 */}
+                                  <td className="px-1 py-1.5 align-top bg-sky-50/20">
+                                    <div className="flex flex-col leading-tight">
+                                      <button
+                                        type="button"
+                                        className="text-[12px] font-semibold text-sky-700 hover:underline text-left break-words whitespace-normal cursor-pointer"
+                                        onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("info"); }}
+                                        title="상품정보 보기"
+                                      >{x.product_name}</button>
+                                      <span className="text-[10px] text-slate-400 tabular-nums">{x.product_code}</span>
+                                    </div>
+                                  </td>
+                                  {/* 공급사 */}
+                                  <td className="px-0.5 py-1.5 align-top bg-sky-50/10">
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                      <span className="text-[11px] font-semibold text-sky-600 break-words whitespace-normal">{x.supplier ?? "-"}</span>
+                                      {x.supplier && <VendorCategoryBadge category={vendorCategoryMap[x.supplier.trim()] ?? null} />}
+                                    </div>
+                                  </td>
+                                </>
+                              )}
+                              {/* 현재고 (항상 표시) */}
                               <td className="text-right px-1 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-amber-50/30 align-top">{x.current_stock.toLocaleString()}</td>
-                              {/* 매입주기 + (펼침 시) 최근매입일·량 sub */}
-                              <td
-                                className="text-right px-1 py-1.5 tabular-nums bg-emerald-50/30 align-top cursor-pointer"
-                                onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("purchase"); }}
-                                title="매입이력 보기"
-                              >
-                                <span className="font-black text-[12px] text-emerald-700 hover:underline">
-                                  {x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}
-                                </span>
-                                {retColPurchaseOpen && (
+                              {/* 매입정보 그룹 · 접힘 시 placeholder */}
+                              {isReturnGroupCollapsed("purchase") ? (
+                                <td className="bg-emerald-50/20 w-4"></td>
+                              ) : (
+                                <td
+                                  className="text-right px-1 py-1.5 tabular-nums bg-emerald-50/30 align-top cursor-pointer"
+                                  onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("purchase"); }}
+                                  title="매입이력 보기"
+                                >
+                                  <span className="font-black text-[12px] text-emerald-700 hover:underline">
+                                    {x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}
+                                  </span>
                                   <span className="block text-[10px] text-slate-500 leading-snug mt-0.5 font-normal">
                                     {x.last_purchase_date ?? "-"}
                                     {x.last_purchase_qty != null && (
                                       <> · <span className="tabular-nums">{x.last_purchase_qty}개</span></>
                                     )}
                                   </span>
-                                )}
-                              </td>
-                              {/* 최근한달 판매량 · 판매액 — 클릭 시 sales 탭 */}
-                              {retColSalesOpen && (
+                                </td>
+                              )}
+                              {/* 판매정보 그룹 · 접힘 시 placeholder */}
+                              {isReturnGroupCollapsed("sales") ? (
+                                <td className="bg-rose-50/20 w-4"></td>
+                              ) : (
                                 <>
                                   <td
                                     className="text-right px-1 py-1.5 tabular-nums bg-rose-50/20 align-top cursor-pointer"
@@ -1724,7 +1793,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                   </td>
                                 </>
                               )}
-                              {/* 재고금액 */}
+                              {/* 재고금액 (항상 표시) */}
                               <td className="text-right px-1 py-1.5 tabular-nums font-black text-[12px] text-indigo-700 bg-indigo-50/20 align-top">
                                 {x.current_stock > 0 && x.purchase_price > 0 ? `${(x.current_stock * x.purchase_price).toLocaleString()}` : "-"}
                               </td>
@@ -2279,22 +2348,48 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           <div className={`max-h-[50vh] overflow-auto relative ${orderLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
             <table className="w-full text-xs sm:min-w-[540px]">
               <thead className="sticky top-0 bg-white z-10">
-                {/* 2026-07-30 · 사용자 요청 · 재고리스트 카테고리 그룹 헤더 스타일 · 3그룹 색상 헤더 */}
+                {/* 그룹 카테고리 헤더 · 클릭으로 접기/펼치기 */}
                 <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
-                  <th className="bg-slate-50"></th>
-                  <th colSpan={3} className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100">상품 정보</th>
-                  <th colSpan={4} className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100">재고 현황</th>
+                  <th className="bg-slate-50 w-6"></th>
+                  <th colSpan={isOrderGroupCollapsed("info") ? 1 : 3}
+                    className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-sky-100 transition"
+                    onClick={() => toggleOrderGroup("info")}
+                    title={isOrderGroupCollapsed("info") ? "상품 정보 펼치기" : "상품 정보 접기"}>
+                    <span className="inline-flex items-center gap-1">
+                      {isOrderGroupCollapsed("info") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}상품 정보
+                    </span>
+                  </th>
+                  <th colSpan={isOrderGroupCollapsed("stock") ? 1 : 4}
+                    className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-amber-100 transition"
+                    onClick={() => toggleOrderGroup("stock")}
+                    title={isOrderGroupCollapsed("stock") ? "재고 현황 펼치기" : "재고 현황 접기"}>
+                    <span className="inline-flex items-center gap-1">
+                      {isOrderGroupCollapsed("stock") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}재고 현황
+                    </span>
+                  </th>
                   <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-slate-100">발주 액션</th>
                 </tr>
                 <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
                   <th className="text-center px-0.5 py-1.5 w-6"></th>
-                  <th onClick={() => handleOrderSort("supplier")} title="공급사 정렬" className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">공급사{orderArrow("supplier")}</th>
-                  <th onClick={() => handleOrderSort("contact")} title="담당자 정렬" className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">담당자{orderArrow("contact")}</th>
-                  <th onClick={() => handleOrderSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 min-w-[120px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">상품명{orderArrow("name")}</th>
-                  <th onClick={() => handleOrderSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{orderArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
-                  <th onClick={() => handleOrderSort("inv")} title="실재고 정렬" className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">실재고{orderArrow("inv")}</th>
-                  <th onClick={() => handleOrderSort("optimal")} title="적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">적정{orderArrow("optimal")}</th>
-                  <th onClick={() => handleOrderSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{orderArrow("short")}</th>
+                  {isOrderGroupCollapsed("info") ? (
+                    <th className="bg-sky-50/20 w-4"></th>
+                  ) : (
+                    <>
+                      <th onClick={() => handleOrderSort("supplier")} title="공급사 정렬" className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">공급사{orderArrow("supplier")}</th>
+                      <th onClick={() => handleOrderSort("contact")} title="담당자 정렬" className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">담당자{orderArrow("contact")}</th>
+                      <th onClick={() => handleOrderSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 min-w-[120px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">상품명{orderArrow("name")}</th>
+                    </>
+                  )}
+                  {isOrderGroupCollapsed("stock") ? (
+                    <th className="bg-amber-50/20 w-4"></th>
+                  ) : (
+                    <>
+                      <th onClick={() => handleOrderSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{orderArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
+                      <th onClick={() => handleOrderSort("inv")} title="실재고 정렬" className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">실재고{orderArrow("inv")}</th>
+                      <th onClick={() => handleOrderSort("optimal")} title="적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">적정{orderArrow("optimal")}</th>
+                      <th onClick={() => handleOrderSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{orderArrow("short")}</th>
+                    </>
+                  )}
                   <th className="text-center px-0.5 py-1.5 w-14 cursor-default bg-emerald-50/30 text-emerald-600">발주</th>
                 </tr>
               </thead>
@@ -2363,82 +2458,93 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           ? <CheckSquare size={13} className="text-rose-500 inline cursor-pointer" />
                           : <Square size={13} className="text-slate-300 hover:text-rose-500 inline cursor-pointer" />}
                       </td>
-                      <td className="px-0.5 py-1.5 align-top">
-                        {(() => {
-                          // 공급사 문자열에서 부가 정보(괄호/vat 등)를 다음 줄로 분리
-                          const raw = String(supplierDisplay ?? "");
-                          const m = raw.match(/^(.+?)\s*(\(.+?\))\s*$/);
-                          const mainName = m ? m[1].trim() : raw;
-                          const suffix = m ? m[2].trim() : "";
-                          // products 테이블에서 부가 정보(예: 세금 구분) fallback
-                          const extraFromProduct = (productData as any)?.supplier_note || (productData as any)?.tax_note || "";
-                          const secondLine = suffix || extraFromProduct || "";
-                          return (
-                            <>
-                              {/* 2026-07-30 · 사용자 요청 · 공급사 클릭 → 정보 모달 */}
-                              {mainName ? (
-                                <div className="flex items-center gap-1 flex-wrap">
-                                  <button type="button"
-                                    onClick={(e) => { e.stopPropagation(); openSupplierInfo(mainName); }}
-                                    className="text-[12px] text-sky-600 hover:text-sky-800 hover:underline font-semibold break-words whitespace-normal leading-tight text-left cursor-pointer"
-                                    title="공급사 정보 조회·수정">{mainName}</button>
-                                  <VendorCategoryBadge category={vendorCategoryMap[mainName] ?? null} />
-                                </div>
-                              ) : (
-                                <div className="text-[12px] text-slate-400 font-semibold">-</div>
-                              )}
-                              {secondLine && (
-                                <div className="text-[10px] text-slate-400 font-normal break-words whitespace-normal leading-tight mt-0.5">{secondLine}</div>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </td>
-                      <td className="px-0.5 py-1.5 text-[12px] text-slate-600 break-words whitespace-normal align-top">
-                        {vendor ? (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const rect = (e.target as HTMLElement).getBoundingClientRect();
-                              setContactPopover({ anchor: rect, name: contactName, phone: vendor.phone, email: vendor.email });
-                            }}
-                            className="hover:text-indigo-700 hover:underline cursor-pointer text-left w-full"
-                            title="클릭 시 전화·이메일 표시"
-                          >{contactName}</button>
-                        ) : (
-                          <span>{contactName}</span>
-                        )}
-                      </td>
-                      <td className="px-0.5 py-1.5 align-top">
-                        <button
-                          onClick={() => setOrderPanelProduct({ code: r.product_code, name: r.product_name })}
-                          className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
-                          title="상품 상세정보 조회"
-                        >{r.product_name || "(상품명 없음)"}</button>
-                      </td>
-                      <td
-                        className={`text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] bg-slate-50/40 align-top ${stockChanged ? "text-orange-600" : "text-slate-700"}`}
-                        title={stockChanged ? `요청 당시 ${r.current_stock ?? "-"} → 현재 ${displayCurrentStock ?? "-"} (변동)` : "현재 ERP 재고 (실시간)"}
-                      >
-                        {displayCurrentStock ?? "-"}
-                        {stockChanged && <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">전 {r.current_stock}</span>}
-                      </td>
-                      <td
-                        className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
-                        title={inv ? `창고 ${inv.warehouse ?? "-"} + 매장 ${inv.store ?? "-"} = ${inv.total}` : "실재고 미입력"}
-                      >
-                        {inv ? inv.total : "—"}
-                        {inv && (
-                          <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">
-                            창{inv.warehouse ?? "-"}·매{inv.store ?? "-"}
-                          </span>
-                        )}
-                      </td>
-                      <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{displayOptimal ?? "-"}</td>
-                      <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
-                        <span className="tabular-nums font-black text-[12px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
-                      </td>
+                      {/* 상품정보 그룹 */}
+                      {isOrderGroupCollapsed("info") ? (
+                        <td className="bg-sky-50/10 w-4"></td>
+                      ) : (
+                        <>
+                          <td className="px-0.5 py-1.5 align-top">
+                            {(() => {
+                              const raw = String(supplierDisplay ?? "");
+                              const m = raw.match(/^(.+?)\s*(\(.+?\))\s*$/);
+                              const mainName = m ? m[1].trim() : raw;
+                              const suffix = m ? m[2].trim() : "";
+                              const extraFromProduct = (productData as any)?.supplier_note || (productData as any)?.tax_note || "";
+                              const secondLine = suffix || extraFromProduct || "";
+                              return (
+                                <>
+                                  {mainName ? (
+                                    <div className="flex items-center gap-1 flex-wrap">
+                                      <button type="button"
+                                        onClick={(e) => { e.stopPropagation(); openSupplierInfo(mainName); }}
+                                        className="text-[12px] text-sky-600 hover:text-sky-800 hover:underline font-semibold break-words whitespace-normal leading-tight text-left cursor-pointer"
+                                        title="공급사 정보 조회·수정">{mainName}</button>
+                                      <VendorCategoryBadge category={vendorCategoryMap[mainName] ?? null} />
+                                    </div>
+                                  ) : (
+                                    <div className="text-[12px] text-slate-400 font-semibold">-</div>
+                                  )}
+                                  {secondLine && (
+                                    <div className="text-[10px] text-slate-400 font-normal break-words whitespace-normal leading-tight mt-0.5">{secondLine}</div>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </td>
+                          <td className="px-0.5 py-1.5 text-[12px] text-slate-600 break-words whitespace-normal align-top">
+                            {vendor ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const rect = (e.target as HTMLElement).getBoundingClientRect();
+                                  setContactPopover({ anchor: rect, name: contactName, phone: vendor.phone, email: vendor.email });
+                                }}
+                                className="hover:text-indigo-700 hover:underline cursor-pointer text-left w-full"
+                                title="클릭 시 전화·이메일 표시"
+                              >{contactName}</button>
+                            ) : (
+                              <span>{contactName}</span>
+                            )}
+                          </td>
+                          <td className="px-0.5 py-1.5 align-top">
+                            <button
+                              onClick={() => setOrderPanelProduct({ code: r.product_code, name: r.product_name })}
+                              className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
+                              title="상품 상세정보 조회"
+                            >{r.product_name || "(상품명 없음)"}</button>
+                          </td>
+                        </>
+                      )}
+                      {/* 재고현황 그룹 */}
+                      {isOrderGroupCollapsed("stock") ? (
+                        <td className="bg-amber-50/10 w-4"></td>
+                      ) : (
+                        <>
+                          <td
+                            className={`text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] bg-slate-50/40 align-top ${stockChanged ? "text-orange-600" : "text-slate-700"}`}
+                            title={stockChanged ? `요청 당시 ${r.current_stock ?? "-"} → 현재 ${displayCurrentStock ?? "-"} (변동)` : "현재 ERP 재고 (실시간)"}
+                          >
+                            {displayCurrentStock ?? "-"}
+                            {stockChanged && <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">전 {r.current_stock}</span>}
+                          </td>
+                          <td
+                            className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
+                            title={inv ? `창고 ${inv.warehouse ?? "-"} + 매장 ${inv.store ?? "-"} = ${inv.total}` : "실재고 미입력"}
+                          >
+                            {inv ? inv.total : "—"}
+                            {inv && (
+                              <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">
+                                창{inv.warehouse ?? "-"}·매{inv.store ?? "-"}
+                              </span>
+                            )}
+                          </td>
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{displayOptimal ?? "-"}</td>
+                          <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
+                            <span className="tabular-nums font-black text-[12px] text-rose-600">{displayShort > 0 ? `-${displayShort}` : "0"}</span>
+                          </td>
+                        </>
+                      )}
                       <td className="text-center px-1 py-1.5 align-top">
                         <button
                           onClick={() => handleSingleOrder(r)}

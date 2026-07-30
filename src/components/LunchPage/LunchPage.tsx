@@ -257,7 +257,7 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
   const noEatCount = allRequests.filter(r => !r.eating).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       <AppNavHeader
         activePage="lunch"
         authSession={authSession ?? null}
@@ -272,12 +272,12 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <button onClick={() => setSelectedDate(d => addDays(d, -1))}
-              className="p-1.5 rounded-lg bg-white border border-gray-200 text-gray-400 hover:text-gray-700 transition cursor-pointer shadow-sm">
+              className="p-1.5 rounded-md bg-white border border-slate-200 text-slate-400 hover:text-slate-700 transition-all duration-150 cursor-pointer shadow-sm">
               <ChevronLeft size={15} />
             </button>
             <div>
-              <p className="text-[12px] text-gray-400 font-semibold uppercase tracking-wide">점심 관리</p>
-              <h1 className="text-xl font-black text-gray-900">{dateLabel(selectedDate)}</h1>
+              <p className="text-[12px] text-slate-400 font-semibold uppercase tracking-wide">점심 관리</p>
+              <h1 className="text-xl font-black text-slate-900">{dateLabel(selectedDate)}</h1>
             </div>
             <button onClick={() => setSelectedDate(d => addDays(d, 1))} disabled={isToday}
               className="p-1.5 rounded-lg bg-white border border-gray-200 text-gray-400 hover:text-gray-700 transition cursor-pointer shadow-sm disabled:opacity-30 disabled:cursor-default">

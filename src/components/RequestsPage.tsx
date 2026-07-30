@@ -61,19 +61,19 @@ function ListToolbar({
   hideDeleteAll?: boolean;
 }) {
   return (
-    <div className="flex items-center gap-2 mb-2 bg-white border border-gray-200 rounded-xl px-3 py-2.5 shadow-sm">
-      <button onClick={onToggleAll} className="shrink-0 cursor-pointer text-gray-400 hover:text-gray-600 transition">
+    <div className="flex items-center gap-2 mb-2 bg-white border border-slate-200 rounded-xl px-3 h-8 shadow-sm">
+      <button onClick={onToggleAll} className="shrink-0 cursor-pointer text-slate-400 hover:text-slate-600 transition">
         {allChecked && total > 0
-          ? <CheckSquare size={16} className={accentColor} />
-          : <Square size={16} />}
+          ? <CheckSquare size={15} className={accentColor} />
+          : <Square size={15} />}
       </button>
-      <span className="text-xs text-gray-500 flex-1 select-none">
+      <span className="text-[12px] text-slate-500 flex-1 select-none">
         {selected > 0 ? <><strong className={accentColor}>{selected}개</strong> 선택됨</> : `전체 ${total}건`}
       </span>
       {selected > 0 && (
         <button
           onClick={onDeleteSelected}
-          className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1.5 rounded-lg hover:bg-rose-100 transition cursor-pointer"
+          className="text-[11px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 h-6 rounded-md hover:bg-rose-100 transition-all duration-150 cursor-pointer"
         >
           선택삭제
         </button>
@@ -83,13 +83,14 @@ function ListToolbar({
         <button
           onClick={onDeleteAll}
           disabled={total === 0}
-          className="text-[11px] font-bold text-gray-500 bg-gray-50 border border-gray-200 px-2.5 py-1.5 rounded-lg hover:bg-gray-100 transition cursor-pointer disabled:opacity-40"
+          className="text-[11px] font-semibold text-slate-500 bg-slate-50 border border-slate-200 px-2.5 h-6 rounded-md hover:bg-slate-100 transition-all duration-150 cursor-pointer disabled:opacity-40"
         >
           전체삭제
         </button>
       )}
-      <button onClick={onRefresh} className="p-1 text-gray-400 hover:text-gray-600 transition cursor-pointer">
-        <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+      <div className="h-4 w-px bg-slate-200 shrink-0" />
+      <button onClick={onRefresh} className="w-6 h-6 flex items-center justify-center rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-all duration-150 cursor-pointer">
+        <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
       </button>
     </div>
   );
@@ -486,7 +487,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       {/* 탭 바 — 콘텐츠와 동일한 max-width 정렬 · 파스텔 pill 스타일 */}
       <div className="bg-white/90 backdrop-blur-sm border-b border-slate-200/70 sticky top-14 z-20" style={{ boxShadow: "0 1px 0 0 rgba(99,102,241,0.05)" }}>
         <div className="max-w-[1360px] mx-auto w-full px-2 sm:px-4 py-2 overflow-x-auto scrollbar-none">
-          <div className="flex bg-slate-100/70 border border-slate-200/60 rounded-2xl p-1 gap-0.5 w-fit min-w-full sm:w-auto sm:min-w-0 sm:inline-flex">
+          <div className="flex bg-slate-100/70 border border-slate-200/60 rounded-xl p-1 gap-0.5 w-fit min-w-full sm:w-auto sm:min-w-0 sm:inline-flex">
             {TABS.map(([key, label, count, activeClass, _iconClass, badgeClass, inactiveClass]) => (
               <button key={key} onClick={() => setTab(key)}
                 className={`px-2.5 sm:px-4 py-1.5 flex items-center gap-1.5 sm:gap-2 rounded-lg text-[11px] sm:text-[12px] font-black transition-all duration-200 cursor-pointer flex-1 sm:flex-none justify-center ${tab === key ? `${activeClass} ring-1 shadow-sm` : inactiveClass}`}>
@@ -524,7 +525,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                   <button
                     onClick={handleNotifyAll}
                     disabled={notifying || displayReqs.filter(r => r.status === "pending").length === 0}
-                    className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-blue-500 hover:bg-blue-600 border border-blue-400 px-2.5 py-1.5 rounded-lg transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+                    className="flex items-center gap-1.5 text-[11px] font-semibold text-white bg-blue-500 hover:bg-blue-600 border border-blue-400 px-2.5 h-6 rounded-md transition-all duration-150 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
                   >
                     {notifying ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
                     알림전송
@@ -548,26 +549,26 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                   const isDone = r.status === "done";
                   const completing = completingDisplay.has(r.id);
                   return (
-                    <div key={r.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition ${selectedDisplay.has(r.id) ? "bg-rose-50/50" : "hover:bg-orange-50/30"} ${isDone ? "opacity-60" : ""}`}>
+                    <div key={r.id} className={`flex items-center gap-3 px-2 py-1.5 transition-all duration-150 ${selectedDisplay.has(r.id) ? "bg-rose-50/50" : "hover:bg-slate-50/60"} ${isDone ? "opacity-60" : ""}`}>
                       <Checkbox checked={selectedDisplay.has(r.id)} onChange={() => toggleOne(selectedDisplay, r.id, setSelectedDisplay)} />
                       <div className="flex-1 min-w-0">
                         {/* 담당자 · 구역 · 카테고리 */}
-                        <div className={`flex items-center gap-1.5 flex-wrap ${isDone ? "line-through text-gray-400" : ""}`}>
+                        <div className={`flex items-center gap-1.5 flex-wrap ${isDone ? "line-through text-slate-400" : ""}`}>
                           {r.assigned_staff_name ? (
                             <span className="text-[12px] font-black text-indigo-700">{r.assigned_staff_name}</span>
                           ) : (
-                            <span className="text-[11px] text-gray-300">미지정</span>
+                            <span className="text-[11px] text-slate-300">미지정</span>
                           )}
                           {r.zone_label && (
-                            <><span className="text-gray-300 text-[10px]">·</span>
-                            <span className="text-[12px] font-bold text-gray-800 break-keep">{r.zone_label}</span></>
+                            <><span className="text-slate-300 text-[10px]">·</span>
+                            <span className="text-[12px] font-bold text-slate-800 break-keep">{r.zone_label}</span></>
                           )}
                           {r.category && (
-                            <><span className="text-gray-300 text-[10px]">·</span>
-                            <span className="text-[11px] text-gray-500 break-keep">{r.category}</span></>
+                            <><span className="text-slate-300 text-[10px]">·</span>
+                            <span className="text-[11px] text-slate-500 break-keep">{r.category}</span></>
                           )}
                           {r.note && (
-                            <><span className="text-gray-300 text-[10px]">·</span>
+                            <><span className="text-slate-300 text-[10px]">·</span>
                             <span className="text-[11px] text-indigo-500 break-keep">{r.note}</span></>
                           )}
                         </div>
@@ -578,17 +579,17 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                           <button
                             onClick={() => handleCompleteDisplay(r)}
                             disabled={completing}
-                            className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-1 rounded-lg hover:bg-emerald-100 transition cursor-pointer disabled:opacity-40 flex items-center gap-0.5"
+                            className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 h-6 rounded-md hover:bg-emerald-100 transition-all duration-150 cursor-pointer disabled:opacity-40 flex items-center gap-0.5"
                           >
                             {completing ? <Loader2 size={9} className="animate-spin" /> : <CheckCircle2 size={9} />}
                             완료
                           </button>
                         )}
-                        <span className={`flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full border ${isDone ? "text-emerald-600 bg-emerald-50 border-emerald-200" : "text-blue-600 bg-blue-50 border-blue-200"}`}>
+                        <span className={`flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border ${isDone ? "text-emerald-600 bg-emerald-50 border-emerald-200" : "text-blue-600 bg-blue-50 border-blue-200"}`}>
                           {isDone ? <CheckCircle2 size={8} /> : <Clock size={8} />}
                           {isDone ? "완료" : "대기"}
                         </span>
-                        <span className="text-[10px] text-gray-400">{fmtDate(r.requested_at)}</span>
+                        <span className="text-[10px] text-slate-400">{fmtDate(r.requested_at)}</span>
                       </div>
                     </div>
                   );

@@ -147,13 +147,13 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="제목·본문 검색"
-              className="w-full pl-9 pr-3 py-2 text-[13px] font-semibold bg-white border border-slate-200 rounded-xl focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 shadow-sm"
+              className="w-full pl-9 pr-3 py-2 text-[13px] font-semibold bg-white border border-slate-200 rounded-lg focus:outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-100 shadow-sm"
             />
           </div>
           <button
             onClick={() => setShowComposer(true)}
             disabled={!authSession?.employeeId}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 text-white text-[13px] font-black shadow-sm active:scale-95 transition disabled:opacity-40"
+            className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-orange-500 hover:bg-orange-600 text-white text-[13px] font-black shadow-sm active:scale-95 transition-all duration-150 disabled:opacity-40"
           >
             <Plus size={14} strokeWidth={3} /> 새 글
           </button>
@@ -166,7 +166,7 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
             const active = filterStatus === s;
             return (
               <button key={s} onClick={() => setFilterStatus(active ? "" : s)}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-black transition ${active ? `${meta.text} bg-white border-2 border-current` : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"}`}>
+                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all duration-150 ${active ? `${meta.text} bg-white border-2 border-current` : "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50"}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${meta.dot}`} />
                 {meta.label}
               </button>
@@ -179,18 +179,18 @@ export const BoardPage: React.FC<Props> = ({ authSession, onBack, onNavigate, on
           <span className="text-[9px] font-black text-slate-400 uppercase tracking-wider mr-1">카테고리</span>
           <button
             onClick={() => setFilterCategory("")}
-            className={`px-2 py-0.5 rounded-full text-[11px] font-black transition ${filterCategory === "" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+            className={`px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all duration-150 ${filterCategory === "" ? "bg-slate-800 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
           >전체</button>
           {CATEGORIES.map(c => (
             <button
               key={c}
               onClick={() => setFilterCategory(prev => prev === c ? "" : c)}
-              className={`px-2 py-0.5 rounded-full text-[11px] font-black transition ${filterCategory === c ? "bg-orange-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
+              className={`px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all duration-150 ${filterCategory === c ? "bg-orange-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200"}`}
             >{c}</button>
           ))}
           <button
             onClick={() => setFilterCategory(prev => prev === "__none__" ? "" : "__none__")}
-            className={`px-2 py-0.5 rounded-full text-[11px] font-black transition ${filterCategory === "__none__" ? "bg-slate-500 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
+            className={`px-2 py-0.5 rounded-md text-[11px] font-semibold transition-all duration-150 ${filterCategory === "__none__" ? "bg-slate-500 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"}`}
           >미분류</button>
         </div>
 
@@ -291,7 +291,7 @@ const PostCard: React.FC<{ post: BoardPost; onOpen: () => void; showEdit?: boole
       tabIndex={0}
       onClick={onOpen}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } }}
-      className="w-full text-left bg-white hover:bg-orange-50/30 transition cursor-pointer px-0.5 sm:px-4 py-1.5 sm:py-2 min-h-[44px]"
+      className="w-full text-left bg-white hover:bg-slate-50/60 transition-all duration-150 cursor-pointer px-0.5 sm:px-4 py-1.5 sm:py-2 min-h-[44px]"
     >
       {/* ── 모바일: 단일 flex 행 ── */}
       <div className="flex items-center gap-2 sm:hidden">
@@ -304,7 +304,7 @@ const PostCard: React.FC<{ post: BoardPost; onOpen: () => void; showEdit?: boole
         {post.pinned && <Pin size={10} className="text-orange-500 shrink-0" />}
         {/* 카테고리 */}
         {post.category && (
-          <span className="shrink-0 text-[9px] font-bold text-slate-500 bg-slate-100 rounded-full px-1.5 py-0.5">{post.category}</span>
+          <span className="shrink-0 text-[9px] font-semibold text-slate-500 bg-slate-100 rounded-md px-1.5 py-0.5">{post.category}</span>
         )}
         {/* 제목 · 최대 두 줄 */}
         <span className="flex-1 min-w-0 text-[13px] font-black text-slate-900 line-clamp-2 break-keep leading-snug">

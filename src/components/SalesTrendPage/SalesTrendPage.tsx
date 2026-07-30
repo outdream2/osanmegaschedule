@@ -720,8 +720,8 @@ const ProductTrendTab: React.FC<{
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-white z-10">
-                    <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
+                  <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm">
+                    <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
                       <th className="text-left px-2 py-1.5">기간</th>
                       <th className="text-right px-2 py-1.5 w-16 bg-emerald-50/60 text-emerald-500">매입</th>
                       <th className="text-right px-2 py-1.5 w-16 bg-orange-50/60 text-orange-500">판매</th>
@@ -1089,8 +1089,8 @@ const SupplierTrendTab: React.FC<{
                         ) : (
                           <div className="max-h-[50vh] overflow-auto">
                             <table className="w-full text-xs sm:min-w-[520px]">
-                              <thead className="sticky top-0 bg-white z-10">
-                                <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
+                              <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm">
+                                <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
                                   <th className="text-left px-0.5 py-1.5 w-6">#</th>
                                   {([
                                     { k: "name" as SupRowsSortKey, label: "상품명", align: "text-left", color: "slate" as "slate" | "orange" | "emerald" },
@@ -1132,7 +1132,7 @@ const SupplierTrendTab: React.FC<{
                                   const saleAmount = saleQty * salePrice;
                                   const profitRate = salePrice > 0 && purchasePrice > 0 ? ((salePrice - purchasePrice) / salePrice) * 100 : null;
                                   return (
-                                    <tr key={`${key}-${r.product_code ?? ri}`} className="hover:bg-orange-50/30 transition align-top">
+                                    <tr key={`${key}-${r.product_code ?? ri}`} className="hover:bg-slate-50/60 transition align-top">
                                       <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600">{ri + 1}</td>
                                       <td className="px-0.5 py-1.5 break-words whitespace-normal leading-tight">
                                         <button
@@ -1504,7 +1504,7 @@ export const StockFlowPanel: React.FC<{
           <div className="text-center text-[11px] text-slate-300 py-6">&nbsp;</div>
         ) : (
           <table className={`w-full text-xs ${loading ? "opacity-40 transition-opacity" : ""}`}>
-            <thead className="sticky top-0 bg-white z-10">
+            <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm">
               {selectedCodes.size > 0 && (
                 <tr className="bg-rose-50 border-b border-rose-200">
                   <td colSpan={10} className="px-2 py-1.5">
@@ -1523,7 +1523,7 @@ export const StockFlowPanel: React.FC<{
                   </td>
                 </tr>
               )}
-              <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
+              <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
                 <th className="text-center px-0.5 py-1.5 w-6">
                   <button onClick={() => {
                     if (selectedCodes.size === displayRows.length) setSelectedCodes(new Set());
@@ -1571,7 +1571,7 @@ export const StockFlowPanel: React.FC<{
                 return (
                   <tr
                     key={`sf-${p.product_code}-${i}`}
-                    className={`transition cursor-pointer ${selectedCode === String(p.product_code) ? "bg-teal-50 border-l-4 border-teal-500" : selectedCodes.has(String(p.product_code)) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}
+                    className={`transition cursor-pointer ${selectedCode === String(p.product_code) ? "bg-teal-50 border-l-4 border-teal-500" : selectedCodes.has(String(p.product_code)) ? "bg-rose-50/50" : "hover:bg-slate-50/60"}`}
                     onClick={() => onProductClick(p)}
                   >
                     <td className="text-center px-0.5 py-1.5 align-top" onClick={(e) => { e.stopPropagation(); toggleSelectCode(String(p.product_code)); }}>
@@ -1866,7 +1866,7 @@ const ZoneCategoryContent: React.FC = () => {
     return (
       <div className="flex flex-col gap-3 h-full">
         {/* 구역 요약 카드 */}
-        <div className={`bg-gradient-to-r from-violet-50 to-slate-50 border border-violet-200 rounded-xl p-3`}>
+        <div className="bg-violet-50/60 border border-violet-200 rounded-xl p-3 shadow-sm">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
               <span className={`text-[15px] font-black ${textCls} tabular-nums`}>{g.zone}</span>
@@ -1894,9 +1894,9 @@ const ZoneCategoryContent: React.FC = () => {
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1">
           <div className="overflow-auto max-h-[55vh]">
             <table className="w-full text-xs sm:min-w-[540px]">
-              <thead className="sticky top-0 bg-white z-10">
-                <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
-                  <th className="text-left px-0.5 py-1.5 w-6">#</th>
+              <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm">
+                <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
+                  <th className="text-left px-1 py-1.5 w-6">#</th>
                   {sortableTh("name", "상품명", "text-left px-0.5 py-1.5")}
                   {sortableTh("sale", "판매", "text-right px-0.5 py-1.5 w-14 text-orange-500 bg-orange-50/40")}
                   {sortableTh("current", "현재고", "text-right px-0.5 py-1.5 w-14 text-amber-600 bg-amber-50/40")}
@@ -1905,7 +1905,7 @@ const ZoneCategoryContent: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-50">
                 {sortedItems.slice(0, 200).map((it, i) => (
-                  <tr key={`${g.zone}-${it.code}`} className="hover:bg-orange-50/30 align-top transition">
+                  <tr key={`${g.zone}-${it.code}`} className="hover:bg-slate-50/60 align-top transition">
                     <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600">{i + 1}</td>
                     <td className="px-0.5 py-1.5 break-words whitespace-normal leading-tight">
                       <span className="text-[13px] font-medium text-slate-800 break-words whitespace-normal leading-tight" title={it.name}>{it.name}</span>
@@ -2476,40 +2476,40 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
       ) : !loading && filtered.length === 0 ? (
         <div className="text-center text-[11px] text-slate-300 py-6">손실 상품 없음</div>
       ) : (
-        <div className={`overflow-auto max-h-[50vh] rounded-lg border border-slate-100 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+        <div className={`overflow-auto max-h-[50vh] rounded-lg border border-slate-200 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
           <table className="w-full text-xs sm:min-w-[540px]">
-            <thead className="sticky top-0 bg-white z-10">
-              <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
-                <th className="text-left px-0.5 py-1.5 w-6">#</th>
+            <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm">
+              <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
+                <th className="text-left px-1 py-1.5 w-6">#</th>
                 <th onClick={() => handleSort("name")}
-                  className={`text-left px-0.5 py-1.5 cursor-pointer select-none hover:bg-slate-50 transition ${sortKey === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}>
+                  className={`text-left px-1 py-1.5 cursor-pointer select-none hover:bg-slate-100 transition ${sortKey === "name" ? "text-slate-800 font-black" : ""}`}>
                   <span className="inline-flex items-center gap-0.5">상품명{arrow("name")}</span>
                 </th>
                 <th onClick={() => handleSort("supplier")}
-                  className={`text-left px-0.5 py-1.5 hidden sm:table-cell cursor-pointer select-none hover:bg-slate-50 transition ${sortKey === "supplier" ? "text-slate-800 font-black" : "text-slate-500"}`}>
+                  className={`text-left px-1 py-1.5 hidden sm:table-cell cursor-pointer select-none hover:bg-slate-100 transition ${sortKey === "supplier" ? "text-slate-800 font-black" : ""}`}>
                   <span className="inline-flex items-center gap-0.5">공급사{arrow("supplier")}</span>
                 </th>
                 <th onClick={() => handleSort("opening")}
-                  className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none hover:bg-slate-50 transition ${sortKey === "opening" ? "text-slate-800 font-black" : "text-slate-500"}`}
+                  className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-slate-100 transition ${sortKey === "opening" ? "text-slate-800 font-black" : ""}`}
                   title="시작재고"><span className="inline-flex items-center gap-0.5">시작{arrow("opening")}</span></th>
                 <th onClick={() => handleSort("sale")}
-                  className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none hover:bg-orange-50/40 bg-orange-50/40 transition ${sortKey === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
+                  className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-orange-100/60 bg-orange-50/60 transition ${sortKey === "sale" ? "text-orange-700 font-black" : "text-orange-500"}`}
                   title="판매출고계 · 실제 팔린 양"><span className="inline-flex items-center gap-0.5">판매{arrow("sale")}</span></th>
                 <th onClick={() => handleSort("current")}
-                  className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none hover:bg-amber-50/40 bg-amber-50/40 transition ${sortKey === "current" ? "text-amber-800 font-black" : "text-amber-600"}`}
+                  className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-amber-100/60 bg-amber-50/60 transition ${sortKey === "current" ? "text-amber-800 font-black" : "text-amber-600"}`}
                   title="현재고 (products.current_stock)"><span className="inline-flex items-center gap-0.5">현재고{arrow("current")}</span></th>
                 <th onClick={() => handleSort("expected")}
-                  className={`text-right px-0.5 py-1.5 w-14 hidden md:table-cell cursor-pointer select-none hover:bg-slate-50 transition ${sortKey === "expected" ? "text-slate-800 font-black" : "text-slate-500"}`}
+                  className={`text-right px-1 py-1.5 w-14 hidden md:table-cell cursor-pointer select-none hover:bg-slate-100 transition ${sortKey === "expected" ? "text-slate-800 font-black" : ""}`}
                   title="시작 − 판매 = 예상 종료재고"><span className="inline-flex items-center gap-0.5">예상{arrow("expected")}</span></th>
                 <th onClick={() => handleSort("purchase")}
-                  className={`text-right px-0.5 py-1.5 w-14 hidden md:table-cell cursor-pointer select-none hover:bg-emerald-50/40 bg-emerald-50/40 transition ${sortKey === "purchase" ? "text-emerald-800 font-black" : "text-emerald-500"}`}
+                  className={`text-right px-1 py-1.5 w-14 hidden md:table-cell cursor-pointer select-none hover:bg-emerald-100/60 bg-emerald-50/60 transition ${sortKey === "purchase" ? "text-emerald-800 font-black" : "text-emerald-500"}`}
                   title="입고계 (참고)"><span className="inline-flex items-center gap-0.5">입고{arrow("purchase")}</span></th>
                 <th onClick={() => handleSort("loss")}
-                  className={`text-right px-0.5 py-1.5 w-16 cursor-pointer select-none hover:bg-rose-50/40 bg-rose-50/40 transition ${sortKey === "loss" ? "text-rose-700 font-black" : "text-rose-500"}`}
+                  className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-rose-100/60 bg-rose-50/60 transition ${sortKey === "loss" ? "text-rose-700 font-black" : "text-rose-500"}`}
                   title="예상 − 종료 (양수면 손실)"><span className="inline-flex items-center gap-0.5">손실{arrow("loss")}</span></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-50">
+            <tbody className="divide-y divide-slate-100">
               {filtered.map((r, i) => {
                 const open = Number(r.opening_stock ?? 0);
                 const purch = Number(r.purchase_qty ?? 0);
@@ -2517,7 +2517,7 @@ export const LossTrackerTab: React.FC<{ onOpenProductInfo: (p: any) => void }> =
                 const close = Number(r.closing_stock ?? 0);
                 const expected = open - sale;
                 return (
-                  <tr key={r.product_code ?? i} className="hover:bg-orange-50/30 transition align-top"
+                  <tr key={r.product_code ?? i} className="hover:bg-slate-50/60 transition align-top"
                     title={`예상 = 시작(${open}) − 판매(${sale}) = ${expected}\n실제 종료 = ${close}\n손실 = ${expected - close}${purch > 0 ? `\n※ 이 기간 입고 ${purch} 있음 (예상 계산에 미반영)` : ""}`}>
                     <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600">{i + 1}</td>
                     <td className="px-0.5 py-1.5 align-top">
