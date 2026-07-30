@@ -8,6 +8,7 @@ import {
   Search, Check, X, Loader2, Building2, Package, Calendar,
   DollarSign, TrendingUp, RefreshCw,
 } from "lucide-react";
+import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 
 interface VendorListEditorProps {
   // 기존 API 호환용 · 무시됨 (모달 방식으로 통일)
@@ -73,6 +74,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [filterMissingBiz, setFilterMissingBiz] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<string>("전체");
   const [modalVendorId, setModalVendorId] = useState<number | null>(null);
 
   const handleVendorClick = (id: number) => {
@@ -103,6 +105,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   const filtered = useMemo(() => {
     let list = vendors;
     if (filterMissingBiz) list = list.filter(v => !v.business_number);
+    if (categoryFilter !== "전체") list = list.filter(v => v.category === categoryFilter);
     const q = search.trim().toLowerCase().replace(/[^0-9가-힣a-z]/g, "");
     if (q) {
       list = list.filter(v => {
@@ -115,7 +118,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
       });
     }
     return list.slice().sort((a, b) => (a.company_name ?? "").localeCompare(b.company_name ?? "", "ko"));
-  }, [vendors, search, filterMissingBiz]);
+  }, [vendors, search, filterMissingBiz, categoryFilter]);
 
   const missingCount = vendors.filter(v => !v.business_number).length;
   const modalVendor = useMemo(() => vendors.find(v => v.id === modalVendorId) ?? null, [vendors, modalVendorId]);
@@ -134,6 +137,27 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
             placeholder="회사명 · 사업자번호 · 담당자 · 전화 · 이메일"
             className="h-8 pl-8 pr-3 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-400 focus:border-teal-400 w-full sm:w-80 transition"
           />
+        </div>
+
+        {/* 분류 segment control */}
+        <div className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5">
+          {(["전체", "위탁", "선결제", "회전", "기타"] as const).map(cat => (
+            <button
+              key={cat}
+              onClick={() => setCategoryFilter(cat)}
+              className={`h-7 px-2.5 rounded-md text-[11px] font-black transition cursor-pointer whitespace-nowrap ${
+                categoryFilter === cat
+                  ? cat === "전체"   ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
+                  : cat === "위탁"   ? "bg-violet-500 text-white shadow-sm"
+                  : cat === "선결제" ? "bg-rose-500 text-white shadow-sm"
+                  : cat === "회전"   ? "bg-emerald-500 text-white shadow-sm"
+                  :                    "bg-slate-500 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 hover:bg-white/60"
+              }`}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
 
         {/* 필터 chip */}
@@ -190,9 +214,10 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
               <div className="flex items-start gap-2">
                 <span className="text-[11px] text-slate-400 font-mono mt-0.5 w-6 shrink-0">{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1 mb-0.5">
+                  <div className="flex items-center gap-1 mb-0.5 flex-wrap">
                     <Building2 size={11} className="text-teal-500 shrink-0" />
                     <span className="text-[13px] font-bold text-slate-800 break-words">{v.company_name}</span>
+                    <VendorCategoryBadge category={v.category} />
                   </div>
                   <div className="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap">
                     {v.business_number
@@ -266,9 +291,10 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
               >
                 <td className="px-2 py-1.5 text-[11px] text-slate-400 font-mono tabular-nums">{i + 1}</td>
                 <td className="px-3 py-1.5 font-semibold text-slate-800">
-                  <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5 flex-wrap">
                     <Building2 size={11} className="text-teal-500 shrink-0" />
                     <span className="underline decoration-dotted decoration-teal-300 underline-offset-2 break-words">{v.company_name}</span>
+                    <VendorCategoryBadge category={v.category} />
                   </span>
                 </td>
                 <td className="px-3 py-1.5 font-mono text-slate-600 whitespace-nowrap">
@@ -284,7 +310,10 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                     <td className="px-3 py-1.5 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
                       {v.latestBalance?.balance != null ? fmtWon(v.latestBalance.balance) : <span className="text-slate-300">-</span>}
                     </td>
-                    <td className="px-3 py-1.5 text-slate-500 truncate hidden xl:table-cell">{v.category ?? "-"}</td>
+                    <td className="px-3 py-1.5 hidden xl:table-cell">
+                      <VendorCategoryBadge category={v.category} />
+                      {!v.category && <span className="text-slate-300">-</span>}
+                    </td>
                     <td className="px-3 py-1.5 font-mono text-[11px] text-slate-400 hidden lg:table-cell">
                       {v.created_at ? String(v.created_at).slice(0, 10) : "-"}
                     </td>
@@ -445,7 +474,10 @@ export const VendorDetailModal: React.FC<{
               <Building2 size={18} className="text-teal-700" />
             </div>
             <div className="min-w-0">
-              <div className="text-[15px] font-black text-slate-800 truncate leading-tight">{vendor.company_name}</div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="text-[15px] font-black text-slate-800 truncate leading-tight">{vendor.company_name}</div>
+                <VendorCategoryBadge category={vendor.category} />
+              </div>
               <div className="text-[11px] text-slate-500 font-mono mt-0.5 flex items-center gap-2 flex-wrap">
                 {vendor.business_number
                   ? <span className="tabular-nums">{formatBizNum(vendor.business_number)}</span>
@@ -517,14 +549,18 @@ export const VendorDetailModal: React.FC<{
                 />
               </Field>
 
-              <Field label="카테고리">
-                <input
-                  type="text"
+              <Field label="분류">
+                <select
                   value={draft.category}
                   onChange={e => setDraft({ ...draft, category: e.target.value })}
-                  placeholder="제약 · 의약외품 · 화장품 등"
                   className={inputCls}
-                />
+                >
+                  <option value="">(없음)</option>
+                  <option value="위탁">위탁</option>
+                  <option value="선결제">선결제</option>
+                  <option value="회전">회전</option>
+                  <option value="기타">기타</option>
+                </select>
               </Field>
 
               <Field label="비고">

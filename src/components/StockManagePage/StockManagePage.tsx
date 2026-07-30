@@ -11,6 +11,7 @@ import { Search, Package, TrendingUp, AlertTriangle, Building2, Info, EyeOff, Ey
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { PurchaseHistoryModal } from "../common/PurchaseHistoryModal";
+import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { useHiddenManager } from "../../hooks/useHiddenManager";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
@@ -1740,6 +1741,23 @@ export const StockManagePage: React.FC = () => {
       } catch { /* ignore */ }
     })();
   }, []);
+  // 2026-07-30 · 공급사 분류 맵 (vendor category 배지 표시용)
+  const [vendorCategoryMap, setVendorCategoryMap] = useState<Record<string, string | null>>({});
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/vendors?withBalances=1");
+        if (!res.ok) return;
+        const list: Array<{ company_name: string; category: string | null }> = await res.json();
+        const map: Record<string, string | null> = {};
+        for (const v of list) {
+          const name = String(v.company_name ?? "").trim();
+          if (name) map[name] = v.category ?? null;
+        }
+        setVendorCategoryMap(map);
+      } catch { /* ignore */ }
+    })();
+  }, []);
   // 2026-07-16 · supplier 우측 패널용 · xlsxSuppliers 선언 이후로 이동
   const supplierSelectedObj = useMemo(() => supplierSelectedKey ? xlsxSuppliers.find(s => `${s.supplier_code ?? "-"}::${s.supplier}` === supplierSelectedKey) ?? null : null, [supplierSelectedKey, xlsxSuppliers]);
   const [xlsxTopSupplier, setXlsxTopSupplier] = useState<SupplierAgg | null>(null);
@@ -2755,6 +2773,11 @@ export const StockManagePage: React.FC = () => {
                                             <span className={`text-[13px] font-semibold break-words whitespace-normal leading-tight ${isSelected ? "text-sky-800" : "text-slate-700"}`}>
                                               {sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
                                             </span>
+                                            {(() => {
+                                              const nm = sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
+                                              const cat = vendorCategoryMap[nm] ?? vendorCategoryMap[sup.supplier ?? ""] ?? null;
+                                              return <VendorCategoryBadge category={cat} />;
+                                            })()}
                                             {sup.supplier_code && (
                                               <span className="text-[10px] tabular-nums text-slate-400 shrink-0 font-mono bg-slate-100 rounded px-1" title="공급사코드">#{sup.supplier_code}</span>
                                             )}
@@ -2824,6 +2847,10 @@ export const StockManagePage: React.FC = () => {
                         <div className="flex items-center gap-2 flex-wrap">
                           <Building2 size={16} className="text-sky-600 shrink-0" />
                           <span className="text-base font-black text-slate-800 break-keep">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</span>
+                          {(() => {
+                            const nm = supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
+                            return <VendorCategoryBadge category={vendorCategoryMap[nm] ?? vendorCategoryMap[supplierSelectedObj.supplier ?? ""] ?? null} />;
+                          })()}
                           {supplierSelectedObj.supplier_code && <span className="text-[10px] tabular-nums text-slate-500 bg-slate-100 rounded px-1.5 py-0.5">#{supplierSelectedObj.supplier_code}</span>}
                         </div>
                         {(() => {
@@ -3695,13 +3722,13 @@ export const StockManagePage: React.FC = () => {
                                           {/* === 판매현황 그룹 (재고금액 · ERP단가 · 판매가 · 이익률) · rose 톤 통일 · 2026-07-30 · 사용자 요청 */}
                                           {isFlowGroupCollapsed("sales") && <th className="bg-rose-50/20"></th>}
                                           {!isFlowGroupCollapsed("sales") && <>
-                                            <th onClick={() => toggleFlowSort("stock_value")}
-                                              className={`text-right px-0.5 py-1.5 w-20 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "stock_value" ? "text-rose-800" : "text-rose-700"}`}
-                                              title="재고금액 = 현재고 × 최근매입가 · 클릭 정렬">
+                                            {/* 2026-07-30 · 사용자 요청 · 판매현황 · 재고금액 → 판매량 (sale_qty) */}
+                                            <th onClick={() => toggleFlowSort("sale")}
+                                              className={`text-right px-0.5 py-1.5 w-20 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale" ? "text-rose-800" : "text-rose-700"}`}
+                                              title="판매량 · 조회기간 sale_qty 합계 · 클릭 정렬">
                                               <span className="flex flex-col leading-tight items-end">
-                                                <span className="font-semibold text-rose-500">재고</span>
-                                                <span>금액</span>
-                                                <span className="text-[11px] opacity-70">{arrowFor("stock_value")}</span>
+                                                <span>판매량</span>
+                                                <span className="text-[11px] opacity-70">{arrowFor("sale")}</span>
                                               </span>
                                             </th>
                                             <th onClick={() => toggleFlowSort("last_purchase_price")}
@@ -3803,7 +3830,12 @@ export const StockManagePage: React.FC = () => {
                                               </span>
                                             )}
                                           </button>
-                                          {p.supplier && <div className="text-[11px] font-medium text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
+                                          {p.supplier && (
+                                            <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                                              <span className="text-[11px] font-medium text-slate-400 break-words whitespace-normal">{p.supplier}</span>
+                                              <VendorCategoryBadge category={vendorCategoryMap[p.supplier] ?? null} />
+                                            </div>
+                                          )}
                                         </td>
                                         {/* === 재고현황 그룹 (판매량 · 현재고 · 적정재고) === */}
                                         {!isFlowGroupCollapsed("stock") && <>
@@ -3871,11 +3903,11 @@ export const StockManagePage: React.FC = () => {
                                           </td>
                                         </>}
                                         {isFlowGroupCollapsed("purchase") && <td className="bg-slate-50/20"></td>}
-                                        {/* === 판매현황 그룹 (재고금액 · ERP단가 · 판매가 · 이익률) === */}
+                                        {/* === 판매현황 그룹 · 2026-07-30 · 재고금액 → 판매량(sale_qty) · ERP단가 · 판매가 · 이익률 === */}
                                         {!isFlowGroupCollapsed("sales") && <>
-                                          <td className="text-right px-1.5 py-2.5 text-slate-700 font-black text-[14px] align-top tabular-nums"
-                                            title={stockValue > 0 ? `현재고 ${fmt(cur)} × ERP단가 ${fmtWon(purP)} = ${fmtWon(stockValue)}` : ""}>
-                                            {fmtMan(stockValue)}
+                                          <td className="text-right px-1.5 py-2.5 text-rose-700 font-black text-[14px] align-top tabular-nums"
+                                            title="판매량 · 조회기간 sale_qty 합계">
+                                            {saleV > 0 ? fmt(saleV) : "-"}
                                           </td>
                                           <td className="text-right px-1.5 py-2.5 text-slate-500 font-black text-[14px] align-top tabular-nums" title="ERP 사입 단가 (products.purchase_price)">{purP > 0 ? fmtWon(purP) : "-"}</td>
                                           <td className="text-right px-1.5 py-2.5 text-slate-600 font-black text-[14px] align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>

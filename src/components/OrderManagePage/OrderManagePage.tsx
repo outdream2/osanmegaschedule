@@ -15,6 +15,7 @@ import type { AppNavPage } from "../AppNavHeader";
 import { VendorListEditor, VendorDetailModal } from "../LandingPage/VendorListEditor";
 import type { Vendor } from "../LandingPage/VendorListEditor";
 import { StockReconciliationTab } from "../StockManagePage/StockReconciliationTab";
+import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 
 interface OrderRequest {
   id: string;
@@ -98,6 +99,17 @@ const ArrivalMatchTab: React.FC = () => {
   const [rows, setRows] = useState<ArrivalMatchRow[]>([]);
   const [meta, setMeta] = useState<{ days: number; order_count: number; arrival_count: number } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [arrivalVendorCatMap, setArrivalVendorCatMap] = useState<Record<string, string | null>>({});
+  useEffect(() => {
+    fetch("/api/vendors?withBalances=1")
+      .then(r => r.ok ? r.json() : [])
+      .then((list: Array<{ company_name: string; category: string | null }>) => {
+        const m: Record<string, string | null> = {};
+        for (const v of list) { const n = String(v.company_name ?? "").trim(); if (n) m[n] = v.category ?? null; }
+        setArrivalVendorCatMap(m);
+      })
+      .catch(() => {});
+  }, []);
   // 2026-07-30 · 사용자 요청 · 일간(7일) 옵션 제거 · 14/30만 유지
   const [days, setDays] = useState<14 | 30>(14);
   const [statusFilter, setStatusFilter] = useState<"all" | "match" | "partial" | "missing">("all");
@@ -256,9 +268,15 @@ const ArrivalMatchTab: React.FC = () => {
                     }`}>
                       <td className="text-left px-2 py-2 align-top">
                         <p className="text-[14px] font-black text-slate-800 break-words whitespace-normal leading-snug">{r.product_name || "-"}</p>
-                        <div className="text-[11px] text-slate-500 font-semibold mt-0.5">
-                          {r.supplier && <span>{r.supplier} · </span>}
-                          <span className="tabular-nums">#{r.product_code}</span>
+                        <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                          {r.supplier && (
+                            <>
+                              <span className="text-[11px] text-slate-500 font-semibold">{r.supplier}</span>
+                              <VendorCategoryBadge category={arrivalVendorCatMap[r.supplier.trim()] ?? null} />
+                              <span className="text-[11px] text-slate-400">·</span>
+                            </>
+                          )}
+                          <span className="text-[11px] text-slate-500 font-semibold tabular-nums">#{r.product_code}</span>
                         </div>
                       </td>
                       <td className="text-left px-2 py-2 text-[12px] tabular-nums text-slate-600 align-top">
@@ -603,11 +621,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [lowStockSearch, setLowStockSearch] = useState("");
   const [orderReqCollapsed, setOrderReqCollapsed] = useState(false);
   const [lowStockCollapsed, setLowStockCollapsed] = useState(false);
-  // 공급사 마스터 (vendors 테이블) — 담당자·이메일·전화 매핑
-  const [vendors, setVendors] = useState<Array<{ id: number; company_name: string; contact_name: string | null; phone: string | null; email: string | null }>>([]);
+  // 공급사 마스터 (vendors 테이블) — 담당자·이메일·전화·분류 매핑
+  const [vendors, setVendors] = useState<Array<{ id: number; company_name: string; contact_name: string | null; phone: string | null; email: string | null; category: string | null }>>([]);
   const loadVendors = useCallback(async () => {
     try {
-      const res = await fetch("/api/vendors");
+      const res = await fetch("/api/vendors?withBalances=1");
       if (res.ok) setVendors(await res.json());
     } catch { /* silent */ }
   }, []);
@@ -622,6 +640,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       m.set(v.company_name.trim(), info);
       m.set(v.company_name.replace(/\s+/g, ""), info);
       m.set(v.company_name.trim().toLowerCase(), info);
+    }
+    return m;
+  }, [vendors]);
+  // 공급사명 → 분류(category) 맵 (배지 표시용)
+  const vendorCategoryMap = useMemo(() => {
+    const m: Record<string, string | null> = {};
+    for (const v of vendors) {
+      const name = v.company_name.trim();
+      if (name) m[name] = v.category ?? null;
     }
     return m;
   }, [vendors]);
@@ -1299,10 +1326,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       {/* 2026-07-30 · 사용자 요청 · 공급사 클릭 → 공급사 정보 모달 */}
                       <td className="px-0.5 py-1.5 text-[12px] font-semibold break-words whitespace-normal align-top">
                         {p.supplier ? (
-                          <button type="button"
-                            onClick={(e) => { e.stopPropagation(); openSupplierInfo(p.supplier); }}
-                            className="text-sky-600 hover:text-sky-800 hover:underline cursor-pointer text-left w-full"
-                            title="공급사 정보 조회·수정">{p.supplier}</button>
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <button type="button"
+                              onClick={(e) => { e.stopPropagation(); openSupplierInfo(p.supplier); }}
+                              className="text-sky-600 hover:text-sky-800 hover:underline cursor-pointer text-left"
+                              title="공급사 정보 조회·수정">{p.supplier}</button>
+                            <VendorCategoryBadge category={vendorCategoryMap[String(p.supplier).trim()] ?? null} />
+                          </div>
                         ) : "-"}
                       </td>
                       <td className="px-0.5 py-1.5 text-[12px] text-slate-600 break-words whitespace-normal align-top">
@@ -1645,7 +1675,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                 </div>
                               </td>
                               {/* 공급사 */}
-                              <td className="px-0.5 py-1.5 text-[11px] font-semibold text-sky-600 break-words whitespace-normal align-top bg-sky-50/10">{x.supplier ?? "-"}</td>
+                              <td className="px-0.5 py-1.5 align-top bg-sky-50/10">
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  <span className="text-[11px] font-semibold text-sky-600 break-words whitespace-normal">{x.supplier ?? "-"}</span>
+                                  {x.supplier && <VendorCategoryBadge category={vendorCategoryMap[x.supplier.trim()] ?? null} />}
+                                </div>
+                              </td>
                               {/* 현재고 */}
                               <td className="text-right px-1 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-amber-50/30 align-top">{x.current_stock.toLocaleString()}</td>
                               {/* 매입주기 + (펼침 시) 최근매입일·량 sub */}
@@ -1697,7 +1732,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               <td className="text-center px-1 py-1.5 align-top bg-slate-50/30">
                                 <button
                                   type="button"
-                                  onClick={(e) => { e.stopPropagation(); setReturnRequestItem(x); }}
+                                  onClick={(e) => { e.stopPropagation(); setReturnRequestItem({ ...x, vendorCategory: x.supplier ? (vendorCategoryMap[x.supplier.trim()] ?? null) : null }); }}
                                   className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 transition-colors cursor-pointer active:scale-95"
                                   title="반품요청"
                                 >
@@ -2342,10 +2377,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                             <>
                               {/* 2026-07-30 · 사용자 요청 · 공급사 클릭 → 정보 모달 */}
                               {mainName ? (
-                                <button type="button"
-                                  onClick={(e) => { e.stopPropagation(); openSupplierInfo(mainName); }}
-                                  className="text-[12px] text-sky-600 hover:text-sky-800 hover:underline font-semibold break-words whitespace-normal leading-tight text-left w-full cursor-pointer"
-                                  title="공급사 정보 조회·수정">{mainName}</button>
+                                <div className="flex items-center gap-1 flex-wrap">
+                                  <button type="button"
+                                    onClick={(e) => { e.stopPropagation(); openSupplierInfo(mainName); }}
+                                    className="text-[12px] text-sky-600 hover:text-sky-800 hover:underline font-semibold break-words whitespace-normal leading-tight text-left cursor-pointer"
+                                    title="공급사 정보 조회·수정">{mainName}</button>
+                                  <VendorCategoryBadge category={vendorCategoryMap[mainName] ?? null} />
+                                </div>
                               ) : (
                                 <div className="text-[12px] text-slate-400 font-semibold">-</div>
                               )}
@@ -3043,7 +3081,10 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, onClose }
           {/* 상품 정보 */}
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
             <div className="text-[13px] font-black text-slate-900 break-words">{item.product_name}</div>
-            <div className="text-[11px] text-slate-500 tabular-nums mt-1">#{item.product_code} · {item.supplier ?? "-"}</div>
+            <div className="flex items-center gap-1 flex-wrap mt-1">
+              <span className="text-[11px] text-slate-500 tabular-nums">#{item.product_code} · {item.supplier ?? "-"}</span>
+              {item.supplier && <VendorCategoryBadge category={item.vendorCategory ?? null} />}
+            </div>
           </div>
 
           {/* 수량 입력 · 이유 */}
@@ -3092,9 +3133,10 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, onClose }
           {/* 공급사별 기존 반품요청 리스트 */}
           {item.supplier && (
             <div className="border-t border-slate-200 pt-3">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
                 <Building2 size={13} className="text-slate-500" />
                 <span className="text-[12px] font-black text-slate-700">{item.supplier} · 최근 60일 반품요청</span>
+                <VendorCategoryBadge category={item.vendorCategory ?? null} />
                 <span className="text-[10px] font-semibold text-slate-400 tabular-nums">{supplierList.length}건</span>
               </div>
               {supplierListLoading ? (

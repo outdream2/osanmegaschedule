@@ -80,6 +80,17 @@ ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS store_stock_2 INT;
 
 
 -- ┌───────────────────────────────────────────────────────────────────────┐
+-- │ 1-d. 공급사 분류 (vendors.category)                                    │
+-- │    2026-07-30 · 사용자 요청 "위탁/선결제/회전/기타 분류 · 배지·필터"  │
+-- └───────────────────────────────────────────────────────────────────────┘
+
+-- vendors 테이블 · category 컬럼 추가 · nullable · 4가지 값
+--   위탁 · 선결제 · 회전 · 기타
+ALTER TABLE vendors ADD COLUMN IF NOT EXISTS category TEXT;
+CREATE INDEX IF NOT EXISTS idx_vendors_category ON vendors(category);
+
+
+-- ┌───────────────────────────────────────────────────────────────────────┐
 -- │ 2. 재고관리 상품현황 · 단일 SQL 조인 함수 (get_stock_flow)            │
 -- │    2026-07-29 · Phase 3 (A) 로딩속도 개선 · 60~100 API → 1 RPC       │
 -- │                                                                       │

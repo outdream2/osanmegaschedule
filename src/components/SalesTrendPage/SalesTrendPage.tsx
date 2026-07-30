@@ -3,6 +3,7 @@ import { Search, TrendingUp, Building2, LineChart, Package, X, Info, Eye, EyeOff
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
+import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { useHiddenManager } from "../../hooks/useHiddenManager";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
 import { ProductPurchaseHistoryModal } from "../StockManagePage/StockManagePage";
@@ -1218,7 +1219,9 @@ export const StockFlowPanel: React.FC<{
   defaultDir?: FlowSortDir;
   /** 리스트 라벨 · default "판매리스트" · 재고관리에선 "재고리스트" */
   listLabel?: string;
-}> = ({ onProductClick, selectedCode, months: monthsProp, onMonthsChange, activeTab, onTabChange, onOpenProductInfo, onOpenHiddenManager, defaultSort = "sale", defaultDir = "desc", listLabel = "판매리스트" }) => {
+  /** 공급사명 → 분류 맵 (배지 표시용) · optional */
+  vendorCategoryMap?: Record<string, string | null>;
+}> = ({ onProductClick, selectedCode, months: monthsProp, onMonthsChange, activeTab, onTabChange, onOpenProductInfo, onOpenHiddenManager, defaultSort = "sale", defaultDir = "desc", listLabel = "판매리스트", vendorCategoryMap }) => {
   const [rows, setRows] = useState<StockFlowRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [sort, setSort] = useState<FlowSortKey>(defaultSort);
@@ -1586,7 +1589,12 @@ export const StockFlowPanel: React.FC<{
                           </span>
                         )}
                       </div>
-                      {p.supplier && <div className="text-[11px] text-slate-400 break-words whitespace-normal">{p.supplier}</div>}
+                      {p.supplier && (
+                        <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                          <span className="text-[11px] text-slate-400 break-words whitespace-normal">{p.supplier}</span>
+                          {vendorCategoryMap && <VendorCategoryBadge category={vendorCategoryMap[p.supplier] ?? null} />}
+                        </div>
+                      )}
                     </td>
                     <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-orange-700 text-[12px] bg-orange-50/40 align-top">{fmt(p.sale_qty)}</td>
                     <td
@@ -1696,6 +1704,136 @@ const ZoneCategoryContent: React.FC = () => {
 
   // 선택된 구역 데이터
   const selectedGroup = grouped.find(g => g.zone === selectedZone) ?? null;
+
+  // ── 상비약 / 일반약 그룹 분리 · zone key 첫 숫자 파싱 ──────────────────────
+  type ZoneListSortKey = "amount" | "qty" | "count";
+  const [essentialSort, setEssentialSort] = useState<ZoneListSortKey>("amount");
+  const [generalSort,   setGeneralSort]   = useState<ZoneListSortKey>("amount");
+  // 2026-07-30 · 사용자 요청 · 상비약 / 일반약 탭 전환
+  const [groupTab, setGroupTab] = useState<"essential" | "general">("essential");
+
+  const zoneNum = (zone: string): number => {
+    const m = zone.match(/^(\d+)/);
+    return m ? parseInt(m[1], 10) : 999;
+  };
+  const isEssential = (zone: string) => zoneNum(zone) <= 9 && zoneNum(zone) > 0;
+
+  const sortGroupList = (list: typeof grouped, key: ZoneListSortKey) =>
+    [...list].sort((a, b) =>
+      key === "qty"   ? b.saleQty - a.saleQty :
+      key === "count" ? b.items.length - a.items.length :
+                        b.totalAmount - a.totalAmount
+    );
+
+  const essentialGroups = useMemo(() => sortGroupList(grouped.filter(g => isEssential(g.zone)), essentialSort), [grouped, essentialSort]);
+  const generalGroups   = useMemo(() => sortGroupList(grouped.filter(g => !isEssential(g.zone)), generalSort),   [grouped, generalSort]);
+
+  // 구역 리스트 카드 렌더 헬퍼 (양쪽 그룹 공통)
+  const renderZoneCard = (g: typeof grouped[number], rank: number) => {
+    const pct = total > 0 ? (g.totalAmount / total) * 100 : 0;
+    const isSelected = selectedZone === g.zone;
+    const color = colorForZone(g.zone);
+    const barCls = { sky: "bg-sky-400", emerald: "bg-emerald-400", amber: "bg-amber-400", rose: "bg-rose-400", indigo: "bg-indigo-400", teal: "bg-teal-400", violet: "bg-violet-400", orange: "bg-orange-400" }[color]!;
+    const textCls = { sky: "text-sky-700", emerald: "text-emerald-700", amber: "text-amber-700", rose: "text-rose-700", indigo: "text-indigo-700", teal: "text-teal-700", violet: "text-violet-700", orange: "text-orange-700" }[color]!;
+    const selectedBorder = isSelected ? "border-violet-400 bg-violet-50/60 shadow-sm" : "border-slate-200 hover:bg-slate-50";
+    const rankCls = rank <= 2
+      ? "bg-rose-500 text-white border-rose-600"
+      : rank <= 4
+        ? "bg-sky-500 text-white border-sky-600"
+        : rank <= 6
+          ? "bg-emerald-500 text-white border-emerald-600"
+          : rank <= 8
+            ? "bg-violet-500 text-white border-violet-600"
+            : rank <= 10
+              ? "bg-slate-400 text-white border-slate-500"
+              : "bg-white text-slate-400 border-slate-200";
+    return (
+      <button
+        key={g.zone}
+        type="button"
+        onClick={() => setSelectedZone(prev => prev === g.zone ? null : g.zone)}
+        className={`w-full flex flex-col gap-1.5 p-2.5 rounded-xl border cursor-pointer text-left transition ${selectedBorder}`}
+      >
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className={`inline-flex items-center justify-center w-[20px] h-[20px] text-[12px] font-black rounded-md border tabular-nums shrink-0 ${rankCls}`}
+              title={`그룹 내 순위 ${rank}위`}>
+              {rank}
+            </span>
+            <span className={`text-[13px] font-black ${textCls} tabular-nums shrink-0`}>{g.zone}</span>
+            {zoneCategoryLabel(g.zone) && (
+              <span className={`text-[11px] font-bold ${textCls} break-words whitespace-normal leading-tight`}
+                title={zoneCategoryLabel(g.zone)}>
+                {zoneCategoryLabel(g.zone)}
+              </span>
+            )}
+          </div>
+          <span className={`text-slate-400 text-[10px] transition-transform shrink-0 ${isSelected ? "rotate-90" : ""}`}>▶</span>
+        </div>
+        <div className="flex items-center justify-between gap-2 flex-wrap text-[11px] tabular-nums">
+          <div className="flex items-center gap-1.5 text-slate-500 font-semibold">
+            <span>상품 <span className="font-black text-slate-700">{g.items.length}</span>종</span>
+            <span className="text-slate-300">·</span>
+            <span>판매 <span className="font-black text-orange-700">{fmt(g.saleQty)}</span></span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="font-black text-emerald-700 text-[12px]">{fmtWon(g.totalAmount)}</span>
+            <span className="text-[10px] font-bold text-slate-400">{pct.toFixed(1)}%</span>
+          </div>
+        </div>
+        <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className={`h-full ${barCls} transition-all`} style={{ width: `${pct}%` }} />
+        </div>
+      </button>
+    );
+  };
+
+  // 그룹 섹션 헤더 + 정렬 segment control
+  const renderGroupSection = (
+    label: string,
+    badge: string,
+    badgeCls: string,
+    list: typeof grouped,
+    sortKey: ZoneListSortKey,
+    setSortKey: (k: ZoneListSortKey) => void,
+  ) => {
+    const SORT_OPTIONS: Array<{ key: ZoneListSortKey; label: string }> = [
+      { key: "amount", label: "판매액" },
+      { key: "qty",    label: "판매량" },
+      { key: "count",  label: "상품수" },
+    ];
+    return (
+      <div className="flex flex-col gap-1">
+        {/* 섹션 헤더 */}
+        <div className="flex items-center justify-between gap-2 flex-wrap px-0.5 pt-1">
+          <div className="flex items-center gap-1.5">
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-black border ${badgeCls}`}>{badge}</span>
+            <span className="text-[12px] font-semibold text-slate-700">{label}</span>
+            <span className="text-[11px] text-slate-400 tabular-nums">{list.length}개 구역</span>
+          </div>
+          {/* 정렬 segment control */}
+          <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
+            {SORT_OPTIONS.map(opt => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setSortKey(opt.key)}
+                className={`px-2 py-0.5 text-[11px] font-semibold rounded transition cursor-pointer ${sortKey === opt.key ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        {/* 구역 카드 목록 */}
+        {list.length === 0 ? (
+          <div className="text-[11px] text-slate-300 py-2 text-center">해당 구역 없음</div>
+        ) : (
+          list.map((g, idx) => renderZoneCard(g, idx + 1))
+        )}
+      </div>
+    );
+  };
 
   // 우측 상세 렌더 헬퍼
   const renderDetailPanel = (g: typeof grouped[number]) => {
@@ -1842,68 +1980,36 @@ const ZoneCategoryContent: React.FC = () => {
         ) : !loading && grouped.length === 0 ? (
           <div className="text-center text-[11px] text-slate-300 py-6">데이터 없음</div>
         ) : (
-          <div className={`overflow-y-auto max-h-[65vh] pr-1 flex flex-col gap-1 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-            {grouped.map((g, idx) => {
-              const rank = idx + 1;
-              const pct = total > 0 ? (g.totalAmount / total) * 100 : 0;
-              const isSelected = selectedZone === g.zone;
-              const color = colorForZone(g.zone);
-              const barCls = { sky: "bg-sky-400", emerald: "bg-emerald-400", amber: "bg-amber-400", rose: "bg-rose-400", indigo: "bg-indigo-400", teal: "bg-teal-400", violet: "bg-violet-400", orange: "bg-orange-400" }[color]!;
-              const textCls = { sky: "text-sky-700", emerald: "text-emerald-700", amber: "text-amber-700", rose: "text-rose-700", indigo: "text-indigo-700", teal: "text-teal-700", violet: "text-violet-700", orange: "text-orange-700" }[color]!;
-              const selectedBorder = isSelected ? "border-violet-400 bg-violet-50/60 shadow-sm" : "border-slate-200 hover:bg-slate-50";
-              // 2026-07-29 · 사용자 요청 · 순위별 색상 · 눈에 띄게
-              //   1·2 빨강 · 3·4 파랑 · 5·6 초록 · 7·8 보라 · 9·10 슬레이트
-              const rankCls = rank <= 2
-                ? "bg-rose-500 text-white border-rose-600"
-                : rank <= 4
-                  ? "bg-sky-500 text-white border-sky-600"
-                  : rank <= 6
-                    ? "bg-emerald-500 text-white border-emerald-600"
-                    : rank <= 8
-                      ? "bg-violet-500 text-white border-violet-600"
-                      : rank <= 10
-                        ? "bg-slate-400 text-white border-slate-500"
-                        : "bg-white text-slate-400 border-slate-200";
-              return (
-                <button
-                  key={g.zone}
-                  type="button"
-                  onClick={() => setSelectedZone(prev => prev === g.zone ? null : g.zone)}
-                  className={`w-full flex flex-col gap-1.5 p-2.5 rounded-xl border cursor-pointer text-left transition ${selectedBorder}`}
-                >
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className={`inline-flex items-center justify-center w-[20px] h-[20px] text-[12px] font-black rounded-md border tabular-nums shrink-0 ${rankCls}`}
-                        title={`판매 순위 ${rank}위`}>
-                        {rank}
-                      </span>
-                      <span className={`text-[13px] font-black ${textCls} tabular-nums shrink-0`}>{g.zone}</span>
-                      {zoneCategoryLabel(g.zone) && (
-                        <span className={`text-[11px] font-bold ${textCls} break-words whitespace-normal leading-tight`}
-                          title={zoneCategoryLabel(g.zone)}>
-                          {zoneCategoryLabel(g.zone)}
-                        </span>
-                      )}
-                    </div>
-                    <span className={`text-slate-400 text-[10px] transition-transform shrink-0 ${isSelected ? "rotate-90" : ""}`}>▶</span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2 flex-wrap text-[11px] tabular-nums">
-                    <div className="flex items-center gap-1.5 text-slate-500 font-semibold">
-                      <span>상품 <span className="font-black text-slate-700">{g.items.length}</span>종</span>
-                      <span className="text-slate-300">·</span>
-                      <span>판매 <span className="font-black text-orange-700">{fmt(g.saleQty)}</span></span>
-                    </div>
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-black text-emerald-700 text-[12px]">{fmtWon(g.totalAmount)}</span>
-                      <span className="text-[10px] font-bold text-slate-400">{pct.toFixed(1)}%</span>
-                    </div>
-                  </div>
-                  <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                    <div className={`h-full ${barCls} transition-all`} style={{ width: `${pct}%` }} />
-                  </div>
-                </button>
-              );
-            })}
+          <div className={`overflow-y-auto max-h-[65vh] pr-1 flex flex-col gap-2 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+            {/* 2026-07-30 · 사용자 요청 · 탭 전환 (상비약 / 일반약) */}
+            <div className="flex items-center gap-1 border-b-2 border-slate-200 sticky top-0 bg-white z-10 -mx-1 px-1 pt-1">
+              <button type="button" onClick={() => setGroupTab("essential")}
+                className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${
+                  groupTab === "essential" ? "text-rose-700" : "text-slate-400 hover:text-slate-600"
+                }`}>
+                상비약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({essentialGroups.length})</span>
+                {groupTab === "essential" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-rose-500" />}
+              </button>
+              <button type="button" onClick={() => setGroupTab("general")}
+                className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${
+                  groupTab === "general" ? "text-sky-700" : "text-slate-400 hover:text-slate-600"
+                }`}>
+                일반약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({generalGroups.length})</span>
+                {groupTab === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
+              </button>
+            </div>
+            {groupTab === "essential"
+              ? renderGroupSection(
+                  "상비약 (1~9구역)", "상비약",
+                  "bg-rose-50 text-rose-700 border-rose-300",
+                  essentialGroups, essentialSort, setEssentialSort,
+                )
+              : renderGroupSection(
+                  "일반약 (10구역 이후)", "일반약",
+                  "bg-sky-50 text-sky-700 border-sky-300",
+                  generalGroups, generalSort, setGeneralSort,
+                )
+            }
           </div>
         )}
       </div>
