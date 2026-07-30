@@ -95,7 +95,11 @@ CREATE INDEX IF NOT EXISTS idx_vendors_category ON vendors(category);
 -- │    2026-07-30 · 반품필요 리스트 로딩 속도 개선                        │
 -- │    기존 · 서버에서 batch fetch (수십 라운드) · 5000상품 시 수초 소요  │
 -- │    개선 · RPC 단일 쿼리로 처리 · <500ms                               │
+-- │                                                                       │
+-- │    ⚠ return type 변경이므로 · DROP FUNCTION 먼저 필요                 │
 -- └───────────────────────────────────────────────────────────────────────┘
+
+DROP FUNCTION IF EXISTS get_stock_flow(date, date);
 
 CREATE OR REPLACE FUNCTION get_stock_flow(p_from date, p_to date)
 RETURNS TABLE (
