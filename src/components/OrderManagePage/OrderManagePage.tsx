@@ -408,12 +408,36 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [vendorReloadKey, setVendorReloadKey] = useState(0);
   // 2026-07-30 · 사용자 요청 · 발주요청/발주필요 리스트에서 공급사 클릭 시 모달로 공급사 정보 조회/수정
   const [supplierInfoModal, setSupplierInfoModal] = useState<Vendor | null>(null);
+  // 2026-07-30 · 사용자 요청 · 공급사 관리 페이지와 동일 방식으로 공급사 정보 조회
+  //   findVendor (로컬 캐시) 우선 · 실패 시 API 재조회 (이름 부분 매칭 fallback)
   // findVendor 는 아래에서 정의 (line 481) · closure 캡처 OK
-  const openSupplierInfo = (supplierName: string | null | undefined) => {
+  const openSupplierInfo = async (supplierName: string | null | undefined) => {
     if (!supplierName) return;
-    const found = findVendor(supplierName);
-    if (found) setSupplierInfoModal(found);
-    else alert(`공급사 정보 없음: ${supplierName}`);
+    const name = String(supplierName).trim();
+    if (!name) return;
+    // 1차 · 로컬 findVendor
+    const cached = findVendor(name);
+    if (cached) { setSupplierInfoModal(cached); return; }
+    // 2차 · API 조회 · 정확 매칭 후 부분 매칭 fallback
+    try {
+      const res = await fetch("/api/vendors?withBalances=1");
+      if (res.ok) {
+        const list: Vendor[] = await res.json();
+        const exact = list.find(v => v.company_name?.trim() === name);
+        if (exact) { setSupplierInfoModal(exact); return; }
+        // 괄호 안 부가정보 벗기고 재시도 (예: "(주)대웅제약 (vat미포함)")
+        const stripped = name.replace(/\s*\(.*?\)\s*/g, "").trim();
+        const strippedMatch = stripped ? list.find(v => v.company_name?.trim() === stripped || v.company_name?.trim().includes(stripped)) : undefined;
+        if (strippedMatch) { setSupplierInfoModal(strippedMatch); return; }
+        // 부분 매칭 (양방향 includes)
+        const partial = list.find(v => {
+          const vn = v.company_name?.trim() ?? "";
+          return vn && (vn.includes(name) || name.includes(vn));
+        });
+        if (partial) { setSupplierInfoModal(partial); return; }
+      }
+    } catch { /* silent */ }
+    alert(`공급사 정보 없음: ${supplierName}`);
   };
   // 공급사 클릭 → API 로 전체 목록 fetch 후 해당 id 의 vendor 우측 패널 표시
   const handleVendorEditRequest = useCallback(async (vendorId: number) => {
