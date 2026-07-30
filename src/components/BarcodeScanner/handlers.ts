@@ -54,39 +54,37 @@ export function useBarcodeScannerHandlers({
     scannedRef.current = true;
 
     // 2026-07-30 (2nd) · 사용자 재요청 · 확실하게 · 인식 시 삑 (POS 스캐너 톤)
-    //   1) HTMLAudioElement + 실제 WAV 파일 (public/beep.wav · 1.2kHz · 150ms)
-    //   2) Web Audio 백업 (WAV 재생 실패 시)
+    // 2026-07-30 (bug-hunter fix) · play() Promise 비동기 · 이중 재생 방지
+    //   1) HTMLAudioElement + WAV (public/beep.wav · 3.2kHz square · 100ms · POS 표준)
+    //   2) 재생 실패 시에만 Web Audio 백업 (Promise catch 안에서만 실행)
     //   3) Vibration API (silent 모드 대비)
-    let played = false;
+    const playWebAudioBackup = () => {
+      try {
+        const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (!AC) return;
+        const ctx = new AC();
+        if (ctx.state === "suspended") { try { ctx.resume(); } catch {} }
+        const osc = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+        osc.connect(gainNode); gainNode.connect(ctx.destination);
+        osc.type = "square";
+        osc.frequency.value = 3200;
+        gainNode.gain.setValueAtTime(1.0, ctx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.1);
+        setTimeout(() => { try { ctx.close(); } catch {} }, 200);
+      } catch { /* silent */ }
+    };
     try {
       const audio = new Audio("/beep.wav");
       audio.volume = 1.0;
       const p = audio.play();
       if (p && typeof p.then === "function") {
-        p.then(() => { played = true; }).catch(() => { /* fallback below */ });
-      } else {
-        played = true;
+        p.catch(() => playWebAudioBackup());
       }
-    } catch { /* fallback below */ }
-    // Web Audio 백업 · WAV 재생 실패 시 즉시 삑
-    if (!played) {
-      try {
-        const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
-        if (AC) {
-          const ctx = new AC();
-          if (ctx.state === "suspended") { try { ctx.resume(); } catch {} }
-          const osc = ctx.createOscillator();
-          const gainNode = ctx.createGain();
-          osc.connect(gainNode); gainNode.connect(ctx.destination);
-          osc.type = "square";
-          osc.frequency.value = 1200;
-          gainNode.gain.setValueAtTime(1.0, ctx.currentTime);
-          gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
-          osc.start(ctx.currentTime);
-          osc.stop(ctx.currentTime + 0.15);
-          setTimeout(() => { try { ctx.close(); } catch {} }, 300);
-        }
-      } catch { /* silent */ }
+    } catch {
+      playWebAudioBackup();
     }
     // 진동 fallback · 무음 모드 대비
     try { (navigator as any).vibrate?.(60); } catch { /* silent */ }

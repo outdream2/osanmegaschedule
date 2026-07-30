@@ -518,9 +518,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     if (!supplierName) return;
     const name = String(supplierName).trim();
     if (!name) return;
-    // 1차 · 로컬 findVendor
-    const cached = findVendor(name);
-    if (cached) { setSupplierInfoModal(cached); return; }
+    // 1차 · 로컬 vendors 배열에서 전체 Vendor 객체 탐색 (findVendor 는 contact 전용 partial 반환 · 사용 불가)
+    const cachedVendor = vendors.find(v =>
+      v.company_name.trim() === name ||
+      v.company_name.replace(/\s+/g, "") === name.replace(/\s+/g, "") ||
+      v.company_name.trim().toLowerCase() === name.toLowerCase()
+    );
+    if (cachedVendor) {
+      // vendors 배열 타입이 Vendor 부분집합 · Vendor 전체 필드가 있는 객체로 캐스팅
+      setSupplierInfoModal(cachedVendor as Vendor);
+      return;
+    }
     // 2차 · API 조회 · 정확 매칭 후 부분 매칭 fallback
     try {
       const res = await fetch("/api/vendors?withBalances=1");
