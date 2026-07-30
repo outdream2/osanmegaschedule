@@ -1621,6 +1621,8 @@ const ZoneCategoryContent: React.FC = () => {
   const [selectedZone, setSelectedZone] = useState<string | null>(null);
   // 계절 필터 · 지정 시 년도 무관 · 해당 월들의 전 데이터로 재집계
   const [season, setSeason] = useState<SeasonKey | null>(null);
+  // 2026-07-30 · 사용자 요청 · 조회기간 프리셋 (10일 · 1~6개월) · season 지정 시 무시
+  const [months, setMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
   // 우측 상세 테이블 정렬 · 2026-07-29 사용자 요청 · 판매순위 desc 기본
   const [itemSort, setItemSort] = useState<{ key: ZoneItemSortKey; dir: "asc" | "desc" }>({ key: "sale", dir: "desc" });
   const toggleItemSort = (k: ZoneItemSortKey) => {
@@ -1646,6 +1648,7 @@ const ZoneCategoryContent: React.FC = () => {
     setLoading(true);
     const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: "50000" });
     if (season) params.set("season", season);
+    else if (months > 0) params.set("months", String(months));
     Promise.all([
       fetch(`/api/stock-manage/top-sales?${params}`).then(r => r.ok ? r.json() : { rows: [] }),
       getProductsMap(),
@@ -1653,7 +1656,7 @@ const ZoneCategoryContent: React.FC = () => {
       .then(([s, p]) => { setSales(Array.isArray(s.rows) ? s.rows : []); setProducts(p ?? {}); })
       .catch(() => { setSales([]); setProducts({}); })
       .finally(() => setLoading(false));
-  }, [season]);
+  }, [season, months]);
   const grouped = useMemo(() => {
     // real_map 앞부분 (예: "1A", "2B", "9B") 로 그룹핑
     const map = new Map<string, { zone: string; saleQty: number; totalAmount: number; items: Array<{ code: string; name: string; saleQty: number; amount: number; currentStock: number }> }>();
@@ -1801,9 +1804,22 @@ const ZoneCategoryContent: React.FC = () => {
         className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-2"
         style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? categoryPanelWidth : undefined }}
       >
-        {/* 계절 조회 필터 */}
-        <div className="flex items-center gap-1.5">
-          <SeasonButtons value={season} onChange={setSeason} size="sm" />
+        {/* 2026-07-30 · 사용자 요청 · 조회기간 프리셋 (10일·1~6개월) + 계절 필터 */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="text-[12px] font-semibold text-slate-600">조회기간</span>
+          <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
+            <button type="button" onClick={() => { setSeason(null); setMonths(0); }}
+              className={`px-2.5 py-1 text-[12px] font-semibold rounded transition cursor-pointer ${!season && months === 0 ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+              10일
+            </button>
+            {[1, 2, 3, 4, 5, 6].map(m => (
+              <button key={m} type="button" onClick={() => { setSeason(null); setMonths(m as any); }}
+                className={`px-2.5 py-1 text-[12px] font-semibold rounded transition cursor-pointer ${!season && months === m ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                {m}개월
+              </button>
+            ))}
+          </div>
+          <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setMonths(0); }} size="sm" hideLabel />
         </div>
         {loading && grouped.length > 0 && (
           <div className="flex items-center justify-center gap-1.5 text-[10px] text-violet-600 font-bold py-1.5 mb-1 bg-violet-50 border border-violet-200 rounded-md sticky top-0 z-10">
