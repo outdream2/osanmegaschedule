@@ -1,10 +1,13 @@
 // src/components/LandingPage/VendorListEditor.tsx
-// 공급사관리 · 한 줄 테이블 리스트 + 상세 모달 (2026-07-16 재편)
-//   리스트: 한 줄 · 반응형 (모바일 카드 · 태블릿·데스크탑 테이블)
-//   모달:   기본 정보 편집 + 잔고 · 매입 통계 · 최근 매입 이력
+// 공급사관리 · 한 줄 테이블 리스트 + 상세 모달 (2026-07-30 UI 리디자인)
+//   리스트: shadcn data-table 스타일 · 그룹 컬러 헤더 · h-8 툴바
+//   모달:   헤더 gradient · 폼 h-9 · 매입이력 shadcn 스타일 · 하단 저장/닫기 통일
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
-import { Search, Check, X, Loader2, Building2, Package, Calendar, DollarSign, TrendingUp } from "lucide-react";
+import {
+  Search, Check, X, Loader2, Building2, Package, Calendar,
+  DollarSign, TrendingUp, RefreshCw,
+} from "lucide-react";
 
 interface VendorListEditorProps {
   // 기존 API 호환용 · 무시됨 (모달 방식으로 통일)
@@ -56,16 +59,25 @@ const formatBizNum = (s: string | null): string => {
   if (d.length !== 10) return d;
   return `${d.slice(0, 3)}-${d.slice(3, 5)}-${d.slice(5)}`;
 };
-const fmtWon = (n: number): string => n >= 1_0000_0000 ? `${(n/1_0000_0000).toFixed(1)}억` : n >= 10000 ? `${(n/10000).toFixed(1)}만` : `${n.toLocaleString()}원`;
+const fmtWon = (n: number): string =>
+  n >= 1_0000_0000 ? `${(n / 1_0000_0000).toFixed(1)}억` :
+  n >= 10000 ? `${(n / 10000).toFixed(1)}만` :
+  `${n.toLocaleString()}원`;
 
-export const VendorListEditor: React.FC<VendorListEditorProps> = ({ initialSelectedId, onEditRequest, compact = false }) => {
+export const VendorListEditor: React.FC<VendorListEditorProps> = ({
+  initialSelectedId,
+  onEditRequest,
+  compact = false,
+}) => {
   const [vendors, setVendors] = useState<Vendor[]>([]);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [filterMissingBiz, setFilterMissingBiz] = useState(false);
   const [modalVendorId, setModalVendorId] = useState<number | null>(null);
-  // onEditRequest 제공 시 내부 모달 스킵 · 외부 split 패널로 위임
-  const handleVendorClick = (id: number) => { if (onEditRequest) { onEditRequest(id); } else { setModalVendorId(id); } };
+
+  const handleVendorClick = (id: number) => {
+    if (onEditRequest) { onEditRequest(id); } else { setModalVendorId(id); }
+  };
 
   const loadVendors = useCallback(async () => {
     setLoading(true);
@@ -79,9 +91,9 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ initialSelec
       setLoading(false);
     }
   }, []);
+
   useEffect(() => { loadVendors(); }, [loadVendors]);
 
-  // 부모가 initialSelectedId 로 특정 공급사 열기 요청한 경우 자동 모달 오픈
   useEffect(() => {
     if (initialSelectedId != null && vendors.find(v => v.id === initialSelectedId)) {
       setModalVendorId(initialSelectedId);
@@ -94,11 +106,11 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ initialSelec
     const q = search.trim().toLowerCase().replace(/[^0-9가-힣a-z]/g, "");
     if (q) {
       list = list.filter(v => {
-        const name = (v.company_name ?? "").toLowerCase().replace(/[^0-9가-힣a-z]/g, "");
-        const bn = (v.business_number ?? "").replace(/[^0-9]/g, "");
+        const name    = (v.company_name ?? "").toLowerCase().replace(/[^0-9가-힣a-z]/g, "");
+        const bn      = (v.business_number ?? "").replace(/[^0-9]/g, "");
         const contact = (v.contact_name ?? "").toLowerCase().replace(/[^0-9가-힣a-z]/g, "");
-        const phone = (v.phone ?? "").replace(/[^0-9]/g, "");
-        const email = (v.email ?? "").toLowerCase();
+        const phone   = (v.phone ?? "").replace(/[^0-9]/g, "");
+        const email   = (v.email ?? "").toLowerCase();
         return name.includes(q) || bn.includes(q) || contact.includes(q) || phone.includes(q) || email.includes(q);
       });
     }
@@ -110,33 +122,60 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ initialSelec
 
   return (
     <div className="flex flex-col gap-3 min-h-0 flex-1">
-      {/* 상단 필터 바 */}
-      <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl border border-slate-200 shadow-sm p-3">
-        <div className="relative flex-1 min-w-[200px] sm:min-w-[240px] sm:flex-none">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
+
+      {/* ── 툴바 ── */}
+      <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2">
+        {/* 검색 */}
+        <div className="relative flex-1 min-w-[200px] sm:min-w-[260px] sm:flex-none">
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value)}
             placeholder="회사명 · 사업자번호 · 담당자 · 전화 · 이메일"
-            className="pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 w-full sm:w-80"
+            className="h-8 pl-8 pr-3 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-400 focus:border-teal-400 w-full sm:w-80 transition"
           />
         </div>
-        <label className="flex items-center gap-1.5 text-[12px] text-slate-600 cursor-pointer">
-          <input type="checkbox" checked={filterMissingBiz} onChange={e => setFilterMissingBiz(e.target.checked)} className="w-3.5 h-3.5 accent-teal-500" />
-          사업자번호 미등록만 <span className="text-rose-500 font-bold">({missingCount})</span>
-        </label>
-        <span className="text-[12px] font-mono text-slate-500">
-          {loading ? <><Loader2 size={11} className="inline animate-spin mr-1" />로딩...</> : `${filtered.length} / ${vendors.length}건`}
+
+        {/* 필터 chip */}
+        <button
+          onClick={() => setFilterMissingBiz(v => !v)}
+          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-[12px] font-semibold transition cursor-pointer ${
+            filterMissingBiz
+              ? "bg-rose-50 border-rose-300 text-rose-700"
+              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+          }`}
+        >
+          <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${filterMissingBiz ? "bg-rose-500 border-rose-500" : "border-slate-300"}`}>
+            {filterMissingBiz && <Check size={9} className="text-white" strokeWidth={3} />}
+          </span>
+          사업자번호 미등록
+          <span className={`text-[11px] font-black ${filterMissingBiz ? "text-rose-600" : "text-slate-400"}`}>
+            {missingCount}
+          </span>
+        </button>
+
+        {/* 건수 */}
+        <span className="text-[12px] font-mono text-slate-400 tabular-nums">
+          {loading
+            ? <span className="inline-flex items-center gap-1"><Loader2 size={11} className="animate-spin" />로딩...</span>
+            : `${filtered.length} / ${vendors.length}건`}
         </span>
-        <button onClick={loadVendors} disabled={loading}
-          className="ml-auto inline-flex items-center gap-1 text-[12px] px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 disabled:opacity-40 rounded-lg font-bold text-slate-600 cursor-pointer transition">
-          새로고침
+
+        {/* icon-only 새로고침 */}
+        <button
+          onClick={loadVendors}
+          disabled={loading}
+          className="ml-auto inline-flex items-center justify-center h-8 w-8 border border-slate-200 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors cursor-pointer"
+          title="새로고침"
+        >
+          <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
 
-      {/* 반응형 리스트 · 모바일(< md): 카드 · 태블릿·데스크탑(md+): 한 줄 테이블 */}
+      {/* ── 반응형 리스트 ── */}
       <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
-        {/* 모바일: 카드 리스트 */}
+
+        {/* 모바일(< md): 카드 */}
         <div className="md:hidden divide-y divide-slate-100">
           {filtered.length === 0 ? (
             <div className="text-center py-10 text-slate-400 text-sm font-semibold">
@@ -146,14 +185,14 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ initialSelec
             <button
               key={v.id}
               onClick={() => handleVendorClick(v.id)}
-              className="w-full text-left px-3 py-2 hover:bg-teal-50 active:bg-teal-100 transition"
+              className="w-full text-left px-3 py-2.5 hover:bg-teal-50/60 active:bg-teal-100 transition"
             >
               <div className="flex items-start gap-2">
                 <span className="text-[11px] text-slate-400 font-mono mt-0.5 w-6 shrink-0">{i + 1}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1 mb-0.5">
                     <Building2 size={11} className="text-teal-500 shrink-0" />
-                    <span className="text-[14px] font-bold text-slate-800 break-words">{v.company_name}</span>
+                    <span className="text-[13px] font-bold text-slate-800 break-words">{v.company_name}</span>
                   </div>
                   <div className="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap">
                     {v.business_number
@@ -171,45 +210,86 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({ initialSelec
             </button>
           ))}
         </div>
-        {/* 태블릿·데스크탑: 한 줄 테이블 · 2026-07-16 · compact 모드 지원 (공급사명+사업자번호+담당자만) */}
+
+        {/* 태블릿·데스크탑(md+): shadcn data-table 스타일 */}
         <table className="hidden md:table w-full text-xs">
-          <thead className="sticky top-0 bg-white z-10 border-b border-slate-200 shadow-sm">
-            <tr className="text-slate-500 uppercase text-[11px]">
-              <th className="text-left px-3 py-2 w-10">#</th>
-              <th className="text-left px-3 py-2 min-w-[160px]">회사명</th>
-              <th className="text-left px-3 py-2 w-28">사업자번호</th>
-              <th className="text-left px-3 py-2 w-20">담당자</th>
-              {!compact && <th className="text-left px-3 py-2 w-24">전화</th>}
-              {!compact && <th className="text-left px-3 py-2 w-40 hidden lg:table-cell">이메일</th>}
-              {!compact && <th className="text-left px-3 py-2 w-20 hidden xl:table-cell">분류</th>}
-              {!compact && <th className="text-right px-3 py-2 w-24">잔고</th>}
-              {!compact && <th className="text-left px-3 py-2 w-24 hidden lg:table-cell">등록일</th>}
+          <thead className="sticky top-0 bg-white z-10 border-b border-slate-200">
+            {/* 그룹 컬러 헤더 */}
+            <tr className="text-[10px] font-black uppercase tracking-wider border-b border-slate-100">
+              <th colSpan={compact ? 3 : 4} className="text-center py-1.5 bg-sky-50 text-sky-700 border-r border-slate-100">
+                기본 정보
+              </th>
+              {!compact && (
+                <>
+                  <th colSpan={2} className="text-center py-1.5 bg-amber-50 text-amber-700 border-r border-slate-100">
+                    연락처
+                  </th>
+                  <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-r border-slate-100">
+                    잔고
+                  </th>
+                  <th className="text-center py-1.5 bg-slate-50 text-slate-500">
+                    기타
+                  </th>
+                </>
+              )}
+            </tr>
+            {/* 서브 헤더 */}
+            <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
+              <th className="text-left px-2 py-1.5 w-8 bg-sky-50/30">#</th>
+              <th className="text-left px-3 py-1.5 min-w-[160px] bg-sky-50/30">회사명</th>
+              <th className="text-left px-3 py-1.5 w-28 bg-sky-50/30">사업자번호</th>
+              <th className="text-left px-3 py-1.5 w-20 bg-sky-50/30">담당자</th>
+              {!compact && (
+                <>
+                  <th className="text-left px-3 py-1.5 w-28 bg-amber-50/30">전화</th>
+                  <th className="text-left px-3 py-1.5 w-36 hidden lg:table-cell bg-amber-50/30">이메일</th>
+                  <th className="text-right px-3 py-1.5 w-24 bg-emerald-50/30">잔고</th>
+                  <th className="text-left px-3 py-1.5 w-20 hidden xl:table-cell bg-slate-50/40">분류</th>
+                  <th className="text-left px-3 py-1.5 w-24 hidden lg:table-cell bg-slate-50/40">등록일</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-50">
             {filtered.length === 0 ? (
-              <tr><td colSpan={compact ? 4 : 9} className="text-center py-10 text-slate-400 font-semibold">
-                {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 데이터 없음"}
-              </td></tr>
+              <tr>
+                <td colSpan={compact ? 4 : 9} className="text-center py-12 text-slate-400 font-semibold">
+                  {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 데이터 없음"}
+                </td>
+              </tr>
             ) : filtered.map((v, i) => (
-              <tr key={v.id}
+              <tr
+                key={v.id}
                 onClick={() => handleVendorClick(v.id)}
-                className="hover:bg-teal-50 cursor-pointer transition"
-                title="클릭하여 상세 · 편집">
-                <td className="px-3 py-1.5 text-orange-600 font-black text-[11px]">{i + 1}</td>
-                <td className="px-3 py-1.5 font-bold text-slate-800">
-                  <span className="inline-flex items-center gap-1">
+                className="hover:bg-slate-50/60 cursor-pointer transition"
+                title="클릭하여 상세 · 편집"
+              >
+                <td className="px-2 py-1.5 text-[11px] text-slate-400 font-mono tabular-nums">{i + 1}</td>
+                <td className="px-3 py-1.5 font-semibold text-slate-800">
+                  <span className="inline-flex items-center gap-1.5">
                     <Building2 size={11} className="text-teal-500 shrink-0" />
-                    <span className="underline decoration-dotted decoration-teal-400 underline-offset-2 break-words">{v.company_name}</span>
+                    <span className="underline decoration-dotted decoration-teal-300 underline-offset-2 break-words">{v.company_name}</span>
                   </span>
                 </td>
-                <td className="px-3 py-1.5 font-mono text-slate-600 whitespace-nowrap">{v.business_number ? formatBizNum(v.business_number) : <span className="text-rose-400 italic">없음</span>}</td>
+                <td className="px-3 py-1.5 font-mono text-slate-600 whitespace-nowrap">
+                  {v.business_number
+                    ? formatBizNum(v.business_number)
+                    : <span className="text-rose-400 italic text-[11px]">없음</span>}
+                </td>
                 <td className="px-3 py-1.5 text-slate-700 truncate">{v.contact_name ?? "-"}</td>
-                {!compact && <td className="px-3 py-1.5 font-mono text-slate-600 whitespace-nowrap">{v.phone ?? "-"}</td>}
-                {!compact && <td className="px-3 py-1.5 text-slate-600 truncate hidden lg:table-cell" title={v.email ?? undefined}>{v.email ?? "-"}</td>}
-                {!compact && <td className="px-3 py-1.5 text-slate-500 truncate hidden xl:table-cell">{v.category ?? "-"}</td>}
-                {!compact && <td className="px-3 py-1.5 text-right font-mono font-black text-emerald-700 whitespace-nowrap">{v.latestBalance?.balance != null ? fmtWon(v.latestBalance.balance) : "-"}</td>}
-                {!compact && <td className="px-3 py-1.5 font-mono text-[11px] text-slate-400 hidden lg:table-cell">{v.created_at ? String(v.created_at).slice(0, 10) : "-"}</td>}
+                {!compact && (
+                  <>
+                    <td className="px-3 py-1.5 font-mono text-slate-600 whitespace-nowrap">{v.phone ?? "-"}</td>
+                    <td className="px-3 py-1.5 text-slate-600 truncate hidden lg:table-cell" title={v.email ?? undefined}>{v.email ?? "-"}</td>
+                    <td className="px-3 py-1.5 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
+                      {v.latestBalance?.balance != null ? fmtWon(v.latestBalance.balance) : <span className="text-slate-300">-</span>}
+                    </td>
+                    <td className="px-3 py-1.5 text-slate-500 truncate hidden xl:table-cell">{v.category ?? "-"}</td>
+                    <td className="px-3 py-1.5 font-mono text-[11px] text-slate-400 hidden lg:table-cell">
+                      {v.created_at ? String(v.created_at).slice(0, 10) : "-"}
+                    </td>
+                  </>
+                )}
               </tr>
             ))}
           </tbody>
@@ -250,7 +330,12 @@ interface VendorSummary {
   count: number;
 }
 
-export const VendorDetailModal: React.FC<{ vendor: Vendor; onClose: () => void; onSaved: () => void; panel?: boolean }> = ({ vendor, onClose, onSaved, panel }) => {
+export const VendorDetailModal: React.FC<{
+  vendor: Vendor;
+  onClose: () => void;
+  onSaved: () => void;
+  panel?: boolean;
+}> = ({ vendor, onClose, onSaved, panel }) => {
   const [draft, setDraft] = useState<EditDraft>(emptyDraft(vendor));
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
@@ -265,23 +350,22 @@ export const VendorDetailModal: React.FC<{ vendor: Vendor; onClose: () => void; 
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  // 매입 이력 · 통계 로드 (supplier 필터로 GET /api/purchase-details)
+  // 매입 이력 · 통계 로드
   useEffect(() => {
     setPurchLoading(true);
     fetch(`/api/purchase-details?supplier=${encodeURIComponent(vendor.company_name)}&limit=1000`)
       .then(r => r.ok ? r.json() : { rows: [] })
       .then(j => {
         const rows: PurchaseRow[] = Array.isArray(j.rows) ? j.rows : [];
-        setPurchases(rows.slice(0, 30)); // 최근 30건만 표시
-        // 통계 · 전체 rows 기반
+        setPurchases(rows.slice(0, 30));
         const totalAmount = rows.reduce((s, r) => s + (Number(r.total ?? r.amount) || 0), 0);
-        const totalQty = rows.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
+        const totalQty    = rows.reduce((s, r) => s + (Number(r.quantity) || 0), 0);
         const uniqueCodes = new Set(rows.map(r => String(r.product_code)));
-        const dates = rows.map(r => String(r.purchase_date)).filter(Boolean).sort();
+        const dates       = rows.map(r => String(r.purchase_date)).filter(Boolean).sort();
         setSummary({
           totalAmount, totalQty,
           uniqueProducts: uniqueCodes.size,
-          latestDate: dates[dates.length - 1] ?? null,
+          latestDate:   dates[dates.length - 1] ?? null,
           earliestDate: dates[0] ?? null,
           count: rows.length,
         });
@@ -291,19 +375,25 @@ export const VendorDetailModal: React.FC<{ vendor: Vendor; onClose: () => void; 
   }, [vendor.id, vendor.company_name]);
 
   const isDirty = useMemo(() => (
-    draft.company_name !== (vendor.company_name ?? "") ||
+    draft.company_name    !== (vendor.company_name    ?? "") ||
     draft.business_number !== (vendor.business_number ?? "") ||
-    draft.contact_name !== (vendor.contact_name ?? "") ||
-    draft.phone !== (vendor.phone ?? "") ||
-    draft.email !== (vendor.email ?? "") ||
-    draft.category !== (vendor.category ?? "") ||
-    draft.note !== (vendor.note ?? "")
+    draft.contact_name    !== (vendor.contact_name    ?? "") ||
+    draft.phone           !== (vendor.phone           ?? "") ||
+    draft.email           !== (vendor.email           ?? "") ||
+    draft.category        !== (vendor.category        ?? "") ||
+    draft.note            !== (vendor.note            ?? "")
   ), [vendor, draft]);
 
   const handleSave = async () => {
     const bnDigits = normalizeBizNum(draft.business_number);
-    if (bnDigits && bnDigits.length !== 10) { setSaveMsg({ type: "err", text: "사업자번호는 10자리 숫자여야 합니다" }); return; }
-    if (!draft.company_name.trim()) { setSaveMsg({ type: "err", text: "회사명은 필수입니다" }); return; }
+    if (bnDigits && bnDigits.length !== 10) {
+      setSaveMsg({ type: "err", text: "사업자번호는 10자리 숫자여야 합니다" });
+      return;
+    }
+    if (!draft.company_name.trim()) {
+      setSaveMsg({ type: "err", text: "회사명은 필수입니다" });
+      return;
+    }
     setSaving(true); setSaveMsg(null);
     try {
       const res = await fetch(`/api/vendors/${vendor.id}`, {
@@ -312,12 +402,12 @@ export const VendorDetailModal: React.FC<{ vendor: Vendor; onClose: () => void; 
         // 2026-07-22: 'email' 컬럼이 Supabase vendors 스키마에 없어 저장 실패 · 페이로드에서 제외
         //   (UI 는 유지 · 나중에 DB 마이그레이션 시 다시 활성)
         body: JSON.stringify({
-          company_name: draft.company_name.trim(),
+          company_name:    draft.company_name.trim(),
           business_number: bnDigits || null,
-          contact_name: draft.contact_name.trim() || null,
-          phone: draft.phone.trim() || null,
-          category: draft.category.trim() || null,
-          note: draft.note.trim() || null,
+          contact_name:    draft.contact_name.trim() || null,
+          phone:           draft.phone.trim() || null,
+          category:        draft.category.trim() || null,
+          note:            draft.note.trim() || null,
         }),
       });
       if (!res.ok) {
@@ -333,85 +423,187 @@ export const VendorDetailModal: React.FC<{ vendor: Vendor; onClose: () => void; 
     }
   };
 
+  // ── 래퍼: panel 모드는 인라인 · 기본은 backdrop 모달 ──
+  const backdropCls = panel
+    ? "relative bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden min-h-0 flex-1"
+    : "fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4";
+
+  const innerCls = panel
+    ? "relative flex flex-col flex-1 min-h-0 overflow-hidden"
+    : "relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[95vh] md:h-auto md:min-h-[85vh] md:max-h-[92vh] flex flex-col overflow-hidden";
+
   return (
-    <div className={panel ? "relative bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden min-h-0 flex-1" : "fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"} onClick={panel ? undefined : onClose}>
+    <div className={backdropCls} onClick={panel ? undefined : onClose}>
       <div
-        className={panel ? "relative flex flex-col flex-1 min-h-0 overflow-hidden" : "relative bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[95vh] md:h-auto md:min-h-[85vh] md:max-h-[92vh] flex flex-col overflow-hidden"}
+        className={innerCls}
         onClick={panel ? undefined : (e => e.stopPropagation())}
       >
-        {/* 헤더 */}
-        <div className="flex items-start justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-gradient-to-r from-teal-50 to-emerald-50">
-          <div className="flex items-center gap-2 min-w-0">
-            <Building2 size={22} className="text-teal-600 shrink-0" />
+        {/* ── 헤더 ── */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-gradient-to-r from-teal-50 via-emerald-50 to-white shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-lg bg-teal-100 flex items-center justify-center shrink-0">
+              <Building2 size={18} className="text-teal-700" />
+            </div>
             <div className="min-w-0">
-              <div className="text-base sm:text-lg font-black text-slate-800 truncate">{vendor.company_name}</div>
-              <div className="text-[12px] text-slate-500 font-mono">
-                {vendor.business_number ? formatBizNum(vendor.business_number) : <span className="text-rose-500 italic">사업자번호 없음</span>}
-                {vendor.created_at && <span className="ml-2 text-slate-400">· 등록 {String(vendor.created_at).slice(0, 10)}</span>}
+              <div className="text-[15px] font-black text-slate-800 truncate leading-tight">{vendor.company_name}</div>
+              <div className="text-[11px] text-slate-500 font-mono mt-0.5 flex items-center gap-2 flex-wrap">
+                {vendor.business_number
+                  ? <span className="tabular-nums">{formatBizNum(vendor.business_number)}</span>
+                  : <span className="text-rose-500 italic">사업자번호 없음</span>}
+                {vendor.created_at && (
+                  <span className="text-slate-400">· 등록 {String(vendor.created_at).slice(0, 10)}</span>
+                )}
               </div>
             </div>
           </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0 ml-2 transition">
-            <X size={16} />
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0 ml-3 transition"
+            title="닫기 (ESC)"
+          >
+            <X size={15} />
           </button>
         </div>
 
-        {/* 본문 · 반응형 2단 (< lg 1단 · lg+ 2단 · 태블릿 답답함 해소) */}
-        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-            {/* Left · 편집 필드 */}
-            <div className="space-y-2.5">
-              <SectionTitle icon="📝" title="기본 정보" />
-              <Field label="회사명 *"><input type="text" value={draft.company_name} onChange={e => setDraft({ ...draft, company_name: e.target.value })} className={inputCls} /></Field>
+        {/* ── 본문 ── */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
+
+            {/* Left · 기본 정보 편집 */}
+            <div className="space-y-3">
+              <SectionTitle icon={<Building2 size={13} />} title="기본 정보" color="sky" />
+
+              <Field label="회사명 *">
+                <input
+                  type="text"
+                  value={draft.company_name}
+                  onChange={e => setDraft({ ...draft, company_name: e.target.value })}
+                  className={inputCls}
+                />
+              </Field>
+
               <Field label="사업자번호 (10자리)">
-                <input type="text" value={draft.business_number} onChange={e => setDraft({ ...draft, business_number: normalizeBizNum(e.target.value) })} placeholder="0000000000" className={`${inputCls} font-mono`} maxLength={10} />
+                <input
+                  type="text"
+                  value={draft.business_number}
+                  onChange={e => setDraft({ ...draft, business_number: normalizeBizNum(e.target.value) })}
+                  placeholder="0000000000"
+                  className={`${inputCls} font-mono tracking-widest`}
+                  maxLength={10}
+                />
                 {draft.business_number && draft.business_number.length === 10 && (
-                  <div className="text-[11px] text-slate-500 mt-1">표시: {formatBizNum(draft.business_number)}</div>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    표시: <span className="font-mono font-semibold text-slate-600">{formatBizNum(draft.business_number)}</span>
+                  </p>
                 )}
               </Field>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="담당자"><input type="text" value={draft.contact_name} onChange={e => setDraft({ ...draft, contact_name: e.target.value })} className={inputCls} /></Field>
-                <Field label="전화"><input type="text" value={draft.phone} onChange={e => setDraft({ ...draft, phone: e.target.value })} className={inputCls} /></Field>
+
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="담당자">
+                  <input type="text" value={draft.contact_name} onChange={e => setDraft({ ...draft, contact_name: e.target.value })} className={inputCls} />
+                </Field>
+                <Field label="전화">
+                  <input type="text" value={draft.phone} onChange={e => setDraft({ ...draft, phone: e.target.value })} className={inputCls} />
+                </Field>
               </div>
-              <Field label="이메일"><input type="email" value={draft.email} onChange={e => setDraft({ ...draft, email: e.target.value })} placeholder="example@company.com" className={inputCls} /></Field>
-              <Field label="카테고리"><input type="text" value={draft.category} onChange={e => setDraft({ ...draft, category: e.target.value })} placeholder="제약 · 의약외품 · 화장품 등" className={inputCls} /></Field>
-              <Field label="비고"><textarea value={draft.note} onChange={e => setDraft({ ...draft, note: e.target.value })} className={`${inputCls} h-16 resize-none`} /></Field>
+
+              <Field label="이메일">
+                <input
+                  type="email"
+                  value={draft.email}
+                  onChange={e => setDraft({ ...draft, email: e.target.value })}
+                  placeholder="example@company.com"
+                  className={inputCls}
+                />
+              </Field>
+
+              <Field label="카테고리">
+                <input
+                  type="text"
+                  value={draft.category}
+                  onChange={e => setDraft({ ...draft, category: e.target.value })}
+                  placeholder="제약 · 의약외품 · 화장품 등"
+                  className={inputCls}
+                />
+              </Field>
+
+              <Field label="비고">
+                <textarea
+                  value={draft.note}
+                  onChange={e => setDraft({ ...draft, note: e.target.value })}
+                  className={`${inputCls} h-[72px] resize-none`}
+                />
+              </Field>
             </div>
 
             {/* Right · 통계 · 매입 이력 */}
-            <div className="space-y-3">
-              <SectionTitle icon="📊" title="공급 요약" />
+            <div className="space-y-4">
+              <SectionTitle icon={<TrendingUp size={13} />} title="공급 요약" color="emerald" />
+
               {/* 4-way stat cards */}
-              <div className="grid grid-cols-2 gap-2">
-                <StatCard icon={<DollarSign size={12} />} color="emerald" label="최근 잔고" value={vendor.latestBalance?.balance != null ? vendor.latestBalance.balance.toLocaleString() + "원" : "-"} sub={vendor.latestBalance?.invoice_date ?? undefined} />
-                <StatCard icon={<TrendingUp size={12} />} color="indigo" label="총 매입액" value={summary ? fmtWon(summary.totalAmount) : "-"} sub={summary ? `${summary.count.toLocaleString()}건` : undefined} />
-                <StatCard icon={<Package size={12} />} color="violet" label="매입 상품" value={summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"} sub={summary?.totalQty ? `총 ${summary.totalQty.toLocaleString()}개` : undefined} />
-                <StatCard icon={<Calendar size={12} />} color="rose" label="최근 매입일" value={summary?.latestDate ?? "-"} sub={summary?.earliestDate ? `첫 ${summary.earliestDate}` : undefined} />
+              <div className="grid grid-cols-2 gap-2.5">
+                <StatCard
+                  icon={<DollarSign size={12} />} color="emerald" label="최근 잔고"
+                  value={vendor.latestBalance?.balance != null ? fmtWon(vendor.latestBalance.balance) : "-"}
+                  sub={vendor.latestBalance?.invoice_date ?? undefined}
+                />
+                <StatCard
+                  icon={<TrendingUp size={12} />} color="indigo" label="총 매입액"
+                  value={summary ? fmtWon(summary.totalAmount) : "-"}
+                  sub={summary ? `${summary.count.toLocaleString()}건` : undefined}
+                />
+                <StatCard
+                  icon={<Package size={12} />} color="violet" label="매입 상품"
+                  value={summary ? `${summary.uniqueProducts.toLocaleString()}종` : "-"}
+                  sub={summary?.totalQty ? `총 ${summary.totalQty.toLocaleString()}개` : undefined}
+                />
+                <StatCard
+                  icon={<Calendar size={12} />} color="rose" label="최근 매입일"
+                  value={summary?.latestDate ?? "-"}
+                  sub={summary?.earliestDate ? `첫 ${summary.earliestDate}` : undefined}
+                />
               </div>
 
-              <SectionTitle icon="📦" title="최근 매입 이력" hint={purchLoading ? "로딩..." : `${purchases.length}건`} />
-              <div className="rounded-lg border border-slate-200 overflow-auto max-h-[300px] bg-slate-50/40">
+              {/* 매입 이력 테이블 */}
+              <div>
+                <SectionTitle
+                  icon={<Package size={13} />}
+                  title="최근 매입 이력"
+                  color="amber"
+                  hint={purchLoading ? "로딩..." : `${purchases.length}건`}
+                />
+              </div>
+
+              <div className="rounded-lg border border-slate-200 overflow-auto max-h-[280px] bg-white">
                 {purchLoading ? (
-                  <div className="p-4 text-center text-slate-400 text-xs"><Loader2 size={14} className="animate-spin inline mr-1" />로딩중...</div>
+                  <div className="flex items-center justify-center gap-1.5 py-8 text-slate-400 text-[12px]">
+                    <Loader2 size={14} className="animate-spin" />로딩중...
+                  </div>
                 ) : purchases.length === 0 ? (
-                  <div className="p-4 text-center text-slate-400 text-xs">매입 이력 없음</div>
+                  <div className="py-8 text-center text-slate-400 text-[12px]">매입 이력 없음</div>
                 ) : (
                   <table className="w-full text-[12px]">
-                    <thead className="sticky top-0 bg-slate-100 text-slate-500 text-[10px] uppercase">
-                      <tr>
-                        <th className="text-left px-2 py-1 w-16">일자</th>
-                        <th className="text-left px-2 py-1">상품</th>
-                        <th className="text-right px-2 py-1 w-10">수량</th>
-                        <th className="text-right px-2 py-1 w-16">금액</th>
+                    <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+                      <tr className="text-[10px] font-black uppercase tracking-wider text-slate-500">
+                        <th className="text-left px-3 py-2 w-16">일자</th>
+                        <th className="text-left px-3 py-2">상품</th>
+                        <th className="text-right px-3 py-2 w-12">수량</th>
+                        <th className="text-right px-3 py-2 w-20">금액</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-50">
                       {purchases.map((p, i) => (
-                        <tr key={p.id ?? i} className="hover:bg-white transition align-top">
-                          <td className="px-2 py-1 font-mono text-slate-500 whitespace-nowrap">{String(p.purchase_date).slice(5)}</td>
-                          <td className="px-2 py-1 text-slate-700 break-words leading-tight">{p.product_name}</td>
-                          <td className="text-right px-2 py-1 font-mono text-slate-700">{Number(p.quantity ?? 0).toLocaleString()}</td>
-                          <td className="text-right px-2 py-1 font-mono font-bold text-emerald-700 whitespace-nowrap">{Number(p.total ?? p.amount ?? 0).toLocaleString()}</td>
+                        <tr key={p.id ?? i} className="hover:bg-slate-50/60 transition align-top">
+                          <td className="px-3 py-1.5 font-mono text-[11px] text-slate-500 whitespace-nowrap tabular-nums">
+                            {String(p.purchase_date).slice(5)}
+                          </td>
+                          <td className="px-3 py-1.5 text-slate-700 break-words leading-snug">{p.product_name}</td>
+                          <td className="text-right px-3 py-1.5 font-mono tabular-nums text-slate-700">
+                            {Number(p.quantity ?? 0).toLocaleString()}
+                          </td>
+                          <td className="text-right px-3 py-1.5 font-mono font-bold text-emerald-700 whitespace-nowrap tabular-nums">
+                            {Number(p.total ?? p.amount ?? 0).toLocaleString()}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -422,18 +614,30 @@ export const VendorDetailModal: React.FC<{ vendor: Vendor; onClose: () => void; 
           </div>
         </div>
 
-        {/* 푸터 · 저장/취소 */}
-        <div className="px-4 sm:px-6 py-3 border-t border-slate-200 bg-slate-50 flex items-center gap-2 flex-wrap">
+        {/* ── 푸터 · 저장/닫기 ── */}
+        <div className="px-5 py-3 border-t border-slate-200 bg-slate-50/80 flex items-center gap-2 flex-wrap shrink-0">
           {saveMsg && (
-            <span className={`text-xs font-bold ${saveMsg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
-              {saveMsg.type === "ok" ? "✓" : "✗"} {saveMsg.text}
+            <span className={`inline-flex items-center gap-1 text-[12px] font-bold ${saveMsg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
+              {saveMsg.type === "ok"
+                ? <Check size={13} strokeWidth={3} />
+                : <X size={13} strokeWidth={3} />}
+              {saveMsg.text}
             </span>
           )}
           <div className="flex-1" />
-          <button onClick={onClose} className="text-xs px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg text-slate-700 font-bold transition">닫기</button>
-          <button onClick={handleSave} disabled={!isDirty || saving}
-            className="inline-flex items-center gap-1 text-xs px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-black rounded-lg transition shadow-sm">
-            {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}저장
+          <button
+            onClick={onClose}
+            className="h-8 px-4 text-[12px] font-semibold bg-white border border-slate-300 hover:bg-slate-50 rounded-lg text-slate-700 transition cursor-pointer"
+          >
+            닫기
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={!isDirty || saving}
+            className="inline-flex items-center gap-1.5 h-8 px-5 text-[12px] font-bold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition shadow-sm cursor-pointer"
+          >
+            {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} strokeWidth={2.5} />}
+            저장
           </button>
         </div>
       </div>
@@ -441,38 +645,67 @@ export const VendorDetailModal: React.FC<{ vendor: Vendor; onClose: () => void; 
   );
 };
 
-// ─── 공용 UI 헬퍼 ───────────────────────────────────────────
-const inputCls = "w-full px-2.5 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 bg-white";
+// ─── 공용 UI 헬퍼 ────────────────────────────────────────────────
+
+/** shadcn form input · h-9 · focus ring teal */
+const inputCls =
+  "w-full h-9 px-3 text-[13px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-teal-400 bg-white transition placeholder:text-slate-300";
 
 const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
-  <label className="block">
-    <div className="text-[12px] font-black text-slate-600 mb-0.5">{label}</div>
+  <label className="block space-y-1">
+    <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">{label}</span>
     {children}
   </label>
 );
 
-const SectionTitle: React.FC<{ icon: string; title: string; hint?: string }> = ({ icon, title, hint }) => (
-  <div className="flex items-center gap-1.5 pb-1 border-b border-slate-100">
-    <span className="text-sm">{icon}</span>
-    <span className="text-[13px] font-black text-slate-700">{title}</span>
-    {hint && <span className="ml-auto text-[11px] text-slate-400 font-mono">{hint}</span>}
-  </div>
-);
+const colorMap = {
+  sky:     { bar: "bg-sky-500",     text: "text-sky-700",     icon: "text-sky-600"     },
+  emerald: { bar: "bg-emerald-500", text: "text-emerald-700", icon: "text-emerald-600" },
+  amber:   { bar: "bg-amber-500",   text: "text-amber-700",   icon: "text-amber-600"   },
+  rose:    { bar: "bg-rose-500",    text: "text-rose-700",    icon: "text-rose-600"    },
+  teal:    { bar: "bg-teal-500",    text: "text-teal-700",    icon: "text-teal-600"    },
+  indigo:  { bar: "bg-indigo-500",  text: "text-indigo-700",  icon: "text-indigo-600"  },
+  violet:  { bar: "bg-violet-500",  text: "text-violet-700",  icon: "text-violet-600"  },
+} as const;
 
-const StatCard: React.FC<{ icon: React.ReactNode; color: "emerald" | "indigo" | "violet" | "rose"; label: string; value: string; sub?: string }> = ({ icon, color, label, value, sub }) => {
-  const c: Record<string, string> = {
-    emerald: "from-emerald-50 to-emerald-100/60 border-emerald-200 text-emerald-800",
-    indigo:  "from-indigo-50 to-indigo-100/60 border-indigo-200 text-indigo-800",
-    violet:  "from-violet-50 to-violet-100/60 border-violet-200 text-violet-800",
-    rose:    "from-rose-50 to-rose-100/60 border-rose-200 text-rose-800",
-  };
+type ColorKey = keyof typeof colorMap;
+
+const SectionTitle: React.FC<{
+  icon: React.ReactNode;
+  title: string;
+  color: ColorKey;
+  hint?: string;
+}> = ({ icon, title, color, hint }) => {
+  const c = colorMap[color];
   return (
-    <div className={`bg-gradient-to-br ${c[color]} border rounded-lg px-2.5 py-2 shadow-sm`}>
-      <div className="flex items-center gap-1 text-[11px] font-black opacity-70 uppercase tracking-wider">
-        {icon}<span>{label}</span>
-      </div>
-      <div className="text-sm sm:text-base font-black mt-0.5 font-mono truncate" title={value}>{value}</div>
-      {sub && <div className="text-[10px] font-semibold opacity-60 mt-0.5 truncate" title={sub}>{sub}</div>}
+    <div className="flex items-center gap-2 pb-1.5 border-b border-slate-100">
+      <span className={`w-1 h-3.5 rounded-full ${c.bar} shrink-0`} />
+      <span className={`${c.icon} shrink-0`}>{icon}</span>
+      <span className={`text-[13px] font-black ${c.text}`}>{title}</span>
+      {hint && <span className="ml-auto text-[11px] text-slate-400 font-mono tabular-nums">{hint}</span>}
     </div>
   );
 };
+
+const statColorMap: Record<string, string> = {
+  emerald: "from-emerald-50 to-emerald-100/50 border-emerald-200 text-emerald-800",
+  indigo:  "from-indigo-50 to-indigo-100/50 border-indigo-200 text-indigo-800",
+  violet:  "from-violet-50 to-violet-100/50 border-violet-200 text-violet-800",
+  rose:    "from-rose-50 to-rose-100/50 border-rose-200 text-rose-800",
+};
+
+const StatCard: React.FC<{
+  icon: React.ReactNode;
+  color: "emerald" | "indigo" | "violet" | "rose";
+  label: string;
+  value: string;
+  sub?: string;
+}> = ({ icon, color, label, value, sub }) => (
+  <div className={`bg-gradient-to-br ${statColorMap[color]} border rounded-xl px-3 py-2.5 shadow-sm`}>
+    <div className="flex items-center gap-1 text-[10px] font-black opacity-70 uppercase tracking-wider mb-1">
+      {icon}<span>{label}</span>
+    </div>
+    <div className="text-sm font-black font-mono truncate" title={value}>{value}</div>
+    {sub && <div className="text-[10px] font-semibold opacity-60 mt-0.5 truncate" title={sub}>{sub}</div>}
+  </div>
+);

@@ -492,12 +492,12 @@ export const ProductManageView: React.FC<{ onProductClick: (p: any) => void }> =
             <tr className="border-b border-slate-100 text-[10px] font-medium text-slate-400 uppercase tracking-wider">
               <th className="text-left px-1 py-2 w-7">#</th>
               {([
-                { k: "name" as const,     label: "상품명", w: "text-left",         activeColor: "text-slate-700 font-semibold",  inactiveColor: "text-slate-400",   bg: "" },
-                { k: "code" as const,     label: "코드",   w: "w-24 text-left",    activeColor: "text-slate-700 font-semibold",  inactiveColor: "text-slate-400",   bg: "" },
-                { k: "supplier" as const, label: "공급사", w: "w-24 text-left",    activeColor: "text-slate-700 font-semibold",  inactiveColor: "text-slate-400",   bg: "" },
-                { k: "current" as const,  label: "현재고", w: "w-16 text-right",   activeColor: "text-slate-700 font-semibold",  inactiveColor: "text-slate-400",  bg: "bg-slate-50/40" },
-                { k: "optimal" as const,  label: "적정",   w: "w-14 text-right",   activeColor: "text-slate-700 font-semibold",  inactiveColor: "text-slate-400",   bg: "bg-slate-50/40" },
-                { k: "price" as const,    label: "판매가", w: "w-20 text-right",   activeColor: "text-slate-700 font-semibold",  inactiveColor: "text-slate-400",   bg: "" },
+                { k: "name" as const, label: "상품명", w: "text-left", activeColor: "text-slate-700 font-semibold", inactiveColor: "text-slate-400", bg: "" },
+                { k: "code" as const, label: "코드", w: "w-24 text-left", activeColor: "text-slate-700 font-semibold", inactiveColor: "text-slate-400", bg: "" },
+                { k: "supplier" as const, label: "공급사", w: "w-24 text-left", activeColor: "text-slate-700 font-semibold", inactiveColor: "text-slate-400", bg: "" },
+                { k: "current" as const, label: "현재고", w: "w-16 text-right", activeColor: "text-slate-700 font-semibold", inactiveColor: "text-slate-400", bg: "bg-slate-50/40" },
+                { k: "optimal" as const, label: "적정", w: "w-14 text-right", activeColor: "text-slate-700 font-semibold", inactiveColor: "text-slate-400", bg: "bg-slate-50/40" },
+                { k: "price" as const, label: "판매가", w: "w-20 text-right", activeColor: "text-slate-700 font-semibold", inactiveColor: "text-slate-400", bg: "" },
               ]).map(col => (
                 <th key={col.k} onClick={() => handleSort(col.k)}
                   className={`px-1 py-2 ${col.w} cursor-pointer select-none hover:bg-slate-50 transition ${col.bg} ${sortKey === col.k ? col.activeColor : col.inactiveColor}`}>
@@ -795,8 +795,8 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
                 <tr className="text-slate-400 text-[15px] font-bold uppercase tracking-wider">
                   <th className="text-center px-2 py-2.5 w-10">#</th>
                   <th className="text-left px-2 py-2.5 min-w-[200px]">상품명</th>
-                  <th className="text-right px-2 py-2.5 w-16">최근<br/>{windowDays}일</th>
-                  <th className="text-right px-2 py-2.5 w-16">이전<br/>{windowDays}일</th>
+                  <th className="text-right px-2 py-2.5 w-16">최근<br />{windowDays}일</th>
+                  <th className="text-right px-2 py-2.5 w-16">이전<br />{windowDays}일</th>
                   <th className="text-right px-2 py-2.5 w-16">성장률</th>
                   <th className="text-right px-2 py-2.5 w-16">증가량</th>
                   <th className="text-right px-2 py-2.5 w-14">현재고</th>
@@ -819,12 +819,11 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
                     </td>
                     <td className="text-right px-2 py-2.5 text-[16px] font-black text-slate-700 tabular-nums align-top">{fmt(r.recent_sale)}</td>
                     <td className="text-right px-2 py-2.5 text-[16px] font-black text-slate-400 tabular-nums align-top">{fmt(r.prior_sale)}</td>
-                    <td className={`text-right px-2 py-2.5 text-[16px] font-black tabular-nums align-top ${
-                      r.newly_trending ? "text-slate-600" :
+                    <td className={`text-right px-2 py-2.5 text-[16px] font-black tabular-nums align-top ${r.newly_trending ? "text-slate-600" :
                       (r.growth_rate ?? 0) >= 50 ? "text-slate-800" :
-                      (r.growth_rate ?? 0) > 0 ? "text-slate-600" :
-                      "text-slate-400"
-                    }`}>
+                        (r.growth_rate ?? 0) > 0 ? "text-slate-600" :
+                          "text-slate-400"
+                      }`}>
                       {r.newly_trending ? "NEW" : r.growth_rate != null ? `${r.growth_rate > 0 ? "+" : ""}${r.growth_rate}%` : "-"}
                     </td>
                     <td className={`text-right px-2 py-2.5 text-[16px] font-black tabular-nums align-top ${r.absolute_delta > 0 ? "text-slate-700" : r.absolute_delta < 0 ? "text-rose-500" : "text-slate-400"}`}>
@@ -940,7 +939,9 @@ export const StockManagePage: React.FC = () => {
   const [flowSeason, setFlowSeason] = useState<SeasonKey | null>(null);
   // 2026-07-16 · 좌우 split 레이아웃 · 좌측 리스트 폭 (localStorage 저장)
   const [flowPanelWidth, setFlowPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_stockmanage_flow_w")); return Number.isFinite(v) && v > 0 ? v : 640; } catch { return 640; }
+    // 2026-07-30 (2nd) · 사용자 요청 · 기본 좌우 6:4 · window.innerWidth 기준
+    const defaultW = typeof window !== "undefined" ? Math.floor(window.innerWidth * 0.6) : 800;
+    try { const v = Number(localStorage.getItem("megatown_stockmanage_flow_w")); return Number.isFinite(v) && v > 0 ? v : defaultW; } catch { return defaultW; }
   });
   useEffect(() => { try { localStorage.setItem("megatown_stockmanage_flow_w", String(flowPanelWidth)); } catch { /* ignore */ } }, [flowPanelWidth]);
   const flowResizeRef = useRef<{ startX: number; startW: number } | null>(null);
@@ -1009,7 +1010,9 @@ export const StockManagePage: React.FC = () => {
   // ── 탭별 좌우 split 레이아웃 state (2026-07-16) ──────────────────────────
   // supplier 탭
   const [supplierPanelWidth, setSupplierPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_stockmanage_supplier_w")); return Number.isFinite(v) && v > 0 ? v : 600; } catch { return 600; }
+    // 2026-07-30 (2nd) · 사용자 요청 · 기본 좌우 6:4
+    const defaultW = typeof window !== "undefined" ? Math.floor(window.innerWidth * 0.6) : 800;
+    try { const v = Number(localStorage.getItem("megatown_stockmanage_supplier_w")); return Number.isFinite(v) && v > 0 ? v : defaultW; } catch { return defaultW; }
   });
   useEffect(() => { try { localStorage.setItem("megatown_stockmanage_supplier_w", String(supplierPanelWidth)); } catch { /**/ } }, [supplierPanelWidth]);
   const supplierPanelWidthRef = useRef(supplierPanelWidth);
@@ -1029,7 +1032,9 @@ export const StockManagePage: React.FC = () => {
 
   // low 탭
   const [lowPanelWidth, setLowPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_stockmanage_low_w")); return Number.isFinite(v) && v > 0 ? v : 560; } catch { return 560; }
+    // 2026-07-30 (2nd) · 사용자 요청 · 기본 좌우 6:4
+    const defaultW = typeof window !== "undefined" ? Math.floor(window.innerWidth * 0.6) : 800;
+    try { const v = Number(localStorage.getItem("megatown_stockmanage_low_w")); return Number.isFinite(v) && v > 0 ? v : defaultW; } catch { return defaultW; }
   });
   useEffect(() => { try { localStorage.setItem("megatown_stockmanage_low_w", String(lowPanelWidth)); } catch { /**/ } }, [lowPanelWidth]);
   const lowPanelWidthRef = useRef(lowPanelWidth);
@@ -1088,7 +1093,9 @@ export const StockManagePage: React.FC = () => {
 
   // diff 탭
   const [diffPanelWidth, setDiffPanelWidth] = useState<number>(() => {
-    try { const v = Number(localStorage.getItem("megatown_stockmanage_diff_w")); return Number.isFinite(v) && v > 0 ? v : 480; } catch { return 480; }
+    // 2026-07-30 (2nd) · 사용자 요청 · 기본 좌우 6:4
+    const defaultW = typeof window !== "undefined" ? Math.floor(window.innerWidth * 0.6) : 800;
+    try { const v = Number(localStorage.getItem("megatown_stockmanage_diff_w")); return Number.isFinite(v) && v > 0 ? v : defaultW; } catch { return defaultW; }
   });
   useEffect(() => { try { localStorage.setItem("megatown_stockmanage_diff_w", String(diffPanelWidth)); } catch { /**/ } }, [diffPanelWidth]);
   const diffPanelWidthRef = useRef(diffPanelWidth);
@@ -2083,9 +2090,9 @@ export const StockManagePage: React.FC = () => {
     const periodDaysLocal = (flowMonths && flowMonths > 0) ? flowMonths * 30 : 30;
     const getVal = (p: any): number | string => {
       const openV = Number(p.opening_stock ?? 0);
-      const cur   = Number(p.current_stock ?? p.closing_stock ?? 0);
+      const cur = Number(p.current_stock ?? p.closing_stock ?? 0);
       const saleV = Number(p.sale_qty ?? 0);
-      const purP  = Number(p.purchase_price ?? 0);
+      const purP = Number(p.purchase_price ?? 0);
       const saleP = Number(p.sale_price ?? 0);
       switch (flowSort) {
         case "turnover": {
@@ -2202,12 +2209,12 @@ export const StockManagePage: React.FC = () => {
                 { k: "trending", label: "급상승", icon: TrendingUp, color: "indigo" },
               ];
               const COLOR_MAP: Record<TabDef["color"], { activeText: string; activeBg: string; activeUnderline: string; activeIcon: string; inactiveHover: string; badgeActive: string; badgeInactive: string }> = {
-                teal:   { activeText: "text-teal-700",    activeBg: "bg-teal-50/70",    activeUnderline: "bg-teal-500",    activeIcon: "text-teal-600",    inactiveHover: "hover:bg-teal-50/40 hover:text-teal-700",    badgeActive: "bg-teal-100 text-teal-700",    badgeInactive: "bg-slate-100 text-slate-500" },
-                sky:    { activeText: "text-sky-700",     activeBg: "bg-sky-50/70",     activeUnderline: "bg-sky-500",     activeIcon: "text-sky-600",     inactiveHover: "hover:bg-sky-50/40 hover:text-sky-700",     badgeActive: "bg-sky-100 text-sky-700",     badgeInactive: "bg-slate-100 text-slate-500" },
-                rose:   { activeText: "text-rose-700",    activeBg: "bg-rose-50/70",    activeUnderline: "bg-rose-500",    activeIcon: "text-rose-600",    inactiveHover: "hover:bg-rose-50/40 hover:text-rose-700",    badgeActive: "bg-rose-500 text-white",       badgeInactive: "bg-rose-100 text-rose-600" },
-                violet: { activeText: "text-violet-700",  activeBg: "bg-violet-50/70",  activeUnderline: "bg-violet-500",  activeIcon: "text-violet-600",  inactiveHover: "hover:bg-violet-50/40 hover:text-violet-700",  badgeActive: "bg-violet-100 text-violet-700", badgeInactive: "bg-slate-100 text-slate-500" },
-                amber:  { activeText: "text-amber-700",   activeBg: "bg-amber-50/70",   activeUnderline: "bg-amber-500",   activeIcon: "text-amber-600",   inactiveHover: "hover:bg-amber-50/40 hover:text-amber-700",   badgeActive: "bg-amber-100 text-amber-700",  badgeInactive: "bg-slate-100 text-slate-500" },
-                indigo: { activeText: "text-indigo-700",  activeBg: "bg-indigo-50/70",  activeUnderline: "bg-indigo-500",  activeIcon: "text-indigo-600",  inactiveHover: "hover:bg-indigo-50/40 hover:text-indigo-700", badgeActive: "bg-indigo-100 text-indigo-700", badgeInactive: "bg-slate-100 text-slate-500" },
+                teal: { activeText: "text-teal-700", activeBg: "bg-teal-50/70", activeUnderline: "bg-teal-500", activeIcon: "text-teal-600", inactiveHover: "hover:bg-teal-50/40 hover:text-teal-700", badgeActive: "bg-teal-100 text-teal-700", badgeInactive: "bg-slate-100 text-slate-500" },
+                sky: { activeText: "text-sky-700", activeBg: "bg-sky-50/70", activeUnderline: "bg-sky-500", activeIcon: "text-sky-600", inactiveHover: "hover:bg-sky-50/40 hover:text-sky-700", badgeActive: "bg-sky-100 text-sky-700", badgeInactive: "bg-slate-100 text-slate-500" },
+                rose: { activeText: "text-rose-700", activeBg: "bg-rose-50/70", activeUnderline: "bg-rose-500", activeIcon: "text-rose-600", inactiveHover: "hover:bg-rose-50/40 hover:text-rose-700", badgeActive: "bg-rose-500 text-white", badgeInactive: "bg-rose-100 text-rose-600" },
+                violet: { activeText: "text-violet-700", activeBg: "bg-violet-50/70", activeUnderline: "bg-violet-500", activeIcon: "text-violet-600", inactiveHover: "hover:bg-violet-50/40 hover:text-violet-700", badgeActive: "bg-violet-100 text-violet-700", badgeInactive: "bg-slate-100 text-slate-500" },
+                amber: { activeText: "text-amber-700", activeBg: "bg-amber-50/70", activeUnderline: "bg-amber-500", activeIcon: "text-amber-600", inactiveHover: "hover:bg-amber-50/40 hover:text-amber-700", badgeActive: "bg-amber-100 text-amber-700", badgeInactive: "bg-slate-100 text-slate-500" },
+                indigo: { activeText: "text-indigo-700", activeBg: "bg-indigo-50/70", activeUnderline: "bg-indigo-500", activeIcon: "text-indigo-600", inactiveHover: "hover:bg-indigo-50/40 hover:text-indigo-700", badgeActive: "bg-indigo-100 text-indigo-700", badgeInactive: "bg-slate-100 text-slate-500" },
               };
               return tabs.map(t => {
                 const Icon = t.icon;
@@ -2215,9 +2222,8 @@ export const StockManagePage: React.FC = () => {
                 const c = COLOR_MAP[t.color];
                 return (
                   <button key={t.k} type="button" onClick={() => setStockTab(t.k)}
-                    className={`relative basis-1/3 sm:basis-auto flex-grow-0 inline-flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-t-lg text-[14px] sm:text-[15px] font-bold leading-tight whitespace-nowrap transition-all duration-150 cursor-pointer ${
-                      active ? `${c.activeText} ${c.activeBg}` : `text-slate-500 ${c.inactiveHover}`
-                    }`}>
+                    className={`relative basis-1/3 sm:basis-auto flex-grow-0 inline-flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 sm:py-3 rounded-t-lg text-[14px] sm:text-[15px] font-bold leading-tight whitespace-nowrap transition-all duration-150 cursor-pointer ${active ? `${c.activeText} ${c.activeBg}` : `text-slate-500 ${c.inactiveHover}`
+                      }`}>
                     <Icon size={16} strokeWidth={active ? 2.4 : 2.0} className={`hidden sm:inline-block shrink-0 ${active ? c.activeIcon : "text-slate-400"}`} />
                     <span>{t.label}</span>
                     {t.badge != null && t.badge > 0 && (
@@ -2240,666 +2246,664 @@ export const StockManagePage: React.FC = () => {
             <div className="flex flex-col gap-3 min-h-0 w-full">
               {/* ── 공급사재고 탭 · 좌우 split (2026-07-16) ── */}
               {stockTab === "supplier" && (
-              <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
-                {/* 좌측: 공급사 리스트 (원본 유지) */}
-                <div
-                  className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
-                  style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? supplierPanelWidth : undefined }}
-                >
-              {/* 공급사별 재고자산 (종료일 시점, xlsx 합계 컬럼 합산) — 최상위 공급사 하이라이트 + 순위 리스트 */}
-              {true && (
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <div className="flex flex-col gap-3 px-4 py-3 border-b border-slate-100 bg-white">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Building2 size={14} className="text-slate-400" />
-                      <span className="text-[17px] font-black text-slate-700">공급사별 현황</span>
-                      <span className="text-[13px] font-medium text-slate-400">(재고·매입·판매)</span>
-                      {flowSnapshot && (
-                        <span className="text-[14px] font-black tabular-nums text-slate-500 bg-slate-50 border border-slate-200 rounded px-2 py-0.5">
-                          {flowSnapshot}
-                        </span>
-                      )}
-                      <span className="text-[14px] font-black tabular-nums text-slate-400">
-                        {displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사
-                      </span>
-                      {/* 2026-07-30 · 사용자 요청 · Top N 필터 앞에 안내 문구 */}
-                      <span className="text-[13px] font-medium text-slate-500 ml-auto whitespace-nowrap">
-                        상품명을 누르면 상세 정보와 재고 상황이 나옵니다
-                      </span>
-                      {/* 2026-07-28 · 사용자 요청 · Top N 필터 (기본 전체) · 2026-07-30 · Top 2000 추가 */}
-                      <div className="flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md p-0.5">
-                        {[
-                          { v: 100,    label: "Top 100" },
-                          { v: 300,    label: "Top 300" },
-                          { v: 1000,   label: "Top 1000" },
-                          { v: 2000,   label: "Top 2000" },
-                          { v: 999999, label: "전체" },
-                        ].map(o => (
-                          <button key={o.v} onClick={() => setSupListLimit(o.v)}
-                            className={`text-[14px] font-black px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${
-                              supListLimit === o.v ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                            }`}
-                          >{o.label}</button>
-                        ))}
-                      </div>
-                    </div>
-                    {/* 2026-07-16 · 기간 필터 (재고리스트와 동일 UI) */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[14px] font-semibold text-slate-500">기간</span>
-                      <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
-                        <button onClick={() => { setSupplierSeason(null); setSupplierMonths(0); }}
-                          className={`px-2.5 py-1 text-[14px] font-black rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
-                        {[1, 2, 3, 4, 5, 6].map(m => (
-                          <button key={m} onClick={() => { setSupplierSeason(null); setSupplierMonths(m as any); }}
-                            className={`px-2.5 py-1 text-[14px] font-black rounded transition cursor-pointer ${!supplierSeason && supplierMonths === m ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
-                        ))}
-                      </div>
-                      <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
-                    </div>
-                    <p className="text-[13px] font-medium text-slate-400 leading-tight">공급사 행을 클릭하면 오른쪽 패널에 상품 리스트가 나타납니다</p>
-                    {/* 2026-07-28 · 사용자 요청 · 정렬 헤더 (재고자산·판매·매입·상품수·공급사명) */}
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <span className="text-[14px] font-semibold text-slate-400 mr-0.5">정렬</span>
-                      {([
-                        { k: "totalStockAmount" as SupListSortKey, label: "재고자산" },
-                        { k: "saleQty" as SupListSortKey, label: "판매량" },
-                        { k: "saleAmount" as SupListSortKey, label: "판매액" },
-                        { k: "purchaseQty" as SupListSortKey, label: "매입" },
-                        { k: "itemCount" as SupListSortKey, label: "상품수" },
-                        { k: "supplier" as SupListSortKey, label: "공급사명" },
-                      ]).map(o => (
-                        <button key={o.k} onClick={() => toggleSupListSort(o.k)}
-                          className={`px-2 py-1 rounded-md text-[14px] font-black transition cursor-pointer ${supListSort.key === o.k ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-50 border border-slate-200"}`}>
-                          {o.label}{supListSort.key === o.k ? (supListSort.dir === "desc" ? " ▼" : " ▲") : ""}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  {!supplierCardCollapsed && (<>
-                    {/* 순위 표 (재고자산 기준 내림차순) — 표 형식 · 컬럼: 확장·순위·공급사·재고자산·판매량·판매액·매입·상품수 */}
-                    <div className="relative flex-1 overflow-auto">
-                      {/* 2026-07-20: 로딩 UI 통일 · 판매추이 공급사별판매 패턴 */}
-                      {loading && xlsxSuppliers.length > 0 && (
-                        <div className="flex items-center justify-center gap-1.5 text-[13px] text-sky-700 font-bold py-2 mx-3 mt-2 bg-sky-50 border border-sky-200 rounded-md">
-                          <LoaderIcon size={13} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
-                        </div>
-                      )}
-                      {xlsxSuppliers.length === 0 ? (
-                        loading ? (
-                          <div className="flex flex-col items-center justify-center gap-3 py-8">
-                            <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
-                            <div className="text-[16px] font-black text-slate-600">데이터 로딩중...</div>
-                          </div>
-                        ) : (
-                          <div className="text-center text-[16px] text-slate-400 py-8 font-black">데이터 없음</div>
-                        )
-                      ) : (
-                        <table className={`w-full text-[16px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                          <thead className="sticky top-0 bg-slate-50 z-10 border-b border-slate-200">
-                            <tr className="text-[15px] font-bold text-slate-400 uppercase tracking-wider">
-                              <th className="text-center w-8 py-2.5"></th>
-                              <th className="text-center w-10 py-2.5">#</th>
-                              <th className="text-left px-3 py-2.5">공급사</th>
-                              <th className="text-right px-3 py-2.5 w-24">재고자산</th>
-                              <th className="text-right px-3 py-2.5 w-20">판매량</th>
-                              <th className="text-right px-3 py-2.5 w-24">판매액</th>
-                              <th className="text-right px-3 py-2.5 w-20">매입</th>
-                              <th className="text-right px-3 py-2.5 w-16">상품수</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-50">
-                            {displayedXlsxSuppliers.map((sup, i) => {
-                              const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
-                              const isExpanded = expandedSuppliers.has(key);
-                              const isSelected = supplierSelectedKey === key;
-                              return (
-                                <tr key={key}
-                                  onClick={() => { toggleSupplierExpand(sup); setSupplierSelectedKey(key); }}
-                                  className={`cursor-pointer transition ${isSelected ? "bg-slate-50 hover:bg-slate-100" : "hover:bg-slate-50/60"}`}
-                                  title="클릭 → 오른쪽 패널에 상세 (판매출고계 내림차순 상품 리스트)"
-                                >
-                                  <td className="text-center align-middle py-3">
-                                    {isExpanded
-                                      ? <ChevronDown size={14} className="text-slate-400 mx-auto" />
-                                      : <ChevronRight size={14} className="text-slate-300 mx-auto" />}
-                                  </td>
-                                  <td className="text-center align-middle py-3 text-[14px] font-black text-slate-400 tabular-nums">{i + 1}</td>
-                                  <td className="text-left px-3 py-3 align-middle">
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="text-[18px] font-black text-slate-700 break-words whitespace-normal leading-tight">
-                                        {sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
-                                      </span>
-                                      {sup.supplier_code && (
-                                        <span className="text-[14px] font-black tabular-nums text-slate-400 shrink-0 font-mono" title="공급사코드">#{sup.supplier_code}</span>
-                                      )}
-                                      {sup.code_conflict && (
-                                        <span
-                                          className="text-[12px] font-black text-amber-600 shrink-0"
-                                          title="같은 이름에 여러 공급사코드가 존재 — 중복 의심"
-                                        >⚠</span>
-                                      )}
-                                    </div>
-                                  </td>
-                                  <td className="text-right px-3 py-3 align-middle text-[16px] font-black text-slate-700 tabular-nums" title="재고자산">
-                                    {fmtWon(sup.totalStockAmount)}
-                                  </td>
-                                  <td className="text-right px-3 py-3 align-middle text-[16px] font-black text-slate-600 tabular-nums" title="판매수량">
-                                    {fmt(sup.saleQty)}
-                                  </td>
-                                  <td className="text-right px-3 py-3 align-middle text-[16px] font-black text-slate-600 tabular-nums" title="판매액 (proxy)">
-                                    {fmtWon(Number(sup.saleAmount ?? 0))}
-                                  </td>
-                                  <td className="text-right px-3 py-3 align-middle text-[16px] font-black text-slate-600 tabular-nums" title="매입수량">
-                                    {fmt(sup.purchaseQty)}
-                                  </td>
-                                  <td className="text-right px-3 py-3 align-middle text-[16px] font-black text-slate-500 tabular-nums" title="취급 상품 종수">
-                                    {sup.itemCount}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      )}
-                    </div>
-                </>)}
-                </div>
-              )}
-                </div>{/* 좌측 공급사 리스트 wrapper close */}
-
-                {/* 리사이즈 핸들 (데스크탑만) */}
-                <div onMouseDown={onSupplierResizeStart}
-                  className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-sky-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
-                  title="드래그하여 폭 조절">
-                  <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
-                </div>
-
-                {/* 우측: 공급사 상세 · 모바일 fullscreen 모달 */}
-                <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0 transition-transform duration-150 ${supplierSelectedObj ? "fixed inset-0 z-50 bg-slate-50 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible" : ""}`}>
-                  {supplierSelectedObj && (
-                    <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md">
-                      <div className="flex items-center gap-2 px-3 py-2">
-                        <button type="button" onClick={() => setSupplierSelectedKey(null)}
-                          className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
-                          <XIcon size={16} strokeWidth={2.4} />
-                        </button>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-[13px] font-black text-slate-800 break-keep whitespace-normal leading-tight">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</div>
-                          <div className="text-[10px] tabular-nums text-slate-500 break-words whitespace-normal leading-tight">{supplierSelectedObj.supplier_code ? `#${supplierSelectedObj.supplier_code}` : ""} · 재고자산 {fmtWon(supplierSelectedObj.totalStockAmount)}</div>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  {!supplierSelectedObj ? (
-                    <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-                      <Building2 size={40} className="mb-3 opacity-30" />
-                      <div className="text-sm font-bold">리스트에서 공급사를 클릭하세요</div>
-                      <div className="text-[11px] mt-1">재고자산 요약 · 상품 리스트</div>
-                    </div>
-                  ) : (
-                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4 flex flex-col gap-3">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Building2 size={16} className="text-sky-600 shrink-0" />
-                        <span className="text-base font-black text-slate-800 break-keep">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</span>
-                        {supplierSelectedObj.supplier_code && <span className="text-[10px] tabular-nums text-slate-500 bg-slate-100 rounded px-1.5 py-0.5">#{supplierSelectedObj.supplier_code}</span>}
-                      </div>
-                      {(() => {
-                        // 2026-07-23 · supplier_balances 최신값 (재고자산 앞에 표시)
-                        const supName = supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
-                        const balInfo = supplierBalanceMap[supName] ?? supplierBalanceMap[supplierSelectedObj.supplier ?? ""] ?? null;
-                        return (
-                          <div className="grid grid-cols-4 gap-2">
-                            <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-center" title={balInfo?.invoice_date ? `기준일 ${balInfo.invoice_date}` : "최신 잔고 없음"}>
-                              <div className="text-[10px] text-amber-600 font-semibold">최신잔고</div>
-                              <div className="text-sm font-black text-amber-700 mt-0.5">{balInfo ? fmtWon(balInfo.balance) : "-"}</div>
-                            </div>
-                            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-center">
-                              <div className="text-[10px] text-emerald-600 font-semibold">재고자산</div>
-                              <div className="text-sm font-black text-emerald-700 mt-0.5">{fmtWon(supplierSelectedObj.totalStockAmount)}</div>
-                            </div>
-                            <div className="bg-sky-50 border border-sky-200 rounded-lg p-2 text-center">
-                              <div className="text-[10px] text-sky-600 font-semibold">매입수량</div>
-                              <div className="text-sm font-black text-sky-700 mt-0.5">{fmt(supplierSelectedObj.purchaseQty)}</div>
-                            </div>
-                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-center">
-                              <div className="text-[10px] text-slate-500 font-semibold">취급상품</div>
-                              <div className="text-sm font-black text-slate-700 mt-0.5">{fmt(supplierSelectedObj.itemCount)}종</div>
+                <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+                  {/* 좌측: 공급사 리스트 (원본 유지) */}
+                  <div
+                    className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
+                    style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? supplierPanelWidth : undefined }}
+                  >
+                    {/* 공급사별 재고자산 (종료일 시점, xlsx 합계 컬럼 합산) — 최상위 공급사 하이라이트 + 순위 리스트 */}
+                    {true && (
+                      <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+                        <div className="flex flex-col gap-3 px-4 py-3 border-b border-slate-100 bg-white">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Building2 size={14} className="text-slate-400" />
+                            <span className="text-[17px] font-black text-slate-700">공급사별 현황</span>
+                            <span className="text-[13px] font-medium text-slate-400">(재고·매입·판매)</span>
+                            {flowSnapshot && (
+                              <span className="text-[14px] font-black tabular-nums text-slate-500 bg-slate-50 border border-slate-200 rounded px-2 py-0.5">
+                                {flowSnapshot}
+                              </span>
+                            )}
+                            <span className="text-[14px] font-black tabular-nums text-slate-400">
+                              {displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사
+                            </span>
+                            {/* 2026-07-30 · 사용자 요청 · Top N 필터 앞에 안내 문구 */}
+                            <span className="text-[13px] font-medium text-slate-500 ml-auto whitespace-nowrap">
+                              상품명을 누르면 상세 정보와 재고 상황이 나옵니다
+                            </span>
+                            {/* 2026-07-28 · 사용자 요청 · Top N 필터 (기본 전체) · 2026-07-30 · Top 2000 추가 */}
+                            <div className="flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md p-0.5">
+                              {[
+                                { v: 100, label: "Top 100" },
+                                { v: 300, label: "Top 300" },
+                                { v: 1000, label: "Top 1000" },
+                                { v: 2000, label: "Top 2000" },
+                                { v: 999999, label: "전체" },
+                              ].map(o => (
+                                <button key={o.v} onClick={() => setSupListLimit(o.v)}
+                                  className={`text-[14px] font-black px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                    }`}
+                                >{o.label}</button>
+                              ))}
                             </div>
                           </div>
-                        );
-                      })()}
-                      {/* 상품 리스트 (확장 리스트에서 가져옴) */}
-                      {(() => {
-                        const key = `${supplierSelectedObj.supplier_code ?? "-"}::${supplierSelectedObj.supplier}`;
-                        const rows = supplierRowsMap[key];
-                        const isLoading = supplierRowsLoading.has(key);
-                        if (isLoading) return <div className="flex items-center gap-2 text-[11px] text-slate-400 py-4"><LoaderIcon size={12} className="animate-spin" />상품 로드 중...</div>;
-                        if (!rows) return <div className="text-[11px] text-slate-400 py-4">공급사를 클릭하면 상품 리스트가 로드됩니다</div>;
-                        if (rows.length === 0) return <div className="text-[11px] text-slate-400 py-4">상품 데이터 없음</div>;
-                        // 우측 단순 상품 리스트 · 헤더 클릭 정렬 (2026-07-16)
-                        const supDetailArrow = (k: SupDetailSortKey) =>
-                          supDetailSort.key === k
-                            ? (supDetailSort.dir === "desc" ? " ▼" : " ▲")
-                            : " ⇅";
-                        const sortedDetail = sortSupDetailRows(rows);
-                        const fmtPurchaseDate = (d: string | null | undefined): string => {
-                          if (!d) return "-";
-                          const dt = new Date(d);
-                          if (isNaN(dt.getTime())) return "-";
-                          const m = String(dt.getMonth() + 1).padStart(2, "0");
-                          const day = String(dt.getDate()).padStart(2, "0");
-                          return `${m}/${day}`;
-                        };
-                        const detailCycleStr = (r: any): string => {
-                          const cnt = Number(r.purchase_count ?? 0);
-                          if (cnt < 2) return "-";
-                          const firstDate = String(r.first_purchase_date ?? r.last_purchase_date ?? "");
-                          const lastDate = String(r.last_purchase_date ?? "");
-                          if (!firstDate || !lastDate || firstDate === lastDate) return "-";
-                          const days = Math.round((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / (86400 * 1000));
-                          const cycle = cnt > 1 ? Math.round(days / (cnt - 1)) : 0;
-                          return cycle > 0 ? `${cycle}일` : "-";
-                        };
-                        return (
-                          <div className="overflow-auto max-h-[60vh] rounded-lg border border-slate-100">
-                            <table className="w-full text-xs min-w-[560px]">
-                              <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
-                                <tr className="text-[11px] text-slate-400 uppercase tracking-wider">
-                                  <th className="text-left px-1 py-1.5 w-6">#</th>
-                                  <th
-                                    onClick={() => toggleSupDetailSort("name")}
-                                    className={`text-left px-1 py-1.5 cursor-pointer select-none hover:bg-slate-50 transition ${supDetailSort.key === "name" ? "text-slate-800 font-black" : ""}`}
-                                    title="상품명 정렬"
-                                  >상품명{supDetailArrow("name")}</th>
-                                  <th
-                                    onClick={() => toggleSupDetailSort("current")}
-                                    className={`text-right px-1 py-1.5 w-12 cursor-pointer select-none hover:bg-amber-50/60 transition ${supDetailSort.key === "current" ? "text-amber-700 font-black" : "text-amber-500"}`}
-                                    title="현재고 정렬"
-                                  >현재고{supDetailArrow("current")}</th>
-                                  <th
-                                    onClick={() => toggleSupDetailSort("cycle")}
-                                    className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-slate-50/60 transition ${supDetailSort.key === "cycle" ? "text-slate-700 font-black" : "text-slate-400"}`}
-                                    title="매입주기 정렬"
-                                  >매입주기{supDetailArrow("cycle")}</th>
-                                  <th
-                                    onClick={() => toggleSupDetailSort("purchase_date")}
-                                    className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-slate-50/60 transition ${supDetailSort.key === "purchase_date" ? "text-slate-700 font-black" : "text-slate-400"}`}
-                                    title="최근매입일 정렬"
-                                  >최근매입일{supDetailArrow("purchase_date")}</th>
-                                  <th
-                                    onClick={() => toggleSupDetailSort("purchase_qty")}
-                                    className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-slate-50 transition ${supDetailSort.key === "purchase_qty" ? "text-slate-800 font-black" : ""}`}
-                                    title="매입수량 정렬"
-                                  >매입수량{supDetailArrow("purchase_qty")}</th>
-                                  <th
-                                    onClick={() => toggleSupDetailSort("min_order")}
-                                    className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-sky-50/60 transition ${supDetailSort.key === "min_order" ? "text-sky-700 font-black" : "text-sky-400"}`}
-                                    title="최소발주 정렬"
-                                  >최소발주{supDetailArrow("min_order")}</th>
-                                  <th
-                                    onClick={() => toggleSupDetailSort("total_amount")}
-                                    className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-emerald-50/60 transition ${supDetailSort.key === "total_amount" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
-                                    title="재고금액 정렬"
-                                  >재고금액{supDetailArrow("total_amount")}</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-sky-100">
-                                {sortedDetail.slice(0, 200).map((r, ri) => {
-                                  const minOrder = Number(r.min_order ?? 0);
-                                  return (
-                                  <tr key={`supdet-${r.product_code ?? ri}`} className="hover:bg-orange-50/30 transition align-top">
-                                    <td className="px-1 py-1 text-slate-400">{ri + 1}</td>
-                                    <td className="px-1 py-1 break-words whitespace-normal leading-tight">
-                                      <button type="button" onClick={() => loadFlowSelectedProduct(r)} className="text-left font-bold text-indigo-700 hover:text-indigo-900 hover:underline cursor-pointer transition break-words whitespace-normal">{r.product_name}</button>
-                                    </td>
-                                    <td className="text-right px-1 py-1 tabular-nums text-amber-700">{fmt(Number(r.current_stock ?? 0))}</td>
-                                    <td className="text-right px-1 py-1 tabular-nums text-slate-500">{detailCycleStr(r)}</td>
-                                    <td className="text-right px-1 py-1 tabular-nums">
-                                      {r.product_code && r.last_purchase_date ? (
-                                        <button type="button"
-                                          onClick={() => setProductPurchaseModal({
-                                            product_code: String(r.product_code),
-                                            product_name: r.product_name ?? "",
-                                          })}
-                                          className="text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer"
-                                          title={`${r.last_purchase_date} · 매입 이력 보기`}
-                                        >{fmtPurchaseDate(r.last_purchase_date)}</button>
-                                      ) : (
-                                        <span className="text-slate-500">{fmtPurchaseDate(r.last_purchase_date)}</span>
-                                      )}
-                                    </td>
-                                    <td className="text-right px-1 py-1 tabular-nums text-slate-700">{fmt(Number(r.purchase_total_qty ?? r.purchase_qty ?? 0))}</td>
-                                    <td className="text-right px-1 py-1 tabular-nums text-sky-600">{minOrder > 0 ? `${fmt(minOrder)}개` : "-"}</td>
-                                    <td className="text-right px-1 py-1 tabular-nums font-bold text-emerald-700">{fmtWon(Number(r.total_amount ?? 0))}</td>
+                          {/* 2026-07-16 · 기간 필터 (재고리스트와 동일 UI) */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[14px] font-semibold text-slate-500">기간</span>
+                            <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
+                              <button onClick={() => { setSupplierSeason(null); setSupplierMonths(0); }}
+                                className={`px-2.5 py-1 text-[14px] font-black rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
+                              {[1, 2, 3, 4, 5, 6].map(m => (
+                                <button key={m} onClick={() => { setSupplierSeason(null); setSupplierMonths(m as any); }}
+                                  className={`px-2.5 py-1 text-[14px] font-black rounded transition cursor-pointer ${!supplierSeason && supplierMonths === m ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
+                              ))}
+                            </div>
+                            <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
+                          </div>
+                          <p className="text-[13px] font-medium text-slate-400 leading-tight">공급사 행을 클릭하면 오른쪽 패널에 상품 리스트가 나타납니다</p>
+                          {/* 2026-07-28 · 사용자 요청 · 정렬 헤더 (재고자산·판매·매입·상품수·공급사명) */}
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <span className="text-[14px] font-semibold text-slate-400 mr-0.5">정렬</span>
+                            {([
+                              { k: "totalStockAmount" as SupListSortKey, label: "재고자산" },
+                              { k: "saleQty" as SupListSortKey, label: "판매량" },
+                              { k: "saleAmount" as SupListSortKey, label: "판매액" },
+                              { k: "purchaseQty" as SupListSortKey, label: "매입" },
+                              { k: "itemCount" as SupListSortKey, label: "상품수" },
+                              { k: "supplier" as SupListSortKey, label: "공급사명" },
+                            ]).map(o => (
+                              <button key={o.k} onClick={() => toggleSupListSort(o.k)}
+                                className={`px-2 py-1 rounded-md text-[14px] font-black transition cursor-pointer ${supListSort.key === o.k ? "bg-slate-800 text-white" : "text-slate-500 hover:bg-slate-50 border border-slate-200"}`}>
+                                {o.label}{supListSort.key === o.k ? (supListSort.dir === "desc" ? " ▼" : " ▲") : ""}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        {!supplierCardCollapsed && (<>
+                          {/* 순위 표 (재고자산 기준 내림차순) — 표 형식 · 컬럼: 확장·순위·공급사·재고자산·판매량·판매액·매입·상품수 */}
+                          <div className="relative flex-1 overflow-auto">
+                            {/* 2026-07-20: 로딩 UI 통일 · 판매추이 공급사별판매 패턴 */}
+                            {loading && xlsxSuppliers.length > 0 && (
+                              <div className="flex items-center justify-center gap-1.5 text-[13px] text-sky-700 font-bold py-2 mx-3 mt-2 bg-sky-50 border border-sky-200 rounded-md">
+                                <LoaderIcon size={13} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+                              </div>
+                            )}
+                            {xlsxSuppliers.length === 0 ? (
+                              loading ? (
+                                <div className="flex flex-col items-center justify-center gap-3 py-8">
+                                  <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+                                  <div className="text-[16px] font-black text-slate-600">데이터 로딩중...</div>
+                                </div>
+                              ) : (
+                                <div className="text-center text-[16px] text-slate-400 py-8 font-black">데이터 없음</div>
+                              )
+                            ) : (
+                              <table className={`w-full text-[16px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                                <thead className="sticky top-0 bg-slate-50 z-10 border-b border-slate-200">
+                                  <tr className="text-[15px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <th className="text-center w-8 py-2.5"></th>
+                                    <th className="text-center w-10 py-2.5">#</th>
+                                    <th className="text-left px-3 py-2.5">공급사</th>
+                                    <th className="text-right px-3 py-2.5 w-24">재고자산</th>
+                                    <th className="text-right px-3 py-2.5 w-20">판매량</th>
+                                    <th className="text-right px-3 py-2.5 w-24">판매액</th>
+                                    <th className="text-right px-3 py-2.5 w-20">매입</th>
+                                    <th className="text-right px-3 py-2.5 w-16">상품수</th>
                                   </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                            {rows.length > 200 && <div className="text-[10px] text-slate-400 text-center py-1">상위 200개만 표시 · 전체 {rows.length}개</div>}
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                  {displayedXlsxSuppliers.map((sup, i) => {
+                                    const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
+                                    const isExpanded = expandedSuppliers.has(key);
+                                    const isSelected = supplierSelectedKey === key;
+                                    return (
+                                      <tr key={key}
+                                        onClick={() => { toggleSupplierExpand(sup); setSupplierSelectedKey(key); }}
+                                        className={`cursor-pointer transition ${isSelected ? "bg-slate-50 hover:bg-slate-100" : "hover:bg-slate-50/60"}`}
+                                        title="클릭 → 오른쪽 패널에 상세 (판매출고계 내림차순 상품 리스트)"
+                                      >
+                                        <td className="text-center align-middle py-3">
+                                          {isExpanded
+                                            ? <ChevronDown size={14} className="text-slate-400 mx-auto" />
+                                            : <ChevronRight size={14} className="text-slate-300 mx-auto" />}
+                                        </td>
+                                        <td className="text-center align-middle py-3 text-[14px] font-black text-slate-400 tabular-nums">{i + 1}</td>
+                                        <td className="text-left px-3 py-3 align-middle">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-[18px] font-black text-slate-700 break-words whitespace-normal leading-tight">
+                                              {sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
+                                            </span>
+                                            {sup.supplier_code && (
+                                              <span className="text-[14px] font-black tabular-nums text-slate-400 shrink-0 font-mono" title="공급사코드">#{sup.supplier_code}</span>
+                                            )}
+                                            {sup.code_conflict && (
+                                              <span
+                                                className="text-[12px] font-black text-amber-600 shrink-0"
+                                                title="같은 이름에 여러 공급사코드가 존재 — 중복 의심"
+                                              >⚠</span>
+                                            )}
+                                          </div>
+                                        </td>
+                                        <td className="text-right px-3 py-3 align-middle text-[16px] font-black text-slate-700 tabular-nums" title="재고자산">
+                                          {fmtWon(sup.totalStockAmount)}
+                                        </td>
+                                        <td className="text-right px-3 py-3 align-middle text-[16px] font-black text-slate-600 tabular-nums" title="판매수량">
+                                          {fmt(sup.saleQty)}
+                                        </td>
+                                        <td className="text-right px-3 py-3 align-middle text-[16px] font-black text-slate-600 tabular-nums" title="판매액 (proxy)">
+                                          {fmtWon(Number(sup.saleAmount ?? 0))}
+                                        </td>
+                                        <td className="text-right px-3 py-3 align-middle text-[16px] font-black text-slate-600 tabular-nums" title="매입수량">
+                                          {fmt(sup.purchaseQty)}
+                                        </td>
+                                        <td className="text-right px-3 py-3 align-middle text-[16px] font-black text-slate-500 tabular-nums" title="취급 상품 종수">
+                                          {sup.itemCount}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            )}
                           </div>
-                        );
+                        </>)}
+                      </div>
+                    )}
+                  </div>{/* 좌측 공급사 리스트 wrapper close */}
 
-                      })()}
-                    </div>
-                  )}
+                  {/* 리사이즈 핸들 (데스크탑만) */}
+                  <div onMouseDown={onSupplierResizeStart}
+                    className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-sky-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+                    title="드래그하여 폭 조절">
+                    <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+                  </div>
+
+                  {/* 우측: 공급사 상세 · 모바일 fullscreen 모달 */}
+                  <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative lg:p-0 transition-transform duration-150 ${supplierSelectedObj ? "fixed inset-0 z-50 bg-slate-50 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible" : ""}`}>
+                    {supplierSelectedObj && (
+                      <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md">
+                        <div className="flex items-center gap-2 px-3 py-2">
+                          <button type="button" onClick={() => setSupplierSelectedKey(null)}
+                            className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
+                            <XIcon size={16} strokeWidth={2.4} />
+                          </button>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-[13px] font-black text-slate-800 break-keep whitespace-normal leading-tight">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</div>
+                            <div className="text-[10px] tabular-nums text-slate-500 break-words whitespace-normal leading-tight">{supplierSelectedObj.supplier_code ? `#${supplierSelectedObj.supplier_code}` : ""} · 재고자산 {fmtWon(supplierSelectedObj.totalStockAmount)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {!supplierSelectedObj ? (
+                      <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+                        <Building2 size={40} className="mb-3 opacity-30" />
+                        <div className="text-sm font-bold">리스트에서 공급사를 클릭하세요</div>
+                        <div className="text-[11px] mt-1">재고자산 요약 · 상품 리스트</div>
+                      </div>
+                    ) : (
+                      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4 flex flex-col gap-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Building2 size={16} className="text-sky-600 shrink-0" />
+                          <span className="text-base font-black text-slate-800 break-keep">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</span>
+                          {supplierSelectedObj.supplier_code && <span className="text-[10px] tabular-nums text-slate-500 bg-slate-100 rounded px-1.5 py-0.5">#{supplierSelectedObj.supplier_code}</span>}
+                        </div>
+                        {(() => {
+                          // 2026-07-23 · supplier_balances 최신값 (재고자산 앞에 표시)
+                          const supName = supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
+                          const balInfo = supplierBalanceMap[supName] ?? supplierBalanceMap[supplierSelectedObj.supplier ?? ""] ?? null;
+                          return (
+                            <div className="grid grid-cols-4 gap-2">
+                              <div className="bg-amber-50 border border-amber-200 rounded-lg p-2 text-center" title={balInfo?.invoice_date ? `기준일 ${balInfo.invoice_date}` : "최신 잔고 없음"}>
+                                <div className="text-[10px] text-amber-600 font-semibold">최신잔고</div>
+                                <div className="text-sm font-black text-amber-700 mt-0.5">{balInfo ? fmtWon(balInfo.balance) : "-"}</div>
+                              </div>
+                              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-2 text-center">
+                                <div className="text-[10px] text-emerald-600 font-semibold">재고자산</div>
+                                <div className="text-sm font-black text-emerald-700 mt-0.5">{fmtWon(supplierSelectedObj.totalStockAmount)}</div>
+                              </div>
+                              <div className="bg-sky-50 border border-sky-200 rounded-lg p-2 text-center">
+                                <div className="text-[10px] text-sky-600 font-semibold">매입수량</div>
+                                <div className="text-sm font-black text-sky-700 mt-0.5">{fmt(supplierSelectedObj.purchaseQty)}</div>
+                              </div>
+                              <div className="bg-slate-50 border border-slate-200 rounded-lg p-2 text-center">
+                                <div className="text-[10px] text-slate-500 font-semibold">취급상품</div>
+                                <div className="text-sm font-black text-slate-700 mt-0.5">{fmt(supplierSelectedObj.itemCount)}종</div>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                        {/* 상품 리스트 (확장 리스트에서 가져옴) */}
+                        {(() => {
+                          const key = `${supplierSelectedObj.supplier_code ?? "-"}::${supplierSelectedObj.supplier}`;
+                          const rows = supplierRowsMap[key];
+                          const isLoading = supplierRowsLoading.has(key);
+                          if (isLoading) return <div className="flex items-center gap-2 text-[11px] text-slate-400 py-4"><LoaderIcon size={12} className="animate-spin" />상품 로드 중...</div>;
+                          if (!rows) return <div className="text-[11px] text-slate-400 py-4">공급사를 클릭하면 상품 리스트가 로드됩니다</div>;
+                          if (rows.length === 0) return <div className="text-[11px] text-slate-400 py-4">상품 데이터 없음</div>;
+                          // 우측 단순 상품 리스트 · 헤더 클릭 정렬 (2026-07-16)
+                          const supDetailArrow = (k: SupDetailSortKey) =>
+                            supDetailSort.key === k
+                              ? (supDetailSort.dir === "desc" ? " ▼" : " ▲")
+                              : " ⇅";
+                          const sortedDetail = sortSupDetailRows(rows);
+                          const fmtPurchaseDate = (d: string | null | undefined): string => {
+                            if (!d) return "-";
+                            const dt = new Date(d);
+                            if (isNaN(dt.getTime())) return "-";
+                            const m = String(dt.getMonth() + 1).padStart(2, "0");
+                            const day = String(dt.getDate()).padStart(2, "0");
+                            return `${m}/${day}`;
+                          };
+                          const detailCycleStr = (r: any): string => {
+                            const cnt = Number(r.purchase_count ?? 0);
+                            if (cnt < 2) return "-";
+                            const firstDate = String(r.first_purchase_date ?? r.last_purchase_date ?? "");
+                            const lastDate = String(r.last_purchase_date ?? "");
+                            if (!firstDate || !lastDate || firstDate === lastDate) return "-";
+                            const days = Math.round((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / (86400 * 1000));
+                            const cycle = cnt > 1 ? Math.round(days / (cnt - 1)) : 0;
+                            return cycle > 0 ? `${cycle}일` : "-";
+                          };
+                          return (
+                            <div className="overflow-auto max-h-[60vh] rounded-lg border border-slate-100">
+                              <table className="w-full text-xs min-w-[560px]">
+                                <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
+                                  <tr className="text-[11px] text-slate-400 uppercase tracking-wider">
+                                    <th className="text-left px-1 py-1.5 w-6">#</th>
+                                    <th
+                                      onClick={() => toggleSupDetailSort("name")}
+                                      className={`text-left px-1 py-1.5 cursor-pointer select-none hover:bg-slate-50 transition ${supDetailSort.key === "name" ? "text-slate-800 font-black" : ""}`}
+                                      title="상품명 정렬"
+                                    >상품명{supDetailArrow("name")}</th>
+                                    <th
+                                      onClick={() => toggleSupDetailSort("current")}
+                                      className={`text-right px-1 py-1.5 w-12 cursor-pointer select-none hover:bg-amber-50/60 transition ${supDetailSort.key === "current" ? "text-amber-700 font-black" : "text-amber-500"}`}
+                                      title="현재고 정렬"
+                                    >현재고{supDetailArrow("current")}</th>
+                                    <th
+                                      onClick={() => toggleSupDetailSort("cycle")}
+                                      className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-slate-50/60 transition ${supDetailSort.key === "cycle" ? "text-slate-700 font-black" : "text-slate-400"}`}
+                                      title="매입주기 정렬"
+                                    >매입주기{supDetailArrow("cycle")}</th>
+                                    <th
+                                      onClick={() => toggleSupDetailSort("purchase_date")}
+                                      className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-slate-50/60 transition ${supDetailSort.key === "purchase_date" ? "text-slate-700 font-black" : "text-slate-400"}`}
+                                      title="최근매입일 정렬"
+                                    >최근매입일{supDetailArrow("purchase_date")}</th>
+                                    <th
+                                      onClick={() => toggleSupDetailSort("purchase_qty")}
+                                      className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-slate-50 transition ${supDetailSort.key === "purchase_qty" ? "text-slate-800 font-black" : ""}`}
+                                      title="매입수량 정렬"
+                                    >매입수량{supDetailArrow("purchase_qty")}</th>
+                                    <th
+                                      onClick={() => toggleSupDetailSort("min_order")}
+                                      className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-sky-50/60 transition ${supDetailSort.key === "min_order" ? "text-sky-700 font-black" : "text-sky-400"}`}
+                                      title="최소발주 정렬"
+                                    >최소발주{supDetailArrow("min_order")}</th>
+                                    <th
+                                      onClick={() => toggleSupDetailSort("total_amount")}
+                                      className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-emerald-50/60 transition ${supDetailSort.key === "total_amount" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
+                                      title="재고금액 정렬"
+                                    >재고금액{supDetailArrow("total_amount")}</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-sky-100">
+                                  {sortedDetail.slice(0, 200).map((r, ri) => {
+                                    const minOrder = Number(r.min_order ?? 0);
+                                    return (
+                                      <tr key={`supdet-${r.product_code ?? ri}`} className="hover:bg-orange-50/30 transition align-top">
+                                        <td className="px-1 py-1 text-slate-400">{ri + 1}</td>
+                                        <td className="px-1 py-1 break-words whitespace-normal leading-tight">
+                                          <button type="button" onClick={() => loadFlowSelectedProduct(r)} className="text-left font-bold text-indigo-700 hover:text-indigo-900 hover:underline cursor-pointer transition break-words whitespace-normal">{r.product_name}</button>
+                                        </td>
+                                        <td className="text-right px-1 py-1 tabular-nums text-amber-700">{fmt(Number(r.current_stock ?? 0))}</td>
+                                        <td className="text-right px-1 py-1 tabular-nums text-slate-500">{detailCycleStr(r)}</td>
+                                        <td className="text-right px-1 py-1 tabular-nums">
+                                          {r.product_code && r.last_purchase_date ? (
+                                            <button type="button"
+                                              onClick={() => setProductPurchaseModal({
+                                                product_code: String(r.product_code),
+                                                product_name: r.product_name ?? "",
+                                              })}
+                                              className="text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer"
+                                              title={`${r.last_purchase_date} · 매입 이력 보기`}
+                                            >{fmtPurchaseDate(r.last_purchase_date)}</button>
+                                          ) : (
+                                            <span className="text-slate-500">{fmtPurchaseDate(r.last_purchase_date)}</span>
+                                          )}
+                                        </td>
+                                        <td className="text-right px-1 py-1 tabular-nums text-slate-700">{fmt(Number(r.purchase_total_qty ?? r.purchase_qty ?? 0))}</td>
+                                        <td className="text-right px-1 py-1 tabular-nums text-sky-600">{minOrder > 0 ? `${fmt(minOrder)}개` : "-"}</td>
+                                        <td className="text-right px-1 py-1 tabular-nums font-bold text-emerald-700">{fmtWon(Number(r.total_amount ?? 0))}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                              {rows.length > 200 && <div className="text-[10px] text-slate-400 text-center py-1">상위 200개만 표시 · 전체 {rows.length}개</div>}
+                            </div>
+                          );
+
+                        })()}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
               )}
 
               {/* 2026-07-29 · 사용자 요청 · 매입상세 탭 삭제 · 관련 JSX 제거 */}
 
               {/* 적정재고 이하 리스트 · 좌우 분할 레이아웃 */}
               {stockTab === "low" && (
-              <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
-                {/* 좌측: 적정재고 이하 리스트 */}
-                <div
-                  className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
-                  style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? lowPanelWidth : undefined }}
-                >
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-                  <div className="flex flex-col gap-2 px-4 py-3 border-b border-slate-100 bg-white">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle size={14} className="text-rose-400" />
-                      <span className="text-[17px] font-black text-slate-700">적정재고 이하</span>
-                      <span className="text-[14px] font-semibold text-slate-400">현재고 &lt; 적정재고</span>
-                      <span className="text-[14px] font-black tabular-nums text-slate-400 ml-1">({lowStock.length}개)</span>
-                    </div>
-                    <p className="text-[13px] font-medium text-slate-400 leading-tight">상품명 클릭 → 상세 정보 · 실재고 스캔 현황</p>
-                  </div>
-                  {!lowStockCollapsed && (
-                    <div className="flex-1 overflow-y-auto relative">
-                      {loading && lowStock.length > 0 && (
-                        <div className="flex items-center justify-center gap-1.5 text-[10px] text-rose-600 font-bold py-1.5 mb-1 bg-rose-50 border border-rose-200 rounded-md sticky top-0 z-10">
-                          <LoaderIcon size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+                <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+                  {/* 좌측: 적정재고 이하 리스트 */}
+                  <div
+                    className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
+                    style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? lowPanelWidth : undefined }}
+                  >
+                    <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+                      <div className="flex flex-col gap-2 px-4 py-3 border-b border-slate-100 bg-white">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle size={14} className="text-rose-400" />
+                          <span className="text-[17px] font-black text-slate-700">적정재고 이하</span>
+                          <span className="text-[14px] font-semibold text-slate-400">현재고 &lt; 적정재고</span>
+                          <span className="text-[14px] font-black tabular-nums text-slate-400 ml-1">({lowStock.length}개)</span>
                         </div>
-                      )}
-                      {loading && lowStock.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center gap-3 py-8">
-                          <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
-                          <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
-                        </div>
-                      ) : lowStock.length === 0 ? (
-                        <div className="text-center text-[11px] text-slate-300 py-6">해당 상품 없음</div>
-                      ) : (
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-xs sm:min-w-[480px]">
-                            <thead className="sticky top-0 bg-white z-10">
-                              <tr className="border-b border-slate-100 text-[15px] font-bold text-slate-400 uppercase tracking-wider">
-                                <th className="text-left px-1 py-2 w-7">#</th>
-                                <th className="text-left px-1 py-2">상품명</th>
-                                <th className="text-right px-1 py-2 w-14" title="ERP 현재고 (products.current_stock)">ERP</th>
-                                <th className="text-right px-1 py-2 w-16 bg-slate-50/60" title="실재고 · 바코드스캔 창고">창고</th>
-                                <th className="text-right px-1 py-2 w-16 bg-slate-50/60" title="실재고 · 바코드스캔 매장">매장</th>
-                                <th className="text-right px-1 py-2 w-14" title="실재고 합계 (창고+매장)">실재고</th>
-                                <th className="text-right px-1 py-2 w-14">적정</th>
-                                <th className="text-right px-1 py-2 w-14 text-rose-400">필요</th>
-                                {/* 2026-07-29 · 사용자 요청 · 발주요청 액션 */}
-                                <th className="text-center px-1 py-2 w-20" title="발주요청 리스트에 추가">발주요청</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                              {lowStock.slice(0, 200).map((p, i) => {
-                                const cur = Number(p.current_stock ?? 0);
-                                const opt = Number(p.optimal_stock ?? 0);
-                                const need = Math.max(0, opt - cur);
-                                const wh = p.warehouse_stock;
-                                const st = p.store_stock;
-                                const isSelected = lowSelectedProduct?.code === String(p.product_code ?? "");
-                                return (
-                                  <tr key={`low-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-slate-50" : "hover:bg-slate-50/60"}`}>
-                                    <td className="px-1 py-2 text-slate-400 font-semibold text-[13px] align-top">{i + 1}</td>
-                                    <td className="px-1 py-2 align-top">
-                                      <button
-                                        onClick={() => loadLowSelectedProduct(p)}
-                                        className="text-left text-[18px] font-black text-slate-700 hover:text-slate-900 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
-                                        title={`${p.product_name} — 클릭 시 상세 정보`}
-                                      >
-                                        {p.product_name}
-                                      </button>
-                                      {p.supplier && <div className="text-[13px] font-medium text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
-                                    </td>
-                                    <td className={`text-right px-1 py-2 tabular-nums text-[16px] font-black align-top ${cur <= 0 ? "text-rose-600" : "text-slate-700"}`} title="ERP 현재고 (products.current_stock)">{fmt(cur)}</td>
-                                    <td className={`text-right px-1 py-2 tabular-nums text-[16px] font-black bg-slate-50/60 align-top ${wh != null ? "text-slate-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 창고 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "창고 실재고 미입력"}>
-                                      {wh != null ? fmt(Number(wh)) : "—"}
-                                    </td>
-                                    <td className={`text-right px-1 py-2 tabular-nums text-[16px] font-black bg-slate-50/60 align-top ${st != null ? "text-slate-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 매장 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "매장 실재고 미입력"}>
-                                      {st != null ? fmt(Number(st)) : "—"}
-                                    </td>
-                                    {(() => {
-                                      const whN = wh != null ? Number(wh) : null;
-                                      const stN = st != null ? Number(st) : null;
-                                      const realTotal = whN != null || stN != null ? (whN ?? 0) + (stN ?? 0) : null;
-                                      const mismatch = realTotal != null && realTotal !== cur;
-                                      return (
-                                        <td
-                                          className={`text-right px-0.5 py-1.5 tabular-nums text-[16px] font-black align-top ${realTotal == null ? "text-slate-300" : mismatch ? "text-red-600" : "text-emerald-700"}`}
-                                          title={realTotal == null ? "실재고 미입력" : mismatch ? `실재고 ${realTotal} ≠ ERP ${cur} · 불일치` : "실재고 = 창고 + 매장"}
-                                        >{realTotal != null ? fmt(realTotal) : "—"}</td>
-                                      );
-                                    })()}
-                                    <td className="text-right px-0.5 py-1.5 tabular-nums text-slate-600 align-top">
-                                      {optimalEditCode === String(p.product_code) ? (
-                                        <div className="flex items-center justify-end gap-0.5">
-                                          <input
-                                            autoFocus
-                                            type="number"
-                                            min={0}
-                                            inputMode="numeric"
-                                            value={optimalEditValue}
-                                            onChange={(e) => setOptimalEditValue(e.target.value)}
-                                            onKeyDown={(e) => {
-                                              if (e.key === "Enter") { e.preventDefault(); commitOptimalEdit(); }
-                                              else if (e.key === "Escape") { e.preventDefault(); cancelOptimalEdit(); }
-                                            }}
-                                            disabled={optimalEditSaving}
-                                            className="w-12 text-right tabular-nums text-[12px] font-black border-2 border-indigo-400 rounded-md px-1 py-1 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 bg-white"
-                                          />
-                                          <button
-                                            type="button"
-                                            onMouseDown={(e) => e.preventDefault()}
-                                            onClick={commitOptimalEdit}
-                                            disabled={optimalEditSaving}
-                                            className="p-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 active:scale-95 transition disabled:opacity-50 shadow-sm"
-                                            title="저장"
-                                          >
-                                            <Check size={12} strokeWidth={3} />
-                                          </button>
-                                          <button
-                                            type="button"
-                                            onMouseDown={(e) => e.preventDefault()}
-                                            onClick={cancelOptimalEdit}
-                                            className="p-1 rounded bg-slate-200 text-slate-600 hover:bg-slate-300 active:scale-95 transition shadow-sm"
-                                            title="취소"
-                                          >
-                                            <XIcon size={12} strokeWidth={3} />
-                                          </button>
-                                        </div>
-                                      ) : (
-                                        <button
-                                          type="button"
-                                          onClick={() => startOptimalEdit(String(p.product_code), opt)}
-                                          className="w-full min-h-[32px] flex items-center justify-end gap-1 text-right tabular-nums text-[12px] font-bold hover:bg-indigo-50 active:bg-indigo-100 border border-transparent hover:border-indigo-200 rounded-md px-2 py-1.5 cursor-pointer transition"
-                                          title="탭하여 적정재고 편집"
-                                        >
-                                          <span className={opt > 0 ? "text-slate-800" : "text-slate-400"}>{opt > 0 ? fmt(opt) : "입력"}</span>
-                                          <Pencil size={10} className="text-indigo-400 shrink-0" />
-                                        </button>
-                                      )}
-                                    </td>
-                                    <td className="text-right px-0.5 py-1.5 tabular-nums text-[16px] font-black text-rose-600 align-top">{need > 0 ? `+${fmt(need)}` : "-"}</td>
-                                    {/* 2026-07-29 · 사용자 요청 · 발주요청 버튼 · confirm 후 POST */}
-                                    <td className="text-center px-0.5 py-1.5 align-top">
-                                      {(() => {
-                                        const code = String(p.product_code ?? "");
-                                        const busy = orderRequestingCode === code;
-                                        const done = orderRequestedCodes.has(code);
-                                        return (
-                                          <button
-                                            type="button"
-                                            onClick={(e) => { e.stopPropagation(); requestOrderFromLow(p); }}
-                                            disabled={busy || done}
-                                            className={`inline-flex items-center justify-center gap-1 min-h-[26px] px-2 py-1 rounded-md text-[14px] font-black border transition cursor-pointer active:scale-95 disabled:cursor-not-allowed ${
-                                              done
-                                                ? "bg-slate-50 text-slate-500 border-slate-200"
-                                                : busy
-                                                  ? "bg-slate-50 text-slate-400 border-slate-200"
-                                                  : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50 hover:border-slate-400"
-                                            }`}
-                                            title={done ? "발주요청 리스트에 추가됨" : "발주요청 리스트에 추가"}
-                                          >
-                                            {busy ? "..." : done ? "추가됨" : "발주요청"}
-                                          </button>
-                                        );
-                                      })()}
-                                    </td>
+                        <p className="text-[13px] font-medium text-slate-400 leading-tight">상품명 클릭 → 상세 정보 · 실재고 스캔 현황</p>
+                      </div>
+                      {!lowStockCollapsed && (
+                        <div className="flex-1 overflow-y-auto relative">
+                          {loading && lowStock.length > 0 && (
+                            <div className="flex items-center justify-center gap-1.5 text-[10px] text-rose-600 font-bold py-1.5 mb-1 bg-rose-50 border border-rose-200 rounded-md sticky top-0 z-10">
+                              <LoaderIcon size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+                            </div>
+                          )}
+                          {loading && lowStock.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center gap-3 py-8">
+                              <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+                              <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
+                            </div>
+                          ) : lowStock.length === 0 ? (
+                            <div className="text-center text-[11px] text-slate-300 py-6">해당 상품 없음</div>
+                          ) : (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-xs sm:min-w-[480px]">
+                                <thead className="sticky top-0 bg-white z-10">
+                                  <tr className="border-b border-slate-100 text-[15px] font-bold text-slate-400 uppercase tracking-wider">
+                                    <th className="text-left px-1 py-2 w-7">#</th>
+                                    <th className="text-left px-1 py-2">상품명</th>
+                                    <th className="text-right px-1 py-2 w-14" title="ERP 현재고 (products.current_stock)">ERP</th>
+                                    <th className="text-right px-1 py-2 w-16 bg-slate-50/60" title="실재고 · 바코드스캔 창고">창고</th>
+                                    <th className="text-right px-1 py-2 w-16 bg-slate-50/60" title="실재고 · 바코드스캔 매장">매장</th>
+                                    <th className="text-right px-1 py-2 w-14" title="실재고 합계 (창고+매장)">실재고</th>
+                                    <th className="text-right px-1 py-2 w-14">적정</th>
+                                    <th className="text-right px-1 py-2 w-14 text-rose-400">필요</th>
+                                    {/* 2026-07-29 · 사용자 요청 · 발주요청 액션 */}
+                                    <th className="text-center px-1 py-2 w-20" title="발주요청 리스트에 추가">발주요청</th>
                                   </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                  {lowStock.slice(0, 200).map((p, i) => {
+                                    const cur = Number(p.current_stock ?? 0);
+                                    const opt = Number(p.optimal_stock ?? 0);
+                                    const need = Math.max(0, opt - cur);
+                                    const wh = p.warehouse_stock;
+                                    const st = p.store_stock;
+                                    const isSelected = lowSelectedProduct?.code === String(p.product_code ?? "");
+                                    return (
+                                      <tr key={`low-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-slate-50" : "hover:bg-slate-50/60"}`}>
+                                        <td className="px-1 py-2 text-slate-400 font-semibold text-[13px] align-top">{i + 1}</td>
+                                        <td className="px-1 py-2 align-top">
+                                          <button
+                                            onClick={() => loadLowSelectedProduct(p)}
+                                            className="text-left text-[18px] font-black text-slate-700 hover:text-slate-900 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
+                                            title={`${p.product_name} — 클릭 시 상세 정보`}
+                                          >
+                                            {p.product_name}
+                                          </button>
+                                          {p.supplier && <div className="text-[13px] font-medium text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
+                                        </td>
+                                        <td className={`text-right px-1 py-2 tabular-nums text-[16px] font-black align-top ${cur <= 0 ? "text-rose-600" : "text-slate-700"}`} title="ERP 현재고 (products.current_stock)">{fmt(cur)}</td>
+                                        <td className={`text-right px-1 py-2 tabular-nums text-[16px] font-black bg-slate-50/60 align-top ${wh != null ? "text-slate-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 창고 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "창고 실재고 미입력"}>
+                                          {wh != null ? fmt(Number(wh)) : "—"}
+                                        </td>
+                                        <td className={`text-right px-1 py-2 tabular-nums text-[16px] font-black bg-slate-50/60 align-top ${st != null ? "text-slate-700" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 매장 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "매장 실재고 미입력"}>
+                                          {st != null ? fmt(Number(st)) : "—"}
+                                        </td>
+                                        {(() => {
+                                          const whN = wh != null ? Number(wh) : null;
+                                          const stN = st != null ? Number(st) : null;
+                                          const realTotal = whN != null || stN != null ? (whN ?? 0) + (stN ?? 0) : null;
+                                          const mismatch = realTotal != null && realTotal !== cur;
+                                          return (
+                                            <td
+                                              className={`text-right px-0.5 py-1.5 tabular-nums text-[16px] font-black align-top ${realTotal == null ? "text-slate-300" : mismatch ? "text-red-600" : "text-emerald-700"}`}
+                                              title={realTotal == null ? "실재고 미입력" : mismatch ? `실재고 ${realTotal} ≠ ERP ${cur} · 불일치` : "실재고 = 창고 + 매장"}
+                                            >{realTotal != null ? fmt(realTotal) : "—"}</td>
+                                          );
+                                        })()}
+                                        <td className="text-right px-0.5 py-1.5 tabular-nums text-slate-600 align-top">
+                                          {optimalEditCode === String(p.product_code) ? (
+                                            <div className="flex items-center justify-end gap-0.5">
+                                              <input
+                                                autoFocus
+                                                type="number"
+                                                min={0}
+                                                inputMode="numeric"
+                                                value={optimalEditValue}
+                                                onChange={(e) => setOptimalEditValue(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === "Enter") { e.preventDefault(); commitOptimalEdit(); }
+                                                  else if (e.key === "Escape") { e.preventDefault(); cancelOptimalEdit(); }
+                                                }}
+                                                disabled={optimalEditSaving}
+                                                className="w-12 text-right tabular-nums text-[12px] font-black border-2 border-indigo-400 rounded-md px-1 py-1 focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-200 bg-white"
+                                              />
+                                              <button
+                                                type="button"
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                onClick={commitOptimalEdit}
+                                                disabled={optimalEditSaving}
+                                                className="p-1 rounded bg-emerald-500 text-white hover:bg-emerald-600 active:scale-95 transition disabled:opacity-50 shadow-sm"
+                                                title="저장"
+                                              >
+                                                <Check size={12} strokeWidth={3} />
+                                              </button>
+                                              <button
+                                                type="button"
+                                                onMouseDown={(e) => e.preventDefault()}
+                                                onClick={cancelOptimalEdit}
+                                                className="p-1 rounded bg-slate-200 text-slate-600 hover:bg-slate-300 active:scale-95 transition shadow-sm"
+                                                title="취소"
+                                              >
+                                                <XIcon size={12} strokeWidth={3} />
+                                              </button>
+                                            </div>
+                                          ) : (
+                                            <button
+                                              type="button"
+                                              onClick={() => startOptimalEdit(String(p.product_code), opt)}
+                                              className="w-full min-h-[32px] flex items-center justify-end gap-1 text-right tabular-nums text-[12px] font-bold hover:bg-indigo-50 active:bg-indigo-100 border border-transparent hover:border-indigo-200 rounded-md px-2 py-1.5 cursor-pointer transition"
+                                              title="탭하여 적정재고 편집"
+                                            >
+                                              <span className={opt > 0 ? "text-slate-800" : "text-slate-400"}>{opt > 0 ? fmt(opt) : "입력"}</span>
+                                              <Pencil size={10} className="text-indigo-400 shrink-0" />
+                                            </button>
+                                          )}
+                                        </td>
+                                        <td className="text-right px-0.5 py-1.5 tabular-nums text-[16px] font-black text-rose-600 align-top">{need > 0 ? `+${fmt(need)}` : "-"}</td>
+                                        {/* 2026-07-29 · 사용자 요청 · 발주요청 버튼 · confirm 후 POST */}
+                                        <td className="text-center px-0.5 py-1.5 align-top">
+                                          {(() => {
+                                            const code = String(p.product_code ?? "");
+                                            const busy = orderRequestingCode === code;
+                                            const done = orderRequestedCodes.has(code);
+                                            return (
+                                              <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); requestOrderFromLow(p); }}
+                                                disabled={busy || done}
+                                                className={`inline-flex items-center justify-center gap-1 min-h-[26px] px-2 py-1 rounded-md text-[14px] font-black border transition cursor-pointer active:scale-95 disabled:cursor-not-allowed ${done
+                                                  ? "bg-slate-50 text-slate-500 border-slate-200"
+                                                  : busy
+                                                    ? "bg-slate-50 text-slate-400 border-slate-200"
+                                                    : "bg-white text-slate-600 border-slate-300 hover:bg-slate-50 hover:border-slate-400"
+                                                  }`}
+                                                title={done ? "발주요청 리스트에 추가됨" : "발주요청 리스트에 추가"}
+                                              >
+                                                {busy ? "..." : done ? "추가됨" : "발주요청"}
+                                              </button>
+                                            );
+                                          })()}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-                </div>
+                  </div>
 
-                {/* 리사이즈 핸들 (데스크탑만) */}
-                <div onMouseDown={onLowResizeStart}
-                  className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-rose-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
-                  title="드래그하여 폭 조절">
-                  <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
-                </div>
+                  {/* 리사이즈 핸들 (데스크탑만) */}
+                  <div onMouseDown={onLowResizeStart}
+                    className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-rose-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+                    title="드래그하여 폭 조절">
+                    <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+                  </div>
 
-                {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}
-                <ProductDetailRightPanel
-                  selected={lowSelectedProduct}
-                  onClose={() => setLowSelectedProduct(null)}
-                  onProductUpdate={(u) => setLowSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
-                  onRealMapUpdate={(v) => setLowSelectedProduct(prev => prev ? { ...prev, real_map: v } : prev)}
-                  showChart={true}
-                  context="stock-manage"
-                  editable={true}
-                  emptySub="상세 정보가 표시됩니다"
-                />
-              </div>
+                  {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}
+                  <ProductDetailRightPanel
+                    selected={lowSelectedProduct}
+                    onClose={() => setLowSelectedProduct(null)}
+                    onProductUpdate={(u) => setLowSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
+                    onRealMapUpdate={(v) => setLowSelectedProduct(prev => prev ? { ...prev, real_map: v } : prev)}
+                    showChart={true}
+                    context="stock-manage"
+                    editable={true}
+                    emptySub="상세 정보가 표시됩니다"
+                  />
+                </div>
               )}
 
               {/* 실재고 vs ERP 차이 상품 리스트 · 좌우 분할 레이아웃 */}
               {stockTab === "diff" && (
-              <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
-                {/* 좌측: 차이 리스트 */}
-                <div
-                  className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
-                  style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? diffPanelWidth : undefined }}
-                >
-                {(() => {
-                  const diffList = lowStock
-                    .map(p => {
-                      const wh = p.warehouse_stock;
-                      const st = p.store_stock;
-                      if (wh == null && st == null) return null;
-                      const actual = (Number(wh) || 0) + (Number(st) || 0);
-                      const cur = Number(p.current_stock ?? 0);
-                      const diff = actual - cur;
-                      if (diff === 0) return null;
-                      return { ...p, actual, cur, diff };
-                    })
-                    .filter(Boolean) as Array<any>;
-                  return (
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-                    <div className="flex flex-col gap-2 px-4 py-3 border-b border-slate-100 bg-white">
-                      <div className="flex items-center gap-2">
-                        <AlertTriangle size={14} className="text-slate-400" />
-                        <span className="text-[17px] font-black text-slate-700">손실추적 · 실재고 ↔ ERP 차이</span>
-                        <span className="text-[14px] font-black tabular-nums text-slate-400">({diffList.length}개)</span>
-                      </div>
-                      <p className="text-[13px] font-medium text-slate-500 leading-relaxed">
-                        실재고 (창고+매장 실사) 와 ERP 현재고가 다른 상품 리스트입니다. 도난·파손·미기록 판매·재고 오류 등의 원인이 있을 수 있습니다.
-                      </p>
-                      <p className="text-[13px] font-medium text-slate-400 leading-tight">상품명 클릭 → 상세 정보 · 실재고 스캔 현황</p>
-                    </div>
-                    {!stockDiffCollapsed && (
-                      <div className="flex-1 overflow-y-auto relative">
-                        {loading && diffList.length > 0 && (
-                          <div className="flex items-center justify-center gap-1.5 text-[10px] text-purple-600 font-bold py-1.5 mb-1 bg-purple-50 border border-purple-200 rounded-md sticky top-0 z-10">
-                            <LoaderIcon size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+                <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+                  {/* 좌측: 차이 리스트 */}
+                  <div
+                    className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
+                    style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? diffPanelWidth : undefined }}
+                  >
+                    {(() => {
+                      const diffList = lowStock
+                        .map(p => {
+                          const wh = p.warehouse_stock;
+                          const st = p.store_stock;
+                          if (wh == null && st == null) return null;
+                          const actual = (Number(wh) || 0) + (Number(st) || 0);
+                          const cur = Number(p.current_stock ?? 0);
+                          const diff = actual - cur;
+                          if (diff === 0) return null;
+                          return { ...p, actual, cur, diff };
+                        })
+                        .filter(Boolean) as Array<any>;
+                      return (
+                        <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+                          <div className="flex flex-col gap-2 px-4 py-3 border-b border-slate-100 bg-white">
+                            <div className="flex items-center gap-2">
+                              <AlertTriangle size={14} className="text-slate-400" />
+                              <span className="text-[17px] font-black text-slate-700">손실추적 · 실재고 ↔ ERP 차이</span>
+                              <span className="text-[14px] font-black tabular-nums text-slate-400">({diffList.length}개)</span>
+                            </div>
+                            <p className="text-[13px] font-medium text-slate-500 leading-relaxed">
+                              실재고 (창고+매장 실사) 와 ERP 현재고가 다른 상품 리스트입니다. 도난·파손·미기록 판매·재고 오류 등의 원인이 있을 수 있습니다.
+                            </p>
+                            <p className="text-[13px] font-medium text-slate-400 leading-tight">상품명 클릭 → 상세 정보 · 실재고 스캔 현황</p>
                           </div>
-                        )}
-                        {loading && diffList.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center gap-3 py-8">
-                          <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
-                          <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
+                          {!stockDiffCollapsed && (
+                            <div className="flex-1 overflow-y-auto relative">
+                              {loading && diffList.length > 0 && (
+                                <div className="flex items-center justify-center gap-1.5 text-[10px] text-purple-600 font-bold py-1.5 mb-1 bg-purple-50 border border-purple-200 rounded-md sticky top-0 z-10">
+                                  <LoaderIcon size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+                                </div>
+                              )}
+                              {loading && diffList.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center gap-3 py-8">
+                                  <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+                                  <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
+                                </div>
+                              ) : diffList.length === 0 ? (
+                                <div className="text-center text-[11px] text-slate-300 py-6">차이 있는 상품 없음</div>
+                              ) : (
+                                <div className="overflow-x-auto">
+                                  <table className="w-full text-xs sm:min-w-[280px]">
+                                    <thead className="sticky top-0 bg-white z-10">
+                                      <tr className="border-b border-slate-100 text-[15px] font-bold text-slate-400 uppercase tracking-wider">
+                                        <th className="text-left px-1 py-2 w-7">#</th>
+                                        <th className="text-left px-1 py-2">상품명</th>
+                                        <th className="text-right px-1 py-2 w-14 bg-slate-50/40">ERP</th>
+                                        <th className="text-right px-1 py-2 w-16 bg-slate-50/40">실재고</th>
+                                        <th className="text-right px-1 py-2 w-14">차이</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-50">
+                                      {diffList.slice(0, 100).map((p: any, i: number) => {
+                                        const isSelected = diffSelectedProduct?.code === String(p.product_code ?? "");
+                                        return (
+                                          <tr key={`diff-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-slate-50" : "hover:bg-slate-50/60"}`}>
+                                            <td className="px-1 py-2 text-slate-400 font-semibold text-[13px] align-top">{i + 1}</td>
+                                            <td className="px-1 py-2 align-top">
+                                              <button
+                                                onClick={() => loadDiffSelectedProduct(p)}
+                                                className="text-left text-[18px] font-black text-slate-700 hover:text-slate-900 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
+                                                title={p.product_name}
+                                              >
+                                                {p.product_name}
+                                              </button>
+                                              {p.supplier && <div className="text-[13px] font-medium text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
+                                            </td>
+                                            <td className="text-right px-1 py-2 tabular-nums text-[16px] font-black bg-slate-50/40 text-slate-600 align-top">{fmt(p.cur)}</td>
+                                            <td className="text-right px-1 py-2 tabular-nums text-[16px] font-black bg-slate-50/40 text-slate-700 align-top">{fmt(p.actual)}</td>
+                                            <td className={`text-right px-1 py-2 tabular-nums text-[16px] font-black align-top ${p.diff > 0 ? "text-slate-600" : "text-rose-500"}`}>
+                                              {p.diff > 0 ? `+${fmt(p.diff)}` : fmt(p.diff)}
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        ) : diffList.length === 0 ? (
-                          <div className="text-center text-[11px] text-slate-300 py-6">차이 있는 상품 없음</div>
-                        ) : (
-                          <div className="overflow-x-auto">
-                            <table className="w-full text-xs sm:min-w-[280px]">
-                              <thead className="sticky top-0 bg-white z-10">
-                                <tr className="border-b border-slate-100 text-[15px] font-bold text-slate-400 uppercase tracking-wider">
-                                  <th className="text-left px-1 py-2 w-7">#</th>
-                                  <th className="text-left px-1 py-2">상품명</th>
-                                  <th className="text-right px-1 py-2 w-14 bg-slate-50/40">ERP</th>
-                                  <th className="text-right px-1 py-2 w-16 bg-slate-50/40">실재고</th>
-                                  <th className="text-right px-1 py-2 w-14">차이</th>
-                                </tr>
-                              </thead>
-                              <tbody className="divide-y divide-slate-50">
-                                {diffList.slice(0, 100).map((p: any, i: number) => {
-                                  const isSelected = diffSelectedProduct?.code === String(p.product_code ?? "");
-                                  return (
-                                  <tr key={`diff-${p.product_name}-${i}`} className={`transition ${isSelected ? "bg-slate-50" : "hover:bg-slate-50/60"}`}>
-                                    <td className="px-1 py-2 text-slate-400 font-semibold text-[13px] align-top">{i + 1}</td>
-                                    <td className="px-1 py-2 align-top">
-                                      <button
-                                        onClick={() => loadDiffSelectedProduct(p)}
-                                        className="text-left text-[18px] font-black text-slate-700 hover:text-slate-900 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
-                                        title={p.product_name}
-                                      >
-                                        {p.product_name}
-                                      </button>
-                                      {p.supplier && <div className="text-[13px] font-medium text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
-                                    </td>
-                                    <td className="text-right px-1 py-2 tabular-nums text-[16px] font-black bg-slate-50/40 text-slate-600 align-top">{fmt(p.cur)}</td>
-                                    <td className="text-right px-1 py-2 tabular-nums text-[16px] font-black bg-slate-50/40 text-slate-700 align-top">{fmt(p.actual)}</td>
-                                    <td className={`text-right px-1 py-2 tabular-nums text-[16px] font-black align-top ${p.diff > 0 ? "text-slate-600" : "text-rose-500"}`}>
-                                      {p.diff > 0 ? `+${fmt(p.diff)}` : fmt(p.diff)}
-                                    </td>
-                                  </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                      );
+                    })()}
                   </div>
-                  );
-                })()}
-                </div>
 
-                {/* 리사이즈 핸들 (데스크탑만) */}
-                <div onMouseDown={onDiffResizeStart}
-                  className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-purple-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
-                  title="드래그하여 폭 조절">
-                  <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
-                </div>
+                  {/* 리사이즈 핸들 (데스크탑만) */}
+                  <div onMouseDown={onDiffResizeStart}
+                    className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-purple-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+                    title="드래그하여 폭 조절">
+                    <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+                  </div>
 
-                {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}
-                <ProductDetailRightPanel
-                  selected={diffSelectedProduct}
-                  onClose={() => setDiffSelectedProduct(null)}
-                  onProductUpdate={(u) => setDiffSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
-                  onRealMapUpdate={(v) => setDiffSelectedProduct(prev => prev ? { ...prev, real_map: v } : prev)}
-                  showChart={true}
-                  context="stock-manage"
-                  editable={true}
-                  emptySub="상세 정보가 표시됩니다"
-                />
-              </div>
+                  {/* 우측: 상품 상세 · ProductDetailRightPanel (공용) */}
+                  <ProductDetailRightPanel
+                    selected={diffSelectedProduct}
+                    onClose={() => setDiffSelectedProduct(null)}
+                    onProductUpdate={(u) => setDiffSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
+                    onRealMapUpdate={(v) => setDiffSelectedProduct(prev => prev ? { ...prev, real_map: v } : prev)}
+                    showChart={true}
+                    context="stock-manage"
+                    editable={true}
+                    emptySub="상세 정보가 표시됩니다"
+                  />
+                </div>
               )}
             </div>
 
@@ -2921,605 +2925,600 @@ export const StockManagePage: React.FC = () => {
 
             {/* 상품재고현황 탭 · 좌우 분할 레이아웃 (2026-07-16) · 좌: 재고리스트(원본) · 우: 제품정보(모바일 fullscreen 모달) */}
             {stockTab === "flow" && (
-            <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
-              {/* ─── 좌측: 재고리스트 (원본 유지) ─── */}
-              <div
-                className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
-                style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? flowPanelWidth : undefined }}
-              >
-              {/* 재고 흐름 카드 · 판매추이 StockFlowPanel 과 동일 레이아웃 */}
-              {/* 2026-07-29 · 사용자 요청 · 산만한 헤더 재구성 · 조회기간 옆에 날짜범위 · 기간 버튼 다음줄 */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-                <div className="flex flex-col gap-3 px-4 py-3 border-b border-slate-100 bg-white">
-                  {/* Top N 필터 (우측 정렬) · 2026-07-30 · 사용자 요청 · 안내 문구 앞에 */}
-                  {topTab === "sale" && !flowCardCollapsed && (
-                    <div className="flex items-center gap-2 flex-wrap justify-end">
-                      <span className="text-[13px] font-semibold text-slate-500 whitespace-nowrap">
-                        상품명을 누르면 상세 정보와 재고 상황이 나옵니다
-                      </span>
-                      <div className="flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md p-0.5">
-                        {[
-                          { v: 100,   label: "Top 100" },
-                          { v: 300,   label: "Top 300" },
-                          { v: 1000,  label: "Top 1000" },
-                          { v: 2000,  label: "Top 2000" },
-                          { v: 50000, label: "전체" },
-                        ].map(o => (
-                          <button key={o.v} onClick={() => setFlowLimit(o.v)}
-                            className={`text-[13px] font-medium px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${
-                              flowLimit === o.v ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                            }`}
-                          >{o.label}</button>
-                        ))}
-                      </div>
+              <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+                {/* ─── 좌측: 재고리스트 (원본 유지) ─── */}
+                <div
+                  className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
+                  style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? flowPanelWidth : undefined }}
+                >
+                  {/* 재고 흐름 카드 · 판매추이 StockFlowPanel 과 동일 레이아웃 */}
+                  {/* 2026-07-29 · 사용자 요청 · 산만한 헤더 재구성 · 조회기간 옆에 날짜범위 · 기간 버튼 다음줄 */}
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <div className="flex flex-col gap-3 px-4 py-3 border-b border-slate-100 bg-white">
+                      {/* 2026-07-30 (2nd) · Top N 필터는 SeasonButtons 옆으로 이동 */}
                     </div>
-                  )}
-                  {!flowCardCollapsed && (
-                    <p className="text-[13px] text-slate-400 leading-tight">
-                      상품명을 누르면 상세 정보와 재고 상황이 나옵니다
-                    </p>
-                  )}
-                </div>
-                <div className={`flex-1 min-h-0 flex flex-col p-3 ${flowCardCollapsed ? "hidden" : "flex"}`}>
-                {topTab === "sale" && (
-                  <>
-                    {/* 1행 · 조회기간 라벨 + 날짜범위 배지 */}
-                    <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="text-[13px] font-medium text-slate-500 shrink-0">조회기간</span>
-                      {/* 스냅샷 (10일 모드) */}
-                      {flowMonths === 0 && !flowSeason && flowSnapshot && (
-                        <span className="text-[13px] tabular-nums font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1">
-                          {flowDateRange ?? flowSnapshot}
-                        </span>
-                      )}
-                      {/* 개월 모드 · 실제 날짜 범위 */}
-                      {flowMonths > 0 && (() => {
-                        const today = new Date();
-                        const start = new Date(today.getFullYear(), today.getMonth() - flowMonths, 1);
-                        const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
-                        const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-                        return (
-                          <span className="text-[13px] tabular-nums font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1">
-                            {s} ~ {e}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                    {/* 2행 · 기간 선택 버튼 (10일 · 1~6개월 · 계절) */}
-                    <div className="flex items-center gap-2 mb-3 flex-wrap">
-                      <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
-                        <button onClick={() => { setFlowSeason(null); setPendingFlowMonths(0); setFlowMonths(0); }}
-                          className={`px-2.5 py-1.5 text-[14px] font-medium rounded transition cursor-pointer ${
-                            !flowSeason && flowMonths === 0 ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                          }`}>10일</button>
-                        {[1, 2, 3, 4, 5, 6].map(m => (
-                          <button key={m} onClick={() => { setFlowSeason(null); setPendingFlowMonths(m as any); setFlowMonths(m as any); }}
-                            className={`px-2.5 py-1.5 text-[14px] font-medium rounded transition cursor-pointer ${
-                              !flowSeason && flowMonths === m ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
-                            }`}>{m}개월</button>
-                        ))}
-                      </div>
-                      <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) { setPendingFlowMonths(0); setFlowMonths(0); } }} size="sm" hideLabel />
-                    </div>
-                    {/* 2026-07-29 · 리스트 내 검색 제거 (사용자 요청) · 전체 DB 검색 + 정보확인 + 숨김관리만 유지 */}
-                    <div className="flex items-center gap-2 mb-3 flex-wrap">
-                      {/* 정보확인 검색 (전체 DB) */}
-                      <div className="relative flex-1 min-w-[240px]">
-                        <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                        <input
-                          value={infoSearchQuery}
-                          onChange={(e) => setInfoSearchQuery(e.target.value)}
-                          onKeyDown={(e) => { if (e.key === "Enter") runInfoSearch(); }}
-                          placeholder="전체 DB 검색 (정보확인)"
-                          className="w-full pl-8 pr-2 py-1.5 border border-slate-200 rounded-md text-[14px] focus:outline-none focus:border-slate-400 bg-white"
-                        />
-                        {infoSearchResults.length > 0 && (
-                          <div className="absolute left-0 top-full mt-1 max-h-64 overflow-y-auto border border-slate-200 bg-white rounded-lg shadow-lg z-30 divide-y divide-slate-100 min-w-full sm:min-w-[500px]">
-                            {infoSearchResults.map((p, i) => (
-                              <button key={`info-sr-${p.product_code}-${i}`}
-                                onClick={() => { setInfoSelected(p); setInfoSearchQuery(p.product_name); setInfoSearchResults([]); }}
-                                className="w-full text-left px-2.5 py-1.5 hover:bg-sky-50 transition text-sm flex items-center justify-between gap-2">
-                                <div className="min-w-0">
-                                  <div className="font-bold text-slate-800 whitespace-nowrap">{p.product_name}</div>
-                                  <div className="text-[12px] tabular-nums text-slate-400 whitespace-nowrap">#{p.product_code} · {p.supplier ?? "-"}</div>
+                    <div className={`flex-1 min-h-0 flex flex-col p-3 ${flowCardCollapsed ? "hidden" : "flex"}`}>
+                      {topTab === "sale" && (
+                        <>
+                          {/* 2026-07-30 (2nd) · 사용자 요청 · 페이지 제목 · 조회기간 위에 */}
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <span className="text-[15px] font-black text-slate-800">상품현황리스트</span>
+                            <span className="text-[12px] tabular-nums text-slate-400">({filteredFlow.length}건)</span>
+                            <p className="text-[13px] text-slate-500 leading-tight">상품명을 누르면 상세 정보와 재고 상황이 나옵니다</p>
+                          </div>
+                          {/* 1행 · 조회기간 라벨 + 날짜범위 배지 */}
+                          <div className="flex items-center gap-2 mb-2 flex-wrap">
+                            <span className="text-[13px] font-medium text-slate-500 shrink-0">조회기간</span>
+                            {/* 스냅샷 (10일 모드) */}
+                            {flowMonths === 0 && !flowSeason && flowSnapshot && (
+                              <span className="text-[13px] tabular-nums font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1">
+                                {flowDateRange ?? flowSnapshot}
+                              </span>
+                            )}
+                            {/* 개월 모드 · 실제 날짜 범위 */}
+                            {flowMonths > 0 && (() => {
+                              const today = new Date();
+                              const start = new Date(today.getFullYear(), today.getMonth() - flowMonths, 1);
+                              const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
+                              const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+                              return (
+                                <span className="text-[13px] tabular-nums font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-1">
+                                  {s} ~ {e}
+                                </span>
+                              );
+                            })()}
+
+                          </div>
+                          {/* 2행 · 기간 선택 버튼 (10일 · 1~6개월 · 계절) */}
+                          <div className="flex items-center gap-2 mb-3 flex-wrap">
+                            <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
+                              <button onClick={() => { setFlowSeason(null); setPendingFlowMonths(0); setFlowMonths(0); }}
+                                className={`px-2.5 py-1.5 text-[14px] font-medium rounded transition cursor-pointer ${!flowSeason && flowMonths === 0 ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                  }`}>10일</button>
+                              {[1, 2, 3, 4, 5, 6].map(m => (
+                                <button key={m} onClick={() => { setFlowSeason(null); setPendingFlowMonths(m as any); setFlowMonths(m as any); }}
+                                  className={`px-2.5 py-1.5 text-[14px] font-medium rounded transition cursor-pointer ${!flowSeason && flowMonths === m ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                    }`}>{m}개월</button>
+                              ))}
+                            </div>
+                            <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) { setPendingFlowMonths(0); setFlowMonths(0); } }} size="sm" hideLabel />
+                            {/* 2026-07-30 (2nd) · 사용자 요청 · Top N 필터 · SeasonButtons 옆 */}
+                            <div className="flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md p-0.5 ml-auto">
+                              {[
+                                { v: 100, label: "Top 100" },
+                                { v: 300, label: "Top 300" },
+                                { v: 1000, label: "Top 1000" },
+                                { v: 2000, label: "Top 2000" },
+                                { v: 50000, label: "전체" },
+                              ].map(o => (
+                                <button key={o.v} onClick={() => setFlowLimit(o.v)}
+                                  className={`text-[13px] font-medium px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${flowLimit === o.v ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"
+                                    }`}
+                                >{o.label}</button>
+                              ))}
+                            </div>
+                          </div>
+                          {/* 2026-07-29 · 리스트 내 검색 제거 (사용자 요청) · 전체 DB 검색 + 정보확인 + 숨김관리만 유지 */}
+                          <div className="flex items-center gap-2 mb-3 flex-wrap">
+                            {/* 정보확인 검색 (전체 DB) */}
+                            <div className="relative flex-1 min-w-[240px]">
+                              <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                              <input
+                                value={infoSearchQuery}
+                                onChange={(e) => setInfoSearchQuery(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === "Enter") runInfoSearch(); }}
+                                placeholder="전체 DB 검색 (정보확인)"
+                                className="w-full pl-8 pr-2 py-1.5 border border-slate-200 rounded-md text-[14px] focus:outline-none focus:border-slate-400 bg-white"
+                              />
+                              {infoSearchResults.length > 0 && (
+                                <div className="absolute left-0 top-full mt-1 max-h-64 overflow-y-auto border border-slate-200 bg-white rounded-lg shadow-lg z-30 divide-y divide-slate-100 min-w-full sm:min-w-[500px]">
+                                  {infoSearchResults.map((p, i) => (
+                                    <button key={`info-sr-${p.product_code}-${i}`}
+                                      onClick={() => { setInfoSelected(p); setInfoSearchQuery(p.product_name); setInfoSearchResults([]); }}
+                                      className="w-full text-left px-2.5 py-1.5 hover:bg-sky-50 transition text-sm flex items-center justify-between gap-2">
+                                      <div className="min-w-0">
+                                        <div className="font-bold text-slate-800 whitespace-nowrap">{p.product_name}</div>
+                                        <div className="text-[12px] tabular-nums text-slate-400 whitespace-nowrap">#{p.product_code} · {p.supplier ?? "-"}</div>
+                                      </div>
+                                      <span className="text-[13px] text-slate-400 shrink-0">재고 {p.current_stock ?? "-"}</span>
+                                    </button>
+                                  ))}
                                 </div>
-                                <span className="text-[13px] text-slate-400 shrink-0">재고 {p.current_stock ?? "-"}</span>
+                              )}
+                            </div>
+                            <button
+                              onClick={() => {
+                                // 2026-07-29 · 사용자 요청 · 정보확인 클릭 시 오른쪽 상품 상세 패널에 표시
+                                const target = infoSelected ?? infoSearchResults[0] ?? null;
+                                if (target) {
+                                  loadFlowSelectedProduct(target);
+                                  setInfoSearchResults([]);
+                                }
+                              }}
+                              disabled={!infoSelected && !infoSearchQuery.trim() && infoSearchResults.length === 0}
+                              className="flex items-center gap-1.5 text-[14px] font-medium text-white bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed rounded-md px-3 py-1.5 cursor-pointer transition shrink-0"
+                              title="검색 후 클릭 → 오른쪽 상세 패널에 상품 정보 표시">
+                              <Info size={13} /> 정보확인
+                            </button>
+                            <button
+                              onClick={() => openHiddenManagerModal()}
+                              className="flex items-center gap-1.5 text-[14px] font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-md px-3 py-1.5 cursor-pointer transition shrink-0"
+                              title="숨김 처리된 상품을 확인/해제">
+                              <EyeOff size={13} /> 숨김 관리
+                            </button>
+                          </div>
+                          {/* 판매수량 범위 필터 (모바일 최적화) */}
+                          <div className="flex items-center gap-2 mb-3 flex-wrap">
+                            <span className="text-[13px] font-medium text-slate-500 shrink-0">판매출고계</span>
+                            <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0">
+                              <input type="number" min={0} value={salesQtyMin}
+                                onChange={e => setSalesQtyMin(e.target.value)} placeholder="최소"
+                                className="flex-1 sm:w-20 min-w-0 px-2 py-1.5 border border-slate-200 rounded-md text-[14px] tabular-nums text-right focus:outline-none focus:border-slate-400" />
+                              <span className="text-slate-400 shrink-0 text-[13px]">~</span>
+                              <input type="number" min={0} value={salesQtyMax}
+                                onChange={e => setSalesQtyMax(e.target.value)} placeholder="최대"
+                                className="flex-1 sm:w-20 min-w-0 px-2 py-1.5 border border-slate-200 rounded-md text-[14px] tabular-nums text-right focus:outline-none focus:border-slate-400" />
+                              <span className="text-slate-400 shrink-0 text-[13px]">개</span>
+                            </div>
+                            {(salesQtyMin || salesQtyMax) && (
+                              <button onClick={() => { setSalesQtyMin(""); setSalesQtyMax(""); }}
+                                className="text-[13px] font-medium text-rose-500 hover:text-rose-700 px-2 py-1.5 rounded-md hover:bg-rose-50 transition cursor-pointer shrink-0 border border-rose-200">
+                                초기화
                               </button>
-                            ))}
+                            )}
+                          </div>
+                        </>
+                      )}
+                      {/* 리스트 · 재고리스트 · 10개 넘으면 세로 스크롤 */}
+                      <div className="px-1 pt-3 pb-2 flex items-center gap-2 border-t border-slate-100">
+                        <span className="text-[15px] font-black text-slate-700">{topTab === "sale" ? "상품현황리스트" : "매입리스트"}</span>
+                        <span className="text-[11px] tabular-nums text-slate-400">
+                          ({topTab === "sale" ? filteredFlow.length : topProducts.length}건)
+                        </span>
+                        <p className="text-[13px] text-slate-400 leading-tight">
+                          상품명을 누르면 상세 정보와 재고 상황이 나옵니다
+                        </p>
+                      </div>
+                      <div className="relative flex-1 overflow-auto -mx-1 max-h-[50vh]">
+                        {/* 2026-07-20: 리스트 내부 로딩 배너 · 데이터 있을 때 sticky 상단 · shimmer 애니메이션 · 아래 데이터 opacity 60% */}
+                        {/* 2026-07-20: 로딩 UI 통일 · 판매추이 공급사별판매 패턴 */}
+                        {loading && topTab === "sale" && filteredFlow.length > 0 && (
+                          <div className="flex items-center justify-center gap-1.5 text-[12px] text-sky-600 font-bold py-1.5 mx-1 mt-1 mb-1 bg-sky-50 border border-sky-200 rounded-md">
+                            <LoaderIcon size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
                           </div>
                         )}
-                      </div>
-                      <button
-                        onClick={() => {
-                          // 2026-07-29 · 사용자 요청 · 정보확인 클릭 시 오른쪽 상품 상세 패널에 표시
-                          const target = infoSelected ?? infoSearchResults[0] ?? null;
-                          if (target) {
-                            loadFlowSelectedProduct(target);
-                            setInfoSearchResults([]);
-                          }
-                        }}
-                        disabled={!infoSelected && !infoSearchQuery.trim() && infoSearchResults.length === 0}
-                        className="flex items-center gap-1.5 text-[14px] font-medium text-white bg-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed rounded-md px-3 py-1.5 cursor-pointer transition shrink-0"
-                        title="검색 후 클릭 → 오른쪽 상세 패널에 상품 정보 표시">
-                        <Info size={13} /> 정보확인
-                      </button>
-                      <button
-                        onClick={() => openHiddenManagerModal()}
-                        className="flex items-center gap-1.5 text-[14px] font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 rounded-md px-3 py-1.5 cursor-pointer transition shrink-0"
-                        title="숨김 처리된 상품을 확인/해제">
-                        <EyeOff size={13} /> 숨김 관리
-                      </button>
-                    </div>
-                    {/* 판매수량 범위 필터 (모바일 최적화) */}
-                    <div className="flex items-center gap-2 mb-3 flex-wrap">
-                      <span className="text-[13px] font-medium text-slate-500 shrink-0">판매출고계</span>
-                      <div className="flex items-center gap-1.5 flex-1 sm:flex-initial min-w-0">
-                        <input type="number" min={0} value={salesQtyMin}
-                          onChange={e => setSalesQtyMin(e.target.value)} placeholder="최소"
-                          className="flex-1 sm:w-20 min-w-0 px-2 py-1.5 border border-slate-200 rounded-md text-[14px] tabular-nums text-right focus:outline-none focus:border-slate-400" />
-                        <span className="text-slate-400 shrink-0 text-[13px]">~</span>
-                        <input type="number" min={0} value={salesQtyMax}
-                          onChange={e => setSalesQtyMax(e.target.value)} placeholder="최대"
-                          className="flex-1 sm:w-20 min-w-0 px-2 py-1.5 border border-slate-200 rounded-md text-[14px] tabular-nums text-right focus:outline-none focus:border-slate-400" />
-                        <span className="text-slate-400 shrink-0 text-[13px]">개</span>
-                      </div>
-                      {(salesQtyMin || salesQtyMax) && (
-                        <button onClick={() => { setSalesQtyMin(""); setSalesQtyMax(""); }}
-                          className="text-[13px] font-medium text-rose-500 hover:text-rose-700 px-2 py-1.5 rounded-md hover:bg-rose-50 transition cursor-pointer shrink-0 border border-rose-200">
-                          초기화
-                        </button>
-                      )}
-                    </div>
-                  </>
-                )}
-                {/* 리스트 · 재고리스트 · 10개 넘으면 세로 스크롤 */}
-                <div className="px-1 pt-3 pb-2 flex items-center gap-2 border-t border-slate-100">
-                  <span className="text-[15px] font-black text-slate-700">{topTab === "sale" ? "상품현황리스트" : "매입리스트"}</span>
-                  <span className="text-[11px] tabular-nums text-slate-400">
-                    ({topTab === "sale" ? filteredFlow.length : topProducts.length}건)
-                  </span>
-                </div>
-                <div className="relative flex-1 overflow-auto -mx-1 max-h-[50vh]">
-                  {/* 2026-07-20: 리스트 내부 로딩 배너 · 데이터 있을 때 sticky 상단 · shimmer 애니메이션 · 아래 데이터 opacity 60% */}
-                  {/* 2026-07-20: 로딩 UI 통일 · 판매추이 공급사별판매 패턴 */}
-                  {loading && topTab === "sale" && filteredFlow.length > 0 && (
-                    <div className="flex items-center justify-center gap-1.5 text-[12px] text-sky-600 font-bold py-1.5 mx-1 mt-1 mb-1 bg-sky-50 border border-sky-200 rounded-md">
-                      <LoaderIcon size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
-                    </div>
-                  )}
-                  {topTab === "sale" ? (
-                    filteredFlow.length === 0 ? (
-                      loading ? (
-                        <div className="flex flex-col items-center justify-center gap-3 py-8">
-                          <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
-                          <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
-                        </div>
-                      ) : (
-                        <div className="text-center text-[13px] text-slate-300 py-6">
-                          {stockFlow.length === 0
-                            ? "재고 데이터 없음 (재고현황 xlsx 업로드 필요)"
-                            : "선택한 판매수량 범위에 해당하는 상품 없음"}
-                        </div>
-                      )
-                    ) : (
-                      // 2026-07-29 · sticky thead 활성화 · 내부 overflow-hidden 제거 (sticky 를 막던 이슈)
-                      <div className={`transition-opacity duration-200 ${loading ? "opacity-60" : "opacity-100"}`}>
-                      <table className="w-full text-[13px] sm:text-sm" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
-                        <thead className="sticky top-0 bg-white z-20 shadow-sm">
-                          {selectedFlowCodes.size > 0 && (
-                            <tr className="bg-rose-50 border-b border-rose-200">
-                              <td colSpan={10} className="px-2 py-1.5">
-                                <div className="flex items-center gap-2 text-[13px]">
-                                  <span className="font-black text-rose-700">{selectedFlowCodes.size}개 선택됨</span>
-                                  <button onClick={bulkHideFlow} disabled={flowBulkHiding}
-                                    className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-black shadow-sm disabled:opacity-50">
-                                    {flowBulkHiding ? <LoaderIcon size={11} className="animate-spin" /> : <EyeOff size={11} />}
-                                    선택 숨김
-                                  </button>
-                                  <button onClick={() => setSelectedFlowCodes(new Set())}
-                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 font-black">
-                                    <XIcon size={11} /> 해제
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          )}
-                          {/* 2026-07-30 · 사용자 요청 · 3그룹 헤더 색상 (재고현황 sky · 매입현황 amber · 판매현황 emerald) */}
-                          <tr className="border-b border-slate-200 text-[12px] font-black tracking-wider">
-                            <th colSpan={2} className="bg-slate-50"></th>{/* 체크박스+# 통합 셀 + 상품명 */}
-                            {(() => {
-                              // 2026-07-30 · 사용자 요청 · 재고현황 파란 · 매입현황 주황 · 판매현황 붉은 계열
-                              const GROUP_COLOR: Record<FlowGroup, { bg: string; text: string; hover: string }> = {
-                                stock:    { bg: "bg-sky-50",   text: "text-sky-700",   hover: "hover:bg-sky-100" },
-                                purchase: { bg: "bg-amber-50", text: "text-amber-700", hover: "hover:bg-amber-100" },
-                                sales:    { bg: "bg-rose-50",  text: "text-rose-700",  hover: "hover:bg-rose-100" },
-                              };
-                              const groupHeader = (g: FlowGroup, label: string, span: number) => {
-                                const collapsed = isFlowGroupCollapsed(g);
-                                const c = GROUP_COLOR[g];
-                                return (
-                                  <th colSpan={collapsed ? 1 : span}
-                                    className={`text-center py-2 border-l border-r border-slate-100 cursor-pointer select-none transition uppercase ${c.bg} ${c.text} ${c.hover}`}
-                                    onClick={() => toggleFlowGroup(g)}
-                                    title={collapsed ? `${label} 펼치기` : `${label} 접기`}
-                                  >
-                                    <span className="inline-flex items-center gap-1 font-black text-[13px] whitespace-nowrap">
-                                      {collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
-                                      {label}
-                                    </span>
-                                  </th>
-                                );
-                              };
-                              return (
-                                <>
-                                  {groupHeader("stock",    "재고현황", 3)}
-                                  {groupHeader("purchase", "매입현황", 3)}
-                                  {groupHeader("sales",    "판매현황", 4)}
-                                </>
-                              );
-                            })()}
-                          </tr>
-                          {/* 2026-07-28 · 사용자 요청 · 리스트 폰트 통일 · 헤더 12px (기존 10px) · 데이터 셀과 동일 */}
-                          <tr className="border-b border-slate-100 text-[15px] font-bold text-slate-500 tracking-tight bg-white">
-                            {(() => {
-                              const arrowFor = (key: SortKey): string => {
-                                if (flowSort !== key) return "⇅";
-                                return flowDir === "desc" ? "▼" : "▲";
-                              };
-                              return (
-                                <>
-                                  {/* 2026-07-29 · 체크박스 + # 한 셀 통합 (사용자 요청) */}
-                                  <th className="text-center px-1 py-1.5" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>
-                                    <div className="flex items-center justify-center gap-1.5">
-                                      <button onClick={() => {
-                                        if (selectedFlowCodes.size === filteredFlow.length) setSelectedFlowCodes(new Set());
-                                        else setSelectedFlowCodes(new Set(filteredFlow.map(r => String(r.product_code))));
-                                      }} className="text-slate-400 hover:text-rose-500 transition inline-flex items-center justify-center" title="전체 선택/해제">
-                                        {selectedFlowCodes.size === filteredFlow.length && filteredFlow.length > 0
-                                          ? <CheckSquare size={13} className="text-rose-500" />
-                                          : <Square size={13} />}
-                                      </button>
-                                      <span className="text-[14px] font-black text-slate-500">#</span>
-                                    </div>
-                                  </th>
-                                  <th
-                                    onClick={() => toggleFlowSort("name")}
-                                    className={`text-left px-1 py-1.5 min-w-[260px] cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}
-                                    title="클릭: 상품명 가나다순 정렬"
-                                  >
-                                    <span className="flex flex-col leading-tight items-start">
-                                      <span>상품명</span>
-                                      <span className="text-[11px] opacity-70">{arrowFor("name")}</span>
-                                    </span>
-                                  </th>
-                                  {/* 2026-07-28 · 사용자 요청 · 시작 컬럼 제거 · 매입 → 최근매입일 옆으로 이동 (라벨 · 최근매입량) */}
-                                  {/* === 재고현황 그룹 (판매량 · 현재고 · 적정재고) · sky 톤 통일 · 2026-07-30 · 사용자 요청 */}
-                                  {isFlowGroupCollapsed("stock") && <th className="bg-sky-50/20"></th>}
-                                  {!isFlowGroupCollapsed("stock") && <>
-                                  <th
-                                    onClick={() => toggleFlowSort("sale")}
-                                    className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "sale" ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
-                                    title="클릭: 판매출고계 기준 정렬 · 실제 팔린 양"
-                                  >
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span>판매량</span>
-                                      <span className="text-[11px] opacity-70">{arrowFor("sale")}</span>
-                                    </span>
-                                  </th>
-                                  <th
-                                    onClick={() => toggleFlowSort("current")}
-                                    className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "current" ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
-                                    title="클릭: ERP 현재고 기준 정렬 · products.current_stock"
-                                  >
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span>현재고</span>
-                                      <span className="text-[11px] opacity-70">{arrowFor("current")}</span>
-                                    </span>
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("optimal" as any)}
-                                    className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === ("optimal" as any) ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
-                                    title="적정재고 = 최근 30일 판매 총합 (관리자가 상단 '적정재고 = 30일 판매량' 버튼 실행 시점 · products.optimal_stock)"
-                                  >
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span>적정재고</span>
-                                      <span className="text-[11px] font-semibold text-sky-500">최근 30일</span>
-                                      <span className="text-[11px] opacity-70">{arrowFor("optimal" as any)}</span>
-                                    </span>
-                                  </th>
-                                  </>}
-                                  {/* === 매입현황 그룹 (평균매입주기 · 최근매입일 · 최근매입량) · amber 톤 통일 */}
-                                  {isFlowGroupCollapsed("purchase") && <th className="bg-amber-50/20"></th>}
-                                  {!isFlowGroupCollapsed("purchase") && <>
-                                  <th onClick={() => toggleFlowSort("cycle")}
-                                    className={`text-right px-0.5 py-1.5 w-12 text-[14px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "cycle" ? "text-amber-800" : "text-amber-600"}`}
-                                    title="평균 매입주기 = (최근-최초 매입일) / (매입횟수-1) · 클릭 정렬">
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span className="text-[12px] font-semibold text-amber-500">평균</span>
-                                      <span>매입주기</span>
-                                      <span className="text-[11px] opacity-70">{arrowFor("cycle")}</span>
-                                    </span>
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("last_purchase")}
-                                    className={`text-right px-0.5 py-1.5 w-11 text-[14px] font-black cursor-pointer select-none bg-amber-50/40 hover:bg-amber-100 transition ${flowSort === "last_purchase" ? "text-amber-800" : "text-amber-600"}`}
-                                    title="최근 매입일 · 클릭 정렬">
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span className="text-[12px] font-semibold text-amber-500">최근</span>
-                                      <span>매입일</span>
-                                      <span className="text-[11px] opacity-70">{arrowFor("last_purchase")}</span>
-                                    </span>
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("purchase")}
-                                    className={`text-right px-0.5 py-1.5 w-12 text-[14px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "purchase" ? "text-amber-800" : "text-amber-600"}`}
-                                    title="최근매입량 · 클릭 정렬">
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span className="text-[12px] font-semibold text-amber-500">최근</span>
-                                      <span>매입량</span>
-                                      <span className="text-[11px] opacity-70">{arrowFor("purchase")}</span>
-                                    </span>
-                                  </th>
-                                  </>}
-                                  {/* === 판매현황 그룹 (재고금액 · ERP단가 · 판매가 · 이익률) · rose 톤 통일 · 2026-07-30 · 사용자 요청 */}
-                                  {isFlowGroupCollapsed("sales") && <th className="bg-rose-50/20"></th>}
-                                  {!isFlowGroupCollapsed("sales") && <>
-                                  <th onClick={() => toggleFlowSort("stock_value")}
-                                    className={`text-right px-0.5 py-1.5 w-20 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "stock_value" ? "text-rose-800" : "text-rose-700"}`}
-                                    title="재고금액 = 현재고 × 최근매입가 · 클릭 정렬">
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span className="font-semibold text-rose-500">재고</span>
-                                      <span>금액</span>
-                                      <span className="text-[11px] opacity-70">{arrowFor("stock_value")}</span>
-                                    </span>
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("last_purchase_price")}
-                                    className={`text-right px-0.5 py-1.5 w-16 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "last_purchase_price" ? "text-rose-800" : "text-rose-600"}`}
-                                    title="ERP단가 = products.purchase_price · 클릭 정렬">
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span className="font-semibold text-rose-500">ERP</span>
-                                      <span>단가</span>
-                                      <span className="text-[11px] opacity-70">{arrowFor("last_purchase_price")}</span>
-                                    </span>
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("sale_price")}
-                                    className={`text-right px-0.5 py-1.5 w-16 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale_price" ? "text-rose-800" : "text-rose-600"}`}
-                                    title="판매 단가 · 클릭 정렬">
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span>판매가</span>
-                                      <span className="text-[11px] opacity-70">{arrowFor("sale_price")}</span>
-                                    </span>
-                                  </th>
-                                  <th onClick={() => toggleFlowSort("profit_rate")}
-                                    className={`text-right px-0.5 py-1.5 w-14 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "profit_rate" ? "text-rose-800" : "text-rose-600"}`}
-                                    title="이익률 · 클릭 정렬">
-                                    <span className="flex flex-col leading-tight items-end">
-                                      <span>이익률</span>
-                                      <span className="text-[11px] opacity-70">{arrowFor("profit_rate")}</span>
-                                    </span>
-                                  </th>
-                                  </>}
-                                </>
-                              );
-                            })()}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                          {filteredFlow.map((p, i) => {
-                            const cur = Number((p as any).current_stock ?? 0);
-                            const openV = Number(p.opening_stock ?? 0);
-                            const saleV = Number(p.sale_qty ?? 0);
-                            // 2026-07-28 · 사용자 요청 · 공급사재고와 동일 데이터 · purchase_total_qty 우선 fallback purchase_qty
-                            const purchV = Number((p as any).purchase_total_qty ?? p.purchase_qty ?? 0);
-                            const closeV = Number(p.closing_stock ?? 0);
-                            const loss = (openV - saleV) - closeV;
-                            const saleP = Number((p as any).sale_price ?? 0);
-                            const purP = Number((p as any).purchase_price ?? 0);
-                            const profitRate = saleP > 0 && purP > 0 ? Math.trunc(((saleP - purP) / saleP) * 100) : null;
-                            const periodDays = (flowMonths && flowMonths > 0) ? flowMonths * 30 : 30;
-                            const avgStock = (openV + cur) / 2;
-                            const turnover = avgStock > 0 ? saleV / avgStock : 0;
-                            const doh = turnover > 0 ? Math.round(periodDays / turnover) : null;
-                            // 2026-07-28 · 매입주기 = (last - first) / (count - 1) · 공급사재고 리스트와 동일 계산
-                            const purchaseCount = Number((p as any).purchase_count ?? 0);
-                            const firstPD = (p as any).first_purchase_date as string | null;
-                            const lastPD = p.last_purchase_date;
-                            const purchaseCycle = (() => {
-                              if (purchaseCount < 2 || !firstPD || !lastPD || firstPD === lastPD) return null;
-                              const days = Math.round((new Date(lastPD).getTime() - new Date(firstPD).getTime()) / (86400 * 1000));
-                              return purchaseCount > 1 ? Math.round(days / (purchaseCount - 1)) : null;
-                            })();
-                            // 최근매입일 M/D 축약
-                            const lastPDShort = (() => {
-                              const d = lastPD;
-                              if (!d || !/^\d{4}-\d{2}-\d{2}/.test(String(d))) return "-";
-                              return `${String(d).slice(5, 7)}/${String(d).slice(8, 10)}`;
-                            })();
-                            // 재고금액 · "N.N만" 축약 (예 · 4488000 → 448.8만)
-                            const stockValue = cur > 0 && purP > 0 ? cur * purP : 0;
-                            const fmtMan = (v: number): string => {
-                              if (v <= 0) return "-";
-                              if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(2)}억`;
-                              if (v >= 10_000) return `${(v / 10_000).toFixed(1)}만`;
-                              return v.toLocaleString();
-                            };
-                            const minOrder = Number((p as any).min_order ?? 0);
-                            return (
-                            <tr key={`flow-${p.product_code}-${i}`} className={`transition ${selectedFlowCodes.has(String(p.product_code)) ? "bg-slate-50" : "hover:bg-slate-50/70"}`}>
-                              {/* 2026-07-29 · 체크박스 + 순위 한 셀 통합 (사용자 요청) */}
-                              <td className="text-center px-1 py-2 align-top" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>
-                                <div className="flex items-center justify-center gap-1.5">
-                                  <span onClick={(e) => { e.stopPropagation(); toggleSelectFlow(String(p.product_code)); }}
-                                    className="cursor-pointer inline-flex items-center justify-center">
-                                    {selectedFlowCodes.has(String(p.product_code))
-                                      ? <CheckSquare size={13} className="text-slate-500" />
-                                      : <Square size={13} className="text-slate-300 hover:text-slate-500" />}
-                                  </span>
-                                  <span className="text-[12px] font-semibold text-slate-400 tabular-nums">{i + 1}</span>
-                                </div>
-                              </td>
-                              <td className="px-2 py-2.5 align-top">
-                                <button
-                                  type="button"
-                                  onClick={() => loadFlowSelectedProduct(p)}
-                                  className="text-left text-[16px] font-black text-slate-700 hover:text-slate-900 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
-                                  title={`${p.product_name} · 클릭하면 오른쪽에 상세 정보 (모바일 · 모달)`}
-                                >
-                                  {p.product_name}
-                                  {(p as any).min_order != null && (p as any).min_order > 0 && (
-                                    <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-sm text-[12px] font-black text-slate-500 bg-slate-100 border border-slate-200 align-middle" title={`최소주문량 ${(p as any).min_order}`}>
-                                      최소{(p as any).min_order}
-                                    </span>
+                        {topTab === "sale" ? (
+                          filteredFlow.length === 0 ? (
+                            loading ? (
+                              <div className="flex flex-col items-center justify-center gap-3 py-8">
+                                <div className="w-10 h-10 border-4 border-slate-200 border-t-orange-500 rounded-full animate-spin" />
+                                <div className="text-xs font-black text-slate-600">데이터 로딩중...</div>
+                              </div>
+                            ) : (
+                              <div className="text-center text-[13px] text-slate-300 py-6">
+                                {stockFlow.length === 0
+                                  ? "재고 데이터 없음 (재고현황 xlsx 업로드 필요)"
+                                  : "선택한 판매수량 범위에 해당하는 상품 없음"}
+                              </div>
+                            )
+                          ) : (
+                            // 2026-07-29 · sticky thead 활성화 · 내부 overflow-hidden 제거 (sticky 를 막던 이슈)
+                            <div className={`transition-opacity duration-200 ${loading ? "opacity-60" : "opacity-100"}`}>
+                              <table className="w-full text-[13px] sm:text-sm" style={{ tableLayout: "fixed", borderCollapse: "separate", borderSpacing: 0 }}>
+                                <thead className="sticky top-0 bg-white z-20 shadow-sm">
+                                  {selectedFlowCodes.size > 0 && (
+                                    <tr className="bg-rose-50 border-b border-rose-200">
+                                      <td colSpan={10} className="px-2 py-1.5">
+                                        <div className="flex items-center gap-2 text-[13px]">
+                                          <span className="font-black text-rose-700">{selectedFlowCodes.size}개 선택됨</span>
+                                          <button onClick={bulkHideFlow} disabled={flowBulkHiding}
+                                            className="ml-auto inline-flex items-center gap-1 px-2 py-1 rounded-md bg-rose-500 hover:bg-rose-600 text-white font-black shadow-sm disabled:opacity-50">
+                                            {flowBulkHiding ? <LoaderIcon size={11} className="animate-spin" /> : <EyeOff size={11} />}
+                                            선택 숨김
+                                          </button>
+                                          <button onClick={() => setSelectedFlowCodes(new Set())}
+                                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 font-black">
+                                            <XIcon size={11} /> 해제
+                                          </button>
+                                        </div>
+                                      </td>
+                                    </tr>
                                   )}
-                                </button>
-                                {p.supplier && <div className="text-[11px] font-medium text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
-                              </td>
-                              {/* === 재고현황 그룹 (판매량 · 현재고 · 적정재고) === */}
-                              {!isFlowGroupCollapsed("stock") && <>
-                              <td
-                                className="text-right px-1.5 py-2.5 font-black text-[14px] bg-slate-50/60 align-top tabular-nums text-slate-700"
-                                title="판매출고계 · 실제 팔린 양"
-                              >{fmt(saleV)}</td>
-                              {(() => {
-                                const close = Number(p.closing_stock ?? 0);
-                                const opt = Number((p as any).optimal_stock ?? 0);
-                                const mismatch = close !== cur;
-                                const belowOptimal = opt > 0 && cur < opt;
-                                // 2026-07-29 · 현재고 < 적정재고 시 빨간색 (사용자 요청)
-                                return (
-                                  <td
-                                    className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${cur <= 0 || mismatch || belowOptimal ? "text-rose-500" : "text-slate-700"}`}
-                                    title={belowOptimal ? `현재고 부족 · ${cur} < 적정재고 ${opt}` : mismatch ? `현재고(${fmt(cur)}) ≠ 스냅샷 종료재고(${fmt(close)}) · 스냅샷 이후 변동 있음` : "ERP 현재고 (= 스냅샷 종료재고)"}
-                                  >{fmt(cur)}</td>
-                                );
-                              })()}
-                              {(() => {
-                                const opt = Number((p as any).optimal_stock ?? 0);
-                                const below = opt > 0 && cur < opt;
-                                return (
-                                  <td className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${opt <= 0 ? "text-slate-300" : below ? "text-rose-400" : "text-slate-500"}`}
-                                    title={opt > 0 ? `적정재고 ${fmt(opt)}${below ? ` · 현재고 부족 (${cur}/${opt})` : ""}` : "적정재고 미설정"}>
-                                    {opt > 0 ? fmt(opt) : "-"}
-                                  </td>
-                                );
-                              })()}
-                              </>}
-                              {/* 그룹 접힘 시 빈 셀 placeholder (colSpan 맞춤용) */}
-                              {isFlowGroupCollapsed("stock") && <td className="bg-slate-50/20"></td>}
-                              {/* === 매입현황 그룹 (매입주기 · 최근매입일 · 최근매입량) === */}
-                              {!isFlowGroupCollapsed("purchase") && <>
-                              <td className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${
-                                purchaseCycle != null ? "text-slate-600" :
-                                purchaseCount === 1 ? "text-slate-400" :
-                                purchaseCount >= 2 && firstPD === lastPD ? "text-slate-400" :
-                                "text-slate-300"
-                              }`}
-                                title={
-                                  purchaseCycle != null
-                                    ? `${purchaseCount}회 매입 · 평균 ${purchaseCycle}일 주기`
-                                    : purchaseCount === 1 && lastPD
-                                      ? `1회만 매입됨 (${lastPD}) · 주기 계산 불가`
-                                      : purchaseCount >= 2 && firstPD === lastPD
-                                        ? `${purchaseCount}회 매입 모두 같은 날짜 (${lastPD}) · 주기 계산 불가`
-                                        : "매입 이력 없음 (purchase_details 미조인 가능성)"
-                                }>
-                                {purchaseCycle != null
-                                  ? `${purchaseCycle}일`
-                                  : purchaseCount === 1
-                                    ? "1회"
-                                    : purchaseCount >= 2 && firstPD === lastPD
-                                      ? "동일일"
-                                      : "-"}
-                              </td>
-                              <td className="text-right px-1.5 py-2.5 text-slate-500 font-black text-[14px] align-top tabular-nums"
-                                title={lastPD ?? undefined}>
-                                {lastPDShort}
-                              </td>
-                              <td className="text-right px-1.5 py-2.5 text-slate-600 font-black text-[14px] align-top tabular-nums"
-                                title={purchV > 0 ? `최근매입량 ${fmt(purchV)}` : "매입 없음"}>
-                                {purchV > 0 ? fmt(purchV) : "-"}
-                              </td>
-                              </>}
-                              {isFlowGroupCollapsed("purchase") && <td className="bg-slate-50/20"></td>}
-                              {/* === 판매현황 그룹 (재고금액 · ERP단가 · 판매가 · 이익률) === */}
-                              {!isFlowGroupCollapsed("sales") && <>
-                              <td className="text-right px-1.5 py-2.5 text-slate-700 font-black text-[14px] align-top tabular-nums"
-                                title={stockValue > 0 ? `현재고 ${fmt(cur)} × ERP단가 ${fmtWon(purP)} = ${fmtWon(stockValue)}` : ""}>
-                                {fmtMan(stockValue)}
-                              </td>
-                              <td className="text-right px-1.5 py-2.5 text-slate-500 font-black text-[14px] align-top tabular-nums" title="ERP 사입 단가 (products.purchase_price)">{purP > 0 ? fmtWon(purP) : "-"}</td>
-                              <td className="text-right px-1.5 py-2.5 text-slate-600 font-black text-[14px] align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
-                              <td className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${profitRate == null ? "text-slate-300" : profitRate >= 30 ? "text-slate-700" : profitRate >= 15 ? "text-slate-600" : profitRate >= 0 ? "text-slate-500" : "text-rose-500"}`}
-                                title={profitRate != null ? `(판매가 ${fmtWon(saleP)} − 최근매입가 ${fmtWon(purP)}) / 판매가 = ${profitRate}%` : "-"}>
-                                {profitRate != null ? `${profitRate}%` : "-"}
-                              </td>
-                              </>}
-                              {isFlowGroupCollapsed("sales") && <td className="bg-slate-50/20"></td>}
-                            </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                                  {/* 2026-07-30 · 사용자 요청 · 3그룹 헤더 색상 (재고현황 sky · 매입현황 amber · 판매현황 emerald) */}
+                                  <tr className="border-b border-slate-200 text-[12px] font-black tracking-wider">
+                                    <th colSpan={2} className="bg-slate-50"></th>{/* 체크박스+# 통합 셀 + 상품명 */}
+                                    {(() => {
+                                      // 2026-07-30 · 사용자 요청 · 재고현황 파란 · 매입현황 주황 · 판매현황 붉은 계열
+                                      const GROUP_COLOR: Record<FlowGroup, { bg: string; text: string; hover: string }> = {
+                                        stock: { bg: "bg-sky-50", text: "text-sky-700", hover: "hover:bg-sky-100" },
+                                        purchase: { bg: "bg-amber-50", text: "text-amber-700", hover: "hover:bg-amber-100" },
+                                        sales: { bg: "bg-rose-50", text: "text-rose-700", hover: "hover:bg-rose-100" },
+                                      };
+                                      const groupHeader = (g: FlowGroup, label: string, span: number) => {
+                                        const collapsed = isFlowGroupCollapsed(g);
+                                        const c = GROUP_COLOR[g];
+                                        return (
+                                          <th colSpan={collapsed ? 1 : span}
+                                            className={`text-center py-2 border-l border-r border-slate-100 cursor-pointer select-none transition uppercase ${c.bg} ${c.text} ${c.hover}`}
+                                            onClick={() => toggleFlowGroup(g)}
+                                            title={collapsed ? `${label} 펼치기` : `${label} 접기`}
+                                          >
+                                            <span className="inline-flex items-center gap-1 font-black text-[13px] whitespace-nowrap">
+                                              {collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+                                              {label}
+                                            </span>
+                                          </th>
+                                        );
+                                      };
+                                      return (
+                                        <>
+                                          {groupHeader("stock", "재고현황", 3)}
+                                          {groupHeader("purchase", "매입현황", 3)}
+                                          {groupHeader("sales", "판매현황", 4)}
+                                        </>
+                                      );
+                                    })()}
+                                  </tr>
+                                  {/* 2026-07-28 · 사용자 요청 · 리스트 폰트 통일 · 헤더 12px (기존 10px) · 데이터 셀과 동일 */}
+                                  <tr className="border-b border-slate-100 text-[15px] font-bold text-slate-500 tracking-tight bg-white">
+                                    {(() => {
+                                      const arrowFor = (key: SortKey): string => {
+                                        if (flowSort !== key) return "⇅";
+                                        return flowDir === "desc" ? "▼" : "▲";
+                                      };
+                                      return (
+                                        <>
+                                          {/* 2026-07-29 · 체크박스 + # 한 셀 통합 (사용자 요청) */}
+                                          <th className="text-center px-1 py-1.5" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>
+                                            <div className="flex items-center justify-center gap-1.5">
+                                              <button onClick={() => {
+                                                if (selectedFlowCodes.size === filteredFlow.length) setSelectedFlowCodes(new Set());
+                                                else setSelectedFlowCodes(new Set(filteredFlow.map(r => String(r.product_code))));
+                                              }} className="text-slate-400 hover:text-rose-500 transition inline-flex items-center justify-center" title="전체 선택/해제">
+                                                {selectedFlowCodes.size === filteredFlow.length && filteredFlow.length > 0
+                                                  ? <CheckSquare size={13} className="text-rose-500" />
+                                                  : <Square size={13} />}
+                                              </button>
+                                              <span className="text-[14px] font-black text-slate-500">#</span>
+                                            </div>
+                                          </th>
+                                          <th
+                                            onClick={() => toggleFlowSort("name")}
+                                            className={`text-left px-1 py-1.5 min-w-[260px] cursor-pointer select-none hover:bg-slate-50 transition ${flowSort === "name" ? "text-slate-800 font-black" : "text-slate-500"}`}
+                                            title="클릭: 상품명 가나다순 정렬"
+                                          >
+                                            <span className="flex flex-col leading-tight items-start">
+                                              <span>상품명</span>
+                                              <span className="text-[11px] opacity-70">{arrowFor("name")}</span>
+                                            </span>
+                                          </th>
+                                          {/* 2026-07-28 · 사용자 요청 · 시작 컬럼 제거 · 매입 → 최근매입일 옆으로 이동 (라벨 · 최근매입량) */}
+                                          {/* === 재고현황 그룹 (판매량 · 현재고 · 적정재고) · sky 톤 통일 · 2026-07-30 · 사용자 요청 */}
+                                          {isFlowGroupCollapsed("stock") && <th className="bg-sky-50/20"></th>}
+                                          {!isFlowGroupCollapsed("stock") && <>
+                                            <th
+                                              onClick={() => toggleFlowSort("sale")}
+                                              className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "sale" ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
+                                              title="클릭: 판매출고계 기준 정렬 · 실제 팔린 양"
+                                            >
+                                              <span className="flex flex-col leading-tight items-end">
+                                                <span>판매량</span>
+                                                <span className="text-[11px] opacity-70">{arrowFor("sale")}</span>
+                                              </span>
+                                            </th>
+                                            <th
+                                              onClick={() => toggleFlowSort("current")}
+                                              className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === "current" ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
+                                              title="클릭: ERP 현재고 기준 정렬 · products.current_stock"
+                                            >
+                                              <span className="flex flex-col leading-tight items-end">
+                                                <span>현재고</span>
+                                                <span className="text-[11px] opacity-70">{arrowFor("current")}</span>
+                                              </span>
+                                            </th>
+                                            <th onClick={() => toggleFlowSort("optimal" as any)}
+                                              className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === ("optimal" as any) ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
+                                              title="적정재고 = 최근 30일 판매 총합 (관리자가 상단 '적정재고 = 30일 판매량' 버튼 실행 시점 · products.optimal_stock)"
+                                            >
+                                              <span className="flex flex-col leading-tight items-end">
+                                                <span>적정재고</span>
+                                                <span className="text-[11px] font-semibold text-sky-500">최근 30일</span>
+                                                <span className="text-[11px] opacity-70">{arrowFor("optimal" as any)}</span>
+                                              </span>
+                                            </th>
+                                          </>}
+                                          {/* === 매입현황 그룹 (평균매입주기 · 최근매입일 · 최근매입량) · amber 톤 통일 */}
+                                          {isFlowGroupCollapsed("purchase") && <th className="bg-amber-50/20"></th>}
+                                          {!isFlowGroupCollapsed("purchase") && <>
+                                            <th onClick={() => toggleFlowSort("cycle")}
+                                              className={`text-right px-0.5 py-1.5 w-12 text-[14px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "cycle" ? "text-amber-800" : "text-amber-600"}`}
+                                              title="평균 매입주기 = (최근-최초 매입일) / (매입횟수-1) · 클릭 정렬">
+                                              <span className="flex flex-col leading-tight items-end">
+                                                <span className="text-[12px] font-semibold text-amber-500">평균</span>
+                                                <span>매입주기</span>
+                                                <span className="text-[11px] opacity-70">{arrowFor("cycle")}</span>
+                                              </span>
+                                            </th>
+                                            <th onClick={() => toggleFlowSort("last_purchase")}
+                                              className={`text-right px-0.5 py-1.5 w-11 text-[14px] font-black cursor-pointer select-none bg-amber-50/40 hover:bg-amber-100 transition ${flowSort === "last_purchase" ? "text-amber-800" : "text-amber-600"}`}
+                                              title="최근 매입일 · 클릭 정렬">
+                                              <span className="flex flex-col leading-tight items-end">
+                                                <span className="text-[12px] font-semibold text-amber-500">최근</span>
+                                                <span>매입일</span>
+                                                <span className="text-[11px] opacity-70">{arrowFor("last_purchase")}</span>
+                                              </span>
+                                            </th>
+                                            <th onClick={() => toggleFlowSort("purchase")}
+                                              className={`text-right px-0.5 py-1.5 w-12 text-[14px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "purchase" ? "text-amber-800" : "text-amber-600"}`}
+                                              title="최근매입량 · 클릭 정렬">
+                                              <span className="flex flex-col leading-tight items-end">
+                                                <span className="text-[12px] font-semibold text-amber-500">최근</span>
+                                                <span>매입량</span>
+                                                <span className="text-[11px] opacity-70">{arrowFor("purchase")}</span>
+                                              </span>
+                                            </th>
+                                          </>}
+                                          {/* === 판매현황 그룹 (재고금액 · ERP단가 · 판매가 · 이익률) · rose 톤 통일 · 2026-07-30 · 사용자 요청 */}
+                                          {isFlowGroupCollapsed("sales") && <th className="bg-rose-50/20"></th>}
+                                          {!isFlowGroupCollapsed("sales") && <>
+                                            <th onClick={() => toggleFlowSort("stock_value")}
+                                              className={`text-right px-0.5 py-1.5 w-20 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "stock_value" ? "text-rose-800" : "text-rose-700"}`}
+                                              title="재고금액 = 현재고 × 최근매입가 · 클릭 정렬">
+                                              <span className="flex flex-col leading-tight items-end">
+                                                <span className="font-semibold text-rose-500">재고</span>
+                                                <span>금액</span>
+                                                <span className="text-[11px] opacity-70">{arrowFor("stock_value")}</span>
+                                              </span>
+                                            </th>
+                                            <th onClick={() => toggleFlowSort("last_purchase_price")}
+                                              className={`text-right px-0.5 py-1.5 w-16 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "last_purchase_price" ? "text-rose-800" : "text-rose-600"}`}
+                                              title="ERP단가 = products.purchase_price · 클릭 정렬">
+                                              <span className="flex flex-col leading-tight items-end">
+                                                <span className="font-semibold text-rose-500">ERP</span>
+                                                <span>단가</span>
+                                                <span className="text-[11px] opacity-70">{arrowFor("last_purchase_price")}</span>
+                                              </span>
+                                            </th>
+                                            <th onClick={() => toggleFlowSort("sale_price")}
+                                              className={`text-right px-0.5 py-1.5 w-16 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale_price" ? "text-rose-800" : "text-rose-600"}`}
+                                              title="판매 단가 · 클릭 정렬">
+                                              <span className="flex flex-col leading-tight items-end">
+                                                <span>판매가</span>
+                                                <span className="text-[11px] opacity-70">{arrowFor("sale_price")}</span>
+                                              </span>
+                                            </th>
+                                            <th onClick={() => toggleFlowSort("profit_rate")}
+                                              className={`text-right px-0.5 py-1.5 w-14 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "profit_rate" ? "text-rose-800" : "text-rose-600"}`}
+                                              title="이익률 · 클릭 정렬">
+                                              <span className="flex flex-col leading-tight items-end">
+                                                <span>이익률</span>
+                                                <span className="text-[11px] opacity-70">{arrowFor("profit_rate")}</span>
+                                              </span>
+                                            </th>
+                                          </>}
+                                        </>
+                                      );
+                                    })()}
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                  {filteredFlow.map((p, i) => {
+                                    const cur = Number((p as any).current_stock ?? 0);
+                                    const openV = Number(p.opening_stock ?? 0);
+                                    const saleV = Number(p.sale_qty ?? 0);
+                                    // 2026-07-28 · 사용자 요청 · 공급사재고와 동일 데이터 · purchase_total_qty 우선 fallback purchase_qty
+                                    const purchV = Number((p as any).purchase_total_qty ?? p.purchase_qty ?? 0);
+                                    const closeV = Number(p.closing_stock ?? 0);
+                                    const loss = (openV - saleV) - closeV;
+                                    const saleP = Number((p as any).sale_price ?? 0);
+                                    const purP = Number((p as any).purchase_price ?? 0);
+                                    const profitRate = saleP > 0 && purP > 0 ? Math.trunc(((saleP - purP) / saleP) * 100) : null;
+                                    const periodDays = (flowMonths && flowMonths > 0) ? flowMonths * 30 : 30;
+                                    const avgStock = (openV + cur) / 2;
+                                    const turnover = avgStock > 0 ? saleV / avgStock : 0;
+                                    const doh = turnover > 0 ? Math.round(periodDays / turnover) : null;
+                                    // 2026-07-28 · 매입주기 = (last - first) / (count - 1) · 공급사재고 리스트와 동일 계산
+                                    const purchaseCount = Number((p as any).purchase_count ?? 0);
+                                    const firstPD = (p as any).first_purchase_date as string | null;
+                                    const lastPD = p.last_purchase_date;
+                                    const purchaseCycle = (() => {
+                                      if (purchaseCount < 2 || !firstPD || !lastPD || firstPD === lastPD) return null;
+                                      const days = Math.round((new Date(lastPD).getTime() - new Date(firstPD).getTime()) / (86400 * 1000));
+                                      return purchaseCount > 1 ? Math.round(days / (purchaseCount - 1)) : null;
+                                    })();
+                                    // 최근매입일 M/D 축약
+                                    const lastPDShort = (() => {
+                                      const d = lastPD;
+                                      if (!d || !/^\d{4}-\d{2}-\d{2}/.test(String(d))) return "-";
+                                      return `${String(d).slice(5, 7)}/${String(d).slice(8, 10)}`;
+                                    })();
+                                    // 재고금액 · "N.N만" 축약 (예 · 4488000 → 448.8만)
+                                    const stockValue = cur > 0 && purP > 0 ? cur * purP : 0;
+                                    const fmtMan = (v: number): string => {
+                                      if (v <= 0) return "-";
+                                      if (v >= 100_000_000) return `${(v / 100_000_000).toFixed(2)}억`;
+                                      if (v >= 10_000) return `${(v / 10_000).toFixed(1)}만`;
+                                      return v.toLocaleString();
+                                    };
+                                    const minOrder = Number((p as any).min_order ?? 0);
+                                    return (
+                                      <tr key={`flow-${p.product_code}-${i}`} className={`transition ${selectedFlowCodes.has(String(p.product_code)) ? "bg-slate-50" : "hover:bg-slate-50/70"}`}>
+                                        {/* 2026-07-29 · 체크박스 + 순위 한 셀 통합 (사용자 요청) */}
+                                        <td className="text-center px-1 py-2 align-top" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>
+                                          <div className="flex items-center justify-center gap-1.5">
+                                            <span onClick={(e) => { e.stopPropagation(); toggleSelectFlow(String(p.product_code)); }}
+                                              className="cursor-pointer inline-flex items-center justify-center">
+                                              {selectedFlowCodes.has(String(p.product_code))
+                                                ? <CheckSquare size={13} className="text-slate-500" />
+                                                : <Square size={13} className="text-slate-300 hover:text-slate-500" />}
+                                            </span>
+                                            <span className="text-[12px] font-semibold text-slate-400 tabular-nums">{i + 1}</span>
+                                          </div>
+                                        </td>
+                                        <td className="px-2 py-2.5 align-top">
+                                          <button
+                                            type="button"
+                                            onClick={() => loadFlowSelectedProduct(p)}
+                                            className="text-left text-[16px] font-black text-slate-700 hover:text-slate-900 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
+                                            title={`${p.product_name} · 클릭하면 오른쪽에 상세 정보 (모바일 · 모달)`}
+                                          >
+                                            {p.product_name}
+                                            {(p as any).min_order != null && (p as any).min_order > 0 && (
+                                              <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-sm text-[12px] font-black text-slate-500 bg-slate-100 border border-slate-200 align-middle" title={`최소주문량 ${(p as any).min_order}`}>
+                                                최소{(p as any).min_order}
+                                              </span>
+                                            )}
+                                          </button>
+                                          {p.supplier && <div className="text-[11px] font-medium text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
+                                        </td>
+                                        {/* === 재고현황 그룹 (판매량 · 현재고 · 적정재고) === */}
+                                        {!isFlowGroupCollapsed("stock") && <>
+                                          <td
+                                            className="text-right px-1.5 py-2.5 font-black text-[14px] bg-slate-50/60 align-top tabular-nums text-slate-700"
+                                            title="판매출고계 · 실제 팔린 양"
+                                          >{fmt(saleV)}</td>
+                                          {(() => {
+                                            const close = Number(p.closing_stock ?? 0);
+                                            const opt = Number((p as any).optimal_stock ?? 0);
+                                            const mismatch = close !== cur;
+                                            const belowOptimal = opt > 0 && cur < opt;
+                                            // 2026-07-29 · 현재고 < 적정재고 시 빨간색 (사용자 요청)
+                                            return (
+                                              <td
+                                                className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${cur <= 0 || mismatch || belowOptimal ? "text-rose-500" : "text-slate-700"}`}
+                                                title={belowOptimal ? `현재고 부족 · ${cur} < 적정재고 ${opt}` : mismatch ? `현재고(${fmt(cur)}) ≠ 스냅샷 종료재고(${fmt(close)}) · 스냅샷 이후 변동 있음` : "ERP 현재고 (= 스냅샷 종료재고)"}
+                                              >{fmt(cur)}</td>
+                                            );
+                                          })()}
+                                          {(() => {
+                                            const opt = Number((p as any).optimal_stock ?? 0);
+                                            const below = opt > 0 && cur < opt;
+                                            return (
+                                              <td className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${opt <= 0 ? "text-slate-300" : below ? "text-rose-400" : "text-slate-500"}`}
+                                                title={opt > 0 ? `적정재고 ${fmt(opt)}${below ? ` · 현재고 부족 (${cur}/${opt})` : ""}` : "적정재고 미설정"}>
+                                                {opt > 0 ? fmt(opt) : "-"}
+                                              </td>
+                                            );
+                                          })()}
+                                        </>}
+                                        {/* 그룹 접힘 시 빈 셀 placeholder (colSpan 맞춤용) */}
+                                        {isFlowGroupCollapsed("stock") && <td className="bg-slate-50/20"></td>}
+                                        {/* === 매입현황 그룹 (매입주기 · 최근매입일 · 최근매입량) === */}
+                                        {!isFlowGroupCollapsed("purchase") && <>
+                                          <td className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${purchaseCycle != null ? "text-slate-600" :
+                                            purchaseCount === 1 ? "text-slate-400" :
+                                              purchaseCount >= 2 && firstPD === lastPD ? "text-slate-400" :
+                                                "text-slate-300"
+                                            }`}
+                                            title={
+                                              purchaseCycle != null
+                                                ? `${purchaseCount}회 매입 · 평균 ${purchaseCycle}일 주기`
+                                                : purchaseCount === 1 && lastPD
+                                                  ? `1회만 매입됨 (${lastPD}) · 주기 계산 불가`
+                                                  : purchaseCount >= 2 && firstPD === lastPD
+                                                    ? `${purchaseCount}회 매입 모두 같은 날짜 (${lastPD}) · 주기 계산 불가`
+                                                    : "매입 이력 없음 (purchase_details 미조인 가능성)"
+                                            }>
+                                            {purchaseCycle != null
+                                              ? `${purchaseCycle}일`
+                                              : purchaseCount === 1
+                                                ? "1회"
+                                                : purchaseCount >= 2 && firstPD === lastPD
+                                                  ? "동일일"
+                                                  : "-"}
+                                          </td>
+                                          <td className="text-right px-1.5 py-2.5 text-slate-500 font-black text-[14px] align-top tabular-nums"
+                                            title={lastPD ?? undefined}>
+                                            {lastPDShort}
+                                          </td>
+                                          <td className="text-right px-1.5 py-2.5 text-slate-600 font-black text-[14px] align-top tabular-nums"
+                                            title={purchV > 0 ? `최근매입량 ${fmt(purchV)}` : "매입 없음"}>
+                                            {purchV > 0 ? fmt(purchV) : "-"}
+                                          </td>
+                                        </>}
+                                        {isFlowGroupCollapsed("purchase") && <td className="bg-slate-50/20"></td>}
+                                        {/* === 판매현황 그룹 (재고금액 · ERP단가 · 판매가 · 이익률) === */}
+                                        {!isFlowGroupCollapsed("sales") && <>
+                                          <td className="text-right px-1.5 py-2.5 text-slate-700 font-black text-[14px] align-top tabular-nums"
+                                            title={stockValue > 0 ? `현재고 ${fmt(cur)} × ERP단가 ${fmtWon(purP)} = ${fmtWon(stockValue)}` : ""}>
+                                            {fmtMan(stockValue)}
+                                          </td>
+                                          <td className="text-right px-1.5 py-2.5 text-slate-500 font-black text-[14px] align-top tabular-nums" title="ERP 사입 단가 (products.purchase_price)">{purP > 0 ? fmtWon(purP) : "-"}</td>
+                                          <td className="text-right px-1.5 py-2.5 text-slate-600 font-black text-[14px] align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
+                                          <td className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${profitRate == null ? "text-slate-300" : profitRate >= 30 ? "text-slate-700" : profitRate >= 15 ? "text-slate-600" : profitRate >= 0 ? "text-slate-500" : "text-rose-500"}`}
+                                            title={profitRate != null ? `(판매가 ${fmtWon(saleP)} − 최근매입가 ${fmtWon(purP)}) / 판매가 = ${profitRate}%` : "-"}>
+                                            {profitRate != null ? `${profitRate}%` : "-"}
+                                          </td>
+                                        </>}
+                                        {isFlowGroupCollapsed("sales") && <td className="bg-slate-50/20"></td>}
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )
+                        ) : (
+                          topProducts.length === 0 ? (
+                            <div className="text-center text-[13px] text-slate-300 py-6">
+                              {loading ? "불러오는 중..." : "OCR 매입 데이터 없음"}
+                            </div>
+                          ) : (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-sm min-w-[280px]">
+                                <thead className="sticky top-0 bg-white z-10">
+                                  <tr className="border-b border-slate-100 text-[12px] text-slate-400 uppercase tracking-wider">
+                                    <th className="text-left px-1 py-1.5 w-8">#</th>
+                                    <th className="text-left px-1 py-1.5">상품명</th>
+                                    <th className="text-right px-1 py-1.5 w-16">수량</th>
+                                    <th className="text-right px-1 py-1.5 w-24">금액</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-50">
+                                  {topProducts.map((p, i) => (
+                                    <tr key={`top-${p.product_name}-${i}`} className="hover:bg-emerald-50/30 transition">
+                                      <td className="px-1 py-1.5 text-[12px] font-black text-emerald-600">{i + 1}</td>
+                                      <td className="px-1 py-1.5">
+                                        <div className="font-bold text-slate-700 break-words whitespace-normal leading-tight">{p.product_name}</div>
+                                        {p.supplier && <div className="text-[12px] text-slate-400 break-words whitespace-normal leading-tight">{p.supplier}</div>}
+                                      </td>
+                                      <td className="text-right px-1 py-1.5 tabular-nums text-slate-600">{fmt(p.totalQty)}</td>
+                                      <td className="text-right px-1 py-1.5 tabular-nums font-bold text-slate-800">{fmtWon(p.totalAmount)}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )
+                        )}
                       </div>
-                    )
-                  ) : (
-                    topProducts.length === 0 ? (
-                      <div className="text-center text-[13px] text-slate-300 py-6">
-                        {loading ? "불러오는 중..." : "OCR 매입 데이터 없음"}
-                      </div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                      <table className="w-full text-sm min-w-[280px]">
-                        <thead className="sticky top-0 bg-white z-10">
-                          <tr className="border-b border-slate-100 text-[12px] text-slate-400 uppercase tracking-wider">
-                            <th className="text-left px-1 py-1.5 w-8">#</th>
-                            <th className="text-left px-1 py-1.5">상품명</th>
-                            <th className="text-right px-1 py-1.5 w-16">수량</th>
-                            <th className="text-right px-1 py-1.5 w-24">금액</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50">
-                          {topProducts.map((p, i) => (
-                            <tr key={`top-${p.product_name}-${i}`} className="hover:bg-emerald-50/30 transition">
-                              <td className="px-1 py-1.5 text-[12px] font-black text-emerald-600">{i + 1}</td>
-                              <td className="px-1 py-1.5">
-                                <div className="font-bold text-slate-700 break-words whitespace-normal leading-tight">{p.product_name}</div>
-                                {p.supplier && <div className="text-[12px] text-slate-400 break-words whitespace-normal leading-tight">{p.supplier}</div>}
-                              </td>
-                              <td className="text-right px-1 py-1.5 tabular-nums text-slate-600">{fmt(p.totalQty)}</td>
-                              <td className="text-right px-1 py-1.5 tabular-nums font-bold text-slate-800">{fmtWon(p.totalAmount)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                      </div>
-                    )
-                  )}
+                    </div>
+                  </div>
+                  {/* 2026-07-16 · 좌측 재고리스트 wrapper close */}
                 </div>
+
+                {/* ─── 리사이즈 핸들 (데스크탑만) ─── */}
+                <div
+                  onMouseDown={onFlowResizeStart}
+                  className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+                  title="드래그하여 폭 조절"
+                >
+                  <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
                 </div>
-              </div>
-              {/* 2026-07-16 · 좌측 재고리스트 wrapper close */}
-              </div>
 
-              {/* ─── 리사이즈 핸들 (데스크탑만) ─── */}
-              <div
-                onMouseDown={onFlowResizeStart}
-                className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
-                title="드래그하여 폭 조절"
-              >
-                <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+                {/* ─── 우측: 제품 정보 · ProductDetailRightPanel (공용) ─── */}
+                <ProductDetailRightPanel
+                  selected={flowSelectedProduct}
+                  onClose={() => setFlowSelectedProduct(null)}
+                  onProductUpdate={(u) => setFlowSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
+                  onRealMapUpdate={(v) => setFlowSelectedProduct(prev => prev ? { ...prev, real_map: v } : prev)}
+                  showChart={true}
+                  context="stock-manage"
+                  editable={true}
+                  emptyMessage="리스트에서 상품을 클릭하세요"
+                  emptySub="상세 정보 · 재고 현황 · 매입/판매가"
+                />
               </div>
-
-              {/* ─── 우측: 제품 정보 · ProductDetailRightPanel (공용) ─── */}
-              <ProductDetailRightPanel
-                selected={flowSelectedProduct}
-                onClose={() => setFlowSelectedProduct(null)}
-                onProductUpdate={(u) => setFlowSelectedProduct(prev => prev ? { ...prev, ...u } : prev)}
-                onRealMapUpdate={(v) => setFlowSelectedProduct(prev => prev ? { ...prev, real_map: v } : prev)}
-                showChart={true}
-                context="stock-manage"
-                editable={true}
-                emptyMessage="리스트에서 상품을 클릭하세요"
-                emptySub="상세 정보 · 재고 현황 · 매입/판매가"
-              />
-            </div>
             )}
           </div>
         </>
