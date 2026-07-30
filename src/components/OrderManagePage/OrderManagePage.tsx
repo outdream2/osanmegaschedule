@@ -1316,61 +1316,137 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       )}
       {/* 2026-07-28 · 사용자 요청 · 입고/사입/ERP 검증 탭 및 render 제거 */}
       {/* 2026-07-28 · 사용자 요청 · 반품필요 탭 · 매입주기 길고 판매량 적은 상품 */}
+      {/* 2026-07-30 · UI 정비 · 발주요청 탭과 동일한 shadcn 스타일로 통일 */}
       {topTab === "return" && (
         <div className="flex-1 flex flex-col min-h-0 gap-3">
-          <div className="bg-white border border-rose-200 rounded-xl shadow-sm p-3">
-            <div className="flex items-center gap-2 flex-wrap text-xs">
-              <span className="font-black text-rose-700">반품필요 조건</span>
-              <label className="inline-flex items-center gap-1">
-                매입주기 ≥
-                <input type="number" value={returnCycleMin} onChange={e => setReturnCycleMin(Math.max(0, Number(e.target.value) || 0))}
-                  className="w-16 px-2 py-1 text-xs border border-slate-300 rounded outline-none focus:border-rose-400 tabular-nums text-right" /> 일
-              </label>
-              <span className="text-slate-400">AND</span>
-              <label className="inline-flex items-center gap-1">
-                매입주기 판매량 ≤
-                <input type="number" value={returnSalesMax} onChange={e => setReturnSalesMax(Math.max(0, Number(e.target.value) || 0))}
-                  className="w-16 px-2 py-1 text-xs border border-slate-300 rounded outline-none focus:border-rose-400 tabular-nums text-right" /> 개
-              </label>
-              <button type="button" onClick={loadReturnList} disabled={returnLoading}
-                className="ml-auto inline-flex items-center gap-1 px-3 py-1 text-[11px] font-black text-white bg-rose-500 hover:bg-rose-600 disabled:bg-slate-300 rounded-lg shadow-sm">
-                {returnLoading ? "조회 중..." : "🔄 다시 조회"}
-              </button>
-              <span className="text-[11px] font-bold text-slate-500 ml-2">{returnList.length}건</span>
+
+          {/* ── 조건 카드 · 발주요청 섹션 헤더와 동일한 bg-white rounded-xl 스타일 ── */}
+          <section className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              {/* 좌: 타이틀 + 조건 인풋 */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <PackageCheck size={14} className="text-rose-500 shrink-0" />
+                  <span className="text-sm font-bold text-slate-700">반품필요 조건</span>
+                </div>
+                {/* 구분선 */}
+                <div className="h-5 w-px bg-slate-200 shrink-0 hidden sm:block" />
+                <label className="inline-flex items-center gap-1.5 text-[12px] text-slate-600">
+                  <span className="font-medium text-slate-500">매입주기</span>
+                  <span className="text-slate-400 font-semibold">≥</span>
+                  <input
+                    type="number"
+                    value={returnCycleMin}
+                    onChange={e => setReturnCycleMin(Math.max(0, Number(e.target.value) || 0))}
+                    className="w-16 h-8 px-2 text-[12px] border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
+                  />
+                  <span className="text-slate-500">일</span>
+                </label>
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">AND</span>
+                <label className="inline-flex items-center gap-1.5 text-[12px] text-slate-600">
+                  <span className="font-medium text-slate-500">주기판매</span>
+                  <span className="text-slate-400 font-semibold">≤</span>
+                  <input
+                    type="number"
+                    value={returnSalesMax}
+                    onChange={e => setReturnSalesMax(Math.max(0, Number(e.target.value) || 0))}
+                    className="w-16 h-8 px-2 text-[12px] border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
+                  />
+                  <span className="text-slate-500">개</span>
+                </label>
+              </div>
+
+              {/* 우: 카운트 + 새로고침 버튼 */}
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-600 border border-rose-200 tabular-nums">
+                  {returnList.length}건
+                </span>
+                <button
+                  type="button"
+                  onClick={loadReturnList}
+                  disabled={returnLoading}
+                  className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-slate-400 border border-slate-200 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 disabled:opacity-50 transition-colors cursor-pointer shrink-0"
+                  title="다시 조회"
+                >
+                  <RefreshCw size={13} className={returnLoading ? "animate-spin" : ""} />
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-            {/* 2026-07-29 · 사용자 요청 · '반품필요리스트' 제목 · 컬럼 확장 */}
-            <div className="px-3 py-2 bg-rose-50/50 border-b border-rose-100 flex items-center gap-2">
-              <PackageCheck size={14} className="text-rose-600" />
-              <span className="text-[13px] font-black text-rose-700">반품필요리스트</span>
-              <span className="text-[11px] font-bold text-slate-500 tabular-nums">{returnList.length}건</span>
+          </section>
+
+          {/* ── 리스트 카드 ── */}
+          <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-0">
+            {/* 카드 헤더 */}
+            <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="inline-block w-1 h-3.5 rounded-full bg-rose-400 shrink-0" />
+                <span className="text-[11px] font-semibold text-slate-500">반품필요 리스트</span>
+                <span className="text-[11px] text-slate-400 font-normal tabular-nums">{returnList.length}건</span>
+              </div>
             </div>
-            {returnList.length === 0 ? (
-              <div className="py-12 text-center text-slate-400 text-xs">
-                {returnLoading ? "불러오는 중..." : "조건에 맞는 반품필요 상품 없음"}
+
+            {/* 로딩 / 빈 상태 */}
+            {returnLoading && returnList.length === 0 ? (
+              <div className="flex items-center justify-center py-12 text-slate-400 text-xs font-bold gap-2">
+                <Loader2 size={14} className="animate-spin" />불러오는 중...
+              </div>
+            ) : returnList.length === 0 ? (
+              <div className="py-12 text-center text-[11px] text-slate-300">
+                조건에 맞는 반품필요 상품 없음
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-[12px] border-collapse">
-                  <thead className="bg-rose-50 border-b border-rose-100 sticky top-0 z-10">
-                    <tr>
-                      <th className="px-2 py-2 text-left font-bold text-rose-800 w-10">#</th>
-                      <th onClick={() => handleReturnSort("product_name")} title="상품명 정렬" className="px-2 py-2 text-left font-bold text-rose-800 min-w-[220px] cursor-pointer hover:bg-rose-100 select-none">상품{retArrow("product_name")}</th>
-                      <th onClick={() => handleReturnSort("supplier")} title="공급사 정렬" className="px-2 py-2 text-left font-bold text-rose-800 w-28 cursor-pointer hover:bg-rose-100 select-none">공급사{retArrow("supplier")}</th>
-                      <th onClick={() => handleReturnSort("current_stock")} title="현재고 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-16 cursor-pointer hover:bg-rose-100 select-none">현재고{retArrow("current_stock")}</th>
-                      <th onClick={() => handleReturnSort("purchase_cycle")} title="매입주기 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-20 cursor-pointer hover:bg-rose-100 select-none">매입주기{retArrow("purchase_cycle")}</th>
-                      {/* 2026-07-30 (2nd) · 사용자 요청 · 매입주기 판매량 컬럼 복원 */}
-                      <th onClick={() => handleReturnSort("sale_qty_cycle")} title="매입주기 판매량 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">주기판매{retArrow("sale_qty_cycle")}</th>
-                      <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 판매량 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">최근 한달 판매{retArrow("sale_qty_month")}</th>
-                      <th onClick={() => handleReturnSort("last_purchase_date")} title="최근매입일 정렬" className="px-2 py-2 text-left font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">최근매입일{retArrow("last_purchase_date")}</th>
-                      <th onClick={() => handleReturnSort("last_purchase_qty")} title="최근 매입일의 매입량 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-20 cursor-pointer hover:bg-rose-100 select-none">최근 매입량{retArrow("last_purchase_qty")}</th>
-                      <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬" className="px-2 py-2 text-right font-bold text-rose-800 w-24 cursor-pointer hover:bg-rose-100 select-none">재고금액{retArrow("stock_value")}</th>
-                      {/* 2026-07-30 (2nd) · 사용자 요청 · 반품요청 액션 */}
-                      <th className="px-2 py-2 text-center font-bold text-rose-800 w-24 select-none">반품요청</th>
+              <div className={`overflow-x-auto ${returnLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                <table className="w-full text-xs">
+                  <thead className="sticky top-0 bg-white z-10">
+                    {/* 그룹 컬러 헤더 · sky / amber / rose */}
+                    <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
+                      <th className="bg-slate-50 w-8" />
+                      <th colSpan={2} className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100">상품 정보</th>
+                      <th colSpan={2} className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100">재고 · 매입</th>
+                      <th colSpan={3} className="text-center py-1.5 bg-orange-50 text-orange-700 border-l border-r border-slate-100">판매 현황</th>
+                      <th colSpan={2} className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-slate-100">반품 액션</th>
+                    </tr>
+                    {/* 서브 헤더 */}
+                    <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
+                      <th className="text-center px-0.5 py-1.5 w-8 bg-slate-50/60">#</th>
+                      <th onClick={() => handleReturnSort("product_name")} title="상품명 정렬"
+                        className="text-left px-0.5 py-1.5 min-w-[160px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">
+                        상품{retArrow("product_name")}
+                      </th>
+                      <th onClick={() => handleReturnSort("supplier")} title="공급사 정렬"
+                        className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">
+                        공급사{retArrow("supplier")}
+                      </th>
+                      <th onClick={() => handleReturnSort("current_stock")} title="현재고 정렬"
+                        className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">
+                        현재고{retArrow("current_stock")}
+                      </th>
+                      <th onClick={() => handleReturnSort("purchase_cycle")} title="매입주기 정렬"
+                        className="text-right px-0.5 py-1.5 w-18 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">
+                        매입주기{retArrow("purchase_cycle")}
+                      </th>
+                      <th onClick={() => handleReturnSort("sale_qty_cycle")} title="매입주기 판매량 정렬"
+                        className="text-right px-0.5 py-1.5 w-16 bg-orange-50/40 text-orange-500 cursor-pointer hover:bg-orange-100 select-none">
+                        주기판매{retArrow("sale_qty_cycle")}
+                      </th>
+                      <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 판매량 정렬"
+                        className="text-right px-0.5 py-1.5 w-20 bg-orange-50/40 text-orange-500 cursor-pointer hover:bg-orange-100 select-none">
+                        최근 한달{retArrow("sale_qty_month")}
+                      </th>
+                      <th onClick={() => handleReturnSort("last_purchase_date")} title="최근매입일 정렬"
+                        className="text-left px-0.5 py-1.5 w-22 bg-orange-50/40 text-slate-500 cursor-pointer hover:bg-orange-100 select-none">
+                        최근매입일{retArrow("last_purchase_date")}
+                      </th>
+                      <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬"
+                        className="text-right px-0.5 py-1.5 w-24 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">
+                        재고금액{retArrow("stock_value")}
+                      </th>
+                      <th className="text-center px-0.5 py-1.5 w-20 bg-rose-50/30 text-rose-600 cursor-default select-none">
+                        반품요청
+                      </th>
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-50">
                     {[...returnList].sort((a, b) => {
                       const dir = returnSortDir === "asc" ? 1 : -1;
                       switch (returnSortKey) {
@@ -1386,42 +1462,59 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         default:                return 0;
                       }
                     }).map((x, i) => (
-                      <tr key={x.product_code} className="border-t border-slate-100 hover:bg-rose-50/40">
-                        <td className="px-2 py-1.5 text-slate-400 tabular-nums">{i + 1}</td>
-                        <td className="px-2 py-1.5">
+                      <tr key={x.product_code} className="hover:bg-orange-50/30 transition">
+                        {/* # */}
+                        <td className="px-0.5 py-1.5 text-center text-slate-400 tabular-nums text-[11px] bg-slate-50/60 align-top">{i + 1}</td>
+                        {/* 상품명 + 코드 */}
+                        <td className="px-0.5 py-1.5 align-top">
                           <div className="flex flex-col leading-tight">
-                            <span className="font-semibold text-slate-800">{x.product_name}</span>
-                            <span className="text-[11px] text-slate-400">{x.product_code}</span>
+                            <span className="text-[13px] font-medium text-slate-800 break-words whitespace-normal">{x.product_name}</span>
+                            <span className="text-[11px] text-slate-400 tabular-nums">{x.product_code}</span>
                           </div>
                         </td>
-                        <td className="px-2 py-1.5 text-slate-600 truncate">{x.supplier ?? "-"}</td>
-                        <td className="px-2 py-1.5 text-right text-slate-800 font-bold tabular-nums">{x.current_stock.toLocaleString()}</td>
-                        <td className="px-2 py-1.5 text-right text-rose-700 font-bold tabular-nums">{x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}</td>
-                        {/* 2026-07-30 (2nd) · 사용자 요청 · 주기판매 셀 복원 */}
-                        <td className="px-2 py-1.5 text-right text-amber-700 font-bold tabular-nums">{x.sale_qty_cycle > 0 ? `${x.sale_qty_cycle.toLocaleString()}개` : "-"}</td>
-                        <td className="px-2 py-1.5 text-right text-orange-600 font-bold tabular-nums">{x.sale_qty_month != null ? `${x.sale_qty_month.toLocaleString()}개` : "-"}</td>
-                        <td className="px-2 py-1.5 text-slate-600 tabular-nums text-[11px]">{x.last_purchase_date ?? "-"}</td>
-                        <td className="px-2 py-1.5 text-right text-emerald-700 font-bold tabular-nums">{x.last_purchase_qty != null ? `${x.last_purchase_qty.toLocaleString()}개` : "-"}</td>
-                        <td className="px-2 py-1.5 text-right text-indigo-700 font-bold tabular-nums">
-                          {x.current_stock > 0 && x.purchase_price > 0 ? (x.current_stock * x.purchase_price).toLocaleString() : "-"}
+                        {/* 공급사 */}
+                        <td className="px-0.5 py-1.5 text-[12px] font-semibold text-sky-600 break-words whitespace-normal align-top">{x.supplier ?? "-"}</td>
+                        {/* 현재고 */}
+                        <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-amber-50/30 align-top">{x.current_stock.toLocaleString()}</td>
+                        {/* 매입주기 */}
+                        <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-rose-600 bg-amber-50/30 align-top">
+                          {x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}
                         </td>
-                        {/* 2026-07-30 (2nd) · 사용자 요청 · 반품요청 버튼 · 클릭 → 모달 (별도 구현 예정) */}
-                        <td className="px-2 py-1.5 text-center align-top">
-                          <button type="button"
+                        {/* 주기판매 */}
+                        <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-amber-700 bg-orange-50/30 align-top">
+                          {x.sale_qty_cycle > 0 ? `${x.sale_qty_cycle.toLocaleString()}개` : "-"}
+                        </td>
+                        {/* 최근 한달 판매 */}
+                        <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-orange-600 bg-orange-50/30 align-top">
+                          {x.sale_qty_month != null ? `${x.sale_qty_month.toLocaleString()}개` : "-"}
+                        </td>
+                        {/* 최근매입일 */}
+                        <td className="px-0.5 py-1.5 text-slate-600 tabular-nums text-[11px] bg-orange-50/20 align-top">{x.last_purchase_date ?? "-"}</td>
+                        {/* 재고금액 */}
+                        <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] text-indigo-700 bg-rose-50/30 align-top">
+                          {x.current_stock > 0 && x.purchase_price > 0 ? `${(x.current_stock * x.purchase_price).toLocaleString()}` : "-"}
+                        </td>
+                        {/* 반품요청 버튼 */}
+                        <td className="text-center px-1 py-1.5 align-top bg-rose-50/20">
+                          <button
+                            type="button"
                             onClick={(e) => { e.stopPropagation(); setReturnRequestItem(x); }}
-                            className="inline-flex items-center justify-center gap-1 min-h-[28px] px-2.5 py-1 rounded-md text-[12px] font-black text-white bg-gradient-to-b from-rose-500 to-rose-600 hover:from-rose-400 hover:to-rose-500 border border-rose-700 shadow-sm hover:shadow-md active:scale-95 transition cursor-pointer"
+                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 transition-colors cursor-pointer active:scale-95"
                             title="반품요청 리스트에 추가"
                           >
-                            <Truck size={11} strokeWidth={2.4} /> 반품요청
+                            <Truck size={11} strokeWidth={2} />반품
                           </button>
                         </td>
                       </tr>
                     ))}
+                    {returnList.length === 0 && (
+                      <tr><td colSpan={10} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
+                    )}
                   </tbody>
                 </table>
               </div>
             )}
-          </div>
+          </section>
         </div>
       )}
       {/* ── 입고매칭 탭 · 발주 vs 입고 비교 (2026-07-29 · 사용자 요청) ── */}
