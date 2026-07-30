@@ -325,27 +325,27 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
 
             {/* 상단 그라디언트 헤더 */}
-            <div className="relative px-5 pt-5 pb-4 bg-gradient-to-b from-sky-50/60 to-transparent">
+            <div className="relative px-5 pt-4 pb-3 bg-gradient-to-b from-sky-50/60 to-transparent">
               {/* 장식 링 */}
-              <div className="absolute top-4 right-4 w-16 h-16 rounded-full
+              <div className="absolute top-3 right-3 w-12 h-12 rounded-full
                 bg-sky-100/60 border border-sky-200/50" />
-              <div className="absolute top-7 right-7 w-8 h-8 rounded-full
+              <div className="absolute top-5.5 right-5.5 w-6 h-6 rounded-full
                 bg-sky-200/40 border border-sky-300/30" />
 
-              <div className="relative flex items-start gap-3">
+              <div className="relative flex items-center gap-3 min-w-0">
                 {/* 카메라 프레임 아이콘 */}
-                <div className="relative w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-sky-600
+                <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-sky-600
                   flex items-center justify-center shadow-md shrink-0">
-                  <ScanLine size={22} className="text-white" />
+                  <ScanLine size={17} className="text-white" />
                   {/* 코너 마커 */}
-                  <span className="absolute top-1.5 left-1.5 w-2 h-2 border-t-2 border-l-2 border-white/60 rounded-tl-sm" />
-                  <span className="absolute top-1.5 right-1.5 w-2 h-2 border-t-2 border-r-2 border-white/60 rounded-tr-sm" />
-                  <span className="absolute bottom-1.5 left-1.5 w-2 h-2 border-b-2 border-l-2 border-white/60 rounded-bl-sm" />
-                  <span className="absolute bottom-1.5 right-1.5 w-2 h-2 border-b-2 border-r-2 border-white/60 rounded-br-sm" />
+                  <span className="absolute top-1 left-1 w-1.5 h-1.5 border-t-2 border-l-2 border-white/60 rounded-tl-sm" />
+                  <span className="absolute top-1 right-1 w-1.5 h-1.5 border-t-2 border-r-2 border-white/60 rounded-tr-sm" />
+                  <span className="absolute bottom-1 left-1 w-1.5 h-1.5 border-b-2 border-l-2 border-white/60 rounded-bl-sm" />
+                  <span className="absolute bottom-1 right-1 w-1.5 h-1.5 border-b-2 border-r-2 border-white/60 rounded-br-sm" />
                 </div>
-                <div className="pt-0.5">
-                  <p className="text-sm font-black text-slate-800 leading-tight">바코드 스캔</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                <div className="min-w-0">
+                  <p className="text-sm font-black text-slate-800 leading-tight truncate">바코드 스캔</p>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-none truncate">
                     스캔 시 자동 등록됩니다
                   </p>
                 </div>
