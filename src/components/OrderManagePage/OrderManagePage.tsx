@@ -327,8 +327,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [returnLoading, setReturnLoading] = useState(false);
   const [returnCycleMin, setReturnCycleMin] = useState<number>(90); // 매입주기 90일 이상
   const [returnSalesMax, setReturnSalesMax] = useState<number>(5);  // 매입주기 판매량 5 이하
-  // 2026-07-30 (2nd) · 사용자 요청 · 매입주기·주기판매 컬럼 복원
-  type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "purchase_cycle" | "sale_qty_cycle" | "sale_qty_month" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
+  // 2026-07-30 (3rd) · sale_qty_cycle 컬럼 제거 · SortKey에서도 제거
+  type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "purchase_cycle" | "sale_qty_month" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
   const [returnSortKey, setReturnSortKey] = useState<ReturnSortKey>("purchase_cycle");
   const [returnSortDir, setReturnSortDir] = useState<"asc" | "desc">("desc");
   const handleReturnSort = (k: ReturnSortKey) => {
@@ -475,6 +475,42 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [supplierInfoModal, setSupplierInfoModal] = useState<Vendor | null>(null);
   // 2026-07-30 (2nd) · 사용자 요청 · 반품요청 모달 (개별 · 임시 · 별도 세션에서 모달 UI 확장)
   const [returnRequestItem, setReturnRequestItem] = useState<any | null>(null);
+  // 2026-07-30 · 반품필요 탭 · 좌우 split · 셀 클릭 → 우측 패널
+  const [returnSelectedProduct, setReturnSelectedProduct] = useState<{ code: string; name: string } | null>(null);
+  const [returnPanelFull, setReturnPanelFull] = useState<Record<string, any> | null>(null);
+  const [returnPanelLoading, setReturnPanelLoading] = useState(false);
+  const [returnPanelError, setReturnPanelError] = useState<string | null>(null);
+  const [returnDetailTab, setReturnDetailTab] = useState<"info" | "purchase" | "sales">("info");
+  const [returnPanelWidth, setReturnPanelWidth] = useState<number>(() => {
+    try { const v = Number(localStorage.getItem("megatown_return_panel_w")); return Number.isFinite(v) && v > 0 ? v : 560; } catch { return 560; }
+  });
+  useEffect(() => { try { localStorage.setItem("megatown_return_panel_w", String(returnPanelWidth)); } catch {} }, [returnPanelWidth]);
+  const returnPanelWidthRef = useRef(returnPanelWidth);
+  useEffect(() => { returnPanelWidthRef.current = returnPanelWidth; }, [returnPanelWidth]);
+  const returnResizeRef = useRef<{ startX: number; startW: number } | null>(null);
+  const onReturnResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    returnResizeRef.current = { startX: e.clientX, startW: returnPanelWidthRef.current };
+    const move = (ev: MouseEvent) => { const r = returnResizeRef.current; if (!r) return; setReturnPanelWidth(Math.min(1000, Math.max(320, r.startW + (ev.clientX - r.startX)))); };
+    const up = () => { returnResizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
+    window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
+  };
+  // 컬럼 그룹 접기 state (매입정보 · 판매정보 기본 펼침)
+  const [retColPurchaseOpen, setRetColPurchaseOpen] = useState(true);
+  const [retColSalesOpen, setRetColSalesOpen] = useState(true);
+  // 우측 패널 상품 fetch
+  useEffect(() => {
+    if (!returnSelectedProduct) { setReturnPanelFull(null); setReturnPanelError(null); return; }
+    setReturnPanelLoading(true); setReturnPanelError(null);
+    (async () => {
+      try {
+        const res = await fetch(`/api/products/${encodeURIComponent(returnSelectedProduct.code)}`);
+        if (res.ok) setReturnPanelFull(await res.json());
+        else { const b = await res.json().catch(() => ({})); setReturnPanelError(b.error ?? `조회 실패 (${res.status})`); }
+      } catch (e: any) { setReturnPanelError(e?.message ?? "네트워크 오류"); }
+      finally { setReturnPanelLoading(false); }
+    })();
+  }, [returnSelectedProduct]);
   // 2026-07-30 · 사용자 요청 · 공급사 관리 페이지와 동일 방식으로 공급사 정보 조회
   //   findVendor (로컬 캐시) 우선 · 실패 시 API 재조회 (이름 부분 매칭 fallback)
   // findVendor 는 아래에서 정의 (line 481) · closure 캡처 OK
@@ -1385,20 +1421,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       )}
       {/* 2026-07-28 · 사용자 요청 · 입고/사입/ERP 검증 탭 및 render 제거 */}
       {/* 2026-07-28 · 사용자 요청 · 반품필요 탭 · 매입주기 길고 판매량 적은 상품 */}
-      {/* 2026-07-30 · UI 정비 · 발주요청 탭과 동일한 shadcn 스타일로 통일 */}
+      {/* 2026-07-30 (3rd) · 좌우 split · 컬럼 그룹 접기 · 셀 클릭 → 우측 패널 탭 */}
       {topTab === "return" && (
         <div className="flex-1 flex flex-col min-h-0 gap-3">
 
-          {/* ── 조건 카드 · 발주요청 섹션 헤더와 동일한 bg-white rounded-xl 스타일 ── */}
-          <section className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+          {/* ── 조건 카드 ── */}
+          <section className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm shrink-0">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              {/* 좌: 타이틀 + 조건 인풋 */}
               <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-center gap-1.5">
                   <PackageCheck size={14} className="text-rose-500 shrink-0" />
                   <span className="text-sm font-bold text-slate-700">반품필요 조건</span>
                 </div>
-                {/* 구분선 */}
                 <div className="h-5 w-px bg-slate-200 shrink-0 hidden sm:block" />
                 <label className="inline-flex items-center gap-1.5 text-[12px] text-slate-600">
                   <span className="font-medium text-slate-500">매입주기</span>
@@ -1413,7 +1447,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 </label>
                 <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">AND</span>
                 <label className="inline-flex items-center gap-1.5 text-[12px] text-slate-600">
-                  <span className="font-medium text-slate-500">주기판매</span>
+                  <span className="font-medium text-slate-500">최근한달판매</span>
                   <span className="text-slate-400 font-semibold">≤</span>
                   <input
                     type="number"
@@ -1424,8 +1458,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   <span className="text-slate-500">개</span>
                 </label>
               </div>
-
-              {/* 우: 카운트 + 새로고침 버튼 */}
               <div className="flex items-center gap-2">
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-rose-50 text-rose-600 border border-rose-200 tabular-nums">
                   {returnList.length}건
@@ -1443,147 +1475,332 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </div>
           </section>
 
-          {/* ── 리스트 카드 ── */}
-          <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-0">
-            {/* 카드 헤더 */}
-            <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className="inline-block w-1 h-3.5 rounded-full bg-rose-400 shrink-0" />
-                <span className="text-[11px] font-semibold text-slate-500">반품필요 리스트</span>
-                <span className="text-[11px] text-slate-400 font-normal tabular-nums">{returnList.length}건</span>
-              </div>
+          {/* ── 좌우 split 레이아웃 ── */}
+          <div className="flex-1 flex flex-row min-h-0 gap-0">
+
+            {/* 좌측: 리스트 */}
+            <div
+              className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
+              style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? returnPanelWidth : undefined }}
+            >
+              <section className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col min-h-0">
+                {/* 카드 헤더 */}
+                <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-slate-100 shrink-0">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block w-1 h-3.5 rounded-full bg-rose-400 shrink-0" />
+                    <span className="text-[11px] font-semibold text-slate-500">반품필요 리스트</span>
+                    <span className="text-[11px] text-slate-400 font-normal tabular-nums">{returnList.length}건</span>
+                  </div>
+                  {/* 컬럼 그룹 토글 */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setRetColPurchaseOpen(v => !v)}
+                      className={`h-6 px-2 rounded text-[10px] font-bold border transition cursor-pointer ${retColPurchaseOpen ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" : "bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100"}`}
+                      title={retColPurchaseOpen ? "매입정보 접기" : "매입정보 펼치기"}
+                    >매입{retColPurchaseOpen ? " ▾" : " ▸"}</button>
+                    <button
+                      type="button"
+                      onClick={() => setRetColSalesOpen(v => !v)}
+                      className={`h-6 px-2 rounded text-[10px] font-bold border transition cursor-pointer ${retColSalesOpen ? "bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100" : "bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100"}`}
+                      title={retColSalesOpen ? "판매정보 접기" : "판매정보 펼치기"}
+                    >판매{retColSalesOpen ? " ▾" : " ▸"}</button>
+                  </div>
+                </div>
+
+                {/* 로딩 / 빈 상태 */}
+                {returnLoading && returnList.length === 0 ? (
+                  <div className="flex items-center justify-center py-12 text-slate-400 text-xs font-bold gap-2">
+                    <Loader2 size={14} className="animate-spin" />불러오는 중...
+                  </div>
+                ) : returnList.length === 0 ? (
+                  <div className="py-12 text-center text-[11px] text-slate-300">
+                    조건에 맞는 반품필요 상품 없음
+                  </div>
+                ) : (
+                  <div className={`overflow-auto flex-1 min-h-0 ${returnLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                    <table className="w-full text-xs">
+                      <thead className="sticky top-0 bg-white z-10">
+                        {/* 그룹 컬러 헤더 */}
+                        <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
+                          <th className="bg-slate-50 w-7" />
+                          {/* 상품정보 (sky) */}
+                          <th colSpan={2} className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100">상품정보</th>
+                          {/* 재고 (amber) */}
+                          <th className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100">재고</th>
+                          {/* 매입정보 (emerald) — 접기 시 1칸 */}
+                          {retColPurchaseOpen ? (
+                            <th colSpan={1} className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-r border-slate-100">매입정보</th>
+                          ) : (
+                            <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-r border-slate-100">매입</th>
+                          )}
+                          {/* 판매정보 (rose) */}
+                          {retColSalesOpen && (
+                            <th className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-r border-slate-100">판매정보</th>
+                          )}
+                          {/* 재고금액 (indigo) */}
+                          <th className="text-center py-1.5 bg-indigo-50 text-indigo-700 border-l border-r border-slate-100">재고금액</th>
+                          {/* 액션 (slate) */}
+                          <th className="text-center py-1.5 bg-slate-100 text-slate-600 border-l border-slate-100">액션</th>
+                        </tr>
+                        {/* 서브 헤더 */}
+                        <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
+                          <th className="text-center px-0.5 py-1.5 w-7 bg-slate-50/60">#</th>
+                          <th onClick={() => handleReturnSort("product_name")} title="상품명 정렬"
+                            className="text-left px-1 py-1.5 min-w-[130px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">
+                            상품{retArrow("product_name")}
+                          </th>
+                          <th onClick={() => handleReturnSort("supplier")} title="공급사 정렬"
+                            className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">
+                            공급사{retArrow("supplier")}
+                          </th>
+                          <th onClick={() => handleReturnSort("current_stock")} title="현재고 정렬"
+                            className="text-right px-1 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">
+                            현재고{retArrow("current_stock")}
+                          </th>
+                          {/* 매입주기 (항상) + 최근매입일·매입량 sub (펼침 시) */}
+                          <th onClick={() => handleReturnSort("purchase_cycle")} title="매입주기 정렬"
+                            className={`text-right px-1 py-1.5 bg-emerald-50/40 text-emerald-700 cursor-pointer hover:bg-emerald-100 select-none ${retColPurchaseOpen ? "w-28" : "w-16"}`}>
+                            {retColPurchaseOpen ? (
+                              <span className="flex flex-col items-end leading-none gap-0.5">
+                                <span>매입주기{retArrow("purchase_cycle")}</span>
+                                <span className="text-[9px] text-slate-400 font-normal">최근매입일·량</span>
+                              </span>
+                            ) : (
+                              <span>주기{retArrow("purchase_cycle")}</span>
+                            )}
+                          </th>
+                          {/* 판매정보: 최근한달 판매 */}
+                          {retColSalesOpen && (
+                            <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 판매량 정렬"
+                              className="text-right px-1 py-1.5 w-20 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none">
+                              최근한달{retArrow("sale_qty_month")}
+                            </th>
+                          )}
+                          <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬"
+                            className="text-right px-1 py-1.5 w-22 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none">
+                            재고금액{retArrow("stock_value")}
+                          </th>
+                          <th className="text-center px-0.5 py-1.5 w-16 bg-slate-50/60 text-slate-500 cursor-default select-none">
+                            반품
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {[...returnList].sort((a, b) => {
+                          const dir = returnSortDir === "asc" ? 1 : -1;
+                          switch (returnSortKey) {
+                            case "product_name":    return dir * String(a.product_name).localeCompare(String(b.product_name), "ko");
+                            case "supplier":        return dir * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
+                            case "current_stock":   return dir * (a.current_stock - b.current_stock);
+                            case "purchase_cycle":  return dir * ((a.purchase_cycle ?? 0) - (b.purchase_cycle ?? 0));
+                            case "sale_qty_month":  return dir * ((a.sale_qty_month ?? 0) - (b.sale_qty_month ?? 0));
+                            case "last_purchase_date": return dir * String(a.last_purchase_date ?? "").localeCompare(String(b.last_purchase_date ?? ""));
+                            case "last_purchase_qty":  return dir * ((a.last_purchase_qty ?? 0) - (b.last_purchase_qty ?? 0));
+                            case "stock_value":     return dir * ((a.current_stock * a.purchase_price) - (b.current_stock * b.purchase_price));
+                            default:                return 0;
+                          }
+                        }).map((x, i) => {
+                          const isSelected = returnSelectedProduct?.code === x.product_code;
+                          return (
+                            <tr
+                              key={x.product_code}
+                              className={`transition cursor-pointer ${isSelected ? "bg-rose-50/60 ring-1 ring-inset ring-rose-200" : "hover:bg-orange-50/30"}`}
+                              onClick={() => {
+                                setReturnSelectedProduct({ code: x.product_code, name: x.product_name });
+                                setReturnDetailTab("info");
+                              }}
+                            >
+                              {/* # */}
+                              <td className="px-0.5 py-1.5 text-center text-slate-400 tabular-nums text-[11px] bg-slate-50/60 align-top">{i + 1}</td>
+                              {/* 상품명 + 코드 — 클릭 시 info 탭 */}
+                              <td className="px-1 py-1.5 align-top bg-sky-50/20">
+                                <div className="flex flex-col leading-tight">
+                                  <button
+                                    type="button"
+                                    className="text-[12px] font-semibold text-sky-700 hover:underline text-left break-words whitespace-normal cursor-pointer"
+                                    onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("info"); }}
+                                    title="상품정보 보기"
+                                  >{x.product_name}</button>
+                                  <span className="text-[10px] text-slate-400 tabular-nums">{x.product_code}</span>
+                                </div>
+                              </td>
+                              {/* 공급사 */}
+                              <td className="px-0.5 py-1.5 text-[11px] font-semibold text-sky-600 break-words whitespace-normal align-top bg-sky-50/10">{x.supplier ?? "-"}</td>
+                              {/* 현재고 */}
+                              <td className="text-right px-1 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-amber-50/30 align-top">{x.current_stock.toLocaleString()}</td>
+                              {/* 매입주기 + (펼침 시) 최근매입일·량 sub */}
+                              <td
+                                className="text-right px-1 py-1.5 tabular-nums bg-emerald-50/30 align-top cursor-pointer"
+                                onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("purchase"); }}
+                                title="매입이력 보기"
+                              >
+                                <span className="font-black text-[12px] text-emerald-700 hover:underline">
+                                  {x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}
+                                </span>
+                                {retColPurchaseOpen && (
+                                  <span className="block text-[10px] text-slate-500 leading-snug mt-0.5 font-normal">
+                                    {x.last_purchase_date ?? "-"}
+                                    {x.last_purchase_qty != null && (
+                                      <> · <span className="tabular-nums">{x.last_purchase_qty}개</span></>
+                                    )}
+                                  </span>
+                                )}
+                              </td>
+                              {/* 최근한달 판매 — 클릭 시 sales 탭 */}
+                              {retColSalesOpen && (
+                                <td
+                                  className="text-right px-1 py-1.5 tabular-nums bg-rose-50/20 align-top cursor-pointer"
+                                  onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
+                                  title="판매정보 보기"
+                                >
+                                  <span className="font-black text-[12px] text-rose-600 hover:underline">
+                                    {x.sale_qty_month != null ? `${x.sale_qty_month.toLocaleString()}개` : "-"}
+                                  </span>
+                                </td>
+                              )}
+                              {/* 재고금액 */}
+                              <td className="text-right px-1 py-1.5 tabular-nums font-black text-[12px] text-indigo-700 bg-indigo-50/20 align-top">
+                                {x.current_stock > 0 && x.purchase_price > 0 ? `${(x.current_stock * x.purchase_price).toLocaleString()}` : "-"}
+                              </td>
+                              {/* 반품요청 버튼 */}
+                              <td className="text-center px-1 py-1.5 align-top bg-slate-50/30">
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); setReturnRequestItem(x); }}
+                                  className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 transition-colors cursor-pointer active:scale-95"
+                                  title="반품요청"
+                                >
+                                  <Truck size={11} strokeWidth={2} />반품
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                        {returnList.length === 0 && (
+                          <tr><td colSpan={8} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
             </div>
 
-            {/* 로딩 / 빈 상태 */}
-            {returnLoading && returnList.length === 0 ? (
-              <div className="flex items-center justify-center py-12 text-slate-400 text-xs font-bold gap-2">
-                <Loader2 size={14} className="animate-spin" />불러오는 중...
+            {/* 리사이즈 핸들 (데스크탑만) */}
+            <div onMouseDown={onReturnResizeStart}
+              className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-rose-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+              title="드래그하여 폭 조절">
+              <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+            </div>
+
+            {/* 우측: 상품 상세 패널 · 탭 전환 */}
+            {returnPanelLoading ? (
+              <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
+                <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+                  <Loader2 size={32} className="animate-spin mb-3 opacity-50" />
+                  <div className="text-sm font-bold">불러오는 중...</div>
+                </div>
               </div>
-            ) : returnList.length === 0 ? (
-              <div className="py-12 text-center text-[11px] text-slate-300">
-                조건에 맞는 반품필요 상품 없음
+            ) : returnPanelError ? (
+              <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
+                <div className="bg-white rounded-xl border border-slate-200 p-4 text-sm text-red-700">
+                  <div className="font-bold mb-1">조회 실패</div>
+                  <div className="text-[11px] font-mono">{returnPanelError}</div>
+                </div>
+              </div>
+            ) : returnPanelFull ? (
+              <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0 overflow-y-auto">
+                {/* 탭 헤더 */}
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden shrink-0">
+                  <div className="flex border-b border-slate-200 bg-slate-50/50">
+                    {([
+                      { k: "info" as const,     label: "상품정보",   color: "text-sky-700 border-sky-500"     },
+                      { k: "purchase" as const, label: "매입이력",   color: "text-emerald-700 border-emerald-500" },
+                      { k: "sales" as const,    label: "판매정보",   color: "text-rose-700 border-rose-500"   },
+                    ] as const).map(({ k, label, color }) => (
+                      <button key={k} type="button"
+                        onClick={() => setReturnDetailTab(k)}
+                        className={`flex-1 min-h-[40px] py-2 px-3 text-[13px] font-black border-b-2 transition cursor-pointer ${returnDetailTab === k ? color : "text-slate-400 border-transparent hover:text-slate-600"}`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {/* 선택 상품명 표시 */}
+                  <div className="px-3 py-1.5 flex items-center gap-2 border-b border-slate-100">
+                    <span className="text-[11px] font-bold text-slate-500 truncate">{returnSelectedProduct?.name}</span>
+                    <button type="button" onClick={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
+                      className="ml-auto text-[10px] text-slate-400 hover:text-slate-600 cursor-pointer shrink-0">닫기</button>
+                  </div>
+                </div>
+
+                {/* 탭 콘텐츠 */}
+                {returnDetailTab === "info" && (
+                  <ProductDetailRightPanel
+                    selected={({
+                      code: (returnPanelFull as any).product_code ?? (returnPanelFull as any).code ?? (returnSelectedProduct?.code ?? ""),
+                      name: (returnPanelFull as any).product_name ?? (returnPanelFull as any).name ?? (returnSelectedProduct?.name ?? ""),
+                      spec: (returnPanelFull as any).spec ?? "",
+                      ...returnPanelFull,
+                      realMap: (returnPanelFull as any).realMap ?? (returnPanelFull as any).real_map ?? null,
+                    } as ProductInfoType)}
+                    onClose={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
+                    onProductUpdate={(u) => setReturnPanelFull(prev => prev ? { ...prev, ...u } : prev)}
+                    onRealMapUpdate={(v) => setReturnPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
+                    showChart={false}
+                    context="order-manage"
+                    editable={true}
+                    emptySub="상세 정보가 표시됩니다"
+                  />
+                )}
+                {returnDetailTab === "purchase" && (
+                  <ProductDetailRightPanel
+                    selected={({
+                      code: (returnPanelFull as any).product_code ?? (returnPanelFull as any).code ?? (returnSelectedProduct?.code ?? ""),
+                      name: (returnPanelFull as any).product_name ?? (returnPanelFull as any).name ?? (returnSelectedProduct?.name ?? ""),
+                      spec: (returnPanelFull as any).spec ?? "",
+                      ...returnPanelFull,
+                      realMap: (returnPanelFull as any).realMap ?? (returnPanelFull as any).real_map ?? null,
+                    } as ProductInfoType)}
+                    onClose={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
+                    onProductUpdate={(u) => setReturnPanelFull(prev => prev ? { ...prev, ...u } : prev)}
+                    onRealMapUpdate={(v) => setReturnPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
+                    showChart={true}
+                    context="order-manage"
+                    editable={false}
+                    emptySub="매입이력이 표시됩니다"
+                  />
+                )}
+                {returnDetailTab === "sales" && (
+                  <ProductDetailRightPanel
+                    selected={({
+                      code: (returnPanelFull as any).product_code ?? (returnPanelFull as any).code ?? (returnSelectedProduct?.code ?? ""),
+                      name: (returnPanelFull as any).product_name ?? (returnPanelFull as any).name ?? (returnSelectedProduct?.name ?? ""),
+                      spec: (returnPanelFull as any).spec ?? "",
+                      ...returnPanelFull,
+                      realMap: (returnPanelFull as any).realMap ?? (returnPanelFull as any).real_map ?? null,
+                    } as ProductInfoType)}
+                    onClose={() => { setReturnSelectedProduct(null); setReturnPanelFull(null); }}
+                    onProductUpdate={(u) => setReturnPanelFull(prev => prev ? { ...prev, ...u } : prev)}
+                    onRealMapUpdate={(v) => setReturnPanelFull(prev => prev ? { ...prev, real_map: v, realMap: v } : prev)}
+                    showChart={true}
+                    context="order-manage"
+                    editable={false}
+                    emptySub="판매정보가 표시됩니다"
+                  />
+                )}
               </div>
             ) : (
-              <div className={`overflow-x-auto ${returnLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
-                <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-white z-10">
-                    {/* 그룹 컬러 헤더 · sky / amber / rose */}
-                    <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
-                      <th className="bg-slate-50 w-8" />
-                      <th colSpan={2} className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100">상품 정보</th>
-                      <th colSpan={2} className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100">재고 · 매입</th>
-                      <th colSpan={3} className="text-center py-1.5 bg-orange-50 text-orange-700 border-l border-r border-slate-100">판매 현황</th>
-                      <th colSpan={2} className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-slate-100">반품 액션</th>
-                    </tr>
-                    {/* 서브 헤더 */}
-                    <tr className="border-b border-slate-100 text-[11px] text-slate-400 uppercase tracking-wider">
-                      <th className="text-center px-0.5 py-1.5 w-8 bg-slate-50/60">#</th>
-                      <th onClick={() => handleReturnSort("product_name")} title="상품명 정렬"
-                        className="text-left px-0.5 py-1.5 min-w-[160px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">
-                        상품{retArrow("product_name")}
-                      </th>
-                      <th onClick={() => handleReturnSort("supplier")} title="공급사 정렬"
-                        className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">
-                        공급사{retArrow("supplier")}
-                      </th>
-                      <th onClick={() => handleReturnSort("current_stock")} title="현재고 정렬"
-                        className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">
-                        현재고{retArrow("current_stock")}
-                      </th>
-                      <th onClick={() => handleReturnSort("purchase_cycle")} title="매입주기 정렬"
-                        className="text-right px-0.5 py-1.5 w-18 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">
-                        매입주기{retArrow("purchase_cycle")}
-                      </th>
-                      <th onClick={() => handleReturnSort("sale_qty_cycle")} title="매입주기 판매량 정렬"
-                        className="text-right px-0.5 py-1.5 w-16 bg-orange-50/40 text-orange-500 cursor-pointer hover:bg-orange-100 select-none">
-                        주기판매{retArrow("sale_qty_cycle")}
-                      </th>
-                      <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 판매량 정렬"
-                        className="text-right px-0.5 py-1.5 w-20 bg-orange-50/40 text-orange-500 cursor-pointer hover:bg-orange-100 select-none">
-                        최근 한달{retArrow("sale_qty_month")}
-                      </th>
-                      <th onClick={() => handleReturnSort("last_purchase_date")} title="최근매입일 정렬"
-                        className="text-left px-0.5 py-1.5 w-22 bg-orange-50/40 text-slate-500 cursor-pointer hover:bg-orange-100 select-none">
-                        최근매입일{retArrow("last_purchase_date")}
-                      </th>
-                      <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬"
-                        className="text-right px-0.5 py-1.5 w-24 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">
-                        재고금액{retArrow("stock_value")}
-                      </th>
-                      <th className="text-center px-0.5 py-1.5 w-20 bg-rose-50/30 text-rose-600 cursor-default select-none">
-                        반품요청
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {[...returnList].sort((a, b) => {
-                      const dir = returnSortDir === "asc" ? 1 : -1;
-                      switch (returnSortKey) {
-                        case "product_name":    return dir * String(a.product_name).localeCompare(String(b.product_name), "ko");
-                        case "supplier":        return dir * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
-                        case "current_stock":   return dir * (a.current_stock - b.current_stock);
-                        case "purchase_cycle":  return dir * ((a.purchase_cycle ?? 0) - (b.purchase_cycle ?? 0));
-                        case "sale_qty_cycle":  return dir * (a.sale_qty_cycle - b.sale_qty_cycle);
-                        case "sale_qty_month":  return dir * ((a.sale_qty_month ?? 0) - (b.sale_qty_month ?? 0));
-                        case "last_purchase_date": return dir * String(a.last_purchase_date ?? "").localeCompare(String(b.last_purchase_date ?? ""));
-                        case "last_purchase_qty":  return dir * ((a.last_purchase_qty ?? 0) - (b.last_purchase_qty ?? 0));
-                        case "stock_value":     return dir * ((a.current_stock * a.purchase_price) - (b.current_stock * b.purchase_price));
-                        default:                return 0;
-                      }
-                    }).map((x, i) => (
-                      <tr key={x.product_code} className="hover:bg-orange-50/30 transition">
-                        {/* # */}
-                        <td className="px-0.5 py-1.5 text-center text-slate-400 tabular-nums text-[11px] bg-slate-50/60 align-top">{i + 1}</td>
-                        {/* 상품명 + 코드 */}
-                        <td className="px-0.5 py-1.5 align-top">
-                          <div className="flex flex-col leading-tight">
-                            <span className="text-[13px] font-medium text-slate-800 break-words whitespace-normal">{x.product_name}</span>
-                            <span className="text-[11px] text-slate-400 tabular-nums">{x.product_code}</span>
-                          </div>
-                        </td>
-                        {/* 공급사 */}
-                        <td className="px-0.5 py-1.5 text-[12px] font-semibold text-sky-600 break-words whitespace-normal align-top">{x.supplier ?? "-"}</td>
-                        {/* 현재고 */}
-                        <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-amber-50/30 align-top">{x.current_stock.toLocaleString()}</td>
-                        {/* 매입주기 */}
-                        <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-rose-600 bg-amber-50/30 align-top">
-                          {x.purchase_cycle != null ? `${x.purchase_cycle}일` : "-"}
-                        </td>
-                        {/* 주기판매 */}
-                        <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-amber-700 bg-orange-50/30 align-top">
-                          {x.sale_qty_cycle > 0 ? `${x.sale_qty_cycle.toLocaleString()}개` : "-"}
-                        </td>
-                        {/* 최근 한달 판매 */}
-                        <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-orange-600 bg-orange-50/30 align-top">
-                          {x.sale_qty_month != null ? `${x.sale_qty_month.toLocaleString()}개` : "-"}
-                        </td>
-                        {/* 최근매입일 */}
-                        <td className="px-0.5 py-1.5 text-slate-600 tabular-nums text-[11px] bg-orange-50/20 align-top">{x.last_purchase_date ?? "-"}</td>
-                        {/* 재고금액 */}
-                        <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] text-indigo-700 bg-rose-50/30 align-top">
-                          {x.current_stock > 0 && x.purchase_price > 0 ? `${(x.current_stock * x.purchase_price).toLocaleString()}` : "-"}
-                        </td>
-                        {/* 반품요청 버튼 */}
-                        <td className="text-center px-1 py-1.5 align-top bg-rose-50/20">
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setReturnRequestItem(x); }}
-                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 transition-colors cursor-pointer active:scale-95"
-                            title="반품요청 리스트에 추가"
-                          >
-                            <Truck size={11} strokeWidth={2} />반품
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {returnList.length === 0 && (
-                      <tr><td colSpan={10} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
-                    )}
-                  </tbody>
-                </table>
+              /* 빈 상태 */
+              <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
+                <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+                  <Package size={40} className="mb-3 opacity-30" />
+                  <div className="text-[11px] font-semibold">상품을 클릭하세요</div>
+                  <div className="text-[11px] mt-1 text-center">상품명 → 상품정보 · 매입주기 → 매입이력 · 판매량 → 판매정보</div>
+                </div>
               </div>
             )}
-          </section>
+          </div>
         </div>
       )}
       {/* ── 입고매칭 탭 · 발주 vs 입고 비교 (2026-07-29 · 사용자 요청) ── */}
