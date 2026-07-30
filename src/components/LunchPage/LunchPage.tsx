@@ -479,11 +479,11 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
 
         {/* ── 점심 불참 내 신청 ────────────────────────────── */}
         {!employeeId ? (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-center text-amber-700 text-sm font-semibold">
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-6 text-center text-amber-700 text-sm font-semibold">
             로그인 후 이용할 수 있습니다.
           </div>
         ) : loading && myRequest === undefined ? (
-          <div className="bg-white border border-gray-200 rounded-2xl p-10 flex items-center justify-center">
+          <div className="bg-white border border-slate-200 rounded-xl p-10 flex items-center justify-center">
             <div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : isToday && myRequest && !myRequest.eating ? (

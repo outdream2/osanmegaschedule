@@ -545,7 +545,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             {/* 빈 상태 */}
             {rows.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 sm:py-24 select-none">
-                <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
+                <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center">
                   <Package size={28} className="text-slate-300" />
                 </div>
                 <div className="text-center">

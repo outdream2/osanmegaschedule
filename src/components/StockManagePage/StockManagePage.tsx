@@ -1105,20 +1105,59 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
                 {/* 컬럼 그룹 헤더 */}
                 <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200">
                   <th colSpan={2} className="bg-slate-50 text-slate-400 text-left px-3 py-1.5">기본정보</th>
-                  <th colSpan={2} className="bg-indigo-50 text-indigo-600 text-center px-3 py-1.5">판매량 비교</th>
-                  <th colSpan={2} className="bg-indigo-100 text-indigo-700 text-center px-3 py-1.5">성장 지표</th>
-                  <th colSpan={2} className="bg-slate-50 text-slate-400 text-center px-3 py-1.5">재고현황</th>
+                  <th
+                    colSpan={isTrendingGroupCollapsed("sales") ? 1 : 2}
+                    onClick={() => toggleTrendingGroup("sales")}
+                    className="bg-indigo-50 text-indigo-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-indigo-100 transition"
+                  >
+                    {isTrendingGroupCollapsed("sales") ? <ChevronRight size={11} className="inline -mt-0.5" /> : <ChevronDown size={11} className="inline -mt-0.5" />}
+                    {" "}판매량 비교
+                  </th>
+                  <th
+                    colSpan={isTrendingGroupCollapsed("growth") ? 1 : 2}
+                    onClick={() => toggleTrendingGroup("growth")}
+                    className="bg-indigo-100 text-indigo-700 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-indigo-200 transition"
+                  >
+                    {isTrendingGroupCollapsed("growth") ? <ChevronRight size={11} className="inline -mt-0.5" /> : <ChevronDown size={11} className="inline -mt-0.5" />}
+                    {" "}성장 지표
+                  </th>
+                  <th
+                    colSpan={isTrendingGroupCollapsed("stock") ? 1 : 2}
+                    onClick={() => toggleTrendingGroup("stock")}
+                    className="bg-slate-50 text-slate-400 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-slate-100 transition"
+                  >
+                    {isTrendingGroupCollapsed("stock") ? <ChevronRight size={11} className="inline -mt-0.5" /> : <ChevronDown size={11} className="inline -mt-0.5" />}
+                    {" "}재고현황
+                  </th>
                 </tr>
                 {/* 서브헤더 */}
                 <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider bg-white">
                   <th className="text-center px-2 py-1.5 w-9">#</th>
                   <th className="text-left px-2 py-1.5 min-w-[200px]">상품명</th>
-                  <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/50 text-indigo-600">최근{windowDays}일</th>
-                  <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/30 text-indigo-500">이전{windowDays}일</th>
-                  <th className="text-right px-2 py-1.5 w-16 bg-indigo-100/60 text-indigo-700">성장률</th>
-                  <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/60 text-indigo-600">증가량</th>
-                  <th className="text-right px-2 py-1.5 w-14 text-slate-500">현재고</th>
-                  <th className="text-right px-2 py-1.5 w-14 text-slate-400">적정</th>
+                  {isTrendingGroupCollapsed("sales") ? (
+                    <th className="bg-indigo-50/20 w-4" />
+                  ) : (
+                    <>
+                      <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/50 text-indigo-600">최근{windowDays}일</th>
+                      <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/30 text-indigo-500">이전{windowDays}일</th>
+                    </>
+                  )}
+                  {isTrendingGroupCollapsed("growth") ? (
+                    <th className="bg-indigo-100/20 w-4" />
+                  ) : (
+                    <>
+                      <th className="text-right px-2 py-1.5 w-16 bg-indigo-100/60 text-indigo-700">성장률</th>
+                      <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/60 text-indigo-600">증가량</th>
+                    </>
+                  )}
+                  {isTrendingGroupCollapsed("stock") ? (
+                    <th className="bg-slate-50/50 w-4" />
+                  ) : (
+                    <>
+                      <th className="text-right px-2 py-1.5 w-14 text-slate-500">현재고</th>
+                      <th className="text-right px-2 py-1.5 w-14 text-slate-400">적정</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
@@ -1137,23 +1176,41 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
                         )}
                       </div>
                     </td>
-                    <td className="text-right px-2 py-2 text-[12px] font-semibold text-indigo-700 tabular-nums align-top bg-indigo-50/30">{fmt(r.recent_sale)}</td>
-                    <td className="text-right px-2 py-2 text-[12px] font-medium text-slate-400 tabular-nums align-top bg-indigo-50/10">{fmt(r.prior_sale)}</td>
-                    <td className={`text-right px-2 py-2 text-[12px] font-bold tabular-nums align-top bg-indigo-50/40 ${r.newly_trending ? "text-indigo-600" :
-                      (r.growth_rate ?? 0) >= 50 ? "text-indigo-700" :
-                        (r.growth_rate ?? 0) > 0 ? "text-indigo-600" :
-                          "text-slate-400"
-                      }`}>
-                      {r.newly_trending ? "NEW" : r.growth_rate != null ? `${r.growth_rate > 0 ? "+" : ""}${r.growth_rate}%` : "-"}
-                    </td>
-                    <td className={`text-right px-2 py-2 text-[12px] font-semibold tabular-nums align-top bg-indigo-50/20 ${r.absolute_delta > 0 ? "text-indigo-600" : r.absolute_delta < 0 ? "text-rose-500" : "text-slate-400"}`}>
-                      {r.absolute_delta > 0 ? `+${fmt(r.absolute_delta)}` : fmt(r.absolute_delta)}
-                    </td>
-                    <td className={`text-right px-2 py-2 text-[12px] font-semibold tabular-nums align-top ${r.below_optimal ? "text-rose-500" : "text-slate-600"}`}
-                      title={r.below_optimal ? `현재고 부족 · ${r.current_stock} < 적정 ${r.optimal_stock}` : ""}>
-                      {fmt(r.current_stock)}
-                    </td>
-                    <td className="text-right px-2 py-2 text-[12px] font-medium text-slate-400 tabular-nums align-top">{r.optimal_stock > 0 ? fmt(r.optimal_stock) : "-"}</td>
+                    {isTrendingGroupCollapsed("sales") ? (
+                      <td className="bg-indigo-50/10 w-4" />
+                    ) : (
+                      <>
+                        <td className="text-right px-2 py-2 text-[12px] font-semibold text-indigo-700 tabular-nums align-top bg-indigo-50/30">{fmt(r.recent_sale)}</td>
+                        <td className="text-right px-2 py-2 text-[12px] font-medium text-slate-400 tabular-nums align-top bg-indigo-50/10">{fmt(r.prior_sale)}</td>
+                      </>
+                    )}
+                    {isTrendingGroupCollapsed("growth") ? (
+                      <td className="bg-indigo-100/10 w-4" />
+                    ) : (
+                      <>
+                        <td className={`text-right px-2 py-2 text-[12px] font-bold tabular-nums align-top bg-indigo-50/40 ${r.newly_trending ? "text-indigo-600" :
+                          (r.growth_rate ?? 0) >= 50 ? "text-indigo-700" :
+                            (r.growth_rate ?? 0) > 0 ? "text-indigo-600" :
+                              "text-slate-400"
+                          }`}>
+                          {r.newly_trending ? "NEW" : r.growth_rate != null ? `${r.growth_rate > 0 ? "+" : ""}${r.growth_rate}%` : "-"}
+                        </td>
+                        <td className={`text-right px-2 py-2 text-[12px] font-semibold tabular-nums align-top bg-indigo-50/20 ${r.absolute_delta > 0 ? "text-indigo-600" : r.absolute_delta < 0 ? "text-rose-500" : "text-slate-400"}`}>
+                          {r.absolute_delta > 0 ? `+${fmt(r.absolute_delta)}` : fmt(r.absolute_delta)}
+                        </td>
+                      </>
+                    )}
+                    {isTrendingGroupCollapsed("stock") ? (
+                      <td className="bg-slate-50/30 w-4" />
+                    ) : (
+                      <>
+                        <td className={`text-right px-2 py-2 text-[12px] font-semibold tabular-nums align-top ${r.below_optimal ? "text-rose-500" : "text-slate-600"}`}
+                          title={r.below_optimal ? `현재고 부족 · ${r.current_stock} < 적정 ${r.optimal_stock}` : ""}>
+                          {fmt(r.current_stock)}
+                        </td>
+                        <td className="text-right px-2 py-2 text-[12px] font-medium text-slate-400 tabular-nums align-top">{r.optimal_stock > 0 ? fmt(r.optimal_stock) : "-"}</td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>

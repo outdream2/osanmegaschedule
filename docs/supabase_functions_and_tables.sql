@@ -91,6 +91,130 @@ CREATE INDEX IF NOT EXISTS idx_vendors_category ON vendors(category);
 
 
 -- ┌───────────────────────────────────────────────────────────────────────┐
+-- │ 1-e. get_stock_flow · sale_qty_month · last_purchase_qty 확장          │
+-- │    2026-07-30 · 반품필요 리스트 로딩 속도 개선                        │
+-- │    기존 · 서버에서 batch fetch (수십 라운드) · 5000상품 시 수초 소요  │
+-- │    개선 · RPC 단일 쿼리로 처리 · <500ms                               │
+-- └───────────────────────────────────────────────────────────────────────┘
+
+CREATE OR REPLACE FUNCTION get_stock_flow(p_from date, p_to date)
+RETURNS TABLE (
+  product_code TEXT,
+  product_name TEXT,
+  supplier TEXT,
+  spec TEXT,
+  opening_stock INT,
+  purchase_qty INT,
+  sale_qty INT,
+  disposal_qty INT,
+  closing_stock INT,
+  total_amount NUMERIC,
+  optimal_stock INT,
+  sale_price NUMERIC,
+  purchase_price NUMERIC,
+  current_stock INT,
+  min_order INT,
+  last_purchase_date TEXT,
+  first_purchase_date TEXT,
+  purchase_count INT,
+  purchase_total_qty INT,
+  purchase_total_amount NUMERIC,
+  sale_qty_month INT,          -- 신규 · 최근 30일 판매량 합산
+  sale_amount_month NUMERIC,   -- 신규 · 최근 30일 판매액 합산
+  last_purchase_qty INT        -- 신규 · 최근 매입일의 매입 수량
+)
+LANGUAGE plpgsql AS $$
+DECLARE
+  v_month_ago date := (CURRENT_DATE - INTERVAL '30 days')::date;
+BEGIN
+  RETURN QUERY
+  WITH sh_agg AS (
+    -- stock_history · 기간 범위 aggregate
+    SELECT
+      sh.product_code,
+      SUM(sh.opening_stock)::INT   AS opening_stock,
+      SUM(sh.purchase_qty)::INT    AS purchase_qty,
+      SUM(sh.sale_qty)::INT        AS sale_qty,
+      SUM(sh.disposal_qty)::INT    AS disposal_qty,
+      SUM(sh.closing_stock)::INT   AS closing_stock,
+      SUM(sh.total_amount)::NUMERIC AS total_amount,
+      MAX(sh.product_name)         AS product_name,
+      MAX(sh.supplier_name)        AS supplier,
+      MAX(sh.spec)                 AS spec
+    FROM stock_history sh
+    WHERE sh.snapshot_date >= p_from AND sh.snapshot_date <= p_to
+    GROUP BY sh.product_code
+  ),
+  sh_month AS (
+    -- 최근 30일 판매량 + 판매액
+    SELECT
+      sh.product_code,
+      SUM(sh.sale_qty)::INT        AS sale_qty_month,
+      SUM(sh.total_amount)::NUMERIC AS sale_amount_month
+    FROM stock_history sh
+    WHERE sh.snapshot_date >= v_month_ago AND sh.snapshot_date <= CURRENT_DATE
+    GROUP BY sh.product_code
+  ),
+  pd_agg AS (
+    -- purchase_details · 매입 이력 집계 + 최근 매입량
+    SELECT
+      pd.product_code,
+      COUNT(DISTINCT pd.purchase_date)::INT AS purchase_count,
+      MIN(pd.purchase_date)::TEXT           AS first_purchase_date,
+      MAX(pd.purchase_date)::TEXT           AS last_purchase_date,
+      SUM(pd.quantity)::INT                 AS purchase_total_qty,
+      SUM(COALESCE(pd.total, pd.amount, 0))::NUMERIC AS purchase_total_amount
+    FROM purchase_details pd
+    GROUP BY pd.product_code
+  ),
+  pd_last AS (
+    -- 각 상품 · 최근 매입일의 quantity (DISTINCT ON)
+    SELECT DISTINCT ON (pd.product_code)
+      pd.product_code,
+      pd.quantity::INT AS last_purchase_qty
+    FROM purchase_details pd
+    ORDER BY pd.product_code, pd.purchase_date DESC
+  )
+  SELECT
+    p.product_code::TEXT,
+    COALESCE(sh_agg.product_name, p.product_name)::TEXT,
+    COALESCE(sh_agg.supplier, p.supplier)::TEXT,
+    COALESCE(sh_agg.spec, p.spec)::TEXT,
+    COALESCE(sh_agg.opening_stock, 0),
+    COALESCE(sh_agg.purchase_qty, 0),
+    COALESCE(sh_agg.sale_qty, 0),
+    COALESCE(sh_agg.disposal_qty, 0),
+    COALESCE(sh_agg.closing_stock, 0),
+    COALESCE(sh_agg.total_amount, 0),
+    COALESCE(NULLIF(p.optimal_stock::text, '')::int, 0),
+    COALESCE(p.sale_price, 0),
+    COALESCE(p.purchase_price, 0),
+    COALESCE(p.current_stock, 0),
+    COALESCE(NULLIF(p.min_order::text, '')::int, 0),
+    pd_agg.last_purchase_date,
+    pd_agg.first_purchase_date,
+    COALESCE(pd_agg.purchase_count, 0),
+    COALESCE(pd_agg.purchase_total_qty, 0),
+    COALESCE(pd_agg.purchase_total_amount, 0),
+    COALESCE(sh_month.sale_qty_month, 0),
+    COALESCE(sh_month.sale_amount_month, 0),
+    pd_last.last_purchase_qty
+  FROM products p
+  LEFT JOIN sh_agg   ON sh_agg.product_code = p.product_code
+  LEFT JOIN sh_month ON sh_month.product_code = p.product_code
+  LEFT JOIN pd_agg   ON pd_agg.product_code = p.product_code
+  LEFT JOIN pd_last  ON pd_last.product_code = p.product_code
+  WHERE p.hidden IS NOT TRUE
+    AND (
+      sh_agg.product_code IS NOT NULL     -- 기간 내 판매 이력 있거나
+      OR pd_agg.product_code IS NOT NULL   -- 매입 이력 있는 상품만
+      OR COALESCE(p.current_stock, 0) > 0  -- 현재고 있는 상품
+    );
+END;
+$$;
+
+
+-- ┌───────────────────────────────────────────────────────────────────────┐
 -- │ 2. 재고관리 상품현황 · 단일 SQL 조인 함수 (get_stock_flow)            │
 -- │    2026-07-29 · Phase 3 (A) 로딩속도 개선 · 60~100 API → 1 RPC       │
 -- │                                                                       │

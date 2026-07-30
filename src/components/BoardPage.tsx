@@ -620,7 +620,7 @@ function ComposerModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white w-full sm:w-[560px] sm:rounded-2xl sm:max-h-[86vh] max-h-[92vh] overflow-y-auto rounded-t-3xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="bg-white w-full sm:w-[560px] sm:rounded-xl sm:max-h-[86vh] max-h-[92vh] overflow-y-auto rounded-t-2xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
         <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-200 px-4 py-3 flex items-center justify-between">
           <h2 className="text-base font-black text-slate-900">새 글 작성</h2>
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 text-slate-500"><XIcon size={18} /></button>
@@ -914,7 +914,7 @@ function DetailModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white w-full sm:w-[640px] sm:rounded-2xl sm:max-h-[92vh] max-h-[95vh] overflow-y-auto rounded-t-3xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="bg-white w-full sm:w-[640px] sm:rounded-xl sm:max-h-[92vh] max-h-[95vh] overflow-y-auto rounded-t-2xl shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>
         {/* 헤더 */}
         <div className="sticky top-0 bg-white/95 backdrop-blur border-b border-slate-200 px-3 sm:px-4 py-3 flex items-center gap-2">
           <button onClick={onClose} className="p-1 rounded-lg hover:bg-slate-100 text-slate-500"><ChevronLeft size={18} /></button>

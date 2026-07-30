@@ -731,6 +731,8 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
           if (!rpcError && Array.isArray(rpcData)) {
             const rpcMs = Date.now() - t0;
             // hidden 필터는 이미 함수에서 처리됨
+            // 2026-07-30 · RPC 함수 확장 · sale_qty_month · sale_amount_month · last_purchase_qty 포함
+            //   기존 batch fetch (수십 라운드) 제거 · 단일 쿼리 · 대폭 개선
             const rows = rpcData.map((r: any) => ({
               product_code:  r.product_code,
               product_name:  r.product_name,
@@ -752,12 +754,17 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
               purchase_count:      r.purchase_count ?? 0,
               purchase_total_qty:  r.purchase_total_qty ?? 0,
               purchase_total_amount: r.purchase_total_amount ?? 0,
+              sale_qty_month:      r.sale_qty_month ?? 0,
+              sale_amount_month:   r.sale_amount_month ?? 0,
+              last_purchase_qty:   r.last_purchase_qty ?? null,
             }));
             // 2026-07-30 · 사용자 지적 · 반품필요 리스트 · sale_qty_month · last_purchase_qty 안 나옴
             //   RPC 반환에 이 두 필드 없음 · 서버에서 batch fetch 로 보강
             //   대상 · rows.slice(0, limit) 만 (전체 · 성능 부담)
+            //   2026-07-30 · RPC 함수가 이미 sale_qty_month·last_purchase_qty 반환하면 · skip (성능)
+            const needsBoost = rows.length > 0 && rows[0].sale_qty_month === undefined;
             try {
-              const targetCodes = rows.slice(0, limit).map(r => String(r.product_code ?? "").trim()).filter(Boolean);
+              const targetCodes = needsBoost ? rows.slice(0, limit).map(r => String(r.product_code ?? "").trim()).filter(Boolean) : [];
               if (targetCodes.length > 0) {
                 // ── 1) purchase_details · last_purchase_qty · 각 상품 최근 매입일의 수량
                 const lastQtyMap = new Map<string, number>();

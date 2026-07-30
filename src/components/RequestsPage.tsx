@@ -634,7 +634,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     const short = (r.optimal_stock ?? 0) - (r.current_stock ?? 0);
                     const inv = invStockMap.get(r.product_code);
                     return (
-                      <div key={r.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition ${selectedOrder.has(r.id) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
+                      <div key={r.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition-all duration-150 ${selectedOrder.has(r.id) ? "bg-rose-50/50" : "hover:bg-slate-50/60"}`}>
                         <Checkbox checked={selectedOrder.has(r.id)} onChange={() => toggleOne(selectedOrder, r.id, setSelectedOrder)} />
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5 flex-wrap">
@@ -689,7 +689,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                     const alreadyRequested = requestedCodes.has(code);
                     const busy = requestingOrder.has(code);
                     return (
-                      <div key={code} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-orange-50/30 transition">
+                      <div key={code} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-slate-50/60 transition-all duration-150">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5 flex-wrap">
                                 <span className="text-[10px] font-mono text-slate-400 shrink-0">{code}</span>
@@ -753,7 +753,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             ) : (
               <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${mismatchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {mismatches.map(m => (
-                  <div key={m.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition ${selectedMismatch.has(m.id) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
+                  <div key={m.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition-all duration-150 ${selectedMismatch.has(m.id) ? "bg-rose-50/50" : "hover:bg-slate-50/60"}`}>
                     <Checkbox checked={selectedMismatch.has(m.id)} onChange={() => toggleOne(selectedMismatch, m.id, setSelectedMismatch)} />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
@@ -828,7 +828,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
                   const isShort = diff != null && diff < 0;
                   const isOver  = diff != null && diff > 0;
                   return (
-                    <div key={r.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition ${selectedInventory.has(r.id) ? "bg-rose-50/50" : "hover:bg-orange-50/30"}`}>
+                    <div key={r.id} className={`flex items-center gap-3 px-0.5 py-1.5 transition-all duration-150 ${selectedInventory.has(r.id) ? "bg-rose-50/50" : "hover:bg-slate-50/60"}`}>
                       <Checkbox checked={selectedInventory.has(r.id)} onChange={() => toggleOne(selectedInventory, r.id, setSelectedInventory)} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -980,7 +980,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             ) : (
               <div className={`bg-white rounded-xl border border-slate-200 shadow-sm divide-y divide-slate-50 ${lunchLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 {lunchRequests.map(r => (
-                  <div key={r.id} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-orange-50/30 transition">
+                  <div key={r.id} className="flex items-center gap-3 px-0.5 py-1.5 hover:bg-slate-50/60 transition-all duration-150">
                     <span className={`w-2 h-2 rounded-full shrink-0 ${r.eating ? "bg-emerald-500" : "bg-gray-300"}`} />
                     <span className="text-sm font-semibold text-gray-800 flex-1">{r.employee_name}</span>
                     {r.memo && <span className="text-[10px] text-gray-400 flex-1 min-w-0 break-keep">{r.memo}</span>}
@@ -1002,7 +1002,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
       {/* 발주요청 중복 확인 모달 */}
       {dupOrderModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-          <div className="bg-white rounded-2xl shadow-xl p-5 max-w-sm w-full flex flex-col gap-4">
+          <div className="bg-white rounded-xl shadow-xl p-5 max-w-sm w-full flex flex-col gap-4">
             <div className="flex items-start gap-3">
               <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center shrink-0">
                 <ShoppingCart size={18} className="text-orange-600" />
