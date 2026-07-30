@@ -2159,4 +2159,112 @@ router.get("/api/stock-manage/trending", async (req, res) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════
+// GET /api/stock-manage/trending-period?from=YYYY-MM-DD&to=YYYY-MM-DD
+//                                      &prior_from=YYYY-MM-DD&prior_to=YYYY-MM-DD
+//                                      &limit=20
+// 2026-07-30 · 사용자 요청 · 명시적 기간 · 급상승 상품
+//   응답 · rows [{ code, name, supplier, recent_sale, prior_sale, growth_rate, delta, current_stock, newly_trending }]
+// ═══════════════════════════════════════════════════════════════════════
+router.get("/api/stock-manage/trending-period", async (req, res) => {
+  const from = String(req.query.from ?? "").trim();
+  const to = String(req.query.to ?? "").trim();
+  const priorFrom = String(req.query.prior_from ?? "").trim();
+  const priorTo = String(req.query.prior_to ?? "").trim();
+  const limit = Math.max(1, Math.min(1000, parseInt(String(req.query.limit ?? "20"), 10) || 20));
+  if (!from || !to || !priorFrom || !priorTo) {
+    return res.status(400).json({ error: "from · to · prior_from · prior_to 필수 (YYYY-MM-DD)" });
+  }
+  try {
+    // stock_history · 두 기간 (prior_from ~ to) 통합 조회 (한 번 · 페이지네이션)
+    const salesMap = new Map<string, { recent: number; prior: number; name: string; supplier: string | null }>();
+    const PAGE = 1000;
+    let fromRow = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from("stock_history")
+        .select("product_code, product_name, supplier_name, snapshot_date, sale_qty")
+        .gte("snapshot_date", priorFrom)
+        .lte("snapshot_date", to)
+        .range(fromRow, fromRow + PAGE - 1);
+      if (error) {
+        if (/relation|does not exist/i.test(error.message)) return res.json({ rows: [] });
+        throw new Error(error.message);
+      }
+      if (!data || data.length === 0) break;
+      for (const r of data) {
+        const code = String((r as any).product_code ?? "").trim();
+        if (!code) continue;
+        const q = Number((r as any).sale_qty ?? 0) || 0;
+        if (q === 0) continue;
+        const snap = String((r as any).snapshot_date ?? "");
+        const cur = salesMap.get(code) ?? {
+          recent: 0, prior: 0,
+          name: String((r as any).product_name ?? code),
+          supplier: (r as any).supplier_name ?? null,
+        };
+        if (snap >= from && snap <= to) cur.recent += q;
+        else if (snap >= priorFrom && snap <= priorTo) cur.prior += q;
+        salesMap.set(code, cur);
+      }
+      if (data.length < PAGE) break;
+      fromRow += PAGE;
+    }
+
+    // products · 현재고 · hidden
+    const codes = Array.from(salesMap.keys());
+    const productMap = new Map<string, { current_stock: number; hidden: boolean }>();
+    const CHUNK = 500;
+    for (let i = 0; i < codes.length; i += CHUNK) {
+      const chunk = codes.slice(i, i + CHUNK);
+      const { data } = await supabase
+        .from("products")
+        .select("product_code, current_stock, hidden")
+        .in("product_code", chunk);
+      for (const p of data ?? []) {
+        productMap.set(String((p as any).product_code ?? "").trim(), {
+          current_stock: Number((p as any).current_stock ?? 0) || 0,
+          hidden: (p as any).hidden === true,
+        });
+      }
+    }
+
+    const rows: any[] = [];
+    for (const [code, s] of salesMap) {
+      const prod = productMap.get(code);
+      if (prod?.hidden) continue;
+      if (s.recent === 0) continue; // 최근 기간 판매 없으면 급상승 대상 아님
+      const delta = s.recent - s.prior;
+      const growthRate = s.prior > 0 ? Math.round(((s.recent - s.prior) / s.prior) * 100) : null;
+      rows.push({
+        product_code: code,
+        product_name: s.name,
+        supplier: s.supplier,
+        recent_sale: s.recent,
+        prior_sale: s.prior,
+        growth_rate: growthRate,
+        absolute_delta: delta,
+        newly_trending: s.prior === 0,
+        current_stock: prod?.current_stock ?? 0,
+      });
+    }
+    rows.sort((a, b) => {
+      if (a.newly_trending !== b.newly_trending) return a.newly_trending ? -1 : 1;
+      const ga = a.growth_rate ?? -999999;
+      const gb = b.growth_rate ?? -999999;
+      if (gb !== ga) return gb - ga;
+      return b.absolute_delta - a.absolute_delta;
+    });
+
+    res.json({
+      from, to, prior_from: priorFrom, prior_to: priorTo,
+      total: rows.length,
+      rows: rows.slice(0, limit),
+    });
+  } catch (err: any) {
+    console.error("[trending-period] 오류:", err?.message);
+    res.status(500).json({ error: err?.message ?? "trending-period 조회 실패" });
+  }
+});
+
 export default router;
