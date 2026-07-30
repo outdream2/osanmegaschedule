@@ -2932,31 +2932,196 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
       {/* 2026-07-30 (2nd) · 사용자 요청 · 반품요청 임시 모달 · 별도 세션에서 API·공급사별·일괄 반품 확장 예정 */}
       {returnRequestItem && (
-        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setReturnRequestItem(null)}>
-          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-5 flex flex-col gap-3" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-2">
-              <Truck size={20} className="text-rose-600" />
-              <h3 className="text-[17px] font-black text-slate-800">반품요청</h3>
-            </div>
-            <div className="text-[14px] text-slate-700 leading-relaxed">
-              <p className="font-black text-slate-900">{returnRequestItem.product_name}</p>
-              <p className="text-[12px] text-slate-500 tabular-nums">#{returnRequestItem.product_code} · {returnRequestItem.supplier ?? "-"}</p>
-              <p className="mt-2">현재고 <span className="font-black tabular-nums">{returnRequestItem.current_stock?.toLocaleString()}</span>개 · 재고금액 <span className="font-black tabular-nums text-rose-700">{(returnRequestItem.current_stock * returnRequestItem.purchase_price).toLocaleString()}원</span></p>
-            </div>
-            <p className="text-[13px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-              반품요청 API · 공급사별 조회 · 일괄 반품 기능은 별도 세션에서 확장 예정입니다.
-            </p>
-            <div className="flex justify-end gap-2 mt-1">
-              <button type="button" onClick={() => setReturnRequestItem(null)}
-                className="px-4 py-2 rounded-lg text-[13px] font-black text-slate-600 border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                닫기
-              </button>
-            </div>
-          </div>
-        </div>
+        <ReturnRequestModal
+          item={returnRequestItem}
+          onClose={() => setReturnRequestItem(null)}
+        />
       )}
     </main>
   );
 };
 
 export default OrderManagePage;
+
+// ═══════════════════════════════════════════════════════════════════════
+// 2026-07-30 · 반품요청 모달 · 개별 반품요청 저장 + 공급사별 리스트 조회
+//   POST /api/return-requests
+//   GET  /api/return-requests?supplier=X
+// ═══════════════════════════════════════════════════════════════════════
+interface ReturnRequestModalProps {
+  item: any;
+  onClose: () => void;
+}
+const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, onClose }) => {
+  const [qty, setQty] = useState<number>(item.current_stock ?? 0);
+  const [reason, setReason] = useState<string>("");
+  const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
+  const [error, setError] = useState<string | null>(null);
+  const [supplierList, setSupplierList] = useState<any[]>([]);
+  const [supplierListLoading, setSupplierListLoading] = useState(false);
+
+  // 같은 공급사 · 기존 반품요청 리스트 조회
+  useEffect(() => {
+    if (!item.supplier) return;
+    setSupplierListLoading(true);
+    fetch(`/api/return-requests?supplier=${encodeURIComponent(item.supplier)}&days=60&limit=50`)
+      .then(r => r.ok ? r.json() : { rows: [] })
+      .then(j => setSupplierList(Array.isArray(j.rows) ? j.rows : []))
+      .catch(() => setSupplierList([]))
+      .finally(() => setSupplierListLoading(false));
+  }, [item.supplier]);
+
+  const submit = async () => {
+    if (status === "saving") return;
+    setStatus("saving"); setError(null);
+    try {
+      const res = await fetch("/api/return-requests", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_code: item.product_code,
+          product_name: item.product_name,
+          supplier: item.supplier,
+          qty,
+          current_stock: item.current_stock,
+          purchase_price: item.purchase_price,
+          reason: reason.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        throw new Error((b as any).error ?? `저장 실패 (${res.status})`);
+      }
+      const j = await res.json();
+      setStatus("done");
+      // 리스트 갱신 (추가된 반품요청 상단에)
+      if (j.row) setSupplierList(prev => [j.row, ...prev]);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "저장 실패");
+      setStatus("error");
+    }
+  };
+
+  const total = qty * (item.purchase_price ?? 0);
+  return (
+    <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
+      <div className="w-full max-w-2xl max-h-[90vh] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* 헤더 */}
+        <div className="flex items-center gap-2 px-5 py-3 border-b border-rose-100 bg-gradient-to-r from-rose-50 to-white shrink-0">
+          <Truck size={18} className="text-rose-600" />
+          <h3 className="text-[15px] font-black text-slate-800">반품요청</h3>
+          <button type="button" onClick={onClose}
+            className="ml-auto w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer" title="닫기">
+            ✕
+          </button>
+        </div>
+
+        {/* 본문 */}
+        <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+          {/* 상품 정보 */}
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <div className="text-[13px] font-black text-slate-900 break-words">{item.product_name}</div>
+            <div className="text-[11px] text-slate-500 tabular-nums mt-1">#{item.product_code} · {item.supplier ?? "-"}</div>
+          </div>
+
+          {/* 수량 입력 · 이유 */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-wider">반품 수량</label>
+              <input type="number" min={0} value={qty}
+                onChange={e => setQty(Math.max(0, Number(e.target.value) || 0))}
+                className="h-9 px-3 border-2 border-rose-200 rounded-lg text-[13px] font-black tabular-nums text-right focus:outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100" />
+              <div className="text-[10px] text-slate-400">현재고 {item.current_stock?.toLocaleString()} · 매입가 {item.purchase_price?.toLocaleString()}원</div>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-[11px] font-black text-slate-600 uppercase tracking-wider">반품 예상 금액</label>
+              <div className="h-9 px-3 flex items-center justify-end text-[15px] font-black tabular-nums text-rose-700 bg-rose-50 border-2 border-rose-100 rounded-lg">
+                {total.toLocaleString()}원
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-[11px] font-black text-slate-600 uppercase tracking-wider">반품 이유 · 상세</label>
+            <textarea value={reason} onChange={e => setReason(e.target.value)} rows={2}
+              placeholder="예) 매입 후 판매 저조 · 유통기한 임박 · 파손 등"
+              className="px-3 py-2 border-2 border-slate-200 rounded-lg text-[13px] focus:outline-none focus:border-rose-400 focus:ring-2 focus:ring-rose-100 resize-none" />
+          </div>
+
+          {error && (
+            <p className="text-[12px] font-semibold text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">
+              {error}
+            </p>
+          )}
+
+          {/* 저장 버튼 */}
+          <button type="button" onClick={submit} disabled={status === "saving" || status === "done"}
+            className={`w-full h-10 rounded-lg font-black text-[14px] text-white transition shadow-sm active:scale-[0.99] cursor-pointer disabled:cursor-not-allowed ${
+              status === "done" ? "bg-emerald-500" :
+              status === "error" ? "bg-rose-500 hover:bg-rose-600" :
+              status === "saving" ? "bg-slate-400" :
+              "bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700"
+            }`}>
+            {status === "saving" ? "저장 중..." :
+             status === "done"   ? "✓ 반품요청 저장 완료" :
+             status === "error"  ? "다시 저장" :
+             "반품요청 저장"}
+          </button>
+
+          {/* 공급사별 기존 반품요청 리스트 */}
+          {item.supplier && (
+            <div className="border-t border-slate-200 pt-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Building2 size={13} className="text-slate-500" />
+                <span className="text-[12px] font-black text-slate-700">{item.supplier} · 최근 60일 반품요청</span>
+                <span className="text-[10px] font-semibold text-slate-400 tabular-nums">{supplierList.length}건</span>
+              </div>
+              {supplierListLoading ? (
+                <div className="py-4 flex items-center justify-center text-[12px] text-slate-400 gap-2">
+                  <Loader2 size={12} className="animate-spin" /> 조회 중...
+                </div>
+              ) : supplierList.length === 0 ? (
+                <div className="py-4 text-center text-[12px] text-slate-400">기존 반품요청 없음</div>
+              ) : (
+                <div className="border border-slate-200 rounded-lg overflow-hidden max-h-[240px] overflow-y-auto">
+                  <table className="w-full text-[11px]">
+                    <thead className="bg-slate-50 sticky top-0">
+                      <tr className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">
+                        <th className="text-left px-2 py-1.5 w-24">등록</th>
+                        <th className="text-left px-2 py-1.5">상품</th>
+                        <th className="text-right px-2 py-1.5 w-14">수량</th>
+                        <th className="text-center px-2 py-1.5 w-16">상태</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {supplierList.map(r => {
+                        const d = new Date(r.created_at);
+                        const ds = isNaN(d.getTime()) ? "-" : `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")}`;
+                        return (
+                          <tr key={r.id} className="hover:bg-slate-50/60">
+                            <td className="px-2 py-1.5 tabular-nums text-slate-500">{ds}</td>
+                            <td className="px-2 py-1.5 text-slate-700 truncate max-w-[200px]">{r.product_name ?? "-"}</td>
+                            <td className="px-2 py-1.5 text-right font-black tabular-nums text-slate-800">{r.qty?.toLocaleString()}</td>
+                            <td className="px-2 py-1.5 text-center">
+                              <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-black border ${
+                                r.status === "done" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
+                                r.status === "sent" ? "bg-sky-50 text-sky-700 border-sky-300" :
+                                r.status === "cancelled" ? "bg-slate-50 text-slate-500 border-slate-300" :
+                                "bg-amber-50 text-amber-700 border-amber-300"
+                              }`}>
+                                {r.status === "done" ? "완료" : r.status === "sent" ? "발송" : r.status === "cancelled" ? "취소" : "대기"}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

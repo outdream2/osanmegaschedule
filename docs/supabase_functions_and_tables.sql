@@ -43,6 +43,32 @@ CREATE INDEX IF NOT EXISTS idx_product_arrivals_supplier ON product_arrivals(sup
 
 
 -- ┌───────────────────────────────────────────────────────────────────────┐
+-- │ 1-b. 반품요청 (return_requests)                                        │
+-- │    2026-07-30 · 사용자 요청 "반품필요 리스트 → 반품요청 · 공급사별"   │
+-- └───────────────────────────────────────────────────────────────────────┘
+
+CREATE TABLE IF NOT EXISTS return_requests (
+  id BIGSERIAL PRIMARY KEY,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  product_code TEXT NOT NULL,
+  product_name TEXT,
+  supplier TEXT,
+  qty INT DEFAULT 0,
+  current_stock INT DEFAULT 0,
+  purchase_price NUMERIC DEFAULT 0,
+  reason TEXT,
+  requested_by TEXT,
+  requested_by_id INT,
+  status TEXT DEFAULT 'pending'  -- pending | sent | done | cancelled
+);
+
+CREATE INDEX IF NOT EXISTS idx_return_requests_created ON return_requests(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_return_requests_supplier ON return_requests(supplier);
+CREATE INDEX IF NOT EXISTS idx_return_requests_status ON return_requests(status);
+CREATE INDEX IF NOT EXISTS idx_return_requests_code ON return_requests(product_code);
+
+
+-- ┌───────────────────────────────────────────────────────────────────────┐
 -- │ 2. 재고관리 상품현황 · 단일 SQL 조인 함수 (get_stock_flow)            │
 -- │    2026-07-29 · Phase 3 (A) 로딩속도 개선 · 60~100 API → 1 RPC       │
 -- │                                                                       │
