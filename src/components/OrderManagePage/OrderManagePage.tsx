@@ -98,7 +98,8 @@ const ArrivalMatchTab: React.FC = () => {
   const [rows, setRows] = useState<ArrivalMatchRow[]>([]);
   const [meta, setMeta] = useState<{ days: number; order_count: number; arrival_count: number } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [days, setDays] = useState<7 | 14 | 30>(7);
+  // 2026-07-30 · 사용자 요청 · 일간(7일) 옵션 제거 · 14/30만 유지
+  const [days, setDays] = useState<14 | 30>(14);
   const [statusFilter, setStatusFilter] = useState<"all" | "match" | "partial" | "missing">("all");
   const [notifying, setNotifying] = useState<Set<number>>(new Set());
   const [notified, setNotified] = useState<Set<number>>(new Set());
@@ -193,7 +194,7 @@ const ArrivalMatchTab: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[13px] font-black text-slate-700 shrink-0">비교 기간</span>
           <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5">
-            {([7, 14, 30] as const).map(d => (
+            {([14, 30] as const).map(d => (
               <button key={d} onClick={() => setDays(d)}
                 className={`px-3 py-1 text-[13px] font-black rounded transition cursor-pointer ${days === d ? "bg-white text-emerald-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>
                 {d}일

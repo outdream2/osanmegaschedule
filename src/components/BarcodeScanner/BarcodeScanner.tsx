@@ -123,18 +123,33 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   // 2026-07-30 · 사용자 요청 · 바코드 스캔 삑 소리 · iOS Audio unlock
   //   iOS 는 user gesture 후 · silent audio 재생하여 AudioContext 활성화 필요
   //   스캐너 오픈 (user gesture) 시점 · 무음 오디오 재생 후 즉시 stop · unlock 유지
+  // 2026-07-30 (3rd) · beep 프리로드 · 첫 인식 즉시 재생 · 지연·실패 방지
   useEffect(() => {
+    // 1) Web Audio unlock (silent)
     try {
       const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
-      if (!AC) return;
-      const ctx = new AC();
-      if (ctx.state === "suspended") { try { ctx.resume(); } catch {} }
-      const buf = ctx.createBuffer(1, 1, 22050);
-      const src = ctx.createBufferSource();
-      src.buffer = buf;
-      src.connect(ctx.destination);
-      src.start(0);
-      setTimeout(() => { try { ctx.close(); } catch {} }, 100);
+      if (AC) {
+        const ctx = new AC();
+        if (ctx.state === "suspended") { try { ctx.resume(); } catch {} }
+        const buf = ctx.createBuffer(1, 1, 22050);
+        const src = ctx.createBufferSource();
+        src.buffer = buf;
+        src.connect(ctx.destination);
+        src.start(0);
+        setTimeout(() => { try { ctx.close(); } catch {} }, 100);
+      }
+    } catch { /* silent */ }
+    // 2) beep.wav 프리로드 · 무음 재생 → unlock 유지 · handleResult 즉시 재생 가능
+    try {
+      const audio = new Audio("/beep.wav");
+      audio.volume = 0;   // 무음 재생 (unlock only)
+      audio.play().then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.volume = 1.0;
+        // window 에 전역 캐시 · handleResult 에서 재사용
+        (window as any).__beepAudio = audio;
+      }).catch(() => { /* silent */ });
     } catch { /* silent */ }
   }, []);
 

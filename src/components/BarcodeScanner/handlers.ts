@@ -77,8 +77,15 @@ export function useBarcodeScannerHandlers({
       } catch { /* silent */ }
     };
     try {
-      const audio = new Audio("/beep.wav");
-      audio.volume = 1.0;
+      // 2026-07-30 (3rd) · 프리로드된 Audio 재사용 (BarcodeScanner mount 시 unlock)
+      let audio: HTMLAudioElement | undefined = (window as any).__beepAudio;
+      if (audio) {
+        audio.currentTime = 0;
+        audio.volume = 1.0;
+      } else {
+        audio = new Audio("/beep.wav");
+        audio.volume = 1.0;
+      }
       const p = audio.play();
       if (p && typeof p.then === "function") {
         p.catch(() => playWebAudioBackup());
