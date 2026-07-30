@@ -2574,14 +2574,56 @@ export const StockManagePage: React.FC = () => {
           <div className="flex flex-col gap-2 flex-1 min-h-0">
             {/* 탭 컨텐츠 · 활성 탭만 렌더 */}
             <div className="flex flex-col gap-3 min-h-0 w-full">
-              {/* ── 공급사재고 탭 · 좌우 split (2026-07-16) ── */}
+              {/* ── 공급사재고 탭 · 상단 필터바 + 하단 좌우 split (2026-07-30) ── */}
               {stockTab === "supplier" && (
-                <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
-                  {/* 좌측: 공급사 리스트 (원본 유지) */}
-                  <div
-                    className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
-                    style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? supplierPanelWidth : undefined }}
-                  >
+                <div className="flex flex-col gap-2">
+
+                  {/* ── 상단 필터바 (full-width) ── */}
+                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    {/* 조회기간 */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">기간</span>
+                      <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
+                        <button onClick={() => { setSupplierSeason(null); setSupplierMonths(0); }}
+                          className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
+                        {[1, 2, 3, 4, 5, 6].map(m => (
+                          <button key={m} onClick={() => { setSupplierSeason(null); setSupplierMonths(m as any); }}
+                            className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!supplierSeason && supplierMonths === m ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* 계절 */}
+                    <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
+                    {/* Top N */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Top N</span>
+                      <div className="flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md p-0.5">
+                        {[
+                          { v: 100, label: "100" },
+                          { v: 300, label: "300" },
+                          { v: 1000, label: "1k" },
+                          { v: 2000, label: "2k" },
+                          { v: 999999, label: "전체" },
+                        ].map(o => (
+                          <button key={o.v} onClick={() => setSupListLimit(o.v)}
+                            className={`text-[11px] font-semibold h-6 px-2 rounded transition whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                          >{o.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                    {/* 안내 문구 */}
+                    <span className="text-[11px] font-medium text-slate-400 ml-auto whitespace-nowrap hidden lg:block">
+                      행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세
+                    </span>
+                  </div>
+
+                  {/* ── 하단 좌우 split ── */}
+                  <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+                    {/* 좌측: 공급사 리스트 카드 */}
+                    <div
+                      className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
+                      style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? supplierPanelWidth : undefined }}
+                    >
                     {/* 공급사별 재고자산 (종료일 시점, xlsx 합계 컬럼 합산) — 최상위 공급사 하이라이트 + 순위 리스트 */}
                     {true && (
                       <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -2598,38 +2640,6 @@ export const StockManagePage: React.FC = () => {
                           <span className="text-[11px] font-semibold tabular-nums text-slate-400 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">
                             {displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사
                           </span>
-                          {/* 안내 문구 */}
-                          <span className="text-[11px] font-medium text-slate-400 ml-auto whitespace-nowrap hidden lg:block">
-                            행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세
-                          </span>
-                          {/* Top N segment control */}
-                          <div className="flex items-center gap-0.5 bg-slate-100 border border-slate-200 rounded-md p-0.5">
-                            {[
-                              { v: 100, label: "100" },
-                              { v: 300, label: "300" },
-                              { v: 1000, label: "1k" },
-                              { v: 2000, label: "2k" },
-                              { v: 999999, label: "전체" },
-                            ].map(o => (
-                              <button key={o.v} onClick={() => setSupListLimit(o.v)}
-                                className={`text-[11px] font-semibold h-6 px-2 rounded transition whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
-                              >{o.label}</button>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* ── 기간 필터 행 ── */}
-                        <div className="flex items-center gap-2 px-4 py-2 border-b border-slate-100 bg-slate-50/50 shrink-0 flex-wrap">
-                          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">기간</span>
-                          <div className="inline-flex bg-white border border-slate-200 rounded-md p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
-                            <button onClick={() => { setSupplierSeason(null); setSupplierMonths(0); }}
-                              className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
-                            {[1, 2, 3, 4, 5, 6].map(m => (
-                              <button key={m} onClick={() => { setSupplierSeason(null); setSupplierMonths(m as any); }}
-                                className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!supplierSeason && supplierMonths === m ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
-                            ))}
-                          </div>
-                          <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
                         </div>
 
                         {/* ── 정렬 행 ── */}
@@ -2958,6 +2968,7 @@ export const StockManagePage: React.FC = () => {
                     )}
                   </div>
                 </div>
+              </div>
               )}
 
               {/* 2026-07-29 · 사용자 요청 · 매입상세 탭 삭제 · 관련 JSX 제거 */}

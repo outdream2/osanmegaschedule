@@ -535,8 +535,8 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
           ) : (
             // 발주내역 테이블 · 가로 스크롤 허용 · min-width 로 컬럼 겹침 방지
             <div className="overflow-x-auto -mx-1 px-1">
-              <table className="w-full text-[13px] min-w-[320px]">
-                <thead className="text-[13px] font-bold text-slate-500 border-b border-slate-100">
+              <table className="w-full text-[11px] min-w-[320px]">
+                <thead className="text-[10px] font-bold text-slate-500 border-b border-slate-100">
                   <tr>
                     <th className="text-left px-2 py-1.5 whitespace-nowrap">요청일시</th>
                     <th className="text-left px-2 py-1.5">공급사</th>
@@ -548,14 +548,14 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
                 <tbody className="divide-y divide-slate-100">
                   {orders.map(o => (
                     <tr key={o.id} className="hover:bg-sky-50/40">
-                      <td className="px-2 py-1.5 tabular-nums text-slate-600 text-[12px] whitespace-nowrap">
+                      <td className="px-2 py-1 tabular-nums text-slate-600 text-[11px] whitespace-nowrap">
                         {o.requested_at ? new Date(o.requested_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-"}
                       </td>
-                      <td className="px-2 py-1.5 text-slate-700 break-words">{o.supplier ?? "-"}</td>
-                      <td className="px-2 py-1.5 text-right tabular-nums text-amber-700 font-bold">{o.current_stock ?? "-"}</td>
-                      <td className="px-2 py-1.5 text-right tabular-nums text-slate-600">{o.optimal_stock ?? "-"}</td>
-                      <td className="px-2 py-1.5 text-center">
-                        <span className={`text-[12px] font-black rounded-full px-2 py-0.5 border whitespace-nowrap ${
+                      <td className="px-2 py-1 text-slate-700 break-words">{o.supplier ?? "-"}</td>
+                      <td className="px-2 py-1 text-right tabular-nums text-amber-700 font-bold">{o.current_stock ?? "-"}</td>
+                      <td className="px-2 py-1 text-right tabular-nums text-slate-600">{o.optimal_stock ?? "-"}</td>
+                      <td className="px-2 py-1 text-center">
+                        <span className={`text-[10px] font-black rounded-full px-1.5 py-0.5 border whitespace-nowrap ${
                           o.status === "done" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
                           o.status === "sent" ? "bg-sky-50 text-sky-700 border-sky-300" :
                           "bg-amber-50 text-amber-700 border-amber-300"

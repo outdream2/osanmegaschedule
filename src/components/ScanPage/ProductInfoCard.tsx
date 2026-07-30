@@ -852,22 +852,22 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
         <div className="flex items-center gap-1.5 flex-wrap">
           <TrendingUp size={13} className="text-emerald-600 shrink-0" />
           {productName && (
-            <span className="text-[13px] font-black text-slate-800 break-words whitespace-normal leading-tight">
+            <span className="text-[12px] font-black text-slate-800 break-words whitespace-normal leading-tight">
               {productName}
             </span>
           )}
-          <span className="text-[12px] font-black text-emerald-700">· 매입 이력</span>
+          <span className="text-[11px] font-black text-emerald-700">· 매입 이력</span>
           {collapsed
             ? <ChevronRight size={14} className="ml-auto text-slate-400 shrink-0" />
             : <ChevronDown size={14} className="ml-auto text-slate-600 shrink-0" />}
         </div>
         {/* 2행 · 통계 (건수 · 총량 · 총액 · 평균 · 주기) */}
         {loading ? (
-          <span className="text-[12px] text-slate-400"><Loader2 size={11} className="inline animate-spin mr-1"/>로딩...</span>
+          <span className="text-[11px] text-slate-400"><Loader2 size={10} className="inline animate-spin mr-1"/>로딩...</span>
         ) : rows.length === 0 ? (
-          <span className="text-[12px] text-slate-400 italic">이력 없음</span>
+          <span className="text-[11px] text-slate-400 italic">이력 없음</span>
         ) : (
-          <div className="text-[12px] tabular-nums text-slate-600 flex items-center gap-1.5 flex-wrap">
+          <div className="text-[11px] tabular-nums text-slate-600 flex items-center gap-1.5 flex-wrap">
             <span className="font-bold">{rows.length}건</span>
             <span className="text-slate-300">·</span>
             <span>총 <span className="font-black text-slate-800">{fmt(totalQty)}</span>개</span>
@@ -886,7 +886,7 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
       </button>
       {/* 2026-07-29 · 제목 아래 공급사 (반복이라 컬럼에서 제거하고 여기로) + 월평균 주문 수량 · 이모지·배지 지양 */}
       {!collapsed && (supplierSummary || avgMonthlyQty != null) && (
-        <div className="-mx-2 px-2 pb-1.5 flex items-center gap-2 flex-wrap text-[11px]">
+        <div className="-mx-2 px-2 pb-1.5 flex items-center gap-2 flex-wrap text-[10px]">
           {supplierSummary && (
             <span className="text-slate-500 font-semibold">공급사 <span className="font-black text-sky-700">{supplierSummary}</span></span>
           )}
@@ -901,7 +901,7 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
       {!collapsed && rows.length > 0 && (
         // overflow-x-auto · min-w 로 5개 컬럼 겹침 방지
         <div className="overflow-auto max-h-48 border border-slate-200 rounded-lg">
-          <table className="w-full text-[12px] min-w-[300px]">
+          <table className="w-full text-[11px] min-w-[300px]">
             <thead className="sticky top-0 bg-slate-50 border-b border-slate-200">
               <tr className="text-slate-500 text-[10px] uppercase">
                 <th className="text-left px-2 py-1 whitespace-nowrap">매입일</th>
@@ -922,13 +922,13 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
                   : null;
                 return (
                 <tr key={i} className="hover:bg-emerald-50/30">
-                  <td className="px-2 py-1 font-mono text-slate-600 whitespace-nowrap">{r.purchase_date}</td>
-                  <td className="text-right px-1 py-1 font-mono text-sky-600" title={gapDays != null ? `${gapDays}일 만에 재매입` : "이전 매입 없음"}>
+                  <td className="px-2 py-0.5 font-mono text-slate-600 whitespace-nowrap">{r.purchase_date}</td>
+                  <td className="text-right px-1 py-0.5 font-mono text-sky-600" title={gapDays != null ? `${gapDays}일 만에 재매입` : "이전 매입 없음"}>
                     {gapDays != null ? `${gapDays}일` : "-"}
                   </td>
-                  <td className="text-right px-2 py-1 font-mono font-bold">{fmt(Number(r.quantity) || 0)}</td>
-                  <td className="text-right px-2 py-1 font-mono text-slate-500">{r.unit_price ? fmt(r.unit_price) : "-"}</td>
-                  <td className="text-right px-2 py-1 font-mono font-black text-emerald-700">{fmtWon(Number(r.total ?? r.amount) || 0)}</td>
+                  <td className="text-right px-2 py-0.5 font-mono font-bold">{fmt(Number(r.quantity) || 0)}</td>
+                  <td className="text-right px-2 py-0.5 font-mono text-slate-500">{r.unit_price ? fmt(r.unit_price) : "-"}</td>
+                  <td className="text-right px-2 py-0.5 font-mono font-black text-emerald-700">{fmtWon(Number(r.total ?? r.amount) || 0)}</td>
                 </tr>
                 );
               })}
