@@ -385,8 +385,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           lg:sticky lg:top-4 lg:self-start">
 
           {/* ── 스캔 카드 ── */}
-          <div className="bg-white rounded-2xl border border-slate-200/80
-            shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200/80
+            shadow-sm overflow-hidden">
 
             {/* 헤더 그라디언트 */}
             <div className="relative px-5 pt-4 pb-3 bg-gradient-to-b from-teal-50/70 to-transparent">
@@ -504,7 +504,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           </div>
 
           {/* ── 도움말 ── */}
-          <div className="bg-teal-50/60 rounded-2xl border border-teal-200/60 px-4 py-3.5 flex flex-col gap-1.5">
+          <div className="bg-teal-50/60 rounded-xl border border-teal-200/60 px-4 py-3.5 flex flex-col gap-1.5">
             <p className="text-[11px] font-black text-teal-700">입력 안내</p>
             <ul className="text-[11px] text-teal-600 leading-relaxed space-y-1">
               <li>창고·매장1·매장2 수량을 입력</li>
@@ -521,8 +521,8 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         <section className="flex-1 min-w-0 flex flex-col gap-4">
 
           {/* ── 리스트 카드 ── */}
-          <div className="bg-white rounded-2xl border border-slate-200/80
-            shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col min-h-[320px] overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200/80
+            shadow-sm flex flex-col min-h-[320px] overflow-hidden">
 
             {/* 테이블 헤더 바 */}
             <div className="flex items-center justify-between

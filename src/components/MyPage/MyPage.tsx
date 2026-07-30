@@ -134,7 +134,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         </div>
 
         {/* 정보 카드 (읽기 전용) */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-4 py-2 border-b border-slate-100 bg-slate-50/60 text-[10px] font-black text-slate-500 uppercase tracking-wider">
             내 정보 (읽기 전용)
           </div>
@@ -158,7 +158,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         </div>
 
         {/* 주소 편집 카드 */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-4 py-2 border-b border-slate-100 bg-indigo-50/60 text-[10px] font-black text-indigo-600 uppercase tracking-wider flex items-center gap-1.5">
             <MapPin size={12} /> 주소
           </div>
@@ -184,7 +184,7 @@ export const MyPage: React.FC<MyPageProps> = ({ authSession, onBack, onNavigate,
         </div>
 
         {/* 비밀번호 변경 카드 */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-4 py-2 border-b border-slate-100 bg-rose-50/60 text-[10px] font-black text-rose-600 uppercase tracking-wider flex items-center gap-1.5">
             <Lock size={12} /> 비밀번호 변경
           </div>

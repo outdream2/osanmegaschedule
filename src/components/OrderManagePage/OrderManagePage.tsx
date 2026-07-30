@@ -632,13 +632,19 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [lowStockCollapsed, setLowStockCollapsed] = useState(false);
   // 공급사 마스터 (vendors 테이블) — 담당자·이메일·전화·분류 매핑
   const [vendors, setVendors] = useState<Array<{ id: number; company_name: string; contact_name: string | null; phone: string | null; email: string | null; category: string | null }>>([]);
+  // 2026-07-30 · 사용자 요청 · 분류 저장 시 리스트 반영 · vendors-changed 이벤트 listen
   const loadVendors = useCallback(async () => {
     try {
       const res = await fetch("/api/vendors?withBalances=1");
       if (res.ok) setVendors(await res.json());
     } catch { /* silent */ }
   }, []);
-  useEffect(() => { loadVendors(); }, [loadVendors]);
+  useEffect(() => {
+    loadVendors();
+    const handler = () => loadVendors();
+    window.addEventListener("vendors-changed", handler);
+    return () => window.removeEventListener("vendors-changed", handler);
+  }, [loadVendors]);
 
   // 공급사 임포트 로직은 LandingPage 데이터 업로드 > 공급사관리 로 이동됨 (여기서 제거 · 2026-07-15)
   const vendorMap = useMemo(() => {

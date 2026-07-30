@@ -6,7 +6,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Search, Check, X, Loader2, Building2, Package, Calendar,
-  DollarSign, TrendingUp, RefreshCw,
+  DollarSign, TrendingUp, RefreshCw, ChevronRight, ChevronDown,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 
@@ -76,6 +76,11 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   const [filterMissingBiz, setFilterMissingBiz] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>("전체");
   const [modalVendorId, setModalVendorId] = useState<number | null>(null);
+  // 그룹 헤더 클릭 접기 · flow 탭 동일 방식
+  type VendorGroup = "basic" | "contact" | "balance" | "etc";
+  const [vendorGroupCollapsed, setVendorGroupCollapsed] = useState<Set<VendorGroup>>(new Set());
+  const toggleVendorGroup = (g: VendorGroup) => setVendorGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
+  const isVendorGroupCollapsed = (g: VendorGroup) => vendorGroupCollapsed.has(g);
 
   const handleVendorClick = (id: number) => {
     if (onEditRequest) { onEditRequest(id); } else { setModalVendorId(id); }
@@ -239,21 +244,40 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         {/* 태블릿·데스크탑(md+): shadcn data-table 스타일 */}
         <table className="hidden md:table w-full text-xs">
           <thead className="sticky top-0 bg-white z-10 border-b border-slate-200">
-            {/* 그룹 컬러 헤더 */}
+            {/* 그룹 컬러 헤더 · flow 탭 동일 방식 · 클릭 접기 */}
             <tr className="text-[10px] font-black uppercase tracking-wider border-b border-slate-100">
+              {/* 기본정보 (sky) · compact 시 3, 일반 시 4컬럼 · 항상 표시 */}
               <th colSpan={compact ? 3 : 4} className="text-center py-1.5 bg-sky-50 text-sky-700 border-r border-slate-100">
                 기본 정보
               </th>
               {!compact && (
                 <>
-                  <th colSpan={2} className="text-center py-1.5 bg-amber-50 text-amber-700 border-r border-slate-100">
-                    연락처
+                  {/* 연락처 (amber) · 클릭 접기 */}
+                  <th colSpan={isVendorGroupCollapsed("contact") ? 1 : 2}
+                    className="text-center py-1.5 bg-amber-50 text-amber-700 border-r border-slate-100 cursor-pointer select-none hover:bg-amber-100 transition"
+                    onClick={() => toggleVendorGroup("contact")}
+                    title={isVendorGroupCollapsed("contact") ? "연락처 펼치기" : "연락처 접기"}>
+                    <span className="inline-flex items-center gap-1">
+                      {isVendorGroupCollapsed("contact") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}연락처
+                    </span>
                   </th>
-                  <th className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-r border-slate-100">
-                    잔고
+                  {/* 잔고 (emerald) · 클릭 접기 */}
+                  <th colSpan={isVendorGroupCollapsed("balance") ? 1 : 1}
+                    className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-r border-slate-100 cursor-pointer select-none hover:bg-emerald-100 transition"
+                    onClick={() => toggleVendorGroup("balance")}
+                    title={isVendorGroupCollapsed("balance") ? "잔고 펼치기" : "잔고 접기"}>
+                    <span className="inline-flex items-center gap-1">
+                      {isVendorGroupCollapsed("balance") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}잔고
+                    </span>
                   </th>
-                  <th className="text-center py-1.5 bg-slate-50 text-slate-500">
-                    기타
+                  {/* 기타 (slate) · 클릭 접기 */}
+                  <th colSpan={isVendorGroupCollapsed("etc") ? 1 : 2}
+                    className="text-center py-1.5 bg-slate-50 text-slate-500 cursor-pointer select-none hover:bg-slate-100 transition"
+                    onClick={() => toggleVendorGroup("etc")}
+                    title={isVendorGroupCollapsed("etc") ? "기타 펼치기" : "기타 접기"}>
+                    <span className="inline-flex items-center gap-1">
+                      {isVendorGroupCollapsed("etc") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}기타
+                    </span>
                   </th>
                 </>
               )}
@@ -266,11 +290,30 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
               <th className="text-left px-3 py-1.5 w-20 bg-sky-50/30">담당자</th>
               {!compact && (
                 <>
-                  <th className="text-left px-3 py-1.5 w-28 bg-amber-50/30">전화</th>
-                  <th className="text-left px-3 py-1.5 w-36 hidden lg:table-cell bg-amber-50/30">이메일</th>
-                  <th className="text-right px-3 py-1.5 w-24 bg-emerald-50/30">잔고</th>
-                  <th className="text-left px-3 py-1.5 w-20 hidden xl:table-cell bg-slate-50/40">분류</th>
-                  <th className="text-left px-3 py-1.5 w-24 hidden lg:table-cell bg-slate-50/40">등록일</th>
+                  {/* 연락처 그룹 · 접힘 시 placeholder */}
+                  {isVendorGroupCollapsed("contact") ? (
+                    <th className="bg-amber-50/20 w-4"></th>
+                  ) : (
+                    <>
+                      <th className="text-left px-3 py-1.5 w-28 bg-amber-50/30">전화</th>
+                      <th className="text-left px-3 py-1.5 w-36 hidden lg:table-cell bg-amber-50/30">이메일</th>
+                    </>
+                  )}
+                  {/* 잔고 그룹 · 접힘 시 placeholder */}
+                  {isVendorGroupCollapsed("balance") ? (
+                    <th className="bg-emerald-50/20 w-4"></th>
+                  ) : (
+                    <th className="text-right px-3 py-1.5 w-24 bg-emerald-50/30">잔고</th>
+                  )}
+                  {/* 기타 그룹 · 접힘 시 placeholder */}
+                  {isVendorGroupCollapsed("etc") ? (
+                    <th className="bg-slate-50/20 w-4"></th>
+                  ) : (
+                    <>
+                      <th className="text-left px-3 py-1.5 w-20 hidden xl:table-cell bg-slate-50/40">분류</th>
+                      <th className="text-left px-3 py-1.5 w-24 hidden lg:table-cell bg-slate-50/40">등록일</th>
+                    </>
+                  )}
                 </>
               )}
             </tr>
@@ -305,18 +348,37 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 <td className="px-3 py-1.5 text-slate-700 truncate">{v.contact_name ?? "-"}</td>
                 {!compact && (
                   <>
-                    <td className="px-3 py-1.5 font-mono text-slate-600 whitespace-nowrap">{v.phone ?? "-"}</td>
-                    <td className="px-3 py-1.5 text-slate-600 truncate hidden lg:table-cell" title={v.email ?? undefined}>{v.email ?? "-"}</td>
-                    <td className="px-3 py-1.5 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
-                      {v.latestBalance?.balance != null ? fmtWon(v.latestBalance.balance) : <span className="text-slate-300">-</span>}
-                    </td>
-                    <td className="px-3 py-1.5 hidden xl:table-cell">
-                      <VendorCategoryBadge category={v.category} />
-                      {!v.category && <span className="text-slate-300">-</span>}
-                    </td>
-                    <td className="px-3 py-1.5 font-mono text-[11px] text-slate-400 hidden lg:table-cell">
-                      {v.created_at ? String(v.created_at).slice(0, 10) : "-"}
-                    </td>
+                    {/* 연락처 그룹 · 접힘 시 placeholder */}
+                    {isVendorGroupCollapsed("contact") ? (
+                      <td className="bg-amber-50/10 w-4"></td>
+                    ) : (
+                      <>
+                        <td className="px-3 py-1.5 font-mono text-slate-600 whitespace-nowrap">{v.phone ?? "-"}</td>
+                        <td className="px-3 py-1.5 text-slate-600 truncate hidden lg:table-cell" title={v.email ?? undefined}>{v.email ?? "-"}</td>
+                      </>
+                    )}
+                    {/* 잔고 그룹 · 접힘 시 placeholder */}
+                    {isVendorGroupCollapsed("balance") ? (
+                      <td className="bg-emerald-50/10 w-4"></td>
+                    ) : (
+                      <td className="px-3 py-1.5 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
+                        {v.latestBalance?.balance != null ? fmtWon(v.latestBalance.balance) : <span className="text-slate-300">-</span>}
+                      </td>
+                    )}
+                    {/* 기타 그룹 · 접힘 시 placeholder */}
+                    {isVendorGroupCollapsed("etc") ? (
+                      <td className="bg-slate-50/10 w-4"></td>
+                    ) : (
+                      <>
+                        <td className="px-3 py-1.5 hidden xl:table-cell">
+                          <VendorCategoryBadge category={v.category} />
+                          {!v.category && <span className="text-slate-300">-</span>}
+                        </td>
+                        <td className="px-3 py-1.5 font-mono text-[11px] text-slate-400 hidden lg:table-cell">
+                          {v.created_at ? String(v.created_at).slice(0, 10) : "-"}
+                        </td>
+                      </>
+                    )}
                   </>
                 )}
               </tr>
@@ -444,6 +506,8 @@ export const VendorDetailModal: React.FC<{
         throw new Error(errData?.error ?? `서버 ${res.status}`);
       }
       setSaveMsg({ type: "ok", text: "저장 완료" });
+      // 2026-07-30 · 사용자 요청 · 분류(category) 저장 시 · 리스트 배지 즉시 반영 이벤트
+      try { window.dispatchEvent(new CustomEvent("vendors-changed")); } catch { /* ignore */ }
       onSaved();
     } catch (e: any) {
       setSaveMsg({ type: "err", text: `저장 실패: ${e?.message ?? e}` });

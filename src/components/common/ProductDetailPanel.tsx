@@ -555,7 +555,7 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
                       <td className="px-2 py-1 text-right tabular-nums text-amber-700 font-bold">{o.current_stock ?? "-"}</td>
                       <td className="px-2 py-1 text-right tabular-nums text-slate-600">{o.optimal_stock ?? "-"}</td>
                       <td className="px-2 py-1 text-center">
-                        <span className={`text-[10px] font-black rounded-full px-1.5 py-0.5 border whitespace-nowrap ${
+                        <span className={`text-[10px] font-semibold rounded-md px-1.5 py-0.5 border whitespace-nowrap ${
                           o.status === "done" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
                           o.status === "sent" ? "bg-sky-50 text-sky-700 border-sky-300" :
                           "bg-amber-50 text-amber-700 border-amber-300"

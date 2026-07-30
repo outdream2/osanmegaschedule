@@ -287,12 +287,12 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
           <div className="flex items-center gap-2">
             {!isToday && (
               <button onClick={() => setSelectedDate(today)}
-                className="text-[12px] text-indigo-600 font-bold border border-indigo-200 rounded-lg px-2.5 py-1.5 hover:bg-indigo-50 transition cursor-pointer">
+                className="text-[12px] text-indigo-600 font-semibold border border-indigo-200 rounded-md px-2.5 py-1 hover:bg-indigo-50 transition-all duration-150 cursor-pointer">
                 오늘
               </button>
             )}
             <button onClick={() => { loadLunch(); loadBreakData(); }}
-              className="p-2 rounded-xl bg-white border border-gray-200 text-gray-400 hover:text-gray-700 transition cursor-pointer shadow-sm">
+              className="w-8 h-8 flex items-center justify-center rounded-md bg-white border border-slate-200 text-slate-400 hover:text-slate-700 transition-all duration-150 cursor-pointer shadow-sm">
               <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
             </button>
           </div>
@@ -487,33 +487,33 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
             <div className="w-6 h-6 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
           </div>
         ) : isToday && myRequest && !myRequest.eating ? (
-          <div className="rounded-2xl border-2 bg-gray-50 border-gray-300 p-5 flex flex-col gap-3 shadow-sm">
+          <div className="rounded-xl border-2 bg-slate-50 border-slate-200 p-4 flex flex-col gap-3 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <UtensilsCrossed size={22} className="text-rose-400" />
-                <span className="font-black text-xl text-gray-600">오늘 점심 불참</span>
+                <UtensilsCrossed size={20} className="text-rose-400" />
+                <span className="font-black text-lg text-slate-700">오늘 점심 불참</span>
               </div>
               <button onClick={cancel} disabled={submitting}
-                className="text-[12px] text-gray-400 hover:text-rose-500 font-semibold transition cursor-pointer disabled:opacity-50">
+                className="text-[12px] text-slate-400 hover:text-rose-500 font-semibold transition-all duration-150 cursor-pointer disabled:opacity-50">
                 신청취소
               </button>
             </div>
-            <p className="text-[12px] text-gray-400 flex items-center gap-1">
+            <p className="text-[12px] text-slate-400 flex items-center gap-1">
               <Clock size={10} />{fmtTime(myRequest.updated_at)} 신청
             </p>
             {myRequest.memo && (
-              <p className="text-xs text-gray-600 bg-white rounded-xl px-3 py-2 border border-gray-100">{myRequest.memo}</p>
+              <p className="text-xs text-slate-600 bg-white rounded-md px-3 py-2 border border-slate-100">{myRequest.memo}</p>
             )}
           </div>
         ) : isToday ? (
-          <div className="bg-white border border-gray-200 rounded-2xl p-5 flex flex-col gap-4 shadow-sm">
-            <p className="text-center text-base font-bold text-gray-700">오늘 점심 드시나요?</p>
-            <p className="text-center text-[12px] text-gray-400">식사하시면 그냥 두시면 됩니다. 불참일 때만 신청해주세요.</p>
+          <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-col gap-4 shadow-sm">
+            <p className="text-center text-base font-bold text-slate-700">오늘 점심 드시나요?</p>
+            <p className="text-center text-[12px] text-slate-400">식사하시면 그냥 두시면 됩니다. 불참일 때만 신청해주세요.</p>
             <textarea value={memo} onChange={e => setMemo(e.target.value)}
               placeholder="메모 (선택사항)" rows={2}
-              className="w-full text-xs border border-gray-200 rounded-xl px-3 py-2 resize-none outline-none focus:border-indigo-300 text-gray-600 placeholder-gray-300" />
+              className="w-full text-xs border border-slate-200 rounded-lg px-3 py-2 resize-none outline-none focus:border-indigo-300 text-slate-600 placeholder-slate-300" />
             <button onClick={() => submit(false)} disabled={submitting}
-              className="w-full flex items-center justify-center gap-2 py-5 rounded-2xl text-base font-black bg-gray-100 hover:bg-gray-200 active:scale-[0.97] text-gray-700 shadow-sm transition cursor-pointer disabled:opacity-50">
+              className="w-full flex items-center justify-center gap-2 py-4 rounded-xl text-base font-black bg-slate-100 hover:bg-slate-200 active:scale-[0.97] text-slate-700 shadow-sm transition-all duration-150 cursor-pointer disabled:opacity-50">
               <UtensilsCrossed size={18} className="text-rose-400" /> 점심 불참 신청
             </button>
           </div>
@@ -536,10 +536,10 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
               <div className="divide-y divide-slate-50">
                 {allRequests.filter(r => !r.eating).map(r => (
                   <div key={r.id} className="flex items-center gap-3 px-1 py-2.5">
-                    <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-gray-300" />
-                    <span className="text-sm font-semibold text-gray-800 flex-1">{r.employee_name}</span>
-                    {r.memo && <span className="text-[11px] text-gray-400 max-w-[130px] truncate">{r.memo}</span>}
-                    <span className="text-[11px] text-gray-300 shrink-0">{fmtTime(r.updated_at)}</span>
+                    <span className="w-1.5 h-1.5 rounded-full shrink-0 bg-slate-300" />
+                    <span className="text-sm font-semibold text-slate-800 flex-1">{r.employee_name}</span>
+                    {r.memo && <span className="text-[11px] text-slate-400 max-w-[130px] truncate">{r.memo}</span>}
+                    <span className="text-[11px] text-slate-400 shrink-0">{fmtTime(r.updated_at)}</span>
                   </div>
                 ))}
               </div>

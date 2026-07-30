@@ -591,10 +591,10 @@ export const ProductPurchaseHistoryModal: React.FC<{ productCode: string; produc
   return (
     <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={onClose}>
       <div
-        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[90vh] md:h-auto md:min-h-[70vh] md:max-h-[90vh] flex flex-col overflow-hidden"
+        className="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl h-[90vh] md:h-auto md:min-h-[70vh] md:max-h-[90vh] flex flex-col overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-gradient-to-r from-emerald-50 to-teal-50">
+        <div className="flex items-start justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-200 bg-emerald-50/50">
           <div className="flex items-center gap-2 min-w-0">
             <TrendingUp size={20} className="text-emerald-600 shrink-0" />
             <div className="min-w-0">
@@ -624,17 +624,17 @@ export const ProductPurchaseHistoryModal: React.FC<{ productCode: string; produc
           ) : (
             <>
               <div className="grid grid-cols-3 gap-2 mb-3">
-                <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/60 border border-emerald-200 rounded-lg px-3 py-2">
-                  <div className="text-[11px] font-black text-emerald-800 opacity-70 uppercase">총 매입 건수</div>
-                  <div className="text-lg font-black text-emerald-800 tabular-nums">{rows.length.toLocaleString()}건</div>
+                <div className="bg-emerald-50/70 border border-emerald-200 rounded-lg px-3 py-2">
+                  <div className="text-[11px] font-semibold text-emerald-800 opacity-70 uppercase">총 매입 건수</div>
+                  <div className="text-lg font-semibold text-emerald-800 tabular-nums">{rows.length.toLocaleString()}건</div>
                 </div>
-                <div className="bg-gradient-to-br from-indigo-50 to-indigo-100/60 border border-indigo-200 rounded-lg px-3 py-2">
-                  <div className="text-[11px] font-black text-indigo-800 opacity-70 uppercase">총 매입 수량</div>
-                  <div className="text-lg font-black text-indigo-800 tabular-nums">{totalQty.toLocaleString()}</div>
+                <div className="bg-indigo-50/70 border border-indigo-200 rounded-lg px-3 py-2">
+                  <div className="text-[11px] font-semibold text-indigo-800 opacity-70 uppercase">총 매입 수량</div>
+                  <div className="text-lg font-semibold text-indigo-800 tabular-nums">{totalQty.toLocaleString()}</div>
                 </div>
-                <div className="bg-gradient-to-br from-violet-50 to-violet-100/60 border border-violet-200 rounded-lg px-3 py-2">
-                  <div className="text-[11px] font-black text-violet-800 opacity-70 uppercase">총 매입 금액</div>
-                  <div className="text-lg font-black text-violet-800 tabular-nums">{totalAmount.toLocaleString()}<span className="text-xs ml-0.5">원</span></div>
+                <div className="bg-violet-50/70 border border-violet-200 rounded-lg px-3 py-2">
+                  <div className="text-[11px] font-semibold text-violet-800 opacity-70 uppercase">총 매입 금액</div>
+                  <div className="text-lg font-semibold text-violet-800 tabular-nums">{totalAmount.toLocaleString()}<span className="text-xs ml-0.5">원</span></div>
                 </div>
               </div>
               <div className="text-[11px] text-slate-500 mb-1 flex items-center gap-2">
@@ -643,7 +643,7 @@ export const ProductPurchaseHistoryModal: React.FC<{ productCode: string; produc
               </div>
               <div className="rounded-lg border border-slate-200 overflow-auto max-h-[50vh]">
                 <table className="w-full text-xs min-w-[520px]">
-                  <thead className="sticky top-0 bg-slate-100 text-slate-500 text-[11px] uppercase">
+                  <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm text-slate-500 text-[11px] uppercase tracking-wider">
                     <tr>
                       <th className="text-left px-2 py-1 w-16">매입일</th>
                       <th className="text-left px-2 py-1">공급사</th>
@@ -654,7 +654,7 @@ export const ProductPurchaseHistoryModal: React.FC<{ productCode: string; produc
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {rows.map((r, i) => (
-                      <tr key={r.id ?? i} className="hover:bg-emerald-50/30 align-top">
+                      <tr key={r.id ?? i} className="hover:bg-slate-50/60 transition-all duration-150 align-top">
                         <td className="px-2 py-1 tabular-nums text-slate-500 whitespace-nowrap">{String(r.purchase_date).slice(5)}</td>
                         <td className="px-2 py-1 text-slate-700 break-words leading-tight font-semibold">{r.supplier_name ?? "-"}</td>
                         <td className="text-right px-2 py-1 tabular-nums text-slate-700">{r.quantity != null ? Number(r.quantity).toLocaleString() : "-"}</td>
@@ -1239,18 +1239,7 @@ export const StockManagePage: React.FC = () => {
     });
   };
   const isFlowGroupCollapsed = (g: FlowGroup) => flowGroupCollapsed.has(g);
-  // ── supplier 탭 좌측 테이블 그룹 접기 state ──
-  const [supGroupCollapsed, setSupGroupCollapsed] = useState<Set<string>>(new Set());
-  const toggleSupGroup = (g: string) => setSupGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
-  const isSupGroupCollapsed = (g: string) => supGroupCollapsed.has(g);
-  // ── low 탭 그룹 접기 state ──
-  const [lowGroupCollapsed, setLowGroupCollapsed] = useState<Set<string>>(new Set());
-  const toggleLowGroup = (g: string) => setLowGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
-  const isLowGroupCollapsed = (g: string) => lowGroupCollapsed.has(g);
-  // ── diff 탭 그룹 접기 state ──
-  const [diffGroupCollapsed, setDiffGroupCollapsed] = useState<Set<string>>(new Set());
-  const toggleDiffGroup = (g: string) => setDiffGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
-  const isDiffGroupCollapsed = (g: string) => diffGroupCollapsed.has(g);
+  // 2026-07-30 · low/diff GroupCollapsed · 아래에서 typed 로 선언 (중복 제거)
   const [flowBulkHiding, setFlowBulkHiding] = useState(false);
   const toggleSelectFlow = (code: string) => setSelectedFlowCodes(prev => {
     const next = new Set(prev);
@@ -1360,7 +1349,7 @@ export const StockManagePage: React.FC = () => {
   const toggleSupplierGroup = (g: SupplierGroup) => setSupplierGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
   const isSupplierGroupCollapsed = (g: SupplierGroup) => supplierGroupCollapsed.has(g);
 
-  type LowGroup = "basic" | "stock" | "inv";
+  type LowGroup = "basic" | "stock" | "inv" | "erp";
   const [lowGroupCollapsed, setLowGroupCollapsed] = useState<Set<LowGroup>>(new Set());
   const toggleLowGroup = (g: LowGroup) => setLowGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
   const isLowGroupCollapsed = (g: LowGroup) => lowGroupCollapsed.has(g);
@@ -1801,8 +1790,9 @@ export const StockManagePage: React.FC = () => {
       alert(`공급사 정보 조회 실패: ${e?.message ?? "네트워크 오류"}`);
     }
   }, []);
+  // 2026-07-30 · 사용자 요청 · 분류 저장 시 리스트 반영 · vendors-changed 이벤트 listen
   useEffect(() => {
-    (async () => {
+    const loadVendorMap = async () => {
       try {
         const res = await fetch("/api/vendors?withBalances=1");
         if (!res.ok) return;
@@ -1814,7 +1804,11 @@ export const StockManagePage: React.FC = () => {
         }
         setVendorCategoryMap(map);
       } catch { /* ignore */ }
-    })();
+    };
+    loadVendorMap();
+    const handler = () => loadVendorMap();
+    window.addEventListener("vendors-changed", handler);
+    return () => window.removeEventListener("vendors-changed", handler);
   }, []);
   // 2026-07-16 · supplier 우측 패널용 · xlsxSuppliers 선언 이후로 이동
   const supplierSelectedObj = useMemo(() => supplierSelectedKey ? xlsxSuppliers.find(s => `${s.supplier_code ?? "-"}::${s.supplier}` === supplierSelectedKey) ?? null : null, [supplierSelectedKey, xlsxSuppliers]);
@@ -3058,7 +3052,7 @@ export const StockManagePage: React.FC = () => {
                                     <th className="text-right px-1 py-1.5 w-16 text-rose-700 select-none" title="판매금액 · 조회기간 합계">판매금액</th>
                                     <th
                                       onClick={() => toggleSupDetailSort("total_amount")}
-                                      className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-emerald-50/60 transition ${supDetailSort.key === "total_amount" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
+                                      className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-slate-100 transition-all duration-150 ${supDetailSort.key === "total_amount" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
                                       title="재고금액 정렬"
                                     >재고금액{supDetailArrow("total_amount")}</th>
                                   </tr>
@@ -3071,7 +3065,7 @@ export const StockManagePage: React.FC = () => {
                                     const curStock = Number(r.current_stock ?? 0);
                                     const stockValue = curStock > 0 && purchPrice > 0 ? curStock * purchPrice : 0;
                                     return (
-                                      <tr key={`supdet-${r.product_code ?? ri}`} className="hover:bg-orange-50/30 transition align-top">
+                                      <tr key={`supdet-${r.product_code ?? ri}`} className="hover:bg-slate-50/60 transition-all duration-150 align-top">
                                         <td className="px-1 py-1 text-slate-400">{ri + 1}</td>
                                         <td className="px-1 py-1 break-words whitespace-normal leading-tight">
                                           <button type="button" onClick={() => loadFlowSelectedProduct(r)} className="text-left font-bold text-indigo-700 hover:text-indigo-900 hover:underline cursor-pointer transition break-words whitespace-normal">{r.product_name}</button>
@@ -3167,13 +3161,26 @@ export const StockManagePage: React.FC = () => {
                             <div className="overflow-x-auto">
                               <table className="w-full text-xs sm:min-w-[480px]">
                                 <thead className="sticky top-0 z-10">
-                                  {/* 컬럼 그룹 헤더 */}
+                                  {/* 그룹 컬러 헤더 · flow 탭 동일 방식 */}
                                   <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200">
                                     <th colSpan={2} className="bg-slate-50 text-slate-400 text-left px-2 py-1.5">기본정보</th>
-                                    <th className="bg-rose-50 text-rose-600 text-right px-2 py-1.5">ERP</th>
-                                    <th colSpan={2} className="bg-slate-100/60 text-slate-500 text-center px-2 py-1.5">실재고</th>
-                                    <th className="bg-rose-50/60 text-rose-500 text-right px-2 py-1.5">합계</th>
-                                    <th className="bg-slate-50 text-slate-400 text-right px-2 py-1.5">적정</th>
+                                    {/* ERP재고 (rose) */}
+                                    <th className="bg-rose-50 text-rose-600 text-center px-2 py-1.5 cursor-pointer select-none hover:bg-rose-100 transition"
+                                      onClick={() => toggleLowGroup("stock")}
+                                      title={isLowGroupCollapsed("stock") ? "ERP재고 펼치기" : "ERP재고 접기"}>
+                                      <span className="inline-flex items-center gap-1">
+                                        {isLowGroupCollapsed("stock") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}ERP
+                                      </span>
+                                    </th>
+                                    {/* 실재고 (slate) · 창고+매장+합계 3컬럼 */}
+                                    <th colSpan={isLowGroupCollapsed("inv") ? 1 : 3}
+                                      className="bg-slate-100/60 text-slate-500 text-center px-2 py-1.5 cursor-pointer select-none hover:bg-slate-200/60 transition"
+                                      onClick={() => toggleLowGroup("inv")}
+                                      title={isLowGroupCollapsed("inv") ? "실재고 펼치기" : "실재고 접기"}>
+                                      <span className="inline-flex items-center gap-1">
+                                        {isLowGroupCollapsed("inv") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}실재고
+                                      </span>
+                                    </th>
                                     <th className="bg-rose-100 text-rose-700 text-right px-2 py-1.5">필요</th>
                                     <th className="bg-slate-50 text-slate-400 text-center px-2 py-1.5">발주</th>
                                   </tr>
@@ -3181,11 +3188,22 @@ export const StockManagePage: React.FC = () => {
                                   <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider bg-white">
                                     <th className="text-left px-2 py-1.5 w-7">#</th>
                                     <th className="text-left px-2 py-1.5">상품명</th>
-                                    <th className="text-right px-2 py-1.5 w-14 bg-rose-50/40 text-rose-600" title="ERP 현재고 (products.current_stock)">현재고</th>
-                                    <th className="text-right px-2 py-1.5 w-14 bg-slate-50/60 text-slate-500" title="실재고 · 바코드스캔 창고">창고</th>
-                                    <th className="text-right px-2 py-1.5 w-14 bg-slate-50/60 text-slate-500" title="실재고 · 바코드스캔 매장">매장</th>
-                                    <th className="text-right px-2 py-1.5 w-14 bg-rose-50/30 text-rose-500" title="실재고 합계 (창고+매장)">실재고</th>
-                                    <th className="text-right px-2 py-1.5 w-14 text-slate-500">적정</th>
+                                    {/* ERP재고 그룹 · 접힘 시 placeholder */}
+                                    {isLowGroupCollapsed("stock") ? (
+                                      <th className="bg-rose-50/20 w-4"></th>
+                                    ) : (
+                                      <th className="text-right px-2 py-1.5 w-14 bg-rose-50/40 text-rose-600" title="ERP 현재고 (products.current_stock)">현재고</th>
+                                    )}
+                                    {/* 실재고 그룹 · 접힘 시 placeholder */}
+                                    {isLowGroupCollapsed("inv") ? (
+                                      <th className="bg-slate-50/20 w-4"></th>
+                                    ) : (
+                                      <>
+                                        <th className="text-right px-2 py-1.5 w-14 bg-slate-50/60 text-slate-500" title="실재고 · 바코드스캔 창고">창고</th>
+                                        <th className="text-right px-2 py-1.5 w-14 bg-slate-50/60 text-slate-500" title="실재고 · 바코드스캔 매장">매장</th>
+                                        <th className="text-right px-2 py-1.5 w-14 bg-rose-50/30 text-rose-500" title="실재고 합계 (창고+매장)">실재고</th>
+                                      </>
+                                    )}
                                     <th className="text-right px-2 py-1.5 w-14 text-rose-600 bg-rose-50/60">필요</th>
                                     <th className="text-center px-2 py-1.5 w-20" title="발주요청 리스트에 추가">발주요청</th>
                                   </tr>
@@ -3211,23 +3229,31 @@ export const StockManagePage: React.FC = () => {
                                           </button>
                                           {p.supplier && <div className="text-[10px] text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
                                         </td>
-                                        <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-semibold align-top bg-rose-50/30 ${cur <= 0 ? "text-rose-600" : "text-slate-700"}`} title="ERP 현재고 (products.current_stock)">{fmt(cur)}</td>
-                                        <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-medium bg-slate-50/60 align-top ${wh != null ? "text-slate-600" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 창고 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "창고 실재고 미입력"}>
-                                          {wh != null ? fmt(Number(wh)) : "—"}
-                                        </td>
-                                        <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-medium bg-slate-50/60 align-top ${st != null ? "text-slate-600" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 매장 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "매장 실재고 미입력"}>
-                                          {st != null ? fmt(Number(st)) : "—"}
-                                        </td>
-                                        {(() => {
+                                        {isLowGroupCollapsed("stock") ? (
+                                          <td className="bg-rose-50/10 w-4"></td>
+                                        ) : (
+                                          <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-semibold align-top bg-rose-50/30 ${cur <= 0 ? "text-rose-600" : "text-slate-700"}`} title="ERP 현재고 (products.current_stock)">{fmt(cur)}</td>
+                                        )}
+                                        {isLowGroupCollapsed("inv") ? (
+                                          <td className="bg-slate-50/20 w-4"></td>
+                                        ) : (() => {
                                           const whN = wh != null ? Number(wh) : null;
                                           const stN = st != null ? Number(st) : null;
                                           const realTotal = whN != null || stN != null ? (whN ?? 0) + (stN ?? 0) : null;
                                           const mismatch = realTotal != null && realTotal !== cur;
                                           return (
-                                            <td
-                                              className={`text-right px-2 py-2 tabular-nums text-[12px] font-semibold align-top bg-rose-50/20 ${realTotal == null ? "text-slate-300" : mismatch ? "text-red-600" : "text-emerald-700"}`}
-                                              title={realTotal == null ? "실재고 미입력" : mismatch ? `실재고 ${realTotal} ≠ ERP ${cur} · 불일치` : "실재고 = 창고 + 매장"}
-                                            >{realTotal != null ? fmt(realTotal) : "—"}</td>
+                                            <>
+                                              <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-medium bg-slate-50/60 align-top ${wh != null ? "text-slate-600" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 창고 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "창고 실재고 미입력"}>
+                                                {wh != null ? fmt(Number(wh)) : "—"}
+                                              </td>
+                                              <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-medium bg-slate-50/60 align-top ${st != null ? "text-slate-600" : "text-slate-300"}`} title={p.inv_checked_at ? `실재고 매장 · 최근입력 ${new Date(p.inv_checked_at).toLocaleDateString("ko-KR")}` : "매장 실재고 미입력"}>
+                                                {st != null ? fmt(Number(st)) : "—"}
+                                              </td>
+                                              <td
+                                                className={`text-right px-2 py-2 tabular-nums text-[12px] font-semibold align-top bg-rose-50/20 ${realTotal == null ? "text-slate-300" : mismatch ? "text-red-600" : "text-emerald-700"}`}
+                                                title={realTotal == null ? "실재고 미입력" : mismatch ? `실재고 ${realTotal} ≠ ERP ${cur} · 불일치` : "실재고 = 창고 + 매장"}
+                                              >{realTotal != null ? fmt(realTotal) : "—"}</td>
+                                            </>
                                           );
                                         })()}
                                         <td className="text-right px-2 py-2 tabular-nums text-slate-500 align-top">
@@ -3406,19 +3432,39 @@ export const StockManagePage: React.FC = () => {
                                 <div className="overflow-x-auto">
                                   <table className="w-full text-xs sm:min-w-[280px]">
                                     <thead className="sticky top-0 z-10">
-                                      {/* 컬럼 그룹 헤더 */}
+                                      {/* 컬럼 그룹 헤더 · 클릭 접기 */}
                                       <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200">
                                         <th colSpan={2} className="bg-slate-50 text-slate-400 text-left px-2 py-1.5">기본정보</th>
-                                        <th className="bg-slate-100/60 text-slate-500 text-right px-2 py-1.5">ERP</th>
-                                        <th className="bg-violet-50 text-violet-600 text-right px-2 py-1.5">실재고</th>
+                                        <th className="bg-slate-100/60 text-slate-500 text-right px-2 py-1.5 cursor-pointer select-none hover:bg-slate-200/60 transition"
+                                          onClick={() => toggleDiffGroup("erp")}
+                                          title={isDiffGroupCollapsed("erp") ? "ERP 펼치기" : "ERP 접기"}>
+                                          <span className="inline-flex items-center gap-1 justify-end">
+                                            {isDiffGroupCollapsed("erp") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}ERP
+                                          </span>
+                                        </th>
+                                        <th className="bg-violet-50 text-violet-600 text-right px-2 py-1.5 cursor-pointer select-none hover:bg-violet-100 transition"
+                                          onClick={() => toggleDiffGroup("actual")}
+                                          title={isDiffGroupCollapsed("actual") ? "실재고 펼치기" : "실재고 접기"}>
+                                          <span className="inline-flex items-center gap-1 justify-end">
+                                            {isDiffGroupCollapsed("actual") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}실재고
+                                          </span>
+                                        </th>
                                         <th className="bg-violet-100 text-violet-700 text-right px-2 py-1.5">차이</th>
                                       </tr>
                                       {/* 서브헤더 */}
                                       <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider bg-white">
                                         <th className="text-left px-2 py-1.5 w-7">#</th>
                                         <th className="text-left px-2 py-1.5">상품명</th>
-                                        <th className="text-right px-2 py-1.5 w-14 bg-slate-50/40 text-slate-500">현재고</th>
-                                        <th className="text-right px-2 py-1.5 w-16 bg-violet-50/40 text-violet-600">실재고</th>
+                                        {isDiffGroupCollapsed("erp") ? (
+                                          <th className="bg-slate-50/20 w-4"></th>
+                                        ) : (
+                                          <th className="text-right px-2 py-1.5 w-14 bg-slate-50/40 text-slate-500">현재고</th>
+                                        )}
+                                        {isDiffGroupCollapsed("actual") ? (
+                                          <th className="bg-violet-50/10 w-4"></th>
+                                        ) : (
+                                          <th className="text-right px-2 py-1.5 w-16 bg-violet-50/40 text-violet-600">실재고</th>
+                                        )}
                                         <th className="text-right px-2 py-1.5 w-14 text-violet-700">차이</th>
                                       </tr>
                                     </thead>
@@ -3438,8 +3484,16 @@ export const StockManagePage: React.FC = () => {
                                               </button>
                                               {p.supplier && <div className="text-[10px] text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
                                             </td>
-                                            <td className="text-right px-2 py-2 tabular-nums text-[12px] font-medium bg-slate-50/40 text-slate-600 align-top">{fmt(p.cur)}</td>
-                                            <td className="text-right px-2 py-2 tabular-nums text-[12px] font-semibold bg-violet-50/30 text-violet-700 align-top">{fmt(p.actual)}</td>
+                                            {isDiffGroupCollapsed("erp") ? (
+                                              <td className="bg-slate-50/10 w-4"></td>
+                                            ) : (
+                                              <td className="text-right px-2 py-2 tabular-nums text-[12px] font-medium bg-slate-50/40 text-slate-600 align-top">{fmt(p.cur)}</td>
+                                            )}
+                                            {isDiffGroupCollapsed("actual") ? (
+                                              <td className="bg-violet-50/10 w-4"></td>
+                                            ) : (
+                                              <td className="text-right px-2 py-2 tabular-nums text-[12px] font-semibold bg-violet-50/30 text-violet-700 align-top">{fmt(p.actual)}</td>
+                                            )}
                                             <td className={`text-right px-2 py-2 tabular-nums text-[12px] font-bold align-top ${p.diff > 0 ? "text-emerald-600" : "text-rose-500"}`}>
                                               {p.diff > 0 ? `+${fmt(p.diff)}` : fmt(p.diff)}
                                             </td>
@@ -4053,7 +4107,7 @@ export const StockManagePage: React.FC = () => {
                                 </thead>
                                 <tbody className="divide-y divide-slate-50">
                                   {topProducts.map((p, i) => (
-                                    <tr key={`top-${p.product_name}-${i}`} className="hover:bg-emerald-50/30 transition">
+                                    <tr key={`top-${p.product_name}-${i}`} className="hover:bg-slate-50/60 transition-all duration-150">
                                       <td className="px-1 py-1.5 text-[12px] font-black text-emerald-600">{i + 1}</td>
                                       <td className="px-1 py-1.5">
                                         <div className="font-bold text-slate-700 break-words whitespace-normal leading-tight">{p.product_name}</div>
@@ -4113,7 +4167,7 @@ export const StockManagePage: React.FC = () => {
       {/* 2026-07-30 · 사용자 요청 · 공급사 정보 조회·수정 모달 */}
       {supplierDetailModal && (
         <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSupplierDetailModal(null)}>
-          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl" onClick={e => e.stopPropagation()}>
+          <div className="relative w-full max-w-3xl max-h-[90vh] overflow-auto bg-white rounded-xl shadow-2xl" onClick={e => e.stopPropagation()}>
             <VendorDetailModal
               vendor={supplierDetailModal}
               onClose={() => setSupplierDetailModal(null)}
@@ -4130,13 +4184,13 @@ export const StockManagePage: React.FC = () => {
           onClick={() => { setSupplierModal(null); setSupplierModalRows(null); }}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[95vh] sm:max-h-[90vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* 헤더 */}
-            <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 border-b border-slate-200 bg-gradient-to-r from-sky-50 via-indigo-50 to-emerald-50">
+            <div className="flex items-center justify-between px-3 sm:px-5 py-3 sm:py-4 border-b border-slate-200 bg-sky-50/50">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-500 flex items-center justify-center shrink-0 shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-sky-500 flex items-center justify-center shrink-0 shadow-sm">
                   <Building2 size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
@@ -4259,7 +4313,7 @@ export const StockManagePage: React.FC = () => {
                       return (
                         <tr
                           key={`sup-modal-${p.product_code}-${i}`}
-                          className="hover:bg-orange-50/30 transition"
+                          className="hover:bg-slate-50/60 transition-all duration-150"
                         >
                           <td className="px-0.5 py-1.5 text-orange-600 font-black text-[12px] align-top">{i + 1}</td>
                           <td className="px-0.5 py-1.5 align-top" style={{ width: supplierModalNameWidth }}>
@@ -4323,13 +4377,13 @@ export const StockManagePage: React.FC = () => {
           onClick={() => { setInfoModal(null); setInfoModalData(null); }}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl max-h-[98vh] sm:max-h-[92vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-xl shadow-2xl w-full max-w-5xl max-h-[98vh] sm:max-h-[92vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {/* 헤더 */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-sky-50 via-indigo-50 to-emerald-50">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-sky-50/50">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-500 flex items-center justify-center shrink-0 shadow-md">
+                <div className="w-11 h-11 rounded-xl bg-sky-500 flex items-center justify-center shrink-0 shadow-sm">
                   <TrendingUp size={20} className="text-white" />
                 </div>
                 <div className="min-w-0">
@@ -4789,12 +4843,12 @@ export const StockManagePage: React.FC = () => {
           onClick={() => setScanProductModal(null)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-md sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-xl shadow-2xl w-full max-w-md sm:max-w-lg max-h-[85vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-sky-50 to-indigo-50">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-emerald-50/50">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center shrink-0 shadow-sm">
                   <Package size={18} className="text-white" />
                 </div>
                 <div className="min-w-0">
@@ -4831,12 +4885,12 @@ export const StockManagePage: React.FC = () => {
           onClick={() => setHiddenModalOpen(false)}
         >
           <div
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden"
+            className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[98vh] sm:max-h-[85vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-gradient-to-r from-amber-50 to-orange-50">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 bg-amber-50/50">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-md">
+                <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center shadow-sm">
                   <EyeOff size={18} className="text-white" />
                 </div>
                 <div>
