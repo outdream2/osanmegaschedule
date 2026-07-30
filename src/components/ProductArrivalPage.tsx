@@ -643,14 +643,15 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
 
                           {/* 갯수 + 상태 셀 */}
                           <td className="px-2 py-2.5 align-top">
-                            <div className="flex flex-col gap-1.5">
-                              {/* 수량 Stepper */}
+                            <div className="flex flex-col gap-2">
+
+                              {/* ── 수량 Stepper ── */}
                               <div className="inline-flex items-center rounded-xl overflow-hidden
                                 border border-slate-200/80 bg-slate-50/80
                                 shadow-[0_1px_3px_rgba(0,0,0,0.06)]">
                                 <button
                                   onClick={() => updateQty(it.key, -1)}
-                                  className="w-7 h-8 flex items-center justify-center
+                                  className="w-8 h-[44px] flex items-center justify-center
                                     text-slate-500 hover:text-slate-800 hover:bg-white
                                     active:bg-slate-100 transition-colors cursor-pointer"
                                   title="수량 -1"
@@ -662,13 +663,13 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                   inputMode="numeric"
                                   value={it.qty}
                                   onChange={(e) => setQtyDirect(it.key, Number(e.target.value) || 0)}
-                                  className="w-10 h-8 text-center bg-transparent
+                                  className="w-10 h-[44px] text-center bg-transparent
                                     text-[13px] font-black tabular-nums text-slate-800
                                     focus:outline-none focus:bg-white transition-colors"
                                 />
                                 <button
                                   onClick={() => updateQty(it.key, 1)}
-                                  className="w-7 h-8 flex items-center justify-center
+                                  className="w-8 h-[44px] flex items-center justify-center
                                     text-slate-500 hover:text-slate-800 hover:bg-white
                                     active:bg-slate-100 transition-colors cursor-pointer"
                                   title="수량 +1"
@@ -677,12 +678,12 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                 </button>
                               </div>
 
-                              {/* Segmented Control · match / mismatch */}
+                              {/* ── Segmented Control · match / mismatch (독립 줄 · 전체 폭) ── */}
                               <div
                                 role="group"
                                 aria-label="수량 일치 여부"
-                                className="inline-flex rounded-xl overflow-hidden
-                                  border border-slate-200/80 bg-slate-100/80 w-fit
+                                className="flex rounded-xl overflow-hidden
+                                  border border-slate-200/80 bg-slate-100/80
                                   shadow-[inset_0_1px_3px_rgba(0,0,0,0.06)]"
                               >
                                 {(["match", "mismatch"] as ItemStatus[]).map((s, segIdx) => {
@@ -696,8 +697,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                       onClick={() => setStatus(it.key, active ? "pending" : s)}
                                       title={`${meta.label} · 클릭 시 선택/해제`}
                                       className={[
-                                        "inline-flex items-center gap-1 px-2.5 py-1.5",
-                                        "text-[11px] font-black transition-all duration-150 cursor-pointer select-none",
+                                        "flex flex-1 items-center justify-center gap-1 px-2 py-2.5",
+                                        "min-h-[44px] text-[11px] font-black",
+                                        "transition-all duration-150 cursor-pointer select-none",
                                         segIdx === 0 ? "" : "border-l border-slate-200/60",
                                         active
                                           ? s === "match"
@@ -716,15 +718,15 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                 })}
                               </div>
 
-                              {/* 유통기한 임박 · 독립 chip toggle */}
+                              {/* ── 유통기한 임박 · 독립 chip toggle (독립 줄 · 전체 폭) ── */}
                               <button
                                 onClick={() => toggleExpiring(it.key)}
                                 aria-pressed={it.expiring}
                                 title={`유통기한임박 ${it.expiring ? "on" : "off"} · 독립 토글`}
                                 className={[
-                                  "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full",
-                                  "text-[11px] font-black border transition-all duration-150",
-                                  "cursor-pointer active:scale-95 select-none w-fit",
+                                  "flex items-center justify-center gap-1.5 px-2.5 rounded-xl",
+                                  "min-h-[44px] text-[11px] font-black border",
+                                  "transition-all duration-150 cursor-pointer active:scale-[0.97] select-none",
                                   it.expiring
                                     ? "bg-amber-500 text-white border-amber-500 shadow-sm"
                                     : "bg-white/80 text-slate-400 border-slate-200 hover:border-amber-300 hover:text-amber-600",
@@ -733,6 +735,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                 <Clock size={11} />
                                 유통기한임박
                               </button>
+
                             </div>
                           </td>
 

@@ -69,6 +69,17 @@ CREATE INDEX IF NOT EXISTS idx_return_requests_code ON return_requests(product_c
 
 
 -- ┌───────────────────────────────────────────────────────────────────────┐
+-- │ 1-c. 실재고 · 매장1/매장2 (store_stock_2) 컬럼 추가                    │
+-- │    2026-07-30 · 사용자 요청 "real_map 이 '/' 로 나뉜 경우              │
+-- │                              매장1 · 매장2 별도 입력"                   │
+-- └───────────────────────────────────────────────────────────────────────┘
+
+-- inventory_checks · 기존 warehouse_stock · store_stock 에
+--   store_stock_2 (매장2) 컬럼 추가 · nullable · 하위 호환
+ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS store_stock_2 INT;
+
+
+-- ┌───────────────────────────────────────────────────────────────────────┐
 -- │ 2. 재고관리 상품현황 · 단일 SQL 조인 함수 (get_stock_flow)            │
 -- │    2026-07-29 · Phase 3 (A) 로딩속도 개선 · 60~100 API → 1 RPC       │
 -- │                                                                       │

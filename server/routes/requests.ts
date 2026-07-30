@@ -360,8 +360,10 @@ router.post("/api/inventory-checks", async (req, res) => {
   const code = String(b.product_code ?? "");
   const now = new Date().toISOString();
   // 부분 업데이트: 요청에 포함된 필드만 업데이트 (창고/매장 각각 독립 저장 지원)
+  // 2026-07-30 · 사용자 요청 · store_stock_2 (매장2) 지원 · real_map "/" 분할
   const hasWarehouse = Object.prototype.hasOwnProperty.call(b, "warehouse_stock");
   const hasStore     = Object.prototype.hasOwnProperty.call(b, "store_stock");
+  const hasStore2    = Object.prototype.hasOwnProperty.call(b, "store_stock_2");
   const payload: Record<string, any> = {
     product_name:  String(b.product_name ?? ""),
     system_stock:  b.system_stock  != null ? Number(b.system_stock)  : null,
@@ -373,8 +375,9 @@ router.post("/api/inventory-checks", async (req, res) => {
   };
   if (hasWarehouse) payload.warehouse_stock = b.warehouse_stock != null && b.warehouse_stock !== "" ? Number(b.warehouse_stock) : null;
   if (hasStore)     payload.store_stock     = b.store_stock     != null && b.store_stock     !== "" ? Number(b.store_stock)     : null;
+  if (hasStore2)    payload.store_stock_2   = b.store_stock_2   != null && b.store_stock_2   !== "" ? Number(b.store_stock_2)   : null;
 
-  const { data: existingList } = await supabase.from("inventory_checks").select("id, warehouse_stock, store_stock").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
+  const { data: existingList } = await supabase.from("inventory_checks").select("id, warehouse_stock, store_stock, store_stock_2").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
   const existing = existingList?.[0] ?? null;
   if (existing) {
     // 요청에 없는 필드는 기존값 유지
@@ -382,13 +385,53 @@ router.post("/api/inventory-checks", async (req, res) => {
     if (error) return res.status(500).json({ error: error.message });
     return res.json({ ok: true, updated: true });
   }
-  // 신규 삽입: 요청에 없는 창고/매장은 null 로 시작
+  // 신규 삽입: 요청에 없는 창고/매장/매장2는 null 로 시작
   const insertPayload: Record<string, any> = { ...payload, product_code: code };
   if (!hasWarehouse) insertPayload.warehouse_stock = null;
   if (!hasStore)     insertPayload.store_stock     = null;
+  if (!hasStore2)    insertPayload.store_stock_2   = null;
   const { error } = await supabase.from("inventory_checks").insert([insertPayload]);
   if (error) return res.status(500).json({ error: error.message });
   res.json({ ok: true, updated: false });
+});
+
+// 2026-07-30 · 사용자 요청 · 실재고 일괄 저장 · 전체 등록 기능
+// body: { checked_by, items: [{product_code, product_name, warehouse_stock, store_stock, store_stock_2}] }
+router.post("/api/inventory-checks/bulk", async (req, res) => {
+  try {
+    const b = req.body ?? {};
+    const items: any[] = Array.isArray(b.items) ? b.items : [];
+    if (items.length === 0) return res.status(400).json({ error: "items 필수" });
+    const checked_by = String(b.checked_by ?? "").trim() || "익명";
+    const now = new Date().toISOString();
+    let saved = 0, failed = 0;
+    for (const it of items) {
+      const code = String(it.product_code ?? "").trim();
+      if (!code) { failed++; continue; }
+      const payload: Record<string, any> = {
+        product_name: String(it.product_name ?? ""),
+        checked_by,
+        checked_at: now,
+        status: "pending",
+        warehouse_stock: it.warehouse_stock != null && it.warehouse_stock !== "" ? Number(it.warehouse_stock) : null,
+        store_stock:     it.store_stock     != null && it.store_stock     !== "" ? Number(it.store_stock)     : null,
+        store_stock_2:   it.store_stock_2   != null && it.store_stock_2   !== "" ? Number(it.store_stock_2)   : null,
+      };
+      const { data: existingList } = await supabase.from("inventory_checks").select("id").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
+      const existing = existingList?.[0] ?? null;
+      if (existing) {
+        const { error } = await supabase.from("inventory_checks").update(payload).eq("id", existing.id);
+        if (error) failed++; else saved++;
+      } else {
+        const { error } = await supabase.from("inventory_checks").insert([{ ...payload, product_code: code }]);
+        if (error) failed++; else saved++;
+      }
+    }
+    res.json({ ok: true, saved, failed, total: items.length });
+  } catch (err: any) {
+    console.error("[inventory-checks/bulk POST]", err?.message);
+    res.status(500).json({ error: err?.message ?? "일괄 저장 실패" });
+  }
 });
 
 router.patch("/api/inventory-checks/:id", async (req, res) => {

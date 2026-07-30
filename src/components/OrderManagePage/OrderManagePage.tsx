@@ -339,7 +339,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const loadReturnList = useCallback(async () => {
     setReturnLoading(true);
     try {
-      const res = await fetch("/api/stock-manage/top-sales?months=6&limit=50000&sort=sale&dir=desc");
+      // 2026-07-30 · limit 50000 → 5000 · RPC boost batch fetch 부담 감소 (sale_qty_month · last_purchase_qty 표시)
+      const res = await fetch("/api/stock-manage/top-sales?months=6&limit=5000&sort=sale&dir=desc");
       if (!res.ok) throw new Error(String(res.status));
       const data = await res.json();
       const rows: any[] = Array.isArray(data?.rows) ? data.rows : [];
