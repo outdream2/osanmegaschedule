@@ -564,9 +564,9 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                       >
                         상품명 <SortIcon active={sortKey === "name"} dir={sortDir} />
                       </th>
-                      {/* 갯수/상태 */}
+                      {/* 갯수/상태 · 반응형 폭 확대 · 한 화면에 3상태 (일치/불일치/유통기한) 나란히 */}
                       <th
-                        className="text-center px-2 py-2.5 w-[148px] sm:w-[160px] font-bold text-slate-400
+                        className="text-center px-2 py-2.5 w-[220px] sm:w-[260px] font-bold text-slate-400
                           cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors"
                         onClick={() => handleSort("qty")}
                       >
@@ -678,10 +678,10 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                 </button>
                               </div>
 
-                              {/* ── Segmented Control · match / mismatch (독립 줄 · 전체 폭) ── */}
+                              {/* ── 3상태 통합 · 한 줄 · 일치 · 불일치 (배타) · 유통기한 (독립) ── */}
                               <div
                                 role="group"
-                                aria-label="수량 일치 여부"
+                                aria-label="일치 · 불일치 · 유통기한"
                                 className="flex rounded-xl overflow-hidden
                                   border border-slate-200/80 bg-slate-100/80
                                   shadow-[inset_0_1px_3px_rgba(0,0,0,0.06)]"
@@ -697,8 +697,8 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                       onClick={() => setStatus(it.key, active ? "pending" : s)}
                                       title={`${meta.label} · 클릭 시 선택/해제`}
                                       className={[
-                                        "flex flex-1 items-center justify-center gap-1 px-2 py-2.5",
-                                        "min-h-[44px] text-[11px] font-black",
+                                        "flex flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5",
+                                        "min-h-[40px] text-[10px] font-black",
                                         "transition-all duration-150 cursor-pointer select-none",
                                         segIdx === 0 ? "" : "border-l border-slate-200/60",
                                         active
@@ -712,29 +712,28 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
                                         ? (s === "match" ? <CheckCircle2 size={11} /> : <XCircle size={11} />)
                                         : meta.icon
                                       }
-                                      <span>{meta.label}</span>
+                                      <span className="leading-none">{s === "match" ? "일치" : "불일치"}</span>
                                     </button>
                                   );
                                 })}
+                                {/* 유통기한 · 독립 토글 · 같은 줄 · 왼쪽 border */}
+                                <button
+                                  onClick={() => toggleExpiring(it.key)}
+                                  aria-pressed={it.expiring}
+                                  title={`유통기한임박 ${it.expiring ? "on" : "off"} · 독립 토글`}
+                                  className={[
+                                    "flex flex-1 flex-col items-center justify-center gap-0.5 px-1 py-1.5",
+                                    "min-h-[40px] text-[10px] font-black border-l border-slate-200/60",
+                                    "transition-all duration-150 cursor-pointer select-none",
+                                    it.expiring
+                                      ? "bg-amber-500 text-white shadow-sm"
+                                      : "text-slate-400 hover:text-slate-600 hover:bg-white/60",
+                                  ].join(" ")}
+                                >
+                                  <Clock size={11} />
+                                  <span className="leading-none">유통기한</span>
+                                </button>
                               </div>
-
-                              {/* ── 유통기한 임박 · 독립 chip toggle (독립 줄 · 전체 폭) ── */}
-                              <button
-                                onClick={() => toggleExpiring(it.key)}
-                                aria-pressed={it.expiring}
-                                title={`유통기한임박 ${it.expiring ? "on" : "off"} · 독립 토글`}
-                                className={[
-                                  "flex items-center justify-center gap-1.5 px-2.5 rounded-xl",
-                                  "min-h-[44px] text-[11px] font-black border",
-                                  "transition-all duration-150 cursor-pointer active:scale-[0.97] select-none",
-                                  it.expiring
-                                    ? "bg-amber-500 text-white border-amber-500 shadow-sm"
-                                    : "bg-white/80 text-slate-400 border-slate-200 hover:border-amber-300 hover:text-amber-600",
-                                ].join(" ")}
-                              >
-                                <Clock size={11} />
-                                유통기한임박
-                              </button>
 
                             </div>
                           </td>
