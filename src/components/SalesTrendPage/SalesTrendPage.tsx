@@ -1967,11 +1967,14 @@ const ZoneCategoryContent: React.FC = () => {
 
   return (
     <div className="flex flex-col gap-2">
-      {/* ── 상단 필터바 (full-width) ── */}
+      {/* ── 상단 필터바 (full-width · 통일 규격) ── */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-        <div className="flex items-center gap-1.5">
-          <PieChart size={14} className="text-violet-600 shrink-0" />
-          <span className="text-[13px] font-semibold text-slate-800">구역별 카테고리별 매입·판매</span>
+        {/* 아이콘 + 제목 + 카운트배지 + 부제 */}
+        <div className="flex items-center gap-2">
+          <PieChart size={14} className="text-amber-500 shrink-0" />
+          <span className="text-[13px] font-semibold text-slate-800">카테고리별현황</span>
+          <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 rounded-full px-2 py-0.5 border border-amber-200 tabular-nums">{grouped.length}개 구역</span>
+          <span className="text-[11px] text-slate-400 hidden sm:inline">real_map 기반 · 구역 클릭 → 상품 상세</span>
         </div>
         {/* 조회기간 */}
         <div className="flex items-center gap-2 flex-wrap">
@@ -1990,7 +1993,28 @@ const ZoneCategoryContent: React.FC = () => {
           </div>
           <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setMonths(0); }} size="sm" hideLabel />
         </div>
-        <span className="ml-auto text-[10px] font-semibold text-slate-400">real_map 기반</span>
+        {/* 새로고침 */}
+        <button
+          type="button"
+          onClick={() => {
+            setLoading(true);
+            const params = new URLSearchParams({ sort: "sale", dir: "desc", limit: "50000" });
+            if (season) params.set("season", season);
+            else if (months > 0) params.set("months", String(months));
+            Promise.all([
+              fetch(`/api/stock-manage/top-sales?${params}`).then(r => r.ok ? r.json() : { rows: [] }),
+              getProductsMap(),
+            ])
+              .then(([s, p]) => { setSales(Array.isArray(s.rows) ? s.rows : []); setProducts(p ?? {}); })
+              .catch(() => { setSales([]); setProducts({}); })
+              .finally(() => setLoading(false));
+          }}
+          disabled={loading}
+          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-amber-50 hover:border-amber-300 text-slate-400 hover:text-amber-500 transition disabled:opacity-40 cursor-pointer"
+          title="새로고침"
+        >
+          <Loader2 size={13} className={loading ? "animate-spin" : ""} />
+        </button>
       </div>
 
       {/* 매장 구역도 (가로 full width) · 판매 rank ★배지 · 상품수 배지 */}

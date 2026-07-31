@@ -1042,65 +1042,34 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
 
   return (
     <div className="flex flex-col gap-2">
-      {/* ── 카드: 헤더 툴바 + 컨트롤 ── */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        {/* h-12 툴바 */}
-        <div className="flex items-center gap-2 px-4 h-12 border-b border-indigo-100 bg-indigo-50/40 shrink-0">
+      {/* ── 상단 필터바 (full-width · 통일 규격) ── */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        {/* 아이콘 + 제목 + 카운트배지 + 부제 */}
+        <div className="flex items-center gap-2">
           <TrendingUp size={14} className="text-indigo-500 shrink-0" />
           <span className="text-[13px] font-semibold text-slate-800">판매 급상승</span>
           {meta && (
-            <span className="text-[11px] font-medium text-indigo-700 bg-indigo-100 rounded-full px-2 py-0.5 tabular-nums">
-              {fmt(meta.total)}건
-            </span>
+            <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5 border border-indigo-200 tabular-nums">{fmt(meta.total)}건</span>
           )}
-          <span className="text-[11px] text-slate-400 hidden sm:block">
-            {meta ? `최근 ${windowDays}일 (${meta.recent_from} ~) vs 최근 ${PRIOR_DAYS}일 기준 비교` : `최근 ${windowDays}일 vs 최근 ${PRIOR_DAYS}일 기준 비교 · 신규진입 상단`}
+          <span className="text-[11px] text-slate-400 hidden sm:inline">
+            {meta ? `최근 ${windowDays}일 (${meta.recent_from} ~) vs 최근 ${PRIOR_DAYS}일 기준` : `최근 ${windowDays}일 vs 최근 ${PRIOR_DAYS}일 기준 · 신규진입 상단`}
           </span>
-          <div className="ml-auto flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => {
-                // 필터 그대로 · 강제 재조회
-                const params = new URLSearchParams();
-                params.set("window", String(windowDays));
-                params.set("prior_days", String(PRIOR_DAYS));
-                params.set("limit", "1000");
-                if (minRecentQty > 0) params.set("min_recent_qty", String(minRecentQty));
-                const g = minGrowthPct.trim() === "" ? null : Number(minGrowthPct);
-                if (g != null && !Number.isNaN(g)) params.set("min_growth_pct", String(g));
-                const supTrim = supplierFilter.trim();
-                if (supTrim) params.set("supplier", supTrim);
-                setLoading(true);
-                fetch(`/api/stock-manage/trending?${params.toString()}`)
-                  .then(r => r.ok ? r.json() : { rows: [] })
-                  .then(j => {
-                    setRows(Array.isArray(j.rows) ? j.rows : []);
-                    setMeta({ recent_from: j.recent_from ?? "", prior_from: j.prior_from ?? "", total: Number(j.total ?? 0) });
-                  })
-                  .catch(() => { setRows([]); setMeta(null); })
-                  .finally(() => setLoading(false));
-              }}
-              disabled={loading}
-              className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-indigo-50 hover:border-indigo-300 text-slate-400 hover:text-indigo-500 transition disabled:opacity-40 cursor-pointer"
-              title="새로고침"
-            >
-              <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
-            </button>
-          </div>
         </div>
-        {/* 컨트롤 행 */}
-        <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap border-b border-slate-100 bg-white">
+        {/* 최근 N일 선택 */}
+        <div className="flex items-center gap-1.5">
           <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">최근</span>
           <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
             {([7, 10, 15, 30, 60] as const).map(w => (
               <button key={w} onClick={() => setWindowDays(w)}
-                className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${windowDays === w ? "bg-indigo-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                className={`h-6 px-2 text-[11px] font-semibold rounded transition cursor-pointer ${windowDays === w ? "bg-indigo-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                 {w}일
               </button>
             ))}
           </div>
-          <span className="text-[11px] text-slate-400 shrink-0">vs 최근 {PRIOR_DAYS}일 (기준)</span>
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0 ml-2">정렬</span>
+        </div>
+        {/* 정렬 */}
+        <div className="flex items-center gap-1.5">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">정렬</span>
           <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
             {([
               { k: "growth" as const, label: "성장률" },
@@ -1109,21 +1078,17 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
               { k: "shortage" as const, label: "재고부족" },
             ]).map(o => (
               <button key={o.k} onClick={() => setSortKey(o.k)}
-                className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${sortKey === o.k ? "bg-indigo-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                className={`h-6 px-2 text-[11px] font-semibold rounded transition cursor-pointer ${sortKey === o.k ? "bg-indigo-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                 {o.label}
               </button>
             ))}
           </div>
-          <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 cursor-pointer ml-auto">
-            <input type="checkbox" checked={onlyShortage} onChange={e => setOnlyShortage(e.target.checked)} className="w-3.5 h-3.5 accent-indigo-500" />
-            재고 부족만
-          </label>
         </div>
-        {/* ── 검색 조건 필터 행 (2026-07-31 신규) ── */}
-        <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap bg-slate-50/40">
+        {/* 검색 조건 */}
+        <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">검색조건</span>
-          <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600">
-            <span className="text-slate-500">최소 최근판매</span>
+          <label className="inline-flex items-center gap-1 text-[11px] text-slate-600">
+            <span className="text-slate-500">최소판매</span>
             <input
               type="number"
               min={0}
@@ -1133,42 +1098,76 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
                 setMinRecentQty(Number.isFinite(v) && v > 0 ? v : 0);
               }}
               placeholder="0"
-              className="w-16 h-7 px-2 text-[11px] tabular-nums text-right border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              className="w-14 h-6 px-2 text-[11px] tabular-nums text-right border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
             />
-            <span className="text-slate-400">개 이상</span>
+            <span className="text-slate-400">개↑</span>
           </label>
-          <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600">
-            <span className="text-slate-500">최소 증가율</span>
+          <label className="inline-flex items-center gap-1 text-[11px] text-slate-600">
+            <span className="text-slate-500">증가율</span>
             <input
               type="number"
               value={minGrowthPct}
               onChange={e => setMinGrowthPct(e.target.value)}
               placeholder="예: 50"
-              className="w-16 h-7 px-2 text-[11px] tabular-nums text-right border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              className="w-14 h-6 px-2 text-[11px] tabular-nums text-right border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
             />
-            <span className="text-slate-400">% 이상</span>
+            <span className="text-slate-400">%↑</span>
           </label>
-          <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 flex-1 min-w-[180px]">
+          <label className="inline-flex items-center gap-1 text-[11px] text-slate-600">
             <span className="text-slate-500 shrink-0">공급사</span>
             <input
               type="text"
               value={supplierFilter}
               onChange={e => setSupplierFilter(e.target.value)}
-              placeholder="공급사명 포함 검색"
-              className="flex-1 min-w-0 h-7 px-2 text-[11px] border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              placeholder="공급사명 검색"
+              className="w-28 h-6 px-2 text-[11px] border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
             />
           </label>
           {(minRecentQty > 0 || minGrowthPct.trim() !== "" || supplierFilter.trim() !== "") && (
             <button
               type="button"
               onClick={() => { setMinRecentQty(0); setMinGrowthPct(""); setSupplierFilter(""); }}
-              className="h-7 px-2.5 text-[11px] font-semibold text-slate-500 hover:text-rose-500 border border-slate-200 hover:border-rose-300 bg-white rounded transition cursor-pointer"
+              className="h-6 px-2 text-[11px] font-semibold text-slate-500 hover:text-rose-500 border border-slate-200 hover:border-rose-300 bg-white rounded transition cursor-pointer"
               title="필터 초기화"
             >
               초기화
             </button>
           )}
         </div>
+        {/* 재고 부족만 체크 */}
+        <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 cursor-pointer">
+          <input type="checkbox" checked={onlyShortage} onChange={e => setOnlyShortage(e.target.checked)} className="w-3.5 h-3.5 accent-indigo-500" />
+          재고부족만
+        </label>
+        {/* 새로고침 */}
+        <button
+          type="button"
+          onClick={() => {
+            const params = new URLSearchParams();
+            params.set("window", String(windowDays));
+            params.set("prior_days", String(PRIOR_DAYS));
+            params.set("limit", "1000");
+            if (minRecentQty > 0) params.set("min_recent_qty", String(minRecentQty));
+            const g = minGrowthPct.trim() === "" ? null : Number(minGrowthPct);
+            if (g != null && !Number.isNaN(g)) params.set("min_growth_pct", String(g));
+            const supTrim = supplierFilter.trim();
+            if (supTrim) params.set("supplier", supTrim);
+            setLoading(true);
+            fetch(`/api/stock-manage/trending?${params.toString()}`)
+              .then(r => r.ok ? r.json() : { rows: [] })
+              .then(j => {
+                setRows(Array.isArray(j.rows) ? j.rows : []);
+                setMeta({ recent_from: j.recent_from ?? "", prior_from: j.prior_from ?? "", total: Number(j.total ?? 0) });
+              })
+              .catch(() => { setRows([]); setMeta(null); })
+              .finally(() => setLoading(false));
+          }}
+          disabled={loading}
+          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-indigo-50 hover:border-indigo-300 text-slate-400 hover:text-indigo-500 transition disabled:opacity-40 cursor-pointer"
+          title="새로고침"
+        >
+          <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
+        </button>
       </div>
 
       {/* ── 테이블 카드 ── */}
@@ -2745,6 +2744,13 @@ export const StockManagePage: React.FC = () => {
 
                   {/* ── 상단 필터바 (full-width) ── */}
                   <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+                    {/* 아이콘 + 제목 + 카운트배지 */}
+                    <div className="flex items-center gap-2">
+                      <Building2 size={14} className="text-sky-500 shrink-0" />
+                      <span className="text-[13px] font-semibold text-slate-800">공급사현황</span>
+                      <span className="text-[11px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">{displayedXlsxSuppliers.length}개 사</span>
+                      <span className="text-[11px] text-slate-400 hidden sm:inline">행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세</span>
+                    </div>
                     {/* 조회기간 */}
                     <div className="flex items-center gap-2">
                       <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">기간</span>
@@ -2776,10 +2782,16 @@ export const StockManagePage: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                    {/* 안내 문구 */}
-                    <span className="text-[11px] font-medium text-slate-400 ml-auto whitespace-nowrap hidden lg:block">
-                      행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세
-                    </span>
+                    {/* 새로고침 */}
+                    <button
+                      type="button"
+                      onClick={fetchAggregates}
+                      disabled={loading}
+                      className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 text-slate-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
+                      title="새로고침"
+                    >
+                      <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
+                    </button>
                   </div>
 
                   {/* ── 하단 좌우 split ── */}
@@ -3235,14 +3247,14 @@ export const StockManagePage: React.FC = () => {
               {/* 실재고 vs ERP 차이 상품 리스트 · 상단 필터바 + 좌우 분할 레이아웃 */}
               {stockTab === "diff" && (
                 <div className="flex flex-col gap-2">
-                  {/* ── 상단 필터바 ── */}
+                  {/* ── 상단 필터바 (통일 규격) ── */}
                   <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
                     <div className="flex items-center gap-2">
                       <Layers size={14} className="text-violet-500 shrink-0" />
                       <span className="text-[13px] font-semibold text-slate-800">손실추적</span>
-                      <span className="text-[11px] font-semibold text-violet-700 bg-violet-100 rounded-full px-2 py-0.5 tabular-nums">{diffList.length}개</span>
+                      <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 rounded-full px-2 py-0.5 border border-violet-200 tabular-nums">{diffList.length}건</span>
+                      <span className="text-[11px] text-slate-400 hidden sm:inline">실재고(창고+매장) ↔ ERP 차이 · 도난·파손·미기록 판매·재고 오류 · 상품명 클릭 → 상세</span>
                     </div>
-                    <span className="text-[11px] text-slate-400">실재고(창고+매장) ↔ ERP 차이 · 도난·파손·미기록 판매·재고 오류 · 상품명 클릭 → 상세</span>
                     <button
                       type="button"
                       onClick={fetchAggregates}
