@@ -34,11 +34,19 @@ function daysAgoISO(days: number): string {
   return d.toISOString();
 }
 
+// 2026-07-31 · performance QW1 · suppliers·top-products 캐시 (in-memory TTL 5분)
+//   ocr_confirmed_items 50000 limit 풀스캔 · 응답당 대역폭 큼 · 캐시로 반복 요청 감소
+const ocrAggCache = new Map<string, { data: any; expiresAt: number }>();
+const OCR_AGG_TTL = 5 * 60 * 1000;
+
 // GET /api/stock-manage/suppliers?days=7|30|90
 // 공급사별 매입 총액 · 수량 · 상품수
 router.get("/api/stock-manage/suppliers", async (req, res) => {
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "7"), 10) || 7));
   const since = daysAgoISO(days);
+  const cacheKey = `suppliers::${days}`;
+  const cached = ocrAggCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return res.json(cached.data);
   try {
     const { data, error } = await supabase
       .from("ocr_confirmed_items")
@@ -59,6 +67,7 @@ router.get("/api/stock-manage/suppliers", async (req, res) => {
     const result = [...map.values()]
       .map(x => ({ supplier: x.supplier, purchaseAmount: x.purchaseAmount, purchaseQty: x.purchaseQty, itemCount: x.items.size }))
       .sort((a, b) => b.purchaseAmount - a.purchaseAmount);
+    ocrAggCache.set(cacheKey, { data: result, expiresAt: Date.now() + OCR_AGG_TTL });
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -71,6 +80,9 @@ router.get("/api/stock-manage/top-products", async (req, res) => {
   const days = Math.max(1, Math.min(365, parseInt(String(req.query.days ?? "7"), 10) || 7));
   const limit = Math.max(1, Math.min(500, parseInt(String(req.query.limit ?? "100"), 10) || 100));
   const since = daysAgoISO(days);
+  const cacheKey = `top-products::${days}::${limit}`;
+  const cached = ocrAggCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) return res.json(cached.data);
   try {
     const { data, error } = await supabase
       .from("ocr_confirmed_items")
@@ -93,6 +105,7 @@ router.get("/api/stock-manage/top-products", async (req, res) => {
       map.set(key, cur);
     }
     const result = [...map.values()].sort((a, b) => b.totalAmount - a.totalAmount).slice(0, limit);
+    ocrAggCache.set(cacheKey, { data: result, expiresAt: Date.now() + OCR_AGG_TTL });
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: err.message });

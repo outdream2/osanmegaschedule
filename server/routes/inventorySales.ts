@@ -101,9 +101,14 @@ async function fetchStockFlow(days: number): Promise<StockFlowRow[]> {
   const fromStr = from.toISOString().slice(0, 10);
   const toStr = now.toISOString().slice(0, 10);
 
-  // 2026-07-29 · 페이지네이션 · limit 5000 고정 제거 (상품 5000+ 시 잘림)
+  // 2026-07-31 · performance QW2·3 · 3루프 병렬화 + purchase_details 날짜 필터
+  //   이전 · 직렬 while 루프 3개 · 라운드트립 15~20회
+  //   현재 · Promise.all 병렬 · purchase_details 는 fromStr 이후만 조회
   const byCode = new Map<string, any>();
-  {
+  const openingByCode = new Map<string, any>();
+  const purchaseByCode = new Map<string, { dates: string[]; latestUnit: number | null }>();
+
+  const loadLatestSnapshot = async () => {
     const PAGE = 1000;
     let fromRow = 0;
     while (true) {
@@ -113,7 +118,7 @@ async function fetchStockFlow(days: number): Promise<StockFlowRow[]> {
         .lte("snapshot_date", toStr)
         .order("snapshot_date", { ascending: false })
         .range(fromRow, fromRow + PAGE - 1);
-      if (pgErr) return [];
+      if (pgErr) throw new Error(pgErr.message);
       if (!pg || pg.length === 0) break;
       for (const r of pg) {
         const code = String((r as any).product_code ?? "").trim();
@@ -123,10 +128,9 @@ async function fetchStockFlow(days: number): Promise<StockFlowRow[]> {
       if (pg.length < PAGE) break;
       fromRow += PAGE;
     }
-  }
+  };
 
-  const openingByCode = new Map<string, any>();
-  {
+  const loadOpeningSnapshot = async () => {
     const PAGE = 1000;
     let fromRow = 0;
     while (true) {
@@ -144,44 +148,45 @@ async function fetchStockFlow(days: number): Promise<StockFlowRow[]> {
       if (pg.length < PAGE) break;
       fromRow += PAGE;
     }
-  }
+  };
 
-  // 2026-07-29 · 사용자 원칙 · 매입 관련은 무조건 purchase_details (매입 테이블)
-  //   이전 · ocr_confirmed_items (OCR 확정 · 부분집합) · limit 10000 고정
-  //   현재 · purchase_details 페이지네이션 조회
-  //   최근매입일 · MAX(purchase_date)
-  //   매입주기 · distinct purchase_date 간격 평균
-  //   단가 · 최신 unit_price (purchase_details)
-  const purchaseByCode = new Map<string, { dates: string[]; latestUnit: number | null }>();
-  try {
-    const PAGE = 1000;
-    let fromRow = 0;
-    while (true) {
-      const { data: purchases, error: pdErr } = await supabase
-        .from("purchase_details")
-        .select("product_code, purchase_date, unit_price")
-        .not("product_code", "is", null)
-        .order("purchase_date", { ascending: false })
-        .range(fromRow, fromRow + PAGE - 1);
-      if (pdErr) throw new Error(pdErr.message);
-      if (!purchases || purchases.length === 0) break;
-      for (const p of purchases) {
-        const code = String((p as any).product_code ?? "").trim();
-        if (!code) continue;
-        const date = String((p as any).purchase_date ?? "").slice(0, 10);
-        if (!date) continue;
-        if (!purchaseByCode.has(code)) purchaseByCode.set(code, { dates: [], latestUnit: null });
-        const rec = purchaseByCode.get(code)!;
-        rec.dates.push(date);
-        if (rec.latestUnit == null) {
-          const up = clampNum((p as any).unit_price);
-          if (up > 0) rec.latestUnit = up;
+  // 매입 관련 · purchase_details · 기간 필터 (fromStr 이후) 로 스캔량 대폭 감소
+  const loadPurchases = async () => {
+    try {
+      const PAGE = 1000;
+      let fromRow = 0;
+      while (true) {
+        const { data: purchases, error: pdErr } = await supabase
+          .from("purchase_details")
+          .select("product_code, purchase_date, unit_price")
+          .not("product_code", "is", null)
+          .gte("purchase_date", fromStr)
+          .order("purchase_date", { ascending: false })
+          .range(fromRow, fromRow + PAGE - 1);
+        if (pdErr) throw new Error(pdErr.message);
+        if (!purchases || purchases.length === 0) break;
+        for (const p of purchases) {
+          const code = String((p as any).product_code ?? "").trim();
+          if (!code) continue;
+          const date = String((p as any).purchase_date ?? "").slice(0, 10);
+          if (!date) continue;
+          if (!purchaseByCode.has(code)) purchaseByCode.set(code, { dates: [], latestUnit: null });
+          const rec = purchaseByCode.get(code)!;
+          rec.dates.push(date);
+          if (rec.latestUnit == null) {
+            const up = clampNum((p as any).unit_price);
+            if (up > 0) rec.latestUnit = up;
+          }
         }
+        if (purchases.length < PAGE) break;
+        fromRow += PAGE;
       }
-      if (purchases.length < PAGE) break;
-      fromRow += PAGE;
-    }
-  } catch { /* 조회 실패 시 빈 map · fallback 처리됨 */ }
+    } catch { /* 조회 실패 시 빈 map · fallback 처리됨 */ }
+  };
+
+  try {
+    await Promise.all([loadLatestSnapshot(), loadOpeningSnapshot(), loadPurchases()]);
+  } catch { return []; }
 
   const computeInterval = (dates: string[]): number | null => {
     if (dates.length < 2) return null;

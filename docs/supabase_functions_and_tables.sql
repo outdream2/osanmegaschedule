@@ -91,6 +91,21 @@ CREATE INDEX IF NOT EXISTS idx_vendors_category ON vendors(category);
 
 
 -- ┌───────────────────────────────────────────────────────────────────────┐
+-- │ 1-g. 성능 인덱스 (2026-07-31 · performance QW4)                        │
+-- │    ocr_confirmed_items · inventory_checks 자주 조회 컬럼 인덱스        │
+-- │    응답 시간 50~70% 단축 예상                                          │
+-- └───────────────────────────────────────────────────────────────────────┘
+
+-- ocr_confirmed_items · saved_at + supplier 복합 (suppliers·top-products API)
+CREATE INDEX IF NOT EXISTS idx_ocr_confirmed_saved_supplier
+  ON ocr_confirmed_items (saved_at DESC, supplier);
+
+-- inventory_checks · product_code + checked_at 복합 (inventory-latest 최신값 조회)
+CREATE INDEX IF NOT EXISTS idx_inventory_checks_code_date
+  ON inventory_checks (product_code, checked_at DESC);
+
+
+-- ┌───────────────────────────────────────────────────────────────────────┐
 -- │ 1-f. 구역 라벨 매핑 (zone_labels)                                       │
 -- │    2026-07-31 · 사용자 요청 · 관리 UI 에서 구역 번호 편집               │
 -- │    zoneId(1A/1B/9/22/35 등) ↔ 표시 번호(1~60) 매핑 · 서버 저장          │
