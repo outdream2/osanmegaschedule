@@ -1677,7 +1677,7 @@ const ZoneCategoryContent: React.FC = () => {
       const primary = t.split(/[\/\-_\s]/)[0];
       return (primary ?? "").slice(0, 4) || "미배치";
     };
-    const map = new Map<string, { zone: string; saleQty: number; totalAmount: number; items: Array<{ code: string; name: string; saleQty: number; amount: number; currentStock: number }> }>();
+    const map = new Map<string, { zone: string; saleQty: number; totalAmount: number; items: Array<{ code: string; name: string; saleQty: number; amount: number; currentStock: number; supplier: string; optimalStock: number; lastPurchaseDate: string | null }> }>();
     for (const r of sales) {
       const code = String(r.product_code ?? "");
       const p = products[code] ?? {};
@@ -1689,7 +1689,16 @@ const ZoneCategoryContent: React.FC = () => {
       if (saleQty > 0 || amount > 0) {
         cur.saleQty += saleQty;
         cur.totalAmount += amount;
-        cur.items.push({ code, name: String(r.product_name ?? ""), saleQty, amount, currentStock: Number(r.current_stock ?? 0) });
+        cur.items.push({
+          code,
+          name: String(r.product_name ?? ""),
+          saleQty,
+          amount,
+          currentStock: Number(r.current_stock ?? 0),
+          supplier: String(p.supplier ?? r.supplier ?? ""),
+          optimalStock: Number(p.optimal_stock ?? 0),
+          lastPurchaseDate: p.last_purchase_date ?? null,
+        });
       }
       map.set(key, cur);
     }
@@ -1897,24 +1906,34 @@ const ZoneCategoryContent: React.FC = () => {
               <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm">
                 <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
                   <th className="text-left px-1 py-1.5 w-6">#</th>
+                  <th className="text-left px-0.5 py-1.5 w-24">공급사</th>
                   {sortableTh("name", "상품명", "text-left px-0.5 py-1.5")}
-                  {sortableTh("sale", "판매", "text-right px-0.5 py-1.5 w-14 text-orange-500 bg-orange-50/40")}
-                  {sortableTh("current", "현재고", "text-right px-0.5 py-1.5 w-14 text-amber-600 bg-amber-50/40")}
-                  {sortableTh("amount", "금액", "text-right px-0.5 py-1.5 w-16 text-emerald-500 bg-emerald-50/40")}
+                  {sortableTh("sale", "판매량", "text-right px-0.5 py-1.5 w-14 text-orange-500 bg-orange-50/40")}
+                  {sortableTh("amount", "판매금액", "text-right px-0.5 py-1.5 w-16 text-emerald-500 bg-emerald-50/40")}
+                  <th className="text-right px-0.5 py-1.5 w-16 text-amber-600 bg-amber-50/40">최근매입</th>
+                  <th className="text-right px-0.5 py-1.5 w-14 text-slate-600 bg-slate-50/40">적정재고</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {sortedItems.slice(0, 200).map((it, i) => (
-                  <tr key={`${g.zone}-${it.code}`} className="hover:bg-slate-50/60 align-top transition">
-                    <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600">{i + 1}</td>
-                    <td className="px-0.5 py-1.5 break-words whitespace-normal leading-tight">
-                      <span className="text-[13px] font-medium text-slate-800 break-words whitespace-normal leading-tight" title={it.name}>{it.name}</span>
-                    </td>
-                    <td className="text-right px-0.5 py-1.5 text-[12px] tabular-nums text-orange-700 font-bold bg-orange-50/40">{fmt(it.saleQty)}</td>
-                    <td className="text-right px-0.5 py-1.5 text-[12px] tabular-nums text-amber-800 font-bold bg-amber-50/40">{fmt(it.currentStock)}</td>
-                    <td className="text-right px-0.5 py-1.5 text-[12px] tabular-nums font-bold text-emerald-700 bg-emerald-50/40">{fmtWon(it.amount)}</td>
-                  </tr>
-                ))}
+                {sortedItems.slice(0, 200).map((it, i) => {
+                  const lastPD = it.lastPurchaseDate;
+                  const lastPDShort = lastPD && /^\d{4}-\d{2}-\d{2}/.test(String(lastPD))
+                    ? `${String(lastPD).slice(5, 7)}/${String(lastPD).slice(8, 10)}`
+                    : "-";
+                  return (
+                    <tr key={`${g.zone}-${it.code}`} className="hover:bg-slate-50/60 align-top transition">
+                      <td className="px-0.5 py-1.5 text-[12px] font-black text-orange-600">{i + 1}</td>
+                      <td className="px-0.5 py-1.5 text-[11px] text-slate-500 break-words whitespace-normal leading-tight" title={it.supplier || undefined}>{it.supplier || "-"}</td>
+                      <td className="px-0.5 py-1.5 break-words whitespace-normal leading-tight">
+                        <span className="text-[13px] font-medium text-slate-800 break-words whitespace-normal leading-tight" title={it.name}>{it.name}</span>
+                      </td>
+                      <td className="text-right px-0.5 py-1.5 text-[12px] tabular-nums text-orange-700 font-bold bg-orange-50/40">{fmt(it.saleQty)}</td>
+                      <td className="text-right px-0.5 py-1.5 text-[12px] tabular-nums font-bold text-emerald-700 bg-emerald-50/40">{fmtWon(it.amount)}</td>
+                      <td className="text-right px-0.5 py-1.5 text-[11px] tabular-nums text-amber-700 font-semibold bg-amber-50/40" title={lastPD ?? undefined}>{lastPDShort}</td>
+                      <td className={`text-right px-0.5 py-1.5 text-[12px] tabular-nums font-bold bg-slate-50/40 ${it.optimalStock > 0 ? "text-slate-700" : "text-slate-300"}`}>{it.optimalStock > 0 ? fmt(it.optimalStock) : "-"}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
             {g.items.length > 200 && <div className="text-[11px] text-slate-400 text-center py-1">상위 200개만 · 전체 {g.items.length}개</div>}
