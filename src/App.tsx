@@ -26,6 +26,7 @@ import { useAuth } from "./hooks/useAuth";
 import { usePushSubscription } from "./hooks/usePushSubscription";
 import type { AuthSession } from "./types";
 import { prefetchProducts } from "./lib/productsCache";
+import { loadZoneLabelsFromServer } from "./constants/zoneLabels";
 
 type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage";
 
@@ -50,6 +51,12 @@ export default function App() {
     const needsProducts: Page[] = ["scan", "productarrival", "display", "stockcheck", "synonyms", "stockarrivals"];
     if (needsProducts.includes(page)) prefetchProducts();
   }, [authSession, page]);
+
+  // 2026-07-31 · 구역 라벨 매핑 · 로그인 즉시 서버 로드 (파일 fallback 이후 override)
+  useEffect(() => {
+    if (!authSession) return;
+    loadZoneLabelsFromServer();
+  }, [authSession]);
 
   // 로그인 직후 웹푸시 자동 구독 (권한 팝업 1회 · 이미 구독됐으면 skip)
   usePushSubscription({ employeeId: authSession?.employeeId ?? null, auto: true });

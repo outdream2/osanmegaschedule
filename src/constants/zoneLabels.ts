@@ -1,26 +1,12 @@
 // src/constants/zoneLabels.ts
 // 매장 구역 라벨 매핑 · 2026-07-31
 //
-// 목적:
-//   내부 zone id (예: "1A", "1B", "9", "22", "35") 는 그대로 유지하되
-//   UI 표시 번호(1~60) 는 이 파일 편집만으로 일괄 변경 가능.
-//   DB(real_map) · 배정 로직 · 매핑 등은 원본 zone id 사용 → 안전.
+// A단계(파일 매핑) + B단계(서버 DB 매핑) 하이브리드:
+//   - 초기 렌더: 파일 기본값 (DEFAULT_MAPPINGS) 즉시 사용 · 첫 페인트 빠름
+//   - mount 후: /api/zone-labels 서버 fetch → 매핑 override → "zone-labels-changed" 이벤트 발행
+//   - 관리 UI 저장 시: PUT /api/zone-labels → 이벤트 발행 → 다른 페이지 자동 refresh
 //
-// 편집 방법:
-//   아래 ZONE_MAPPINGS 배열의 { number, zoneId } 를 조정하세요.
-//   number = UI 표시 번호 (1~60)
-//   zoneId = 내부 원본 id (건드리지 마세요)
-//   dev 서버 재시작(또는 hot reload) 후 즉시 반영.
-//
-// 매장 실제 구조 (참고 · storeMapLayout.ts):
-//   - 진열대 A/B pair 1~8 (16셀) · 1A, 1B, 2A, 2B, ..., 8A, 8B
-//   - 상단 벽면 9~21 (13셀)
-//   - 중앙 단독 22
-//   - 하단 벽면 23~34 (12셀)
-//   - 수직윙 35~42 (8셀)
-//   총 50 셀. 아래 매핑은 1~50 순차 재넘버링 기본값 (여유 슬롯 있음 · 60 미만).
-//
-// TODO(B단계): 관리 UI 페이지 → DB 저장 · 사용자가 브라우저에서 편집 · 이 파일은 fallback.
+// DB(real_map) · 배정 로직 · 매핑 등은 원본 zone id 사용 → 안전.
 
 export interface ZoneMapping {
   /** UI 표시 번호 (1~60) */
@@ -31,101 +17,137 @@ export interface ZoneMapping {
   subLabel?: string;
 }
 
-export const ZONE_MAPPINGS: ZoneMapping[] = [
-  // ── 진열대 (1~8 pair) · 1~16 ────────────────────────
-  { number: 1,  zoneId: "1A" },
-  { number: 2,  zoneId: "1B" },
-  { number: 3,  zoneId: "2A" },
-  { number: 4,  zoneId: "2B" },
-  { number: 5,  zoneId: "3A" },
-  { number: 6,  zoneId: "3B" },
-  { number: 7,  zoneId: "4A" },
-  { number: 8,  zoneId: "4B" },
-  { number: 9,  zoneId: "5A" },
-  { number: 10, zoneId: "5B" },
-  { number: 11, zoneId: "6A" },
-  { number: 12, zoneId: "6B" },
-  { number: 13, zoneId: "7A" },
-  { number: 14, zoneId: "7B" },
-  { number: 15, zoneId: "8A" },
-  { number: 16, zoneId: "8B" },
-
-  // ── 상단 벽면 (9~21) · 17~29 ────────────────────────
-  { number: 17, zoneId: "9"  },
-  { number: 18, zoneId: "10" },
-  { number: 19, zoneId: "11" },
-  { number: 20, zoneId: "12" },
-  { number: 21, zoneId: "13" },
-  { number: 22, zoneId: "14" },
-  { number: 23, zoneId: "15" },
-  { number: 24, zoneId: "16" },
-  { number: 25, zoneId: "17" },
-  { number: 26, zoneId: "18" },
-  { number: 27, zoneId: "19" },
-  { number: 28, zoneId: "20" },
+// ─────────────────────────────────────────────────────────────
+// 기본 매핑 · 파일 기반 fallback · 서버 응답 없을 때 사용
+// ─────────────────────────────────────────────────────────────
+export const DEFAULT_MAPPINGS: ZoneMapping[] = [
+  // 진열대 (1~8 pair) · 1~16
+  { number: 1,  zoneId: "1A" }, { number: 2,  zoneId: "1B" },
+  { number: 3,  zoneId: "2A" }, { number: 4,  zoneId: "2B" },
+  { number: 5,  zoneId: "3A" }, { number: 6,  zoneId: "3B" },
+  { number: 7,  zoneId: "4A" }, { number: 8,  zoneId: "4B" },
+  { number: 9,  zoneId: "5A" }, { number: 10, zoneId: "5B" },
+  { number: 11, zoneId: "6A" }, { number: 12, zoneId: "6B" },
+  { number: 13, zoneId: "7A" }, { number: 14, zoneId: "7B" },
+  { number: 15, zoneId: "8A" }, { number: 16, zoneId: "8B" },
+  // 상단 벽면 (9~21) · 17~29
+  { number: 17, zoneId: "9"  }, { number: 18, zoneId: "10" },
+  { number: 19, zoneId: "11" }, { number: 20, zoneId: "12" },
+  { number: 21, zoneId: "13" }, { number: 22, zoneId: "14" },
+  { number: 23, zoneId: "15" }, { number: 24, zoneId: "16" },
+  { number: 25, zoneId: "17" }, { number: 26, zoneId: "18" },
+  { number: 27, zoneId: "19" }, { number: 28, zoneId: "20" },
   { number: 29, zoneId: "21" },
-
-  // ── 중앙 단독 (22) · 30 ─────────────────────────────
+  // 중앙 (22) · 30
   { number: 30, zoneId: "22" },
-
-  // ── 하단 벽면 (23~34) · 31~42 ───────────────────────
-  { number: 31, zoneId: "23" },
-  { number: 32, zoneId: "24" },
-  { number: 33, zoneId: "25" },
-  { number: 34, zoneId: "26" },
-  { number: 35, zoneId: "27" },
-  { number: 36, zoneId: "28" },
-  { number: 37, zoneId: "29" },
-  { number: 38, zoneId: "30" },
-  { number: 39, zoneId: "31" },
-  { number: 40, zoneId: "32" },
-  { number: 41, zoneId: "33" },
-  { number: 42, zoneId: "34" },
-
-  // ── 수직윙 (35~42) · 43~50 ──────────────────────────
-  { number: 43, zoneId: "35" },
-  { number: 44, zoneId: "36" },
-  { number: 45, zoneId: "37" },
-  { number: 46, zoneId: "38" },
-  { number: 47, zoneId: "39" },
-  { number: 48, zoneId: "40" },
-  { number: 49, zoneId: "41" },
-  { number: 50, zoneId: "42" },
-
-  // ── 여유 슬롯 (51~60) · 매장 확장 시 여기에 { number: 51, zoneId: "43" } 형태로 추가 ──
+  // 하단 벽면 (23~34) · 31~42
+  { number: 31, zoneId: "23" }, { number: 32, zoneId: "24" },
+  { number: 33, zoneId: "25" }, { number: 34, zoneId: "26" },
+  { number: 35, zoneId: "27" }, { number: 36, zoneId: "28" },
+  { number: 37, zoneId: "29" }, { number: 38, zoneId: "30" },
+  { number: 39, zoneId: "31" }, { number: 40, zoneId: "32" },
+  { number: 41, zoneId: "33" }, { number: 42, zoneId: "34" },
+  // 수직윙 (35~42) · 43~50
+  { number: 43, zoneId: "35" }, { number: 44, zoneId: "36" },
+  { number: 45, zoneId: "37" }, { number: 46, zoneId: "38" },
+  { number: 47, zoneId: "39" }, { number: 48, zoneId: "40" },
+  { number: 49, zoneId: "41" }, { number: 50, zoneId: "42" },
 ];
 
 // ─────────────────────────────────────────────────────────────
-// derived 조회 · O(1) 룩업
+// 활성 매핑 (mutable) · 서버 응답으로 override
 // ─────────────────────────────────────────────────────────────
-export const ZONE_LABEL_MAP: Record<string, string> = Object.fromEntries(
-  ZONE_MAPPINGS.map(m => [m.zoneId, String(m.number)])
-);
-const NUMBER_TO_ZONE: Record<string, string> = Object.fromEntries(
-  ZONE_MAPPINGS.map(m => [String(m.number), m.zoneId])
-);
+let _activeMappings: ZoneMapping[] = [...DEFAULT_MAPPINGS];
+let _labelMap: Record<string, string> = buildLabelMap(_activeMappings);
+let _numberToZone: Record<string, string> = buildNumberMap(_activeMappings);
+let _subLabelMap: Record<string, string> = buildSubLabelMap(_activeMappings);
+let _serverLoaded = false;
+let _loadPromise: Promise<void> | null = null;
+
+function buildLabelMap(list: ZoneMapping[]): Record<string, string> {
+  return Object.fromEntries(list.map(m => [m.zoneId, String(m.number)]));
+}
+function buildNumberMap(list: ZoneMapping[]): Record<string, string> {
+  return Object.fromEntries(list.map(m => [String(m.number), m.zoneId]));
+}
+function buildSubLabelMap(list: ZoneMapping[]): Record<string, string> {
+  const m: Record<string, string> = {};
+  for (const it of list) if (it.subLabel) m[it.zoneId] = it.subLabel;
+  return m;
+}
+
+/** 매핑 교체 · 서버 fetch 이후 · 편집 저장 이후 호출 */
+export function setZoneMappings(list: ZoneMapping[]): void {
+  _activeMappings = [...list].sort((a, b) => a.number - b.number);
+  _labelMap = buildLabelMap(_activeMappings);
+  _numberToZone = buildNumberMap(_activeMappings);
+  _subLabelMap = buildSubLabelMap(_activeMappings);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("zone-labels-changed"));
+  }
+}
+
+/** 현재 활성 매핑 반환 (관리 UI 편집용) */
+export function getZoneMappings(): ZoneMapping[] {
+  return [..._activeMappings];
+}
+
+/** 서버 매핑 로드 · 앱 mount 시 1회 · 이후 편집 저장 후 강제 refresh 가능 */
+export async function loadZoneLabelsFromServer(force = false): Promise<void> {
+  if (_serverLoaded && !force) return;
+  if (_loadPromise && !force) return _loadPromise;
+  _loadPromise = (async () => {
+    try {
+      const res = await fetch("/api/zone-labels");
+      if (!res.ok) return;
+      const j = await res.json();
+      const rows: Array<{ zone_id: string; number: number; sub_label?: string | null }> =
+        Array.isArray(j?.mappings) ? j.mappings : [];
+      if (rows.length === 0) return;
+      const list: ZoneMapping[] = rows.map(r => ({
+        zoneId: String(r.zone_id).trim(),
+        number: Number(r.number),
+        subLabel: r.sub_label ? String(r.sub_label).trim() : undefined,
+      })).filter(m => m.zoneId && m.number > 0);
+      setZoneMappings(list);
+      _serverLoaded = true;
+    } catch { /* 파일 fallback 사용 · silent */ }
+    finally { _loadPromise = null; }
+  })();
+  return _loadPromise;
+}
 
 /**
  * zone id 를 UI 표시 라벨(번호)로 변환.
  * 매핑 없으면 원본 id 그대로 반환 (안전 fallback).
- *
- * 사용 예:
- *   <span>{getZoneLabel("1A")}</span>          // "1"
- *   <span>{getZoneLabel(String(num))}</span>   // 숫자형 num 은 String() 캐스팅
- *   <span>{getZoneLabel(`${num}B`)}</span>     // pair B 셀
  */
 export function getZoneLabel(zoneId: string | number | null | undefined): string {
   if (zoneId === null || zoneId === undefined) return "";
   const key = String(zoneId).trim();
   if (!key) return "";
-  return ZONE_LABEL_MAP[key] ?? key;
+  return _labelMap[key] ?? key;
 }
 
-/**
- * UI 번호로 원본 zone id 조회 (역방향).
- * 예: getZoneIdByNumber(1) → "1A"
- */
+/** UI 번호로 원본 zone id 조회 (역방향) */
 export function getZoneIdByNumber(num: number | string | null | undefined): string | null {
   if (num === null || num === undefined) return null;
-  return NUMBER_TO_ZONE[String(num)] ?? null;
+  return _numberToZone[String(num)] ?? null;
 }
+
+/** zone id 의 부제 라벨 (선택적 · 없으면 빈 문자열) */
+export function getZoneSubLabel(zoneId: string | number | null | undefined): string {
+  if (zoneId === null || zoneId === undefined) return "";
+  const key = String(zoneId).trim();
+  return _subLabelMap[key] ?? "";
+}
+
+// 하위 호환 · 옛 코드에서 ZONE_LABEL_MAP · ZONE_MAPPINGS 참조하던 경우 대응
+export const ZONE_LABEL_MAP: Record<string, string> = new Proxy(_labelMap, {
+  get: (_t, k) => _labelMap[k as string],
+  ownKeys: () => Object.keys(_labelMap),
+  getOwnPropertyDescriptor: (_t, k) =>
+    Object.prototype.hasOwnProperty.call(_labelMap, k)
+      ? { enumerable: true, configurable: true, value: _labelMap[k as string] }
+      : undefined,
+});
+export const ZONE_MAPPINGS = DEFAULT_MAPPINGS; // deprecated · 편집은 getZoneMappings() / setZoneMappings() 사용
