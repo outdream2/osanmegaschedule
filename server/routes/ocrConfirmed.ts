@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { supabase } from "../../src/supabase/client";
+import { clearOcrAggCache } from "./stockManage";
 
 const router = Router();
 const TABLE = "ocr_confirmed_items";
@@ -111,6 +112,7 @@ router.post("/api/ocr-confirmed-items", async (req, res) => {
     return res.status(500).json({ error: error.message });
   }
 
+  clearOcrAggCache(); // 2026-07-31 · 신규 매입 저장 시 공급사/상품 캐시 무효화
   return res.json({ ok: true, inserted: data?.length ?? rows.length, items: data ?? [] });
 });
 
@@ -167,6 +169,7 @@ router.delete("/api/ocr-confirmed-items/:id", async (req, res) => {
   }
   const { error } = await supabase.from(TABLE).delete().eq("id", id);
   if (error) return res.status(500).json({ error: error.message });
+  clearOcrAggCache(); // 2026-07-31 · 매입 삭제 시 공급사/상품 캐시 무효화
   return res.json({ ok: true });
 });
 

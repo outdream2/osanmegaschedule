@@ -332,6 +332,14 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
   const [zonesLoaded, setZonesLoaded] = useState(false);
   const [requests, setRequests] = useState<DisplayRequest[]>(() => loadRequests());
 
+  // 2026-07-31 · zone-labels-changed 이벤트 수신 → 강제 리렌더 (getZoneLabel 이 mutable 모듈 변수 참조)
+  const [, setZoneLabelVersion] = useState(0);
+  useEffect(() => {
+    const handler = () => setZoneLabelVersion(v => v + 1);
+    window.addEventListener("zone-labels-changed", handler);
+    return () => window.removeEventListener("zone-labels-changed", handler);
+  }, []);
+
   // Employees & today's staff
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [todayStaff, setTodayStaff] = useState<TodayStaff[]>([]);

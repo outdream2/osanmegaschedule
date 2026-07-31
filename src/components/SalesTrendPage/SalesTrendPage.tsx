@@ -1622,6 +1622,14 @@ export const StockFlowPanel: React.FC<{
 //   2026-07-16: 좌우 split 레이아웃 · 좌측 구역 리스트 · 우측 선택 구역 상세
 type ZoneItemSortKey = "name" | "sale" | "current" | "amount";
 const ZoneCategoryContent: React.FC = () => {
+  // 2026-07-31 · zone-labels-changed 이벤트 수신 → 강제 리렌더 (getZoneLabel 이 mutable 모듈 변수 참조)
+  const [, setZoneLabelVersion] = useState(0);
+  useEffect(() => {
+    const handler = () => setZoneLabelVersion(v => v + 1);
+    window.addEventListener("zone-labels-changed", handler);
+    return () => window.removeEventListener("zone-labels-changed", handler);
+  }, []);
+
   const [sales, setSales] = useState<any[]>([]);
   const [products, setProducts] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(false);
@@ -2127,6 +2135,14 @@ interface MiniStoreZoneMapProps {
   zoneRankMap?: Record<string, number>;
 }
 const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zoneRankMap }) => {
+  // 2026-07-31 · zone-labels-changed 수신 → 강제 리렌더
+  const [, setZoneLabelVersion] = useState(0);
+  useEffect(() => {
+    const handler = () => setZoneLabelVersion(v => v + 1);
+    window.addEventListener("zone-labels-changed", handler);
+    return () => window.removeEventListener("zone-labels-changed", handler);
+  }, []);
+
   // rank 배지 · Top 10 · "★ BEST N" · 순위별 색상 (사용자 요청 · 눈에 띄게)
   //   1·2위 · 빨강 · 3·4위 · 파랑 · 5·6위 · 초록 · 7·8위 · 보라 · 9·10위 · 슬레이트
   const rankBadge = (zoneId: string) => {

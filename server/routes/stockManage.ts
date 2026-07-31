@@ -38,6 +38,8 @@ function daysAgoISO(days: number): string {
 //   ocr_confirmed_items 50000 limit 풀스캔 · 응답당 대역폭 큼 · 캐시로 반복 요청 감소
 const ocrAggCache = new Map<string, { data: any; expiresAt: number }>();
 const OCR_AGG_TTL = 5 * 60 * 1000;
+/** OCR 아이템 저장/삭제 후 캐시 무효화 (ocrConfirmed.ts 에서 호출) */
+export function clearOcrAggCache() { ocrAggCache.clear(); }
 
 // GET /api/stock-manage/suppliers?days=7|30|90
 // 공급사별 매입 총액 · 수량 · 상품수
