@@ -53,46 +53,50 @@ export function useBarcodeScannerHandlers({
     if (scannedRef.current || !mountedRef.current) return;
     scannedRef.current = true;
 
-    // 2026-07-30 (2nd) · 사용자 재요청 · 확실하게 · 인식 시 삑 (POS 스캐너 톤)
-    // 2026-07-30 (bug-hunter fix) · play() Promise 비동기 · 이중 재생 방지
-    //   1) HTMLAudioElement + WAV (public/beep.wav · 3.2kHz square · 100ms · POS 표준)
-    //   2) 재생 실패 시에만 Web Audio 백업 (Promise catch 안에서만 실행)
+    // 2026-07-31 · 사용자 재요청 "BEEP!! 하고 소리 나야지" · Web Audio 우선 (autoplay 정책 회피 확실)
+    //   1) Web Audio API (unlock 된 AudioContext 재사용 · POS 3.2kHz 삑)
+    //   2) HTMLAudioElement + WAV 병행 (더블 안전)
     //   3) Vibration API (silent 모드 대비)
-    const playWebAudioBackup = () => {
+    const playBeep = () => {
+      // 1) Web Audio · unlock 된 shared context 재사용 · 매번 new AC 는 mobile 에서 실패 가능
       try {
         const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
-        if (!AC) return;
-        const ctx = new AC();
-        if (ctx.state === "suspended") { try { ctx.resume(); } catch {} }
-        const osc = ctx.createOscillator();
-        const gainNode = ctx.createGain();
-        osc.connect(gainNode); gainNode.connect(ctx.destination);
-        osc.type = "square";
-        osc.frequency.value = 3200;
-        gainNode.gain.setValueAtTime(1.0, ctx.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.1);
-        setTimeout(() => { try { ctx.close(); } catch {} }, 200);
+        if (AC) {
+          let ctx: AudioContext | undefined = (window as any).__beepAudioCtx;
+          if (!ctx || ctx.state === "closed") {
+            ctx = new AC();
+            (window as any).__beepAudioCtx = ctx;
+          }
+          if (ctx && ctx.state === "suspended") { try { ctx.resume(); } catch {} }
+          if (ctx && ctx.state === "running") {
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.connect(gainNode); gainNode.connect(ctx.destination);
+            osc.type = "square";
+            osc.frequency.value = 3200;
+            gainNode.gain.setValueAtTime(0.7, ctx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.1);
+          }
+        }
+      } catch { /* silent */ }
+      // 2) HTMLAudio · WAV 파일 병행 (Web Audio 실패 시 최소 백업)
+      try {
+        let audio: HTMLAudioElement | undefined = (window as any).__beepAudio;
+        if (audio) {
+          audio.currentTime = 0;
+          audio.volume = 1.0;
+        } else {
+          audio = new Audio("/beep.wav");
+          audio.volume = 1.0;
+          (window as any).__beepAudio = audio;
+        }
+        const p = audio.play();
+        if (p && typeof p.then === "function") p.catch(() => { /* Web Audio 커버 */ });
       } catch { /* silent */ }
     };
-    try {
-      // 2026-07-30 (3rd) · 프리로드된 Audio 재사용 (BarcodeScanner mount 시 unlock)
-      let audio: HTMLAudioElement | undefined = (window as any).__beepAudio;
-      if (audio) {
-        audio.currentTime = 0;
-        audio.volume = 1.0;
-      } else {
-        audio = new Audio("/beep.wav");
-        audio.volume = 1.0;
-      }
-      const p = audio.play();
-      if (p && typeof p.then === "function") {
-        p.catch(() => playWebAudioBackup());
-      }
-    } catch {
-      playWebAudioBackup();
-    }
+    playBeep();
     // 진동 fallback · 무음 모드 대비
     try { (navigator as any).vibrate?.(60); } catch { /* silent */ }
 
@@ -267,6 +271,25 @@ export function useBarcodeScannerHandlers({
 
       if (code && mountedRef.current && !scannedRef.current) {
         scannedRef.current = true;
+        // 파일 인식 성공 시에도 삑 (라이브 스캔과 동일 사용자 경험)
+        try {
+          const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
+          if (AC) {
+            let ctx: AudioContext | undefined = (window as any).__beepAudioCtx;
+            if (!ctx || ctx.state === "closed") { ctx = new AC(); (window as any).__beepAudioCtx = ctx; }
+            if (ctx && ctx.state === "suspended") { try { ctx.resume(); } catch {} }
+            if (ctx && ctx.state === "running") {
+              const osc = ctx.createOscillator();
+              const g = ctx.createGain();
+              osc.connect(g); g.connect(ctx.destination);
+              osc.type = "square"; osc.frequency.value = 3200;
+              g.gain.setValueAtTime(0.7, ctx.currentTime);
+              g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+              osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.1);
+            }
+          }
+        } catch { /* silent */ }
+        try { (navigator as any).vibrate?.(60); } catch { /* silent */ }
         setFlashing(true);
         setTimeout(() => {
           if (!mountedRef.current) return;

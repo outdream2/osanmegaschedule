@@ -125,18 +125,22 @@ export const BarcodeScanner: React.FC<BarcodeScannerProps> = ({
   //   스캐너 오픈 (user gesture) 시점 · 무음 오디오 재생 후 즉시 stop · unlock 유지
   // 2026-07-30 (3rd) · beep 프리로드 · 첫 인식 즉시 재생 · 지연·실패 방지
   useEffect(() => {
-    // 1) Web Audio unlock (silent)
+    // 1) Web Audio unlock (silent) · shared ctx 전역 저장 · handleResult 에서 재사용
     try {
       const AC: any = (window as any).AudioContext || (window as any).webkitAudioContext;
       if (AC) {
-        const ctx = new AC();
+        let ctx: AudioContext = (window as any).__beepAudioCtx;
+        if (!ctx || (ctx as any).state === "closed") {
+          ctx = new AC();
+          (window as any).__beepAudioCtx = ctx;
+        }
         if (ctx.state === "suspended") { try { ctx.resume(); } catch {} }
         const buf = ctx.createBuffer(1, 1, 22050);
         const src = ctx.createBufferSource();
         src.buffer = buf;
         src.connect(ctx.destination);
         src.start(0);
-        setTimeout(() => { try { ctx.close(); } catch {} }, 100);
+        // ⚠ ctx.close() 하지 말 것 · handlers.ts 에서 재사용 (unlock 상태 유지)
       }
     } catch { /* silent */ }
     // 2) beep.wav 프리로드 · 무음 재생 → unlock 유지 · handleResult 즉시 재생 가능
