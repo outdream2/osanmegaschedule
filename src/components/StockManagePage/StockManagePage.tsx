@@ -2647,13 +2647,8 @@ export const StockManagePage: React.FC = () => {
     <div className="flex-1 flex flex-col max-w-[1360px] mx-auto w-full px-4 sm:px-6 py-3 sm:py-5 gap-3 sm:gap-5">
       {/* 페이지 상단 탭: 대시보드 / 원본 데이터 */}
       <div className="flex flex-col gap-3">
-        {/* 1행: 제목 + 서브탭 + 날짜범위 배지 · 아이콘은 상단 네비 탭(재고관리=Boxes)과 통일 */}
+        {/* 2026-07-31 · 사용자 요청 · "재고/판매관리" 제목 제거 · 서브탭 위 여백 최소화 · 우측 관리 버튼만 유지 */}
         <div className="flex items-center gap-3 flex-wrap min-w-0">
-          <Boxes size={17} className="text-slate-400 shrink-0" />
-          <h2 className="text-sm font-semibold text-slate-700 tracking-tight">재고/판매관리</h2>
-          {/* 2026-07-29 · 사용자 요청 · DB 임포트 시각 배지 제거 */}
-          {/* 2026-07-29 · 사용자 요청 · 날짜범위 배지 제거 (재고리스트 헤더에도 나옴 · 중복) */}
-          {/* 2026-07-28 · 사용자 요청 · 재고관리 페이지 상단 · 별도 관리자 액션 버튼 (적정재고 일괄 업데이트) */}
           <button
             type="button"
             onClick={handleRefillOptimalStock}
@@ -2682,12 +2677,12 @@ export const StockManagePage: React.FC = () => {
             {(() => {
               type TabDef = { k: "flow" | "supplier" | "low" | "diff" | "category" | "trending"; label: string; icon: any; color: "teal" | "sky" | "rose" | "violet" | "amber" | "indigo"; badge?: number };
               const tabs: TabDef[] = [
+                { k: "trending", label: "급상승", icon: TrendingUp, color: "indigo" },
                 { k: "flow", label: "상품현황", icon: Activity, color: "teal" },
                 { k: "supplier", label: "공급사", icon: Building2, color: "sky" },
                 { k: "low", label: "적정재고↓", icon: AlertTriangle, color: "rose", badge: lowStock.length },
                 { k: "diff", label: "손실추적", icon: Layers, color: "violet" },
                 { k: "category", label: "카테고리별현황", icon: PieChart, color: "amber" },
-                { k: "trending", label: "급상승", icon: TrendingUp, color: "indigo" },
               ];
               const COLOR_MAP: Record<TabDef["color"], { activeText: string; activeBg: string; activeUnderline: string; activeIcon: string; inactiveHover: string; badgeActive: string; badgeInactive: string }> = {
                 teal: { activeText: "text-teal-700", activeBg: "bg-teal-50/70", activeUnderline: "bg-teal-500", activeIcon: "text-teal-600", inactiveHover: "hover:bg-teal-50/40 hover:text-teal-700", badgeActive: "bg-teal-100 text-teal-700", badgeInactive: "bg-slate-100 text-slate-500" },
