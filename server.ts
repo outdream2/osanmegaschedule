@@ -31,6 +31,7 @@ import returnRequestsRouter from "./server/routes/returnRequests";
 import zoneLabelsRouter from "./server/routes/zoneLabels";
 import zoneAssignmentsRouter from "./server/routes/zoneAssignments";
 import supplierBalanceConfigRouter from "./server/routes/supplierBalanceConfig";
+import supplierPaymentsRouter from "./server/routes/supplierPayments";
 import ocrConfirmedRouter from "./server/routes/ocrConfirmed";
 import { ocrDeletedRowsRouter } from "./server/routes/ocrDeletedRows";
 import boardRouter from "./server/routes/board";
@@ -90,6 +91,7 @@ async function startServer() {
   app.use(zoneLabelsRouter);
   app.use(zoneAssignmentsRouter);
   app.use(supplierBalanceConfigRouter);
+  app.use(supplierPaymentsRouter);
   app.use(ocrConfirmedRouter);
   app.use(ocrDeletedRowsRouter);
   app.use(boardRouter);

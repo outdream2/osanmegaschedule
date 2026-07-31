@@ -374,6 +374,40 @@ CREATE INDEX IF NOT EXISTS idx_products_hidden ON products(hidden) WHERE hidden 
 
 
 -- ┌───────────────────────────────────────────────────────────────────────┐
+-- │ 1-h. 공급사 결제 관리 (supplier_payments · allocations)              │
+-- │    2026-07-31 · 사용자 요청 · 결제·잔고 관리 시스템                   │
+-- │    · supplier_balances 는 그대로 유지 (OCR 스냅샷 · snapshot_type)   │
+-- │    · supplier_payments 는 결제 원장 · allocations 는 매입-결제 M:N   │
+-- │    · 잔액 = SUM(ocr_confirmed_items.amount) - SUM(payments.amount)   │
+-- └───────────────────────────────────────────────────────────────────────┘
+
+CREATE TABLE IF NOT EXISTS supplier_payments (
+  id            BIGSERIAL PRIMARY KEY,
+  supplier_name TEXT        NOT NULL,
+  payment_date  DATE        NOT NULL,
+  amount        NUMERIC     NOT NULL CHECK (amount > 0),
+  method        TEXT        NOT NULL DEFAULT 'transfer'
+                            CHECK (method IN ('transfer','cash','card','check','offset','etc')),
+  memo          TEXT,
+  created_by    TEXT,
+  created_by_id INT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_sup_pay_supplier_date ON supplier_payments(supplier_name, payment_date DESC);
+CREATE INDEX IF NOT EXISTS idx_sup_pay_date ON supplier_payments(payment_date DESC);
+
+CREATE TABLE IF NOT EXISTS supplier_payment_allocations (
+  id                    BIGSERIAL PRIMARY KEY,
+  payment_id            BIGINT NOT NULL REFERENCES supplier_payments(id) ON DELETE CASCADE,
+  ocr_confirmed_item_id BIGINT REFERENCES ocr_confirmed_items(id) ON DELETE SET NULL,
+  allocated_amount      NUMERIC NOT NULL CHECK (allocated_amount > 0),
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_alloc_payment ON supplier_payment_allocations(payment_id);
+CREATE INDEX IF NOT EXISTS idx_alloc_invoice ON supplier_payment_allocations(ocr_confirmed_item_id);
+
+
+-- ┌───────────────────────────────────────────────────────────────────────┐
 -- │ 참고: 기존 활용 중인 테이블 (스키마는 별도 관리 · 여기는 목록만)      │
 -- └───────────────────────────────────────────────────────────────────────┘
 -- products             · 상품 마스터 (ERP 기준 · xlsx 임포트)
@@ -396,6 +430,8 @@ CREATE INDEX IF NOT EXISTS idx_products_hidden ON products(hidden) WHERE hidden 
 -- ocr_synonyms         · OCR 상품명 동의어
 -- ocr_supplier_aliases · OCR 공급사 별칭
 -- ocr_templates        · OCR 템플릿
+-- supplier_payments             · 공급사 결제 원장 (2026-07-31 · 이 파일)
+-- supplier_payment_allocations  · 결제→매입건 배분 M:N (2026-07-31 · 이 파일)
 
 
 -- ═══════════════════════════════════════════════════════════════════════

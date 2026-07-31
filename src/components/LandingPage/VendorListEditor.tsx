@@ -7,6 +7,7 @@ import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Search, Check, X, Loader2, Building2, Package, Calendar,
   DollarSign, TrendingUp, RefreshCw, ChevronRight, ChevronDown,
+  Wallet, Plus, Trash2, CircleDollarSign,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 
@@ -422,6 +423,61 @@ interface VendorSummary {
   count: number;
 }
 
+// ── 결제·잔고 관련 타입 (2026-07-31) ─────────────────────────────
+interface SupplierBalanceInfo {
+  supplier: string;
+  total_purchase: number;
+  total_payment: number;
+  balance: number;
+  purchase_count: number;
+  payment_count: number;
+}
+interface PaymentAllocation {
+  id: number;
+  payment_id: number;
+  ocr_confirmed_item_id: number | null;
+  allocated_amount: number;
+}
+interface PaymentRow {
+  id: number;
+  supplier_name: string;
+  payment_date: string;
+  amount: number;
+  method: string;
+  memo: string | null;
+  created_at: string;
+  allocations?: PaymentAllocation[];
+}
+interface LedgerRow {
+  type: "purchase" | "payment";
+  id: number;
+  date: string;
+  amount: number;
+  method: string | null;
+  memo: string | null;
+  running_balance: number;
+}
+interface OpenInvoiceRow {
+  id: number;
+  date: string;
+  product_name: string;
+  amount: number;
+  allocated: number;
+  remaining: number;
+  status: "open" | "partial" | "paid";
+}
+
+const METHOD_LABEL: Record<string, string> = {
+  transfer: "이체",
+  cash: "현금",
+  card: "카드",
+  check: "수표",
+  offset: "상계",
+  etc: "기타",
+};
+
+type DetailTab = "info" | "payment" | "purchase";
+
 export const VendorDetailModal: React.FC<{
   vendor: Vendor;
   onClose: () => void;
@@ -434,6 +490,14 @@ export const VendorDetailModal: React.FC<{
   const [purchases, setPurchases] = useState<PurchaseRow[]>([]);
   const [purchLoading, setPurchLoading] = useState(false);
   const [summary, setSummary] = useState<VendorSummary | null>(null);
+  const [activeTab, setActiveTab] = useState<DetailTab>("info");
+  // 결제·잔고 데이터
+  const [balanceInfo, setBalanceInfo] = useState<SupplierBalanceInfo | null>(null);
+  const [payments, setPayments] = useState<PaymentRow[]>([]);
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [payMsg, setPayMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [showPayModal, setShowPayModal] = useState(false);
+  const [ledgerRows, setLedgerRows] = useState<LedgerRow[]>([]);
 
   // ESC · 배경 클릭 닫기
   useEffect(() => {
@@ -441,6 +505,50 @@ export const VendorDetailModal: React.FC<{
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
+
+  // 결제·잔고 로드 (payment 탭 · info 탭 KPI 용도)
+  const loadPaymentData = useCallback(async () => {
+    setPaymentLoading(true);
+    try {
+      const supplierEnc = encodeURIComponent(vendor.company_name);
+      const [balRes, payRes, ledgerRes] = await Promise.all([
+        fetch(`/api/supplier-balance/${supplierEnc}`),
+        fetch(`/api/supplier-payments?supplier=${supplierEnc}&days=3650`),
+        fetch(`/api/supplier-ledger?supplier=${supplierEnc}&days=3650`),
+      ]);
+      if (balRes.ok) setBalanceInfo(await balRes.json());
+      if (payRes.ok) {
+        const j = await payRes.json();
+        setPayments(Array.isArray(j.rows) ? j.rows : []);
+      }
+      if (ledgerRes.ok) {
+        const j = await ledgerRes.json();
+        setLedgerRows(Array.isArray(j.rows) ? j.rows : []);
+      }
+    } catch (e) {
+      console.error("결제·잔고 로드 실패:", e);
+    } finally {
+      setPaymentLoading(false);
+    }
+  }, [vendor.company_name]);
+
+  useEffect(() => { loadPaymentData(); }, [loadPaymentData]);
+
+  // 결제 삭제
+  const handleDeletePayment = async (id: number) => {
+    if (!window.confirm("결제 기록을 삭제하시겠습니까? 배분(allocations) 도 함께 삭제됩니다.")) return;
+    try {
+      const res = await fetch(`/api/supplier-payments/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.error ?? `서버 ${res.status}`);
+      }
+      setPayMsg({ type: "ok", text: "삭제 완료" });
+      await loadPaymentData();
+    } catch (e: any) {
+      setPayMsg({ type: "err", text: `삭제 실패: ${e?.message ?? e}` });
+    }
+  };
 
   // 매입 이력 · 통계 로드
   useEffect(() => {
@@ -562,8 +670,37 @@ export const VendorDetailModal: React.FC<{
           </button>
         </div>
 
+        {/* ── 서브탭 (2026-07-31 · 정보/결제·잔고/매입이력) ── */}
+        <div className="flex items-center gap-1 px-5 pt-2 border-b border-slate-200 bg-white shrink-0">
+          {([
+            { key: "info",     label: "정보",       icon: <Building2 size={13} />, color: "sky" },
+            { key: "payment",  label: "결제·잔고",  icon: <Wallet size={13} />,    color: "emerald" },
+            { key: "purchase", label: "매입이력",   icon: <Package size={13} />,   color: "amber" },
+          ] as const).map(t => {
+            const active = activeTab === t.key;
+            const colorCls = active
+              ? t.color === "sky"     ? "text-sky-700 border-sky-500"
+              : t.color === "emerald" ? "text-emerald-700 border-emerald-500"
+              :                         "text-amber-700 border-amber-500"
+              : "text-slate-500 border-transparent hover:text-slate-700 hover:border-slate-200";
+            return (
+              <button
+                key={t.key}
+                onClick={() => setActiveTab(t.key)}
+                className={`inline-flex items-center gap-1.5 px-3 py-2 text-[12px] font-bold border-b-2 -mb-px transition cursor-pointer ${colorCls}`}
+              >
+                {t.icon}
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
         {/* ── 본문 ── */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-5">
+
+          {/* ─── 정보 탭 ─── */}
+          {activeTab === "info" && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-5">
 
             {/* Left · 기본 정보 편집 */}
@@ -642,16 +779,16 @@ export const VendorDetailModal: React.FC<{
               </Field>
             </div>
 
-            {/* Right · 통계 · 매입 이력 */}
+            {/* Right · 공급 요약 (정보 탭에서만 · 매입이력은 탭 이동) */}
             <div className="space-y-4">
               <SectionTitle icon={<TrendingUp size={13} />} title="공급 요약" color="emerald" />
 
               {/* 4-way stat cards */}
               <div className="grid grid-cols-2 gap-2.5">
                 <StatCard
-                  icon={<DollarSign size={12} />} color="emerald" label="최근 잔고"
-                  value={vendor.latestBalance?.balance != null ? fmtWon(vendor.latestBalance.balance) : "-"}
-                  sub={vendor.latestBalance?.invoice_date ?? undefined}
+                  icon={<DollarSign size={12} />} color="emerald" label="현재 잔액"
+                  value={balanceInfo ? fmtWon(balanceInfo.balance) : (vendor.latestBalance?.balance != null ? fmtWon(vendor.latestBalance.balance) : "-")}
+                  sub={balanceInfo ? `매입 ${balanceInfo.purchase_count} · 결제 ${balanceInfo.payment_count}` : undefined}
                 />
                 <StatCard
                   icon={<TrendingUp size={12} />} color="indigo" label="총 매입액"
@@ -670,54 +807,193 @@ export const VendorDetailModal: React.FC<{
                 />
               </div>
 
-              {/* 매입 이력 테이블 */}
-              <div>
-                <SectionTitle
-                  icon={<Package size={13} />}
-                  title="최근 매입 이력"
-                  color="amber"
-                  hint={purchLoading ? "로딩..." : `${purchases.length}건`}
-                />
-              </div>
-
-              <div className="rounded-lg border border-slate-200 overflow-auto max-h-[280px] bg-white">
-                {purchLoading ? (
-                  <div className="flex items-center justify-center gap-1.5 py-8 text-slate-400 text-[12px]">
-                    <Loader2 size={14} className="animate-spin" />로딩중...
-                  </div>
-                ) : purchases.length === 0 ? (
-                  <div className="py-8 text-center text-slate-400 text-[12px]">매입 이력 없음</div>
-                ) : (
-                  <table className="w-full text-[12px]">
-                    <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
-                      <tr className="text-[10px] font-black uppercase tracking-wider text-slate-500">
-                        <th className="text-left px-3 py-2 w-16">일자</th>
-                        <th className="text-left px-3 py-2">상품</th>
-                        <th className="text-right px-3 py-2 w-12">수량</th>
-                        <th className="text-right px-3 py-2 w-20">금액</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                      {purchases.map((p, i) => (
-                        <tr key={p.id ?? i} className="hover:bg-slate-50/60 transition align-top">
-                          <td className="px-3 py-1.5 font-mono text-[11px] text-slate-500 whitespace-nowrap tabular-nums">
-                            {String(p.purchase_date).slice(5)}
-                          </td>
-                          <td className="px-3 py-1.5 text-slate-700 break-words leading-snug">{p.product_name}</td>
-                          <td className="text-right px-3 py-1.5 font-mono tabular-nums text-slate-700">
-                            {Number(p.quantity ?? 0).toLocaleString()}
-                          </td>
-                          <td className="text-right px-3 py-1.5 font-mono font-bold text-emerald-700 whitespace-nowrap tabular-nums">
-                            {Number(p.total ?? p.amount ?? 0).toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+              <div className="rounded-lg bg-slate-50 border border-slate-200 p-3 text-[11px] text-slate-500 leading-relaxed">
+                <div className="font-bold text-slate-600 mb-1 flex items-center gap-1">
+                  <ChevronRight size={11} /> 안내
+                </div>
+                결제·잔고 관리는 상단 <span className="font-bold text-emerald-700">결제·잔고</span> 탭 · 매입 이력은 <span className="font-bold text-amber-700">매입이력</span> 탭에서 확인하세요.
               </div>
             </div>
           </div>
+          )}
+
+          {/* ─── 결제·잔고 탭 ─── */}
+          {activeTab === "payment" && (
+          <div className="space-y-4">
+            {/* KPI 3카드 */}
+            <div className="grid grid-cols-3 gap-2.5">
+              <StatCard
+                icon={<TrendingUp size={12} />} color="indigo" label="총 매입"
+                value={balanceInfo ? fmtWon(balanceInfo.total_purchase) : "-"}
+                sub={balanceInfo ? `${balanceInfo.purchase_count.toLocaleString()}건` : undefined}
+              />
+              <StatCard
+                icon={<Wallet size={12} />} color="emerald" label="총 결제"
+                value={balanceInfo ? fmtWon(balanceInfo.total_payment) : "-"}
+                sub={balanceInfo ? `${balanceInfo.payment_count.toLocaleString()}건` : undefined}
+              />
+              <StatCard
+                icon={<CircleDollarSign size={12} />} color="rose" label="현재 잔액"
+                value={balanceInfo ? fmtWon(balanceInfo.balance) : "-"}
+                sub={balanceInfo && balanceInfo.balance > 0 ? "미결제" : balanceInfo && balanceInfo.balance < 0 ? "선지급" : undefined}
+              />
+            </div>
+
+            {/* 결제 등록 버튼 + 상태 메시지 */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                onClick={() => setShowPayModal(true)}
+                className="inline-flex items-center gap-1.5 h-8 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[12px] font-bold shadow-sm transition cursor-pointer"
+              >
+                <Plus size={13} strokeWidth={2.5} />
+                결제 등록
+              </button>
+              <button
+                onClick={loadPaymentData}
+                disabled={paymentLoading}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 text-[12px] font-semibold transition cursor-pointer disabled:opacity-50"
+                title="새로고침"
+              >
+                <RefreshCw size={12} className={paymentLoading ? "animate-spin" : ""} />
+                새로고침
+              </button>
+              {payMsg && (
+                <span className={`inline-flex items-center gap-1 text-[12px] font-bold ${payMsg.type === "ok" ? "text-emerald-600" : "text-rose-600"}`}>
+                  {payMsg.type === "ok" ? <Check size={13} strokeWidth={3} /> : <X size={13} strokeWidth={3} />}
+                  {payMsg.text}
+                </span>
+              )}
+              <span className="ml-auto text-[11px] text-slate-400 font-mono tabular-nums">
+                {ledgerRows.length} 원장 항목
+              </span>
+            </div>
+
+            {/* 원장 테이블 · 시간순 desc */}
+            <div className="rounded-lg border border-slate-200 overflow-auto max-h-[420px] bg-white">
+              {paymentLoading ? (
+                <div className="flex items-center justify-center gap-1.5 py-8 text-slate-400 text-[12px]">
+                  <Loader2 size={14} className="animate-spin" />로딩중...
+                </div>
+              ) : ledgerRows.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-[12px]">거래 내역 없음</div>
+              ) : (
+                <table className="w-full text-[12px]">
+                  <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+                    <tr className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                      <th className="text-left px-3 py-2 w-20">날짜</th>
+                      <th className="text-left px-3 py-2 w-16">유형</th>
+                      <th className="text-right px-3 py-2 w-24">금액</th>
+                      <th className="text-left px-3 py-2 w-16">방법</th>
+                      <th className="text-left px-3 py-2">메모 / 상품</th>
+                      <th className="text-right px-3 py-2 w-24">잔액</th>
+                      <th className="text-center px-2 py-2 w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {ledgerRows.slice().reverse().map((r) => {
+                      const isPay = r.type === "payment";
+                      const paymentRow = isPay ? payments.find(p => p.id === r.id) : null;
+                      return (
+                        <tr key={`${r.type}-${r.id}`} className="hover:bg-slate-50/60 transition">
+                          <td className="px-3 py-1.5 font-mono text-[11px] text-slate-500 whitespace-nowrap tabular-nums">
+                            {String(r.date).slice(2)}
+                          </td>
+                          <td className="px-3 py-1.5">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                              isPay ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                    : "bg-indigo-50 text-indigo-700 border border-indigo-200"
+                            }`}>
+                              {isPay ? "결제" : "매입"}
+                            </span>
+                          </td>
+                          <td className={`text-right px-3 py-1.5 font-mono font-bold whitespace-nowrap tabular-nums ${
+                            isPay ? "text-emerald-700" : "text-indigo-700"
+                          }`}>
+                            {isPay ? "-" : "+"}{Number(r.amount).toLocaleString()}
+                          </td>
+                          <td className="px-3 py-1.5 text-[11px] text-slate-600">
+                            {r.method ? (METHOD_LABEL[r.method] ?? r.method) : "-"}
+                          </td>
+                          <td className="px-3 py-1.5 text-slate-700 break-words leading-snug text-[11px]">
+                            {r.memo ?? "-"}
+                            {paymentRow?.allocations && paymentRow.allocations.length > 0 && (
+                              <span className="ml-1 text-[10px] font-bold text-emerald-600">· {paymentRow.allocations.length}건 매칭</span>
+                            )}
+                          </td>
+                          <td className={`text-right px-3 py-1.5 font-mono font-bold whitespace-nowrap tabular-nums ${
+                            r.running_balance > 0 ? "text-rose-700" : r.running_balance < 0 ? "text-emerald-700" : "text-slate-500"
+                          }`}>
+                            {Number(r.running_balance).toLocaleString()}
+                          </td>
+                          <td className="px-2 py-1.5 text-center">
+                            {isPay && (
+                              <button
+                                onClick={() => handleDeletePayment(r.id)}
+                                className="w-6 h-6 rounded hover:bg-rose-50 text-rose-500 hover:text-rose-700 inline-flex items-center justify-center transition"
+                                title="결제 삭제"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+          )}
+
+          {/* ─── 매입이력 탭 ─── */}
+          {activeTab === "purchase" && (
+          <div className="space-y-3">
+            <SectionTitle
+              icon={<Package size={13} />}
+              title="최근 매입 이력"
+              color="amber"
+              hint={purchLoading ? "로딩..." : `${purchases.length}건`}
+            />
+            <div className="rounded-lg border border-slate-200 overflow-auto max-h-[520px] bg-white">
+              {purchLoading ? (
+                <div className="flex items-center justify-center gap-1.5 py-8 text-slate-400 text-[12px]">
+                  <Loader2 size={14} className="animate-spin" />로딩중...
+                </div>
+              ) : purchases.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-[12px]">매입 이력 없음</div>
+              ) : (
+                <table className="w-full text-[12px]">
+                  <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+                    <tr className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                      <th className="text-left px-3 py-2 w-20">일자</th>
+                      <th className="text-left px-3 py-2">상품</th>
+                      <th className="text-right px-3 py-2 w-14">수량</th>
+                      <th className="text-right px-3 py-2 w-24">금액</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {purchases.map((p, i) => (
+                      <tr key={p.id ?? i} className="hover:bg-slate-50/60 transition align-top">
+                        <td className="px-3 py-1.5 font-mono text-[11px] text-slate-500 whitespace-nowrap tabular-nums">
+                          {String(p.purchase_date).slice(5)}
+                        </td>
+                        <td className="px-3 py-1.5 text-slate-700 break-words leading-snug">{p.product_name}</td>
+                        <td className="text-right px-3 py-1.5 font-mono tabular-nums text-slate-700">
+                          {Number(p.quantity ?? 0).toLocaleString()}
+                        </td>
+                        <td className="text-right px-3 py-1.5 font-mono font-bold text-emerald-700 whitespace-nowrap tabular-nums">
+                          {Number(p.total ?? p.amount ?? 0).toLocaleString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+          )}
+
         </div>
 
         {/* ── 푸터 · 저장/닫기 ── */}
@@ -744,6 +1020,405 @@ export const VendorDetailModal: React.FC<{
           >
             {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} strokeWidth={2.5} />}
             저장
+          </button>
+        </div>
+
+        {/* 결제 등록 모달 (2026-07-31) */}
+        {showPayModal && (
+          <PaymentRegisterModal
+            supplierName={vendor.company_name}
+            onClose={() => setShowPayModal(false)}
+            onSaved={async () => {
+              setShowPayModal(false);
+              setPayMsg({ type: "ok", text: "결제 등록 완료" });
+              await loadPaymentData();
+            }}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// 결제 등록 모달 · Odoo 스타일 · 매입건 체크박스 매칭 · unallocated 허용
+// 2026-07-31 · 사용자 요청 · 결제·잔고 관리 시스템
+// ═══════════════════════════════════════════════════════════════════
+const METHOD_OPTIONS: Array<{ key: string; label: string }> = [
+  { key: "transfer", label: "이체" },
+  { key: "cash",     label: "현금" },
+  { key: "card",     label: "카드" },
+  { key: "check",    label: "수표" },
+  { key: "offset",   label: "상계" },
+  { key: "etc",      label: "기타" },
+];
+
+const todayYmd = (): string => {
+  const d = new Date();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${m}-${day}`;
+};
+
+const PaymentRegisterModal: React.FC<{
+  supplierName: string;
+  onClose: () => void;
+  onSaved: () => void;
+}> = ({ supplierName, onClose, onSaved }) => {
+  const [paymentDate, setPaymentDate] = useState<string>(todayYmd());
+  const [amount, setAmount] = useState<string>("");
+  const [method, setMethod] = useState<string>("transfer");
+  const [memo, setMemo] = useState<string>("");
+  const [invoices, setInvoices] = useState<OpenInvoiceRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [errMsg, setErrMsg] = useState<string | null>(null);
+  // invoice_id → { checked, allocated_amount(string) }
+  const [allocMap, setAllocMap] = useState<Map<number, { checked: boolean; alloc: string }>>(new Map());
+
+  // ESC 닫기
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  // 미결제 매입건 로드
+  useEffect(() => {
+    setLoading(true);
+    fetch(`/api/supplier-open-invoices?supplier=${encodeURIComponent(supplierName)}`)
+      .then(r => r.ok ? r.json() : { rows: [] })
+      .then(j => {
+        const rows: OpenInvoiceRow[] = Array.isArray(j.rows) ? j.rows : [];
+        // paid 는 아래로 · open/partial 상단
+        rows.sort((a, b) => {
+          const sw = (s: string) => s === "open" ? 0 : s === "partial" ? 1 : 2;
+          const d = sw(a.status) - sw(b.status);
+          return d !== 0 ? d : String(b.date).localeCompare(String(a.date));
+        });
+        setInvoices(rows);
+        const m = new Map<number, { checked: boolean; alloc: string }>();
+        rows.forEach(r => m.set(r.id, { checked: false, alloc: String(Math.max(0, Math.round(r.remaining))) }));
+        setAllocMap(m);
+      })
+      .catch(() => setInvoices([]))
+      .finally(() => setLoading(false));
+  }, [supplierName]);
+
+  const amountNum = Number(String(amount).replace(/[^0-9.-]/g, "")) || 0;
+  const allocSum = useMemo(() => {
+    let s = 0;
+    for (const [, v] of allocMap) {
+      if (v.checked) s += Number(v.alloc) || 0;
+    }
+    return s;
+  }, [allocMap]);
+  const diff = amountNum - allocSum;
+
+  const toggleCheck = (id: number) => {
+    setAllocMap(prev => {
+      const n = new Map<number, { checked: boolean; alloc: string }>(prev);
+      const v = n.get(id);
+      if (v) n.set(id, { ...v, checked: !v.checked });
+      return n;
+    });
+  };
+
+  const updateAlloc = (id: number, val: string) => {
+    setAllocMap(prev => {
+      const n = new Map<number, { checked: boolean; alloc: string }>(prev);
+      const v = n.get(id);
+      if (v) n.set(id, { ...v, alloc: val });
+      return n;
+    });
+  };
+
+  const autoAllocate = () => {
+    // 결제금액을 위에서부터 잔여금액만큼 자동 배분
+    let remainingBudget = amountNum;
+    setAllocMap(prev => {
+      const n = new Map<number, { checked: boolean; alloc: string }>(prev);
+      for (const inv of invoices) {
+        if (inv.status === "paid" || inv.remaining <= 0) continue;
+        if (remainingBudget <= 0) {
+          const v = n.get(inv.id);
+          if (v) n.set(inv.id, { ...v, checked: false, alloc: String(Math.round(inv.remaining)) });
+          continue;
+        }
+        const take = Math.min(remainingBudget, inv.remaining);
+        n.set(inv.id, { checked: true, alloc: String(Math.round(take)) });
+        remainingBudget -= take;
+      }
+      return n;
+    });
+  };
+
+  const handleSubmit = async () => {
+    setErrMsg(null);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(paymentDate)) {
+      setErrMsg("날짜는 YYYY-MM-DD 형식이어야 합니다");
+      return;
+    }
+    if (amountNum <= 0) {
+      setErrMsg("결제 금액은 양수여야 합니다");
+      return;
+    }
+    if (diff < -0.5) {
+      setErrMsg(`배분 총액이 결제 금액을 초과합니다 (차이 ${diff.toLocaleString()})`);
+      return;
+    }
+    const allocations: Array<{ ocr_confirmed_item_id: number; allocated_amount: number }> = [];
+    for (const [id, v] of allocMap) {
+      if (v.checked) {
+        const a = Number(v.alloc) || 0;
+        if (a > 0) allocations.push({ ocr_confirmed_item_id: id, allocated_amount: a });
+      }
+    }
+    setSaving(true);
+    try {
+      const res = await fetch("/api/supplier-payments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          supplier_name: supplierName,
+          payment_date: paymentDate,
+          amount: amountNum,
+          method,
+          memo: memo.trim() || null,
+          allocations,
+        }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.error ?? `서버 ${res.status}`);
+      }
+      onSaved();
+    } catch (e: any) {
+      setErrMsg(`저장 실패: ${e?.message ?? e}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] bg-slate-900/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl h-[92vh] md:h-auto md:max-h-[88vh] flex flex-col overflow-hidden"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-gradient-to-r from-emerald-50 via-teal-50 to-white shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+              <Wallet size={18} className="text-emerald-700" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[15px] font-black text-slate-800 truncate leading-tight">결제 등록</div>
+              <div className="text-[11px] text-slate-500 truncate">{supplierName}</div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg bg-white hover:bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 shrink-0 ml-3 transition"
+            title="닫기 (ESC)"
+          >
+            <X size={15} />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+          {/* 결제 정보 */}
+          <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)_minmax(0,1fr)] gap-3">
+            <Field label="결제 날짜 *">
+              <input
+                type="date"
+                value={paymentDate}
+                onChange={e => setPaymentDate(e.target.value)}
+                className={inputCls}
+              />
+            </Field>
+            <Field label="결제 금액 (원) *">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={amount}
+                onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
+                placeholder="0"
+                className={`${inputCls} text-right font-mono tabular-nums font-bold`}
+              />
+              {amountNum > 0 && (
+                <p className="text-[11px] text-slate-400 mt-1 text-right font-mono">{fmtWon(amountNum)}</p>
+              )}
+            </Field>
+            <Field label="결제 방법">
+              <select
+                value={method}
+                onChange={e => setMethod(e.target.value)}
+                className={inputCls}
+              >
+                {METHOD_OPTIONS.map(m => (
+                  <option key={m.key} value={m.key}>{m.label}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+
+          <Field label="메모">
+            <input
+              type="text"
+              value={memo}
+              onChange={e => setMemo(e.target.value)}
+              placeholder="예: 6월분 결제 · 상계 처리 · 세금계산서 매칭 등"
+              className={inputCls}
+            />
+          </Field>
+
+          {/* 매입건 매칭 */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <SectionTitle
+                icon={<Package size={13} />}
+                title="매입건 매칭 (선택)"
+                color="amber"
+                hint={loading ? "로딩..." : `${invoices.filter(i => i.status !== "paid").length}건 미결제`}
+              />
+              <button
+                onClick={autoAllocate}
+                disabled={amountNum <= 0 || loading}
+                className="inline-flex items-center gap-1 h-7 px-3 text-[11px] font-bold rounded-lg bg-teal-600 hover:bg-teal-700 disabled:opacity-40 disabled:cursor-not-allowed text-white transition cursor-pointer shadow-sm"
+                title="상단부터 결제금액만큼 자동 배분"
+              >
+                <TrendingUp size={11} strokeWidth={2.5} />
+                자동 배분
+              </button>
+            </div>
+
+            <div className="rounded-lg border border-slate-200 overflow-auto max-h-[300px] bg-white">
+              {loading ? (
+                <div className="flex items-center justify-center gap-1.5 py-8 text-slate-400 text-[12px]">
+                  <Loader2 size={14} className="animate-spin" />로딩중...
+                </div>
+              ) : invoices.length === 0 ? (
+                <div className="py-8 text-center text-slate-400 text-[12px]">
+                  매입건 없음 · 결제만 등록 (unallocated payment)
+                </div>
+              ) : (
+                <table className="w-full text-[12px]">
+                  <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
+                    <tr className="text-[11px] font-black uppercase tracking-wider text-slate-500">
+                      <th className="px-2 py-2 w-8"></th>
+                      <th className="text-left px-3 py-2 w-20">일자</th>
+                      <th className="text-left px-3 py-2">상품</th>
+                      <th className="text-right px-3 py-2 w-20">매입액</th>
+                      <th className="text-right px-3 py-2 w-20">잔액</th>
+                      <th className="text-right px-3 py-2 w-24">배분</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {invoices.map(inv => {
+                      const v = allocMap.get(inv.id);
+                      const disabled = inv.status === "paid";
+                      return (
+                        <tr key={inv.id} className={`transition ${disabled ? "bg-slate-50/50 opacity-50" : "hover:bg-teal-50/40"}`}>
+                          <td className="px-2 py-1.5 text-center">
+                            <input
+                              type="checkbox"
+                              checked={v?.checked ?? false}
+                              disabled={disabled}
+                              onChange={() => toggleCheck(inv.id)}
+                              className="w-4 h-4 accent-teal-600 cursor-pointer disabled:cursor-not-allowed"
+                            />
+                          </td>
+                          <td className="px-3 py-1.5 font-mono text-[11px] text-slate-500 whitespace-nowrap tabular-nums">
+                            {String(inv.date).slice(2)}
+                          </td>
+                          <td className="px-3 py-1.5 text-slate-700 break-words leading-snug text-[11px]">
+                            {inv.product_name}
+                            {inv.status === "partial" && <span className="ml-1 text-[10px] font-bold text-amber-600">· 부분</span>}
+                            {inv.status === "paid" && <span className="ml-1 text-[10px] font-bold text-slate-400">· 완납</span>}
+                          </td>
+                          <td className="text-right px-3 py-1.5 font-mono tabular-nums text-slate-600 whitespace-nowrap">
+                            {Number(inv.amount).toLocaleString()}
+                          </td>
+                          <td className={`text-right px-3 py-1.5 font-mono font-bold tabular-nums whitespace-nowrap ${
+                            inv.remaining > 0 ? "text-rose-700" : "text-slate-400"
+                          }`}>
+                            {Number(inv.remaining).toLocaleString()}
+                          </td>
+                          <td className="text-right px-2 py-1">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={v?.alloc ?? ""}
+                              disabled={disabled || !v?.checked}
+                              onChange={e => updateAlloc(inv.id, e.target.value.replace(/[^0-9]/g, ""))}
+                              className="w-full h-7 px-2 text-right text-[11px] font-mono tabular-nums border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-teal-400 focus:border-teal-400 disabled:bg-slate-50 disabled:text-slate-400"
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+
+          {/* 합계 요약 */}
+          <div className="grid grid-cols-3 gap-2.5">
+            <div className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2">
+              <div className="text-[10px] font-black uppercase text-emerald-600 tracking-wider">결제 금액</div>
+              <div className="text-sm font-black font-mono tabular-nums text-emerald-800 mt-0.5">{amountNum.toLocaleString()}</div>
+            </div>
+            <div className="rounded-lg bg-teal-50 border border-teal-200 px-3 py-2">
+              <div className="text-[10px] font-black uppercase text-teal-600 tracking-wider">배분 총액</div>
+              <div className="text-sm font-black font-mono tabular-nums text-teal-800 mt-0.5">{allocSum.toLocaleString()}</div>
+            </div>
+            <div className={`rounded-lg border px-3 py-2 ${
+              Math.abs(diff) < 0.5 ? "bg-emerald-50 border-emerald-200"
+              : diff > 0            ? "bg-amber-50 border-amber-200"
+              :                       "bg-rose-50 border-rose-200"
+            }`}>
+              <div className={`text-[10px] font-black uppercase tracking-wider ${
+                Math.abs(diff) < 0.5 ? "text-emerald-600" : diff > 0 ? "text-amber-600" : "text-rose-600"
+              }`}>
+                {Math.abs(diff) < 0.5 ? "일치" : diff > 0 ? "미배분" : "초과"}
+              </div>
+              <div className={`text-sm font-black font-mono tabular-nums mt-0.5 ${
+                Math.abs(diff) < 0.5 ? "text-emerald-800" : diff > 0 ? "text-amber-800" : "text-rose-800"
+              }`}>
+                {diff.toLocaleString()}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="px-5 py-3 border-t border-slate-200 bg-slate-50/80 flex items-center gap-2 flex-wrap shrink-0">
+          {errMsg && (
+            <span className="inline-flex items-center gap-1 text-[12px] font-bold text-rose-600">
+              <X size={13} strokeWidth={3} />
+              {errMsg}
+            </span>
+          )}
+          <div className="flex-1" />
+          <button
+            onClick={onClose}
+            className="h-8 px-4 text-[12px] font-semibold bg-white border border-slate-300 hover:bg-slate-50 rounded-lg text-slate-700 transition cursor-pointer"
+          >
+            취소
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving || amountNum <= 0}
+            className="inline-flex items-center gap-1.5 h-8 px-5 text-[12px] font-bold bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg transition shadow-sm cursor-pointer"
+          >
+            {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} strokeWidth={2.5} />}
+            결제 등록
           </button>
         </div>
       </div>
