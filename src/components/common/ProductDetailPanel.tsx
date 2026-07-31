@@ -108,23 +108,23 @@ const StockFlowChart: React.FC<{ productCode: string; productName?: string }> = 
                 ? <ChevronRight size={14} className="ml-auto text-slate-400 shrink-0" />
                 : <ChevronDown size={14} className="ml-auto text-slate-600 shrink-0" />}
             </div>
-            {/* 2행 · 상품명 (줄바꿈 · 크게) */}
+            {/* 2행 · 상품명 (줄바꿈) */}
             {productName && (
-              <div className="text-[14px] font-black text-slate-900 break-words whitespace-normal leading-snug pl-5">
+              <div className="text-[12px] font-bold text-slate-900 break-words whitespace-normal leading-snug pl-5">
                 {productName}
               </div>
             )}
-            {/* 3행 · 판매량 통계 (상품명 아래 · 큰 글씨) */}
+            {/* 3행 · 판매량 통계 (상품명 아래) */}
             {!collapsed && (totalSaleQty > 0 || last30Sale > 0) && (
-              <div className="flex items-center gap-3 flex-wrap pl-5 text-[12px] tabular-nums font-semibold text-slate-600">
+              <div className="flex items-center gap-3 flex-wrap pl-5 text-[11px] tabular-nums font-semibold text-slate-600">
                 {totalSaleQty > 0 && (
                   <span title={`stock_history.sale_qty 합계 ${totalSaleQty.toLocaleString()} / ${monthSpan}개월 = 월평균 ${avgMonthlySale}개`}>
-                    월평균 판매 <span className="font-black text-rose-700 text-[14px]">{avgMonthlySale.toLocaleString()}</span>개
+                    월평균 판매 <span className="font-black text-rose-700 text-[12px]">{avgMonthlySale.toLocaleString()}</span>개
                   </span>
                 )}
                 {last30Sale > 0 && (
                   <span title="최근 30일 판매량 (stock_history · snapshot_date >= 30일 전)">
-                    최근 한달 판매 <span className="font-black text-teal-700 text-[14px]">{last30Sale.toLocaleString()}</span>개
+                    최근 한달 판매 <span className="font-black text-teal-700 text-[12px]">{last30Sale.toLocaleString()}</span>개
                   </span>
                 )}
               </div>
@@ -516,7 +516,7 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
             : "text-slate-500 border-transparent hover:text-slate-700";
           return (
             <button key={k} type="button" onClick={() => setTab(k)}
-              className={`flex-1 min-h-[44px] py-2 px-3 text-[14px] font-black border-b-2 transition cursor-pointer ${cls}`}>
+              className={`flex-1 min-h-[44px] py-2 px-3 text-[12px] font-black border-b-2 transition cursor-pointer ${cls}`}>
               {label}
             </button>
           );
@@ -531,7 +531,7 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
           {ordersLoading ? (
             <div className="py-6 text-center text-[13px] text-slate-400">발주내역 로딩...</div>
           ) : orders.length === 0 ? (
-            <div className="py-6 text-center text-[13px] text-slate-400">이 상품의 발주내역이 없습니다</div>
+            <div className="py-6 text-center text-[12px] text-slate-400">이 상품의 발주내역이 없습니다</div>
           ) : (
             // 발주내역 테이블 · 가로 스크롤 허용 · min-width 로 컬럼 겹침 방지
             <div className="overflow-x-auto -mx-1 px-1">
@@ -551,9 +551,9 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
                       <td className="px-2 py-1 tabular-nums text-slate-600 text-[11px] whitespace-nowrap">
                         {o.requested_at ? new Date(o.requested_at).toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }) : "-"}
                       </td>
-                      <td className="px-2 py-1 text-slate-700 break-words">{o.supplier ?? "-"}</td>
-                      <td className="px-2 py-1 text-right tabular-nums text-amber-700 font-bold">{o.current_stock ?? "-"}</td>
-                      <td className="px-2 py-1 text-right tabular-nums text-slate-600">{o.optimal_stock ?? "-"}</td>
+                      <td className="px-2 py-1 text-[11px] text-slate-700 break-words">{o.supplier ?? "-"}</td>
+                      <td className="px-2 py-1 text-[11px] text-right tabular-nums text-amber-700 font-bold">{o.current_stock ?? "-"}</td>
+                      <td className="px-2 py-1 text-[11px] text-right tabular-nums text-slate-600">{o.optimal_stock ?? "-"}</td>
                       <td className="px-2 py-1 text-center">
                         <span className={`text-[10px] font-semibold rounded-md px-1.5 py-0.5 border whitespace-nowrap ${
                           o.status === "done" ? "bg-emerald-50 text-emerald-700 border-emerald-300" :

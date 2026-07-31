@@ -922,13 +922,13 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
                   : null;
                 return (
                 <tr key={i} className="hover:bg-emerald-50/30">
-                  <td className="px-2 py-0.5 font-mono text-slate-600 whitespace-nowrap">{r.purchase_date}</td>
-                  <td className="text-right px-1 py-0.5 font-mono text-sky-600" title={gapDays != null ? `${gapDays}일 만에 재매입` : "이전 매입 없음"}>
+                  <td className="px-2 py-0.5 tabular-nums text-slate-600 whitespace-nowrap">{r.purchase_date}</td>
+                  <td className="text-right px-1 py-0.5 tabular-nums text-sky-600" title={gapDays != null ? `${gapDays}일 만에 재매입` : "이전 매입 없음"}>
                     {gapDays != null ? `${gapDays}일` : "-"}
                   </td>
-                  <td className="text-right px-2 py-0.5 font-mono font-bold">{fmt(Number(r.quantity) || 0)}</td>
-                  <td className="text-right px-2 py-0.5 font-mono text-slate-500">{r.unit_price ? fmt(r.unit_price) : "-"}</td>
-                  <td className="text-right px-2 py-0.5 font-mono font-black text-emerald-700">{fmtWon(Number(r.total ?? r.amount) || 0)}</td>
+                  <td className="text-right px-2 py-0.5 tabular-nums font-bold">{fmt(Number(r.quantity) || 0)}</td>
+                  <td className="text-right px-2 py-0.5 tabular-nums text-slate-500">{r.unit_price ? fmt(r.unit_price) : "-"}</td>
+                  <td className="text-right px-2 py-0.5 tabular-nums font-black text-emerald-700">{fmtWon(Number(r.total ?? r.amount) || 0)}</td>
                 </tr>
                 );
               })}

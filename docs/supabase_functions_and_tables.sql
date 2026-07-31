@@ -133,49 +133,49 @@ DECLARE
 BEGIN
   RETURN QUERY
   WITH sh_agg AS (
-    -- stock_history · 기간 범위 aggregate
+    -- stock_history · 기간 범위 aggregate · text→numeric 안전 캐스팅
     SELECT
       sh.product_code,
-      SUM(sh.opening_stock)::INT   AS opening_stock,
-      SUM(sh.purchase_qty)::INT    AS purchase_qty,
-      SUM(sh.sale_qty)::INT        AS sale_qty,
-      SUM(sh.disposal_qty)::INT    AS disposal_qty,
-      SUM(sh.closing_stock)::INT   AS closing_stock,
-      SUM(sh.total_amount)::NUMERIC AS total_amount,
-      MAX(sh.product_name)         AS product_name,
-      MAX(sh.supplier_name)        AS supplier,
-      MAX(sh.spec)                 AS spec
+      COALESCE(SUM(NULLIF(sh.opening_stock::text, '')::numeric), 0)::INT   AS opening_stock,
+      COALESCE(SUM(NULLIF(sh.purchase_qty::text, '')::numeric), 0)::INT    AS purchase_qty,
+      COALESCE(SUM(NULLIF(sh.sale_qty::text, '')::numeric), 0)::INT        AS sale_qty,
+      COALESCE(SUM(NULLIF(sh.disposal_qty::text, '')::numeric), 0)::INT    AS disposal_qty,
+      COALESCE(SUM(NULLIF(sh.closing_stock::text, '')::numeric), 0)::INT   AS closing_stock,
+      COALESCE(SUM(NULLIF(sh.total_amount::text, '')::numeric), 0)::NUMERIC AS total_amount,
+      MAX(sh.product_name)::TEXT   AS product_name,
+      MAX(sh.supplier_name)::TEXT  AS supplier,
+      MAX(sh.spec)::TEXT           AS spec
     FROM stock_history sh
     WHERE sh.snapshot_date >= p_from AND sh.snapshot_date <= p_to
     GROUP BY sh.product_code
   ),
   sh_month AS (
-    -- 최근 30일 판매량 + 판매액
+    -- 최근 30일 판매량 + 판매액 · text→numeric 안전 캐스팅
     SELECT
       sh.product_code,
-      SUM(sh.sale_qty)::INT        AS sale_qty_month,
-      SUM(sh.total_amount)::NUMERIC AS sale_amount_month
+      COALESCE(SUM(NULLIF(sh.sale_qty::text, '')::numeric), 0)::INT        AS sale_qty_month,
+      COALESCE(SUM(NULLIF(sh.total_amount::text, '')::numeric), 0)::NUMERIC AS sale_amount_month
     FROM stock_history sh
     WHERE sh.snapshot_date >= v_month_ago AND sh.snapshot_date <= CURRENT_DATE
     GROUP BY sh.product_code
   ),
   pd_agg AS (
-    -- purchase_details · 매입 이력 집계 + 최근 매입량
+    -- purchase_details · 매입 이력 집계 · text→numeric 안전 캐스팅
     SELECT
       pd.product_code,
       COUNT(DISTINCT pd.purchase_date)::INT AS purchase_count,
       MIN(pd.purchase_date)::TEXT           AS first_purchase_date,
       MAX(pd.purchase_date)::TEXT           AS last_purchase_date,
-      SUM(pd.quantity)::INT                 AS purchase_total_qty,
-      SUM(COALESCE(pd.total, pd.amount, 0))::NUMERIC AS purchase_total_amount
+      COALESCE(SUM(NULLIF(pd.quantity::text, '')::numeric), 0)::INT AS purchase_total_qty,
+      COALESCE(SUM(NULLIF(COALESCE(pd.total, pd.amount)::text, '')::numeric), 0)::NUMERIC AS purchase_total_amount
     FROM purchase_details pd
     GROUP BY pd.product_code
   ),
   pd_last AS (
-    -- 각 상품 · 최근 매입일의 quantity (DISTINCT ON)
+    -- 각 상품 · 최근 매입일의 quantity (DISTINCT ON) · text 안전 캐스팅
     SELECT DISTINCT ON (pd.product_code)
       pd.product_code,
-      pd.quantity::INT AS last_purchase_qty
+      COALESCE(NULLIF(pd.quantity::text, '')::numeric, 0)::INT AS last_purchase_qty
     FROM purchase_details pd
     ORDER BY pd.product_code, pd.purchase_date DESC
   )
@@ -190,11 +190,11 @@ BEGIN
     COALESCE(sh_agg.disposal_qty, 0),
     COALESCE(sh_agg.closing_stock, 0),
     COALESCE(sh_agg.total_amount, 0),
-    COALESCE(NULLIF(p.optimal_stock::text, '')::int, 0),
-    COALESCE(p.sale_price, 0),
-    COALESCE(p.purchase_price, 0),
-    COALESCE(p.current_stock, 0),
-    COALESCE(NULLIF(p.min_order::text, '')::int, 0),
+    COALESCE(NULLIF(p.optimal_stock::text, '')::numeric, 0)::int,
+    COALESCE(NULLIF(p.sale_price::text, '')::numeric, 0)::numeric,
+    COALESCE(NULLIF(p.purchase_price::text, '')::numeric, 0)::numeric,
+    COALESCE(NULLIF(p.current_stock::text, '')::numeric, 0)::int,
+    COALESCE(NULLIF(p.min_order::text, '')::numeric, 0)::int,
     pd_agg.last_purchase_date,
     pd_agg.first_purchase_date,
     COALESCE(pd_agg.purchase_count, 0),

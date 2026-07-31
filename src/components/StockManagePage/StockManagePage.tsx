@@ -1795,6 +1795,8 @@ export const StockManagePage: React.FC = () => {
     itemCount: number; totalStockAmount: number;
   };
   const [xlsxSuppliers, setXlsxSuppliers] = useState<SupplierAgg[]>([]);
+  // 2026-07-30 · 공급사 분류 맵 · 아래 useMemo forward-reference 방지 위해 여기서 선언
+  const [vendorCategoryMap, setVendorCategoryMap] = useState<Record<string, string | null>>({});
   // 2026-07-28 · 사용자 요청 · 공급사 리스트 정렬 (재고자산 · 판매량 · 판매액 · 매입 · 상품수 · 공급사명)
   type SupListSortKey = "totalStockAmount" | "saleQty" | "saleAmount" | "purchaseQty" | "itemCount" | "supplier";
   const [supListSort, setSupListSort] = useState<{ key: SupListSortKey; dir: "asc" | "desc" }>({ key: "totalStockAmount", dir: "desc" });
@@ -1811,10 +1813,18 @@ export const StockManagePage: React.FC = () => {
   }, [xlsxSuppliers, supListSort]);
   // 2026-07-28 · 사용자 요청 · Top N 필터 (기본 전체)
   const [supListLimit, setSupListLimit] = useState<number>(999999);
-  const displayedXlsxSuppliers = useMemo(
-    () => sortedXlsxSuppliers.slice(0, supListLimit),
-    [sortedXlsxSuppliers, supListLimit]
-  );
+  // 2026-07-31 · 사용자 요청 · 분류별 필터 (전체·위탁·선결제·회전·기타)
+  const [supListCategory, setSupListCategory] = useState<"전체" | "위탁" | "선결제" | "회전" | "기타">("전체");
+  const displayedXlsxSuppliers = useMemo(() => {
+    const filtered = supListCategory === "전체"
+      ? sortedXlsxSuppliers
+      : sortedXlsxSuppliers.filter(sup => {
+          const nm = String(sup.supplier ?? "").trim();
+          const cat = vendorCategoryMap[nm] ?? null;
+          return cat === supListCategory;
+        });
+    return filtered.slice(0, supListLimit);
+  }, [sortedXlsxSuppliers, supListLimit, supListCategory, vendorCategoryMap]);
   // 2026-07-23 · 공급사별 최신 잔고 (supplier_balances 최신값) — 우측 패널 재고자산 앞 표시
   const [supplierBalanceMap, setSupplierBalanceMap] = useState<Record<string, { balance: number; invoice_date: string | null }>>({});
   useEffect(() => {
@@ -1834,8 +1844,7 @@ export const StockManagePage: React.FC = () => {
       } catch { /* ignore */ }
     })();
   }, []);
-  // 2026-07-30 · 공급사 분류 맵 (vendor category 배지 표시용) + 상세 모달
-  const [vendorCategoryMap, setVendorCategoryMap] = useState<Record<string, string | null>>({});
+  // 2026-07-30 · 공급사 분류 맵 · 위쪽 forward-reference 방지 위해 이미 선언됨 · 여기 중복 제거
   const [supplierDetailModal, setSupplierDetailModal] = useState<any | null>(null);
   const openSupplierDetailModal = useCallback(async (supplierName: string) => {
     if (!supplierName) return;
@@ -2782,6 +2791,26 @@ export const StockManagePage: React.FC = () => {
                           <span className="text-[11px] font-semibold tabular-nums text-slate-400 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5">
                             {displayedXlsxSuppliers.length}{supListLimit < xlsxSuppliers.length ? `/${xlsxSuppliers.length}` : ""}개 사
                           </span>
+                        </div>
+
+                        {/* ── 분류 필터 · 2026-07-31 · 사용자 요청 · 위탁/선결제/회전/기타 필터링 ── */}
+                        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-slate-100 bg-white shrink-0 flex-wrap">
+                          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mr-0.5">분류</span>
+                          {([
+                            { k: "전체" as const, activeCls: "bg-slate-700 text-white shadow-sm" },
+                            { k: "위탁" as const, activeCls: "bg-violet-500 text-white shadow-sm" },
+                            { k: "선결제" as const, activeCls: "bg-rose-500 text-white shadow-sm" },
+                            { k: "회전" as const, activeCls: "bg-emerald-500 text-white shadow-sm" },
+                            { k: "기타" as const, activeCls: "bg-slate-500 text-white shadow-sm" },
+                          ]).map(o => {
+                            const active = supListCategory === o.k;
+                            return (
+                              <button key={o.k} onClick={() => setSupListCategory(o.k)}
+                                className={`h-7 px-2.5 rounded-md text-[11px] font-semibold transition cursor-pointer ${active ? o.activeCls : "text-slate-500 bg-slate-50 hover:bg-slate-100 border border-slate-200"}`}>
+                                {o.k}
+                              </button>
+                            );
+                          })}
                         </div>
 
                         {/* ── 정렬 행 ── */}
