@@ -143,6 +143,8 @@ export const ReturnListPanel: React.FC = () => {
   const [returnLoading, setReturnLoading] = useState(false);
   const [returnCycleMin, setReturnCycleMin] = useState<number>(90);
   const [returnSalesMax, setReturnSalesMax] = useState<number>(5);
+  // 2026-07-31 · 사용자 요청 · 공급사 검색 필터 (부분일치 · 대소문자 무시)
+  const [returnSupplierSearch, setReturnSupplierSearch] = useState<string>("");
 
   type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "purchase_cycle" | "sale_qty_month" | "sale_amount_month" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
   const [returnSortKey, setReturnSortKey] = useState<ReturnSortKey>("purchase_cycle");
@@ -272,7 +274,15 @@ export const ReturnListPanel: React.FC = () => {
         <div className="flex items-center gap-1.5">
           <PackageCheck size={14} className="text-rose-500 shrink-0" />
           <span className="text-[13px] font-semibold text-slate-800">반품필요</span>
-          <span className="text-[11px] font-semibold text-rose-600 bg-rose-50 rounded-full px-2 py-0.5 border border-rose-200 tabular-nums">{returnList.length}건</span>
+          {(() => {
+            const q = returnSupplierSearch.trim().toLowerCase();
+            const filteredCount = q ? returnList.filter(x => String(x.supplier ?? "").toLowerCase().includes(q)).length : returnList.length;
+            return (
+              <span className="text-[11px] font-semibold text-rose-600 bg-rose-50 rounded-full px-2 py-0.5 border border-rose-200 tabular-nums">
+                {q ? `${filteredCount}/${returnList.length}` : returnList.length}건
+              </span>
+            );
+          })()}
         </div>
         <label className="inline-flex items-center gap-1.5 text-[11px] text-slate-600">
           <span className="font-medium text-slate-500">매입주기</span>
@@ -296,6 +306,25 @@ export const ReturnListPanel: React.FC = () => {
             className="w-14 h-7 px-2 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 tabular-nums text-right transition"
           />
           <span className="text-slate-500">개</span>
+        </label>
+        {/* 2026-07-31 · 사용자 요청 · 공급사 검색 · 검색한 공급사 제품만 표시 */}
+        <label className="inline-flex items-center gap-1.5 text-[11px] text-slate-600">
+          <span className="font-medium text-slate-500">공급사</span>
+          <input
+            type="text"
+            value={returnSupplierSearch}
+            onChange={e => setReturnSupplierSearch(e.target.value)}
+            placeholder="공급사명 검색"
+            className="w-36 h-7 px-2 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
+          />
+          {returnSupplierSearch && (
+            <button
+              type="button"
+              onClick={() => setReturnSupplierSearch("")}
+              className="text-slate-400 hover:text-rose-500 text-[10px] font-semibold cursor-pointer"
+              title="지우기"
+            >×</button>
+          )}
         </label>
         <button
           type="button"
@@ -423,7 +452,11 @@ export const ReturnListPanel: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-50">
-                    {[...returnList].sort((a, b) => {
+                    {[...returnList].filter(x => {
+                      const q = returnSupplierSearch.trim().toLowerCase();
+                      if (!q) return true;
+                      return String(x.supplier ?? "").toLowerCase().includes(q);
+                    }).sort((a, b) => {
                       const dir = returnSortDir === "asc" ? 1 : -1;
                       switch (returnSortKey) {
                         case "product_name":    return dir * String(a.product_name).localeCompare(String(b.product_name), "ko");
