@@ -2128,7 +2128,8 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
       </span>
     );
   };
-  const [collapsed, setCollapsed] = useState(false);
+  // 2026-07-31 · 사용자 요청 · 카테고리별 현황 진입 시 기본 접힘 · 필요 시 사용자가 펼침
+  const [collapsed, setCollapsed] = useState(true);
 
   // 벽면·수직윙 셀 · 상위 map 의 renderWallZoneCard 와 동일 aspect ratio (~ 1:1.6)
   const wallCell = (num: number) => {
@@ -2154,7 +2155,9 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
     );
   };
 
-  // 중앙 진열대 B/A pair 셀 · 상위 map 과 동일 aspect ratio · pair 세로 폭 확대
+  // 중앙 진열대 B/A pair 셀 · 원본 구역도(DisplayPage)와 동일 · B|A 가로 나란히 배치
+  //   2026-07-31 · 사용자 재지적 · "1A 1B가 위아래로 있는게 아니고 9B 9A ... 1B 1A 순서대로"
+  //   각 pair 내부에서 B (좌) | A (우) 가로 배치 (원본 map fullmap-pair 구조 참조)
   const pairCell = (num: number) => {
     const ca = CAT_A_COLORS[num];
     const cb = CAT_B_COLORS[num];
@@ -2164,21 +2167,20 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
     const countB = zoneItemCounts?.[`${num}B`] ?? 0;
     const countA = zoneItemCounts?.[`${num}A`] ?? 0;
     return (
-      <div key={`pair-${num}`} className="flex flex-col items-stretch gap-1 flex-1 min-w-[64px]">
-        {/* B 셀 · 위 ★BEST 배지 · 안 라벨/카운트 · 아래 서브카테 */}
-        <div className="flex flex-col items-stretch gap-0.5">
+      <div key={`pair-${num}`} className="flex flex-row items-stretch gap-0.5 flex-1 min-w-[92px]">
+        {/* B 셀 (좌측) · 위 ★BEST 배지 · 안 라벨 · 서브카테 */}
+        <div className="flex flex-col items-stretch gap-0.5 flex-1 min-w-[44px]">
           <div className="min-h-[18px] flex items-center justify-center">{rankBadge(`${num}B`)}</div>
           <div className={`w-full font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-1 leading-tight text-center min-h-[76px] flex flex-col items-center justify-center overflow-hidden`}
             title={`${num}B · ${subB}${countB > 0 ? ` · ${countB}개 상품` : ""}`}>
-            {/* 2026-07-30 · 사용자 요청 · 상위 구역도와 통일 · 라벨만 · 상품 개수 배지 제거 (호버 툴팁에는 유지) */}
             <div className="flex items-center justify-center mb-0.5">
               <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1.5 leading-none`}>{num}B</span>
             </div>
             <span className="line-clamp-3 text-[10px] break-all">{subB}</span>
           </div>
         </div>
-        {/* A 셀 */}
-        <div className="flex flex-col items-stretch gap-0.5">
+        {/* A 셀 (우측) */}
+        <div className="flex flex-col items-stretch gap-0.5 flex-1 min-w-[44px]">
           <div className="min-h-[18px] flex items-center justify-center">{rankBadge(`${num}A`)}</div>
           <div className={`w-full font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-1 leading-tight text-center min-h-[76px] flex flex-col items-center justify-center overflow-hidden`}
             title={`${num}A · ${subA}${countA > 0 ? ` · ${countA}개 상품` : ""}`}>
