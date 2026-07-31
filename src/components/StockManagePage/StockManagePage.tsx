@@ -3608,12 +3608,13 @@ export const StockManagePage: React.FC = () => {
             {stockTab === "flow" && (
               <div className="flex flex-col gap-2">
 
-                {/* ── 상단 필터바 (full-width) ── */}
+                {/* ── 상단 필터바 (full-width · 벤치마크: OrderManage need 탭) ── */}
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-                  {/* 페이지 제목 · 카운트 배지 */}
+                  {/* 페이지 제목 · 아이콘 · 카운트 배지 (sky 톤) */}
                   <div className="flex items-center gap-2">
-                    <span className="text-[13px] font-black text-slate-800">상품현황리스트</span>
-                    <span className="text-[11px] tabular-nums font-semibold text-slate-400 bg-slate-100 rounded-full px-2 py-0.5">{filteredFlow.length}건</span>
+                    <Boxes size={14} className="text-sky-500 shrink-0" />
+                    <span className="text-[13px] font-semibold text-slate-800">상품현황리스트</span>
+                    <span className="text-[11px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">{filteredFlow.length}건</span>
                   </div>
                   {/* 조회기간 · 날짜범위 */}
                   <div className="flex items-center gap-2 flex-wrap">
@@ -3721,25 +3722,44 @@ export const StockManagePage: React.FC = () => {
                     title="숨김 처리된 상품을 확인/해제">
                     <EyeOff size={12} /> 숨김관리
                   </button>
+                  {/* 새로고침 (아이콘 · 우측 정렬) */}
+                  <button
+                    onClick={fetchAggregates}
+                    disabled={loading}
+                    className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 text-slate-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
+                    title="새로고침"
+                  >
+                    <LoaderIcon size={13} className={loading ? "animate-spin" : ""} />
+                  </button>
                 </div>
 
                 {/* ── 하단 · 좌우 split ── */}
                 <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
-                {/* ─── 좌측: 재고리스트 (원본 유지) ─── */}
+                {/* ─── 좌측: 재고리스트 ─── */}
                 <div
                   className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
                   style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? flowPanelWidth : undefined }}
                 >
-                  {/* 재고 흐름 카드 · 순수 테이블 영역 */}
-                  <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
-                    <div className={`flex-1 min-h-0 flex flex-col p-3 ${flowCardCollapsed ? "hidden" : "flex"}`}>
+                  {/* 재고 흐름 카드 · 순수 테이블 영역 · section 패턴 (벤치마크: need 탭) */}
+                  <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 flex-1 min-h-0 flex flex-col overflow-hidden">
+                    <div className={`flex-1 min-h-0 flex flex-col ${flowCardCollapsed ? "hidden" : "flex"}`}>
                       {topTab === "sale" && (
-                      <div className="relative flex-1 overflow-auto -mx-1 max-h-[50vh]">
+                      <>
+                        {/* 리스트 소제목 (dot + 라벨 + 카운트) · 벤치마크: need 탭 */}
+                        <div className="flex items-center gap-2 mb-2 shrink-0">
+                          <span className="inline-block w-1 h-3.5 rounded-full bg-sky-400 shrink-0"></span>
+                          <span className="text-[11px] font-semibold text-slate-500">재고 · 매입 · 판매 현황</span>
+                          <span className="text-[11px] text-slate-400 font-normal tabular-nums">{filteredFlow.length}건</span>
+                          {selectedFlowCodes.size > 0 && (
+                            <span className="text-[11px] text-rose-600 font-semibold tabular-nums ml-1">· {selectedFlowCodes.size}개 선택됨</span>
+                          )}
+                        </div>
+                      <div className="relative flex-1 overflow-auto max-h-[50vh]">
                         {/* 2026-07-20: 리스트 내부 로딩 배너 · 데이터 있을 때 sticky 상단 · shimmer 애니메이션 · 아래 데이터 opacity 60% */}
                         {/* 2026-07-20: 로딩 UI 통일 · 판매추이 공급사별판매 패턴 */}
                         {loading && topTab === "sale" && filteredFlow.length > 0 && (
-                          <div className="flex items-center justify-center gap-1.5 text-[12px] text-sky-600 font-bold py-1.5 mx-1 mt-1 mb-1 bg-sky-50 border border-sky-200 rounded-md">
-                            <LoaderIcon size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
+                          <div className="flex items-center justify-center gap-1.5 py-1.5 mx-1 mb-1 bg-sky-50 border border-sky-200 rounded-md shrink-0">
+                            <LoaderIcon size={11} className="animate-spin text-sky-600" /><span className="text-[10px] font-bold text-sky-700">조건 변경 · 새로 불러오는 중...</span>
                           </div>
                         )}
                         {topTab === "sale" ? (
@@ -3798,7 +3818,7 @@ export const StockManagePage: React.FC = () => {
                                             onClick={() => toggleFlowGroup(g)}
                                             title={collapsed ? `${label} 펼치기` : `${label} 접기`}
                                           >
-                                            <span className="inline-flex items-center gap-1 font-black text-[13px] whitespace-nowrap">
+                                            <span className="inline-flex items-center gap-1 font-black text-[11px] whitespace-nowrap">
                                               {collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
                                               {label}
                                             </span>
@@ -3814,8 +3834,8 @@ export const StockManagePage: React.FC = () => {
                                       );
                                     })()}
                                   </tr>
-                                  {/* 2026-07-28 · 사용자 요청 · 리스트 폰트 통일 · 헤더 12px (기존 10px) · 데이터 셀과 동일 */}
-                                  <tr className="border-b border-slate-100 text-[15px] font-bold text-slate-500 tracking-tight bg-white">
+                                  {/* 서브헤더 · 벤치마크: need 탭 11px · 컴팩트 */}
+                                  <tr className="border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider bg-white">
                                     {(() => {
                                       const arrowFor = (key: SortKey): string => {
                                         if (flowSort !== key) return "⇅";
@@ -3844,7 +3864,7 @@ export const StockManagePage: React.FC = () => {
                                           >
                                             <span className="flex flex-col leading-tight items-start">
                                               <span>상품명</span>
-                                              <span className="text-[11px] opacity-70">{arrowFor("name")}</span>
+                                              <span className="text-[10px] opacity-70">{arrowFor("name")}</span>
                                             </span>
                                           </th>
                                           {/* 2026-07-28 · 사용자 요청 · 시작 컬럼 제거 · 매입 → 최근매입일 옆으로 이동 (라벨 · 최근매입량) */}
@@ -3858,7 +3878,7 @@ export const StockManagePage: React.FC = () => {
                                             >
                                               <span className="flex flex-col leading-tight items-end">
                                                 <span>판매량</span>
-                                                <span className="text-[11px] opacity-70">{arrowFor("sale")}</span>
+                                                <span className="text-[10px] opacity-70">{arrowFor("sale")}</span>
                                               </span>
                                             </th>
                                             <th
@@ -3868,7 +3888,7 @@ export const StockManagePage: React.FC = () => {
                                             >
                                               <span className="flex flex-col leading-tight items-end">
                                                 <span>현재고</span>
-                                                <span className="text-[11px] opacity-70">{arrowFor("current")}</span>
+                                                <span className="text-[10px] opacity-70">{arrowFor("current")}</span>
                                               </span>
                                             </th>
                                             <th onClick={() => toggleFlowSort("optimal" as any)}
@@ -3878,7 +3898,7 @@ export const StockManagePage: React.FC = () => {
                                               <span className="flex flex-col leading-tight items-end">
                                                 <span>적정재고</span>
                                                 <span className="text-[11px] font-semibold text-sky-500">최근 30일</span>
-                                                <span className="text-[11px] opacity-70">{arrowFor("optimal" as any)}</span>
+                                                <span className="text-[10px] opacity-70">{arrowFor("optimal" as any)}</span>
                                               </span>
                                             </th>
                                           </>}
@@ -3886,30 +3906,30 @@ export const StockManagePage: React.FC = () => {
                                           {isFlowGroupCollapsed("purchase") && <th className="bg-amber-50/20"></th>}
                                           {!isFlowGroupCollapsed("purchase") && <>
                                             <th onClick={() => toggleFlowSort("cycle")}
-                                              className={`text-right px-0.5 py-1.5 w-12 text-[14px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "cycle" ? "text-amber-800" : "text-amber-600"}`}
+                                              className={`text-right px-0.5 py-1.5 w-12 text-[11px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "cycle" ? "text-amber-800" : "text-amber-600"}`}
                                               title="평균 매입주기 = (최근-최초 매입일) / (매입횟수-1) · 클릭 정렬">
                                               <span className="flex flex-col leading-tight items-end">
                                                 <span className="text-[12px] font-semibold text-amber-500">평균</span>
                                                 <span>매입주기</span>
-                                                <span className="text-[11px] opacity-70">{arrowFor("cycle")}</span>
+                                                <span className="text-[10px] opacity-70">{arrowFor("cycle")}</span>
                                               </span>
                                             </th>
                                             <th onClick={() => toggleFlowSort("last_purchase")}
-                                              className={`text-right px-0.5 py-1.5 w-11 text-[14px] font-black cursor-pointer select-none bg-amber-50/40 hover:bg-amber-100 transition ${flowSort === "last_purchase" ? "text-amber-800" : "text-amber-600"}`}
+                                              className={`text-right px-0.5 py-1.5 w-11 text-[11px] font-black cursor-pointer select-none bg-amber-50/40 hover:bg-amber-100 transition ${flowSort === "last_purchase" ? "text-amber-800" : "text-amber-600"}`}
                                               title="최근 매입일 · 클릭 정렬">
                                               <span className="flex flex-col leading-tight items-end">
                                                 <span className="text-[12px] font-semibold text-amber-500">최근</span>
                                                 <span>매입일</span>
-                                                <span className="text-[11px] opacity-70">{arrowFor("last_purchase")}</span>
+                                                <span className="text-[10px] opacity-70">{arrowFor("last_purchase")}</span>
                                               </span>
                                             </th>
                                             <th onClick={() => toggleFlowSort("purchase")}
-                                              className={`text-right px-0.5 py-1.5 w-12 text-[14px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "purchase" ? "text-amber-800" : "text-amber-600"}`}
+                                              className={`text-right px-0.5 py-1.5 w-12 text-[11px] font-black cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition ${flowSort === "purchase" ? "text-amber-800" : "text-amber-600"}`}
                                               title="최근매입량 · 클릭 정렬">
                                               <span className="flex flex-col leading-tight items-end">
                                                 <span className="text-[12px] font-semibold text-amber-500">최근</span>
                                                 <span>매입량</span>
-                                                <span className="text-[11px] opacity-70">{arrowFor("purchase")}</span>
+                                                <span className="text-[10px] opacity-70">{arrowFor("purchase")}</span>
                                               </span>
                                             </th>
                                           </>}
@@ -3918,36 +3938,36 @@ export const StockManagePage: React.FC = () => {
                                           {!isFlowGroupCollapsed("sales") && <>
                                             {/* 2026-07-30 · 사용자 요청 · 판매현황 · 재고금액 → 판매량 (sale_qty) */}
                                             <th onClick={() => toggleFlowSort("sale")}
-                                              className={`text-right px-0.5 py-1.5 w-20 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale" ? "text-rose-800" : "text-rose-700"}`}
+                                              className={`text-right px-0.5 py-1.5 w-20 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale" ? "text-rose-800" : "text-rose-700"}`}
                                               title="판매량 · 조회기간 sale_qty 합계 · 클릭 정렬">
                                               <span className="flex flex-col leading-tight items-end">
                                                 <span>판매량</span>
-                                                <span className="text-[11px] opacity-70">{arrowFor("sale")}</span>
+                                                <span className="text-[10px] opacity-70">{arrowFor("sale")}</span>
                                               </span>
                                             </th>
                                             <th onClick={() => toggleFlowSort("last_purchase_price")}
-                                              className={`text-right px-0.5 py-1.5 w-16 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "last_purchase_price" ? "text-rose-800" : "text-rose-600"}`}
+                                              className={`text-right px-0.5 py-1.5 w-16 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "last_purchase_price" ? "text-rose-800" : "text-rose-600"}`}
                                               title="ERP단가 = products.purchase_price · 클릭 정렬">
                                               <span className="flex flex-col leading-tight items-end">
                                                 <span className="font-semibold text-rose-500">ERP</span>
                                                 <span>단가</span>
-                                                <span className="text-[11px] opacity-70">{arrowFor("last_purchase_price")}</span>
+                                                <span className="text-[10px] opacity-70">{arrowFor("last_purchase_price")}</span>
                                               </span>
                                             </th>
                                             <th onClick={() => toggleFlowSort("sale_price")}
-                                              className={`text-right px-0.5 py-1.5 w-16 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale_price" ? "text-rose-800" : "text-rose-600"}`}
+                                              className={`text-right px-0.5 py-1.5 w-16 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale_price" ? "text-rose-800" : "text-rose-600"}`}
                                               title="판매 단가 · 클릭 정렬">
                                               <span className="flex flex-col leading-tight items-end">
                                                 <span>판매가</span>
-                                                <span className="text-[11px] opacity-70">{arrowFor("sale_price")}</span>
+                                                <span className="text-[10px] opacity-70">{arrowFor("sale_price")}</span>
                                               </span>
                                             </th>
                                             <th onClick={() => toggleFlowSort("profit_rate")}
-                                              className={`text-right px-0.5 py-1.5 w-14 text-[14px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "profit_rate" ? "text-rose-800" : "text-rose-600"}`}
+                                              className={`text-right px-0.5 py-1.5 w-14 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "profit_rate" ? "text-rose-800" : "text-rose-600"}`}
                                               title="이익률 · 클릭 정렬">
                                               <span className="flex flex-col leading-tight items-end">
                                                 <span>이익률</span>
-                                                <span className="text-[11px] opacity-70">{arrowFor("profit_rate")}</span>
+                                                <span className="text-[10px] opacity-70">{arrowFor("profit_rate")}</span>
                                               </span>
                                             </th>
                                           </>}
@@ -4014,12 +4034,12 @@ export const StockManagePage: React.FC = () => {
                                           <button
                                             type="button"
                                             onClick={() => loadFlowSelectedProduct(p)}
-                                            className="text-left text-[16px] font-black text-slate-700 hover:text-slate-900 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
+                                            className="text-left text-[13px] font-black text-slate-700 hover:text-slate-900 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition"
                                             title={`${p.product_name} · 클릭하면 오른쪽에 상세 정보 (모바일 · 모달)`}
                                           >
                                             {p.product_name}
                                             {(p as any).min_order != null && (p as any).min_order > 0 && (
-                                              <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-sm text-[12px] font-black text-slate-500 bg-slate-100 border border-slate-200 align-middle" title={`최소주문량 ${(p as any).min_order}`}>
+                                              <span className="inline-flex items-center ml-1 px-1.5 py-0.5 rounded-sm text-[10px] font-black text-slate-500 bg-slate-100 border border-slate-200 align-middle" title={`최소주문량 ${(p as any).min_order}`}>
                                                 최소{(p as any).min_order}
                                               </span>
                                             )}
@@ -4045,7 +4065,7 @@ export const StockManagePage: React.FC = () => {
                                             // 2026-07-29 · 현재고 < 적정재고 시 빨간색 (사용자 요청)
                                             return (
                                               <td
-                                                className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${cur <= 0 || mismatch || belowOptimal ? "text-rose-500" : "text-slate-700"}`}
+                                                className={`text-right px-1.5 py-2.5 font-black text-[12px] align-top tabular-nums ${cur <= 0 || mismatch || belowOptimal ? "text-rose-500" : "text-slate-700"}`}
                                                 title={belowOptimal ? `현재고 부족 · ${cur} < 적정재고 ${opt}` : mismatch ? `현재고(${fmt(cur)}) ≠ 스냅샷 종료재고(${fmt(close)}) · 스냅샷 이후 변동 있음` : "ERP 현재고 (= 스냅샷 종료재고)"}
                                               >{fmt(cur)}</td>
                                             );
@@ -4054,7 +4074,7 @@ export const StockManagePage: React.FC = () => {
                                             const opt = Number((p as any).optimal_stock ?? 0);
                                             const below = opt > 0 && cur < opt;
                                             return (
-                                              <td className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${opt <= 0 ? "text-slate-300" : below ? "text-rose-400" : "text-slate-500"}`}
+                                              <td className={`text-right px-1.5 py-2.5 font-black text-[12px] align-top tabular-nums ${opt <= 0 ? "text-slate-300" : below ? "text-rose-400" : "text-slate-500"}`}
                                                 title={opt > 0 ? `적정재고 ${fmt(opt)}${below ? ` · 현재고 부족 (${cur}/${opt})` : ""}` : "적정재고 미설정"}>
                                                 {opt > 0 ? fmt(opt) : "-"}
                                               </td>
@@ -4065,7 +4085,7 @@ export const StockManagePage: React.FC = () => {
                                         {isFlowGroupCollapsed("stock") && <td className="bg-slate-50/20"></td>}
                                         {/* === 매입현황 그룹 (매입주기 · 최근매입일 · 최근매입량) === */}
                                         {!isFlowGroupCollapsed("purchase") && <>
-                                          <td className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${purchaseCycle != null ? "text-slate-600" :
+                                          <td className={`text-right px-1.5 py-2.5 font-black text-[12px] align-top tabular-nums ${purchaseCycle != null ? "text-slate-600" :
                                             purchaseCount === 1 ? "text-slate-400" :
                                               purchaseCount >= 2 && firstPD === lastPD ? "text-slate-400" :
                                                 "text-slate-300"
@@ -4087,11 +4107,11 @@ export const StockManagePage: React.FC = () => {
                                                   ? "동일일"
                                                   : "-"}
                                           </td>
-                                          <td className="text-right px-1.5 py-2.5 text-slate-500 font-black text-[14px] align-top tabular-nums"
+                                          <td className="text-right px-1.5 py-2.5 text-slate-500 font-black text-[12px] align-top tabular-nums"
                                             title={lastPD ?? undefined}>
                                             {lastPDShort}
                                           </td>
-                                          <td className="text-right px-1.5 py-2.5 text-slate-600 font-black text-[14px] align-top tabular-nums"
+                                          <td className="text-right px-1.5 py-2.5 text-slate-600 font-black text-[12px] align-top tabular-nums"
                                             title={purchV > 0 ? `최근매입량 ${fmt(purchV)}` : "매입 없음"}>
                                             {purchV > 0 ? fmt(purchV) : "-"}
                                           </td>
@@ -4099,13 +4119,13 @@ export const StockManagePage: React.FC = () => {
                                         {isFlowGroupCollapsed("purchase") && <td className="bg-slate-50/20"></td>}
                                         {/* === 판매현황 그룹 · 2026-07-30 · 재고금액 → 판매량(sale_qty) · ERP단가 · 판매가 · 이익률 === */}
                                         {!isFlowGroupCollapsed("sales") && <>
-                                          <td className="text-right px-1.5 py-2.5 text-rose-700 font-black text-[14px] align-top tabular-nums"
+                                          <td className="text-right px-1.5 py-2.5 text-rose-700 font-black text-[12px] align-top tabular-nums"
                                             title="판매량 · 조회기간 sale_qty 합계">
                                             {saleV > 0 ? fmt(saleV) : "-"}
                                           </td>
-                                          <td className="text-right px-1.5 py-2.5 text-slate-500 font-black text-[14px] align-top tabular-nums" title="ERP 사입 단가 (products.purchase_price)">{purP > 0 ? fmtWon(purP) : "-"}</td>
-                                          <td className="text-right px-1.5 py-2.5 text-slate-600 font-black text-[14px] align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
-                                          <td className={`text-right px-1.5 py-2.5 font-black text-[14px] align-top tabular-nums ${profitRate == null ? "text-slate-300" : profitRate >= 30 ? "text-slate-700" : profitRate >= 15 ? "text-slate-600" : profitRate >= 0 ? "text-slate-500" : "text-rose-500"}`}
+                                          <td className="text-right px-1.5 py-2.5 text-slate-500 font-black text-[12px] align-top tabular-nums" title="ERP 사입 단가 (products.purchase_price)">{purP > 0 ? fmtWon(purP) : "-"}</td>
+                                          <td className="text-right px-1.5 py-2.5 text-slate-600 font-black text-[12px] align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
+                                          <td className={`text-right px-1.5 py-2.5 font-black text-[12px] align-top tabular-nums ${profitRate == null ? "text-slate-300" : profitRate >= 30 ? "text-slate-700" : profitRate >= 15 ? "text-slate-600" : profitRate >= 0 ? "text-slate-500" : "text-rose-500"}`}
                                             title={profitRate != null ? `(판매가 ${fmtWon(saleP)} − 최근매입가 ${fmtWon(purP)}) / 판매가 = ${profitRate}%` : "-"}>
                                             {profitRate != null ? `${profitRate}%` : "-"}
                                           </td>
@@ -4152,10 +4172,11 @@ export const StockManagePage: React.FC = () => {
                           )
                         )}
                       </div>
+                      </>
                       )}
                     </div>
-                  </div>
-                  {/* 2026-07-16 · 좌측 재고리스트 wrapper close */}
+                  </section>
+                  {/* 좌측 재고리스트 wrapper close */}
                 </div>
 
                 {/* ─── 리사이즈 핸들 (데스크탑만) ─── */}
