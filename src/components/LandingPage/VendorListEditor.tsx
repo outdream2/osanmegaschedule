@@ -144,19 +144,20 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
           />
         </div>
 
-        {/* 분류 segment control */}
-        <div className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5">
-          {(["전체", "위탁", "선결제", "회전", "기타"] as const).map(cat => (
+        {/* 분류 segment control · 2026-07-31 · 60일회전/90일회전 세분화 */}
+        <div className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5 flex-wrap">
+          {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
             <button
               key={cat}
               onClick={() => setCategoryFilter(cat)}
               className={`h-7 px-2.5 rounded-md text-[11px] font-black transition cursor-pointer whitespace-nowrap ${
                 categoryFilter === cat
-                  ? cat === "전체"   ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
-                  : cat === "위탁"   ? "bg-violet-500 text-white shadow-sm"
-                  : cat === "선결제" ? "bg-rose-500 text-white shadow-sm"
-                  : cat === "회전"   ? "bg-emerald-500 text-white shadow-sm"
-                  :                    "bg-slate-500 text-white shadow-sm"
+                  ? cat === "전체"     ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
+                  : cat === "위탁"     ? "bg-violet-500 text-white shadow-sm"
+                  : cat === "선결제"   ? "bg-rose-500 text-white shadow-sm"
+                  : cat === "60일회전" ? "bg-emerald-500 text-white shadow-sm"
+                  : cat === "90일회전" ? "bg-teal-500 text-white shadow-sm"
+                  :                     "bg-slate-500 text-white shadow-sm"
                   : "text-slate-500 hover:text-slate-700 hover:bg-white/60"
               }`}
             >
@@ -588,7 +589,8 @@ export const VendorDetailModal: React.FC<{
                     <option value="">(없음)</option>
                     <option value="위탁">위탁</option>
                     <option value="선결제">선결제</option>
-                    <option value="회전">회전</option>
+                    <option value="60일회전">60일회전</option>
+                    <option value="90일회전">90일회전</option>
                     <option value="기타">기타</option>
                   </select>
                 </Field>

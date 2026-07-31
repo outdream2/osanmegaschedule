@@ -1,17 +1,19 @@
 // src/components/common/VendorCategoryBadge.tsx
 // 공급사 분류(category) 배지 컴포넌트
-// 위탁(violet) · 선결제(rose) · 회전(emerald) · 기타(slate)
+// 위탁(violet) · 선결제(rose) · 60일회전(emerald) · 90일회전(teal) · 기타(slate)
 // category null/empty 시 아무것도 렌더하지 않음
+// 2026-07-31 · 사용자 확정 · "회전" 단일 → "60일회전"/"90일회전" 세분화
 
 import React from "react";
 
-export type VendorCategory = "위탁" | "선결제" | "회전" | "기타";
+export type VendorCategory = "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
 
 const CATEGORY_STYLE: Record<VendorCategory, string> = {
-  위탁:   "bg-violet-50 text-violet-700 border-violet-300",
-  선결제: "bg-rose-50   text-rose-700   border-rose-300",
-  회전:   "bg-emerald-50 text-emerald-700 border-emerald-300",
-  기타:   "bg-slate-50  text-slate-600  border-slate-300",
+  위탁:      "bg-violet-50 text-violet-700 border-violet-300",
+  선결제:    "bg-rose-50   text-rose-700   border-rose-300",
+  "60일회전": "bg-emerald-50 text-emerald-700 border-emerald-300",
+  "90일회전": "bg-teal-50   text-teal-700   border-teal-300",
+  기타:      "bg-slate-50  text-slate-600  border-slate-300",
 };
 
 interface VendorCategoryBadgeProps {
@@ -24,7 +26,7 @@ interface VendorCategoryBadgeProps {
  * 유효 카테고리 화이트리스트 · DB 에 이 목록 외 값(예: "직영")이 남아있어도 오표시 방지
  * 2026-07-31 · 사용자 요청 · "직영이라는 분류는 없는데" 오표시 이슈 fix
  */
-const VALID_CATEGORIES: readonly VendorCategory[] = ["위탁", "선결제", "회전", "기타"] as const;
+const VALID_CATEGORIES: readonly VendorCategory[] = ["위탁", "선결제", "60일회전", "90일회전", "기타"] as const;
 
 export const VendorCategoryBadge: React.FC<VendorCategoryBadgeProps> = ({
   category,

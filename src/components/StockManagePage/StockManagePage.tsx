@@ -1813,8 +1813,8 @@ export const StockManagePage: React.FC = () => {
   }, [xlsxSuppliers, supListSort]);
   // 2026-07-28 · 사용자 요청 · Top N 필터 (기본 전체)
   const [supListLimit, setSupListLimit] = useState<number>(999999);
-  // 2026-07-31 · 사용자 요청 · 분류별 필터 (전체·위탁·선결제·회전·기타)
-  const [supListCategory, setSupListCategory] = useState<"전체" | "위탁" | "선결제" | "회전" | "기타">("전체");
+  // 2026-07-31 · 사용자 확정 · 분류 5개 · 전체·위탁·선결제·60일회전·90일회전·기타
+  const [supListCategory, setSupListCategory] = useState<"전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타">("전체");
   const displayedXlsxSuppliers = useMemo(() => {
     const filtered = supListCategory === "전체"
       ? sortedXlsxSuppliers
@@ -2800,7 +2800,8 @@ export const StockManagePage: React.FC = () => {
                             { k: "전체" as const, activeCls: "bg-slate-700 text-white shadow-sm" },
                             { k: "위탁" as const, activeCls: "bg-violet-500 text-white shadow-sm" },
                             { k: "선결제" as const, activeCls: "bg-rose-500 text-white shadow-sm" },
-                            { k: "회전" as const, activeCls: "bg-emerald-500 text-white shadow-sm" },
+                            { k: "60일회전" as const, activeCls: "bg-emerald-500 text-white shadow-sm" },
+                            { k: "90일회전" as const, activeCls: "bg-teal-500 text-white shadow-sm" },
                             { k: "기타" as const, activeCls: "bg-slate-500 text-white shadow-sm" },
                           ]).map(o => {
                             const active = supListCategory === o.k;
