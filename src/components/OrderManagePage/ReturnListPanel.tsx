@@ -2,7 +2,7 @@
 // 반품필요 탭을 독립 컴포넌트로 추출 (2026-07-31 · 탭 스왑 · StockManagePage 이동용)
 // 기존 OrderManagePage의 return 탭 state/fetch/JSX 를 그대로 캡슐화
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, Package, PackageCheck, RefreshCw, Truck, ChevronRight, ChevronDown } from "lucide-react";
+import { Loader2, Package, PackageCheck, RefreshCw, Search, Truck, ChevronRight, ChevronDown } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
@@ -308,24 +308,16 @@ export const ReturnListPanel: React.FC = () => {
           <span className="text-slate-500">개</span>
         </label>
         {/* 2026-07-31 · 사용자 요청 · 공급사 검색 · 검색한 공급사 제품만 표시 */}
-        <label className="inline-flex items-center gap-1.5 text-[11px] text-slate-600">
-          <span className="font-medium text-slate-500">공급사</span>
+        <div className="relative">
+          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           <input
             type="text"
             value={returnSupplierSearch}
             onChange={e => setReturnSupplierSearch(e.target.value)}
             placeholder="공급사명 검색"
-            className="w-36 h-7 px-2 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
+            className="w-40 h-7 pl-7 pr-2 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
           />
-          {returnSupplierSearch && (
-            <button
-              type="button"
-              onClick={() => setReturnSupplierSearch("")}
-              className="text-slate-400 hover:text-rose-500 text-[10px] font-semibold cursor-pointer"
-              title="지우기"
-            >×</button>
-          )}
-        </label>
+        </div>
         <button
           type="button"
           onClick={loadReturnList}

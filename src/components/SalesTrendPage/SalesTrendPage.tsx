@@ -1977,16 +1977,16 @@ const ZoneCategoryContent: React.FC = () => {
           <span className="text-[11px] text-slate-400 hidden sm:inline">real_map 기반 · 구역 클릭 → 상품 상세</span>
         </div>
         {/* 조회기간 */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">기간</span>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">기간</span>
           <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
             <button type="button" onClick={() => { setSeason(null); setMonths(0); }}
-              className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!season && months === 0 ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+              className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!season && months === 0 ? "bg-amber-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
               10일
             </button>
             {[1, 2, 3, 4, 5, 6].map(m => (
               <button key={m} type="button" onClick={() => { setSeason(null); setMonths(m as any); }}
-                className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!season && months === m ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!season && months === m ? "bg-amber-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                 {m}개월
               </button>
             ))}

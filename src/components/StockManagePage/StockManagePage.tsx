@@ -1132,44 +1132,42 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
           </div>
         </div>
         {/* 검색 조건 */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">검색조건</span>
-          <label className="inline-flex items-center gap-1 text-[11px] text-slate-600">
-            <span className="text-slate-500">최소판매</span>
-            <input
-              type="number"
-              min={0}
-              value={minRecentQty || ""}
-              onChange={e => {
-                const v = parseInt(e.target.value, 10);
-                setMinRecentQty(Number.isFinite(v) && v > 0 ? v : 0);
-              }}
-              placeholder="0"
-              className="w-14 h-6 px-2 text-[11px] tabular-nums text-right border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
-            />
-            <span className="text-slate-400">개↑</span>
-          </label>
-          <label className="inline-flex items-center gap-1 text-[11px] text-slate-600">
-            <span className="text-slate-500 shrink-0">공급사</span>
-            <input
-              type="text"
-              value={supplierFilter}
-              onChange={e => setSupplierFilter(e.target.value)}
-              placeholder="공급사명 검색"
-              className="w-28 h-6 px-2 text-[11px] border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
-            />
-          </label>
-          {(minRecentQty > 0 || supplierFilter.trim() !== "") && (
-            <button
-              type="button"
-              onClick={() => { setMinRecentQty(0); setSupplierFilter(""); }}
-              className="h-6 px-2 text-[11px] font-semibold text-slate-500 hover:text-rose-500 border border-slate-200 hover:border-rose-300 bg-white rounded transition cursor-pointer"
-              title="필터 초기화"
-            >
-              초기화
-            </button>
-          )}
+        <label className="inline-flex items-center gap-1.5 text-[11px] text-slate-600">
+          <span className="font-medium text-slate-500 uppercase tracking-wider shrink-0">최소판매</span>
+          <input
+            type="number"
+            min={0}
+            value={minRecentQty || ""}
+            onChange={e => {
+              const v = parseInt(e.target.value, 10);
+              setMinRecentQty(Number.isFinite(v) && v > 0 ? v : 0);
+            }}
+            placeholder="0"
+            className="w-14 h-7 px-2 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-indigo-400 focus:border-indigo-400 tabular-nums text-right transition"
+          />
+          <span className="text-slate-500">개↑</span>
+        </label>
+        {/* 공급사 검색 */}
+        <div className="relative">
+          <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            value={supplierFilter}
+            onChange={e => setSupplierFilter(e.target.value)}
+            placeholder="공급사명 검색"
+            className="w-40 h-7 pl-7 pr-2 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-indigo-400 focus:border-indigo-400 transition"
+          />
         </div>
+        {(minRecentQty > 0 || supplierFilter.trim() !== "") && (
+          <button
+            type="button"
+            onClick={() => { setMinRecentQty(0); setSupplierFilter(""); }}
+            className="h-7 px-2 text-[11px] font-semibold text-slate-500 hover:text-rose-500 border border-slate-200 hover:border-rose-300 bg-white rounded-md transition cursor-pointer"
+            title="필터 초기화"
+          >
+            초기화
+          </button>
+        )}
         {/* 재고 부족만 체크 */}
         <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 cursor-pointer">
           <input type="checkbox" checked={onlyShortage} onChange={e => setOnlyShortage(e.target.checked)} className="w-3.5 h-3.5 accent-indigo-500" />
@@ -2773,9 +2771,9 @@ export const StockManagePage: React.FC = () => {
                       <span className="text-[11px] text-slate-400 hidden sm:inline">행 클릭 → 우측 상품 리스트 · 상품명 클릭 → 상세</span>
                     </div>
                     {/* 조회기간 */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">기간</span>
-                      <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">기간</span>
+                      <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
                         <button onClick={() => { setSupplierSeason(null); setSupplierMonths(0); }}
                           className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!supplierSeason && supplierMonths === 0 ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
                         {[1, 2, 3, 4, 5, 6].map(m => (
@@ -2788,8 +2786,8 @@ export const StockManagePage: React.FC = () => {
                     <SeasonButtons value={supplierSeason} onChange={(v) => { setSupplierSeason(v); if (v) setSupplierMonths(0); }} size="sm" hideLabel />
                     {/* Top N */}
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Top N</span>
-                      <div className="flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md p-0.5">
+                      <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">Top N</span>
+                      <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
                         {[
                           { v: 100, label: "100" },
                           { v: 300, label: "300" },
@@ -2798,7 +2796,7 @@ export const StockManagePage: React.FC = () => {
                           { v: 999999, label: "전체" },
                         ].map(o => (
                           <button key={o.v} onClick={() => setSupListLimit(o.v)}
-                            className={`text-[11px] font-semibold h-6 px-2 rounded transition whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                            className={`text-[11px] font-semibold h-6 px-2 rounded transition whitespace-nowrap cursor-pointer ${supListLimit === o.v ? "bg-sky-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                           >{o.label}</button>
                         ))}
                       </div>
@@ -3448,8 +3446,8 @@ export const StockManagePage: React.FC = () => {
                     <span className="text-[11px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">{filteredFlow.length}건</span>
                   </div>
                   {/* 조회기간 · 날짜범위 */}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">기간</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">기간</span>
                     {flowMonths === 0 && !flowSeason && flowSnapshot && (
                       <span className="text-[11px] tabular-nums font-medium text-slate-600 bg-slate-50 border border-slate-200 rounded-md px-2 py-0.5">
                         {flowDateRange ?? flowSnapshot}
@@ -3468,18 +3466,18 @@ export const StockManagePage: React.FC = () => {
                     })()}
                     <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
                       <button onClick={() => { setFlowSeason(null); setPendingFlowMonths(0); setFlowMonths(0); }}
-                        className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!flowSeason && flowMonths === 0 ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
+                        className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!flowSeason && flowMonths === 0 ? "bg-teal-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
                       {[1, 2, 3, 4, 5, 6].map(m => (
                         <button key={m} onClick={() => { setFlowSeason(null); setPendingFlowMonths(m as any); setFlowMonths(m as any); }}
-                          className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!flowSeason && flowMonths === m ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
+                          className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!flowSeason && flowMonths === m ? "bg-teal-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
                       ))}
                     </div>
                     <SeasonButtons value={flowSeason} onChange={(v) => { setFlowSeason(v); if (v) { setPendingFlowMonths(0); setFlowMonths(0); } }} size="sm" hideLabel />
                   </div>
                   {/* Top N */}
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Top N</span>
-                    <div className="flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md p-0.5">
+                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">Top N</span>
+                    <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
                       {[
                         { v: 100, label: "100" },
                         { v: 300, label: "300" },
@@ -3488,20 +3486,20 @@ export const StockManagePage: React.FC = () => {
                         { v: 50000, label: "전체" },
                       ].map(o => (
                         <button key={o.v} onClick={() => setFlowLimit(o.v)}
-                          className={`text-[11px] font-semibold h-6 px-2 rounded transition whitespace-nowrap cursor-pointer ${flowLimit === o.v ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                          className={`text-[11px] font-semibold h-6 px-2 rounded transition whitespace-nowrap cursor-pointer ${flowLimit === o.v ? "bg-teal-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                         >{o.label}</button>
                       ))}
                     </div>
                   </div>
                   {/* 정보확인 검색 */}
-                  <div className="relative min-w-[200px] flex-1 max-w-xs">
-                    <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <div className="relative">
+                    <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
                     <input
                       value={infoSearchQuery}
                       onChange={(e) => setInfoSearchQuery(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter") runInfoSearch(); }}
                       placeholder="전체 DB 검색 (정보확인)"
-                      className="w-full pl-8 pr-2 py-1.5 border border-slate-200 rounded-md text-[11px] focus:outline-none focus:border-slate-400 bg-white"
+                      className="w-48 h-7 pl-7 pr-2 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-teal-400 focus:border-teal-400 bg-white transition"
                     />
                     {infoSearchResults.length > 0 && (
                       <div className="absolute left-0 top-full mt-1 max-h-64 overflow-y-auto border border-slate-200 bg-white rounded-lg shadow-lg z-30 divide-y divide-slate-100 min-w-full sm:min-w-[500px]">
@@ -3532,14 +3530,14 @@ export const StockManagePage: React.FC = () => {
                   </button>
                   {/* 판매출고계 범위 필터 */}
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-semibold text-slate-500 shrink-0">판매출고계</span>
+                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">판매출고계</span>
                     <input type="number" min={0} value={salesQtyMin}
                       onChange={e => setSalesQtyMin(e.target.value)} placeholder="최소"
-                      className="w-16 px-2 py-1 border border-slate-200 rounded-md text-[11px] tabular-nums text-right focus:outline-none focus:border-slate-400" />
+                      className="w-14 h-7 px-2 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-teal-400 focus:border-teal-400 tabular-nums text-right transition" />
                     <span className="text-slate-400 text-[11px]">~</span>
                     <input type="number" min={0} value={salesQtyMax}
                       onChange={e => setSalesQtyMax(e.target.value)} placeholder="최대"
-                      className="w-16 px-2 py-1 border border-slate-200 rounded-md text-[11px] tabular-nums text-right focus:outline-none focus:border-slate-400" />
+                      className="w-14 h-7 px-2 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-teal-400 focus:border-teal-400 tabular-nums text-right transition" />
                     <span className="text-slate-400 text-[11px]">개</span>
                     {(salesQtyMin || salesQtyMax) && (
                       <button onClick={() => { setSalesQtyMin(""); setSalesQtyMax(""); }}
