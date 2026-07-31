@@ -1769,7 +1769,7 @@ const ZoneCategoryContent: React.FC = () => {
               title={`그룹 내 순위 ${rank}위`}>
               {rank}
             </span>
-            <span className={`text-[13px] font-black ${textCls} tabular-nums shrink-0`}>{g.zone}</span>
+            <span className={`text-[13px] font-black ${textCls} tabular-nums shrink-0`}>{getZoneLabel(g.zone)}</span>
             {zoneCategoryLabel(g.zone) && (
               <span className={`text-[11px] font-bold ${textCls} break-words whitespace-normal leading-tight`}
                 title={zoneCategoryLabel(g.zone)}>
@@ -1878,7 +1878,7 @@ const ZoneCategoryContent: React.FC = () => {
         <div className="bg-violet-50/60 border border-violet-200 rounded-xl p-3 shadow-sm">
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-2 min-w-0">
-              <span className={`text-[15px] font-black ${textCls} tabular-nums`}>{g.zone}</span>
+              <span className={`text-[15px] font-black ${textCls} tabular-nums`}>{getZoneLabel(g.zone)}</span>
               {zoneCategoryLabel(g.zone) && (
                 <span className={`text-sm font-semibold ${textCls}`}>{zoneCategoryLabel(g.zone)}</span>
               )}
@@ -2070,7 +2070,7 @@ const ZoneCategoryContent: React.FC = () => {
               </button>
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-black text-slate-800 truncate leading-tight">
-                  구역 {selectedZone}{zoneCategoryLabel(selectedZone) ? ` · ${zoneCategoryLabel(selectedZone)}` : ""}
+                  구역 {getZoneLabel(selectedZone)}{zoneCategoryLabel(selectedZone) ? ` · ${zoneCategoryLabel(selectedZone)}` : ""}
                 </div>
                 <div className="text-[10px] tabular-nums text-slate-500 truncate">
                   {grouped.find(g => g.zone === selectedZone)?.items.length ?? 0}개 상품
@@ -2118,6 +2118,7 @@ import {
   STORE_TOP_WALL, STORE_AISLE_CENTER, STORE_AISLE_PAIRS, STORE_BOTTOM_WALL, STORE_VERTICAL_WING,
   CAT_A_COLORS, CAT_B_COLORS,
 } from "../../constants/storeMapLayout";
+import { getZoneLabel } from "../../constants/zoneLabels";
 
 interface MiniStoreZoneMapProps {
   /** 구역별 상품 수 · key = 구역 id (예: "1A", "9B", "22") */
@@ -2166,7 +2167,7 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
         <div className="w-full bg-stone-50 px-1 py-1 flex flex-col items-center gap-0.5 flex-1 justify-center">
           {/* 2026-07-30 · 사용자 요청 · 상위 구역도와 통일 · 라벨만 · 개수 배지 제거 (툴팁 유지) */}
           <div className="flex items-center justify-center">
-            <span className="text-[10px] font-black text-white bg-amber-700 rounded px-1.5 leading-none">{num}</span>
+            <span className="text-[10px] font-black text-white bg-amber-700 rounded px-1.5 leading-none">{getZoneLabel(num)}</span>
           </div>
           <span className="text-[10px] font-bold text-stone-800 leading-tight text-center line-clamp-2 break-all">{cat}</span>
         </div>
@@ -2193,7 +2194,7 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
           <div className={`w-full font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-1 leading-tight text-center min-h-[76px] flex flex-col items-center justify-center overflow-hidden`}
             title={`${num}B · ${subB}${countB > 0 ? ` · ${countB}개 상품` : ""}`}>
             <div className="flex items-center justify-center mb-0.5">
-              <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1.5 leading-none`}>{num}B</span>
+              <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1.5 leading-none`}>{getZoneLabel(`${num}B`)}</span>
             </div>
             <span className="line-clamp-3 text-[10px] break-all">{subB}</span>
           </div>
@@ -2204,7 +2205,7 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
           <div className={`w-full font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-1 leading-tight text-center min-h-[76px] flex flex-col items-center justify-center overflow-hidden`}
             title={`${num}A · ${subA}${countA > 0 ? ` · ${countA}개 상품` : ""}`}>
             <div className="flex items-center justify-center mb-0.5">
-              <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1.5 leading-none`}>{num}A</span>
+              <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1.5 leading-none`}>{getZoneLabel(`${num}A`)}</span>
             </div>
             <span className="line-clamp-3 text-[10px] break-all">{subA}</span>
           </div>
@@ -2225,7 +2226,7 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
           <span className="line-clamp-6">{zd?.category ?? ""}</span>
         </div>
         <div className="w-full flex items-center justify-center gap-0.5 flex-wrap mt-0.5">
-          <span className="text-[10px] font-black text-white bg-slate-600 rounded px-1 leading-none py-0.5">22</span>
+          <span className="text-[10px] font-black text-white bg-slate-600 rounded px-1 leading-none py-0.5">{getZoneLabel(STORE_AISLE_CENTER)}</span>
           {count > 0 && <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 rounded px-1 leading-none tabular-nums">{count}</span>}
         </div>
       </div>

@@ -6,6 +6,7 @@ import {
   STORE_TOP_WALL, STORE_AISLE_CENTER, STORE_AISLE_PAIRS, STORE_BOTTOM_WALL, STORE_VERTICAL_WING,
   CAT_A_COLORS, CAT_B_COLORS,
 } from "../../constants/storeMapLayout";
+import { getZoneLabel } from "../../constants/zoneLabels";
 import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import {
   Bell,
@@ -1330,7 +1331,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             title={`${num}번 · ${zd?.category ?? ""} → 진열상품 조회`}
             className="w-full h-[64px] bg-stone-50 hover:bg-amber-50 px-1 py-1 flex flex-col items-center gap-0.5 border-b border-stone-200 cursor-pointer transition"
           >
-            <span className="text-[10px] font-black text-white bg-amber-700 rounded px-1 py-0.5 leading-none shrink-0">{num}</span>
+            <span className="text-[10px] font-black text-white bg-amber-700 rounded px-1 py-0.5 leading-none shrink-0">{getZoneLabel(num)}</span>
             {(() => {
               const cat = zd?.category ?? "";
               // 카테고리 분리 기준: "·" · "/" · "," (2개 이상이면 두 줄로 표시)
@@ -1956,7 +1957,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                     <div key={`fullmap-pair-${num}`} className="flex flex-col items-stretch gap-0.5 flex-[2] min-w-[60px]">
                                       {/* B (연한 톤) */}
                                       <div className={`w-full text-[10px] font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden`}>
-                                        <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}B</span>
+                                        <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{getZoneLabel(`${num}B`)}</span>
                                         <span className="line-clamp-3 text-[10px]">{subB}</span>
                                       </div>
                                       {/* B|A zone cell 나란히 */}
@@ -1970,7 +1971,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                       </div>
                                       {/* A (진한 톤) */}
                                       <div className={`w-full text-[10px] font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden`}>
-                                        <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}A</span>
+                                        <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{getZoneLabel(`${num}A`)}</span>
                                         <span className="line-clamp-3 text-[10px]">{subA}</span>
                                       </div>
                                     </div>
@@ -2156,7 +2157,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                     }}
                                     title={`${num}B 카테고리 → 상품 조회`}
                                     className={`w-full text-[10px] font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:brightness-95 transition`}>
-                                    <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}B</span>
+                                    <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{getZoneLabel(`${num}B`)}</span>
                                     <span className="line-clamp-3 text-[10px]">{subB}</span>
                                   </button>
                                   {/* 드래그드롭 zone (B|A 나란히) */}
@@ -2179,7 +2180,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                     }}
                                     title={`${num}A 카테고리 → 상품 조회`}
                                     className={`w-full text-[10px] font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden cursor-pointer hover:brightness-95 transition`}>
-                                    <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{num}A</span>
+                                    <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{getZoneLabel(`${num}A`)}</span>
                                     <span className="line-clamp-3 text-[10px]">{subA}</span>
                                   </button>
                                 </div>
