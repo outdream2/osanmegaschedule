@@ -3709,12 +3709,12 @@ export const StockManagePage: React.FC = () => {
                         {infoSearchResults.map((p, i) => (
                           <button key={`info-sr-${p.product_code}-${i}`}
                             onClick={() => { setInfoSelected(p); setInfoSearchQuery(p.product_name); setInfoSearchResults([]); }}
-                            className="w-full text-left px-2.5 py-1.5 hover:bg-sky-50 transition text-sm flex items-center justify-between gap-2">
+                            className="w-full text-left px-2.5 py-1 hover:bg-sky-50 transition flex items-center justify-between gap-2">
                             <div className="min-w-0">
-                              <div className="font-bold text-slate-800 whitespace-nowrap">{p.product_name}</div>
-                              <div className="text-[12px] tabular-nums text-slate-400 whitespace-nowrap">#{p.product_code} · {p.supplier ?? "-"}</div>
+                              <div className="text-[13px] font-semibold text-slate-800 whitespace-nowrap">{p.product_name}</div>
+                              <div className="text-[11px] tabular-nums text-slate-400 whitespace-nowrap">#{p.product_code} · {p.supplier ?? "-"}</div>
                             </div>
-                            <span className="text-[13px] text-slate-400 shrink-0">재고 {p.current_stock ?? "-"}</span>
+                            <span className="text-[11px] text-slate-400 shrink-0">재고 {p.current_stock ?? "-"}</span>
                           </button>
                         ))}
                       </div>
