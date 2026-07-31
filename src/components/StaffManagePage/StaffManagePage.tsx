@@ -641,12 +641,14 @@ const StaffManagePage: React.FC = () => {
             isSelected ? "bg-indigo-500 opacity-100" : "opacity-0"
           }`}
         />
-        {/* 아바타 */}
-        <div className="shrink-0 ml-1">
-          <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
-        </div>
+        {/* 2026-07-31 · 사용자 요청 · 앞에 성씨 크게 나오는 아바타 제거 · photo_url 있을 때만 표시 */}
+        {emp.photo_url && (
+          <div className="shrink-0 ml-1">
+            <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
+          </div>
+        )}
         {/* 이름 + 메타 */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5 pl-2">
           <span className={`text-[13px] font-black leading-tight ${isSelected ? "text-indigo-800" : "text-slate-800"}`}>
             {emp.name}
           </span>
