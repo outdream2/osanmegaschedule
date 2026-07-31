@@ -686,11 +686,15 @@ interface TrendingRow {
   product_code: string;
   product_name: string;
   supplier: string | null;
-  recent_sale: number;
-  prior_sale: number;
-  growth_rate: number | null;
-  absolute_delta: number;
-  newly_trending: boolean;
+  // 10일 지표 · 최근10일 vs 지난10일 (10~20일 전)
+  recent_10: number;
+  prior_10: number;
+  delta_10: number;
+  // 30일 지표 · 최근30일 vs 지난30일 (30~60일 전)
+  recent_30: number;
+  prior_30: number;
+  delta_30: number;
+  // 재고 · 공통
   current_stock: number;
   optimal_stock: number;
   sale_price: number;
@@ -923,18 +927,19 @@ const PeriodTrendingSection: React.FC<{
 const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProductClick }) => {
   const [rows, setRows] = useState<TrendingRow[]>([]);
   const [loading, setLoading] = useState(false);
-  // 2026-07-31 · 사용자 요청 · "급상승은 최근판매와 30일이 기준" · 최근 N일 판매 vs 최근 30일 판매(기준) 비교
-  //   priorDays 는 항상 30 · windowDays 는 사용자 선택 (7/10/15/30/60)
-  const [windowDays, setWindowDays] = useState<7 | 10 | 15 | 30 | 60>(7);
-  const PRIOR_DAYS = 30;
-  const [sortKey, setSortKey] = useState<"growth" | "delta" | "recent" | "shortage">("growth");
+  // 2026-07-31 · 사용자 요청 · 급상승 · 이중 지표 표시 (10일·30일 절대 증가량)
+  //   10일 : 최근 10일 vs 지난 10일 (10~20일 전)
+  //   30일 : 최근 30일 vs 지난 30일 (30~60일 전)
+  //   서버 트렌딩 라우트는 prior_days 미지정 시 "이전 인접 window" 를 자동 계산 (recent 이전 구간)
+  //   그러므로 window=10 · window=30 두 번 fetch 후 product_code 로 병합
+  //   정렬 : 30일 증가량 desc (default)
+  const [sortKey, setSortKey] = useState<"delta_30" | "delta_10" | "recent_30" | "recent_10" | "shortage">("delta_30");
   const [onlyShortage, setOnlyShortage] = useState(false);
-  // ── 검색 조건 (2026-07-31 신규) ──
+  // ── 검색 조건 ──
   const [minRecentQty, setMinRecentQty] = useState<number>(0);
-  const [minGrowthPct, setMinGrowthPct] = useState<string>(""); // 빈 문자열 = 미적용
   const [supplierFilter, setSupplierFilter] = useState<string>("");
-  const [meta, setMeta] = useState<{ recent_from: string; prior_from: string; total: number } | null>(null);
-  // ── 그룹 접기 state (TrendingTab 자체 보유) ──
+  const [meta, setMeta] = useState<{ recent_from_10: string; recent_from_30: string; total: number } | null>(null);
+  // ── 그룹 접기 state ──
   const [trendingGroupCollapsed, setTrendingGroupCollapsed] = useState<Set<string>>(new Set());
   const toggleTrendingGroup = (g: string) => setTrendingGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
   const isTrendingGroupCollapsed = (g: string) => trendingGroupCollapsed.has(g);
@@ -944,33 +949,88 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
   const [decadalBuckets, setDecadalBuckets] = useState<PeriodBucket[]>([]);
   const [bucketsLoaded, setBucketsLoaded] = useState(false);
 
+  // ── 병합 fetch 로직 (window=10 · window=30 병렬) ──
+  const buildParams = (win: 10 | 30): URLSearchParams => {
+    const p = new URLSearchParams();
+    p.set("window", String(win));
+    // prior_days 미지정 · 서버가 "이전 인접 win일" 로 계산 (사용자 요청과 일치)
+    p.set("limit", "2000");
+    if (minRecentQty > 0) p.set("min_recent_qty", String(minRecentQty));
+    const supTrim = supplierFilter.trim();
+    if (supTrim) p.set("supplier", supTrim);
+    return p;
+  };
+
+  const fetchAndMerge = useCallback(async (): Promise<void> => {
+    setLoading(true);
+    try {
+      const [res10, res30] = await Promise.all([
+        fetch(`/api/stock-manage/trending?${buildParams(10).toString()}`).then(r => r.ok ? r.json() : { rows: [] }),
+        fetch(`/api/stock-manage/trending?${buildParams(30).toString()}`).then(r => r.ok ? r.json() : { rows: [] }),
+      ]);
+      const map = new Map<string, TrendingRow>();
+      // 30일 우선 삽입 (재고·가격·공급사 등 공통 필드 채움)
+      for (const r of (res30.rows ?? []) as any[]) {
+        const code = String(r.product_code ?? "").trim();
+        if (!code) continue;
+        map.set(code, {
+          product_code: code,
+          product_name: String(r.product_name ?? code),
+          supplier: r.supplier ?? null,
+          recent_10: 0, prior_10: 0, delta_10: 0,
+          recent_30: Number(r.recent_sale ?? 0) || 0,
+          prior_30: Number(r.prior_sale ?? 0) || 0,
+          delta_30: Number(r.absolute_delta ?? 0) || 0,
+          current_stock: Number(r.current_stock ?? 0) || 0,
+          optimal_stock: Number(r.optimal_stock ?? 0) || 0,
+          sale_price: Number(r.sale_price ?? 0) || 0,
+          below_optimal: Boolean(r.below_optimal),
+        });
+      }
+      // 10일 병합 (없는 코드는 신규 생성)
+      for (const r of (res10.rows ?? []) as any[]) {
+        const code = String(r.product_code ?? "").trim();
+        if (!code) continue;
+        const cur = map.get(code) ?? {
+          product_code: code,
+          product_name: String(r.product_name ?? code),
+          supplier: r.supplier ?? null,
+          recent_10: 0, prior_10: 0, delta_10: 0,
+          recent_30: 0, prior_30: 0, delta_30: 0,
+          current_stock: Number(r.current_stock ?? 0) || 0,
+          optimal_stock: Number(r.optimal_stock ?? 0) || 0,
+          sale_price: Number(r.sale_price ?? 0) || 0,
+          below_optimal: Boolean(r.below_optimal),
+        };
+        cur.recent_10 = Number(r.recent_sale ?? 0) || 0;
+        cur.prior_10 = Number(r.prior_sale ?? 0) || 0;
+        cur.delta_10 = Number(r.absolute_delta ?? 0) || 0;
+        map.set(code, cur);
+      }
+      const merged = Array.from(map.values());
+      setRows(merged);
+      setMeta({
+        recent_from_10: String(res10.recent_from ?? ""),
+        recent_from_30: String(res30.recent_from ?? ""),
+        total: merged.length,
+      });
+    } catch {
+      setRows([]);
+      setMeta(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [minRecentQty, supplierFilter]);
+
   // 서버 fetch · 필터 변경 시 300ms debounce
   useEffect(() => {
     let cancelled = false;
     const timer = setTimeout(() => {
-      const params = new URLSearchParams();
-      params.set("window", String(windowDays));
-      params.set("prior_days", String(PRIOR_DAYS));
-      params.set("limit", "1000");
-      if (minRecentQty > 0) params.set("min_recent_qty", String(minRecentQty));
-      const growthNum = minGrowthPct.trim() === "" ? null : Number(minGrowthPct);
-      if (growthNum != null && !Number.isNaN(growthNum)) params.set("min_growth_pct", String(growthNum));
-      const supTrim = supplierFilter.trim();
-      if (supTrim) params.set("supplier", supTrim);
-
-      setLoading(true);
-      fetch(`/api/stock-manage/trending?${params.toString()}`)
-        .then(r => r.ok ? r.json() : { rows: [] })
-        .then(j => {
-          if (cancelled) return;
-          setRows(Array.isArray(j.rows) ? j.rows : []);
-          setMeta({ recent_from: j.recent_from ?? "", prior_from: j.prior_from ?? "", total: Number(j.total ?? 0) });
-        })
-        .catch(() => { if (!cancelled) { setRows([]); setMeta(null); } })
-        .finally(() => { if (!cancelled) setLoading(false); });
+      if (cancelled) return;
+      fetchAndMerge();
     }, 300);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [windowDays, minRecentQty, minGrowthPct, supplierFilter]);
+  }, [fetchAndMerge]);
 
   // ── 월별 / 순별 버킷 fetch (마운트 1회) ──
   useEffect(() => {
@@ -1026,12 +1086,10 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
   const displayed = useMemo(() => {
     let arr = onlyShortage ? rows.filter(r => r.below_optimal) : rows;
     arr = [...arr].sort((a, b) => {
-      if (sortKey === "growth") {
-        if (a.newly_trending !== b.newly_trending) return a.newly_trending ? -1 : 1;
-        return (b.growth_rate ?? -999999) - (a.growth_rate ?? -999999);
-      }
-      if (sortKey === "delta") return b.absolute_delta - a.absolute_delta;
-      if (sortKey === "recent") return b.recent_sale - a.recent_sale;
+      if (sortKey === "delta_30") return b.delta_30 - a.delta_30;
+      if (sortKey === "delta_10") return b.delta_10 - a.delta_10;
+      if (sortKey === "recent_30") return b.recent_30 - a.recent_30;
+      if (sortKey === "recent_10") return b.recent_10 - a.recent_10;
       if (sortKey === "shortage") return (b.optimal_stock - b.current_stock) - (a.optimal_stock - a.current_stock);
       return 0;
     });
@@ -1052,33 +1110,22 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
             <span className="text-[11px] font-semibold text-indigo-600 bg-indigo-50 rounded-full px-2 py-0.5 border border-indigo-200 tabular-nums">{fmt(meta.total)}건</span>
           )}
           <span className="text-[11px] text-slate-400 hidden sm:inline">
-            {meta ? `최근 ${windowDays}일 (${meta.recent_from} ~) vs 최근 ${PRIOR_DAYS}일 기준` : `최근 ${windowDays}일 vs 최근 ${PRIOR_DAYS}일 기준 · 신규진입 상단`}
+            최근 10일 vs 지난 10일 · 최근 30일 vs 지난 30일 · 절대 증가량 기준
           </span>
-        </div>
-        {/* 최근 N일 선택 */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">최근</span>
-          <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
-            {([7, 10, 15, 30, 60] as const).map(w => (
-              <button key={w} onClick={() => setWindowDays(w)}
-                className={`h-6 px-2 text-[11px] font-semibold rounded transition cursor-pointer ${windowDays === w ? "bg-indigo-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
-                {w}일
-              </button>
-            ))}
-          </div>
         </div>
         {/* 정렬 */}
         <div className="flex items-center gap-1.5">
           <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">정렬</span>
           <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
             {([
-              { k: "growth" as const, label: "성장률" },
-              { k: "delta" as const, label: "증가량" },
-              { k: "recent" as const, label: "최근판매" },
+              { k: "delta_30" as const, label: "30일 증가량" },
+              { k: "delta_10" as const, label: "10일 증가량" },
+              { k: "recent_30" as const, label: "최근30일" },
+              { k: "recent_10" as const, label: "최근10일" },
               { k: "shortage" as const, label: "재고부족" },
             ]).map(o => (
               <button key={o.k} onClick={() => setSortKey(o.k)}
-                className={`h-6 px-2 text-[11px] font-semibold rounded transition cursor-pointer ${sortKey === o.k ? "bg-indigo-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                className={`h-6 px-2 text-[11px] font-semibold rounded transition cursor-pointer ${sortKey === o.k ? "bg-rose-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                 {o.label}
               </button>
             ))}
@@ -1103,17 +1150,6 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
             <span className="text-slate-400">개↑</span>
           </label>
           <label className="inline-flex items-center gap-1 text-[11px] text-slate-600">
-            <span className="text-slate-500">증가율</span>
-            <input
-              type="number"
-              value={minGrowthPct}
-              onChange={e => setMinGrowthPct(e.target.value)}
-              placeholder="예: 50"
-              className="w-14 h-6 px-2 text-[11px] tabular-nums text-right border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
-            />
-            <span className="text-slate-400">%↑</span>
-          </label>
-          <label className="inline-flex items-center gap-1 text-[11px] text-slate-600">
             <span className="text-slate-500 shrink-0">공급사</span>
             <input
               type="text"
@@ -1123,10 +1159,10 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
               className="w-28 h-6 px-2 text-[11px] border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
             />
           </label>
-          {(minRecentQty > 0 || minGrowthPct.trim() !== "" || supplierFilter.trim() !== "") && (
+          {(minRecentQty > 0 || supplierFilter.trim() !== "") && (
             <button
               type="button"
-              onClick={() => { setMinRecentQty(0); setMinGrowthPct(""); setSupplierFilter(""); }}
+              onClick={() => { setMinRecentQty(0); setSupplierFilter(""); }}
               className="h-6 px-2 text-[11px] font-semibold text-slate-500 hover:text-rose-500 border border-slate-200 hover:border-rose-300 bg-white rounded transition cursor-pointer"
               title="필터 초기화"
             >
@@ -1142,26 +1178,7 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
         {/* 새로고침 */}
         <button
           type="button"
-          onClick={() => {
-            const params = new URLSearchParams();
-            params.set("window", String(windowDays));
-            params.set("prior_days", String(PRIOR_DAYS));
-            params.set("limit", "1000");
-            if (minRecentQty > 0) params.set("min_recent_qty", String(minRecentQty));
-            const g = minGrowthPct.trim() === "" ? null : Number(minGrowthPct);
-            if (g != null && !Number.isNaN(g)) params.set("min_growth_pct", String(g));
-            const supTrim = supplierFilter.trim();
-            if (supTrim) params.set("supplier", supTrim);
-            setLoading(true);
-            fetch(`/api/stock-manage/trending?${params.toString()}`)
-              .then(r => r.ok ? r.json() : { rows: [] })
-              .then(j => {
-                setRows(Array.isArray(j.rows) ? j.rows : []);
-                setMeta({ recent_from: j.recent_from ?? "", prior_from: j.prior_from ?? "", total: Number(j.total ?? 0) });
-              })
-              .catch(() => { setRows([]); setMeta(null); })
-              .finally(() => setLoading(false));
-          }}
+          onClick={() => { void fetchAndMerge(); }}
           disabled={loading}
           className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-indigo-50 hover:border-indigo-300 text-slate-400 hover:text-indigo-500 transition disabled:opacity-40 cursor-pointer"
           title="새로고침"
@@ -1190,23 +1207,23 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
                 <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200">
                   <th colSpan={2} className="bg-slate-50 text-slate-400 text-left px-3 py-1.5">기본정보</th>
                   <th
-                    colSpan={isTrendingGroupCollapsed("sales") ? 1 : 2}
-                    onClick={() => toggleTrendingGroup("sales")}
-                    className="bg-indigo-50 text-indigo-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-indigo-100 transition"
+                    colSpan={isTrendingGroupCollapsed("g10") ? 1 : 3}
+                    onClick={() => toggleTrendingGroup("g10")}
+                    className="bg-rose-50/60 text-rose-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-rose-100/70 transition"
                   >
-                    {isTrendingGroupCollapsed("sales") ? <ChevronRight size={11} className="inline -mt-0.5" /> : <ChevronDown size={11} className="inline -mt-0.5" />}
-                    {" "}판매량 비교
+                    {isTrendingGroupCollapsed("g10") ? <ChevronRight size={11} className="inline -mt-0.5" /> : <ChevronDown size={11} className="inline -mt-0.5" />}
+                    {" "}10일 성장지표
                   </th>
                   <th
-                    colSpan={isTrendingGroupCollapsed("growth") ? 1 : 2}
-                    onClick={() => toggleTrendingGroup("growth")}
-                    className="bg-indigo-100 text-indigo-700 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-indigo-200 transition"
+                    colSpan={isTrendingGroupCollapsed("g30") ? 1 : 3}
+                    onClick={() => toggleTrendingGroup("g30")}
+                    className="bg-rose-100/70 text-rose-700 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-rose-200/70 transition"
                   >
-                    {isTrendingGroupCollapsed("growth") ? <ChevronRight size={11} className="inline -mt-0.5" /> : <ChevronDown size={11} className="inline -mt-0.5" />}
-                    {" "}성장 지표
+                    {isTrendingGroupCollapsed("g30") ? <ChevronRight size={11} className="inline -mt-0.5" /> : <ChevronDown size={11} className="inline -mt-0.5" />}
+                    {" "}30일 성장지표
                   </th>
                   <th
-                    colSpan={isTrendingGroupCollapsed("stock") ? 1 : 2}
+                    colSpan={isTrendingGroupCollapsed("stock") ? 1 : 3}
                     onClick={() => toggleTrendingGroup("stock")}
                     className="bg-slate-50 text-slate-400 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-slate-100 transition"
                   >
@@ -1218,20 +1235,22 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
                 <tr className="border-b border-slate-100 text-[11px] font-semibold text-slate-500 uppercase tracking-wider bg-white">
                   <th className="text-center px-2 py-1.5 w-9">#</th>
                   <th className="text-left px-2 py-1.5 min-w-[200px]">상품명</th>
-                  {isTrendingGroupCollapsed("sales") ? (
-                    <th className="bg-indigo-50/20 w-4" />
+                  {isTrendingGroupCollapsed("g10") ? (
+                    <th className="bg-rose-50/30 w-4" />
                   ) : (
                     <>
-                      <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/50 text-indigo-600">최근{windowDays}일</th>
-                      <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/30 text-indigo-500">최근{PRIOR_DAYS}일</th>
+                      <th className="text-right px-2 py-1.5 w-16 bg-rose-50/40 text-rose-600">최근10일</th>
+                      <th className="text-right px-2 py-1.5 w-16 bg-rose-50/40 text-rose-500">지난10일</th>
+                      <th className="text-right px-2 py-1.5 w-16 bg-rose-50/40 text-rose-700">증가량</th>
                     </>
                   )}
-                  {isTrendingGroupCollapsed("growth") ? (
-                    <th className="bg-indigo-100/20 w-4" />
+                  {isTrendingGroupCollapsed("g30") ? (
+                    <th className="bg-rose-100/40 w-4" />
                   ) : (
                     <>
-                      <th className="text-right px-2 py-1.5 w-16 bg-indigo-100/60 text-indigo-700">성장률</th>
-                      <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/60 text-indigo-600">증가량</th>
+                      <th className="text-right px-2 py-1.5 w-16 bg-rose-100/50 text-rose-700">최근30일</th>
+                      <th className="text-right px-2 py-1.5 w-16 bg-rose-100/50 text-rose-600">지난30일</th>
+                      <th className="text-right px-2 py-1.5 w-16 bg-rose-100/50 text-rose-700">증가량</th>
                     </>
                   )}
                   {isTrendingGroupCollapsed("stock") ? (
@@ -1240,63 +1259,65 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
                     <>
                       <th className="text-right px-2 py-1.5 w-14 text-slate-500">현재고</th>
                       <th className="text-right px-2 py-1.5 w-14 text-slate-400">적정</th>
+                      <th className="text-right px-2 py-1.5 w-14 text-slate-400">필요</th>
                     </>
                   )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
-                {displayed.map((r, i) => (
-                  <tr key={r.product_code} className={`hover:bg-indigo-50/20 transition ${r.newly_trending ? "bg-indigo-50/10" : ""}`}>
-                    <td className="text-center px-2 py-2 text-[11px] font-medium text-slate-400 tabular-nums align-top">{i + 1}</td>
-                    <td className="text-left px-2 py-2 align-top">
-                      <button onClick={() => onProductClick?.({ product_code: r.product_code, product_name: r.product_name, supplier: r.supplier })}
-                        className="text-left text-[12px] font-semibold text-slate-700 hover:text-indigo-700 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition">
-                        {r.product_name}
-                      </button>
-                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                        {r.supplier && <span className="text-[10px] text-slate-400">{r.supplier}</span>}
-                        {r.newly_trending && (
-                          <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-100 border border-indigo-200 rounded px-1.5 py-0.5">신규진입</span>
+                {displayed.map((r, i) => {
+                  const need = Math.max(0, (r.optimal_stock || 0) - (r.current_stock || 0));
+                  return (
+                    <tr key={r.product_code} className="hover:bg-rose-50/20 transition">
+                      <td className="text-center px-2 py-2 text-[11px] font-medium text-slate-400 tabular-nums align-top">{i + 1}</td>
+                      <td className="text-left px-2 py-2 align-top">
+                        <button onClick={() => onProductClick?.({ product_code: r.product_code, product_name: r.product_name, supplier: r.supplier })}
+                          className="text-left text-[12px] font-semibold text-slate-700 hover:text-rose-700 hover:underline break-words whitespace-normal leading-snug cursor-pointer transition">
+                          {r.product_name}
+                        </button>
+                        {r.supplier && (
+                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                            <span className="text-[10px] text-slate-400">{r.supplier}</span>
+                          </div>
                         )}
-                      </div>
-                    </td>
-                    {isTrendingGroupCollapsed("sales") ? (
-                      <td className="bg-indigo-50/10 w-4" />
-                    ) : (
-                      <>
-                        <td className="text-right px-2 py-2 text-[12px] font-semibold text-indigo-700 tabular-nums align-top bg-indigo-50/30">{fmt(r.recent_sale)}</td>
-                        <td className="text-right px-2 py-2 text-[12px] font-medium text-slate-400 tabular-nums align-top bg-indigo-50/10">{fmt(r.prior_sale)}</td>
-                      </>
-                    )}
-                    {isTrendingGroupCollapsed("growth") ? (
-                      <td className="bg-indigo-100/10 w-4" />
-                    ) : (
-                      <>
-                        <td className={`text-right px-2 py-2 text-[12px] font-bold tabular-nums align-top bg-indigo-50/40 ${r.newly_trending ? "text-indigo-600" :
-                          (r.growth_rate ?? 0) >= 50 ? "text-indigo-700" :
-                            (r.growth_rate ?? 0) > 0 ? "text-indigo-600" :
-                              "text-slate-400"
-                          }`}>
-                          {r.newly_trending ? "NEW" : r.growth_rate != null ? `${r.growth_rate > 0 ? "+" : ""}${r.growth_rate}%` : "-"}
-                        </td>
-                        <td className={`text-right px-2 py-2 text-[12px] font-semibold tabular-nums align-top bg-indigo-50/20 ${r.absolute_delta > 0 ? "text-indigo-600" : r.absolute_delta < 0 ? "text-rose-500" : "text-slate-400"}`}>
-                          {r.absolute_delta > 0 ? `+${fmt(r.absolute_delta)}` : fmt(r.absolute_delta)}
-                        </td>
-                      </>
-                    )}
-                    {isTrendingGroupCollapsed("stock") ? (
-                      <td className="bg-slate-50/30 w-4" />
-                    ) : (
-                      <>
-                        <td className={`text-right px-2 py-2 text-[12px] font-semibold tabular-nums align-top ${r.below_optimal ? "text-rose-500" : "text-slate-600"}`}
-                          title={r.below_optimal ? `현재고 부족 · ${r.current_stock} < 적정 ${r.optimal_stock}` : ""}>
-                          {fmt(r.current_stock)}
-                        </td>
-                        <td className="text-right px-2 py-2 text-[12px] font-medium text-slate-400 tabular-nums align-top">{r.optimal_stock > 0 ? fmt(r.optimal_stock) : "-"}</td>
-                      </>
-                    )}
-                  </tr>
-                ))}
+                      </td>
+                      {isTrendingGroupCollapsed("g10") ? (
+                        <td className="bg-rose-50/20 w-4" />
+                      ) : (
+                        <>
+                          <td className="text-right px-2 py-2 text-[12px] font-semibold text-rose-700 tabular-nums align-top bg-rose-50/40">{fmt(r.recent_10)}</td>
+                          <td className="text-right px-2 py-2 text-[12px] font-medium text-slate-400 tabular-nums align-top bg-rose-50/40">{fmt(r.prior_10)}</td>
+                          <td className={`text-right px-2 py-2 text-[12px] font-bold tabular-nums align-top bg-rose-50/40 ${r.delta_10 > 0 ? "text-rose-700" : r.delta_10 < 0 ? "text-slate-400" : "text-slate-300"}`}>
+                            {r.delta_10 > 0 ? `+${fmt(r.delta_10)}` : fmt(r.delta_10)}
+                          </td>
+                        </>
+                      )}
+                      {isTrendingGroupCollapsed("g30") ? (
+                        <td className="bg-rose-100/30 w-4" />
+                      ) : (
+                        <>
+                          <td className="text-right px-2 py-2 text-[12px] font-semibold text-rose-700 tabular-nums align-top bg-rose-100/50">{fmt(r.recent_30)}</td>
+                          <td className="text-right px-2 py-2 text-[12px] font-medium text-slate-400 tabular-nums align-top bg-rose-100/50">{fmt(r.prior_30)}</td>
+                          <td className={`text-right px-2 py-2 text-[12px] font-bold tabular-nums align-top bg-rose-100/50 ${r.delta_30 > 0 ? "text-rose-700" : r.delta_30 < 0 ? "text-slate-400" : "text-slate-300"}`}>
+                            {r.delta_30 > 0 ? `+${fmt(r.delta_30)}` : fmt(r.delta_30)}
+                          </td>
+                        </>
+                      )}
+                      {isTrendingGroupCollapsed("stock") ? (
+                        <td className="bg-slate-50/30 w-4" />
+                      ) : (
+                        <>
+                          <td className={`text-right px-2 py-2 text-[12px] font-semibold tabular-nums align-top ${r.below_optimal ? "text-rose-500" : "text-slate-600"}`}
+                            title={r.below_optimal ? `현재고 부족 · ${r.current_stock} < 적정 ${r.optimal_stock}` : ""}>
+                            {fmt(r.current_stock)}
+                          </td>
+                          <td className="text-right px-2 py-2 text-[12px] font-medium text-slate-400 tabular-nums align-top">{r.optimal_stock > 0 ? fmt(r.optimal_stock) : "-"}</td>
+                          <td className={`text-right px-2 py-2 text-[12px] font-semibold tabular-nums align-top ${need > 0 ? "text-rose-500" : "text-slate-300"}`}>{need > 0 ? fmt(need) : "-"}</td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
