@@ -1257,7 +1257,9 @@ export const StockManagePage: React.FC = () => {
     }
   };
   // 2026-07-29 · 사용자 요청 · 재고리스트 기본 전체 (Top 100 → 전체)
-  const [flowLimit, setFlowLimit] = useState<number>(50000);
+  // 2026-07-31 · 사용자 · "상품현황리스트 로딩시 너무 긴데" · 초기값 50000 (전체) → 300 축소
+  //   상단 Top N 옵션(100/300/1000/2000/전체)에서 사용자가 필요 시 확대
+  const [flowLimit, setFlowLimit] = useState<number>(300);
   // 2026-07-28 · 적정재고 자동 계산 (최근 30일 판매량) · 사용자 요청
   const [refillingOptimalStock, setRefillingOptimalStock] = useState(false);
   const handleRefillOptimalStock = async () => {
