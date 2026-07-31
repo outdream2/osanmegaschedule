@@ -6,7 +6,7 @@ import {
   STORE_TOP_WALL, STORE_AISLE_CENTER, STORE_AISLE_PAIRS, STORE_BOTTOM_WALL, STORE_VERTICAL_WING,
   CAT_A_COLORS, CAT_B_COLORS,
 } from "../../constants/storeMapLayout";
-import { getZoneLabel } from "../../constants/zoneLabels";
+import { getZoneLabel, getZoneSubLabel } from "../../constants/zoneLabels";
 import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import {
   Bell,
@@ -1341,7 +1341,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           >
             <span className="text-[10px] font-black text-white bg-amber-700 rounded px-1 py-0.5 leading-none shrink-0">{getZoneLabel(num)}</span>
             {(() => {
-              const cat = zd?.category ?? "";
+              // 2026-07-31 · 사용자 편집 라벨 우선
+              const cat = getZoneSubLabel(num) || (zd?.category ?? "");
               // 카테고리 분리 기준: "·" · "/" · "," (2개 이상이면 두 줄로 표시)
               const parts = cat.split(/[·,\/]/).map(s => s.trim()).filter(Boolean);
               if (parts.length >= 2) {
@@ -1959,8 +1960,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                                   const ca = CAT_A_COLORS[num];
                                   const cb = CAT_B_COLORS[num];
                                   const zd = ZONE_DEFS.find(z => z.num === num);
-                                  const subB = zd?.subB ?? "";
-                                  const subA = zd?.subA ?? "";
+                                  const subB = getZoneSubLabel(`${num}B`) || (zd?.subB ?? "");
+                                  const subA = getZoneSubLabel(`${num}A`) || (zd?.subA ?? "");
                                   return (
                                     <div key={`fullmap-pair-${num}`} className="flex flex-col items-stretch gap-0.5 flex-[2] min-w-[60px]">
                                       {/* B (연한 톤) */}
@@ -2152,8 +2153,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                               const ca = CAT_A_COLORS[num];
                               const cb = CAT_B_COLORS[num];
                               const zd = ZONE_DEFS.find(z => z.num === num);
-                              const subB = zd?.subB ?? "";
-                              const subA = zd?.subA ?? "";
+                              const subB = getZoneSubLabel(`${num}B`) || (zd?.subB ?? "");
+                              const subA = getZoneSubLabel(`${num}A`) || (zd?.subA ?? "");
                               return (
                                 <div key={`pair-${num}`} className="flex flex-col items-stretch gap-0.5 basis-[calc(50%-6px)] md:basis-0 md:flex-[2_2_0%] md:min-w-[60px]">
                                   {/* 상단: B 카테고리 (연한 톤) */}

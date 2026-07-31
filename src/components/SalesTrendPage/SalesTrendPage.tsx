@@ -2150,7 +2150,7 @@ import {
   STORE_TOP_WALL, STORE_AISLE_CENTER, STORE_AISLE_PAIRS, STORE_BOTTOM_WALL, STORE_VERTICAL_WING,
   CAT_A_COLORS, CAT_B_COLORS,
 } from "../../constants/storeMapLayout";
-import { getZoneLabel } from "../../constants/zoneLabels";
+import { getZoneLabel, getZoneSubLabel } from "../../constants/zoneLabels";
 
 interface MiniStoreZoneMapProps {
   /** 구역별 상품 수 · key = 구역 id (예: "1A", "9B", "22") */
@@ -2194,7 +2194,8 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
   // 벽면·수직윙 셀 · 상위 map 의 renderWallZoneCard 와 동일 aspect ratio (~ 1:1.6)
   const wallCell = (num: number) => {
     const zd = ZONE_DEFS.find(z => z.num === num);
-    const cat = zd?.category ?? "";
+    // 2026-07-31 · 사용자 편집 라벨 우선 (getZoneSubLabel) · 없으면 원본 카테고리
+    const cat = getZoneSubLabel(num) || (zd?.category ?? "");
     const count = zoneItemCounts?.[String(num)] ?? 0;
     return (
       <div key={num}
@@ -2222,8 +2223,9 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
     const ca = CAT_A_COLORS[num];
     const cb = CAT_B_COLORS[num];
     const zd = ZONE_DEFS.find(z => z.num === num);
-    const subB = zd?.subB ?? "";
-    const subA = zd?.subA ?? "";
+    // 2026-07-31 · 사용자 편집 라벨 우선 · 없으면 원본 subA/subB
+    const subB = getZoneSubLabel(`${num}B`) || (zd?.subB ?? "");
+    const subA = getZoneSubLabel(`${num}A`) || (zd?.subA ?? "");
     const countB = zoneItemCounts?.[`${num}B`] ?? 0;
     const countA = zoneItemCounts?.[`${num}A`] ?? 0;
     return (
@@ -2257,13 +2259,15 @@ const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zon
   // 중앙 22 (단독) 셀 · 상단 ★BEST + 카테고리 + 번호+상품수
   const centerCell = () => {
     const zd = ZONE_DEFS.find(z => z.num === STORE_AISLE_CENTER);
+    // 2026-07-31 · 사용자 편집 라벨 우선 · 없으면 원본 카테고리
+    const centerLabel = getZoneSubLabel("22") || (zd?.category ?? "");
     const count = zoneItemCounts?.["22"] ?? 0;
     return (
       <div className="flex flex-col items-center gap-0.5 flex-none w-[54px] min-w-[54px]">
         <div className="min-h-[18px] flex items-center justify-center">{rankBadge("22")}</div>
         <div className="w-full text-[10px] font-bold text-slate-700 bg-white border border-slate-300 rounded px-0.5 py-1 leading-tight text-center min-h-[140px] flex items-center justify-center overflow-hidden"
-          title={`${STORE_AISLE_CENTER} · ${zd?.category ?? ""}${count > 0 ? ` · ${count}개 상품` : ""}`}>
-          <span className="line-clamp-6">{zd?.category ?? ""}</span>
+          title={`${STORE_AISLE_CENTER} · ${centerLabel}${count > 0 ? ` · ${count}개 상품` : ""}`}>
+          <span className="line-clamp-6">{centerLabel}</span>
         </div>
         <div className="w-full flex items-center justify-center gap-0.5 flex-wrap mt-0.5">
           <span className="text-[10px] font-black text-white bg-slate-600 rounded px-1 leading-none py-0.5">{getZoneLabel(STORE_AISLE_CENTER)}</span>
