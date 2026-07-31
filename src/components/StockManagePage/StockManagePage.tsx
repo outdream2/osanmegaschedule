@@ -2674,11 +2674,11 @@ export const StockManagePage: React.FC = () => {
               type TabDef = { k: "flow" | "supplier" | "low" | "return" | "diff" | "category" | "trending"; label: string; icon: any; color: "teal" | "sky" | "rose" | "violet" | "amber" | "indigo" | "emerald"; badge?: number };
               const tabs: TabDef[] = [
                 { k: "trending", label: "급상승", icon: TrendingUp, color: "indigo" },
+                { k: "category", label: "카테고리별현황", icon: PieChart, color: "amber" },
                 { k: "flow", label: "상품현황", icon: Activity, color: "teal" },
                 { k: "supplier", label: "공급사", icon: Building2, color: "sky" },
                 { k: "low", label: "적정재고↓", icon: AlertTriangle, color: "emerald" },
                 { k: "diff", label: "손실추적", icon: Layers, color: "violet" },
-                { k: "category", label: "카테고리별현황", icon: PieChart, color: "amber" },
                 { k: "return", label: "반품필요", icon: PackageCheck, color: "rose" },
               ];
               const COLOR_MAP: Record<TabDef["color"], { activeText: string; activeBg: string; activeUnderline: string; activeIcon: string; inactiveHover: string; badgeActive: string; badgeInactive: string }> = {
