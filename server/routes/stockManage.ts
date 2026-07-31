@@ -762,7 +762,8 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
             //   RPC 반환에 이 두 필드 없음 · 서버에서 batch fetch 로 보강
             //   대상 · rows.slice(0, limit) 만 (전체 · 성능 부담)
             //   2026-07-30 · RPC 함수가 이미 sale_qty_month·last_purchase_qty 반환하면 · skip (성능)
-            const needsBoost = rows.length > 0 && rows[0].sale_qty_month === undefined;
+            // sale_qty_month 가 RPC 반환에 포함됐는지 · rpcData[0] 에서 직접 확인 (rows 는 이미 ?? 0 적용됨)
+            const needsBoost = rows.length > 0 && rpcData[0].sale_qty_month === undefined;
             try {
               const targetCodes = needsBoost ? rows.slice(0, limit).map(r => String(r.product_code ?? "").trim()).filter(Boolean) : [];
               if (targetCodes.length > 0) {

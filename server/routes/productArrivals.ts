@@ -65,6 +65,7 @@ router.post("/api/product-arrivals", async (req, res) => {
       supplier:     String(it.supplier ?? "").trim() || null,
       qty:          Number(it.qty ?? 0) || 0,
       status:       String(it.status ?? "pending"),
+      expiring:     it.expiring === true,
     }));
     const { error: iErr } = await supabase.from("product_arrival_items").insert(itemRows);
     if (iErr) {
@@ -102,44 +103,8 @@ router.get("/api/product-arrivals", async (req, res) => {
   }
 });
 
-// GET /api/product-arrivals/:id
-router.get("/api/product-arrivals/:id", async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ error: "잘못된 id" });
-    const { data: header, error: hErr } = await supabase
-      .from("product_arrivals")
-      .select("*")
-      .eq("id", id)
-      .maybeSingle();
-    if (hErr) throw new Error(hErr.message);
-    if (!header) return res.status(404).json({ error: "not found" });
-    const { data: items, error: iErr } = await supabase
-      .from("product_arrival_items")
-      .select("*")
-      .eq("arrival_id", id)
-      .order("id", { ascending: true });
-    if (iErr) throw new Error(iErr.message);
-    res.json({ header, items: items ?? [] });
-  } catch (err: any) {
-    res.status(500).json({ error: err?.message ?? "조회 실패" });
-  }
-});
-
-// DELETE /api/product-arrivals/:id
-router.delete("/api/product-arrivals/:id", async (req, res) => {
-  try {
-    const id = Number(req.params.id);
-    if (!Number.isFinite(id)) return res.status(400).json({ error: "잘못된 id" });
-    const { error } = await supabase.from("product_arrivals").delete().eq("id", id);
-    if (error) throw new Error(error.message);
-    res.json({ ok: true });
-  } catch (err: any) {
-    res.status(500).json({ error: err?.message ?? "삭제 실패" });
-  }
-});
-
-// GET /api/product-arrivals/compare?days=7
+// GET /api/product-arrivals/compare/orders?days=7
+// ⚠️ 반드시 /:id 보다 먼저 등록 — Express 는 등록 순서대로 평가하므로 compare 가 뒤에 있으면 /:id 에 가로채임
 // 최근 N일 발주 vs 입고 비교 (order_requests · product_arrival_items 조인)
 router.get("/api/product-arrivals/compare/orders", async (req, res) => {
   try {
@@ -214,6 +179,44 @@ router.get("/api/product-arrivals/compare/orders", async (req, res) => {
   } catch (err: any) {
     console.error("[product-arrivals compare]", err?.message);
     res.status(500).json({ error: err?.message ?? "비교 조회 실패" });
+  }
+});
+
+// GET /api/product-arrivals/:id
+// ⚠️ /:id 는 반드시 /compare/orders 보다 뒤에 등록
+router.get("/api/product-arrivals/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "잘못된 id" });
+    const { data: header, error: hErr } = await supabase
+      .from("product_arrivals")
+      .select("*")
+      .eq("id", id)
+      .maybeSingle();
+    if (hErr) throw new Error(hErr.message);
+    if (!header) return res.status(404).json({ error: "not found" });
+    const { data: items, error: iErr } = await supabase
+      .from("product_arrival_items")
+      .select("*")
+      .eq("arrival_id", id)
+      .order("id", { ascending: true });
+    if (iErr) throw new Error(iErr.message);
+    res.json({ header, items: items ?? [] });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message ?? "조회 실패" });
+  }
+});
+
+// DELETE /api/product-arrivals/:id
+router.delete("/api/product-arrivals/:id", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).json({ error: "잘못된 id" });
+    const { error } = await supabase.from("product_arrivals").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+    res.json({ ok: true });
+  } catch (err: any) {
+    res.status(500).json({ error: err?.message ?? "삭제 실패" });
   }
 });
 

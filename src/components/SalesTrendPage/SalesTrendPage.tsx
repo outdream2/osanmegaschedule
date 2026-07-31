@@ -295,14 +295,14 @@ export const MultiLineChartInner: React.FC<LineChartProps> = ({ labels, series, 
             }
             <span className="font-bold text-slate-600">{s.label}</span>
             {hoverIdx != null && (
-              <span className="tabular-numstext-slate-800">
+              <span className="tabular-nums text-slate-800">
                 {s.format === "won" ? fmtWon(s.values[hoverIdx]) : fmt(s.values[hoverIdx])}
               </span>
             )}
           </div>
         ))}
         {hoverIdx != null && (
-          <span className="ml-auto text-slate-500 tabular-numsfont-bold">{labels[hoverIdx]}</span>
+          <span className="ml-auto text-slate-500 tabular-nums font-bold">{labels[hoverIdx]}</span>
         )}
       </div>
     </div>
@@ -597,7 +597,7 @@ const ProductTrendTab: React.FC<{
                 <div className="text-[13px] font-black text-slate-800 truncate leading-tight">
                   {rows[0]?.product_name ?? selected.product_name}
                 </div>
-                <div className="text-[10px] tabular-numstext-slate-500 truncate">
+                <div className="text-[10px] tabular-nums text-slate-500 truncate">
                   #{selected.product_code} · {rows[0]?.supplier_name ?? selected.supplier ?? "-"}
                 </div>
               </div>
@@ -648,7 +648,7 @@ const ProductTrendTab: React.FC<{
                       <Info size={11} /> 정보확인
                     </button>
                   </div>
-                  <div className="text-[11px] tabular-numstext-slate-500">
+                  <div className="text-[11px] tabular-nums text-slate-500">
                     #{selected.product_code} · {rows[0]?.supplier_name ?? selected.supplier ?? "-"}
                     {rows[0]?.spec ? ` · ${rows[0].spec}` : ""}
                   </div>
@@ -780,7 +780,7 @@ const ProductTrendTab: React.FC<{
                 </div>
                 <div className="min-w-0">
                   <div className="text-base font-black text-slate-800 truncate">{scanProductModal.name}</div>
-                  <div className="text-[11px] tabular-numstext-slate-500 mt-0.5">#{scanProductModal.code}</div>
+                  <div className="text-[11px] tabular-nums text-slate-500 mt-0.5">#{scanProductModal.code}</div>
                 </div>
               </div>
               <button
@@ -1062,7 +1062,7 @@ const SupplierTrendTab: React.FC<{
                         <Building2 size={11} className="text-sky-500 shrink-0" />
                         <span className="text-xs font-bold text-slate-700 break-words whitespace-normal leading-tight">{sup.supplier}</span>
                         {sup.supplier_code && (
-                          <span className="text-[9px] tabular-numstext-slate-400 shrink-0" title="공급사코드">#{sup.supplier_code}</span>
+                          <span className="text-[9px] tabular-nums text-slate-400 shrink-0" title="공급사코드">#{sup.supplier_code}</span>
                         )}
                         {sup.code_conflict && (
                           <span className="text-[9px] font-bold text-amber-700 bg-amber-100 border border-amber-300 rounded px-1 shrink-0"
@@ -1330,7 +1330,7 @@ export const StockFlowPanel: React.FC<{
             <TrendingUp size={14} className="text-orange-600" />
             {/* 스냅샷 날짜 · 재고관리와 동일 형식 */}
             {snapshot && (
-              <span className="text-[10px] tabular-numsfont-black text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
+              <span className="text-[10px] tabular-nums font-black text-orange-600 bg-orange-50 border border-orange-200 rounded px-1.5 py-0.5">
                 {snapshot}
               </span>
             )}
@@ -1412,7 +1412,7 @@ export const StockFlowPanel: React.FC<{
           const s = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
           const e = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
           return (
-            <span className="text-[10px] tabular-numsfont-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 ml-1">
+            <span className="text-[10px] tabular-nums font-black text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-1.5 py-0.5 ml-1">
               {s} ~ {e}
             </span>
           );
@@ -1470,11 +1470,11 @@ export const StockFlowPanel: React.FC<{
           <span className="text-slate-500 font-black shrink-0">판매</span>
           <input type="number" min={0} value={saleMin}
             onChange={(e) => setSaleMin(e.target.value)} placeholder="최소"
-            className="flex-1 min-w-0 px-1.5 py-1 border border-slate-200 rounded text-[11px] tabular-numstext-right focus:outline-none focus:border-orange-400" />
+            className="flex-1 min-w-0 px-1.5 py-1 border border-slate-200 rounded text-[11px] tabular-nums text-right focus:outline-none focus:border-orange-400" />
           <span className="text-slate-400 shrink-0">~</span>
           <input type="number" min={0} value={saleMax}
             onChange={(e) => setSaleMax(e.target.value)} placeholder="최대"
-            className="flex-1 min-w-0 px-1.5 py-1 border border-slate-200 rounded text-[11px] tabular-numstext-right focus:outline-none focus:border-orange-400" />
+            className="flex-1 min-w-0 px-1.5 py-1 border border-slate-200 rounded text-[11px] tabular-nums text-right focus:outline-none focus:border-orange-400" />
           {(saleMin || saleMax) && (
             <button onClick={() => { setSaleMin(""); setSaleMax(""); }}
               className="text-[10px] font-black text-rose-500 hover:text-rose-700 px-1.5 py-1 rounded hover:bg-rose-50 transition cursor-pointer shrink-0">✕</button>
@@ -1489,7 +1489,7 @@ export const StockFlowPanel: React.FC<{
       >
         <span className={`text-slate-400 text-xs transition-transform ${saleListCollapsed ? "" : "rotate-90"}`}>▶</span>
         <span className="text-[11px] font-black text-slate-600">{listLabel}</span>
-        <span className="text-[10px] tabular-numstext-slate-400">({displayRows.length}건)</span>
+        <span className="text-[10px] tabular-nums text-slate-400">({displayRows.length}건)</span>
       </div>
       <div className={`flex-1 overflow-auto relative max-h-[50vh] ${saleListCollapsed ? "hidden" : ""}`}>
         {loading && (
@@ -2053,7 +2053,7 @@ const ZoneCategoryContent: React.FC = () => {
                 <div className="text-[13px] font-black text-slate-800 truncate leading-tight">
                   구역 {selectedZone}{zoneCategoryLabel(selectedZone) ? ` · ${zoneCategoryLabel(selectedZone)}` : ""}
                 </div>
-                <div className="text-[10px] tabular-numstext-slate-500 truncate">
+                <div className="text-[10px] tabular-nums text-slate-500 truncate">
                   {grouped.find(g => g.zone === selectedZone)?.items.length ?? 0}개 상품
                 </div>
               </div>
@@ -2334,12 +2334,12 @@ const _CategoryTabSupplier_deprecated: React.FC = () => {
                     <div className="flex items-center gap-1.5 min-w-0">
                       <span className={`text-slate-400 text-xs transition-transform shrink-0 ${isOpen ? "rotate-90" : ""}`}>▶</span>
                       <span className={`text-sm font-black ${textCls}`}>{g.name}</span>
-                      <span className="text-[10px] tabular-numstext-slate-400">{g.suppliers.length}개 사</span>
+                      <span className="text-[10px] tabular-nums text-slate-400">{g.suppliers.length}개 사</span>
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[11px] tabular-numstext-slate-600">{fmt(g.saleQty)}판매</span>
+                      <span className="text-[11px] tabular-nums text-slate-600">{fmt(g.saleQty)}판매</span>
                       <span className="text-xs font-black text-emerald-700">{fmtWon(g.purchaseAmount)}</span>
-                      <span className="text-[10px] tabular-numstext-slate-400">{pct.toFixed(1)}%</span>
+                      <span className="text-[10px] tabular-nums text-slate-400">{pct.toFixed(1)}%</span>
                     </div>
                   </div>
                   <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -2350,7 +2350,7 @@ const _CategoryTabSupplier_deprecated: React.FC = () => {
                   <div className="mt-1 ml-4 p-2 border-l-2 border-slate-200 bg-slate-50/50 rounded-r-lg">
                     <div className="flex flex-wrap gap-1">
                       {g.suppliers.slice(0, 30).map(s => (
-                        <span key={s} className="text-[10px] tabular-numstext-slate-600 bg-white border border-slate-200 rounded px-1.5 py-0.5">{s}</span>
+                        <span key={s} className="text-[10px] tabular-nums text-slate-600 bg-white border border-slate-200 rounded px-1.5 py-0.5">{s}</span>
                       ))}
                       {g.suppliers.length > 30 && <span className="text-[10px] text-slate-400">+{g.suppliers.length - 30}...</span>}
                     </div>
@@ -2777,7 +2777,7 @@ export const SalesTrendPage: React.FC = () => {
                 </div>
                 <div className="min-w-0">
                   <div className="text-base font-black text-slate-800 truncate">{scanProductModal.name}</div>
-                  <div className="text-[11px] tabular-numstext-slate-500 mt-0.5">#{scanProductModal.code}</div>
+                  <div className="text-[11px] tabular-nums text-slate-500 mt-0.5">#{scanProductModal.code}</div>
                 </div>
               </div>
               <button onClick={() => setScanProductModal(null)} className="text-slate-400 hover:text-slate-700 text-3xl leading-none font-black w-9 h-9 rounded-lg hover:bg-white/70 transition cursor-pointer flex items-center justify-center shrink-0">×</button>
@@ -2838,7 +2838,7 @@ export const SalesTrendPage: React.FC = () => {
                       <li key={`st-hidden-${code}`} className="flex items-center justify-between gap-3 px-4 py-2.5 hover:bg-amber-50/30 transition">
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-black text-slate-800 truncate" title={p.product_name}>{p.product_name}</div>
-                          <div className="text-[10px] tabular-numstext-slate-400 truncate">
+                          <div className="text-[10px] tabular-nums text-slate-400 truncate">
                             #{code}
                             {p.supplier ? ` · ${p.supplier}` : ""}
                             {p.real_map ? ` · ${p.real_map}` : ""}
