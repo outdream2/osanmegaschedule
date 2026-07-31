@@ -263,9 +263,9 @@ const InlineField: React.FC<{
   onChange: (v: string) => void;
   monospace?: boolean;
   wide?: boolean;
-}> = ({ label, value, editing, icon, type = "text", placeholder, onChange, monospace, wide }) => (
+}> = ({ label, value, editing, icon, type = "text", placeholder, onChange, monospace: _monospace, wide }) => (
   <div className={`flex flex-col gap-0.5 ${wide ? "col-span-2" : ""}`}>
-    <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
       {icon}
       {label}
     </span>
@@ -275,11 +275,11 @@ const InlineField: React.FC<{
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 bg-indigo-50/40 ${monospace ? "font-mono" : ""}`}
+        className="border border-indigo-300 rounded-lg px-2.5 py-1 text-[12px] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 bg-indigo-50/40"
       />
     ) : (
       <span
-        className={`text-[12px] py-1 min-h-[24px] ${monospace ? "font-mono" : ""} ${!value ? "text-slate-300 italic" : "text-slate-700"}`}
+        className={`text-[12px] font-semibold py-1 min-h-[24px] ${!value ? "text-slate-300 italic" : "text-slate-700"}`}
       >
         {value || "(없음)"}
       </span>
@@ -298,30 +298,39 @@ const SectionCard: React.FC<{
   const [open, setOpen] = useState(defaultOpen);
   const headerCls = GROUP_HEADER[group];
   const iconCls   = GROUP_ICON[group];
+  const textCls   = headerCls.split(" ").find(c => c.startsWith("text-")) ?? "";
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`w-full px-3.5 py-2.5 border-b ${headerCls} flex items-center justify-between cursor-pointer transition-colors`}
+        className={`w-full px-4 py-2.5 border-b ${open ? headerCls : "bg-white border-slate-100"} flex items-center justify-between cursor-pointer transition-colors duration-150`}
       >
-        <span className={`flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider ${headerCls.split(" ").find(c => c.startsWith("text-")) ?? ""}`}>
-          <span className={iconCls}>{icon}</span>
+        <span className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider ${open ? textCls : "text-slate-500"}`}>
+          <span className={open ? iconCls : "text-slate-400"}>{icon}</span>
           {title}
         </span>
-        <span className={`transition-transform duration-150 opacity-50 ${open ? "rotate-180" : ""} ${headerCls.split(" ").find(c => c.startsWith("text-")) ?? ""}`}>
-          <svg width="11" height="11" viewBox="0 0 12 12" fill="currentColor">
+        <span className={`transition-transform duration-200 opacity-50 ${open ? "rotate-180" : ""} ${open ? textCls : "text-slate-400"}`}>
+          <svg width="11" height="11" viewBox="0 0 12 12">
             <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
           </svg>
         </span>
       </button>
-      {open && <div className="p-3.5">{children}</div>}
+      {open && <div className="p-4">{children}</div>}
     </div>
   );
 };
 
 // ─── 서브컴포넌트: 빈 상태 행 ───────────────────────────────────────────────
 const EmptyRow: React.FC<{ label: string }> = ({ label }) => (
-  <p className="text-[11px] text-slate-300 italic py-1">{label}</p>
+  <p className="text-[11px] text-slate-300 italic py-1.5">{label}</p>
+);
+
+// ─── 서브컴포넌트: 섹션 소제목 indicator ─────────────────────────────────────
+const SectionLabel: React.FC<{ color: string; children: React.ReactNode }> = ({ color, children }) => (
+  <div className="flex items-center gap-1.5 mb-3">
+    <span className={`inline-block w-1 h-3.5 rounded-full shrink-0 ${color}`} />
+    <span className="text-[11px] font-semibold text-slate-500">{children}</span>
+  </div>
 );
 
 // ─── 서브컴포넌트: 신규 등록 모달 ────────────────────────────────────────────
@@ -424,13 +433,13 @@ const CreateModal: React.FC<{
 
 // ─── 서브컴포넌트: 직원 없음 (우측 빈 상태) ─────────────────────────────────
 const EmptyDetail: React.FC = () => (
-  <div className="flex-1 flex flex-col items-center justify-center gap-3 text-slate-300 select-none">
-    <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center">
-      <Users size={30} className="text-slate-300" />
+  <div className="flex-1 flex flex-col items-center justify-center gap-4 text-slate-300 select-none py-16">
+    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-50 to-violet-50 border border-indigo-100 flex items-center justify-center shadow-sm">
+      <Users size={34} className="text-indigo-300" />
     </div>
     <div className="text-center">
-      <p className="text-sm font-semibold text-slate-400">직원을 선택하세요</p>
-      <p className="text-[11px] text-slate-300 mt-0.5">좌측 목록에서 직원을 클릭하면 인사카드가 표시됩니다</p>
+      <p className="text-sm font-bold text-slate-400">직원을 선택하세요</p>
+      <p className="text-[12px] text-slate-300 mt-1">좌측 목록에서 직원을 클릭하면 인사카드가 표시됩니다</p>
     </div>
   </div>
 );
@@ -620,15 +629,15 @@ const StaffManagePage: React.FC = () => {
     return (
       <button
         onClick={() => handleSelect(emp)}
-        className={`w-full text-left flex items-center h-[52px] px-3 gap-2.5 relative transition-colors cursor-pointer group ${
+        className={`w-full text-left flex items-center h-[54px] px-3 gap-2.5 relative transition-colors duration-100 cursor-pointer group ${
           isSelected
-            ? "bg-indigo-50/70"
-            : "hover:bg-slate-50/60"
+            ? "bg-indigo-50/80"
+            : "hover:bg-slate-50/70"
         }`}
       >
         {/* 선택 강조선 */}
         <span
-          className={`absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full transition-opacity ${
+          className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full transition-all duration-150 ${
             isSelected ? "bg-indigo-500 opacity-100" : "opacity-0"
           }`}
         />
@@ -637,94 +646,78 @@ const StaffManagePage: React.FC = () => {
           <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
         </div>
         {/* 이름 + 메타 */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center gap-px">
-          <span className={`text-[13px] font-semibold leading-tight truncate ${isSelected ? "text-indigo-800" : "text-slate-800"}`}>
+        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
+          <span className={`text-[13px] font-black leading-tight ${isSelected ? "text-indigo-800" : "text-slate-800"}`}>
             {emp.name}
           </span>
           <div className="flex items-center gap-1">
             {emp.position && (
-              <span className={`text-[9px] font-semibold px-1 py-px rounded border leading-tight ${positionColor(emp.position)}`}>
+              <span className={`text-[9px] font-semibold px-1.5 py-px rounded-md border leading-tight ${positionColor(emp.position)}`}>
                 {emp.position}
               </span>
             )}
             {schedType && (
-              <span className={`text-[9px] font-semibold px-1 py-px rounded border leading-tight ${scheduleTypeColor(schedType)}`}>
+              <span className={`text-[9px] font-semibold px-1.5 py-px rounded-md border leading-tight ${scheduleTypeColor(schedType)}`}>
                 {schedType}
               </span>
             )}
             {emp.level != null && (
-              <span className="text-[9px] text-slate-300 font-mono ml-auto">Lv.{emp.level}</span>
+              <span className="text-[9px] text-slate-300 ml-auto">Lv.{emp.level}</span>
             )}
           </div>
         </div>
+        {/* 선택 화살표 힌트 */}
+        {isSelected && (
+          <svg width="12" height="12" viewBox="0 0 12 12" className="text-indigo-400 shrink-0">
+            <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
       </button>
     );
   };
 
   // ── 렌더링 ──────────────────────────────────────────────────────────────────
   return (
-    <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-0 min-h-0">
+    <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-3 min-h-0">
 
-      {/* ── 페이지 헤더 툴바 (h-8 버튼 · shadcn 스타일) ── */}
-      <div className="bg-white border border-slate-200 rounded-t-xl border-b-0 px-4 h-12 flex items-center justify-between gap-2">
+      {/* ── 상단 필터바 (full-width · StockManagePage 벤치마크) ── */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        {/* 페이지 아이콘 + 타이틀 */}
         <div className="flex items-center gap-2">
-          <Users size={15} className="text-indigo-500 shrink-0" />
-          <h2 className="text-sm font-semibold text-slate-800">직원관리</h2>
-          <span className="text-[10px] font-semibold px-1.5 py-px rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 tabular-nums">
+          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm shrink-0">
+            <Users size={13} className="text-white" />
+          </div>
+          <span className="text-[13px] font-bold text-slate-800">직원관리</span>
+          <span className="text-[11px] font-semibold px-1.5 py-px rounded-full bg-indigo-50 text-indigo-600 border border-indigo-200 tabular-nums">
             {employees.length}명
           </span>
         </div>
-        <div className="flex items-center gap-1.5">
-          {/* icon-only 새로고침 */}
-          <button
-            onClick={loadEmployees}
-            disabled={loading}
-            title="새로고침"
-            className="w-8 h-8 flex items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 cursor-pointer disabled:opacity-40 transition-colors"
-          >
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-          </button>
-          {/* 신규 등록 */}
-          <button
-            onClick={() => setCreateOpen(true)}
-            className="h-8 px-3 flex items-center gap-1.5 text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md cursor-pointer shadow-sm transition-colors"
-          >
-            <UserPlus size={12} />
-            신규 등록
-          </button>
+
+        {/* 구분선 */}
+        <div className="hidden sm:block w-px h-5 bg-slate-200 shrink-0" />
+
+        {/* 검색 */}
+        <div className="relative min-w-[160px]">
+          <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="이름 · 직책 · 연락처"
+            className="pl-8 pr-3 h-8 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 bg-slate-50 placeholder:text-slate-400 w-full sm:w-48"
+          />
         </div>
-      </div>
 
-      {/* ── 마스터-디테일 ── */}
-      <div
-        className="flex flex-col lg:flex-row flex-1 bg-white border border-slate-200 rounded-b-xl shadow-sm overflow-hidden"
-        style={{ minHeight: "calc(100vh - 160px)" }}
-      >
-        {/* ════ 좌측: 슬림 리스트 ════ */}
-        <aside className="w-full lg:w-64 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col bg-white max-h-[40vh] lg:max-h-none">
-
-          {/* 검색 */}
-          <div className="px-2.5 pt-2.5 pb-2 border-b border-slate-100">
-            <div className="relative">
-              <Search size={11} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="이름 · 직책 · 연락처"
-                className="w-full pl-7 pr-2 h-7 text-[11px] border border-slate-200 rounded-md focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 bg-slate-50 placeholder:text-slate-350"
-              />
-            </div>
-          </div>
-
-          {/* 직책 segment 필터 */}
-          <div className="px-2.5 py-1.5 border-b border-slate-100 flex gap-1 flex-wrap">
+        {/* 직책 필터 */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">직책</span>
+          <div className="inline-flex bg-slate-50 border border-slate-200 rounded-lg p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] flex-wrap gap-0.5">
             <button
               onClick={() => setFilterPosition("")}
-              className={`text-[9px] font-semibold h-5 px-1.5 rounded border transition-colors cursor-pointer ${
+              className={`h-6 px-2 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
                 filterPosition === ""
-                  ? "bg-indigo-600 text-white border-indigo-600"
-                  : "bg-white text-slate-400 border-slate-200 hover:border-indigo-300 hover:text-indigo-600"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
               }`}
             >
               전체
@@ -733,30 +726,78 @@ const StaffManagePage: React.FC = () => {
               <button
                 key={p}
                 onClick={() => setFilterPosition(filterPosition === p ? "" : p)}
-                className={`text-[9px] font-semibold h-5 px-1.5 rounded border transition-colors cursor-pointer ${
+                className={`h-6 px-2 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
                   filterPosition === p
-                    ? `${positionColor(p)} border-current`
-                    : "bg-white text-slate-400 border-slate-200 hover:border-slate-300"
+                    ? "bg-white text-slate-800 shadow-sm border border-slate-200"
+                    : "text-slate-500 hover:text-slate-700"
                 }`}
               >
                 {p}
               </button>
             ))}
           </div>
+        </div>
+
+        {/* 우측 액션 버튼 */}
+        <div className="ml-auto flex items-center gap-1.5">
+          <button
+            onClick={loadEmployees}
+            disabled={loading}
+            title="새로고침"
+            className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-slate-700 cursor-pointer disabled:opacity-40 transition-colors"
+          >
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+          </button>
+          <button
+            onClick={() => setCreateOpen(true)}
+            className="h-8 px-3 flex items-center gap-1.5 text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg cursor-pointer shadow-sm transition-colors"
+          >
+            <UserPlus size={12} />
+            신규 등록
+          </button>
+        </div>
+      </div>
+
+      {/* ── 마스터-디테일 · 좌우 split ── */}
+      <div
+        className="flex flex-col lg:flex-row flex-1 gap-3 min-h-0"
+        style={{ minHeight: "calc(100vh - 200px)" }}
+      >
+        {/* ════ 좌측: 직원 리스트 카드 ════ */}
+        <aside className="w-full lg:w-72 shrink-0 flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden max-h-[42vh] lg:max-h-none">
+
+          {/* 카드 헤더 */}
+          <div className="flex items-center gap-2 px-4 h-10 border-b border-slate-100 shrink-0">
+            <User size={13} className="text-indigo-400 shrink-0" />
+            <span className="text-[13px] font-semibold text-slate-800">직원 목록</span>
+            {filtered.length !== employees.length && (
+              <span className="text-[10px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded px-1.5 py-px tabular-nums ml-auto">
+                {filtered.length}/{employees.length}
+              </span>
+            )}
+          </div>
+
+          {/* 리스트 테이블 헤더 */}
+          <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0">
+            <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">이름</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">직책 / 근무</span>
+            </div>
+          </div>
 
           {/* 직원 목록 */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100/70">
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
             {loading && filtered.length === 0 ? (
               <div className="flex items-center justify-center py-8 text-slate-400 text-[11px] font-semibold gap-1.5">
                 <Loader2 size={13} className="animate-spin" />로딩 중...
               </div>
             ) : error ? (
-              <div className="m-2.5 p-2.5 text-[11px] text-red-600 font-semibold bg-red-50 rounded-md border border-red-200">
+              <div className="m-2.5 p-2.5 text-[11px] text-red-600 font-semibold bg-red-50 rounded-lg border border-red-200">
                 {error}
                 <button onClick={loadEmployees} className="ml-1.5 underline cursor-pointer">재시도</button>
               </div>
             ) : !loading && filtered.length === 0 ? (
-              <div className="text-center text-[11px] text-slate-300 py-6">해당 조건의 직원이 없습니다</div>
+              <div className="text-center text-[11px] text-slate-300 py-8">해당 조건의 직원이 없습니다</div>
             ) : (
               <div className={loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
                 {filtered.map((emp) => <ListRow key={emp.id} emp={emp} />)}
@@ -765,10 +806,10 @@ const StaffManagePage: React.FC = () => {
           </div>
 
           {/* 하단 신규 등록 */}
-          <div className="px-2.5 py-2 border-t border-slate-100">
+          <div className="px-3 py-2 border-t border-slate-100 shrink-0">
             <button
               onClick={() => setCreateOpen(true)}
-              className="w-full h-7 text-[11px] font-semibold text-indigo-600 border border-indigo-200 rounded-md hover:bg-indigo-50 cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
+              className="w-full h-7 text-[11px] font-semibold text-indigo-600 border border-dashed border-indigo-200 rounded-lg hover:bg-indigo-50 cursor-pointer flex items-center justify-center gap-1.5 transition-colors"
             >
               <UserPlus size={11} /> 신규 직원 등록
             </button>
@@ -776,13 +817,13 @@ const StaffManagePage: React.FC = () => {
         </aside>
 
         {/* ════ 우측: 인사카드 패널 ════ */}
-        <section className="flex-1 flex flex-col min-w-0 bg-slate-50/30">
+        <section className="flex-1 flex flex-col min-w-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
           {!displayEmp ? (
             <EmptyDetail />
           ) : (
             <>
-              {/* ── 프로필 헤더 — 인디고 tint 배너 ── */}
-              <div className="bg-gradient-to-r from-indigo-50/80 to-violet-50/60 border-b border-indigo-100/60 px-5 py-4">
+              {/* ── 프로필 헤더 — 인디고 그라디언트 배너 ── */}
+              <div className="bg-gradient-to-r from-indigo-50/90 to-violet-50/70 border-b border-indigo-100/80 px-5 py-4 shrink-0">
                 <div className="flex items-start gap-4">
                   {/* 사진 */}
                   <div className="relative group shrink-0">
@@ -857,7 +898,7 @@ const StaffManagePage: React.FC = () => {
                           <Award size={9} /> Lv.{editing ? draft?.level : displayEmp.level}
                         </span>
                       )}
-                      <span className="text-[9px] text-slate-300 font-mono ml-auto">#{displayEmp.id}</span>
+                      <span className="text-[9px] text-slate-300 ml-auto">#{displayEmp.id}</span>
                     </div>
                   </div>
 
@@ -868,14 +909,14 @@ const StaffManagePage: React.FC = () => {
                         <button
                           onClick={cancelEdit}
                           disabled={saving}
-                          className="h-7 px-2.5 text-[11px] font-semibold text-slate-600 bg-white border border-slate-300 rounded-md hover:bg-slate-50 cursor-pointer flex items-center gap-1 disabled:opacity-40 transition-colors"
+                          className="h-7 px-2.5 text-[11px] font-semibold text-slate-600 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 cursor-pointer flex items-center gap-1 disabled:opacity-40 transition-colors"
                         >
                           <X size={12} /> 취소
                         </button>
                         <button
                           onClick={saveEdit}
                           disabled={saving}
-                          className="h-7 px-2.5 text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-40 transition-colors"
+                          className="h-7 px-2.5 text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg cursor-pointer flex items-center gap-1.5 shadow-sm disabled:opacity-40 transition-colors"
                         >
                           {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                           {saving ? "저장 중..." : "저장"}
@@ -885,13 +926,13 @@ const StaffManagePage: React.FC = () => {
                       <>
                         <button
                           onClick={() => selectedEmp && startEdit(selectedEmp)}
-                          className="h-7 px-2.5 text-[11px] font-semibold text-indigo-600 bg-white border border-indigo-200 rounded-md hover:bg-indigo-50 cursor-pointer flex items-center gap-1 transition-colors"
+                          className="h-7 px-2.5 text-[11px] font-semibold text-indigo-600 bg-white border border-indigo-200 rounded-lg hover:bg-indigo-50 cursor-pointer flex items-center gap-1 transition-colors"
                         >
                           <Edit2 size={12} /> 편집
                         </button>
                         <button
                           onClick={() => selectedEmp && deleteEmployee(selectedEmp)}
-                          className="h-7 px-2.5 text-[11px] font-semibold text-red-600 bg-white border border-red-200 rounded-md hover:bg-red-50 cursor-pointer flex items-center gap-1 transition-colors"
+                          className="h-7 px-2.5 text-[11px] font-semibold text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50 cursor-pointer flex items-center gap-1 transition-colors"
                         >
                           <Trash2 size={12} /> 삭제
                         </button>
@@ -902,7 +943,7 @@ const StaffManagePage: React.FC = () => {
               </div>
 
               {/* ── 인사카드 섹션들 ── */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-2.5">
+              <div className="flex-1 overflow-y-auto p-4 space-y-2.5 bg-slate-50/30">
 
                 {/* §1 인적사항 — sky 그룹 */}
                 <SectionCard title="인적사항" icon={<User size={11} />} group="personal" defaultOpen>
@@ -1320,25 +1361,29 @@ const StaffManagePage: React.FC = () => {
           onClick={() => setMobileDetail(false)}
         >
           <div
-            className="bg-white w-full max-w-lg rounded-t-xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            className="bg-white w-full max-w-lg rounded-t-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-200 bg-gradient-to-r from-indigo-50/70 to-violet-50/50">
+            {/* 드래그 핸들 */}
+            <div className="flex justify-center pt-2.5 pb-1 shrink-0">
+              <div className="w-10 h-1 rounded-full bg-slate-200" />
+            </div>
+            <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/80 to-violet-50/60 shrink-0">
               <div className="flex items-center gap-2.5">
                 <Avatar name={selectedEmp.name} photoUrl={selectedEmp.photo_url} size="xs" />
                 <div>
-                  <span className="text-sm font-semibold text-slate-800">{selectedEmp.name}</span>
-                  <span className={`ml-2 text-[9px] font-semibold px-1.5 py-px rounded border ${positionColor(selectedEmp.position)}`}>
+                  <span className="text-sm font-bold text-slate-800">{selectedEmp.name}</span>
+                  <span className={`ml-2 text-[9px] font-semibold px-1.5 py-px rounded-md border ${positionColor(selectedEmp.position)}`}>
                     {selectedEmp.position || "직책 없음"}
                   </span>
                 </div>
               </div>
-              <button onClick={() => setMobileDetail(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer w-7 h-7 flex items-center justify-center rounded-md hover:bg-white/60">
+              <button onClick={() => setMobileDetail(false)} className="text-slate-400 hover:text-slate-700 cursor-pointer w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/70 transition-colors">
                 <X size={15} />
               </button>
             </div>
-            <div className="flex-1 overflow-y-auto p-3.5 bg-slate-50/30 space-y-2.5">
-              <div className="grid grid-cols-2 gap-2.5 bg-white rounded-lg border border-slate-200 p-3.5">
+            <div className="flex-1 overflow-y-auto p-3.5 bg-slate-50/40 space-y-2.5">
+              <div className="grid grid-cols-2 gap-2.5 bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm">
                 {(
                   [
                     ["연락처", selectedEmp.phone],
@@ -1351,31 +1396,31 @@ const StaffManagePage: React.FC = () => {
                 ).map(([label, val]) =>
                   val ? (
                     <div key={label} className="flex flex-col gap-0.5">
-                      <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">{label}</span>
-                      <span className="text-[11px] text-slate-700">{val}</span>
+                      <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{label}</span>
+                      <span className="text-[12px] font-semibold text-slate-700">{val}</span>
                     </div>
                   ) : null
                 )}
               </div>
               {selectedEmp.memo && (
-                <div className="bg-white rounded-lg border border-slate-200 p-3.5">
-                  <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider block mb-1">메모</span>
-                  <p className="text-[11px] text-slate-700 whitespace-pre-wrap">{selectedEmp.memo}</p>
+                <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">메모</span>
+                  <p className="text-[12px] text-slate-700 whitespace-pre-wrap leading-relaxed">{selectedEmp.memo}</p>
                 </div>
               )}
             </div>
-            <div className="px-3.5 py-2.5 border-t border-slate-200 bg-white flex gap-1.5">
+            <div className="px-3.5 py-2.5 border-t border-slate-100 bg-white flex gap-1.5 shrink-0">
               <button
                 onClick={() => { setMobileDetail(false); startEdit(selectedEmp); }}
-                className="flex-1 h-8 text-[11px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-md flex items-center justify-center gap-1.5 cursor-pointer hover:bg-indigo-100 transition-colors"
+                className="flex-1 h-9 text-[12px] font-semibold text-indigo-600 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-center gap-1.5 cursor-pointer hover:bg-indigo-100 transition-colors"
               >
-                <Edit2 size={12} /> 편집
+                <Edit2 size={13} /> 편집
               </button>
               <button
                 onClick={() => { setMobileDetail(false); deleteEmployee(selectedEmp); }}
-                className="h-8 px-3 text-[11px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-md flex items-center gap-1 cursor-pointer hover:bg-red-100 transition-colors"
+                className="h-9 px-4 text-[12px] font-semibold text-red-600 bg-red-50 border border-red-200 rounded-xl flex items-center gap-1.5 cursor-pointer hover:bg-red-100 transition-colors"
               >
-                <Trash2 size={12} /> 삭제
+                <Trash2 size={13} /> 삭제
               </button>
             </div>
           </div>
