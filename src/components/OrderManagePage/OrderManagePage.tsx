@@ -1386,6 +1386,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             context="order-manage"
             editable={true}
             emptySub="상세 정보가 표시됩니다"
+            onSupplierInfoOpen={(nm) => openSupplierInfo(nm)}
           />
         )}
           </div>
@@ -2029,6 +2030,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             editable={true}
             emptyMessage="리스트에서 상품을 클릭하세요"
             emptySub="상세 정보가 표시됩니다"
+            onSupplierInfoOpen={(nm) => openSupplierInfo(nm)}
           />
         )}
           </div>

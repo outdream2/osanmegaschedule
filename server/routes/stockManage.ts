@@ -2082,16 +2082,36 @@ router.get("/api/stock-manage/purchase-info-batch", async (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════
 router.get("/api/stock-manage/trending", async (req, res) => {
   const windowDays = Math.max(1, Math.min(180, parseInt(String(req.query.window ?? "30"), 10) || 30));
+  // 2026-07-31 · 사용자 요청 · 기준(=prior) window 를 별도 지정 가능
+  //   미지정 시 기존 동작 유지 (prior = window 와 동일 길이 · 그 이전 구간)
+  //   지정 시 recent 는 최근 windowDays 일 · prior 는 최근 priorDays 일 (recent 포함 전체)
+  //   급상승 탭 요구사항: recent 는 사용자 선택 (7/10/15/30/60) · prior 는 항상 30일 (=최근 30일 기준)
+  const priorDaysRaw = req.query.prior_days ?? req.query.prior_window ?? "";
+  const hasPriorDays = String(priorDaysRaw).trim() !== "";
+  const priorDays = hasPriorDays
+    ? Math.max(1, Math.min(365, parseInt(String(priorDaysRaw), 10) || windowDays))
+    : windowDays;
   const limit = Math.max(1, Math.min(50000, parseInt(String(req.query.limit ?? "500"), 10) || 500));
+  // 필터 파라미터 (선택적)
+  const minRecentQty = Math.max(0, parseInt(String(req.query.min_recent_qty ?? "0"), 10) || 0);
+  const minGrowthPctRaw = String(req.query.min_growth_pct ?? "").trim();
+  const hasMinGrowthPct = minGrowthPctRaw !== "" && !Number.isNaN(Number(minGrowthPctRaw));
+  const minGrowthPct = hasMinGrowthPct ? Number(minGrowthPctRaw) : null;
+  const supplierFilter = String(req.query.supplier ?? "").trim().toLowerCase();
   try {
     const now = new Date();
     const recentFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate() - windowDays);
-    const priorFrom = new Date(now.getFullYear(), now.getMonth(), now.getDate() - windowDays * 2);
+    // prior 시작일 · hasPriorDays 이면 recent 범위와 겹치는 최근 priorDays 구간 · 아니면 recent 이전 구간
+    const priorFrom = hasPriorDays
+      ? new Date(now.getFullYear(), now.getMonth(), now.getDate() - priorDays)
+      : new Date(now.getFullYear(), now.getMonth(), now.getDate() - windowDays * 2);
     const recentFromStr = recentFrom.toISOString().slice(0, 10);
     const priorFromStr = priorFrom.toISOString().slice(0, 10);
     const todayStr = now.toISOString().slice(0, 10);
+    // 조회 시작일 · 두 구간 중 이른 날짜
+    const scanFromStr = priorFromStr < recentFromStr ? priorFromStr : recentFromStr;
 
-    // stock_history 페이지네이션 · 최근 window*2 일치 조회
+    // stock_history 페이지네이션 · 두 구간 커버
     const salesMap = new Map<string, { recent: number; prior: number; name: string; supplier: string | null }>();
     const PAGE = 1000;
     let from = 0;
@@ -2099,7 +2119,7 @@ router.get("/api/stock-manage/trending", async (req, res) => {
       const { data, error } = await supabase
         .from("stock_history")
         .select("product_code, product_name, supplier_name, snapshot_date, sale_qty")
-        .gte("snapshot_date", priorFromStr)
+        .gte("snapshot_date", scanFromStr)
         .lte("snapshot_date", todayStr)
         .range(from, from + PAGE - 1);
       if (error) {
@@ -2118,8 +2138,15 @@ router.get("/api/stock-manage/trending", async (req, res) => {
           name: String((r as any).product_name ?? code),
           supplier: (r as any).supplier_name ?? null,
         };
-        if (snap >= recentFromStr) cur.recent += q;
-        else cur.prior += q;
+        // hasPriorDays · 최근 windowDays 는 recent · 최근 priorDays 전체는 prior (기준 · recent 포함)
+        // !hasPriorDays · 기존 로직 유지 · recent 이전은 prior
+        if (hasPriorDays) {
+          if (snap >= recentFromStr) cur.recent += q;
+          if (snap >= priorFromStr) cur.prior += q;
+        } else {
+          if (snap >= recentFromStr) cur.recent += q;
+          else cur.prior += q;
+        }
         salesMap.set(code, cur);
       }
       if (data.length < PAGE) break;
@@ -2157,6 +2184,16 @@ router.get("/api/stock-manage/trending", async (req, res) => {
       // 성장률 · prior=0 이고 recent>0 이면 "신규 진입" flag (growth_rate=null)
       const growthRate = prior > 0 ? Math.round(((recent - prior) / prior) * 100) : null;
       const newlyTrending = prior === 0 && recent > 0;
+      // ── 필터 적용 ──
+      if (minRecentQty > 0 && recent < minRecentQty) continue;
+      if (minGrowthPct != null) {
+        // 신규 진입 (prior=0) 은 항상 통과 · 그 외는 성장률 >= 최소
+        if (!newlyTrending && (growthRate ?? -999999) < minGrowthPct) continue;
+      }
+      if (supplierFilter) {
+        const sup = (s.supplier ?? "").toLowerCase();
+        if (!sup.includes(supplierFilter)) continue;
+      }
       rows.push({
         product_code: code,
         product_name: s.name,
@@ -2183,9 +2220,16 @@ router.get("/api/stock-manage/trending", async (req, res) => {
 
     res.json({
       window_days: windowDays,
+      prior_days: priorDays,
+      prior_mode: hasPriorDays ? "overlap" : "adjacent",
       recent_from: recentFromStr,
       prior_from: priorFromStr,
       today: todayStr,
+      filters: {
+        min_recent_qty: minRecentQty || null,
+        min_growth_pct: minGrowthPct,
+        supplier: supplierFilter || null,
+      },
       total: rows.length,
       rows: rows.slice(0, limit),
     });

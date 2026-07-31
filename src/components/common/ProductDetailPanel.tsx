@@ -4,7 +4,7 @@
 // 사용처: StockManagePage(flow/low/diff/product/supplier), SalesTrendPage(supplier/loss), OrderManagePage(order/need)
 
 import React, { useEffect, useRef, useState } from "react";
-import { X, Package, TrendingUp, ChevronRight, ChevronDown } from "lucide-react";
+import { X, Package, TrendingUp, ChevronRight, ChevronDown, Building2, ClipboardList, History } from "lucide-react";
 import { ProductInfoCard, PurchaseHistorySection } from "../ScanPage/ProductInfoCard";
 import { type ProductInfo } from "../../lib/productsCache";
 import { SeasonButtons } from "./SeasonButtons";
@@ -37,6 +37,11 @@ export interface ProductDetailPanelProps {
   context?: "scan" | "stock-manage" | "order-manage";
   /** 인라인 편집 여부 (default: true) */
   editable?: boolean;
+  /**
+   * 공급사조회 버튼 클릭 콜백 · showChart 모드의 상단 헤더 카드에서 호출
+   * 부모에서 supplierDetailModal 을 오픈하도록 연결
+   */
+  onSupplierInfoOpen?: (supplierName: string) => void;
 }
 
 // ── 내부: 기간 재고 흐름 차트 ──────────────────────────────────────────────
@@ -296,6 +301,7 @@ export const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({
   showChart = true,
   context = "stock-manage",
   editable = true,
+  onSupplierInfoOpen,
 }) => {
   const handleRealMapUpdate = onRealMapUpdate ?? (() => {});
 
@@ -314,32 +320,71 @@ export const ProductDetailPanel: React.FC<ProductDetailPanelProps> = ({
     );
   }
 
-  // 차트 모드: 차트(맨위) + 상단카드 + 하단 메타카드 (2026-07-16 · 사용자 요청 · 순서 변경 · 각 섹션 접기/펼치기)
+  // 차트 모드: 상단 헤더(상품명·공급사) + 3탭(기간별상품흐름·매입이력·발주내역) + 하위 정보 카드
+  // 2026-07-31 · 사용자 요청 · 3탭 구조 재편 · 공급사조회 버튼 추가
   return <ProductDetailChartMode
     product={product}
     onProductUpdate={onProductUpdate}
     onRealMapUpdate={handleRealMapUpdate}
     context={context}
     editable={editable}
+    onSupplierInfoOpen={onSupplierInfoOpen}
   />;
 };
 
-// 2026-07-16 · 차트 모드 · 각 섹션 접기/펼치기 지원 · 차트 맨 위
+// ── 상단 헤더 카드 (상품명 + 공급사 + 공급사조회 버튼) ─────────────────────────
+// 2026-07-31 · 사용자 요청 · 우측 패널 최상단 · 상품명(크게) / 공급사 + 조회 버튼
+const ProductHeaderCard: React.FC<{
+  product: ProductInfo;
+  onSupplierInfoOpen?: (supplierName: string) => void;
+}> = ({ product, onSupplierInfoOpen }) => {
+  const supplier = (product.supplier ?? "").toString().trim();
+  const canOpenSupplier = !!supplier && !!onSupplierInfoOpen;
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5">
+      {/* 상품명 · 큰 글씨 · 클릭 안됨 */}
+      <div className="text-[13px] font-black text-slate-900 break-words whitespace-normal leading-snug">
+        {product.name || "-"}
+      </div>
+      {/* 공급사 + 조회 버튼 */}
+      <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+        <Building2 size={12} className="text-slate-400 shrink-0" />
+        <span className="text-[12px] font-bold text-slate-700 break-words whitespace-normal">
+          {supplier || <span className="text-slate-400 font-semibold">공급사 정보 없음</span>}
+        </span>
+        {canOpenSupplier && (
+          <button
+            type="button"
+            onClick={() => onSupplierInfoOpen!(supplier)}
+            className="ml-auto min-h-[32px] px-2.5 py-1 text-[11px] font-black rounded-md border border-sky-300 bg-sky-50 text-sky-700 hover:bg-sky-100 active:bg-sky-200 transition cursor-pointer shrink-0"
+            title={`공급사 정보 조회 · ${supplier}`}
+          >
+            공급사조회
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// 2026-07-16 · 차트 모드 · 각 섹션 접기/펼치기 지원
+// 2026-07-31 · 사용자 요청 · 재편성 · 상단 헤더(상품명·공급사) → 3탭(흐름·매입·발주) → 하위 카드
 const ProductDetailChartMode: React.FC<{
   product: ProductInfo;
   onProductUpdate?: (u: Partial<ProductInfo>) => void;
   onRealMapUpdate: (v: string) => void;
   context: "scan" | "stock-manage" | "order-manage";
   editable: boolean;
-}> = ({ product, onProductUpdate, onRealMapUpdate, context, editable }) => {
+  onSupplierInfoOpen?: (supplierName: string) => void;
+}> = ({ product, onProductUpdate, onRealMapUpdate, context, editable, onSupplierInfoOpen }) => {
   const [topCollapsed, setTopCollapsed] = useState(false);
   const [metaCollapsed, setMetaCollapsed] = useState(false);
   return (
     <>
-      {/* 기간 재고 흐름 차트 (2026-07-16 · 맨 위로 이동 · 사용자 요청) */}
-      <StockFlowChart productCode={product.code} productName={product.name} />
+      {/* 상단 헤더 카드 · 상품명 + 공급사 + 공급사조회 (2026-07-31 · 사용자 요청) */}
+      <ProductHeaderCard product={product} onSupplierInfoOpen={onSupplierInfoOpen} />
 
-      {/* 2026-07-29 · 사용자 요청 · 매입이력 · 발주내역 탭 전환 · 두가지 정보 볼 수 있게 */}
+      {/* 3탭 · 기간별상품흐름 · 매입이력 · 발주내역 (2026-07-31 · 사용자 요청) */}
       <PurchaseOrderTabs productCode={product.code} productName={product.name} />
 
       {/* 상단 카드: 헤더 + 재고현황 + 매입판매가 + 발주요청 + 배정구역 · 접기 지원 (매입이력 분리됨) */}
@@ -419,6 +464,8 @@ export interface ProductDetailRightPanelProps {
   editable?: boolean;
   emptyMessage?: string;
   emptySub?: string;
+  /** 상단 헤더 카드 공급사조회 버튼 클릭 콜백 (showChart 모드에서만 노출) */
+  onSupplierInfoOpen?: (supplierName: string) => void;
 }
 
 /**
@@ -446,6 +493,7 @@ export const ProductDetailRightPanel: React.FC<ProductDetailRightPanelProps> = (
   editable = true,
   emptyMessage,
   emptySub,
+  onSupplierInfoOpen,
 }) => (
   <div
     className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 transition-transform duration-150 ${
@@ -470,14 +518,18 @@ export const ProductDetailRightPanel: React.FC<ProductDetailRightPanelProps> = (
           showChart={showChart}
           context={context}
           editable={editable}
+          onSupplierInfoOpen={onSupplierInfoOpen}
         />
       </div>
     )}
   </div>
 );
 
-// 2026-07-29 · 사용자 요청 · 매입이력 · 발주내역 탭 전환 컴포넌트
-//   두 정보를 한 곳에서 볼 수 있도록 · 기존 PurchaseHistorySection 감쌈
+// 2026-07-29 · 매입이력 · 발주내역 탭 전환 컴포넌트
+// 2026-07-31 · 사용자 요청 · 기간별상품흐름 탭 추가 (첫 번째 · default) · 3탭 구조
+//   flow · 기간별상품흐름 (StockFlowChart 재사용)
+//   purchase · 매입이력 (PurchaseHistorySection)
+//   order · 발주내역 (order-requests API)
 interface OrderRequestRow {
   id: string;
   product_code: string;
@@ -489,8 +541,9 @@ interface OrderRequestRow {
   status?: string | null;
   memo?: string | null;
 }
+type FlowTabKey = "flow" | "purchase" | "order";
 const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }> = ({ productCode, productName }) => {
-  const [tab, setTab] = useState<"purchase" | "order">("purchase");
+  const [tab, setTab] = useState<FlowTabKey>("flow");
   const [orders, setOrders] = useState<OrderRequestRow[]>([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
   useEffect(() => {
@@ -508,21 +561,31 @@ const PurchaseOrderTabs: React.FC<{ productCode: string; productName?: string }>
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="flex border-b border-slate-200 bg-slate-50/50">
-        {(["purchase", "order"] as const).map(k => {
+        {(["flow", "purchase", "order"] as const).map(k => {
           const active = tab === k;
-          const label = k === "purchase" ? "매입 이력" : "발주내역";
-          const cls = active
-            ? (k === "purchase" ? "text-emerald-700 border-emerald-500" : "text-sky-700 border-sky-500")
-            : "text-slate-500 border-transparent hover:text-slate-700";
+          const label = k === "flow" ? "기간별 상품흐름" : k === "purchase" ? "매입이력" : "발주내역";
+          const Icon = k === "flow" ? TrendingUp : k === "purchase" ? History : ClipboardList;
+          const activeColor = k === "flow" ? "text-teal-700 border-teal-500"
+                             : k === "purchase" ? "text-emerald-700 border-emerald-500"
+                             : "text-sky-700 border-sky-500";
+          const cls = active ? activeColor : "text-slate-500 border-transparent hover:text-slate-700";
           return (
             <button key={k} type="button" onClick={() => setTab(k)}
-              className={`flex-1 min-h-[44px] py-2 px-3 text-[12px] font-black border-b-2 transition cursor-pointer ${cls}`}>
-              {label}
+              className={`flex-1 min-h-[44px] py-2 px-2 text-[12px] font-black border-b-2 transition cursor-pointer flex items-center justify-center gap-1 ${cls}`}
+              title={label}>
+              <Icon size={13} className="shrink-0" />
+              <span className="truncate">{label}</span>
             </button>
           );
         })}
       </div>
-      {tab === "purchase" ? (
+      {tab === "flow" ? (
+        /* 탭 UI 내부 · 기존 StockFlowChart 카드 스타일이 이미 white bg + border 이므로
+           중첩 border 방지 위해 padding 만 최소로 유지 · 사용자 UX 동일 */
+        <div className="p-2">
+          <StockFlowChart productCode={productCode} productName={productName} />
+        </div>
+      ) : tab === "purchase" ? (
         <div className="px-3 py-2">
           <PurchaseHistorySection productCode={productCode} productName={productName} noBorderTop />
         </div>

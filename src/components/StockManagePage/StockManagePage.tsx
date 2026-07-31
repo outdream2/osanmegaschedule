@@ -923,9 +923,16 @@ const PeriodTrendingSection: React.FC<{
 const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProductClick }) => {
   const [rows, setRows] = useState<TrendingRow[]>([]);
   const [loading, setLoading] = useState(false);
-  const [windowDays, setWindowDays] = useState<7 | 14 | 30 | 60 | 90>(30);
+  // 2026-07-31 · 사용자 요청 · "급상승은 최근판매와 30일이 기준" · 최근 N일 판매 vs 최근 30일 판매(기준) 비교
+  //   priorDays 는 항상 30 · windowDays 는 사용자 선택 (7/10/15/30/60)
+  const [windowDays, setWindowDays] = useState<7 | 10 | 15 | 30 | 60>(7);
+  const PRIOR_DAYS = 30;
   const [sortKey, setSortKey] = useState<"growth" | "delta" | "recent" | "shortage">("growth");
   const [onlyShortage, setOnlyShortage] = useState(false);
+  // ── 검색 조건 (2026-07-31 신규) ──
+  const [minRecentQty, setMinRecentQty] = useState<number>(0);
+  const [minGrowthPct, setMinGrowthPct] = useState<string>(""); // 빈 문자열 = 미적용
+  const [supplierFilter, setSupplierFilter] = useState<string>("");
   const [meta, setMeta] = useState<{ recent_from: string; prior_from: string; total: number } | null>(null);
   // ── 그룹 접기 state (TrendingTab 자체 보유) ──
   const [trendingGroupCollapsed, setTrendingGroupCollapsed] = useState<Set<string>>(new Set());
@@ -937,17 +944,33 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
   const [decadalBuckets, setDecadalBuckets] = useState<PeriodBucket[]>([]);
   const [bucketsLoaded, setBucketsLoaded] = useState(false);
 
+  // 서버 fetch · 필터 변경 시 300ms debounce
   useEffect(() => {
-    setLoading(true);
-    fetch(`/api/stock-manage/trending?window=${windowDays}&limit=1000`)
-      .then(r => r.ok ? r.json() : { rows: [] })
-      .then(j => {
-        setRows(Array.isArray(j.rows) ? j.rows : []);
-        setMeta({ recent_from: j.recent_from ?? "", prior_from: j.prior_from ?? "", total: Number(j.total ?? 0) });
-      })
-      .catch(() => { setRows([]); setMeta(null); })
-      .finally(() => setLoading(false));
-  }, [windowDays]);
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      const params = new URLSearchParams();
+      params.set("window", String(windowDays));
+      params.set("prior_days", String(PRIOR_DAYS));
+      params.set("limit", "1000");
+      if (minRecentQty > 0) params.set("min_recent_qty", String(minRecentQty));
+      const growthNum = minGrowthPct.trim() === "" ? null : Number(minGrowthPct);
+      if (growthNum != null && !Number.isNaN(growthNum)) params.set("min_growth_pct", String(growthNum));
+      const supTrim = supplierFilter.trim();
+      if (supTrim) params.set("supplier", supTrim);
+
+      setLoading(true);
+      fetch(`/api/stock-manage/trending?${params.toString()}`)
+        .then(r => r.ok ? r.json() : { rows: [] })
+        .then(j => {
+          if (cancelled) return;
+          setRows(Array.isArray(j.rows) ? j.rows : []);
+          setMeta({ recent_from: j.recent_from ?? "", prior_from: j.prior_from ?? "", total: Number(j.total ?? 0) });
+        })
+        .catch(() => { if (!cancelled) { setRows([]); setMeta(null); } })
+        .finally(() => { if (!cancelled) setLoading(false); });
+    }, 300);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [windowDays, minRecentQty, minGrowthPct, supplierFilter]);
 
   // ── 월별 / 순별 버킷 fetch (마운트 1회) ──
   useEffect(() => {
@@ -1031,14 +1054,24 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
             </span>
           )}
           <span className="text-[11px] text-slate-400 hidden sm:block">
-            {meta ? `최근 ${windowDays}일 (${meta.recent_from} ~) vs 이전 ${windowDays}일 비교` : `최근 ${windowDays}일 vs 이전 기간 판매 비교 · 신규진입 상단`}
+            {meta ? `최근 ${windowDays}일 (${meta.recent_from} ~) vs 최근 ${PRIOR_DAYS}일 기준 비교` : `최근 ${windowDays}일 vs 최근 ${PRIOR_DAYS}일 기준 비교 · 신규진입 상단`}
           </span>
           <div className="ml-auto flex items-center gap-1.5">
             <button
               type="button"
               onClick={() => {
+                // 필터 그대로 · 강제 재조회
+                const params = new URLSearchParams();
+                params.set("window", String(windowDays));
+                params.set("prior_days", String(PRIOR_DAYS));
+                params.set("limit", "1000");
+                if (minRecentQty > 0) params.set("min_recent_qty", String(minRecentQty));
+                const g = minGrowthPct.trim() === "" ? null : Number(minGrowthPct);
+                if (g != null && !Number.isNaN(g)) params.set("min_growth_pct", String(g));
+                const supTrim = supplierFilter.trim();
+                if (supTrim) params.set("supplier", supTrim);
                 setLoading(true);
-                fetch(`/api/stock-manage/trending?window=${windowDays}&limit=1000`)
+                fetch(`/api/stock-manage/trending?${params.toString()}`)
                   .then(r => r.ok ? r.json() : { rows: [] })
                   .then(j => {
                     setRows(Array.isArray(j.rows) ? j.rows : []);
@@ -1057,16 +1090,17 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
         </div>
         {/* 컨트롤 행 */}
         <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap border-b border-slate-100 bg-white">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">비교기간</span>
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">최근</span>
           <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
-            {([7, 14, 30, 60, 90] as const).map(w => (
+            {([7, 10, 15, 30, 60] as const).map(w => (
               <button key={w} onClick={() => setWindowDays(w)}
                 className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${windowDays === w ? "bg-indigo-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                 {w}일
               </button>
             ))}
           </div>
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">정렬</span>
+          <span className="text-[11px] text-slate-400 shrink-0">vs 최근 {PRIOR_DAYS}일 (기준)</span>
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0 ml-2">정렬</span>
           <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
             {([
               { k: "growth" as const, label: "성장률" },
@@ -1084,6 +1118,56 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
             <input type="checkbox" checked={onlyShortage} onChange={e => setOnlyShortage(e.target.checked)} className="w-3.5 h-3.5 accent-indigo-500" />
             재고 부족만
           </label>
+        </div>
+        {/* ── 검색 조건 필터 행 (2026-07-31 신규) ── */}
+        <div className="flex items-center gap-3 px-4 py-2.5 flex-wrap bg-slate-50/40">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">검색조건</span>
+          <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span className="text-slate-500">최소 최근판매</span>
+            <input
+              type="number"
+              min={0}
+              value={minRecentQty || ""}
+              onChange={e => {
+                const v = parseInt(e.target.value, 10);
+                setMinRecentQty(Number.isFinite(v) && v > 0 ? v : 0);
+              }}
+              placeholder="0"
+              className="w-16 h-7 px-2 text-[11px] tabular-nums text-right border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            />
+            <span className="text-slate-400">개 이상</span>
+          </label>
+          <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600">
+            <span className="text-slate-500">최소 증가율</span>
+            <input
+              type="number"
+              value={minGrowthPct}
+              onChange={e => setMinGrowthPct(e.target.value)}
+              placeholder="예: 50"
+              className="w-16 h-7 px-2 text-[11px] tabular-nums text-right border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            />
+            <span className="text-slate-400">% 이상</span>
+          </label>
+          <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 flex-1 min-w-[180px]">
+            <span className="text-slate-500 shrink-0">공급사</span>
+            <input
+              type="text"
+              value={supplierFilter}
+              onChange={e => setSupplierFilter(e.target.value)}
+              placeholder="공급사명 포함 검색"
+              className="flex-1 min-w-0 h-7 px-2 text-[11px] border border-slate-200 rounded bg-white focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            />
+          </label>
+          {(minRecentQty > 0 || minGrowthPct.trim() !== "" || supplierFilter.trim() !== "") && (
+            <button
+              type="button"
+              onClick={() => { setMinRecentQty(0); setMinGrowthPct(""); setSupplierFilter(""); }}
+              className="h-7 px-2.5 text-[11px] font-semibold text-slate-500 hover:text-rose-500 border border-slate-200 hover:border-rose-300 bg-white rounded transition cursor-pointer"
+              title="필터 초기화"
+            >
+              초기화
+            </button>
+          )}
         </div>
       </div>
 
@@ -1140,7 +1224,7 @@ const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProduc
                   ) : (
                     <>
                       <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/50 text-indigo-600">최근{windowDays}일</th>
-                      <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/30 text-indigo-500">이전{windowDays}일</th>
+                      <th className="text-right px-2 py-1.5 w-16 bg-indigo-50/30 text-indigo-500">최근{PRIOR_DAYS}일</th>
                     </>
                   )}
                   {isTrendingGroupCollapsed("growth") ? (
@@ -3294,6 +3378,7 @@ export const StockManagePage: React.FC = () => {
                     context="stock-manage"
                     editable={true}
                     emptySub="상세 정보가 표시됩니다"
+                    onSupplierInfoOpen={(nm) => openSupplierDetailModal(nm)}
                   />
                   </div>
                 </div>
@@ -3931,6 +4016,7 @@ export const StockManagePage: React.FC = () => {
                   editable={true}
                   emptyMessage="리스트에서 상품을 클릭하세요"
                   emptySub="상세 정보 · 재고 현황 · 매입/판매가"
+                  onSupplierInfoOpen={(nm) => openSupplierDetailModal(nm)}
                 />
               </div>
               </div>
