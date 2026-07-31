@@ -647,12 +647,20 @@ const StaffManagePage: React.FC = () => {
             <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
           </div>
         )}
-        {/* 이름 + 메타 */}
+        {/* 이름 + 메타 · 2026-07-31 · 성별·근무일·연락처 등 간단 정보 추가 */}
         <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5 pl-2">
-          <span className={`text-[13px] font-black leading-tight ${isSelected ? "text-indigo-800" : "text-slate-800"}`}>
-            {emp.name}
-          </span>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className={`text-[13px] font-black leading-tight ${isSelected ? "text-indigo-800" : "text-slate-800"}`}>
+              {emp.name}
+            </span>
+            {emp.gender && (
+              <span className="text-[9px] font-semibold text-slate-400">· {emp.gender}</span>
+            )}
+            {emp.level != null && (
+              <span className="text-[9px] text-slate-400 ml-auto">Lv.{emp.level}</span>
+            )}
+          </div>
+          <div className="flex items-center gap-1 flex-wrap">
             {emp.position && (
               <span className={`text-[9px] font-semibold px-1.5 py-px rounded-md border leading-tight ${positionColor(emp.position)}`}>
                 {emp.position}
@@ -663,10 +671,13 @@ const StaffManagePage: React.FC = () => {
                 {schedType}
               </span>
             )}
-            {emp.level != null && (
-              <span className="text-[9px] text-slate-300 ml-auto">Lv.{emp.level}</span>
+            {emp.weekly_holiday && (
+              <span className="text-[9px] font-medium text-slate-400 leading-tight">휴{emp.weekly_holiday.slice(0, 1)}</span>
             )}
           </div>
+          {emp.phone && (
+            <span className="text-[10px] text-slate-400 tabular-nums leading-tight truncate">{emp.phone}</span>
+          )}
         </div>
         {/* 선택 화살표 힌트 */}
         {isSelected && (
@@ -827,30 +838,38 @@ const StaffManagePage: React.FC = () => {
               {/* ── 프로필 헤더 — 인디고 그라디언트 배너 ── */}
               <div className="bg-gradient-to-r from-indigo-50/90 to-violet-50/70 border-b border-indigo-100/80 px-5 py-4 shrink-0">
                 <div className="flex items-start gap-4">
-                  {/* 사진 */}
-                  <div className="relative group shrink-0">
-                    <Avatar name={displayEmp.name} photoUrl={displayEmp.photo_url} size="lg" />
-                    {editing && (
-                      <button
-                        onClick={() => photoInputRef.current?.click()}
-                        title="사진 변경"
-                        className="absolute inset-0 rounded-full bg-slate-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                      >
-                        <Camera size={16} className="text-white" />
-                      </button>
-                    )}
-                    <input
-                      ref={photoInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        setField("photo_url", URL.createObjectURL(file));
-                      }}
-                    />
-                  </div>
+                  {/* 사진 · 2026-07-31 · 사용자 요청 · 성씨 크게 아바타 제거 · 실제 사진(photo_url) 있을 때만 · 편집 모드에서 업로드 버튼 유지 */}
+                  {(displayEmp.photo_url || editing) && (
+                    <div className="relative group shrink-0">
+                      {displayEmp.photo_url ? (
+                        <Avatar name={displayEmp.name} photoUrl={displayEmp.photo_url} size="lg" />
+                      ) : (
+                        <div className="w-16 h-16 rounded-full bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-slate-400">
+                          <Camera size={20} />
+                        </div>
+                      )}
+                      {editing && (
+                        <button
+                          onClick={() => photoInputRef.current?.click()}
+                          title="사진 변경"
+                          className="absolute inset-0 rounded-full bg-slate-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                        >
+                          <Camera size={16} className="text-white" />
+                        </button>
+                      )}
+                      <input
+                        ref={photoInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          setField("photo_url", URL.createObjectURL(file));
+                        }}
+                      />
+                    </div>
+                  )}
 
                   {/* 이름 · 뱃지 */}
                   <div className="flex-1 min-w-0">
