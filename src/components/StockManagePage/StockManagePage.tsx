@@ -9,6 +9,7 @@ const CategoryTabLazy = lazy(() => import("../SalesTrendPage/SalesTrendPage").th
 // 2026-07-29 · LossTrackerTabLazy 제거 · 손실추적 탭이 실재고차이로 통합됨 (사용자 요청)
 import { Search, Package, TrendingUp, AlertTriangle, Building2, Info, EyeOff, Eye, Loader2 as LoaderIcon, Pencil, Check, X as XIcon, CheckSquare, Square, Boxes, Activity, Layers, FileText, LineChart, PieChart, ChevronRight, ChevronDown, PackageCheck } from "lucide-react";
 import { ReturnListPanel } from "../OrderManagePage/ReturnListPanel";
+import { LowStockPanel } from "./LowStockPanel";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { PurchaseHistoryModal } from "../common/PurchaseHistoryModal";
@@ -1363,29 +1364,6 @@ export const StockManagePage: React.FC = () => {
   // 2026-07-31 · 사용자 · "상품현황리스트 로딩시 너무 긴데" · 초기값 50000 (전체) → 300 축소
   //   상단 Top N 옵션(100/300/1000/2000/전체)에서 사용자가 필요 시 확대
   const [flowLimit, setFlowLimit] = useState<number>(300);
-  // 2026-07-28 · 적정재고 자동 계산 (최근 30일 판매량) · 사용자 요청
-  const [refillingOptimalStock, setRefillingOptimalStock] = useState(false);
-  const handleRefillOptimalStock = async () => {
-    if (refillingOptimalStock) return;
-    if (!window.confirm("적정재고를 최근 30일 판매량으로 일괄 업데이트합니다.\n\n · 기존 적정재고 값은 덮어써집니다.\n · 백업 컬럼(optimal_stock_backup)에는 함께 저장됩니다.\n\n계속하시겠습니까?")) return;
-    setRefillingOptimalStock(true);
-    try {
-      const res = await fetch("/api/products/refill-optimal-stock", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ days: 30 }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data?.error ?? `HTTP ${res.status}`);
-      alert(`✅ 적정재고 업데이트 완료\n · ${data.updated}건 업데이트\n · ${data.failed}건 실패\n · 기준일: ${data.from} ~ 오늘 (${data.days}일)${data.note ? `\n · ${data.note}` : ""}`);
-      // 리스트 갱신 트리거
-      window.dispatchEvent(new CustomEvent("inventory-checks-updated"));
-    } catch (e: any) {
-      alert(`❌ 적정재고 업데이트 실패: ${e?.message ?? "알 수 없는 오류"}`);
-    } finally {
-      setRefillingOptimalStock(false);
-    }
-  };
   // 재고흐름 리스트 · 상품명/코드 검색 (필터)
   const [flowSearch, setFlowSearch] = useState<string>("");
   // 재고흐름 리스트 · 벌크 숨김 · 판매추이와 동일 패턴
@@ -1598,7 +1576,7 @@ export const StockManagePage: React.FC = () => {
   //   flow · supplier · low · diff
   //   기본: flow (재고흐름)
   // 2026-07-29 · 사용자 요청 · 손실추적 → 실재고차이(diff) 로 통합 · "loss" 타입 제거
-  const [stockTab, setStockTab] = useState<"flow" | "supplier" | "return" | "diff" | "category" | "trending">("flow");
+  const [stockTab, setStockTab] = useState<"flow" | "supplier" | "low" | "return" | "diff" | "category" | "trending">("flow");
   // 상품재고현황 매입 셀 클릭 시 팝업 (2026-07-16) · 해당 상품 매입 이력
   const [productPurchaseModal, setProductPurchaseModal] = useState<{ product_code: string; product_name: string } | null>(null);
 
@@ -2682,26 +2660,7 @@ export const StockManagePage: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col max-w-[1360px] mx-auto w-full px-4 sm:px-6 py-3 sm:py-5 gap-3 sm:gap-5">
-      {/* 페이지 상단 탭: 대시보드 / 원본 데이터 */}
-      <div className="flex flex-col gap-3">
-        {/* 2026-07-31 · 사용자 요청 · "재고/판매관리" 제목 제거 · 서브탭 위 여백 최소화 · 우측 관리 버튼만 유지 */}
-        <div className="flex items-center gap-3 flex-wrap min-w-0">
-          <button
-            type="button"
-            onClick={handleRefillOptimalStock}
-            disabled={refillingOptimalStock}
-            className="ml-auto inline-flex items-center gap-1.5 text-[11px] font-medium text-teal-700 bg-teal-50 hover:bg-teal-100 disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed border border-teal-200 hover:border-teal-300 rounded-md px-3 py-1.5 cursor-pointer whitespace-nowrap transition-colors"
-            title="적정재고 (products.optimal_stock) 를 최근 30일 판매량으로 일괄 업데이트 · 관리자 기능"
-          >
-            {refillingOptimalStock ? (
-              <><LoaderIcon size={12} className="animate-spin" /> 계산 중...</>
-            ) : (
-              <span>적정재고 = 30일 판매량</span>
-            )}
-          </button>
-        </div>
-        {/* 2026-07-29 · 사용자 요청 · 상단 검색 블록 제거 · 리스트 안으로 이동 */}
-      </div>
+      {/* 2026-07-29 · 사용자 요청 · 상단 검색 블록 제거 · 리스트 안으로 이동 */}
 
       {pageTab === "raw" ? <RawDataView /> : (
         <>
@@ -2712,14 +2671,15 @@ export const StockManagePage: React.FC = () => {
               - 배경 · rounded-t-lg · 활성 시 미묘한 tint · 비활성 hover 도 tint */}
           <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-1 border-b-2 border-slate-200 sm:overflow-x-auto sm:scrollbar-none px-1 pt-1">
             {(() => {
-              type TabDef = { k: "flow" | "supplier" | "return" | "diff" | "category" | "trending"; label: string; icon: any; color: "teal" | "sky" | "rose" | "violet" | "amber" | "indigo"; badge?: number };
+              type TabDef = { k: "flow" | "supplier" | "low" | "return" | "diff" | "category" | "trending"; label: string; icon: any; color: "teal" | "sky" | "rose" | "violet" | "amber" | "indigo" | "emerald"; badge?: number };
               const tabs: TabDef[] = [
                 { k: "trending", label: "급상승", icon: TrendingUp, color: "indigo" },
                 { k: "flow", label: "상품현황", icon: Activity, color: "teal" },
                 { k: "supplier", label: "공급사", icon: Building2, color: "sky" },
-                { k: "return", label: "반품필요", icon: PackageCheck, color: "rose" },
+                { k: "low", label: "적정재고↓", icon: AlertTriangle, color: "emerald" },
                 { k: "diff", label: "손실추적", icon: Layers, color: "violet" },
                 { k: "category", label: "카테고리별현황", icon: PieChart, color: "amber" },
+                { k: "return", label: "반품필요", icon: PackageCheck, color: "rose" },
               ];
               const COLOR_MAP: Record<TabDef["color"], { activeText: string; activeBg: string; activeUnderline: string; activeIcon: string; inactiveHover: string; badgeActive: string; badgeInactive: string }> = {
                 teal: { activeText: "text-teal-700", activeBg: "bg-teal-50/70", activeUnderline: "bg-teal-500", activeIcon: "text-teal-600", inactiveHover: "hover:bg-teal-50/40 hover:text-teal-700", badgeActive: "bg-teal-100 text-teal-700", badgeInactive: "bg-slate-100 text-slate-500" },
@@ -2728,6 +2688,7 @@ export const StockManagePage: React.FC = () => {
                 violet: { activeText: "text-violet-700", activeBg: "bg-violet-50/70", activeUnderline: "bg-violet-500", activeIcon: "text-violet-600", inactiveHover: "hover:bg-violet-50/40 hover:text-violet-700", badgeActive: "bg-violet-100 text-violet-700", badgeInactive: "bg-slate-100 text-slate-500" },
                 amber: { activeText: "text-amber-700", activeBg: "bg-amber-50/70", activeUnderline: "bg-amber-500", activeIcon: "text-amber-600", inactiveHover: "hover:bg-amber-50/40 hover:text-amber-700", badgeActive: "bg-amber-100 text-amber-700", badgeInactive: "bg-slate-100 text-slate-500" },
                 indigo: { activeText: "text-indigo-700", activeBg: "bg-indigo-50/70", activeUnderline: "bg-indigo-500", activeIcon: "text-indigo-600", inactiveHover: "hover:bg-indigo-50/40 hover:text-indigo-700", badgeActive: "bg-indigo-100 text-indigo-700", badgeInactive: "bg-slate-100 text-slate-500" },
+                emerald: { activeText: "text-emerald-700", activeBg: "bg-emerald-50/70", activeUnderline: "bg-emerald-500", activeIcon: "text-emerald-600", inactiveHover: "hover:bg-emerald-50/40 hover:text-emerald-700", badgeActive: "bg-emerald-100 text-emerald-700", badgeInactive: "bg-slate-100 text-slate-500" },
               };
               return tabs.map(t => {
                 const Icon = t.icon;
@@ -3257,6 +3218,11 @@ export const StockManagePage: React.FC = () => {
               )}
 
               {/* 2026-07-29 · 사용자 요청 · 매입상세 탭 삭제 · 관련 JSX 제거 */}
+
+              {/* 적정재고↓ 탭 · LowStockPanel (2026-07-31 · OrderManagePage에서 복귀) */}
+              {stockTab === "low" && (
+                <LowStockPanel />
+              )}
 
               {/* 반품필요 탭 · ReturnListPanel (2026-07-31 · 탭 스왑 · OrderManagePage에서 이동) */}
               {stockTab === "return" && (

@@ -3,7 +3,7 @@
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
 // 사입(OCR거래명세서 등록) 탭에서는 거래명세서 OCR(OcrPage) 노출
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle, Upload, Building2, ClipboardList, Bell, CheckCircle2, ChevronRight, ChevronDown } from "lucide-react";
+import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle, Upload, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown } from "lucide-react";
 import * as XLSX from "xlsx";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -14,9 +14,7 @@ import type { AppNavPage } from "../AppNavHeader";
 // VendorListEditor · VendorDetailModal · Vendor — split 패널 구성 (static import · panel 모드 지원)
 import { VendorListEditor, VendorDetailModal } from "../LandingPage/VendorListEditor";
 import type { Vendor } from "../LandingPage/VendorListEditor";
-import { StockReconciliationTab } from "../StockManagePage/StockReconciliationTab";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
-import { LowStockPanel } from "../StockManagePage/LowStockPanel";
 
 interface OrderRequest {
   id: string;
@@ -76,262 +74,7 @@ interface OrderManagePageProps {
   ocrTabOnLogout?: () => void;
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// ArrivalMatchTab · 발주 vs 입고 비교 (2026-07-29 · 사용자 요청)
-//   GET /api/product-arrivals/compare/orders?days=N
-//   상태 · match(완전입고) · partial(부분입고) · missing(미입고)
-//   담당자에게 push 알림 전송 버튼
-// ═══════════════════════════════════════════════════════════════════════
-interface ArrivalMatchRow {
-  order_id: number;
-  product_code: string;
-  product_name: string;
-  supplier: string;
-  assigned_staff_id: number | null;
-  assigned_staff_name: string;
-  requested_at: string;
-  order_qty: number;
-  arrived_qty: number;
-  status: "match" | "partial" | "missing";
-  arrival_items: any[];
-}
-type ArrivalSortKey = "product_name" | "supplier" | "requested_at" | "order_qty" | "arrived_qty" | "status" | "assigned_staff_name";
-const ArrivalMatchTab: React.FC = () => {
-  const [rows, setRows] = useState<ArrivalMatchRow[]>([]);
-  const [meta, setMeta] = useState<{ days: number; order_count: number; arrival_count: number } | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [arrivalVendorCatMap, setArrivalVendorCatMap] = useState<Record<string, string | null>>({});
-  useEffect(() => {
-    fetch("/api/vendors?withBalances=1")
-      .then(r => r.ok ? r.json() : [])
-      .then((list: Array<{ company_name: string; category: string | null }>) => {
-        const m: Record<string, string | null> = {};
-        for (const v of list) { const n = String(v.company_name ?? "").trim(); if (n) m[n] = v.category ?? null; }
-        setArrivalVendorCatMap(m);
-      })
-      .catch(() => {});
-  }, []);
-  // 2026-07-30 · 사용자 요청 · 일간(7일) 옵션 제거 · 14/30만 유지
-  const [days, setDays] = useState<14 | 30>(14);
-  const [statusFilter, setStatusFilter] = useState<"all" | "match" | "partial" | "missing">("all");
-  const [notifying, setNotifying] = useState<Set<number>>(new Set());
-  const [notified, setNotified] = useState<Set<number>>(new Set());
-  const [notifyError, setNotifyError] = useState<Record<number, string>>({});
-  const [arrSortKey, setArrSortKey] = useState<ArrivalSortKey>("requested_at");
-  const [arrSortDir, setArrSortDir] = useState<"asc" | "desc">("desc");
-  const handleArrSort = (k: ArrivalSortKey) => {
-    if (arrSortKey === k) setArrSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setArrSortKey(k); setArrSortDir("asc"); }
-  };
-  const arrArrow = (k: ArrivalSortKey) => arrSortKey !== k ? " ⇅" : arrSortDir === "asc" ? " ▲" : " ▼";
-
-  useEffect(() => {
-    setLoading(true);
-    fetch(`/api/product-arrivals/compare/orders?days=${days}`)
-      .then(r => r.ok ? r.json() : { rows: [] })
-      .then(j => {
-        setRows(Array.isArray(j.rows) ? j.rows : []);
-        setMeta({ days: j.days ?? days, order_count: j.order_count ?? 0, arrival_count: j.arrival_count ?? 0 });
-      })
-      .catch(() => { setRows([]); setMeta(null); })
-      .finally(() => setLoading(false));
-  }, [days]);
-
-  const filtered = useMemo(() => {
-    const base = statusFilter === "all" ? rows : rows.filter(r => r.status === statusFilter);
-    return [...base].sort((a, b) => {
-      const dir = arrSortDir === "asc" ? 1 : -1;
-      switch (arrSortKey) {
-        case "product_name": return dir * String(a.product_name).localeCompare(String(b.product_name), "ko");
-        case "supplier":     return dir * String(a.supplier).localeCompare(String(b.supplier), "ko");
-        case "assigned_staff_name": return dir * String(a.assigned_staff_name ?? "").localeCompare(String(b.assigned_staff_name ?? ""), "ko");
-        case "status":       return dir * String(a.status).localeCompare(String(b.status), "ko");
-        case "requested_at": return dir * String(a.requested_at).localeCompare(String(b.requested_at));
-        case "order_qty":    return dir * (a.order_qty - b.order_qty);
-        case "arrived_qty":  return dir * (a.arrived_qty - b.arrived_qty);
-        default:             return 0;
-      }
-    });
-  }, [rows, statusFilter, arrSortKey, arrSortDir]);
-
-  const notify = async (r: ArrivalMatchRow) => {
-    if (!r.assigned_staff_id) return;
-    setNotifying(prev => new Set([...prev, r.order_id]));
-    setNotifyError(prev => { const n = { ...prev }; delete n[r.order_id]; return n; });
-    try {
-      const body = r.status === "missing"
-        ? `[${r.product_name}] 발주 ${r.order_qty}개 · 입고 미확인 · 확인 부탁드립니다`
-        : `[${r.product_name}] 발주 ${r.order_qty}개 · 입고 ${r.arrived_qty}개 · 부족분 ${r.order_qty - r.arrived_qty}개 확인 부탁드립니다`;
-      const res = await fetch("/api/push-send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          employeeId: r.assigned_staff_id,
-          title: r.status === "missing" ? "📦 입고 미확인" : "📦 입고 부족",
-          body,
-          url: "/",
-        }),
-      });
-      if (!res.ok) throw new Error(`알림 전송 실패 (${res.status})`);
-      setNotified(prev => new Set([...prev, r.order_id]));
-    } catch (e: any) {
-      setNotifyError(prev => ({ ...prev, [r.order_id]: e?.message ?? "실패" }));
-    } finally {
-      setNotifying(prev => { const n = new Set(prev); n.delete(r.order_id); return n; });
-    }
-  };
-
-  const fmt = (n: number) => n.toLocaleString();
-  const counts = useMemo(() => {
-    const c = { total: rows.length, match: 0, partial: 0, missing: 0 };
-    for (const r of rows) c[r.status]++;
-    return c;
-  }, [rows]);
-
-  return (
-    <div className="flex-1 flex flex-col min-h-0 gap-3">
-      {/* 헤더 · 기간 · 통계 · 필터 */}
-      <div className="bg-white rounded-xl border border-slate-200 p-3 shadow-sm">
-        <div className="flex items-center gap-2 flex-wrap mb-3">
-          <PackageCheck size={16} className="text-emerald-600 shrink-0" />
-          <span className="text-[15px] font-black text-slate-800">입고매칭 · 발주 vs 입고 비교</span>
-          {meta && (
-            <span className="text-[12px] tabular-nums text-slate-500 font-semibold">
-              최근 {meta.days}일 · 발주 <span className="font-black text-sky-700">{meta.order_count}</span>건 · 입고 <span className="font-black text-emerald-700">{meta.arrival_count}</span>건
-            </span>
-          )}
-        </div>
-        <p className="text-[12px] text-slate-600 mb-3 leading-relaxed">
-          최근 발주요청과 상품입고 저장 기록을 상품코드로 매칭. 미입고/부족분 발견 시 담당자에게 즉시 알림 전송.
-        </p>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[13px] font-black text-slate-700 shrink-0">비교 기간</span>
-          <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5">
-            {([14, 30] as const).map(d => (
-              <button key={d} onClick={() => setDays(d)}
-                className={`px-3 py-1 text-[13px] font-black rounded transition cursor-pointer ${days === d ? "bg-white text-emerald-700 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>
-                {d}일
-              </button>
-            ))}
-          </div>
-          <span className="text-[13px] font-black text-slate-700 shrink-0 ml-2">상태</span>
-          <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5">
-            {([
-              { k: "all"     as const, label: `전체 (${counts.total})` },
-              { k: "match"   as const, label: `완전입고 (${counts.match})` },
-              { k: "partial" as const, label: `부분입고 (${counts.partial})` },
-              { k: "missing" as const, label: `미입고 (${counts.missing})` },
-            ]).map(o => (
-              <button key={o.k} onClick={() => setStatusFilter(o.k)}
-                className={`px-3 py-1 text-[13px] font-black rounded transition cursor-pointer ${statusFilter === o.k ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200" : "text-slate-600 hover:text-slate-900"}`}>
-                {o.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 결과 리스트 */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-16 gap-3 text-slate-400">
-            <Loader2 size={24} className="animate-spin" />
-            <span className="text-[13px] font-black">불러오는 중...</span>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-slate-400 text-[13px] font-black">
-            {statusFilter === "all" ? "매칭 대상 발주가 없습니다" : `${statusFilter === "match" ? "완전입고" : statusFilter === "partial" ? "부분입고" : "미입고"} 상품 없음`}
-          </div>
-        ) : (
-          <div className="overflow-auto max-h-[70vh]">
-            <table className="w-full text-[13px]">
-              <thead className="sticky top-0 bg-slate-50 border-b-2 border-slate-200 z-10 shadow-sm">
-                <tr className="text-slate-600 text-[12px] font-black">
-                  <th onClick={() => handleArrSort("product_name")} title="상품명 정렬" className="text-left px-2 py-2 min-w-[220px] cursor-pointer hover:bg-slate-100 select-none">상품 · 공급사{arrArrow("product_name")}</th>
-                  <th onClick={() => handleArrSort("requested_at")} title="발주일 정렬" className="text-left px-2 py-2 w-20 cursor-pointer hover:bg-slate-100 select-none">발주일{arrArrow("requested_at")}</th>
-                  <th onClick={() => handleArrSort("order_qty")} title="발주량 정렬" className="text-right px-2 py-2 w-16 cursor-pointer hover:bg-slate-100 select-none">발주량{arrArrow("order_qty")}</th>
-                  <th onClick={() => handleArrSort("arrived_qty")} title="입고량 정렬" className="text-right px-2 py-2 w-16 cursor-pointer hover:bg-slate-100 select-none">입고량{arrArrow("arrived_qty")}</th>
-                  <th onClick={() => handleArrSort("status")} title="상태 정렬" className="text-center px-2 py-2 w-20 cursor-pointer hover:bg-slate-100 select-none">상태{arrArrow("status")}</th>
-                  <th onClick={() => handleArrSort("assigned_staff_name")} title="담당자 정렬" className="text-left px-2 py-2 w-24 cursor-pointer hover:bg-slate-100 select-none">담당자{arrArrow("assigned_staff_name")}</th>
-                  <th className="text-center px-2 py-2 w-28">알림</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {filtered.map(r => {
-                  const isNotifying = notifying.has(r.order_id);
-                  const isNotified = notified.has(r.order_id);
-                  const err = notifyError[r.order_id];
-                  return (
-                    <tr key={r.order_id} className={`hover:bg-slate-50/50 ${
-                      r.status === "match"   ? "bg-emerald-50/30" :
-                      r.status === "partial" ? "bg-amber-50/40" :
-                      r.status === "missing" ? "bg-rose-50/40" : ""
-                    }`}>
-                      <td className="text-left px-2 py-2 align-top">
-                        <p className="text-[14px] font-black text-slate-800 break-words whitespace-normal leading-snug">{r.product_name || "-"}</p>
-                        <div className="flex items-center gap-1 flex-wrap mt-0.5">
-                          {r.supplier && (
-                            <>
-                              <span className="text-[11px] text-slate-500 font-semibold">{r.supplier}</span>
-                              <VendorCategoryBadge category={arrivalVendorCatMap[r.supplier.trim()] ?? null} />
-                              <span className="text-[11px] text-slate-400">·</span>
-                            </>
-                          )}
-                          <span className="text-[11px] text-slate-500 font-semibold tabular-nums">#{r.product_code}</span>
-                        </div>
-                      </td>
-                      <td className="text-left px-2 py-2 text-[12px] tabular-nums text-slate-600 align-top">
-                        {r.requested_at ? new Date(r.requested_at).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" }) : "-"}
-                      </td>
-                      <td className="text-right px-2 py-2 text-[14px] font-black text-sky-700 tabular-nums align-top">
-                        {fmt(r.order_qty)}
-                      </td>
-                      <td className="text-right px-2 py-2 text-[14px] font-black tabular-nums align-top text-emerald-700">
-                        {fmt(r.arrived_qty)}
-                      </td>
-                      <td className="text-center px-2 py-2 align-top">
-                        <span className={`inline-flex items-center gap-1 text-[12px] font-black px-2 py-1 rounded-md border ${
-                          r.status === "match"   ? "bg-emerald-50 text-emerald-700 border-emerald-300" :
-                          r.status === "partial" ? "bg-amber-50 text-amber-700 border-amber-300" :
-                          "bg-rose-50 text-rose-700 border-rose-300"
-                        }`}>
-                          {r.status === "match"   ? "완전입고" :
-                           r.status === "partial" ? `부족 ${r.order_qty - r.arrived_qty}` :
-                           "미입고"}
-                        </span>
-                      </td>
-                      <td className="text-left px-2 py-2 text-[12px] font-bold text-slate-700 align-top">
-                        {r.assigned_staff_name || <span className="text-slate-400">미배정</span>}
-                      </td>
-                      <td className="text-center px-2 py-2 align-top">
-                        {r.status === "match" ? (
-                          <span className="text-[11px] text-slate-400">불필요</span>
-                        ) : !r.assigned_staff_id ? (
-                          <span className="text-[11px] text-slate-400">담당자 없음</span>
-                        ) : isNotified ? (
-                          <span className="inline-flex items-center gap-1 text-[12px] font-black text-emerald-700 px-2 py-1 bg-emerald-50 border border-emerald-200 rounded-md">
-                            ✓ 전송됨
-                          </span>
-                        ) : (
-                          <button onClick={() => notify(r)} disabled={isNotifying}
-                            className="inline-flex items-center gap-1 text-[12px] font-black px-2.5 py-1 bg-rose-500 hover:bg-rose-600 disabled:opacity-50 text-white rounded-md transition cursor-pointer shadow-sm">
-                            {isNotifying ? <Loader2 size={12} className="animate-spin" /> : <Bell size={12} />}
-                            {isNotifying ? "전송중" : "담당자 연락"}
-                          </button>
-                        )}
-                        {err && <div className="text-[10px] text-rose-600 mt-1">{err}</div>}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
+// ArrivalMatchTab 제거됨 (2026-07-31 · 사용자 요청)
 
 const OrderManagePage: React.FC<OrderManagePageProps> = ({
   ocrTabAuthSession,
@@ -340,7 +83,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   ocrTabOnLogout,
 }) => {
   // 상단 탭 (발주요청 / 발주필요 / 반품필요 / 사입(OCR거래명세서 등록) / 공급사관리) · Vercel Ink underline 스타일
-  const [topTab, setTopTab] = useState<"order" | "need" | "low" | "receipt" | "reconciliation" | "vendor" | "arrival_match" | "arrival_history">("order");
+  const [topTab, setTopTab] = useState<"order" | "need" | "receipt" | "reconciliation" | "vendor" | "arrival_history">("order");
 
   // 2026-07-30 · 사용자 요청 · 입고내역 탭 · product_arrivals 이력 조회
   interface ArrivalHistoryRow {
@@ -1069,12 +812,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         {[
           { k: "order"   as const, label: "발주요청", icon: ShoppingCart, color: "sky" },
           { k: "need"    as const, label: "발주필요", icon: ClipboardList, color: "amber", badge: lowStock.length },
-          // 2026-07-31 · 탭 스왑 · 반품필요(return) → 적정재고↓(low) 로 교체 (StockManagePage 로 이동)
-          { k: "low"     as const, label: "적정재고↓", icon: AlertTriangle, color: "rose" },
           // 라벨 반응형: 데스크탑 lg+ 은 풀네임 · 태블릿·모바일은 축약 (2026-07-16)
           { k: "receipt" as const, label: "사입(OCR거래명세서 등록)", shortLabel: "사입·OCR", icon: PackageCheck, color: "violet" },
-          // 2026-07-29 · 사용자 요청 · 발주 vs 입고 비교 · 담당자 연락
-          { k: "arrival_match" as const, label: "입고매칭", icon: PackageCheck, color: "emerald" },
           // 2026-07-30 · 사용자 요청 · 상품입고 이력 조회 (product_arrivals API)
           { k: "arrival_history" as const, label: "입고내역", icon: Package, color: "indigo" },
           // 2026-07-28 · 사용자 요청 · 입고/사입/ERP 검증 탭 제거
@@ -1085,18 +824,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           const activeText = {
             sky:     "text-sky-700",
             amber:   "text-amber-700",
-            rose:    "text-rose-700",
             violet:  "text-violet-700",
-            emerald: "text-emerald-700",
             teal:    "text-teal-700",
             indigo:  "text-indigo-700",
           }[t.color as string]!;
           const activeBar = {
             sky:     "bg-sky-500",
             amber:   "bg-amber-500",
-            rose:    "bg-rose-500",
             violet:  "bg-violet-500",
-            emerald: "bg-emerald-500",
             teal:    "bg-teal-500",
             indigo:  "bg-indigo-500",
           }[t.color as string]!;
@@ -1404,16 +1139,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           />
         </div>
       )}
-      {/* 2026-07-28 · 사용자 요청 · 입고/사입/ERP 검증 탭 및 render 제거 */}
-      {/* 2026-07-31 · 탭 스왑 · 적정재고↓(low) 탭 추가 · LowStockPanel (StockManagePage에서 이동) */}
-      {topTab === "low" && (
-        <LowStockPanel />
-      )}
-      {/* ── 입고매칭 탭 · 발주 vs 입고 비교 (2026-07-29 · 사용자 요청) ── */}
-      {topTab === "arrival_match" && (
-        <ArrivalMatchTab />
-      )}
-
       {/* ── 입고내역 탭 · 상품입고 이력 (2026-07-30 · 사용자 요청) ── */}
       {topTab === "arrival_history" && (
         <div className="flex-1 flex flex-col min-h-0 gap-3">
