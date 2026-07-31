@@ -20,17 +20,26 @@ interface VendorCategoryBadgeProps {
 }
 
 /** 공급사 분류 배지 — null 이면 null 반환 (JSX 조건부 렌더 불필요) */
+/**
+ * 유효 카테고리 화이트리스트 · DB 에 이 목록 외 값(예: "직영")이 남아있어도 오표시 방지
+ * 2026-07-31 · 사용자 요청 · "직영이라는 분류는 없는데" 오표시 이슈 fix
+ */
+const VALID_CATEGORIES: readonly VendorCategory[] = ["위탁", "선결제", "회전", "기타"] as const;
+
 export const VendorCategoryBadge: React.FC<VendorCategoryBadgeProps> = ({
   category,
   className = "",
 }) => {
   if (!category) return null;
-  const style = CATEGORY_STYLE[category as VendorCategory] ?? "bg-slate-50 text-slate-600 border-slate-300";
+  const trimmed = String(category).trim();
+  // 유효 카테고리만 렌더 · 그 외 값(직영 등 옛 데이터) 은 표시 안 함
+  if (!VALID_CATEGORIES.includes(trimmed as VendorCategory)) return null;
+  const style = CATEGORY_STYLE[trimmed as VendorCategory];
   return (
     <span
       className={`inline-flex items-center text-[10px] font-black rounded px-1.5 py-0.5 border leading-none shrink-0 ${style} ${className}`}
     >
-      {category}
+      {trimmed}
     </span>
   );
 };
