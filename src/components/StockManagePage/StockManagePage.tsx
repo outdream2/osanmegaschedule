@@ -3831,7 +3831,7 @@ export const StockManagePage: React.FC = () => {
                                         <>
                                           {groupHeader("stock", "재고현황", 3)}
                                           {groupHeader("purchase", "매입현황", 3)}
-                                          {groupHeader("sales", "판매현황", 4)}
+                                          {groupHeader("sales", "판매현황", 5)}
                                         </>
                                       );
                                     })()}
@@ -3940,11 +3940,20 @@ export const StockManagePage: React.FC = () => {
                                           {!isFlowGroupCollapsed("sales") && <>
                                             {/* 2026-07-30 · 사용자 요청 · 판매현황 · 재고금액 → 판매량 (sale_qty) */}
                                             <th onClick={() => toggleFlowSort("sale")}
-                                              className={`text-right px-0.5 py-1.5 w-20 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale" ? "text-rose-800" : "text-rose-700"}`}
+                                              className={`text-right px-0.5 py-1.5 w-16 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "sale" ? "text-rose-800" : "text-rose-700"}`}
                                               title="판매량 · 조회기간 sale_qty 합계 · 클릭 정렬">
                                               <span className="flex flex-col leading-tight items-end">
                                                 <span>판매량</span>
                                                 <span className="text-[10px] opacity-70">{arrowFor("sale")}</span>
+                                              </span>
+                                            </th>
+                                            {/* 2026-07-31 · 사용자 요청 · 판매량 옆 판매금액 (기간별 total_amount 합계) */}
+                                            <th onClick={() => toggleFlowSort("amount")}
+                                              className={`text-right px-0.5 py-1.5 w-20 text-[11px] font-black cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition ${flowSort === "amount" ? "text-rose-800" : "text-rose-700"}`}
+                                              title="판매금액 · 조회기간 total_amount 합계 · 클릭 정렬">
+                                              <span className="flex flex-col leading-tight items-end">
+                                                <span>판매금액</span>
+                                                <span className="text-[10px] opacity-70">{arrowFor("amount")}</span>
                                               </span>
                                             </th>
                                             <th onClick={() => toggleFlowSort("last_purchase_price")}
@@ -4125,6 +4134,16 @@ export const StockManagePage: React.FC = () => {
                                             title="판매량 · 조회기간 sale_qty 합계">
                                             {saleV > 0 ? fmt(saleV) : "-"}
                                           </td>
+                                          {/* 2026-07-31 · 판매금액 (기간별 total_amount 합계) · 만원/억 축약 · fmtMan */}
+                                          {(() => {
+                                            const saleAmount = Number((p as any).total_amount ?? 0);
+                                            return (
+                                              <td className="text-right px-1.5 py-2.5 text-rose-600 font-black text-[12px] align-top tabular-nums"
+                                                title={saleAmount > 0 ? `판매금액 ${saleAmount.toLocaleString()}원 · 조회기간 total_amount 합계` : "판매금액 없음"}>
+                                                {fmtMan(saleAmount)}
+                                              </td>
+                                            );
+                                          })()}
                                           <td className="text-right px-1.5 py-2.5 text-slate-500 font-black text-[12px] align-top tabular-nums" title="ERP 사입 단가 (products.purchase_price)">{purP > 0 ? fmtWon(purP) : "-"}</td>
                                           <td className="text-right px-1.5 py-2.5 text-slate-600 font-black text-[12px] align-top tabular-nums">{saleP > 0 ? fmtWon(saleP) : "-"}</td>
                                           <td className={`text-right px-1.5 py-2.5 font-black text-[12px] align-top tabular-nums ${profitRate == null ? "text-slate-300" : profitRate >= 30 ? "text-slate-700" : profitRate >= 15 ? "text-slate-600" : profitRate >= 0 ? "text-slate-500" : "text-rose-500"}`}
