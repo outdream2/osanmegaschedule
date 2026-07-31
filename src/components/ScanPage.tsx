@@ -384,9 +384,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         <aside className="lg:w-[320px] xl:w-[340px] lg:shrink-0 flex flex-col gap-4
           lg:sticky lg:top-4 lg:self-start">
 
-          {/* ── 스캔 카드 ── */}
-          <div className="bg-white rounded-xl border border-slate-200/80
-            shadow-sm overflow-hidden">
+          {/* ── 스캔 카드 · rounded-2xl + 강화 shadow (ProductArrivalPage layout 통일) ── */}
+          <div className="bg-white rounded-2xl border border-slate-200/80
+            shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
 
             {/* 헤더 그라디언트 */}
             <div className="relative px-5 pt-4 pb-3 bg-gradient-to-b from-teal-50/70 to-transparent">
@@ -503,16 +503,35 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             </div>
           </div>
 
-          {/* ── 도움말 ── */}
-          <div className="bg-teal-50/60 rounded-xl border border-teal-200/60 px-4 py-3.5 flex flex-col gap-1.5">
-            <p className="text-[11px] font-black text-teal-700">입력 안내</p>
-            <ul className="text-[11px] text-teal-600 leading-relaxed space-y-1">
-              <li>창고·매장1·매장2 수량을 입력</li>
-              <li>실재고 합계는 자동 계산됩니다</li>
-              <li>매장2는 real_map "/" 있을 때만 활성</li>
-              <li>하단 "전체 등록" 버튼으로 일괄 저장</li>
-            </ul>
-          </div>
+          {/* ── 요약 카운트 카드 · ProductArrivalPage 레이아웃 통일 ── */}
+          {(() => {
+            const warehouseTotal = rows.reduce((s, r) => s + (Number(r.warehouseQty) || 0), 0);
+            const store1Total = rows.reduce((s, r) => s + (Number(r.store1Qty) || 0), 0);
+            const store2Total = rows.reduce((s, r) => s + (Number(r.store2Qty) || 0), 0);
+            const grandTotal = warehouseTotal + store1Total + store2Total;
+            const Pill: React.FC<{ label: string; value: number; valueClass: string; accent?: string }> = ({ label, value, valueClass, accent }) => (
+              <div className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl transition ${accent ?? ""}`}>
+                <span className={`text-[16px] sm:text-[18px] font-black tabular-nums leading-none ${valueClass}`}>{value}</span>
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 leading-none">{label}</span>
+              </div>
+            );
+            return (
+              <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)] px-2 py-2">
+                <div className="grid grid-cols-4 gap-1">
+                  <Pill label="총건수" value={rows.length} valueClass="text-slate-800" />
+                  <Pill label="창고" value={warehouseTotal} valueClass="text-slate-700" accent="hover:bg-slate-50/60 rounded-xl transition" />
+                  <Pill label="매장1" value={store1Total} valueClass="text-sky-600" accent="hover:bg-sky-50/60 rounded-xl transition" />
+                  <Pill label="매장2" value={store2Total} valueClass="text-violet-600" accent="hover:bg-violet-50/60 rounded-xl transition" />
+                </div>
+                <div className="mx-2 mt-1 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                  <span className="text-[11px] font-semibold text-slate-400">총 실재고 수량</span>
+                  <span className="text-[13px] font-black text-slate-800 tabular-nums">
+                    {grandTotal}<span className="text-[10px] font-semibold text-slate-400 ml-0.5">개</span>
+                  </span>
+                </div>
+              </div>
+            );
+          })()}
         </aside>
 
         {/* ══════════════════════════════════════════════════════
@@ -520,14 +539,14 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         ══════════════════════════════════════════════════════ */}
         <section className="flex-1 min-w-0 flex flex-col gap-4">
 
-          {/* ── 리스트 카드 ── */}
-          <div className="bg-white rounded-xl border border-slate-200/80
-            shadow-sm flex flex-col min-h-[320px] overflow-hidden">
+          {/* ── 리스트 카드 · rounded-2xl 통일 ── */}
+          <div className="bg-white rounded-2xl border border-slate-200/80
+            shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col min-h-[320px] overflow-hidden">
 
             {/* 테이블 헤더 바 */}
             <div className="flex items-center justify-between
               px-4 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200/80
-              bg-gradient-to-r from-slate-50/80 to-white rounded-t-2xl">
+              bg-gradient-to-r from-slate-50/80 to-white rounded-t-2xl sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-2.5">
                 <div className="w-7 h-7 rounded-lg bg-teal-100 flex items-center justify-center">
                   <Package size={14} className="text-teal-600" />
@@ -756,12 +775,12 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             )}
           </div>
 
-          {/* ── 전체 저장 카드 ── */}
+          {/* ── 전체 저장 카드 · rounded-2xl 통일 ── */}
           {rows.length > 0 && (
-            <div className={`bg-white rounded-xl border-2 overflow-hidden transition-all duration-300 ${
+            <div className={`bg-white rounded-2xl border-2 overflow-hidden transition-all duration-300 ${
               saveStatus === "done"
                 ? "border-emerald-300/80 shadow-[0_0_0_4px_rgba(16,185,129,0.08),0_4px_16px_rgba(0,0,0,0.08)]"
-                : "border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.05)]"
+                : "border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
             }`}>
               <div className={`px-5 py-3.5 border-b border-slate-100/80 flex items-center justify-between gap-2 ${
                 saveStatus === "done" ? "bg-gradient-to-r from-emerald-50/60 to-transparent" : "bg-slate-50/40"
