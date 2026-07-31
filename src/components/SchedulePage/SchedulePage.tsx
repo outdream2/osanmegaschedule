@@ -2023,8 +2023,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                                   <span
                                     onMouseDown={(e) => e.stopPropagation()}
                                     onClick={(e) => { e.stopPropagation(); setCalendarEmployee(emp); }}
-                                    className={`font-bold text-xs sm:text-[13px] cursor-pointer select-none transition truncate hover:underline ${emp.position === "약사" ? "text-emerald-700 hover:text-emerald-900 ring-2 ring-emerald-500 ring-offset-1 rounded px-0.5" : "text-indigo-600 hover:text-indigo-800"}`}
-                                    title="클릭하여 개인 스케줄 달력 보기"
+                                    className={`font-bold text-[11px] leading-tight cursor-pointer select-none transition break-keep hover:underline ${emp.position === "약사" ? "text-emerald-700 hover:text-emerald-900 ring-2 ring-emerald-500 ring-offset-1 rounded px-0.5" : "text-indigo-600 hover:text-indigo-800"}`}
+                                    title={`${emp.name} — 클릭하여 개인 스케줄 달력 보기`}
                                   >
                                     {emp.name}
                                   </span>

@@ -209,7 +209,7 @@ function renderSingleChip(
           ? { backgroundColor: "#eef2ff", color: "#3730a3", borderColor: "#a5b4fc" }
           : undefined),
       }}
-      className={`relative flex items-center gap-1 whitespace-nowrap ${compact ? "px-2 py-1 text-[11px]" : "px-2 py-1 text-[12px]"} rounded-full font-bold border cursor-grab active:cursor-grabbing select-none transition ${
+      className={`relative flex items-center gap-1 whitespace-nowrap ${compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-0.5 text-[11px]"} rounded-full font-bold border cursor-grab active:cursor-grabbing select-none transition ${
         // 약사는 항상 emerald ring 테두리 (배정 여부 관계없이 시각적으로 두드러지게)
         isPharmacist ? "ring-2 ring-emerald-500 ring-offset-1 ring-offset-white" : ""
       } ${
