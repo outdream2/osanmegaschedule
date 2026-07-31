@@ -41,7 +41,7 @@ import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
-  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals", auth?: AuthSession) => void;
+  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "zone-labels", auth?: AuthSession) => void;
   onLogout: () => void;
   onAuthOnly?: (auth: AuthSession) => void;
 }
@@ -1056,6 +1056,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">권한 · 근무 유형 · 시급 등 앱 전체 설정</div>
                       <div className="flex items-center gap-1 mt-2 text-fuchsia-600 text-xs font-bold">
                         <span className="text-[11px] sm:text-xs">설정하기</span>
+                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </div>
+                  </button>
+                )}
+
+                {/* 구역 라벨 관리 — sky (level 9 전용) · 2026-07-31 · 매장 구역 번호/부제 편집 */}
+                {isSuperAdminLevel9 && (
+                  <button onClick={() => onNavigate("zone-labels", authSession!)}
+                    className="group relative bg-white border border-sky-200/80 hover:border-sky-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,242,254,0.7) 0%, transparent 60%)" }} />
+                    <div className="relative">
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #38bdf8" }}>
+                        <MapPin size={16} className="text-sky-600 sm:hidden" /><MapPin size={20} className="text-sky-600 hidden sm:block" />
+                      </div>
+                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">구역 라벨 관리</div>
+                      <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">매장 구역 번호·부제 편집 · 모든 페이지 반영</div>
+                      <div className="flex items-center gap-1 mt-2 text-sky-600 text-xs font-bold">
+                        <span className="text-[11px] sm:text-xs">편집하기</span>
                         <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     </div>

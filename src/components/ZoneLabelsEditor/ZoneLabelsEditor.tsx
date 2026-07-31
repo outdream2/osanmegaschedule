@@ -1,0 +1,506 @@
+// src/components/ZoneLabelsEditor/ZoneLabelsEditor.tsx
+// 구역 라벨 관리 UI · 2026-07-31 (B단계 마무리)
+//   - 관리자(level 9) 전용
+//   - 서버 fetch → 로컬 편집 → PUT 저장 → setZoneMappings() → 다른 페이지 즉시 반영
+//   - 카테고리 그룹 접기/펴기 · 원본 zoneId 는 read-only · 번호/부제만 편집
+//   - 번호 중복 검증 · dirty 실시간 감지
+
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  ArrowLeft,
+  MapPin,
+  Save,
+  RotateCcw,
+  AlertCircle,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+} from "lucide-react";
+import type { AuthSession } from "../../types";
+import {
+  DEFAULT_MAPPINGS,
+  getZoneMappings,
+  setZoneMappings,
+  loadZoneLabelsFromServer,
+  type ZoneMapping,
+} from "../../constants/zoneLabels";
+
+interface ZoneLabelsEditorProps {
+  authSession: AuthSession | null;
+  onBack: () => void;
+}
+
+// ───────────────────────────────────────────────────────────────
+// 카테고리 그룹 정의 · zoneId prefix/pattern 으로 그룹핑
+// ───────────────────────────────────────────────────────────────
+type CategoryKey = "aisle" | "top" | "center" | "bottom" | "wing" | "spare";
+interface CategoryDef {
+  key: CategoryKey;
+  label: string;
+  hint: string;
+  color: "sky" | "indigo" | "violet" | "emerald" | "amber" | "rose";
+  match: (zoneId: string) => boolean;
+}
+
+const CATEGORY_DEFS: CategoryDef[] = [
+  {
+    key: "aisle",
+    label: "진열대 (1~8 pair)",
+    hint: "중앙 진열대 · A/B 쌍",
+    color: "sky",
+    match: (z) => /^[1-8][AB]$/i.test(z),
+  },
+  {
+    key: "top",
+    label: "상단 벽면 (9~21)",
+    hint: "상단 벽면 진열",
+    color: "indigo",
+    match: (z) => /^\d+$/.test(z) && Number(z) >= 9 && Number(z) <= 21,
+  },
+  {
+    key: "center",
+    label: "중앙 (22)",
+    hint: "중앙 단독 진열대",
+    color: "violet",
+    match: (z) => z === "22",
+  },
+  {
+    key: "bottom",
+    label: "하단 벽면 (23~34)",
+    hint: "하단 벽면 진열",
+    color: "emerald",
+    match: (z) => /^\d+$/.test(z) && Number(z) >= 23 && Number(z) <= 34,
+  },
+  {
+    key: "wing",
+    label: "수직윙 (35~42)",
+    hint: "우측 수직 진열",
+    color: "amber",
+    match: (z) => /^\d+$/.test(z) && Number(z) >= 35 && Number(z) <= 42,
+  },
+  {
+    key: "spare",
+    label: "여유 슬롯 (기타)",
+    hint: "위 카테고리에 속하지 않는 zoneId",
+    color: "rose",
+    match: () => true, // fallback · 마지막에 매칭
+  },
+];
+
+const COLOR_CLASSES: Record<CategoryDef["color"], {
+  headerBg: string;
+  headerText: string;
+  badgeBg: string;
+  badgeText: string;
+  badgeBorder: string;
+  accentDot: string;
+}> = {
+  sky:     { headerBg: "bg-sky-50",     headerText: "text-sky-700",     badgeBg: "bg-sky-50",     badgeText: "text-sky-700",     badgeBorder: "border-sky-200",     accentDot: "bg-sky-500"     },
+  indigo:  { headerBg: "bg-indigo-50",  headerText: "text-indigo-700",  badgeBg: "bg-indigo-50",  badgeText: "text-indigo-700",  badgeBorder: "border-indigo-200",  accentDot: "bg-indigo-500"  },
+  violet:  { headerBg: "bg-violet-50",  headerText: "text-violet-700",  badgeBg: "bg-violet-50",  badgeText: "text-violet-700",  badgeBorder: "border-violet-200",  accentDot: "bg-violet-500"  },
+  emerald: { headerBg: "bg-emerald-50", headerText: "text-emerald-700", badgeBg: "bg-emerald-50", badgeText: "text-emerald-700", badgeBorder: "border-emerald-200", accentDot: "bg-emerald-500" },
+  amber:   { headerBg: "bg-amber-50",   headerText: "text-amber-800",   badgeBg: "bg-amber-50",   badgeText: "text-amber-800",   badgeBorder: "border-amber-200",   accentDot: "bg-amber-500"   },
+  rose:    { headerBg: "bg-rose-50",    headerText: "text-rose-700",    badgeBg: "bg-rose-50",    badgeText: "text-rose-700",    badgeBorder: "border-rose-200",    accentDot: "bg-rose-500"    },
+};
+
+function categorize(zoneId: string): CategoryKey {
+  for (const c of CATEGORY_DEFS) {
+    if (c.key === "spare") continue;
+    if (c.match(zoneId)) return c.key;
+  }
+  return "spare";
+}
+
+// 정렬 · 카테고리 내에서 · 원본 순서(진열대는 1A,1B,2A... · 나머지는 숫자 오름차순)
+function sortByZoneId(a: ZoneMapping, b: ZoneMapping): number {
+  const ax = a.zoneId, bx = b.zoneId;
+  const aPair = /^([1-8])([AB])$/i.exec(ax);
+  const bPair = /^([1-8])([AB])$/i.exec(bx);
+  if (aPair && bPair) {
+    const an = Number(aPair[1]) * 10 + (aPair[2].toUpperCase() === "A" ? 0 : 1);
+    const bn = Number(bPair[1]) * 10 + (bPair[2].toUpperCase() === "A" ? 0 : 1);
+    return an - bn;
+  }
+  const anum = Number(ax);
+  const bnum = Number(bx);
+  if (!isNaN(anum) && !isNaN(bnum)) return anum - bnum;
+  return ax.localeCompare(bx);
+}
+
+// ───────────────────────────────────────────────────────────────
+// 컴포넌트
+// ───────────────────────────────────────────────────────────────
+const ZoneLabelsEditor: React.FC<ZoneLabelsEditorProps> = ({ authSession, onBack }) => {
+  const userLevel = authSession?.level ??
+    (authSession?.role === "superadmin" || authSession?.role === "admin" ? 9
+      : authSession?.role === "manager" ? 2
+      : authSession?.role === "employee" ? 1 : 0);
+
+  const [mappings, setMappings] = useState<ZoneMapping[]>(() => getZoneMappings());
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [collapsed, setCollapsed] = useState<Record<CategoryKey, boolean>>({
+    aisle: false, top: false, center: false, bottom: false, wing: false, spare: false,
+  });
+
+  // ── 서버 로드 ──
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      try {
+        await loadZoneLabelsFromServer(true); // force refresh
+        if (!cancelled) setMappings(getZoneMappings());
+      } catch {
+        // 서버 실패 → 파일 fallback 유지
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // ── 원본(DEFAULT) 값 조회 · dirty 판정용 ──
+  const defaultByZoneId = useMemo(() => {
+    const m: Record<string, ZoneMapping> = {};
+    for (const it of DEFAULT_MAPPINGS) m[it.zoneId] = it;
+    return m;
+  }, []);
+
+  // ── 로컬 편집 핸들러 ──
+  const updateNumber = useCallback((zoneId: string, next: number) => {
+    setMappings((prev) => prev.map(m => m.zoneId === zoneId ? { ...m, number: next } : m));
+  }, []);
+  const updateSubLabel = useCallback((zoneId: string, next: string) => {
+    setMappings((prev) => prev.map(m => m.zoneId === zoneId ? {
+      ...m,
+      subLabel: next.trim() ? next : undefined,
+    } : m));
+  }, []);
+  const resetRow = useCallback((zoneId: string) => {
+    const def = defaultByZoneId[zoneId];
+    if (!def) return;
+    setMappings((prev) => prev.map(m => m.zoneId === zoneId ? { ...def } : m));
+  }, [defaultByZoneId]);
+  const resetAll = useCallback(() => {
+    if (!window.confirm("모든 구역 라벨을 기본값으로 되돌립니다. 계속할까요?")) return;
+    setMappings([...DEFAULT_MAPPINGS]);
+  }, []);
+
+  // ── 중복 검증 ──
+  const duplicateNumbers = useMemo(() => {
+    const count: Record<number, number> = {};
+    for (const m of mappings) {
+      const n = Number(m.number);
+      if (!Number.isFinite(n) || n <= 0) continue;
+      count[n] = (count[n] ?? 0) + 1;
+    }
+    return new Set(Object.keys(count).filter(k => count[Number(k)] > 1).map(Number));
+  }, [mappings]);
+
+  const invalidRows = useMemo(() => {
+    const bad = new Set<string>();
+    for (const m of mappings) {
+      const n = Number(m.number);
+      if (!Number.isFinite(n) || n < 1 || n > 60) bad.add(m.zoneId);
+    }
+    return bad;
+  }, [mappings]);
+
+  const canSave = duplicateNumbers.size === 0 && invalidRows.size === 0 && !saving && !loading;
+
+  // ── dirty 여부 ──
+  const dirtyZoneIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const m of mappings) {
+      const def = defaultByZoneId[m.zoneId];
+      if (!def) { s.add(m.zoneId); continue; }
+      if (def.number !== m.number || (def.subLabel ?? "") !== (m.subLabel ?? "")) {
+        s.add(m.zoneId);
+      }
+    }
+    return s;
+  }, [mappings, defaultByZoneId]);
+
+  // ── 저장 ──
+  const handleSave = useCallback(async () => {
+    if (!canSave) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const body = {
+        mappings: mappings.map(m => ({
+          zone_id: m.zoneId,
+          number: m.number,
+          sub_label: m.subLabel ?? null,
+        })),
+      };
+      const res = await fetch("/api/zone-labels", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.error ?? `저장 실패 (${res.status})`);
+      }
+      // 즉시 다른 페이지 반영
+      setZoneMappings(mappings);
+      setToast("저장되었습니다.");
+      window.setTimeout(() => setToast(null), 2200);
+    } catch (err: any) {
+      setSaveError(err?.message ?? "저장 중 오류가 발생했습니다.");
+    } finally {
+      setSaving(false);
+    }
+  }, [mappings, canSave]);
+
+  // ── 그룹화 ──
+  const grouped = useMemo(() => {
+    const g: Record<CategoryKey, ZoneMapping[]> = {
+      aisle: [], top: [], center: [], bottom: [], wing: [], spare: [],
+    };
+    for (const m of mappings) g[categorize(m.zoneId)].push(m);
+    for (const k of Object.keys(g) as CategoryKey[]) g[k].sort(sortByZoneId);
+    return g;
+  }, [mappings]);
+
+  // ── 권한 체크 ──
+  if (userLevel < 9) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <AlertCircle size={40} className="text-rose-400 mx-auto mb-3" />
+          <p className="text-slate-600 font-semibold">최고관리자(레벨 9)만 접근할 수 있습니다.</p>
+          <button
+            type="button"
+            onClick={onBack}
+            className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-slate-100 text-slate-700 text-[12px] font-bold hover:bg-slate-200 transition"
+          >
+            <ArrowLeft size={13} /> 돌아가기
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const totalCount = mappings.length;
+  const dirtyCount = dirtyZoneIds.size;
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* 상단 헤더 */}
+      <div className="sticky top-0 z-20 bg-white/95 backdrop-blur border-b border-slate-200 shadow-sm">
+        <div className="max-w-4xl mx-auto w-full px-4 py-3 flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-[12px] font-bold transition cursor-pointer"
+          >
+            <ArrowLeft size={13} /> 뒤로
+          </button>
+
+          <div className="flex items-center gap-2 ml-1">
+            <div className="w-7 h-7 rounded-lg bg-sky-600 flex items-center justify-center">
+              <MapPin size={14} className="text-white" />
+            </div>
+            <h1 className="text-[15px] font-black text-slate-900 tracking-tight">구역 라벨 관리</h1>
+          </div>
+
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-sky-700 text-[11px] font-bold">
+            총 {totalCount}건
+          </span>
+          {dirtyCount > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-[11px] font-bold">
+              변경 {dirtyCount}건
+            </span>
+          )}
+          {duplicateNumbers.size > 0 && (
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-rose-700 text-[11px] font-bold">
+              <AlertCircle size={11} /> 중복 {duplicateNumbers.size}건
+            </span>
+          )}
+
+          <div className="flex-1" />
+
+          <button
+            type="button"
+            onClick={resetAll}
+            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-[12px] font-bold transition cursor-pointer"
+          >
+            <RotateCcw size={12} /> 초기화
+          </button>
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canSave}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-black transition ${
+              canSave
+                ? "bg-sky-600 hover:bg-sky-700 text-white shadow-sm cursor-pointer"
+                : "bg-slate-200 text-slate-400 cursor-not-allowed"
+            }`}
+          >
+            {saving ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
+            {saving ? "저장 중..." : "저장"}
+          </button>
+        </div>
+        <div className="max-w-4xl mx-auto w-full px-4 pb-2.5 text-[11px] text-slate-500">
+          번호 편집 후 저장 · 모든 페이지 즉시 반영 · 원본 zoneId 는 변경 불가 (DB/로직 안전)
+        </div>
+      </div>
+
+      {/* 본문 */}
+      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-4">
+        {loading ? (
+          <div className="flex items-center justify-center py-16 text-slate-400 text-sm gap-2">
+            <Loader2 size={16} className="animate-spin" /> 불러오는 중...
+          </div>
+        ) : (
+          <>
+            {saveError && (
+              <div className="mb-3 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[12px] flex items-center gap-2">
+                <AlertCircle size={13} /> {saveError}
+              </div>
+            )}
+            {duplicateNumbers.size > 0 && (
+              <div className="mb-3 px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-[12px] flex items-center gap-2">
+                <AlertCircle size={13} /> 번호가 중복된 항목이 있습니다:
+                <span className="font-black">
+                  {Array.from(duplicateNumbers as Set<number>).sort((a, b) => a - b).join(", ")}
+                </span>
+              </div>
+            )}
+            {invalidRows.size > 0 && (
+              <div className="mb-3 px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[12px] flex items-center gap-2">
+                <AlertCircle size={13} /> 유효하지 않은 번호 (1~60 범위 필요): {invalidRows.size}건
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {CATEGORY_DEFS.map((cat) => {
+                const rows = grouped[cat.key];
+                if (!rows || rows.length === 0) return null;
+                const cs = COLOR_CLASSES[cat.color];
+                const isCollapsed = collapsed[cat.key];
+                return (
+                  <div key={cat.key} className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                    {/* 카테고리 헤더 */}
+                    <button
+                      type="button"
+                      onClick={() => setCollapsed(prev => ({ ...prev, [cat.key]: !prev[cat.key] }))}
+                      className={`w-full flex items-center gap-2 px-4 py-2.5 ${cs.headerBg} border-b border-slate-100 hover:bg-opacity-80 transition cursor-pointer`}
+                    >
+                      <span className={`inline-block w-2 h-2 rounded-full ${cs.accentDot}`} />
+                      <span className={`text-[12px] font-black ${cs.headerText} tracking-tight`}>{cat.label}</span>
+                      <span className="text-[11px] text-slate-400 font-medium">· {cat.hint}</span>
+                      <span className={`ml-auto inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold ${cs.badgeBg} ${cs.badgeText} border ${cs.badgeBorder}`}>
+                        {rows.length}
+                      </span>
+                      {isCollapsed
+                        ? <ChevronRight size={14} className="text-slate-400" />
+                        : <ChevronDown size={14} className="text-slate-400" />}
+                    </button>
+
+                    {/* 행 목록 */}
+                    {!isCollapsed && (
+                      <div>
+                        {/* 컬럼 헤더 */}
+                        <div className="hidden sm:grid grid-cols-[80px_100px_1fr_36px] gap-3 px-4 py-2 bg-slate-50/60 border-b border-slate-100 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                          <span>원본 ID</span>
+                          <span>번호</span>
+                          <span>부제 (선택)</span>
+                          <span></span>
+                        </div>
+                        {rows.map((m, i) => {
+                          const isDup = duplicateNumbers.has(Number(m.number));
+                          const isBad = invalidRows.has(m.zoneId);
+                          const isDirty = dirtyZoneIds.has(m.zoneId);
+                          const rowBorder = i < rows.length - 1 ? "border-b border-slate-100" : "";
+                          return (
+                            <div
+                              key={m.zoneId}
+                              className={`grid grid-cols-1 sm:grid-cols-[80px_100px_1fr_36px] gap-2 sm:gap-3 px-4 py-2.5 items-center ${rowBorder} ${isDup || isBad ? "bg-rose-50/40" : ""}`}
+                            >
+                              {/* 원본 zoneId 배지 */}
+                              <div className="flex items-center gap-1.5">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-sky-700 text-[12px] font-black`}>
+                                  {m.zoneId}
+                                </span>
+                                {isDirty && (
+                                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" title="변경됨" />
+                                )}
+                              </div>
+
+                              {/* 번호 input */}
+                              <div>
+                                <label className="sm:hidden block text-[10px] font-bold text-slate-400 mb-0.5">번호</label>
+                                <input
+                                  type="number"
+                                  min={1}
+                                  max={60}
+                                  value={m.number}
+                                  onChange={(e) => updateNumber(m.zoneId, Number(e.target.value))}
+                                  className={`w-full px-2.5 py-1.5 rounded-lg border text-[12px] font-bold text-slate-800 tabular-nums text-center transition focus:outline-none focus:ring-2 ${
+                                    isDup || isBad
+                                      ? "border-rose-300 bg-rose-50 focus:ring-rose-200"
+                                      : "border-slate-200 bg-white focus:ring-sky-200 focus:border-sky-400"
+                                  }`}
+                                />
+                              </div>
+
+                              {/* subLabel input */}
+                              <div>
+                                <label className="sm:hidden block text-[10px] font-bold text-slate-400 mb-0.5">부제</label>
+                                <input
+                                  type="text"
+                                  value={m.subLabel ?? ""}
+                                  placeholder="(선택) 카테고리·이름 등"
+                                  maxLength={40}
+                                  onChange={(e) => updateSubLabel(m.zoneId, e.target.value)}
+                                  className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-[12px] text-slate-700 transition focus:outline-none focus:ring-2 focus:ring-sky-200 focus:border-sky-400"
+                                />
+                              </div>
+
+                              {/* 리셋 버튼 */}
+                              <div className="flex justify-end">
+                                <button
+                                  type="button"
+                                  onClick={() => resetRow(m.zoneId)}
+                                  disabled={!isDirty}
+                                  title={isDirty ? "이 행을 기본값으로" : "변경 없음"}
+                                  className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition ${
+                                    isDirty
+                                      ? "text-slate-500 hover:text-slate-800 hover:bg-slate-100 cursor-pointer"
+                                      : "text-slate-300 cursor-not-allowed"
+                                  }`}
+                                >
+                                  <RotateCcw size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-600 text-white text-[12px] font-bold shadow-lg">
+          <Check size={13} /> {toast}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default ZoneLabelsEditor;
