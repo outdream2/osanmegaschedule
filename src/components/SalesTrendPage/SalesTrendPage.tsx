@@ -1939,34 +1939,43 @@ const ZoneCategoryContent: React.FC = () => {
   }, [grouped]);
 
   return (
-    <div className="flex flex-col gap-3 min-h-[520px]">
-      {/* 상단 · 매장 구역도 (가로 full width) · 판매 rank ★배지 · 상품수 배지 */}
-      <MiniStoreZoneMap zoneItemCounts={zoneItemCounts} zoneRankMap={zoneRankMap} />
-
-      {/* 하단 · 좌측 구역 리스트 + 우측 상세 split */}
-      <div className="flex flex-col lg:flex-row gap-0 flex-1">
-      {/* ── 좌측: 구역 리스트 ── */}
-      <div
-        className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-2"
-        style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? categoryPanelWidth : undefined }}
-      >
-        {/* 2026-07-30 · 사용자 요청 · 조회기간 프리셋 (10일·1~6개월) + 계절 필터 */}
+    <div className="flex flex-col gap-2">
+      {/* ── 상단 필터바 (full-width) ── */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+        <div className="flex items-center gap-1.5">
+          <PieChart size={14} className="text-violet-600 shrink-0" />
+          <span className="text-[13px] font-semibold text-slate-800">구역별 카테고리별 매입·판매</span>
+        </div>
+        {/* 조회기간 */}
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[12px] font-semibold text-slate-600">조회기간</span>
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">기간</span>
           <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
             <button type="button" onClick={() => { setSeason(null); setMonths(0); }}
-              className={`px-2.5 py-1 text-[12px] font-semibold rounded transition cursor-pointer ${!season && months === 0 ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+              className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!season && months === 0 ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
               10일
             </button>
             {[1, 2, 3, 4, 5, 6].map(m => (
               <button key={m} type="button" onClick={() => { setSeason(null); setMonths(m as any); }}
-                className={`px-2.5 py-1 text-[12px] font-semibold rounded transition cursor-pointer ${!season && months === m ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!season && months === m ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
                 {m}개월
               </button>
             ))}
           </div>
           <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setMonths(0); }} size="sm" hideLabel />
         </div>
+        <span className="ml-auto text-[10px] font-semibold text-slate-400">real_map 기반</span>
+      </div>
+
+      {/* 매장 구역도 (가로 full width) · 판매 rank ★배지 · 상품수 배지 */}
+      <MiniStoreZoneMap zoneItemCounts={zoneItemCounts} zoneRankMap={zoneRankMap} />
+
+      {/* 하단 · 좌측 구역 리스트 + 우측 상세 split */}
+      <div className="flex flex-col lg:flex-row gap-0 flex-1 min-h-[520px]">
+      {/* ── 좌측: 구역 리스트 ── */}
+      <div
+        className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-2"
+        style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? categoryPanelWidth : undefined }}
+      >
         {loading && grouped.length > 0 && (
           <div className="flex items-center justify-center gap-1.5 text-[10px] text-violet-600 font-bold py-1.5 mb-1 bg-violet-50 border border-violet-200 rounded-md sticky top-0 z-10">
             <Loader2 size={11} className="animate-spin" /> 조건 변경 · 새로 불러오는 중...
@@ -2263,20 +2272,7 @@ export const CategoryTab: React.FC = () => {
   // 2026-07-15: 공급사분류 서브탭 제거 · 구역별만 유지 · 각 구역 설명 표시
   // 2026-07-16: 매장 구역도 미니맵 + 좌우 split 레이아웃
   return (
-    <div className="flex flex-col gap-3">
-      {/* 헤더 카드 · MiniStoreZoneMap 은 ZoneCategoryContent 안으로 이동 (grouped 데이터 접근용 · zoneItemCounts) */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <PieChart size={14} className="text-violet-600" />
-            <span className="text-sm font-black text-slate-700">구역별 카테고리별 매입 · 판매</span>
-          </div>
-          <span className="text-[10px] font-semibold text-slate-400">real_map 기반</span>
-        </div>
-      </div>
-      {/* split 레이아웃 (ZoneCategoryContent 내장) */}
-      <ZoneCategoryContent />
-    </div>
+    <ZoneCategoryContent />
   );
 };
 
