@@ -3164,9 +3164,9 @@ export const StockManagePage: React.FC = () => {
                           };
                           return (
                             <div className="overflow-auto max-h-[60vh] rounded-lg border border-slate-100">
-                              <table className="w-full text-[11px] min-w-[560px]">
+                              <table className="w-full text-[12px] min-w-[560px]">
                                 <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
-                                  <tr className="text-[10px] text-slate-400 uppercase tracking-wider">
+                                  <tr className="text-[11px] text-slate-400 uppercase tracking-wider">
                                     <th className="text-left px-1 py-1.5 w-6">#</th>
                                     <th
                                       onClick={() => toggleSupDetailSort("name")}
@@ -3213,12 +3213,12 @@ export const StockManagePage: React.FC = () => {
                                     const stockValue = curStock > 0 && purchPrice > 0 ? curStock * purchPrice : 0;
                                     return (
                                       <tr key={`supdet-${r.product_code ?? ri}`} className="hover:bg-slate-50/60 transition-all duration-150 align-top">
-                                        <td className="px-1 py-1 text-[10px] text-slate-400">{ri + 1}</td>
+                                        <td className="px-1 py-1 text-[11px] text-slate-400">{ri + 1}</td>
                                         <td className="px-1 py-1 break-words whitespace-normal leading-tight">
-                                          <button type="button" onClick={() => loadFlowSelectedProduct(r)} className="text-left text-[11px] font-semibold text-indigo-700 hover:text-indigo-900 hover:underline cursor-pointer transition break-words whitespace-normal">{r.product_name}</button>
+                                          <button type="button" onClick={() => loadFlowSelectedProduct(r)} className="text-left text-[12px] font-semibold text-indigo-700 hover:text-indigo-900 hover:underline cursor-pointer transition break-words whitespace-normal">{r.product_name}</button>
                                         </td>
-                                        <td className="text-right px-1 py-1 text-[10px] tabular-nums text-amber-700">{fmt(curStock)}</td>
-                                        <td className="text-right px-1 py-1 text-[10px] tabular-nums text-slate-500">{detailCycleStr(r)}</td>
+                                        <td className="text-right px-1 py-1 text-[11px] tabular-nums text-amber-700">{fmt(curStock)}</td>
+                                        <td className="text-right px-1 py-1 text-[11px] tabular-nums text-slate-500">{detailCycleStr(r)}</td>
                                         <td className="text-right px-1 py-1 tabular-nums">
                                           {r.product_code && r.last_purchase_date ? (
                                             <button type="button"
@@ -3233,12 +3233,12 @@ export const StockManagePage: React.FC = () => {
                                             <span className="text-slate-500">{fmtPurchaseDate(r.last_purchase_date)}</span>
                                           )}
                                         </td>
-                                        <td className="text-right px-1 py-1 text-[10px] tabular-nums text-slate-700">{fmt(Number(r.purchase_total_qty ?? r.purchase_qty ?? 0))}</td>
+                                        <td className="text-right px-1 py-1 text-[11px] tabular-nums text-slate-700">{fmt(Number(r.purchase_total_qty ?? r.purchase_qty ?? 0))}</td>
                                         {/* 2026-07-30 · 매입단가 · 판매량 · 판매금액 (최소발주 제거) */}
-                                        <td className="text-right px-1 py-1 text-[10px] tabular-nums text-amber-700 font-semibold">{purchPrice > 0 ? purchPrice.toLocaleString() : "-"}</td>
-                                        <td className="text-right px-1 py-1 text-[10px] tabular-nums text-rose-600 font-semibold">{saleQty > 0 ? fmt(saleQty) : "-"}</td>
-                                        <td className="text-right px-1 py-1 text-[10px] tabular-nums text-rose-700 font-semibold">{saleAmt > 0 ? fmtWon(saleAmt) : "-"}</td>
-                                        <td className="text-right px-1 py-1 text-[10px] tabular-nums font-bold text-emerald-700">{stockValue > 0 ? fmtWon(stockValue) : "-"}</td>
+                                        <td className="text-right px-1 py-1 text-[11px] tabular-nums text-amber-700 font-semibold">{purchPrice > 0 ? purchPrice.toLocaleString() : "-"}</td>
+                                        <td className="text-right px-1 py-1 text-[11px] tabular-nums text-rose-600 font-semibold">{saleQty > 0 ? fmt(saleQty) : "-"}</td>
+                                        <td className="text-right px-1 py-1 text-[11px] tabular-nums text-rose-700 font-semibold">{saleAmt > 0 ? fmtWon(saleAmt) : "-"}</td>
+                                        <td className="text-right px-1 py-1 text-[11px] tabular-nums font-bold text-emerald-700">{stockValue > 0 ? fmtWon(stockValue) : "-"}</td>
                                       </tr>
                                     );
                                   })}
