@@ -1249,7 +1249,8 @@ export const StockManagePage: React.FC = () => {
   const [stockDiffCollapsed, setStockDiffCollapsed] = useState(false);
   const [flowCollapsedTop, setFlowCollapsedTop] = useState(false);
   // ── 그룹 헤더 클릭 접기 · supplier/low/diff 탭 ─────────────────────────
-  type SupplierGroup = "base" | "stock_asset" | "purchase_sale";
+  // 2026-08-03 · 재고현황(sky)/매입현황(amber)/판매현황(rose) 3그룹으로 재편
+  type SupplierGroup = "stock" | "purchase" | "sale";
   const [supplierGroupCollapsed, setSupplierGroupCollapsed] = useState<Set<SupplierGroup>>(new Set());
   const toggleSupplierGroup = (g: SupplierGroup) => setSupplierGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
   const isSupplierGroupCollapsed = (g: SupplierGroup) => supplierGroupCollapsed.has(g);
@@ -1914,9 +1915,10 @@ export const StockManagePage: React.FC = () => {
   // 2026-07-15: 판매 컬럼 제거 · 매입 중심 · 매입수량 내림차순 기본
   type SupSortKey = "name" | "current" | "cycle" | "purchase_date" | "purchase_qty" | "min_order" | "amount";
   const [supRowsSort, setSupRowsSort] = useState<{ key: SupSortKey; dir: "asc" | "desc" }>({ key: "purchase_qty", dir: "desc" });
-  // 우측 패널 단순 상품 리스트 정렬 (공급사 클릭 후 나오는 #·상품명·현재고·매입주기·최근매입일·매입수량·최소발주·재고금액)
+  // 우측 패널 단순 상품 리스트 정렬 (공급사 클릭 후 나오는 #·상품명·현재고·매입주기·최근매입일·매입수량·매입단가·판매량·판매금액·재고금액)
   // 기본: 재고금액 내림차순 (total_amount)
-  type SupDetailSortKey = "name" | "current" | "cycle" | "purchase_date" | "purchase_qty" | "min_order" | "total_amount";
+  // 2026-08-03 · 매입단가(purchase_price)·판매량(sale_qty)·판매금액(sale_amount) 정렬 추가
+  type SupDetailSortKey = "name" | "current" | "cycle" | "purchase_date" | "purchase_qty" | "min_order" | "total_amount" | "purchase_price" | "sale_qty" | "sale_amount";
   const [supDetailSort, setSupDetailSort] = useState<{ key: SupDetailSortKey; dir: "asc" | "desc" }>({ key: "total_amount", dir: "desc" });
   const toggleSupDetailSort = (k: SupDetailSortKey) => {
     setSupDetailSort(prev => prev.key === k
@@ -1974,7 +1976,16 @@ export const StockManagePage: React.FC = () => {
       else if (key === "purchase_date") { va = String(a.last_purchase_date ?? ""); vb = String(b.last_purchase_date ?? ""); }
       else if (key === "purchase_qty") { va = Number(a.purchase_total_qty ?? a.purchase_qty ?? 0); vb = Number(b.purchase_total_qty ?? b.purchase_qty ?? 0); }
       else if (key === "min_order") { va = Number(a.min_order ?? 0); vb = Number(b.min_order ?? 0); }
-      else { va = Number(a.total_amount ?? 0); vb = Number(b.total_amount ?? 0); }
+      else if (key === "purchase_price") { va = Number(a.purchase_price ?? 0); vb = Number(b.purchase_price ?? 0); }
+      else if (key === "sale_qty") { va = Number(a.sale_qty ?? 0); vb = Number(b.sale_qty ?? 0); }
+      // sale_amount: API total_amount = 판매금액 · total_amount key: 재고금액(current_stock * purchase_price)
+      else if (key === "sale_amount") { va = Number(a.total_amount ?? 0); vb = Number(b.total_amount ?? 0); }
+      else {
+        // total_amount key = 재고금액 (current_stock × purchase_price)
+        const stockA = Number(a.current_stock ?? 0) * Number(a.purchase_price ?? 0);
+        const stockB = Number(b.current_stock ?? 0) * Number(b.purchase_price ?? 0);
+        va = stockA; vb = stockB;
+      }
       if (typeof va === "string") return va.localeCompare(String(vb), "ko") * mult;
       return (va - vb) * mult;
     });
@@ -2634,29 +2645,37 @@ export const StockManagePage: React.FC = () => {
                             ) : (
                               <table className={`w-full text-[13px] ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`} style={{ borderCollapse: "separate", borderSpacing: 0 }}>
                                 <thead className="sticky top-0 z-10">
-                                  {/* 그룹 컬러 헤더 · flow 탭 동일 방식 */}
+                                  {/* 그룹 컬러 헤더 · 재고현황(sky)/매입현황(amber)/판매현황(rose) 3그룹 · 2026-08-03 */}
                                   <tr className="text-[10px] font-semibold uppercase tracking-wider border-b border-slate-200">
-                                    {/* 기본정보 (slate) · 접기 시 expand 아이콘 + 항상 필요한 체크/# 포함 */}
-                                    <th colSpan={isSupplierGroupCollapsed("base") ? 3 : 3} className="bg-slate-50 text-slate-400 text-left px-3 py-1.5">기본정보</th>
-                                    {/* 재고자산 (amber) */}
-                                    <th colSpan={isSupplierGroupCollapsed("stock_asset") ? 1 : 1}
+                                    {/* 기본정보 (slate) · 항상 표시 */}
+                                    <th colSpan={3} className="bg-slate-50 text-slate-400 text-left px-3 py-1.5">기본정보</th>
+                                    {/* 재고현황 (sky) · 재고자산 + 상품수 */}
+                                    <th colSpan={isSupplierGroupCollapsed("stock") ? 1 : 2}
+                                      className="bg-sky-50 text-sky-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-sky-100 transition"
+                                      onClick={() => toggleSupplierGroup("stock")}
+                                      title={isSupplierGroupCollapsed("stock") ? "재고현황 펼치기" : "재고현황 접기"}>
+                                      <span className="inline-flex items-center gap-1">
+                                        {isSupplierGroupCollapsed("stock") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}재고현황
+                                      </span>
+                                    </th>
+                                    {/* 매입현황 (amber) · 매입수량 */}
+                                    <th colSpan={isSupplierGroupCollapsed("purchase") ? 1 : 1}
                                       className="bg-amber-50 text-amber-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-amber-100 transition"
-                                      onClick={() => toggleSupplierGroup("stock_asset")}
-                                      title={isSupplierGroupCollapsed("stock_asset") ? "재고자산 펼치기" : "재고자산 접기"}>
+                                      onClick={() => toggleSupplierGroup("purchase")}
+                                      title={isSupplierGroupCollapsed("purchase") ? "매입현황 펼치기" : "매입현황 접기"}>
                                       <span className="inline-flex items-center gap-1">
-                                        {isSupplierGroupCollapsed("stock_asset") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}재고자산
+                                        {isSupplierGroupCollapsed("purchase") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}매입현황
                                       </span>
                                     </th>
-                                    {/* 매입·판매 (emerald) */}
-                                    <th colSpan={isSupplierGroupCollapsed("purchase_sale") ? 1 : 3}
-                                      className="bg-emerald-50 text-emerald-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-emerald-100 transition"
-                                      onClick={() => toggleSupplierGroup("purchase_sale")}
-                                      title={isSupplierGroupCollapsed("purchase_sale") ? "매입·판매 펼치기" : "매입·판매 접기"}>
+                                    {/* 판매현황 (rose) · 판매량 + 판매액 */}
+                                    <th colSpan={isSupplierGroupCollapsed("sale") ? 1 : 2}
+                                      className="bg-rose-50 text-rose-600 text-center px-3 py-1.5 cursor-pointer select-none hover:bg-rose-100 transition"
+                                      onClick={() => toggleSupplierGroup("sale")}
+                                      title={isSupplierGroupCollapsed("sale") ? "판매현황 펼치기" : "판매현황 접기"}>
                                       <span className="inline-flex items-center gap-1">
-                                        {isSupplierGroupCollapsed("purchase_sale") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}매입 · 판매
+                                        {isSupplierGroupCollapsed("sale") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}판매현황
                                       </span>
                                     </th>
-                                    <th className="bg-slate-50 text-slate-400 text-right px-3 py-1.5">상품수</th>
                                   </tr>
                                   {/* 컬럼 서브 헤더 */}
                                   <tr className="text-[11px] font-semibold text-slate-500 border-b border-slate-200 bg-white">
@@ -2667,43 +2686,50 @@ export const StockManagePage: React.FC = () => {
                                       onClick={() => toggleSupListSort("supplier")}
                                       title="공급사명 정렬"
                                     >공급사 {supListSort.key === "supplier" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-slate-300">⇅</span>}</th>
-                                    {/* 재고자산 그룹 · 접힘 시 placeholder */}
-                                    {isSupplierGroupCollapsed("stock_asset") ? (
-                                      <th className="bg-amber-50/20 w-4"></th>
-                                    ) : (
-                                      <th
-                                        className="text-right px-3 py-2 w-24 cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition text-amber-600"
-                                        onClick={() => toggleSupListSort("totalStockAmount")}
-                                        title="재고자산 정렬"
-                                      >재고자산 {supListSort.key === "totalStockAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-amber-300">⇅</span>}</th>
-                                    )}
-                                    {/* 매입·판매 그룹 · 접힘 시 placeholder */}
-                                    {isSupplierGroupCollapsed("purchase_sale") ? (
-                                      <th className="bg-emerald-50/20 w-4"></th>
+                                    {/* 재고현황 그룹 (sky) · 재고자산 + 상품수 */}
+                                    {isSupplierGroupCollapsed("stock") ? (
+                                      <th className="bg-sky-50/20 w-4"></th>
                                     ) : (
                                       <>
                                         <th
-                                          className="text-right px-3 py-2 w-20 cursor-pointer select-none bg-emerald-50/60 hover:bg-emerald-100 transition text-emerald-600"
-                                          onClick={() => toggleSupListSort("purchaseQty")}
-                                          title="매입수량 정렬"
-                                        >매입 {supListSort.key === "purchaseQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-emerald-300">⇅</span>}</th>
+                                          className="text-right px-3 py-2 w-24 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition text-sky-700"
+                                          onClick={() => toggleSupListSort("totalStockAmount")}
+                                          title="재고자산 정렬"
+                                        >재고자산 {supListSort.key === "totalStockAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-sky-300">⇅</span>}</th>
                                         <th
-                                          className="text-right px-3 py-2 w-20 cursor-pointer select-none bg-emerald-50/40 hover:bg-emerald-100 transition text-emerald-600"
-                                          onClick={() => toggleSupListSort("saleQty")}
-                                          title="판매량 정렬"
-                                        >판매량 {supListSort.key === "saleQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-emerald-300">⇅</span>}</th>
-                                        <th
-                                          className="text-right px-3 py-2 w-24 cursor-pointer select-none bg-emerald-50/60 hover:bg-emerald-100 transition text-emerald-600"
-                                          onClick={() => toggleSupListSort("saleAmount")}
-                                          title="판매액 정렬"
-                                        >판매액 {supListSort.key === "saleAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-emerald-300">⇅</span>}</th>
+                                          className="text-right px-3 py-2 w-16 cursor-pointer select-none bg-sky-50/40 hover:bg-sky-100 transition text-sky-600"
+                                          onClick={() => toggleSupListSort("itemCount")}
+                                          title="상품수 정렬"
+                                        >상품수 {supListSort.key === "itemCount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-sky-300">⇅</span>}</th>
                                       </>
                                     )}
-                                    <th
-                                      className="text-right px-3 py-2 w-16 cursor-pointer select-none hover:bg-slate-50 transition"
-                                      onClick={() => toggleSupListSort("itemCount")}
-                                      title="상품수 정렬"
-                                    >상품수 {supListSort.key === "itemCount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-slate-300">⇅</span>}</th>
+                                    {/* 매입현황 그룹 (amber) · 매입수량 */}
+                                    {isSupplierGroupCollapsed("purchase") ? (
+                                      <th className="bg-amber-50/20 w-4"></th>
+                                    ) : (
+                                      <th
+                                        className="text-right px-3 py-2 w-20 cursor-pointer select-none bg-amber-50/60 hover:bg-amber-100 transition text-amber-600"
+                                        onClick={() => toggleSupListSort("purchaseQty")}
+                                        title="매입수량 정렬"
+                                      >매입 {supListSort.key === "purchaseQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-amber-300">⇅</span>}</th>
+                                    )}
+                                    {/* 판매현황 그룹 (rose) · 판매량 + 판매액 */}
+                                    {isSupplierGroupCollapsed("sale") ? (
+                                      <th className="bg-rose-50/20 w-4"></th>
+                                    ) : (
+                                      <>
+                                        <th
+                                          className="text-right px-3 py-2 w-20 cursor-pointer select-none bg-rose-50/60 hover:bg-rose-100 transition text-rose-600"
+                                          onClick={() => toggleSupListSort("saleQty")}
+                                          title="판매량 정렬"
+                                        >판매량 {supListSort.key === "saleQty" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-rose-300">⇅</span>}</th>
+                                        <th
+                                          className="text-right px-3 py-2 w-24 cursor-pointer select-none bg-rose-50/40 hover:bg-rose-100 transition text-rose-700"
+                                          onClick={() => toggleSupListSort("saleAmount")}
+                                          title="판매액 정렬"
+                                        >판매액 {supListSort.key === "saleAmount" ? (supListSort.dir === "desc" ? "▼" : "▲") : <span className="text-rose-300">⇅</span>}</th>
+                                      </>
+                                    )}
                                   </tr>
                                 </thead>
                                 <tbody className="divide-y divide-slate-100">
@@ -2741,33 +2767,40 @@ export const StockManagePage: React.FC = () => {
                                             )}
                                           </div>
                                         </td>
-                                        {/* 재고자산 그룹 · 접힘 시 placeholder */}
-                                        {isSupplierGroupCollapsed("stock_asset") ? (
-                                          <td className="bg-amber-50/20 w-4"></td>
-                                        ) : (
-                                          <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-amber-700 tabular-nums bg-amber-50/30" title="재고자산">
-                                            {fmtWon(sup.totalStockAmount)}
-                                          </td>
-                                        )}
-                                        {/* 매입·판매 그룹 · 접힘 시 placeholder */}
-                                        {isSupplierGroupCollapsed("purchase_sale") ? (
-                                          <td className="bg-emerald-50/20 w-4"></td>
+                                        {/* 재고현황 그룹 (sky) · 재고자산 + 상품수 */}
+                                        {isSupplierGroupCollapsed("stock") ? (
+                                          <td className="bg-sky-50/20 w-4"></td>
                                         ) : (
                                           <>
-                                            <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-emerald-700 tabular-nums bg-emerald-50/20" title="매입수량">
-                                              {fmt(sup.purchaseQty)}
+                                            <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-sky-700 tabular-nums bg-sky-50/40" title="재고자산">
+                                              {fmtWon(sup.totalStockAmount)}
                                             </td>
-                                            <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-emerald-600 tabular-nums bg-emerald-50/10" title="판매수량">
+                                            <td className="text-right px-3 py-2.5 align-middle text-[12px] font-semibold text-sky-600 tabular-nums bg-sky-50/20" title="취급 상품 종수">
+                                              {sup.itemCount}
+                                            </td>
+                                          </>
+                                        )}
+                                        {/* 매입현황 그룹 (amber) · 매입수량 */}
+                                        {isSupplierGroupCollapsed("purchase") ? (
+                                          <td className="bg-amber-50/20 w-4"></td>
+                                        ) : (
+                                          <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-amber-700 tabular-nums bg-amber-50/30" title="매입수량">
+                                            {fmt(sup.purchaseQty)}
+                                          </td>
+                                        )}
+                                        {/* 판매현황 그룹 (rose) · 판매량 + 판매액 */}
+                                        {isSupplierGroupCollapsed("sale") ? (
+                                          <td className="bg-rose-50/20 w-4"></td>
+                                        ) : (
+                                          <>
+                                            <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-rose-600 tabular-nums bg-rose-50/20" title="판매수량">
                                               {fmt(sup.saleQty)}
                                             </td>
-                                            <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-emerald-700 tabular-nums bg-emerald-50/20" title="판매액">
+                                            <td className="text-right px-3 py-2.5 align-middle text-[13px] font-semibold text-rose-700 tabular-nums bg-rose-50/30" title="판매액">
                                               {fmtWon(Number(sup.saleAmount ?? 0))}
                                             </td>
                                           </>
                                         )}
-                                        <td className="text-right px-3 py-2.5 align-middle text-[12px] font-semibold text-slate-500 tabular-nums" title="취급 상품 종수">
-                                          {sup.itemCount}
-                                        </td>
                                       </tr>
                                     );
                                   })}
@@ -2921,9 +2954,22 @@ export const StockManagePage: React.FC = () => {
                                       title="매입수량 정렬"
                                     >매입수량{supDetailArrow("purchase_qty")}</th>
                                     {/* 2026-07-30 · 사용자 요청 · 최소발주 제거 · 매입단가·판매량·판매금액 추가 */}
-                                    <th className="text-right px-1 py-1.5 w-14 text-amber-600 select-none" title="매입단가 (products.purchase_price)">매입단가</th>
-                                    <th className="text-right px-1 py-1.5 w-14 text-rose-600 select-none" title="판매량 · 조회기간 합계">판매량</th>
-                                    <th className="text-right px-1 py-1.5 w-16 text-rose-700 select-none" title="판매금액 · 조회기간 합계">판매금액</th>
+                                    {/* 2026-08-03 · 3개 컬럼 정렬 추가 */}
+                                    <th
+                                      onClick={() => toggleSupDetailSort("purchase_price")}
+                                      className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-amber-50/60 transition ${supDetailSort.key === "purchase_price" ? "text-amber-700 font-black" : "text-amber-600"}`}
+                                      title="매입단가 정렬"
+                                    >매입단가{supDetailArrow("purchase_price")}</th>
+                                    <th
+                                      onClick={() => toggleSupDetailSort("sale_qty")}
+                                      className={`text-right px-1 py-1.5 w-14 cursor-pointer select-none hover:bg-rose-50/60 transition ${supDetailSort.key === "sale_qty" ? "text-rose-700 font-black" : "text-rose-600"}`}
+                                      title="판매량 정렬"
+                                    >판매량{supDetailArrow("sale_qty")}</th>
+                                    <th
+                                      onClick={() => toggleSupDetailSort("sale_amount")}
+                                      className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-rose-50/60 transition ${supDetailSort.key === "sale_amount" ? "text-rose-800 font-black" : "text-rose-700"}`}
+                                      title="판매금액 정렬"
+                                    >판매금액{supDetailArrow("sale_amount")}</th>
                                     <th
                                       onClick={() => toggleSupDetailSort("total_amount")}
                                       className={`text-right px-1 py-1.5 w-16 cursor-pointer select-none hover:bg-slate-100 transition-all duration-150 ${supDetailSort.key === "total_amount" ? "text-emerald-700 font-black" : "text-emerald-500"}`}
