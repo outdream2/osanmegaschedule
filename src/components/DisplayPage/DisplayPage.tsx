@@ -7,6 +7,8 @@ import {
   CAT_A_COLORS, CAT_B_COLORS,
 } from "../../constants/storeMapLayout";
 import { getZoneLabel, getZoneSubLabel } from "../../constants/zoneLabels";
+// 2026-08-03 · 사용자 요청 · 공용 매장 구역도 · SalesTrendPage 와 동일 · 모바일 fullscreen 모달에서 사용
+import { StoreZoneMap } from "../common/StoreZoneMap";
 import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import {
   Bell,
@@ -1924,85 +1926,37 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
               })()}
 
               {/* ── 모바일 · 매장 구역도 fullscreen 모달 (읽기 전용 · 드래그 스크롤) ─── */}
+              {/*   2026-08-03 · 사용자 요청 · 공용 StoreZoneMap 사용 · 카테고리 페이지와 동일 구조 */}
+              {/*   셀 클릭 · 상품 조회 모달 오픈 (기존 데스크탑 map 동작과 동일) */}
               {fullMapOpen && (
                 <div className="sm:hidden fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm flex flex-col" onClick={() => setFullMapOpen(false)}>
                   <div className="flex items-center justify-between px-3 py-2 bg-white border-b border-slate-200 shadow-sm">
                     <span className="text-sm font-black text-slate-800">🗺️ 매장 구역도 (읽기 전용)</span>
                     <button onClick={() => setFullMapOpen(false)} className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 text-lg font-black">×</button>
                   </div>
-                  <div className="flex-1 overflow-auto p-2" onClick={e => e.stopPropagation()}>
-                    {/* 데스크탑 매장맵과 동일한 카테고리 라벨/색깔/테두리 · pointer-events-none 으로 읽기만 · 드래그·스크롤은 가능 */}
-                    <div className="min-w-[820px] pointer-events-none select-none">
-                      <div className="p-2 bg-slate-200 rounded-2xl border-4 border-emerald-500 shadow-inner space-y-3">
-                        {/* 상단 벽면 */}
-                        <div className="w-full bg-white border-2 border-emerald-600 rounded-xl p-2 shadow-sm">
-                          <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">상단 벽면 (21→9)</div>
-                          <div className="grid grid-cols-[repeat(13,minmax(0,1fr))] gap-1 bg-slate-100 p-1 rounded">
-                            {STORE_TOP_WALL.map((num) => renderWallZoneCard(num, "top"))}
-                          </div>
-
-                          {/* 중앙 진열대: 22 + 8B|8A → 1B|1A · 데스크탑과 동일 카테고리 라벨/색깔/테두리 */}
-                          <div className="my-3 w-full">
-                            <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-1">중앙 진열대 (22 · 8B|8A → 1B|1A · 16구역)</div>
-                            <div className="flex items-stretch justify-start pr-3 px-1.5 bg-slate-50 border border-slate-200 py-2 rounded-lg gap-1.5">
-                              {/* 진열대 22 (단독) */}
-                              <div className="flex flex-col items-center gap-0.5 flex-none w-[40px] min-w-[40px] mr-1">
-                                <div className="w-full text-[10px] font-black text-slate-700 bg-white border-2 border-slate-300 rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex items-center justify-center overflow-hidden">
-                                  <span className="line-clamp-4">{ZONE_DEFS.find(z => z.num === STORE_AISLE_CENTER)?.category ?? ""}</span>
-                                </div>
-                                <div className="w-full text-[9px] font-black text-white bg-slate-600 rounded px-0.5 py-0.5 text-center leading-none">22</div>
-                                {renderZoneCell(22, "w-full h-[80px] flex flex-col justify-between items-center py-1 px-0.5 text-[9px]", "", true)}
-                              </div>
-                              {/* 8→1 pair · 데스크탑 catA/catB 컬러맵 그대로 */}
-                              {(() => {
-                                // 2026-07-29 · shared CAT_A_COLORS/CAT_B_COLORS 사용 (storeMapLayout.ts)
-                                return STORE_AISLE_PAIRS.map(num => {
-                                  const ca = CAT_A_COLORS[num];
-                                  const cb = CAT_B_COLORS[num];
-                                  const zd = ZONE_DEFS.find(z => z.num === num);
-                                  const subB = getZoneSubLabel(`${num}B`) || (zd?.subB ?? "");
-                                  const subA = getZoneSubLabel(`${num}A`) || (zd?.subA ?? "");
-                                  return (
-                                    <div key={`fullmap-pair-${num}`} className="flex flex-col items-stretch gap-0.5 flex-[2] min-w-[60px]">
-                                      {/* B (연한 톤) */}
-                                      <div className={`w-full text-[10px] font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden`}>
-                                        <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{getZoneLabel(`${num}B`)}</span>
-                                        <span className="line-clamp-3 text-[10px]">{subB}</span>
-                                      </div>
-                                      {/* B|A zone cell 나란히 */}
-                                      <div className="flex gap-0.5 items-stretch">
-                                        <div className="flex-1 flex flex-col gap-0.5">
-                                          {renderZoneCellById(`${num}B`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[9px]", "", true)}
-                                        </div>
-                                        <div className="flex-1 flex flex-col gap-0.5">
-                                          {renderZoneCellById(`${num}A`, "w-full h-[80px] flex flex-col justify-between items-center py-0.5 px-0.5 text-[9px]", "", true)}
-                                        </div>
-                                      </div>
-                                      {/* A (진한 톤) */}
-                                      <div className={`w-full text-[10px] font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-0.5 leading-tight text-center h-[56px] flex flex-col items-center justify-center overflow-hidden`}>
-                                        <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1 py-0.5 leading-none mb-0.5`}>{getZoneLabel(`${num}A`)}</span>
-                                        <span className="line-clamp-3 text-[10px]">{subA}</span>
-                                      </div>
-                                    </div>
-                                  );
-                                });
-                              })()}
-                            </div>
-                          </div>
-
-                          {/* 하단 벽면 */}
-                          <div className="w-full">
-                            <div className="text-[7px] font-black text-slate-400 uppercase tracking-wider mb-0.5">하단 벽면 (23→34)</div>
-                            <div className="grid grid-cols-12 gap-1 bg-slate-100 p-1 rounded">
-                              {STORE_BOTTOM_WALL.map((num) => renderWallZoneCard(num, "bottom"))}
-                            </div>
-                          </div>
-                        </div>
+                  <div className="flex-1 overflow-auto" onClick={e => e.stopPropagation()}>
+                    <div className="p-2 bg-slate-100">
+                      <div className="p-2 bg-slate-200 rounded-2xl border-4 border-emerald-500 shadow-inner">
+                        <StoreZoneMap
+                          onZoneClick={(zoneId) => {
+                            // zoneId 예: "1A" · "9B" · "22" · "35" 등
+                            const num = parseInt(zoneId, 10);
+                            const side = /[AB]$/.test(zoneId) ? zoneId.slice(-1) : "";
+                            const zd = ZONE_DEFS.find(z => z.num === num);
+                            const category = side === "A" ? (zd?.subA ?? zd?.category ?? "")
+                              : side === "B" ? (zd?.subB ?? zd?.category ?? "")
+                              : (zd?.category ?? "");
+                            const zoneLabel = side ? `진열대 ${num}${side}` : (num === 22 ? "진열대 22" : `벽면 ${num}`);
+                            setZoneProductsModal({ zoneId, zoneNum: num, zoneLabel, category });
+                            setZoneProductsFilter("all"); setZoneProductsSearch("");
+                            setFullMapOpen(false);
+                          }}
+                        />
                       </div>
                     </div>
                   </div>
                   <div className="px-3 py-2 bg-white border-t border-slate-200 text-[10px] text-slate-500 text-center">
-                    💡 좌우로 드래그하여 전체 구역도 확인 · 편집은 데스크탑에서 가능
+                    💡 좌우로 드래그하여 전체 구역도 확인 · 셀 클릭 → 진열상품 조회
                   </div>
                 </div>
               )}

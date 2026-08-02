@@ -10,6 +10,9 @@ import { ProductPurchaseHistoryModal } from "../StockManagePage/StockManagePage"
 import { ZONE_DEFS } from "../../constants/displayZones";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
+// 2026-08-03 · 매장구역도 공용 컴포넌트 · DisplayPage 와 통합
+import { StoreZoneMap } from "../common/StoreZoneMap";
+import { getZoneLabel } from "../../constants/zoneLabels";
 // 구역 코드 → 카테고리 설명 매핑 (매장 구역도의 ZONE_DEFS 그대로 사용)
 //   real_map 형식 예: "1A", "1B", "2A", "9B", "22" 등
 //   ZONE_DEFS 의 num + section 으로 매칭 · subA/subB 있으면 side 로 세분화
@@ -2017,8 +2020,15 @@ const ZoneCategoryContent: React.FC = () => {
         </button>
       </div>
 
-      {/* 매장 구역도 (가로 full width) · 판매 rank ★배지 · 상품수 배지 */}
-      <MiniStoreZoneMap zoneItemCounts={zoneItemCounts} zoneRankMap={zoneRankMap} />
+      {/* 매장 구역도 (가로 full width) · 판매 rank ★배지 · 상품수 배지 · 2026-08-03 공용 컴포넌트 사용 */}
+      <StoreZoneMap
+        zoneItemCounts={zoneItemCounts}
+        zoneRankMap={zoneRankMap}
+        showBestBadges
+        collapsible
+        defaultCollapsed
+        title="🗺️ 매장 구역도 · 상위 map 동일 (참고)"
+      />
 
       {/* 하단 · 좌측 구역 리스트 + 우측 상세 split */}
       <div className="flex flex-col lg:flex-row gap-0 flex-1 min-h-[520px]">
@@ -2142,196 +2152,10 @@ function classifySupplier(name: string): { category: string; color: string } {
   return { category: "기타", color: "slate" };
 }
 
-// ─── 매장구역도 미니맵 (읽기 전용 · 2026-07-29 · 상위 매장 구역도와 동일 레이아웃) ─────
-//   공용 상수 · src/constants/storeMapLayout.ts (STORE_TOP_WALL 등)
-//   레이아웃 · 상위 map 과 100% 일치 (상단벽 · 중앙진열대 22+8B/8A→1B/1A · 하단벽 · 수직윙)
-//   차이 · 읽기 전용 · 컴팩트 사이즈 · 편집·드래그드롭 없음
-import {
-  STORE_TOP_WALL, STORE_AISLE_CENTER, STORE_AISLE_PAIRS, STORE_BOTTOM_WALL, STORE_VERTICAL_WING,
-  CAT_A_COLORS, CAT_B_COLORS,
-} from "../../constants/storeMapLayout";
-import { getZoneLabel, getZoneSubLabel } from "../../constants/zoneLabels";
-
-interface MiniStoreZoneMapProps {
-  /** 구역별 상품 수 · key = 구역 id (예: "1A", "9B", "22") */
-  zoneItemCounts?: Record<string, number>;
-  /** 구역별 판매순위 rank (1부터 · 낮을수록 상위) · Top 10 만 ★ BEST 배지 표시 */
-  zoneRankMap?: Record<string, number>;
-}
-const MiniStoreZoneMap: React.FC<MiniStoreZoneMapProps> = ({ zoneItemCounts, zoneRankMap }) => {
-  // 2026-07-31 · zone-labels-changed 수신 → 강제 리렌더
-  const [, setZoneLabelVersion] = useState(0);
-  useEffect(() => {
-    const handler = () => setZoneLabelVersion(v => v + 1);
-    window.addEventListener("zone-labels-changed", handler);
-    return () => window.removeEventListener("zone-labels-changed", handler);
-  }, []);
-
-  // rank 배지 · Top 10 · "★ BEST N" · 순위별 색상 (사용자 요청 · 눈에 띄게)
-  //   1·2위 · 빨강 · 3·4위 · 파랑 · 5·6위 · 초록 · 7·8위 · 보라 · 9·10위 · 슬레이트
-  const rankBadge = (zoneId: string) => {
-    const rank = zoneRankMap?.[zoneId];
-    if (!rank || rank > 10) return null;
-    const cls = rank <= 2
-      ? "bg-gradient-to-r from-rose-500 to-red-600 text-white border-red-700 shadow-md"
-      : rank <= 4
-        ? "bg-gradient-to-r from-sky-500 to-blue-600 text-white border-blue-700 shadow-md"
-        : rank <= 6
-          ? "bg-gradient-to-r from-emerald-500 to-green-600 text-white border-green-700 shadow-md"
-          : rank <= 8
-            ? "bg-gradient-to-r from-violet-500 to-purple-600 text-white border-purple-700 shadow-md"
-            : "bg-gradient-to-r from-slate-400 to-slate-500 text-white border-slate-600 shadow-sm";
-    return (
-      <span className={`inline-flex items-center gap-0.5 text-[10px] font-black border rounded px-1.5 py-0.5 leading-none tabular-nums ${cls}`}
-        title={`판매 BEST ${rank}위`}>
-        ★ BEST{rank}
-      </span>
-    );
-  };
-  // 2026-07-31 · 사용자 요청 · 카테고리별 현황 진입 시 기본 접힘 · 필요 시 사용자가 펼침
-  const [collapsed, setCollapsed] = useState(true);
-
-  // 벽면·수직윙 셀 · 상위 map 의 renderWallZoneCard 와 동일 aspect ratio (~ 1:1.6)
-  const wallCell = (num: number) => {
-    const zd = ZONE_DEFS.find(z => z.num === num);
-    // 2026-07-31 · 사용자 편집 라벨 우선 (getZoneSubLabel) · 없으면 원본 카테고리
-    const cat = getZoneSubLabel(num) || (zd?.category ?? "");
-    const count = zoneItemCounts?.[String(num)] ?? 0;
-    return (
-      <div key={num}
-        className="rounded-md overflow-hidden border border-stone-300 bg-white shadow-sm flex flex-col items-center min-h-[92px]"
-        title={`${zd?.label ?? num} · ${cat}${count > 0 ? ` · ${count}개 상품` : ""}`}>
-        {/* 상단 · ★ BEST 배지 (Top 10) · 별도 라인 · 사용자 요청 */}
-        <div className="w-full min-h-[18px] flex items-center justify-center pt-0.5">
-          {rankBadge(String(num))}
-        </div>
-        <div className="w-full bg-stone-50 px-1 py-1 flex flex-col items-center gap-0.5 flex-1 justify-center">
-          {/* 2026-07-30 · 사용자 요청 · 상위 구역도와 통일 · 라벨만 · 개수 배지 제거 (툴팁 유지) */}
-          <div className="flex items-center justify-center">
-            <span className="text-[10px] font-black text-white bg-amber-700 rounded px-1.5 leading-none">{getZoneLabel(num)}</span>
-          </div>
-          <span className="text-[10px] font-bold text-stone-800 leading-tight text-center line-clamp-2 break-all">{cat}</span>
-        </div>
-      </div>
-    );
-  };
-
-  // 중앙 진열대 B/A pair 셀 · 원본 구역도(DisplayPage)와 동일 · B|A 가로 나란히 배치
-  //   2026-07-31 · 사용자 재지적 · "1A 1B가 위아래로 있는게 아니고 9B 9A ... 1B 1A 순서대로"
-  //   각 pair 내부에서 B (좌) | A (우) 가로 배치 (원본 map fullmap-pair 구조 참조)
-  const pairCell = (num: number) => {
-    const ca = CAT_A_COLORS[num];
-    const cb = CAT_B_COLORS[num];
-    const zd = ZONE_DEFS.find(z => z.num === num);
-    // 2026-07-31 · 사용자 편집 라벨 우선 · 없으면 원본 subA/subB
-    const subB = getZoneSubLabel(`${num}B`) || (zd?.subB ?? "");
-    const subA = getZoneSubLabel(`${num}A`) || (zd?.subA ?? "");
-    const countB = zoneItemCounts?.[`${num}B`] ?? 0;
-    const countA = zoneItemCounts?.[`${num}A`] ?? 0;
-    return (
-      <div key={`pair-${num}`} className="flex flex-row items-stretch gap-0.5 flex-1 min-w-[92px]">
-        {/* B 셀 (좌측) · 위 ★BEST 배지 · 안 라벨 · 서브카테 */}
-        <div className="flex flex-col items-stretch gap-0.5 flex-1 min-w-[44px]">
-          <div className="min-h-[18px] flex items-center justify-center">{rankBadge(`${num}B`)}</div>
-          <div className={`w-full font-black ${cb.text} ${cb.bg} border-2 ${cb.border} rounded px-0.5 py-1 leading-tight text-center min-h-[76px] flex flex-col items-center justify-center overflow-hidden`}
-            title={`${num}B · ${subB}${countB > 0 ? ` · ${countB}개 상품` : ""}`}>
-            <div className="flex items-center justify-center mb-0.5">
-              <span className={`text-[10px] font-black text-white ${cb.labelBg} rounded px-1.5 leading-none`}>{getZoneLabel(`${num}B`)}</span>
-            </div>
-            <span className="line-clamp-3 text-[10px] break-all">{subB}</span>
-          </div>
-        </div>
-        {/* A 셀 (우측) */}
-        <div className="flex flex-col items-stretch gap-0.5 flex-1 min-w-[44px]">
-          <div className="min-h-[18px] flex items-center justify-center">{rankBadge(`${num}A`)}</div>
-          <div className={`w-full font-black ${ca.text} ${ca.bg} border-2 ${ca.border} rounded px-0.5 py-1 leading-tight text-center min-h-[76px] flex flex-col items-center justify-center overflow-hidden`}
-            title={`${num}A · ${subA}${countA > 0 ? ` · ${countA}개 상품` : ""}`}>
-            <div className="flex items-center justify-center mb-0.5">
-              <span className={`text-[10px] font-black text-white ${ca.labelBg} rounded px-1.5 leading-none`}>{getZoneLabel(`${num}A`)}</span>
-            </div>
-            <span className="line-clamp-3 text-[10px] break-all">{subA}</span>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // 중앙 22 (단독) 셀 · 상단 ★BEST + 카테고리 + 번호+상품수
-  const centerCell = () => {
-    const zd = ZONE_DEFS.find(z => z.num === STORE_AISLE_CENTER);
-    // 2026-07-31 · 사용자 편집 라벨 우선 · 없으면 원본 카테고리
-    const centerLabel = getZoneSubLabel("22") || (zd?.category ?? "");
-    const count = zoneItemCounts?.["22"] ?? 0;
-    return (
-      <div className="flex flex-col items-center gap-0.5 flex-none w-[54px] min-w-[54px]">
-        <div className="min-h-[18px] flex items-center justify-center">{rankBadge("22")}</div>
-        <div className="w-full text-[10px] font-bold text-slate-700 bg-white border border-slate-300 rounded px-0.5 py-1 leading-tight text-center min-h-[140px] flex items-center justify-center overflow-hidden"
-          title={`${STORE_AISLE_CENTER} · ${centerLabel}${count > 0 ? ` · ${count}개 상품` : ""}`}>
-          <span className="line-clamp-6">{centerLabel}</span>
-        </div>
-        <div className="w-full flex items-center justify-center gap-0.5 flex-wrap mt-0.5">
-          <span className="text-[10px] font-black text-white bg-slate-600 rounded px-1 leading-none py-0.5">{getZoneLabel(STORE_AISLE_CENTER)}</span>
-          {count > 0 && <span className="text-[10px] font-black text-emerald-700 bg-emerald-100 border border-emerald-300 rounded px-1 leading-none tabular-nums">{count}</span>}
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="mb-3 border border-violet-100 rounded-xl bg-violet-50/30 overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setCollapsed(v => !v)}
-        className="w-full flex items-center justify-between px-3 py-2 hover:bg-violet-100/40 transition cursor-pointer"
-      >
-        <span className="text-[11px] font-black text-violet-700 inline-flex items-center gap-1">🗺️ 매장 구역도 · 상위 map 동일 (참고)</span>
-        <span className="text-[10px] font-black text-violet-600">{collapsed ? "펼치기 ▼" : "접기 ▲"}</span>
-      </button>
-      {!collapsed && (
-        <div className="p-2 overflow-x-auto">
-          {/* 2026-07-29 · 사용자 요청 · 동측 wing 을 상위 구역도처럼 수평 배치 · main map 아래에 8셀 한 줄 */}
-          <div className="flex flex-col gap-1.5 min-w-[720px]">
-
-            {/* 상단 · main map (상단벽 · 중앙 22+8B/8A→1B/1A · 하단벽) */}
-            <div className="flex flex-col gap-1.5">
-              {/* 상단 벽면 */}
-              <div>
-                <div className="text-[8px] font-black text-emerald-600 uppercase tracking-wider mb-0.5 px-0.5">상단 벽면 (21→9)</div>
-                <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(13, minmax(0, 1fr))" }}>
-                  {STORE_TOP_WALL.map(n => wallCell(n))}
-                </div>
-              </div>
-              {/* 중앙 진열대 · 22 + 8B/8A→1B/1A (17셀 · 상위와 동일 catA/catB) */}
-              <div>
-                <div className="text-[8px] font-black text-blue-600 uppercase tracking-wider mb-0.5 px-0.5">중앙 진열대 (22 · 8B|8A → 1B|1A · 17구역)</div>
-                <div className="flex items-stretch justify-start gap-1.5 bg-slate-100 border border-slate-200 py-1.5 px-1.5 rounded-lg">
-                  {centerCell()}
-                  {STORE_AISLE_PAIRS.map(n => pairCell(n))}
-                </div>
-              </div>
-              {/* 하단 벽면 */}
-              <div>
-                <div className="text-[8px] font-black text-amber-600 uppercase tracking-wider mb-0.5 px-0.5">하단 벽면 (23→34)</div>
-                <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(12, minmax(0, 1fr))" }}>
-                  {STORE_BOTTOM_WALL.map(n => wallCell(n))}
-                </div>
-              </div>
-            </div>
-
-            {/* 하단 · 동측 wing · 수평 8셀 · 상위 구역도의 동측 wing 과 방향 통일 */}
-            <div className="border-t border-violet-200 pt-1.5">
-              <div className="text-[8px] font-black text-violet-600 uppercase tracking-wider mb-0.5 px-0.5">동측 wing (35→42) · 이벤트 · 카운터 · 조제실</div>
-              <div className="grid gap-0.5" style={{ gridTemplateColumns: "repeat(8, minmax(0, 1fr))" }}>
-                {STORE_VERTICAL_WING.map(n => wallCell(n))}
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
+// ─── 매장구역도 · 공용 컴포넌트로 이관 (2026-08-03 · 사용자 요청 · DisplayPage 와 통합) ─
+//   기존 MiniStoreZoneMap 로컬 컴포넌트 삭제 · common/StoreZoneMap 사용
+//   양쪽에서 하나의 컴포넌트만 · 카테고리 페이지 전용 BEST 배지 옵션 사용
+//   import 은 파일 상단에 배치 (getZoneLabel · StoreZoneMap)
 
 // 2026-07-28 · 사용자 요청 · 카테고리별판매 재고관리로 이동 · export 추가
 export const CategoryTab: React.FC = () => {
