@@ -983,13 +983,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </button>
 
                 {/* 경영관리 — violet · 직원관리·연차승인·점심불참 서브메뉴 팝오버 · 2026-08-03 */}
-                <div ref={businessMenuRef} className="relative">
+                <div ref={businessMenuRef} className="relative flex flex-col">
                   <button
                     type="button"
                     onClick={() => setBusinessMenuOpen(v => !v)}
                     aria-expanded={businessMenuOpen}
                     aria-haspopup="menu"
-                    className="group relative w-full bg-white border border-slate-200/80 hover:border-violet-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm"
+                    className="group relative w-full flex-1 bg-white border border-slate-200/80 hover:border-violet-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm"
                   >
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(237,233,254,0.7) 0%, transparent 60%)" }} />
                     {leavePendingCount > 0 && (
