@@ -25,6 +25,8 @@ interface LeavePageProps {
   authSession: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  /** true 시 자체 AppNavHeader skip (BusinessManagePage 임베드용 · 2026-08-03) */
+  embedded?: boolean;
 }
 
 type ManagerTab = "pending" | "all";
@@ -61,7 +63,7 @@ function today() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
+export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNavigate, onLogout, embedded = false }) => {
   const isManager = (authSession?.level ?? 0) >= 2;
   const employeeId = authSession?.employeeId;
   const employeeName = authSession?.employeeName ?? "";
@@ -176,23 +178,25 @@ export const LeavePage: React.FC<LeavePageProps> = ({ onBack, authSession, onNav
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {/* Shared App Nav Header */}
-      <AppNavHeader
-        activePage="leave"
-        authSession={authSession}
-        onBack={onBack}
-        onNavigate={onNavigate}
-        onLogout={onLogout}
-        rightSlot={
-          isManager && pending.length > 0 ? (
-            <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">
-              <Clock size={11} />
-              대기 {pending.length}건
-            </span>
-          ) : undefined
-        }
-      />
+    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-gray-50 flex flex-col"}>
+      {/* Shared App Nav Header · embedded 모드(BusinessManagePage 임베드)에서는 skip */}
+      {!embedded && (
+        <AppNavHeader
+          activePage="leave"
+          authSession={authSession}
+          onBack={onBack}
+          onNavigate={onNavigate}
+          onLogout={onLogout}
+          rightSlot={
+            isManager && pending.length > 0 ? (
+              <span className="flex items-center gap-1.5 text-xs font-bold text-amber-600 bg-amber-50 border border-amber-200 px-2 py-1 rounded-full">
+                <Clock size={11} />
+                대기 {pending.length}건
+              </span>
+            ) : undefined
+          }
+        />
+      )}
 
       <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-5">
 

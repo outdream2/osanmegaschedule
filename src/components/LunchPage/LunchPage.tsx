@@ -41,6 +41,8 @@ interface LunchPageProps {
   authSession?: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  /** true 시 자체 AppNavHeader skip (BusinessManagePage 임베드용 · 2026-08-03) */
+  embedded?: boolean;
 }
 
 const TIME_SLOTS = [
@@ -75,7 +77,7 @@ function fmtTime(iso: string) {
   return new Date(iso).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 }
 
-export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNavigate, onLogout }) => {
+export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNavigate, onLogout, embedded = false }) => {
   const today = todayString();
   const userLevel = authSession?.level ?? 0;
   const isLoggedIn = !!authSession?.employeeId;
@@ -257,14 +259,16 @@ export const LunchPage: React.FC<LunchPageProps> = ({ onBack, authSession, onNav
   const noEatCount = allRequests.filter(r => !r.eating).length;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <AppNavHeader
-        activePage="lunch"
-        authSession={authSession ?? null}
-        onBack={onBack}
-        onNavigate={onNavigate}
-        onLogout={onLogout}
-      />
+    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col"}>
+      {!embedded && (
+        <AppNavHeader
+          activePage="lunch"
+          authSession={authSession ?? null}
+          onBack={onBack}
+          onNavigate={onNavigate}
+          onLogout={onLogout}
+        />
+      )}
 
       <main className="flex-1 max-w-3xl mx-auto w-full px-4 py-6 flex flex-col gap-5">
 

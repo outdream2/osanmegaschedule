@@ -28,7 +28,6 @@ import {
   X,
   XCircle,
   AlertTriangle,
-  Users,
   Loader2,
   MapPin,
   Search,
@@ -52,7 +51,7 @@ const StockManagePage = lazy(() => import("../StockManagePage").then(m => ({ def
 import { StockArrivalPage } from "../StockArrivalPage";
 import { OcrPage } from "../OcrPage";
 import OrderManagePage from "../OrderManagePage/OrderManagePage";
-import StaffManagePage from "../StaffManagePage/StaffManagePage";
+// 2026-08-03 · StaffManagePage · 매장관리 서브탭에서 제거 · 경영관리 통합 페이지(BusinessManagePage)로 이동
 import type { AuthSession } from "../../types";
 
 interface DisplayPageProps {
@@ -327,7 +326,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
-  const [dpSubTab, setDpSubTab] = useState<"store" | "stock-manage" | "stock-arrivals" | "order-manage" | "staff-manage">(
+  const [dpSubTab, setDpSubTab] = useState<"store" | "stock-manage" | "stock-arrivals" | "order-manage">(
     dpCanSeeStockManage ? "stock-manage" : "store"
   );
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
@@ -1477,7 +1476,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           { key: "order-manage",   label: "발주/사입관리", icon: ClipboardList, visible: dpCanSeeStockManage,   color: "sky"     },
           { key: "stock-arrivals", label: "입고알림",     icon: Bell,          visible: dpCanSeeStockArrivals, color: "orange"  },
           { key: "store",          label: "구역도",       icon: Store,         visible: true,                  color: "rose"    },
-          { key: "staff-manage",   label: "직원관리",     icon: Users,         visible: true,                  color: "indigo"  },
+          // 2026-08-03 · 직원관리 탭 제거 · 경영관리 통합 페이지(BusinessManagePage)로 이동
         ];
         const visibleTabs = tabs.filter(t => t.visible);
         return (
@@ -1546,10 +1545,6 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             ocrTabOnNavigate={onNavigate as any}
             ocrTabOnLogout={onLogout}
           />
-        </main>
-      ) : dpSubTab === "staff-manage" ? (
-        <main className="flex-1 flex flex-col min-h-0">
-          <StaffManagePage />
         </main>
       ) : (
         /* Main Content Grid — 세로 스택: 상단(검색+출근직원 가로), 하단(매장맵 전체) */

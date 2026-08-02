@@ -1,11 +1,11 @@
 // src/components/AppNavHeader.tsx
-// 헤더 · 2026-07-19 · 2026-08-03 경영관리 팝오버 추가
+// 헤더 · 2026-07-19 · 2026-08-03 경영관리 통합 페이지 라우팅
 //   - PC: 데스크톱 탭 실측 폭 기반 오버플로 · 넘어가는 탭만 삼선(☰) 드롭다운
 //   - 모바일: 균등 분할 · 넘치는 탭 삼선(☰) 드롭다운 처리
 //   - 로고 클릭 → 홈(랜딩) 이동
-//   - 경영관리 탭 클릭 → 팝오버 (직원관리·연차승인·점심불참)
+//   - 경영관리 탭 클릭 → business-manage 페이지로 단순 라우팅 (팝오버 제거)
 import React, { useState, useEffect, useLayoutEffect, useRef, useMemo } from "react";
-import { Lock, LogOut, Menu, ChevronRight } from "lucide-react";
+import { Lock, LogOut, Menu } from "lucide-react";
 import {
   House,
   SquaresFour,
@@ -16,9 +16,6 @@ import {
   Chat,
   FileText,
   Briefcase,
-  UserGear,
-  CalendarDots,
-  ForkKnife,
 } from "@phosphor-icons/react";
 import type { AuthSession } from "../types";
 import { NotificationBell } from "./NotificationBell";
@@ -40,9 +37,10 @@ export type AppNavPage =
   | "synonyms"
   | "stockcheck"
   | "board"
-  | "mypage";
+  | "mypage"
+  | "business-manage";  // 2026-08-03 · 경영관리 통합 페이지
 
-// 헤더 내부 탭 렌더용 확장 키 (경영관리 팝오버)
+// 헤더 내부 탭 렌더용 확장 키 (경영관리 · business-manage 로 라우팅)
 type TabKey = AppNavPage | "business";
 
 interface AppNavHeaderProps {
@@ -65,7 +63,7 @@ interface TabDef {
 }
 
 // 무지개 순서: 홈 → 매장(빨) → 경영(보라) → 상품(주) → 스케줄(amber) → 이슈(초) → 요청(청록) → OCR(남청)
-// 2026-08-03: 연차승인·점심불참 탭 제거 → 경영관리 팝오버로 이동
+// 2026-08-03: 경영관리 → business-manage 통합 페이지로 단순 라우팅 (팝오버 제거)
 const TABS: TabDef[] = [
   { key: "landing",       label: "홈",         mobileLabel: "홈",     icon: House,       managerOnly: false, color: "slate"   },
   { key: "display",       label: "매장관리",   mobileLabel: "매장",   icon: SquaresFour, managerOnly: true,  color: "red"     },
@@ -76,53 +74,6 @@ const TABS: TabDef[] = [
   { key: "board",         label: "이슈공유",   mobileLabel: "이슈",   icon: ChatCircle,  managerOnly: false, color: "emerald" },
   { key: "requests",      label: "요청목록",   mobileLabel: "요청",   icon: Chat,        managerOnly: false, color: "cyan"    },
   { key: "ocr",           label: "거래명세서", mobileLabel: "OCR",    icon: FileText,    managerOnly: true,  color: "indigo"  },
-];
-
-// 경영관리 팝오버 항목 (연차승인·점심불참 이동됨)
-const BUSINESS_MENU_ITEMS: Array<{
-  key: AppNavPage;
-  label: string;
-  sublabel: string;
-  icon: React.ComponentType<{ size?: number; className?: string; weight?: string }>;
-  hoverBg: string;
-  iconBg: string;
-  iconBorder: string;
-  iconColor: string;
-  chevronHover: string;
-}> = [
-  {
-    key: "leave",
-    label: "연차승인",
-    sublabel: "직원 휴가·연차 신청 승인",
-    icon: CalendarDots,
-    hoverBg: "hover:bg-teal-50 active:bg-teal-100",
-    iconBg: "linear-gradient(135deg, #ccfbf1, #99f6e4)",
-    iconBorder: "#5eead4",
-    iconColor: "text-teal-600",
-    chevronHover: "group-hover/item:text-teal-500",
-  },
-  {
-    key: "lunch",
-    label: "점심불참",
-    sublabel: "오늘의 점심 불참 신청",
-    icon: ForkKnife,
-    hoverBg: "hover:bg-orange-50 active:bg-orange-100",
-    iconBg: "linear-gradient(135deg, #ffedd5, #fed7aa)",
-    iconBorder: "#fdba74",
-    iconColor: "text-orange-500",
-    chevronHover: "group-hover/item:text-orange-500",
-  },
-  {
-    key: "permissions",
-    label: "직원 권한",
-    sublabel: "직원 접근 권한 설정",
-    icon: UserGear,
-    hoverBg: "hover:bg-indigo-50 active:bg-indigo-100",
-    iconBg: "linear-gradient(135deg, #e0e7ff, #c7d2fe)",
-    iconBorder: "#a5b4fc",
-    iconColor: "text-indigo-600",
-    chevronHover: "group-hover/item:text-indigo-500",
-  },
 ];
 
 const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inactiveText: string; inactiveHoverText: string; }> = {
@@ -138,8 +89,9 @@ const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inac
   cyan:    { activeBg: "from-cyan-500 to-cyan-600",       activeText: "text-white", inactiveText: "text-cyan-600",    inactiveHoverText: "hover:text-cyan-800"    },
 };
 
-// 경영관리 팝오버가 활성인 페이지들 (탭을 active 로 표시)
-const BUSINESS_PAGES = new Set<AppNavPage>(["leave", "lunch", "permissions"]);
+// 경영관리 탭이 활성인 페이지들 (통합 페이지 + 서브 페이지들 · 헤더 활성 표시용)
+// business-manage 는 통합 페이지 · leave/lunch/permissions 는 랜딩페이지에서 직접 이동 시 활성 표시
+const BUSINESS_PAGES = new Set<AppNavPage>(["business-manage", "leave", "lunch", "permissions"]);
 
 export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   activePage,
@@ -155,17 +107,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     : authSession?.role === "employee" ? 1 : 0);
   const isPrivileged = userLevel >= 2;
 
-  // ── 경영관리 팝오버 state ──────────────────────────────────────
-  const [bizMenuOpen, setBizMenuOpen] = useState(false);
-  const bizMenuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!bizMenuOpen) return;
-    const onDoc = (e: MouseEvent) => {
-      if (!bizMenuRef.current?.contains(e.target as Node)) setBizMenuOpen(false);
-    };
-    document.addEventListener("mousedown", onDoc);
-    return () => document.removeEventListener("mousedown", onDoc);
-  }, [bizMenuOpen]);
+  // 2026-08-03 · 경영관리 팝오버 제거 (business-manage 통합 페이지로 라우팅)
 
   const visibleTabs = useMemo(() => TABS.filter((t) => {
     if (t.key === "landing") return true;
@@ -320,62 +262,27 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     //   sm (640-767): 매우 컴팩트 · md (768-1023): 중간 · lg (1024+): 원래대로
     const base = "flex items-center gap-1 md:gap-1.5 px-1.5 md:px-2.5 lg:px-3.5 py-1.5 md:py-2 rounded-lg text-[11px] md:text-[12px] lg:text-[13.5px] font-medium border transition-all whitespace-nowrap";
 
-    // 경영관리 팝오버 버튼 (2026-08-03)
+    // 경영관리 탭 · business-manage 통합 페이지로 단순 라우팅 (2026-08-03)
     if (tab.key === "business") {
-      const isActive = isBizPage || bizMenuOpen;
+      const isActive = isBizPage;
+      const bizOnClick = () => onNavigate?.("business-manage");
+      if (isActive) {
+        return (
+          <span key="business" className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} border-transparent shadow-sm font-bold`}>
+            <Icon size={15} weight="fill" /> {tab.label}
+          </span>
+        );
+      }
       return (
-        <div key="business" ref={bizMenuRef} className="relative shrink-0">
-          <button
-            type="button"
-            onClick={() => setBizMenuOpen(v => !v)}
-            aria-expanded={bizMenuOpen}
-            aria-haspopup="menu"
-            className={`${base} cursor-pointer active:scale-95 ${
-              isActive
-                ? `bg-gradient-to-br ${c.activeBg} ${c.activeText} border-transparent shadow-sm font-bold`
-                : `bg-white ${c.inactiveText} ${c.inactiveHoverText} border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm`
-            }`}
-          >
-            <Icon size={15} weight="fill" />
-            {tab.label}
-            <ChevronRight size={11} className={`transition-transform duration-200 ${bizMenuOpen ? "rotate-90" : ""}`} />
-          </button>
-          {bizMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-30" onClick={() => setBizMenuOpen(false)} aria-hidden="true" />
-              <div
-                role="menu"
-                className="absolute left-0 top-full mt-1.5 z-40 min-w-[220px] bg-white border border-violet-200 rounded-2xl shadow-2xl p-2 space-y-1"
-                style={{ boxShadow: "0 20px 40px -12px rgba(139,92,246,0.25), 0 8px 16px -8px rgba(0,0,0,0.1)" }}
-              >
-                {BUSINESS_MENU_ITEMS.map(item => {
-                  const ItemIcon = item.icon;
-                  const isItemActive = activePage === item.key;
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      role="menuitem"
-                      onClick={() => { setBizMenuOpen(false); onNavigate?.(item.key); }}
-                      className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left group/item ${
-                        isItemActive ? "bg-violet-50" : item.hoverBg
-                      }`}
-                    >
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: item.iconBg, border: `1px solid ${item.iconBorder}` }}>
-                        <ItemIcon size={16} className={item.iconColor} weight="fill" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-slate-800 font-bold text-[13px] leading-tight">{item.label}</div>
-                        <div className="text-slate-400 text-[11px] leading-tight mt-0.5">{item.sublabel}</div>
-                      </div>
-                      <ChevronRight size={13} className={`text-slate-300 ${item.chevronHover} group-hover/item:translate-x-0.5 transition-all flex-shrink-0`} />
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
+        <button
+          key="business"
+          type="button"
+          onClick={bizOnClick}
+          disabled={!onNavigate}
+          className={`${base} bg-white ${c.inactiveText} ${c.inactiveHoverText} border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-40`}
+        >
+          <Icon size={15} weight="fill" /> {tab.label}
+        </button>
       );
     }
 
@@ -405,60 +312,29 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
     const base = "flex-1 min-w-[52px] flex flex-col items-center justify-center gap-0.5 px-1 py-1.5 rounded-lg text-[10px] font-bold transition-all active:scale-95";
 
-    // 경영관리 팝오버 버튼 (모바일)
+    // 경영관리 탭 (모바일) · business-manage 단순 라우팅 (2026-08-03)
     if (tab.key === "business") {
-      const isActive = isBizPage || bizMenuOpen;
-      return (
-        <div key="business" ref={bizMenuRef} className="relative flex-1 min-w-[52px]">
-          <button
-            type="button"
-            onClick={() => setBizMenuOpen(v => !v)}
-            aria-expanded={bizMenuOpen}
-            aria-haspopup="menu"
-            className={`w-full ${base} ${
-              isActive
-                ? `bg-gradient-to-br ${c.activeBg} ${c.activeText} shadow-md font-black`
-                : `${c.inactiveText} ${c.inactiveHoverText} hover:bg-white cursor-pointer`
-            }`}
-          >
+      const isActive = isBizPage;
+      const bizOnClick = () => onNavigate?.("business-manage");
+      if (isActive) {
+        return (
+          <span key="business" className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} shadow-md font-black`}>
             <Icon size={18} weight="fill" />
             <span className="leading-tight text-center">경영</span>
-          </button>
-          {bizMenuOpen && (
-            <>
-              <div className="fixed inset-0 z-30" onClick={() => setBizMenuOpen(false)} aria-hidden="true" />
-              <div
-                role="menu"
-                className="absolute left-0 top-full mt-1 z-40 min-w-[200px] bg-white border border-violet-200 rounded-2xl shadow-2xl p-2 space-y-1"
-                style={{ boxShadow: "0 20px 40px -12px rgba(139,92,246,0.25), 0 8px 16px -8px rgba(0,0,0,0.1)" }}
-              >
-                {BUSINESS_MENU_ITEMS.map(item => {
-                  const ItemIcon = item.icon;
-                  const isItemActive = activePage === item.key;
-                  return (
-                    <button
-                      key={item.key}
-                      type="button"
-                      role="menuitem"
-                      onClick={() => { setBizMenuOpen(false); onNavigate?.(item.key); }}
-                      className={`w-full flex items-center gap-3 p-2.5 rounded-xl transition-colors text-left group/item ${
-                        isItemActive ? "bg-violet-50" : item.hoverBg
-                      }`}
-                    >
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: item.iconBg, border: `1px solid ${item.iconBorder}` }}>
-                        <ItemIcon size={16} className={item.iconColor} weight="fill" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-slate-800 font-bold text-[13px] leading-tight">{item.label}</div>
-                      </div>
-                      <ChevronRight size={13} className={`text-slate-300 ${item.chevronHover} transition-all flex-shrink-0`} />
-                    </button>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
+          </span>
+        );
+      }
+      return (
+        <button
+          key="business"
+          type="button"
+          onClick={bizOnClick}
+          disabled={!onNavigate}
+          className={`${base} ${c.inactiveText} ${c.inactiveHoverText} hover:bg-white cursor-pointer disabled:opacity-40`}
+        >
+          <Icon size={18} weight="fill" />
+          <span className="leading-tight text-center">경영</span>
+        </button>
       );
     }
 
@@ -577,7 +453,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                       const isActive = tab.key === "business" ? isBizPage : tab.key === activePage;
                       const onClickTab = () => {
                         setDesktopOverflowOpen(false);
-                        if (tab.key === "business") { setBizMenuOpen(true); return; }
+                        if (tab.key === "business") { onNavigate?.("business-manage"); return; }
                         if (tab.key === "landing" && onBack) onBack();
                         else onNavigate?.(tab.key as AppNavPage);
                       };
@@ -682,7 +558,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
                       const isActive = tab.key === "business" ? isBizPage : tab.key === activePage;
                       const onClickTab = () => {
                         setMobileOverflowOpen(false);
-                        if (tab.key === "business") { setBizMenuOpen(true); return; }
+                        if (tab.key === "business") { onNavigate?.("business-manage"); return; }
                         if (tab.key === "landing" && onBack) onBack();
                         else onNavigate?.(tab.key as AppNavPage);
                       };

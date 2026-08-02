@@ -22,7 +22,6 @@ import {
   SquaresFour,
   ShieldCheck,
   User,
-  UserGear,
   Briefcase,
   CalendarDots,
   CalendarCheck,
@@ -43,7 +42,7 @@ import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
-  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "zone-labels", auth?: AuthSession) => void;
+  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "zone-labels" | "business-manage", auth?: AuthSession) => void;
   onLogout: () => void;
   onAuthOnly?: (auth: AuthSession) => void;
 }
@@ -236,24 +235,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   // 직원용: 나에게 배정된 진열 보충 요청 중 pending 개수
   const [myPendingCount, setMyPendingCount] = useState(0);
 
-  // 경영관리 팝오버 (직원관리 · 연차승인 · 점심불참 서브메뉴) · 2026-08-03
-  const [businessMenuOpen, setBusinessMenuOpen] = useState(false);
-  const businessMenuRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!businessMenuOpen) return;
-    const onDocClick = (e: MouseEvent) => {
-      if (businessMenuRef.current && !businessMenuRef.current.contains(e.target as Node)) {
-        setBusinessMenuOpen(false);
-      }
-    };
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setBusinessMenuOpen(false); };
-    document.addEventListener("mousedown", onDocClick);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onDocClick);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [businessMenuOpen]);
+  // 2026-08-03 · 경영관리 팝오버 제거 · business-manage 통합 페이지로 단순 라우팅
 
   // Product list upload (manager only)
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -982,105 +964,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 </button>
 
-                {/* 경영관리 — violet · 직원관리·연차승인·점심불참 서브메뉴 팝오버 · 2026-08-03 */}
-                <div ref={businessMenuRef} className="relative flex flex-col">
-                  <button
-                    type="button"
-                    onClick={() => setBusinessMenuOpen(v => !v)}
-                    aria-expanded={businessMenuOpen}
-                    aria-haspopup="menu"
-                    className="group relative w-full flex-1 bg-white border border-slate-200/80 hover:border-violet-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm"
-                  >
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(237,233,254,0.7) 0%, transparent 60%)" }} />
-                    {leavePendingCount > 0 && (
-                      <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-white text-[10px] font-black" style={{ background: "linear-gradient(135deg, #f43f5e, #e11d48)", boxShadow: "0 0 0 2px white, 0 2px 6px rgba(244,63,94,0.4)" }}>
-                        {leavePendingCount}
-                      </div>
-                    )}
-                    <div className="relative">
-                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ede9fe, #ddd6fe)", border: "1px solid #a78bfa" }}>
-                        <Briefcase size={16} className="text-violet-600 sm:hidden" weight="fill" /><Briefcase size={20} className="text-violet-600 hidden sm:block" weight="fill" />
-                      </div>
-                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">경영관리</div>
-                      <div className="text-slate-400 text-[10px] leading-tight block mt-0.5">직원관리 · 연차승인 · 점심불참</div>
-                      <div className="flex items-center gap-1 mt-2 text-violet-600 text-xs font-bold">
-                        <span className="text-[11px] sm:text-xs">{leavePendingCount > 0 ? `대기 ${leavePendingCount}건` : "메뉴 열기"}</span>
-                        <ChevronRight size={11} className={`transition-transform ${businessMenuOpen ? "rotate-90" : "group-hover:translate-x-0.5"}`} />
-                      </div>
+                {/* 경영관리 — violet · business-manage 통합 페이지로 단순 라우팅 · 2026-08-03 */}
+                <button onClick={() => onNavigate("business-manage", authSession!)}
+                  className="group relative bg-white border border-slate-200/80 hover:border-violet-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(237,233,254,0.7) 0%, transparent 60%)" }} />
+                  {leavePendingCount > 0 && (
+                    <div className="absolute top-2.5 right-2.5 flex items-center gap-1 px-1.5 py-0.5 rounded-full text-white text-[10px] font-black" style={{ background: "linear-gradient(135deg, #f43f5e, #e11d48)", boxShadow: "0 0 0 2px white, 0 2px 6px rgba(244,63,94,0.4)" }}>
+                      {leavePendingCount}
                     </div>
-                  </button>
-
-                  {/* 팝오버 · 카드 아래 · 3개 링크 */}
-                  {businessMenuOpen && (
-                    <>
-                      {/* 백드롭 (모바일 · 시각적 강조 없이 클릭만 흡수) */}
-                      <div className="fixed inset-0 z-30" onClick={() => setBusinessMenuOpen(false)} aria-hidden="true" />
-                      <div
-                        role="menu"
-                        className="absolute left-0 right-0 top-full mt-2 z-40 min-w-[240px] sm:min-w-[300px] bg-white border border-violet-200 rounded-2xl shadow-2xl p-2 space-y-1.5"
-                        style={{ boxShadow: "0 20px 40px -12px rgba(139,92,246,0.25), 0 8px 16px -8px rgba(0,0,0,0.1)" }}
-                      >
-                        {/* 직원관리 → display 페이지 (내부 서브탭 staff-manage · 별도 개선 예정) */}
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => { setBusinessMenuOpen(false); onNavigate("display", authSession!); }}
-                          className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-indigo-50 active:bg-indigo-100 transition-colors text-left group/item"
-                        >
-                          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #e0e7ff, #c7d2fe)", border: "1px solid #a5b4fc" }}>
-                            <UserGear size={18} className="text-indigo-600" weight="fill" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-slate-800 font-bold text-sm leading-tight">직원관리</div>
-                            <div className="text-slate-400 text-[11px] leading-tight mt-0.5 truncate">직원 정보 · 근무 유형 관리</div>
-                          </div>
-                          <ChevronRight size={14} className="text-slate-300 group-hover/item:text-indigo-500 group-hover/item:translate-x-0.5 transition-all flex-shrink-0" />
-                        </button>
-
-                        {/* 연차승인 → leave */}
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => { setBusinessMenuOpen(false); onNavigate("leave", authSession!); }}
-                          className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-teal-50 active:bg-teal-100 transition-colors text-left group/item"
-                        >
-                          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #ccfbf1, #99f6e4)", border: "1px solid #5eead4" }}>
-                            <CalendarDots size={18} className="text-teal-600" weight="fill" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-slate-800 font-bold text-sm leading-tight flex items-center gap-1.5">
-                              연차승인
-                              {leavePendingCount > 0 && (
-                                <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-white text-[10px] font-black bg-rose-500">
-                                  {leavePendingCount}
-                                </span>
-                              )}
-                            </div>
-                            <div className="text-slate-400 text-[11px] leading-tight mt-0.5 truncate">직원 휴가·연차 신청 승인</div>
-                          </div>
-                          <ChevronRight size={14} className="text-slate-300 group-hover/item:text-teal-500 group-hover/item:translate-x-0.5 transition-all flex-shrink-0" />
-                        </button>
-
-                        {/* 점심불참 → lunch */}
-                        <button
-                          type="button"
-                          role="menuitem"
-                          onClick={() => { setBusinessMenuOpen(false); onNavigate("lunch", authSession!); }}
-                          className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-orange-50 active:bg-orange-100 transition-colors text-left group/item"
-                        >
-                          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: "linear-gradient(135deg, #ffedd5, #fed7aa)", border: "1px solid #fdba74" }}>
-                            <ForkKnife size={18} className="text-orange-500" weight="fill" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-slate-800 font-bold text-sm leading-tight">점심불참</div>
-                            <div className="text-slate-400 text-[11px] leading-tight mt-0.5 truncate">오늘의 점심 불참 신청</div>
-                          </div>
-                          <ChevronRight size={14} className="text-slate-300 group-hover/item:text-orange-500 group-hover/item:translate-x-0.5 transition-all flex-shrink-0" />
-                        </button>
-                      </div>
-                    </>
                   )}
-                </div>
+                  <div className="relative">
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #ede9fe, #ddd6fe)", border: "1px solid #a78bfa" }}>
+                      <Briefcase size={16} className="text-violet-600 sm:hidden" weight="fill" /><Briefcase size={20} className="text-violet-600 hidden sm:block" weight="fill" />
+                    </div>
+                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">경영관리</div>
+                    <div className="text-slate-400 text-[10px] leading-tight block mt-0.5">직원관리 · 연차승인 · 점심불참 · 권한</div>
+                    <div className="flex items-center gap-1 mt-2 text-violet-600 text-xs font-bold">
+                      <span className="text-[11px] sm:text-xs">{leavePendingCount > 0 ? `대기 ${leavePendingCount}건` : "관리하기"}</span>
+                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </div>
+                </button>
 
                 {/* 요청목록 조회 — indigo */}
                 <button onClick={() => onNavigate("requests", authSession!)}

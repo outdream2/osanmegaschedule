@@ -30,8 +30,10 @@ import { loadZoneLabelsFromServer } from "./constants/zoneLabels";
 
 // 관리자 전용 · 구역 라벨 편집 UI · lazy 로드 (초기 번들 축소)
 const ZoneLabelsEditor = React.lazy(() => import("./components/ZoneLabelsEditor/ZoneLabelsEditor"));
+// 2026-08-03 · 경영관리 통합 페이지 (직원관리 · 연차승인 · 점심불참 · 직원권한 서브탭) · lazy 로드
+const BusinessManagePage = React.lazy(() => import("./components/BusinessManagePage/BusinessManagePage"));
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage" | "zone-labels";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage";
 
 export default function App() {
   // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
@@ -87,7 +89,7 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage" | "zone-labels", auth?: AuthSession) => {
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage", auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
     navigate(next);
   };
@@ -113,7 +115,7 @@ export default function App() {
 
   // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
   // The user is already authenticated here, so no AuthSession is required.
-  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "productarrival" | "ocr" | "lunch" | "board" | "mypage") => navigate(next);
+  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "productarrival" | "ocr" | "lunch" | "board" | "mypage" | "business-manage") => navigate(next as Page);
 
   let pageContent: React.ReactElement;
 
@@ -234,6 +236,13 @@ export default function App() {
     pageContent = (
       <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
         <ZoneLabelsEditor authSession={authSession} onBack={goBack} />
+      </React.Suspense>
+    );
+  } else if (page === "business-manage") {
+    // 2026-08-03 · 경영관리 통합 페이지 (직원관리 · 연차승인 · 점심불참 · 직원권한 서브탭)
+    pageContent = (
+      <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
+        <BusinessManagePage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />
       </React.Suspense>
     );
   } else {

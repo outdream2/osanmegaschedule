@@ -13,6 +13,8 @@ interface PermissionsPageProps {
   onBack: () => void;
   onLogout: () => void;
   onNavigate?: (page: AppNavPage) => void;
+  /** true 시 자체 AppNavHeader skip (BusinessManagePage 임베드용 · 2026-08-03) */
+  embedded?: boolean;
 }
 
 const PAGE_LABELS: { key: keyof PagePermissions; label: string; desc: string }[] = [
@@ -30,7 +32,7 @@ const PAGE_LABELS: { key: keyof PagePermissions; label: string; desc: string }[]
 
 const LEVELS = [0,1,2,3,4,5,6,7,8,9];
 
-export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, onBack, onLogout, onNavigate }) => {
+export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, onBack, onLogout, onNavigate, embedded = false }) => {
   const [perms, setPerms] = useState<PagePermissions>(DEFAULT_PERMISSIONS);
   const [saving, setSaving] = useState<string | null>(null); // key being saved
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
@@ -109,14 +111,16 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <AppNavHeader
-        activePage="permissions"
-        authSession={authSession}
-        onBack={onBack}
-        onNavigate={onNavigate}
-        onLogout={onLogout}
-      />
+    <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col"}>
+      {!embedded && (
+        <AppNavHeader
+          activePage="permissions"
+          authSession={authSession}
+          onBack={onBack}
+          onNavigate={onNavigate}
+          onLogout={onLogout}
+        />
+      )}
 
       <div className="flex-1 max-w-3xl mx-auto w-full px-4 py-8">
         {/* Header */}
