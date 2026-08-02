@@ -19,40 +19,10 @@ export interface ZoneMapping {
 
 // ─────────────────────────────────────────────────────────────
 // 기본 매핑 · 파일 기반 fallback · 서버 응답 없을 때 사용
+// 2026-08-03 · 사용자 요청 · 원본 zoneId (1A/1B/...) 그대로 표시 · 매핑 비움
+// getZoneLabel · 매핑 없으면 원본 zoneId fallback 반환 → 1A · 1B · 9 등 그대로
 // ─────────────────────────────────────────────────────────────
-export const DEFAULT_MAPPINGS: ZoneMapping[] = [
-  // 진열대 (1~8 pair) · 1~16
-  { number: 1,  zoneId: "1A" }, { number: 2,  zoneId: "1B" },
-  { number: 3,  zoneId: "2A" }, { number: 4,  zoneId: "2B" },
-  { number: 5,  zoneId: "3A" }, { number: 6,  zoneId: "3B" },
-  { number: 7,  zoneId: "4A" }, { number: 8,  zoneId: "4B" },
-  { number: 9,  zoneId: "5A" }, { number: 10, zoneId: "5B" },
-  { number: 11, zoneId: "6A" }, { number: 12, zoneId: "6B" },
-  { number: 13, zoneId: "7A" }, { number: 14, zoneId: "7B" },
-  { number: 15, zoneId: "8A" }, { number: 16, zoneId: "8B" },
-  // 상단 벽면 (9~21) · 17~29
-  { number: 17, zoneId: "9"  }, { number: 18, zoneId: "10" },
-  { number: 19, zoneId: "11" }, { number: 20, zoneId: "12" },
-  { number: 21, zoneId: "13" }, { number: 22, zoneId: "14" },
-  { number: 23, zoneId: "15" }, { number: 24, zoneId: "16" },
-  { number: 25, zoneId: "17" }, { number: 26, zoneId: "18" },
-  { number: 27, zoneId: "19" }, { number: 28, zoneId: "20" },
-  { number: 29, zoneId: "21" },
-  // 중앙 (22) · 30
-  { number: 30, zoneId: "22" },
-  // 하단 벽면 (23~34) · 31~42
-  { number: 31, zoneId: "23" }, { number: 32, zoneId: "24" },
-  { number: 33, zoneId: "25" }, { number: 34, zoneId: "26" },
-  { number: 35, zoneId: "27" }, { number: 36, zoneId: "28" },
-  { number: 37, zoneId: "29" }, { number: 38, zoneId: "30" },
-  { number: 39, zoneId: "31" }, { number: 40, zoneId: "32" },
-  { number: 41, zoneId: "33" }, { number: 42, zoneId: "34" },
-  // 수직윙 (35~42) · 43~50
-  { number: 43, zoneId: "35" }, { number: 44, zoneId: "36" },
-  { number: 45, zoneId: "37" }, { number: 46, zoneId: "38" },
-  { number: 47, zoneId: "39" }, { number: 48, zoneId: "40" },
-  { number: 49, zoneId: "41" }, { number: 50, zoneId: "42" },
-];
+export const DEFAULT_MAPPINGS: ZoneMapping[] = [];
 
 // ─────────────────────────────────────────────────────────────
 // 활성 매핑 (mutable) · 서버 응답으로 override
