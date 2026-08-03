@@ -7,7 +7,10 @@ import {
   Briefcase,
   Building,
   Calendar,
+  CalendarDays,
   Camera,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   Clock,
   Edit2,
@@ -598,6 +601,23 @@ const StaffManagePage: React.FC = () => {
 
   const photoInputRef = useRef<HTMLInputElement>(null);
 
+  // ── 연차 · 유급휴가 상태 (선택된 직원 · 연 단위) ──────────────────────────
+  // schedules 테이블에서 type ∈ {"월차","오전반차","오후반차"} 항목을 사용한 연차로 집계
+  // 연차 승인(POST/PUT /api/leave-requests approved) → 서버가 schedules에 자동 upsert
+  // 삭제 → PUT /api/schedules { type: "" } (SchedulePage와 동일한 clear 방식)
+  interface UsedLeaveItem {
+    date: string;              // YYYY-MM-DD
+    type: string;              // 월차 / 오전반차 / 오후반차
+    memo: string;
+    weight: number;            // 월차=1, 반차=0.5
+  }
+  const currentYearNow = new Date().getFullYear();
+  const [leaveYear, setLeaveYear] = useState<number>(currentYearNow);
+  const [usedLeaves, setUsedLeaves] = useState<UsedLeaveItem[]>([]);
+  const [leaveLoading, setLeaveLoading] = useState(false);
+  const [leaveError, setLeaveError]     = useState<string | null>(null);
+  const [deletingLeaveDate, setDeletingLeaveDate] = useState<string | null>(null);
+
   // ── 데이터 로드 ──
   const loadEmployees = useCallback(async () => {
     setLoading(true);
@@ -621,6 +641,87 @@ const StaffManagePage: React.FC = () => {
   }, [selectedId]);
 
   useEffect(() => { loadEmployees(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── 연차 사용 이력 로드 (선택된 직원 · 지정 연도 12개월 병렬) ──────────────
+  const LEAVE_TYPES_SET = useMemo(() => new Set(["월차", "오전반차", "오후반차"]), []);
+  const leaveWeight = (t: string) => (t === "오전반차" || t === "오후반차") ? 0.5 : 1;
+
+  const loadUsedLeaves = useCallback(async (empId: number, year: number) => {
+    setLeaveLoading(true);
+    setLeaveError(null);
+    try {
+      const results = await Promise.all(
+        Array.from({ length: 12 }, (_, i) => i + 1).map(async (m) => {
+          const res = await fetch(`/api/schedules?year=${year}&month=${m}`);
+          if (!res.ok) return null;
+          return res.json().catch(() => null);
+        })
+      );
+      const items: UsedLeaveItem[] = [];
+      for (const monthData of results) {
+        const emps: Employee[] = Array.isArray(monthData?.employees) ? monthData.employees : [];
+        const target = emps.find(e => e.id === empId);
+        const schedules: any[] = Array.isArray((target as any)?.schedules) ? (target as any).schedules : [];
+        for (const s of schedules) {
+          const t = String(s?.type ?? "");
+          const d = String(s?.date ?? "");
+          if (!t || !d) continue;
+          if (!LEAVE_TYPES_SET.has(t)) continue;
+          if (!d.startsWith(`${year}-`)) continue;
+          items.push({ date: d, type: t, memo: String(s?.memo ?? ""), weight: leaveWeight(t) });
+        }
+      }
+      items.sort((a, b) => a.date.localeCompare(b.date));
+      setUsedLeaves(items);
+    } catch (err: unknown) {
+      setLeaveError(err instanceof Error ? err.message : "연차 이력 조회 실패");
+      setUsedLeaves([]);
+    } finally {
+      setLeaveLoading(false);
+    }
+  }, [LEAVE_TYPES_SET]);
+
+  // 선택된 직원 · 연도 변경 시 재조회
+  useEffect(() => {
+    if (selectedId == null) {
+      setUsedLeaves([]);
+      setLeaveError(null);
+      setLeaveLoading(false);
+      return;
+    }
+    loadUsedLeaves(selectedId, leaveYear);
+  }, [selectedId, leaveYear, loadUsedLeaves]);
+
+  // 개별 연차 삭제 · PUT /api/schedules with type="" (SchedulePage clear 방식)
+  const deleteUsedLeave = async (empId: number, date: string) => {
+    if (!window.confirm(`${date} 연차 기록을 삭제할까요?\n\n스케줄표(월차)에도 반영됩니다.`)) return;
+    setDeletingLeaveDate(date);
+    try {
+      const res = await fetch(`/api/schedules`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          employeeId: empId,
+          date,
+          type: "",
+          workingHours: "",
+          actualHours: "",
+          memo: "",
+        }),
+      });
+      if (!res.ok) {
+        const b = await res.json().catch(() => ({}));
+        alert(`삭제 실패: ${(b as { error?: string }).error ?? res.statusText}`);
+        return;
+      }
+      // 로컬 상태 즉시 반영
+      setUsedLeaves(prev => prev.filter(l => l.date !== date));
+    } catch (err: unknown) {
+      alert(`삭제 오류: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setDeletingLeaveDate(null);
+    }
+  };
 
   // ── 필터링 ──
   const filtered = useMemo(() => {
@@ -1539,12 +1640,7 @@ const StaffManagePage: React.FC = () => {
                       editing={editing} placeholder="일요일"
                       onChange={(v) => setField("weekly_holiday", v)}
                     />
-                    <InlineField
-                      label="연차유급휴가 (일)"
-                      value={editing ? String(draft?.annual_leave_days ?? "") : String(displayEmp.annual_leave_days ?? "")}
-                      editing={editing} type="number" placeholder="15"
-                      onChange={(v) => setField("annual_leave_days", v === "" ? null : Number(v))}
-                    />
+                    {/* 연차유급휴가 총일수 · 아래 "연차 · 유급휴가" 섹션에서 편집 */}
                     <InlineField
                       label="근무 장소"
                       value={editing ? (draft?.work_location ?? "") : (displayEmp.work_location ?? "")}
@@ -1558,6 +1654,164 @@ const StaffManagePage: React.FC = () => {
                       onChange={(v) => setField("job_duties", v)}
                     />
                   </div>
+                </SectionCard>
+
+                {/* §7-2 연차 · 유급휴가 — work 그룹 · 스케줄표(월차)와 실시간 연동 */}
+                <SectionCard title="연차 · 유급휴가" icon={<CalendarDays size={11} />} group="work" defaultOpen>
+                  {(() => {
+                    // 총일수 (편집 중이면 draft, 아니면 원본) · 반차 0.5일 가산
+                    const totalDaysRaw = editing ? draft?.annual_leave_days : displayEmp.annual_leave_days;
+                    const totalDays = Number.isFinite(Number(totalDaysRaw)) ? Number(totalDaysRaw) : 15;
+                    const usedDays = usedLeaves.reduce((sum, l) => sum + l.weight, 0);
+                    const remainDays = Math.max(0, totalDays - usedDays);
+                    const fmtDays = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+                    return (
+                      <div className="flex flex-col gap-3">
+                        {/* 상단 KPI · 잔여 / 총 / 사용 + 연도 셀렉터 */}
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            {/* 잔여 (강조) */}
+                            <div className="flex flex-col items-center px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 min-w-[64px]">
+                              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">잔여</span>
+                              <span className="text-[16px] font-black text-emerald-700 tabular-nums leading-tight">{fmtDays(remainDays)}<span className="text-[11px] font-semibold ml-0.5">일</span></span>
+                            </div>
+                            {/* 총 · 편집 가능 */}
+                            <div className="flex flex-col items-center px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 min-w-[64px]">
+                              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">총 부여</span>
+                              {editing ? (
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step={1}
+                                  value={String(draft?.annual_leave_days ?? "")}
+                                  onChange={(e) => setField("annual_leave_days", e.target.value === "" ? null : Number(e.target.value))}
+                                  className="w-14 text-center border border-indigo-300 rounded-md px-1 py-0.5 text-[14px] font-black text-slate-800 tabular-nums bg-white focus:outline-none focus:border-indigo-500"
+                                />
+                              ) : (
+                                <span className="text-[16px] font-black text-slate-800 tabular-nums leading-tight">{fmtDays(totalDays)}<span className="text-[11px] font-semibold ml-0.5">일</span></span>
+                              )}
+                            </div>
+                            {/* 사용 */}
+                            <div className="flex flex-col items-center px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 min-w-[64px]">
+                              <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">사용</span>
+                              <span className="text-[16px] font-black text-amber-700 tabular-nums leading-tight">{fmtDays(usedDays)}<span className="text-[11px] font-semibold ml-0.5">일</span></span>
+                            </div>
+                          </div>
+                          {/* 연도 선택 */}
+                          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-1.5 py-1 shadow-sm">
+                            <button
+                              type="button"
+                              onClick={() => setLeaveYear(y => y - 1)}
+                              className="w-6 h-6 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 cursor-pointer"
+                              title="이전 해"
+                            >
+                              <ChevronLeft size={13} />
+                            </button>
+                            <span className="text-[12px] font-bold text-slate-700 tabular-nums px-1 min-w-[46px] text-center">{leaveYear}년</span>
+                            <button
+                              type="button"
+                              onClick={() => setLeaveYear(y => y + 1)}
+                              disabled={leaveYear >= currentYearNow}
+                              className="w-6 h-6 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                              title="다음 해"
+                            >
+                              <ChevronRight size={13} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => selectedEmp && loadUsedLeaves(selectedEmp.id, leaveYear)}
+                              className="ml-1 w-6 h-6 rounded-md hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-indigo-600 cursor-pointer"
+                              title="새로고침"
+                            >
+                              <RefreshCw size={11} className={leaveLoading ? "animate-spin" : ""} />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* 사용 이력 리스트 */}
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center justify-between">
+                            <SectionLabel color="bg-amber-400">사용한 연차 · {usedLeaves.length}건</SectionLabel>
+                            {editing && (
+                              <span className="text-[10px] font-semibold text-rose-500">편집 모드 · X 버튼으로 삭제</span>
+                            )}
+                          </div>
+                          {leaveError ? (
+                            <div className="text-[11px] text-rose-600 bg-rose-50 border border-rose-200 rounded-md px-2 py-1.5">
+                              {leaveError}
+                            </div>
+                          ) : leaveLoading ? (
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-400 py-2">
+                              <Loader2 size={11} className="animate-spin" /> 불러오는 중...
+                            </div>
+                          ) : usedLeaves.length === 0 ? (
+                            <EmptyRow label={`${leaveYear}년 사용한 연차가 없습니다`} />
+                          ) : (
+                            <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+                              <table className="w-full text-[12px]">
+                                <thead className="bg-slate-50 border-b border-slate-200">
+                                  <tr className="text-slate-500 text-[10px] uppercase tracking-wider">
+                                    <th className="text-left  font-semibold px-2.5 py-1.5 w-[110px]">날짜</th>
+                                    <th className="text-center font-semibold px-1.5 py-1.5 w-[70px]">유형</th>
+                                    <th className="text-left  font-semibold px-2 py-1.5">사유 · 메모</th>
+                                    {editing && <th className="w-8" />}
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {usedLeaves.map((leave) => {
+                                    const typeColor =
+                                      leave.type === "월차"      ? "bg-amber-100 text-amber-700 border-amber-200"
+                                      : leave.type === "오전반차" ? "bg-sky-100 text-sky-700 border-sky-200"
+                                      : leave.type === "오후반차" ? "bg-indigo-100 text-indigo-700 border-indigo-200"
+                                      :                             "bg-slate-100 text-slate-600 border-slate-200";
+                                    const isDeleting = deletingLeaveDate === leave.date;
+                                    // date → YYYY.MM.DD (요일)
+                                    let dowLabel = "";
+                                    try {
+                                      const d = new Date(leave.date + "T00:00:00");
+                                      dowLabel = ["일","월","화","수","목","금","토"][d.getDay()];
+                                    } catch { /* ignore */ }
+                                    return (
+                                      <tr key={leave.date} className="border-t border-slate-100 hover:bg-slate-50/60">
+                                        <td className="px-2.5 py-1.5 font-semibold text-slate-700 tabular-nums whitespace-nowrap">
+                                          {leave.date.replace(/-/g, ".")}
+                                          {dowLabel && <span className="text-[10px] font-normal text-slate-400 ml-1">({dowLabel})</span>}
+                                        </td>
+                                        <td className="px-1.5 py-1.5 text-center">
+                                          <span className={`inline-block text-[10px] font-bold px-1.5 py-0.5 rounded-md border leading-tight ${typeColor}`}>
+                                            {leave.type}
+                                          </span>
+                                        </td>
+                                        <td className="px-2 py-1.5 text-[11px] text-slate-600 truncate max-w-[220px]" title={leave.memo}>
+                                          {leave.memo || <span className="text-slate-300 italic">-</span>}
+                                        </td>
+                                        {editing && (
+                                          <td className="px-1 py-1.5 text-center">
+                                            <button
+                                              type="button"
+                                              onClick={() => selectedEmp && deleteUsedLeave(selectedEmp.id, leave.date)}
+                                              disabled={isDeleting}
+                                              className="w-6 h-6 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer disabled:opacity-40 flex items-center justify-center"
+                                              title="이 연차 삭제 (스케줄표에도 반영)"
+                                            >
+                                              {isDeleting ? <Loader2 size={11} className="animate-spin" /> : <X size={12} />}
+                                            </button>
+                                          </td>
+                                        )}
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                          <p className="text-[10px] text-slate-400 mt-0.5 leading-relaxed">
+                            연차 승인 시 자동 반영 · 삭제 시 스케줄표(월차)에서도 제거됩니다 · 반차는 0.5일로 계산
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </SectionCard>
 
                 {/* §8 임금 정보 — rose 그룹 */}
