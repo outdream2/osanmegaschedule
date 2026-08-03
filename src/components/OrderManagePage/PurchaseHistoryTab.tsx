@@ -15,7 +15,9 @@ import VendorHeaderPanel, { type VendorFull } from "./PurchaseHistoryTab/VendorH
 import PurchaseSubTabs, {
   type PurchaseLedgerRow,
   type PurchaseDetailRow,
+  type TabKey as PurchaseSubTabKey,
 } from "./PurchaseHistoryTab/PurchaseSubTabs";
+import { useLedgerHighlight } from "../../hooks/useLedgerHighlight";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -46,6 +48,12 @@ export const PurchaseHistoryTab: React.FC = () => {
 
   // 선택 공급사
   const [selectedVendor, setSelectedVendor] = useState<VendorItem | null>(null);
+
+  // 우측 서브탭 · controlled · 공급사 클릭 시 강제 "ledger" 전환용
+  const [subTab, setSubTab] = useState<PurchaseSubTabKey>("ledger");
+
+  // 원장 row 강조 훅 · 좌측 카드 클릭 시 최신 매입건 잠깐 강조 (2.4초)
+  const { highlightId, triggerHighlight } = useLedgerHighlight(2600);
 
   // 우측 · 원장 (기간 필터 반영 · Tab 1 표시용)
   const [ledgerRows, setLedgerRows] = useState<PurchaseLedgerRow[]>([]);
@@ -172,6 +180,26 @@ export const PurchaseHistoryTab: React.FC = () => {
     loadLedger(selectedVendor.company_name);
     loadDetail(selectedVendor.company_name);
   }, [selectedVendor, loadLedger, loadDetail]);
+
+  // 원장 로드 완료 후 · 서브탭이 ledger 이고 최신 row 가 있으면 잠깐 강조
+  //   - 공급사 카드 클릭 시 setSubTab("ledger") 이 먼저 세팅되고, 원장이 도착하면 여기서 강조
+  //   - 기간 필터 변경 등 다른 원인의 재로드에서도 자동 강조 (친절한 UX)
+  useEffect(() => {
+    if (!selectedVendor) return;
+    if (ledgerLoading) return;
+    if (subTab !== "ledger") return;
+    if (ledgerRows.length === 0) return;
+    // 최신 매입일 row 선택 (desc 정렬)
+    let latest: PurchaseLedgerRow | null = null;
+    for (const r of ledgerRows) {
+      if (!latest) { latest = r; continue; }
+      const ad = String(r.invoice_date ?? "");
+      const bd = String(latest.invoice_date ?? "");
+      if (ad > bd) latest = r;
+    }
+    if (latest) triggerHighlight(latest.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ledgerRows, ledgerLoading, subTab, selectedVendor?.id]);
 
   // 기간 필터 바뀌면 원장만 재로드 (selectedVendor 있을 때)
   // loadLedger 는 periodMonths/periodSeason deps → callback 새로 만들어짐 → 위 effect 재실행
@@ -318,7 +346,11 @@ export const PurchaseHistoryTab: React.FC = () => {
                     category={v.category}
                     summary={summaryMap.get(v.company_name) ?? null}
                     active={selectedVendor?.id === v.id}
-                    onSelect={() => setSelectedVendor(v)}
+                    onSelect={() => {
+                      setSelectedVendor(v);
+                      // 공급사 클릭 시 원장(매입원장) 탭으로 자동 전환 · 강조는 로드 완료 후 effect 에서
+                      setSubTab("ledger");
+                    }}
                   />
                 ))}
               </div>
@@ -347,12 +379,16 @@ export const PurchaseHistoryTab: React.FC = () => {
                 detailRows={detailRows}
                 loading={detailLoading}
               />
-              {/* Phase C · 서브탭 3개 (매입원장 · 상품별 · 매입추이) */}
+              {/* Phase C · 서브탭 3개 (매입원장 · 상품별 · 매입추이)
+                  · controlled · 공급사 클릭 시 ledger 로 자동 전환 + 최신 row highlight */}
               <PurchaseSubTabs
                 ledgerRows={ledgerRows}
                 ledgerLoading={ledgerLoading}
                 detailRows={detailRows}
                 detailLoading={detailLoading}
+                activeTab={subTab}
+                onTabChange={setSubTab}
+                highlightId={highlightId}
               />
             </>
           )}

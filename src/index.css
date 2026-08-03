@@ -21,6 +21,16 @@
 }
 .tab-shake { animation: tab-shake 0.55s ease-in-out infinite; transform-origin: center; }
 
+/* 2026-08-03 · 매입원장 row highlight flash · useLedgerHighlight 훅과 짝
+ *  좌측 공급사 클릭 시 우측 원장의 특정 row 를 amber ring + soft bg 로 잠깐 강조
+ *  duration 2.4s · ease-out · 자연스러운 fade */
+@keyframes highlight-flash {
+  0%   { background-color: rgba(251, 191, 36, 0.35); box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.75); }
+  40%  { background-color: rgba(253, 230, 138, 0.55); box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.55); }
+  100% { background-color: rgba(253, 230, 138, 0);    box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0);    }
+}
+.animate-highlight-flash { animation: highlight-flash 2.4s ease-out 1; }
+
 @theme {
   --font-sans: "Inter", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;

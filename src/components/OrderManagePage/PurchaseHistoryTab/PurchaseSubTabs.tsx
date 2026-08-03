@@ -5,10 +5,12 @@
 // Tab 3 · 매입 추이 (월별 bar + 카테고리 pie · 커스텀 SVG)
 // Progressive Disclosure · 결제·명세서 탭 · VendorDetailModal 과 중복이라 만들지 않음
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowUpDown, BarChart3, ListOrdered, Package2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────
+
+export type TabKey = "ledger" | "product" | "trend";
 
 export interface PurchaseLedgerRow {
   id: string | number;
@@ -34,6 +36,14 @@ interface PurchaseSubTabsProps {
   ledgerLoading: boolean;
   detailRows: PurchaseDetailRow[]; // 최근 365일 · Tab 2/3 용
   detailLoading: boolean;
+  /** 초기 활성 탭 · uncontrolled 초기값 · 기본 "ledger" */
+  initialTab?: TabKey;
+  /** 외부 controlled 탭 · 지정 시 activeTab prop 을 소스로 사용 */
+  activeTab?: TabKey;
+  /** 사용자가 탭을 클릭했을 때 · controlled 모드에서 필수 */
+  onTabChange?: (tab: TabKey) => void;
+  /** 매입원장 탭에서 강조할 row id · null 이면 강조 없음 · 2~3초 후 자동 해제는 caller 책임 */
+  highlightId?: string | number | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
@@ -60,7 +70,11 @@ function dateLabel(iso: string | null): string {
 type LedgerSortKey = "date" | "product_name" | "quantity" | "unit_price" | "amount";
 type SortDir = "asc" | "desc";
 
-const LedgerTab: React.FC<{ rows: PurchaseLedgerRow[]; loading: boolean }> = ({ rows, loading }) => {
+const LedgerTab: React.FC<{
+  rows: PurchaseLedgerRow[];
+  loading: boolean;
+  highlightId?: string | number | null;
+}> = ({ rows, loading, highlightId = null }) => {
   const [sortKey, setSortKey] = useState<LedgerSortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const toggleSort = (k: LedgerSortKey) => {
@@ -84,6 +98,23 @@ const LedgerTab: React.FC<{ rows: PurchaseLedgerRow[]; loading: boolean }> = ({ 
   }, [rows, sortKey, sortDir]);
 
   const totalAmount = useMemo(() => rows.reduce((s, r) => s + (r.amount ?? 0), 0), [rows]);
+
+  // highlightId 가 바뀌면 해당 row 로 스무스 스크롤 (블록: nearest · 상단으로 튀지 않게)
+  const highlightRowRef = useRef<HTMLTableRowElement | null>(null);
+  useEffect(() => {
+    if (highlightId == null) return;
+    // 다음 프레임 · 렌더 후 DOM 배치 완료 대기
+    const t = window.setTimeout(() => {
+      if (highlightRowRef.current) {
+        try {
+          highlightRowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+        } catch {
+          highlightRowRef.current.scrollIntoView();
+        }
+      }
+    }, 30);
+    return () => window.clearTimeout(t);
+  }, [highlightId, sorted]);
 
   if (loading) {
     return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">불러오는 중...</div>;
@@ -120,26 +151,35 @@ const LedgerTab: React.FC<{ rows: PurchaseLedgerRow[]; loading: boolean }> = ({ 
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-50">
-          {sorted.map((r, i) => (
-            <tr key={`ph-${r.id}-${i}`} className="hover:bg-slate-50/60 transition-all duration-100">
-              <td className="px-2 py-1.5 text-slate-300 text-[11px] tabular-nums align-top">{i + 1}</td>
-              <td className="px-2 py-1.5 tabular-nums text-[11px] text-slate-500 align-top whitespace-nowrap">
-                {dateLabel(r.invoice_date)}
-              </td>
-              <td className="px-2 py-1.5 text-[12px] font-semibold text-slate-700 align-top break-words whitespace-normal leading-snug">
-                {r.product_name ?? "-"}
-              </td>
-              <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-slate-600 align-top">
-                {r.quantity != null ? fmt(r.quantity) : "-"}
-              </td>
-              <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-slate-600 align-top">
-                {r.unit_price != null ? fmt(r.unit_price) : "-"}
-              </td>
-              <td className="px-2 py-1.5 text-right tabular-nums text-[12px] font-semibold text-emerald-700 align-top">
-                {r.amount != null && r.amount > 0 ? fmt(r.amount) : "-"}
-              </td>
-            </tr>
-          ))}
+          {sorted.map((r, i) => {
+            const isHighlight = highlightId != null && String(r.id) === String(highlightId);
+            return (
+              <tr
+                key={`ph-${r.id}-${i}`}
+                ref={isHighlight ? highlightRowRef : undefined}
+                className={`transition-all duration-100 ${
+                  isHighlight ? "animate-highlight-flash" : "hover:bg-slate-50/60"
+                }`}
+              >
+                <td className="px-2 py-1.5 text-slate-300 text-[11px] tabular-nums align-top">{i + 1}</td>
+                <td className="px-2 py-1.5 tabular-nums text-[11px] text-slate-500 align-top whitespace-nowrap">
+                  {dateLabel(r.invoice_date)}
+                </td>
+                <td className="px-2 py-1.5 text-[12px] font-semibold text-slate-700 align-top break-words whitespace-normal leading-snug">
+                  {r.product_name ?? "-"}
+                </td>
+                <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-slate-600 align-top">
+                  {r.quantity != null ? fmt(r.quantity) : "-"}
+                </td>
+                <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-slate-600 align-top">
+                  {r.unit_price != null ? fmt(r.unit_price) : "-"}
+                </td>
+                <td className="px-2 py-1.5 text-right tabular-nums text-[12px] font-semibold text-emerald-700 align-top">
+                  {r.amount != null && r.amount > 0 ? fmt(r.amount) : "-"}
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
         <tfoot className="sticky bottom-0 bg-white border-t-2 border-slate-200">
           <tr>
@@ -453,8 +493,6 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
 
 // ─── PurchaseSubTabs · Container ──────────────────────────────────────────
 
-type TabKey = "ledger" | "product" | "trend";
-
 const TABS: { key: TabKey; label: string; icon: React.ReactNode; hint: string }[] = [
   { key: "ledger",  label: "매입원장",   icon: <ListOrdered size={12} />, hint: "선택 기간 · 원장 뷰" },
   { key: "product", label: "상품별 집계", icon: <Package2 size={12} />,   hint: "최근 1년 · groupBy 상품명" },
@@ -466,8 +504,19 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
   ledgerLoading,
   detailRows,
   detailLoading,
+  initialTab = "ledger",
+  activeTab,
+  onTabChange,
+  highlightId = null,
 }) => {
-  const [tab, setTab] = useState<TabKey>("ledger");
+  // controlled · uncontrolled 모드 모두 지원 (activeTab 제공 시 controlled)
+  const [internalTab, setInternalTab] = useState<TabKey>(initialTab);
+  const tab = activeTab ?? internalTab;
+  const setTab = (next: TabKey) => {
+    if (activeTab === undefined) setInternalTab(next);
+    onTabChange?.(next);
+  };
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col min-h-0 flex-1">
       {/* 탭 헤더 */}
@@ -496,7 +545,7 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
 
       {/* 탭 컨텐츠 */}
       <div className="flex flex-col min-h-0 flex-1">
-        {tab === "ledger"  && <LedgerTab     rows={ledgerRows}  loading={ledgerLoading} />}
+        {tab === "ledger"  && <LedgerTab     rows={ledgerRows}  loading={ledgerLoading} highlightId={highlightId} />}
         {tab === "product" && <ProductAggTab rows={detailRows}  loading={detailLoading} />}
         {tab === "trend"   && <TrendTab      rows={detailRows}  loading={detailLoading} />}
       </div>
