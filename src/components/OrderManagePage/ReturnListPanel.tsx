@@ -652,7 +652,7 @@ export const ReturnListPanel: React.FC = () => {
       </div>
 
       {/* ── 좌우 split 레이아웃 ── */}
-      <div className="flex flex-col lg:flex-row min-h-[520px] gap-0">
+      <div className="flex flex-col lg:flex-row lg:min-h-[520px] gap-0">
 
         {/* 좌측: 리스트 */}
         <div

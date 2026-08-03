@@ -289,7 +289,7 @@ export const SupplierTab: React.FC = () => {
       </div>
 
       {/* ── 하단 좌우 split ── */}
-      <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+      <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px]">
         {/* 좌측: 공급사 리스트 */}
         <div className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? supplierPanelWidth : undefined }}>

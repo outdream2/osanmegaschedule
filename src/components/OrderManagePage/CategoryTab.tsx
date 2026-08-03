@@ -432,7 +432,7 @@ const ZoneCategoryContent: React.FC = () => {
       />
 
       {/* 하단: 좌측 구역 리스트 + 우측 상세 split */}
-      <div className="flex flex-col lg:flex-row gap-0 flex-1 min-h-[520px]">
+      <div className="flex flex-col lg:flex-row gap-0 flex-1 lg:min-h-[520px]">
         {/* 좌측: 구역 리스트 */}
         <div
           className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-2"

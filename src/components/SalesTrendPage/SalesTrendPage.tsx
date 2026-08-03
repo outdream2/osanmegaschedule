@@ -556,7 +556,7 @@ const ProductTrendTab: React.FC<{
   }), [filteredRows, granularity]);
 
   return (
-    <div className="flex flex-col lg:flex-row gap-0 min-h-[520px]">
+    <div className="flex flex-col lg:flex-row gap-0 lg:min-h-[520px]">
       {/* ── 좌측: 재고흐름 리스트 (검색+정렬+Top N 내장) ── */}
       <div className="min-h-0 max-h-[75vh] lg:max-h-[720px] w-full lg:w-auto lg:shrink-0" style={{ width: window.innerWidth >= 1024 ? flowPanelWidth : undefined }}>
         <StockFlowPanel
@@ -2031,7 +2031,7 @@ const ZoneCategoryContent: React.FC = () => {
       />
 
       {/* 하단 · 좌측 구역 리스트 + 우측 상세 split */}
-      <div className="flex flex-col lg:flex-row gap-0 flex-1 min-h-[520px]">
+      <div className="flex flex-col lg:flex-row gap-0 flex-1 lg:min-h-[520px]">
       {/* ── 좌측: 구역 리스트 ── */}
       <div
         className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-2"
@@ -2539,7 +2539,7 @@ export const SalesTrendPage: React.FC = () => {
 
         {/* 공급사별 판매 · 좌우 분할 레이아웃 */}
         {salesTab === "supplier" && (
-        <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+        <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px]">
           <div
             className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
             style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? supplierPanelWidth : undefined }}

@@ -576,7 +576,7 @@ export const FlowTab: React.FC = () => {
       </div>
 
       {/* 하단 · 좌우 split */}
-      <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+      <div className="flex flex-col lg:flex-row gap-2 lg:min-h-[520px]">
 
         {/* 좌측: 재고리스트 */}
         <div
