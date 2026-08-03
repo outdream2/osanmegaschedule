@@ -3,10 +3,9 @@
 //   상단: AppNavHeader (activePage="business-manage")
 //   서브탭: 직원관리 · 연차승인 · 점심불참 · 직원권한 (DisplayPage 서브탭 스타일 벤치마크)
 //   각 서브탭 · 기존 페이지 임베드 (embedded prop 전달 → 자체 AppNavHeader skip)
-import React, { Suspense, useEffect, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useState } from "react";
 import { UserGear, CalendarDots, ForkKnife, FileText, NotePencil, type Icon as PhIcon } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
-import { LeavePage } from "../LeavePage/LeavePage";
 import { LunchPage } from "../LunchPage/LunchPage";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import type { AuthSession } from "../../types";
@@ -17,6 +16,8 @@ const StaffManagePage = React.lazy(() => import("../StaffManagePage/StaffManageP
 const HrFormsPage = React.lazy(() => import("../HrFormsPage/HrFormsPage"));
 // 2026-08-03 · 서류작성 · 근로계약서·사직서 2탭 wrapper · lazy 로드
 const DocumentWriterPage = React.lazy(() => import("../DocumentWriterPage/DocumentWriterPage"));
+// 2026-08-03 · #180 · 승인대기 wrapper (연차승인 · 사직서승인 2탭 · pending 배지)
+const ApprovalCenterPage = React.lazy(() => import("../ApprovalCenterPage/ApprovalCenterPage"));
 
 interface BusinessManagePageProps {
   onBack: () => void;
@@ -25,7 +26,8 @@ interface BusinessManagePageProps {
   onLogout?: () => void;
 }
 
-type BmSubTab = "staff-manage" | "leave" | "lunch" | "hr-forms" | "document-writer";
+// 2026-08-03 · "leave" 는 하위 호환 · 실제 렌더는 "approval-center" 로 리다이렉트
+type BmSubTab = "staff-manage" | "approval-center" | "lunch" | "hr-forms" | "document-writer";
 
 // 서브탭 색상 팔레트 · DisplayPage 서브탭 SUBTAB_COLORS 와 동일 구조
 const SUBTAB_COLORS: Record<string, { bar: string; text: string; iconActive: string; hoverText: string }> = {
@@ -45,11 +47,12 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { key: "staff-manage",    label: "직원관리",  icon: UserGear,       color: "emerald" },
-  { key: "leave",           label: "연차승인",  icon: CalendarDots,   color: "teal"    },
-  { key: "lunch",           label: "점심불참",  icon: ForkKnife,      color: "orange"  },
-  { key: "hr-forms",        label: "각종양식",  icon: FileText,       color: "amber"   },
-  { key: "document-writer", label: "서류작성",  icon: NotePencil,     color: "indigo"  },
+  { key: "staff-manage",     label: "직원관리",  icon: UserGear,       color: "emerald" },
+  // 2026-08-03 · #180 · "연차승인" → "승인대기" · 내부 2탭 (연차·사직서) 으로 확장
+  { key: "approval-center",  label: "승인대기",  icon: CalendarDots,   color: "teal"    },
+  { key: "lunch",            label: "점심불참",  icon: ForkKnife,      color: "orange"  },
+  { key: "hr-forms",         label: "각종양식",  icon: FileText,       color: "amber"   },
+  { key: "document-writer",  label: "서류작성",  icon: NotePencil,     color: "indigo"  },
 ];
 
 const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
@@ -70,9 +73,44 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   //   · localStorage 순서 반영 후 첫 원소 · 마운트 1회
   useEffect(() => {
     const firstKey = sortable.tabs[0]?.key as BmSubTab | undefined;
-    if (firstKey) setSubTab(firstKey);
+    // 하위 호환 · 이전 저장값 "leave" → "approval-center" 로 자동 리다이렉트
+    const mapped: BmSubTab | undefined =
+      (firstKey as unknown as string) === "leave" ? "approval-center" : firstKey;
+    if (mapped) setSubTab(mapped);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── 승인대기 pending 카운트 (연차 + 사직서 합계) · 서브탭 라벨 옆 배지 ──
+  //   · 초기 · 60초 폴링 · CustomEvent("approval-count-updated") 실시간 갱신
+  //   · 관리자(level>=2) 만 표시 (승인 권한 없는 사원에게 표시 X)
+  const showApprovalBadge = (authSession?.level ?? 0) >= 2;
+  const [approvalPending, setApprovalPending] = useState<number>(0);
+
+  const loadApprovalCount = useCallback(async () => {
+    if (!showApprovalBadge) return;
+    try {
+      const [lRes, rRes] = await Promise.all([
+        fetch("/api/leave-requests/pending-count").catch(() => null),
+        fetch("/api/resignations/pending-count").catch(() => null),
+      ]);
+      const lJson = lRes && lRes.ok ? await lRes.json().catch(() => null) : null;
+      const rJson = rRes && rRes.ok ? await rRes.json().catch(() => null) : null;
+      setApprovalPending(Number(lJson?.count ?? 0) + Number(rJson?.count ?? 0));
+    } catch {
+      // no-op
+    }
+  }, [showApprovalBadge]);
+
+  useEffect(() => {
+    loadApprovalCount();
+    const iv = setInterval(loadApprovalCount, 60_000);
+    const handler = () => loadApprovalCount();
+    window.addEventListener("approval-count-updated", handler);
+    return () => {
+      clearInterval(iv);
+      window.removeEventListener("approval-count-updated", handler);
+    };
+  }, [loadApprovalCount]);
 
   // 노프롭 서브페이지에 넘길 공통 props (embedded=true 로 자체 헤더 skip 요청)
   const commonSubPageProps = {
@@ -146,6 +184,15 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
                     className={`shrink-0 sm:size-[20px] transition-colors duration-150 ${active ? c.iconActive : "text-slate-400"}`}
                   />
                   <span>{t.label}</span>
+                  {/* 2026-08-03 · 승인대기 서브탭 옆 · pending 갯수 배지 (rose · 관리자 & count>0) */}
+                  {t.key === "approval-center" && showApprovalBadge && approvalPending > 0 && (
+                    <span
+                      className="ml-0.5 min-w-[20px] h-[20px] inline-flex items-center justify-center px-1.5 rounded-full bg-rose-500 text-white text-[11px] font-black tabular-nums leading-none"
+                      title={`승인 대기 ${approvalPending}건`}
+                    >
+                      {approvalPending}
+                    </span>
+                  )}
                   {active && (
                     <span className={`absolute left-0 right-0 -bottom-px h-[2.5px] ${c.bar} rounded-t-sm`} />
                   )}
@@ -163,8 +210,13 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
             <StaffManagePage />
           </Suspense>
         )}
-        {subTab === "leave" && (
-          <LeavePage {...commonSubPageProps} />
+        {subTab === "approval-center" && (
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">승인대기 로딩 중...</div>}>
+            <ApprovalCenterPage
+              {...commonSubPageProps}
+              onCountsChange={(c) => setApprovalPending(c.leave + c.resignation)}
+            />
+          </Suspense>
         )}
         {subTab === "lunch" && (
           <LunchPage {...commonSubPageProps} />

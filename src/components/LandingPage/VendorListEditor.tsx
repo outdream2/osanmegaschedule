@@ -331,23 +331,23 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
               <tr
                 key={v.id}
                 onClick={() => handleVendorClick(v.id)}
-                className="hover:bg-slate-50/60 cursor-pointer transition"
+                className={`hover:bg-slate-50/60 cursor-pointer transition ${compact ? "text-[11px]" : ""}`}
                 title="클릭하여 상세 · 편집"
               >
-                <td className="px-2 py-1.5 text-[11px] text-slate-400 font-mono tabular-nums">{i + 1}</td>
-                <td className="px-3 py-1.5 font-semibold text-slate-800">
-                  <span className="inline-flex items-center gap-1.5 flex-wrap">
-                    <Building2 size={11} className="text-teal-500 shrink-0" />
+                <td className={`px-2 py-1 text-slate-400 font-mono tabular-nums ${compact ? "text-[10px]" : "text-[11px]"}`}>{i + 1}</td>
+                <td className={`px-2 py-1 font-semibold text-slate-800 ${compact ? "" : "text-[13px]"}`}>
+                  <span className="inline-flex items-center gap-1 flex-wrap">
+                    <Building2 size={compact ? 10 : 11} className="text-teal-500 shrink-0" />
                     <span className="underline decoration-dotted decoration-teal-300 underline-offset-2 break-words">{v.company_name}</span>
                     <VendorCategoryBadge category={v.category} />
                   </span>
                 </td>
-                <td className="px-3 py-1.5 font-mono text-slate-600 whitespace-nowrap">
+                <td className={`px-2 py-1 font-mono text-slate-600 whitespace-nowrap ${compact ? "text-[11px]" : ""}`}>
                   {v.business_number
                     ? formatBizNum(v.business_number)
-                    : <span className="text-rose-400 italic text-[11px]">없음</span>}
+                    : <span className="text-rose-400 italic text-[10px]">없음</span>}
                 </td>
-                <td className="px-3 py-1.5 text-slate-700 truncate">{v.contact_name ?? "-"}</td>
+                <td className={`px-2 py-1 text-slate-700 truncate ${compact ? "text-[11px]" : ""}`}>{v.contact_name ?? "-"}</td>
                 {!compact && (
                   <>
                     {/* 연락처 그룹 · 접힘 시 placeholder */}
