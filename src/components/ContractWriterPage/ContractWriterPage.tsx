@@ -205,7 +205,7 @@ const SelectOrCustom: React.FC<{
               onChange(e.target.value);
             }
           }}
-          className="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition cursor-pointer"
+          className="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition cursor-pointer"
         >
           {options.map(o => (
             <option key={o} value={o}>{o}{suffix ? ` ${suffix}` : ""}</option>
@@ -219,7 +219,7 @@ const SelectOrCustom: React.FC<{
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={placeholder}
-            className="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+            className="flex-1 min-w-0 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
           />
           <button
             type="button"
@@ -485,7 +485,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
       </PreviewRow>
 
       {/* 계약일자 */}
-      <div className="mt-8 text-center text-[13px] text-slate-800 font-semibold">
+      <div className="mt-8 text-center text-[14px] text-slate-800 font-semibold">
         {fmtKoreanDate(form.startDate) || fmtKoreanDate(todayIso())}
       </div>
 
@@ -879,7 +879,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   <select
                     value={form.employeeId != null ? String(form.employeeId) : ""}
                     onChange={(e) => onSelectEmployee(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition cursor-pointer"
+                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition cursor-pointer"
                     disabled={empLoading}
                   >
                     <option value="">-- 직원 선택 --</option>
@@ -897,14 +897,14 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     value={form.employeeName}
                     onChange={(e) => upd("employeeName", e.target.value)}
                     placeholder="성명"
-                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
                   />
                   <input
                     type="text"
                     value={form.employeeBirth}
                     onChange={(e) => upd("employeeBirth", e.target.value)}
                     placeholder="생년월일 (예: 1990-01-15)"
-                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
                   />
                 </div>
                 <input
@@ -912,14 +912,14 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   value={form.employeePhone}
                   onChange={(e) => upd("employeePhone", e.target.value)}
                   placeholder="연락처 (예: 010-1234-5678)"
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
                 />
                 <input
                   type="text"
                   value={form.employeeAddress}
                   onChange={(e) => upd("employeeAddress", e.target.value)}
                   placeholder="주소"
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
                 />
                 {/* 직원 카테고리 · 약사 · 사원 · 기타 (기타는 자유 입력) */}
                 <div className="grid grid-cols-3 gap-1.5">
@@ -949,7 +949,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     value={form.employeeCategoryCustom}
                     onChange={(e) => upd("employeeCategoryCustom", e.target.value)}
                     placeholder="기타 직군 · 자유 입력 (예: 인턴약사 · 청소 · 배송 등)"
-                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
                   />
                 )}
                 {/* 연차 유급휴가 (일) */}
@@ -961,7 +961,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     value={form.annualLeaveDays}
                     onChange={(e) => upd("annualLeaveDays", e.target.value)}
                     placeholder="15"
-                    className="w-24 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold text-right focus:outline-none focus:border-emerald-500 transition"
+                    className="w-24 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold text-right focus:outline-none focus:border-emerald-500 transition"
                   />
                   <span className="text-[11px] text-slate-500 font-semibold">일</span>
                 </div>
@@ -978,14 +978,14 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     value={form.companyName}
                     onChange={(e) => upd("companyName", e.target.value)}
                     placeholder="사업체명"
-                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
                   />
                   <input
                     type="text"
                     value={form.employerName}
                     onChange={(e) => upd("employerName", e.target.value)}
                     placeholder="대표자명"
-                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
                   />
                 </div>
                 <input
@@ -993,14 +993,14 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   value={form.companyAddress}
                   onChange={(e) => upd("companyAddress", e.target.value)}
                   placeholder="사업장 주소"
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
                 />
                 <input
                   type="text"
                   value={form.companyRegNo}
                   onChange={(e) => upd("companyRegNo", e.target.value)}
                   placeholder="사업자등록번호 (예: 123-45-67890)"
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
                 />
               </div>
             </div>
@@ -1101,7 +1101,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   min={0}
                   value={form.breakMinutes}
                   onChange={(e) => upd("breakMinutes", e.target.value)}
-                  className="w-20 bg-white border border-slate-200 rounded-lg px-2 py-1 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition text-right"
+                  className="w-20 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition text-right"
                 />
                 <span className="text-[11px] text-slate-500 font-semibold">분</span>
               </div>
@@ -1150,7 +1150,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     type="date"
                     value={form.startDate}
                     onChange={(e) => upd("startDate", e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
                   />
                 </div>
                 <div>
@@ -1160,7 +1160,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     value={form.endDate}
                     onChange={(e) => upd("endDate", e.target.value)}
                     disabled={form.indefinite}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -1183,7 +1183,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 value={form.jobDuty}
                 onChange={(e) => upd("jobDuty", e.target.value)}
                 placeholder="예: 약국 카운터 · OTC 판매"
-                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
               />
             </div>
 
@@ -1208,7 +1208,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 onChange={(e) => upd("additionalContent", e.target.value)}
                 rows={4}
                 placeholder="계약서에 추가로 명시할 내용 (예: 수습기간 3개월 · 명절 상여 별도 등)"
-                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition resize-y"
+                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition resize-y"
               />
             </div>
 
