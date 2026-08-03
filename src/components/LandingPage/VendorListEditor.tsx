@@ -66,6 +66,22 @@ const fmtWon = (n: number): string =>
   n >= 10000 ? `${(n / 10000).toFixed(1)}만` :
   `${n.toLocaleString()}원`;
 
+// compact 모드 전용 · 분류별 좌측 컬러 바
+const CATEGORY_LEFT_BORDER: Record<string, string> = {
+  위탁:       "border-l-violet-400",
+  선결제:     "border-l-rose-400",
+  "60일회전": "border-l-emerald-400",
+  "90일회전": "border-l-teal-400",
+  기타:       "border-l-slate-300",
+};
+const CATEGORY_LEFT_BG: Record<string, string> = {
+  위탁:       "bg-violet-50/40",
+  선결제:     "bg-rose-50/40",
+  "60일회전": "bg-emerald-50/40",
+  "90일회전": "bg-teal-50/40",
+  기타:       "bg-slate-50/30",
+};
+
 export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   initialSelectedId,
   onEditRequest,
@@ -77,6 +93,8 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   const [filterMissingBiz, setFilterMissingBiz] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState<string>("전체");
   const [modalVendorId, setModalVendorId] = useState<number | null>(null);
+  // compact 모드 · 선택된 항목 강조용
+  const [activeId, setActiveId] = useState<number | null>(null);
   // 그룹 헤더 클릭 접기 · flow 탭 동일 방식
   type VendorGroup = "basic" | "contact" | "balance" | "etc";
   const [vendorGroupCollapsed, setVendorGroupCollapsed] = useState<Set<VendorGroup>>(new Set());
@@ -84,6 +102,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   const isVendorGroupCollapsed = (g: VendorGroup) => vendorGroupCollapsed.has(g);
 
   const handleVendorClick = (id: number) => {
+    setActiveId(id);
     if (onEditRequest) { onEditRequest(id); } else { setModalVendorId(id); }
   };
 
@@ -130,264 +149,374 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   const modalVendor = useMemo(() => vendors.find(v => v.id === modalVendorId) ?? null, [vendors, modalVendorId]);
 
   return (
-    <div className="flex flex-col gap-3 min-h-0 flex-1">
+    <div className="flex flex-col gap-2 min-h-0 flex-1">
 
-      {/* ── 툴바 ── */}
-      <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2">
-        {/* 검색 */}
-        <div className="relative flex-1 min-w-[200px] sm:min-w-[260px] sm:flex-none">
-          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="회사명 · 사업자번호 · 담당자 · 전화 · 이메일"
-            className="h-8 pl-8 pr-3 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-400 focus:border-teal-400 w-full sm:w-80 transition"
-          />
-        </div>
-
-        {/* 분류 segment control · 2026-07-31 · 60일회전/90일회전 세분화 */}
-        <div className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5 flex-wrap">
-          {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
+      {/* ── compact 툴바 ── */}
+      {compact ? (
+        <div className="flex flex-col gap-1.5 bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2">
+          {/* 검색 + 새로고침 */}
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1 min-w-0">
+              <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="회사명 · 담당자 · 전화"
+                className="h-7 pl-7 pr-2 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-indigo-400 focus:border-indigo-400 w-full transition"
+              />
+            </div>
+            {/* 건수 */}
+            <span className="text-[11px] text-slate-400 tabular-nums whitespace-nowrap shrink-0">
+              {loading
+                ? <span className="inline-flex items-center gap-1"><Loader2 size={10} className="animate-spin" /></span>
+                : `${filtered.length}건`}
+            </span>
             <button
-              key={cat}
-              onClick={() => setCategoryFilter(cat)}
-              className={`h-7 px-2.5 rounded-md text-[11px] font-black transition cursor-pointer whitespace-nowrap ${
-                categoryFilter === cat
-                  ? cat === "전체"     ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
-                  : cat === "위탁"     ? "bg-violet-500 text-white shadow-sm"
-                  : cat === "선결제"   ? "bg-rose-500 text-white shadow-sm"
-                  : cat === "60일회전" ? "bg-emerald-500 text-white shadow-sm"
-                  : cat === "90일회전" ? "bg-teal-500 text-white shadow-sm"
-                  :                     "bg-slate-500 text-white shadow-sm"
-                  : "text-slate-500 hover:text-slate-700 hover:bg-white/60"
+              onClick={loadVendors}
+              disabled={loading}
+              className="inline-flex items-center justify-center h-7 w-7 shrink-0 border border-slate-200 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors cursor-pointer"
+              title="새로고침"
+            >
+              <RefreshCw size={11} className={loading ? "animate-spin" : ""} />
+            </button>
+          </div>
+          {/* 분류 필터 · 가로 스크롤 */}
+          <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-none pb-0.5">
+            {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`h-6 px-2 rounded-md text-[10px] font-black transition cursor-pointer whitespace-nowrap shrink-0 ${
+                  categoryFilter === cat
+                    ? cat === "전체"     ? "bg-slate-700 text-white shadow-sm"
+                    : cat === "위탁"     ? "bg-violet-500 text-white shadow-sm"
+                    : cat === "선결제"   ? "bg-rose-500 text-white shadow-sm"
+                    : cat === "60일회전" ? "bg-emerald-500 text-white shadow-sm"
+                    : cat === "90일회전" ? "bg-teal-500 text-white shadow-sm"
+                    :                     "bg-slate-500 text-white shadow-sm"
+                    : "text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-md"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+            {/* 사번없음 필터 */}
+            <button
+              onClick={() => setFilterMissingBiz(v => !v)}
+              className={`ml-auto h-6 px-2 rounded-md text-[10px] font-black transition cursor-pointer whitespace-nowrap shrink-0 ${
+                filterMissingBiz
+                  ? "bg-rose-500 text-white shadow-sm"
+                  : "text-slate-400 hover:text-rose-500 hover:bg-rose-50"
               }`}
             >
-              {cat}
+              사번없음 {missingCount > 0 && <span>{missingCount}</span>}
             </button>
-          ))}
+          </div>
         </div>
-
-        {/* 필터 chip */}
-        <button
-          onClick={() => setFilterMissingBiz(v => !v)}
-          className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-[12px] font-semibold transition cursor-pointer ${
-            filterMissingBiz
-              ? "bg-rose-50 border-rose-300 text-rose-700"
-              : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
-          }`}
-        >
-          <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${filterMissingBiz ? "bg-rose-500 border-rose-500" : "border-slate-300"}`}>
-            {filterMissingBiz && <Check size={9} className="text-white" strokeWidth={3} />}
+      ) : (
+        /* ── 일반 모드 툴바 (기존) ── */
+        <div className="flex items-center gap-2 flex-wrap bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2">
+          <div className="relative flex-1 min-w-[200px] sm:min-w-[260px] sm:flex-none">
+            <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="회사명 · 사업자번호 · 담당자 · 전화 · 이메일"
+              className="h-8 pl-8 pr-3 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-teal-400 focus:border-teal-400 w-full sm:w-80 transition"
+            />
+          </div>
+          <div className="inline-flex items-center bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5 flex-wrap">
+            {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
+              <button
+                key={cat}
+                onClick={() => setCategoryFilter(cat)}
+                className={`h-7 px-2.5 rounded-md text-[11px] font-black transition cursor-pointer whitespace-nowrap ${
+                  categoryFilter === cat
+                    ? cat === "전체"     ? "bg-white text-slate-800 shadow-sm ring-1 ring-slate-200"
+                    : cat === "위탁"     ? "bg-violet-500 text-white shadow-sm"
+                    : cat === "선결제"   ? "bg-rose-500 text-white shadow-sm"
+                    : cat === "60일회전" ? "bg-emerald-500 text-white shadow-sm"
+                    : cat === "90일회전" ? "bg-teal-500 text-white shadow-sm"
+                    :                     "bg-slate-500 text-white shadow-sm"
+                    : "text-slate-500 hover:text-slate-700 hover:bg-white/60"
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setFilterMissingBiz(v => !v)}
+            className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border text-[12px] font-semibold transition cursor-pointer ${
+              filterMissingBiz
+                ? "bg-rose-50 border-rose-300 text-rose-700"
+                : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+            }`}
+          >
+            <span className={`w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0 ${filterMissingBiz ? "bg-rose-500 border-rose-500" : "border-slate-300"}`}>
+              {filterMissingBiz && <Check size={9} className="text-white" strokeWidth={3} />}
+            </span>
+            사업자번호 미등록
+            <span className={`text-[11px] font-black ${filterMissingBiz ? "text-rose-600" : "text-slate-400"}`}>
+              {missingCount}
+            </span>
+          </button>
+          <span className="text-[12px] text-slate-400 tabular-nums">
+            {loading
+              ? <span className="inline-flex items-center gap-1"><Loader2 size={11} className="animate-spin" />로딩...</span>
+              : `${filtered.length} / ${vendors.length}건`}
           </span>
-          사업자번호 미등록
-          <span className={`text-[11px] font-black ${filterMissingBiz ? "text-rose-600" : "text-slate-400"}`}>
-            {missingCount}
-          </span>
-        </button>
+          <button
+            onClick={loadVendors}
+            disabled={loading}
+            className="ml-auto inline-flex items-center justify-center h-8 w-8 border border-slate-200 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors cursor-pointer"
+            title="새로고침"
+          >
+            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+          </button>
+        </div>
+      )}
 
-        {/* 건수 */}
-        <span className="text-[12px] font-mono text-slate-400 tabular-nums">
-          {loading
-            ? <span className="inline-flex items-center gap-1"><Loader2 size={11} className="animate-spin" />로딩...</span>
-            : `${filtered.length} / ${vendors.length}건`}
-        </span>
-
-        {/* icon-only 새로고침 */}
-        <button
-          onClick={loadVendors}
-          disabled={loading}
-          className="ml-auto inline-flex items-center justify-center h-8 w-8 border border-slate-200 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors cursor-pointer"
-          title="새로고침"
-        >
-          <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-        </button>
-      </div>
-
-      {/* ── 반응형 리스트 ── */}
-      <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
-
-        {/* 모바일(< md): 카드 */}
-        <div className="md:hidden divide-y divide-slate-100">
+      {/* ── compact 모드: 카드형 행 리스트 ── */}
+      {compact ? (
+        <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
           {filtered.length === 0 ? (
-            <div className="text-center py-10 text-slate-400 text-sm font-semibold">
-              {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 데이터 없음"}
+            <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-2">
+              <Building2 size={28} className="opacity-25" />
+              <span className="text-[13px] font-semibold">
+                {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
+              </span>
             </div>
-          ) : filtered.map((v, i) => (
-            <button
-              key={v.id}
-              onClick={() => handleVendorClick(v.id)}
-              className="w-full text-left px-3 py-2.5 hover:bg-teal-50/60 active:bg-teal-100 transition"
-            >
-              <div className="flex items-start gap-2">
-                <span className="text-[11px] text-slate-400 font-mono mt-0.5 w-6 shrink-0">{i + 1}</span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1 mb-0.5 flex-wrap">
-                    <Building2 size={11} className="text-teal-500 shrink-0" />
-                    <span className="text-[13px] font-bold text-slate-800 break-words">{v.company_name}</span>
-                    <VendorCategoryBadge category={v.category} />
-                  </div>
-                  <div className="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap">
-                    {v.business_number
-                      ? <span className="font-mono">{formatBizNum(v.business_number)}</span>
-                      : <span className="text-rose-500 font-semibold italic">사번없음</span>}
-                    {v.category && <span>· {v.category}</span>}
-                    {v.contact_name && <span>· {v.contact_name}</span>}
-                    {v.phone && <span className="font-mono">· {v.phone}</span>}
-                    {v.latestBalance?.balance != null && (
-                      <span className="font-mono font-bold text-emerald-700">· 잔고 {fmtWon(v.latestBalance.balance)}</span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </button>
-          ))}
+          ) : (
+            <div className="divide-y divide-slate-100">
+              {filtered.map((v) => {
+                const isActive = activeId === v.id;
+                const catBorder = v.category ? (CATEGORY_LEFT_BORDER[v.category] ?? "border-l-slate-200") : "border-l-slate-200";
+                const catBg    = v.category ? (CATEGORY_LEFT_BG[v.category] ?? "") : "";
+                const hasBal   = v.latestBalance?.balance != null;
+                return (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => handleVendorClick(v.id)}
+                    title="클릭하여 상세 · 편집"
+                    className={[
+                      "w-full text-left border-l-[3px] px-3 py-2 transition-all duration-150",
+                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60",
+                      isActive
+                        ? "border-l-indigo-500 bg-indigo-50/60"
+                        : `${catBorder} ${catBg} hover:bg-slate-50/80 active:bg-slate-100`,
+                    ].join(" ")}
+                  >
+                    {/* Line 1: 회사명 + 분류 */}
+                    <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
+                      <span className={`text-[13px] font-bold leading-tight text-slate-800 min-w-0 break-keep ${isActive ? "text-indigo-900" : ""}`}>
+                        {v.company_name}
+                      </span>
+                      <VendorCategoryBadge category={v.category} className="text-[10px] shrink-0" />
+                      {!v.business_number && (
+                        <span className="ml-auto shrink-0 text-[9px] font-black text-rose-500 bg-rose-50 border border-rose-200 rounded px-1 py-px leading-none">
+                          사번없음
+                        </span>
+                      )}
+                    </div>
+                    {/* Line 2: 담당자 · 전화 · 잔고 */}
+                    <div className="flex items-center gap-2 text-[11px] text-slate-500 leading-tight flex-wrap">
+                      {v.contact_name && (
+                        <span className="flex items-center gap-0.5">
+                          <span className="text-slate-400">담당</span>
+                          <span className="font-semibold text-slate-600">{v.contact_name}</span>
+                        </span>
+                      )}
+                      {v.phone && (
+                        <span className="text-slate-400 tabular-nums">{v.phone}</span>
+                      )}
+                      {hasBal && (
+                        <span className={`ml-auto shrink-0 font-bold tabular-nums ${v.latestBalance!.balance > 0 ? "text-emerald-600" : "text-slate-400"}`}>
+                          {fmtWon(v.latestBalance!.balance)}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
+      ) : (
+        /* ── 일반 모드: 기존 반응형 테이블 ── */
+        <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
 
-        {/* 태블릿·데스크탑(md+): shadcn data-table 스타일 */}
-        <table className="hidden md:table w-full text-xs">
-          <thead className="sticky top-0 bg-white z-10 border-b border-slate-200">
-            {/* 그룹 컬러 헤더 · flow 탭 동일 방식 · 클릭 접기 */}
-            <tr className="text-[10px] font-black uppercase tracking-wider border-b border-slate-100">
-              {/* 기본정보 (sky) · compact 시 3, 일반 시 4컬럼 · 항상 표시 */}
-              <th colSpan={compact ? 3 : 4} className="text-center py-1.5 bg-sky-50 text-sky-700 border-r border-slate-100">
-                기본 정보
-              </th>
-              {!compact && (
-                <>
-                  {/* 연락처 (amber) · 클릭 접기 */}
-                  <th colSpan={isVendorGroupCollapsed("contact") ? 1 : 2}
-                    className="text-center py-1.5 bg-amber-50 text-amber-700 border-r border-slate-100 cursor-pointer select-none hover:bg-amber-100 transition"
-                    onClick={() => toggleVendorGroup("contact")}
-                    title={isVendorGroupCollapsed("contact") ? "연락처 펼치기" : "연락처 접기"}>
-                    <span className="inline-flex items-center gap-1">
-                      {isVendorGroupCollapsed("contact") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}연락처
-                    </span>
-                  </th>
-                  {/* 잔고 (emerald) · 클릭 접기 */}
-                  <th colSpan={isVendorGroupCollapsed("balance") ? 1 : 1}
-                    className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-r border-slate-100 cursor-pointer select-none hover:bg-emerald-100 transition"
-                    onClick={() => toggleVendorGroup("balance")}
-                    title={isVendorGroupCollapsed("balance") ? "잔고 펼치기" : "잔고 접기"}>
-                    <span className="inline-flex items-center gap-1">
-                      {isVendorGroupCollapsed("balance") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}잔고
-                    </span>
-                  </th>
-                  {/* 기타 (slate) · 클릭 접기 */}
-                  <th colSpan={isVendorGroupCollapsed("etc") ? 1 : 2}
-                    className="text-center py-1.5 bg-slate-50 text-slate-500 cursor-pointer select-none hover:bg-slate-100 transition"
-                    onClick={() => toggleVendorGroup("etc")}
-                    title={isVendorGroupCollapsed("etc") ? "기타 펼치기" : "기타 접기"}>
-                    <span className="inline-flex items-center gap-1">
-                      {isVendorGroupCollapsed("etc") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}기타
-                    </span>
-                  </th>
-                </>
-              )}
-            </tr>
-            {/* 서브 헤더 */}
-            <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
-              <th className="text-left px-2 py-1.5 w-8 bg-sky-50/30">#</th>
-              <th className="text-left px-3 py-1.5 min-w-[160px] bg-sky-50/30">회사명</th>
-              <th className="text-left px-3 py-1.5 w-28 bg-sky-50/30">사업자번호</th>
-              <th className="text-left px-3 py-1.5 w-20 bg-sky-50/30">담당자</th>
-              {!compact && (
-                <>
-                  {/* 연락처 그룹 · 접힘 시 placeholder */}
-                  {isVendorGroupCollapsed("contact") ? (
-                    <th className="bg-amber-50/20 w-4"></th>
-                  ) : (
-                    <>
-                      <th className="text-left px-3 py-1.5 w-28 bg-amber-50/30">전화</th>
-                      <th className="text-left px-3 py-1.5 w-36 hidden lg:table-cell bg-amber-50/30">이메일</th>
-                    </>
-                  )}
-                  {/* 잔고 그룹 · 접힘 시 placeholder */}
-                  {isVendorGroupCollapsed("balance") ? (
-                    <th className="bg-emerald-50/20 w-4"></th>
-                  ) : (
-                    <th className="text-right px-3 py-1.5 w-24 bg-emerald-50/30">잔고</th>
-                  )}
-                  {/* 기타 그룹 · 접힘 시 placeholder */}
-                  {isVendorGroupCollapsed("etc") ? (
-                    <th className="bg-slate-50/20 w-4"></th>
-                  ) : (
-                    <>
-                      <th className="text-left px-3 py-1.5 w-20 hidden xl:table-cell bg-slate-50/40">분류</th>
-                      <th className="text-left px-3 py-1.5 w-24 hidden lg:table-cell bg-slate-50/40">등록일</th>
-                    </>
-                  )}
-                </>
-              )}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-50">
+          {/* 모바일(< md): 카드 */}
+          <div className="md:hidden divide-y divide-slate-100">
             {filtered.length === 0 ? (
-              <tr>
-                <td colSpan={compact ? 4 : 9} className="text-center py-12 text-slate-400 font-semibold">
-                  {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 데이터 없음"}
-                </td>
-              </tr>
+              <div className="text-center py-10 text-slate-400 text-sm font-semibold">
+                {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 데이터 없음"}
+              </div>
             ) : filtered.map((v, i) => (
-              <tr
+              <button
                 key={v.id}
                 onClick={() => handleVendorClick(v.id)}
-                className={`hover:bg-slate-50/60 cursor-pointer transition ${compact ? "text-[11px]" : ""}`}
-                title="클릭하여 상세 · 편집"
+                className="w-full text-left px-3 py-2.5 hover:bg-teal-50/60 active:bg-teal-100 transition"
               >
-                <td className={`px-2 py-1 text-slate-400 font-mono tabular-nums ${compact ? "text-[10px]" : "text-[11px]"}`}>{i + 1}</td>
-                <td className={`px-2 py-1 font-semibold text-slate-800 ${compact ? "" : "text-[13px]"}`}>
-                  <span className="inline-flex items-center gap-1 flex-wrap">
-                    <Building2 size={compact ? 10 : 11} className="text-teal-500 shrink-0" />
-                    <span className="underline decoration-dotted decoration-teal-300 underline-offset-2 break-words">{v.company_name}</span>
-                    <VendorCategoryBadge category={v.category} />
+                <div className="flex items-start gap-2">
+                  <span className="text-[11px] text-slate-400 mt-0.5 w-6 shrink-0">{i + 1}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1 mb-0.5 flex-wrap">
+                      <Building2 size={11} className="text-teal-500 shrink-0" />
+                      <span className="text-[13px] font-bold text-slate-800 break-words">{v.company_name}</span>
+                      <VendorCategoryBadge category={v.category} />
+                    </div>
+                    <div className="text-[11px] text-slate-500 flex items-center gap-1.5 flex-wrap">
+                      {v.business_number
+                        ? <span>{formatBizNum(v.business_number)}</span>
+                        : <span className="text-rose-500 font-semibold italic">사번없음</span>}
+                      {v.category && <span>· {v.category}</span>}
+                      {v.contact_name && <span>· {v.contact_name}</span>}
+                      {v.phone && <span>· {v.phone}</span>}
+                      {v.latestBalance?.balance != null && (
+                        <span className="font-bold text-emerald-700">· 잔고 {fmtWon(v.latestBalance.balance)}</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {/* 태블릿·데스크탑(md+): shadcn data-table 스타일 */}
+          <table className="hidden md:table w-full text-xs">
+            <thead className="sticky top-0 bg-white z-10 border-b border-slate-200">
+              {/* 그룹 컬러 헤더 */}
+              <tr className="text-[10px] font-black uppercase tracking-wider border-b border-slate-100">
+                <th colSpan={4} className="text-center py-1.5 bg-sky-50 text-sky-700 border-r border-slate-100">
+                  기본 정보
+                </th>
+                {/* 연락처 (amber) · 클릭 접기 */}
+                <th colSpan={isVendorGroupCollapsed("contact") ? 1 : 2}
+                  className="text-center py-1.5 bg-amber-50 text-amber-700 border-r border-slate-100 cursor-pointer select-none hover:bg-amber-100 transition"
+                  onClick={() => toggleVendorGroup("contact")}
+                  title={isVendorGroupCollapsed("contact") ? "연락처 펼치기" : "연락처 접기"}>
+                  <span className="inline-flex items-center gap-1">
+                    {isVendorGroupCollapsed("contact") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}연락처
                   </span>
-                </td>
-                <td className={`px-2 py-1 font-mono text-slate-600 whitespace-nowrap ${compact ? "text-[11px]" : ""}`}>
-                  {v.business_number
-                    ? formatBizNum(v.business_number)
-                    : <span className="text-rose-400 italic text-[10px]">없음</span>}
-                </td>
-                <td className={`px-2 py-1 text-slate-700 truncate ${compact ? "text-[11px]" : ""}`}>{v.contact_name ?? "-"}</td>
-                {!compact && (
+                </th>
+                {/* 잔고 (emerald) · 클릭 접기 */}
+                <th colSpan={1}
+                  className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-r border-slate-100 cursor-pointer select-none hover:bg-emerald-100 transition"
+                  onClick={() => toggleVendorGroup("balance")}
+                  title={isVendorGroupCollapsed("balance") ? "잔고 펼치기" : "잔고 접기"}>
+                  <span className="inline-flex items-center gap-1">
+                    {isVendorGroupCollapsed("balance") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}잔고
+                  </span>
+                </th>
+                {/* 기타 (slate) · 클릭 접기 */}
+                <th colSpan={isVendorGroupCollapsed("etc") ? 1 : 2}
+                  className="text-center py-1.5 bg-slate-50 text-slate-500 cursor-pointer select-none hover:bg-slate-100 transition"
+                  onClick={() => toggleVendorGroup("etc")}
+                  title={isVendorGroupCollapsed("etc") ? "기타 펼치기" : "기타 접기"}>
+                  <span className="inline-flex items-center gap-1">
+                    {isVendorGroupCollapsed("etc") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}기타
+                  </span>
+                </th>
+              </tr>
+              {/* 서브 헤더 */}
+              <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
+                <th className="text-left px-2 py-1.5 w-8 bg-sky-50/30">#</th>
+                <th className="text-left px-3 py-1.5 min-w-[160px] bg-sky-50/30">회사명</th>
+                <th className="text-left px-3 py-1.5 w-28 bg-sky-50/30">사업자번호</th>
+                <th className="text-left px-3 py-1.5 w-20 bg-sky-50/30">담당자</th>
+                {/* 연락처 그룹 */}
+                {isVendorGroupCollapsed("contact") ? (
+                  <th className="bg-amber-50/20 w-4"></th>
+                ) : (
                   <>
-                    {/* 연락처 그룹 · 접힘 시 placeholder */}
-                    {isVendorGroupCollapsed("contact") ? (
-                      <td className="bg-amber-50/10 w-4"></td>
-                    ) : (
-                      <>
-                        <td className="px-3 py-1.5 font-mono text-slate-600 whitespace-nowrap">{v.phone ?? "-"}</td>
-                        <td className="px-3 py-1.5 text-slate-600 truncate hidden lg:table-cell" title={v.email ?? undefined}>{v.email ?? "-"}</td>
-                      </>
-                    )}
-                    {/* 잔고 그룹 · 접힘 시 placeholder */}
-                    {isVendorGroupCollapsed("balance") ? (
-                      <td className="bg-emerald-50/10 w-4"></td>
-                    ) : (
-                      <td className="px-3 py-1.5 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">
-                        {v.latestBalance?.balance != null ? fmtWon(v.latestBalance.balance) : <span className="text-slate-300">-</span>}
-                      </td>
-                    )}
-                    {/* 기타 그룹 · 접힘 시 placeholder */}
-                    {isVendorGroupCollapsed("etc") ? (
-                      <td className="bg-slate-50/10 w-4"></td>
-                    ) : (
-                      <>
-                        <td className="px-3 py-1.5 hidden xl:table-cell">
-                          <VendorCategoryBadge category={v.category} />
-                          {!v.category && <span className="text-slate-300">-</span>}
-                        </td>
-                        <td className="px-3 py-1.5 font-mono text-[11px] text-slate-400 hidden lg:table-cell">
-                          {v.created_at ? String(v.created_at).slice(0, 10) : "-"}
-                        </td>
-                      </>
-                    )}
+                    <th className="text-left px-3 py-1.5 w-28 bg-amber-50/30">전화</th>
+                    <th className="text-left px-3 py-1.5 w-36 hidden lg:table-cell bg-amber-50/30">이메일</th>
+                  </>
+                )}
+                {/* 잔고 그룹 */}
+                {isVendorGroupCollapsed("balance") ? (
+                  <th className="bg-emerald-50/20 w-4"></th>
+                ) : (
+                  <th className="text-right px-3 py-1.5 w-24 bg-emerald-50/30">잔고</th>
+                )}
+                {/* 기타 그룹 */}
+                {isVendorGroupCollapsed("etc") ? (
+                  <th className="bg-slate-50/20 w-4"></th>
+                ) : (
+                  <>
+                    <th className="text-left px-3 py-1.5 w-20 hidden xl:table-cell bg-slate-50/40">분류</th>
+                    <th className="text-left px-3 py-1.5 w-24 hidden lg:table-cell bg-slate-50/40">등록일</th>
                   </>
                 )}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="text-center py-12 text-slate-400 font-semibold">
+                    {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 데이터 없음"}
+                  </td>
+                </tr>
+              ) : filtered.map((v, i) => (
+                <tr
+                  key={v.id}
+                  onClick={() => handleVendorClick(v.id)}
+                  className="hover:bg-slate-50/60 cursor-pointer transition"
+                  title="클릭하여 상세 · 편집"
+                >
+                  <td className="px-2 py-1 text-[11px] text-slate-400 tabular-nums">{i + 1}</td>
+                  <td className="px-2 py-1 text-[13px] font-semibold text-slate-800">
+                    <span className="inline-flex items-center gap-1 flex-wrap">
+                      <Building2 size={11} className="text-teal-500 shrink-0" />
+                      <span className="underline decoration-dotted decoration-teal-300 underline-offset-2 break-words">{v.company_name}</span>
+                      <VendorCategoryBadge category={v.category} />
+                    </span>
+                  </td>
+                  <td className="px-2 py-1 text-[11px] text-slate-600 whitespace-nowrap">
+                    {v.business_number
+                      ? formatBizNum(v.business_number)
+                      : <span className="text-rose-400 italic text-[10px]">없음</span>}
+                  </td>
+                  <td className="px-2 py-1 text-[11px] text-slate-700 truncate">{v.contact_name ?? "-"}</td>
+                  {/* 연락처 그룹 */}
+                  {isVendorGroupCollapsed("contact") ? (
+                    <td className="bg-amber-50/10 w-4"></td>
+                  ) : (
+                    <>
+                      <td className="px-3 py-1.5 text-[11px] text-slate-600 whitespace-nowrap">{v.phone ?? "-"}</td>
+                      <td className="px-3 py-1.5 text-[11px] text-slate-600 truncate hidden lg:table-cell" title={v.email ?? undefined}>{v.email ?? "-"}</td>
+                    </>
+                  )}
+                  {/* 잔고 그룹 */}
+                  {isVendorGroupCollapsed("balance") ? (
+                    <td className="bg-emerald-50/10 w-4"></td>
+                  ) : (
+                    <td className="px-3 py-1.5 text-right text-[11px] font-bold text-emerald-700 whitespace-nowrap">
+                      {v.latestBalance?.balance != null ? fmtWon(v.latestBalance.balance) : <span className="text-slate-300">-</span>}
+                    </td>
+                  )}
+                  {/* 기타 그룹 */}
+                  {isVendorGroupCollapsed("etc") ? (
+                    <td className="bg-slate-50/10 w-4"></td>
+                  ) : (
+                    <>
+                      <td className="px-3 py-1.5 hidden xl:table-cell">
+                        <VendorCategoryBadge category={v.category} />
+                        {!v.category && <span className="text-slate-300">-</span>}
+                      </td>
+                      <td className="px-3 py-1.5 text-[11px] text-slate-400 hidden lg:table-cell">
+                        {v.created_at ? String(v.created_at).slice(0, 10) : "-"}
+                      </td>
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* 상세 모달 */}
       {modalVendor && (

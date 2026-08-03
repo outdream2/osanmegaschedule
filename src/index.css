@@ -155,3 +155,137 @@ body:has(.fixed.inset-0[class*="bg-neutral-9"]) {
   overscroll-behavior: contain;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+ * 공통 CSS 아키텍처 · 2026-08-03 (#183)
+ *   전체 UI 통일성 · 페이지별 duplicate 스타일 흡수
+ *   Tailwind @apply 로 유틸리티 클래스 정의 · JIT purge 문제 없음
+ *   feedback_ui_principles B-3 (공통 CSS 아키텍처) 원칙 준수
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* ── 탭 계층 · Level 1 (top nav sub-tab) ── */
+/*   예 · BusinessManagePage · DisplayPage 서브탭 · OrderManagePage Level-1 (발주/매입/결제/통계) */
+.tab-l1 {
+  @apply relative flex items-center gap-2 sm:gap-2.5
+         px-4 sm:px-6 py-3.5 sm:py-4
+         text-[16px] sm:text-[17px] font-black leading-none whitespace-nowrap
+         transition-colors duration-150 cursor-pointer outline-none
+         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300
+         active:opacity-70;
+}
+/* ── 탭 계층 · Level 2 (page sub-tab) — Level-1 보다 약간 큼 · 서브탭 계층 강조 ── */
+.tab-l2 {
+  @apply relative flex items-center gap-2 sm:gap-2.5
+         px-4 sm:px-6 py-3.5 sm:py-4
+         text-[16px] sm:text-[18px] font-black leading-none whitespace-nowrap
+         transition-colors duration-150 cursor-pointer outline-none
+         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300
+         active:opacity-70;
+}
+/* ── 탭 계층 · Level 3 (deep nested) — 컴팩트 하위 서브탭 ── */
+.tab-l3 {
+  @apply relative flex items-center gap-1.5
+         px-4 sm:px-5 py-2.5 sm:py-3
+         text-[14px] sm:text-[15px] font-bold leading-none whitespace-nowrap
+         transition-colors duration-150 cursor-pointer outline-none
+         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300
+         active:opacity-70;
+}
+/* ── 탭 컨테이너 (탭바 전체 wrap) ── */
+.tab-bar-l1, .tab-bar-l2 {
+  @apply bg-white border-b border-slate-200 w-full shrink-0;
+}
+.tab-bar-l3 {
+  @apply bg-white border-b border-slate-100 w-full shrink-0;
+}
+.tab-bar-inner {
+  @apply max-w-[1360px] mx-auto px-2 sm:px-5 w-full overflow-x-auto scrollbar-none;
+}
+.tab-bar-row {
+  @apply flex flex-nowrap items-stretch gap-0;
+}
+/* ── 활성 탭 underline (색상은 인라인 or bg-* 프리셋으로 별도 지정) ── */
+.tab-active-underline-l1 {
+  @apply absolute left-0 right-0 -bottom-px h-[3px] rounded-t-sm;
+}
+.tab-active-underline-l2 {
+  @apply absolute left-0 right-0 -bottom-px h-[2.5px] rounded-t-sm;
+}
+.tab-active-underline-l3 {
+  @apply absolute left-0 right-0 -bottom-px h-[2px] rounded-t-sm;
+}
+
+/* ── Split 레이아웃 (마스터-디테일) ── */
+/*   예 · StaffManagePage · 좌측 리스트 + 우측 상세 */
+.split-container {
+  @apply flex flex-col lg:flex-row flex-1 gap-3 min-h-0;
+}
+.split-left {
+  @apply w-full shrink-0 flex flex-col bg-white rounded-xl border border-slate-200
+         shadow-sm overflow-hidden max-h-[42vh] lg:max-h-none;
+}
+.split-divider {
+  @apply hidden lg:flex items-center justify-center w-1.5 hover:w-2
+         bg-slate-200 hover:bg-indigo-400 rounded-full cursor-col-resize
+         transition-all shrink-0 relative;
+}
+.split-right {
+  @apply flex-1 flex flex-col min-w-0 min-h-0 bg-white rounded-xl
+         border border-slate-200 shadow-sm overflow-hidden;
+}
+
+/* ── 카드 패널 (KPI · 리스트 카드 등) ── */
+.card-panel {
+  @apply bg-white rounded-xl border border-slate-200 shadow-sm;
+}
+.card-header {
+  @apply flex items-center gap-2 px-4 h-10 border-b border-slate-100 shrink-0;
+}
+
+/* ── KPI 카드 (상단 요약 통계) ── */
+.kpi-card {
+  @apply bg-white border border-slate-200 rounded-xl p-3 flex flex-col gap-1 shadow-sm;
+}
+.kpi-card-value {
+  @apply text-lg font-black text-slate-900 tabular-nums;
+}
+.kpi-card-label {
+  @apply text-[11px] font-semibold text-slate-500 uppercase tracking-wider;
+}
+
+/* ── 필터바 (상단 검색/필터 컨테이너) ── */
+.filter-bar {
+  @apply bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3
+         flex flex-wrap items-center gap-x-4 gap-y-2;
+}
+
+/* ── 폼 요소 (input · label 통일) ── */
+.input-field {
+  @apply w-full bg-white border border-slate-200 rounded-lg
+         px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold
+         focus:outline-none focus:border-indigo-500 focus:shadow-sm transition
+         placeholder:text-slate-400 placeholder:text-[12px];
+}
+.label-field {
+  @apply text-[12px] font-bold text-slate-600 flex items-center gap-1.5 mb-1;
+}
+
+/* ── 배지 · 상태 (통일된 크기) ── */
+.badge-base {
+  @apply inline-flex items-center text-[11px] font-bold
+         px-1.5 py-0.5 rounded-md border leading-none shrink-0;
+}
+
+/* ── Modal 공통 (backdrop + card) ── */
+.modal-backdrop {
+  @apply fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4;
+}
+.modal-card {
+  @apply bg-white rounded-2xl shadow-2xl w-full max-h-[90vh] flex flex-col overflow-hidden;
+}
+.modal-header {
+  @apply flex items-center gap-2 px-5 py-3 border-b border-slate-200 shrink-0;
+}
+.modal-body {
+  @apply flex-1 overflow-y-auto p-5 min-h-0;
+}
+
