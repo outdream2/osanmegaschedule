@@ -1,11 +1,18 @@
 // src/components/ContractWriterPage/ContractWriterPage.tsx
-// 근로계약서 작성 페이지 · 2026-08-03 · #165
+// 근로계약서 작성 페이지 · 2026-08-03 · #165 · #200
 // - 좌측: 조건 입력 폼 (직원·계약유형·근무요일·주근무횟수·시간·시급·기간·업무·4대보험·추가내용)
-// - 우측: 실시간 표준 근로계약서 렌더 + 서명 canvas 2개 (사업주·근로자)
+// - 우측: 실시간 표준 근로계약서 렌더 + 조항별 이해확인 체크박스·마이크로 서명 (은행 스타일) + 최종 서명 2개
 // - [계약 완료 · PDF 다운] · html2canvas + jsPDF · 서명 포함 · 파일명: 근로계약서_{직원명}_{시작일}.pdf
 // - 드롭박스 기본 · "직접 입력" 옵션 · input 전환 · 모든 필드 자유 편집
 // - 반응형: 모바일 상하 스택 · 데스크탑 좌우 split (lg:)
 // - embedded 모드 · BusinessManagePage 임베드 시 자체 AppNavHeader skip
+// #200 · 은행 스타일 조항별 이해 확인 (DocuSign initial + 한국 금융권 개별약관 동의 패턴 참고):
+//   - 각 조항 오른쪽에 컴팩트 확인 영역 (~140px) · [ ] 이해했음 체크박스 + 60x30 mini signature pad
+//   - 서명 시 자동 체크 · 지우기 미니 버튼
+//   - 미확인 dashed rose / 확인 solid emerald
+//   - 하단 진행률 badge (N/M 조항 확인) · 100% 완료 시 emerald 강조
+//   - PDF 캡처 시 프리뷰 내부에 이미 canvas 포함 · html2canvas 가 자연스럽게 렌더
+//   - 좌측 대형 서명 canvas 2개 · 최종 서명(사업주·근로자)으로 우측 계약서 하단에 유지
 // 준수 원칙:
 //   - feedback_ui_principles: 리스트 아니라 폼이라 3원칙 자체는 미해당 · 카테고리 색상 팔레트는 유지
 //   - feedback_ui_consult: 통일된 디자인 (slate + emerald/indigo 팔레트 · rounded-xl · shadow-sm)
@@ -347,6 +354,110 @@ const SignArea: React.FC<{
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
+// #200 · 조항별 이해 확인 · 마이크로 서명 패드 (은행/DocuSign initial 스타일)
+//   - 60~80 x 30~40 px · 지우기 미니 버튼 · 서명 시 자동 체크
+//   - padRef 는 부모에서 관리 (조항 키별 Map) · 자동 이해상태 콜백
+//   - 미확인 dashed rose · 확인 solid emerald
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MicroSignPad: React.FC<{
+  clauseKey: string;
+  checked: boolean;
+  onChangeChecked: (v: boolean) => void;
+  padRef: React.MutableRefObject<SignatureCanvasType | null>;
+  onSignedChange?: (empty: boolean) => void;
+}> = ({ clauseKey: _clauseKey, checked, onChangeChecked, padRef, onSignedChange }) => {
+  const [empty, setEmpty] = useState(true);
+
+  // 서명 시작 → 자동 체크
+  const handleBegin = () => {
+    setEmpty(false);
+    if (!checked) onChangeChecked(true);
+    onSignedChange?.(false);
+  };
+  const handleEnd = () => {
+    const e = padRef.current ? padRef.current.isEmpty() : true;
+    setEmpty(e);
+    onSignedChange?.(e);
+  };
+  const handleClear = () => {
+    padRef.current?.clear();
+    setEmpty(true);
+    onSignedChange?.(true);
+    // 체크는 유지 (사용자 의도 존중) · 원한다면 해제하려면 아래 주석 해제
+    // onChangeChecked(false);
+  };
+
+  // 상태별 색상 · 완료(checked && !empty) · 확인만(checked) · 미확인
+  const isComplete = checked && !empty;
+  const borderCls = isComplete
+    ? "border-emerald-500 border-solid"
+    : checked
+      ? "border-amber-400 border-solid"
+      : "border-rose-300 border-dashed";
+  const bgCls = isComplete ? "bg-emerald-50/40" : "bg-white";
+
+  return (
+    <div className="flex flex-col items-stretch gap-1 w-[130px] shrink-0">
+      {/* 체크박스 */}
+      <label className="flex items-center gap-1 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => onChangeChecked(e.target.checked)}
+          className="w-3.5 h-3.5 accent-emerald-600 cursor-pointer"
+        />
+        <span className={`text-[10px] font-black leading-tight ${isComplete ? "text-emerald-700" : checked ? "text-amber-700" : "text-slate-500"}`}>
+          이해했음
+        </span>
+      </label>
+
+      {/* 서명 pad + 지우기 */}
+      <div className="relative">
+        <div
+          className={`relative rounded-md border-2 ${borderCls} ${bgCls} overflow-hidden`}
+          style={{ width: 130, height: 40 }}
+        >
+          <SignaturePad
+            ref={(el) => { padRef.current = el; }}
+            canvasProps={{
+              width: 130,
+              height: 40,
+              className: "block touch-none",
+              style: { width: "130px", height: "40px" },
+            }}
+            penColor="#0f172a"
+            onBegin={handleBegin}
+            onEnd={handleEnd}
+          />
+          {empty && (
+            <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-[9px] font-bold text-slate-300 select-none">
+              여기에 서명
+            </span>
+          )}
+        </div>
+        {/* 지우기 미니 버튼 */}
+        <button
+          type="button"
+          onClick={handleClear}
+          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-slate-100 hover:bg-rose-100 text-slate-500 hover:text-rose-600 border border-slate-200 flex items-center justify-center text-[8px] font-black leading-none transition-colors cursor-pointer"
+          title="서명 지우기"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// 각 조항 이해확인 상태
+interface ClauseAck {
+  checked: boolean;
+  empty: boolean;  // 서명 empty 여부
+}
+type ClauseAckMap = Record<string, ClauseAck>;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 실시간 계약서 프리뷰 (우측)
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -354,7 +465,11 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
   form: ContractForm;
   employerSignUrl: string | null;
   employeeSignUrl: string | null;
-}>(({ form, employerSignUrl, employeeSignUrl }, ref) => {
+  clauseAcks: ClauseAckMap;
+  setClauseAckChecked: (key: string, v: boolean) => void;
+  setClauseAckEmpty: (key: string, empty: boolean) => void;
+  clausePadRefs: React.MutableRefObject<Record<string, SignatureCanvasType | null>>;
+}>(({ form, employerSignUrl, employeeSignUrl, clauseAcks, setClauseAckChecked, setClauseAckEmpty, clausePadRefs }, ref) => {
   const workDayText = DAYS.filter(d => form.workDays[d]).join("·") || "(선택 안 됨)";
   const startD = fmtKoreanDate(form.startDate);
   const endD = form.indefinite ? "무기한 (기간의 정함 없음)" : fmtKoreanDate(form.endDate) || "(미입력)";
@@ -403,20 +518,63 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
         <span className="font-bold">{form.employeeName || "(근로자명)"}</span>(이하 "근로자"라 함)는 다음과 같이 근로계약을 체결한다.
       </p>
 
-      <PreviewRow no="1" title="근로계약기간">
+      {/* 헬퍼 · ack props 생성 · 조번호를 key 로 */}
+      {(() => null)()}
+
+      <PreviewRow
+        no="1"
+        title="근로계약기간"
+        ack={{
+          clauseKey: "1",
+          checked: !!clauseAcks["1"]?.checked,
+          onChangeChecked: (v) => setClauseAckChecked("1", v),
+          padRef: ensurePadRef(clausePadRefs, "1"),
+          onSignedChange: (e) => setClauseAckEmpty("1", e),
+        }}
+      >
         <div>{startD || "(시작일 미입력)"} 부터 {endD} 까지</div>
         {form.indefinite && <div className="text-[11px] text-slate-500 mt-0.5">※ 기간의 정함이 없는 경우 (정규직)</div>}
       </PreviewRow>
 
-      <PreviewRow no="2" title="근무장소">
+      <PreviewRow
+        no="2"
+        title="근무장소"
+        ack={{
+          clauseKey: "2",
+          checked: !!clauseAcks["2"]?.checked,
+          onChangeChecked: (v) => setClauseAckChecked("2", v),
+          padRef: ensurePadRef(clausePadRefs, "2"),
+          onSignedChange: (e) => setClauseAckEmpty("2", e),
+        }}
+      >
         <div>{form.companyAddress || "(근무장소 미입력)"}</div>
       </PreviewRow>
 
-      <PreviewRow no="3" title="업무의 내용">
+      <PreviewRow
+        no="3"
+        title="업무의 내용"
+        ack={{
+          clauseKey: "3",
+          checked: !!clauseAcks["3"]?.checked,
+          onChangeChecked: (v) => setClauseAckChecked("3", v),
+          padRef: ensurePadRef(clausePadRefs, "3"),
+          onSignedChange: (e) => setClauseAckEmpty("3", e),
+        }}
+      >
         <div className="whitespace-pre-wrap">{form.jobDuty || "(업무 내용 미입력)"}</div>
       </PreviewRow>
 
-      <PreviewRow no="4" title="소정근로시간">
+      <PreviewRow
+        no="4"
+        title="소정근로시간"
+        ack={{
+          clauseKey: "4",
+          checked: !!clauseAcks["4"]?.checked,
+          onChangeChecked: (v) => setClauseAckChecked("4", v),
+          padRef: ensurePadRef(clausePadRefs, "4"),
+          onSignedChange: (e) => setClauseAckEmpty("4", e),
+        }}
+      >
         <div>
           {form.startTime || "--:--"} 부터 {form.endTime || "--:--"} 까지
           {hoursCalc && <span className="text-slate-500 text-[12px] ml-1">(총 {hoursCalc.rawText})</span>}
@@ -438,12 +596,32 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
         </div>
       </PreviewRow>
 
-      <PreviewRow no="5" title="근무일 / 주 근무횟수">
+      <PreviewRow
+        no="5"
+        title="근무일 / 주 근무횟수"
+        ack={{
+          clauseKey: "5",
+          checked: !!clauseAcks["5"]?.checked,
+          onChangeChecked: (v) => setClauseAckChecked("5", v),
+          padRef: ensurePadRef(clausePadRefs, "5"),
+          onSignedChange: (e) => setClauseAckEmpty("5", e),
+        }}
+      >
         <div>근무일: {workDayText}</div>
         <div>주 {form.weeklyDays || "-"}일 근무</div>
       </PreviewRow>
 
-      <PreviewRow no="6" title="임금">
+      <PreviewRow
+        no="6"
+        title="임금"
+        ack={{
+          clauseKey: "6",
+          checked: !!clauseAcks["6"]?.checked,
+          onChangeChecked: (v) => setClauseAckChecked("6", v),
+          padRef: ensurePadRef(clausePadRefs, "6"),
+          onSignedChange: (e) => setClauseAckEmpty("6", e),
+        }}
+      >
         <div>· 시간급 (주중): {fmtWon(form.weekdayHourly)} 원</div>
         <div>· 시간급 (주말): {fmtWon(form.weekendHourly)} 원</div>
         <div className="text-[12px] text-slate-600 mt-0.5">
@@ -454,13 +632,33 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
         </div>
       </PreviewRow>
 
-      <PreviewRow no="7" title="연차유급휴가">
+      <PreviewRow
+        no="7"
+        title="연차유급휴가"
+        ack={{
+          clauseKey: "7",
+          checked: !!clauseAcks["7"]?.checked,
+          onChangeChecked: (v) => setClauseAckChecked("7", v),
+          padRef: ensurePadRef(clausePadRefs, "7"),
+          onSignedChange: (e) => setClauseAckEmpty("7", e),
+        }}
+      >
         <div>연차유급휴가는 근로기준법에서 정하는 바에 따라 <b>연 {form.annualLeaveDays || "15"}일</b> 부여함</div>
       </PreviewRow>
 
       {/* #186 · 8. 담당 업무의 우선순위 (매장/창고 우선업무 · 70%) · 조건부 */}
       {form.primaryFocus && (form.employeeCategory === "매장" || form.employeeCategory === "창고") && (
-        <PreviewRow no="8" title="담당 업무의 우선순위">
+        <PreviewRow
+          no="8"
+          title="담당 업무의 우선순위"
+          ack={{
+            clauseKey: "8",
+            checked: !!clauseAcks["8"]?.checked,
+            onChangeChecked: (v) => setClauseAckChecked("8", v),
+            padRef: ensurePadRef(clausePadRefs, "8"),
+            onSignedChange: (e) => setClauseAckEmpty("8", e),
+          }}
+        >
           <div>
             근로자는 <b>{form.primaryFocus}</b> 관련 업무에 근무시간의{" "}
             <b>{form.primaryFocusPercent}%</b> 비중을 두고 근무한다.
@@ -480,9 +678,16 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
         const additionalNo = form.additionalContent.trim() ? String(n++) : null;
         const grantNo = String(n++);
         const etcNo = String(n++);
+        const mkAck = (key: string) => ({
+          clauseKey: key,
+          checked: !!clauseAcks[key]?.checked,
+          onChangeChecked: (v: boolean) => setClauseAckChecked(key, v),
+          padRef: ensurePadRef(clausePadRefs, key),
+          onSignedChange: (e: boolean) => setClauseAckEmpty(key, e),
+        });
         return (
           <>
-            <PreviewRow no={socialNo} title="사회보험 적용">
+            <PreviewRow no={socialNo} title="사회보험 적용" ack={mkAck(socialNo)}>
               <div className="flex flex-wrap gap-3 text-[13px]">
                 <span className="flex items-center gap-1">
                   <SpanBox checked={form.socialInsurance} /> 고용보험
@@ -499,23 +704,23 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
               </div>
             </PreviewRow>
 
-            <PreviewRow no={contractTypeNo} title="계약유형">
+            <PreviewRow no={contractTypeNo} title="계약유형" ack={mkAck(contractTypeNo)}>
               <div>{form.contractType || "(계약유형 미입력)"}</div>
             </PreviewRow>
 
             {additionalNo && (
-              <PreviewRow no={additionalNo} title="기타 (추가 내용)">
+              <PreviewRow no={additionalNo} title="기타 (추가 내용)" ack={mkAck(additionalNo)}>
                 <div className="whitespace-pre-wrap">{form.additionalContent}</div>
               </PreviewRow>
             )}
 
-            <PreviewRow no={grantNo} title="근로계약서 교부">
+            <PreviewRow no={grantNo} title="근로계약서 교부" ack={mkAck(grantNo)}>
               <div className="text-[12px] text-slate-700">
                 사업주는 근로계약을 체결함과 동시에 본 계약서를 사본하여 근로자의 교부요구와 관계 없이 근로자에게 교부한다.
               </div>
             </PreviewRow>
 
-            <PreviewRow no={etcNo} title="기타">
+            <PreviewRow no={etcNo} title="기타" ack={mkAck(etcNo)}>
               <div className="text-[12px] text-slate-700">
                 본 계약에 정함이 없는 사항은 근로기준법령에 의함.
               </div>
@@ -574,16 +779,51 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
 });
 ContractPreview.displayName = "ContractPreview";
 
-// 프리뷰 · 항목 하나
-const PreviewRow: React.FC<{ no: string; title: string; children: React.ReactNode }> = ({ no, title, children }) => (
-  <div className="mb-3 grid grid-cols-[70px,1fr] gap-3 items-start text-[13px]">
+// 프리뷰 · 항목 하나 · #200 · 우측 이해확인 영역 지원
+const PreviewRow: React.FC<{
+  no: string;
+  title: string;
+  children: React.ReactNode;
+  ack?: {
+    clauseKey: string;
+    checked: boolean;
+    onChangeChecked: (v: boolean) => void;
+    padRef: React.MutableRefObject<SignatureCanvasType | null>;
+    onSignedChange: (empty: boolean) => void;
+  };
+}> = ({ no, title, children, ack }) => (
+  <div className="mb-3 grid grid-cols-[52px,1fr,auto] gap-2 items-start text-[13px]">
     <div className="font-bold text-slate-800 pt-0.5">제{no}조</div>
-    <div className="text-slate-700">
+    <div className="text-slate-700 min-w-0">
       <div className="font-bold text-slate-900 mb-0.5">({title})</div>
       <div className="pl-1">{children}</div>
     </div>
+    {ack ? (
+      <MicroSignPad
+        clauseKey={ack.clauseKey}
+        checked={ack.checked}
+        onChangeChecked={ack.onChangeChecked}
+        padRef={ack.padRef}
+        onSignedChange={ack.onSignedChange}
+      />
+    ) : (
+      <div className="w-[130px] shrink-0" aria-hidden="true" />
+    )}
   </div>
 );
+
+// 조항별 pad ref helper · lazy get/set
+function ensurePadRef(
+  refs: React.MutableRefObject<Record<string, SignatureCanvasType | null>>,
+  key: string,
+): React.MutableRefObject<SignatureCanvasType | null> {
+  if (!(key in refs.current)) refs.current[key] = null;
+  // wrapper 객체 (다른 부분과 API 동일 유지)
+  return {
+    get current() { return refs.current[key]; },
+    set current(v: SignatureCanvasType | null) { refs.current[key] = v; },
+  } as React.MutableRefObject<SignatureCanvasType | null>;
+}
 
 // 사회보험 · 체크박스 대체 사각형 (PDF 렌더 안정성 · 이모지 회피)
 const SpanBox: React.FC<{ checked: boolean }> = ({ checked }) => (
@@ -609,6 +849,22 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   // 서명 pad refs
   const employerPadRef = useRef<SignatureCanvasType | null>(null);
   const employeePadRef = useRef<SignatureCanvasType | null>(null);
+
+  // #200 · 조항별 이해확인 상태
+  const [clauseAcks, setClauseAcks] = useState<ClauseAckMap>({});
+  const clausePadRefs = useRef<Record<string, SignatureCanvasType | null>>({});
+  const setClauseAckChecked = useCallback((key: string, v: boolean) => {
+    setClauseAcks(prev => ({
+      ...prev,
+      [key]: { checked: v, empty: prev[key]?.empty ?? true },
+    }));
+  }, []);
+  const setClauseAckEmpty = useCallback((key: string, empty: boolean) => {
+    setClauseAcks(prev => ({
+      ...prev,
+      [key]: { checked: prev[key]?.checked ?? false, empty },
+    }));
+  }, []);
 
   // 완료 · PDF 생성 상태
   const previewRef = useRef<HTMLDivElement | null>(null);
@@ -843,6 +1099,9 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     setForm(emptyForm());
     employerPadRef.current?.clear();
     employeePadRef.current?.clear();
+    // #200 · 조항별 이해확인 pad·상태 초기화
+    Object.values(clausePadRefs.current).forEach(p => { try { p?.clear(); } catch {} });
+    setClauseAcks({});
     setNotice(null);
   };
 
@@ -887,6 +1146,16 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         employeeEmpty ? "근로자" : null,
       ].filter(Boolean).join(" · ");
       if (!window.confirm(`서명이 비어있습니다 (${missing}).\n서명 없이 PDF를 생성하시겠습니까?`)) return;
+    }
+
+    // #200 · 조항별 이해확인 검증 · 미확인 조항 있으면 경고
+    const activeKeys = Object.keys(clauseAcks);
+    const unchecked = activeKeys.filter(k => !clauseAcks[k].checked);
+    if (activeKeys.length === 0 || unchecked.length > 0) {
+      const msg = activeKeys.length === 0
+        ? "조항별 이해 확인이 하나도 완료되지 않았습니다.\n그래도 PDF를 생성하시겠습니까?"
+        : `이해 미확인 조항이 ${unchecked.length}개 있습니다 (제${unchecked.join("·")}조).\n그래도 PDF를 생성하시겠습니까?`;
+      if (!window.confirm(msg)) return;
     }
 
     // 서명 URL 반영 (프리뷰에 이미지로 나타나도록)
@@ -1483,12 +1752,55 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               <span className="text-[11px] text-slate-400 font-semibold ml-1">(우측 화면 그대로 PDF로 저장됩니다)</span>
             </div>
 
+            {/* #200 · 조항 이해 확인 진행률 */}
+            {(() => {
+              const activeKeys = Object.keys(clauseAcks);
+              // 활성 조항 = 화면에 렌더되는 조항 · 항상 최소 1..7 + 조건부
+              // 진행률 표시는 clauseAcks 에 등록된 항목 기준 (렌더링 시 초기화됨)
+              // 대신 UX 상 · 렌더된 조항 중 몇 개가 checked 인지 계산
+              const total = Math.max(activeKeys.length, 1);
+              const done = activeKeys.filter(k => clauseAcks[k].checked).length;
+              const pct = Math.round((done / total) * 100);
+              const complete = done > 0 && done === activeKeys.length;
+              return (
+                <div className={`rounded-lg border px-3 py-2 flex items-center gap-3 ${
+                  complete
+                    ? "bg-emerald-50 border-emerald-200"
+                    : "bg-slate-50 border-slate-200"
+                }`}>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {complete ? (
+                      <Check size={14} weight="bold" className="text-emerald-600" />
+                    ) : (
+                      <ClipboardText size={14} weight="fill" className="text-slate-500" />
+                    )}
+                    <span className={`text-[12px] font-black ${complete ? "text-emerald-700" : "text-slate-700"}`}>
+                      조항 이해 확인 {done} / {activeKeys.length || "-"}
+                    </span>
+                  </div>
+                  <div className="flex-1 h-1.5 rounded-full bg-slate-200 overflow-hidden">
+                    <div
+                      className={`h-full transition-all ${complete ? "bg-emerald-500" : "bg-indigo-400"}`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <span className={`text-[11px] font-bold shrink-0 ${complete ? "text-emerald-600" : "text-slate-500"}`}>
+                    {complete ? "전체 완료" : `${pct}%`}
+                  </span>
+                </div>
+              );
+            })()}
+
             <div className="bg-slate-100 border border-slate-200 rounded-xl p-3 sm:p-4">
               <ContractPreview
                 ref={previewRef}
                 form={form}
                 employerSignUrl={employerSignUrl}
                 employeeSignUrl={employeeSignUrl}
+                clauseAcks={clauseAcks}
+                setClauseAckChecked={setClauseAckChecked}
+                setClauseAckEmpty={setClauseAckEmpty}
+                clausePadRefs={clausePadRefs}
               />
             </div>
           </section>
