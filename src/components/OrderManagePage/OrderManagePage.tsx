@@ -237,6 +237,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const toggleNeedStockDetail = (code: string) => setNeedStockDetailOpen(prev => {
     const n = new Set(prev); n.has(code) ? n.delete(code) : n.add(code); return n;
   });
+  // #243 · 발주요청 리스트 실재고 상세 모달 (창고1/2·매장1/2/3)
+  const [orderStockDetail, setOrderStockDetail] = useState<{
+    code: string; name?: string;
+    w1: number | null; w2: number | null;
+    s1: number | null; s2: number | null; s3: number | null;
+    s1z: string | null; s2z: string | null; s3z: string | null;
+    total: number;
+  } | null>(null);
   // ── 그룹 헤더 클릭 접기 · 발주요청 탭 (orderCollapsed) ──
   const [orderGroupCollapsed, setOrderGroupCollapsed] = useState<Set<string>>(new Set());
   const toggleOrderGroup = (g: string) => setOrderGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
@@ -1879,7 +1887,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       <th onClick={() => handleNeedSort("inv")} title="실재고 합계 정렬 · 각 행의 [상세]로 창고1/2·매장1/2/3 확인" className="text-right px-0.5 py-1.5 w-20 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">
                         <div className="leading-tight">실재고{needArrow("inv")}<br/><span className="text-[9px] text-slate-400 font-normal">(합계)</span></div>
                       </th>
-                      <th onClick={() => handleNeedSort("optimal")} title="추천적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none">추천적정{needArrow("optimal")}</th>
+                      <th onClick={() => handleNeedSort("optimal")} title="추천적정재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none"><div className="leading-tight">추천<br/>적정재고{needArrow("optimal")}</div></th>
                       <th onClick={() => handleNeedSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{needArrow("short")}</th>
                     </>
                   )}
@@ -2591,14 +2599,28 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           </td>
                           <td
                             className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
-                            title={inv ? `창고 ${inv.warehouse ?? "-"} + 매장 ${inv.store ?? "-"} = ${inv.total}` : "실재고 미입력"}
+                            title={inv ? `창고1 ${inv.w1 ?? "-"} · 창고2 ${inv.w2 ?? "-"} · 매장1 ${inv.s1 ?? "-"} · 매장2 ${inv.s2 ?? "-"} · 매장3 ${inv.s3 ?? "-"} = ${inv.total}` : "실재고 미입력"}
                           >
-                            {inv ? inv.total : "—"}
-                            {inv && (
-                              <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">
-                                창{inv.warehouse ?? "-"}·매{inv.store ?? "-"}
-                              </span>
-                            )}
+                            <div className="flex items-center justify-end gap-1">
+                              <span>{inv ? inv.total : "—"}</span>
+                              {inv && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOrderStockDetail({
+                                      code: r.product_code, name: r.product_name,
+                                      w1: inv.w1, w2: inv.w2, s1: inv.s1, s2: inv.s2, s3: inv.s3,
+                                      s1z: inv.s1z, s2z: inv.s2z, s3z: inv.s3z, total: inv.total,
+                                    });
+                                  }}
+                                  className="w-4 h-4 inline-flex items-center justify-center rounded border bg-white border-violet-300 text-violet-500 hover:bg-violet-100 transition cursor-pointer"
+                                  title="상세 재고현황 (창고1/2·매장1/2/3)"
+                                >
+                                  <Info size={9} strokeWidth={3} />
+                                </button>
+                              )}
+                            </div>
                           </td>
                           <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{displayOptimal ?? "-"}</td>
                           <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
@@ -3035,6 +3057,54 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               onClose={() => setSupplierInfoModal(null)}
               onSaved={() => setSupplierInfoModal(null)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* #243 · 발주요청 리스트 실재고 상세 모달 · 창고1/2·매장1/2/3 */}
+      {orderStockDetail && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4"
+          onClick={() => setOrderStockDetail(null)}>
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-violet-50 to-white flex items-center gap-2">
+              <Package size={16} className="text-violet-600" />
+              <div className="min-w-0 flex-1">
+                <div className="text-[13px] font-black text-slate-800 truncate">{orderStockDetail.name || orderStockDetail.code}</div>
+                <div className="text-[11px] font-semibold text-violet-600">상세 재고현황</div>
+              </div>
+              <button type="button" onClick={() => setOrderStockDetail(null)}
+                className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer" title="닫기">
+                <X size={14} strokeWidth={2.4} />
+              </button>
+            </div>
+            <div className="p-4 space-y-2">
+              <div className="grid grid-cols-2 gap-2 text-[12px] font-semibold">
+                <div className="px-3 py-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 flex items-center justify-between">
+                  <span>창고1</span>
+                  <span className="tabular-nums font-black">{orderStockDetail.w1 ?? "—"}</span>
+                </div>
+                <div className="px-3 py-2 rounded-lg bg-orange-50 border border-orange-200 text-orange-700 flex items-center justify-between">
+                  <span>창고2</span>
+                  <span className="tabular-nums font-black">{orderStockDetail.w2 ?? "—"}</span>
+                </div>
+                <div className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-between col-span-2">
+                  <span>매장1 {orderStockDetail.s1z && <span className="text-[10px] font-normal text-slate-500 ml-1">· {orderStockDetail.s1z}</span>}</span>
+                  <span className="tabular-nums font-black">{orderStockDetail.s1 ?? "—"}</span>
+                </div>
+                <div className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-between col-span-2">
+                  <span>매장2 {orderStockDetail.s2z && <span className="text-[10px] font-normal text-slate-500 ml-1">· {orderStockDetail.s2z}</span>}</span>
+                  <span className="tabular-nums font-black">{orderStockDetail.s2 ?? "—"}</span>
+                </div>
+                <div className="px-3 py-2 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 flex items-center justify-between col-span-2">
+                  <span>매장3 {orderStockDetail.s3z && <span className="text-[10px] font-normal text-slate-500 ml-1">· {orderStockDetail.s3z}</span>}</span>
+                  <span className="tabular-nums font-black">{orderStockDetail.s3 ?? "—"}</span>
+                </div>
+              </div>
+              <div className="mt-3 px-3 py-2 rounded-lg bg-violet-100 border border-violet-300 text-violet-800 flex items-center justify-between text-[13px] font-black">
+                <span>합계 (창고+매장)</span>
+                <span className="tabular-nums">{orderStockDetail.total}</span>
+              </div>
+            </div>
           </div>
         </div>
       )}
