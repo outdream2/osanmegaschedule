@@ -599,13 +599,29 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
     }
     const normRows: NormRow[] = [];
     let pdOk = false;
+    let pdSkippedNullSupplier = 0; // 2026-08-03 fix · supplier_name NULL 인 행 카운트 (진단용)
+    // supplier_code → supplier_name 매핑 (vendors 테이블 · code null 인 raw 매입행 보완용)
+    //   vendors 테이블에 supplier_code 컬럼 없으면 무해하게 skip (컬럼 에러 catch)
+    const codeToName = new Map<string, string>();
+    try {
+      const { data: vdata, error: verr } = await supabase
+        .from("vendors")
+        .select("company_name, supplier_code");
+      if (!verr) {
+        for (const v of (vdata ?? []) as any[]) {
+          const code = String(v.supplier_code ?? "").trim();
+          const name = String(v.company_name ?? "").trim();
+          if (code && name) codeToName.set(code, name);
+        }
+      } // else · 컬럼 없음 · codeToName 비어 있음 · pdSkippedNullSupplier 만 증가
+    } catch { /* silent · vendors 없어도 무관 */ }
     try {
       const PAGE = 1000;
       let from = 0;
       while (true) {
         const { data, error } = await supabase
           .from("purchase_details")
-          .select("supplier_name, purchase_date, amount, total, product_code")
+          .select("supplier_name, supplier_code, purchase_date, amount, total, product_code")
           .gte("purchase_date", cutoffYmd)
           .range(from, from + PAGE - 1);
         if (error) {
@@ -614,19 +630,30 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
         }
         if (!data || data.length === 0) break;
         for (const r of data as any[]) {
-          const supplier = String(r.supplier_name ?? "").trim();
-          if (!supplier) continue;
+          // 2026-08-03 fix (이슈 B) · supplier_name NULL 이면 supplier_code 로 vendors 조회 · 여전히 없으면 skip
+          let supplier = String(r.supplier_name ?? "").trim();
+          if (!supplier) {
+            const code = String(r.supplier_code ?? "").trim();
+            if (code && codeToName.has(code)) supplier = codeToName.get(code)!;
+          }
+          if (!supplier) { pdSkippedNullSupplier++; continue; }
           const date: string = (r.purchase_date && /^\d{4}-\d{2}-\d{2}/.test(String(r.purchase_date)))
             ? String(r.purchase_date).slice(0, 10)
             : "";
           if (!date) continue;
-          const amount = Number(r.total ?? r.amount ?? 0) || 0;
+          // 2026-08-03 fix (이슈 A) · amount 우선 · total fallback (xlsx total 이 amount 와 다르게 부풀린 케이스 방지)
+          //   purchase.ts 임포트 시 amount = 순매입금액 (반품 차감 후) · 정답 값
+          //   total 은 xlsx "총합계" 컬럼 raw 저장 · VAT 포함 여부가 파일마다 상이 · 신뢰 불가
+          const amount = Number(r.amount ?? r.total ?? 0) || 0;
           const code = String(r.product_code ?? "").trim();
           normRows.push({ supplier, date, amount, code });
         }
         pdOk = true;
         if (data.length < PAGE) break;
         from += PAGE;
+      }
+      if (pdSkippedNullSupplier > 0) {
+        console.warn(`[supplier-purchase-summary] purchase_details · supplier_name NULL 로 스킵된 행 ${pdSkippedNullSupplier}개 (supplier_code 매핑 실패)`);
       }
     } catch (e: any) {
       console.warn("[supplier-purchase-summary] purchase_details 실패 · fallback:", e?.message);
@@ -771,12 +798,49 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
     //   vat_amount·supply_amount 컬럼 없을 수 있음 · 실패 시 재시도
     let data: any[] | null = null;
     let sourceUsed: "purchase_details" | "ocr_confirmed_items" = "purchase_details";
+    // 2026-08-03 fix (이슈 B 관련) · supplier_name NULL 인 매입행 회수 · supplier_code 로도 조회
+    //   vendors.supplier_code 있으면 · purchase_details.supplier_code 매칭 병행
+    //   vendors 테이블에 supplier_code 컬럼 없으면 무해하게 skip (컬럼 에러 catch)
+    let supplierCode: string | null = null;
     try {
-      const pdFull = await supabase
+      const { data: vd, error: verr } = await supabase
+        .from("vendors")
+        .select("supplier_code")
+        .eq("company_name", supplier)
+        .limit(1);
+      if (!verr) {
+        const c = String(((vd ?? [])[0] as any)?.supplier_code ?? "").trim();
+        if (c) supplierCode = c;
+      }
+    } catch { /* silent · 컬럼 없어도 무관 · supplierCode null */ }
+    // 2026-08-03 fix · 헬퍼 · purchase_details 조회 (name + optional code 병렬 · dedup by id)
+    const fetchPdByNameAndCode = async (withVatCols: boolean) => {
+      const cols = withVatCols
+        ? "id, purchase_date, product_code, product_name, quantity, unit_price, amount, total, vat_amount, supply_amount"
+        : "id, purchase_date, product_code, product_name, quantity, unit_price, amount, total";
+      const byName = supabase
         .from("purchase_details")
-        .select("id, purchase_date, product_code, product_name, quantity, unit_price, amount, total, vat_amount, supply_amount")
+        .select(cols)
         .eq("supplier_name", supplier)
         .gte("purchase_date", cutoffYmd);
+      const byCode = supplierCode
+        ? supabase
+            .from("purchase_details")
+            .select(cols)
+            .eq("supplier_code", supplierCode)
+            .gte("purchase_date", cutoffYmd)
+        : Promise.resolve({ data: [] as any[], error: null as any });
+      const [rn, rc] = await Promise.all([byName, byCode]);
+      if (rn.error) return rn;
+      const merged: any[] = [...(rn.data ?? [])];
+      const seen = new Set(merged.map((x: any) => x.id));
+      for (const r of ((rc as any).data ?? [])) {
+        if (!seen.has((r as any).id)) { merged.push(r); seen.add((r as any).id); }
+      }
+      return { data: merged, error: null as any };
+    };
+    try {
+      const pdFull = await fetchPdByNameAndCode(true);
       if (!pdFull.error) {
         data = (pdFull.data ?? []).map((r: any) => ({
           id: r.id,
@@ -786,17 +850,14 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
           product_name: r.product_name,
           quantity: r.quantity,
           unit_price: r.unit_price,
-          amount: r.total ?? r.amount ?? 0,
+          // 2026-08-03 fix (이슈 A) · amount 우선 · total fallback · 이중산정 방지
+          amount: r.amount ?? r.total ?? 0,
           vat_amount: r.vat_amount ?? 0,
           supply_amount: r.supply_amount ?? 0,
         }));
       } else if (/vat_amount|supply_amount/i.test(pdFull.error.message)) {
         // VAT 컬럼 없는 DB · 다시 조회
-        const pdSlim = await supabase
-          .from("purchase_details")
-          .select("id, purchase_date, product_code, product_name, quantity, unit_price, amount, total")
-          .eq("supplier_name", supplier)
-          .gte("purchase_date", cutoffYmd);
+        const pdSlim = await fetchPdByNameAndCode(false);
         if (!pdSlim.error) {
           data = (pdSlim.data ?? []).map((r: any) => ({
             id: r.id,
@@ -806,7 +867,7 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
             product_name: r.product_name,
             quantity: r.quantity,
             unit_price: r.unit_price,
-            amount: r.total ?? r.amount ?? 0,
+            amount: r.amount ?? r.total ?? 0,
             vat_amount: 0,
             supply_amount: 0,
           }));

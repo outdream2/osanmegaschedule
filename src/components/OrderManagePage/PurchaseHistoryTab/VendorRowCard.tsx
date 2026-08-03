@@ -1,8 +1,8 @@
 // src/components/OrderManagePage/PurchaseHistoryTab/VendorRowCard.tsx
-// 좌측 공급사 리스트 · 카드형 3줄 (2026-08-03 · 컬럼 확장)
-// Line 1 · 공급사명 + 분류 배지 + 최근 매입일 배지 (D+N)
-// Line 2 · 이번달 매입액 + 12주 스파크라인 + SKU 종수
-// Line 3 (신규) · 최근 한달 판매량·판매금액 + 매입주기
+// 좌측 공급사 리스트 · 카드형 2줄 (2026-08-03 재구성 · 재고관리 29728bb 참조)
+// Line 1 · grid · 공급사명+분류 | 매입주기 | 최근매입일 (D+N) | 이번달매입액
+//           - 상단 헤더 grid 와 동일 컬럼 폭 (컬럼 정렬 시각적 일치)
+// Line 2 · 12주 스파크라인 + SKU 종수 + (있으면) 판매량·매출 서브배지
 // Zoho·QuickBooks Purchases by Vendor 벤치마크
 
 import React, { useMemo } from "react";
@@ -105,92 +105,88 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
   const saleQty = summary?.sale_qty_month ?? null;
   const saleAmt = summary?.sale_amount_month ?? null;
 
+  // 매입주기 색상 · 재고관리 29728bb 스타일 참조
+  const cycleColor = cycle == null
+    ? "text-slate-300"
+    : cycle <= 14 ? "text-emerald-700"
+    : cycle <= 30 ? "text-sky-700"
+    : cycle <= 60 ? "text-teal-700"
+    : "text-slate-500";
+
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={`group w-full text-left px-3 py-2 flex flex-col gap-1 transition cursor-pointer border-l-2 ${
+      className={`group w-full text-left px-3 py-2 flex flex-col gap-1.5 transition cursor-pointer border-l-2 ${
         active
           ? "bg-emerald-50 border-emerald-500"
           : "hover:bg-slate-50 border-transparent"
       }`}
     >
-      {/* Line 1 · 이름 + 분류 + 최근성 */}
-      <div className="flex items-center gap-1.5 w-full min-w-0">
-        <VendorCategoryBadge category={category} />
-        <span className={`text-[12px] font-semibold leading-tight flex-1 min-w-0 break-words ${
-          active ? "text-emerald-800" : "text-slate-700"
-        }`}>
-          {companyName}
-        </span>
+      {/* Line 1 · grid · 공급사명 | 매입주기 | 최근매입일 | 이번달매입액 (상단 헤더 grid 와 동일 폭) */}
+      <div className="grid grid-cols-[1fr_44px_56px_60px] gap-2 items-center w-full min-w-0">
+        {/* 공급사명 + 분류 배지 */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          <VendorCategoryBadge category={category} />
+          <span className={`text-[12px] font-semibold leading-tight flex-1 min-w-0 break-words ${
+            active ? "text-emerald-800" : "text-slate-700"
+          }`}>
+            {companyName}
+          </span>
+        </div>
+        {/* 매입주기 */}
         <span
-          className={`text-[9px] font-black rounded px-1.5 py-0.5 border leading-none shrink-0 tabular-nums ${recency.cls}`}
+          className={`text-right text-[11px] font-black tabular-nums leading-none ${cycleColor}`}
+          title={cycle != null ? `평균 매입주기 · ${cycle}일 (서로 다른 매입일 2회↑ 기준)` : "매입 2회 미만 · 계산 불가"}
+        >
+          {cycle != null ? `${cycle}일` : "-"}
+        </span>
+        {/* 최근매입일 (D+N 배지) */}
+        <span
+          className={`justify-self-end text-[9px] font-black rounded px-1.5 py-0.5 border leading-none tabular-nums ${recency.cls}`}
           title={summary?.last_purchase_date ?? "매입 이력 없음"}
         >
           {recency.label}
         </span>
-      </div>
-
-      {/* Line 2 · 이번달 매입액 + 스파크라인 + SKU */}
-      <div className="flex items-center gap-2 w-full min-w-0">
+        {/* 이번달 매입액 */}
         <span
-          className={`text-[10px] font-black tabular-nums shrink-0 ${
-            thisMonth > 0 ? (active ? "text-emerald-700" : "text-slate-600") : "text-slate-300"
+          className={`text-right text-[11px] font-black tabular-nums leading-none ${
+            thisMonth > 0 ? (active ? "text-indigo-800" : "text-indigo-700") : "text-slate-300"
           }`}
           title={`이번달 매입액 · ${thisMonth.toLocaleString()}원`}
         >
-          {fmtWon(thisMonth)}
+          {thisMonth > 0 ? fmtWon(thisMonth) : "-"}
         </span>
+      </div>
+
+      {/* Line 2 · 스파크라인 + SKU + (있으면) 판매량·매출 서브배지 */}
+      <div className="flex items-center gap-2 w-full min-w-0">
         <SparklineBars data={sparkline} active={active} />
         <span
           className={`text-[9px] font-semibold tabular-nums shrink-0 ${
             skuCount > 0 ? "text-slate-500" : "text-slate-300"
           }`}
-          title="최근 3개월 활성 SKU 종수"
+          title="최근 90일 활성 SKU 종수"
         >
           {skuCount > 0 ? `${skuCount}종` : "-"}
         </span>
-      </div>
-
-      {/* Line 3 · 최근 한달 판매량·판매금액 + 매입주기 */}
-      <div className="flex items-center gap-1.5 w-full min-w-0 pt-0.5">
-        {/* 판매량 (지난달) */}
-        <span
-          className={`text-[9px] font-bold tabular-nums shrink-0 rounded px-1 py-0.5 border ${
-            saleQty != null && saleQty > 0
-              ? "bg-orange-50 text-orange-700 border-orange-200"
-              : "bg-slate-50 text-slate-300 border-slate-100"
-          }`}
-          title="최근 한달 판매수량 (top-sales 조인)"
-        >
-          판매 {saleQty != null && saleQty > 0 ? saleQty.toLocaleString() : "-"}
-        </span>
-        {/* 판매금액 (지난달) */}
-        <span
-          className={`text-[9px] font-bold tabular-nums shrink-0 rounded px-1 py-0.5 border ${
-            saleAmt != null && saleAmt > 0
-              ? "bg-indigo-50 text-indigo-700 border-indigo-200"
-              : "bg-slate-50 text-slate-300 border-slate-100"
-          }`}
-          title={`최근 한달 판매금액 · ${saleAmt != null ? saleAmt.toLocaleString() : "-"}원`}
-        >
-          매출 {saleAmt != null && saleAmt > 0 ? fmtWon(saleAmt) : "-"}
-        </span>
-        {/* 매입주기 */}
-        <span
-          className={`ml-auto text-[9px] font-bold tabular-nums shrink-0 rounded px-1 py-0.5 border ${
-            cycle != null
-              ? cycle <= 14
-                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                : cycle <= 30
-                ? "bg-teal-50 text-teal-700 border-teal-200"
-                : "bg-slate-50 text-slate-600 border-slate-200"
-              : "bg-slate-50 text-slate-300 border-slate-100"
-          }`}
-          title={cycle != null ? `평균 매입주기 · ${cycle}일` : "매입 2회 미만 · 계산 불가"}
-        >
-          주기 {cycle != null ? `${cycle}일` : "-"}
-        </span>
+        {/* 판매량 · 판매금액 (top-sales 매칭 성공 시만 표시 · 실패 시 UI 숨김) */}
+        {(saleQty != null && saleQty > 0) && (
+          <span
+            className="text-[9px] font-bold tabular-nums shrink-0 rounded px-1 py-0.5 border bg-orange-50 text-orange-700 border-orange-200"
+            title={`최근 한달 판매수량 · ${saleQty.toLocaleString()}개`}
+          >
+            판매 {saleQty.toLocaleString()}
+          </span>
+        )}
+        {(saleAmt != null && saleAmt > 0) && (
+          <span
+            className="text-[9px] font-bold tabular-nums shrink-0 rounded px-1 py-0.5 border bg-indigo-50 text-indigo-700 border-indigo-200"
+            title={`최근 한달 판매금액 · ${saleAmt.toLocaleString()}원`}
+          >
+            매출 {fmtWon(saleAmt)}
+          </span>
+        )}
       </div>
     </button>
   );

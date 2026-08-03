@@ -16,7 +16,7 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  Plus, Trash2, Loader2, AlertCircle, Upload, X, Save, Pencil,
+  Plus, Trash2, Loader2, AlertCircle, X, Save, Pencil,
   ArrowUp, ArrowDown, CheckCircle2, FileText, CloudUpload,
 } from "lucide-react";
 import Modal from "../common/Modal";

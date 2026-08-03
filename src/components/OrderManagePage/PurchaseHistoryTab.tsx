@@ -159,8 +159,18 @@ export const PurchaseHistoryTab: React.FC = () => {
       if (!summaryRes.ok) throw new Error(String(summaryRes.status));
       const j: SummaryResponse & { suppliers: any[] } = await summaryRes.json();
 
-      // 공급사별 판매량·판매금액 집계 (top-sales row 는 상품 단위 · supplier_name 으로 groupBy)
+      // 공급사별 판매량·판매금액 집계 (top-sales row 는 상품 단위 · supplier 필드로 groupBy)
+      //   2026-08-03 fix (이슈 C) · top-sales rows[].supplier 는 products.supplier 원본 (숫자 코드 or 축약)
+      //     · vendors.company_name 과 접미어(㈜/주식회사/(주)) 차이로 매칭 실패 다수 → 정규화 후 매칭
+      //     · 원본 key + 정규화 key 둘 다 저장 · 조회 시 두 key 모두 시도
+      const normalizeName = (s: string): string =>
+        s.replace(/[\s()㈜㈐]/g, "")
+         .replace(/^\(주\)/g, "")
+         .replace(/주식회사/g, "")
+         .replace(/\(주\)$/g, "")
+         .toLowerCase();
       const salesBySupplier = new Map<string, { qty: number; amt: number }>();
+      const salesBySupplierNorm = new Map<string, { qty: number; amt: number }>();
       if (salesRes && salesRes.ok) {
         try {
           const sb = await salesRes.json();
@@ -175,6 +185,15 @@ export const PurchaseHistoryTab: React.FC = () => {
             cur.qty += qty;
             cur.amt += amt;
             salesBySupplier.set(sup, cur);
+            const norm = normalizeName(sup);
+            if (norm && norm !== sup) {
+              const curN = salesBySupplierNorm.get(norm) ?? { qty: 0, amt: 0 };
+              curN.qty += qty;
+              curN.amt += amt;
+              salesBySupplierNorm.set(norm, curN);
+            } else if (norm) {
+              salesBySupplierNorm.set(norm, cur);
+            }
           }
         } catch {
           // top-sales 실패는 무시 · summary 는 계속 진행
@@ -183,7 +202,12 @@ export const PurchaseHistoryTab: React.FC = () => {
 
       const map = new Map<string, VendorSummary>();
       for (const s of j.suppliers ?? []) {
-        const sales = salesBySupplier.get(s.supplier);
+        // 2026-08-03 fix (이슈 C) · 원본 매칭 우선 · 실패 시 정규화 매칭
+        let sales = salesBySupplier.get(s.supplier);
+        if (!sales) {
+          const norm = normalizeName(String(s.supplier ?? ""));
+          if (norm) sales = salesBySupplierNorm.get(norm);
+        }
         map.set(s.supplier, {
           last_purchase_date: s.last_purchase_date,
           first_purchase_date: s.first_purchase_date ?? null,
@@ -343,6 +367,29 @@ export const PurchaseHistoryTab: React.FC = () => {
     if (viewMode === "by-product") loadAllDetails();
   }, [viewMode, loadAllDetails]);
 
+  // ─── summary lookup · vendors.company_name → summaryMap value ─────────────
+  //   2026-08-03 fix (이슈 C) · 서버 supplier 와 vendor company_name 접미어 차이 대응
+  //     · 정확 매칭 우선 · 실패 시 정규화 매칭 (㈜/(주)/주식회사 제거)
+  const summaryLookup = useMemo(() => {
+    const norm = (s: string): string =>
+      s.replace(/[\s()㈜㈐]/g, "")
+       .replace(/^\(주\)/g, "")
+       .replace(/주식회사/g, "")
+       .replace(/\(주\)$/g, "")
+       .toLowerCase();
+    const byNorm = new Map<string, VendorSummary>();
+    for (const [k, v] of summaryMap) {
+      const n = norm(k);
+      if (n && !byNorm.has(n)) byNorm.set(n, v);
+    }
+    return (companyName: string): VendorSummary | null => {
+      const direct = summaryMap.get(companyName);
+      if (direct) return direct;
+      const n = norm(companyName);
+      return (n ? byNorm.get(n) : undefined) ?? null;
+    };
+  }, [summaryMap]);
+
   // ─── 필터링 · 정렬된 좌측 리스트 (공급사) ────────────────────────────────
   //   2026-08-03 · leftSort · leftDir 조합 · asc/desc 토글 지원
   //   null 값은 desc 정렬 시 항상 뒤로 · asc 정렬 시 항상 뒤로 (일관성)
@@ -357,7 +404,7 @@ export const PurchaseHistoryTab: React.FC = () => {
 
     // 컬럼별 정렬 값 추출 (숫자 or 문자열)
     const pickNum = (v: VendorItem): number | null => {
-      const s = summaryMap.get(v.company_name);
+      const s = summaryLookup(v.company_name);
       switch (leftSort) {
         case "amount":    return s?.total_amount ?? null;
         case "sale_qty":  return s?.sale_qty_month ?? null;
@@ -369,8 +416,8 @@ export const PurchaseHistoryTab: React.FC = () => {
     };
 
     return list.sort((a, b) => {
-      const sa = summaryMap.get(a.company_name);
-      const sb = summaryMap.get(b.company_name);
+      const sa = summaryLookup(a.company_name);
+      const sb = summaryLookup(b.company_name);
       // name 정렬 (예외 · 항상 문자열 비교)
       if (leftSort === "name") {
         return dirSign * a.company_name.localeCompare(b.company_name, "ko");
@@ -395,7 +442,7 @@ export const PurchaseHistoryTab: React.FC = () => {
       if (va !== vb) return dirSign * (va - vb);
       return a.company_name.localeCompare(b.company_name, "ko");
     });
-  }, [vendors, vendorSearch, vendorCategoryFilter, summaryMap, leftSort, leftDir]);
+  }, [vendors, vendorSearch, vendorCategoryFilter, summaryLookup, leftSort, leftDir]);
 
   // ─── 상품별 집계 (allDetails groupBy product_code || product_name) ──────
   const productList = useMemo<ProductSummary[]>(() => {
@@ -672,14 +719,16 @@ export const PurchaseHistoryTab: React.FC = () => {
                   })}
                 </div>
               </div>
-              {/* 공급사 리스트 · 카드 3줄 · 상단 컬럼 헤더 (헤더도 클릭 정렬) */}
+              {/* 공급사 리스트 · 컬럼 헤더 (2026-08-03 재구성 · 재고관리 29728bb 스타일 참조)
+                    · 4컬럼 · 공급사 · 매입주기 · 최근매입일 · 이번달매입액
+                    · 각 헤더 클릭 시 정렬 asc/desc 토글 · arrowFor 화살표 */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[65vh] flex flex-col overflow-hidden">
-                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[10px] font-bold uppercase tracking-wider">
+                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_44px_56px_60px] gap-2 items-center text-[10px] font-bold uppercase tracking-wider">
                   <button
                     type="button"
                     onClick={() => toggleLeftSort("name")}
                     className={`text-left cursor-pointer inline-flex items-center gap-0.5 transition ${
-                      leftSort === "name" ? "text-emerald-700" : "text-slate-500 hover:text-slate-700"
+                      leftSort === "name" ? "text-slate-800" : "text-slate-500 hover:text-slate-700"
                     }`}
                     title="공급사명 정렬"
                   >
@@ -690,27 +739,14 @@ export const PurchaseHistoryTab: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => toggleLeftSort("amount")}
+                    onClick={() => toggleLeftSort("cycle")}
                     className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
-                      leftSort === "amount" ? "text-emerald-700" : "text-slate-500 hover:text-slate-700"
+                      leftSort === "cycle" ? "text-sky-800" : "text-sky-600 hover:text-sky-800"
                     }`}
-                    title="총 매입액 기준 정렬"
+                    title="매입주기 (평균 며칠마다 매입) 기준 정렬"
                   >
-                    매입액
-                    {leftSort === "amount" && (
-                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleLeftSort("sale_amt")}
-                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
-                      leftSort === "sale_amt" || leftSort === "sale_qty" ? "text-indigo-700" : "text-slate-500 hover:text-slate-700"
-                    }`}
-                    title="최근 한달 판매금액 기준 정렬"
-                  >
-                    판매(1m)
-                    {(leftSort === "sale_amt" || leftSort === "sale_qty") && (
+                    매입주기
+                    {leftSort === "cycle" && (
                       <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
                     )}
                   </button>
@@ -718,12 +754,25 @@ export const PurchaseHistoryTab: React.FC = () => {
                     type="button"
                     onClick={() => toggleLeftSort("recent")}
                     className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
-                      leftSort === "recent" ? "text-emerald-700" : "text-slate-500 hover:text-slate-700"
+                      leftSort === "recent" ? "text-emerald-800" : "text-emerald-600 hover:text-emerald-800"
                     }`}
                     title="최근 매입일 기준 정렬"
                   >
-                    최근
+                    최근매입
                     {leftSort === "recent" && (
+                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleLeftSort("amount")}
+                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
+                      leftSort === "amount" ? "text-indigo-800" : "text-indigo-600 hover:text-indigo-800"
+                    }`}
+                    title="총 매입액 (90일) 기준 정렬"
+                  >
+                    매입액
+                    {leftSort === "amount" && (
                       <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
                     )}
                   </button>
@@ -743,7 +792,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                         vendorId={v.id}
                         companyName={v.company_name}
                         category={v.category}
-                        summary={summaryMap.get(v.company_name) ?? null}
+                        summary={summaryLookup(v.company_name)}
                         active={selectedVendor?.id === v.id}
                         onSelect={() => {
                           setSelectedVendor(v);
