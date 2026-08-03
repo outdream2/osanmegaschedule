@@ -514,6 +514,15 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
             Number(warehouse1Stock || 0) + Number(warehouse2Stock || 0) +
             Number(store1Stock || 0) + Number(store2Stock || 0) + Number(store3Stock || 0);
           const diff = hasInput && cur != null ? totalActual - cur : null;
+          // #224 · real_map 슬래시(/) 분할 · 매장1/2/3 진열위치 라벨
+          //   예: "8A/냉" → 매장1="8A" · 매장2="냉"
+          const storeZones = String(product.real_map ?? "")
+            .split(/[/,]/)
+            .map(s => s.trim())
+            .filter(Boolean);
+          const zoneS1 = storeZones[0] ?? "";
+          const zoneS2 = storeZones[1] ?? "";
+          const zoneS3 = storeZones[2] ?? "";
           return (
             <div className={`rounded-xl border px-3 py-2 mb-2.5 ${isLow ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200"}`}>
               {/* 2026-07-16 · 헤더 · 재고현황 라벨(클릭 시 접기/펼치기) + 재고세기 버튼 + 부족 뱃지 */}
@@ -639,9 +648,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                       </button>
                     )}
                   </div>
-                  {/* 매장1 · violet 기본 */}
+                  {/* 매장1 · violet 기본 · #224 real_map 슬래시[0] 표시 */}
                   <div className="bg-white rounded-lg border border-violet-200 py-1 px-1 text-center">
-                    <p className="text-[12px] font-semibold text-violet-600 mb-0.5 flex items-center justify-center gap-0.5"><Store size={10} />매장1</p>
+                    <p className="text-[12px] font-semibold text-violet-600 mb-0.5 flex items-center justify-center gap-0.5 flex-wrap"><Store size={10} />매장1{zoneS1 && <span className="text-[10px] font-black text-violet-800 bg-violet-100 border border-violet-200 rounded px-1 leading-tight">{zoneS1}</span>}</p>
                     <input
                       type="number" min="0"
                       value={store1Stock}
@@ -662,9 +671,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                       </button>
                     )}
                   </div>
-                  {/* 매장2 · violet 중간 */}
+                  {/* 매장2 · violet 중간 · #224 real_map 슬래시[1] 표시 */}
                   <div className="bg-white rounded-lg border border-violet-300 py-1 px-1 text-center">
-                    <p className="text-[12px] font-semibold text-violet-700 mb-0.5 flex items-center justify-center gap-0.5"><Store size={10} />매장2</p>
+                    <p className="text-[12px] font-semibold text-violet-700 mb-0.5 flex items-center justify-center gap-0.5 flex-wrap"><Store size={10} />매장2{zoneS2 && <span className="text-[10px] font-black text-violet-800 bg-violet-100 border border-violet-300 rounded px-1 leading-tight">{zoneS2}</span>}</p>
                     <input
                       type="number" min="0"
                       value={store2Stock}
@@ -685,9 +694,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                       </button>
                     )}
                   </div>
-                  {/* 매장3 · violet 진한 (purple 톤) */}
+                  {/* 매장3 · violet 진한 (purple 톤) · #224 real_map 슬래시[2] 표시 */}
                   <div className="bg-white rounded-lg border border-purple-300 py-1 px-1 text-center">
-                    <p className="text-[12px] font-semibold text-purple-700 mb-0.5 flex items-center justify-center gap-0.5"><Store size={10} />매장3</p>
+                    <p className="text-[12px] font-semibold text-purple-700 mb-0.5 flex items-center justify-center gap-0.5 flex-wrap"><Store size={10} />매장3{zoneS3 && <span className="text-[10px] font-black text-purple-800 bg-purple-100 border border-purple-300 rounded px-1 leading-tight">{zoneS3}</span>}</p>
                     <input
                       type="number" min="0"
                       value={store3Stock}
