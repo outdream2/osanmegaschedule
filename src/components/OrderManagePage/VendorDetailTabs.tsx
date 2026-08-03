@@ -633,23 +633,24 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
       <div className="flex-1 min-h-0 flex flex-col">
         {activeTab === "balance" && (
           <div className="flex-1 min-h-0 flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-            {/* 탭 내 KPI 3개 */}
+            {/* 탭 내 KPI 3개 · 매입금액 · 결제금액 · 남은잔고 (미결제) */}
             {ledger && !ledgerLoading && (
-              <div className="grid grid-cols-3 gap-0 border-b border-slate-100">
+              <div className="grid grid-cols-3 gap-0 border-b border-slate-100 bg-slate-50/40">
                 {[
-                  { label: "총 매입", value: ledger.total_purchase, tone: "emerald" as const },
-                  { label: "총 결제", value: ledger.total_payment, tone: "sky" as const },
-                  { label: "잔  고",  value: ledger.current_balance, tone: ledger.current_balance > 0 ? "amber" as const : "emerald" as const },
+                  { label: "매입 금액",           value: ledger.total_purchase,   tone: "emerald" as const, subtitle: "구입 총액" },
+                  { label: "결제 금액",           value: ledger.total_payment,    tone: "sky" as const,     subtitle: "지불 총액" },
+                  { label: "남은 잔고 (미결제)", value: ledger.current_balance,  tone: ledger.current_balance > 0 ? "amber" as const : "emerald" as const, subtitle: ledger.current_balance > 0 ? "지불 필요" : "완납" },
                 ].map((item, i) => (
-                  <div key={i} className={`px-3 py-2.5 ${i < 2 ? "border-r border-slate-100" : ""} flex flex-col gap-0.5`}>
-                    <span className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider">{item.label}</span>
-                    <span className={`text-[13px] font-black tabular-nums ${
+                  <div key={i} className={`px-4 py-3 ${i < 2 ? "border-r border-slate-100" : ""} flex flex-col gap-0.5`}>
+                    <span className="text-[11px] font-bold text-slate-500">{item.label}</span>
+                    <span className={`text-[15px] font-black tabular-nums leading-tight ${
                       item.tone === "emerald" ? "text-emerald-700" :
                       item.tone === "sky" ? "text-sky-700" :
                       "text-amber-700"
                     }`}>
-                      {item.value.toLocaleString()}
+                      {item.value.toLocaleString()}원
                     </span>
+                    <span className="text-[10px] text-slate-400 font-medium">{item.subtitle}</span>
                   </div>
                 ))}
               </div>
