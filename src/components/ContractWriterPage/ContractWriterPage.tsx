@@ -52,6 +52,9 @@ interface ContractForm {
   // 계약 유형
   contractType: string;          // 정규직/계약직/알바/일용/인턴 · 자유 입력
 
+  // 계약직 · 개월수 (선택 시 startDate + N개월 → endDate 자동)
+  contractMonths: string;        // "3" | "6" | "12" | "24" | 자유 입력
+
   // 근무 요일 (체크박스)
   workDays: Record<DayKey, boolean>;
 
@@ -145,6 +148,7 @@ const emptyForm = (): ContractForm => ({
   employeeAddress: "",
   employeeBirth: "",
   contractType: "정규직",
+  contractMonths: "12",
   workDays: { "월": true, "화": true, "수": true, "목": true, "금": true, "토": false, "일": false },
   weeklyDays: "5",
   startTime: "09:00",
@@ -596,12 +600,50 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
 
   // 사업주 · 대표자 · 기본값(강남성 · 오산 메가타운 약국) · 편집 가능
 
-  // 계약 유형 · "정규직" 이면 무기한 자동 (편집 가능)
+  // 계약 유형 · "정규직" 이면 무기한 자동 · "계약직" 이면 무기한 해제 (편집 가능)
   useEffect(() => {
     if (form.contractType === "정규직" && !form.indefinite) {
       setForm(prev => ({ ...prev, indefinite: true, endDate: "" }));
+    } else if (form.contractType === "계약직" && form.indefinite) {
+      setForm(prev => ({ ...prev, indefinite: false }));
     }
   }, [form.contractType]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 계약직 · contractMonths → 시작일 + N개월 · 종료일 자동 계산 (편집 가능)
+  useEffect(() => {
+    if (form.contractType !== "계약직") return;
+    if (form.indefinite) return;
+    const months = Number(form.contractMonths);
+    if (!Number.isFinite(months) || months <= 0) return;
+    if (!form.startDate) return;
+    const start = new Date(form.startDate);
+    if (isNaN(start.getTime())) return;
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + months);
+    end.setDate(end.getDate() - 1);
+    const iso = `${end.getFullYear()}-${String(end.getMonth() + 1).padStart(2, "0")}-${String(end.getDate()).padStart(2, "0")}`;
+    if (iso !== form.endDate) {
+      setForm(prev => ({ ...prev, endDate: iso }));
+    }
+  }, [form.contractType, form.contractMonths, form.startDate, form.indefinite]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 직원 카테고리 (약사·사원·기타) → 업무 내용 기본값 자동 반영 (사용자 편집 시 그대로 유지)
+  useEffect(() => {
+    const defaults: Record<string, string> = {
+      "약사": "일반의약품·전문의약품 조제·복약지도 · 의약품 재고 관리 · 처방전 접수",
+      "사원": "약국 카운터 · OTC 판매 · 재고 관리 · 매장 정리",
+      "기타": "매장 지원 업무",
+    };
+    const key = form.employeeCategory;
+    const nextDuty = form.employeeCategory === "기타" && form.employeeCategoryCustom
+      ? `${form.employeeCategoryCustom} 관련 업무`
+      : defaults[key];
+    // 기본값 3종 중 하나이거나 빈 값인 경우만 자동 갱신 (사용자 커스텀 지키기)
+    const isDefault = !form.jobDuty || Object.values(defaults).includes(form.jobDuty);
+    if (isDefault && nextDuty && nextDuty !== form.jobDuty) {
+      setForm(prev => ({ ...prev, jobDuty: nextDuty }));
+    }
+  }, [form.employeeCategory, form.employeeCategoryCustom]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 근무요일 개수 → 주근무횟수 자동 (사용자가 직접 조정 안 했으면)
   const chosenDaysCount = useMemo(() => DAYS.filter(d => form.workDays[d]).length, [form.workDays]);
@@ -972,6 +1014,19 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 onChange={(v) => upd("contractType", v)}
                 placeholder="예: 프리랜서"
               />
+              {/* 계약직 · 개월수 선택 (시작일 + N개월 → 종료일 자동) */}
+              {form.contractType === "계약직" && (
+                <div className="mt-2">
+                  <div className="text-[11px] text-slate-500 font-semibold mb-1">계약 개월수</div>
+                  <SelectOrCustom
+                    value={form.contractMonths}
+                    options={["3", "6", "12", "18", "24", "36"]}
+                    onChange={(v) => upd("contractMonths", v)}
+                    placeholder="예: 9"
+                    suffix="개월"
+                  />
+                </div>
+              )}
             </div>
 
             {/* 근무 요일 */}
