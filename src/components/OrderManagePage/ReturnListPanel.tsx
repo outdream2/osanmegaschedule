@@ -574,9 +574,9 @@ export const ReturnListPanel: React.FC = () => {
                                 </div>
                               </td>
                               <td className="px-0.5 py-1.5 align-top bg-sky-50/10">
-                                <div className="flex items-center gap-1 flex-wrap">
+                                <div className="flex flex-col leading-tight">
                                   {x.supplier && <VendorCategoryBadge category={vendorCategoryMap[x.supplier.trim()] ?? null} />}
-                                  <span className="text-[11px] font-semibold text-sky-600 break-words whitespace-normal">{x.supplier ?? "-"}</span>
+                                  <span className="text-[12px] font-semibold text-sky-700 whitespace-nowrap">{x.supplier ?? "-"}</span>
                                 </div>
                               </td>
                             </>

@@ -327,9 +327,9 @@ export const LowStockPanel: React.FC = () => {
                                   {p.product_name}
                                 </button>
                                 {p.supplier && (
-                                  <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                                  <div className="flex flex-col leading-tight mt-0.5">
                                     <VendorCategoryBadge category={vendorCategoryMap[String(p.supplier).trim()] ?? null} />
-                                    <span className="text-[10px] text-slate-400 break-words whitespace-normal">{p.supplier}</span>
+                                    <span className="text-[11px] text-slate-500 whitespace-nowrap">{p.supplier}</span>
                                   </div>
                                 )}
                               </td>

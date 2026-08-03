@@ -1242,13 +1242,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         <td className="bg-sky-50/10 w-4"></td>
                       ) : (
                         <>
-                          <td className="px-0.5 py-1.5 text-[12px] font-semibold break-words whitespace-normal align-top">
+                          <td className="px-0.5 py-1.5 text-[12px] font-semibold align-top">
                             {p.supplier ? (
-                              <div className="flex items-center gap-1 flex-wrap">
+                              <div className="flex flex-col leading-tight">
                                 <VendorCategoryBadge category={vendorCategoryMap[String(p.supplier).trim()] ?? null} />
                                 <button type="button"
                                   onClick={(e) => { e.stopPropagation(); openSupplierInfo(p.supplier); }}
-                                  className="text-sky-600 hover:text-sky-800 hover:underline cursor-pointer text-left"
+                                  className="text-sky-700 hover:text-sky-900 hover:underline cursor-pointer text-left whitespace-nowrap"
                                   title="공급사 정보 조회·수정">{p.supplier}</button>
                               </div>
                             ) : "-"}
