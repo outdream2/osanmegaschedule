@@ -1,5 +1,5 @@
 // src/components/OrderManagePage/VendorDetailTabs.tsx
-// 공급사 상세 패널 — 하단 2탭 (결제잔고 · 매입이력)
+// 공급사 상세 패널 — 하단 2탭 (결제내역 · 매입이력)
 // VendorInfoHeader 아래에 배치 · vendor, ledger, purchase-detail API 활용
 // Props: vendor (VendorBasic) → 내부에서 직접 fetch
 

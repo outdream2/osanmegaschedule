@@ -29,7 +29,7 @@ import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
 import { PaymentInfoTab } from "./PaymentInfoTab";
 import { CategoryTab } from "./CategoryTab";
 import { VendorDetailTabs } from "./VendorDetailTabs";
-import { BarChart2, PieChart, ArrowLeftRight, Boxes } from "lucide-react";
+import { BarChart2, PieChart, ArrowLeftRight, Boxes, Wallet } from "lucide-react";
 
 interface OrderRequest {
   id: string;
@@ -153,7 +153,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // Level-2 서브탭 상태
   const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need">("need");
   const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history">("receipt");
-  const [paymentSubTab, setPaymentSubTab] = useState<"vendor">("vendor");
+  const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input">("vendor");
   const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff">("trending");
 
   // 2026-08-03 · 관리자(level>=8) 전용 · 서브탭 long-press 드래그 재정렬 (useSortableTabs 훅)
@@ -883,7 +883,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   //   · badge 는 렌더 시 별도 계산 (여기서는 순서·label·icon·color 만 유지)
   type PurchaseOrderKey = "order" | "need";
   type PurchaseKey = "receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history";
-  type PaymentKey = "vendor";
+  type PaymentKey = "vendor" | "payment-input";
   type StatKey = "trending" | "category" | "flow" | "diff";
   interface SubTabDef<K extends string> { key: K; label: string; icon: React.ElementType; color: string; }
 
@@ -900,7 +900,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     { key: "reconciliation",   label: "실재고",     icon: CheckCircle2,   color: "emerald" },
   ], []);
   const paymentDefaultTabs: SubTabDef<PaymentKey>[] = useMemo(() => [
-    { key: "vendor",       label: "공급사관리", icon: Building2,     color: "teal"  },
+    { key: "vendor",        label: "공급사관리", icon: Building2,     color: "teal"   },
+    { key: "payment-input", label: "결제입력",   icon: Wallet,        color: "amber"  },
   ], []);
   const statDefaultTabs: SubTabDef<StatKey>[] = useMemo(() => [
     { key: "trending", label: "급상승",         icon: TrendingUp,    color: "indigo" },
@@ -921,7 +922,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   useEffect(() => {
     const first0 = purchaseOrderSortable.tabs[0]?.key as "order" | "need" | undefined;
     const first1 = purchaseSortable.tabs[0]?.key as "receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history" | undefined;
-    const first2 = paymentSortable.tabs[0]?.key as "vendor" | undefined;
+    const first2 = paymentSortable.tabs[0]?.key as "vendor" | "payment-input" | undefined;
     const first3 = statSortable.tabs[0]?.key as "trending" | "category" | "flow" | "diff" | undefined;
     if (first0) setPurchaseOrderSubTab(first0);
     if (first1) setPurchaseSubTab(first1);
@@ -1621,16 +1622,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         </div>
       )}
 
-      {/* ══ 결제 탭 (payment) — 공급사관리 단일 · 서브탭 바 제거 · 제목만 ══ */}
+      {/* ══ 결제 탭 (payment) — 공급사관리 · 결제입력 서브탭 ══ */}
       {topTab === "payment" && (
         <div className="flex flex-col gap-3">
-          {/* 페이지 제목 */}
-          <div className="flex items-center gap-2 px-1">
-            <Building2 size={18} className="text-teal-600" />
-            <h2 className="text-[16px] sm:text-[18px] font-black text-slate-800">공급사관리</h2>
-          </div>
+          {renderSubTabs<PaymentKey>(
+            paymentSortable.tabs.map(t => ({ k: t.key, label: t.label, icon: t.icon, color: t.color })),
+            paymentSubTab,
+            setPaymentSubTab,
+            { getTabProps: paymentSortable.getTabProps, isDragging: paymentSortable.isDragging },
+          )}
 
-          {/* ── 공급사관리 본문 ── */}
+          {/* ── 공급사관리 서브탭 ── */}
           {paymentSubTab === "vendor" && (
             <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
               {/* 좌측: 공급사 리스트 */}
@@ -1680,6 +1682,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   <VendorDetailTabs vendor={vendorSelected} />
                 )}
               </div>
+            </div>
+          )}
+
+          {/* ── 결제입력 서브탭 ── */}
+          {paymentSubTab === "payment-input" && (
+            <div className="flex-1 min-h-0">
+              <PaymentInfoTab />
             </div>
           )}
 
