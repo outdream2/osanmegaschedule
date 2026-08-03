@@ -146,37 +146,59 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
   const [existingOrder, setExistingOrder] = useState<{ current_stock: number | null; requested_at: string } | null>(null);
   const [orderConfirm, setOrderConfirm] = useState(false);
 
-  // 실재고 입력 (창고/매장 독립 저장)
-  const [warehouseStock, setWarehouseStock] = useState<number | "">("");
-  const [storeStock, setStoreStock] = useState<number | "">("");
+  // 실재고 입력 · 2026-08-03 · 5분리 (창고1·창고2·매장1·매장2·매장3)
+  //   신규 서버 컬럼: warehouse1_stock · warehouse2_stock · store_stock (=매장1 레거시) · store_stock_2 (=매장2) · store3_stock
+  //   레거시 하위 호환: 서버 응답에 warehouse_stock 만 있고 warehouse1_stock 없으면 창고1로 로드
+  const [warehouse1Stock, setWarehouse1Stock] = useState<number | "">("");
+  const [warehouse2Stock, setWarehouse2Stock] = useState<number | "">("");
+  const [store1Stock, setStore1Stock] = useState<number | "">("");
+  const [store2Stock, setStore2Stock] = useState<number | "">("");
+  const [store3Stock, setStore3Stock] = useState<number | "">("");
   type InvStatus = "idle" | "loading" | "done" | "error";
-  const [whStatus, setWhStatus] = useState<InvStatus>("idle");
-  const [stStatus, setStStatus] = useState<InvStatus>("idle");
-  const [whError, setWhError] = useState<string | null>(null);
-  const [stError, setStError] = useState<string | null>(null);
+  const [w1Status, setW1Status] = useState<InvStatus>("idle");
+  const [w2Status, setW2Status] = useState<InvStatus>("idle");
+  const [s1Status, setS1Status] = useState<InvStatus>("idle");
+  const [s2Status, setS2Status] = useState<InvStatus>("idle");
+  const [s3Status, setS3Status] = useState<InvStatus>("idle");
+  const [w1Error, setW1Error] = useState<string | null>(null);
+  const [w2Error, setW2Error] = useState<string | null>(null);
+  const [s1Error, setS1Error] = useState<string | null>(null);
+  const [s2Error, setS2Error] = useState<string | null>(null);
+  const [s3Error, setS3Error] = useState<string | null>(null);
 
   // 바코드 스캔 시 기존 실재고·발주요청 데이터 자동 로드
   useEffect(() => {
-    setWarehouseStock("");
-    setStoreStock("");
-    setWhStatus("idle");
-    setStStatus("idle");
-    setWhError(null);
-    setStError(null);
+    setWarehouse1Stock("");
+    setWarehouse2Stock("");
+    setStore1Stock("");
+    setStore2Stock("");
+    setStore3Stock("");
+    setW1Status("idle"); setW2Status("idle");
+    setS1Status("idle"); setS2Status("idle"); setS3Status("idle");
+    setW1Error(null); setW2Error(null);
+    setS1Error(null); setS2Error(null); setS3Error(null);
     setOrderStatus("idle");
     setExistingOrder(null);
     setOrderConfirm(false);
 
     if (!product.code) return;
-    // 기존 실재고 데이터 로드
+    // 기존 실재고 데이터 로드 · 하위호환 · warehouse1_stock 없으면 warehouse_stock 값을 창고1로 채움
     fetch(`/api/inventory-checks?product_code=${encodeURIComponent(product.code)}`)
       .then(r => r.ok ? r.json() : [])
       .then((list: any[]) => {
         const last = list[0];
-        if (last) {
-          if (last.warehouse_stock != null) setWarehouseStock(Number(last.warehouse_stock));
-          if (last.store_stock != null) setStoreStock(Number(last.store_stock));
-        }
+        if (!last) return;
+        // 창고1 · 신규 컬럼 우선 · 없으면 레거시 warehouse_stock
+        if (last.warehouse1_stock != null) setWarehouse1Stock(Number(last.warehouse1_stock));
+        else if (last.warehouse_stock != null) setWarehouse1Stock(Number(last.warehouse_stock));
+        // 창고2
+        if (last.warehouse2_stock != null) setWarehouse2Stock(Number(last.warehouse2_stock));
+        // 매장1 · store_stock (레거시=매장1)
+        if (last.store_stock != null) setStore1Stock(Number(last.store_stock));
+        // 매장2 · store_stock_2
+        if (last.store_stock_2 != null) setStore2Stock(Number(last.store_stock_2));
+        // 매장3 · store3_stock
+        if (last.store3_stock != null) setStore3Stock(Number(last.store3_stock));
       }).catch(() => {});
     // 기존 발주요청 로드
     fetch(`/api/order-requests?product_code=${encodeURIComponent(product.code)}`)
@@ -186,11 +208,26 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
       }).catch(() => {});
   }, [product.code]);
 
-  // 창고/매장 각각 독립 저장: 다른 필드는 서버에서 기존값 유지
-  const submitStockField = async (field: "warehouse_stock" | "store_stock", value: number | "") => {
+  // 각 필드 독립 저장 · 서버가 이미 신규+레거시 mirror 처리하므로 신규 컬럼명만 보냄
+  type StockField = "warehouse1_stock" | "warehouse2_stock" | "store_stock" | "store_stock_2" | "store3_stock";
+  const statusSetters: Record<StockField, React.Dispatch<React.SetStateAction<InvStatus>>> = {
+    warehouse1_stock: setW1Status,
+    warehouse2_stock: setW2Status,
+    store_stock:      setS1Status,
+    store_stock_2:    setS2Status,
+    store3_stock:     setS3Status,
+  };
+  const errorSetters: Record<StockField, React.Dispatch<React.SetStateAction<string | null>>> = {
+    warehouse1_stock: setW1Error,
+    warehouse2_stock: setW2Error,
+    store_stock:      setS1Error,
+    store_stock_2:    setS2Error,
+    store3_stock:     setS3Error,
+  };
+  const submitStockField = async (field: StockField, value: number | "") => {
     if (value === "") return;
-    const setStatus = field === "warehouse_stock" ? setWhStatus : setStStatus;
-    const setError  = field === "warehouse_stock" ? setWhError  : setStError;
+    const setStatus = statusSetters[field];
+    const setError  = errorSetters[field];
     setStatus("loading");
     setError(null);
     try {
@@ -222,8 +259,11 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
       setStatus("error");
     }
   };
-  const handleWarehouseSubmit = () => submitStockField("warehouse_stock", warehouseStock);
-  const handleStoreSubmit     = () => submitStockField("store_stock",     storeStock);
+  const handleW1Submit = () => submitStockField("warehouse1_stock", warehouse1Stock);
+  const handleW2Submit = () => submitStockField("warehouse2_stock", warehouse2Stock);
+  const handleS1Submit = () => submitStockField("store_stock",      store1Stock);
+  const handleS2Submit = () => submitStockField("store_stock_2",    store2Stock);
+  const handleS3Submit = () => submitStockField("store3_stock",     store3Stock);
 
   const submitOrderRequest = async () => {
     setOrderStatus("loading");
@@ -465,10 +505,14 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
           </div>
         )}
 
-        {/* ── 재고 통합 (2026-07-16 컴팩트화) · 현재고 · 적정 · 창고 · 매장 · 한 줄 ── */}
+        {/* ── 재고 통합 · 2026-08-03 · 5분리 (창고1·창고2·매장1·매장2·매장3) ── */}
         {(S.stockStatus || S.actualStockInput) && (() => {
-          const hasInput = warehouseStock !== "" || storeStock !== "";
-          const totalActual = Number(warehouseStock || 0) + Number(storeStock || 0);
+          const hasInput =
+            warehouse1Stock !== "" || warehouse2Stock !== "" ||
+            store1Stock !== "" || store2Stock !== "" || store3Stock !== "";
+          const totalActual =
+            Number(warehouse1Stock || 0) + Number(warehouse2Stock || 0) +
+            Number(store1Stock || 0) + Number(store2Stock || 0) + Number(store3Stock || 0);
           const diff = hasInput && cur != null ? totalActual - cur : null;
           return (
             <div className={`rounded-xl border px-3 py-2 mb-2.5 ${isLow ? "bg-red-50 border-red-200" : "bg-slate-50 border-slate-200"}`}>
@@ -504,8 +548,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                 )}
               </div>
 
-              {/* 4열 그리드 · 현재고 · 적정 · 창고 · 매장 · 360px 미만에서는 2×2 */}
-              <div className="grid grid-cols-2 min-[360px]:grid-cols-4 gap-1.5">
+              {/* 2026-08-03 · 상단 2열 · 현재고 · 추천적정재고 */}
+              <div className="grid grid-cols-2 gap-1.5">
                 {/* 현재고 */}
                 <div className="text-center bg-white rounded-lg border border-slate-200 py-1.5 px-1">
                   <p className="text-[12px] font-semibold text-slate-500 mb-0.5">현재고</p>
@@ -541,57 +585,131 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                     >{opt ?? "-"}</button>
                   )}
                 </div>
-                {/* 창고 실재고 */}
-                {S.actualStockInput && (
+              </div>
+
+              {/* 2026-08-03 · 하단 5열 · 창고1 · 창고2 · 매장1 · 매장2 · 매장3
+                    - 좁은 화면(360px 미만) · 5열이 wrap 될 수 있도록 grid-cols-2 fallback
+                    - 창고: cyan 계열 (창고1 · 창고2 진하게)
+                    - 매장1/2/3: violet 계열 */}
+              {S.actualStockInput && (
+                <div className="grid grid-cols-2 min-[360px]:grid-cols-3 min-[520px]:grid-cols-5 gap-1.5 mt-1.5">
+                  {/* 창고1 */}
                   <div className="bg-white rounded-lg border border-cyan-200 py-1 px-1 text-center">
-                    <p className="text-[12px] font-semibold text-cyan-600 mb-0.5 flex items-center justify-center gap-0.5"><Warehouse size={10} />창고</p>
+                    <p className="text-[12px] font-semibold text-cyan-600 mb-0.5 flex items-center justify-center gap-0.5"><Warehouse size={10} />창고1</p>
                     <input
                       type="number" min="0"
-                      value={warehouseStock}
-                      onChange={e => { setWarehouseStock(e.target.value === "" ? "" : Number(e.target.value)); setWhStatus("idle"); }}
+                      value={warehouse1Stock}
+                      onChange={e => { setWarehouse1Stock(e.target.value === "" ? "" : Number(e.target.value)); setW1Status("idle"); }}
                       className="w-full text-sm font-black text-center bg-cyan-50/50 border border-cyan-200 rounded px-1 py-0 outline-none focus:border-cyan-400 transition"
                       placeholder="—"
                     />
-                    {whStatus === "done" ? (
+                    {w1Status === "done" ? (
                       <div className="mt-0.5 text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-0.5"><CheckCircle2 size={10} /> 저장됨</div>
                     ) : (
                       <button
-                        onClick={handleWarehouseSubmit}
-                        disabled={whStatus === "loading" || warehouseStock === ""}
+                        onClick={handleW1Submit}
+                        disabled={w1Status === "loading" || warehouse1Stock === ""}
                         className="mt-0.5 w-full text-[11px] font-black rounded transition cursor-pointer disabled:opacity-40 bg-cyan-500 hover:bg-cyan-600 text-white py-0.5 flex items-center justify-center gap-0.5"
                       >
-                        {whStatus === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
-                        {whStatus === "loading" ? "저장중" : whStatus === "error" ? "재시도" : "저장"}
+                        {w1Status === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
+                        {w1Status === "loading" ? "저장중" : w1Status === "error" ? "재시도" : "저장"}
                       </button>
                     )}
                   </div>
-                )}
-                {/* 매장 실재고 */}
-                {S.actualStockInput && (
-                  <div className="bg-white rounded-lg border border-violet-200 py-1 px-1 text-center">
-                    <p className="text-[12px] font-semibold text-violet-600 mb-0.5 flex items-center justify-center gap-0.5"><Store size={10} />매장</p>
+                  {/* 창고2 · cyan 진하게 (cyan-300/700) */}
+                  <div className="bg-white rounded-lg border border-cyan-300 py-1 px-1 text-center">
+                    <p className="text-[12px] font-semibold text-cyan-700 mb-0.5 flex items-center justify-center gap-0.5"><Warehouse size={10} />창고2</p>
                     <input
                       type="number" min="0"
-                      value={storeStock}
-                      onChange={e => { setStoreStock(e.target.value === "" ? "" : Number(e.target.value)); setStStatus("idle"); }}
+                      value={warehouse2Stock}
+                      onChange={e => { setWarehouse2Stock(e.target.value === "" ? "" : Number(e.target.value)); setW2Status("idle"); }}
+                      className="w-full text-sm font-black text-center bg-cyan-100/40 border border-cyan-300 rounded px-1 py-0 outline-none focus:border-cyan-500 transition"
+                      placeholder="—"
+                    />
+                    {w2Status === "done" ? (
+                      <div className="mt-0.5 text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-0.5"><CheckCircle2 size={10} /> 저장됨</div>
+                    ) : (
+                      <button
+                        onClick={handleW2Submit}
+                        disabled={w2Status === "loading" || warehouse2Stock === ""}
+                        className="mt-0.5 w-full text-[11px] font-black rounded transition cursor-pointer disabled:opacity-40 bg-cyan-600 hover:bg-cyan-700 text-white py-0.5 flex items-center justify-center gap-0.5"
+                      >
+                        {w2Status === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
+                        {w2Status === "loading" ? "저장중" : w2Status === "error" ? "재시도" : "저장"}
+                      </button>
+                    )}
+                  </div>
+                  {/* 매장1 · violet 기본 */}
+                  <div className="bg-white rounded-lg border border-violet-200 py-1 px-1 text-center">
+                    <p className="text-[12px] font-semibold text-violet-600 mb-0.5 flex items-center justify-center gap-0.5"><Store size={10} />매장1</p>
+                    <input
+                      type="number" min="0"
+                      value={store1Stock}
+                      onChange={e => { setStore1Stock(e.target.value === "" ? "" : Number(e.target.value)); setS1Status("idle"); }}
                       className="w-full text-sm font-black text-center bg-violet-50/50 border border-violet-200 rounded px-1 py-0 outline-none focus:border-violet-400 transition"
                       placeholder="—"
                     />
-                    {stStatus === "done" ? (
+                    {s1Status === "done" ? (
                       <div className="mt-0.5 text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-0.5"><CheckCircle2 size={10} /> 저장됨</div>
                     ) : (
                       <button
-                        onClick={handleStoreSubmit}
-                        disabled={stStatus === "loading" || storeStock === ""}
+                        onClick={handleS1Submit}
+                        disabled={s1Status === "loading" || store1Stock === ""}
                         className="mt-0.5 w-full text-[11px] font-black rounded transition cursor-pointer disabled:opacity-40 bg-violet-500 hover:bg-violet-600 text-white py-0.5 flex items-center justify-center gap-0.5"
                       >
-                        {stStatus === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
-                        {stStatus === "loading" ? "저장중" : stStatus === "error" ? "재시도" : "저장"}
+                        {s1Status === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
+                        {s1Status === "loading" ? "저장중" : s1Status === "error" ? "재시도" : "저장"}
                       </button>
                     )}
                   </div>
-                )}
-              </div>
+                  {/* 매장2 · violet 중간 */}
+                  <div className="bg-white rounded-lg border border-violet-300 py-1 px-1 text-center">
+                    <p className="text-[12px] font-semibold text-violet-700 mb-0.5 flex items-center justify-center gap-0.5"><Store size={10} />매장2</p>
+                    <input
+                      type="number" min="0"
+                      value={store2Stock}
+                      onChange={e => { setStore2Stock(e.target.value === "" ? "" : Number(e.target.value)); setS2Status("idle"); }}
+                      className="w-full text-sm font-black text-center bg-violet-100/40 border border-violet-300 rounded px-1 py-0 outline-none focus:border-violet-500 transition"
+                      placeholder="—"
+                    />
+                    {s2Status === "done" ? (
+                      <div className="mt-0.5 text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-0.5"><CheckCircle2 size={10} /> 저장됨</div>
+                    ) : (
+                      <button
+                        onClick={handleS2Submit}
+                        disabled={s2Status === "loading" || store2Stock === ""}
+                        className="mt-0.5 w-full text-[11px] font-black rounded transition cursor-pointer disabled:opacity-40 bg-violet-600 hover:bg-violet-700 text-white py-0.5 flex items-center justify-center gap-0.5"
+                      >
+                        {s2Status === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
+                        {s2Status === "loading" ? "저장중" : s2Status === "error" ? "재시도" : "저장"}
+                      </button>
+                    )}
+                  </div>
+                  {/* 매장3 · violet 진한 (purple 톤) */}
+                  <div className="bg-white rounded-lg border border-purple-300 py-1 px-1 text-center">
+                    <p className="text-[12px] font-semibold text-purple-700 mb-0.5 flex items-center justify-center gap-0.5"><Store size={10} />매장3</p>
+                    <input
+                      type="number" min="0"
+                      value={store3Stock}
+                      onChange={e => { setStore3Stock(e.target.value === "" ? "" : Number(e.target.value)); setS3Status("idle"); }}
+                      className="w-full text-sm font-black text-center bg-purple-100/40 border border-purple-300 rounded px-1 py-0 outline-none focus:border-purple-500 transition"
+                      placeholder="—"
+                    />
+                    {s3Status === "done" ? (
+                      <div className="mt-0.5 text-[11px] font-bold text-emerald-700 flex items-center justify-center gap-0.5"><CheckCircle2 size={10} /> 저장됨</div>
+                    ) : (
+                      <button
+                        onClick={handleS3Submit}
+                        disabled={s3Status === "loading" || store3Stock === ""}
+                        className="mt-0.5 w-full text-[11px] font-black rounded transition cursor-pointer disabled:opacity-40 bg-purple-600 hover:bg-purple-700 text-white py-0.5 flex items-center justify-center gap-0.5"
+                      >
+                        {s3Status === "loading" ? <Loader2 size={9} className="animate-spin" /> : <ClipboardCheck size={9} />}
+                        {s3Status === "loading" ? "저장중" : s3Status === "error" ? "재시도" : "저장"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* 하단 · 합계 + 차이 (실재고 입력 시만) */}
               {S.actualStockInput && hasInput && (
@@ -608,12 +726,21 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
               {editingKey === "optimal_stock" && editError && (
                 <p className="text-[11px] text-red-500 mt-1">{editError}</p>
               )}
-              {/* 창고/매장 저장 에러 */}
-              {S.actualStockInput && (whStatus === "error" && whError) && (
-                <p className="text-[11px] text-red-500 text-center mt-1">창고: {whError}</p>
+              {/* 창고/매장 저장 에러 · 2026-08-03 · 5분리 */}
+              {S.actualStockInput && (w1Status === "error" && w1Error) && (
+                <p className="text-[11px] text-red-500 text-center mt-1">창고1: {w1Error}</p>
               )}
-              {S.actualStockInput && (stStatus === "error" && stError) && (
-                <p className="text-[11px] text-red-500 text-center mt-1">매장: {stError}</p>
+              {S.actualStockInput && (w2Status === "error" && w2Error) && (
+                <p className="text-[11px] text-red-500 text-center mt-1">창고2: {w2Error}</p>
+              )}
+              {S.actualStockInput && (s1Status === "error" && s1Error) && (
+                <p className="text-[11px] text-red-500 text-center mt-1">매장1: {s1Error}</p>
+              )}
+              {S.actualStockInput && (s2Status === "error" && s2Error) && (
+                <p className="text-[11px] text-red-500 text-center mt-1">매장2: {s2Error}</p>
+              )}
+              {S.actualStockInput && (s3Status === "error" && s3Error) && (
+                <p className="text-[11px] text-red-500 text-center mt-1">매장3: {s3Error}</p>
               )}
             </div>
           );
@@ -780,8 +907,10 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
       )}
       {stockCounterOpen && (
         <StockCounterModal
-          onApplyWarehouse={count => { setWarehouseStock(count); setWhStatus("idle"); setStockCounterOpen(false); }}
-          onApplyStore={count => { setStoreStock(count); setStStatus("idle"); setStockCounterOpen(false); }}
+          /* 2026-08-03 · 5분리 · Modal 은 창고/매장 2 타겟만 지원하므로
+             재고세기 결과는 창고1·매장1 로 매핑 (Modal props 유지) */
+          onApplyWarehouse={count => { setWarehouse1Stock(count); setW1Status("idle"); setStockCounterOpen(false); }}
+          onApplyStore={count => { setStore1Stock(count); setS1Status("idle"); setStockCounterOpen(false); }}
           onClose={() => setStockCounterOpen(false)}
         />
       )}
