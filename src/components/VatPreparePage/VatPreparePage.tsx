@@ -386,8 +386,9 @@ const VatPreparePage: React.FC = () => {
                 <thead className="sticky top-0 bg-slate-50 z-10 shadow-sm">
                   <tr className="text-slate-600">
                     <th className="text-left px-3 py-2 font-bold">공급사</th>
-                    <th className="text-right px-2 py-2 font-bold">매입가</th>
+                    <th className="text-right px-2 py-2 font-bold" title="공급가액 (VAT 별도)">공급가액</th>
                     <th className="text-right px-2 py-2 font-bold">부가세</th>
+                    <th className="text-right px-2 py-2 font-bold" title="공급가액 + 부가세 · 실제 매입 총액">매입금액</th>
                     <th className="text-center px-2 py-2 font-bold">공제</th>
                   </tr>
                 </thead>
@@ -421,6 +422,7 @@ const VatPreparePage: React.FC = () => {
                       </td>
                       <td className="px-2 py-2 text-right tabular-nums text-slate-700">{fmt(v.amount)}</td>
                       <td className="px-2 py-2 text-right tabular-nums font-semibold text-rose-700">{fmt(v.vat)}</td>
+                      <td className="px-2 py-2 text-right tabular-nums font-black text-slate-900">{fmt(v.amount + v.vat)}</td>
                       <td className="px-2 py-2 text-center">
                         {v.deductible ? (
                           <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">공제</span>
@@ -439,6 +441,9 @@ const VatPreparePage: React.FC = () => {
                     </td>
                     <td className="px-2 py-2 text-right tabular-nums text-rose-700 text-[11px]">
                       {fmt(breakdown.reduce((s, r) => s + r.vat, 0))}
+                    </td>
+                    <td className="px-2 py-2 text-right tabular-nums text-[11px]">
+                      {fmt(breakdown.reduce((s, r) => s + r.amount + r.vat, 0))}
                     </td>
                     <td className="px-2 py-2"></td>
                   </tr>
