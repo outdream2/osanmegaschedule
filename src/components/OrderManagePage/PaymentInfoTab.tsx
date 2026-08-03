@@ -3,7 +3,7 @@
 // 2026-08-03 신규 생성
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Building2, Loader2, Package, RefreshCw } from "lucide-react";
+import { Boxes, Building2, Filter, Loader2, Package, RefreshCw, X } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -32,6 +32,40 @@ interface LedgerSummary {
   total_purchase: number;
   total_payment: number;
   current_balance: number;
+}
+
+// 상품별 매입 raw row · /api/supplier-purchase-detail
+interface PurchaseDetailRow {
+  id: number | string;
+  date: string;
+  product_code: string | null;
+  product_name: string | null;
+  quantity: number;
+  unit_price: number;
+  amount: number;
+}
+
+// 상품별 집계 · UI 좌측 상품 리스트
+interface ProductStat {
+  product_code: string;
+  product_name: string;
+  buy_count: number;
+  total_qty: number;
+  total_amount: number;
+  latest_date: string | null;
+  latest_unit_price: number;
+  current_stock: number;
+  purchase_price: number;
+  stock_value: number;
+}
+
+// products-search · 재고잔고 계산용 최소 필드
+interface SupplierProduct {
+  product_code: string;
+  product_name: string;
+  supplier: string | null;
+  current_stock: number;
+  purchase_price: number;
 }
 
 type SortKey = "date" | "type" | "amount" | "running_balance";
@@ -104,6 +138,15 @@ export const PaymentInfoTab: React.FC = () => {
   const [ledgerLoading, setLedgerLoading] = useState(false);
   const [ledgerError, setLedgerError] = useState<string | null>(null);
 
+  // 상품별 매입 상세 (raw rows) + 재고 스냅샷
+  const [purchaseDetail, setPurchaseDetail] = useState<PurchaseDetailRow[]>([]);
+  const [supplierProducts, setSupplierProducts] = useState<SupplierProduct[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  // 상품 필터 (선택 시 원장 및 통계도 해당 상품 기준)
+  const [selectedProductCode, setSelectedProductCode] = useState<string | null>(null);
+  const [productSearch, setProductSearch] = useState("");
+
   // 기간 필터
   const [periodMonths, setPeriodMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
   const [periodSeason, setPeriodSeason] = useState<SeasonKey | null>(null);
@@ -163,6 +206,54 @@ export const PaymentInfoTab: React.FC = () => {
     else setLedger(null);
   }, [selectedVendor, loadLedger]);
 
+  // 공급사 변경 시 상품 필터/캐시 초기화
+  useEffect(() => {
+    setSelectedProductCode(null);
+    setProductSearch("");
+  }, [selectedVendor]);
+
+  // 상품별 매입 상세 + 공급사 상품 리스트 로드 (기간 · 공급사 변경 시)
+  const loadDetail = useCallback(async (supplier: string) => {
+    setDetailLoading(true);
+    try {
+      const days = periodSeason ? 365 : (periodMonths === 0 ? 10 : (periodMonths || 1) * 30);
+      const [detailRes, productsRes] = await Promise.allSettled([
+        fetch(`/api/supplier-purchase-detail?supplier=${encodeURIComponent(supplier)}&days=${days}`),
+        fetch(`/api/products-search?q=%20&supplier=${encodeURIComponent(supplier)}&include_hidden=1`),
+      ]);
+
+      // 매입 상세
+      if (detailRes.status === "fulfilled" && detailRes.value.ok) {
+        const j = await detailRes.value.json();
+        setPurchaseDetail(Array.isArray(j.rows) ? j.rows : []);
+      } else setPurchaseDetail([]);
+
+      // 공급사 상품 (재고잔고 계산용)
+      if (productsRes.status === "fulfilled" && productsRes.value.ok) {
+        const arr: any[] = await productsRes.value.json();
+        setSupplierProducts(
+          (Array.isArray(arr) ? arr : [])
+            .filter(p => String(p.supplier ?? "").trim() === supplier.trim())
+            .map(p => ({
+              product_code: String(p.product_code ?? "").trim(),
+              product_name: String(p.product_name ?? "").trim(),
+              supplier: p.supplier ?? null,
+              current_stock: Number(p.current_stock) || 0,
+              purchase_price: Number(p.purchase_price) || 0,
+            }))
+        );
+      } else setSupplierProducts([]);
+    } catch {
+      setPurchaseDetail([]);
+      setSupplierProducts([]);
+    } finally { setDetailLoading(false); }
+  }, [periodMonths, periodSeason]);
+
+  useEffect(() => {
+    if (selectedVendor) loadDetail(selectedVendor.company_name);
+    else { setPurchaseDetail([]); setSupplierProducts([]); }
+  }, [selectedVendor, loadDetail]);
+
   // 필터링된 공급사
   const filteredVendors = useMemo(() => {
     const q = vendorSearch.trim().toLowerCase();
@@ -185,11 +276,119 @@ export const PaymentInfoTab: React.FC = () => {
     return m;
   }, [ledger]);
 
-  // 정렬된 원장 행
+  // 재고잔고 = SUM(current_stock × purchase_price)
+  const stockValue = useMemo(() => {
+    return supplierProducts.reduce((s, p) => s + p.current_stock * p.purchase_price, 0);
+  }, [supplierProducts]);
+
+  // 상품별 집계 (매입 상세 → SKU 그룹핑) + 재고 병합
+  const productStats = useMemo<ProductStat[]>(() => {
+    const byCode = new Map<string, ProductStat>();
+    for (const r of purchaseDetail) {
+      const code = (r.product_code ?? "").trim();
+      if (!code) continue;
+      const cur = byCode.get(code);
+      if (cur) {
+        cur.buy_count += 1;
+        cur.total_qty += r.quantity;
+        cur.total_amount += r.amount;
+        if (!cur.latest_date || (r.date && r.date > cur.latest_date)) {
+          cur.latest_date = r.date;
+          cur.latest_unit_price = r.unit_price;
+        }
+      } else {
+        byCode.set(code, {
+          product_code: code,
+          product_name: r.product_name ?? code,
+          buy_count: 1,
+          total_qty: r.quantity,
+          total_amount: r.amount,
+          latest_date: r.date,
+          latest_unit_price: r.unit_price,
+          current_stock: 0,
+          purchase_price: 0,
+          stock_value: 0,
+        });
+      }
+    }
+    // products 캐시 병합 (매입 이력 없어도 재고 있는 SKU 포함)
+    const productByCode = new Map<string, SupplierProduct>(supplierProducts.map(p => [p.product_code, p] as [string, SupplierProduct]));
+    for (const p of supplierProducts) {
+      const cur = byCode.get(p.product_code);
+      if (cur) {
+        cur.current_stock = p.current_stock;
+        cur.purchase_price = p.purchase_price;
+        cur.stock_value = p.current_stock * p.purchase_price;
+        if (!cur.product_name && p.product_name) cur.product_name = p.product_name;
+      } else if (p.current_stock > 0) {
+        // 재고만 있고 매입이력 없음 (기간 밖)
+        byCode.set(p.product_code, {
+          product_code: p.product_code,
+          product_name: p.product_name || p.product_code,
+          buy_count: 0,
+          total_qty: 0,
+          total_amount: 0,
+          latest_date: null,
+          latest_unit_price: 0,
+          current_stock: p.current_stock,
+          purchase_price: p.purchase_price,
+          stock_value: p.current_stock * p.purchase_price,
+        });
+      }
+    }
+    // 상품명 없는 코드에 대해 products 캐시로 fallback
+    for (const s of byCode.values()) {
+      if ((!s.product_name || s.product_name === s.product_code) && productByCode.has(s.product_code)) {
+        const p = productByCode.get(s.product_code)!;
+        if (p.product_name) s.product_name = p.product_name;
+      }
+    }
+    // 검색 필터
+    const q = productSearch.trim().toLowerCase();
+    const list = Array.from(byCode.values()).filter(s => {
+      if (!q) return true;
+      return s.product_name.toLowerCase().includes(q) || s.product_code.toLowerCase().includes(q);
+    });
+    // 총 매입액 desc → 재고금액 desc → 이름
+    list.sort((a, b) => {
+      if (b.total_amount !== a.total_amount) return b.total_amount - a.total_amount;
+      if (b.stock_value !== a.stock_value) return b.stock_value - a.stock_value;
+      return a.product_name.localeCompare(b.product_name);
+    });
+    return list;
+  }, [purchaseDetail, supplierProducts, productSearch]);
+
+  // 선택된 상품 (하이라이트/원장 필터용)
+  const selectedProduct = useMemo(() => {
+    if (!selectedProductCode) return null;
+    return productStats.find(p => p.product_code === selectedProductCode)
+        ?? supplierProducts.find(p => p.product_code === selectedProductCode) as ProductStat | undefined
+        ?? null;
+  }, [selectedProductCode, productStats, supplierProducts]);
+
+  // 선택 상품의 매입 이력 (필터된 raw rows) · date desc
+  const selectedProductPurchases = useMemo(() => {
+    if (!selectedProductCode) return [];
+    return purchaseDetail
+      .filter(r => (r.product_code ?? "") === selectedProductCode)
+      .sort((a, b) => String(b.date ?? "").localeCompare(String(a.date ?? "")));
+  }, [selectedProductCode, purchaseDetail]);
+
+  // 정렬된 원장 행 (상품 선택 시 · 해당 상품 매입만 + 결제 전체)
   const sortedRows = useMemo(() => {
     if (!ledger) return [];
+    let base = ledger.rows;
+    if (selectedProductCode) {
+      // 매입은 memo(product_name) 매칭 · 결제는 전체 유지
+      const productName = selectedProduct?.product_name?.trim();
+      base = ledger.rows.filter(r => {
+        if (r.type === "payment") return true;
+        if (!productName) return true;
+        return String(r.memo ?? "").trim() === productName;
+      });
+    }
     const sign = sortDir === "asc" ? 1 : -1;
-    return [...ledger.rows].sort((a, b) => {
+    return [...base].sort((a, b) => {
       switch (sortKey) {
         case "date":            return sign * String(a.date ?? "").localeCompare(String(b.date ?? ""));
         case "type":            return sign * String(a.type).localeCompare(String(b.type));
@@ -198,7 +397,7 @@ export const PaymentInfoTab: React.FC = () => {
         default:                return 0;
       }
     });
-  }, [ledger, sortKey, sortDir]);
+  }, [ledger, sortKey, sortDir, selectedProductCode, selectedProduct]);
 
   return (
     <div className="flex flex-col gap-2 h-full min-h-0">
@@ -229,12 +428,12 @@ export const PaymentInfoTab: React.FC = () => {
         {selectedVendor && (
           <button
             type="button"
-            onClick={() => loadLedger(selectedVendor.company_name)}
-            disabled={ledgerLoading}
+            onClick={() => { loadLedger(selectedVendor.company_name); loadDetail(selectedVendor.company_name); }}
+            disabled={ledgerLoading || detailLoading}
             className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 text-slate-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
             title="새로고침"
           >
-            <RefreshCw size={13} className={ledgerLoading ? "animate-spin" : ""} />
+            <RefreshCw size={13} className={(ledgerLoading || detailLoading) ? "animate-spin" : ""} />
           </button>
         )}
       </div>
@@ -337,8 +536,14 @@ export const PaymentInfoTab: React.FC = () => {
                 )}
               </div>
 
-              {/* KPI 4카드 */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {/* KPI 5카드 · 재고잔고 + 매입/결제/남은잔고 + 원장건수 */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                <KpiCard
+                  label="현재 재고잔고"
+                  value={fmtWon(stockValue)}
+                  sub={`${supplierProducts.length} SKU · 현재고 × 매입가`}
+                  color="emerald"
+                />
                 <KpiCard
                   label="총 매입액"
                   value={fmtWon(ledger.total_purchase)}
@@ -365,15 +570,162 @@ export const PaymentInfoTab: React.FC = () => {
                 />
               </div>
 
+              {/* 상품별 매입 리스트 · 클릭 시 원장/이력 필터 */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col">
+                <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2 flex-wrap">
+                  <Boxes size={13} className="text-emerald-500 shrink-0" />
+                  <span className="text-[12px] font-black text-slate-700">상품별 매입이력</span>
+                  <span className="text-[10px] font-semibold text-slate-400 bg-slate-50 rounded-full px-2 py-0.5 border border-slate-200 tabular-nums">
+                    {productStats.length} SKU
+                  </span>
+                  <input
+                    type="text"
+                    value={productSearch}
+                    onChange={e => setProductSearch(e.target.value)}
+                    placeholder="상품명·코드 검색"
+                    className="ml-auto w-40 h-6 px-2 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-emerald-400 focus:border-emerald-400 transition"
+                  />
+                  {selectedProductCode && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProductCode(null)}
+                      className="inline-flex items-center gap-1 h-6 px-2 rounded-md bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-[10px] font-semibold cursor-pointer transition"
+                      title="상품 필터 해제"
+                    >
+                      <X size={11} /> 필터 해제
+                    </button>
+                  )}
+                </div>
+                {detailLoading ? (
+                  <div className="flex items-center justify-center py-6 text-slate-400 gap-2 text-[11px]">
+                    <Loader2 size={12} className="animate-spin" />불러오는 중...
+                  </div>
+                ) : productStats.length === 0 ? (
+                  <div className="py-6 text-center text-[11px] text-slate-300">해당 기간 매입/재고 없음</div>
+                ) : (
+                  <div className="overflow-auto max-h-64">
+                    <table className="w-full text-xs min-w-[560px]">
+                      <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
+                        <tr className="text-[10px] text-slate-400 uppercase tracking-wider">
+                          <th className="text-left px-2 py-1.5 w-6 text-slate-300">#</th>
+                          <th className="text-left px-2 py-1.5">상품명</th>
+                          <th className="text-right px-2 py-1.5 w-16">매입건</th>
+                          <th className="text-right px-2 py-1.5 w-16">총수량</th>
+                          <th className="text-right px-2 py-1.5 w-20">총매입액</th>
+                          <th className="text-right px-2 py-1.5 w-16">현재고</th>
+                          <th className="text-right px-2 py-1.5 w-20">재고금액</th>
+                          <th className="text-left px-2 py-1.5 w-20">최근매입</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {productStats.map((s, i) => {
+                          const isSel = s.product_code === selectedProductCode;
+                          return (
+                            <tr
+                              key={`ps-${s.product_code}`}
+                              onClick={() => setSelectedProductCode(isSel ? null : s.product_code)}
+                              className={`cursor-pointer transition-all duration-100 ${
+                                isSel
+                                  ? "bg-emerald-50 border-l-2 border-emerald-500"
+                                  : "hover:bg-slate-50"
+                              }`}
+                            >
+                              <td className="px-2 py-1.5 text-slate-300 text-[10px] tabular-nums align-top">{i + 1}</td>
+                              <td className="px-2 py-1.5 align-top">
+                                <div className={`text-[11px] font-semibold leading-tight break-words whitespace-normal ${isSel ? "text-emerald-800" : "text-slate-700"}`}>
+                                  {s.product_name}
+                                </div>
+                                <div className="text-[9px] text-slate-400 font-mono">{s.product_code}</div>
+                              </td>
+                              <td className="px-2 py-1.5 text-right text-[11px] tabular-nums text-slate-600 align-top">
+                                {s.buy_count > 0 ? s.buy_count : <span className="text-slate-300">-</span>}
+                              </td>
+                              <td className="px-2 py-1.5 text-right text-[11px] tabular-nums text-slate-600 align-top">
+                                {s.total_qty > 0 ? fmt(s.total_qty) : <span className="text-slate-300">-</span>}
+                              </td>
+                              <td className="px-2 py-1.5 text-right text-[11px] tabular-nums font-semibold text-emerald-700 align-top">
+                                {s.total_amount > 0 ? fmt(s.total_amount) : <span className="text-slate-300 font-normal">-</span>}
+                              </td>
+                              <td className={`px-2 py-1.5 text-right text-[11px] tabular-nums align-top ${s.current_stock > 0 ? "text-slate-700 font-semibold" : "text-slate-300"}`}>
+                                {s.current_stock > 0 ? fmt(s.current_stock) : "-"}
+                              </td>
+                              <td className={`px-2 py-1.5 text-right text-[11px] tabular-nums align-top ${s.stock_value > 0 ? "text-amber-700 font-semibold" : "text-slate-300"}`}>
+                                {s.stock_value > 0 ? fmt(s.stock_value) : "-"}
+                              </td>
+                              <td className="px-2 py-1.5 text-[10px] text-slate-400 align-top whitespace-nowrap">
+                                {s.latest_date ? dateLabel(s.latest_date) : "-"}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* 선택 상품 매입 이력 (drill-down) */}
+                {selectedProductCode && (
+                  <div className="border-t border-slate-100 bg-emerald-50/20 px-4 py-2.5">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                      <Filter size={11} className="text-emerald-600" />
+                      <span className="text-[11px] font-black text-emerald-800">
+                        {selectedProduct?.product_name ?? selectedProductCode}
+                      </span>
+                      <span className="text-[10px] text-emerald-600 font-mono">{selectedProductCode}</span>
+                      <span className="text-[10px] font-semibold text-emerald-600 bg-white rounded-full px-2 py-0.5 border border-emerald-200 tabular-nums">
+                        매입 {selectedProductPurchases.length}건
+                      </span>
+                    </div>
+                    {selectedProductPurchases.length === 0 ? (
+                      <div className="text-[11px] text-slate-400 py-2">해당 기간 매입 이력 없음</div>
+                    ) : (
+                      <div className="overflow-auto max-h-40">
+                        <table className="w-full text-xs">
+                          <thead>
+                            <tr className="text-[10px] text-slate-400 uppercase tracking-wider border-b border-emerald-100">
+                              <th className="text-left px-2 py-1 w-20">매입일</th>
+                              <th className="text-right px-2 py-1 w-16">수량</th>
+                              <th className="text-right px-2 py-1 w-20">단가</th>
+                              <th className="text-right px-2 py-1 w-24">금액</th>
+                              <th className="text-left px-2 py-1">명세서</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-emerald-50">
+                            {selectedProductPurchases.map((r) => (
+                              <tr key={`spp-${r.id}`} className="hover:bg-emerald-50/40">
+                                <td className="px-2 py-1 text-[11px] tabular-nums text-slate-500 whitespace-nowrap">
+                                  {dateLabel(r.date)}
+                                </td>
+                                <td className="px-2 py-1 text-right text-[11px] tabular-nums text-slate-600">{fmt(r.quantity)}</td>
+                                <td className="px-2 py-1 text-right text-[11px] tabular-nums text-slate-500">{fmt(r.unit_price)}</td>
+                                <td className="px-2 py-1 text-right text-[11px] tabular-nums font-semibold text-emerald-700">
+                                  {fmt(r.amount)}
+                                </td>
+                                <td className="px-2 py-1 text-[10px] text-slate-400">-</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* 원장 테이블 */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col min-h-0 flex-1">
-                <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2">
+                <div className="px-4 py-2.5 border-b border-slate-100 flex items-center gap-2 flex-wrap">
                   <span className="text-[12px] font-black text-slate-700">매입·결제 통합 원장</span>
+                  {selectedProductCode && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5">
+                      <Filter size={10} /> {selectedProduct?.product_name ?? selectedProductCode}
+                    </span>
+                  )}
                   <span className="text-[10px] text-slate-400 ml-auto">시간순 · running balance</span>
                 </div>
-                {ledger.rows.length === 0 ? (
+                {sortedRows.length === 0 ? (
                   <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">
-                    해당 기간 내역 없음
+                    {selectedProductCode ? "해당 상품 매입 내역 없음 (결제는 상품 필터와 무관)" : "해당 기간 내역 없음"}
                   </div>
                 ) : (
                   <div className="overflow-auto flex-1 min-h-0">
