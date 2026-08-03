@@ -88,7 +88,7 @@ interface ContractForm {
   annualLeaveDays: string;
 
   // 직원 카테고리 (약사·사원·기타) · 기타는 자유 입력 지원
-  employeeCategory: "약사" | "사원" | "기타";
+  employeeCategory: "약사" | "매장" | "창고" | "기타";
   employeeCategoryCustom: string;   // 기타 선택 시 커스텀 텍스트 (예 · 인턴약사)
 
   // 사업주 (기본값 · 편집 가능)
@@ -163,7 +163,7 @@ const emptyForm = (): ContractForm => ({
   socialInsurance: true,
   additionalContent: "",
   annualLeaveDays: "15",
-  employeeCategory: "사원",
+  employeeCategory: "매장",
   employeeCategoryCustom: "",
   employerName: (DEFAULT_EMPLOYER.employerName as string) ?? "",
   companyName:  (DEFAULT_EMPLOYER.companyName as string) ?? "",
@@ -627,11 +627,12 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }
   }, [form.contractType, form.contractMonths, form.startDate, form.indefinite]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // 직원 카테고리 (약사·사원·기타) → 업무 내용 기본값 자동 반영 (사용자 편집 시 그대로 유지)
+  // 직원 카테고리 (약사·매장·창고·기타) → 업무 내용 기본값 자동 반영 (사용자 편집 시 그대로 유지)
   useEffect(() => {
     const defaults: Record<string, string> = {
       "약사": "일반의약품·전문의약품 조제·복약지도 · 의약품 재고 관리 · 처방전 접수",
-      "사원": "약국 카운터 · OTC 판매 · 재고 관리 · 매장 정리",
+      "매장": "약국 매장 진열·정리 · OTC 판매 · 카운터 계산 · 고객 응대",
+      "창고": "의약품 창고 관리 · 입고·검수 · 매장 보충 · 재고 실사",
       "기타": "매장 지원 업무",
     };
     const key = form.employeeCategory;
@@ -921,20 +922,21 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   placeholder="주소"
                   className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
                 />
-                {/* 직원 카테고리 · 약사 · 사원 · 기타 (기타는 자유 입력) */}
-                <div className="grid grid-cols-3 gap-1.5">
-                  {(["약사", "사원", "기타"] as const).map(cat => {
+                {/* 직원 카테고리 · 약사 · 매장 (진열·판매·카운터) · 창고 (물류·입고·재고) · 기타 */}
+                <div className="grid grid-cols-4 gap-1.5">
+                  {(["약사", "매장", "창고", "기타"] as const).map(cat => {
                     const active = form.employeeCategory === cat;
                     const activeColor =
                       cat === "약사" ? "bg-violet-500 text-white border-violet-500" :
-                      cat === "사원" ? "bg-sky-500 text-white border-sky-500" :
+                      cat === "매장" ? "bg-emerald-500 text-white border-emerald-500" :
+                      cat === "창고" ? "bg-orange-500 text-white border-orange-500" :
                                        "bg-slate-600 text-white border-slate-600";
                     return (
                       <button
                         key={cat}
                         type="button"
                         onClick={() => upd("employeeCategory", cat)}
-                        className={`px-2 py-1.5 rounded-lg border text-[12px] font-bold transition-colors cursor-pointer ${
+                        className={`px-2 py-1.5 rounded-lg border text-[13px] font-bold transition-colors cursor-pointer ${
                           active ? activeColor : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
                         }`}
                       >

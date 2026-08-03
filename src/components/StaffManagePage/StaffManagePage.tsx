@@ -173,7 +173,8 @@ type EditDraft = Pick<
 >;
 
 // ─── 상수 ───────────────────────────────────────────────────────────────────
-const POSITIONS = ["약사", "물류", "캐셔", "진열", "매니저", "기타"] as const;
+// 2026-08-03 · 캐셔·진열 → 물류로 통합 · 물류를 창고/매장으로 분리
+const POSITIONS = ["약사", "창고", "매장", "매니저", "기타"] as const;
 const SCHEDULE_TYPES = ["오픈", "미들", "마감", "클로징", "자유", "풀타임"] as const;
 const GENDERS = ["남", "여"] as const;
 
@@ -198,11 +199,12 @@ const PERFORMANCE_RATINGS: { value: string; label: string }[] = [
 // ─── 헬퍼: 직책 컬러 ────────────────────────────────────────────────────────
 function positionColor(pos: string | null | undefined) {
   if (!pos) return "bg-slate-100 text-slate-500 border-slate-200";
-  if (pos.includes("약사"))   return "bg-violet-100 text-violet-700 border-violet-200";
-  if (pos.includes("물류"))   return "bg-orange-100 text-orange-700 border-orange-200";
-  if (pos.includes("캐셔"))   return "bg-emerald-100 text-emerald-700 border-emerald-200";
-  if (pos.includes("진열"))   return "bg-sky-100 text-sky-700 border-sky-200";
-  if (pos.includes("매니저")) return "bg-rose-100 text-rose-700 border-rose-200";
+  if (pos.includes("약사"))              return "bg-violet-100 text-violet-700 border-violet-200";
+  if (pos.includes("매장"))              return "bg-emerald-100 text-emerald-700 border-emerald-200";
+  if (pos.includes("창고"))              return "bg-orange-100 text-orange-700 border-orange-200";
+  if (pos.includes("물류") || pos.includes("진열") || pos.includes("캐셔"))
+                                          return "bg-orange-100 text-orange-700 border-orange-200"; // 하위 호환
+  if (pos.includes("매니저"))            return "bg-rose-100 text-rose-700 border-rose-200";
   return "bg-slate-100 text-slate-600 border-slate-200";
 }
 
