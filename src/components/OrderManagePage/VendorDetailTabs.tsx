@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Loader2, RefreshCw, Filter, X, Package2, ReceiptText,
 } from "lucide-react";
-import { VendorInfoHeader, type VendorBasic, type VendorKpi } from "./VendorInfoHeader";
+import { VendorInfoHeader, type VendorBasic, type VendorKpi, type LedgerRowMinimal } from "./VendorInfoHeader";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 
@@ -620,7 +620,12 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
   return (
     <div className="flex flex-col gap-3 min-h-0 flex-1">
       {/* 헤더 카드 */}
-      <VendorInfoHeader vendor={vendor} kpi={kpi} loading={isLoading} />
+      <VendorInfoHeader
+        vendor={vendor}
+        kpi={kpi}
+        loading={isLoading}
+        ledgerRows={ledger?.rows as LedgerRowMinimal[] | undefined}
+      />
 
       {/* 기간 필터 + 새로고침 */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1.5">
