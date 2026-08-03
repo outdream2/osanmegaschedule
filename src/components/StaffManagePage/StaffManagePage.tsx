@@ -1449,8 +1449,11 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                 );
               })()}
 
-              {/* ── 인사카드 섹션들 · flex-1 min-h-0 · 세로 스크롤 ── */}
-              <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 bg-slate-50/30">
+              {/* ── 인사카드 섹션들 · flex-1 min-h-0 · 세로 스크롤 (#238 · 명시적 max-h + overscroll-contain 강제) ── */}
+              <div
+                className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 space-y-2 bg-slate-50/30"
+                style={{ maxHeight: "calc(100vh - 260px)" }}
+              >
 
                 {/* §1 인적사항 — sky 그룹 */}
                 <SectionCard title="인적사항" icon={<User size={11} />} group="personal" defaultOpen>
