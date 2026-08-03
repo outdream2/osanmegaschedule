@@ -45,6 +45,10 @@ export interface Employee {
   contract_file_url?: string | null;
   break_time_minutes?: number | null; // 일일 휴게시간 (분) · 기본 60
   break_apply_paid?: boolean | null;  // 인건비 계산 시 휴게 차감 여부 · 기본 true
+  /** #186 · 우선 담당 물류 · "매장" | "창고" · null 은 미지정 */
+  primary_focus?: "매장" | "창고" | null;
+  /** #186 · 우선 담당 비중 (%) · 기본 70 · null 이면 미적용 */
+  primary_focus_percent?: number | null;
   schedules: Schedule[];
 }
 

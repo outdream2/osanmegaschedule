@@ -1,15 +1,17 @@
 // src/components/DocumentWriterPage/DocumentWriterPage.tsx
-// 2026-08-03 · 서류작성 wrapper · 근로계약서·사직서 2탭
+// 2026-08-03 · 서류작성 wrapper · 근로계약서·사직서·설정 3탭
 // 경영관리 서브탭 (5번째)
 // 2026-08-03 (#183) · 공통 TabBar 로 리팩터 · duplicate 스타일 흡수
+// 2026-08-03 (#184) · 설정 탭 추가 · 카테고리별 업무내용 기본값 관리
 import React, { Suspense, useState } from "react";
-import { NotePencil, SignOut } from "@phosphor-icons/react";
+import { NotePencil, SignOut, Gear } from "@phosphor-icons/react";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../AppNavHeader";
 import { TabBar, type TabDef } from "../common/TabBar";
 
 const ContractWriterPage = React.lazy(() => import("../ContractWriterPage/ContractWriterPage"));
 const ResignationWriterPage = React.lazy(() => import("../ResignationWriterPage/ResignationWriterPage"));
+const ContractSettingsPage = React.lazy(() => import("../ContractSettingsPage/ContractSettingsPage"));
 
 interface DocumentWriterPageProps {
   onBack: () => void;
@@ -19,11 +21,12 @@ interface DocumentWriterPageProps {
   embedded?: boolean;
 }
 
-type DocTab = "contract" | "resignation";
+type DocTab = "contract" | "resignation" | "settings";
 
 const TABS: TabDef<DocTab>[] = [
   { key: "contract",    label: "근로계약서 작성", icon: NotePencil, color: "emerald" },
   { key: "resignation", label: "사직서 작성",     icon: SignOut,    color: "rose"    },
+  { key: "settings",    label: "설정",            icon: Gear,       color: "indigo"  },
 ];
 
 const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
@@ -31,7 +34,7 @@ const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* ── 내부 2탭 바 · 공통 TabBar (level 2) ── */}
+      {/* ── 내부 3탭 바 · 공통 TabBar (level 2) ── */}
       <TabBar<DocTab>
         level={2}
         tabs={TABS}
@@ -50,6 +53,11 @@ const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
         {tab === "resignation" && (
           <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">사직서 로딩 중...</div>}>
             <ResignationWriterPage {...props} />
+          </Suspense>
+        )}
+        {tab === "settings" && (
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">설정 로딩 중...</div>}>
+            <ContractSettingsPage {...props} />
           </Suspense>
         )}
       </div>

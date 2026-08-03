@@ -157,6 +157,22 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
                 {leaveRemaining === 0 ? "잔여 0" : `잔여 ${leaveRemaining}`}
               </span>
             )}
+
+            {/* #186 · 우선업무 배지 · sm 이상 · 매장=emerald / 창고=orange */}
+            {(emp.primary_focus === "매장" || emp.primary_focus === "창고") && (
+              <span
+                className={`
+                  hidden sm:inline-flex items-center px-1 py-[1px] rounded-sm shrink-0 leading-none
+                  text-[9px] font-black
+                  ${emp.primary_focus === "매장"
+                    ? "bg-emerald-100 text-emerald-700"
+                    : "bg-orange-100 text-orange-700"}
+                `}
+                title={`우선업무: ${emp.primary_focus} · ${emp.primary_focus_percent ?? 70}%`}
+              >
+                {emp.primary_focus} {emp.primary_focus_percent ?? 70}%
+              </span>
+            )}
           </div>
 
           {/* 줄 3: 비고 — lg 이상 표시 */}

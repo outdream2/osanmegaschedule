@@ -22,6 +22,11 @@ import jsPDF from "jspdf";
 
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession, Employee } from "../../types";
+import {
+  loadContractSettings,
+  DEFAULT_CONTRACT_SETTINGS,
+  type ContractCategory,
+} from "../ContractSettingsPage/ContractSettingsPage";
 
 // react-signature-canvas · 기본 export 가 SignatureCanvas 클래스 · ref 타입 별칭
 type SignatureCanvasType = SignaturePad;
@@ -90,6 +95,12 @@ interface ContractForm {
   // 직원 카테고리 (약사·사원·기타) · 기타는 자유 입력 지원
   employeeCategory: "약사" | "매장" | "창고" | "기타";
   employeeCategoryCustom: string;   // 기타 선택 시 커스텀 텍스트 (예 · 인턴약사)
+
+  // #186 · 우선업무 · 매장/창고 선택 시 표시
+  // - primaryFocus: 매장/창고 중 어느 물류에 우선순위 · null 은 미사용
+  // - primaryFocusPercent: 비중 (%) · default 70
+  primaryFocus: "매장" | "창고" | null;
+  primaryFocusPercent: number;
 
   // 사업주 (기본값 · 편집 가능)
   employerName: string;          // 대표자명
@@ -165,6 +176,8 @@ const emptyForm = (): ContractForm => ({
   annualLeaveDays: "15",
   employeeCategory: "매장",
   employeeCategoryCustom: "",
+  primaryFocus: "매장",           // #186 · 매장이 기본 카테고리 · 기본 우선업무는 매장
+  primaryFocusPercent: 70,        // #186 · 기본 70%
   employerName: (DEFAULT_EMPLOYER.employerName as string) ?? "",
   companyName:  (DEFAULT_EMPLOYER.companyName as string) ?? "",
   companyAddress: (DEFAULT_EMPLOYER.companyAddress as string) ?? "",
@@ -445,44 +458,71 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
         <div>연차유급휴가는 근로기준법에서 정하는 바에 따라 <b>연 {form.annualLeaveDays || "15"}일</b> 부여함</div>
       </PreviewRow>
 
-      <PreviewRow no="8" title="사회보험 적용">
-        <div className="flex flex-wrap gap-3 text-[13px]">
-          <span className="flex items-center gap-1">
-            <SpanBox checked={form.socialInsurance} /> 고용보험
-          </span>
-          <span className="flex items-center gap-1">
-            <SpanBox checked={form.socialInsurance} /> 산재보험
-          </span>
-          <span className="flex items-center gap-1">
-            <SpanBox checked={form.socialInsurance} /> 국민연금
-          </span>
-          <span className="flex items-center gap-1">
-            <SpanBox checked={form.socialInsurance} /> 건강보험
-          </span>
-        </div>
-      </PreviewRow>
-
-      <PreviewRow no="9" title="계약유형">
-        <div>{form.contractType || "(계약유형 미입력)"}</div>
-      </PreviewRow>
-
-      {form.additionalContent.trim() && (
-        <PreviewRow no="10" title="기타 (추가 내용)">
-          <div className="whitespace-pre-wrap">{form.additionalContent}</div>
+      {/* #186 · 8. 담당 업무의 우선순위 (매장/창고 우선업무 · 70%) · 조건부 */}
+      {form.primaryFocus && (form.employeeCategory === "매장" || form.employeeCategory === "창고") && (
+        <PreviewRow no="8" title="담당 업무의 우선순위">
+          <div>
+            근로자는 <b>{form.primaryFocus}</b> 관련 업무에 근무시간의{" "}
+            <b>{form.primaryFocusPercent}%</b> 비중을 두고 근무한다.
+          </div>
+          <div className="text-[11px] text-slate-500 mt-0.5">
+            ※ 잔여 시간은 근무 상황에 따라 사업주가 지정하는 부수 업무를 수행함
+          </div>
         </PreviewRow>
       )}
 
-      <PreviewRow no={form.additionalContent.trim() ? "11" : "10"} title="근로계약서 교부">
-        <div className="text-[12px] text-slate-700">
-          사업주는 근로계약을 체결함과 동시에 본 계약서를 사본하여 근로자의 교부요구와 관계 없이 근로자에게 교부한다.
-        </div>
-      </PreviewRow>
+      {(() => {
+        // 우선업무 조항 유무에 따라 이후 조 번호 동적 계산
+        const hasFocus = !!(form.primaryFocus && (form.employeeCategory === "매장" || form.employeeCategory === "창고"));
+        let n = hasFocus ? 9 : 8;
+        const socialNo = String(n++);
+        const contractTypeNo = String(n++);
+        const additionalNo = form.additionalContent.trim() ? String(n++) : null;
+        const grantNo = String(n++);
+        const etcNo = String(n++);
+        return (
+          <>
+            <PreviewRow no={socialNo} title="사회보험 적용">
+              <div className="flex flex-wrap gap-3 text-[13px]">
+                <span className="flex items-center gap-1">
+                  <SpanBox checked={form.socialInsurance} /> 고용보험
+                </span>
+                <span className="flex items-center gap-1">
+                  <SpanBox checked={form.socialInsurance} /> 산재보험
+                </span>
+                <span className="flex items-center gap-1">
+                  <SpanBox checked={form.socialInsurance} /> 국민연금
+                </span>
+                <span className="flex items-center gap-1">
+                  <SpanBox checked={form.socialInsurance} /> 건강보험
+                </span>
+              </div>
+            </PreviewRow>
 
-      <PreviewRow no={form.additionalContent.trim() ? "12" : "11"} title="기타">
-        <div className="text-[12px] text-slate-700">
-          본 계약에 정함이 없는 사항은 근로기준법령에 의함.
-        </div>
-      </PreviewRow>
+            <PreviewRow no={contractTypeNo} title="계약유형">
+              <div>{form.contractType || "(계약유형 미입력)"}</div>
+            </PreviewRow>
+
+            {additionalNo && (
+              <PreviewRow no={additionalNo} title="기타 (추가 내용)">
+                <div className="whitespace-pre-wrap">{form.additionalContent}</div>
+              </PreviewRow>
+            )}
+
+            <PreviewRow no={grantNo} title="근로계약서 교부">
+              <div className="text-[12px] text-slate-700">
+                사업주는 근로계약을 체결함과 동시에 본 계약서를 사본하여 근로자의 교부요구와 관계 없이 근로자에게 교부한다.
+              </div>
+            </PreviewRow>
+
+            <PreviewRow no={etcNo} title="기타">
+              <div className="text-[12px] text-slate-700">
+                본 계약에 정함이 없는 사항은 근로기준법령에 의함.
+              </div>
+            </PreviewRow>
+          </>
+        );
+      })()}
 
       {/* 계약일자 */}
       <div className="mt-8 text-center text-[14px] text-slate-800 font-semibold">
@@ -599,6 +639,69 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     return () => { cancelled = true; };
   }, []);
 
+  // #194 · localStorage · "contract-writer-prefill" · 자동 채움 (mount 후 1회)
+  // - 직원목록 [작성] 버튼 → localStorage prefill → 이 페이지 마운트 시 자동 반영
+  // - 채움 후 · localStorage.removeItem · 재사용 방지 (뒤로가기 뒤 다시 들어와도 재적용 안 됨)
+  // - 실패 시 silent
+  const [prefillConsumed, setPrefillConsumed] = useState(false);
+  useEffect(() => {
+    if (prefillConsumed) return;
+    try {
+      const raw = localStorage.getItem("contract-writer-prefill");
+      if (!raw) { setPrefillConsumed(true); return; }
+      const p = JSON.parse(raw);
+      if (!p || typeof p !== "object") { setPrefillConsumed(true); return; }
+
+      // position → employeeCategory 매핑 (onSelectEmployee 와 동일 규칙)
+      const mapCategory = (pos: string): { cat: ContractForm["employeeCategory"]; custom: string } => {
+        const t = String(pos ?? "").trim();
+        if (t === "약사") return { cat: "약사", custom: "" };
+        if (t === "매장") return { cat: "매장", custom: "" };
+        if (t === "창고") return { cat: "창고", custom: "" };
+        if (["물류", "캐셔", "진열"].includes(t)) return { cat: "매장", custom: "" };
+        if (!t) return { cat: "기타", custom: "" };
+        return { cat: "기타", custom: t };
+      };
+      // employmentType → contractType
+      const mapContractType = (et: string, fallback: string): string => {
+        const t = String(et ?? "").trim();
+        if (!t) return fallback;
+        if (t.includes("정")) return "정규직";
+        if (t.includes("계약")) return "계약직";
+        if (t.includes("알바") || t.includes("파트")) return "알바";
+        return fallback;
+      };
+
+      setForm(prev => {
+        const { cat, custom } = mapCategory(typeof p.position === "string" ? p.position : "");
+        const nextAnnual =
+          p.annualLeaveDays != null && p.annualLeaveDays !== ""
+            ? String(p.annualLeaveDays)
+            : prev.annualLeaveDays;
+        return {
+          ...prev,
+          employeeId: typeof p.employeeId === "number" ? p.employeeId : prev.employeeId,
+          employeeName: typeof p.employeeName === "string" && p.employeeName ? p.employeeName : prev.employeeName,
+          employeePhone: typeof p.employeePhone === "string" && p.employeePhone ? p.employeePhone : prev.employeePhone,
+          employeeAddress: typeof p.employeeAddress === "string" && p.employeeAddress ? p.employeeAddress : prev.employeeAddress,
+          annualLeaveDays: nextAnnual,
+          employeeCategory: cat,
+          employeeCategoryCustom: custom || prev.employeeCategoryCustom,
+          contractType: mapContractType(typeof p.employmentType === "string" ? p.employmentType : "", prev.contractType),
+          // 입사일 있으면 startDate 로 (없으면 유지)
+          startDate: typeof p.hireDate === "string" && p.hireDate ? p.hireDate : prev.startDate,
+        };
+      });
+
+      // 재사용 방지 · 소비 즉시 제거
+      localStorage.removeItem("contract-writer-prefill");
+    } catch {
+      // silent · 실패해도 기본 폼 유지
+    } finally {
+      setPrefillConsumed(true);
+    }
+  }, [prefillConsumed]);
+
   // 사업주 · 대표자 · 기본값(강남성 · 오산 메가타운 약국) · 편집 가능
 
   // 계약 유형 · "정규직" 이면 무기한 자동 · "계약직" 이면 무기한 해제 (편집 가능)
@@ -629,23 +732,50 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   }, [form.contractType, form.contractMonths, form.startDate, form.indefinite]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 직원 카테고리 (약사·매장·창고·기타) → 업무 내용 기본값 자동 반영 (사용자 편집 시 그대로 유지)
+  // - #184 · 사용자 설정 (contract-writer-settings) 우선 · 없으면 하드코딩 fallback
   useEffect(() => {
-    const defaults: Record<string, string> = {
-      "약사": "일반의약품·전문의약품 조제·복약지도 · 의약품 재고 관리 · 처방전 접수",
-      "매장": "약국 매장 진열·정리 · OTC 판매 · 카운터 계산 · 고객 응대",
-      "창고": "의약품 창고 관리 · 입고·검수 · 매장 보충 · 재고 실사",
-      "기타": "매장 지원 업무",
+    // 저장된 설정 우선 · 실패 시 default
+    const settings = loadContractSettings();
+    const defaults: Record<ContractCategory, string> = {
+      "약사": settings.약사 || DEFAULT_CONTRACT_SETTINGS.약사,
+      "매장": settings.매장 || DEFAULT_CONTRACT_SETTINGS.매장,
+      "창고": settings.창고 || DEFAULT_CONTRACT_SETTINGS.창고,
+      "기타": settings.기타 || DEFAULT_CONTRACT_SETTINGS.기타,
     };
     const key = form.employeeCategory;
     const nextDuty = form.employeeCategory === "기타" && form.employeeCategoryCustom
       ? `${form.employeeCategoryCustom} 관련 업무`
       : defaults[key];
-    // 기본값 3종 중 하나이거나 빈 값인 경우만 자동 갱신 (사용자 커스텀 지키기)
-    const isDefault = !form.jobDuty || Object.values(defaults).includes(form.jobDuty);
+    // 기본값 4종 · DEFAULT 4종 · 빈 값 중 하나이면 자동 갱신 (사용자 커스텀 지키기)
+    const knownDefaults = new Set<string>([
+      ...Object.values(defaults),
+      ...Object.values(DEFAULT_CONTRACT_SETTINGS).filter((v): v is string => typeof v === "string" && v.length > 0),
+    ]);
+    const isDefault = !form.jobDuty || knownDefaults.has(form.jobDuty);
     if (isDefault && nextDuty && nextDuty !== form.jobDuty) {
       setForm(prev => ({ ...prev, jobDuty: nextDuty }));
     }
   }, [form.employeeCategory, form.employeeCategoryCustom]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // #186 · 카테고리 → 우선업무 자동 매핑
+  // - 매장/창고 선택 시 · primaryFocus 자동 설정 (이미 다른 값이면 유지)
+  // - 약사/기타 선택 시 · primaryFocus null 로 리셋 (부적합)
+  useEffect(() => {
+    setForm(prev => {
+      if (prev.employeeCategory === "매장" || prev.employeeCategory === "창고") {
+        // 카테고리와 동일한 물류 자동 · 이미 매장/창고 중 값이면 유지
+        if (prev.primaryFocus == null) {
+          return { ...prev, primaryFocus: prev.employeeCategory };
+        }
+        return prev;
+      }
+      // 약사·기타 · 우선업무 미적용
+      if (prev.primaryFocus !== null) {
+        return { ...prev, primaryFocus: null };
+      }
+      return prev;
+    });
+  }, [form.employeeCategory]);
 
   // 근무요일 개수 → 주근무횟수 자동 (사용자가 직접 조정 안 했으면)
   const chosenDaysCount = useMemo(() => DAYS.filter(d => form.workDays[d]).length, [form.workDays]);
@@ -697,6 +827,13 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         if (et.includes("알바") || et.includes("파트")) return "알바";
         return prev.contractType;
       })(),
+      // #186 · Employee.primary_focus / primary_focus_percent 존재 시 반영
+      primaryFocus: (emp.primary_focus === "매장" || emp.primary_focus === "창고")
+        ? emp.primary_focus
+        : prev.primaryFocus,
+      primaryFocusPercent: (typeof emp.primary_focus_percent === "number" && emp.primary_focus_percent > 0)
+        ? emp.primary_focus_percent
+        : prev.primaryFocusPercent,
     }));
   };
 
@@ -999,6 +1136,52 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   placeholder="기타 직군 자유 입력 (예: 인턴약사 · 청소 · 배송)"
                   className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
                 />
+              )}
+
+              {/* #186 · 우선업무 (매장/창고) · 매장/창고 카테고리에서만 노출 */}
+              {(form.employeeCategory === "매장" || form.employeeCategory === "창고") && (
+                <div className="mt-1 rounded-lg border border-indigo-100 bg-indigo-50/40 px-2 py-1.5 flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-black text-indigo-700 shrink-0">우선업무</span>
+                  <div className="flex items-center gap-1">
+                    {(["매장", "창고"] as const).map(f => {
+                      const active = form.primaryFocus === f;
+                      const activeCls = f === "매장"
+                        ? "bg-emerald-500 text-white border-emerald-600"
+                        : "bg-orange-500 text-white border-orange-600";
+                      return (
+                        <button
+                          key={f}
+                          type="button"
+                          onClick={() => upd("primaryFocus", active ? null : f)}
+                          className={`px-2 py-0.5 rounded-md border text-[12px] font-bold transition-colors cursor-pointer ${
+                            active ? activeCls : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                          }`}
+                          title={`${f} 업무를 우선순위로 지정`}
+                        >
+                          {f}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex items-center gap-1 ml-auto">
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={form.primaryFocusPercent}
+                      onChange={(e) => {
+                        const n = Number(e.target.value);
+                        upd("primaryFocusPercent", Number.isFinite(n) ? Math.max(0, Math.min(100, n)) : 70);
+                      }}
+                      disabled={form.primaryFocus == null}
+                      className="w-14 bg-white border border-slate-200 rounded-md px-1.5 py-0.5 text-[13px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 focus:shadow-sm transition disabled:bg-slate-100 disabled:text-slate-400"
+                    />
+                    <span className="text-[11px] text-indigo-700 font-bold">% 비중</span>
+                  </div>
+                  <div className="basis-full text-[10px] text-indigo-500/80 leading-tight">
+                    선택한 물류(매장/창고)의 업무에 {form.primaryFocusPercent}% 비중을 두고 근무. 스케줄표에 우선업무 배지로 표시됨.
+                  </div>
+                </div>
               )}
             </div>
 
