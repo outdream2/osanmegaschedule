@@ -440,7 +440,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   //   · 0 이면 해당 조건 미적용 · Settings 모달(#187/#189) 과 AND 병존
   const ORDER_NEED_INLINE_KEY = "megatown_orderNeed_inline";
   interface OrderNeedInline { minCycle: number; maxCurrent: number; minSales: number }
-  const DEFAULT_INLINE: OrderNeedInline = { minCycle: 90, maxCurrent: 5, minSales: 100 };
+  const DEFAULT_INLINE: OrderNeedInline = { minCycle: 90, maxCurrent: 50, minSales: 100 };
   const loadInlineFilter = (): OrderNeedInline => {
     try {
       const raw = localStorage.getItem(ORDER_NEED_INLINE_KEY);
