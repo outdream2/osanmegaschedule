@@ -952,10 +952,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <SquaresFour size={16} className="text-sky-600 sm:hidden" weight="fill" /><SquaresFour size={20} className="text-sky-600 hidden sm:block" weight="fill" />
                     </div>
                     <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">
-                      관리메뉴
+                      매장관리
                     </div>
                     <div className="text-slate-400 text-[10px] leading-tight block mt-0.5">
-                      매장관리 · 재고관리 · 입고알림관리
+                      매장 · 발주 · 매입 · 결제 · 통계 · 입고알림
                     </div>
                     <div className="flex items-center gap-1 mt-2 text-sky-600 text-xs font-bold">
                       <span className="text-[11px] sm:text-xs">관리하기</span>
