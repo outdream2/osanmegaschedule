@@ -175,21 +175,21 @@ export const PurchaseHistoryTab: React.FC = () => {
       const days = periodSeason
         ? 365
         : isDays10 ? 10 : (periodMonths || 1) * 30;
+      // 매입 원장 · supplier-purchase-detail 사용 (상품코드·수량·단가 포함)
       const params = new URLSearchParams({ supplier, days: String(days) });
-      const res = await fetch(`/api/supplier-ledger?${params}`);
+      const res = await fetch(`/api/supplier-purchase-detail?${params}`);
       if (!res.ok) throw new Error(String(res.status));
       const j = await res.json();
-      const allRows: any[] = Array.isArray(j.rows) ? j.rows : [];
-      const purchaseRows: PurchaseLedgerRow[] = allRows
-        .filter((r: any) => r.type === "purchase")
-        .map((r: any) => ({
-          id: r.id,
-          invoice_date: r.date ?? null,
-          product_name: r.memo ?? null,
-          quantity: null,
-          unit_price: null,
-          amount: Number(r.amount) || 0,
-        }));
+      const rowsFromApi: any[] = Array.isArray(j.rows) ? j.rows : [];
+      const purchaseRows: PurchaseLedgerRow[] = rowsFromApi.map((r: any) => ({
+        id: r.id,
+        invoice_date: r.date ?? r.invoice_date ?? null,
+        product_name: r.product_name ?? null,
+        product_code: r.product_code ?? null,
+        quantity: r.quantity != null ? Number(r.quantity) : null,
+        unit_price: r.unit_price != null ? Number(r.unit_price) : null,
+        amount: Number(r.amount) || 0,
+      }));
       setLedgerRows(purchaseRows);
     } catch (e: any) {
       setLedgerError(e?.message ?? "네트워크 오류");

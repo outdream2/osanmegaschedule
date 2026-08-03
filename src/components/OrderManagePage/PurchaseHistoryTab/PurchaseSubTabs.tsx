@@ -16,6 +16,7 @@ export interface PurchaseLedgerRow {
   id: string | number;
   invoice_date: string | null;
   product_name: string | null;
+  product_code: string | null;
   quantity: number | null;
   unit_price: number | null;
   amount: number | null;
@@ -136,6 +137,7 @@ const LedgerTab: React.FC<{
               className="text-left px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition">
               상품명{arrow("product_name")}
             </th>
+            <th className="text-left px-2 py-2 w-24 text-slate-400 whitespace-nowrap">상품코드</th>
             <th onClick={() => toggleSort("quantity")}
               className="text-right px-2 py-2 w-16 cursor-pointer select-none hover:bg-slate-50 transition">
               수량{arrow("quantity")}
@@ -168,6 +170,9 @@ const LedgerTab: React.FC<{
                 <td className="px-2 py-1.5 text-[12px] font-semibold text-slate-700 align-top break-words whitespace-normal leading-snug">
                   {r.product_name ?? "-"}
                 </td>
+                <td className="px-2 py-1.5 text-[11px] font-mono text-slate-400 align-top whitespace-nowrap">
+                  {r.product_code ?? "-"}
+                </td>
                 <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-slate-600 align-top">
                   {r.quantity != null ? fmt(r.quantity) : "-"}
                 </td>
@@ -183,7 +188,7 @@ const LedgerTab: React.FC<{
         </tbody>
         <tfoot className="sticky bottom-0 bg-white border-t-2 border-slate-200">
           <tr>
-            <td colSpan={5} className="px-2 py-2 text-right text-[11px] font-black text-slate-500">합계</td>
+            <td colSpan={6} className="px-2 py-2 text-right text-[11px] font-black text-slate-500">합계</td>
             <td className="px-2 py-2 text-right tabular-nums text-[13px] font-black text-emerald-700">{fmtWon(totalAmount)}</td>
           </tr>
         </tfoot>
