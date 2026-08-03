@@ -397,7 +397,7 @@ const ZoneCategoryContent: React.FC = () => {
           </div>
           <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setMonths(0); }} size="sm" hideLabel />
         </div>
-        <ProductClassFilter value={classFilter} onChange={setClassFilter} compactOnMobile />
+        {/* #229 · 상단 ProductClassFilter 제거 · 좌측 리스트 위 탭으로 통일 */}
         <button
           type="button"
           onClick={() => {
