@@ -1003,25 +1003,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 </button>
 
-                {/* 약사 전용 — sky · level ≥ 3 만 노출 · 2026-08-03 */}
-                {(authSession?.level ?? 0) >= 3 && (
-                  <button data-menu-card onClick={() => onNavigate("pharmacist" as any, authSession!)}
-                    className="group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-br from-sky-100/70 to-transparent" />
-                    <div className="relative">
-                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105 bg-gradient-to-br from-sky-100 to-cyan-100 border border-sky-300">
-                        <FirstAid size={16} className="text-sky-600 sm:hidden" weight="fill" /><FirstAid size={20} className="text-sky-600 hidden sm:block" weight="fill" />
-                      </div>
-                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">약사 전용</div>
-                      <div className="text-slate-400 text-[10px] leading-tight block mt-0.5">교육자료 · 복약지도 · 참고 문서</div>
-                      <div className="flex items-center gap-1 mt-2 text-sky-600 text-xs font-bold">
-                        <span className="text-[11px] sm:text-xs">열기</span>
-                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                      </div>
-                    </div>
-                  </button>
-                )}
-
                 {/* 경영관리 — violet · business-manage 통합 페이지로 단순 라우팅 · 2026-08-03 */}
                 <button data-menu-card onClick={() => onNavigate("business-manage", authSession!)}
                   className="group relative bg-white border border-slate-200/80 hover:border-violet-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
@@ -1147,6 +1128,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, #c7d2fe, transparent)" }} />
               </div>
               <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
+
+                {/* 약사 전용 — sky · level ≥ 3 만 노출 · 2026-08-03 */}
+                {(authSession?.level ?? 0) >= 3 && (
+                  <button data-menu-card onClick={() => onNavigate("pharmacist" as any, authSession!)}
+                    className="order-1 group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-br from-sky-100/70 to-transparent" />
+                    <div className="relative">
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105 bg-gradient-to-br from-sky-100 to-cyan-100 border border-sky-300">
+                        <FirstAid size={16} className="text-sky-600 sm:hidden" weight="fill" /><FirstAid size={20} className="text-sky-600 hidden sm:block" weight="fill" />
+                      </div>
+                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight leading-tight">약사 전용</div>
+                      <div className="text-slate-400 text-[10px] leading-tight block mt-0.5">교육자료 · 복약지도 · 참고 문서</div>
+                      <div className="flex items-center gap-1 mt-2 text-sky-600 text-xs font-bold">
+                        <span className="text-[11px] sm:text-xs">열기</span>
+                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </div>
+                  </button>
+                )}
 
                 {/* 스케줄표 조회 — blue */}
                 <button data-menu-card onClick={() => onNavigate("schedule", authSession!)}

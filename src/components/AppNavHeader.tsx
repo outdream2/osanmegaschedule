@@ -513,15 +513,15 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           {authSession && onLogout ? (
             <button
               onClick={onLogout}
-              className="flex items-center gap-1 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 text-xs font-bold bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 rounded-xl transition-all shadow-sm hover:shadow-md active:scale-95 cursor-pointer shrink-0"
+              className="flex items-center gap-1 justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-[10px] font-semibold bg-white hover:bg-rose-50 text-rose-600 border border-slate-200 hover:border-rose-300 rounded-lg transition-all shadow-sm hover:shadow-md active:scale-95 cursor-pointer shrink-0"
               title="로그아웃"
             >
-              <LogOut size={15} strokeWidth={2.2} />
+              <LogOut size={13} strokeWidth={2.2} />
               <span className="hidden sm:inline">로그아웃</span>
             </button>
           ) : (
-            <div className="flex items-center gap-1 justify-center w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 text-xs font-bold bg-slate-50 text-slate-400 border border-slate-200 rounded-xl shrink-0" title="비로그인">
-              <Lock size={14} strokeWidth={2.2} />
+            <div className="flex items-center gap-1 justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-[10px] font-semibold bg-slate-50 text-slate-400 border border-slate-200 rounded-lg shrink-0" title="비로그인">
+              <Lock size={13} strokeWidth={2.2} />
             </div>
           )}
         </div>
