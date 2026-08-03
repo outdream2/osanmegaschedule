@@ -24,7 +24,6 @@ import { TrendingTab } from "./TrendingTab";
 import { FlowTab } from "../StockManagePage/FlowTab";
 import { DiffTab } from "../StockManagePage/DiffTab";
 import { SupplierTab } from "../StockManagePage/SupplierTab";
-import { LowStockPanel } from "../StockManagePage/LowStockPanel";
 import { ReturnListPanel } from "./ReturnListPanel";
 import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
 import { PaymentInfoTab } from "./PaymentInfoTab";
@@ -113,7 +112,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialTopTab]);
   // Level-2 서브탭 상태
-  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "low">("need");
+  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need">("need");
   const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history">("receipt");
   const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment" | "payment-info">("vendor");
   const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff">("trending");
@@ -339,6 +338,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     const up = () => { needResizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
     window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
   };
+  // ── 발주필요(need) 탭 · 공급사 카테고리 필터 ──
+  //   · 전체·위탁·선결제·60일회전·90일회전·기타 (6개 segmented control)
+  //   · vendorCategoryMap 기반 필터링
+  type NeedCategoryFilter = "all" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
+  const [needCategoryFilter, setNeedCategoryFilter] = useState<NeedCategoryFilter>("all");
   // 우측 패널용 선택 상품 (발주필요 탭)
   const [needPanelProduct, setNeedPanelProduct] = useState<{ code: string; name: string } | null>(null);
   const [needPanelFull, setNeedPanelFull] = useState<Record<string, any> | null>(null);
@@ -778,17 +782,33 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             r.supplier?.toLowerCase().includes(q));
   });
   const lowStockFiltered = lowStock.filter(p => {
-    if (!lowStockSearch.trim()) return true;
-    const q = lowStockSearch.trim().toLowerCase();
-    return (getName(p).toLowerCase().includes(q) ||
-            getCode(p).toLowerCase().includes(q) ||
-            (p.supplier ?? "").toLowerCase().includes(q));
+    // 검색 필터
+    if (lowStockSearch.trim()) {
+      const q = lowStockSearch.trim().toLowerCase();
+      const ok = getName(p).toLowerCase().includes(q) ||
+                 getCode(p).toLowerCase().includes(q) ||
+                 (p.supplier ?? "").toLowerCase().includes(q);
+      if (!ok) return false;
+    }
+    // 카테고리 필터 (전체 · 위탁 · 선결제 · 60일회전 · 90일회전 · 기타)
+    if (needCategoryFilter !== "all") {
+      const supplierName = String(p.supplier ?? "").trim();
+      const cat = supplierName ? vendorCategoryMap[supplierName] : null;
+      // "기타" 필터 · null·undefined 또는 유효 카테고리 외 값 모두 포함
+      if (needCategoryFilter === "기타") {
+        const validCats = ["위탁", "선결제", "60일회전", "90일회전", "기타"];
+        if (cat && validCats.includes(cat) && cat !== "기타") return false;
+      } else {
+        if (cat !== needCategoryFilter) return false;
+      }
+    }
+    return true;
   });
 
   // ── 2026-08-03 · 서브탭 정의 (useSortableTabs 재정렬 대상) ──
   //   · 각 페이지별 storageKey 는 memory feedback_tab_reorder 규칙 준수 (tabOrder.<page>)
   //   · badge 는 렌더 시 별도 계산 (여기서는 순서·label·icon·color 만 유지)
-  type PurchaseOrderKey = "order" | "need" | "low";
+  type PurchaseOrderKey = "order" | "need";
   type PurchaseKey = "receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history";
   type PaymentKey = "vendor" | "payment" | "payment-info";
   type StatKey = "trending" | "category" | "flow" | "diff";
@@ -796,8 +816,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   const purchaseOrderDefaultTabs: SubTabDef<PurchaseOrderKey>[] = useMemo(() => [
     { key: "order", label: "발주요청",     icon: ShoppingCart,  color: "sky"   },
-    { key: "need",  label: "발주필요",     icon: ClipboardList, color: "amber" },
-    { key: "low",   label: "적정재고이하", icon: AlertTriangle, color: "rose"  },
+    { key: "need",  label: "발주필요",     icon: ClipboardList, color: "rose"  },
   ], []);
   const purchaseDefaultTabs: SubTabDef<PurchaseKey>[] = useMemo(() => [
     { key: "purchase-history", label: "매입이력",   icon: Building2,      color: "sky"     },
@@ -829,7 +848,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   //   · 이전 세션 서브탭 상태 무시 · 사용자 요청 (모든 메뉴 진입 시 · 첫 서브탭 기본 표시)
   //   · 마운트 1회만 · 이후 사용자가 다른 서브탭 클릭하면 그 상태 유지
   useEffect(() => {
-    const first0 = purchaseOrderSortable.tabs[0]?.key as "order" | "need" | "low" | undefined;
+    const first0 = purchaseOrderSortable.tabs[0]?.key as "order" | "need" | undefined;
     const first1 = purchaseSortable.tabs[0]?.key as "receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history" | undefined;
     const first2 = paymentSortable.tabs[0]?.key as "vendor" | "payment" | "payment-info" | undefined;
     const first3 = statSortable.tabs[0]?.key as "trending" | "category" | "flow" | "diff" | undefined;
@@ -965,29 +984,63 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {/* ── 발주필요 서브탭 ── */}
           {purchaseOrderSubTab === "need" && (
         <div className="flex flex-col gap-2">
-          {/* ── 상단 필터바 ── */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+          {/* ── 상단 KPI 카드 · 재고 이하 N개 + 공급사 카테고리 필터 ── */}
+          <div className="bg-gradient-to-r from-rose-50 via-white to-white rounded-xl border border-rose-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+            {/* 좌측 · KPI 카드 · 재고 이하 N개 (rose 톤) */}
             <div className="flex items-center gap-2">
-              <Package size={14} className="text-amber-500 shrink-0" />
-              <span className="text-[13px] font-semibold text-slate-800">발주 필요 상품</span>
-              <span className="text-[11px] font-semibold text-amber-600 bg-amber-50 rounded-full px-2 py-0.5 border border-amber-200 tabular-nums">{lowStock.length}개</span>
-              <span className="text-[11px] text-slate-400 hidden sm:inline">(현재고 &lt; 추천적정재고)</span>
+              <div className="flex items-center gap-2 bg-rose-50 border border-rose-200 rounded-lg px-3 py-1.5">
+                <AlertTriangle size={16} className="text-rose-500 shrink-0" />
+                <div className="flex flex-col leading-none">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-rose-500">재고 이하</span>
+                  <span className="text-[15px] font-black text-rose-700 tabular-nums">{lowStock.length}<span className="text-[11px] font-bold ml-0.5">개</span></span>
+                </div>
+              </div>
+              <span className="text-[11px] text-slate-500 hidden sm:inline">현재고 &lt; 추천적정재고 · 상품명 클릭 → 상세</span>
             </div>
-            <input
-              type="text"
-              value={lowStockSearch}
-              onChange={e => setLowStockSearch(e.target.value)}
-              placeholder="상품·코드·공급사"
-              className="text-[11px] border border-slate-200 rounded-md pl-3 pr-3 h-7 w-40 focus:outline-none focus:ring-1 focus:ring-amber-400 focus:border-amber-400 transition"
-            />
-            <button
-              onClick={loadProducts}
-              disabled={productsLoading}
-              className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-amber-50 hover:border-amber-300 text-slate-400 hover:text-amber-500 transition disabled:opacity-40 cursor-pointer"
-              title="새로고침"
-            >
-              <RefreshCw size={13} className={productsLoading ? "animate-spin" : ""} />
-            </button>
+
+            {/* 우측 · 카테고리 필터 (segmented control · 6버튼) */}
+            <div className="ml-auto flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 shrink-0">분류</span>
+              <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-0.5 gap-0.5 flex-wrap">
+                {([
+                  { k: "all"      as NeedCategoryFilter, label: "전체",     activeCls: "bg-slate-100    text-slate-800   border-slate-300"  },
+                  { k: "위탁"      as NeedCategoryFilter, label: "위탁",     activeCls: "bg-violet-50    text-violet-700  border-violet-300" },
+                  { k: "선결제"    as NeedCategoryFilter, label: "선결제",   activeCls: "bg-rose-50      text-rose-700    border-rose-300"   },
+                  { k: "60일회전"  as NeedCategoryFilter, label: "60일회전", activeCls: "bg-emerald-50   text-emerald-700 border-emerald-300"},
+                  { k: "90일회전"  as NeedCategoryFilter, label: "90일회전", activeCls: "bg-teal-50      text-teal-700    border-teal-300"   },
+                  { k: "기타"      as NeedCategoryFilter, label: "기타",     activeCls: "bg-slate-50     text-slate-700   border-slate-300"  },
+                ]).map(b => {
+                  const active = needCategoryFilter === b.k;
+                  return (
+                    <button
+                      key={b.k}
+                      type="button"
+                      onClick={() => setNeedCategoryFilter(b.k)}
+                      className={[
+                        "px-2.5 h-7 rounded-md text-[11px] font-black leading-none border transition-colors cursor-pointer whitespace-nowrap",
+                        active ? b.activeCls : "bg-white text-slate-500 border-transparent hover:text-slate-800 hover:bg-slate-50",
+                      ].join(" ")}
+                      title={`${b.label} 카테고리만 표시`}
+                    >{b.label}</button>
+                  );
+                })}
+              </div>
+              <input
+                type="text"
+                value={lowStockSearch}
+                onChange={e => setLowStockSearch(e.target.value)}
+                placeholder="상품·코드·공급사"
+                className="text-[11px] border border-slate-200 rounded-md pl-3 pr-3 h-7 w-40 focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
+              />
+              <button
+                onClick={loadProducts}
+                disabled={productsLoading}
+                className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-300 text-slate-400 hover:text-rose-500 transition disabled:opacity-40 cursor-pointer"
+                title="새로고침"
+              >
+                <RefreshCw size={13} className={productsLoading ? "animate-spin" : ""} />
+              </button>
+            </div>
           </div>
 
           {/* ── 하단 split ── */}
@@ -1011,8 +1064,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         ) : (
           <>
           <div className="flex items-center gap-2 mb-2">
-            <span className="inline-block w-1 h-3.5 rounded-full bg-amber-400 shrink-0"></span>
-            <span className="text-[11px] font-semibold text-slate-500">발주필요 리스트</span>
+            <span className="inline-block w-1 h-3.5 rounded-full bg-rose-500 shrink-0"></span>
+            <span className="text-[11px] font-black text-rose-600">발주필요 리스트</span>
             <span className="text-[11px] text-slate-400 font-normal">{lowStockFiltered.length}건</span>
           </div>
           <div className={`max-h-[50vh] overflow-auto relative ${productsLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
@@ -1028,7 +1081,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       {isNeedCollapsed("info") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}상품 정보
                     </span>
                   </th>
-                  <th colSpan={isNeedCollapsed("stock") ? 1 : 4}
+                  <th colSpan={isNeedCollapsed("stock") ? 1 : 9}
                     className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-amber-100 transition"
                     onClick={() => toggleNeedGroup("stock")}
                     title={isNeedCollapsed("stock") ? "재고 현황 펼치기" : "재고 현황 접기"}>
@@ -1052,8 +1105,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   ) : (
                     <>
                       <th onClick={() => handleNeedSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
-                      <th onClick={() => handleNeedSort("inv")} title="실재고 정렬" className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">실재고{needArrow("inv")}</th>
-                      <th onClick={() => handleNeedSort("optimal")} title="추천적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">추천적정{needArrow("optimal")}</th>
+                      {/* 창고1·창고2 (orange 톤) */}
+                      <th className="text-right px-0.5 py-1.5 w-12 bg-orange-50/40 text-orange-600 select-none"><div className="leading-tight">창고1</div></th>
+                      <th className="text-right px-0.5 py-1.5 w-12 bg-orange-50/60 text-orange-600 select-none"><div className="leading-tight">창고2</div></th>
+                      {/* 매장1·매장2·매장3 (emerald 톤 · 구역 표시) */}
+                      <th className="text-right px-0.5 py-1.5 w-14 bg-emerald-50/40 text-emerald-600 select-none"><div className="leading-tight">매장1<br/><span className="text-[9px] text-slate-400 font-normal">(구역)</span></div></th>
+                      <th className="text-right px-0.5 py-1.5 w-14 bg-emerald-50/60 text-emerald-600 select-none"><div className="leading-tight">매장2<br/><span className="text-[9px] text-slate-400 font-normal">(구역)</span></div></th>
+                      <th className="text-right px-0.5 py-1.5 w-14 bg-emerald-50/80 text-emerald-700 select-none"><div className="leading-tight">매장3<br/><span className="text-[9px] text-slate-400 font-normal">(구역)</span></div></th>
+                      <th onClick={() => handleNeedSort("inv")} title="실재고 합계 정렬" className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">실재고{needArrow("inv")}</th>
+                      <th onClick={() => handleNeedSort("optimal")} title="추천적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none">추천적정{needArrow("optimal")}</th>
                       <th onClick={() => handleNeedSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{needArrow("short")}</th>
                     </>
                   )}
@@ -1115,12 +1175,40 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           </td>
                         </>
                       )}
-                      {/* 재고현황 그룹 */}
+                      {/* 재고현황 그룹 · 9컬럼 (ERP재고 · 창고1 · 창고2 · 매장1 · 매장2 · 매장3 · 실재고 · 추천적정 · 부족) */}
                       {isNeedCollapsed("stock") ? (
                         <td className="bg-amber-50/10 w-4"></td>
                       ) : (
                         <>
+                          {/* ERP재고 (현재고) */}
                           <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{cur}</td>
+                          {/* 창고1 · 창고2 (숫자만 · 구역 없음) */}
+                          <td className={`text-right px-0.5 py-1.5 tabular-nums font-semibold text-[12px] bg-orange-50/40 align-top ${inv?.w1 != null ? "text-orange-700" : "text-slate-300"}`} title={inv?.w1 != null ? `창고1: ${inv.w1}` : "창고1 재고 없음"}>
+                            {inv?.w1 != null ? inv.w1 : "—"}
+                          </td>
+                          <td className={`text-right px-0.5 py-1.5 tabular-nums font-semibold text-[12px] bg-orange-50/60 align-top ${inv?.w2 != null ? "text-orange-700" : "text-slate-300"}`} title={inv?.w2 != null ? `창고2: ${inv.w2}` : "창고2 재고 없음"}>
+                            {inv?.w2 != null ? inv.w2 : "—"}
+                          </td>
+                          {/* 매장1·2·3 (숫자 + 하단 구역 sub-line) */}
+                          <td className={`text-right px-0.5 py-1.5 tabular-nums font-semibold text-[12px] bg-emerald-50/40 align-top ${inv?.s1 != null ? "text-emerald-700" : "text-slate-300"}`} title={inv?.s1 != null ? `매장1: ${inv.s1}${inv.s1z ? ` · ${inv.s1z}` : ""}` : "매장1 재고 없음"}>
+                            {inv?.s1 != null ? inv.s1 : "—"}
+                            {inv?.s1z && (
+                              <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">{inv.s1z}</span>
+                            )}
+                          </td>
+                          <td className={`text-right px-0.5 py-1.5 tabular-nums font-semibold text-[12px] bg-emerald-50/60 align-top ${inv?.s2 != null ? "text-emerald-700" : "text-slate-300"}`} title={inv?.s2 != null ? `매장2: ${inv.s2}${inv.s2z ? ` · ${inv.s2z}` : ""}` : "매장2 재고 없음"}>
+                            {inv?.s2 != null ? inv.s2 : "—"}
+                            {inv?.s2z && (
+                              <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">{inv.s2z}</span>
+                            )}
+                          </td>
+                          <td className={`text-right px-0.5 py-1.5 tabular-nums font-semibold text-[12px] bg-emerald-50/80 align-top ${inv?.s3 != null ? "text-emerald-700" : "text-slate-300"}`} title={inv?.s3 != null ? `매장3: ${inv.s3}${inv.s3z ? ` · ${inv.s3z}` : ""}` : "매장3 재고 없음"}>
+                            {inv?.s3 != null ? inv.s3 : "—"}
+                            {inv?.s3z && (
+                              <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">{inv.s3z}</span>
+                            )}
+                          </td>
+                          {/* 실재고 합계 (violet · 유지) */}
                           <td
                             className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
                             title={inv ? `창고 ${inv.warehouse ?? "-"} + 매장 ${inv.store ?? "-"} = ${inv.total}` : "실재고 미입력"}
@@ -1132,7 +1220,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               </span>
                             )}
                           </td>
-                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{opt}</td>
+                          {/* 추천적정 (indigo 톤) */}
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-indigo-700 bg-indigo-50/40 align-top">{opt}</td>
+                          {/* 부족 (rose 톤) */}
                           <td className="text-right px-0.5 py-1.5 bg-rose-50/40 align-top">
                             <span className="tabular-nums font-black text-[12px] text-rose-600">-{opt - cur}</span>
                           </td>
@@ -1160,7 +1250,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   );
                 })}
                 {lowStockFiltered.length === 0 && (
-                  <tr><td colSpan={7} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
+                  <tr><td colSpan={12} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
                 )}
               </tbody>
             </table>
@@ -1794,13 +1884,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           />
         )}
           </div>
-        </div>
-      )}
-
-      {/* ── 적정재고이하(low) 서브탭 (purchase-order > low) ── */}
-      {topTab === "purchase-order" && purchaseOrderSubTab === "low" && (
-        <div className="flex-1 min-h-0">
-          <LowStockPanel />
         </div>
       )}
 
