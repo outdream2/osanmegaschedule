@@ -21,7 +21,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
   NotePencil, User, ClipboardText, CalendarBlank, ClockClockwise, Money,
   Coffee, Notepad, Eraser, DownloadSimple, ArrowsClockwise, Warning, Check,
-  Buildings, Signature,
+  Buildings, Signature, ClockCounterClockwise, X as XIcon,
 } from "@phosphor-icons/react";
 import SignaturePad from "react-signature-canvas";
 import html2canvas from "html2canvas";
@@ -158,6 +158,18 @@ const fmtKoreanDate = (iso: string): string => {
   if (!m) return iso;
   return `${m[1]}년 ${Number(m[2])}월 ${Number(m[3])}일`;
 };
+
+// #220 · 기간 개월수 산출 · 연장 기본값 프리셋용 (start~end)
+function contractPeriodMonthsClient(startIso?: string | null, endIso?: string | null): number | null {
+  if (!startIso || !endIso) return null;
+  const s = new Date(startIso);
+  const e = new Date(endIso);
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return null;
+  if (e.getTime() < s.getTime()) return null;
+  let months = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
+  if (e.getDate() >= s.getDate() - 1) months += 1;
+  return months > 0 ? months : null;
+}
 
 const emptyForm = (): ContractForm => ({
   employeeId: null,
@@ -926,6 +938,156 @@ const SpanBox: React.FC<{ checked: boolean }> = ({ checked }) => (
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// #220 · 연장 모달 · N개월 입력 → 신규 startDate/endDate 프리뷰 → 확정
+//   · 확정 후 · 부모(handleExtendConfirm)가 폼 업데이트 + 서명 초기화
+// ─────────────────────────────────────────────────────────────────────────────
+const ExtendContractModal: React.FC<{
+  open: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  months: string;
+  setMonths: (v: string) => void;
+  existingEnd: string | null | undefined;
+  hireDateReference: string | null;
+}> = ({ open, onClose, onConfirm, months, setMonths, existingEnd, hireDateReference }) => {
+  // 신규 기간 프리뷰 계산
+  const preview = useMemo(() => {
+    if (!existingEnd) return null;
+    const baseEnd = new Date(existingEnd);
+    if (Number.isNaN(baseEnd.getTime())) return null;
+    const n = Number(months);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    const newStart = new Date(baseEnd);
+    newStart.setDate(newStart.getDate() + 1);
+    const newEnd = new Date(newStart);
+    newEnd.setMonth(newEnd.getMonth() + n);
+    newEnd.setDate(newEnd.getDate() - 1);
+    const iso = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    return { start: iso(newStart), end: iso(newEnd) };
+  }, [existingEnd, months]);
+
+  if (!open) return null;
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="px-4 py-3 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-emerald-50 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center shadow-sm">
+              <ClockCounterClockwise size={13} weight="fill" className="text-white" />
+            </div>
+            <span className="text-sm font-black text-slate-800">근로계약 연장</span>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-slate-400 hover:text-slate-700 w-7 h-7 rounded-md hover:bg-white/70 cursor-pointer flex items-center justify-center"
+            title="닫기"
+          >
+            <XIcon size={13} weight="bold" />
+          </button>
+        </div>
+
+        <div className="p-4 flex flex-col gap-3">
+          <div className="text-[12px] text-slate-700 leading-relaxed">
+            현재 계약 종료일 <b className="text-slate-900">{existingEnd ?? "-"}</b> 다음 날부터 지정한 개월수만큼 자동으로 신규 계약서를 작성합니다.
+          </div>
+
+          {/* 프리셋 버튼 + 직접 입력 */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[12px] font-bold text-slate-600 flex items-center gap-1">
+              연장 개월수 <span className="text-rose-500">*</span>
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {["1", "3", "6", "12", "24"].map(m => {
+                const active = months === m;
+                return (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setMonths(m)}
+                    className={`px-3 py-1.5 rounded-lg border text-[13px] font-black transition-colors cursor-pointer ${
+                      active
+                        ? "bg-indigo-500 text-white border-indigo-600 shadow-sm"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                    }`}
+                  >
+                    {m}개월
+                  </button>
+                );
+              })}
+              <div className="flex items-center gap-1 ml-1">
+                <input
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={months}
+                  onChange={(e) => setMonths(e.target.value.replace(/[^0-9]/g, ""))}
+                  className="w-16 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[13px] text-slate-800 font-black text-right focus:outline-none focus:border-indigo-500 focus:shadow-sm transition"
+                  placeholder="직접"
+                />
+                <span className="text-[11px] font-semibold text-slate-500">개월</span>
+              </div>
+            </div>
+          </div>
+
+          {/* 프리뷰 · 신규 기간 */}
+          <div className="rounded-lg border border-indigo-200 bg-indigo-50/40 px-3 py-2 text-[12px] flex flex-col gap-1">
+            <div className="font-black text-indigo-800 flex items-center gap-1">
+              <CalendarBlank size={12} weight="fill" />
+              신규 계약 기간
+            </div>
+            {preview ? (
+              <div className="text-slate-800">
+                <b className="font-black">{preview.start}</b>
+                <span className="mx-1 text-slate-400">~</span>
+                <b className="font-black">{preview.end}</b>
+              </div>
+            ) : (
+              <div className="text-rose-600 font-semibold">개월수를 입력하면 신규 기간이 계산됩니다.</div>
+            )}
+            {hireDateReference && (
+              <div className="text-[11px] text-slate-500 mt-0.5">
+                · 입사일 <b className="text-slate-700">{hireDateReference}</b> 은 변경되지 않고 유지됩니다 (근속 산정용).
+              </div>
+            )}
+          </div>
+
+          <div className="text-[11px] text-amber-700 bg-amber-50/70 border border-amber-200 rounded-lg px-2.5 py-1.5">
+            확정 시 현재 폼에 신규 계약 기간이 반영되고 · 서명·이해확인 상태가 초기화됩니다. 서명 후 [계약완료 승인] 을 눌러 저장하세요.
+          </div>
+        </div>
+
+        <div className="px-4 py-3 border-t border-slate-200 bg-slate-50/70 flex items-center justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-[12px] font-bold text-slate-600 bg-white border border-slate-300 rounded-md h-8 px-3 hover:bg-slate-50 cursor-pointer"
+          >
+            취소
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={!preview}
+            className="text-[12px] font-black text-white bg-indigo-600 hover:bg-indigo-700 rounded-md h-8 px-4 cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed flex items-center gap-1.5 shadow-sm"
+          >
+            <Check size={12} weight="bold" />
+            연장 확정
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 메인 페이지
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -983,6 +1145,22 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const previewRef = useRef<HTMLDivElement | null>(null);
   const [generating, setGenerating] = useState(false);
   const [notice, setNotice] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+
+  // #220 · 연장 기능 · 기존 근로계약서 이력 (선택된 직원 기준 · 최신 1건)
+  interface ExistingContract {
+    id?: number;
+    contract_type?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    created_at?: string | null;
+    pdf_url?: string | null;
+  }
+  const [existingContract, setExistingContract] = useState<ExistingContract | null>(null);
+  const [existingLoading, setExistingLoading] = useState(false);
+  const [extendModalOpen, setExtendModalOpen] = useState(false);
+  const [extendMonths, setExtendMonths] = useState<string>("3");
+  // #220 · 재계약 baseline · 원본 계약의 hire_date (입사일) · 표시용 (계약 startDate 는 신규 = 기존 end+1일)
+  const [hireDateReference, setHireDateReference] = useState<string | null>(null);
 
   // 직원 목록 로드
   useEffect(() => {
@@ -1070,6 +1248,48 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       setPrefillConsumed(true);
     }
   }, [prefillConsumed]);
+
+  // #220 · form.employeeId 변경 시 · 기존 근로계약서 이력 (최신 1건) 조회 + hire_date 참조 저장
+  //   · GET /api/employee-contracts?employeeId=X · created_at DESC 첫번째
+  //   · 실패해도 UX 는 그대로 · 연장 버튼만 미노출
+  useEffect(() => {
+    const empId = form.employeeId;
+    if (empId == null) {
+      setExistingContract(null);
+      setHireDateReference(null);
+      setExistingLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setExistingLoading(true);
+      try {
+        // 계약 이력
+        const res = await fetch(`/api/employee-contracts?employeeId=${empId}`);
+        if (res.ok) {
+          const rows = await res.json();
+          if (!cancelled) {
+            const first = Array.isArray(rows) && rows.length > 0 ? (rows[0] as ExistingContract) : null;
+            setExistingContract(first);
+          }
+        } else if (!cancelled) {
+          setExistingContract(null);
+        }
+        // hire_date · employees 리스트에서 · 이미 employees state 에 존재
+        const emp = employees.find(e => e.id === empId);
+        const hd = (emp as any)?.hire_date ?? null;
+        if (!cancelled) setHireDateReference(typeof hd === "string" && hd ? hd : null);
+      } catch {
+        if (!cancelled) {
+          setExistingContract(null);
+          setHireDateReference(null);
+        }
+      } finally {
+        if (!cancelled) setExistingLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [form.employeeId, employees]);
 
   // 사업주 · 대표자 · 기본값(강남성 · 오산 메가타운 약국) · 편집 가능
 
@@ -1204,6 +1424,68 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         ? emp.primary_focus_percent
         : prev.primaryFocusPercent,
     }));
+  };
+
+  // #220 · 연장 확정 · N개월 연장
+  //   · 신규 startDate = 기존 계약 end_date + 1일
+  //   · 신규 endDate = 신규 startDate + N개월 - 1일 (contractMonths → useEffect 자동계산과 동일 규칙)
+  //   · contractType = "계약직" · indefinite = false · 기타 필드는 유지 (사용자가 서명 후 저장)
+  //   · hire_date (입사일) 은 폼에 별도 필드 없음 · UI 배너로 "입사일 X · 유지됨" 안내
+  const handleExtendConfirm = () => {
+    const months = Number(extendMonths);
+    if (!Number.isFinite(months) || months <= 0) {
+      setNotice({ tone: "err", text: "연장 개월수를 올바르게 입력하세요." });
+      return;
+    }
+    const baseEnd = existingContract?.end_date;
+    if (!baseEnd) {
+      setNotice({ tone: "err", text: "기존 계약서에 종료일이 없어 연장할 수 없습니다." });
+      return;
+    }
+    const baseEndDate = new Date(baseEnd);
+    if (Number.isNaN(baseEndDate.getTime())) {
+      setNotice({ tone: "err", text: "기존 계약서 종료일이 유효하지 않습니다." });
+      return;
+    }
+    // 신규 시작일 = 기존 종료일 + 1일
+    const newStart = new Date(baseEndDate);
+    newStart.setDate(newStart.getDate() + 1);
+    const newStartIso = `${newStart.getFullYear()}-${String(newStart.getMonth() + 1).padStart(2, "0")}-${String(newStart.getDate()).padStart(2, "0")}`;
+    // 신규 종료일 = 신규 시작일 + N개월 - 1일 (기존 계약직 auto-end 규칙과 동일)
+    const newEnd = new Date(newStart);
+    newEnd.setMonth(newEnd.getMonth() + months);
+    newEnd.setDate(newEnd.getDate() - 1);
+    const newEndIso = `${newEnd.getFullYear()}-${String(newEnd.getMonth() + 1).padStart(2, "0")}-${String(newEnd.getDate()).padStart(2, "0")}`;
+
+    setForm(prev => ({
+      ...prev,
+      contractType: "계약직",
+      contractMonths: String(months),
+      indefinite: false,
+      startDate: newStartIso,
+      endDate: newEndIso,
+    }));
+
+    // 신규 계약서 · 서명·조항확인 초기화 (사용자에게 재서명 요구)
+    employerPadRef.current?.clear();
+    employeePadRef.current?.clear();
+    setEmployerSignUrl(null);
+    setEmployeeSignUrl(null);
+    Object.values(clausePadRefs.current).forEach(p => { try { p?.clear(); } catch {} });
+    setClauseAcks(prev => {
+      // requiresSignature metadata 는 유지 · checked/empty 만 초기화
+      const next: ClauseAckMap = {};
+      for (const [k, v] of Object.entries(prev)) {
+        next[k] = { checked: false, empty: true, requiresSignature: v.requiresSignature };
+      }
+      return next;
+    });
+
+    setExtendModalOpen(false);
+    setNotice({
+      tone: "ok",
+      text: `${months}개월 연장 초안이 작성되었습니다. 신규 기간 ${newStartIso} ~ ${newEndIso} · 입사일 ${hireDateReference ?? "(정보 없음)"} 은 유지됩니다. 서명 후 [계약완료 승인] 을 눌러 저장하세요.`,
+    });
   };
 
   // 폼 리셋
@@ -1411,6 +1693,18 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           ? `계약이 승인되어 저장되었습니다. 다운로드 링크: ${pdfUrl}`
           : "계약이 승인되어 저장되었습니다.",
       });
+
+      // #220 · 방금 저장된 계약을 existingContract 로 반영 (다음 연장 baseline)
+      if (saved && (saved.start_date || saved.end_date)) {
+        setExistingContract({
+          id: saved.id,
+          contract_type: saved.contract_type,
+          start_date: saved.start_date,
+          end_date: saved.end_date,
+          created_at: saved.created_at,
+          pdf_url: saved.pdf_url,
+        });
+      }
     } catch (err: any) {
       setNotice({ tone: "err", text: err?.message ?? "계약 승인·저장에 실패했습니다." });
     } finally {
@@ -1457,6 +1751,23 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </div>
 
           <div className="flex items-center gap-2">
+            {/* #220 · 연장 버튼 · 기존 계약(종료일 있는) 존재 시 노출 */}
+            {existingContract && existingContract.end_date && (
+              <button
+                type="button"
+                onClick={() => {
+                  // 개월수 초기화 · 기존 계약의 기간과 비슷하게 프리셋 · fallback 3
+                  const prevMonths = contractPeriodMonthsClient(existingContract.start_date, existingContract.end_date);
+                  setExtendMonths(prevMonths != null && prevMonths > 0 ? String(prevMonths) : "3");
+                  setExtendModalOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-indigo-300 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-sm font-bold transition-colors cursor-pointer shadow-sm"
+                title={`기존 계약 (${existingContract.start_date ?? "-"} ~ ${existingContract.end_date}) 을 이어서 연장`}
+              >
+                <ClockCounterClockwise size={14} weight="fill" />
+                <span>연장</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={handleReset}
@@ -1468,6 +1779,42 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             </button>
           </div>
         </div>
+
+        {/* #220 · 기존 계약서 안내 배너 · 연장 대상 · 입사일 참조 */}
+        {existingContract && form.employeeId != null && (
+          <div className="rounded-lg border border-indigo-200 bg-indigo-50/60 px-3 py-2 text-[12px] text-indigo-800 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="inline-flex items-center gap-1 font-black">
+              <ClockCounterClockwise size={13} weight="fill" />
+              기존 계약서
+            </span>
+            <span>
+              기간 <b className="font-black">{existingContract.start_date ?? "-"}</b> ~ <b className="font-black">{existingContract.end_date ?? "-"}</b>
+            </span>
+            {existingContract.contract_type && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-white/70 border border-indigo-200 px-1.5 py-0.5 text-[11px] font-bold">
+                {existingContract.contract_type}
+              </span>
+            )}
+            {hireDateReference && (
+              <span className="inline-flex items-center gap-1 rounded-md bg-white/70 border border-indigo-200 px-1.5 py-0.5 text-[11px] font-bold">
+                입사일 {hireDateReference} · 유지
+              </span>
+            )}
+            {existingContract.pdf_url && (
+              <a
+                href={existingContract.pdf_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-auto underline text-[11px] font-bold text-indigo-700 hover:text-indigo-900"
+              >
+                기존 계약서 PDF 보기
+              </a>
+            )}
+          </div>
+        )}
+        {existingLoading && form.employeeId != null && !existingContract && (
+          <div className="text-[11px] text-slate-400">기존 계약 이력 조회 중...</div>
+        )}
 
         {/* 안내 배너 */}
         {notice && (
@@ -2060,6 +2407,17 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </section>
         </div>
       </main>
+
+      {/* #220 · 연장 모달 */}
+      <ExtendContractModal
+        open={extendModalOpen}
+        onClose={() => setExtendModalOpen(false)}
+        onConfirm={handleExtendConfirm}
+        months={extendMonths}
+        setMonths={setExtendMonths}
+        existingEnd={existingContract?.end_date ?? null}
+        hireDateReference={hireDateReference}
+      />
     </div>
   );
 };

@@ -267,6 +267,42 @@ function isSeveranceEligible(emp: Employee): boolean {
   return true;
 }
 
+// #219 · 근로계약서(employee_contracts) 기반 · 계약 개월수 자동 산출
+//   · start_date ~ end_date · 총 개월 <= 4 → "계약 N개월"
+//   · 그 외(장기 · 무기한 · 미매핑) → null (호출자가 fallback 처리)
+function contractPeriodMonths(startIso: string | null | undefined, endIso: string | null | undefined): number | null {
+  if (!startIso || !endIso) return null;
+  const s = new Date(String(startIso));
+  const e = new Date(String(endIso));
+  if (Number.isNaN(s.getTime()) || Number.isNaN(e.getTime())) return null;
+  if (e.getTime() < s.getTime()) return null;
+  let months = (e.getFullYear() - s.getFullYear()) * 12 + (e.getMonth() - s.getMonth());
+  // 종료일이 시작일 "일자보다 크거나 같으면" · 1개월 더 인정 (예 2026-01-01 ~ 2026-01-31 → 1개월)
+  if (e.getDate() >= s.getDate() - 1) months += 1;
+  return months > 0 ? months : null;
+}
+
+// #219 · 계약 자동 라벨 산출 (근로계약서 이력 우선 · 없으면 contract_type)
+//   · 총 개월 <= 4 → "계약 N개월" (amber 배지)
+//   · 그 외 → contract_type 기반 (기존 contractTypeMeta 그대로 유지)
+function autoContractBadge(
+  latest: { start_date?: string | null; end_date?: string | null } | null | undefined,
+  contractType: string | null | undefined,
+): { label: string; color: string; source: "auto" | "manual" } | null {
+  if (latest) {
+    const months = contractPeriodMonths(latest.start_date, latest.end_date);
+    if (months != null && months <= 4) {
+      return {
+        label: `계약 ${months}개월`,
+        color: "bg-amber-100 text-amber-800 border-amber-300",
+        source: "auto",
+      };
+    }
+  }
+  const meta = contractTypeMeta(contractType);
+  return meta ? { label: meta.label, color: meta.color, source: "manual" } : null;
+}
+
 // 근속기간 계산 · hire_date 기반 · "3년 2개월" · 없으면 "-"
 function calcTenure(hireDate: string | null | undefined): string {
   if (!hireDate) return "-";
@@ -624,6 +660,18 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
   const [leaveError, setLeaveError]     = useState<string | null>(null);
   const [deletingLeaveDate, setDeletingLeaveDate] = useState<string | null>(null);
 
+  // #219 · 선택된 직원의 최신 근로계약서 (start_date/end_date · 자동 계약타입 산출용)
+  interface LatestContract {
+    id?: number;
+    contract_type?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    created_at?: string | null;
+    pdf_url?: string | null;
+  }
+  const [latestContract, setLatestContract] = useState<LatestContract | null>(null);
+  const [latestContractLoading, setLatestContractLoading] = useState(false);
+
   // ── 데이터 로드 ──
   const loadEmployees = useCallback(async () => {
     setLoading(true);
@@ -697,6 +745,34 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
     }
     loadUsedLeaves(selectedId, leaveYear);
   }, [selectedId, leaveYear, loadUsedLeaves]);
+
+  // #219 · 선택된 직원의 최신 근로계약서 조회 (자동 계약타입 배지용)
+  //   · GET /api/employee-contracts?employeeId=X · created_at DESC 첫번째
+  //   · 실패 시 · latestContract=null (배지는 contract_type fallback)
+  useEffect(() => {
+    if (selectedId == null) {
+      setLatestContract(null);
+      setLatestContractLoading(false);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setLatestContractLoading(true);
+      try {
+        const res = await fetch(`/api/employee-contracts?employeeId=${selectedId}`);
+        if (!res.ok) { if (!cancelled) setLatestContract(null); return; }
+        const rows = await res.json();
+        if (cancelled) return;
+        const first = Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
+        setLatestContract(first as LatestContract | null);
+      } catch {
+        if (!cancelled) setLatestContract(null);
+      } finally {
+        if (!cancelled) setLatestContractLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedId]);
 
   // 개별 연차 삭제 · PUT /api/schedules with type="" (SchedulePage clear 방식)
   const deleteUsedLeave = async (empId: number, date: string) => {
@@ -1240,14 +1316,21 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                             : (displayEmp.position || "직책 없음")}
                         </span>
                       )}
-                      {/* 계약유형 */}
+                      {/* 계약유형 · #219 · 근로계약서 기반 자동 산출 (짧은 계약 → "계약 N개월") · fallback contract_type */}
                       {(() => {
-                        const ct = contractTypeMeta(displayEmp.contract_type);
-                        return ct ? (
-                          <span className={`text-[11px] font-semibold px-1.5 py-px rounded border ${ct.color}`} title="계약유형">
-                            {ct.label}
+                        const badge = autoContractBadge(latestContract, displayEmp.contract_type);
+                        if (!badge) return null;
+                        const tip = badge.source === "auto"
+                          ? `계약서 자동 산출 · 시작 ${latestContract?.start_date ?? "-"} · 종료 ${latestContract?.end_date ?? "-"}`
+                          : "계약유형";
+                        return (
+                          <span
+                            className={`text-[11px] font-semibold px-1.5 py-px rounded border ${badge.color}`}
+                            title={tip}
+                          >
+                            {badge.label}
                           </span>
-                        ) : null;
+                        );
                       })()}
                       {/* 근무타입 */}
                       {editing ? (
@@ -1563,15 +1646,38 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                           ))}
                         </select>
                       ) : (() => {
-                        const meta = contractTypeMeta(displayEmp.contract_type);
-                        return meta ? (
-                          <span className="leading-snug min-h-[20px] flex items-center">
-                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${meta.color}`}>
-                              {meta.label}
-                            </span>
-                          </span>
-                        ) : (
-                          <span className="text-[13px] font-semibold text-slate-300 italic leading-snug min-h-[20px]">(없음)</span>
+                        // #219 · 근로계약서 기반 자동 산출 우선 · fallback contract_type
+                        const badge = autoContractBadge(latestContract, displayEmp.contract_type);
+                        const manualMeta = contractTypeMeta(displayEmp.contract_type);
+                        const showAutoOnly = badge?.source === "auto";
+                        return (
+                          <div className="flex flex-wrap items-center gap-1 min-h-[20px]">
+                            {badge ? (
+                              <span
+                                className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${badge.color}`}
+                                title={showAutoOnly
+                                  ? `계약서 자동 산출 · ${latestContract?.start_date ?? "-"} ~ ${latestContract?.end_date ?? "-"}`
+                                  : "계약유형"}
+                              >
+                                {badge.label}
+                                {showAutoOnly && <span className="ml-1 text-[9px] font-black opacity-70">AUTO</span>}
+                              </span>
+                            ) : (
+                              <span className="text-[13px] font-semibold text-slate-300 italic">(없음)</span>
+                            )}
+                            {/* auto 배지가 우선 노출된 경우 · 수동 contract_type 이 있으면 옆에 서브 표시 */}
+                            {showAutoOnly && manualMeta && (
+                              <span
+                                className={`text-[10px] font-semibold px-1.5 py-0.5 rounded border ${manualMeta.color} opacity-70`}
+                                title="수동 지정 계약유형"
+                              >
+                                {manualMeta.short}
+                              </span>
+                            )}
+                            {latestContractLoading && (
+                              <span className="text-[10px] text-slate-300">불러오는 중...</span>
+                            )}
+                          </div>
                         );
                       })()}
                     </div>
