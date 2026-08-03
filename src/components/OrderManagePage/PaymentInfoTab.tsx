@@ -222,6 +222,8 @@ export const PaymentInfoTab: React.FC = () => {
   const [cardIssuerCustom, setCardIssuerCustom] = useState<string>("");
   const [bankName, setBankName] = useState<string>("");
   const [bankNameCustom, setBankNameCustom] = useState<string>("");
+  // #225 · 기타(etc) 옵션 자유 텍스트 · 저장 시 memo prefix 또는 payload method_note
+  const [etcNote, setEtcNote] = useState<string>("");
   const [referenceNo, setReferenceNo] = useState<string>("");
   const [taxInvoiceIssued, setTaxInvoiceIssued] = useState<boolean>(false);
   const [taxInvoiceNo, setTaxInvoiceNo] = useState<string>("");
@@ -643,7 +645,7 @@ export const PaymentInfoTab: React.FC = () => {
                   </FieldLabel>
                 </div>
 
-                {/* Row 2 · 결제 방법 · #225 · 드롭다운 (카드/현금/기타) · 카드사도 옆에 */}
+                {/* Row 2 · 결제 방법 · #225 · 드롭다운 (카드/현금/기타) + 옵션별 부가 필드 옆에 */}
                 <FieldLabel label="결제 방법" required>
                   <div className="flex items-center gap-2 flex-wrap">
                     <select
@@ -677,11 +679,42 @@ export const PaymentInfoTab: React.FC = () => {
                         )}
                       </>
                     )}
+                    {method === "cash" && (
+                      <>
+                        <select
+                          value={bankName}
+                          onChange={e => setBankName(e.target.value)}
+                          className={`${inputCls} w-36 shrink-0`}
+                        >
+                          <option value="">은행 선택...</option>
+                          {BANKS.map(b => <option key={b} value={b}>{b}</option>)}
+                          <option value="직접입력">직접 입력...</option>
+                        </select>
+                        {bankName === "직접입력" && (
+                          <input
+                            type="text"
+                            value={bankNameCustom}
+                            onChange={e => setBankNameCustom(e.target.value)}
+                            placeholder="은행 이름"
+                            className={`${inputCls} flex-1 min-w-[140px]`}
+                          />
+                        )}
+                      </>
+                    )}
+                    {method === "etc" && (
+                      <input
+                        type="text"
+                        value={etcNote}
+                        onChange={e => setEtcNote(e.target.value)}
+                        placeholder="예: 페이코 · 카카오페이 · 상계 · 어음 등"
+                        className={`${inputCls} flex-1 min-w-[180px]`}
+                      />
+                    )}
                   </div>
                 </FieldLabel>
 
-                {/* Row 3 · 은행 · 제거됨 (#225 · transfer 옵션 폐지) · 남겨두는 dead branch (렌더링 안 됨) */}
-                {method === ("transfer" as PayMethod) && (
+                {/* Row 3 · dead branch · #225 · Row 2 로 병합됨 · 유지만 (렌더링 안 됨) */}
+                {false && (
                   <FieldLabel label="은행" icon={<Landmark size={11} />} required>
                     <div className="flex gap-2">
                       <select
