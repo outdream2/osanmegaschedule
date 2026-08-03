@@ -44,6 +44,7 @@ import { ZoneCell } from "./ZoneCell";
 import { ZoneAssignPopover } from "./ZoneAssignPopover";
 import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { DisplayRequestPanel } from "./DisplayRequestPanel";
 // 2026-08-03 · StockManagePage 폐지 · 모든 탭이 OrderManagePage 서브탭으로 통합됨
 // 2026-07-29 · 판매추이 탭 제거 (사용자 요청) · CategoryTab · LossTrackerTab 은 재고관리 안에서만 lazy import (SalesTrendPage 파일에 남아있음)
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일은 보관 · 사이드바/라우팅만 해제
@@ -2168,86 +2169,15 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                   <div className="w-full flex flex-col lg:flex-row gap-2 mt-2 items-stretch">
 
                     {/* 실시간 진열 보충 요청 현황 — 드래그로 폭 조절 가능 */}
-                    <div className="bg-white p-3 rounded-xl shadow-sm border border-slate-200 flex flex-col shrink-0" style={{ width: `min(100%, ${reqPanelWidth}px)` }}>
-                      <div className="border-b border-slate-100 pb-3 flex items-center justify-between flex-nowrap gap-2 overflow-x-auto scrollbar-none">
-                        <div className="flex items-center gap-2 shrink-0">
-                          <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center shrink-0">
-                            <ClipboardList size={16} className="text-violet-600" />
-                          </div>
-                          <h2 className="text-sm font-bold text-slate-900 whitespace-nowrap">실시간 진열 보충 요청 현황</h2>
-                          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700 shrink-0 whitespace-nowrap">
-                            대기 {requests.filter(r => r.status === "pending").length}건 / 전체 {requests.length}건
-                          </span>
-                        </div>
-                        <div className="flex gap-1 bg-slate-100 rounded-lg p-0.5 text-[10px] shrink-0">
-                          {(["all", "pending", "done"] as const).map((k) => (
-                            <button key={k} type="button" onClick={() => setReqFilter(k)}
-                              className={`px-2.5 py-1 font-semibold rounded-md transition cursor-pointer whitespace-nowrap ${reqFilter === k ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
-                              {k === "all" ? "전체" : k === "pending" ? "대기중" : "완료"}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="overflow-x-auto flex-1 min-h-0 overflow-y-auto mt-2">
-                        {filteredReqs.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center py-10 text-slate-400 text-xs text-center px-4">
-                            <Bell size={24} className="mb-2 opacity-30 animate-bounce" />
-                            {reqFilter === "done" ? "완료된 요청이 없습니다" : reqFilter === "pending" ? "대기 중인 요청이 없습니다" : "등록된 진열 요청이 없습니다"}
-                          </div>
-                        ) : (
-                          <table className="w-full text-left text-xs border-collapse">
-                            <thead>
-                              <tr className="bg-slate-50 text-slate-500 font-bold border-b border-slate-100">
-                                <th className="p-2 w-24">구역</th>
-                                <th className="p-2 w-24">담당</th>
-                                <th className="p-2 w-20">시각</th>
-                                <th className="p-2 w-16 text-center">상태</th>
-                                <th className="p-2 text-center">작업</th>
-                              </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                              {filteredReqs.map((req) => (
-                                <tr key={req.id} className="hover:bg-slate-50 transition">
-                                  <td className="p-2 font-bold text-slate-900">{req.zoneLabel}</td>
-                                  <td className="p-2 font-bold text-slate-800">{req.assignedStaffName || "미배정"}</td>
-                                  <td className="p-2 text-slate-500 text-[11px]">{formatRel(req.requestedAt)}</td>
-                                  <td className="p-2 text-center">
-                                    <span className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold border ${req.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-300" : "bg-emerald-50 text-emerald-700 border-emerald-300"}`}>
-                                      {req.status === "pending" ? "대기" : "완료"}
-                                    </span>
-                                  </td>
-                                  <td className="p-2 text-center">
-                                    <div className="flex items-center justify-center gap-1">
-                                      {req.status === "pending" && (
-                                        <button onClick={() => {
-                                          setRequests((prev) => prev.map((r) => r.id === req.id ? { ...r, status: "done" as const } : r));
-                                          fetch(`/api/display-requests/${req.id}`, {
-                                            method: "PATCH",
-                                            headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify({ status: "done" }),
-                                          }).catch(() => { });
-                                        }}
-                                          className="text-[11px] font-bold px-1.5 py-0.5 rounded bg-emerald-600 text-white hover:bg-emerald-700 transition cursor-pointer flex items-center gap-0.5">
-                                          <CheckCircle2 size={9} />완료
-                                        </button>
-                                      )}
-                                      <button onClick={() => {
-                                        setRequests((prev) => prev.filter((r) => r.id !== req.id));
-                                        fetch(`/api/display-requests/${req.id}`, { method: "DELETE" }).catch(() => { });
-                                      }}
-                                        className="text-[11px] font-medium px-1.5 py-0.5 rounded text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer border border-slate-200">
-                                        삭제
-                                      </button>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        )}
-                      </div>
-                    </div>
+                    <DisplayRequestPanel
+                      filteredReqs={filteredReqs}
+                      requests={requests}
+                      reqFilter={reqFilter}
+                      setReqFilter={setReqFilter}
+                      setRequests={setRequests}
+                      reqPanelWidth={reqPanelWidth}
+                      formatRel={formatRel}
+                    />
 
                     {/* 리사이즈 핸들 — 좌우 폭 조절 · 데스크탑만 */}
                     <div
