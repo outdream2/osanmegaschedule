@@ -12,6 +12,8 @@ import { FirstAid, BookOpen, Video, FileText, GraduationCap, Folder } from "@pho
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
+import { ZONE_DEFS } from "../../constants/displayZones";
+import { getZoneLabel } from "../../constants/zoneLabels";
 import type { AuthSession } from "../../types";
 
 interface PharmacistPageProps {
@@ -32,14 +34,8 @@ const PHARM_TABS: CommonTabDef<PharmTabKey>[] = [
 
 interface CategoryItem { key: string; title: string; subtitle: string; }
 
-const CATEGORIES: Record<PharmTabKey, CategoryItem[]> = {
-  education: [
-    { key: "drug",     title: "약물학 기초",         subtitle: "성분·기전·상호작용" },
-    { key: "compound", title: "조제·투약",           subtitle: "처방 조제 실무" },
-    { key: "counsel",  title: "복약 상담",           subtitle: "환자 응대 · 사례" },
-    { key: "otc",      title: "OTC · 일반약",        subtitle: "일반의약품 안내" },
-    { key: "law",      title: "약사법 · 규정",       subtitle: "관계 법령·고시" },
-  ],
+// 교육자료 카테고리는 매장 구역(ZONE_DEFS) 기반 · 아래 buildEducationCategories 참조
+const CATEGORIES: Record<Exclude<PharmTabKey, "education">, CategoryItem[]> = {
   reference: [
     { key: "interact",   title: "상호작용",           subtitle: "병용 금기·주의" },
     { key: "adverse",    title: "부작용",             subtitle: "이상반응·대응" },
@@ -60,6 +56,37 @@ const CATEGORIES: Record<PharmTabKey, CategoryItem[]> = {
 };
 
 const RESIZE_STORAGE_KEY = "megatown_pharm_leftw";
+
+/**
+ * 교육자료 카테고리 · 매장 구역(ZONE_DEFS) 기반 동적 생성
+ *  · 통계 > 카테고리별 현황 · zone key 규칙과 동일 (예: "1A","1B","22","40A","40B","40C","35","36")
+ *  · aisle 1~8 · A/B 서브존 개별 카드 · 22 · 계산대 40 A/B/C · 벽면·윙 통합
+ *  · 매장 layout 순 정렬 (aisle → 상단벽면 → 하단벽면 → 윙 → 이벤트)
+ */
+function buildEducationCategories(): CategoryItem[] {
+  const items: CategoryItem[] = [];
+  const sectionRank: Record<string, number> = { aisle: 0, top_wall: 1, bottom_wall: 2, wing: 3, left_wall: 4, event: 5 };
+  const sorted = [...ZONE_DEFS].sort((a, b) => {
+    const sa = sectionRank[a.section] ?? 9;
+    const sb = sectionRank[b.section] ?? 9;
+    if (sa !== sb) return sa - sb;
+    return a.num - b.num;
+  });
+  for (const z of sorted) {
+    const numStr = String(z.num);
+    if (z.subA && z.subB && z.subC) {
+      items.push({ key: `${numStr}A`, title: `${getZoneLabel(`${numStr}A`)} · ${z.label} A`, subtitle: z.subA });
+      items.push({ key: `${numStr}B`, title: `${getZoneLabel(`${numStr}B`)} · ${z.label} B`, subtitle: z.subB });
+      items.push({ key: `${numStr}C`, title: `${getZoneLabel(`${numStr}C`)} · ${z.label} C`, subtitle: z.subC });
+    } else if (z.subA && z.subB) {
+      items.push({ key: `${numStr}A`, title: `${getZoneLabel(`${numStr}A`)} · ${z.label} A`, subtitle: z.subA });
+      items.push({ key: `${numStr}B`, title: `${getZoneLabel(`${numStr}B`)} · ${z.label} B`, subtitle: z.subB });
+    } else {
+      items.push({ key: numStr, title: `${getZoneLabel(numStr)} · ${z.label}`, subtitle: z.category });
+    }
+  }
+  return items;
+}
 
 export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onBack, onNavigate, onLogout }) => {
   const isAdmin = (authSession?.level ?? 0) >= 8;
@@ -91,7 +118,19 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
     window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
   };
 
-  const categories = CATEGORIES[tab] ?? [];
+  // 교육자료 카테고리 · zone-labels-changed 이벤트 시 재빌드 (사용자 라벨 변경 반영)
+  const [zoneLabelVer, setZoneLabelVer] = useState(0);
+  useEffect(() => {
+    const h = () => setZoneLabelVer(v => v + 1);
+    window.addEventListener("zone-labels-changed", h);
+    return () => window.removeEventListener("zone-labels-changed", h);
+  }, []);
+  const educationCategories = useMemo(() => buildEducationCategories(), [zoneLabelVer]);
+
+  const categories = useMemo<CategoryItem[]>(
+    () => (tab === "education" ? educationCategories : (CATEGORIES[tab as Exclude<PharmTabKey, "education">] ?? [])),
+    [tab, educationCategories],
+  );
   const activeTabDef = useMemo(() => PHARM_TABS.find(t => t.key === tab)!, [tab]);
   const selectedCatObj = useMemo(() => categories.find(c => c.key === selectedCat) ?? null, [categories, selectedCat]);
 
