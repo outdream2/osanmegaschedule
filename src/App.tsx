@@ -34,12 +34,14 @@ const ZoneLabelsEditor = React.lazy(() => import("./components/ZoneLabelsEditor/
 const BusinessManagePage = React.lazy(() => import("./components/BusinessManagePage/BusinessManagePage"));
 // 2026-08-03 · 기타 도구 페이지 (관리자용 · 잘 안 쓰이는 3개 페이지 링크) · lazy 로드
 const OthersPage = React.lazy(() => import("./components/OthersPage/OthersPage"));
+// 2026-08-03 · 약사 전용 페이지 (교육자료·복약지도·문서) · lazy 로드
+const PharmacistPage = React.lazy(() => import("./components/PharmacistPage/PharmacistPage"));
 // 2026-08-03 · 재고·판매 통합 (기타 도구 서브 페이지) · lazy 로드
 const InventorySalesPage = React.lazy(() => import("./components/InventorySalesPage/InventorySalesPage").then(m => ({ default: m.InventorySalesPage })));
 // 2026-08-03 · 각종 양식 (인사 문서 관리) · 경영관리 서브탭 및 별도 라우팅 진입 지원 · lazy 로드
 const HrFormsPage = React.lazy(() => import("./components/HrFormsPage/HrFormsPage"));
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "others" | "inventory-sales" | "hr-forms";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "others" | "inventory-sales" | "hr-forms" | "pharmacist";
 
 export default function App() {
   // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
@@ -259,6 +261,18 @@ export default function App() {
           authSession={authSession}
           onBack={goBack}
           onNavigate={(p) => navigate(p as Page)}
+          onLogout={handleLogout}
+        />
+      </React.Suspense>
+    );
+  } else if (page === "pharmacist") {
+    // 2026-08-03 · 약사 전용 페이지 · 교육자료·복약지도 등 · 약사 rank 만 접근
+    pageContent = (
+      <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
+        <PharmacistPage
+          authSession={authSession}
+          onBack={goBack}
+          onNavigate={navigateInner}
           onLogout={handleLogout}
         />
       </React.Suspense>

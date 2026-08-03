@@ -13,6 +13,7 @@ import {
   ChatCircle,
   Chat,
   Briefcase,
+  FirstAid,
 } from "@phosphor-icons/react";
 import type { AuthSession } from "../types";
 import { NotificationBell } from "./NotificationBell";
@@ -40,7 +41,8 @@ export type AppNavPage =
   | "business-manage"      // 2026-08-03 · 경영관리 통합 페이지
   | "hr-forms"             // 2026-08-03 · 각종 양식 (경영관리 서브탭 · 별도 라우팅 union 유지)
   | "others"               // 2026-08-03 · 기타 도구 페이지 (관리자용 · 숨은 도구 모음)
-  | "inventory-sales";     // 2026-08-03 · 재고·판매 통합 (기타 도구 내부 링크 · 헤더 탭 노출 없음)
+  | "inventory-sales"      // 2026-08-03 · 재고·판매 통합 (기타 도구 내부 링크 · 헤더 탭 노출 없음)
+  | "pharmacist";          // 2026-08-03 · 약사 전용 페이지
 
 // 헤더 내부 탭 렌더용 확장 키 (경영관리 · business-manage 로 라우팅)
 type TabKey = AppNavPage | "business";
@@ -61,6 +63,7 @@ interface TabDef {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number; weight?: any }>;
   managerOnly: boolean;
+  pharmacistOnly?: boolean;   // 2026-08-03 · 약사만 노출 (position === '약사' or role 'pharmacist')
   iconClassName?: string;
   color?: "slate" | "blue" | "red" | "sky" | "indigo" | "orange" | "emerald" | "violet" | "amber" | "cyan";
 }
@@ -72,6 +75,7 @@ const TABS: TabDef[] = [
   { key: "landing",       label: "홈",         mobileLabel: "홈",     icon: House,       managerOnly: false, color: "slate"   },
   { key: "display",       label: "매장관리",   mobileLabel: "매장",   icon: SquaresFour, managerOnly: true,  color: "red"     },
   { key: "business",      label: "경영관리",   mobileLabel: "경영",   icon: Briefcase,   managerOnly: true,  color: "violet"  },
+  { key: "pharmacist",    label: "약사전용",   mobileLabel: "약사",   icon: FirstAid,    managerOnly: false, pharmacistOnly: true, color: "sky" },
   { key: "schedule",      label: "스케줄관리", mobileLabel: "스케줄", icon: Calendar,    managerOnly: false, color: "amber"   },
   { key: "board",         label: "이슈공유",   mobileLabel: "이슈",   icon: ChatCircle,  managerOnly: false, color: "emerald" },
   { key: "requests",      label: "요청목록",   mobileLabel: "요청",   icon: Chat,        managerOnly: false, color: "cyan"    },
@@ -110,12 +114,24 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
 
   // 2026-08-03 · 경영관리 팝오버 제거 (business-manage 통합 페이지로 라우팅)
 
+  // 약사 판정 · level === 3 (약사 전용 레벨) or 직책/role 이 '약사' · **관리자도 안 보임** (약사만)
+  const isPharmacist = useMemo(() => {
+    if (!authSession) return false;
+    if ((authSession.level ?? 0) === 3) return true;      // 약사 · 지정 레벨 (사용자 확정)
+    const rank = (authSession.employeeRank ?? "").toString();
+    const role = (authSession.role ?? "").toString().toLowerCase();
+    if (rank.includes("약사")) return true;
+    if (role === "pharmacist") return true;
+    return false;
+  }, [authSession]);
+
   const visibleTabs = useMemo(() => TABS.filter((t) => {
     if (t.key === "landing") return true;
     if (!authSession) return false;
     if (t.managerOnly) return isPrivileged;
+    if (t.pharmacistOnly) return isPharmacist;
     return true;
-  }), [authSession, isPrivileged]);
+  }), [authSession, isPrivileged, isPharmacist]);
 
   // 경영관리 하위 페이지 활성 여부 (연차승인·점심불참·권한관리)
   const isBizPage = BUSINESS_PAGES.has(activePage);
