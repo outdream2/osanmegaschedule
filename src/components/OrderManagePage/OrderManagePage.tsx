@@ -1167,6 +1167,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
 
   const purchaseOrderSortable = useSortableTabs("tabOrder.purchase-order", purchaseOrderDefaultTabs, isAdmin);
   const purchaseSortable      = useSortableTabs("tabOrder.purchase",       purchaseDefaultTabs,      isAdmin);
+
+  // 반품필요 탭 배지 · ReturnListPanel 에서 dispatch 하는 CustomEvent 리스닝
+  const [returnNeedCount, setReturnNeedCount] = useState<number>(0);
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && typeof detail.count === "number") setReturnNeedCount(detail.count);
+    };
+    window.addEventListener("return-need-count", handler);
+    return () => window.removeEventListener("return-need-count", handler);
+  }, []);
   const paymentSortable       = useSortableTabs("tabOrder.payment",        paymentDefaultTabs,       isAdmin);
   const statSortable          = useSortableTabs("tabOrder.statistics",     statDefaultTabs,          isAdmin);
 
@@ -1997,7 +2008,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {topTab === "purchase" && (
         <div className="flex flex-col gap-3">
           {renderSubTabs<PurchaseKey>(
-            purchaseSortable.tabs.map(t => ({ k: t.key, label: t.label, icon: t.icon, color: t.color })),
+            purchaseSortable.tabs.map(t => ({
+              k: t.key, label: t.label, icon: t.icon, color: t.color,
+              badge: t.key === "return" ? returnNeedCount : undefined,
+            })),
             purchaseSubTab,
             setPurchaseSubTab,
             { getTabProps: purchaseSortable.getTabProps, isDragging: purchaseSortable.isDragging },

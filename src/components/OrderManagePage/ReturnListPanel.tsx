@@ -508,6 +508,8 @@ export const ReturnListPanel: React.FC = () => {
       });
       filtered.sort((a, b) => (b.purchase_cycle ?? 0) - (a.purchase_cycle ?? 0));
       setReturnList(filtered);
+      // 매입 탭 · 반품필요 서브탭 배지용 · 필터링 전 원본 갯수
+      try { window.dispatchEvent(new CustomEvent("return-need-count", { detail: { count: filtered.length } })); } catch { /**/ }
     } catch (e: any) {
       console.warn("[반품필요] 로드 실패:", e?.message);
       setReturnList([]);
