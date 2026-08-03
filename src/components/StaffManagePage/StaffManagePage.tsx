@@ -1094,7 +1094,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
       {/* ── 마스터-디테일 · 좌우 split · 2026-08-03 (#183) · 공통 CSS 클래스 (split-*) 로 통일 ── */}
       <div
         className="split-container"
-        style={{ minHeight: "calc(100vh - 200px)" }}
+        style={{ height: "calc(100vh - 200px)" }}
       >
         {/* ════ 좌측: 직원 리스트 카드 · 데스크탑에서 폭 조정 가능 ════ */}
         <aside
