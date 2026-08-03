@@ -564,6 +564,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [empLoading, setEmpLoading] = useState(false);
   const [empError, setEmpError] = useState<string | null>(null);
+  const [empSearchOpen, setEmpSearchOpen] = useState(false);
 
   // 서명 pad refs
   const employerPadRef = useRef<SignatureCanvasType | null>(null);
@@ -674,13 +675,14 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       employeePhone: emp.phone || prev.employeePhone,
       employeeAddress: emp.address || prev.employeeAddress,
       annualLeaveDays: emp.annual_leave_days != null ? String(emp.annual_leave_days) : prev.annualLeaveDays,
-      // 직원 카테고리 자동 매핑 (약사 · 사원 · 기타)
+      // 직원 카테고리 자동 매핑 (약사·매장·창고·기타)
       employeeCategory: (() => {
         const pos = String(emp.position || "").trim();
-        if (pos === "약사") return "약사" as const;
-        // 정직원 + 약사 아닌 경우 = 사원
-        const et = String(emp.employmentType || "").trim();
-        if (pos && !["기타", "알바"].includes(pos) && (et === "정직원" || et === "")) return "사원" as const;
+        if (pos === "약사")  return "약사" as const;
+        if (pos === "매장")  return "매장" as const;
+        if (pos === "창고")  return "창고" as const;
+        // 하위 호환 · 물류/캐셔/진열 → 매장 (기본)
+        if (["물류", "캐셔", "진열"].includes(pos)) return "매장" as const;
         return "기타" as const;
       })(),
       employeeCategoryCustom: (() => {
@@ -865,150 +867,184 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         {/* 좌우 split */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* ── 좌측: 조건 입력 폼 ────────────────────────────────────────── */}
-          <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 sm:p-5 flex flex-col gap-4 order-2 lg:order-1">
-            <div className="flex items-center gap-1.5 pb-2 border-b border-slate-100">
-              <ClipboardText size={16} weight="fill" className="text-emerald-600" />
-              <h2 className="text-sm font-black text-slate-800">계약 조건 입력</h2>
+          <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-3 order-2 lg:order-1">
+            <div className="flex items-center gap-1.5 pb-1.5 border-b border-slate-100">
+              <ClipboardText size={15} weight="fill" className="text-emerald-600" />
+              <h2 className="text-[13px] font-black text-slate-800">계약 조건 입력</h2>
             </div>
 
             {/* 근로자 정보 */}
-            <div>
-              <FieldLabel icon={<User size={13} weight="fill" className="text-slate-500" />}>근로자 정보</FieldLabel>
-              <div className="grid grid-cols-1 gap-2">
-                <div>
-                  <div className="text-[11px] text-slate-500 font-semibold mb-1">직원 선택 (또는 직접 입력)</div>
-                  <select
-                    value={form.employeeId != null ? String(form.employeeId) : ""}
-                    onChange={(e) => onSelectEmployee(e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition cursor-pointer"
-                    disabled={empLoading}
-                  >
-                    <option value="">-- 직원 선택 --</option>
-                    {employees.map(e => (
-                      <option key={e.id} value={e.id}>
-                        {e.name}{e.position ? ` (${e.position})` : ""}
-                      </option>
-                    ))}
-                  </select>
-                  {empError && <div className="text-[11px] text-rose-600 mt-1">{empError}</div>}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel icon={<User size={12} weight="fill" className="text-slate-400" />}>근로자 정보</FieldLabel>
+              {empError && <div className="text-[12px] text-rose-600">{empError}</div>}
+              {/* 성명 (autocomplete · DB 검색) + 생년월일 한 줄 */}
+              <div className="grid grid-cols-2 gap-1.5">
+                <div className="relative">
                   <input
                     type="text"
                     value={form.employeeName}
-                    onChange={(e) => upd("employeeName", e.target.value)}
-                    placeholder="성명"
-                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      upd("employeeName", val);
+                      setEmpSearchOpen(true);
+                      if (form.employeeId != null) upd("employeeId", null);
+                    }}
+                    onFocus={() => setEmpSearchOpen(true)}
+                    onBlur={() => setTimeout(() => setEmpSearchOpen(false), 200)}
+                    placeholder={empLoading ? "직원 불러오는 중..." : "성명 입력 → 검색"}
+                    autoComplete="off"
+                    className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
                   />
-                  <input
-                    type="text"
-                    value={form.employeeBirth}
-                    onChange={(e) => upd("employeeBirth", e.target.value)}
-                    placeholder="생년월일 (예: 1990-01-15)"
-                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-                  />
-                </div>
-                <input
-                  type="text"
-                  value={form.employeePhone}
-                  onChange={(e) => upd("employeePhone", e.target.value)}
-                  placeholder="연락처 (예: 010-1234-5678)"
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-                />
-                <input
-                  type="text"
-                  value={form.employeeAddress}
-                  onChange={(e) => upd("employeeAddress", e.target.value)}
-                  placeholder="주소"
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-                />
-                {/* 직원 카테고리 · 약사 · 매장 (진열·판매·카운터) · 창고 (물류·입고·재고) · 기타 */}
-                <div className="grid grid-cols-4 gap-1.5">
-                  {(["약사", "매장", "창고", "기타"] as const).map(cat => {
-                    const active = form.employeeCategory === cat;
-                    const activeColor =
-                      cat === "약사" ? "bg-violet-500 text-white border-violet-500" :
-                      cat === "매장" ? "bg-emerald-500 text-white border-emerald-500" :
-                      cat === "창고" ? "bg-orange-500 text-white border-orange-500" :
-                                       "bg-slate-600 text-white border-slate-600";
-                    return (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => upd("employeeCategory", cat)}
-                        className={`px-2 py-1.5 rounded-lg border text-[13px] font-bold transition-colors cursor-pointer ${
-                          active ? activeColor : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
-                        }`}
-                      >
-                        {cat}
-                      </button>
+                  {empSearchOpen && form.employeeName.trim() && (() => {
+                    const q = form.employeeName.trim().toLowerCase();
+                    const matches = employees
+                      .filter(e => (e.name ?? "").toLowerCase().includes(q))
+                      .slice(0, 8);
+                    if (matches.length === 0) return (
+                      <div className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-lg shadow-lg p-2 text-[12px] text-slate-400 text-center">
+                        일치하는 직원 없음 · 직접 입력 가능
+                      </div>
                     );
-                  })}
+                    return (
+                      <ul className="absolute left-0 right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-lg shadow-lg max-h-56 overflow-y-auto divide-y divide-slate-100">
+                        {matches.map(e => (
+                          <li key={e.id}>
+                            <button
+                              type="button"
+                              onMouseDown={(ev) => ev.preventDefault()}
+                              onClick={() => {
+                                onSelectEmployee(String(e.id));
+                                setEmpSearchOpen(false);
+                              }}
+                              className="w-full text-left px-2.5 py-1.5 hover:bg-emerald-50 transition-colors flex items-center gap-2"
+                            >
+                              <span className="text-[13px] font-bold text-slate-800">{e.name}</span>
+                              {e.position && (
+                                <span className="text-[11px] text-slate-500">{e.position}</span>
+                              )}
+                              {e.phone && (
+                                <span className="text-[11px] text-slate-400 ml-auto tabular-nums">{e.phone}</span>
+                              )}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    );
+                  })()}
                 </div>
-                {form.employeeCategory === "기타" && (
-                  <input
-                    type="text"
-                    value={form.employeeCategoryCustom}
-                    onChange={(e) => upd("employeeCategoryCustom", e.target.value)}
-                    placeholder="기타 직군 · 자유 입력 (예: 인턴약사 · 청소 · 배송 등)"
-                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-                  />
-                )}
-                {/* 연차 유급휴가 (일) */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-slate-500 font-semibold shrink-0">연차 유급휴가</span>
+                <input
+                  type="text"
+                  value={form.employeeBirth}
+                  onChange={(e) => upd("employeeBirth", e.target.value)}
+                  placeholder="생년월일 (1990-01-15)"
+                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+                />
+              </div>
+              {/* 연락처 */}
+              <input
+                type="text"
+                value={form.employeePhone}
+                onChange={(e) => upd("employeePhone", e.target.value)}
+                placeholder="연락처 (010-1234-5678)"
+                className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+              />
+              {/* 주소 */}
+              <input
+                type="text"
+                value={form.employeeAddress}
+                onChange={(e) => upd("employeeAddress", e.target.value)}
+                placeholder="주소"
+                className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+              />
+              {/* 직원 카테고리 (4버튼) + 연차 인라인 */}
+              <div className="flex items-center gap-1">
+                {(["약사", "매장", "창고", "기타"] as const).map(cat => {
+                  const active = form.employeeCategory === cat;
+                  const activeColor =
+                    cat === "약사" ? "bg-violet-500 text-white border-violet-500" :
+                    cat === "매장" ? "bg-emerald-500 text-white border-emerald-500" :
+                    cat === "창고" ? "bg-orange-500 text-white border-orange-500" :
+                                     "bg-slate-600 text-white border-slate-600";
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => upd("employeeCategory", cat)}
+                      className={`px-2 py-1 rounded-lg border text-[12px] font-bold transition-colors cursor-pointer ${
+                        active ? activeColor : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  );
+                })}
+                <div className="flex items-center gap-1 ml-auto">
+                  <span className="text-[11px] text-slate-400 font-semibold shrink-0">연차</span>
                   <input
                     type="number"
                     min={0}
                     value={form.annualLeaveDays}
                     onChange={(e) => upd("annualLeaveDays", e.target.value)}
                     placeholder="15"
-                    className="w-24 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold text-right focus:outline-none focus:border-emerald-500 transition"
+                    className="w-14 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[14px] text-slate-800 font-semibold text-right focus:outline-none focus:border-emerald-500 focus:shadow-sm transition"
                   />
-                  <span className="text-[11px] text-slate-500 font-semibold">일</span>
+                  <span className="text-[11px] text-slate-400 font-semibold">일</span>
                 </div>
               </div>
+              {form.employeeCategory === "기타" && (
+                <input
+                  type="text"
+                  value={form.employeeCategoryCustom}
+                  onChange={(e) => upd("employeeCategoryCustom", e.target.value)}
+                  placeholder="기타 직군 자유 입력 (예: 인턴약사 · 청소 · 배송)"
+                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+                />
+              )}
             </div>
 
             {/* 사업주 정보 */}
-            <div>
-              <FieldLabel icon={<Buildings size={13} weight="fill" className="text-slate-500" />}>사업주 정보</FieldLabel>
-              <div className="grid grid-cols-1 gap-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    type="text"
-                    value={form.companyName}
-                    onChange={(e) => upd("companyName", e.target.value)}
-                    placeholder="사업체명"
-                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-                  />
-                  <input
-                    type="text"
-                    value={form.employerName}
-                    onChange={(e) => upd("employerName", e.target.value)}
-                    placeholder="대표자명"
-                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
-                  />
-                </div>
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel icon={<Buildings size={12} weight="fill" className="text-slate-400" />}>사업주 정보</FieldLabel>
+              {/* 사업체명 + 대표자명 한 줄 */}
+              <div className="grid grid-cols-2 gap-1.5">
                 <input
                   type="text"
-                  value={form.companyAddress}
-                  onChange={(e) => upd("companyAddress", e.target.value)}
-                  placeholder="사업장 주소"
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                  value={form.companyName}
+                  onChange={(e) => upd("companyName", e.target.value)}
+                  placeholder="사업체명"
+                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
                 />
+                <input
+                  type="text"
+                  value={form.employerName}
+                  onChange={(e) => upd("employerName", e.target.value)}
+                  placeholder="대표자명"
+                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+                />
+              </div>
+              {/* 사업장 주소 */}
+              <input
+                type="text"
+                value={form.companyAddress}
+                onChange={(e) => upd("companyAddress", e.target.value)}
+                placeholder="사업장 주소"
+                className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+              />
+              {/* 사업자등록번호 인라인 */}
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-400 font-semibold shrink-0">사업자등록번호</span>
                 <input
                   type="text"
                   value={form.companyRegNo}
                   onChange={(e) => upd("companyRegNo", e.target.value)}
-                  placeholder="사업자등록번호 (예: 123-45-67890)"
-                  className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                  placeholder="123-45-67890"
+                  className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
                 />
               </div>
             </div>
 
             {/* 계약 유형 */}
-            <div>
+            <div className="flex flex-col gap-1.5">
               <FieldLabel required>계약 유형</FieldLabel>
               <SelectOrCustom
                 value={form.contractType}
@@ -1016,25 +1052,27 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 onChange={(v) => upd("contractType", v)}
                 placeholder="예: 프리랜서"
               />
-              {/* 계약직 · 개월수 선택 (시작일 + N개월 → 종료일 자동) */}
+              {/* 계약직 · 개월수 선택 */}
               {form.contractType === "계약직" && (
-                <div className="mt-2">
-                  <div className="text-[11px] text-slate-500 font-semibold mb-1">계약 개월수</div>
-                  <SelectOrCustom
-                    value={form.contractMonths}
-                    options={["3", "6", "12", "18", "24", "36"]}
-                    onChange={(v) => upd("contractMonths", v)}
-                    placeholder="예: 9"
-                    suffix="개월"
-                  />
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-slate-400 font-semibold shrink-0">계약 개월수</span>
+                  <div className="flex-1">
+                    <SelectOrCustom
+                      value={form.contractMonths}
+                      options={["3", "6", "12", "18", "24", "36"]}
+                      onChange={(v) => upd("contractMonths", v)}
+                      placeholder="예: 9"
+                      suffix="개월"
+                    />
+                  </div>
                 </div>
               )}
             </div>
 
             {/* 근무 요일 */}
-            <div>
-              <FieldLabel icon={<CalendarBlank size={13} weight="fill" className="text-slate-500" />} required>근무 요일</FieldLabel>
-              <div className="flex flex-wrap gap-1.5">
+            <div className="flex flex-col gap-1">
+              <FieldLabel icon={<CalendarBlank size={12} weight="fill" className="text-slate-400" />} required>근무 요일</FieldLabel>
+              <div className="flex flex-wrap gap-1">
                 {DAYS.map(d => {
                   const on = form.workDays[d];
                   const isWeekend = d === "토" || d === "일";
@@ -1044,7 +1082,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                       type="button"
                       onClick={() => toggleDay(d)}
                       className={[
-                        "min-w-[38px] px-2.5 py-1.5 rounded-lg text-sm font-black transition-colors cursor-pointer border",
+                        "min-w-[34px] px-2 py-1 rounded-lg text-[12px] font-black transition-colors cursor-pointer border",
                         on
                           ? isWeekend
                             ? "bg-rose-500 text-white border-rose-600"
@@ -1056,28 +1094,31 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     </button>
                   );
                 })}
+                <span className="text-[11px] text-slate-400 font-semibold self-center ml-1">선택 {chosenDaysCount}일</span>
               </div>
-              <div className="text-[11px] text-slate-500 mt-1">선택된 요일: {chosenDaysCount}일</div>
             </div>
 
             {/* 주 근무 횟수 */}
-            <div>
-              <FieldLabel>주 근무 횟수 (일)</FieldLabel>
-              <SelectOrCustom
-                value={form.weeklyDays}
-                options={WEEKLY_DAYS}
-                onChange={(v) => upd("weeklyDays", v)}
-                suffix="일"
-                placeholder="예: 2.5"
-              />
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-slate-500 font-semibold shrink-0">주 근무 횟수</span>
+              <div className="flex-1">
+                <SelectOrCustom
+                  value={form.weeklyDays}
+                  options={WEEKLY_DAYS}
+                  onChange={(v) => upd("weeklyDays", v)}
+                  suffix="일"
+                  placeholder="예: 2.5"
+                />
+              </div>
             </div>
 
             {/* 근무 시간 */}
-            <div>
-              <FieldLabel icon={<ClockClockwise size={13} weight="fill" className="text-slate-500" />} required>근무 시간</FieldLabel>
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <div>
-                  <div className="text-[11px] text-slate-500 font-semibold mb-1">시작</div>
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel icon={<ClockClockwise size={12} weight="fill" className="text-slate-400" />} required>근무 시간</FieldLabel>
+              {/* 시작 · 종료 · 휴게 한 줄 */}
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <div className="text-[11px] text-slate-400 font-semibold mb-0.5">시작</div>
                   <SelectOrCustom
                     value={form.startTime}
                     options={START_TIMES}
@@ -1085,8 +1126,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     placeholder="HH:MM"
                   />
                 </div>
-                <div>
-                  <div className="text-[11px] text-slate-500 font-semibold mb-1">종료</div>
+                <div className="flex-1">
+                  <div className="text-[11px] text-slate-400 font-semibold mb-0.5">종료</div>
                   <SelectOrCustom
                     value={form.endTime}
                     options={END_TIMES}
@@ -1094,75 +1135,74 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                     placeholder="HH:MM"
                   />
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Coffee size={13} className="text-slate-400" />
-                <span className="text-[11px] text-slate-500 font-semibold">휴게시간</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={form.breakMinutes}
-                  onChange={(e) => upd("breakMinutes", e.target.value)}
-                  className="w-20 bg-white border border-slate-200 rounded-lg px-2 py-1 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition text-right"
-                />
-                <span className="text-[11px] text-slate-500 font-semibold">분</span>
+                <div className="flex items-center gap-1 pb-0.5">
+                  <Coffee size={12} className="text-slate-400 shrink-0" />
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.breakMinutes}
+                    onChange={(e) => upd("breakMinutes", e.target.value)}
+                    className="w-14 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition text-right"
+                  />
+                  <span className="text-[11px] text-slate-400 font-semibold">분</span>
+                </div>
               </div>
             </div>
 
             {/* 시급 */}
-            <div>
-              <FieldLabel icon={<Money size={13} weight="fill" className="text-slate-500" />} required>시급 (원)</FieldLabel>
-              <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel icon={<Money size={12} weight="fill" className="text-slate-400" />} required>시급 (원)</FieldLabel>
+              <div className="grid grid-cols-2 gap-1.5">
                 <div>
-                  <div className="text-[11px] text-slate-500 font-semibold mb-1">주중</div>
+                  <div className="text-[11px] text-slate-400 font-semibold mb-0.5">주중</div>
                   <div className="relative">
                     <input
                       type="text"
                       inputMode="numeric"
                       value={form.weekdayHourly}
                       onChange={(e) => upd("weekdayHourly", e.target.value.replace(/[^0-9]/g, ""))}
-                      className="w-full bg-white border border-slate-200 rounded-lg pl-2.5 pr-8 py-1.5 text-sm text-slate-800 font-black focus:outline-none focus:border-emerald-500 transition text-right"
+                      className="w-full bg-white border border-slate-200 rounded-lg pl-2 pr-7 py-1.5 text-[12px] text-slate-800 font-black focus:outline-none focus:border-emerald-500 focus:shadow-sm transition text-right"
                     />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold pointer-events-none">원</span>
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-semibold pointer-events-none">원</span>
                   </div>
                 </div>
                 <div>
-                  <div className="text-[11px] text-slate-500 font-semibold mb-1">주말</div>
+                  <div className="text-[11px] text-slate-400 font-semibold mb-0.5">주말</div>
                   <div className="relative">
                     <input
                       type="text"
                       inputMode="numeric"
                       value={form.weekendHourly}
                       onChange={(e) => upd("weekendHourly", e.target.value.replace(/[^0-9]/g, ""))}
-                      className="w-full bg-white border border-slate-200 rounded-lg pl-2.5 pr-8 py-1.5 text-sm text-slate-800 font-black focus:outline-none focus:border-emerald-500 transition text-right"
+                      className="w-full bg-white border border-slate-200 rounded-lg pl-2 pr-7 py-1.5 text-[12px] text-slate-800 font-black focus:outline-none focus:border-emerald-500 focus:shadow-sm transition text-right"
                     />
-                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-semibold pointer-events-none">원</span>
+                    <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[11px] text-slate-400 font-semibold pointer-events-none">원</span>
                   </div>
                 </div>
               </div>
             </div>
 
             {/* 계약 기간 */}
-            <div>
+            <div className="flex flex-col gap-1.5">
               <FieldLabel required>계약 기간</FieldLabel>
-              <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className="grid grid-cols-2 gap-1.5">
                 <div>
-                  <div className="text-[11px] text-slate-500 font-semibold mb-1">시작일</div>
+                  <div className="text-[11px] text-slate-400 font-semibold mb-0.5">시작일</div>
                   <input
                     type="date"
                     value={form.startDate}
                     onChange={(e) => upd("startDate", e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                    className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition"
                   />
                 </div>
                 <div>
-                  <div className="text-[11px] text-slate-500 font-semibold mb-1">종료일</div>
+                  <div className="text-[11px] text-slate-400 font-semibold mb-0.5">종료일</div>
                   <input
                     type="date"
                     value={form.endDate}
                     onChange={(e) => upd("endDate", e.target.value)}
                     disabled={form.indefinite}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                    className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                   />
                 </div>
               </div>
@@ -1173,19 +1213,19 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   onChange={(e) => upd("indefinite", e.target.checked)}
                   className="w-4 h-4 accent-emerald-600"
                 />
-                <span className="text-xs font-semibold text-slate-700">무기한 (기간의 정함 없음 · 정규직)</span>
+                <span className="text-[12px] font-semibold text-slate-700">무기한 (기간의 정함 없음 · 정규직)</span>
               </label>
             </div>
 
             {/* 담당 업무 */}
-            <div>
+            <div className="flex flex-col gap-1">
               <FieldLabel required>담당 업무</FieldLabel>
               <input
                 type="text"
                 value={form.jobDuty}
                 onChange={(e) => upd("jobDuty", e.target.value)}
                 placeholder="예: 약국 카운터 · OTC 판매"
-                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
               />
             </div>
 
@@ -1198,28 +1238,28 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   onChange={(e) => upd("socialInsurance", e.target.checked)}
                   className="w-4 h-4 accent-emerald-600"
                 />
-                <span className="text-sm font-bold text-slate-700">4대보험 가입 (고용·산재·국민연금·건강보험)</span>
+                <span className="text-[12px] font-bold text-slate-700">4대보험 가입 (고용·산재·국민연금·건강보험)</span>
               </label>
             </div>
 
             {/* 추가 내용 */}
-            <div>
-              <FieldLabel icon={<Notepad size={13} weight="fill" className="text-slate-500" />}>추가 내용</FieldLabel>
+            <div className="flex flex-col gap-1">
+              <FieldLabel icon={<Notepad size={12} weight="fill" className="text-slate-400" />}>추가 내용</FieldLabel>
               <textarea
                 value={form.additionalContent}
                 onChange={(e) => upd("additionalContent", e.target.value)}
-                rows={4}
+                rows={3}
                 placeholder="계약서에 추가로 명시할 내용 (예: 수습기간 3개월 · 명절 상여 별도 등)"
-                className="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-2 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition resize-y"
+                className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition resize-y placeholder:text-slate-400 placeholder:text-[12px]"
               />
             </div>
 
             {/* 서명 영역 */}
-            <div className="border-t border-slate-100 pt-3">
+            <div className="border-t border-slate-100 pt-2.5">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
-                  <Signature size={14} weight="fill" className="text-slate-500" />
-                  <span className="text-[12px] font-bold text-slate-600">서명 (사업주 · 근로자 · 손가락 또는 마우스)</span>
+                  <Signature size={13} weight="fill" className="text-slate-400" />
+                  <span className="text-[12px] font-bold text-slate-600">서명 (사업주 · 근로자)</span>
                 </div>
                 <button
                   type="button"
@@ -1236,8 +1276,8 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 <SignArea label="근로자 서명" padRef={employeePadRef} color="indigo" />
               </div>
 
-              {/* 계약 완료 · PDF 다운 · 서명 아래에 배치 */}
-              <div className="mt-4 flex justify-end">
+              {/* 계약 완료 · PDF 다운 */}
+              <div className="mt-3 flex justify-end">
                 <button
                   type="button"
                   onClick={handleComplete}
