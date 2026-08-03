@@ -493,11 +493,17 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
 
 // ─── PurchaseSubTabs · Container ──────────────────────────────────────────
 
-const TABS: { key: TabKey; label: string; icon: React.ReactNode; hint: string }[] = [
-  { key: "ledger",  label: "매입원장",   icon: <ListOrdered size={12} />, hint: "선택 기간 · 원장 뷰" },
-  { key: "product", label: "상품별 집계", icon: <Package2 size={12} />,   hint: "최근 1년 · groupBy 상품명" },
-  { key: "trend",   label: "매입 추이",   icon: <BarChart3 size={12} />,  hint: "12개월 bar · TOP 상품 도넛" },
+const TABS: { key: TabKey; label: string; icon: React.ElementType; hint: string; color: string }[] = [
+  { key: "ledger",  label: "매입원장",   icon: ListOrdered, hint: "선택 기간 · 원장 뷰",          color: "emerald" },
+  { key: "product", label: "상품별 집계", icon: Package2,    hint: "최근 1년 · groupBy 상품명",    color: "sky"     },
+  { key: "trend",   label: "매입 추이",   icon: BarChart3,   hint: "12개월 bar · TOP 상품 도넛",   color: "violet"  },
 ];
+
+const PURCHASE_SUBTAB_COLORS: Record<string, { text: string; bar: string; hoverText: string }> = {
+  emerald: { text: "text-emerald-700", bar: "bg-emerald-500", hoverText: "hover:text-emerald-700" },
+  sky:     { text: "text-sky-700",     bar: "bg-sky-500",     hoverText: "hover:text-sky-700"     },
+  violet:  { text: "text-violet-700",  bar: "bg-violet-500",  hoverText: "hover:text-violet-700"  },
+};
 
 export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
   ledgerRows,
@@ -520,23 +526,33 @@ export const PurchaseSubTabs: React.FC<PurchaseSubTabsProps> = ({
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col min-h-0 flex-1">
       {/* 탭 헤더 */}
-      <div className="flex items-center border-b border-slate-100 px-2 pt-2 gap-1">
-        {TABS.map(t => (
-          <button
-            key={t.key}
-            type="button"
-            onClick={() => setTab(t.key)}
-            title={t.hint}
-            className={`inline-flex items-center gap-1.5 px-3 h-8 text-[12px] font-semibold rounded-t-md transition cursor-pointer border-b-2 ${
-              tab === t.key
-                ? "text-emerald-700 border-emerald-500 bg-emerald-50/50"
-                : "text-slate-500 border-transparent hover:text-slate-700 hover:bg-slate-50"
-            }`}
-          >
-            {t.icon}
-            {t.label}
-          </button>
-        ))}
+      <div className="flex items-center border-b border-slate-200 bg-slate-50/50 px-2 pt-1 gap-0">
+        {TABS.map(t => {
+          const Icon = t.icon;
+          const active = tab === t.key;
+          const c = PURCHASE_SUBTAB_COLORS[t.color];
+          return (
+            <button
+              key={t.key}
+              type="button"
+              onClick={() => setTab(t.key)}
+              title={t.hint}
+              className={[
+                "relative flex items-center gap-2 sm:gap-2.5",
+                "px-4 sm:px-6 py-3.5 sm:py-4",
+                "text-[16px] sm:text-[18px] font-black leading-none whitespace-nowrap",
+                "transition-colors duration-150 cursor-pointer outline-none",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300",
+                "active:opacity-70",
+                active ? c.text : `text-slate-500 ${c.hoverText}`,
+              ].join(" ")}
+            >
+              <Icon size={19} className={`shrink-0 sm:size-[20px] transition-colors duration-150 ${active ? c.text : "text-slate-400"}`} />
+              <span>{t.label}</span>
+              {active && <span className={`absolute left-0 right-0 -bottom-px h-[2.5px] ${c.bar} rounded-t-sm`} />}
+            </button>
+          );
+        })}
         <div className="ml-auto flex items-center gap-1 text-[10px] text-slate-400 pr-2">
           <ArrowUpDown size={10} />
           <span>헤더 클릭 정렬</span>
