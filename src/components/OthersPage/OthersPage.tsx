@@ -1,11 +1,10 @@
 // src/components/OthersPage/OthersPage.tsx
-// 2026-08-03 · 기타 도구 페이지 · 관리자용 · 잘 안 쓰이는 3개 페이지 링크 카드 그리드
+// 2026-08-03 · 기타 도구 페이지 · 관리자용 · 잘 안 쓰이는 페이지 링크 카드 그리드
 //   - 재고·판매 통합 (InventorySalesPage) · sky
-//   - 재고실사 (StockCheckPage) · emerald
 //   - OCR 동의어 관리 (SynonymPage) · amber
 // 미로그인/일반 직원은 접근 제한 (관리자 level 2+ 만)
 import React from "react";
-import { BarChart2, Package, BookOpen, ChevronRight, LayoutGrid } from "lucide-react";
+import { BarChart2, BookOpen, ChevronRight, LayoutGrid } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import type { AuthSession } from "../../types";
 
@@ -17,7 +16,7 @@ interface OthersPageProps {
 }
 
 interface ToolCard {
-  key: "inventory-sales" | "stockcheck" | "synonyms";
+  key: "inventory-sales" | "synonyms";
   title: string;
   subtitle: string;
   Icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
@@ -46,20 +45,6 @@ const CARDS: ToolCard[] = [
     iconText: "text-sky-600",
     ctaText: "text-sky-600",
     overlayGrad: "linear-gradient(135deg, rgba(224,242,254,0.7) 0%, transparent 60%)",
-  },
-  {
-    key: "stockcheck",
-    title: "재고실사",
-    subtitle: "매장 상품별 재고 상태 · 실사 도구",
-    Icon: Package,
-    cta: "열기",
-    borderHover: "hover:border-emerald-300",
-    bgGrad: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
-    iconGrad: "linear-gradient(135deg, #d1fae5, #a7f3d0)",
-    iconBorder: "1px solid #6ee7b7",
-    iconText: "text-emerald-600",
-    ctaText: "text-emerald-600",
-    overlayGrad: "linear-gradient(135deg, rgba(209,250,229,0.7) 0%, transparent 60%)",
   },
   {
     key: "synonyms",

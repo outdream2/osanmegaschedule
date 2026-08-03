@@ -29,6 +29,7 @@ import { ReturnListPanel } from "./ReturnListPanel";
 import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
 import { PaymentInfoTab } from "./PaymentInfoTab";
 import { CategoryTab } from "./CategoryTab";
+import { VendorDetailTabs } from "./VendorDetailTabs";
 import { BarChart2, PieChart, ArrowLeftRight, Boxes } from "lucide-react";
 
 interface OrderRequest {
@@ -1278,38 +1279,33 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 title="드래그하여 폭 조절">
                 <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
               </div>
-              {/* 우측: 선택 공급사 상세 · 모바일 fullscreen 모달 */}
-              <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-slate-50 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible" : ""}`}>
+              {/* 우측: 선택 공급사 상세 (VendorDetailTabs — 헤더 + 2탭) */}
+              <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 overflow-y-auto lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-slate-50 p-3 lg:static lg:z-auto lg:bg-transparent lg:p-0 lg:overflow-visible" : ""}`}>
                 {vendorSelected && (
-                  <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md">
-                    <div className="flex items-center gap-2 px-3 py-2">
-                      <button type="button" onClick={() => setVendorSelected(null)}
-                        className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
-                        <span className="text-lg font-black">×</span>
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-black text-slate-800 truncate leading-tight">{vendorSelected.company_name}</div>
-                        <div className="text-[10px] font-mono text-slate-500 truncate">공급사 상세 · 편집</div>
-                      </div>
+                  <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md -mx-3 px-3 py-2 mb-1 flex items-center gap-2">
+                    <button type="button" onClick={() => setVendorSelected(null)}
+                      className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
+                      <span className="text-lg font-black">×</span>
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-black text-slate-800 leading-tight">{vendorSelected.company_name}</div>
+                      <div className="text-[10px] text-slate-500">공급사 상세 · 결제잔고 · 매입이력</div>
                     </div>
+                    <button type="button"
+                      onClick={() => setVendorSelected(null)}
+                      className="text-[11px] font-black text-sky-600 border border-sky-200 bg-sky-50 hover:bg-sky-100 rounded-lg px-3 py-1 transition cursor-pointer shrink-0">
+                      닫기
+                    </button>
                   </div>
                 )}
                 {!vendorSelected ? (
                   <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
                     <Building2 size={40} className="mb-3 opacity-30" />
                     <div className="text-sm font-bold">리스트에서 공급사를 클릭하세요</div>
-                    <div className="text-[11px] mt-1">상세 정보 · 편집 · 매입이력이 표시됩니다</div>
+                    <div className="text-[11px] mt-1">헤더 정보 + 결제잔고 + 매입이력이 표시됩니다</div>
                   </div>
                 ) : (
-                  <VendorDetailModal
-                    vendor={vendorSelected}
-                    panel
-                    onClose={() => setVendorSelected(null)}
-                    onSaved={() => {
-                      setVendorReloadKey(k => k + 1);
-                      handleVendorEditRequest(vendorSelected.id);
-                    }}
-                  />
+                  <VendorDetailTabs vendor={vendorSelected} />
                 )}
               </div>
             </div>
@@ -1336,19 +1332,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 title="드래그하여 폭 조절">
                 <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
               </div>
-              {/* 우측: 선택 공급사 결제·잔고 모달 (panel 모드) */}
-              <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-slate-50 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible" : ""}`}>
+              {/* 우측: 선택 공급사 결제·잔고 (VendorDetailTabs — 결제잔고 탭 기본) */}
+              <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 overflow-y-auto lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-slate-50 p-3 lg:static lg:z-auto lg:bg-transparent lg:p-0 lg:overflow-visible" : ""}`}>
                 {vendorSelected && (
-                  <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md">
-                    <div className="flex items-center gap-2 px-3 py-2">
-                      <button type="button" onClick={() => setVendorSelected(null)}
-                        className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
-                        <span className="text-lg font-black">×</span>
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13px] font-black text-slate-800 truncate leading-tight">{vendorSelected.company_name}</div>
-                        <div className="text-[10px] font-mono text-slate-500 truncate">결제 · 잔고 원장</div>
-                      </div>
+                  <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md -mx-3 px-3 py-2 mb-1 flex items-center gap-2">
+                    <button type="button" onClick={() => setVendorSelected(null)}
+                      className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
+                      <span className="text-lg font-black">×</span>
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[13px] font-black text-slate-800 leading-tight">{vendorSelected.company_name}</div>
+                      <div className="text-[10px] text-slate-500">결제 · 잔고 원장</div>
                     </div>
                   </div>
                 )}
@@ -1359,15 +1353,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     <div className="text-[11px] mt-1">결제 원장 · 잔고가 표시됩니다</div>
                   </div>
                 ) : (
-                  <VendorDetailModal
-                    vendor={vendorSelected}
-                    panel
-                    onClose={() => setVendorSelected(null)}
-                    onSaved={() => {
-                      setVendorReloadKey(k => k + 1);
-                      handleVendorEditRequest(vendorSelected.id);
-                    }}
-                  />
+                  <VendorDetailTabs vendor={vendorSelected} />
                 )}
               </div>
             </div>
