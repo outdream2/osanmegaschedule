@@ -1003,8 +1003,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </div>
                 </button>
 
-                {/* 약사 전용 — sky · 약사(level=3)만 노출 · 2026-08-03 */}
-                {(authSession?.level === 3 || (authSession?.employeeRank ?? "").includes("약사")) && (
+                {/* 약사 전용 — sky · level ≥ 3 만 노출 · 2026-08-03 */}
+                {(authSession?.level ?? 0) >= 3 && (
                   <button data-menu-card onClick={() => onNavigate("pharmacist" as any, authSession!)}
                     className="group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-gradient-to-br from-sky-100/70 to-transparent" />

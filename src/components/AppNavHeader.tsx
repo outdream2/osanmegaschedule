@@ -114,15 +114,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
 
   // 2026-08-03 · 경영관리 팝오버 제거 (business-manage 통합 페이지로 라우팅)
 
-  // 약사 판정 · level === 3 (약사 전용 레벨) or 직책/role 이 '약사' · **관리자도 안 보임** (약사만)
+  // 약사 판정 · level ≥ 3 · 사용자 확정 (2026-08-03)
   const isPharmacist = useMemo(() => {
     if (!authSession) return false;
-    if ((authSession.level ?? 0) === 3) return true;      // 약사 · 지정 레벨 (사용자 확정)
-    const rank = (authSession.employeeRank ?? "").toString();
-    const role = (authSession.role ?? "").toString().toLowerCase();
-    if (rank.includes("약사")) return true;
-    if (role === "pharmacist") return true;
-    return false;
+    return (authSession.level ?? 0) >= 3;
   }, [authSession]);
 
   const visibleTabs = useMemo(() => TABS.filter((t) => {
