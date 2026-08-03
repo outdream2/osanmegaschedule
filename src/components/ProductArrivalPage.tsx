@@ -26,6 +26,8 @@ interface ProductArrivalPageProps {
   authSession?: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  /** 2026-08-03 · true 이면 AppNavHeader 및 min-h-screen 컨테이너 skip · 부모 서브탭 임베드 모드 */
+  embedded?: boolean;
 }
 
 // 일치/불일치 배타 · 유통기한임박 독립 toggle
@@ -91,7 +93,7 @@ const SortIcon: React.FC<{ active: boolean; dir: SortDir }> = ({ active, dir }) 
 // Main Component
 // ─────────────────────────────────────────────────────────────
 export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
-  onBack, authSession, onNavigate, onLogout,
+  onBack, authSession, onNavigate, onLogout, embedded = false,
 }) => {
   const [scannerOpen, setScannerOpen]           = useState(false);
   const [mapLoading, setMapLoading]             = useState(false);
@@ -244,30 +246,32 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   // Render
   // ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#f8f9fb] flex flex-col">
+    <div className={embedded ? "flex-1 flex flex-col bg-[#f8f9fb]" : "min-h-screen bg-[#f8f9fb] flex flex-col"}>
 
-      {/* ── AppNavHeader (유지) ── */}
-      <AppNavHeader
-        activePage="productarrival"
-        authSession={authSession ?? null}
-        onBack={onBack}
-        onNavigate={onNavigate}
-        onLogout={onLogout}
-        rightSlot={
-          items.length > 0 ? (
-            <button
-              onClick={resetAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
-                text-slate-500 hover:text-slate-800 bg-white border border-slate-200
-                hover:bg-slate-50 hover:border-slate-300 shadow-sm
-                transition-all duration-150 cursor-pointer"
-            >
-              <RotateCcw size={12} />
-              초기화
-            </button>
-          ) : undefined
-        }
-      />
+      {/* ── AppNavHeader (embedded 모드에선 부모가 헤더 렌더 · skip) ── */}
+      {!embedded && (
+        <AppNavHeader
+          activePage="productarrival"
+          authSession={authSession ?? null}
+          onBack={onBack}
+          onNavigate={onNavigate}
+          onLogout={onLogout}
+          rightSlot={
+            items.length > 0 ? (
+              <button
+                onClick={resetAll}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
+                  text-slate-500 hover:text-slate-800 bg-white border border-slate-200
+                  hover:bg-slate-50 hover:border-slate-300 shadow-sm
+                  transition-all duration-150 cursor-pointer"
+              >
+                <RotateCcw size={12} />
+                초기화
+              </button>
+            ) : undefined
+          }
+        />
+      )}
 
       {/* ── Toast ── */}
       {toast && <Toast message={toast} />}

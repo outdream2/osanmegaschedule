@@ -1,6 +1,6 @@
 // src/components/SettingsModal.tsx
 import React, { useState, useEffect, useRef } from "react";
-import { X, Plus, Trash2, GripVertical, Check } from "lucide-react";
+import { X, Plus, Trash2, GripVertical, Check, MapPin, ChevronRight } from "lucide-react";
 import { AppSettings, WageRate, ScheduleTypeEntry } from "../../hooks/useSettings";
 import { COLOR_PRESETS, findPresetByBg } from "../../constants";
 
@@ -15,6 +15,8 @@ interface SettingsModalProps {
   sessionEmployeeId?: number | null;
   /** true 면 fixed 모달 chrome 없이 인라인으로 렌더링 (설정 페이지 탭 등에서 사용) */
   embedded?: boolean;
+  /** 2026-08-03 · 구역 라벨 관리 링크 클릭 시 페이지 전환 콜백 (선택) · 없으면 링크 숨김 */
+  onNavigateZoneLabels?: () => void;
 }
 
 type TabId = "positions" | "workplaces" | "scheduleTypes" | "wages" | "account";
@@ -114,7 +116,7 @@ const ColorPicker: React.FC<ColorPickerProps> = ({ value, onChange }) => {
   );
 };
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onApplyShiftHours, onClose, employees, editMode, onEnableEditMode, sessionEmployeeId, embedded = false }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate, onApplyShiftHours, onClose, employees, editMode, onEnableEditMode, sessionEmployeeId, embedded = false, onNavigateZoneLabels }) => {
   const [activeTab, setActiveTab] = useState<TabId>("positions");
 
   // ─── 비밀번호 변경 상태 ─────────────────────────────────────
@@ -372,6 +374,26 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ settings, onUpdate
             </button>
           ))}
         </div>
+
+        {/* 2026-08-03 · 구역 라벨 관리 링크 (권한 조정 페이지 · 환경설정 탭에서 노출) */}
+        {onNavigateZoneLabels && (
+          <div className="px-6 pt-4 shrink-0">
+            <button
+              type="button"
+              onClick={() => { onNavigateZoneLabels(); onClose(); }}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-sky-200 bg-gradient-to-br from-sky-50 to-cyan-50 hover:border-sky-400 hover:shadow-sm active:scale-[0.99] transition-all cursor-pointer text-left group"
+            >
+              <div className="w-9 h-9 rounded-lg bg-white border border-sky-200 flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition">
+                <MapPin size={16} className="text-sky-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-black text-slate-800 leading-tight">구역 라벨 관리</div>
+                <div className="text-[11px] font-semibold text-slate-500 leading-tight mt-0.5">매장 구역 번호·부제 편집 · 모든 페이지 반영</div>
+              </div>
+              <ChevronRight size={16} className="text-sky-500 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          </div>
+        )}
 
         {/* Tab Content */}
         <div className="flex-1 overflow-y-auto overflow-x-auto min-w-0 px-6 py-5 space-y-4">

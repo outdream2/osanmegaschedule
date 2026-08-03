@@ -3,11 +3,14 @@
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
 // 사입(OCR거래명세서 등록) 탭에서는 거래명세서 OCR(OcrPage) 노출
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp } from "lucide-react";
+import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
 import { OcrPage } from "../OcrPage";
+// 2026-08-03 · 매입 서브탭 임베드용 · ScanPage · ProductArrivalPage
+import { ScanPage } from "../ScanPage";
+import { ProductArrivalPage } from "../ProductArrivalPage";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../AppNavHeader";
 // VendorListEditor · VendorDetailModal · Vendor — split 패널 구성 (static import · panel 모드 지원)
@@ -108,7 +111,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   }, [initialTopTab]);
   // Level-2 서브탭 상태
   const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "low">("need");
-  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "arrival_history" | "return" | "purchase-history">("receipt");
+  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "arrival_history" | "scan" | "productarrival" | "return" | "purchase-history">("receipt");
   const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment" | "payment-info">("vendor");
   const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff">("trending");
 
@@ -1187,6 +1190,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             { k: "receipt"          as const, label: "사입·OCR",   icon: PackageCheck,    color: "violet" },
             { k: "reconciliation"   as const, label: "실재고반영",  icon: CheckCircle2,    color: "emerald" },
             { k: "arrival_history"  as const, label: "입고내역",    icon: Package,         color: "indigo" },
+            { k: "scan"             as const, label: "실재고입력",  icon: ScanLine,        color: "amber" },
+            { k: "productarrival"   as const, label: "상품입고",    icon: PackagePlus,     color: "teal" },
             { k: "return"           as const, label: "반품필요",    icon: ArrowLeftRight,  color: "rose" },
             { k: "purchase-history" as const, label: "매입이력",    icon: Building2,       color: "sky" },
           ], purchaseSubTab, setPurchaseSubTab)}
@@ -1307,6 +1312,30 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         </div>
       )}
 
+          {/* ── 실재고입력 서브탭 (2026-08-03 · ScanPage 임베드) ── */}
+          {purchaseSubTab === "scan" && (
+            <div className="flex-1 flex flex-col min-h-0 -mt-1">
+              <ScanPage
+                embedded
+                onBack={ocrTabOnBack ?? (() => {})}
+                authSession={ocrTabAuthSession ?? null}
+                onNavigate={ocrTabOnNavigate}
+                onLogout={ocrTabOnLogout}
+              />
+            </div>
+          )}
+          {/* ── 상품입고 서브탭 (2026-08-03 · ProductArrivalPage 임베드) ── */}
+          {purchaseSubTab === "productarrival" && (
+            <div className="flex-1 flex flex-col min-h-0 -mt-1">
+              <ProductArrivalPage
+                embedded
+                onBack={ocrTabOnBack ?? (() => {})}
+                authSession={ocrTabAuthSession ?? null}
+                onNavigate={ocrTabOnNavigate}
+                onLogout={ocrTabOnLogout}
+              />
+            </div>
+          )}
           {/* ── 반품필요 서브탭 ── */}
           {purchaseSubTab === "return" && (
             <div className="flex-1 min-h-0">

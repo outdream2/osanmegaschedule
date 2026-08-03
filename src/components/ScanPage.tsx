@@ -27,6 +27,8 @@ interface ScanPageProps {
   authSession?: AuthSession | null;
   onNavigate?: (page: AppNavPage) => void;
   onLogout?: () => void;
+  /** 2026-08-03 · true 이면 AppNavHeader 및 min-h-screen 컨테이너 skip · 부모 서브탭 임베드 모드 */
+  embedded?: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -116,7 +118,7 @@ const NumberInput: React.FC<NumberInputProps> = ({
 // Main Component
 // ─────────────────────────────────────────────────────────────
 export const ScanPage: React.FC<ScanPageProps> = ({
-  onBack, authSession, onNavigate, onLogout,
+  onBack, authSession, onNavigate, onLogout, embedded = false,
 }) => {
   // ── scanner
   const [scannerOpen, setScannerOpen]           = useState(false);
@@ -316,30 +318,32 @@ export const ScanPage: React.FC<ScanPageProps> = ({
   // Render
   // ─────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-[#f8f9fb] flex flex-col">
+    <div className={embedded ? "flex-1 flex flex-col bg-[#f8f9fb]" : "min-h-screen bg-[#f8f9fb] flex flex-col"}>
 
-      {/* ── AppNavHeader ── */}
-      <AppNavHeader
-        activePage="scan"
-        authSession={authSession ?? null}
-        onBack={onBack}
-        onNavigate={onNavigate}
-        onLogout={onLogout}
-        rightSlot={
-          rows.length > 0 ? (
-            <button
-              onClick={resetAll}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
-                text-slate-500 hover:text-slate-800 bg-white border border-slate-200
-                hover:bg-slate-50 hover:border-slate-300 shadow-sm
-                transition-all duration-150 cursor-pointer"
-            >
-              <RotateCcw size={12} />
-              초기화
-            </button>
-          ) : undefined
-        }
-      />
+      {/* ── AppNavHeader (embedded 모드에선 부모가 헤더 렌더 · skip) ── */}
+      {!embedded && (
+        <AppNavHeader
+          activePage="scan"
+          authSession={authSession ?? null}
+          onBack={onBack}
+          onNavigate={onNavigate}
+          onLogout={onLogout}
+          rightSlot={
+            rows.length > 0 ? (
+              <button
+                onClick={resetAll}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
+                  text-slate-500 hover:text-slate-800 bg-white border border-slate-200
+                  hover:bg-slate-50 hover:border-slate-300 shadow-sm
+                  transition-all duration-150 cursor-pointer"
+              >
+                <RotateCcw size={12} />
+                초기화
+              </button>
+            ) : undefined
+          }
+        />
+      )}
 
       {/* ── Toast ── */}
       {toast && <Toast message={toast} />}

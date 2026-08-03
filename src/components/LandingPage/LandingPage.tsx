@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect, useMemo } from "react";
 import axios from "axios";
 import {
   ChevronRight,
-  MapPin,
   Clock,
   Lock,
   X,
@@ -29,7 +28,6 @@ import {
   Calendar,
   Scan,
   Table,
-  FileText,
   CheckCircle,
   ForkKnife,
   Package,
@@ -235,6 +233,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
   const [requestsCounts, setRequestsCounts] = useState({ display: 0, order: 0, mismatch: 0, lunch: 0 });
   // 직원용: 나에게 배정된 진열 보충 요청 중 pending 개수
   const [myPendingCount, setMyPendingCount] = useState(0);
+
+  // 2026-08-03 · 메뉴 검색 · 관리자·직원 카드 이름·부제 매칭 · [data-menu-card] 요소를 조회하여 필터링
+  const [menuSearch, setMenuSearch] = useState<string>("");
+  useEffect(() => {
+    const q = menuSearch.trim().toLowerCase();
+    const nodes = document.querySelectorAll<HTMLElement>("[data-menu-card]");
+    nodes.forEach(el => {
+      if (!q) { el.style.display = ""; return; }
+      const text = (el.textContent ?? "").toLowerCase();
+      el.style.display = text.includes(q) ? "" : "none";
+    });
+  });
 
   // 2026-08-03 · 경영관리 팝오버 제거 · business-manage 통합 페이지로 단순 라우팅
 
@@ -932,6 +942,33 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
           {/* Hero brand area · 로그인 사용자 표시는 헤더 탭 아래 [이름 직급] 로 통일 */}
           <div className="w-full mb-3 px-1" />
 
+          {/* 2026-08-03 · 메뉴 검색 · 관리자·직원 카드 이름·부제 텍스트 매칭 (거래처는 검색 제외) */}
+          {isLoggedIn && !isVendor && (
+            <div className="w-full mb-5 px-1">
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                <input
+                  type="search"
+                  value={menuSearch}
+                  onChange={e => setMenuSearch(e.target.value)}
+                  placeholder="메뉴 검색"
+                  className="w-full h-10 pl-9 pr-9 text-[13px] font-semibold text-slate-800 bg-white border border-slate-200 rounded-xl shadow-sm placeholder:text-slate-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition"
+                />
+                {menuSearch && (
+                  <button
+                    type="button"
+                    onClick={() => setMenuSearch("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-100 transition cursor-pointer"
+                    aria-label="검색어 지우기"
+                    title="지우기"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ── 관리자 도구 (관리자 로그인 시에만 표시) ── */}
           {isManagerOrAdmin && (
             <div className="w-full mb-7">
@@ -945,7 +982,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
 
                 {/* 매장관리 · 재고관리 — sky */}
-                <button onClick={() => onNavigate("display", authSession!)}
+                <button data-menu-card onClick={() => onNavigate("display", authSession!)}
                   className="group relative bg-white border border-slate-200/80 hover:border-sky-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,242,254,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
@@ -966,7 +1003,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </button>
 
                 {/* 경영관리 — violet · business-manage 통합 페이지로 단순 라우팅 · 2026-08-03 */}
-                <button onClick={() => onNavigate("business-manage", authSession!)}
+                <button data-menu-card onClick={() => onNavigate("business-manage", authSession!)}
                   className="group relative bg-white border border-slate-200/80 hover:border-violet-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(237,233,254,0.7) 0%, transparent 60%)" }} />
                   {leavePendingCount > 0 && (
@@ -988,7 +1025,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </button>
 
                 {/* 요청목록 조회 — indigo */}
-                <button onClick={() => onNavigate("requests", authSession!)}
+                <button data-menu-card onClick={() => onNavigate("requests", authSession!)}
                   className="group relative bg-white border border-slate-200/80 hover:border-indigo-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,231,255,0.7) 0%, transparent 60%)" }} />
                   <div className="absolute top-2 right-2 flex items-center gap-0.5">
@@ -1013,6 +1050,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 {/* 데이터 업로드 (통합) — orange (level 9 전용) — 상품목록 · 재고리스트 서브탭 */}
                 {isSuperAdminLevel9 && (
                   <button
+                    data-menu-card
                     onClick={() => { setUploadOpen(true); setUploadTab("products"); setUploadResult(null); setUploadFile(null); setStockUploadResult(null); setStockUploadFile(null); fetchImportLog(); fetchStockImportLog(); }}
                     className="group relative bg-white border border-slate-200/80 hover:border-orange-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
@@ -1030,28 +1068,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </button>
                 )}
 
-                {/* 거래명세서 OCR — amber */}
-                <button onClick={() => onNavigate("ocr", authSession!)}
-                  className="group relative bg-white border border-slate-200/80 hover:border-amber-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                  <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(254,243,199,0.7) 0%, transparent 60%)" }} />
-                  <div className="relative">
-                    <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #fef9c3, #fef08a)", border: "1px solid #fde047" }}>
-                      <FileText size={16} className="text-yellow-600 sm:hidden" weight="fill" /><FileText size={20} className="text-yellow-600 hidden sm:block" weight="fill" />
-                    </div>
-                    <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">거래명세서 OCR</div>
-                    <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">PDF 업로드로 거래명세서 자동 추출</div>
-                    <div className="flex items-center gap-1 mt-2 text-yellow-600 text-xs font-bold">
-                      <span className="text-[11px] sm:text-xs">추출하기</span>
-                      <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  </div>
-                </button>
+                {/* 거래명세서 OCR 카드 · 매장관리 > 매입 > 사입·OCR 서브탭으로 이동 · 2026-08-03 랜딩 제거 */}
 
                 {/* 연차 승인 카드 · 경영관리 팝오버로 이동 · 2026-08-03 */}
 
                 {/* 설정 — fuchsia (level 9 전용) · 권한 조정 + 환경 설정 통합 */}
                 {isSuperAdminLevel9 && (
-                  <button onClick={() => onNavigate("permissions", authSession!)}
+                  <button data-menu-card onClick={() => onNavigate("permissions", authSession!)}
                     className="group relative bg-white border border-fuchsia-200/80 hover:border-fuchsia-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(253,244,255,0.7) 0%, transparent 60%)" }} />
                     <div className="relative">
@@ -1068,28 +1091,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                   </button>
                 )}
 
-                {/* 구역 라벨 관리 — sky (level 9 전용) · 2026-07-31 · 매장 구역 번호/부제 편집 */}
-                {isSuperAdminLevel9 && (
-                  <button onClick={() => onNavigate("zone-labels", authSession!)}
-                    className="group relative bg-white border border-sky-200/80 hover:border-sky-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
-                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(224,242,254,0.7) 0%, transparent 60%)" }} />
-                    <div className="relative">
-                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #e0f2fe, #bae6fd)", border: "1px solid #38bdf8" }}>
-                        <MapPin size={16} className="text-sky-600 sm:hidden" /><MapPin size={20} className="text-sky-600 hidden sm:block" />
-                      </div>
-                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">구역 라벨 관리</div>
-                      <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">매장 구역 번호·부제 편집 · 모든 페이지 반영</div>
-                      <div className="flex items-center gap-1 mt-2 text-sky-600 text-xs font-bold">
-                        <span className="text-[11px] sm:text-xs">편집하기</span>
-                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
-                      </div>
-                    </div>
-                  </button>
-                )}
+                {/* 구역 라벨 관리 카드 · 설정(권한관리 > 환경설정) 내부로 이동 · 2026-08-03 랜딩 제거 */}
 
                 {/* 기타 도구 — slate · 2026-08-03 · 재고·판매 통합 · 재고실사 · OCR 동의어 (숨은 페이지 모음) */}
                 {isManagerOrAdmin && (
-                  <button onClick={() => onNavigate("others", authSession!)}
+                  <button data-menu-card onClick={() => onNavigate("others", authSession!)}
                     className="group relative bg-white border border-slate-200/80 hover:border-slate-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                     <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(241,245,249,0.8) 0%, transparent 60%)" }} />
                     <div className="relative">
@@ -1123,7 +1129,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
               <div className="grid grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
 
                 {/* 스케줄표 조회 — blue */}
-                <button onClick={() => onNavigate("schedule", authSession!)}
+                <button data-menu-card onClick={() => onNavigate("schedule", authSession!)}
                   className="order-2 group relative bg-white border border-slate-200/80 hover:border-blue-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(219,234,254,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
@@ -1140,7 +1146,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </button>
 
                 {/* 상품 스캔 — violet */}
-                <button onClick={() => onNavigate("scan", authSession!)}
+                <button data-menu-card onClick={() => onNavigate("scan", authSession!)}
                   className="order-3 group relative bg-white border border-slate-200/80 hover:border-violet-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(237,233,254,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
@@ -1157,7 +1163,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </button>
 
                 {/* 상품입고 — emerald · 2026-07-29 · 사용자 요청 · 직원 랜딩 추가 */}
-                <button onClick={() => onNavigate("productarrival", authSession!)}
+                <button data-menu-card onClick={() => onNavigate("productarrival", authSession!)}
                   className="order-4 group relative bg-white border border-slate-200/80 hover:border-emerald-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(209,250,229,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
@@ -1174,7 +1180,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </button>
 
                 {/* 연차 신청 — rose · 뒤로 배치 */}
-                <button onClick={() => onNavigate("leave", authSession!)}
+                <button data-menu-card onClick={() => onNavigate("leave", authSession!)}
                   className="order-5 group relative bg-white border border-slate-200/80 hover:border-rose-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,228,230,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
@@ -1191,7 +1197,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 </button>
 
                 {/* 점심 불참 — orange · 맨 뒤 */}
-                <button onClick={() => onNavigate("lunch", authSession!)}
+                <button data-menu-card onClick={() => onNavigate("lunch", authSession!)}
                   className="order-6 group relative bg-white border border-slate-200/80 hover:border-orange-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(255,237,213,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">
@@ -1209,7 +1215,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
 
                 {/* 내 요청목록 · 무지개 gradient · 맨 앞 · 눈에 띄는 강조 */}
                 {isEmployee && (
-                  <button onClick={() => onNavigate("requests", authSession!)}
+                  <button data-menu-card onClick={() => onNavigate("requests", authSession!)}
                     className="order-1 group relative rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-2xl hover:-translate-y-1 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-lg ring-2 ring-white"
                     style={{
                       background: "linear-gradient(135deg, #ef4444 0%, #f97316 20%, #eab308 40%, #22c55e 60%, #06b6d4 80%, #8b5cf6 100%)"
@@ -1260,7 +1266,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                 )}
 
                 {/* 이슈공유 게시판 (전체 직원) — amber */}
-                <button onClick={() => onNavigate("board" as any, authSession!)}
+                <button data-menu-card onClick={() => onNavigate("board" as any, authSession!)}
                   className="order-4 group relative bg-white border border-slate-200/80 hover:border-amber-300 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
                   <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(254,243,199,0.7) 0%, transparent 60%)" }} />
                   <div className="relative">

@@ -119,7 +119,7 @@ export default function App() {
 
   // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
   // The user is already authenticated here, so no AuthSession is required.
-  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "productarrival" | "ocr" | "lunch" | "board" | "mypage" | "business-manage" | "others" | "inventory-sales" | "stockcheck" | "synonyms") => navigate(next as Page);
+  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "productarrival" | "ocr" | "lunch" | "board" | "mypage" | "business-manage" | "others" | "inventory-sales" | "stockcheck" | "synonyms" | "zone-labels") => navigate(next as Page);
 
   let pageContent: React.ReactElement;
 

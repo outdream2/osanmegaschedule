@@ -228,6 +228,7 @@ export const PermissionsPage: React.FC<PermissionsPageProps> = ({ authSession, o
               onApplyShiftHours={applyShiftHoursToAll}
               onClose={() => { /* no-op · 탭 임베디드 모드 */ }}
               sessionEmployeeId={authSession?.employeeId ?? null}
+              onNavigateZoneLabels={onNavigate ? () => onNavigate("zone-labels" as AppNavPage) : undefined}
             />
           </div>
         )}

@@ -9,12 +9,9 @@ import { Lock, LogOut, Menu } from "lucide-react";
 import {
   House,
   SquaresFour,
-  Barcode,
-  Package,
   Calendar,
   ChatCircle,
   Chat,
-  FileText,
   Briefcase,
 } from "@phosphor-icons/react";
 import type { AuthSession } from "../types";
@@ -28,9 +25,9 @@ export type AppNavPage =
   | "display"
   | "requests"
   | "leave"
-  | "scan"
-  | "productarrival"
-  | "ocr"
+  | "scan"                 // 헤더 탭에서는 제거되었으나 라우팅용 union 유지 · 랜딩 카드·매입 서브탭·설정 등에서 접근
+  | "productarrival"       // 헤더 탭에서는 제거되었으나 라우팅용 union 유지 · 랜딩 카드·매입 서브탭 등에서 접근
+  | "ocr"                  // 헤더 탭에서는 제거되었으나 라우팅용 union 유지 · 매입 사입 서브탭에서 접근
   | "lunch"
   | "permissions"
   | "stockarrivals"
@@ -38,6 +35,7 @@ export type AppNavPage =
   | "stockcheck"
   | "board"
   | "mypage"
+  | "zone-labels"          // 2026-08-03 · 구역 라벨 관리 (설정 링크에서 접근 · 헤더 탭 노출 없음 · 라우팅 union 유지)
   | "business-manage"      // 2026-08-03 · 경영관리 통합 페이지
   | "others"               // 2026-08-03 · 기타 도구 페이지 (관리자용 · 숨은 도구 모음)
   | "inventory-sales";     // 2026-08-03 · 재고·판매 통합 (기타 도구 내부 링크 · 헤더 탭 노출 없음)
@@ -64,18 +62,16 @@ interface TabDef {
   color?: "slate" | "blue" | "red" | "sky" | "indigo" | "orange" | "emerald" | "violet" | "amber" | "cyan";
 }
 
-// 무지개 순서: 홈 → 매장(빨) → 경영(보라) → 상품(주) → 스케줄(amber) → 이슈(초) → 요청(청록) → OCR(남청)
+// 무지개 순서: 홈 → 매장(빨) → 경영(보라) → 스케줄(amber) → 이슈(초) → 요청(청록)
 // 2026-08-03: 경영관리 → business-manage 통합 페이지로 단순 라우팅 (팝오버 제거)
+// 2026-08-03: scan · productarrival · ocr 탭 제거 (매장관리 매입 서브탭 및 랜딩 카드에서 접근 · union 유지)
 const TABS: TabDef[] = [
   { key: "landing",       label: "홈",         mobileLabel: "홈",     icon: House,       managerOnly: false, color: "slate"   },
   { key: "display",       label: "매장관리",   mobileLabel: "매장",   icon: SquaresFour, managerOnly: true,  color: "red"     },
   { key: "business",      label: "경영관리",   mobileLabel: "경영",   icon: Briefcase,   managerOnly: true,  color: "violet"  },
-  { key: "scan",          label: "실재고입력", mobileLabel: "실재고", icon: Barcode,     managerOnly: true,  color: "orange"  },
-  { key: "productarrival",label: "상품입고",   mobileLabel: "상품입고",icon: Package,    managerOnly: true,  color: "sky"     },
   { key: "schedule",      label: "스케줄관리", mobileLabel: "스케줄", icon: Calendar,    managerOnly: false, color: "amber"   },
   { key: "board",         label: "이슈공유",   mobileLabel: "이슈",   icon: ChatCircle,  managerOnly: false, color: "emerald" },
   { key: "requests",      label: "요청목록",   mobileLabel: "요청",   icon: Chat,        managerOnly: false, color: "cyan"    },
-  { key: "ocr",           label: "거래명세서", mobileLabel: "OCR",    icon: FileText,    managerOnly: true,  color: "indigo"  },
 ];
 
 const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inactiveText: string; inactiveHoverText: string; }> = {
