@@ -3,6 +3,7 @@
 // 2026-08-03 · 독립 컴포넌트로 추출
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useVendors } from "../../hooks/useVendors";
 import { Building2, Loader2 as LoaderIcon, ChevronRight, ChevronDown, X as XIcon } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
@@ -44,7 +45,7 @@ export const SupplierTab: React.FC = () => {
 
   // 공급사 목록
   const [xlsxSuppliers, setXlsxSuppliers] = useState<SupplierAgg[]>([]);
-  const [vendorCategoryMap, setVendorCategoryMap] = useState<Record<string, string | null>>({});
+  const { vendorCategoryMap } = useVendors();
   const [supplierBalanceMap, setSupplierBalanceMap] = useState<Record<string, { balance: number; invoice_date: string | null }>>({});
 
   // 정렬·필터
@@ -227,23 +228,6 @@ export const SupplierTab: React.FC = () => {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // 공급사 분류 맵 로드
-  useEffect(() => {
-    const loadVendorMap = async () => {
-      try {
-        const res = await fetch("/api/vendors?withBalances=1");
-        if (!res.ok) return;
-        const list: Array<{ company_name: string; category: string | null }> = await res.json();
-        const map: Record<string, string | null> = {};
-        for (const v of list) { const name = String(v.company_name ?? "").trim(); if (name) map[name] = v.category ?? null; }
-        setVendorCategoryMap(map);
-      } catch { /* ignore */ }
-    };
-    loadVendorMap();
-    const handler = () => loadVendorMap();
-    window.addEventListener("vendors-changed", handler);
-    return () => window.removeEventListener("vendors-changed", handler);
-  }, []);
 
   // 잔고 맵 로드
   useEffect(() => {

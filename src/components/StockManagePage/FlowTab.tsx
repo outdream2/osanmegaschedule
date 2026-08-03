@@ -3,6 +3,7 @@
 // 2026-08-03 · StockManagePage.tsx 리팩터 · OrderManagePage 통계/flow 서브탭으로 이동
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useVendors } from "../../hooks/useVendors";
 import {
   Search, Boxes, Info, EyeOff, Loader2 as LoaderIcon,
   ChevronRight, ChevronDown, CheckSquare, Square, X as XIcon,
@@ -187,23 +188,8 @@ export const FlowTab: React.FC = () => {
     } catch (e: any) { alert(`공급사 정보 조회 실패: ${e?.message ?? "네트워크 오류"}`); }
   }, []);
 
-  // 분류 맵
-  const [vendorCategoryMap, setVendorCategoryMap] = useState<Record<string, string | null>>({});
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch("/api/vendors?withBalances=1");
-        if (!res.ok) return;
-        const list: Array<{ company_name: string; category: string | null }> = await res.json();
-        const map: Record<string, string | null> = {};
-        for (const v of list) { const nm = String(v.company_name ?? "").trim(); if (nm) map[nm] = v.category ?? null; }
-        setVendorCategoryMap(map);
-      } catch { /* ignore */ }
-    };
-    load();
-    window.addEventListener("vendors-changed", load);
-    return () => window.removeEventListener("vendors-changed", load);
-  }, []);
+  // 분류 맵 · 공용 훅
+  const { vendorCategoryMap } = useVendors();
 
   // 숨김 관리 훅
   const fetchStockFlowRef = useRef<() => void>(() => {});

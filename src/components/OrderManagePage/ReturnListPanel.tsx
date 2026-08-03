@@ -2,6 +2,7 @@
 // 반품필요 탭을 독립 컴포넌트로 추출 (2026-07-31 · 탭 스왑 · StockManagePage 이동용)
 // 기존 OrderManagePage의 return 탭 state/fetch/JSX 를 그대로 캡슐화
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useVendors } from "../../hooks/useVendors";
 import { Loader2, Package, PackageCheck, RefreshCw, Search, Truck, ChevronRight, ChevronDown } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
@@ -205,26 +206,8 @@ export const ReturnListPanel: React.FC = () => {
   // 마운트 시 자동 로드
   useEffect(() => { loadReturnList(); }, [loadReturnList]);
 
-  // ── 공급사 카테고리 맵 (배지용) ────────────────────────────────────────
-  const [vendorCategoryMap, setVendorCategoryMap] = useState<Record<string, string | null>>({});
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch("/api/vendors?withBalances=1");
-        if (!res.ok) return;
-        const list: Array<{ company_name: string; category: string | null }> = await res.json();
-        const m: Record<string, string | null> = {};
-        for (const v of list) {
-          const name = String(v.company_name ?? "").trim();
-          if (name) m[name] = v.category ?? null;
-        }
-        setVendorCategoryMap(m);
-      } catch { /* silent */ }
-    };
-    load();
-    window.addEventListener("vendors-changed", load);
-    return () => window.removeEventListener("vendors-changed", load);
-  }, []);
+  // ── 공급사 카테고리 맵 (배지용) · 공용 훅 ──────────────────────────────
+  const { vendorCategoryMap } = useVendors();
 
   // ── 우측 패널 (상품 상세) ───────────────────────────────────────────────
   const [returnSelectedProduct, setReturnSelectedProduct] = useState<{ code: string; name: string } | null>(null);

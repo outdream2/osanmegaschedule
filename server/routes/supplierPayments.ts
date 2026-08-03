@@ -461,4 +461,156 @@ router.get("/api/supplier-open-invoices", async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────
+// GET /api/supplier-purchase-summary?days=90
+//   · 모든 공급사 매입 요약 (좌측 vendor 카드용)
+//   · 반환: [{ supplier, last_purchase_date, this_month_amount, sku_count,
+//              weekly_sparkline: number[12], total_amount, purchase_count }]
+//   · ocr_confirmed_items 1회 조회 후 클라이언트-side 집계 (N+1 회피)
+// ─────────────────────────────────────────────────────────────────────
+router.get("/api/supplier-purchase-summary", async (req, res) => {
+  try {
+    const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "90"), 10) || 90));
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+
+    // 이번달 시작 (YYYY-MM-01)
+    const now = new Date();
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
+    // 최근 90일 매입 전체 조회
+    const { data, error } = await supabase
+      .from("ocr_confirmed_items")
+      .select("supplier, invoice_date, saved_at, amount, product_code, product_name")
+      .gte("saved_at", cutoffYmd);
+    if (error) {
+      if (/relation .* does not exist/i.test(error.message)) return res.json({ suppliers: [] });
+      throw new Error(error.message);
+    }
+    const rows = data ?? [];
+
+    // 공급사별 집계
+    interface Agg {
+      supplier: string;
+      last_purchase_date: string | null;
+      this_month_amount: number;
+      total_amount: number;
+      purchase_count: number;
+      sku_set: Set<string>;
+      // 12주 weekly buckets · 최근주=index 11
+      weekly: number[];
+    }
+    const bucket = new Map<string, Agg>();
+
+    // 12주 · 오늘 기준 · week[i] = (now - (12 - i) 주 ~ now - (11 - i) 주)
+    const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+    const nowMs = now.getTime();
+
+    for (const r of rows as any[]) {
+      const supplier = String(r.supplier ?? "").trim();
+      if (!supplier) continue;
+      const date: string = (r.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(r.invoice_date))
+        ? r.invoice_date
+        : String(r.saved_at ?? "").slice(0, 10);
+      if (!date) continue;
+      const amount = Number(r.amount) || 0;
+      const code = String(r.product_code ?? "").trim();
+
+      let agg = bucket.get(supplier);
+      if (!agg) {
+        agg = {
+          supplier,
+          last_purchase_date: null,
+          this_month_amount: 0,
+          total_amount: 0,
+          purchase_count: 0,
+          sku_set: new Set<string>(),
+          weekly: new Array(12).fill(0),
+        };
+        bucket.set(supplier, agg);
+      }
+
+      // 최근 매입일
+      if (!agg.last_purchase_date || date > agg.last_purchase_date) {
+        agg.last_purchase_date = date;
+      }
+      agg.total_amount += amount;
+      agg.purchase_count += 1;
+      if (code) agg.sku_set.add(code);
+      if (date >= monthStart) agg.this_month_amount += amount;
+
+      // weekly bucket · 최근 12주
+      const dMs = new Date(date + "T00:00:00Z").getTime();
+      if (!Number.isNaN(dMs)) {
+        const weeksAgo = Math.floor((nowMs - dMs) / WEEK_MS);
+        if (weeksAgo >= 0 && weeksAgo < 12) {
+          // weeksAgo=0 → 이번주 → index 11 (오른쪽 끝)
+          agg.weekly[11 - weeksAgo] += amount;
+        }
+      }
+    }
+
+    const suppliers = Array.from(bucket.values()).map(a => ({
+      supplier: a.supplier,
+      last_purchase_date: a.last_purchase_date,
+      this_month_amount: a.this_month_amount,
+      total_amount: a.total_amount,
+      purchase_count: a.purchase_count,
+      sku_count: a.sku_set.size,
+      weekly_sparkline: a.weekly,
+    }));
+
+    return res.json({ suppliers, cutoff: cutoffYmd, days });
+  } catch (err: any) {
+    console.error("[GET supplier-purchase-summary] error:", err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────
+// GET /api/supplier-purchase-detail?supplier=X&days=365
+//   · 특정 공급사 매입 raw rows (product_code, quantity, unit_price, amount)
+//   · Tab 2 상품별 집계 · Tab 3 매입 추이용 · running_balance 없음
+// ─────────────────────────────────────────────────────────────────────
+router.get("/api/supplier-purchase-detail", async (req, res) => {
+  try {
+    const supplier = String(req.query.supplier ?? "").trim();
+    if (!supplier) return res.status(400).json({ error: "supplier 필수" });
+    const days = Math.max(1, Math.min(3650, parseInt(String(req.query.days ?? "365"), 10) || 365));
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
+
+    const { data, error } = await supabase
+      .from("ocr_confirmed_items")
+      .select("id, invoice_date, saved_at, product_code, product_name, quantity, unit_price, amount")
+      .eq("supplier", supplier)
+      .gte("saved_at", cutoffYmd);
+    if (error) {
+      if (/relation .* does not exist/i.test(error.message)) return res.json({ rows: [] });
+      throw new Error(error.message);
+    }
+    const rows = (data ?? []).map((r: any) => {
+      const date = (r.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(r.invoice_date))
+        ? r.invoice_date
+        : String(r.saved_at ?? "").slice(0, 10);
+      return {
+        id: r.id,
+        date,
+        product_code: r.product_code ?? null,
+        product_name: r.product_name ?? null,
+        quantity: Number(r.quantity) || 0,
+        unit_price: Number(r.unit_price) || 0,
+        amount: Number(r.amount) || 0,
+      };
+    });
+    return res.json({ supplier, rows });
+  } catch (err: any) {
+    console.error("[GET supplier-purchase-detail] error:", err.message);
+    return res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;

@@ -3,6 +3,7 @@
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
 // 사입(OCR거래명세서 등록) 탭에서는 거래명세서 OCR(OcrPage) 노출
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useVendors } from "../../hooks/useVendors";
 import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -300,40 +301,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [lowStockSearch, setLowStockSearch] = useState("");
   const [orderReqCollapsed, setOrderReqCollapsed] = useState(false);
   const [lowStockCollapsed, setLowStockCollapsed] = useState(false);
-  // 공급사 마스터 (vendors 테이블) — 담당자·이메일·전화·분류 매핑
-  const [vendors, setVendors] = useState<Array<{ id: number; company_name: string; contact_name: string | null; phone: string | null; email: string | null; category: string | null }>>([]);
-  // 2026-07-30 · 사용자 요청 · 분류 저장 시 리스트 반영 · vendors-changed 이벤트 listen
-  const loadVendors = useCallback(async () => {
-    try {
-      const res = await fetch("/api/vendors?withBalances=1");
-      if (res.ok) setVendors(await res.json());
-    } catch { /* silent */ }
-  }, []);
-  useEffect(() => {
-    loadVendors();
-    const handler = () => loadVendors();
-    window.addEventListener("vendors-changed", handler);
-    return () => window.removeEventListener("vendors-changed", handler);
-  }, [loadVendors]);
+  // 공급사 마스터 · 공용 훅 (모듈 레벨 캐시 · 5분 TTL · vendors-changed 이벤트 구독)
+  const { vendors, vendorCategoryMap } = useVendors();
 
   // 공급사 임포트 로직은 LandingPage 데이터 업로드 > 공급사관리 로 이동됨 (여기서 제거 · 2026-07-15)
+  // vendorMap: 원본·공백정규화·소문자 세 가지 형태로 저장 (매칭률 극대화)
   const vendorMap = useMemo(() => {
     const m = new Map<string, { contact_name: string | null; phone: string | null; email: string | null }>();
     for (const v of vendors) {
       const info = { contact_name: v.contact_name, phone: v.phone, email: v.email };
-      // 원본, 공백 정규화, 소문자 세 가지 형태로 저장 (매칭률 극대화)
       m.set(v.company_name.trim(), info);
       m.set(v.company_name.replace(/\s+/g, ""), info);
       m.set(v.company_name.trim().toLowerCase(), info);
-    }
-    return m;
-  }, [vendors]);
-  // 공급사명 → 분류(category) 맵 (배지 표시용)
-  const vendorCategoryMap = useMemo(() => {
-    const m: Record<string, string | null> = {};
-    for (const v of vendors) {
-      const name = v.company_name.trim();
-      if (name) m[name] = v.category ?? null;
     }
     return m;
   }, [vendors]);

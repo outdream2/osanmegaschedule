@@ -2,6 +2,7 @@
 // 적정재고 이하(low) 탭을 독립 컴포넌트로 추출 (2026-07-31 · 탭 스왑 · OrderManagePage 이동용)
 // 기존 StockManagePage의 stockTab === "low" 블록 state/fetch/JSX 를 그대로 캡슐화
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useVendors } from "../../hooks/useVendors";
 import { AlertTriangle, Check, X as XIcon, Loader2 as LoaderIcon, Pencil, ChevronRight, ChevronDown } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
@@ -134,22 +135,7 @@ export const LowStockPanel: React.FC = () => {
   // ── 분류 필터 + 공급사 카테고리 맵 ──────────────────────────────────────
   type CategoryFilter = "전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
   const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("전체");
-  const [vendorCategoryMap, setVendorCategoryMap] = useState<Record<string, string | null>>({});
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch("/api/vendors?withBalances=1");
-        if (!res.ok) return;
-        const list: Array<{ company_name: string; category: string | null }> = await res.json();
-        const m: Record<string, string | null> = {};
-        for (const v of list) { const nm = String(v.company_name ?? "").trim(); if (nm) m[nm] = v.category ?? null; }
-        setVendorCategoryMap(m);
-      } catch { /* silent */ }
-    };
-    load();
-    window.addEventListener("vendors-changed", load);
-    return () => window.removeEventListener("vendors-changed", load);
-  }, []);
+  const { vendorCategoryMap } = useVendors();
 
   // ── 그룹 접기 ──────────────────────────────────────────────────────────
   type LowGroup = "basic" | "stock" | "inv" | "erp";
