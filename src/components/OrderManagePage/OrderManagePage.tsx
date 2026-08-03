@@ -974,7 +974,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           tabs={[
             { key: "purchase-order", label: "발주", icon: ShoppingCart, color: "sky"    },
             { key: "purchase",       label: "매입", icon: PackageCheck, color: "violet" },
-            { key: "payment",        label: "결제", icon: BarChart2,    color: "teal"   },
+            { key: "payment",        label: "결제/세금", icon: BarChart2,    color: "teal"   },
             { key: "statistics",     label: "통계", icon: PieChart,     color: "indigo" },
           ] as CommonTabDef<typeof topTab>[]}
           activeKey={topTab}
