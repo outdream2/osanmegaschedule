@@ -35,23 +35,27 @@ const DocumentWriterPage: React.FC<DocumentWriterPageProps> = (props) => {
           {TABS.map(t => {
             const active = tab === t.key;
             const Icon = t.icon;
-            const color = t.color;
+            // 색상 정적 클래스 (Tailwind JIT purge 안전 · 동적 문자열 회피)
+            const activeText = t.key === "contract" ? "text-emerald-700" : "text-rose-700";
+            const activeIcon = t.key === "contract" ? "text-emerald-600" : "text-rose-600";
+            const activeBar  = t.key === "contract" ? "bg-emerald-500"   : "bg-rose-500";
+            const hoverText  = t.key === "contract" ? "hover:text-emerald-700" : "hover:text-rose-700";
             return (
               <button
                 key={t.key}
                 type="button"
                 onClick={() => setTab(t.key)}
                 className={`
-                  relative flex items-center gap-1.5 px-4 py-2.5
-                  text-[13px] font-bold leading-none whitespace-nowrap
+                  relative flex items-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4
+                  text-[16px] sm:text-[18px] font-black leading-none whitespace-nowrap
                   transition-colors cursor-pointer
-                  ${active ? `text-${color}-700` : `text-slate-500 hover:text-${color}-700`}
+                  ${active ? activeText : `text-slate-500 ${hoverText}`}
                 `}
               >
-                <Icon size={15} weight="fill" className={active ? `text-${color}-600` : "text-slate-400"} />
+                <Icon size={19} weight="fill" className={active ? activeIcon : "text-slate-400"} />
                 <span>{t.label}</span>
                 {active && (
-                  <span className={`absolute left-0 right-0 -bottom-px h-[2px] bg-${color}-500 rounded-t-sm`} />
+                  <span className={`absolute left-0 right-0 -bottom-px h-[2.5px] ${activeBar} rounded-t-sm`} />
                 )}
               </button>
             );
