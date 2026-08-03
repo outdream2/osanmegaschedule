@@ -361,7 +361,7 @@ const InlineField: React.FC<{
   wide?: boolean;
 }> = ({ label, value, editing, icon, type = "text", placeholder, onChange, monospace: _monospace, wide }) => (
   <div className={`flex flex-col gap-0.5 ${wide ? "col-span-2" : ""}`}>
-    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+    <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
       {icon}
       {label}
     </span>
@@ -371,11 +371,11 @@ const InlineField: React.FC<{
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="border border-indigo-300 rounded-lg px-2.5 py-1 text-[12px] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 bg-indigo-50/40"
+        className="border border-indigo-300 rounded-md px-2 py-0.5 text-[13px] focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 bg-indigo-50/40 h-7"
       />
     ) : (
       <span
-        className={`text-[12px] font-semibold py-1 min-h-[24px] ${!value ? "text-slate-300 italic" : "text-slate-700"}`}
+        className={`text-[13px] font-semibold leading-snug min-h-[20px] ${!value ? "text-slate-300 italic" : "text-slate-700"}`}
       >
         {value || "(없음)"}
       </span>
@@ -399,19 +399,19 @@ const SectionCard: React.FC<{
     <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
       <button
         onClick={() => setOpen((o) => !o)}
-        className={`w-full px-4 py-2.5 border-b ${open ? headerCls : "bg-white border-slate-100"} flex items-center justify-between cursor-pointer transition-colors duration-150`}
+        className={`w-full px-3 py-2 border-b ${open ? headerCls : "bg-white border-slate-100"} flex items-center justify-between cursor-pointer transition-colors duration-150`}
       >
         <span className={`flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider ${open ? textCls : "text-slate-500"}`}>
           <span className={open ? iconCls : "text-slate-400"}>{icon}</span>
           {title}
         </span>
         <span className={`transition-transform duration-200 opacity-50 ${open ? "rotate-180" : ""} ${open ? textCls : "text-slate-400"}`}>
-          <svg width="11" height="11" viewBox="0 0 12 12">
+          <svg width="10" height="10" viewBox="0 0 12 12">
             <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
           </svg>
         </span>
       </button>
-      {open && <div className="p-4">{children}</div>}
+      {open && <div className="p-3">{children}</div>}
     </div>
   );
 };
@@ -1137,17 +1137,17 @@ const StaffManagePage: React.FC = () => {
             <EmptyDetail />
           ) : (
             <>
-              {/* ── 프로필 헤더 — 인디고 그라디언트 배너 ── */}
-              <div className="bg-gradient-to-r from-indigo-50/90 to-violet-50/70 border-b border-indigo-100/80 px-5 py-4 shrink-0">
-                <div className="flex items-start gap-4">
-                  {/* 사진 · 2026-07-31 · 사용자 요청 · 성씨 크게 아바타 제거 · 실제 사진(photo_url) 있을 때만 · 편집 모드에서 업로드 버튼 유지 */}
+              {/* ── 프로필 헤더 — 슬림 배너 (py-2.5) ── */}
+              <div className="bg-gradient-to-r from-indigo-50/90 to-violet-50/70 border-b border-indigo-100/80 px-4 py-2.5 shrink-0">
+                <div className="flex items-center gap-3">
+                  {/* 사진 · 편집 모드 또는 photo_url 있을 때만 */}
                   {(displayEmp.photo_url || editing) && (
                     <div className="relative group shrink-0">
                       {displayEmp.photo_url ? (
-                        <Avatar name={displayEmp.name} photoUrl={displayEmp.photo_url} size="lg" />
+                        <Avatar name={displayEmp.name} photoUrl={displayEmp.photo_url} size="sm" />
                       ) : (
-                        <div className="w-16 h-16 rounded-full bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-slate-400">
-                          <Camera size={20} />
+                        <div className="w-9 h-9 rounded-full bg-slate-100 border border-dashed border-slate-300 flex items-center justify-center text-slate-400">
+                          <Camera size={14} />
                         </div>
                       )}
                       {editing && (
@@ -1156,7 +1156,7 @@ const StaffManagePage: React.FC = () => {
                           title="사진 변경"
                           className="absolute inset-0 rounded-full bg-slate-900/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                         >
-                          <Camera size={16} className="text-white" />
+                          <Camera size={11} className="text-white" />
                         </button>
                       )}
                       <input
@@ -1173,17 +1173,20 @@ const StaffManagePage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* 이름 · 뱃지 */}
+                  {/* 이름 · 배지 */}
                   <div className="flex-1 min-w-0">
-                    {editing ? (
-                      <input
-                        value={draft?.name ?? ""}
-                        onChange={(e) => setField("name", e.target.value)}
-                        className="text-lg font-semibold text-slate-800 border-b-2 border-indigo-400 bg-transparent focus:outline-none w-full mb-1.5"
-                      />
-                    ) : (
-                      <h3 className="text-lg font-semibold text-slate-800 leading-tight mb-1.5">{displayEmp.name}</h3>
-                    )}
+                    <div className="flex items-baseline gap-2 mb-1">
+                      {editing ? (
+                        <input
+                          value={draft?.name ?? ""}
+                          onChange={(e) => setField("name", e.target.value)}
+                          className="text-base font-bold text-slate-800 border-b-2 border-indigo-400 bg-transparent focus:outline-none leading-tight"
+                        />
+                      ) : (
+                        <h3 className="text-base font-bold text-slate-800 leading-tight">{displayEmp.name}</h3>
+                      )}
+                      <span className="text-[10px] text-slate-300">#{displayEmp.id}</span>
+                    </div>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {/* 직책 */}
                       {editing ? (
@@ -1202,7 +1205,7 @@ const StaffManagePage: React.FC = () => {
                             : (displayEmp.position || "직책 없음")}
                         </span>
                       )}
-                      {/* 계약유형 · 정규직/계약직/알바 등 */}
+                      {/* 계약유형 */}
                       {(() => {
                         const ct = contractTypeMeta(displayEmp.contract_type);
                         return ct ? (
@@ -1232,11 +1235,10 @@ const StaffManagePage: React.FC = () => {
                           <Award size={9} /> Lv.{editing ? draft?.level : displayEmp.level}
                         </span>
                       )}
-                      <span className="text-[9px] text-slate-300 ml-auto">#{displayEmp.id}</span>
                     </div>
                   </div>
 
-                  {/* 편집 / 저장 / 삭제 버튼 — h-7 통일 */}
+                  {/* 편집 / 저장 / 삭제 버튼 */}
                   <div className="flex items-center gap-1.5 shrink-0">
                     {editing ? (
                       <>
@@ -1276,12 +1278,65 @@ const StaffManagePage: React.FC = () => {
                 </div>
               </div>
 
+              {/* ── 3열 KPI 바 — 근속 · 연차잔여 · 인사평가 (항상 노출) ── */}
+              {(() => {
+                const tenure = calcTenure(displayEmp.hire_date);
+                const totalDaysRaw = editing ? draft?.annual_leave_days : displayEmp.annual_leave_days;
+                const totalDays = Number.isFinite(Number(totalDaysRaw)) ? Number(totalDaysRaw) : 15;
+                const usedDays = usedLeaves.reduce((sum, l) => sum + l.weight, 0);
+                const remainDays = Math.max(0, totalDays - usedDays);
+                const fmtD = (n: number) => Number.isInteger(n) ? String(n) : n.toFixed(1);
+                const rating = displayEmp.performance_rating ? String(displayEmp.performance_rating).toUpperCase() : null;
+                return (
+                  <div className="grid grid-cols-3 divide-x divide-slate-200 border-b border-slate-200 shrink-0 bg-white">
+                    {/* 근속 */}
+                    <div className="flex flex-col items-center justify-center py-2 px-2 gap-0.5">
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-0.5">
+                        <Clock size={9} className="text-indigo-400" /> 근속
+                      </span>
+                      <span className="text-[15px] font-black text-slate-800 leading-tight tabular-nums">
+                        {tenure === "-" ? <span className="text-[12px] text-slate-300">미등록</span> : tenure}
+                      </span>
+                      {displayEmp.hire_date && (
+                        <span className="text-[10px] text-slate-400">{displayEmp.hire_date}</span>
+                      )}
+                    </div>
+                    {/* 연차 잔여 */}
+                    <div className="flex flex-col items-center justify-center py-2 px-2 gap-0.5">
+                      <span className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wide flex items-center gap-0.5">
+                        <CalendarDays size={9} /> 연차 잔여
+                      </span>
+                      <span className="text-[15px] font-black text-emerald-700 leading-tight tabular-nums">
+                        {fmtD(remainDays)}<span className="text-[11px] font-semibold ml-0.5">일</span>
+                      </span>
+                      <span className="text-[10px] text-slate-400">총 {fmtD(totalDays)}일 · 사용 {fmtD(usedDays)}일</span>
+                    </div>
+                    {/* 인사평가 */}
+                    <div className="flex flex-col items-center justify-center py-2 px-2 gap-0.5">
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-0.5">
+                        <Star size={9} className="text-amber-400" /> 평가
+                      </span>
+                      {rating ? (
+                        <span className={`text-[15px] font-black leading-tight px-2 py-0.5 rounded-md border ${performanceRatingColor(rating)}`}>
+                          {rating}
+                        </span>
+                      ) : (
+                        <span className="text-[12px] text-slate-300 italic leading-tight">미평가</span>
+                      )}
+                      {isSeveranceEligible(displayEmp) && (
+                        <span className="text-[9px] font-bold text-rose-500 bg-rose-50 border border-rose-200 px-1.5 py-px rounded-md leading-tight">퇴직금대상</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* ── 인사카드 섹션들 · flex-1 min-h-0 · 세로 스크롤 ── */}
-              <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-2.5 bg-slate-50/30">
+              <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2 bg-slate-50/30">
 
                 {/* §1 인적사항 — sky 그룹 */}
                 <SectionCard title="인적사항" icon={<User size={11} />} group="personal" defaultOpen>
-                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                     <InlineField
                       label="연락처" value={editing ? (draft?.phone ?? "") : (displayEmp.phone ?? "")}
                       editing={editing} icon={<Phone size={9} />} placeholder="010-0000-0000" monospace
@@ -1298,20 +1353,20 @@ const StaffManagePage: React.FC = () => {
                       onChange={(v) => setField("birth_date", v)}
                     />
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
                         <User size={9} /> 성별
                       </span>
                       {editing ? (
                         <select
                           value={draft?.gender ?? ""}
                           onChange={(e) => setField("gender", e.target.value)}
-                          className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] bg-white focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                          className="border border-indigo-300 rounded-md px-2 py-0.5 text-[13px] bg-white focus:outline-none focus:border-indigo-500 bg-indigo-50/40 h-7"
                         >
                           <option value="">선택 안 함</option>
                           {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
                         </select>
                       ) : (
-                        <span className={`text-[12px] py-1 ${displayEmp.gender ? "text-slate-700" : "text-slate-300 italic"}`}>
+                        <span className={`text-[13px] font-semibold leading-snug min-h-[20px] ${displayEmp.gender ? "text-slate-700" : "text-slate-300 italic"}`}>
                           {displayEmp.gender || "(없음)"}
                         </span>
                       )}
@@ -1325,35 +1380,35 @@ const StaffManagePage: React.FC = () => {
                 </SectionCard>
 
                 {/* §2 근무 정보 — amber 그룹 */}
-                <SectionCard title="근무 정보" icon={<Building size={11} />} group="work" defaultOpen>
-                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
+                <SectionCard title="근무 정보" icon={<Building size={11} />} group="work" defaultOpen={false}>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                     <InlineField
                       label="직책" value={editing ? (draft?.position ?? "") : (displayEmp.position ?? "")}
                       editing={editing} icon={<Award size={9} />} placeholder="직책 입력"
                       onChange={(v) => setField("position", v)}
                     />
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
                         <Users size={9} /> 구분 / 역할
                       </span>
                       {editing ? (
-                        <div className="flex gap-1.5">
+                        <div className="flex gap-1">
                           <input
                             type="number" min={1} max={9}
                             value={draft?.level ?? ""}
                             onChange={(e) => setField("level", e.target.value === "" ? null : Number(e.target.value))}
                             placeholder="Lv"
-                            className="w-12 border border-indigo-300 rounded-md px-2 py-1 text-[12px] focus:outline-none bg-indigo-50/40"
+                            className="w-10 border border-indigo-300 rounded-md px-1.5 text-[13px] focus:outline-none bg-indigo-50/40 h-7"
                           />
                           <input
                             type="text" value={draft?.role ?? ""}
                             onChange={(e) => setField("role", e.target.value)}
                             placeholder="역할 (예: admin)"
-                            className="flex-1 border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] focus:outline-none bg-indigo-50/40"
+                            className="flex-1 border border-indigo-300 rounded-md px-2 text-[13px] focus:outline-none bg-indigo-50/40 h-7"
                           />
                         </div>
                       ) : (
-                        <span className="text-[12px] py-1 text-slate-700">
+                        <span className="text-[13px] font-semibold leading-snug min-h-[20px] text-slate-700">
                           {displayEmp.level != null ? `Lv.${displayEmp.level}` : ""}
                           {displayEmp.role && <span className="text-slate-400 ml-1">({displayEmp.role})</span>}
                           {displayEmp.level == null && !displayEmp.role && <span className="text-slate-300 italic">(없음)</span>}
@@ -1366,20 +1421,20 @@ const StaffManagePage: React.FC = () => {
                       onChange={(v) => setField("hire_date", v)}
                     />
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
                         <ClipboardList size={9} /> 근무 타입
                       </span>
                       {editing ? (
                         <select
                           value={draft?.schedule_type ?? ""}
                           onChange={(e) => setField("schedule_type", e.target.value)}
-                          className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] bg-white focus:outline-none bg-indigo-50/40"
+                          className="border border-indigo-300 rounded-md px-2 text-[13px] bg-white focus:outline-none bg-indigo-50/40 h-7"
                         >
                           <option value="">선택 안 함</option>
                           {SCHEDULE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                         </select>
                       ) : (
-                        <span className={`text-[12px] py-1 ${displayEmp.schedule_type ? "text-slate-700" : "text-slate-300 italic"}`}>
+                        <span className={`text-[13px] font-semibold leading-snug min-h-[20px] ${displayEmp.schedule_type ? "text-slate-700" : "text-slate-300 italic"}`}>
                           {displayEmp.schedule_type || "(없음)"}
                         </span>
                       )}
@@ -1455,17 +1510,17 @@ const StaffManagePage: React.FC = () => {
 
                 {/* §6 계약 · 서류 — amber 그룹 */}
                 <SectionCard title="계약 · 서류" icon={<FileText size={11} />} group="work" defaultOpen>
-                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                     {/* 계약유형 · 드롭박스 (정규/계약/알바/일용/인턴) */}
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
                         <Briefcase size={9} /> 계약유형
                       </span>
                       {editing ? (
                         <select
                           value={draft?.contract_type ?? ""}
                           onChange={(e) => setField("contract_type", e.target.value || null)}
-                          className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] bg-indigo-50/40 focus:outline-none focus:border-indigo-500"
+                          className="border border-indigo-300 rounded-md px-2 text-[13px] bg-indigo-50/40 focus:outline-none focus:border-indigo-500 h-7"
                         >
                           <option value="">선택 안 함</option>
                           {CONTRACT_TYPES.map((c) => (
@@ -1475,27 +1530,27 @@ const StaffManagePage: React.FC = () => {
                       ) : (() => {
                         const meta = contractTypeMeta(displayEmp.contract_type);
                         return meta ? (
-                          <span className="py-1">
+                          <span className="leading-snug min-h-[20px] flex items-center">
                             <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${meta.color}`}>
                               {meta.label}
                             </span>
                           </span>
                         ) : (
-                          <span className="text-[12px] text-slate-300 italic py-1">(없음)</span>
+                          <span className="text-[13px] font-semibold text-slate-300 italic leading-snug min-h-[20px]">(없음)</span>
                         );
                       })()}
                     </div>
 
                     {/* 근속기간 · read-only 계산 표시 (hire_date 기반) */}
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
                         <Clock size={9} /> 근속기간
                       </span>
-                      <span className={`text-[12px] py-1 font-semibold ${displayEmp.hire_date ? "text-slate-700" : "text-slate-300 italic"}`}>
+                      <span className={`text-[13px] font-semibold leading-snug min-h-[20px] ${displayEmp.hire_date ? "text-slate-700" : "text-slate-300 italic"}`}>
                         {displayEmp.hire_date ? calcTenure(displayEmp.hire_date) : "(입사일 미등록)"}
                         {displayEmp.hire_date && (
-                          <span className="text-[10px] font-normal text-slate-400 ml-1.5">
-                            · 입사 {displayEmp.hire_date}
+                          <span className="text-[10px] font-normal text-slate-400 ml-1">
+                            · {displayEmp.hire_date}
                           </span>
                         )}
                       </span>
@@ -1519,14 +1574,14 @@ const StaffManagePage: React.FC = () => {
 
                     {/* 인사평가 · 편집 가능 (드롭박스 S/A/B/C/D) */}
                     <div className="col-span-2 flex flex-col gap-0.5">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
                         <Star size={9} /> 인사평가
                       </span>
                       {editing ? (
                         <select
                           value={draft?.performance_rating ?? ""}
                           onChange={(e) => setField("performance_rating", e.target.value || null)}
-                          className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] bg-indigo-50/40 focus:outline-none focus:border-indigo-500 max-w-[220px]"
+                          className="border border-indigo-300 rounded-md px-2 text-[13px] bg-indigo-50/40 focus:outline-none focus:border-indigo-500 max-w-[200px] h-7"
                         >
                           <option value="">평가 없음</option>
                           {PERFORMANCE_RATINGS.map((r) => (
@@ -1534,7 +1589,7 @@ const StaffManagePage: React.FC = () => {
                           ))}
                         </select>
                       ) : displayEmp.performance_rating ? (
-                        <span className="py-1 inline-flex items-center gap-1.5">
+                        <span className="inline-flex items-center gap-1.5 leading-snug min-h-[20px]">
                           <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${performanceRatingColor(displayEmp.performance_rating)}`}>
                             {String(displayEmp.performance_rating).toUpperCase()}
                           </span>
@@ -1543,13 +1598,13 @@ const StaffManagePage: React.FC = () => {
                           </span>
                         </span>
                       ) : (
-                        <span className="text-[12px] text-slate-300 italic py-1">(미평가)</span>
+                        <span className="text-[13px] font-semibold text-slate-300 italic leading-snug min-h-[20px]">(미평가)</span>
                       )}
                     </div>
 
                     {/* 계약서 파일 · [보기] 버튼 UI · 없으면 "없음" 배지 · 편집 모드에서 URL 입력 */}
                     <div className="col-span-2 flex flex-col gap-0.5">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                      <span className="text-[11px] font-semibold text-slate-400 flex items-center gap-0.5 leading-none">
                         <FileText size={9} /> 근로계약서
                       </span>
                       {editing ? (
@@ -1595,7 +1650,7 @@ const StaffManagePage: React.FC = () => {
 
                 {/* §7 근로조건 — amber 그룹 */}
                 <SectionCard title="근로조건" icon={<Calendar size={11} />} group="work" defaultOpen={false}>
-                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                     <InlineField
                       label="주 소정근로시간"
                       value={editing ? String(draft?.working_hours_per_week ?? "") : String(displayEmp.working_hours_per_week ?? "")}
@@ -1603,11 +1658,11 @@ const StaffManagePage: React.FC = () => {
                       onChange={(v) => setField("working_hours_per_week", v === "" ? null : Number(v))}
                     />
                     {/* 휴게시간 · 인건비 차감 적용 여부 + 30/60분 선택 */}
-                    <div className="flex flex-col gap-1">
-                      <div className="text-[11px] font-semibold text-slate-500">휴게시간 (인건비 차감)</div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[11px] font-semibold text-slate-400 leading-none">휴게시간 (차감)</span>
                       {editing ? (
-                        <div className="flex items-center gap-2">
-                          <label className="inline-flex items-center gap-1.5 text-[12px] text-slate-700 cursor-pointer select-none">
+                        <div className="flex items-center gap-1.5">
+                          <label className="inline-flex items-center gap-1 text-[12px] text-slate-700 cursor-pointer select-none">
                             <input
                               type="checkbox"
                               checked={draft?.break_apply_paid ?? true}
@@ -1627,11 +1682,11 @@ const StaffManagePage: React.FC = () => {
                           </select>
                         </div>
                       ) : (
-                        <div className="text-[13px] text-slate-800">
+                        <span className="text-[13px] font-semibold leading-snug min-h-[20px] text-slate-700">
                           {(displayEmp.break_apply_paid ?? true) === false
                             ? <span className="text-slate-400 italic">미적용</span>
                             : `${displayEmp.break_time_minutes ?? 60}분 차감`}
-                        </div>
+                        </span>
                       )}
                     </div>
                     <InlineField
@@ -1666,17 +1721,17 @@ const StaffManagePage: React.FC = () => {
                     const remainDays = Math.max(0, totalDays - usedDays);
                     const fmtDays = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
                     return (
-                      <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-2.5">
                         {/* 상단 KPI · 잔여 / 총 / 사용 + 연도 셀렉터 */}
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                          <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5">
                             {/* 잔여 (강조) */}
-                            <div className="flex flex-col items-center px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 min-w-[64px]">
+                            <div className="flex flex-col items-center px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200 min-w-[56px]">
                               <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">잔여</span>
-                              <span className="text-[16px] font-black text-emerald-700 tabular-nums leading-tight">{fmtDays(remainDays)}<span className="text-[11px] font-semibold ml-0.5">일</span></span>
+                              <span className="text-[14px] font-black text-emerald-700 tabular-nums leading-tight">{fmtDays(remainDays)}<span className="text-[10px] font-semibold ml-0.5">일</span></span>
                             </div>
                             {/* 총 · 편집 가능 */}
-                            <div className="flex flex-col items-center px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 min-w-[64px]">
+                            <div className="flex flex-col items-center px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 min-w-[56px]">
                               <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">총 부여</span>
                               {editing ? (
                                 <input
@@ -1685,16 +1740,16 @@ const StaffManagePage: React.FC = () => {
                                   step={1}
                                   value={String(draft?.annual_leave_days ?? "")}
                                   onChange={(e) => setField("annual_leave_days", e.target.value === "" ? null : Number(e.target.value))}
-                                  className="w-14 text-center border border-indigo-300 rounded-md px-1 py-0.5 text-[14px] font-black text-slate-800 tabular-nums bg-white focus:outline-none focus:border-indigo-500"
+                                  className="w-12 text-center border border-indigo-300 rounded-md px-1 py-0.5 text-[13px] font-black text-slate-800 tabular-nums bg-white focus:outline-none focus:border-indigo-500"
                                 />
                               ) : (
-                                <span className="text-[16px] font-black text-slate-800 tabular-nums leading-tight">{fmtDays(totalDays)}<span className="text-[11px] font-semibold ml-0.5">일</span></span>
+                                <span className="text-[14px] font-black text-slate-800 tabular-nums leading-tight">{fmtDays(totalDays)}<span className="text-[10px] font-semibold ml-0.5">일</span></span>
                               )}
                             </div>
                             {/* 사용 */}
-                            <div className="flex flex-col items-center px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 min-w-[64px]">
+                            <div className="flex flex-col items-center px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 min-w-[56px]">
                               <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">사용</span>
-                              <span className="text-[16px] font-black text-amber-700 tabular-nums leading-tight">{fmtDays(usedDays)}<span className="text-[11px] font-semibold ml-0.5">일</span></span>
+                              <span className="text-[14px] font-black text-amber-700 tabular-nums leading-tight">{fmtDays(usedDays)}<span className="text-[10px] font-semibold ml-0.5">일</span></span>
                             </div>
                           </div>
                           {/* 연도 선택 */}
@@ -1729,7 +1784,7 @@ const StaffManagePage: React.FC = () => {
                         </div>
 
                         {/* 사용 이력 리스트 */}
-                        <div className="flex flex-col gap-1.5">
+                        <div className="flex flex-col gap-1">
                           <div className="flex items-center justify-between">
                             <SectionLabel color="bg-amber-400">사용한 연차 · {usedLeaves.length}건</SectionLabel>
                             {editing && (
@@ -1816,14 +1871,14 @@ const StaffManagePage: React.FC = () => {
 
                 {/* §8 임금 정보 — rose 그룹 */}
                 <SectionCard title="임금 정보" icon={<Briefcase size={11} />} group="wage" defaultOpen={false}>
-                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                     <div className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">임금 유형</span>
+                      <span className="text-[11px] font-semibold text-slate-400 leading-none">임금 유형</span>
                       {editing ? (
                         <select
                           value={draft?.wage_calc_type ?? ""}
                           onChange={(e) => setField("wage_calc_type", e.target.value || null)}
-                          className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
+                          className="border border-indigo-300 rounded-md px-2 text-[13px] focus:outline-none focus:border-indigo-500 bg-indigo-50/40 h-7"
                         >
                           <option value="">선택 안 함</option>
                           <option value="hourly">시급</option>
@@ -1832,7 +1887,7 @@ const StaffManagePage: React.FC = () => {
                           <option value="annual">연봉</option>
                         </select>
                       ) : (
-                        <span className="text-[12px] text-slate-700 py-1">
+                        <span className="text-[13px] font-semibold leading-snug min-h-[20px] text-slate-700">
                           {({ hourly: "시급", daily: "일급", monthly: "월급", annual: "연봉" } as Record<string, string>)[displayEmp.wage_calc_type ?? ""] ?? <span className="text-slate-300 italic">(미지정)</span>}
                         </span>
                       )}
@@ -1874,7 +1929,7 @@ const StaffManagePage: React.FC = () => {
 
                 {/* §9 4대보험 — rose 그룹 */}
                 <SectionCard title="4대보험" icon={<ClipboardList size={11} />} group="wage" defaultOpen={false}>
-                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                     <InlineField
                       label="국민연금 취득일"
                       value={editing ? (draft?.insurance_nps_date ?? "") : (displayEmp.insurance_nps_date ?? "")}
@@ -1899,7 +1954,7 @@ const StaffManagePage: React.FC = () => {
                       editing={editing} icon={<Calendar size={9} />} type="date"
                       onChange={(v) => setField("insurance_wcia_date", v)}
                     />
-                    <div className="col-span-2 flex items-center gap-2 mt-1">
+                    <div className="col-span-2 flex items-center gap-2">
                       {editing ? (
                         <label className="flex items-center gap-2 text-[11px] font-semibold text-slate-700 cursor-pointer">
                           <input
@@ -1919,7 +1974,7 @@ const StaffManagePage: React.FC = () => {
 
                 {/* §10 약국 특수 자격 — emerald 그룹 */}
                 <SectionCard title="약국 특수 자격" icon={<Award size={11} />} group="career" defaultOpen={false}>
-                  <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                     <InlineField
                       label="약사 면허번호"
                       value={editing ? (draft?.pharmacist_license_no ?? "") : (displayEmp.pharmacist_license_no ?? "")}
@@ -1937,7 +1992,7 @@ const StaffManagePage: React.FC = () => {
                 </SectionCard>
 
                 {/* §11 메모 — personal 그룹 */}
-                <SectionCard title="메모" icon={<ClipboardList size={11} />} group="personal" defaultOpen>
+                <SectionCard title="메모" icon={<ClipboardList size={11} />} group="personal" defaultOpen={false}>
                   {editing ? (
                     <textarea
                       value={draft?.memo ?? ""}
@@ -1953,7 +2008,7 @@ const StaffManagePage: React.FC = () => {
                   )}
                 </SectionCard>
 
-                <div className="h-4" />
+                <div className="h-2" />
               </div>
             </>
           )}
