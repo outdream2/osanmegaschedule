@@ -852,7 +852,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         const c = colorMap[t.color] ?? colorMap["sky"];
         return (
           <button key={t.k} onClick={() => setTab(t.k)}
-            className={`relative basis-1/2 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-[13px] sm:text-[14px] font-bold leading-tight transition-colors duration-150 rounded-t-md ${
+            className={`relative basis-1/2 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-[14px] sm:text-[16px] font-bold leading-tight transition-colors duration-150 rounded-t-md ${
               active ? `${c.text} bg-white shadow-sm` : "text-slate-400 hover:text-slate-600 hover:bg-white/60"
             }`}>
             <Icon size={15} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
@@ -886,7 +886,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           const barMap:  Record<string, string> = { sky: "bg-sky-500",   violet: "bg-violet-500",   teal: "bg-teal-500",   indigo: "bg-indigo-500" };
           return (
             <button key={t.k} onClick={() => setTopTab(t.k)}
-              className={`relative basis-1/4 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-3 sm:px-5 py-2.5 text-[13px] sm:text-[14px] font-bold leading-tight transition-colors duration-150 ${
+              className={`relative basis-1/4 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-3 sm:px-5 py-2.5 text-[14px] sm:text-[16px] font-bold leading-tight transition-colors duration-150 ${
                 active ? textMap[t.color] : "text-slate-400 hover:text-slate-700"
               }`}>
               <Icon size={14} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
