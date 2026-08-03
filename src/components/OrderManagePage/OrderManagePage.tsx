@@ -27,9 +27,10 @@ import { SupplierTab } from "../StockManagePage/SupplierTab";
 import { ReturnListPanel } from "./ReturnListPanel";
 import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
 import { PaymentInfoTab } from "./PaymentInfoTab";
+import { VatPreparePage } from "../VatPreparePage/VatPreparePage";
 import { CategoryTab } from "./CategoryTab";
 import { VendorDetailTabs } from "./VendorDetailTabs";
-import { BarChart2, PieChart, ArrowLeftRight, Boxes, Wallet } from "lucide-react";
+import { BarChart2, PieChart, ArrowLeftRight, Boxes, Wallet, Calculator } from "lucide-react";
 // 2026-08-03 (#183) · 공통 TabBar (level 1 · Level-1 발주/매입/결제/통계 탭) · duplicate 스타일 흡수
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 
@@ -155,7 +156,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // Level-2 서브탭 상태
   const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need">("need");
   const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history">("receipt");
-  const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input">("vendor");
+  const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment-input" | "vat-prepare">("vendor");
   const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff">("trending");
 
   // 2026-08-03 · 관리자(level>=8) 전용 · 서브탭 long-press 드래그 재정렬 (useSortableTabs 훅)
@@ -885,7 +886,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   //   · badge 는 렌더 시 별도 계산 (여기서는 순서·label·icon·color 만 유지)
   type PurchaseOrderKey = "order" | "need";
   type PurchaseKey = "receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history";
-  type PaymentKey = "vendor" | "payment-input";
+  type PaymentKey = "vendor" | "payment-input" | "vat-prepare";
   type StatKey = "trending" | "category" | "flow" | "diff";
   interface SubTabDef<K extends string> { key: K; label: string; icon: React.ElementType; color: string; }
 
@@ -904,6 +905,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const paymentDefaultTabs: SubTabDef<PaymentKey>[] = useMemo(() => [
     { key: "vendor",        label: "공급사관리", icon: Building2,     color: "teal"   },
     { key: "payment-input", label: "결제입력",   icon: Wallet,        color: "amber"  },
+    { key: "vat-prepare",   label: "부가세 준비", icon: Calculator,    color: "rose"   },
   ], []);
   const statDefaultTabs: SubTabDef<StatKey>[] = useMemo(() => [
     { key: "trending", label: "급상승",         icon: TrendingUp,    color: "indigo" },
@@ -924,7 +926,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   useEffect(() => {
     const first0 = purchaseOrderSortable.tabs[0]?.key as "order" | "need" | undefined;
     const first1 = purchaseSortable.tabs[0]?.key as "receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history" | undefined;
-    const first2 = paymentSortable.tabs[0]?.key as "vendor" | "payment-input" | undefined;
+    const first2 = paymentSortable.tabs[0]?.key as "vendor" | "payment-input" | "vat-prepare" | undefined;
     const first3 = statSortable.tabs[0]?.key as "trending" | "category" | "flow" | "diff" | undefined;
     if (first0) setPurchaseOrderSubTab(first0);
     if (first1) setPurchaseSubTab(first1);
@@ -1633,6 +1635,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {paymentSubTab === "payment-input" && (
             <div className="flex-1 min-h-0">
               <PaymentInfoTab />
+            </div>
+          )}
+
+          {/* ── 부가세 준비 서브탭 (#197) ── */}
+          {paymentSubTab === "vat-prepare" && (
+            <div className="flex-1 min-h-0">
+              <VatPreparePage />
             </div>
           )}
 

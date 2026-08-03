@@ -39,6 +39,7 @@ import invoiceImagesRouter from "./server/routes/invoiceImages";
 import purchaseHistoryRouter from "./server/routes/purchaseHistory";
 import hrFormsRouter from "./server/routes/hrForms";
 import resignationsRouter from "./server/routes/resignations";
+import vatRouter from "./server/routes/vat";
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일 보관 · 라우터 등록만 해제
 // import inventorySalesRouter from "./server/routes/inventorySales";
 import { loadStockCountModel } from "./server/stockCounter";
@@ -101,6 +102,7 @@ async function startServer() {
   app.use(purchaseHistoryRouter);
   app.use(hrFormsRouter);
   app.use(resignationsRouter);
+  app.use(vatRouter);
   // app.use(inventorySalesRouter);
 
   // /products.json — 항상 DB에서 동적으로 제공 (브라우저 캐시 없음, 서버 메모리 캐시만 사용)
