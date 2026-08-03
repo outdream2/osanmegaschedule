@@ -276,6 +276,7 @@ export const LowStockPanel: React.FC = () => {
                               {isLowGroupCollapsed("inv") ? <ChevronRight size={11} /> : <ChevronDown size={11} />}실재고
                             </span>
                           </th>
+                          <th className="bg-indigo-50 text-indigo-600 text-center px-2 py-1.5">추천</th>
                           <th className="bg-rose-100 text-rose-700 text-right px-2 py-1.5">필요</th>
                           <th className="bg-slate-50 text-slate-400 text-center px-2 py-1.5">발주</th>
                         </tr>
@@ -297,6 +298,7 @@ export const LowStockPanel: React.FC = () => {
                               <th className="text-right px-2 py-1.5 w-14 bg-rose-50/30 text-rose-500" title="실재고 합계 (창고+매장)">실재고</th>
                             </>
                           )}
+                          <th className="text-right px-2 py-1.5 w-14 bg-indigo-50/40 text-indigo-600" title="추천 적정재고 (편집 가능 · 클릭하여 수정)">적정재고</th>
                           <th className="text-right px-2 py-1.5 w-14 text-rose-600 bg-rose-50/60">필요</th>
                           <th className="text-center px-2 py-1.5 w-20" title="발주요청 리스트에 추가">발주요청</th>
                         </tr>
