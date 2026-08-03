@@ -4,7 +4,7 @@
 //   서브탭: 직원관리 · 연차승인 · 점심불참 · 직원권한 (DisplayPage 서브탭 스타일 벤치마크)
 //   각 서브탭 · 기존 페이지 임베드 (embedded prop 전달 → 자체 AppNavHeader skip)
 import React, { Suspense, useState } from "react";
-import { UserGear, CalendarDots, ForkKnife, ShieldCheck, FileText } from "@phosphor-icons/react";
+import { UserGear, CalendarDots, ForkKnife, ShieldCheck, FileText, NotePencil, type Icon as PhIcon } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { LeavePage } from "../LeavePage/LeavePage";
 import { LunchPage } from "../LunchPage/LunchPage";
@@ -15,6 +15,8 @@ import type { AuthSession } from "../../types";
 const StaffManagePage = React.lazy(() => import("../StaffManagePage/StaffManagePage"));
 // 2026-08-03 · 각종 양식 페이지 · lazy 로드 (초기 진입 시에만 필요)
 const HrFormsPage = React.lazy(() => import("../HrFormsPage/HrFormsPage"));
+// 2026-08-03 · 근로계약서 작성 페이지 (#165) · lazy 로드 (html2canvas/jspdf/signature 3개 라이브러리 포함 · 진입 시만 로드)
+const ContractWriterPage = React.lazy(() => import("../ContractWriterPage/ContractWriterPage"));
 
 interface BusinessManagePageProps {
   onBack: () => void;
@@ -23,7 +25,7 @@ interface BusinessManagePageProps {
   onLogout?: () => void;
 }
 
-type BmSubTab = "staff-manage" | "leave" | "lunch" | "permissions" | "hr-forms";
+type BmSubTab = "staff-manage" | "leave" | "lunch" | "permissions" | "hr-forms" | "contract-writer";
 
 // 서브탭 색상 팔레트 · DisplayPage 서브탭 SUBTAB_COLORS 와 동일 구조
 const SUBTAB_COLORS: Record<string, { bar: string; text: string; iconActive: string; hoverText: string }> = {
@@ -37,16 +39,18 @@ const SUBTAB_COLORS: Record<string, { bar: string; text: string; iconActive: str
 interface TabDef {
   key: BmSubTab;
   label: string;
-  icon: React.ComponentType<{ size?: number; className?: string; weight?: string }>;
+  // Phosphor Icon 컴포넌트 (weight 는 "regular"|"bold"|"fill"|... 유니온 · 문자열 유니온 대신 원본 Icon 타입 사용)
+  icon: PhIcon;
   color: keyof typeof SUBTAB_COLORS;
 }
 
 const TABS: TabDef[] = [
-  { key: "staff-manage", label: "직원관리",  icon: UserGear,     color: "emerald" },
-  { key: "leave",        label: "연차승인",  icon: CalendarDots, color: "teal"    },
-  { key: "lunch",        label: "점심불참",  icon: ForkKnife,    color: "orange"  },
-  { key: "permissions",  label: "직원권한",  icon: ShieldCheck,  color: "indigo"  },
-  { key: "hr-forms",     label: "각종양식",  icon: FileText,     color: "amber"   },
+  { key: "staff-manage",    label: "직원관리",       icon: UserGear,       color: "emerald" },
+  { key: "leave",           label: "연차승인",       icon: CalendarDots,   color: "teal"    },
+  { key: "lunch",           label: "점심불참",       icon: ForkKnife,      color: "orange"  },
+  { key: "permissions",     label: "직원권한",       icon: ShieldCheck,    color: "indigo"  },
+  { key: "hr-forms",        label: "각종양식",       icon: FileText,       color: "amber"   },
+  { key: "contract-writer", label: "근로계약서작성", icon: NotePencil,     color: "emerald" },
 ];
 
 const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
@@ -136,6 +140,11 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
         {subTab === "hr-forms" && (
           <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">각종 양식 로딩 중...</div>}>
             <HrFormsPage {...commonSubPageProps} />
+          </Suspense>
+        )}
+        {subTab === "contract-writer" && (
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">근로계약서 작성 로딩 중...</div>}>
+            <ContractWriterPage {...commonSubPageProps} />
           </Suspense>
         )}
       </main>
