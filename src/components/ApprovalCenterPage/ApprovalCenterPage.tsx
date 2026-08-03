@@ -28,6 +28,7 @@ interface ApprovalCenterPageProps {
 type ACTab = "leave" | "resignation";
 
 const ApprovalCenterPage: React.FC<ApprovalCenterPageProps> = (props) => {
+  const { onCountsChange } = props;
   const [tab, setTab] = useState<ACTab>("leave");
   const [leaveCount, setLeaveCount] = useState<number>(0);
   const [resignCount, setResignCount] = useState<number>(0);
@@ -44,11 +45,11 @@ const ApprovalCenterPage: React.FC<ApprovalCenterPageProps> = (props) => {
       const rc = Number(rJson?.count ?? 0);
       setLeaveCount(lc);
       setResignCount(rc);
-      props.onCountsChange?.({ leave: lc, resignation: rc });
+      onCountsChange?.({ leave: lc, resignation: rc });
     } catch {
       // no-op
     }
-  }, [props]);
+  }, [onCountsChange]);
 
   // 초기 로드 · 60초 폴링 · CustomEvent 실시간
   useEffect(() => {

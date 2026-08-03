@@ -1051,7 +1051,8 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
   // 2026-07-24 · 리팩터 · 편집 stable-key 마이그레이션은 useEditMigration 훅으로 분리
   useEditMigration({ pageNums, dispHeaders, setCellEdits, setAutoSynonymMatches });
   const [autoSynonymLoading, setAutoSynonymLoading] = useState(false);
-  const [barcodeAutoMap, setBarcodeAutoMap] = useState<Record<number, CandidateInfo>>({});
+  // barcodeAutoMap: 바코드 자동 매핑 · 2026-07-28 자동 바인딩 제거 후 항상 {} · BarcodeProduct 타입 유지 (useSaveConfirmed/ErpMatchSubRow 호환)
+  const [barcodeAutoMap, setBarcodeAutoMap] = useState<Record<number, BarcodeProduct>>({});
 
   // effectiveDispRows: 자동보정 + 셀 인라인 편집 결과를 반영한 행 (cellEdits 우선)
   // 2026-07-18 v2 · 금액 무조건 자동 반영 (사용자 요청)
@@ -5214,7 +5215,7 @@ export const RawOcrTable: React.FC<RawOcrTableProps> = ({ pages: pagesFromProps,
                     )}
                     <button
                       type="button"
-                      onClick={handleSaveConfirmed}
+                      onClick={() => handleSaveConfirmed()}
                       disabled={savingConfirmed || hasMissingSupplier}
                       className="flex items-center gap-1.5 text-xs font-bold text-white bg-rose-500 hover:bg-rose-600 disabled:opacity-50 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition cursor-pointer shrink-0 shadow-sm"
                       title={hasMissingSupplier ? `공급사 미입력 페이지 (${missingSupplierPages.join(", ")}번) 를 먼저 채워주세요` : "현재 표시된 항목들을 확정표(DB)에 저장합니다"}

@@ -41,7 +41,7 @@ import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
-  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "zone-labels" | "business-manage" | "others", auth?: AuthSession) => void;
+  onNavigate: (page: Exclude<AppNavPage, "landing">, auth?: AuthSession) => void;
   onLogout: () => void;
   onAuthOnly?: (auth: AuthSession) => void;
 }

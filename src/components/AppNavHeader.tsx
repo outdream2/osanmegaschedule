@@ -25,6 +25,7 @@ export type AppNavPage =
   | "display"
   | "requests"
   | "leave"
+  | "reservation"          // 예약 페이지 · 랜딩 카드에서 접근 · 헤더 탭 노출 없음
   | "scan"                 // 헤더 탭에서는 제거되었으나 라우팅용 union 유지 · 랜딩 카드·매입 서브탭·설정 등에서 접근
   | "productarrival"       // 헤더 탭에서는 제거되었으나 라우팅용 union 유지 · 랜딩 카드·매입 서브탭 등에서 접근
   | "ocr"                  // 헤더 탭에서는 제거되었으나 라우팅용 union 유지 · 매입 사입 서브탭에서 접근
@@ -57,7 +58,8 @@ interface TabDef {
   key: TabKey;
   label: string;
   mobileLabel: string;
-  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number; weight?: string }>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number; weight?: any }>;
   managerOnly: boolean;
   iconClassName?: string;
   color?: "slate" | "blue" | "red" | "sky" | "indigo" | "orange" | "emerald" | "violet" | "amber" | "cyan";
