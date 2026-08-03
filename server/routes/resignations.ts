@@ -1,5 +1,6 @@
 // server/routes/resignations.ts
 // 2026-08-03 · #179+#180+#181 · 사직서 제출/조회/승인/반려 API
+// 2026-08-03 · #204 Priority 4 · signature_data_url → Supabase Storage 업로드 · signature_url 저장
 //
 // 엔드포인트:
 //   POST   /api/resignations                      · 직원 · 사직서 제출 · 관리자 push+in-app 알림
@@ -18,12 +19,71 @@
 //   - 최소 필드 검증만 · 상위 UI 검증에 위임
 //   - status 는 4종 whitelist · CHECK 제약과 동일
 //   - retire_date 실패해도 승인 자체는 성공 반환 (개별 catch)
+//   - signature Storage 업로드 실패 시 · signature_url=null 로 저장 · 오류 로그만 · 제출 자체는 성공
 //
 // leave.ts 라우터를 벤치마크 · 동일한 push+notifications 흐름 유지
 import { Router } from "express";
 import webpush from "web-push";
 import { supabase } from "../../src/supabase/client";
 import { notificationsService } from "../../src/services/notificationsService";
+
+// ─── Storage 설정 ────────────────────────────────────────────────────────────
+// Supabase 대시보드에서 "resignation-signatures" 버킷을 Public으로 생성 필요
+const SIGNATURE_BUCKET = process.env.SUPABASE_SIGNATURE_BUCKET || "resignation-signatures";
+
+/**
+ * base64 dataURL(data:<mime>;base64,<b64>) → Supabase Storage 업로드 → publicUrl 반환
+ * 실패 시 null 반환 (호출자가 null로 저장 · 제출 자체는 계속)
+ */
+async function uploadSignatureToStorage(
+  dataUrl: string,
+  employeeId: number,
+): Promise<string | null> {
+  if (!dataUrl || typeof dataUrl !== "string") return null;
+  const m = /^data:([^;,]+);base64,(.+)$/.exec(dataUrl);
+  if (!m) return null;
+
+  const mime = m[1];
+  const buffer = Buffer.from(m[2], "base64");
+
+  // 서명 이미지 크기 상한 · 2MB
+  const MAX_BYTES = 2 * 1024 * 1024;
+  if (buffer.length > MAX_BYTES) {
+    console.warn(`[resignations/signature] 크기 초과 · emp=${employeeId} · ${(buffer.length / 1024).toFixed(0)}KB > 2048KB · Storage 업로드 생략`);
+    return null;
+  }
+
+  const ext = mime.includes("png") ? "png" : mime.includes("webp") ? "webp" : "jpg";
+  const now = Date.now();
+  const objectPath = `${employeeId}/${now}.${ext}`;
+
+  try {
+    const { error: upErr } = await supabase
+      .storage
+      .from(SIGNATURE_BUCKET)
+      .upload(objectPath, buffer, {
+        contentType: mime,
+        cacheControl: "31536000",
+        upsert: false,
+      });
+
+    if (upErr) {
+      console.warn(`[resignations/signature] Storage 업로드 실패 · emp=${employeeId} · ${upErr.message}`);
+      return null;
+    }
+
+    const { data: pub } = supabase.storage.from(SIGNATURE_BUCKET).getPublicUrl(objectPath);
+    if (!pub?.publicUrl) {
+      console.warn(`[resignations/signature] getPublicUrl 실패 · path=${objectPath}`);
+      return null;
+    }
+
+    return pub.publicUrl;
+  } catch (err: any) {
+    console.warn(`[resignations/signature] Storage 예외 · emp=${employeeId} · ${err?.message ?? err}`);
+    return null;
+  }
+}
 
 const router = Router();
 
@@ -109,6 +169,15 @@ router.post("/api/resignations", async (req, res) => {
   }
 
   try {
+    // ── 서명 이미지 · Storage 업로드 (실패해도 제출 계속) ──────────────────
+    let signature_url: string | null = null;
+    if (signature_data_url) {
+      signature_url = await uploadSignatureToStorage(
+        String(signature_data_url),
+        Number(employee_id),
+      );
+    }
+
     const { data, error } = await supabase
       .from("resignation_requests")
       .insert([{
@@ -120,7 +189,10 @@ router.post("/api/resignations", async (req, res) => {
         reason: String(reason),
         reason_detail: reason_detail ?? null,
         handover_notes: handover_notes ?? null,
+        // deprecated · 하위 호환 · 신규 레코드도 임시 유지 (클라이언트 이관 완료 후 중단 예정)
         signature_data_url: signature_data_url ?? null,
+        // 신규 · Storage URL
+        signature_url,
         pdf_url: pdf_url ?? null,
         status: "pending",
       }])
