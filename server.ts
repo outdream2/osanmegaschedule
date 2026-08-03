@@ -39,6 +39,7 @@ import invoiceImagesRouter from "./server/routes/invoiceImages";
 import purchaseHistoryRouter from "./server/routes/purchaseHistory";
 import hrFormsRouter from "./server/routes/hrForms";
 import resignationsRouter from "./server/routes/resignations";
+import employeeContractsRouter from "./server/routes/employeeContracts";
 import vatRouter from "./server/routes/vat";
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일 보관 · 라우터 등록만 해제
 // import inventorySalesRouter from "./server/routes/inventorySales";
@@ -102,6 +103,7 @@ async function startServer() {
   app.use(purchaseHistoryRouter);
   app.use(hrFormsRouter);
   app.use(resignationsRouter);
+  app.use(employeeContractsRouter);
   app.use(vatRouter);
   // app.use(inventorySalesRouter);
 

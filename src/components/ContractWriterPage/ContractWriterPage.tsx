@@ -1121,22 +1121,62 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     }
   };
 
-  // 계약 완료 → 프리뷰 캡처 → PDF 저장
-  const handleComplete = async () => {
-    setNotice(null);
+  // ── 공통 · 프리뷰 캡처 → PDF 인스턴스 생성 ────────────────────────────
+  // handleComplete (로컬 다운) 과 handleApproveAndSave (#202 · DB 저장) 이 공유
+  const buildPdfFromPreview = async (): Promise<{ pdf: jsPDF; filename: string }> => {
+    const node = previewRef.current;
+    if (!node) throw new Error("계약서 프리뷰를 찾을 수 없습니다.");
 
-    // 최소 검증
+    const canvas = await html2canvas(node, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      logging: false,
+      windowWidth: node.scrollWidth,
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+    const pdfW = pdf.internal.pageSize.getWidth();
+    const pdfH = pdf.internal.pageSize.getHeight();
+    const imgW = pdfW;
+    const imgH = (canvas.height * imgW) / canvas.width;
+
+    if (imgH <= pdfH) {
+      pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH, undefined, "FAST");
+    } else {
+      let heightLeft = imgH;
+      let position = 0;
+      pdf.addImage(imgData, "PNG", 0, position, imgW, imgH, undefined, "FAST");
+      heightLeft -= pdfH;
+      while (heightLeft > 0) {
+        position -= pdfH;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgW, imgH, undefined, "FAST");
+        heightLeft -= pdfH;
+      }
+    }
+
+    const safeName = (form.employeeName || "근로자").replace(/[\\/:*?"<>|]/g, "_");
+    const safeDate = (form.startDate || todayIso()).replace(/-/g, "");
+    const filename = `근로계약서_${safeName}_${safeDate}.pdf`;
+    return { pdf, filename };
+  };
+
+  // 공통 검증 · 최소 필드 + 서명 + 조항 확인 (softMode=true 면 조항 미확인 시 confirm 스킵)
+  const validateBeforeAction = (opts: { requireAllAcks: boolean }): boolean => {
     if (!form.employeeName.trim()) {
       setNotice({ tone: "err", text: "근로자 성명을 입력하세요." });
-      return;
+      return false;
     }
     if (!form.startDate) {
       setNotice({ tone: "err", text: "계약 시작일을 입력하세요." });
-      return;
+      return false;
     }
     if (!form.indefinite && !form.endDate) {
       setNotice({ tone: "err", text: "계약 종료일을 입력하거나 '무기한'을 선택하세요." });
-      return;
+      return false;
     }
     const employerEmpty = !employerPadRef.current || employerPadRef.current.isEmpty();
     const employeeEmpty = !employeePadRef.current || employeePadRef.current.isEmpty();
@@ -1145,70 +1185,46 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         employerEmpty ? "사업주" : null,
         employeeEmpty ? "근로자" : null,
       ].filter(Boolean).join(" · ");
-      if (!window.confirm(`서명이 비어있습니다 (${missing}).\n서명 없이 PDF를 생성하시겠습니까?`)) return;
+      if (!window.confirm(`서명이 비어있습니다 (${missing}).\n서명 없이 진행하시겠습니까?`)) return false;
     }
 
-    // #200 · 조항별 이해확인 검증 · 미확인 조항 있으면 경고
     const activeKeys = Object.keys(clauseAcks);
     const unchecked = activeKeys.filter(k => !clauseAcks[k].checked);
-    if (activeKeys.length === 0 || unchecked.length > 0) {
-      const msg = activeKeys.length === 0
-        ? "조항별 이해 확인이 하나도 완료되지 않았습니다.\n그래도 PDF를 생성하시겠습니까?"
-        : `이해 미확인 조항이 ${unchecked.length}개 있습니다 (제${unchecked.join("·")}조).\n그래도 PDF를 생성하시겠습니까?`;
-      if (!window.confirm(msg)) return;
+    if (opts.requireAllAcks) {
+      // 승인 모드 · 미확인 있으면 하드 스톱
+      if (activeKeys.length === 0 || unchecked.length > 0) {
+        setNotice({
+          tone: "err",
+          text: activeKeys.length === 0
+            ? "조항 이해 확인을 먼저 완료하세요."
+            : `이해 미확인 조항 ${unchecked.length}개 (제${unchecked.join("·")}조) 를 완료하세요.`,
+        });
+        return false;
+      }
+    } else {
+      // 로컬 다운로드 모드 · confirm 로 진행 여부 확인
+      if (activeKeys.length === 0 || unchecked.length > 0) {
+        const msg = activeKeys.length === 0
+          ? "조항별 이해 확인이 하나도 완료되지 않았습니다.\n그래도 PDF를 생성하시겠습니까?"
+          : `이해 미확인 조항이 ${unchecked.length}개 있습니다 (제${unchecked.join("·")}조).\n그래도 PDF를 생성하시겠습니까?`;
+        if (!window.confirm(msg)) return false;
+      }
     }
+    return true;
+  };
 
-    // 서명 URL 반영 (프리뷰에 이미지로 나타나도록)
+  // 계약 완료 → 프리뷰 캡처 → PDF 로컬 저장 (기존 · 유지)
+  const handleComplete = async () => {
+    setNotice(null);
+    if (!validateBeforeAction({ requireAllAcks: false })) return;
+
     refreshSignaturePreview();
-
-    // 다음 tick · state 반영 후 캡처
     setGenerating(true);
     await new Promise(r => setTimeout(r, 60));
 
     try {
-      const node = previewRef.current;
-      if (!node) throw new Error("계약서 프리뷰를 찾을 수 없습니다.");
-
-      // html2canvas · 스케일 2 · 흰색 배경 (PDF 텍스트 선명도)
-      const canvas = await html2canvas(node, {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        logging: false,
-        windowWidth: node.scrollWidth,
-      });
-
-      const imgData = canvas.toDataURL("image/png");
-
-      // A4 세로 · mm 단위
-      const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
-      const pdfW = pdf.internal.pageSize.getWidth();
-      const pdfH = pdf.internal.pageSize.getHeight();
-
-      // 이미지 비율 유지 · A4 폭 기준 스케일
-      const imgW = pdfW;
-      const imgH = (canvas.height * imgW) / canvas.width;
-
-      if (imgH <= pdfH) {
-        pdf.addImage(imgData, "PNG", 0, 0, imgW, imgH, undefined, "FAST");
-      } else {
-        // 여러 페이지 분할
-        let heightLeft = imgH;
-        let position = 0;
-        pdf.addImage(imgData, "PNG", 0, position, imgW, imgH, undefined, "FAST");
-        heightLeft -= pdfH;
-        while (heightLeft > 0) {
-          position -= pdfH;
-          pdf.addPage();
-          pdf.addImage(imgData, "PNG", 0, position, imgW, imgH, undefined, "FAST");
-          heightLeft -= pdfH;
-        }
-      }
-
-      const safeName = (form.employeeName || "근로자").replace(/[\\/:*?"<>|]/g, "_");
-      const safeDate = (form.startDate || todayIso()).replace(/-/g, "");
-      pdf.save(`근로계약서_${safeName}_${safeDate}.pdf`);
-
+      const { pdf, filename } = await buildPdfFromPreview();
+      pdf.save(filename);
       setNotice({ tone: "ok", text: "PDF 다운로드가 시작되었습니다." });
     } catch (err: any) {
       setNotice({ tone: "err", text: err?.message ?? "PDF 생성에 실패했습니다." });
@@ -1216,6 +1232,70 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       setGenerating(false);
     }
   };
+
+  // #202 · 계약완료 승인 · PDF 생성 → DB 저장 (Supabase Storage + employee_contracts row + employees.contract_file_url 갱신) → 로컬 다운도 병행
+  const handleApproveAndSave = async () => {
+    setNotice(null);
+    if (!validateBeforeAction({ requireAllAcks: true })) return;
+
+    refreshSignaturePreview();
+    setGenerating(true);
+    await new Promise(r => setTimeout(r, 60));
+
+    try {
+      const { pdf, filename } = await buildPdfFromPreview();
+
+      // dataURL · data:application/pdf;base64,...
+      const pdfDataUrl = pdf.output("datauristring");
+
+      // 서버 저장 (Storage 업로드 + row insert + employees.contract_file_url 갱신)
+      const body = {
+        employee_id: form.employeeId,
+        employee_name: form.employeeName,
+        contract_type: form.contractType || null,
+        start_date: form.startDate || null,
+        end_date: form.indefinite ? null : (form.endDate || null),
+        pdf_data_url: pdfDataUrl,
+        approved_by: authSession?.employeeName ?? null,
+        approved_by_id: authSession?.employeeId ?? null,
+      };
+      const resp = await fetch("/api/employee-contracts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const saved = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        const msg = saved?.error ?? `저장 실패 (HTTP ${resp.status})`;
+        // 저장 실패라도 사용자 편의 · 로컬 다운은 진행
+        pdf.save(filename);
+        setNotice({ tone: "err", text: `${msg} · 로컬 다운로드만 진행되었습니다.` });
+        return;
+      }
+
+      // 로컬 다운도 병행 (사용자 편의)
+      pdf.save(filename);
+
+      const pdfUrl: string | undefined = saved?.pdf_url;
+      setNotice({
+        tone: "ok",
+        text: pdfUrl
+          ? `계약이 승인되어 저장되었습니다. 다운로드 링크: ${pdfUrl}`
+          : "계약이 승인되어 저장되었습니다.",
+      });
+    } catch (err: any) {
+      setNotice({ tone: "err", text: err?.message ?? "계약 승인·저장에 실패했습니다." });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  // 승인 버튼 활성화 조건 · 조항 이해 확인 100% (렌더된 활성 조항 전체 checked)
+  const canApprove = (() => {
+    const keys = Object.keys(clauseAcks);
+    if (keys.length === 0) return false;
+    return keys.every(k => !!clauseAcks[k]?.checked);
+  })();
 
   // ── 렌더 ─────────────────────────────────────────────────────────────────
   return (
@@ -1728,17 +1808,42 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 <SignArea label="근로자 서명" padRef={employeePadRef} color="indigo" />
               </div>
 
-              {/* 계약 완료 · PDF 다운 */}
-              <div className="mt-3 flex justify-end">
+              {/* 계약 완료 · 승인/PDF 다운 · #202 */}
+              {/* - 좌측 · [계약완료 승인] · rose→emerald 그라디언트 · DB 저장 (Storage + row + employees.contract_file_url) + 로컬 다운
+                  - 우측 · [PDF 다운로드] · 기존 로컬 다운로드 유지 (승인 없이 확인용 프린트 가능) */}
+              <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:justify-between">
+                <div className="flex-1 flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={handleApproveAndSave}
+                    disabled={generating || !canApprove}
+                    className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white text-[15px] font-black shadow-md transition-all cursor-pointer disabled:cursor-not-allowed
+                      ${canApprove && !generating
+                        ? "bg-gradient-to-r from-rose-500 via-fuchsia-500 to-emerald-500 hover:brightness-110 hover:shadow-lg"
+                        : "bg-slate-300 text-slate-500"}`}
+                    title={canApprove
+                      ? "계약 승인 · DB 저장 + PDF 다운"
+                      : "모든 조항 이해 확인을 완료해야 활성화됩니다"}
+                  >
+                    <Check size={16} weight="bold" />
+                    <span>{generating ? "저장 중..." : "계약완료 승인 (DB 저장)"}</span>
+                  </button>
+                  {!canApprove && (
+                    <span className="text-[11px] text-slate-500 font-semibold text-center sm:text-left">
+                      모든 조항 이해 확인 · 미니 서명 완료 시 활성화
+                    </span>
+                  )}
+                </div>
+
                 <button
                   type="button"
                   onClick={handleComplete}
                   disabled={generating}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-sm font-black shadow-sm transition-colors cursor-pointer"
-                  title="계약 완료 · PDF 다운"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer"
+                  title="PDF 로컬 다운로드 (승인 없이)"
                 >
-                  <DownloadSimple size={16} weight="bold" />
-                  <span>{generating ? "생성 중..." : "계약 완료 · PDF 다운"}</span>
+                  <DownloadSimple size={14} weight="bold" />
+                  <span>{generating ? "생성 중..." : "PDF 다운로드"}</span>
                 </button>
               </div>
             </div>
