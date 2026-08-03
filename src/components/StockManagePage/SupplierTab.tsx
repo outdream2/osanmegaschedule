@@ -133,6 +133,19 @@ export const SupplierTab: React.FC = () => {
     return filtered.slice(0, supListLimit);
   }, [sortedXlsxSuppliers, supListLimit, supListCategory, vendorCategoryMap]);
 
+  // 합계 (필터/제한된 visible rows 기준)
+  const supListTotals = useMemo(() => {
+    let stock = 0, item = 0, purchase = 0, saleQ = 0, saleA = 0;
+    for (const s of displayedXlsxSuppliers) {
+      stock += Number(s.totalStockAmount ?? 0);
+      item  += Number(s.itemCount ?? 0);
+      purchase += Number(s.purchaseQty ?? 0);
+      saleQ += Number(s.saleQty ?? 0);
+      saleA += Number(s.saleAmount ?? 0);
+    }
+    return { stock, item, purchase, saleQ, saleA };
+  }, [displayedXlsxSuppliers]);
+
   const supplierSelectedObj = useMemo(() =>
     supplierSelectedKey ? xlsxSuppliers.find(s => `${s.supplier_code ?? "-"}::${s.supplier}` === supplierSelectedKey) ?? null : null,
     [supplierSelectedKey, xlsxSuppliers]);
@@ -431,6 +444,27 @@ export const SupplierTab: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
+                    {/* 합계 요약 행 · 필터/제한된 visible 공급사 기준 */}
+                    <tr className="bg-slate-100 border-b-2 border-slate-300 font-black text-slate-800 text-[12px]">
+                      <td className="text-center py-1.5">Σ</td>
+                      <td className="text-center py-1.5 text-slate-500">-</td>
+                      <td className="text-left px-3 py-1.5 text-slate-800 font-black">합계 <span className="text-slate-500 font-bold">({displayedXlsxSuppliers.length}개 사)</span></td>
+                      {isSupplierGroupCollapsed("stock") ? <td className="bg-slate-100" /> : (
+                        <>
+                          <td className="text-right px-3 py-1.5 tabular-nums font-black text-slate-800 bg-sky-100/60">{fmtWon(supListTotals.stock)}</td>
+                          <td className="text-right px-3 py-1.5 tabular-nums font-black text-slate-800 bg-sky-100/40">{supListTotals.item.toLocaleString()}</td>
+                        </>
+                      )}
+                      {isSupplierGroupCollapsed("purchase") ? <td className="bg-slate-100" /> : (
+                        <td className="text-right px-3 py-1.5 tabular-nums font-black text-amber-700 bg-amber-100/40">{supListTotals.purchase.toLocaleString()}</td>
+                      )}
+                      {isSupplierGroupCollapsed("sale") ? <td className="bg-slate-100" /> : (
+                        <>
+                          <td className="text-right px-3 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/40">{supListTotals.saleQ.toLocaleString()}</td>
+                          <td className="text-right px-3 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/60">{fmtWon(supListTotals.saleA)}</td>
+                        </>
+                      )}
+                    </tr>
                     {displayedXlsxSuppliers.map((sup, i) => {
                       const key = `${sup.supplier_code ?? "-"}::${sup.supplier}`;
                       const isExpanded = supplierRowsMap[key] != null;

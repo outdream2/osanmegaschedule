@@ -1350,26 +1350,45 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {/* ── 발주필요 서브탭 ── */}
           {purchaseOrderSubTab === "need" && (<>
         <div className="flex flex-col gap-2">
-          {/* ── 상단 KPI 카드 · 재고 이하 N개 + 공급사 카테고리 필터 ── */}
-          <div className="bg-gradient-to-r from-rose-50 via-white to-white rounded-xl border border-rose-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
-            {/* 좌측 · 조건 요약 (KPI 카드 삭제 · 2026-08-03 사용자 요청) */}
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-500 hidden sm:inline">
-                {orderNeedConfig.shortageBasis === "min" && "현재고 < 최소재고"}
-                {orderNeedConfig.shortageBasis === "realStock" && "실재고 < 추천적정재고"}
-                {orderNeedConfig.shortageBasis === "optimal" && "현재고 < 추천적정재고"}
-                {orderNeedConfig.minShortage > 1 && ` · 부족 ${orderNeedConfig.minShortage}개 이상`}
-                {!orderNeedConfig.includeMissingRealStock && " · 실재고 있는 것만"}
-                {/* 2026-08-03 (#189) · 매입주기·최근 한달 판매량 필터 · 정렬 표시 */}
-                {orderNeedConfig.minPurchaseCycle > 0 && ` · 매입주기 ≥${orderNeedConfig.minPurchaseCycle}일`}
-                {orderNeedConfig.minMonthlySales > 0 && ` · 최근 한달 판매 ≥${orderNeedConfig.minMonthlySales}개`}
-                <span className="mx-1 text-slate-300">·</span>상품명 클릭 → 상세
-              </span>
+          {/* ══ 통합 조건 카드 · 검색 + 재고상태 + 카테고리 + 4조건 + 발주판정 설정 ══ */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+
+            {/* ── Row 1: 검색 + 재고상태 chip ── */}
+            <div className="px-4 pt-3 pb-2.5 flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-100">
+              <SearchBar
+                value={lowStockSearch}
+                onChange={setLowStockSearch}
+                placeholder="상품·코드·공급사 검색 (한글 초성 · 예: ㅇㅅㅌ)"
+                resultCount={lowStockFiltered.length}
+                resultUnit="건"
+                historyKey="megatown_orderNeed_search_history"
+                accent="rose"
+                widthClass="w-64 sm:w-80"
+              />
+              <SearchFilterChips<NeedStockStatus>
+                label="재고 상태"
+                options={stockStatusChipOptions}
+                selected={needStockStatus}
+                onToggle={toggleNeedStockStatus}
+                showAll={true}
+                allLabel="전체"
+                size="sm"
+              />
+              {(lowStockSearch.trim() || needStockStatus.size > 0) && (
+                <button
+                  type="button"
+                  onClick={() => { setLowStockSearch(""); setNeedStockStatus(new Set()); }}
+                  className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-black text-slate-500 hover:text-rose-600 transition cursor-pointer"
+                  title="검색·필터 모두 초기화"
+                >
+                  <RotateCcw size={11} />초기화
+                </button>
+              )}
             </div>
 
-            {/* 우측 · 카테고리 필터 (segmented control · 6버튼) */}
-            <div className="ml-auto flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 shrink-0">분류</span>
+            {/* ── Row 2: 공급사 카테고리 필터 + 새로고침 ── */}
+            <div className="px-4 py-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b border-slate-100 bg-slate-50/40">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0">분류</span>
               <div className="inline-flex items-center rounded-lg border border-slate-200 bg-white p-0.5 gap-0.5 flex-wrap">
                 {([
                   { k: "all"      as NeedCategoryFilter, label: "전체",     activeCls: "bg-slate-100    text-slate-800   border-slate-300"  },
@@ -1660,6 +1679,44 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">
+                {/* 합계 요약 행 · 필터된 visible rows 기준 */}
+                {(() => {
+                  let sumCur = 0, sumInv = 0, sumOpt = 0, sumShort = 0;
+                  let invCount = 0;
+                  for (const p of lowStockFiltered) {
+                    const c = Number(p.current_stock ?? 0);
+                    const o = Number(p.optimal_stock ?? 0);
+                    sumCur += c;
+                    sumOpt += o;
+                    sumShort += Math.max(0, o - c);
+                    const codeK = getCode(p);
+                    const invR = invStockMap.get(codeK);
+                    if (invR && Number.isFinite(invR.total)) { sumInv += Number(invR.total); invCount++; }
+                  }
+                  return (
+                    <tr className="bg-slate-100 border-b-2 border-slate-300 font-black text-slate-800 text-[12px]">
+                      {isNeedCollapsed("info") ? (
+                        <td className="bg-slate-100" />
+                      ) : (
+                        <>
+                          <td className="text-left px-1 py-1.5 text-slate-500 font-bold">Σ</td>
+                          <td className="text-left px-1 py-1.5 text-slate-800 font-black">합계 <span className="text-slate-500 font-bold">({lowStockFiltered.length}건)</span></td>
+                        </>
+                      )}
+                      {isNeedCollapsed("stock") ? (
+                        <td className="bg-slate-100" />
+                      ) : (
+                        <>
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-slate-800 bg-slate-100">{sumCur.toLocaleString()}</td>
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-violet-700 bg-violet-100/60" title={`실재고 입력된 상품 ${invCount}건 합계`}>{invCount > 0 ? sumInv.toLocaleString() : "-"}</td>
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-indigo-700 bg-indigo-100/60">{sumOpt.toLocaleString()}</td>
+                          <td className="text-right px-0.5 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/60">-{sumShort.toLocaleString()}</td>
+                        </>
+                      )}
+                      <td className="bg-slate-100" />
+                    </tr>
+                  );
+                })()}
                 {[...lowStockFiltered].sort((a, b) => {
                   const dir = needSortDir === "asc" ? 1 : -1;
                   const aCode = getCode(a), bCode = getCode(b);

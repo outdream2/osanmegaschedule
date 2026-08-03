@@ -434,6 +434,20 @@ export const FlowTab: React.FC = () => {
     return filtered;
   }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowSearch, flowMonths, flowCategoryFilter, vendorCategoryMap, classFilter, productRealMapById]);
 
+  // 합계 (필터/정렬된 visible rows 기준)
+  const flowTotals = useMemo(() => {
+    let saleV = 0, curV = 0, optV = 0, monthV = 0, purchV = 0, amountV = 0;
+    for (const p of filteredFlow) {
+      saleV += Number((p as any).sale_qty ?? 0);
+      curV  += Number((p as any).current_stock ?? 0);
+      optV  += Number((p as any).optimal_stock ?? 0);
+      monthV += Number((p as any).sale_qty_month ?? 0);
+      purchV += Number((p as any).purchase_total_qty ?? (p as any).purchase_qty ?? 0);
+      amountV += Number((p as any).total_amount ?? 0);
+    }
+    return { saleV, curV, optV, monthV, purchV, amountV };
+  }, [filteredFlow]);
+
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
@@ -772,6 +786,32 @@ export const FlowTab: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
+                        {/* 합계 요약 행 · 필터/정렬된 visible rows 기준 */}
+                        <tr className="bg-slate-100 border-b-2 border-slate-300 font-black text-slate-800 text-[12px]">
+                          <td className="text-center px-1 py-1.5 align-middle" style={{ width: 48, minWidth: 48, maxWidth: 48 }}>Σ</td>
+                          <td className="px-2 py-1.5 align-middle text-slate-800 font-black">합계 <span className="text-slate-500 font-bold">({filteredFlow.length}건)</span></td>
+                          {!isFlowGroupCollapsed("stock") && <>
+                            <td className="text-right px-1.5 py-1.5 tabular-nums font-black text-slate-800 bg-sky-100/60">{flowTotals.saleV.toLocaleString()}</td>
+                            <td className="text-right px-1.5 py-1.5 tabular-nums font-black text-slate-800 bg-sky-100/60">{flowTotals.curV.toLocaleString()}</td>
+                            <td className="text-right px-1.5 py-1.5 tabular-nums font-black text-slate-800 bg-sky-100/60">{flowTotals.optV.toLocaleString()}</td>
+                            <td className="text-right px-1.5 py-1.5 tabular-nums font-black text-sky-700 bg-sky-100/60">{flowTotals.monthV.toLocaleString()}</td>
+                          </>}
+                          {isFlowGroupCollapsed("stock") && <td className="bg-slate-100" />}
+                          {!isFlowGroupCollapsed("purchase") && <>
+                            <td className="text-right px-1.5 py-1.5 tabular-nums text-slate-400">-</td>
+                            <td className="text-right px-1.5 py-1.5 tabular-nums text-slate-400">-</td>
+                            <td className="text-right px-1.5 py-1.5 tabular-nums font-black text-slate-800 bg-amber-100/60">{flowTotals.purchV > 0 ? flowTotals.purchV.toLocaleString() : "-"}</td>
+                          </>}
+                          {isFlowGroupCollapsed("purchase") && <td className="bg-slate-100" />}
+                          {!isFlowGroupCollapsed("sales") && <>
+                            <td className="text-right px-1.5 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/60">{flowTotals.saleV > 0 ? flowTotals.saleV.toLocaleString() : "-"}</td>
+                            <td className="text-right px-1.5 py-1.5 tabular-nums font-black text-rose-700 bg-rose-100/60">{flowTotals.amountV > 0 ? fmtWon(flowTotals.amountV) : "-"}</td>
+                            <td className="text-right px-1.5 py-1.5 tabular-nums text-slate-400">평균</td>
+                            <td className="text-right px-1.5 py-1.5 tabular-nums text-slate-400">평균</td>
+                            <td className="text-right px-1.5 py-1.5 tabular-nums text-slate-400">-</td>
+                          </>}
+                          {isFlowGroupCollapsed("sales") && <td className="bg-slate-100" />}
+                        </tr>
                         {filteredFlow.map((p, i) => {
                           const cur = Number((p as any).current_stock ?? 0);
                           const openV = Number(p.opening_stock ?? 0);
