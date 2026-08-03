@@ -9,16 +9,20 @@ import {
   Calendar,
   Camera,
   ClipboardList,
+  Clock,
   Edit2,
+  ExternalLink,
   FileText,
   GraduationCap,
   Loader2,
   Mail,
   MapPin,
+  Paperclip,
   Phone,
   RefreshCw,
   Save,
   Search,
+  Star,
   Trash2,
   User,
   UserPlus,
@@ -83,6 +87,8 @@ interface Employee {
   careers?: CareerItem[] | null;
   educations?: EducationItem[] | null;
   certifications?: CertItem[] | null;
+  // 인사평가 (S/A/B/C/D · 관리자 입력)
+  performance_rating?: string | null;
   [key: string]: unknown;
 }
 
@@ -123,7 +129,8 @@ interface Employee {
  *   ADD COLUMN IF NOT EXISTS health_check_expiry date,
  *   ADD COLUMN IF NOT EXISTS careers jsonb DEFAULT '[]'::jsonb,
  *   ADD COLUMN IF NOT EXISTS educations jsonb DEFAULT '[]'::jsonb,
- *   ADD COLUMN IF NOT EXISTS certifications jsonb DEFAULT '[]'::jsonb;
+ *   ADD COLUMN IF NOT EXISTS certifications jsonb DEFAULT '[]'::jsonb,
+ *   ADD COLUMN IF NOT EXISTS performance_rating text;
  */
 
 interface CareerItem {
@@ -160,12 +167,31 @@ type EditDraft = Pick<
   | "wage_calc_type" | "wage_amount" | "wage_pay_day" | "wage_pay_method" | "bank_name" | "bank_account_no"
   | "insurance_nps_date" | "insurance_nhis_date" | "insurance_ei_date" | "insurance_wcia_date" | "insurance_excluded"
   | "pharmacist_license_no" | "health_check_expiry"
+  | "performance_rating"
 >;
 
 // ─── 상수 ───────────────────────────────────────────────────────────────────
 const POSITIONS = ["약사", "물류", "캐셔", "진열", "매니저", "기타"] as const;
 const SCHEDULE_TYPES = ["오픈", "미들", "마감", "클로징", "자유", "풀타임"] as const;
 const GENDERS = ["남", "여"] as const;
+
+// 계약유형 (regular/fixed_term/part_time/daily/intern)
+const CONTRACT_TYPES: { value: string; label: string; short: string }[] = [
+  { value: "regular",    label: "정규직",  short: "정규" },
+  { value: "fixed_term", label: "계약직",  short: "계약" },
+  { value: "part_time",  label: "알바",    short: "알바" },
+  { value: "daily",      label: "일용직",  short: "일용" },
+  { value: "intern",     label: "인턴",    short: "인턴" },
+];
+
+// 인사평가 등급
+const PERFORMANCE_RATINGS: { value: string; label: string }[] = [
+  { value: "S", label: "S · 탁월" },
+  { value: "A", label: "A · 우수" },
+  { value: "B", label: "B · 양호" },
+  { value: "C", label: "C · 보통" },
+  { value: "D", label: "D · 미흡" },
+];
 
 // ─── 헬퍼: 직책 컬러 ────────────────────────────────────────────────────────
 function positionColor(pos: string | null | undefined) {
@@ -186,6 +212,55 @@ function scheduleTypeColor(t: string | null | undefined) {
   if (t === "클로징")  return "bg-purple-100 text-purple-700 border-purple-200";
   if (t === "풀타임")  return "bg-blue-100 text-blue-700 border-blue-200";
   return "bg-slate-100 text-slate-500 border-slate-200";
+}
+
+// 계약유형 · 배지 컬러 + 한글 라벨
+function contractTypeMeta(t: string | null | undefined): { label: string; short: string; color: string } | null {
+  if (!t) return null;
+  const found = CONTRACT_TYPES.find((c) => c.value === t);
+  const short = found?.short ?? t;
+  const label = found?.label ?? t;
+  let color: string;
+  switch (t) {
+    case "regular":    color = "bg-blue-100 text-blue-700 border-blue-200"; break;
+    case "fixed_term": color = "bg-amber-100 text-amber-700 border-amber-200"; break;
+    case "part_time":  color = "bg-slate-100 text-slate-600 border-slate-200"; break;
+    case "daily":      color = "bg-rose-100 text-rose-700 border-rose-200"; break;
+    case "intern":     color = "bg-lime-100 text-lime-700 border-lime-200"; break;
+    default:           color = "bg-slate-100 text-slate-500 border-slate-200";
+  }
+  return { label, short, color };
+}
+
+// 인사평가 · 배지 컬러
+function performanceRatingColor(r: string | null | undefined): string {
+  if (!r) return "bg-slate-100 text-slate-400 border-slate-200";
+  switch (r.toUpperCase()) {
+    case "S": return "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200";
+    case "A": return "bg-emerald-100 text-emerald-700 border-emerald-200";
+    case "B": return "bg-sky-100 text-sky-700 border-sky-200";
+    case "C": return "bg-amber-100 text-amber-700 border-amber-200";
+    case "D": return "bg-rose-100 text-rose-700 border-rose-200";
+    default:  return "bg-slate-100 text-slate-500 border-slate-200";
+  }
+}
+
+// 근속기간 계산 · hire_date 기반 · "3년 2개월" · 없으면 "-"
+function calcTenure(hireDate: string | null | undefined): string {
+  if (!hireDate) return "-";
+  const start = new Date(hireDate);
+  if (Number.isNaN(start.getTime())) return "-";
+  const now = new Date();
+  let months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+  // 일자 보정 · 아직 이번 달의 입사일이 안 지났다면 -1
+  if (now.getDate() < start.getDate()) months -= 1;
+  if (months < 0) return "-";
+  const years = Math.floor(months / 12);
+  const rem = months % 12;
+  if (years === 0 && rem === 0) return "이번 달";
+  if (years === 0) return `${rem}개월`;
+  if (rem === 0)   return `${years}년`;
+  return `${years}년 ${rem}개월`;
 }
 
 // ─── 헬퍼: 아바타 그라디언트 ────────────────────────────────────────────────
@@ -541,6 +616,8 @@ const StaffManagePage: React.FC = () => {
       salary: emp.salary ?? "",
       contract_start: emp.contract_start ?? "",
       contract_end: emp.contract_end ?? "",
+      contract_type: emp.contract_type ?? "",
+      performance_rating: emp.performance_rating ?? "",
     });
     setEditing(true);
   };
@@ -626,10 +703,14 @@ const StaffManagePage: React.FC = () => {
   const ListRow: React.FC<{ emp: Employee }> = ({ emp }) => {
     const isSelected = emp.id === selectedId;
     const schedType = emp.schedule_type;
+    const ctMeta   = contractTypeMeta(emp.contract_type);
+    const tenure   = calcTenure(emp.hire_date);
+    const hasContractFile = !!emp.contract_file_url;
+    const rating   = emp.performance_rating ? emp.performance_rating.toUpperCase() : null;
     return (
       <button
         onClick={() => handleSelect(emp)}
-        className={`w-full text-left flex items-center h-[54px] px-3 gap-2.5 relative transition-colors duration-100 cursor-pointer group ${
+        className={`w-full text-left flex items-center min-h-[64px] px-3 py-1.5 gap-2.5 relative transition-colors duration-100 cursor-pointer group ${
           isSelected
             ? "bg-indigo-50/80"
             : "hover:bg-slate-50/70"
@@ -671,13 +752,43 @@ const StaffManagePage: React.FC = () => {
                 {schedType}
               </span>
             )}
+            {ctMeta && (
+              <span className={`text-[9px] font-semibold px-1.5 py-px rounded-md border leading-tight ${ctMeta.color}`}>
+                {ctMeta.short}
+              </span>
+            )}
             {emp.weekly_holiday && (
               <span className="text-[9px] font-medium text-slate-400 leading-tight">휴{emp.weekly_holiday.slice(0, 1)}</span>
             )}
           </div>
-          {emp.phone && (
-            <span className="text-[10px] text-slate-400 tabular-nums leading-tight truncate">{emp.phone}</span>
-          )}
+          {/* 2026-08 · 계약/근속/평가 요약 행 */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* 근속기간 */}
+            <span className="text-[10px] text-slate-500 leading-tight inline-flex items-center gap-0.5">
+              <Clock size={9} className="text-slate-400" />
+              {tenure}
+            </span>
+            {/* 계약서 아이콘 · 있으면 인디고, 없으면 회색 */}
+            <span
+              title={hasContractFile ? "근로계약서 있음" : "근로계약서 없음"}
+              className={`inline-flex items-center gap-0.5 text-[10px] leading-tight ${
+                hasContractFile ? "text-indigo-500" : "text-slate-300"
+              }`}
+            >
+              <Paperclip size={9} />
+              계약서
+            </span>
+            {/* 인사평가 배지 */}
+            {rating && (
+              <span className={`text-[9px] font-bold px-1.5 py-px rounded-md border leading-tight tabular-nums ${performanceRatingColor(rating)}`}>
+                {rating}
+              </span>
+            )}
+            {/* 연락처 · 우측으로 밀기 */}
+            {emp.phone && (
+              <span className="text-[10px] text-slate-400 tabular-nums leading-tight truncate ml-auto">{emp.phone}</span>
+            )}
+          </div>
         </div>
         {/* 선택 화살표 힌트 */}
         {isSelected && (
@@ -1143,6 +1254,51 @@ const StaffManagePage: React.FC = () => {
                 {/* §6 계약 · 서류 — amber 그룹 */}
                 <SectionCard title="계약 · 서류" icon={<FileText size={11} />} group="work" defaultOpen>
                   <div className="grid grid-cols-2 gap-x-5 gap-y-2.5">
+                    {/* 계약유형 · 드롭박스 (정규/계약/알바/일용/인턴) */}
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        <Briefcase size={9} /> 계약유형
+                      </span>
+                      {editing ? (
+                        <select
+                          value={draft?.contract_type ?? ""}
+                          onChange={(e) => setField("contract_type", e.target.value || null)}
+                          className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] bg-indigo-50/40 focus:outline-none focus:border-indigo-500"
+                        >
+                          <option value="">선택 안 함</option>
+                          {CONTRACT_TYPES.map((c) => (
+                            <option key={c.value} value={c.value}>{c.label}</option>
+                          ))}
+                        </select>
+                      ) : (() => {
+                        const meta = contractTypeMeta(displayEmp.contract_type);
+                        return meta ? (
+                          <span className="py-1">
+                            <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${meta.color}`}>
+                              {meta.label}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="text-[12px] text-slate-300 italic py-1">(없음)</span>
+                        );
+                      })()}
+                    </div>
+
+                    {/* 근속기간 · read-only 계산 표시 (hire_date 기반) */}
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        <Clock size={9} /> 근속기간
+                      </span>
+                      <span className={`text-[12px] py-1 font-semibold ${displayEmp.hire_date ? "text-slate-700" : "text-slate-300 italic"}`}>
+                        {displayEmp.hire_date ? calcTenure(displayEmp.hire_date) : "(입사일 미등록)"}
+                        {displayEmp.hire_date && (
+                          <span className="text-[10px] font-normal text-slate-400 ml-1.5">
+                            · 입사 {displayEmp.hire_date}
+                          </span>
+                        )}
+                      </span>
+                    </div>
+
                     <InlineField
                       label="계약 시작일" value={editing ? (draft?.contract_start ?? "") : (displayEmp.contract_start ?? "")}
                       editing={editing} icon={<Calendar size={9} />} type="date"
@@ -1158,10 +1314,41 @@ const StaffManagePage: React.FC = () => {
                       editing={editing} placeholder="예: 시급 10,030원"
                       onChange={(v) => setField("salary", v)} wide
                     />
-                    {/* 계약서 링크 */}
+
+                    {/* 인사평가 · 편집 가능 (드롭박스 S/A/B/C/D) */}
                     <div className="col-span-2 flex flex-col gap-0.5">
                       <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                        <FileText size={9} /> 계약서 파일
+                        <Star size={9} /> 인사평가
+                      </span>
+                      {editing ? (
+                        <select
+                          value={draft?.performance_rating ?? ""}
+                          onChange={(e) => setField("performance_rating", e.target.value || null)}
+                          className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] bg-indigo-50/40 focus:outline-none focus:border-indigo-500 max-w-[220px]"
+                        >
+                          <option value="">평가 없음</option>
+                          {PERFORMANCE_RATINGS.map((r) => (
+                            <option key={r.value} value={r.value}>{r.label}</option>
+                          ))}
+                        </select>
+                      ) : displayEmp.performance_rating ? (
+                        <span className="py-1 inline-flex items-center gap-1.5">
+                          <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${performanceRatingColor(displayEmp.performance_rating)}`}>
+                            {String(displayEmp.performance_rating).toUpperCase()}
+                          </span>
+                          <span className="text-[11px] text-slate-500">
+                            {PERFORMANCE_RATINGS.find((r) => r.value === String(displayEmp.performance_rating).toUpperCase())?.label ?? ""}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-[12px] text-slate-300 italic py-1">(미평가)</span>
+                      )}
+                    </div>
+
+                    {/* 계약서 파일 · [보기] 버튼 UI · 없으면 "없음" 배지 · 편집 모드에서 URL 입력 */}
+                    <div className="col-span-2 flex flex-col gap-0.5">
+                      <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+                        <FileText size={9} /> 근로계약서
                       </span>
                       {editing ? (
                         <input
@@ -1171,17 +1358,34 @@ const StaffManagePage: React.FC = () => {
                           placeholder="계약서 URL 입력 (https://...)"
                           className="border border-indigo-300 rounded-md px-2.5 py-1 text-[12px] focus:outline-none focus:border-indigo-500 bg-indigo-50/40"
                         />
-                      ) : displayEmp.contract_file_url ? (
-                        <a
-                          href={displayEmp.contract_file_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[12px] font-semibold text-indigo-600 hover:underline py-1 truncate"
-                        >
-                          계약서 다운로드
-                        </a>
                       ) : (
-                        <span className="text-[12px] text-slate-300 italic py-1">(없음)</span>
+                        <div className="flex items-center gap-2 py-1">
+                          {displayEmp.contract_file_url ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => window.open(displayEmp.contract_file_url as string, "_blank", "noopener,noreferrer")}
+                                className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-sm cursor-pointer transition-colors"
+                              >
+                                <ExternalLink size={11} /> 보기
+                              </button>
+                              <span className="text-[10px] text-slate-400 truncate max-w-[280px]">
+                                {displayEmp.contract_file_url}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => alert("등록된 근로계약서가 없습니다.\n편집 모드에서 계약서 URL 을 입력해 주세요.")}
+                                className="inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-semibold text-slate-400 bg-slate-100 border border-slate-200 rounded-md cursor-pointer hover:bg-slate-200/60 transition-colors"
+                              >
+                                <Paperclip size={11} /> 보기
+                              </button>
+                              <span className="text-[11px] font-semibold text-slate-400 italic">없음</span>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -1410,6 +1614,9 @@ const StaffManagePage: React.FC = () => {
                     ["연락처", selectedEmp.phone],
                     ["이메일", selectedEmp.email],
                     ["입사일", selectedEmp.hire_date],
+                    ["근속기간", selectedEmp.hire_date ? calcTenure(selectedEmp.hire_date) : null],
+                    ["계약유형", contractTypeMeta(selectedEmp.contract_type)?.label ?? null],
+                    ["인사평가", selectedEmp.performance_rating ? String(selectedEmp.performance_rating).toUpperCase() : null],
                     ["권한레벨", selectedEmp.level != null ? `Lv.${selectedEmp.level}` : null],
                     ["근무타입", selectedEmp.schedule_type],
                     ["담당구역", selectedEmp.work_area],
@@ -1422,6 +1629,21 @@ const StaffManagePage: React.FC = () => {
                     </div>
                   ) : null
                 )}
+                {/* 근로계약서 · 별도 버튼 */}
+                <div className="col-span-2 flex flex-col gap-0.5 pt-1 border-t border-slate-100 mt-1">
+                  <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">근로계약서</span>
+                  {selectedEmp.contract_file_url ? (
+                    <button
+                      type="button"
+                      onClick={() => window.open(selectedEmp.contract_file_url as string, "_blank", "noopener,noreferrer")}
+                      className="mt-1 inline-flex items-center gap-1.5 h-7 px-2.5 text-[11px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-md shadow-sm cursor-pointer self-start"
+                    >
+                      <ExternalLink size={11} /> 보기
+                    </button>
+                  ) : (
+                    <span className="text-[11px] font-semibold text-slate-400 italic mt-1">없음</span>
+                  )}
+                </div>
               </div>
               {selectedEmp.memo && (
                 <div className="bg-white rounded-xl border border-slate-200 p-3.5 shadow-sm">
