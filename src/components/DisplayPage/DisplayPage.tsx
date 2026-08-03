@@ -1478,7 +1478,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           { key: "payment",        label: "결제",         icon: Wallet,        visible: dpCanSeeStockManage,   color: "teal"    },
           { key: "statistics",     label: "통계",         icon: BarChart2,     visible: dpCanSeeStockManage,   color: "indigo"  },
           { key: "stock-arrivals", label: "입고알림",     icon: Bell,          visible: dpCanSeeStockArrivals, color: "orange"  },
-          { key: "store",          label: "구역도",       icon: Store,         visible: true,                  color: "rose"    },
+          { key: "store",          label: "구역진열요청",  icon: Store,         visible: true,                  color: "rose"    },
           // 2026-08-03 · 직원관리 탭 제거 · 경영관리 통합 페이지(BusinessManagePage)로 이동
         ];
         const visibleTabs = tabs.filter(t => t.visible);
