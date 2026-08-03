@@ -10,7 +10,6 @@ import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { StoreZoneMap } from "../common/StoreZoneMap";
 import { getZoneLabel } from "../../constants/zoneLabels";
 import { ZONE_DEFS } from "../../constants/displayZones";
-import { ProductClassFilter } from "../common/ProductClassFilter";
 import { type ClassFilter } from "../../utils/productClassify";
 
 // ─── 구역 코드 → 카테고리 설명 매핑 ──────────────────────────────────────────

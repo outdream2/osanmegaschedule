@@ -324,11 +324,12 @@ export const PaymentInfoTab: React.FC = () => {
     // 폼 리셋
     setPaymentDate(todayYmd());
     setAmount("");
-    setMethod("transfer");
+    setMethod("card");
     setCardIssuer("");
     setCardIssuerCustom("");
     setBankName("");
     setBankNameCustom("");
+    setEtcNote("");
     setReferenceNo("");
     setTaxInvoiceIssued(false);
     setTaxInvoiceNo("");
