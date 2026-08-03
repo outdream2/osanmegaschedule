@@ -29,9 +29,20 @@ export interface Vendor {
   category: string | null;
   note: string | null;
   business_number: string | null;
+  vat_included?: boolean | null;   // 부가세 포함/미포함 (VAT 통합 · #193)
   created_at?: string | null;
   latestBalance?: { balance: number; invoice_date: string | null; created_at: string } | null;
   balanceConfig?: { balance_field: string; updated_at: string } | null;
+}
+
+// VAT 포함 여부 판정 · vendor.vat_included 우선 · null 이면 company_name 문자열에서 유추
+export function detectVatIncluded(v: Pick<Vendor, "vat_included" | "company_name" | "note">): boolean | null {
+  if (v.vat_included === true) return true;
+  if (v.vat_included === false) return false;
+  const text = `${v.company_name ?? ""} ${v.note ?? ""}`;
+  if (/vat\s*미포함|부가세\s*미포함|부가가치세\s*미포함/i.test(text)) return false;
+  if (/vat\s*포함|부가세\s*포함|부가가치세\s*포함/i.test(text)) return true;
+  return null;
 }
 
 interface EditDraft {
@@ -320,7 +331,7 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                         </span>
                       )}
                     </div>
-                    {/* Line 2: 담당자 · 전화 · 잔고 */}
+                    {/* Line 2: 담당자 · 전화 · VAT · 잔고 */}
                     <div className="flex items-center gap-2 text-[12px] text-slate-500 leading-tight flex-wrap">
                       {v.contact_name && (
                         <span className="flex items-center gap-0.5">
@@ -331,6 +342,20 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                       {v.phone && (
                         <span className="text-slate-400 tabular-nums">{v.phone}</span>
                       )}
+                      {(() => {
+                        const vatIn = detectVatIncluded(v);
+                        if (vatIn == null) return null;
+                        return (
+                          <span
+                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap ${
+                              vatIn ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200"
+                            }`}
+                            title={vatIn ? "부가세 포함 (매입가에 VAT 포함)" : "부가세 미포함 (VAT 별도 부과)"}
+                          >
+                            {vatIn ? "VAT포함" : "VAT별도"}
+                          </span>
+                        );
+                      })()}
                       {hasBal && (
                         <span className={`ml-auto shrink-0 font-bold tabular-nums ${v.latestBalance!.balance > 0 ? "text-emerald-600" : "text-slate-400"}`}>
                           {fmtWon(v.latestBalance!.balance)}
