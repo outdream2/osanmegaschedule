@@ -26,7 +26,7 @@ router.post("/api/return-requests", async (req, res) => {
       qty: Number(b.qty ?? 0) || 0,
       current_stock: Number(b.current_stock ?? 0) || 0,
       purchase_price: Number(b.purchase_price ?? 0) || 0,
-      reason: String(b.reason ?? "").trim() || null,
+      reason: String(b.reason ?? b.note ?? "").trim() || null,  // 클라이언트 payload 는 "note" 필드 사용 · fallback 호환
       requested_by: String(b.requested_by ?? "").trim() || null,
       requested_by_id: Number(b.requested_by_id ?? 0) || null,
       status: "pending",   // pending | sent | done | cancelled
