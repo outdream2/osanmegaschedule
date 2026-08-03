@@ -23,6 +23,8 @@ import type { AppNavPage } from "../AppNavHeader";
 import { VendorListEditor, VendorDetailModal } from "../LandingPage/VendorListEditor";
 import type { Vendor } from "../LandingPage/VendorListEditor";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
+// 2026-08-03 · 공급사명 정제 유틸 · vat 부가정보 제거 (표시·분류 조회 통일)
+import { stripVendorAnnotation, isVatAnnotation } from "../../utils/vendorNameNormalize";
 import { StockReconciliationTab } from "../StockManagePage/StockReconciliationTab";
 import { TrendingTab } from "./TrendingTab";
 import { FlowTab } from "../StockManagePage/FlowTab";
@@ -1665,15 +1667,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       ) : (
                         <>
                           <td className="px-0.5 py-1.5 text-[12px] font-semibold align-top">
-                            {p.supplier ? (
-                              <div className="flex flex-col leading-tight">
-                                <VendorCategoryBadge category={vendorCategoryMap[String(p.supplier).trim()] ?? null} />
-                                <button type="button"
-                                  onClick={(e) => { e.stopPropagation(); openSupplierInfo(p.supplier); }}
-                                  className="text-sky-700 hover:text-sky-900 hover:underline cursor-pointer text-left whitespace-nowrap"
-                                  title="공급사 정보 조회·수정">{p.supplier}</button>
-                              </div>
-                            ) : "-"}
+                            {p.supplier ? (() => {
+                              const cleanName = stripVendorAnnotation(p.supplier);
+                              return (
+                                <div className="flex flex-col leading-tight">
+                                  <VendorCategoryBadge category={vendorCategoryMap[cleanName] ?? vendorCategoryMap[String(p.supplier).trim()] ?? null} />
+                                  <button type="button"
+                                    onClick={(e) => { e.stopPropagation(); openSupplierInfo(cleanName || p.supplier); }}
+                                    className="text-sky-700 hover:text-sky-900 hover:underline cursor-pointer text-left whitespace-nowrap"
+                                    title="공급사 정보 조회·수정">{cleanName || p.supplier}</button>
+                                </div>
+                              );
+                            })() : "-"}
                           </td>
                           <td className="px-0.5 py-1.5 align-top">
                             <button
@@ -2473,16 +2478,20 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           <td className="px-0.5 py-1.5 align-top">
                             {(() => {
                               const raw = String(supplierDisplay ?? "");
-                              const m = raw.match(/^(.+?)\s*(\(.+?\))\s*$/);
-                              const mainName = m ? m[1].trim() : raw;
+                              // 우선 vat 부가정보만 정제 (통일된 유틸) · 그 후 잔여 괄호 suffix 추출
+                              const vatStripped = stripVendorAnnotation(raw);
+                              const m = vatStripped.match(/^(.+?)\s*(\(.+?\))\s*$/);
+                              const mainName = m ? m[1].trim() : vatStripped;
                               const suffix = m ? m[2].trim() : "";
                               const extraFromProduct = (productData as any)?.supplier_note || (productData as any)?.tax_note || "";
-                              const secondLine = suffix || extraFromProduct || "";
+                              // vat 관련이면 secondLine 노출 skip · 나머지 부가정보만 노출
+                              const rawSecondLine = suffix || extraFromProduct || "";
+                              const secondLine = isVatAnnotation(rawSecondLine) ? "" : rawSecondLine;
                               return (
                                 <>
                                   {mainName ? (
                                     <div className="flex flex-col leading-tight">
-                                      <VendorCategoryBadge category={vendorCategoryMap[mainName] ?? null} />
+                                      <VendorCategoryBadge category={vendorCategoryMap[mainName] ?? vendorCategoryMap[stripVendorAnnotation(raw)] ?? null} />
                                       <button type="button"
                                         onClick={(e) => { e.stopPropagation(); openSupplierInfo(mainName); }}
                                         className="text-[12px] text-sky-700 hover:text-sky-900 hover:underline font-semibold whitespace-nowrap leading-tight text-left cursor-pointer"
