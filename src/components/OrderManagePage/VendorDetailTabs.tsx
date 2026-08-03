@@ -92,7 +92,7 @@ function calcAvgCycle(rows: PurchaseDetailRow[]): number | null {
 type TabKey = "balance" | "history";
 
 const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
-  { key: "balance", label: "결제잔고", icon: <ReceiptText size={12} /> },
+  { key: "balance", label: "결제내역", icon: <ReceiptText size={12} /> },
   { key: "history", label: "매입이력", icon: <Package2 size={12} /> },
 ];
 
