@@ -1,12 +1,19 @@
 // server/routes/pharmacistMenuItems.ts
-// 약사 전용 페이지 · 하위메뉴 항목 CRUD (2026-08-03)
+// 약사 전용 페이지 · 하위메뉴 항목 CRUD (2026-08-03 · Cloudinary 전환)
 //   - GET    /api/pharmacist-menu-items?tab=X&category=Y  · 리스트
 //   - POST   /api/pharmacist-menu-items                    · 신규 등록 (title + optional file)
 //   - PATCH  /api/pharmacist-menu-items/:id                · 이름·순서·title 등 변경
 //   - DELETE /api/pharmacist-menu-items/:id                · 삭제 (Storage 원본 정리)
 //
-// 파일 업로드 방식: hrForms.ts 그대로 · base64 → 서버 → Supabase Storage
-//   bucket: "pharmacist-materials" (없으면 로컬 uploads/pharmacist-materials/ 폴백)
+// 파일 업로드 방식: invoiceImages.ts 와 동일 · base64 dataURL → Cloudinary
+//   folder: "pharmacist-materials"
+//   resource_type: "auto" (PDF · 이미지 · DOCX 자동 판정)
+//   env: CLOUDINARY_CLOUD_NAME · CLOUDINARY_API_KEY · CLOUDINARY_API_SECRET
+//   미설정 시 · POST 는 503 반환 (로컬 fallback 제거)
+//
+// 하위 호환:
+//   기존 DB row (storage: "supabase" / "local") · file_url 그대로 반환 · 표시 가능
+//   DELETE 시 · storage 값에 따라 Cloudinary / Supabase Storage / 로컬 파일 각각 정리
 //
 // 권한 체크: editor_level (query 또는 body) 로 확인
 //   - CRUD (POST/PATCH/DELETE) · level >= 8 (관리자) 필수
@@ -15,14 +22,15 @@
 import { Router } from "express";
 import fs from "fs";
 import path from "path";
+import { v2 as cloudinary, type UploadApiResponse } from "cloudinary";
 import { supabase } from "../../src/supabase/client";
 
 const router = Router();
 
-// 환경변수 오버라이드 가능
+// 기존 Supabase Storage bucket · 하위 호환 DELETE 용도로만 사용
 const BUCKET = process.env.SUPABASE_PHARM_MATERIALS_BUCKET || "pharmacist-materials";
 
-// 파일 크기 상한 · 20MB (PDF 는 hrForms 10MB 보다 크게)
+// 파일 크기 상한 · 20MB
 const MAX_BYTES = 20 * 1024 * 1024;
 
 // 허용 탭 키
@@ -31,7 +39,28 @@ const ALLOWED_TABS = new Set(["education", "reference", "video", "docs"]);
 // 관리자 권한 기준 (>= 8)
 const ADMIN_LEVEL = 8;
 
-// ── 유틸 (hrForms.ts 패턴 재사용) ─────────────────────────────
+// Cloudinary 폴더명
+const CLOUD_FOLDER = "pharmacist-materials";
+
+// ── Cloudinary 설정 (invoiceImages.ts 와 동일 패턴) ─────────────
+let cloudinaryConfigured = false;
+function ensureConfigured(): boolean {
+  if (cloudinaryConfigured) return true;
+  const cloud_name = process.env.CLOUDINARY_CLOUD_NAME;
+  const api_key = process.env.CLOUDINARY_API_KEY;
+  const api_secret = process.env.CLOUDINARY_API_SECRET;
+  if (!cloud_name || !api_key || !api_secret) {
+    console.warn(
+      "[pharm-menu] Cloudinary env 미설정 · CLOUDINARY_CLOUD_NAME · CLOUDINARY_API_KEY · CLOUDINARY_API_SECRET 필요"
+    );
+    return false;
+  }
+  cloudinary.config({ cloud_name, api_key, api_secret, secure: true });
+  cloudinaryConfigured = true;
+  return true;
+}
+
+// ── 유틸 ─────────────────────────────────────────────────────
 
 function safeFilename(name: string, maxLen = 80): string {
   const trimmed = String(name ?? "").trim() || "material";
@@ -48,31 +77,21 @@ function parseDataUrl(dataUrl: string): { mime: string; buffer: Buffer } | null 
   return { mime, buffer };
 }
 
-function extFromNameOrMime(filename: string, mime: string): string {
-  const dot = filename.lastIndexOf(".");
-  if (dot >= 0 && dot < filename.length - 1) {
-    const ext = filename.slice(dot + 1).toLowerCase();
-    if (/^[a-z0-9]{1,6}$/.test(ext)) return ext;
-  }
-  const map: Record<string, string> = {
-    "application/pdf": "pdf",
-    "application/msword": "doc",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
-    "application/vnd.ms-excel": "xls",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
-    "application/vnd.ms-powerpoint": "ppt",
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
-    "application/zip": "zip",
-    "text/plain": "txt",
-    "text/csv": "csv",
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/webp": "webp",
-    "image/gif": "gif",
-    "video/mp4": "mp4",
-    "video/webm": "webm",
-  };
-  return map[mime] ?? "bin";
+// public_id · 슬래시 없는 안전한 문자로 sanitize · folder 옵션으로 경로 지정
+function safePublicIdPart(s: string, maxLen = 40): string {
+  const cleaned = String(s ?? "").replace(/[^A-Za-z0-9_-]+/g, "_");
+  return cleaned.slice(0, maxLen) || "x";
+}
+
+// Cloudinary resource_type 을 저장·삭제에서 그대로 사용하기 위한 타입
+type ResourceType = "image" | "video" | "raw" | "auto";
+
+// MIME 으로 resource_type 힌트 (destroy 시 필수 · upload 는 auto 사용)
+function resourceTypeFromMime(mime: string | null | undefined): "image" | "video" | "raw" {
+  const m = String(mime ?? "").toLowerCase();
+  if (m.startsWith("image/")) return "image";
+  if (m.startsWith("video/")) return "video";
+  return "raw"; // PDF · DOCX · XLSX · ZIP 등
 }
 
 /**
@@ -138,7 +157,7 @@ router.post("/api/pharmacist-menu-items", async (req, res) => {
     let fileName: string | null = null;
     let fileSize: number | null = null;
     let mimeType: string | null = null;
-    let storage: "supabase" | "local" | null = null;
+    let storage: "cloudinary" | "supabase" | "local" | null = null;
     let storagePath: string | null = null;
 
     if (dataUrl) {
@@ -149,6 +168,12 @@ router.post("/api/pharmacist-menu-items", async (req, res) => {
           error: `파일 크기 초과 (${(parsed.buffer.length / 1024 / 1024).toFixed(1)}MB > ${MAX_BYTES / 1024 / 1024}MB)`,
         });
       }
+
+      // Cloudinary 미설정 시 · 503 (로컬 fallback 제거 · 명확한 실패)
+      if (!ensureConfigured()) {
+        return res.status(503).json({ error: "Cloudinary 설정이 없습니다 (env)." });
+      }
+
       fileName = safeFilename(rawFileName || "material");
       mimeType = parsed.mime;
       fileSize = parsed.buffer.length;
@@ -156,51 +181,46 @@ router.post("/api/pharmacist-menu-items", async (req, res) => {
       const now = new Date();
       const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
       const rand = Math.random().toString(36).slice(2, 8);
-      const ext = extFromNameOrMime(fileName, parsed.mime);
       const baseNoExt = fileName.replace(/\.[^.]+$/, "").slice(0, 60) || "material";
-      // path: <tab>/<category>/<yyyy-mm>/<ts>_<rand>_<name>.<ext>
-      const objectPath = `${tabKey}/${categoryKey}/${ym}/${now.getTime()}_${rand}_${baseNoExt}.${ext}`;
 
-      // 1) Supabase Storage 우선
-      let uploadedUrl = "";
+      // Cloudinary public_id · folder 옵션으로 경로 지정하므로 파일명 부분만 사용
+      // folder: pharmacist-materials/<tab>/<category>/<yyyy-mm>
+      const cloudFolder = `${CLOUD_FOLDER}/${safePublicIdPart(tabKey, 20)}/${safePublicIdPart(categoryKey, 30)}/${ym}`;
+      const publicId = `${now.getTime()}_${rand}_${safePublicIdPart(baseNoExt, 40)}`;
+
+      // data URI 로 업로드 (invoiceImages.ts 와 동일)
+      const dataUri = dataUrl; // 이미 data:<mime>;base64,... 포맷 확인됨
+
+      let result: UploadApiResponse;
       try {
-        const { error: upErr } = await supabase
-          .storage
-          .from(BUCKET)
-          .upload(objectPath, parsed.buffer, {
-            contentType: parsed.mime,
-            cacheControl: "31536000",
-            upsert: false,
-          });
-        if (upErr) {
-          console.warn(`[pharm-menu/upload] Supabase Storage 실패 · fallback 로컬 · bucket=${BUCKET} · reason=${upErr.message}`);
-        } else {
-          const { data: pub } = supabase.storage.from(BUCKET).getPublicUrl(objectPath);
-          if (pub?.publicUrl) {
-            uploadedUrl = pub.publicUrl;
-          } else {
-            console.warn(`[pharm-menu/upload] getPublicUrl 실패 · fallback 로컬 · path=${objectPath}`);
-          }
-        }
-      } catch (supErr: any) {
-        console.warn(`[pharm-menu/upload] Supabase 예외 · fallback 로컬 · ${supErr?.message ?? supErr}`);
+        result = await cloudinary.uploader.upload(dataUri, {
+          folder: cloudFolder,
+          public_id: publicId,
+          resource_type: "auto",   // PDF · 이미지 · DOCX 자동 판정
+          overwrite: false,
+          use_filename: false,
+          unique_filename: false,
+          // 이미지는 자동 최적화 · PDF/문서 (raw) 는 transformation 무시됨
+          transformation: [
+            { width: 1600, crop: "limit", quality: "auto:good", fetch_format: "auto" },
+          ],
+        });
+      } catch (upErr: any) {
+        console.error(`[pharm-menu/upload] Cloudinary 업로드 실패 · ${upErr?.message ?? upErr}`);
+        return res.status(502).json({ error: upErr?.message ?? "Cloudinary 업로드 실패" });
       }
 
-      if (uploadedUrl) {
-        fileUrl = uploadedUrl;
-        storage = "supabase";
-        storagePath = objectPath;
-      } else {
-        // 2) 로컬 fallback
-        const dir = path.join(process.cwd(), "uploads", "pharmacist-materials", tabKey, categoryKey, ym);
-        fs.mkdirSync(dir, { recursive: true });
-        const fname = `${now.getTime()}_${rand}_${baseNoExt}.${ext}`;
-        const fpath = path.join(dir, fname);
-        fs.writeFileSync(fpath, parsed.buffer);
-        fileUrl = `/uploads/pharmacist-materials/${tabKey}/${categoryKey}/${ym}/${fname}`;
-        storage = "local";
-        storagePath = `${tabKey}/${categoryKey}/${ym}/${fname}`;
-        console.log(`[pharm-menu/upload] Local fallback · path=${fileUrl}`);
+      fileUrl = result.secure_url;
+      storage = "cloudinary";
+      // storage_path = public_id · Cloudinary destroy 시 필요 (folder 포함 full public_id)
+      storagePath = result.public_id;
+      // Cloudinary 가 실제로 사용한 크기·포맷 반영
+      if (Number.isFinite(result.bytes)) fileSize = Number(result.bytes);
+      if (result.resource_type && result.format) {
+        mimeType = `${result.resource_type}/${result.format}`;
+      } else if (result.format) {
+        // raw 리소스라도 format 만 있으면 원본 MIME 유지 (parsed.mime)
+        mimeType = parsed.mime;
       }
     }
 
@@ -227,10 +247,9 @@ router.post("/api/pharmacist-menu-items", async (req, res) => {
 
     if (error) {
       // 메타 저장 실패 시 업로드한 파일 정리 (best-effort)
-      if (storage === "supabase" && storagePath) {
-        await supabase.storage.from(BUCKET).remove([storagePath]).catch(() => null);
-      } else if (storage === "local" && storagePath) {
-        try { fs.unlinkSync(path.join(process.cwd(), "uploads", "pharmacist-materials", storagePath)); } catch { /* noop */ }
+      if (storage === "cloudinary" && storagePath) {
+        const rt = resourceTypeFromMime(mimeType);
+        await cloudinary.uploader.destroy(storagePath, { resource_type: rt, invalidate: true }).catch(() => null);
       }
       throw new Error(error.message);
     }
@@ -284,6 +303,7 @@ router.patch("/api/pharmacist-menu-items/:id", async (req, res) => {
 /**
  * DELETE /api/pharmacist-menu-items/:id?editor_level=X
  *   · Storage 원본 정리 (best-effort)
+ *   · storage 값에 따라 Cloudinary / Supabase Storage / 로컬 파일 각각 처리
  */
 router.delete("/api/pharmacist-menu-items/:id", async (req, res) => {
   try {
@@ -292,10 +312,10 @@ router.delete("/api/pharmacist-menu-items/:id", async (req, res) => {
     if (!Number.isFinite(id)) return res.status(400).json({ error: "invalid id" });
     if (editorLevel < ADMIN_LEVEL) return res.status(403).json({ error: "관리자 권한 필요 (level ≥ 8)" });
 
-    // 원본 정리 위해 먼저 조회
+    // 원본 정리 위해 먼저 조회 (mime_type 도 함께 · Cloudinary resource_type 판정)
     const { data: row, error: getErr } = await supabase
       .from("pharmacist_menu_items")
-      .select("id, storage, storage_path")
+      .select("id, storage, storage_path, mime_type")
       .eq("id", id)
       .maybeSingle();
     if (getErr) throw new Error(getErr.message);
@@ -307,7 +327,14 @@ router.delete("/api/pharmacist-menu-items/:id", async (req, res) => {
 
     // 원본 삭제 · best-effort
     try {
-      if (row.storage === "supabase" && row.storage_path) {
+      if (row.storage === "cloudinary" && row.storage_path) {
+        if (ensureConfigured()) {
+          const rt = resourceTypeFromMime(row.mime_type);
+          await cloudinary.uploader.destroy(row.storage_path, { resource_type: rt, invalidate: true });
+        } else {
+          console.warn(`[pharm-menu/delete] Cloudinary 미설정 · 원본 정리 스킵 · id=${id} · public_id=${row.storage_path}`);
+        }
+      } else if (row.storage === "supabase" && row.storage_path) {
         await supabase.storage.from(BUCKET).remove([row.storage_path]);
       } else if (row.storage === "local" && row.storage_path) {
         const fpath = path.join(process.cwd(), "uploads", "pharmacist-materials", row.storage_path);
