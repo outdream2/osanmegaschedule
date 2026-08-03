@@ -2204,10 +2204,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             {/* 액션 버튼 */}
             <div className="flex items-center gap-1.5 ml-auto">
               <button onClick={handleBulkOrder} disabled={sendingBulk || selectedOrder.size === 0}
-                className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[11px] font-semibold text-white bg-rose-500 hover:bg-rose-600 border border-rose-600 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer shrink-0"
+                className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-[12px] font-black text-white bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600 shadow-sm hover:shadow disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shrink-0 whitespace-nowrap"
                 title="선택한 발주요청을 공급사별로 그룹핑 후 이메일/문자 발송">
-                {sendingBulk ? <Loader2 size={11} className="animate-spin" /> : <Send size={11} />}
-                일괄 발주{selectedOrder.size > 0 && ` (${selectedOrder.size})`}
+                {sendingBulk ? <Loader2 size={13} className="animate-spin shrink-0" /> : <Send size={13} className="shrink-0" />}
+                <span>일괄 발주{selectedOrder.size > 0 && ` (${selectedOrder.size})`}</span>
               </button>
               <button onClick={toggleAll}
                 className="inline-flex items-center gap-1 h-7 px-2 rounded-md text-[11px] font-medium text-slate-500 border border-slate-200 hover:bg-slate-50 hover:border-slate-300 transition-colors cursor-pointer shrink-0">
@@ -2403,11 +2403,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               );
                             })()}
                           </td>
-                          <td className="px-0.5 py-1.5 align-top">
+                          <td className="px-1 py-1.5 align-top max-w-[180px] w-[180px]">
                             <button
                               onClick={() => setOrderPanelProduct({ code: r.product_code, name: r.product_name })}
-                              className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words whitespace-normal leading-tight cursor-pointer transition"
-                              title="상품 상세정보 조회"
+                              className="text-left text-[13px] font-medium text-slate-800 hover:text-indigo-600 hover:underline break-words leading-snug cursor-pointer transition line-clamp-2"
+                              title={r.product_name || "상품 상세정보 조회"}
                             >{r.product_name || "(상품명 없음)"}</button>
                           </td>
                         </>
