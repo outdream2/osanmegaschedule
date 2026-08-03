@@ -798,6 +798,22 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const paymentSortable       = useSortableTabs("tabOrder.payment",        paymentDefaultTabs,       isAdmin);
   const statSortable          = useSortableTabs("tabOrder.statistics",     statDefaultTabs,          isAdmin);
 
+  // 2026-08-03 · 페이지 진입(마운트) 시 · 모든 서브탭 · 재정렬된 순서의 첫 탭으로 리셋
+  //   · useSortableTabs 훅 결과 (localStorage 순서 반영) 의 첫 원소 사용
+  //   · 이전 세션 서브탭 상태 무시 · 사용자 요청 (모든 메뉴 진입 시 · 첫 서브탭 기본 표시)
+  //   · 마운트 1회만 · 이후 사용자가 다른 서브탭 클릭하면 그 상태 유지
+  useEffect(() => {
+    const first0 = purchaseOrderSortable.tabs[0]?.key as "order" | "need" | "low" | undefined;
+    const first1 = purchaseSortable.tabs[0]?.key as "receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history" | undefined;
+    const first2 = paymentSortable.tabs[0]?.key as "vendor" | "payment" | "payment-info" | undefined;
+    const first3 = statSortable.tabs[0]?.key as "trending" | "category" | "flow" | "diff" | undefined;
+    if (first0) setPurchaseOrderSubTab(first0);
+    if (first1) setPurchaseSubTab(first1);
+    if (first2) setPaymentSubTab(first2);
+    if (first3) setStatSubTab(first3);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── 서브탭 렌더 헬퍼 ──
   //   2026-08-03 · sortable prop 추가 · getTabProps 로 long-press 드래그 이벤트/시각 flag 전달
   //   · 기본값은 no-op (getTabProps 미제공 시 기존 동작 그대로)

@@ -3,7 +3,7 @@
 //   상단: AppNavHeader (activePage="business-manage")
 //   서브탭: 직원관리 · 연차승인 · 점심불참 · 직원권한 (DisplayPage 서브탭 스타일 벤치마크)
 //   각 서브탭 · 기존 페이지 임베드 (embedded prop 전달 → 자체 AppNavHeader skip)
-import React, { Suspense, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { UserGear, CalendarDots, ForkKnife, ShieldCheck, FileText, NotePencil, type Icon as PhIcon } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { LeavePage } from "../LeavePage/LeavePage";
@@ -66,6 +66,15 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
   //   · storageKey "tabOrder.business" · memory feedback_tab_reorder 규칙 준수
   const isAdmin = (authSession?.level ?? 0) >= 8;
   const sortable = useSortableTabs<TabDef>("tabOrder.business", TABS, isAdmin);
+
+  // 2026-08-03 · 페이지 진입(마운트) 시 · 서브탭 · 재정렬된 순서의 첫 탭으로 리셋
+  //   · 사용자 요청 (모든 메뉴 진입 시 · 첫 서브탭 기본 표시)
+  //   · localStorage 순서 반영 후 첫 원소 · 마운트 1회
+  useEffect(() => {
+    const firstKey = sortable.tabs[0]?.key as BmSubTab | undefined;
+    if (firstKey) setSubTab(firstKey);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // 노프롭 서브페이지에 넘길 공통 props (embedded=true 로 자체 헤더 skip 요청)
   const commonSubPageProps = {
