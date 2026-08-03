@@ -248,8 +248,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       v.company_name.trim().toLowerCase() === name.toLowerCase()
     );
     if (cachedVendor) {
-      // vendors 배열 타입이 Vendor 부분집합 · Vendor 전체 필드가 있는 객체로 캐스팅
-      setSupplierInfoModal(cachedVendor as Vendor);
+      // vendors 배열 타입이 Vendor 부분집합 · Vendor 전체 필드가 있는 객체로 캐스팅 (런타임 데이터는 실제 Vendor 형태)
+      setSupplierInfoModal(cachedVendor as unknown as Vendor);
       return;
     }
     // 2차 · API 조회 · 정확 매칭 후 부분 매칭 fallback
@@ -434,6 +434,62 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderNeedConfig.defaultSortKey, orderNeedConfig.defaultSortDir]);
 
+  // 2026-08-03 (#206) · 발주필요 탭 · 인라인 3조건 입력 (split 위쪽 · 헤더 영역)
+  //   · localStorage 키: megatown_orderNeed_inline
+  //   · 매입일 N일 이상 · 재고 N개 이하 · 최근 한달 판매량 N개 이상
+  //   · 0 이면 해당 조건 미적용 · Settings 모달(#187/#189) 과 AND 병존
+  const ORDER_NEED_INLINE_KEY = "megatown_orderNeed_inline";
+  interface OrderNeedInline { minCycle: number; maxCurrent: number; minSales: number }
+  const DEFAULT_INLINE: OrderNeedInline = { minCycle: 90, maxCurrent: 5, minSales: 100 };
+  const loadInlineFilter = (): OrderNeedInline => {
+    try {
+      const raw = localStorage.getItem(ORDER_NEED_INLINE_KEY);
+      if (!raw) return DEFAULT_INLINE;
+      const p = JSON.parse(raw);
+      if (!p || typeof p !== "object") return DEFAULT_INLINE;
+      return {
+        minCycle:    typeof p.minCycle    === "number" && p.minCycle    >= 0 ? Math.floor(p.minCycle)    : DEFAULT_INLINE.minCycle,
+        maxCurrent:  typeof p.maxCurrent  === "number" && p.maxCurrent  >= 0 ? Math.floor(p.maxCurrent)  : DEFAULT_INLINE.maxCurrent,
+        minSales:    typeof p.minSales    === "number" && p.minSales    >= 0 ? Math.floor(p.minSales)    : DEFAULT_INLINE.minSales,
+      };
+    } catch { return DEFAULT_INLINE; }
+  };
+  const [needInlineMinCycle,    setNeedInlineMinCycle]    = useState<number>(() => loadInlineFilter().minCycle);
+  const [needInlineMaxCurrent,  setNeedInlineMaxCurrent]  = useState<number>(() => loadInlineFilter().maxCurrent);
+  const [needInlineMinSales,    setNeedInlineMinSales]    = useState<number>(() => loadInlineFilter().minSales);
+  // debounced values (300ms) — 입력 즉시 state · 필터는 debounce
+  const [deferredInlineCycle,   setDeferredInlineCycle]   = useState(needInlineMinCycle);
+  const [deferredInlineCurrent, setDeferredInlineCurrent] = useState(needInlineMaxCurrent);
+  const [deferredInlineSales,   setDeferredInlineSales]   = useState(needInlineMinSales);
+  const inlineDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const updateInline = useCallback((field: "cycle" | "current" | "sales", raw: string) => {
+    const n = raw === "" ? 0 : Math.max(0, Math.floor(Number(raw)));
+    if (!Number.isFinite(n)) return;
+    if (field === "cycle")   setNeedInlineMinCycle(n);
+    if (field === "current") setNeedInlineMaxCurrent(n);
+    if (field === "sales")   setNeedInlineMinSales(n);
+    if (inlineDebounceRef.current) clearTimeout(inlineDebounceRef.current);
+    inlineDebounceRef.current = setTimeout(() => {
+      const next = {
+        minCycle:   field === "cycle"   ? n : needInlineMinCycle,
+        maxCurrent: field === "current" ? n : needInlineMaxCurrent,
+        minSales:   field === "sales"   ? n : needInlineMinSales,
+      };
+      setDeferredInlineCycle(next.minCycle);
+      setDeferredInlineCurrent(next.maxCurrent);
+      setDeferredInlineSales(next.minSales);
+      try { localStorage.setItem(ORDER_NEED_INLINE_KEY, JSON.stringify(next)); } catch { /**/ }
+    }, 300);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needInlineMinCycle, needInlineMaxCurrent, needInlineMinSales]);
+  const resetInlineFilter = () => {
+    if (inlineDebounceRef.current) clearTimeout(inlineDebounceRef.current);
+    setNeedInlineMinCycle(0); setNeedInlineMaxCurrent(0); setNeedInlineMinSales(0);
+    setDeferredInlineCycle(0); setDeferredInlineCurrent(0); setDeferredInlineSales(0);
+    try { localStorage.setItem(ORDER_NEED_INLINE_KEY, JSON.stringify({ minCycle: 0, maxCurrent: 0, minSales: 0 })); } catch { /**/ }
+  };
+  const inlineActive = deferredInlineCycle > 0 || deferredInlineCurrent > 0 || deferredInlineSales > 0;
+
   // 2026-08-03 (#189) · 발주필요 · 매입주기·최근 한달 판매량 enrich map
   //   · 필터 조건 (minPurchaseCycle · minMonthlySales) + 정렬 (sale_month · cycle) 에 사용
   //   · top-sales?months=6 재활용 (ReturnListPanel 이 이미 warm 시켜둠 · 서버 캐시 TTL 활용)
@@ -447,7 +503,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     orderNeedConfig.defaultSortKey === "sale_month" ||
     orderNeedConfig.defaultSortKey === "cycle" ||
     needSortKey === "sale_month" ||
-    needSortKey === "cycle"
+    needSortKey === "cycle" ||
+    // 2026-08-03 (#206) · 인라인 필터도 enrich 필요
+    deferredInlineCycle > 0 ||
+    deferredInlineSales > 0
   );
   useEffect(() => {
     if (!needExtraRequired || needExtraLoaded) return;
@@ -723,6 +782,24 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       else if (needExtraLoaded) {
         if (orderNeedConfig.minPurchaseCycle > 0) return false;
         if (orderNeedConfig.minMonthlySales > 0) return false;
+      }
+    }
+    // 2026-08-03 (#206) · 인라인 3조건 필터 (Settings 모달과 AND · debounced)
+    //   · maxCurrent > 0 이면 현재고 <= maxCurrent 인 상품만 (재고 N개 이하)
+    //   · minCycle  > 0 이면 매입주기 >= minCycle 인 상품만 (enrich · 미로딩 상품 통과)
+    //   · minSales  > 0 이면 최근 한달 판매량 >= minSales 인 상품만 (enrich · 미로딩 상품 통과)
+    if (deferredInlineCurrent > 0) {
+      if (isNaN(cur) || cur > deferredInlineCurrent) return false;
+    }
+    if (deferredInlineCycle > 0 || deferredInlineSales > 0) {
+      const extra = code ? needExtraMap.get(code) : undefined;
+      if (extra) {
+        if (deferredInlineCycle > 0 && (extra.cycle == null || extra.cycle < deferredInlineCycle)) return false;
+        if (deferredInlineSales > 0 && (extra.saleMonth == null || extra.saleMonth < deferredInlineSales)) return false;
+      } else if (needExtraLoaded) {
+        // enrich 데이터 없는 상품 · 로딩 완료 시 미달로 간주
+        if (deferredInlineCycle > 0) return false;
+        if (deferredInlineSales > 0) return false;
       }
     }
     return true;
@@ -1280,6 +1357,107 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               >
                 <RotateCcw size={11} />초기화
               </button>
+            )}
+          </div>
+
+          {/* ── 2026-08-03 (#206) · 인라인 3조건 입력 · split 위 · 검색바 아래 ── */}
+          {/*   순서: 검색바 > 카테고리 chip > 인라인 조건 (신규) > split                  */}
+          {/*   매입일 N일 이상 · 재고 N개 이하 · 최근 한달 판매량 N개 이상                 */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
+            {/* 라벨 */}
+            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 shrink-0 whitespace-nowrap">발주 조건</span>
+
+            {/* 조건 1 · 매입일 N일 이상 (매입주기) */}
+            <label className="inline-flex items-center gap-1.5 shrink-0">
+              <span className="text-[12px] font-bold text-slate-600 whitespace-nowrap">매입일</span>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={needInlineMinCycle === 0 ? "" : needInlineMinCycle}
+                onChange={e => updateInline("cycle", e.target.value)}
+                placeholder="90"
+                className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
+                           focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
+                           hover:border-slate-300 transition placeholder:text-slate-300"
+                style={{ fontSize: 13 }}
+              />
+              <span className="text-[12px] text-slate-500 whitespace-nowrap">일 이상</span>
+            </label>
+
+            <span className="text-slate-200 text-xs hidden sm:inline">|</span>
+
+            {/* 조건 2 · 재고 N개 이하 (current_stock) */}
+            <label className="inline-flex items-center gap-1.5 shrink-0">
+              <span className="text-[12px] font-bold text-slate-600 whitespace-nowrap">재고</span>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={needInlineMaxCurrent === 0 ? "" : needInlineMaxCurrent}
+                onChange={e => updateInline("current", e.target.value)}
+                placeholder="5"
+                className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
+                           focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
+                           hover:border-slate-300 transition placeholder:text-slate-300"
+                style={{ fontSize: 13 }}
+              />
+              <span className="text-[12px] text-slate-500 whitespace-nowrap">개 이하</span>
+            </label>
+
+            <span className="text-slate-200 text-xs hidden sm:inline">|</span>
+
+            {/* 조건 3 · 최근 한달 판매량 N개 이상 */}
+            <label className="inline-flex items-center gap-1.5 shrink-0">
+              <span className="text-[12px] font-bold text-slate-600 whitespace-nowrap">최근 한달 판매량</span>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={needInlineMinSales === 0 ? "" : needInlineMinSales}
+                onChange={e => updateInline("sales", e.target.value)}
+                placeholder="100"
+                className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
+                           focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
+                           hover:border-slate-300 transition placeholder:text-slate-300"
+                style={{ fontSize: 13 }}
+              />
+              <span className="text-[12px] text-slate-500 whitespace-nowrap">개 이상</span>
+            </label>
+
+            {/* 초기화 버튼 (조건 하나라도 활성 시 노출) */}
+            {inlineActive && (
+              <button
+                type="button"
+                onClick={resetInlineFilter}
+                className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-slate-200 bg-white
+                           hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600
+                           text-[11px] font-black text-slate-500 transition cursor-pointer shrink-0"
+                title="인라인 조건 모두 초기화 (0으로)"
+              >
+                <X size={11} />초기화
+              </button>
+            )}
+
+            {/* 적용 중 조건 요약 badge */}
+            {inlineActive && (
+              <div className="hidden sm:flex items-center gap-1.5 ml-1">
+                {deferredInlineCycle > 0 && (
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-700 whitespace-nowrap">
+                    매입주기 ≥{deferredInlineCycle}일
+                  </span>
+                )}
+                {deferredInlineCurrent > 0 && (
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-700 whitespace-nowrap">
+                    재고 ≤{deferredInlineCurrent}개
+                  </span>
+                )}
+                {deferredInlineSales > 0 && (
+                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-[11px] font-bold text-sky-700 whitespace-nowrap">
+                    판매 ≥{deferredInlineSales}개
+                  </span>
+                )}
+              </div>
             )}
           </div>
 
