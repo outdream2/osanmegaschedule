@@ -384,21 +384,40 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     } catch { /* silent */ }
   }, []);
   useEffect(() => { reloadAllProductsMap(); }, [reloadAllProductsMap]);
-  // 전체 inventory_checks (창고·매장 재고) 매핑 — 자동 재조회 지원
-  const [invMap, setInvMap] = useState<Record<string, { warehouse: number | null; store: number | null }>>({});
+  // 전체 inventory_checks (창고1·창고2·매장1·매장2·매장3 재고 + 매장 구역) 매핑
+  type InvSplit = {
+    warehouse: number | null;   // 창고 합계 (w1+w2 · 하위 호환용)
+    store: number | null;       // 매장 합계 (s1+s2+s3 · 하위 호환용)
+    w1: number | null; w2: number | null;
+    s1: number | null; s2: number | null; s3: number | null;
+    s1z: string | null; s2z: string | null; s3z: string | null;
+  };
+  const [invMap, setInvMap] = useState<Record<string, InvSplit>>({});
   const loadInvMap = useCallback(async () => {
     try {
       const res = await fetch("/api/inventory-checks");
       if (!res.ok) return;
       const list = await res.json();
       if (!Array.isArray(list)) return;
-      const m: Record<string, { warehouse: number | null; store: number | null }> = {};
+      const m: Record<string, InvSplit> = {};
+      const numOrNull = (v: unknown) => v == null ? null : Number(v);
+      const strOrNull = (v: unknown) => v == null ? null : String(v);
       for (const r of list) {
         const code = String((r as any).product_code ?? "").trim();
         if (!code || m[code]) continue;
+        const w1 = numOrNull((r as any).warehouse1_stock ?? (r as any).warehouse_stock);
+        const w2 = numOrNull((r as any).warehouse2_stock);
+        const s1 = numOrNull((r as any).store_stock);
+        const s2 = numOrNull((r as any).store_stock_2);
+        const s3 = numOrNull((r as any).store3_stock);
+        const whSum = (w1 != null || w2 != null) ? (Number(w1) || 0) + (Number(w2) || 0) : null;
+        const stSum = (s1 != null || s2 != null || s3 != null) ? (Number(s1) || 0) + (Number(s2) || 0) + (Number(s3) || 0) : null;
         m[code] = {
-          warehouse: (r as any).warehouse_stock != null ? Number((r as any).warehouse_stock) : null,
-          store:     (r as any).store_stock     != null ? Number((r as any).store_stock)     : null,
+          warehouse: whSum, store: stSum,
+          w1, w2, s1, s2, s3,
+          s1z: strOrNull((r as any).store1_zone),
+          s2z: strOrNull((r as any).store2_zone),
+          s3z: strOrNull((r as any).store3_zone),
         };
       }
       setInvMap(m);
@@ -457,17 +476,23 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const getCode = (p: ProductInfo) => p.code ?? p.product_code ?? "";
   const getName = (p: ProductInfo) => p.name ?? p.product_name ?? "";
 
-  // 실재고 (창고 + 매장) 맵 — 1) inventory_checks 전체 · 2) low-stock 응답 fallback
-  const invStockMap = new Map<string, { warehouse: number | null; store: number | null; total: number }>();
+  // 실재고 (창고1·창고2·매장1·매장2·매장3 + 매장 구역) 맵 · inventory_checks · low-stock fallback
+  type InvStockEntry = {
+    warehouse: number | null; store: number | null; total: number;
+    w1: number | null; w2: number | null;
+    s1: number | null; s2: number | null; s3: number | null;
+    s1z: string | null; s2z: string | null; s3z: string | null;
+  };
+  const invStockMap = new Map<string, InvStockEntry>();
   for (const [code, iv] of Object.entries(invMap)) {
-    const wh = (iv as { warehouse: number | null; store: number | null }).warehouse;
-    const st = (iv as { warehouse: number | null; store: number | null }).store;
+    const wh = iv.warehouse;
+    const st = iv.store;
     if (wh != null || st != null) {
       const total = (Number(wh) || 0) + (Number(st) || 0);
-      invStockMap.set(code, { warehouse: wh, store: st, total });
+      invStockMap.set(code, { warehouse: wh, store: st, total, w1: iv.w1, w2: iv.w2, s1: iv.s1, s2: iv.s2, s3: iv.s3, s1z: iv.s1z, s2z: iv.s2z, s3z: iv.s3z });
     }
   }
-  // low-stock에서 병합 (invMap에 없는 경우 fallback)
+  // low-stock에서 병합 (invMap에 없는 경우 fallback · 5분리 불가 · 단일 값만)
   for (const p of products) {
     const code = getCode(p);
     if (!code || invStockMap.has(code)) continue;
@@ -475,7 +500,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     const st = (p as any).store_stock;
     if (wh != null || st != null) {
       const total = (Number(wh) || 0) + (Number(st) || 0);
-      invStockMap.set(code, { warehouse: wh, store: st, total });
+      invStockMap.set(code, { warehouse: wh, store: st, total, w1: wh, w2: null, s1: st, s2: null, s3: null, s1z: null, s2z: null, s3z: null });
     }
   }
 
