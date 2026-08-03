@@ -10,6 +10,8 @@ import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { StoreZoneMap } from "../common/StoreZoneMap";
 import { getZoneLabel } from "../../constants/zoneLabels";
 import { ZONE_DEFS } from "../../constants/displayZones";
+import { ProductClassFilter } from "../common/ProductClassFilter";
+import { type ClassFilter } from "../../utils/productClassify";
 
 // ─── 구역 코드 → 카테고리 설명 매핑 ──────────────────────────────────────────
 const ZONE_CATEGORY_MAP: Record<string, string> = (() => {
@@ -129,11 +131,18 @@ const ZoneCategoryContent: React.FC = () => {
 
   const selectedGroup = grouped.find(g => g.zone === selectedZone) ?? null;
 
-  // 상비약 / 일반약 그룹 분리
+  // 상비약 / 일반약 / 전체 3-way 필터 (localStorage 저장)
   type ZoneListSortKey = "amount" | "qty" | "count";
   const [essentialSort, setEssentialSort] = useState<ZoneListSortKey>("amount");
   const [generalSort, setGeneralSort] = useState<ZoneListSortKey>("amount");
-  const [groupTab, setGroupTab] = useState<"essential" | "general">("essential");
+  const [allSort, setAllSort] = useState<ZoneListSortKey>("amount");
+  const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
+    try {
+      const v = localStorage.getItem("megatown_category_classfilter");
+      return v === "stationery" || v === "general" || v === "all" ? v : "stationery";
+    } catch { return "stationery"; }
+  });
+  useEffect(() => { try { localStorage.setItem("megatown_category_classfilter", classFilter); } catch { /**/ } }, [classFilter]);
 
   const zoneNum = (zone: string): number => {
     const m = zone.match(/^(\d+)/);
@@ -150,6 +159,7 @@ const ZoneCategoryContent: React.FC = () => {
 
   const essentialGroups = useMemo(() => sortGroupList(grouped.filter(g => isEssential(g.zone)), essentialSort), [grouped, essentialSort]);
   const generalGroups = useMemo(() => sortGroupList(grouped.filter(g => !isEssential(g.zone)), generalSort), [grouped, generalSort]);
+  const allGroups = useMemo(() => sortGroupList(grouped, allSort), [grouped, allSort]);
 
   const renderZoneCard = (g: typeof grouped[number], rank: number) => {
     const pct = total > 0 ? (g.totalAmount / total) * 100 : 0;
@@ -387,6 +397,7 @@ const ZoneCategoryContent: React.FC = () => {
           </div>
           <SeasonButtons value={season} onChange={(v) => { setSeason(v); if (v) setMonths(0); }} size="sm" hideLabel />
         </div>
+        <ProductClassFilter value={classFilter} onChange={setClassFilter} compactOnMobile />
         <button
           type="button"
           onClick={() => {
@@ -442,27 +453,38 @@ const ZoneCategoryContent: React.FC = () => {
           ) : (
             <div className={`overflow-y-auto max-h-[65vh] pr-1 flex flex-col gap-2 ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
               <div className="flex items-center gap-1 border-b-2 border-slate-200 sticky top-0 bg-white z-10 -mx-1 px-1 pt-1">
-                <button type="button" onClick={() => setGroupTab("essential")}
-                  className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${groupTab === "essential" ? "text-rose-700" : "text-slate-400 hover:text-slate-600"}`}>
+                <button type="button" onClick={() => setClassFilter("stationery")}
+                  className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-slate-400 hover:text-slate-600"}`}>
                   상비약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({essentialGroups.length})</span>
-                  {groupTab === "essential" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-rose-500" />}
+                  {classFilter === "stationery" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-violet-500" />}
                 </button>
-                <button type="button" onClick={() => setGroupTab("general")}
-                  className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${groupTab === "general" ? "text-sky-700" : "text-slate-400 hover:text-slate-600"}`}>
+                <button type="button" onClick={() => setClassFilter("general")}
+                  className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-slate-400 hover:text-slate-600"}`}>
                   일반약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({generalGroups.length})</span>
-                  {groupTab === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
+                  {classFilter === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
+                </button>
+                <button type="button" onClick={() => setClassFilter("all")}
+                  className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
+                  전체 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({allGroups.length})</span>
+                  {classFilter === "all" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-slate-500" />}
                 </button>
               </div>
-              {groupTab === "essential"
+              {classFilter === "stationery"
                 ? renderGroupSection(
                   "상비약 (1~9구역)", "상비약",
-                  "bg-rose-50 text-rose-700 border-rose-300",
+                  "bg-violet-50 text-violet-700 border-violet-300",
                   essentialGroups, essentialSort, setEssentialSort,
                 )
-                : renderGroupSection(
+                : classFilter === "general"
+                ? renderGroupSection(
                   "일반약 (10구역 이후)", "일반약",
                   "bg-sky-50 text-sky-700 border-sky-300",
                   generalGroups, generalSort, setGeneralSort,
+                )
+                : renderGroupSection(
+                  "전체 구역", "전체",
+                  "bg-slate-100 text-slate-700 border-slate-300",
+                  allGroups, allSort, setAllSort,
                 )
               }
             </div>

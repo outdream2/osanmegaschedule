@@ -5,6 +5,9 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { TrendingUp, AlertTriangle, Loader2 as LoaderIcon } from "lucide-react";
+import { getProductsMap } from "../../lib/productsCache";
+import { ProductClassFilter } from "../common/ProductClassFilter";
+import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
 interface TrendingRow {
@@ -235,6 +238,26 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
   const [sortKey, setSortKey] = useState<"growth" | "delta" | "recent" | "shortage">("growth");
   const [onlyShortage, setOnlyShortage] = useState(false);
   const [meta, setMeta] = useState<{ recent_from: string; prior_from: string; total: number } | null>(null);
+  // 상비약/일반약/전체 3-way 필터 (localStorage 저장)
+  const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
+    try {
+      const v = localStorage.getItem("megatown_trending_classfilter");
+      return v === "stationery" || v === "general" || v === "all" ? v : "all";
+    } catch { return "all"; }
+  });
+  useEffect(() => { try { localStorage.setItem("megatown_trending_classfilter", classFilter); } catch { /**/ } }, [classFilter]);
+  // 상품 real_map 매핑 (products.json 캐시)
+  const [productRealMapById, setProductRealMapById] = useState<Record<string, string | null>>({});
+  useEffect(() => {
+    let alive = true;
+    getProductsMap().then(map => {
+      if (!alive) return;
+      const m: Record<string, string | null> = {};
+      for (const [k, v] of Object.entries(map)) m[k] = (v as any)?.real_map ?? null;
+      setProductRealMapById(m);
+    }).catch(() => { /* 캐시 없으면 필터 미분류 처리 */ });
+    return () => { alive = false; };
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -250,6 +273,9 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
 
   const displayed = useMemo(() => {
     let arr = onlyShortage ? rows.filter(r => r.below_optimal) : rows;
+    if (classFilter !== "all") {
+      arr = arr.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, classFilter));
+    }
     arr = [...arr].sort((a, b) => {
       if (sortKey === "growth") {
         if (a.newly_trending !== b.newly_trending) return a.newly_trending ? -1 : 1;
@@ -261,7 +287,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
       return 0;
     });
     return arr;
-  }, [rows, sortKey, onlyShortage]);
+  }, [rows, sortKey, onlyShortage, classFilter, productRealMapById]);
 
   const fmt = (n: number) => n.toLocaleString();
 
@@ -328,6 +354,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
               </button>
             ))}
           </div>
+          <ProductClassFilter value={classFilter} onChange={setClassFilter} compactOnMobile />
           <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 cursor-pointer ml-auto">
             <input type="checkbox" checked={onlyShortage} onChange={e => setOnlyShortage(e.target.checked)} className="w-3.5 h-3.5 accent-indigo-500" />
             재고 부족만

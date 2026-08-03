@@ -7,6 +7,8 @@ import { Layers, Loader2 as LoaderIcon, ChevronRight, ChevronDown } from "lucide
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
+import { ProductClassFilter } from "../common/ProductClassFilter";
+import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 
 function fmt(n: number): string {
   if (!Number.isFinite(n)) return "0";
@@ -28,6 +30,14 @@ interface ProductLite {
 export const DiffTab: React.FC = () => {
   const [lowStock, setLowStock] = useState<ProductLite[]>([]);
   const [loading, setLoading] = useState(false);
+  // 상비약/일반약/전체 3-way 필터 (localStorage 저장)
+  const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
+    try {
+      const v = localStorage.getItem("megatown_diff_classfilter");
+      return v === "stationery" || v === "general" || v === "all" ? v : "all";
+    } catch { return "all"; }
+  });
+  useEffect(() => { try { localStorage.setItem("megatown_diff_classfilter", classFilter); } catch { /**/ } }, [classFilter]);
 
   // 패널 폭 (localStorage 저장)
   const [diffPanelWidth, setDiffPanelWidth] = useState<number>(() => {
@@ -120,9 +130,10 @@ export const DiffTab: React.FC = () => {
       const cur = Number(p.current_stock ?? 0);
       const diff = actual - cur;
       if (diff === 0) return null;
+      if (!matchClassFilter(p.real_map, classFilter)) return null;
       return { ...p, actual, cur, diff };
     })
-    .filter(Boolean) as Array<any>, [lowStock]);
+    .filter(Boolean) as Array<any>, [lowStock, classFilter]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -134,6 +145,7 @@ export const DiffTab: React.FC = () => {
           <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 rounded-full px-2 py-0.5 border border-violet-200 tabular-nums">{diffList.length}건</span>
           <span className="text-[11px] text-slate-400 hidden sm:inline">실재고(창고+매장) ↔ ERP 차이 · 도난·파손·미기록 판매·재고 오류 · 상품명 클릭 → 상세</span>
         </div>
+        <ProductClassFilter value={classFilter} onChange={setClassFilter} compactOnMobile />
         <button
           type="button"
           onClick={fetchData}

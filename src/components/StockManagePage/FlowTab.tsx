@@ -16,6 +16,8 @@ import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
+import { ProductClassFilter } from "../common/ProductClassFilter";
+import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -88,6 +90,26 @@ export const FlowTab: React.FC = () => {
   // 분류 필터
   type FlowCategoryFilter = "전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
   const [flowCategoryFilter, setFlowCategoryFilter] = useState<FlowCategoryFilter>("전체");
+  // 상비약/일반약/전체 3-way 필터 (localStorage 저장)
+  const [classFilter, setClassFilter] = useState<ClassFilter>(() => {
+    try {
+      const v = localStorage.getItem("megatown_flow_classfilter");
+      return v === "stationery" || v === "general" || v === "all" ? v : "all";
+    } catch { return "all"; }
+  });
+  useEffect(() => { try { localStorage.setItem("megatown_flow_classfilter", classFilter); } catch { /**/ } }, [classFilter]);
+  // 상품 real_map 매핑 (products.json 캐시)
+  const [productRealMapById, setProductRealMapById] = useState<Record<string, string | null>>({});
+  useEffect(() => {
+    let alive = true;
+    getProductsMap().then(map => {
+      if (!alive) return;
+      const m: Record<string, string | null> = {};
+      for (const [k, v] of Object.entries(map)) m[k] = (v as any)?.real_map ?? null;
+      setProductRealMapById(m);
+    }).catch(() => { /* 캐시 없으면 필터 미분류 처리 */ });
+    return () => { alive = false; };
+  }, []);
 
   // 그룹 접기
   const [flowGroupCollapsed, setFlowGroupCollapsed] = useState<Set<FlowGroup>>(new Set(["purchase", "sales"]));
@@ -361,6 +383,10 @@ export const FlowTab: React.FC = () => {
         const sup = String(p.supplier ?? "").trim();
         if (vendorCategoryMap[sup] !== flowCategoryFilter) return false;
       }
+      if (classFilter !== "all") {
+        const rm = (p as any).real_map ?? productRealMapById[String(p.product_code)] ?? null;
+        if (!matchClassFilter(rm, classFilter)) return false;
+      }
       return true;
     });
     const sign = flowDir === "asc" ? 1 : -1;
@@ -406,7 +432,7 @@ export const FlowTab: React.FC = () => {
       });
     }
     return filtered;
-  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowSearch, flowMonths, flowCategoryFilter, vendorCategoryMap]);
+  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowSearch, flowMonths, flowCategoryFilter, vendorCategoryMap, classFilter, productRealMapById]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -520,6 +546,9 @@ export const FlowTab: React.FC = () => {
           title="숨김 처리된 상품을 확인/해제">
           <EyeOff size={12} /> 숨김관리
         </button>
+
+        {/* 상비약/일반약/전체 3-way 필터 */}
+        <ProductClassFilter value={classFilter} onChange={setClassFilter} compactOnMobile />
 
         {/* 분류 세그먼트 필터 */}
         <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
