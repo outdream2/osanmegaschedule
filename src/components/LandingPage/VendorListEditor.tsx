@@ -6,7 +6,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
   Search, Check, X, Loader2, Building2, Package, Calendar,
-  DollarSign, TrendingUp, RefreshCw, ChevronRight, ChevronDown,
+  DollarSign, TrendingUp, RefreshCw, ChevronRight, ChevronDown, ChevronUp,
   Wallet, Plus, Trash2, CircleDollarSign,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
@@ -93,6 +93,9 @@ const CATEGORY_LEFT_BG: Record<string, string> = {
   기타:       "bg-slate-50/30",
 };
 
+// compact 테이블 정렬 키 타입 (모듈 레벨 · IIFE SortIcon 에서 참조)
+type CompactSortKey = "company_name" | "category" | "business_number" | "contact_name" | "phone" | "vat" | "balance" | "invoice_date";
+
 export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   initialSelectedId,
   onEditRequest,
@@ -106,6 +109,17 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   const [modalVendorId, setModalVendorId] = useState<number | null>(null);
   // compact 모드 · 선택된 항목 강조용
   const [activeId, setActiveId] = useState<number | null>(null);
+  // compact 모드 · 테이블 정렬
+  const [compactSortKey, setCompactSortKey] = useState<CompactSortKey>("company_name");
+  const [compactSortDir, setCompactSortDir] = useState<"asc" | "desc">("asc");
+  const toggleCompactSort = (key: CompactSortKey) => {
+    if (compactSortKey === key) {
+      setCompactSortDir(d => d === "asc" ? "desc" : "asc");
+    } else {
+      setCompactSortKey(key);
+      setCompactSortDir("asc");
+    }
+  };
   // 그룹 헤더 클릭 접기 · flow 탭 동일 방식
   type VendorGroup = "basic" | "contact" | "balance" | "etc";
   const [vendorGroupCollapsed, setVendorGroupCollapsed] = useState<Set<VendorGroup>>(new Set());
@@ -158,6 +172,39 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
 
   const missingCount = vendors.filter(v => !v.business_number).length;
   const modalVendor = useMemo(() => vendors.find(v => v.id === modalVendorId) ?? null, [vendors, modalVendorId]);
+
+  // compact 테이블 정렬 결과
+  const compactSorted = useMemo(() => {
+    return filtered.slice().sort((a, b) => {
+      let cmp = 0;
+      switch (compactSortKey) {
+        case "company_name":
+          cmp = (a.company_name ?? "").localeCompare(b.company_name ?? "", "ko"); break;
+        case "category":
+          cmp = (a.category ?? "").localeCompare(b.category ?? "", "ko"); break;
+        case "business_number":
+          cmp = (a.business_number ?? "").localeCompare(b.business_number ?? ""); break;
+        case "contact_name":
+          cmp = (a.contact_name ?? "").localeCompare(b.contact_name ?? "", "ko"); break;
+        case "phone":
+          cmp = (a.phone ?? "").localeCompare(b.phone ?? ""); break;
+        case "vat": {
+          const va = detectVatIncluded(a); const vb = detectVatIncluded(b);
+          const toNum = (x: boolean | null) => x === true ? 1 : x === false ? 0 : -1;
+          cmp = toNum(va) - toNum(vb); break;
+        }
+        case "balance":
+          cmp = (a.latestBalance?.balance ?? -Infinity) - (b.latestBalance?.balance ?? -Infinity); break;
+        case "invoice_date": {
+          const da = a.latestBalance?.invoice_date ?? "";
+          const db = b.latestBalance?.invoice_date ?? "";
+          cmp = da < db ? -1 : da > db ? 1 : 0; break;
+        }
+        default: cmp = 0;
+      }
+      return compactSortDir === "asc" ? cmp : -cmp;
+    });
+  }, [filtered, compactSortKey, compactSortDir]);
 
   return (
     <div className="flex flex-col gap-2 min-h-0 flex-1">
@@ -288,85 +335,237 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         </div>
       )}
 
-      {/* ── compact 모드: 카드형 행 리스트 ── */}
+      {/* ── compact 모드: 표 형식 리스트 (헤더 정렬 · 결제/공급사 컬럼) ── */}
       {compact ? (
         <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-slate-400 gap-2">
-              <Building2 size={28} className="opacity-25" />
-              <span className="text-[13px] font-semibold">
-                {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
-              </span>
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-100">
-              {filtered.map((v) => {
-                const isActive = activeId === v.id;
+          <table className="w-full min-w-[360px] text-xs border-collapse">
+            <thead>
+              <tr>
+                {/* 공급사 헤더 (분류+이름 stacked) */}
+                <th
+                  onClick={() => toggleCompactSort("company_name")}
+                  className={[
+                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
+                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
+                    "py-1.5 text-left pl-2 pr-1 w-[140px]",
+                    compactSortKey === "company_name" ? "text-indigo-600" : "text-slate-500",
+                  ].join(" ")}
+                >
+                  <span className="inline-flex items-center gap-0.5">
+                    공급사
+                    {compactSortKey === "company_name"
+                      ? (compactSortDir === "asc"
+                          ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" />
+                          : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
+                      : <ChevronUp size={9} className="text-slate-300 ml-0.5 shrink-0" />}
+                  </span>
+                </th>
+                {/* 사업자번호 */}
+                <th
+                  onClick={() => toggleCompactSort("business_number")}
+                  className={[
+                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
+                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
+                    "py-1.5 text-left px-2 w-24",
+                    compactSortKey === "business_number" ? "text-indigo-600" : "text-slate-500",
+                  ].join(" ")}
+                >
+                  <span className="inline-flex items-center gap-0.5">
+                    사업자번호
+                    {compactSortKey === "business_number"
+                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
+                      : <ChevronUp size={9} className="text-slate-300 ml-0.5 shrink-0" />}
+                  </span>
+                </th>
+                {/* 담당자 */}
+                <th
+                  onClick={() => toggleCompactSort("contact_name")}
+                  className={[
+                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
+                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
+                    "py-1.5 text-left px-2 w-16",
+                    compactSortKey === "contact_name" ? "text-indigo-600" : "text-slate-500",
+                  ].join(" ")}
+                >
+                  <span className="inline-flex items-center gap-0.5">
+                    담당자
+                    {compactSortKey === "contact_name"
+                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
+                      : <ChevronUp size={9} className="text-slate-300 ml-0.5 shrink-0" />}
+                  </span>
+                </th>
+                {/* 전화 */}
+                <th
+                  onClick={() => toggleCompactSort("phone")}
+                  className={[
+                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
+                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
+                    "py-1.5 text-left px-2 w-24",
+                    compactSortKey === "phone" ? "text-indigo-600" : "text-slate-500",
+                  ].join(" ")}
+                >
+                  <span className="inline-flex items-center gap-0.5">
+                    전화
+                    {compactSortKey === "phone"
+                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
+                      : <ChevronUp size={9} className="text-slate-300 ml-0.5 shrink-0" />}
+                  </span>
+                </th>
+                {/* VAT */}
+                <th
+                  onClick={() => toggleCompactSort("vat")}
+                  className={[
+                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
+                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
+                    "py-1.5 text-left px-2 w-16",
+                    compactSortKey === "vat" ? "text-indigo-600" : "text-slate-500",
+                  ].join(" ")}
+                >
+                  <span className="inline-flex items-center gap-0.5">
+                    VAT
+                    {compactSortKey === "vat"
+                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
+                      : <ChevronUp size={9} className="text-slate-300 ml-0.5 shrink-0" />}
+                  </span>
+                </th>
+                {/* 잔고 · 우측 정렬 */}
+                <th
+                  onClick={() => toggleCompactSort("balance")}
+                  className={[
+                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
+                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
+                    "py-1.5 text-right pr-2 pl-1 w-16",
+                    compactSortKey === "balance" ? "text-indigo-600" : "text-slate-500",
+                  ].join(" ")}
+                >
+                  <span className="inline-flex items-center flex-row-reverse gap-0.5">
+                    잔고
+                    {compactSortKey === "balance"
+                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 mr-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 mr-0.5 shrink-0" />)
+                      : <ChevronUp size={9} className="text-slate-300 mr-0.5 shrink-0" />}
+                  </span>
+                </th>
+                {/* 최근매입 */}
+                <th
+                  onClick={() => toggleCompactSort("invoice_date")}
+                  className={[
+                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
+                    "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
+                    "py-1.5 text-left px-2 w-16",
+                    compactSortKey === "invoice_date" ? "text-indigo-600" : "text-slate-500",
+                  ].join(" ")}
+                >
+                  <span className="inline-flex items-center gap-0.5">
+                    최근매입
+                    {compactSortKey === "invoice_date"
+                      ? (compactSortDir === "asc" ? <ChevronUp size={9} className="text-indigo-500 ml-0.5 shrink-0" /> : <ChevronDown size={9} className="text-indigo-500 ml-0.5 shrink-0" />)
+                      : <ChevronUp size={9} className="text-slate-300 ml-0.5 shrink-0" />}
+                  </span>
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-50">
+              {compactSorted.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="text-center py-12">
+                    <div className="flex flex-col items-center gap-2 text-slate-400">
+                      <Building2 size={28} className="opacity-25" />
+                      <span className="text-[13px] font-semibold">
+                        {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 없음"}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ) : compactSorted.map((v) => {
+                const isActive  = activeId === v.id;
                 const catBorder = v.category ? (CATEGORY_LEFT_BORDER[v.category] ?? "border-l-slate-200") : "border-l-slate-200";
-                const catBg    = v.category ? (CATEGORY_LEFT_BG[v.category] ?? "") : "";
-                const hasBal   = v.latestBalance?.balance != null;
+                const catBg     = v.category ? (CATEGORY_LEFT_BG[v.category] ?? "") : "";
+                const vatIn     = detectVatIncluded(v);
+                const hasBal    = v.latestBalance?.balance != null;
+                const invDate   = v.latestBalance?.invoice_date;
+                const fmtDate   = (d: string | null | undefined): string => {
+                  if (!d) return "-";
+                  const m = d.match(/^(\d{4})-(\d{2})-(\d{2})/);
+                  return m ? `${m[1].slice(2)}.${m[2]}.${m[3]}` : d.slice(0, 10);
+                };
                 return (
-                  <button
+                  <tr
                     key={v.id}
-                    type="button"
                     onClick={() => handleVendorClick(v.id)}
                     title="클릭하여 상세 · 편집"
                     className={[
-                      "w-full text-left border-l-[3px] px-3 py-2 transition-all duration-150",
-                      "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60",
+                      "cursor-pointer transition-all duration-150 border-l-[3px]",
                       isActive
                         ? "border-l-indigo-500 bg-indigo-50/60"
                         : `${catBorder} ${catBg} hover:bg-slate-50/80 active:bg-slate-100`,
                     ].join(" ")}
                   >
-                    {/* Line 1: 회사명 + 분류 · VAT미포함 텍스트 제거 표시 */}
-                    <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
-                      <span className={`text-[14px] font-bold leading-tight text-slate-800 min-w-0 break-keep ${isActive ? "text-indigo-900" : ""}`}>
-                        {String(v.company_name ?? "").replace(/\s*\(?\s*(VAT|부가세|부가가치세)\s*미포함\s*\)?\s*/gi, "").trim() || v.company_name}
-                      </span>
-                      <VendorCategoryBadge category={v.category} className="text-[11px] shrink-0" />
-                      {!v.business_number && (
-                        <span className="ml-auto shrink-0 text-[10px] font-black text-rose-500 bg-rose-50 border border-rose-200 rounded px-1 py-px leading-none">
-                          사번없음
-                        </span>
-                      )}
-                    </div>
-                    {/* Line 2: 담당자 · 전화 · VAT · 잔고 */}
-                    <div className="flex items-center gap-2 text-[12px] text-slate-500 leading-tight flex-wrap">
-                      {v.contact_name && (
-                        <span className="flex items-center gap-0.5">
-                          <span className="text-slate-400">담당</span>
-                          <span className="font-semibold text-slate-600">{v.contact_name}</span>
-                        </span>
-                      )}
-                      {v.phone && (
-                        <span className="text-slate-400 tabular-nums">{v.phone}</span>
-                      )}
-                      {(() => {
-                        const vatIn = detectVatIncluded(v);
-                        if (vatIn == null) return null;
-                        return (
+                    {/* 공급사: 분류(위·색상) + 이름(아래·bold) */}
+                    <td className="pl-2 pr-1 py-1.5 min-w-[120px] max-w-[160px]">
+                      <div className="leading-tight">
+                        <VendorCategoryBadge category={v.category} className="text-[10px] mb-0.5" />
+                        <div className={`text-[13px] font-bold break-keep leading-snug ${isActive ? "text-indigo-900" : "text-slate-800"}`}>
+                          {String(v.company_name ?? "").replace(/\s*\(?\s*(VAT|부가세|부가가치세)\s*미포함\s*\)?\s*/gi, "").trim() || v.company_name}
+                        </div>
+                      </div>
+                    </td>
+                    {/* 사업자번호 */}
+                    <td className="px-2 py-1.5 text-[11px] text-slate-600 tabular-nums whitespace-nowrap">
+                      {v.business_number
+                        ? formatBizNum(v.business_number)
+                        : <span className="text-[10px] font-black text-rose-500 bg-rose-50 border border-rose-200 rounded px-1 py-px leading-none">번호없음</span>}
+                    </td>
+                    {/* 담당자 */}
+                    <td className="px-2 py-1.5 text-[12px] text-slate-600 whitespace-nowrap">
+                      {v.contact_name != null ? v.contact_name : <span className="text-slate-300">-</span>}
+                    </td>
+                    {/* 전화 */}
+                    <td className="px-2 py-1.5 text-[11px] text-slate-500 tabular-nums whitespace-nowrap">
+                      {v.phone != null ? v.phone : <span className="text-slate-300">-</span>}
+                    </td>
+                    {/* VAT */}
+                    <td className="px-2 py-1.5 whitespace-nowrap">
+                      {vatIn == null
+                        ? <span className="text-[10px] text-slate-300">-</span>
+                        : (
                           <span
-                            className={`text-[10px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap ${
-                              vatIn ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-amber-50 text-amber-700 border border-amber-200"
+                            className={`text-[10px] font-bold px-1 py-px rounded whitespace-nowrap ${
+                              vatIn
+                                ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                : "bg-amber-50 text-amber-700 border border-amber-200"
                             }`}
-                            title={vatIn ? "부가세 포함 (매입가에 VAT 포함)" : "부가세 미포함 (VAT 별도 부과)"}
+                            title={vatIn ? "부가세 포함" : "부가세 미포함 (VAT 별도)"}
                           >
-                            {vatIn ? "VAT포함" : "VAT별도"}
+                            {vatIn ? "포함" : "별도"}
                           </span>
-                        );
-                      })()}
-                      {hasBal && (
-                        <span className={`ml-auto shrink-0 font-bold tabular-nums ${v.latestBalance!.balance > 0 ? "text-emerald-600" : "text-slate-400"}`}>
-                          {fmtWon(v.latestBalance!.balance)}
-                        </span>
-                      )}
-                    </div>
-                  </button>
+                        )}
+                    </td>
+                    {/* 잔고 · 우측 정렬 */}
+                    <td className="pr-2 pl-1 py-1.5 text-right whitespace-nowrap">
+                      {hasBal
+                        ? (
+                          <span className={`text-[12px] font-bold tabular-nums ${v.latestBalance!.balance > 0 ? "text-emerald-600" : "text-slate-400"}`}>
+                            {fmtWon(v.latestBalance!.balance)}
+                          </span>
+                        )
+                        : <span className="text-[10px] text-slate-300">-</span>}
+                    </td>
+                    {/* 최근매입 */}
+                    <td className="px-2 py-1.5 text-[11px] text-slate-500 tabular-nums whitespace-nowrap">
+                      {fmtDate(invDate)}
+                    </td>
+                  </tr>
                 );
               })}
-            </div>
-          )}
+            </tbody>
+          </table>
         </div>
       ) : (
         /* ── 일반 모드: 기존 반응형 테이블 ── */
