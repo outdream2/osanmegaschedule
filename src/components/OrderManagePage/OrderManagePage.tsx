@@ -1663,23 +1663,28 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         {alreadyRequested ? (
                           <button
                             onClick={() => handleRequestOrder(p)}
-                            className="inline-flex items-center gap-1 h-8 px-3 rounded-lg text-[12px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                            className="group inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[12px] font-black text-emerald-700 bg-emerald-50 ring-1 ring-inset ring-emerald-300 hover:bg-emerald-100 hover:ring-emerald-400 transition-all cursor-pointer whitespace-nowrap"
                             title="발주요청 리스트에 추가됨"
                           >
-                            <CheckCircle2 size={13} strokeWidth={2.5} className="shrink-0" /><span>요청됨</span>
+                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500 text-white shadow-sm shrink-0">
+                              <CheckCircle2 size={11} strokeWidth={3} />
+                            </span>
+                            <span>요청됨</span>
                           </button>
                         ) : (
                           <button
                             onClick={() => handleRequestOrder(p)}
                             disabled={busy}
-                            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-[12px] font-black text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-sm hover:shadow-md hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed active:translate-y-0 active:scale-95 transition-all duration-150 cursor-pointer whitespace-nowrap"
+                            className="group relative inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[12px] font-black text-white bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:via-orange-600 hover:to-rose-600 shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-orange-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer whitespace-nowrap ring-1 ring-inset ring-white/20"
                             title="발주요청 리스트에 추가"
                           >
-                            {busy ? (
-                              <Loader2 size={13} strokeWidth={2.5} className="shrink-0 animate-spin" />
-                            ) : (
-                              <ShoppingCart size={13} strokeWidth={2.5} className="shrink-0" />
-                            )}
+                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/25 backdrop-blur shrink-0">
+                              {busy ? (
+                                <Loader2 size={11} strokeWidth={3} className="animate-spin" />
+                              ) : (
+                                <ShoppingCart size={11} strokeWidth={3} />
+                              )}
+                            </span>
                             <span>{busy ? "추가중" : "발주"}</span>
                           </button>
                         )}
