@@ -3,7 +3,7 @@
 // 기존 StockManagePage의 stockTab === "low" 블록 state/fetch/JSX 를 그대로 캡슐화
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
-import { AlertTriangle, Check, X as XIcon, Loader2 as LoaderIcon, Pencil, ChevronRight, ChevronDown } from "lucide-react";
+import { AlertTriangle, Check, X as XIcon, Loader2 as LoaderIcon, Pencil, ChevronRight, ChevronDown, CheckCircle2, ShoppingCart } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
@@ -416,20 +416,31 @@ export const LowStockPanel: React.FC = () => {
                                   const code = String(p.product_code ?? "");
                                   const busy = orderRequestingCode === code;
                                   const done = orderRequestedCodes.has(code);
+                                  if (done) return (
+                                    <button
+                                      type="button"
+                                      disabled
+                                      className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-black text-emerald-700 bg-emerald-50 ring-1 ring-inset ring-emerald-300 cursor-not-allowed whitespace-nowrap"
+                                      title="발주요청 리스트에 추가됨"
+                                    >
+                                      <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-emerald-500 text-white shrink-0">
+                                        <CheckCircle2 size={9} strokeWidth={3} />
+                                      </span>
+                                      <span>추가됨</span>
+                                    </button>
+                                  );
                                   return (
                                     <button
                                       type="button"
                                       onClick={(e) => { e.stopPropagation(); requestOrderFromLow(p); }}
-                                      disabled={busy || done}
-                                      className={`inline-flex items-center justify-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-semibold border transition cursor-pointer active:scale-95 disabled:cursor-not-allowed ${done
-                                        ? "bg-slate-50 text-slate-400 border-slate-200"
-                                        : busy
-                                          ? "bg-slate-50 text-slate-400 border-slate-200"
-                                          : "bg-white text-rose-600 border-rose-300 hover:bg-rose-50 hover:border-rose-400 shadow-sm"
-                                        }`}
-                                      title={done ? "발주요청 리스트에 추가됨" : "발주요청 리스트에 추가"}
+                                      disabled={busy}
+                                      className="relative inline-flex items-center gap-1 h-7 px-2.5 rounded-full text-[11px] font-black text-white bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:via-orange-600 hover:to-rose-600 shadow-sm shadow-amber-500/30 hover:shadow-md hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 transition-all duration-200 cursor-pointer whitespace-nowrap ring-1 ring-inset ring-white/20"
+                                      title="발주요청 리스트에 추가"
                                     >
-                                      {busy ? "..." : done ? "추가됨" : "발주요청"}
+                                      <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-white/25 backdrop-blur shrink-0">
+                                        {busy ? <LoaderIcon size={9} strokeWidth={2.5} className="animate-spin" /> : <ShoppingCart size={9} strokeWidth={2.5} />}
+                                      </span>
+                                      <span>{busy ? "추가 중" : "발주요청"}</span>
                                     </button>
                                   );
                                 })()}
