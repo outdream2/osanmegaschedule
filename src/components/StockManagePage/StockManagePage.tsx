@@ -3,11 +3,10 @@
 // 좌측: ERP 현재고 + 수량 차이 추이 차트
 // 우측: 공급사별 매입 · Top 100 · 적정재고 이하
 
-import React, { useCallback, useEffect, useMemo, useRef, useState, lazy } from "react";
-// 2026-07-28 · 카테고리별판매·손실추적 · 판매추이 페이지에서 이동 · lazy 로드
-const CategoryTabLazy = lazy(() => import("../SalesTrendPage/SalesTrendPage").then(m => ({ default: m.CategoryTab })));
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 // 2026-07-29 · LossTrackerTabLazy 제거 · 손실추적 탭이 실재고차이로 통합됨 (사용자 요청)
-import { Search, Package, TrendingUp, AlertTriangle, Building2, Info, EyeOff, Eye, Loader2 as LoaderIcon, Pencil, Check, X as XIcon, CheckSquare, Square, Boxes, Activity, Layers, FileText, LineChart, PieChart, ChevronRight, ChevronDown, PackageCheck } from "lucide-react";
+// 2026-08-03 · CategoryTabLazy · TrendingTab → OrderManagePage 통계탭으로 이동
+import { Search, Package, TrendingUp, AlertTriangle, Building2, Info, EyeOff, Eye, Loader2 as LoaderIcon, Pencil, Check, X as XIcon, CheckSquare, Square, Boxes, Activity, Layers, FileText, LineChart, ChevronRight, ChevronDown, PackageCheck } from "lucide-react";
 import { ReturnListPanel } from "../OrderManagePage/ReturnListPanel";
 import { LowStockPanel } from "./LowStockPanel";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
@@ -921,7 +920,7 @@ const PeriodTrendingSection: React.FC<{
   );
 };
 
-const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProductClick }) => {
+export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ onProductClick }) => {
   const [rows, setRows] = useState<TrendingRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [windowDays, setWindowDays] = useState<7 | 14 | 30 | 60 | 90>(30);
@@ -1343,7 +1342,7 @@ export const StockManagePage: React.FC = () => {
   //   flow · supplier · low · diff
   //   기본: flow (재고흐름)
   // 2026-07-29 · 사용자 요청 · 손실추적 → 실재고차이(diff) 로 통합 · "loss" 타입 제거
-  const [stockTab, setStockTab] = useState<"flow" | "supplier" | "low" | "return" | "diff" | "category" | "trending">("flow");
+  const [stockTab, setStockTab] = useState<"flow" | "supplier" | "low" | "return" | "diff">("flow");
   // 상품재고현황 매입 셀 클릭 시 팝업 (2026-07-16) · 해당 상품 매입 이력
   const [productPurchaseModal, setProductPurchaseModal] = useState<{ product_code: string; product_name: string } | null>(null);
 
@@ -2448,10 +2447,8 @@ export const StockManagePage: React.FC = () => {
               - 배경 · rounded-t-lg · 활성 시 미묘한 tint · 비활성 hover 도 tint */}
           <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-1 border-b-2 border-slate-200 sm:overflow-x-auto sm:scrollbar-none px-1 pt-1">
             {(() => {
-              type TabDef = { k: "flow" | "supplier" | "low" | "return" | "diff" | "category" | "trending"; label: string; icon: any; color: "teal" | "sky" | "rose" | "violet" | "amber" | "indigo" | "emerald"; badge?: number };
+              type TabDef = { k: "flow" | "supplier" | "low" | "return" | "diff"; label: string; icon: any; color: "teal" | "sky" | "rose" | "violet" | "amber" | "indigo" | "emerald"; badge?: number };
               const tabs: TabDef[] = [
-                { k: "trending", label: "급상승", icon: TrendingUp, color: "indigo" },
-                { k: "category", label: "카테고리별현황", icon: PieChart, color: "amber" },
                 { k: "flow", label: "상품현황", icon: Activity, color: "teal" },
                 { k: "supplier", label: "공급사", icon: Building2, color: "sky" },
                 { k: "low", label: "적정재고↓", icon: AlertTriangle, color: "emerald" },
@@ -3194,22 +3191,6 @@ export const StockManagePage: React.FC = () => {
               )}
 
             </div>
-
-            {/* 2026-07-28 · 사용자 요청 · 상품관리 탭 제거 · 카테고리별판매 (판매추이에서 이동) */}
-            {stockTab === "category" && (
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <React.Suspense fallback={<div className="text-center text-xs text-slate-400 py-8">카테고리별판매 로딩 중...</div>}>
-                  <CategoryTabLazy />
-                </React.Suspense>
-              </div>
-            )}
-            {/* 2026-07-29 · 손실추적 탭 및 LossTrackerTabLazy 완전 제거 · 실재고차이 탭이 커버 */}
-            {/* 2026-07-29 · 급상승 탭 · 최근 window일 판매 vs 이전 window일 판매 비교 */}
-            {stockTab === "trending" && (
-              <div className="flex-1 min-h-0 overflow-y-auto">
-                <TrendingTab onProductClick={loadFlowSelectedProduct} />
-              </div>
-            )}
 
             {/* 상품재고현황 탭 · 상단 필터바 + 좌우 분할 레이아웃 (2026-07-30) */}
             {stockTab === "flow" && (

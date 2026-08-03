@@ -3,8 +3,7 @@
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
 // 사입(OCR거래명세서 등록) 탭에서는 거래명세서 OCR(OcrPage) 노출
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, Truck, AlertTriangle, Upload, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown } from "lucide-react";
-import * as XLSX from "xlsx";
+import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
@@ -15,6 +14,10 @@ import type { AppNavPage } from "../AppNavHeader";
 import { VendorListEditor, VendorDetailModal } from "../LandingPage/VendorListEditor";
 import type { Vendor } from "../LandingPage/VendorListEditor";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
+import { StockReconciliationTab } from "../StockManagePage/StockReconciliationTab";
+import { TrendingTab } from "../StockManagePage/StockManagePage";
+import { CategoryTab } from "../SalesTrendPage/SalesTrendPage";
+import { BarChart2, PieChart } from "lucide-react";
 
 interface OrderRequest {
   id: string;
@@ -82,8 +85,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   ocrTabOnNavigate,
   ocrTabOnLogout,
 }) => {
-  // 상단 탭 (발주요청 / 발주필요 / 반품필요 / 사입(OCR거래명세서 등록) / 공급사관리) · Vercel Ink underline 스타일
-  const [topTab, setTopTab] = useState<"order" | "need" | "receipt" | "reconciliation" | "vendor" | "arrival_history">("order");
+  // Level-1 탭 (발주 / 매입 / 결제 / 통계) — 2026-08-03 재구성
+  const [topTab, setTopTab] = useState<"purchase-order" | "purchase" | "payment" | "statistics">("purchase-order");
+  // Level-2 서브탭 상태
+  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need">("need");
+  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "arrival_history" | "vendor">("receipt");
+  const [statSubTab, setStatSubTab] = useState<"trending" | "category">("trending");
 
   // 2026-07-30 · 사용자 요청 · 입고내역 탭 · product_arrivals 이력 조회
   interface ArrivalHistoryRow {
@@ -124,7 +131,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       setArrivalsLoading(false);
     }
   }, [arrivalDays]);
-  useEffect(() => { if (topTab === "arrival_history") loadArrivals(); }, [topTab, loadArrivals]);
+  useEffect(() => { if (topTab === "purchase" && purchaseSubTab === "arrival_history") loadArrivals(); }, [topTab, purchaseSubTab, loadArrivals]);
   useEffect(() => {
     if (selectedArrivalId == null) { setArrivalDetail(null); return; }
     setArrivalDetailLoading(true);
@@ -471,7 +478,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     } catch { /* silent · 서버 API 미구성일 수 있음 */ }
     finally { setReceiptsLoading(false); }
   }, []);
-  useEffect(() => { if (topTab === "receipt") loadReceipts(); }, [topTab, loadReceipts]);
+  useEffect(() => { if (topTab === "purchase" && purchaseSubTab === "receipt") loadReceipts(); }, [topTab, purchaseSubTab, loadReceipts]);
 
   // 입고 확정 (부분/완전)
   const markReceived = async (receipt: GoodsReceipt, receivedQtyMap?: Record<string, number>) => {
@@ -805,60 +812,81 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             (p.supplier ?? "").toLowerCase().includes(q));
   });
 
+  // ── 서브탭 렌더 헬퍼 ──
+  const renderSubTabs = <K extends string>(
+    tabs: { k: K; label: string; icon: React.ElementType; color: string; badge?: number }[],
+    activeTab: K,
+    setTab: (k: K) => void,
+  ) => (
+    <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-0.5 border-b border-slate-200 sm:overflow-x-auto sm:scrollbar-none bg-slate-50/50 px-2 pt-1">
+      {tabs.map(t => {
+        const Icon = t.icon;
+        const active = activeTab === t.k;
+        const colorMap: Record<string, { text: string; bar: string; badge: string }> = {
+          sky:    { text: "text-sky-700",    bar: "bg-sky-500",    badge: "bg-sky-100 text-sky-700" },
+          amber:  { text: "text-amber-700",  bar: "bg-amber-500",  badge: "bg-amber-100 text-amber-700" },
+          violet: { text: "text-violet-700", bar: "bg-violet-500", badge: "bg-violet-100 text-violet-700" },
+          teal:   { text: "text-teal-700",   bar: "bg-teal-500",   badge: "bg-teal-100 text-teal-700" },
+          indigo: { text: "text-indigo-700", bar: "bg-indigo-500", badge: "bg-indigo-100 text-indigo-700" },
+          rose:   { text: "text-rose-700",   bar: "bg-rose-500",   badge: "bg-rose-100 text-rose-700" },
+          emerald:{ text: "text-emerald-700",bar: "bg-emerald-500",badge: "bg-emerald-100 text-emerald-700" },
+        };
+        const c = colorMap[t.color] ?? colorMap["sky"];
+        return (
+          <button key={t.k} onClick={() => setTab(t.k)}
+            className={`relative basis-1/2 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 text-[11px] sm:text-[12px] font-semibold leading-tight transition-colors duration-150 rounded-t-md ${
+              active ? `${c.text} bg-white shadow-sm` : "text-slate-400 hover:text-slate-600 hover:bg-white/60"
+            }`}>
+            <Icon size={12} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
+            <span>{t.label}</span>
+            {t.badge != null && t.badge > 0 && (
+              <span className={`inline-flex items-center justify-center min-w-[14px] px-1 h-4 rounded-full text-[9px] font-black ${active ? c.badge : "bg-slate-100 text-slate-500"}`}>
+                {t.badge}
+              </span>
+            )}
+            {active && <span className={`absolute left-0 right-0 -bottom-px h-[2px] ${c.bar} rounded-t-sm`} />}
+          </button>
+        );
+      })}
+    </div>
+  );
+
   return (
     <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-4">
-      {/* 상단 탭 (2026-07-15) · Vercel Ink underline 스타일 · 재고관리/판매추이와 통일 */}
+      {/* ── Level-1 탭 (발주 / 매입 / 결제 / 통계) — 2026-08-03 재구성 ── */}
       <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-1 border-b border-slate-200 sm:overflow-x-auto sm:scrollbar-none">
-        {[
-          { k: "order"   as const, label: "발주요청", icon: ShoppingCart, color: "sky" },
-          { k: "need"    as const, label: "발주필요", icon: ClipboardList, color: "amber", badge: lowStock.length },
-          // 라벨 반응형: 데스크탑 lg+ 은 풀네임 · 태블릿·모바일은 축약 (2026-07-16)
-          { k: "receipt" as const, label: "사입(OCR거래명세서 등록)", shortLabel: "사입·OCR", icon: PackageCheck, color: "violet" },
-          // 2026-07-30 · 사용자 요청 · 상품입고 이력 조회 (product_arrivals API)
-          { k: "arrival_history" as const, label: "입고내역", icon: Package, color: "indigo" },
-          // 2026-07-28 · 사용자 요청 · 입고/사입/ERP 검증 탭 제거
-          { k: "vendor"  as const, label: "공급사관리", icon: Building2, color: "teal" },
-        ].map(t => {
+        {([
+          { k: "purchase-order" as const, label: "발주", icon: ShoppingCart, color: "sky" },
+          { k: "purchase"       as const, label: "매입", icon: PackageCheck,  color: "violet" },
+          { k: "payment"        as const, label: "결제", icon: BarChart2,     color: "teal" },
+          { k: "statistics"     as const, label: "통계", icon: PieChart,      color: "indigo" },
+        ] as { k: typeof topTab; label: string; icon: React.ElementType; color: string }[]).map(t => {
           const Icon = t.icon;
           const active = topTab === t.k;
-          const activeText = {
-            sky:     "text-sky-700",
-            amber:   "text-amber-700",
-            violet:  "text-violet-700",
-            teal:    "text-teal-700",
-            indigo:  "text-indigo-700",
-          }[t.color as string]!;
-          const activeBar = {
-            sky:     "bg-sky-500",
-            amber:   "bg-amber-500",
-            violet:  "bg-violet-500",
-            teal:    "bg-teal-500",
-            indigo:  "bg-indigo-500",
-          }[t.color as string]!;
+          const textMap: Record<string, string> = { sky: "text-sky-700", violet: "text-violet-700", teal: "text-teal-700", indigo: "text-indigo-700" };
+          const barMap:  Record<string, string> = { sky: "bg-sky-500",   violet: "bg-violet-500",   teal: "bg-teal-500",   indigo: "bg-indigo-500" };
           return (
             <button key={t.k} onClick={() => setTopTab(t.k)}
-              className={`relative basis-1/2 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-2 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-[13px] font-bold leading-tight transition-colors duration-150 ${
-                active ? activeText : "text-slate-400 hover:text-slate-700"
+              className={`relative basis-1/4 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-3 sm:px-5 py-2.5 text-[13px] sm:text-[14px] font-bold leading-tight transition-colors duration-150 ${
+                active ? textMap[t.color] : "text-slate-400 hover:text-slate-700"
               }`}>
-              <Icon size={13} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
-              {/* 태블릿·모바일에서 shortLabel 우선 (있으면) · 데스크탑(lg+)에서 풀네임 */}
-              <span className="lg:hidden">{(t as any).shortLabel ?? t.label}</span>
-              <span className="hidden lg:inline">{t.label}</span>
-              {"badge" in t && t.badge != null && t.badge > 0 && (
-                <span className={`inline-flex items-center justify-center min-w-[14px] sm:min-w-[18px] px-1 h-4 rounded-full text-[9px] font-black ${active ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-500"}`}>
-                  {t.badge}
-                </span>
-              )}
-              {active && (
-                <span className={`absolute left-0 right-0 -bottom-px h-[2px] ${activeBar} rounded-t-sm`} />
-              )}
+              <Icon size={14} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
+              <span>{t.label}</span>
+              {active && <span className={`absolute left-0 right-0 -bottom-px h-[2px] ${barMap[t.color]} rounded-t-sm`} />}
             </button>
           );
         })}
       </div>
 
-      {/* ── 발주필요 탭 · 좌우 분할 레이아웃 ── */}
-      {topTab === "need" && (
+      {/* ══ 발주 탭 (purchase-order) ══ */}
+      {topTab === "purchase-order" && (
+        <div className="flex flex-col gap-3">
+          {renderSubTabs([
+            { k: "need"  as const, label: "발주필요", icon: ClipboardList, color: "amber", badge: lowStock.length },
+            { k: "order" as const, label: "발주요청", icon: ShoppingCart,  color: "sky" },
+          ], purchaseOrderSubTab, setPurchaseOrderSubTab)}
+          {/* ── 발주필요 서브탭 ── */}
+          {purchaseOrderSubTab === "need" && (
         <div className="flex flex-col gap-2">
           {/* ── 상단 필터바 ── */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -1126,9 +1154,21 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         )}
           </div>
         </div>
+          )}
+        </div>
       )}
-      {/* ── 사입(OCR거래명세서 등록) 탭 · 거래명세서 OCR 컨텐츠만 임베드 (헤더 X) ── */}
-      {topTab === "receipt" && (
+
+      {/* ══ 매입 탭 (purchase) ══ */}
+      {topTab === "purchase" && (
+        <div className="flex flex-col gap-3">
+          {renderSubTabs([
+            { k: "receipt"         as const, label: "사입·OCR",   icon: PackageCheck, color: "violet" },
+            { k: "reconciliation"  as const, label: "실재고반영",  icon: CheckCircle2, color: "emerald" },
+            { k: "arrival_history" as const, label: "입고내역",    icon: Package,      color: "indigo" },
+            { k: "vendor"          as const, label: "공급사관리",  icon: Building2,    color: "teal" },
+          ], purchaseSubTab, setPurchaseSubTab)}
+          {/* ── 사입(OCR거래명세서 등록) 서브탭 ── */}
+          {purchaseSubTab === "receipt" && (
         <div className="flex-1 flex flex-col min-h-0 -mt-1">
           <OcrPage
             embedded
@@ -1138,9 +1178,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             onLogout={ocrTabOnLogout}
           />
         </div>
-      )}
-      {/* ── 입고내역 탭 · 상품입고 이력 (2026-07-30 · 사용자 요청) ── */}
-      {topTab === "arrival_history" && (
+          )}
+          {/* ── 실재고반영(reconciliation) 서브탭 ── */}
+          {purchaseSubTab === "reconciliation" && (
+            <div className="flex-1 flex flex-col min-h-0">
+              <StockReconciliationTab />
+            </div>
+          )}
+          {/* ── 입고내역 서브탭 ── */}
+          {purchaseSubTab === "arrival_history" && (
         <div className="flex-1 flex flex-col min-h-0 gap-3">
           {/* 헤더 카드 */}
           <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 h-12 flex items-center gap-2">
@@ -1238,8 +1284,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         </div>
       )}
 
-      {/* ── 공급사관리 탭 · 좌우 split 레이아웃 (2026-07-16) ── */}
-      {topTab === "vendor" && (
+          {/* ── 공급사관리 서브탭 ── */}
+          {purchaseSubTab === "vendor" && (
         <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
           {/* 좌측: 공급사 리스트 */}
           <div
@@ -1299,111 +1345,90 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             )}
           </div>
         </div>
-      )}
-      {/* ── (기존 입고 목록 UI · 참조용 · 표시 안 함) ── */}
-      {false && (
-        <section className="flex flex-col gap-3 bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <div className="flex items-center gap-2">
-              <Truck size={18} className="text-emerald-500" />
-              <h2 className="text-sm font-black text-slate-800">사입(OCR거래명세서 등록) 목록</h2>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">{receipts.length}건</span>
-            </div>
-            <div className="flex items-center gap-1.5 flex-wrap">
-              {(["all", "pending", "partial", "complete"] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setReceiptFilter(f)}
-                  className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition cursor-pointer ${
-                    receiptFilter === f
-                      ? "bg-slate-800 text-white border-slate-800"
-                      : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  {f === "all" ? "전체" : f === "pending" ? "미입고" : f === "partial" ? "부분입고" : "완전입고"}
-                </button>
-              ))}
-              <button onClick={loadReceipts} disabled={receiptsLoading} className="text-[11px] font-bold text-slate-500 border border-slate-200 rounded-lg px-2 py-1 hover:bg-slate-50 cursor-pointer flex items-center gap-1">
-                <RefreshCw size={12} className={receiptsLoading ? "animate-spin" : ""} />
-              </button>
-            </div>
-          </div>
-          {receiptsLoading ? (
-            <div className="flex justify-center py-10"><Loader2 size={20} className="animate-spin text-emerald-400" /></div>
-          ) : receipts.length === 0 ? (
-            <div className="flex flex-col items-center py-12 text-slate-300">
-              <PackageCheck size={32} className="mb-2" />
-              <p className="text-sm font-bold">입고 대기 중인 발주가 없습니다</p>
-              <p className="text-[11px] text-slate-400 mt-1">발주 발송 후 이 목록에 자동 표시됩니다 · OCR 거래명세서 등록 시 자동 매칭</p>
-              <div className="mt-3 text-[10px] text-slate-400 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 max-w-md">
-                <b>서버 API 구성 필요:</b> <code>/api/goods-receipts</code>, <code>/api/goods-receipts/:id/confirm</code><br/>
-                DB: <code>goods_receipts</code>, <code>goods_receipt_items</code> 테이블
-              </div>
-            </div>
-          ) : (
-            <div className="border-t border-b border-slate-200 overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-black uppercase tracking-wide text-[11px]">
-                    <th className="text-left p-2 w-32">발주번호</th>
-                    <th className="text-left p-2 w-28">공급사</th>
-                    <th className="text-left p-2 w-24">담당자</th>
-                    <th className="text-right p-2 w-16">품목수</th>
-                    <th className="text-center p-2 w-24">상태</th>
-                    <th className="text-right p-2 w-24">발주일</th>
-                    <th className="text-right p-2 w-24">입고일</th>
-                    <th className="text-center p-2 w-32">액션</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {receipts
-                    .filter(r => receiptFilter === "all" || r.status === receiptFilter)
-                    .map(r => {
-                      const statusColor = r.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-300"
-                                       : r.status === "partial"  ? "bg-blue-50 text-blue-700 border-blue-300"
-                                       : r.status === "complete" ? "bg-emerald-50 text-emerald-700 border-emerald-300"
-                                       : r.status === "over"     ? "bg-purple-50 text-purple-700 border-purple-300"
-                                       : "bg-rose-50 text-rose-700 border-rose-300";
-                      const statusLabel = r.status === "pending" ? "미입고" : r.status === "partial" ? "부분입고" : r.status === "complete" ? "완전입고" : r.status === "over" ? "초과입고" : "반품";
-                      const overdue = r.status === "pending" && (Date.now() - new Date(r.dispatched_at).getTime()) > 7 * 86400000;
-                      return (
-                        <tr key={r.id} className={`hover:bg-slate-50/70 transition ${overdue ? "bg-rose-50/30" : ""}`}>
-                          <td className="p-2 tabular-nums text-[11px] text-slate-500">{r.order_number}</td>
-                          <td className="p-2 text-sky-600 font-semibold truncate">{r.supplier}</td>
-                          <td className="p-2 text-slate-600 truncate">{r.supplier_contact || "-"}</td>
-                          <td className="p-2 text-right font-bold text-slate-700 tabular-nums">{r.item_count}</td>
-                          <td className="p-2 text-center">
-                            <span className={`inline-flex items-center gap-1 text-[11px] font-black px-1.5 py-0.5 rounded border ${statusColor}`}>
-                              {statusLabel}
-                              {overdue && <AlertTriangle size={9} className="text-rose-500" />}
-                            </span>
-                          </td>
-                          <td className="p-2 text-right text-slate-500 text-[11px]">{fmtDate(r.dispatched_at)}</td>
-                          <td className="p-2 text-right text-slate-500 text-[11px]">{r.received_at ? fmtDate(r.received_at) : "-"}</td>
-                          <td className="p-2 text-center">
-                            {r.status === "pending" || r.status === "partial" ? (
-                              <button
-                                onClick={() => markReceived(r)}
-                                className="text-[11px] font-black text-white bg-emerald-600 hover:bg-emerald-700 rounded px-2 py-1 cursor-pointer flex items-center gap-1 mx-auto"
-                              >
-                                <PackageCheck size={10} /> 입고확정
-                              </button>
-                            ) : (
-                              <span className="text-[11px] text-slate-300">-</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
           )}
-        </section>
+        </div>
       )}
 
-      {/* ── 발주요청 탭 · 상단 필터바 + 좌우 분할 레이아웃 ── */}
-      {topTab === "order" && (
+      {/* ══ 결제 탭 (payment) — 공급사 결제·잔고 원장 ══ */}
+      {topTab === "payment" && (
+        <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+          {/* 좌측: 공급사 리스트 */}
+          <div
+            className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
+            style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? vendorPanelWidth : undefined }}
+          >
+            <VendorListEditor
+              key={`payment-${vendorReloadKey}`}
+              initialSelectedId={vendorPreselectId}
+              onEditRequest={handleVendorEditRequest}
+              compact
+            />
+          </div>
+          {/* 리사이즈 핸들 */}
+          <div onMouseDown={onVendorResizeStart}
+            className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+            title="드래그하여 폭 조절">
+            <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+          </div>
+          {/* 우측: 선택 공급사 결제·잔고 모달 (panel 모드) */}
+          <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-slate-50 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible" : ""}`}>
+            {vendorSelected && (
+              <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md">
+                <div className="flex items-center gap-2 px-3 py-2">
+                  <button type="button" onClick={() => setVendorSelected(null)}
+                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
+                    <span className="text-lg font-black">×</span>
+                  </button>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[13px] font-black text-slate-800 truncate leading-tight">{vendorSelected.company_name}</div>
+                    <div className="text-[10px] font-mono text-slate-500 truncate">결제 · 잔고 원장</div>
+                  </div>
+                </div>
+              </div>
+            )}
+            {!vendorSelected ? (
+              <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+                <Building2 size={40} className="mb-3 opacity-30" />
+                <div className="text-sm font-bold">리스트에서 공급사를 클릭하세요</div>
+                <div className="text-[11px] mt-1">결제 원장 · 잔고가 표시됩니다</div>
+              </div>
+            ) : (
+              <VendorDetailModal
+                vendor={vendorSelected}
+                panel
+                onClose={() => setVendorSelected(null)}
+                onSaved={() => {
+                  setVendorReloadKey(k => k + 1);
+                  handleVendorEditRequest(vendorSelected.id);
+                }}
+              />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ══ 통계 탭 (statistics) ══ */}
+      {topTab === "statistics" && (
+        <div className="flex flex-col gap-3">
+          {renderSubTabs([
+            { k: "trending"  as const, label: "급상승",       icon: TrendingUp, color: "indigo" },
+            { k: "category"  as const, label: "카테고리별현황", icon: PieChart,   color: "amber" },
+          ], statSubTab, setStatSubTab)}
+          {statSubTab === "trending" && (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <TrendingTab />
+            </div>
+          )}
+          {statSubTab === "category" && (
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              <CategoryTab />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── 발주요청 서브탭 (purchase-order > order) ── */}
+      {topTab === "purchase-order" && purchaseOrderSubTab === "order" && (
         <div className="flex flex-col gap-2">
           {/* ── 상단 필터바 ── */}
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-3 gap-y-2">
