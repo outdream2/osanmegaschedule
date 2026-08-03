@@ -247,6 +247,20 @@ function performanceRatingColor(r: string | null | undefined): string {
   }
 }
 
+// 퇴직금 지급대상 판단 · 계속근로 1년 이상 · 주 15시간 이상
+//   · 근로기준법 상 최소 조건 (working_hours_per_week 없으면 정규직/계약직만 인정)
+function isSeveranceEligible(emp: Employee): boolean {
+  if (!emp.hire_date) return false;
+  const hire = new Date(String(emp.hire_date));
+  if (isNaN(hire.getTime())) return false;
+  const end = emp.retire_date ? new Date(String(emp.retire_date)) : new Date();
+  const years = (end.getTime() - hire.getTime()) / (365.25 * 24 * 3600 * 1000);
+  if (years < 1) return false;
+  const hoursPerWeek = Number(emp.working_hours_per_week);
+  if (Number.isFinite(hoursPerWeek) && hoursPerWeek > 0 && hoursPerWeek < 15) return false;
+  return true;
+}
+
 // 근속기간 계산 · hire_date 기반 · "3년 2개월" · 없으면 "-"
 function calcTenure(hireDate: string | null | undefined): string {
   if (!hireDate) return "-";
@@ -529,6 +543,7 @@ const StaffManagePage: React.FC = () => {
   const [error, setError]       = useState<string | null>(null);
   const [search, setSearch]     = useState("");
   const [filterPosition, setFilterPosition] = useState<string>("");
+  const [filterStatus, setFilterStatus] = useState<"active" | "retired" | "all">("active");
 
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
@@ -569,6 +584,9 @@ const StaffManagePage: React.FC = () => {
   // ── 필터링 ──
   const filtered = useMemo(() => {
     return employees.filter((e) => {
+      const isRetired = !!(e as any).retire_date;
+      if (filterStatus === "active"  && isRetired)   return false;
+      if (filterStatus === "retired" && !isRetired)  return false;
       if (filterPosition && !(e.position ?? "").includes(filterPosition)) return false;
       if (search.trim()) {
         const q = search.trim().toLowerCase();
@@ -581,7 +599,7 @@ const StaffManagePage: React.FC = () => {
       }
       return true;
     });
-  }, [employees, search, filterPosition]);
+  }, [employees, search, filterPosition, filterStatus]);
 
   const selectedEmp = useMemo(
     () => employees.find((e) => e.id === selectedId) ?? null,
@@ -711,6 +729,8 @@ const StaffManagePage: React.FC = () => {
     const tenure   = calcTenure(emp.hire_date);
     const hasContractFile = !!emp.contract_file_url;
     const rating   = emp.performance_rating ? emp.performance_rating.toUpperCase() : null;
+    const severance = isSeveranceEligible(emp);
+    const isRetired = !!(emp as any).retire_date;
     return (
       <button
         onClick={() => handleSelect(emp)}
@@ -788,6 +808,24 @@ const StaffManagePage: React.FC = () => {
                 {rating}
               </span>
             )}
+            {/* 퇴직금 지급대상 · 1년+ · 주 15h+ */}
+            {severance && (
+              <span
+                className="text-[9px] font-bold px-1.5 py-px rounded-md border leading-tight bg-amber-50 text-amber-700 border-amber-200"
+                title="퇴직금 지급대상 (계속근로 1년 이상 · 주 15시간 이상)"
+              >
+                퇴직금
+              </span>
+            )}
+            {/* 퇴사 · rose 배지 */}
+            {isRetired && (
+              <span
+                className="text-[9px] font-bold px-1.5 py-px rounded-md border leading-tight bg-rose-50 text-rose-700 border-rose-200"
+                title="퇴사자"
+              >
+                퇴사
+              </span>
+            )}
             {/* 연락처 · 우측으로 밀기 */}
             {emp.phone && (
               <span className="text-[10px] text-slate-400 tabular-nums leading-tight truncate ml-auto">{emp.phone}</span>
@@ -834,6 +872,28 @@ const StaffManagePage: React.FC = () => {
             placeholder="이름 · 직책 · 연락처"
             className="pl-8 pr-3 h-8 text-[12px] border border-slate-200 rounded-lg focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-100 bg-slate-50 placeholder:text-slate-400 w-full sm:w-48"
           />
+        </div>
+
+        {/* 재직 상태 필터 · 재직/퇴사/전체 */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">상태</span>
+          <div className="inline-flex bg-slate-50 border border-slate-200 rounded-lg p-0.5 shadow-[0_1px_2px_0_rgba(0,0,0,0.04)] gap-0.5">
+            {[
+              { key: "active",  label: "재직",  color: "bg-emerald-600 text-white" },
+              { key: "retired", label: "퇴사",  color: "bg-rose-500 text-white" },
+              { key: "all",     label: "전체",  color: "bg-slate-700 text-white" },
+            ].map(s => (
+              <button
+                key={s.key}
+                onClick={() => setFilterStatus(s.key as typeof filterStatus)}
+                className={`h-6 px-2 text-[11px] font-semibold rounded-md transition-all cursor-pointer ${
+                  filterStatus === s.key ? `${s.color} shadow-sm` : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* 직책 필터 */}
