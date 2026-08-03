@@ -4,6 +4,8 @@
 //   · 잔액 계산: SUM(ocr_confirmed_items.amount) - SUM(supplier_payments.amount)
 //   · POST /api/supplier-payments 는 payment + allocations 를 순차 insert 후
 //     allocations 실패 시 payment 롤백 (Supabase JS 는 트랜잭션 미지원 → 수동)
+// 2026-08-03 · #193 · VAT 통합 · supplier-ledger · supplier-purchase-detail 응답에
+//   vat_amount·supply_amount 필드 추가 (vendor.vat_included 반영 · row 저장값 있으면 우선)
 import { Router } from "express";
 import { supabase } from "../../src/supabase/client";
 
@@ -22,6 +24,42 @@ const toNumOrNull = (v: unknown): number | null => {
 
 const isYmd = (s: unknown): s is string =>
   typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s);
+
+// ─────────────────────────────────────────────────────────────────────
+// VAT 유틸 (2026-08-03 · #193)
+//   splitVat(amount, vat_included)
+//     · vat_included=true  · 총액에 VAT 포함 → vat = amount/11 · supply = amount - vat
+//     · vat_included=false · 총액은 공급가액 (별도과세) → vat = amount*0.1 · supply = amount
+//     · vat_included=null  · 세액 산정 불가 → vat=0 · supply=amount (VAT 미설정 안내용)
+// ─────────────────────────────────────────────────────────────────────
+export function splitVat(amount: number, vatIncluded: boolean | null): { vat: number; supply: number } {
+  if (!Number.isFinite(amount) || amount <= 0) return { vat: 0, supply: 0 };
+  if (vatIncluded === true) {
+    const vat = Math.round(amount / 11);
+    return { vat, supply: amount - vat };
+  }
+  if (vatIncluded === false) {
+    const vat = Math.round(amount * 0.1);
+    return { vat, supply: amount };
+  }
+  return { vat: 0, supply: amount };
+}
+
+/** 공급사명으로 vat_included lookup · 실패해도 null 반환 (컬럼 없는 DB 안전) */
+async function fetchVatIncluded(supplier: string): Promise<boolean | null> {
+  try {
+    const { data, error } = await supabase
+      .from("vendors")
+      .select("vat_included")
+      .eq("company_name", supplier)
+      .maybeSingle();
+    if (error) return null;
+    const v = (data as any)?.vat_included;
+    return v === true || v === false ? v : null;
+  } catch {
+    return null;
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────
 // GET /api/supplier-payments?supplier=X&days=90
@@ -320,15 +358,30 @@ router.get("/api/supplier-ledger", async (req, res) => {
     cutoffDate.setDate(cutoffDate.getDate() - days);
     const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
 
-    // 매입 (ocr_confirmed_items)
+    // 공급사 VAT 설정 (병렬 fetch 는 아래에서 · 여기선 결과만 사용)
+    const vatIncludedPromise = fetchVatIncluded(supplier);
+
+    // 매입 (ocr_confirmed_items) · vat_amount·supply_amount 있으면 우선 사용
     const purchases: any[] = [];
     {
-      const { data, error } = await supabase
+      // 컬럼 없을 수 있음 · 실패 시 vat/supply 제외 재시도
+      let data: any[] | null = null;
+      const r1 = await supabase
         .from("ocr_confirmed_items")
-        .select("id, invoice_date, saved_at, supplier, product_name, amount")
+        .select("id, invoice_date, saved_at, supplier, product_name, amount, vat_amount, supply_amount")
         .eq("supplier", supplier)
         .gte("saved_at", cutoffYmd);
-      if (error && !/relation .* does not exist/i.test(error.message)) throw new Error(error.message);
+      if (!r1.error) data = r1.data ?? [];
+      else if (/vat_amount|supply_amount/i.test(r1.error.message)) {
+        const r2 = await supabase
+          .from("ocr_confirmed_items")
+          .select("id, invoice_date, saved_at, supplier, product_name, amount")
+          .eq("supplier", supplier)
+          .gte("saved_at", cutoffYmd);
+        if (!r2.error) data = (r2.data ?? []).map((x: any) => ({ ...x, vat_amount: 0, supply_amount: 0 }));
+        else if (!/relation .* does not exist/i.test(r2.error.message)) throw new Error(r2.error.message);
+      } else if (!/relation .* does not exist/i.test(r1.error.message)) throw new Error(r1.error.message);
+
       for (const r of data ?? []) {
         const date = ((r as any).invoice_date && /^\d{4}-\d{2}-\d{2}$/.test((r as any).invoice_date))
           ? (r as any).invoice_date
@@ -338,6 +391,8 @@ router.get("/api/supplier-ledger", async (req, res) => {
           id: (r as any).id,
           date,
           amount: Number((r as any).amount) || 0,
+          _raw_vat: Number((r as any).vat_amount) || 0,
+          _raw_supply: Number((r as any).supply_amount) || 0,
           method: null,
           memo: (r as any).product_name ?? null,
           allocations: null,
@@ -345,30 +400,70 @@ router.get("/api/supplier-ledger", async (req, res) => {
       }
     }
 
-    // 결제 (supplier_payments)
+    // 결제 (supplier_payments) · vat_amount 있으면 우선 사용
     const payments: any[] = [];
     {
-      const { data, error } = await supabase
+      let data: any[] | null = null;
+      const r1 = await supabase
         .from("supplier_payments")
-        .select("id, supplier_name, payment_date, amount, method, memo")
+        .select("id, supplier_name, payment_date, amount, method, memo, vat_amount, tax_invoice_no")
         .eq("supplier_name", supplier)
         .gte("payment_date", cutoffYmd);
-      if (error && !/relation .* does not exist/i.test(error.message)) throw new Error(error.message);
+      if (!r1.error) data = r1.data ?? [];
+      else if (/vat_amount|tax_invoice_no/i.test(r1.error.message)) {
+        const r2 = await supabase
+          .from("supplier_payments")
+          .select("id, supplier_name, payment_date, amount, method, memo")
+          .eq("supplier_name", supplier)
+          .gte("payment_date", cutoffYmd);
+        if (!r2.error) data = (r2.data ?? []).map((x: any) => ({ ...x, vat_amount: 0, tax_invoice_no: null }));
+        else if (!/relation .* does not exist/i.test(r2.error.message)) throw new Error(r2.error.message);
+      } else if (!/relation .* does not exist/i.test(r1.error.message)) throw new Error(r1.error.message);
+
       for (const r of data ?? []) {
         payments.push({
           type: "payment",
           id: (r as any).id,
           date: (r as any).payment_date,
           amount: Number((r as any).amount) || 0,
+          _raw_vat: Number((r as any).vat_amount) || 0,
           method: (r as any).method ?? null,
           memo: (r as any).memo ?? null,
+          tax_invoice_no: (r as any).tax_invoice_no ?? null,
           allocations: null,
         });
       }
     }
 
+    // VAT 계산 · row 에 저장된 값 있으면 우선 · 없으면 vendor.vat_included 로 계산
+    const vatIncluded = await vatIncludedPromise;
+    const decoratePurchase = (m: any) => {
+      let vat = m._raw_vat;
+      let supply = m._raw_supply;
+      if (!vat && !supply) {
+        const s = splitVat(m.amount, vatIncluded);
+        vat = s.vat;
+        supply = s.supply;
+      } else if (!supply) {
+        supply = Math.max(0, m.amount - vat);
+      }
+      return { ...m, vat_amount: vat, supply_amount: supply };
+    };
+    const decoratePayment = (m: any) => {
+      let vat = m._raw_vat;
+      if (!vat) {
+        // 결제에서는 vendor.vat_included=true 인 경우만 자동분리 (별도과세는 결제 시점에 VAT 라인 별도 X)
+        vat = vatIncluded === true ? splitVat(m.amount, true).vat : 0;
+      }
+      const supply = Math.max(0, m.amount - vat);
+      return { ...m, vat_amount: vat, supply_amount: supply };
+    };
+
+    const decoratedP = purchases.map(decoratePurchase);
+    const decoratedY = payments.map(decoratePayment);
+
     // 시간순 asc · date 동일 시 매입 먼저 (재무 관례)
-    const merged = [...purchases, ...payments].sort((a, b) => {
+    const merged = [...decoratedP, ...decoratedY].sort((a, b) => {
       if (a.date !== b.date) return String(a.date).localeCompare(String(b.date));
       if (a.type !== b.type) return a.type === "purchase" ? -1 : 1;
       return a.id - b.id;
@@ -378,16 +473,28 @@ router.get("/api/supplier-ledger", async (req, res) => {
     let running = 0;
     const rows = merged.map(m => {
       running += m.type === "purchase" ? m.amount : -m.amount;
-      return { ...m, running_balance: running };
+      const { _raw_vat, _raw_supply, ...clean } = m;
+      void _raw_vat; void _raw_supply;
+      return { ...clean, running_balance: running };
     });
+
+    const totalPurchaseVat = decoratedP.reduce((s, r) => s + (r.vat_amount || 0), 0);
+    const totalPurchaseSupply = decoratedP.reduce((s, r) => s + (r.supply_amount || 0), 0);
+    const totalPaymentVat = decoratedY.reduce((s, r) => s + (r.vat_amount || 0), 0);
+    const totalPaymentSupply = decoratedY.reduce((s, r) => s + (r.supply_amount || 0), 0);
 
     // 프론트는 desc 로 보여주는 경우가 많으니 반전 옵션 제공
     // (여기선 asc 로 반환 · 프론트에서 정렬)
     return res.json({
       supplier,
+      vat_included: vatIncluded,
       rows,
-      total_purchase: purchases.reduce((s, r) => s + r.amount, 0),
-      total_payment: payments.reduce((s, r) => s + r.amount, 0),
+      total_purchase: decoratedP.reduce((s, r) => s + r.amount, 0),
+      total_purchase_vat: Math.round(totalPurchaseVat),
+      total_purchase_supply: Math.round(totalPurchaseSupply),
+      total_payment: decoratedY.reduce((s, r) => s + r.amount, 0),
+      total_payment_vat: Math.round(totalPaymentVat),
+      total_payment_supply: Math.round(totalPaymentSupply),
       current_balance: running,
     });
   } catch (err: any) {
@@ -583,19 +690,48 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
     cutoffDate.setDate(cutoffDate.getDate() - days);
     const cutoffYmd = cutoffDate.toISOString().slice(0, 10);
 
-    const { data, error } = await supabase
+    // vendor VAT 설정 (병렬)
+    const vatIncludedPromise = fetchVatIncluded(supplier);
+
+    // vat_amount·supply_amount 컬럼 없을 수 있음 · 실패 시 폴백
+    let data: any[] | null = null;
+    const r1 = await supabase
       .from("ocr_confirmed_items")
-      .select("id, invoice_date, saved_at, product_code, product_name, quantity, unit_price, amount")
+      .select("id, invoice_date, saved_at, product_code, product_name, quantity, unit_price, amount, vat_amount, supply_amount")
       .eq("supplier", supplier)
       .gte("saved_at", cutoffYmd);
-    if (error) {
-      if (/relation .* does not exist/i.test(error.message)) return res.json({ rows: [] });
-      throw new Error(error.message);
+    if (!r1.error) data = r1.data ?? [];
+    else if (/vat_amount|supply_amount/i.test(r1.error.message)) {
+      const r2 = await supabase
+        .from("ocr_confirmed_items")
+        .select("id, invoice_date, saved_at, product_code, product_name, quantity, unit_price, amount")
+        .eq("supplier", supplier)
+        .gte("saved_at", cutoffYmd);
+      if (!r2.error) data = (r2.data ?? []).map((x: any) => ({ ...x, vat_amount: 0, supply_amount: 0 }));
+      else {
+        if (/relation .* does not exist/i.test(r2.error.message)) return res.json({ rows: [] });
+        throw new Error(r2.error.message);
+      }
+    } else {
+      if (/relation .* does not exist/i.test(r1.error.message)) return res.json({ rows: [] });
+      throw new Error(r1.error.message);
     }
+
+    const vatIncluded = await vatIncludedPromise;
     const rows = (data ?? []).map((r: any) => {
       const date = (r.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(r.invoice_date))
         ? r.invoice_date
         : String(r.saved_at ?? "").slice(0, 10);
+      const amount = Number(r.amount) || 0;
+      let vat = Number(r.vat_amount) || 0;
+      let supply = Number(r.supply_amount) || 0;
+      if (!vat && !supply) {
+        const s = splitVat(amount, vatIncluded);
+        vat = s.vat;
+        supply = s.supply;
+      } else if (!supply) {
+        supply = Math.max(0, amount - vat);
+      }
       return {
         id: r.id,
         date,
@@ -603,10 +739,12 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
         product_name: r.product_name ?? null,
         quantity: Number(r.quantity) || 0,
         unit_price: Number(r.unit_price) || 0,
-        amount: Number(r.amount) || 0,
+        amount,
+        vat_amount: vat,
+        supply_amount: supply,
       };
     });
-    return res.json({ supplier, rows });
+    return res.json({ supplier, vat_included: vatIncluded, rows });
   } catch (err: any) {
     console.error("[GET supplier-purchase-detail] error:", err.message);
     return res.status(500).json({ error: err.message });

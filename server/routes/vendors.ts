@@ -107,25 +107,38 @@ router.post("/api/upload-vendors", express.raw({ type: "application/octet-stream
 // 전체 거래처 목록 (관리자)
 router.get("/api/vendors", async (req, res) => {
   // 2026-07-15: email 컬럼이 없는 DB 도 호환 (첫 시도에 email 포함 → 실패 시 email 없이 재시도)
+  // 2026-08-03 · #193 · vat_included 추가 (마이그레이션 미적용 DB 도 호환 · 3단계 fallback)
   let data: any[] | null = null;
   let firstErr: string | null = null;
+  let hasVatIncluded = true;
   {
     const r1 = await supabase
       .from("vendors")
-      .select("id, company_name, contact_name, phone, email, category, note, business_number, created_at")
+      .select("id, company_name, contact_name, phone, email, category, note, business_number, vat_included, created_at")
       .order("company_name");
     if (!r1.error) data = r1.data ?? [];
     else firstErr = r1.error.message;
   }
   if (!data) {
-    // email 컬럼 없는 구 DB fallback
+    // vat_included 컬럼 없음 fallback · email 은 유지
+    hasVatIncluded = false;
     const r2 = await supabase
+      .from("vendors")
+      .select("id, company_name, contact_name, phone, email, category, note, business_number, created_at")
+      .order("company_name");
+    if (!r2.error) data = (r2.data ?? []).map((v: any) => ({ ...v, vat_included: null }));
+    else firstErr = `${firstErr} | ${r2.error.message}`;
+  }
+  if (!data) {
+    // email·vat_included 둘 다 없는 구 DB fallback
+    const r3 = await supabase
       .from("vendors")
       .select("id, company_name, contact_name, phone, category, note, business_number, created_at")
       .order("company_name");
-    if (r2.error) return res.status(500).json({ error: `vendors 조회 실패: ${r2.error.message} (첫시도: ${firstErr})` });
-    data = (r2.data ?? []).map((v: any) => ({ ...v, email: null }));
+    if (r3.error) return res.status(500).json({ error: `vendors 조회 실패: ${r3.error.message} (이전: ${firstErr})` });
+    data = (r3.data ?? []).map((v: any) => ({ ...v, email: null, vat_included: null }));
   }
+  void hasVatIncluded;
 
   // 2026-07-14: withBalances=1 파라미터 · vendors 에 잔액/잔고 정보 첨부
   //   supplier_balances (최신값) + supplier_balance_configs (잔고 컬럼 지정) 조인
@@ -188,7 +201,7 @@ router.post("/api/vendors", async (req, res) => {
 router.patch("/api/vendors/:id", async (req, res) => {
   const id = parseInt(req.params.id);
   if (isNaN(id)) return res.status(400).json({ error: "invalid id" });
-  const { company_name, contact_name, phone, email, category, note, business_number } = req.body ?? {};
+  const { company_name, contact_name, phone, email, category, note, business_number, vat_included } = req.body ?? {};
   const updates: Record<string, any> = {};
   if (company_name !== undefined) updates.company_name = company_name.trim();
   if (contact_name !== undefined) updates.contact_name = contact_name;
@@ -200,17 +213,40 @@ router.patch("/api/vendors/:id", async (req, res) => {
     const digits = business_number ? String(business_number).replace(/[^0-9]/g, "") : "";
     updates.business_number = digits.length === 10 ? digits : null;
   }
+  // 2026-08-03 · #193 · vat_included 저장 (true/false/null 허용)
+  if (vat_included !== undefined) {
+    updates.vat_included = vat_included === true ? true : vat_included === false ? false : null;
+  }
   // 2026-07-22: email 컬럼 없는 DB 호환 · 실패 시 email 제외 후 재시도 (GET 과 동일 패턴)
-  const SELECT_WITH_EMAIL = "id, company_name, contact_name, phone, email, category, note, business_number";
-  const SELECT_NO_EMAIL   = "id, company_name, contact_name, phone, category, note, business_number";
-  const r1 = await supabase.from("vendors").update(updates).eq("id", id).select(SELECT_WITH_EMAIL).single();
+  // 2026-08-03 · vat_included 도 동일한 방식으로 폴백
+  const SELECT_FULL     = "id, company_name, contact_name, phone, email, category, note, business_number, vat_included";
+  const SELECT_NO_VAT   = "id, company_name, contact_name, phone, email, category, note, business_number";
+  const SELECT_NO_EMAIL = "id, company_name, contact_name, phone, category, note, business_number";
+  const r1 = await supabase.from("vendors").update(updates).eq("id", id).select(SELECT_FULL).single();
   if (!r1.error) return res.json(r1.data);
+  // vat_included 컬럼 없음 fallback
+  if (/vat_included/i.test(r1.error.message)) {
+    const noVat = { ...updates };
+    delete noVat.vat_included;
+    const r2 = await supabase.from("vendors").update(noVat).eq("id", id).select(SELECT_NO_VAT).single();
+    if (!r2.error) return res.json({ ...r2.data, vat_included: null });
+    if (/email/i.test(r2.error.message)) {
+      const noVatNoEmail = { ...noVat };
+      delete noVatNoEmail.email;
+      const r3 = await supabase.from("vendors").update(noVatNoEmail).eq("id", id).select(SELECT_NO_EMAIL).single();
+      if (r3.error) return res.status(500).json({ error: `vendors 수정 실패: ${r3.error.message}` });
+      return res.json({ ...r3.data, email: null, vat_included: null });
+    }
+    return res.status(500).json({ error: r2.error.message });
+  }
+  // email 컬럼 없음 fallback (기존 로직)
   if (/email/i.test(r1.error.message)) {
-    const updatesNoEmail = { ...updates };
-    delete updatesNoEmail.email;
-    const r2 = await supabase.from("vendors").update(updatesNoEmail).eq("id", id).select(SELECT_NO_EMAIL).single();
+    const noEmail = { ...updates };
+    delete noEmail.email;
+    delete noEmail.vat_included;
+    const r2 = await supabase.from("vendors").update(noEmail).eq("id", id).select(SELECT_NO_EMAIL).single();
     if (r2.error) return res.status(500).json({ error: `vendors 수정 실패: ${r2.error.message}` });
-    return res.json({ ...r2.data, email: null });
+    return res.json({ ...r2.data, email: null, vat_included: null });
   }
   return res.status(500).json({ error: r1.error.message });
 });

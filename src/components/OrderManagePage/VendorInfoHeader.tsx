@@ -26,6 +26,7 @@ export interface VendorBasic {
   created_at?: string | null;
   payment_terms?: string | null;
   active?: boolean | null;
+  vat_included?: boolean | null;  // 2026-08-03 · #193
 }
 
 export interface VendorKpi {
@@ -106,12 +107,29 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({ vendor, kpi,
         </div>
 
         <div className="flex-1 min-w-0 flex flex-col gap-1">
-          {/* 공급사명 + 분류 배지 */}
+          {/* 공급사명 + 분류 배지 + VAT 배지 */}
           <div className="flex items-center gap-2 flex-wrap">
             <h2 className="text-[16px] font-black text-slate-800 leading-tight break-words">
               {vendor.company_name}
             </h2>
             <VendorCategoryBadge category={vendor.category} />
+            {/* 2026-08-03 · #193 · VAT 배지 (설정된 경우만 · 미설정은 미표시) */}
+            {vendor.vat_included === true && (
+              <span
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200"
+                title="거래명세서 총액에 VAT 포함 · 부가세 신고 시 amount÷11 로 세액 산정"
+              >
+                VAT 포함
+              </span>
+            )}
+            {vendor.vat_included === false && (
+              <span
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-200"
+                title="거래명세서 총액은 공급가액 · 부가세 10% 별도 · 세액 = amount×0.1"
+              >
+                VAT 별도
+              </span>
+            )}
             {vendor.active === false && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black bg-slate-100 text-slate-500 border border-slate-200">
                 비활성

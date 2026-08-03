@@ -21,6 +21,10 @@ interface LedgerRow {
   method: string | null;
   memo: string | null;
   running_balance: number;
+  // 2026-08-03 · #193 · VAT 통합 (서버 계산 · row 저장값 또는 vendor.vat_included 기반)
+  vat_amount?: number;
+  supply_amount?: number;
+  tax_invoice_no?: string | null;
 }
 
 interface LedgerSummary {
@@ -29,6 +33,12 @@ interface LedgerSummary {
   total_purchase: number;
   total_payment: number;
   current_balance: number;
+  // 2026-08-03 · #193 · VAT 통합 소계
+  vat_included: boolean | null;
+  total_purchase_vat: number;
+  total_purchase_supply: number;
+  total_payment_vat: number;
+  total_payment_supply: number;
 }
 
 interface PurchaseDetailRow {
@@ -39,6 +49,9 @@ interface PurchaseDetailRow {
   quantity: number;
   unit_price: number;
   amount: number;
+  // 2026-08-03 · #193
+  vat_amount?: number;
+  supply_amount?: number;
 }
 
 interface ProductStat {
@@ -140,9 +153,12 @@ const LedgerContent: React.FC<{
     </div>
   );
 
+  // VAT 컬럼 표시 여부 · row 에 하나라도 vat_amount > 0 있으면 활성 (vendor.vat_included=null 이면 전부 0)
+  const showVatCol = rows.some(r => (r.vat_amount ?? 0) > 0);
+
   return (
     <div className="flex-1 min-h-0 overflow-auto">
-      <table className="w-full text-xs min-w-[480px]">
+      <table className="w-full text-xs min-w-[520px]">
         <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
           <tr className="text-[10px] text-slate-400 uppercase tracking-wider">
             <th className="text-left px-3 py-2 w-6 text-slate-300">#</th>
@@ -160,6 +176,11 @@ const LedgerContent: React.FC<{
               className="text-right px-3 py-2 w-24 cursor-pointer select-none hover:bg-slate-50 transition">
               금액{arrow("amount")}
             </th>
+            {showVatCol && (
+              <th className="text-right px-3 py-2 w-20 text-slate-400" title="부가세 (row 저장값 또는 vendor.vat_included 기반 계산)">
+                VAT
+              </th>
+            )}
             <th onClick={() => toggleSort("running_balance")}
               className="text-right px-3 py-2 w-24 cursor-pointer select-none hover:bg-slate-50 transition">
               잔고{arrow("running_balance")}
@@ -169,6 +190,7 @@ const LedgerContent: React.FC<{
         <tbody className="divide-y divide-slate-50">
           {rows.map((r, i) => {
             const isPurchase = r.type === "purchase";
+            const vat = r.vat_amount ?? 0;
             return (
               <tr key={`led-${r.id}-${i}`}
                 className={`transition-all duration-100 ${isPurchase ? "hover:bg-emerald-50/30" : "hover:bg-sky-50/30"}`}>
@@ -185,6 +207,11 @@ const LedgerContent: React.FC<{
                 </td>
                 <td className="px-3 py-1.5 text-[11px] text-slate-600 align-top break-words whitespace-normal leading-snug">
                   {r.memo ?? "-"}
+                  {!isPurchase && r.tax_invoice_no && (
+                    <span className="inline-flex items-center ml-1 px-1 py-px rounded text-[9px] font-bold bg-violet-50 text-violet-700 border border-violet-200 leading-none align-middle" title={`전자세금계산서 승인번호: ${r.tax_invoice_no}`}>
+                      세금계산서 {r.tax_invoice_no.slice(-8)}
+                    </span>
+                  )}
                 </td>
                 <td className="px-3 py-1.5 text-[11px] text-slate-400 align-top whitespace-nowrap">
                   {isPurchase ? "-" : methodLabel(r.method)}
@@ -192,6 +219,11 @@ const LedgerContent: React.FC<{
                 <td className={`px-3 py-1.5 text-right tabular-nums text-[12px] font-semibold align-top ${isPurchase ? "text-emerald-700" : "text-sky-700"}`}>
                   {isPurchase ? "+" : "-"}{fmt(r.amount)}
                 </td>
+                {showVatCol && (
+                  <td className="px-3 py-1.5 text-right tabular-nums text-[11px] text-slate-500 align-top">
+                    {vat > 0 ? fmt(vat) : <span className="text-slate-300">-</span>}
+                  </td>
+                )}
                 <td className={`px-3 py-1.5 text-right tabular-nums text-[12px] font-black align-top ${
                   r.running_balance > 0 ? "text-amber-700" : r.running_balance < 0 ? "text-rose-700" : "text-slate-400"
                 }`}>
@@ -203,10 +235,15 @@ const LedgerContent: React.FC<{
         </tbody>
         <tfoot className="sticky bottom-0 bg-slate-50 border-t-2 border-slate-200">
           <tr>
-            <td colSpan={5} className="px-3 py-2 text-right text-[11px] font-black text-slate-500">최종 잔고</td>
-            <td className="px-3 py-2 text-right text-[11px] font-semibold text-slate-500 tabular-nums">
-              {fmt(ledger.total_purchase)}
+            <td colSpan={5} className="px-3 py-2 text-right text-[11px] font-black text-slate-500">기간 합계</td>
+            <td className="px-3 py-2 text-right text-[11px] font-semibold text-slate-500 tabular-nums" title={`매입 ${fmt(ledger.total_purchase)} / 결제 ${fmt(ledger.total_payment)}`}>
+              {fmt(ledger.total_purchase - ledger.total_payment)}
             </td>
+            {showVatCol && (
+              <td className="px-3 py-2 text-right text-[11px] font-black text-slate-500 tabular-nums" title={`매입VAT ${fmt(ledger.total_purchase_vat)} · 결제VAT ${fmt(ledger.total_payment_vat)}`}>
+                {fmt(ledger.total_purchase_vat)}
+              </td>
+            )}
             <td className={`px-3 py-2 text-right tabular-nums text-[13px] font-black ${
               ledger.current_balance > 0 ? "text-amber-700" : ledger.current_balance < 0 ? "text-rose-700" : "text-slate-400"
             }`}>
@@ -514,6 +551,12 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
         total_purchase: Number(j.total_purchase ?? 0),
         total_payment: Number(j.total_payment ?? 0),
         current_balance: Number(j.current_balance ?? 0),
+        // 2026-08-03 · #193 · VAT 통합 필드 (서버가 없으면 0)
+        vat_included: j.vat_included === true ? true : j.vat_included === false ? false : null,
+        total_purchase_vat: Number(j.total_purchase_vat ?? 0),
+        total_purchase_supply: Number(j.total_purchase_supply ?? 0),
+        total_payment_vat: Number(j.total_payment_vat ?? 0),
+        total_payment_supply: Number(j.total_payment_supply ?? 0),
       });
     } catch (e: any) {
       setLedgerError(e?.message ?? "네트워크 오류");
@@ -634,27 +677,79 @@ export const VendorDetailTabs: React.FC<VendorDetailTabsProps> = ({ vendor }) =>
         {activeTab === "balance" && (
           <div className="flex-1 min-h-0 flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             {/* 탭 내 KPI 3개 · 매입금액 · 결제금액 · 남은잔고 (미결제) */}
-            {ledger && !ledgerLoading && (
-              <div className="grid grid-cols-3 gap-0 border-b border-slate-100 bg-slate-50/40">
-                {[
-                  { label: "매입 금액",           value: ledger.total_purchase,   tone: "emerald" as const, subtitle: "구입 총액" },
-                  { label: "결제 금액",           value: ledger.total_payment,    tone: "sky" as const,     subtitle: "지불 총액" },
-                  { label: "남은 잔고 (미결제)", value: ledger.current_balance,  tone: ledger.current_balance > 0 ? "amber" as const : "emerald" as const, subtitle: ledger.current_balance > 0 ? "지불 필요" : "완납" },
-                ].map((item, i) => (
-                  <div key={i} className={`px-4 py-3 ${i < 2 ? "border-r border-slate-100" : ""} flex flex-col gap-0.5`}>
-                    <span className="text-[11px] font-bold text-slate-500">{item.label}</span>
-                    <span className={`text-[15px] font-black tabular-nums leading-tight ${
-                      item.tone === "emerald" ? "text-emerald-700" :
-                      item.tone === "sky" ? "text-sky-700" :
-                      "text-amber-700"
-                    }`}>
-                      {item.value.toLocaleString()}원
+            {/* 2026-08-03 · #193 · VAT 소계 subtitle 추가 (vat_included 설정 시 · 부가세 신고 준비용) */}
+            {ledger && !ledgerLoading && (() => {
+              const vatMode = ledger.vat_included;
+              const vatModeText =
+                vatMode === true  ? "VAT 포함" :
+                vatMode === false ? "VAT 별도" :
+                                    "VAT 미설정";
+              const vatModeCls =
+                vatMode === true  ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                vatMode === false ? "bg-amber-50 text-amber-700 border-amber-200" :
+                                    "bg-slate-50 text-slate-400 border-slate-200";
+              const items = [
+                {
+                  label: "매입 금액",
+                  value: ledger.total_purchase,
+                  tone: "emerald" as const,
+                  subtitle: "구입 총액",
+                  vatBadge: vatMode != null ? `VAT ${ledger.total_purchase_vat.toLocaleString()}원 · 공급가액 ${ledger.total_purchase_supply.toLocaleString()}원` : null,
+                },
+                {
+                  label: "결제 금액",
+                  value: ledger.total_payment,
+                  tone: "sky" as const,
+                  subtitle: "지불 총액",
+                  vatBadge: vatMode === true && ledger.total_payment_vat > 0 ? `VAT ${ledger.total_payment_vat.toLocaleString()}원 · 공급가액 ${ledger.total_payment_supply.toLocaleString()}원` : null,
+                },
+                {
+                  label: "남은 잔고 (미결제)",
+                  value: ledger.current_balance,
+                  tone: ledger.current_balance > 0 ? "amber" as const : "emerald" as const,
+                  subtitle: ledger.current_balance > 0 ? "지불 필요" : "완납",
+                  vatBadge: null,
+                },
+              ];
+              return (
+                <div className="flex flex-col">
+                  {/* VAT 모드 배지 (전체 우상단) */}
+                  <div className="flex items-center justify-between px-4 pt-2.5 pb-1">
+                    <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider">기간 합계</span>
+                    <span
+                      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border ${vatModeCls}`}
+                      title={
+                        vatMode === true  ? "거래명세서 총액에 VAT 포함 · amount÷11 로 세액 산정" :
+                        vatMode === false ? "거래명세서 총액은 공급가액 · amount×0.1 별도 세액" :
+                                            "공급사 관리에서 VAT 처리 방식을 설정하면 세액이 계산됩니다"
+                      }
+                    >
+                      {vatModeText}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-medium">{item.subtitle}</span>
                   </div>
-                ))}
-              </div>
-            )}
+                  <div className="grid grid-cols-3 gap-0 border-b border-slate-100 bg-slate-50/40">
+                    {items.map((item, i) => (
+                      <div key={i} className={`px-4 py-3 ${i < 2 ? "border-r border-slate-100" : ""} flex flex-col gap-0.5`}>
+                        <span className="text-[11px] font-bold text-slate-500">{item.label}</span>
+                        <span className={`text-[15px] font-black tabular-nums leading-tight ${
+                          item.tone === "emerald" ? "text-emerald-700" :
+                          item.tone === "sky" ? "text-sky-700" :
+                          "text-amber-700"
+                        }`}>
+                          {item.value.toLocaleString()}원
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">{item.subtitle}</span>
+                        {item.vatBadge && (
+                          <span className="text-[10px] text-slate-500 font-semibold tabular-nums mt-0.5 leading-tight">
+                            {item.vatBadge}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
             <LedgerContent ledger={ledger} loading={ledgerLoading} error={ledgerError} />
           </div>
         )}

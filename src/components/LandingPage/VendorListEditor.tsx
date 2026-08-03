@@ -53,7 +53,16 @@ interface EditDraft {
   email: string;
   category: string;
   note: string;
+  // 2026-08-03 · #193 · VAT 포함 여부 · "included"|"excluded"|"unset"
+  vat_included: "included" | "excluded" | "unset";
 }
+
+const vatDraftVal = (v: Vendor | null | undefined): "included" | "excluded" | "unset" => {
+  if (!v) return "unset";
+  if (v.vat_included === true) return "included";
+  if (v.vat_included === false) return "excluded";
+  return "unset";
+};
 
 const emptyDraft = (v: Vendor): EditDraft => ({
   company_name: v.company_name ?? "",
@@ -63,6 +72,7 @@ const emptyDraft = (v: Vendor): EditDraft => ({
   email: v.email ?? "",
   category: v.category ?? "",
   note: v.note ?? "",
+  vat_included: vatDraftVal(v),
 });
 
 const normalizeBizNum = (s: string): string => s.replace(/[^0-9]/g, "").slice(0, 10);
@@ -934,7 +944,8 @@ export const VendorDetailModal: React.FC<{
     draft.phone           !== (vendor.phone           ?? "") ||
     draft.email           !== (vendor.email           ?? "") ||
     draft.category        !== (vendor.category        ?? "") ||
-    draft.note            !== (vendor.note            ?? "")
+    draft.note            !== (vendor.note            ?? "") ||
+    draft.vat_included    !== vatDraftVal(vendor)
   ), [vendor, draft]);
 
   const handleSave = async () => {
@@ -961,6 +972,8 @@ export const VendorDetailModal: React.FC<{
           phone:           draft.phone.trim() || null,
           category:        draft.category.trim() || null,
           note:            draft.note.trim() || null,
+          // 2026-08-03 · #193 · VAT 포함 여부 (unset → null)
+          vat_included:    draft.vat_included === "included" ? true : draft.vat_included === "excluded" ? false : null,
         }),
       });
       if (!res.ok) {
@@ -1120,6 +1133,37 @@ export const VendorDetailModal: React.FC<{
                   placeholder="example@company.com"
                   className={inputCls}
                 />
+              </Field>
+
+              {/* 2026-08-03 · #193 · 거래명세서 VAT 포함 여부 (부가세 신고용) */}
+              <Field label="거래명세서 VAT 처리 (부가세 신고용)">
+                <div className="inline-flex bg-slate-100 border border-slate-200 rounded-lg p-0.5 gap-0.5 w-full">
+                  {([
+                    { key: "included" as const, label: "VAT 포함",   sub: "총액에 부가세 포함 (÷11)",     tone: "emerald" },
+                    { key: "excluded" as const, label: "VAT 별도",   sub: "공급가액만 · 부가세 10% 별도", tone: "amber"   },
+                    { key: "unset"    as const, label: "미설정",     sub: "상호명·비고로 자동 유추",       tone: "slate"   },
+                  ]).map(opt => {
+                    const active = draft.vat_included === opt.key;
+                    const activeCls =
+                      opt.tone === "emerald" ? "bg-emerald-500 text-white shadow-sm ring-1 ring-emerald-400" :
+                      opt.tone === "amber"   ? "bg-amber-500 text-white shadow-sm ring-1 ring-amber-400"     :
+                                               "bg-slate-500 text-white shadow-sm ring-1 ring-slate-400";
+                    return (
+                      <button
+                        key={opt.key}
+                        type="button"
+                        onClick={() => setDraft({ ...draft, vat_included: opt.key })}
+                        className={`flex-1 h-9 px-2 rounded-md text-[11px] font-bold transition cursor-pointer whitespace-nowrap flex flex-col items-center justify-center gap-0 leading-tight ${
+                          active ? activeCls : "text-slate-500 hover:text-slate-700 hover:bg-white/60"
+                        }`}
+                        title={opt.sub}
+                      >
+                        <span className="text-[12px] font-black">{opt.label}</span>
+                        <span className={`text-[9px] font-medium ${active ? "text-white/80" : "text-slate-400"}`}>{opt.sub}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </Field>
 
               {/* 비고 (single row) */}

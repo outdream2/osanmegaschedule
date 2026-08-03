@@ -61,11 +61,16 @@ function getNextDeadline(today: Date): { period: PeriodKey; label: string; type:
   return { period: c.period, label: c.label, type: c.type, dueDate: c.deadline.toISOString().slice(0, 10), daysLeft: days };
 }
 
-/** vat 값 (있으면 그대로 · 없으면 amount * 0.1 별도과세 가정) */
-function calcVat(amount: number, vat: number): number {
+/** vat 값 (row 저장값 우선 · 없으면 vendor.vat_included 반영해서 amount 로 계산)
+ *  · vat_included=true  · amount 가 총액(VAT 포함) → vat = amount/11
+ *  · vat_included=false · amount 가 공급가액(별도)  → vat = amount*0.1
+ *  · vat_included=null  · 기존 폴백 · 별도과세 가정 (amount*0.1) · #197 원래 동작 유지
+ */
+function calcVat(amount: number, vat: number, vatIncluded: boolean | null = null): number {
   if (vat && Number.isFinite(vat) && vat > 0) return vat;
-  if (amount && Number.isFinite(amount) && amount > 0) return Math.round(amount * 0.1);
-  return 0;
+  if (!(amount && Number.isFinite(amount) && amount > 0)) return 0;
+  if (vatIncluded === true) return Math.round(amount / 11);
+  return Math.round(amount * 0.1);
 }
 
 // ═════════════════════════════════════════════════════════════════
@@ -97,15 +102,31 @@ router.get("/api/vat/summary", async (req, res) => {
       throw new Error(error.message);
     }
 
-    // 공급사별 · category 조회 (면세 여부 판단)
+    // 공급사별 · category + vat_included 조회 (면세·VAT 포함 여부 판단)
     const supplierNames = Array.from(new Set((rows ?? []).map(r => String(r.supplier_name ?? "").trim()).filter(Boolean)));
     const catMap = new Map<string, string | null>();
+    const vatIncMap = new Map<string, boolean | null>();
     if (supplierNames.length > 0) {
-      const { data: vendors } = await supabase
+      // vat_included 컬럼 없는 DB fallback
+      let vendors: any[] | null = null;
+      const rv1 = await supabase
         .from("vendors")
-        .select("company_name, category")
+        .select("company_name, category, vat_included")
         .in("company_name", supplierNames);
-      for (const v of vendors ?? []) catMap.set(String((v as any).company_name), (v as any).category ?? null);
+      if (!rv1.error) vendors = rv1.data ?? [];
+      else if (/vat_included/i.test(rv1.error.message)) {
+        const rv2 = await supabase
+          .from("vendors")
+          .select("company_name, category")
+          .in("company_name", supplierNames);
+        if (!rv2.error) vendors = (rv2.data ?? []).map((v: any) => ({ ...v, vat_included: null }));
+      }
+      for (const v of vendors ?? []) {
+        const name = String((v as any).company_name);
+        catMap.set(name, (v as any).category ?? null);
+        const vi = (v as any).vat_included;
+        vatIncMap.set(name, vi === true || vi === false ? vi : null);
+      }
     }
 
     let totalAmount = 0;
@@ -117,7 +138,8 @@ router.get("/api/vat/summary", async (req, res) => {
     for (const r of rows ?? []) {
       const sup = String(r.supplier_name ?? "").trim();
       const amt = Number(r.amount ?? 0) || 0;
-      const vat = calcVat(amt, Number(r.vat ?? 0) || 0);
+      const vi = vatIncMap.get(sup) ?? null;
+      const vat = calcVat(amt, Number(r.vat ?? 0) || 0, vi);
       totalAmount += amt;
       totalVat += vat;
       if (sup) vendorSet.add(sup);
@@ -166,24 +188,35 @@ router.get("/api/vat/vendor-breakdown", async (req, res) => {
       throw new Error(error.message);
     }
 
-    // 공급사 카테고리·사업자번호 조회
+    // 공급사 카테고리·사업자번호·vat_included 조회
     const supplierNames = Array.from(new Set((rows ?? []).map(r => String(r.supplier_name ?? "").trim()).filter(Boolean)));
-    const vendorMap = new Map<string, { category: string | null; business_number: string | null }>();
+    const vendorMap = new Map<string, { category: string | null; business_number: string | null; vat_included: boolean | null }>();
     if (supplierNames.length > 0) {
-      const { data: vendors } = await supabase
+      let vendors: any[] | null = null;
+      const rv1 = await supabase
         .from("vendors")
-        .select("company_name, category, business_number")
+        .select("company_name, category, business_number, vat_included")
         .in("company_name", supplierNames);
+      if (!rv1.error) vendors = rv1.data ?? [];
+      else if (/vat_included/i.test(rv1.error.message)) {
+        const rv2 = await supabase
+          .from("vendors")
+          .select("company_name, category, business_number")
+          .in("company_name", supplierNames);
+        if (!rv2.error) vendors = (rv2.data ?? []).map((v: any) => ({ ...v, vat_included: null }));
+      }
       for (const v of vendors ?? []) {
+        const vi = (v as any).vat_included;
         vendorMap.set(String((v as any).company_name), {
           category: (v as any).category ?? null,
           business_number: (v as any).business_number ?? null,
+          vat_included: vi === true || vi === false ? vi : null,
         });
       }
     }
 
     // 공급사별 집계
-    interface Agg { supplier_name: string; supplier_code: string | null; category: string | null; business_number: string | null; amount: number; vat: number; total: number; count: number; deductible: boolean; }
+    interface Agg { supplier_name: string; supplier_code: string | null; category: string | null; business_number: string | null; vat_included: boolean | null; amount: number; vat: number; total: number; count: number; deductible: boolean; }
     const map = new Map<string, Agg>();
     for (const r of rows ?? []) {
       const sup = String(r.supplier_name ?? "").trim() || "(미상)";
@@ -193,11 +226,12 @@ router.get("/api/vat/vendor-breakdown", async (req, res) => {
         supplier_code: (r.supplier_code as string) ?? null,
         category: info?.category ?? null,
         business_number: info?.business_number ?? null,
+        vat_included: info?.vat_included ?? null,
         amount: 0, vat: 0, total: 0, count: 0,
         deductible: (info?.category ?? "") !== "면세",
       };
       const amt = Number(r.amount ?? 0) || 0;
-      const vat = calcVat(amt, Number(r.vat ?? 0) || 0);
+      const vat = calcVat(amt, Number(r.vat ?? 0) || 0, info?.vat_included ?? null);
       cur.amount += amt;
       cur.vat += vat;
       cur.total += Number(r.total ?? 0) || (amt + vat);
@@ -233,6 +267,16 @@ router.get("/api/vat/vendor-detail", async (req, res) => {
     if (!range) return res.status(400).json({ error: "period 형식 오류" });
     if (!supplier) return res.status(400).json({ error: "supplier 필요" });
 
+    // vendor.vat_included lookup (병렬 · 실패해도 null 폴백)
+    const vendorLookupPromise = (async () => {
+      const rv1 = await supabase.from("vendors").select("vat_included").eq("company_name", supplier).maybeSingle();
+      if (!rv1.error) {
+        const vi = (rv1.data as any)?.vat_included;
+        return vi === true || vi === false ? vi : null;
+      }
+      return null;
+    })();
+
     const { data: rows, error } = await supabase
       .from("purchase_details")
       .select("id, purchase_date, product_code, product_name, spec, quantity, unit_price, amount, vat, total")
@@ -249,14 +293,15 @@ router.get("/api/vat/vendor-detail", async (req, res) => {
       throw new Error(error.message);
     }
 
+    const vatIncluded = await vendorLookupPromise;
     const rowsOut = (rows ?? []).map(r => ({
       ...r,
       amount: Math.round(Number(r.amount ?? 0) || 0),
-      vat: Math.round(calcVat(Number(r.amount ?? 0) || 0, Number(r.vat ?? 0) || 0)),
+      vat: Math.round(calcVat(Number(r.amount ?? 0) || 0, Number(r.vat ?? 0) || 0, vatIncluded)),
       total: Math.round(Number(r.total ?? 0) || 0),
     }));
 
-    res.json({ range, supplier, rows: rowsOut });
+    res.json({ range, supplier, vat_included: vatIncluded, rows: rowsOut });
   } catch (err: any) {
     console.error("[vat/vendor-detail] error:", err?.message);
     res.status(500).json({ error: err?.message ?? "공급사 매입 상세 조회 실패" });
