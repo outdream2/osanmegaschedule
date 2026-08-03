@@ -87,6 +87,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
   return (
     <td
       className={`
+        relative
         border-r border-slate-100 bg-white sticky left-0 z-[29]
         group-hover:bg-slate-50/80
         shadow-[1px_0_0_0_#e2e8f0]
@@ -209,32 +210,32 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
             </div>
           )}
 
-          {/* 줄 4: 수정·삭제 — 관리자 · hover 시 fade-in */}
-          {isAdmin && (
-            <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 mt-0.5">
-              <button
-                draggable={false}
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => { e.stopPropagation(); onEditClick(emp); }}
-                className="flex items-center justify-center w-5 h-5 rounded text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 transition-colors duration-150 cursor-pointer"
-                title="직원 정보 수정"
-              >
-                <Edit size={9} />
-              </button>
-              <button
-                draggable={false}
-                onMouseDown={(e) => e.stopPropagation()}
-                onClick={(e) => { e.stopPropagation(); onDeleteClick(emp.id, emp.name); }}
-                className="flex items-center justify-center w-5 h-5 rounded text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors duration-150 cursor-pointer"
-                title="직원 삭제"
-              >
-                <Trash2 size={9} />
-              </button>
-            </div>
-          )}
-
         </div>
       </div>
+
+      {/* 수정·삭제 — 관리자 · hover fade-in · absolute (레이아웃 밀림 방지) */}
+      {isAdmin && (
+        <div className="absolute right-0.5 bottom-0.5 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none group-hover:pointer-events-auto z-[1]">
+          <button
+            draggable={false}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); onEditClick(emp); }}
+            className="flex items-center justify-center w-5 h-5 rounded bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 hover:border-indigo-200 transition-colors duration-150 cursor-pointer shadow-sm"
+            title="직원 정보 수정"
+          >
+            <Edit size={9} />
+          </button>
+          <button
+            draggable={false}
+            onMouseDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); onDeleteClick(emp.id, emp.name); }}
+            className="flex items-center justify-center w-5 h-5 rounded bg-white/90 backdrop-blur-sm border border-slate-200 text-slate-400 hover:text-rose-500 hover:bg-rose-50 hover:border-rose-200 transition-colors duration-150 cursor-pointer shadow-sm"
+            title="직원 삭제"
+          >
+            <Trash2 size={9} />
+          </button>
+        </div>
+      )}
     </td>
   );
 };
