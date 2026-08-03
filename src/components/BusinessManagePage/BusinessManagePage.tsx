@@ -152,7 +152,7 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
       <main className="flex-1 flex flex-col min-h-0">
         {subTab === "staff-manage" && (
           <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">직원관리 로딩 중...</div>}>
-            <StaffManagePage />
+            <StaffManagePage onWriteContract={() => setSubTab("document-writer")} />
           </Suspense>
         )}
         {subTab === "approval-center" && (

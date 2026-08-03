@@ -21,6 +21,7 @@ import {
   Mail,
   MapPin,
   Paperclip,
+  PenSquare as NotePencilIcon,
   Phone,
   RefreshCw,
   Save,
