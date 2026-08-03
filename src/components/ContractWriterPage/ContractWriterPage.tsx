@@ -112,7 +112,7 @@ const CUSTOM_OPTION = "__custom__";
 const DEFAULT_EMPLOYER: Partial<ContractForm> = {
   employerName: "강남성",
   companyName: "오산 메가타운 약국",
-  companyAddress: "경기대로 868-4 2층",
+  companyAddress: "경기도 오산시 경기대로 868-4 2층",
   companyRegNo: "",
 };
 
