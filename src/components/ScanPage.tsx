@@ -1,7 +1,19 @@
-// 실재고입력 (ScanPage) · 2026-07-30 리팩터
+// 실재고입력 (ScanPage) · 2026-08-03 리팩터 (Phase 3+4)
 // 좌: 바코드 스캐너 + 최근 스캔 상품 + notFoundCode
-// 우: 스캔한 상품 테이블 · 창고/매장1/매장2 입력 · 전체 등록
-// real_map "/" 분할 → 매장1·매장2 컬럼 (없으면 매장1만)
+// 우: 스캔한 상품 테이블 · 창고1/창고2/매장1/매장2/매장3 (5분리) · 매장별 구역 표시·편집 · 전체 등록
+// real_map "/" 분할 → 매장1·매장2·매장3 구역 자동 배정 · 사용자 편집 가능
+//
+// 하위 호환:
+//   - 서버 : warehouse_stock ← warehouse1Qty · store_stock ← store1Qty · store_stock_2 ← store2Qty (미러)
+//   - 로드 : 새 컬럼 있으면 그대로 · 없으면 warehouse_stock → warehouse1Qty fallback
+//
+// DB 스키마 확장 필요 (사용자 실행):
+//   ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS warehouse1_stock INT;
+//   ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS warehouse2_stock INT;
+//   ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS store3_stock INT;
+//   ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS store1_zone TEXT;
+//   ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS store2_zone TEXT;
+//   ALTER TABLE inventory_checks ADD COLUMN IF NOT EXISTS store3_zone TEXT;
 
 import React, { useEffect, useState, useMemo, useCallback } from "react";
 import {
@@ -32,16 +44,15 @@ interface ScanPageProps {
 }
 
 // ─────────────────────────────────────────────────────────────
-// real_map 파싱 · "/" 기준 분할 → 매장1 / 매장2
-// 예: "8A/냉" → ["8A", "냉"] · "9B" → ["9B", null]
+// real_map 파싱 · "/" 기준 분할 → 매장1 · 매장2 · 매장3
+// 예: "8A/냉/2B" → ["8A", "냉", "2B"]
+//     "8A/냉"    → ["8A", "냉", null]
+//     "9B"       → ["9B", null, null]
 // ─────────────────────────────────────────────────────────────
-function parseRealMap(realMap: string | null | undefined): [string | null, string | null] {
-  if (!realMap) return [null, null];
-  const idx = realMap.indexOf("/");
-  if (idx < 0) return [realMap.trim() || null, null];
-  const a = realMap.slice(0, idx).trim();
-  const b = realMap.slice(idx + 1).trim();
-  return [a || null, b || null];
+function parseRealMap(realMap: string | null | undefined): [string | null, string | null, string | null] {
+  if (!realMap) return [null, null, null];
+  const parts = String(realMap).split("/").map(s => s.trim()).filter(Boolean);
+  return [parts[0] ?? null, parts[1] ?? null, parts[2] ?? null];
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -52,11 +63,14 @@ interface StockRow {
   code: string;
   product: ProductInfo;
   addedAt: number;
-  warehouseQty: number | "";
-  store1Qty:    number | "";
-  store2Qty:    number | "";     // real_map "/" 있을 때만 의미 있음
-  store1Label:  string | null;   // real_map 첫 번째 위치명
-  store2Label:  string | null;   // real_map 두 번째 위치명 (없으면 null)
+  warehouse1Qty: number | "";
+  warehouse2Qty: number | "";
+  store1Qty:     number | "";
+  store2Qty:     number | "";
+  store3Qty:     number | "";
+  store1Zone:    string | null;   // 매장1 구역 (편집 가능)
+  store2Zone:    string | null;   // 매장2 구역 (편집 가능)
+  store3Zone:    string | null;   // 매장3 구역 (편집 가능)
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -111,6 +125,28 @@ const NumberInput: React.FC<NumberInputProps> = ({
       text-[13px] font-black tabular-nums focus:outline-none transition
       disabled:bg-slate-100 disabled:text-slate-300 disabled:cursor-not-allowed
       ${accent}`}
+  />
+);
+
+// ─────────────────────────────────────────────────────────────
+// ZoneInput · 매장 구역 편집 · placeholder 로 auto 값 힌트
+// ─────────────────────────────────────────────────────────────
+interface ZoneInputProps {
+  value: string | null;
+  placeholder?: string;
+  accentClass: string;                     // e.g. "text-emerald-600 focus:border-emerald-400"
+  onChange: (v: string | null) => void;
+}
+const ZoneInput: React.FC<ZoneInputProps> = ({ value, placeholder = "-", accentClass, onChange }) => (
+  <input
+    type="text"
+    value={value ?? ""}
+    onChange={e => onChange(e.target.value.trim() === "" ? null : e.target.value)}
+    placeholder={placeholder}
+    className={`w-full h-5 text-center px-1 bg-transparent border-0 border-b border-dashed border-slate-200
+      text-[10px] font-bold tabular-nums outline-none transition placeholder:text-slate-300
+      ${accentClass}`}
+    title="구역 편집"
   />
 );
 
@@ -185,38 +221,52 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       return;
     }
 
-    // real_map 파싱
-    const rm = found.realMap ?? (found as any).real_map ?? null;
-    const [s1Label, s2Label] = parseRealMap(rm);
+    // real_map 파싱 → 매장1·2·3 구역 자동 배정
+    const rm = (found as any).realMap ?? (found as any).real_map ?? null;
+    const [z1, z2, z3] = parseRealMap(rm);
 
     const newRow: StockRow = {
       key: `${result}-${Date.now()}`,
       code: result,
       product: found,
       addedAt: Date.now(),
-      warehouseQty: "",
-      store1Qty: "",
-      store2Qty: "",
-      store1Label: s1Label,
-      store2Label: s2Label,
+      warehouse1Qty: "",
+      warehouse2Qty: "",
+      store1Qty:     "",
+      store2Qty:     "",
+      store3Qty:     "",
+      store1Zone:    z1,
+      store2Zone:    z2,
+      store3Zone:    z3,
     };
 
     setRows(prev => [newRow, ...prev]);
     setLastAddedKey(newRow.key);
     setSaveStatus("idle");
 
-    // 기존 실재고 자동 로드
+    // 기존 실재고 자동 로드 · 신규 컬럼 우선 · 없으면 레거시 fallback
     fetch(`/api/inventory-checks?product_code=${encodeURIComponent(result)}`)
       .then(r => r.ok ? r.json() : [])
       .then((list: any[]) => {
         const last = list[0];
         if (!last) return;
+        const w1 = last.warehouse1_stock ?? last.warehouse_stock;
+        const w2 = last.warehouse2_stock ?? null;
+        const s1 = last.store_stock ?? null;              // 매장1 = store_stock
+        const s2 = last.store_stock_2 ?? null;
+        const s3 = last.store3_stock ?? null;
         setRows(prev => prev.map(r => r.key === newRow.key
           ? {
               ...r,
-              warehouseQty: last.warehouse_stock != null ? Number(last.warehouse_stock) : "",
-              store1Qty:    last.store_stock      != null ? Number(last.store_stock)     : "",
-              store2Qty:    last.store_stock_2    != null ? Number(last.store_stock_2)   : "",
+              warehouse1Qty: w1 != null ? Number(w1) : "",
+              warehouse2Qty: w2 != null ? Number(w2) : "",
+              store1Qty:     s1 != null ? Number(s1) : "",
+              store2Qty:     s2 != null ? Number(s2) : "",
+              store3Qty:     s3 != null ? Number(s3) : "",
+              // 저장된 구역 우선 · 없으면 real_map 기반 유지
+              store1Zone: (last.store1_zone ?? r.store1Zone) || null,
+              store2Zone: (last.store2_zone ?? r.store2Zone) || null,
+              store3Zone: (last.store3_zone ?? r.store3Zone) || null,
             }
           : r
         ));
@@ -258,11 +308,20 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         body: JSON.stringify({
           checked_by: authSession?.employeeName ?? "익명",
           items: rows.map(r => ({
-            product_code:    r.code,
-            product_name:    r.product.name,
-            warehouse_stock: r.warehouseQty !== "" ? Number(r.warehouseQty) : null,
-            store_stock:     r.store1Qty    !== "" ? Number(r.store1Qty)    : null,
-            store_stock_2:   r.store2Qty    !== "" ? Number(r.store2Qty)    : null,
+            product_code:     r.code,
+            product_name:     r.product.name,
+            // 신규 5-분리 컬럼
+            warehouse1_stock: r.warehouse1Qty !== "" ? Number(r.warehouse1Qty) : null,
+            warehouse2_stock: r.warehouse2Qty !== "" ? Number(r.warehouse2Qty) : null,
+            store_stock:      r.store1Qty     !== "" ? Number(r.store1Qty)     : null,   // 매장1
+            store_stock_2:    r.store2Qty     !== "" ? Number(r.store2Qty)     : null,   // 매장2
+            store3_stock:     r.store3Qty     !== "" ? Number(r.store3Qty)     : null,   // 매장3
+            // 매장 구역 (편집된 값 · 없으면 auto 값 저장)
+            store1_zone:      r.store1Zone,
+            store2_zone:      r.store2Zone,
+            store3_zone:      r.store3Zone,
+            // 레거시 mirror (구 클라이언트 하위 호환용 · 서버가 warehouse1 우선 처리)
+            warehouse_stock:  r.warehouse1Qty !== "" ? Number(r.warehouse1Qty) : null,
           })),
         }),
       });
@@ -270,10 +329,14 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         const b = await res.json().catch(() => ({}));
         throw new Error((b as any).error ?? `저장 실패 (${res.status})`);
       }
-      const j = await res.json() as { saved?: number; failed?: number };
+      const j = await res.json() as { saved?: number; failed?: number; downgraded?: boolean };
       setSavedCount(j.saved ?? rows.length);
       setSaveStatus("done");
-      showToast(`${j.saved ?? rows.length}건 저장 완료`);
+      showToast(
+        j.downgraded
+          ? `${j.saved ?? rows.length}건 저장 완료 (DB 컬럼 확장 대기 · 레거시 모드)`
+          : `${j.saved ?? rows.length}건 저장 완료`
+      );
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "저장 실패";
       setSaveError(msg);
@@ -293,11 +356,11 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       switch (sortKey) {
         case "addedAt":  return sign * (a.addedAt - b.addedAt);
         case "name":     return sign * a.product.name.localeCompare(b.product.name, "ko");
-        case "supplier": return sign * (a.product.supplier ?? "").localeCompare(b.product.supplier ?? "", "ko");
+        case "supplier": return sign * ((a.product as any).supplier ?? "").localeCompare(((b.product as any).supplier ?? ""), "ko");
         case "realMap": {
-          const ra = a.product.realMap ?? (a.product as any).real_map ?? "";
-          const rb = b.product.realMap ?? (b.product as any).real_map ?? "";
-          return sign * ra.localeCompare(rb, "ko");
+          const ra = (a.product as any).realMap ?? (a.product as any).real_map ?? "";
+          const rb = (b.product as any).realMap ?? (b.product as any).real_map ?? "";
+          return sign * String(ra).localeCompare(String(rb), "ko");
         }
         default: return 0;
       }
@@ -306,13 +369,21 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
   // 합계 계산 헬퍼
   const total = (r: StockRow): number => {
-    const w  = r.warehouseQty !== "" ? Number(r.warehouseQty) : 0;
-    const s1 = r.store1Qty    !== "" ? Number(r.store1Qty)    : 0;
-    const s2 = r.store2Qty    !== "" ? Number(r.store2Qty)    : 0;
-    return w + s1 + s2;
+    const w1 = r.warehouse1Qty !== "" ? Number(r.warehouse1Qty) : 0;
+    const w2 = r.warehouse2Qty !== "" ? Number(r.warehouse2Qty) : 0;
+    const s1 = r.store1Qty     !== "" ? Number(r.store1Qty)     : 0;
+    const s2 = r.store2Qty     !== "" ? Number(r.store2Qty)     : 0;
+    const s3 = r.store3Qty     !== "" ? Number(r.store3Qty)     : 0;
+    return w1 + w2 + s1 + s2 + s3;
   };
 
-  const hasDualStore = sortedRows.some(r => r.store2Label !== null);
+  // 요약 카운트
+  const warehouse1Total = rows.reduce((s, r) => s + (Number(r.warehouse1Qty) || 0), 0);
+  const warehouse2Total = rows.reduce((s, r) => s + (Number(r.warehouse2Qty) || 0), 0);
+  const store1Total     = rows.reduce((s, r) => s + (Number(r.store1Qty)     || 0), 0);
+  const store2Total     = rows.reduce((s, r) => s + (Number(r.store2Qty)     || 0), 0);
+  const store3Total     = rows.reduce((s, r) => s + (Number(r.store3Qty)     || 0), 0);
+  const grandTotal      = warehouse1Total + warehouse2Total + store1Total + store2Total + store3Total;
 
   // ─────────────────────────────────────────────────────────────
   // Render
@@ -359,7 +430,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
 
       {/* ── Page header strip ── */}
       <div className="bg-white border-b border-slate-200/80 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-3">
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-teal-500 to-teal-600
             flex items-center justify-center shadow-sm shrink-0">
             <ScanLine size={16} className="text-white" />
@@ -367,7 +438,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
           <div>
             <h1 className="text-sm sm:text-base font-black text-slate-900 leading-none">실재고 입력</h1>
             <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5 leading-none">
-              바코드 스캔 후 창고·매장 수량 입력 · 전체 저장
+              바코드 스캔 후 창고1·2 · 매장1·2·3 수량 입력 · 전체 저장
             </p>
           </div>
           {rows.length > 0 && (
@@ -379,20 +450,19 @@ export const ScanPage: React.FC<ScanPageProps> = ({
       </div>
 
       {/* ── Main layout ── */}
-      <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5
+      <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5
         flex flex-col lg:flex-row gap-4 lg:gap-5">
 
         {/* ══════════════════════════════════════════════════════
             LEFT PANEL · 스캐너 + 마지막 스캔 상품
         ══════════════════════════════════════════════════════ */}
-        <aside className="lg:w-[320px] xl:w-[340px] lg:shrink-0 flex flex-col gap-4
+        <aside className="lg:w-[300px] xl:w-[320px] lg:shrink-0 flex flex-col gap-4
           lg:sticky lg:top-4 lg:self-start">
 
-          {/* ── 스캔 카드 · rounded-2xl + 강화 shadow (ProductArrivalPage layout 통일) ── */}
+          {/* ── 스캔 카드 ── */}
           <div className="bg-white rounded-2xl border border-slate-200/80
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] overflow-hidden">
 
-            {/* 헤더 그라디언트 */}
             <div className="relative px-5 pt-4 pb-3 bg-gradient-to-b from-teal-50/70 to-transparent">
               <div className="absolute top-3 right-3 w-12 h-12 rounded-full bg-teal-100/50 border border-teal-200/40" />
               <div className="relative flex items-center gap-3">
@@ -414,7 +484,6 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             </div>
 
             <div className="px-4 pb-5 flex flex-col gap-3">
-              {/* 스캔 버튼 */}
               <button
                 onClick={() => setScannerOpen(true)}
                 disabled={mapLoading}
@@ -435,7 +504,6 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 }
               </button>
 
-              {/* 미등록 코드 경고 */}
               {notFoundCode && !lastProduct && (
                 <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl
                   bg-amber-50 border border-amber-200/80">
@@ -450,7 +518,6 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 </div>
               )}
 
-              {/* 마지막 스캔 상품 */}
               {lastProduct && (
                 <div className="flex flex-col gap-2.5 px-3.5 py-3.5 rounded-xl
                   bg-gradient-to-b from-teal-50 to-teal-50/30
@@ -476,22 +543,22 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                   </p>
 
                   <div className="flex flex-wrap items-center gap-1.5">
-                    {lastProduct.spec && (
+                    {(lastProduct as any).spec && (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-600
                         bg-white/80 border border-slate-200/60 rounded-lg px-2 py-1">
                         <Box size={10} className="text-slate-400" />
-                        {lastProduct.spec}
+                        {(lastProduct as any).spec}
                       </span>
                     )}
-                    {lastProduct.supplier && (
+                    {(lastProduct as any).supplier && (
                       <span className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-700
                         bg-sky-50 border border-sky-200/70 rounded-lg px-2 py-1">
                         <Building2 size={10} className="text-sky-500" />
-                        {lastProduct.supplier}
+                        {(lastProduct as any).supplier}
                       </span>
                     )}
                     {(() => {
-                      const rm = lastProduct.realMap ?? (lastProduct as any).real_map ?? null;
+                      const rm = (lastProduct as any).realMap ?? (lastProduct as any).real_map ?? null;
                       if (!rm) return null;
                       return (
                         <span className="inline-flex items-center gap-1 text-[11px] font-bold text-violet-700
@@ -507,25 +574,23 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             </div>
           </div>
 
-          {/* ── 요약 카운트 카드 · ProductArrivalPage 레이아웃 통일 ── */}
+          {/* ── 요약 카운트 카드 ── */}
           {(() => {
-            const warehouseTotal = rows.reduce((s, r) => s + (Number(r.warehouseQty) || 0), 0);
-            const store1Total = rows.reduce((s, r) => s + (Number(r.store1Qty) || 0), 0);
-            const store2Total = rows.reduce((s, r) => s + (Number(r.store2Qty) || 0), 0);
-            const grandTotal = warehouseTotal + store1Total + store2Total;
             const Pill: React.FC<{ label: string; value: number; valueClass: string; accent?: string }> = ({ label, value, valueClass, accent }) => (
-              <div className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl transition ${accent ?? ""}`}>
-                <span className={`text-[16px] sm:text-[18px] font-black tabular-nums leading-none ${valueClass}`}>{value}</span>
-                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 leading-none">{label}</span>
+              <div className={`flex flex-col items-center gap-1 px-1.5 py-2 rounded-xl transition ${accent ?? ""}`}>
+                <span className={`text-[14px] sm:text-[15px] font-black tabular-nums leading-none ${valueClass}`}>{value}</span>
+                <span className="text-[9px] sm:text-[10px] font-semibold text-slate-400 leading-none">{label}</span>
               </div>
             );
             return (
               <div className="bg-white rounded-2xl border border-slate-200/80 shadow-[0_2px_8px_rgba(0,0,0,0.06)] px-2 py-2">
-                <div className="grid grid-cols-4 gap-1">
-                  <Pill label="총건수" value={rows.length} valueClass="text-slate-800" />
-                  <Pill label="창고" value={warehouseTotal} valueClass="text-slate-700" accent="hover:bg-slate-50/60 rounded-xl transition" />
-                  <Pill label="매장1" value={store1Total} valueClass="text-sky-600" accent="hover:bg-sky-50/60 rounded-xl transition" />
-                  <Pill label="매장2" value={store2Total} valueClass="text-violet-600" accent="hover:bg-violet-50/60 rounded-xl transition" />
+                <div className="grid grid-cols-6 gap-0.5">
+                  <Pill label="건수" value={rows.length} valueClass="text-slate-800" />
+                  <Pill label="창고1" value={warehouse1Total} valueClass="text-orange-600" accent="hover:bg-orange-50/60 rounded-xl transition" />
+                  <Pill label="창고2" value={warehouse2Total} valueClass="text-amber-600" accent="hover:bg-amber-50/60 rounded-xl transition" />
+                  <Pill label="매장1" value={store1Total} valueClass="text-emerald-600" accent="hover:bg-emerald-50/60 rounded-xl transition" />
+                  <Pill label="매장2" value={store2Total} valueClass="text-sky-600" accent="hover:bg-sky-50/60 rounded-xl transition" />
+                  <Pill label="매장3" value={store3Total} valueClass="text-violet-600" accent="hover:bg-violet-50/60 rounded-xl transition" />
                 </div>
                 <div className="mx-2 mt-1 pt-2.5 border-t border-slate-100 flex items-center justify-between">
                   <span className="text-[11px] font-semibold text-slate-400">총 실재고 수량</span>
@@ -543,11 +608,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
         ══════════════════════════════════════════════════════ */}
         <section className="flex-1 min-w-0 flex flex-col gap-4">
 
-          {/* ── 리스트 카드 · rounded-2xl 통일 ── */}
           <div className="bg-white rounded-2xl border border-slate-200/80
             shadow-[0_2px_8px_rgba(0,0,0,0.06)] flex flex-col min-h-[320px] overflow-hidden">
 
-            {/* 테이블 헤더 바 */}
             <div className="flex items-center justify-between
               px-4 sm:px-5 py-3 sm:py-3.5 border-b border-slate-200/80
               bg-gradient-to-r from-slate-50/80 to-white rounded-t-2xl sticky top-0 z-10 shadow-[0_1px_0_rgba(0,0,0,0.04)]">
@@ -565,7 +628,6 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               </div>
             </div>
 
-            {/* 빈 상태 */}
             {rows.length === 0 ? (
               <div className="flex-1 flex flex-col items-center justify-center gap-3 py-16 sm:py-24 select-none">
                 <div className="w-16 h-16 rounded-xl bg-slate-100 flex items-center justify-center">
@@ -583,7 +645,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                     <tr className="bg-slate-50/95 backdrop-blur-sm border-b border-slate-200/60">
                       {/* 시각 */}
                       <th
-                        className="text-left px-3 py-2.5 w-[64px] sm:w-[72px] font-bold text-slate-400
+                        className="text-left px-2 py-2.5 w-[56px] sm:w-[64px] font-bold text-slate-400
                           cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors whitespace-nowrap"
                         onClick={() => handleSort("addedAt")}
                       >
@@ -591,42 +653,52 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                       </th>
                       {/* 상품명 */}
                       <th
-                        className="text-left px-2 py-2.5 font-bold text-slate-400
+                        className="text-left px-2 py-2.5 font-bold text-slate-400 min-w-[140px]
                           cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors"
                         onClick={() => handleSort("name")}
                       >
                         상품명 <SortIcon active={sortKey === "name"} dir={sortDir} />
                       </th>
-                      {/* 구역 */}
+                      {/* 구역 (real_map 원본) */}
                       <th
-                        className="text-left px-2 py-2.5 w-[70px] font-bold text-slate-400
+                        className="text-left px-2 py-2.5 w-[68px] font-bold text-slate-400
                           cursor-pointer select-none hover:text-slate-600 hover:bg-slate-100/60 transition-colors whitespace-nowrap"
                         onClick={() => handleSort("realMap")}
                       >
                         구역 <SortIcon active={sortKey === "realMap"} dir={sortDir} />
                       </th>
-                      {/* 창고 */}
-                      <th className="text-center px-2 py-2.5 w-[76px] sm:w-[86px] font-bold text-slate-400 whitespace-nowrap">
+                      {/* 창고1 */}
+                      <th className="text-center px-1.5 py-2.5 w-[70px] sm:w-[80px] font-bold text-slate-400 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
-                          <Warehouse size={11} className="text-orange-400" /> 창고
+                          <Warehouse size={11} className="text-orange-400" /> 창고1
+                        </span>
+                      </th>
+                      {/* 창고2 */}
+                      <th className="text-center px-1.5 py-2.5 w-[70px] sm:w-[80px] font-bold text-slate-400 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
+                          <Warehouse size={11} className="text-amber-400" /> 창고2
                         </span>
                       </th>
                       {/* 매장1 */}
-                      <th className="text-center px-2 py-2.5 w-[76px] sm:w-[86px] font-bold text-slate-400 whitespace-nowrap">
+                      <th className="text-center px-1.5 py-2.5 w-[74px] sm:w-[84px] font-bold text-slate-400 whitespace-nowrap">
                         <span className="inline-flex items-center gap-1">
                           <Store size={11} className="text-emerald-500" /> 매장1
                         </span>
                       </th>
-                      {/* 매장2 (dual store 있을 때만) */}
-                      {hasDualStore && (
-                        <th className="text-center px-2 py-2.5 w-[76px] sm:w-[86px] font-bold text-slate-400 whitespace-nowrap">
-                          <span className="inline-flex items-center gap-1">
-                            <Store size={11} className="text-violet-500" /> 매장2
-                          </span>
-                        </th>
-                      )}
+                      {/* 매장2 */}
+                      <th className="text-center px-1.5 py-2.5 w-[74px] sm:w-[84px] font-bold text-slate-400 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
+                          <Store size={11} className="text-sky-500" /> 매장2
+                        </span>
+                      </th>
+                      {/* 매장3 */}
+                      <th className="text-center px-1.5 py-2.5 w-[74px] sm:w-[84px] font-bold text-slate-400 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1">
+                          <Store size={11} className="text-violet-500" /> 매장3
+                        </span>
+                      </th>
                       {/* 합계 */}
-                      <th className="text-center px-2 py-2.5 w-[60px] font-bold text-slate-400 whitespace-nowrap">
+                      <th className="text-center px-2 py-2.5 w-[54px] font-bold text-slate-400 whitespace-nowrap">
                         합계
                       </th>
                       {/* 삭제 */}
@@ -639,9 +711,11 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                       const isRecent = row.key === lastAddedKey;
                       const d = new Date(row.addedAt);
                       const addedAt = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-                      const rm = row.product.realMap ?? (row.product as any).real_map ?? null;
+                      const rm = (row.product as any).realMap ?? (row.product as any).real_map ?? null;
                       const rowTotal = total(row);
-                      const hasAnyValue = row.warehouseQty !== "" || row.store1Qty !== "" || row.store2Qty !== "";
+                      const hasAnyValue =
+                        row.warehouse1Qty !== "" || row.warehouse2Qty !== "" ||
+                        row.store1Qty !== "" || row.store2Qty !== "" || row.store3Qty !== "";
 
                       const rowBg = isRecent
                         ? "bg-teal-50/60"
@@ -658,23 +732,23 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             ${accentColor} ${rowBg}`}
                         >
                           {/* 시각 */}
-                          <td className="px-3 py-2 align-middle tabular-nums font-mono text-[11px]
+                          <td className="px-2 py-2 align-middle tabular-nums font-mono text-[11px]
                             text-slate-400 whitespace-nowrap">
                             {addedAt}
                           </td>
 
                           {/* 상품명 · 규격 · 코드 */}
-                          <td className="px-2 py-2 align-middle min-w-[120px]">
+                          <td className="px-2 py-2 align-middle min-w-[140px]">
                             <p className="text-[12px] sm:text-[13px] font-black text-slate-800
                               break-words whitespace-normal leading-snug">
                               {row.product.name}
                             </p>
                             <div className="flex items-center gap-1 mt-0.5 flex-wrap">
-                              {row.product.spec && (
+                              {(row.product as any).spec && (
                                 <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold
                                   text-slate-500 bg-slate-100/80 rounded px-1.5 py-0.5">
                                   <Box size={8} className="text-slate-400" />
-                                  {row.product.spec}
+                                  {(row.product as any).spec}
                                 </span>
                               )}
                               <span className="inline-flex items-center gap-0.5 text-[10px] font-mono
@@ -685,7 +759,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             </div>
                           </td>
 
-                          {/* 구역 */}
+                          {/* 구역 원본 (real_map) */}
                           <td className="px-2 py-2 align-middle">
                             {rm ? (
                               <span className="inline-flex items-center gap-1 text-[11px] font-bold
@@ -699,52 +773,74 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                             )}
                           </td>
 
-                          {/* 창고 수량 */}
-                          <td className="px-1.5 py-2 align-middle">
+                          {/* 창고1 */}
+                          <td className="px-1 py-2 align-middle">
                             <NumberInput
-                              value={row.warehouseQty}
-                              onChange={v => patchRow(row.key, { warehouseQty: v })}
+                              value={row.warehouse1Qty}
+                              onChange={v => patchRow(row.key, { warehouse1Qty: v })}
                               accent="focus:border-orange-400"
                             />
                           </td>
 
-                          {/* 매장1 수량 */}
-                          <td className="px-1.5 py-2 align-middle">
+                          {/* 창고2 */}
+                          <td className="px-1 py-2 align-middle">
+                            <NumberInput
+                              value={row.warehouse2Qty}
+                              onChange={v => patchRow(row.key, { warehouse2Qty: v })}
+                              accent="focus:border-amber-400"
+                            />
+                          </td>
+
+                          {/* 매장1 · 수량 + 구역 편집 */}
+                          <td className="px-1 py-2 align-middle">
                             <div className="flex flex-col gap-0.5">
                               <NumberInput
                                 value={row.store1Qty}
                                 onChange={v => patchRow(row.key, { store1Qty: v })}
                                 accent="focus:border-emerald-400"
                               />
-                              {row.store1Label && (
-                                <span className="text-[9px] text-center text-emerald-600 font-bold leading-none">
-                                  {row.store1Label}
-                                </span>
-                              )}
+                              <ZoneInput
+                                value={row.store1Zone}
+                                placeholder="-"
+                                accentClass="text-emerald-600 focus:border-emerald-400"
+                                onChange={v => patchRow(row.key, { store1Zone: v })}
+                              />
                             </div>
                           </td>
 
-                          {/* 매장2 수량 (hasDualStore 열이 있을 때) */}
-                          {hasDualStore && (
-                            <td className="px-1.5 py-2 align-middle">
-                              {row.store2Label !== null ? (
-                                <div className="flex flex-col gap-0.5">
-                                  <NumberInput
-                                    value={row.store2Qty}
-                                    onChange={v => patchRow(row.key, { store2Qty: v })}
-                                    accent="focus:border-violet-400"
-                                  />
-                                  <span className="text-[9px] text-center text-violet-600 font-bold leading-none">
-                                    {row.store2Label}
-                                  </span>
-                                </div>
-                              ) : (
-                                <div className="h-9 rounded-lg bg-slate-100/60 border border-slate-200/40 flex items-center justify-center">
-                                  <span className="text-[10px] text-slate-300">-</span>
-                                </div>
-                              )}
-                            </td>
-                          )}
+                          {/* 매장2 */}
+                          <td className="px-1 py-2 align-middle">
+                            <div className="flex flex-col gap-0.5">
+                              <NumberInput
+                                value={row.store2Qty}
+                                onChange={v => patchRow(row.key, { store2Qty: v })}
+                                accent="focus:border-sky-400"
+                              />
+                              <ZoneInput
+                                value={row.store2Zone}
+                                placeholder="-"
+                                accentClass="text-sky-600 focus:border-sky-400"
+                                onChange={v => patchRow(row.key, { store2Zone: v })}
+                              />
+                            </div>
+                          </td>
+
+                          {/* 매장3 */}
+                          <td className="px-1 py-2 align-middle">
+                            <div className="flex flex-col gap-0.5">
+                              <NumberInput
+                                value={row.store3Qty}
+                                onChange={v => patchRow(row.key, { store3Qty: v })}
+                                accent="focus:border-violet-400"
+                              />
+                              <ZoneInput
+                                value={row.store3Zone}
+                                placeholder="-"
+                                accentClass="text-violet-600 focus:border-violet-400"
+                                onChange={v => patchRow(row.key, { store3Zone: v })}
+                              />
+                            </div>
+                          </td>
 
                           {/* 합계 */}
                           <td className="px-2 py-2 align-middle text-center">
@@ -779,7 +875,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
             )}
           </div>
 
-          {/* ── 전체 저장 카드 · rounded-2xl 통일 ── */}
+          {/* ── 전체 저장 카드 ── */}
           {rows.length > 0 && (
             <div className={`bg-white rounded-2xl border-2 overflow-hidden transition-all duration-300 ${
               saveStatus === "done"
@@ -805,10 +901,9 @@ export const ScanPage: React.FC<ScanPageProps> = ({
               <div className="px-5 py-4 flex flex-col gap-3">
                 <p className="text-[12px] text-slate-500 leading-relaxed">
                   리스트의 모든 항목을 한 번에 저장합니다.
-                  창고·매장 수량을 입력한 뒤 아래 버튼을 누르세요.
+                  창고1·2 · 매장1·2·3 수량과 구역을 확인한 뒤 아래 버튼을 누르세요.
                 </p>
 
-                {/* 저장 버튼 */}
                 <button
                   onClick={handleBulkSave}
                   disabled={saveStatus === "saving" || saveStatus === "done"}
@@ -846,7 +941,7 @@ export const ScanPage: React.FC<ScanPageProps> = ({
                 {saveStatus === "done" && (
                   <div className="flex items-center gap-2">
                     <p className="text-[12px] text-emerald-600 font-semibold flex-1">
-                      저장 완료. 재고관리 탭에서 실재고 현황을 확인할 수 있습니다.
+                      저장 완료. 재고관리 · 실재고 탭에서 차이 있는 상품을 확인할 수 있습니다.
                     </p>
                     <button
                       onClick={() => {

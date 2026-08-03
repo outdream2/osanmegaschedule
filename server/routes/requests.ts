@@ -361,9 +361,24 @@ router.post("/api/inventory-checks", async (req, res) => {
   const now = new Date().toISOString();
   // 부분 업데이트: 요청에 포함된 필드만 업데이트 (창고/매장 각각 독립 저장 지원)
   // 2026-07-30 · 사용자 요청 · store_stock_2 (매장2) 지원 · real_map "/" 분할
-  const hasWarehouse = Object.prototype.hasOwnProperty.call(b, "warehouse_stock");
-  const hasStore     = Object.prototype.hasOwnProperty.call(b, "store_stock");
-  const hasStore2    = Object.prototype.hasOwnProperty.call(b, "store_stock_2");
+  // 2026-08-03 · Phase 3 · 5분리 (창고1·창고2·매장1·매장2·매장3) · 구역 3개 추가
+  //   - warehouse1_stock / warehouse2_stock / store3_stock / store1_zone / store2_zone / store3_zone
+  //   - 레거시 하위 호환: warehouse_stock = warehouse1_stock, store_stock = store1_stock (== store_stock)
+  const hasWarehouse  = Object.prototype.hasOwnProperty.call(b, "warehouse_stock");
+  const hasStore      = Object.prototype.hasOwnProperty.call(b, "store_stock");
+  const hasStore2     = Object.prototype.hasOwnProperty.call(b, "store_stock_2");
+  const hasWarehouse1 = Object.prototype.hasOwnProperty.call(b, "warehouse1_stock");
+  const hasWarehouse2 = Object.prototype.hasOwnProperty.call(b, "warehouse2_stock");
+  const hasStore3     = Object.prototype.hasOwnProperty.call(b, "store3_stock");
+  const hasZone1      = Object.prototype.hasOwnProperty.call(b, "store1_zone");
+  const hasZone2      = Object.prototype.hasOwnProperty.call(b, "store2_zone");
+  const hasZone3      = Object.prototype.hasOwnProperty.call(b, "store3_zone");
+  const num = (v: any): number | null => (v != null && v !== "" ? Number(v) : null);
+  const str = (v: any): string | null => {
+    if (v == null) return null;
+    const s = String(v).trim();
+    return s === "" ? null : s;
+  };
   const payload: Record<string, any> = {
     product_name:  String(b.product_name ?? ""),
     system_stock:  b.system_stock  != null ? Number(b.system_stock)  : null,
@@ -373,30 +388,61 @@ router.post("/api/inventory-checks", async (req, res) => {
     checked_at:    now,
     status:        "pending",
   };
-  if (hasWarehouse) payload.warehouse_stock = b.warehouse_stock != null && b.warehouse_stock !== "" ? Number(b.warehouse_stock) : null;
-  if (hasStore)     payload.store_stock     = b.store_stock     != null && b.store_stock     !== "" ? Number(b.store_stock)     : null;
-  if (hasStore2)    payload.store_stock_2   = b.store_stock_2   != null && b.store_stock_2   !== "" ? Number(b.store_stock_2)   : null;
+  // 레거시 · 신규 컬럼 mirror 처리 · warehouse1 → warehouse (없으면 warehouse 값 그대로)
+  if (hasWarehouse1) {
+    payload.warehouse1_stock = num(b.warehouse1_stock);
+    payload.warehouse_stock  = payload.warehouse1_stock; // 레거시 mirror
+  } else if (hasWarehouse) {
+    payload.warehouse_stock  = num(b.warehouse_stock);
+    payload.warehouse1_stock = payload.warehouse_stock;   // 신규 mirror (하위 호환)
+  }
+  if (hasWarehouse2) payload.warehouse2_stock = num(b.warehouse2_stock);
+  if (hasStore)      payload.store_stock      = num(b.store_stock);
+  if (hasStore2)     payload.store_stock_2    = num(b.store_stock_2);
+  if (hasStore3)     payload.store3_stock     = num(b.store3_stock);
+  if (hasZone1)      payload.store1_zone      = str(b.store1_zone);
+  if (hasZone2)      payload.store2_zone      = str(b.store2_zone);
+  if (hasZone3)      payload.store3_zone      = str(b.store3_zone);
 
   const { data: existingList } = await supabase.from("inventory_checks").select("id, warehouse_stock, store_stock, store_stock_2").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
   const existing = existingList?.[0] ?? null;
-  if (existing) {
-    // 요청에 없는 필드는 기존값 유지
-    const { error } = await supabase.from("inventory_checks").update(payload).eq("id", existing.id);
-    if (error) return res.status(500).json({ error: error.message });
-    return res.json({ ok: true, updated: true });
+  const applyPayload = async (): Promise<{ error?: string } | null> => {
+    if (existing) {
+      const { error } = await supabase.from("inventory_checks").update(payload).eq("id", existing.id);
+      if (error) return { error: error.message };
+      return null;
+    }
+    const insertPayload: Record<string, any> = { ...payload, product_code: code };
+    if (!("warehouse_stock" in insertPayload))  insertPayload.warehouse_stock  = null;
+    if (!("store_stock" in insertPayload))      insertPayload.store_stock      = null;
+    if (!("store_stock_2" in insertPayload))    insertPayload.store_stock_2    = null;
+    const { error } = await supabase.from("inventory_checks").insert([insertPayload]);
+    if (error) return { error: error.message };
+    return null;
+  };
+  // 신규 컬럼 미존재 DB 하위 호환 · 실패 시 신규 필드 stripping 후 재시도
+  let result = await applyPayload();
+  if (result?.error && /column .* does not exist|no column named|schema cache/i.test(result.error)) {
+    for (const k of ["warehouse1_stock","warehouse2_stock","store3_stock","store1_zone","store2_zone","store3_zone"]) {
+      delete (payload as any)[k];
+    }
+    result = await applyPayload();
   }
-  // 신규 삽입: 요청에 없는 창고/매장/매장2는 null 로 시작
-  const insertPayload: Record<string, any> = { ...payload, product_code: code };
-  if (!hasWarehouse) insertPayload.warehouse_stock = null;
-  if (!hasStore)     insertPayload.store_stock     = null;
-  if (!hasStore2)    insertPayload.store_stock_2   = null;
-  const { error } = await supabase.from("inventory_checks").insert([insertPayload]);
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ ok: true, updated: false });
+  if (result?.error) return res.status(500).json({ error: result.error });
+  return res.json({ ok: true, updated: !!existing });
 });
 
 // 2026-07-30 · 사용자 요청 · 실재고 일괄 저장 · 전체 등록 기능
-// body: { checked_by, items: [{product_code, product_name, warehouse_stock, store_stock, store_stock_2}] }
+// 2026-08-03 · Phase 3 · 5분리 (창고1·창고2·매장1·매장2·매장3) · 구역 3개
+// body: { checked_by, items: [{
+//   product_code, product_name,
+//   warehouse1_stock, warehouse2_stock, store_stock (=store1), store_stock_2 (=store2), store3_stock,
+//   store1_zone, store2_zone, store3_zone
+// }] }
+// 하위 호환:
+//   - warehouse_stock (레거시 · 단일 창고) → warehouse1_stock 미지정 시 fallback
+//   - 구 클라이언트: warehouse_stock / store_stock / store_stock_2 만 보내는 경우 그대로 저장
+//   - 신규 컬럼 미존재 DB · 신규 필드 stripping 후 재시도 (자동 다운그레이드)
 router.post("/api/inventory-checks/bulk", async (req, res) => {
   try {
     const b = req.body ?? {};
@@ -404,30 +450,63 @@ router.post("/api/inventory-checks/bulk", async (req, res) => {
     if (items.length === 0) return res.status(400).json({ error: "items 필수" });
     const checked_by = String(b.checked_by ?? "").trim() || "익명";
     const now = new Date().toISOString();
+    const num = (v: any): number | null => (v != null && v !== "" ? Number(v) : null);
+    const str = (v: any): string | null => {
+      if (v == null) return null;
+      const s = String(v).trim();
+      return s === "" ? null : s;
+    };
     let saved = 0, failed = 0;
+    let downgraded = false; // 신규 컬럼 없는 DB 감지 후 이후 아이템 전부 스트립 처리
     for (const it of items) {
       const code = String(it.product_code ?? "").trim();
       if (!code) { failed++; continue; }
+      // 창고1 우선 · 없으면 레거시 warehouse_stock 사용
+      const wh1 = it.warehouse1_stock !== undefined ? num(it.warehouse1_stock) : num(it.warehouse_stock);
+      const wh2 = num(it.warehouse2_stock);
+      const s1  = num(it.store_stock);       // 매장1
+      const s2  = num(it.store_stock_2);     // 매장2
+      const s3  = num(it.store3_stock);      // 매장3
       const payload: Record<string, any> = {
         product_name: String(it.product_name ?? ""),
         checked_by,
         checked_at: now,
         status: "pending",
-        warehouse_stock: it.warehouse_stock != null && it.warehouse_stock !== "" ? Number(it.warehouse_stock) : null,
-        store_stock:     it.store_stock     != null && it.store_stock     !== "" ? Number(it.store_stock)     : null,
-        store_stock_2:   it.store_stock_2   != null && it.store_stock_2   !== "" ? Number(it.store_stock_2)   : null,
+        // 레거시 mirror · 기존 소비자 (LowStockPanel · DisplayPage · RequestsPage) 하위 호환
+        warehouse_stock: wh1,
+        store_stock:     s1,
+        store_stock_2:   s2,
       };
+      // 신규 컬럼
+      if (!downgraded) {
+        payload.warehouse1_stock = wh1;
+        payload.warehouse2_stock = wh2;
+        payload.store3_stock     = s3;
+        payload.store1_zone      = str(it.store1_zone);
+        payload.store2_zone      = str(it.store2_zone);
+        payload.store3_zone      = str(it.store3_zone);
+      }
       const { data: existingList } = await supabase.from("inventory_checks").select("id").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
       const existing = existingList?.[0] ?? null;
-      if (existing) {
-        const { error } = await supabase.from("inventory_checks").update(payload).eq("id", existing.id);
-        if (error) failed++; else saved++;
-      } else {
-        const { error } = await supabase.from("inventory_checks").insert([{ ...payload, product_code: code }]);
-        if (error) failed++; else saved++;
+      const doWrite = async (p: Record<string, any>) => {
+        if (existing) {
+          return supabase.from("inventory_checks").update(p).eq("id", existing.id);
+        }
+        return supabase.from("inventory_checks").insert([{ ...p, product_code: code }]);
+      };
+      let { error } = await doWrite(payload);
+      if (error && /column .* does not exist|no column named|schema cache/i.test(error.message)) {
+        // 신규 컬럼 미존재 DB → 스트립 후 재시도 · 이후 아이템도 스트립
+        downgraded = true;
+        for (const k of ["warehouse1_stock","warehouse2_stock","store3_stock","store1_zone","store2_zone","store3_zone"]) {
+          delete (payload as any)[k];
+        }
+        const retry = await doWrite(payload);
+        error = retry.error ?? null;
       }
+      if (error) { failed++; } else { saved++; }
     }
-    res.json({ ok: true, saved, failed, total: items.length });
+    res.json({ ok: true, saved, failed, total: items.length, downgraded });
   } catch (err: any) {
     console.error("[inventory-checks/bulk POST]", err?.message);
     res.status(500).json({ error: err?.message ?? "일괄 저장 실패" });
