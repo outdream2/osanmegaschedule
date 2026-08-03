@@ -107,6 +107,13 @@ interface OrderManagePageProps {
 //   · 페이지 로딩 시 저장된 조건으로 초기화
 type NeedCategoryFilterKey = "all" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
 type OrderNeedShortageBasis = "optimal" | "min" | "realStock";
+// 2026-08-03 (#189) · 정렬 기본값 · 매입주기·최근 한달 판매량 필터와 함께 저장
+//   · "sale_month" · 최근 한달 판매량 (top-sales?months 로 enrich)
+//   · "cycle" · 매입주기일 (first/last purchase 로 계산 · enrich)
+//   · 나머지 · 기존 NeedSortKey 와 동일
+type OrderNeedDefaultSortKey =
+  | "supplier" | "contact" | "name" | "current" | "inv" | "optimal" | "short"
+  | "sale_month" | "cycle";
 interface OrderNeedFilterConfig {
   /** 부족 판정 기준 · optimal(추천적정재고) · min(최소재고) · realStock(실재고) */
   shortageBasis: OrderNeedShortageBasis;
@@ -116,6 +123,14 @@ interface OrderNeedFilterConfig {
   includeMissingRealStock: boolean;
   /** 최소 부족 개수 · 부족량이 이 값 이상만 표시 (>=1) */
   minShortage: number;
+  /** 2026-08-03 (#189) · 매입주기 최소 (일) · N 이상만 표시 · 0 이면 필터 미적용 */
+  minPurchaseCycle: number;
+  /** 2026-08-03 (#189) · 최근 한달(30일) 판매량 최소 (개) · N 이상만 표시 · 0 이면 필터 미적용 */
+  minMonthlySales: number;
+  /** 2026-08-03 (#189) · 기본 정렬 · 페이지 진입 시 적용 */
+  defaultSortKey: OrderNeedDefaultSortKey;
+  /** 2026-08-03 (#189) · 기본 정렬 방향 */
+  defaultSortDir: "asc" | "desc";
 }
 const ORDER_NEED_CONFIG_KEY = "megatown_orderNeedFilterConfig";
 const DEFAULT_ORDER_NEED_CONFIG: OrderNeedFilterConfig = {
@@ -123,6 +138,12 @@ const DEFAULT_ORDER_NEED_CONFIG: OrderNeedFilterConfig = {
   defaultCategory: "all",
   includeMissingRealStock: true,
   minShortage: 1,
+  // 2026-08-03 (#189) · 사용자 요청 기본값 · 매입주기 90일 이상 · 최근 한달 판매 100개 이상
+  minPurchaseCycle: 90,
+  minMonthlySales: 100,
+  // 2026-08-03 (#189) · 기본 정렬 · 최근 한달 판매량 desc (많이 팔린 상품 우선)
+  defaultSortKey: "sale_month",
+  defaultSortDir: "desc",
 };
 const loadOrderNeedConfig = (): OrderNeedFilterConfig => {
   try {
@@ -132,11 +153,20 @@ const loadOrderNeedConfig = (): OrderNeedFilterConfig => {
     if (!parsed || typeof parsed !== "object") return DEFAULT_ORDER_NEED_CONFIG;
     const validBasis: OrderNeedShortageBasis[] = ["optimal", "min", "realStock"];
     const validCat: NeedCategoryFilterKey[] = ["all", "위탁", "선결제", "60일회전", "90일회전", "기타"];
+    const validSortKey: OrderNeedDefaultSortKey[] = [
+      "supplier", "contact", "name", "current", "inv", "optimal", "short",
+      "sale_month", "cycle",
+    ];
     return {
       shortageBasis: validBasis.includes(parsed.shortageBasis) ? parsed.shortageBasis : DEFAULT_ORDER_NEED_CONFIG.shortageBasis,
       defaultCategory: validCat.includes(parsed.defaultCategory) ? parsed.defaultCategory : DEFAULT_ORDER_NEED_CONFIG.defaultCategory,
       includeMissingRealStock: typeof parsed.includeMissingRealStock === "boolean" ? parsed.includeMissingRealStock : DEFAULT_ORDER_NEED_CONFIG.includeMissingRealStock,
       minShortage: (typeof parsed.minShortage === "number" && parsed.minShortage >= 1) ? Math.floor(parsed.minShortage) : DEFAULT_ORDER_NEED_CONFIG.minShortage,
+      // 2026-08-03 (#189) · 새 필드 · 하위 호환 · fallback = DEFAULT
+      minPurchaseCycle: (typeof parsed.minPurchaseCycle === "number" && parsed.minPurchaseCycle >= 0) ? Math.floor(parsed.minPurchaseCycle) : DEFAULT_ORDER_NEED_CONFIG.minPurchaseCycle,
+      minMonthlySales: (typeof parsed.minMonthlySales === "number" && parsed.minMonthlySales >= 0) ? Math.floor(parsed.minMonthlySales) : DEFAULT_ORDER_NEED_CONFIG.minMonthlySales,
+      defaultSortKey: validSortKey.includes(parsed.defaultSortKey) ? parsed.defaultSortKey : DEFAULT_ORDER_NEED_CONFIG.defaultSortKey,
+      defaultSortDir: (parsed.defaultSortDir === "asc" || parsed.defaultSortDir === "desc") ? parsed.defaultSortDir : DEFAULT_ORDER_NEED_CONFIG.defaultSortDir,
     };
   } catch { return DEFAULT_ORDER_NEED_CONFIG; }
 };
@@ -267,9 +297,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [orderSearch, setOrderSearch] = useState("");
 
   // ── 발주필요(need) 탭 정렬 ──
-  type NeedSortKey = "supplier" | "contact" | "name" | "current" | "inv" | "optimal" | "short";
-  const [needSortKey, setNeedSortKey] = useState<NeedSortKey>("short");
-  const [needSortDir, setNeedSortDir] = useState<"asc" | "desc">("desc");
+  //   · 2026-08-03 (#189) · "sale_month" · "cycle" 추가 · orderNeedConfig.defaultSort* 로 초기화
+  type NeedSortKey = "supplier" | "contact" | "name" | "current" | "inv" | "optimal" | "short" | "sale_month" | "cycle";
+  const [needSortKey, setNeedSortKey] = useState<NeedSortKey>(() => loadOrderNeedConfig().defaultSortKey as NeedSortKey);
+  const [needSortDir, setNeedSortDir] = useState<"asc" | "desc">(() => loadOrderNeedConfig().defaultSortDir);
   const handleNeedSort = (k: NeedSortKey) => {
     if (needSortKey === k) setNeedSortDir(d => d === "asc" ? "desc" : "asc");
     else { setNeedSortKey(k); setNeedSortDir("asc"); }
@@ -396,6 +427,58 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [needCategoryFilter, setNeedCategoryFilter] = useState<NeedCategoryFilter>(orderNeedConfig.defaultCategory);
   // 설정된 defaultCategory 변경 시 · 현재 카테고리 필터도 즉시 반영 (사용자가 저장한 순간 UI 동기화)
   useEffect(() => { setNeedCategoryFilter(orderNeedConfig.defaultCategory); }, [orderNeedConfig.defaultCategory]);
+  // 2026-08-03 (#189) · 설정된 defaultSort 변경 시 · 현재 정렬 상태도 즉시 반영 (모달 저장 순간 UI 동기화)
+  useEffect(() => {
+    setNeedSortKey(orderNeedConfig.defaultSortKey as NeedSortKey);
+    setNeedSortDir(orderNeedConfig.defaultSortDir);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orderNeedConfig.defaultSortKey, orderNeedConfig.defaultSortDir]);
+
+  // 2026-08-03 (#189) · 발주필요 · 매입주기·최근 한달 판매량 enrich map
+  //   · 필터 조건 (minPurchaseCycle · minMonthlySales) + 정렬 (sale_month · cycle) 에 사용
+  //   · top-sales?months=6 재활용 (ReturnListPanel 이 이미 warm 시켜둠 · 서버 캐시 TTL 활용)
+  //   · 발주필요 탭 · 필터 활성화 or 정렬 활성화 시에만 fetch (성능 · 필요없으면 skip)
+  interface NeedExtra { cycle: number | null; saleMonth: number | null }
+  const [needExtraMap, setNeedExtraMap] = useState<Map<string, NeedExtra>>(() => new Map());
+  const [needExtraLoaded, setNeedExtraLoaded] = useState(false);
+  const needExtraRequired = (
+    orderNeedConfig.minPurchaseCycle > 0 ||
+    orderNeedConfig.minMonthlySales > 0 ||
+    orderNeedConfig.defaultSortKey === "sale_month" ||
+    orderNeedConfig.defaultSortKey === "cycle" ||
+    needSortKey === "sale_month" ||
+    needSortKey === "cycle"
+  );
+  useEffect(() => {
+    if (!needExtraRequired || needExtraLoaded) return;
+    let alive = true;
+    (async () => {
+      try {
+        // months=6 · 매입주기 계산에 충분한 이력 · limit=5000 · 전체 상품 커버
+        const res = await fetch("/api/stock-manage/top-sales?months=6&limit=5000&sort=sale&dir=desc");
+        if (!res.ok) return;
+        const body = await res.json();
+        const rows: any[] = Array.isArray(body?.rows) ? body.rows : (Array.isArray(body) ? body : []);
+        const m = new Map<string, NeedExtra>();
+        for (const r of rows) {
+          const code = String(r?.product_code ?? "").trim();
+          if (!code) continue;
+          const cnt = Number(r?.purchase_count ?? 0);
+          const first = String(r?.first_purchase_date ?? "");
+          const last = String(r?.last_purchase_date ?? "");
+          let cycle: number | null = null;
+          if (cnt >= 2 && first && last && first !== last) {
+            const days = Math.round((new Date(last).getTime() - new Date(first).getTime()) / (86400 * 1000));
+            cycle = cnt > 1 ? Math.round(days / (cnt - 1)) : null;
+          }
+          const saleMonth = r?.sale_qty_month != null ? Number(r.sale_qty_month) : null;
+          m.set(code, { cycle, saleMonth: Number.isFinite(saleMonth) ? saleMonth : null });
+        }
+        if (alive) { setNeedExtraMap(m); setNeedExtraLoaded(true); }
+      } catch { /* silent · 필터/정렬 스킵 · 기존 동작 유지 */ }
+    })();
+    return () => { alive = false; };
+  }, [needExtraRequired, needExtraLoaded]);
   // 2026-08-03 (#201) · 발주필요 · 추가 검색 필터 (기존 조건 설정 위에 UX 개선)
   //   · stockStatus · 다중 선택 · zero(0)·low(<=3)·warning(부족<10)·healthy(부족>=10)
   //   · needSearchDeferred · React 18 useDeferredValue · 입력 즉시 반응 · 필터링만 유예
@@ -620,7 +703,29 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       if (isNaN(cur) || isNaN(opt) || opt <= 0) return false;
       shortage = opt - cur;
     }
-    return shortage >= Math.max(1, orderNeedConfig.minShortage);
+    if (shortage < Math.max(1, orderNeedConfig.minShortage)) return false;
+
+    // 2026-08-03 (#189) · 매입주기 · 최근 한달 판매량 필터 (enrich 데이터 필요 · 미로딩 시 skip)
+    //   · 0 이면 미적용
+    //   · enrich 데이터 없는 상품 · 안전상 통과 (오탐 방지 · 미로딩 상태에서 사라지지 않음)
+    //   · 데이터 있고 기준 미달 시에만 제외
+    if (orderNeedConfig.minPurchaseCycle > 0 || orderNeedConfig.minMonthlySales > 0) {
+      const extra = code ? needExtraMap.get(code) : undefined;
+      if (extra) {
+        if (orderNeedConfig.minPurchaseCycle > 0) {
+          if (extra.cycle == null || extra.cycle < orderNeedConfig.minPurchaseCycle) return false;
+        }
+        if (orderNeedConfig.minMonthlySales > 0) {
+          if (extra.saleMonth == null || extra.saleMonth < orderNeedConfig.minMonthlySales) return false;
+        }
+      }
+      // enrich 미로딩 상품 · 로딩 완료 후에만 엄격 적용 (needExtraLoaded=true)
+      else if (needExtraLoaded) {
+        if (orderNeedConfig.minPurchaseCycle > 0) return false;
+        if (orderNeedConfig.minMonthlySales > 0) return false;
+      }
+    }
+    return true;
   }).sort((a, b) => (Number(b.optimal_stock) - Number(b.current_stock)) - (Number(a.optimal_stock) - Number(a.current_stock)));
 
   const handleRequestOrder = async (p: ProductInfo) => {
@@ -1091,6 +1196,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 {orderNeedConfig.shortageBasis === "optimal" && "현재고 < 추천적정재고"}
                 {orderNeedConfig.minShortage > 1 && ` · 부족 ${orderNeedConfig.minShortage}개 이상`}
                 {!orderNeedConfig.includeMissingRealStock && " · 실재고 있는 것만"}
+                {/* 2026-08-03 (#189) · 매입주기·최근 한달 판매량 필터 · 정렬 표시 */}
+                {orderNeedConfig.minPurchaseCycle > 0 && ` · 매입주기 ≥${orderNeedConfig.minPurchaseCycle}일`}
+                {orderNeedConfig.minMonthlySales > 0 && ` · 최근 한달 판매 ≥${orderNeedConfig.minMonthlySales}개`}
                 <span className="mx-1 text-slate-300">·</span>상품명 클릭 → 상세
               </span>
             </div>
@@ -1261,6 +1369,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   const bVendor = b.supplier ? findVendor(b.supplier) : undefined;
                   const aContact = aVendor?.contact_name || (a as any).supplier_contact || "";
                   const bContact = bVendor?.contact_name || (b as any).supplier_contact || "";
+                  // 2026-08-03 (#189) · sale_month · cycle · enrich map 참조 (null 은 최하위 정렬 값)
+                  const aExtra = aCode ? needExtraMap.get(aCode) : undefined;
+                  const bExtra = bCode ? needExtraMap.get(bCode) : undefined;
                   switch (needSortKey) {
                     case "supplier": return dir * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
                     case "contact":  return dir * aContact.localeCompare(bContact, "ko");
@@ -1269,6 +1380,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     case "inv":      return dir * ((aInv?.total ?? -1) - (bInv?.total ?? -1));
                     case "optimal":  return dir * (Number(a.optimal_stock ?? 0) - Number(b.optimal_stock ?? 0));
                     case "short":    return dir * ((Number(a.optimal_stock ?? 0) - Number(a.current_stock ?? 0)) - (Number(b.optimal_stock ?? 0) - Number(b.current_stock ?? 0)));
+                    case "sale_month": return dir * ((aExtra?.saleMonth ?? -1) - (bExtra?.saleMonth ?? -1));
+                    case "cycle":      return dir * ((aExtra?.cycle ?? -1) - (bExtra?.cycle ?? -1));
                     default:         return 0;
                   }
                 }).map(p => {
@@ -1563,6 +1676,95 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                     <span className="text-[13px] text-slate-600">개 이상 부족한 상품만 표시</span>
                   </div>
                   <span className="text-[12px] text-slate-400">기본값: 1 (조금이라도 부족하면 모두 표시)</span>
+                </div>
+
+                {/* 5. 매입주기 최소 · 2026-08-03 (#189) */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">5. 매입주기 최소</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={needFilterDraft.minPurchaseCycle}
+                      onChange={e => {
+                        const v = Number(e.target.value);
+                        setNeedFilterDraft(prev => ({ ...prev, minPurchaseCycle: Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0 }));
+                      }}
+                      className="w-24 h-10 px-3 border border-slate-300 rounded-lg text-[14px] font-bold text-slate-800 tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+                    />
+                    <span className="text-[13px] text-slate-600">일 이상 매입주기 상품만 표시</span>
+                  </div>
+                  <span className="text-[12px] text-slate-400">기본값: 90 · 0 입력 시 필터 미적용 · 매입주기 = 최근·처음 매입일 사이 평균 간격</span>
+                </div>
+
+                {/* 6. 최근 한달 판매량 최소 · 2026-08-03 (#189) */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">6. 최근 한달(30일) 판매량 최소</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      step={1}
+                      value={needFilterDraft.minMonthlySales}
+                      onChange={e => {
+                        const v = Number(e.target.value);
+                        setNeedFilterDraft(prev => ({ ...prev, minMonthlySales: Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0 }));
+                      }}
+                      className="w-24 h-10 px-3 border border-slate-300 rounded-lg text-[14px] font-bold text-slate-800 tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+                    />
+                    <span className="text-[13px] text-slate-600">개 이상 판매된 상품만 표시</span>
+                  </div>
+                  <span className="text-[12px] text-slate-400">기본값: 100 · 0 입력 시 필터 미적용 · 최근 30일 stock_history 합계</span>
+                </div>
+
+                {/* 7. 기본 정렬 · 2026-08-03 (#189) */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">7. 기본 정렬</span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {([
+                      { k: "sale_month" as OrderNeedDefaultSortKey, label: "최근 한달 판매량" },
+                      { k: "cycle"      as OrderNeedDefaultSortKey, label: "매입주기(일)" },
+                      { k: "short"      as OrderNeedDefaultSortKey, label: "부족량" },
+                      { k: "current"    as OrderNeedDefaultSortKey, label: "ERP재고(현재고)" },
+                      { k: "optimal"    as OrderNeedDefaultSortKey, label: "추천적정재고" },
+                      { k: "inv"        as OrderNeedDefaultSortKey, label: "실재고 합계" },
+                      { k: "name"       as OrderNeedDefaultSortKey, label: "상품명" },
+                      { k: "supplier"   as OrderNeedDefaultSortKey, label: "공급사" },
+                    ]).map(opt => (
+                      <button
+                        key={opt.k}
+                        type="button"
+                        onClick={() => setNeedFilterDraft(prev => ({ ...prev, defaultSortKey: opt.k }))}
+                        className={[
+                          "px-2 h-8 rounded-md text-[13px] font-bold border transition cursor-pointer text-left",
+                          needFilterDraft.defaultSortKey === opt.k
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
+                        ].join(" ")}
+                      >{opt.label}</button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[12px] font-bold text-slate-600">정렬 방향:</span>
+                    {([
+                      { k: "desc" as const, label: "내림차순 (큰 것부터)" },
+                      { k: "asc"  as const, label: "오름차순 (작은 것부터)" },
+                    ]).map(opt => (
+                      <button
+                        key={opt.k}
+                        type="button"
+                        onClick={() => setNeedFilterDraft(prev => ({ ...prev, defaultSortDir: opt.k }))}
+                        className={[
+                          "px-2 h-8 rounded-md text-[13px] font-bold border transition cursor-pointer",
+                          needFilterDraft.defaultSortDir === opt.k
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
+                        ].join(" ")}
+                      >{opt.label}</button>
+                    ))}
+                  </div>
+                  <span className="text-[12px] text-slate-400">기본값: 최근 한달 판매량 · 내림차순 (판매 많은 상품 우선)</span>
                 </div>
               </div>
 
