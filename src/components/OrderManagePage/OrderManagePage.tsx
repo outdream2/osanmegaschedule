@@ -9,7 +9,7 @@ import { SearchBar } from "../common/SearchBar";
 import { SearchFilterChips, type ChipOption } from "../common/SearchFilterChips";
 import { matchHangul } from "../common/hangulSearch";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
-import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, Settings, RotateCcw, X } from "lucide-react";
+import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, Settings, RotateCcw, X, Search } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
@@ -468,20 +468,17 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     if (field === "cycle")   setNeedInlineMinCycle(n);
     if (field === "current") setNeedInlineMaxCurrent(n);
     if (field === "sales")   setNeedInlineMinSales(n);
-    if (inlineDebounceRef.current) clearTimeout(inlineDebounceRef.current);
-    inlineDebounceRef.current = setTimeout(() => {
-      const next = {
-        minCycle:   field === "cycle"   ? n : needInlineMinCycle,
-        maxCurrent: field === "current" ? n : needInlineMaxCurrent,
-        minSales:   field === "sales"   ? n : needInlineMinSales,
-      };
-      setDeferredInlineCycle(next.minCycle);
-      setDeferredInlineCurrent(next.maxCurrent);
-      setDeferredInlineSales(next.minSales);
-      try { localStorage.setItem(ORDER_NEED_INLINE_KEY, JSON.stringify(next)); } catch { /**/ }
-    }, 300);
+    // 실시간 반영 X · [조회] 버튼 클릭 시만 필터 적용 (사용자 요청)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needInlineMinCycle, needInlineMaxCurrent, needInlineMinSales]);
+  // [조회] 버튼 · 명시적 필터 적용
+  const applyInlineFilter = () => {
+    if (inlineDebounceRef.current) clearTimeout(inlineDebounceRef.current);
+    setDeferredInlineCycle(needInlineMinCycle);
+    setDeferredInlineCurrent(needInlineMaxCurrent);
+    setDeferredInlineSales(needInlineMinSales);
+    try { localStorage.setItem(ORDER_NEED_INLINE_KEY, JSON.stringify({ minCycle: needInlineMinCycle, maxCurrent: needInlineMaxCurrent, minSales: needInlineMinSales })); } catch { /**/ }
+  };
   const resetInlineFilter = () => {
     if (inlineDebounceRef.current) clearTimeout(inlineDebounceRef.current);
     setNeedInlineMinCycle(0); setNeedInlineMaxCurrent(0); setNeedInlineMinSales(0);
@@ -1425,12 +1422,23 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <span className="text-[12px] text-slate-500 whitespace-nowrap">개 이상</span>
             </label>
 
+            {/* 조회 버튼 · 명시적 필터 적용 (실시간 X · 사용자 요청) */}
+            <button
+              type="button"
+              onClick={applyInlineFilter}
+              className="ml-auto inline-flex items-center gap-1.5 h-8 px-4 rounded-md bg-emerald-600 hover:bg-emerald-700
+                         text-white text-[13px] font-black shadow-sm transition cursor-pointer whitespace-nowrap shrink-0"
+              title="입력값으로 리스트 조회"
+            >
+              <Search size={13} strokeWidth={2.5} className="shrink-0" />조회
+            </button>
+
             {/* 초기화 버튼 (조건 하나라도 활성 시 노출) */}
             {inlineActive && (
               <button
                 type="button"
                 onClick={resetInlineFilter}
-                className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-slate-200 bg-white
+                className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-slate-200 bg-white
                            hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600
                            text-[11px] font-black text-slate-500 transition cursor-pointer shrink-0"
                 title="인라인 조건 모두 초기화 (0으로)"
