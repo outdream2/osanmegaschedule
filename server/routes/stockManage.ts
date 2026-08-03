@@ -776,38 +776,46 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
             // 2026-07-30 · 사용자 지적 · 반품필요 리스트 · sale_qty_month · last_purchase_qty 안 나옴
             //   RPC 반환에 이 두 필드 없음 · 서버에서 batch fetch 로 보강
             //   대상 · rows.slice(0, limit) 만 (전체 · 성능 부담)
-            //   2026-07-30 · RPC 함수가 이미 sale_qty_month·last_purchase_qty 반환하면 · skip (성능)
-            // sale_qty_month 가 RPC 반환에 포함됐는지 · rpcData[0] 에서 직접 확인 (rows 는 이미 ?? 0 적용됨)
-            const needsBoost = rows.length > 0 && rpcData[0].sale_qty_month === undefined;
+            //   2026-07-30 · RPC 함수가 이미 sale_qty_month·last_purchase_qty 반환하면 · 부분 skip (성능)
+            //   2026-08-03 · sale_qty_60d · sale_qty_90d 추가 · 반품필요 리스트 · 1/2/3달 판매 컬럼
+            //     · 60d/90d 는 RPC 에 없으므로 항상 fetch · 30d 는 RPC 재사용 가능
+            const needsMonthBoost = rows.length > 0 && rpcData[0].sale_qty_month === undefined;
+            const needsExtended = rows.length > 0; // 60d/90d 는 항상 필요
             try {
-              const targetCodes = needsBoost ? rows.slice(0, limit).map(r => String(r.product_code ?? "").trim()).filter(Boolean) : [];
+              const targetCodes = needsExtended ? rows.slice(0, limit).map(r => String(r.product_code ?? "").trim()).filter(Boolean) : [];
               if (targetCodes.length > 0) {
-                // ── 1) purchase_details · last_purchase_qty · 각 상품 최근 매입일의 수량
+                // ── 1) purchase_details · last_purchase_qty · 각 상품 최근 매입일의 수량 (기존 boost 조건 유지)
                 const lastQtyMap = new Map<string, number>();
                 const CHUNK = 200; const PAGE = 1000;
-                for (let i = 0; i < targetCodes.length; i += CHUNK) {
-                  const chunk = targetCodes.slice(i, i + CHUNK);
-                  let fromRow = 0;
-                  while (true) {
-                    const { data: pd } = await supabase
-                      .from("purchase_details")
-                      .select("product_code, purchase_date, quantity")
-                      .in("product_code", chunk)
-                      .order("purchase_date", { ascending: false })
-                      .range(fromRow, fromRow + PAGE - 1);
-                    if (!pd || pd.length === 0) break;
-                    for (const r of pd) {
-                      const code = String((r as any).product_code ?? "").trim();
-                      if (!code || lastQtyMap.has(code)) continue;
-                      lastQtyMap.set(code, Number((r as any).quantity ?? 0) || 0);
+                if (needsMonthBoost) {
+                  for (let i = 0; i < targetCodes.length; i += CHUNK) {
+                    const chunk = targetCodes.slice(i, i + CHUNK);
+                    let fromRow = 0;
+                    while (true) {
+                      const { data: pd } = await supabase
+                        .from("purchase_details")
+                        .select("product_code, purchase_date, quantity")
+                        .in("product_code", chunk)
+                        .order("purchase_date", { ascending: false })
+                        .range(fromRow, fromRow + PAGE - 1);
+                      if (!pd || pd.length === 0) break;
+                      for (const r of pd) {
+                        const code = String((r as any).product_code ?? "").trim();
+                        if (!code || lastQtyMap.has(code)) continue;
+                        lastQtyMap.set(code, Number((r as any).quantity ?? 0) || 0);
+                      }
+                      if (pd.length < PAGE) break;
+                      fromRow += PAGE;
                     }
-                    if (pd.length < PAGE) break;
-                    fromRow += PAGE;
                   }
                 }
-                // ── 2) stock_history · 최근 30일 · sale_qty + total_amount (판매량 + 판매액)
-                const monthAgo = new Date(Date.now() - 30 * 86400 * 1000).toISOString().slice(0, 10);
-                const monthSalesMap = new Map<string, { qty: number; amount: number }>();
+                // ── 2) stock_history · 최근 90일 · sale_qty + total_amount · 30d/60d/90d 윈도우 각각 합산
+                //   (2026-08-03 · 60d/90d 확장 · 90일까지 fetch · window sum)
+                const _now = Date.now();
+                const day30 = new Date(_now - 30 * 86400 * 1000).toISOString().slice(0, 10);
+                const day60 = new Date(_now - 60 * 86400 * 1000).toISOString().slice(0, 10);
+                const day90 = new Date(_now - 90 * 86400 * 1000).toISOString().slice(0, 10);
+                const salesWindowMap = new Map<string, { qty30: number; amt30: number; qty60: number; qty90: number }>();
                 for (let i = 0; i < targetCodes.length; i += CHUNK) {
                   const chunk = targetCodes.slice(i, i + CHUNK);
                   let fromRow = 0;
@@ -816,19 +824,24 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
                       .from("stock_history")
                       .select("product_code, sale_qty, total_amount, snapshot_date")
                       .in("product_code", chunk)
-                      .gte("snapshot_date", monthAgo)
+                      .gte("snapshot_date", day90)
                       .lte("snapshot_date", todayStr)
                       .range(fromRow, fromRow + PAGE - 1);
                     if (!sh || sh.length === 0) break;
                     for (const r of sh) {
                       const code = String((r as any).product_code ?? "").trim();
                       if (!code) continue;
+                      const snap = String((r as any).snapshot_date ?? "");
                       const q = Number((r as any).sale_qty ?? 0) || 0;
                       const a = Number((r as any).total_amount ?? 0) || 0;
-                      const cur = monthSalesMap.get(code) ?? { qty: 0, amount: 0 };
-                      cur.qty += q;
-                      cur.amount += a;
-                      monthSalesMap.set(code, cur);
+                      const cur = salesWindowMap.get(code) ?? { qty30: 0, amt30: 0, qty60: 0, qty90: 0 };
+                      // 90d 는 fetch 범위 전체
+                      cur.qty90 += q;
+                      // 60d · snap >= day60
+                      if (snap >= day60) cur.qty60 += q;
+                      // 30d · snap >= day30
+                      if (snap >= day30) { cur.qty30 += q; cur.amt30 += a; }
+                      salesWindowMap.set(code, cur);
                     }
                     if (sh.length < PAGE) break;
                     fromRow += PAGE;
@@ -837,10 +850,17 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
                 // 3) rows 에 필드 주입
                 for (const r of rows) {
                   const code = String((r as any).product_code ?? "").trim();
-                  (r as any).last_purchase_qty = lastQtyMap.get(code) ?? null;
-                  const monthData = monthSalesMap.get(code);
-                  (r as any).sale_qty_month    = monthData?.qty ?? 0;
-                  (r as any).sale_amount_month = monthData?.amount ?? 0;
+                  if (needsMonthBoost) {
+                    (r as any).last_purchase_qty = lastQtyMap.get(code) ?? null;
+                  }
+                  const w = salesWindowMap.get(code);
+                  if (needsMonthBoost) {
+                    (r as any).sale_qty_month    = w?.qty30 ?? 0;
+                    (r as any).sale_amount_month = w?.amt30 ?? 0;
+                  }
+                  // 2026-08-03 · 반품필요 리스트 · 60/90일 판매량 (항상 주입)
+                  (r as any).sale_qty_60d = w?.qty60 ?? 0;
+                  (r as any).sale_qty_90d = w?.qty90 ?? 0;
                 }
               }
             } catch (e: any) {
@@ -1069,26 +1089,37 @@ router.get("/api/stock-manage/top-sales", async (req, res) => {
       }
       // 2026-07-30 · 사용자 요청 · 반품필요 · 최근 한달 판매량 + 판매액 계산
       //   salesByCodeByDate 재사용 · 오늘 - 30일 이내 snapshot 합산
+      // 2026-08-03 · 60일 · 90일 판매량도 추가 (반품필요 · 1/2/3달 판매 컬럼)
       const _todayIso = new Date().toISOString().slice(0, 10);
       const _monthAgo = new Date(Date.now() - 30 * 86400 * 1000).toISOString().slice(0, 10);
+      const _day60    = new Date(Date.now() - 60 * 86400 * 1000).toISOString().slice(0, 10);
+      const _day90    = new Date(Date.now() - 90 * 86400 * 1000).toISOString().slice(0, 10);
       // 각 상품 · purchase_details 값 반영 + sale_qty_cycle 계산
       // 2026-07-29 · 사용자 요청 · 매입 관련 필드는 무조건 purchase_details 값 사용 (조건부 override X)
       for (const agg of byCode.values()) {
         // 2026-07-30 · sale_qty_month + sale_amount_month · 최근 30일 (독립 계산 · purchase 유무 무관)
+        // 2026-08-03 · sale_qty_60d · sale_qty_90d 병렬 계산 (같은 loop)
         {
           const bySup = salesByCodeByDate.get(agg.product_code);
           let salesMonth = 0;
           let amountMonth = 0;
+          let sales60 = 0;
+          let sales90 = 0;
           if (bySup) {
             for (const [snap, v] of bySup) {
-              if (snap >= _monthAgo && snap <= _todayIso) {
+              if (snap > _todayIso) continue;
+              if (snap >= _monthAgo) {
                 salesMonth += v.qty;
                 amountMonth += v.amount;
               }
+              if (snap >= _day60) sales60 += v.qty;
+              if (snap >= _day90) sales90 += v.qty;
             }
           }
           (agg as any).sale_qty_month = salesMonth;
           (agg as any).sale_amount_month = amountMonth;
+          (agg as any).sale_qty_60d = sales60;
+          (agg as any).sale_qty_90d = sales90;
         }
         const info = purchaseInfoMap.get(agg.product_code);
         if (info && info.count > 0) {

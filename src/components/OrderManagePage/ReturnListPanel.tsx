@@ -22,6 +22,7 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, onClose }
   const send = async () => {
     setSending(true);
     try {
+      // 2026-08-03 · 반품필요 컬럼 재편 · 판매액 제거 · 60/90일 판매량 · 실재고 필드 추가
       const payload = {
         product_code: item.product_code,
         product_name: item.product_name,
@@ -30,8 +31,10 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, onClose }
         note: note.trim() || null,
         purchase_cycle: item.purchase_cycle,
         sale_qty_month: item.sale_qty_month,
-        sale_amount_month: item.sale_amount_month,
-        current_stock: item.current_stock,
+        sale_qty_60d:   item.sale_qty_60d,
+        sale_qty_90d:   item.sale_qty_90d,
+        current_stock:  item.current_stock,
+        actual_stock:   item.actual_stock,
         purchase_price: item.purchase_price,
       };
       const res = await fetch("/api/return-requests", {
@@ -127,17 +130,20 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, onClose }
 // ── ReturnListPanel (메인 export) ────────────────────────────────────────
 export const ReturnListPanel: React.FC = () => {
   // ── state ──────────────────────────────────────────────────────────────
+  // 2026-08-03 · 반품필요 컬럼 재편 · 실재고 컬럼 추가 · 1/2/3달 판매량 컬럼 (판매액 제거)
   type ReturnItem = {
     product_code: string;
     product_name: string;
     supplier: string | null;
     purchase_cycle: number | null;
     sale_qty_cycle: number;
-    sale_qty_month: number | null;
-    sale_amount_month: number | null;
+    sale_qty_month: number | null;   // 최근 30일 (1달)
+    sale_qty_60d: number | null;     // 최근 60일 (2달) · 2026-08-03 추가
+    sale_qty_90d: number | null;     // 최근 90일 (3달) · 2026-08-03 추가
     last_purchase_date: string | null;
     last_purchase_qty: number | null;
     current_stock: number;
+    actual_stock: number | null;     // 실재고 · inventory_checks 최신값 합계 · 2026-08-03 추가
     purchase_price: number;
   };
   const [returnList, setReturnList] = useState<ReturnItem[]>([]);
@@ -149,7 +155,7 @@ export const ReturnListPanel: React.FC = () => {
   type ReturnCategoryFilter = "전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
   const [returnCategoryFilter, setReturnCategoryFilter] = useState<ReturnCategoryFilter>("전체");
 
-  type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "purchase_cycle" | "sale_qty_month" | "sale_amount_month" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
+  type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "actual_stock" | "purchase_cycle" | "sale_qty_month" | "sale_qty_60d" | "sale_qty_90d" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
   const [returnSortKey, setReturnSortKey] = useState<ReturnSortKey>("purchase_cycle");
   const [returnSortDir, setReturnSortDir] = useState<"asc" | "desc">("desc");
   const handleReturnSort = (k: ReturnSortKey) => {
@@ -161,10 +167,47 @@ export const ReturnListPanel: React.FC = () => {
   const loadReturnList = useCallback(async () => {
     setReturnLoading(true);
     try {
-      const res = await fetch("/api/stock-manage/top-sales?months=6&limit=5000&sort=sale&dir=desc");
-      if (!res.ok) throw new Error(String(res.status));
-      const data = await res.json();
+      // 2026-08-03 · 병렬 · top-sales (반품필요 원본) + inventory-checks (실재고 컬럼용)
+      const [salesRes, invRes] = await Promise.all([
+        fetch("/api/stock-manage/top-sales?months=6&limit=5000&sort=sale&dir=desc"),
+        fetch("/api/inventory-checks").catch(() => null),
+      ]);
+      if (!salesRes.ok) throw new Error(String(salesRes.status));
+      const data = await salesRes.json();
       const rows: any[] = Array.isArray(data?.rows) ? data.rows : [];
+
+      // 실재고 맵 · product_code 별 최신 · warehouse1+warehouse2+store1+store2+store3
+      //   레거시 fallback · warehouse_stock + store_stock + store_stock_2
+      const actualByCode = new Map<string, number>();
+      if (invRes && invRes.ok) {
+        try {
+          const invRaw: any[] = await invRes.json().catch(() => []);
+          const latestByCode = new Map<string, any>();
+          for (const r of Array.isArray(invRaw) ? invRaw : []) {
+            const code = String(r?.product_code ?? "").trim();
+            if (!code) continue;
+            if (!latestByCode.has(code)) latestByCode.set(code, r); // API 는 checked_at desc 로 이미 정렬
+          }
+          latestByCode.forEach((row, code) => {
+            const num = (v: any) => Number.isFinite(Number(v)) ? Number(v) : 0;
+            const w1 = row.warehouse1_stock ?? row.warehouse_stock ?? 0;
+            const w2 = row.warehouse2_stock ?? 0;
+            const s1 = row.store_stock ?? 0;         // store_stock == store1
+            const s2 = row.store_stock_2 ?? 0;
+            const s3 = row.store3_stock ?? 0;
+            // hasAny · 아무 값도 없으면 skip (실재고 정보 없음 · null 유지)
+            if (row.warehouse1_stock == null && row.warehouse2_stock == null &&
+                row.warehouse_stock == null && row.store_stock == null &&
+                row.store_stock_2 == null && row.store3_stock == null) {
+              return;
+            }
+            actualByCode.set(code, num(w1) + num(w2) + num(s1) + num(s2) + num(s3));
+          });
+        } catch (e: any) {
+          console.warn("[반품필요] 실재고 파싱 실패:", e?.message);
+        }
+      }
+
       const items: ReturnItem[] = rows.map(r => {
         const cnt = Number(r.purchase_count ?? 0);
         const first = String(r.first_purchase_date ?? "");
@@ -174,17 +217,25 @@ export const ReturnListPanel: React.FC = () => {
           const days = Math.round((new Date(last).getTime() - new Date(first).getTime()) / (86400 * 1000));
           cycle = cnt > 1 ? Math.round(days / (cnt - 1)) : null;
         }
+        const code = String(r.product_code ?? "");
+        // 실재고 조회 · 원본 code + stripped(앞자리 0 제거) 두 키 모두 시도
+        const stripped = code.replace(/^0+/, "");
+        const actual = actualByCode.has(code) ? (actualByCode.get(code) ?? null)
+                     : actualByCode.has(stripped) ? (actualByCode.get(stripped) ?? null)
+                     : null;
         return {
-          product_code: String(r.product_code ?? ""),
+          product_code: code,
           product_name: String(r.product_name ?? ""),
           supplier: r.supplier ?? null,
           purchase_cycle: cycle,
           sale_qty_cycle: Number(r.sale_qty_cycle ?? 0),
           sale_qty_month: r.sale_qty_month != null ? Number(r.sale_qty_month) : (r.sale_qty_1m != null ? Number(r.sale_qty_1m) : null),
-          sale_amount_month: r.sale_amount_month != null ? Number(r.sale_amount_month) : null,
+          sale_qty_60d:   r.sale_qty_60d   != null ? Number(r.sale_qty_60d)   : null,
+          sale_qty_90d:   r.sale_qty_90d   != null ? Number(r.sale_qty_90d)   : null,
           last_purchase_date: r.last_purchase_date ?? null,
           last_purchase_qty: r.last_purchase_qty != null ? Number(r.last_purchase_qty) : (r.last_snapshot_qty != null ? Number(r.last_snapshot_qty) : null),
           current_stock: Number(r.current_stock ?? r.closing_stock ?? 0),
+          actual_stock: actual,
           purchase_price: Number(r.purchase_price ?? 0),
         };
       });
@@ -360,7 +411,7 @@ export const ReturnListPanel: React.FC = () => {
               <div className={`overflow-auto flex-1 min-h-0 ${returnLoading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-white z-10">
-                    {/* 그룹 컬러 헤더 */}
+                    {/* 그룹 컬러 헤더 · 2026-08-03 · 재고 그룹 (현재고·실재고·재고금액) · 판매 그룹 (1/2/3달) */}
                     <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
                       <th className="bg-slate-50 w-7" />
                       {/* 상품정보 (sky) */}
@@ -372,8 +423,15 @@ export const ReturnListPanel: React.FC = () => {
                           {isReturnGroupCollapsed("info") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}상품정보
                         </span>
                       </th>
-                      {/* 재고 (amber) */}
-                      <th className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100">재고</th>
+                      {/* 재고 (amber) · 3개 컬럼 · 현재고 · 실재고 · 재고금액 */}
+                      <th colSpan={isReturnGroupCollapsed("stock") ? 1 : 3}
+                        className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-amber-100 transition"
+                        onClick={() => toggleReturnGroup("stock")}
+                        title={isReturnGroupCollapsed("stock") ? "재고 펼치기" : "재고 접기"}>
+                        <span className="inline-flex items-center gap-1">
+                          {isReturnGroupCollapsed("stock") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}재고
+                        </span>
+                      </th>
                       {/* 매입정보 (emerald) */}
                       <th colSpan={isReturnGroupCollapsed("purchase") ? 1 : 1}
                         className="text-center py-1.5 bg-emerald-50 text-emerald-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-emerald-100 transition"
@@ -383,8 +441,8 @@ export const ReturnListPanel: React.FC = () => {
                           {isReturnGroupCollapsed("purchase") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}매입정보
                         </span>
                       </th>
-                      {/* 판매정보 (rose) */}
-                      <th colSpan={isReturnGroupCollapsed("sales") ? 1 : 2}
+                      {/* 판매정보 (rose) · 3개 컬럼 · 1달 · 2달 · 3달 판매량 */}
+                      <th colSpan={isReturnGroupCollapsed("sales") ? 1 : 3}
                         className="text-center py-1.5 bg-rose-50 text-rose-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-rose-100 transition"
                         onClick={() => toggleReturnGroup("sales")}
                         title={isReturnGroupCollapsed("sales") ? "판매정보 펼치기" : "판매정보 접기"}>
@@ -392,8 +450,6 @@ export const ReturnListPanel: React.FC = () => {
                           {isReturnGroupCollapsed("sales") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}판매정보
                         </span>
                       </th>
-                      {/* 재고금액 (indigo) */}
-                      <th className="text-center py-1.5 bg-indigo-50 text-indigo-700 border-l border-r border-slate-100">재고금액</th>
                       {/* 액션 (slate) */}
                       <th className="text-center py-1.5 bg-slate-100 text-slate-600 border-l border-slate-100">액션</th>
                     </tr>
@@ -414,10 +470,25 @@ export const ReturnListPanel: React.FC = () => {
                           </th>
                         </>
                       )}
-                      <th onClick={() => handleReturnSort("current_stock")} title="현재고 정렬"
-                        className="text-right px-1 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">
-                        현재고{retArrow("current_stock")}
-                      </th>
+                      {/* 재고 서브 · 현재고 · 실재고 · 재고금액 */}
+                      {isReturnGroupCollapsed("stock") ? (
+                        <th className="bg-amber-50/20 w-4"></th>
+                      ) : (
+                        <>
+                          <th onClick={() => handleReturnSort("current_stock")} title="ERP 현재고 정렬"
+                            className="text-right px-1 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none">
+                            현재고{retArrow("current_stock")}
+                          </th>
+                          <th onClick={() => handleReturnSort("actual_stock")} title="실재고 (창고·매장 합계) 정렬"
+                            className="text-right px-1 py-1.5 w-14 bg-amber-50/40 text-amber-700 cursor-pointer hover:bg-amber-100 select-none">
+                            실재고{retArrow("actual_stock")}
+                          </th>
+                          <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬"
+                            className="text-right px-1 py-1.5 w-22 bg-amber-50/40 text-indigo-700 cursor-pointer hover:bg-amber-100 select-none">
+                            재고금액{retArrow("stock_value")}
+                          </th>
+                        </>
+                      )}
                       {isReturnGroupCollapsed("purchase") ? (
                         <th className="bg-emerald-50/20 w-4"></th>
                       ) : (
@@ -429,24 +500,25 @@ export const ReturnListPanel: React.FC = () => {
                           </span>
                         </th>
                       )}
+                      {/* 판매 서브 · 1달 · 2달 · 3달 판매량 */}
                       {isReturnGroupCollapsed("sales") ? (
                         <th className="bg-rose-50/20 w-4"></th>
                       ) : (
                         <>
-                          <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 판매량 정렬"
-                            className="text-right px-1 py-1.5 w-20 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none">
-                            한달판매{retArrow("sale_qty_month")}
+                          <th onClick={() => handleReturnSort("sale_qty_month")} title="최근 30일 (1달) 판매량 정렬"
+                            className="text-right px-1 py-1.5 w-16 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none">
+                            1달{retArrow("sale_qty_month")}
                           </th>
-                          <th onClick={() => handleReturnSort("sale_amount_month")} title="최근 30일 판매액 정렬"
-                            className="text-right px-1 py-1.5 w-24 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none">
-                            한달판매액{retArrow("sale_amount_month")}
+                          <th onClick={() => handleReturnSort("sale_qty_60d")} title="최근 60일 (2달) 판매량 정렬"
+                            className="text-right px-1 py-1.5 w-16 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none">
+                            2달{retArrow("sale_qty_60d")}
+                          </th>
+                          <th onClick={() => handleReturnSort("sale_qty_90d")} title="최근 90일 (3달) 판매량 정렬"
+                            className="text-right px-1 py-1.5 w-16 bg-rose-50/40 text-rose-600 cursor-pointer hover:bg-rose-100 select-none">
+                            3달{retArrow("sale_qty_90d")}
                           </th>
                         </>
                       )}
-                      <th onClick={() => handleReturnSort("stock_value")} title="재고금액 정렬"
-                        className="text-right px-1 py-1.5 w-22 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none">
-                        재고금액{retArrow("stock_value")}
-                      </th>
                       <th className="text-center px-0.5 py-1.5 w-16 bg-slate-50/60 text-slate-500 cursor-default select-none">
                         반품
                       </th>
@@ -467,9 +539,11 @@ export const ReturnListPanel: React.FC = () => {
                         case "product_name":    return dir * String(a.product_name).localeCompare(String(b.product_name), "ko");
                         case "supplier":        return dir * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
                         case "current_stock":   return dir * (a.current_stock - b.current_stock);
+                        case "actual_stock":    return dir * ((a.actual_stock ?? -1) - (b.actual_stock ?? -1));
                         case "purchase_cycle":  return dir * ((a.purchase_cycle ?? 0) - (b.purchase_cycle ?? 0));
                         case "sale_qty_month":  return dir * ((a.sale_qty_month ?? 0) - (b.sale_qty_month ?? 0));
-                        case "sale_amount_month": return dir * ((a.sale_amount_month ?? 0) - (b.sale_amount_month ?? 0));
+                        case "sale_qty_60d":    return dir * ((a.sale_qty_60d ?? 0) - (b.sale_qty_60d ?? 0));
+                        case "sale_qty_90d":    return dir * ((a.sale_qty_90d ?? 0) - (b.sale_qty_90d ?? 0));
                         case "last_purchase_date": return dir * String(a.last_purchase_date ?? "").localeCompare(String(b.last_purchase_date ?? ""));
                         case "last_purchase_qty":  return dir * ((a.last_purchase_qty ?? 0) - (b.last_purchase_qty ?? 0));
                         case "stock_value":     return dir * ((a.current_stock * a.purchase_price) - (b.current_stock * b.purchase_price));
@@ -507,7 +581,24 @@ export const ReturnListPanel: React.FC = () => {
                               </td>
                             </>
                           )}
-                          <td className="text-right px-1 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-amber-50/30 align-top">{x.current_stock.toLocaleString()}</td>
+                          {/* 재고 그룹 · 현재고 · 실재고 · 재고금액 (2026-08-03) */}
+                          {isReturnGroupCollapsed("stock") ? (
+                            <td className="bg-amber-50/20 w-4"></td>
+                          ) : (
+                            <>
+                              <td className="text-right px-1 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-amber-50/30 align-top">{x.current_stock.toLocaleString()}</td>
+                              <td className="text-right px-1 py-1.5 tabular-nums font-bold text-[12px] bg-amber-50/30 align-top">
+                                {x.actual_stock != null ? (
+                                  <span className={x.actual_stock !== x.current_stock ? "text-amber-700" : "text-slate-700"}>{x.actual_stock.toLocaleString()}</span>
+                                ) : (
+                                  <span className="text-slate-300">-</span>
+                                )}
+                              </td>
+                              <td className="text-right px-1 py-1.5 tabular-nums font-black text-[12px] text-indigo-700 bg-amber-50/20 align-top">
+                                {x.current_stock > 0 && x.purchase_price > 0 ? `${(x.current_stock * x.purchase_price).toLocaleString()}` : "-"}
+                              </td>
+                            </>
+                          )}
                           {isReturnGroupCollapsed("purchase") ? (
                             <td className="bg-emerald-50/20 w-4"></td>
                           ) : (
@@ -527,6 +618,7 @@ export const ReturnListPanel: React.FC = () => {
                               </span>
                             </td>
                           )}
+                          {/* 판매 그룹 · 1달 · 2달 · 3달 판매량 (2026-08-03) */}
                           {isReturnGroupCollapsed("sales") ? (
                             <td className="bg-rose-50/20 w-4"></td>
                           ) : (
@@ -534,26 +626,32 @@ export const ReturnListPanel: React.FC = () => {
                               <td
                                 className="text-right px-1 py-1.5 tabular-nums bg-rose-50/20 align-top cursor-pointer"
                                 onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
-                                title="판매정보 보기"
+                                title="최근 30일 (1달) 판매량"
                               >
                                 <span className="font-black text-[12px] text-rose-600 hover:underline">
-                                  {x.sale_qty_month != null ? `${x.sale_qty_month.toLocaleString()}개` : "-"}
+                                  {x.sale_qty_month != null ? `${x.sale_qty_month.toLocaleString()}` : "-"}
                                 </span>
                               </td>
                               <td
                                 className="text-right px-1 py-1.5 tabular-nums bg-rose-50/20 align-top cursor-pointer"
                                 onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
-                                title="판매정보 보기"
+                                title="최근 60일 (2달) 판매량"
+                              >
+                                <span className="font-black text-[12px] text-rose-600 hover:underline">
+                                  {x.sale_qty_60d != null ? `${x.sale_qty_60d.toLocaleString()}` : "-"}
+                                </span>
+                              </td>
+                              <td
+                                className="text-right px-1 py-1.5 tabular-nums bg-rose-50/20 align-top cursor-pointer"
+                                onClick={(e) => { e.stopPropagation(); setReturnSelectedProduct({ code: x.product_code, name: x.product_name }); setReturnDetailTab("sales"); }}
+                                title="최근 90일 (3달) 판매량"
                               >
                                 <span className="font-black text-[12px] text-rose-700 hover:underline">
-                                  {x.sale_amount_month != null && x.sale_amount_month > 0 ? `${x.sale_amount_month.toLocaleString()}` : "-"}
+                                  {x.sale_qty_90d != null ? `${x.sale_qty_90d.toLocaleString()}` : "-"}
                                 </span>
                               </td>
                             </>
                           )}
-                          <td className="text-right px-1 py-1.5 tabular-nums font-black text-[12px] text-indigo-700 bg-indigo-50/20 align-top">
-                            {x.current_stock > 0 && x.purchase_price > 0 ? `${(x.current_stock * x.purchase_price).toLocaleString()}` : "-"}
-                          </td>
                           <td className="text-center px-1 py-1.5 align-top bg-slate-50/30">
                             <button
                               type="button"
@@ -568,7 +666,7 @@ export const ReturnListPanel: React.FC = () => {
                       );
                     })}
                     {returnList.length === 0 && (
-                      <tr><td colSpan={8} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
+                      <tr><td colSpan={11} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
                     )}
                   </tbody>
                 </table>
