@@ -5,12 +5,12 @@
 // 우측: 스캔 상품 자동 등록 리스트 · 상태 선택
 // 하단: 전체 품목일치 · 품목불일치 최종 확인
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ScanLine, Loader2, AlertCircle, PackagePlus, CheckCircle2, XCircle, Clock,
   Trash2, Minus, Plus, RotateCcw, ClipboardCheck, ClipboardX,
   Barcode, Building2, Box, Hash, ArrowUpDown, ArrowUp, ArrowDown,
-  Sparkles, ShieldCheck,
+  Sparkles, ShieldCheck, Package, RefreshCw,
 } from "lucide-react";
 import { BarcodeScanner } from "./BarcodeScanner";
 import { loadZBar } from "./BarcodeScanner/zbar";
@@ -95,6 +95,8 @@ const SortIcon: React.FC<{ active: boolean; dir: SortDir }> = ({ active, dir }) 
 export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   onBack, authSession, onNavigate, onLogout, embedded = false,
 }) => {
+  // 2026-08-03 · 내부 탭 (상품입고 / 입고내역) · 입고내역 로직 · OrderManagePage 에서 이동
+  const [arrivalTab, setArrivalTab]             = useState<"input" | "history">("input");
   const [scannerOpen, setScannerOpen]           = useState(false);
   const [mapLoading, setMapLoading]             = useState(false);
   const [items, setItems]                       = useState<ArrivalItem[]>([]);
@@ -108,6 +110,70 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
   const [toast, setToast]                       = useState<string | null>(null);
   const [lastScannedProduct, setLastScannedProduct] = useState<ProductInfo | null>(null);
   const [lastScannedCode, setLastScannedCode]   = useState<string | null>(null);
+
+  // ─── 입고내역(history) state · OrderManagePage 에서 이동 (2026-08-03) ───
+  interface ArrivalHistoryRow {
+    id: number;
+    arrival_date: string;
+    checked_by: string | null;
+    total_items: number;
+    total_qty: number;
+    match_count: number;
+    mismatch_count: number;
+    expiring_count: number;
+    final_decision: string | null;
+    supplier_summary: string | null;
+    note: string | null;
+  }
+  interface ArrivalHistoryDetail extends ArrivalHistoryRow {
+    items: Array<{ id: number; product_code: string | null; product_name: string | null; supplier: string | null; qty: number; status: string }>;
+  }
+  const [arrivals, setArrivals] = useState<ArrivalHistoryRow[]>([]);
+  const [arrivalsLoading, setArrivalsLoading] = useState(false);
+  const [arrivalDays, setArrivalDays] = useState<7 | 30 | 90>(30);
+  const [selectedArrivalId, setSelectedArrivalId] = useState<number | null>(null);
+  const [arrivalDetail, setArrivalDetail] = useState<ArrivalHistoryDetail | null>(null);
+  const [arrivalDetailLoading, setArrivalDetailLoading] = useState(false);
+  const loadArrivals = useCallback(async () => {
+    setArrivalsLoading(true);
+    try {
+      const res = await fetch(`/api/product-arrivals?limit=100&days=${arrivalDays}`);
+      if (res.ok) {
+        const j = await res.json();
+        setArrivals(Array.isArray(j?.rows) ? j.rows : []);
+      } else {
+        setArrivals([]);
+      }
+    } catch {
+      setArrivals([]);
+    } finally {
+      setArrivalsLoading(false);
+    }
+  }, [arrivalDays]);
+  useEffect(() => { if (arrivalTab === "history") loadArrivals(); }, [arrivalTab, loadArrivals]);
+  useEffect(() => {
+    if (selectedArrivalId == null) { setArrivalDetail(null); return; }
+    setArrivalDetailLoading(true);
+    fetch(`/api/product-arrivals/${selectedArrivalId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(j => setArrivalDetail(j ?? null))
+      .catch(() => setArrivalDetail(null))
+      .finally(() => setArrivalDetailLoading(false));
+  }, [selectedArrivalId]);
+  const deleteArrival = async (id: number) => {
+    if (!window.confirm("이 입고내역을 삭제하시겠습니까? (관련 아이템 모두 삭제)")) return;
+    try {
+      const res = await fetch(`/api/product-arrivals/${id}`, { method: "DELETE" });
+      if (res.ok) {
+        setArrivals(prev => prev.filter(a => a.id !== id));
+        if (selectedArrivalId === id) setSelectedArrivalId(null);
+      } else {
+        alert(`삭제 실패 (${res.status})`);
+      }
+    } catch (e: any) {
+      alert(`삭제 실패: ${e?.message ?? "네트워크 오류"}`);
+    }
+  };
 
   useEffect(() => { loadZBar(); }, []);
   useEffect(() => {
@@ -257,7 +323,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           onNavigate={onNavigate}
           onLogout={onLogout}
           rightSlot={
-            items.length > 0 ? (
+            arrivalTab === "input" && items.length > 0 ? (
               <button
                 onClick={resetAll}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold
@@ -298,7 +364,7 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
               거래명세표와 실제 입고물품·수량 일치 확인
             </p>
           </div>
-          {counts.total > 0 && (
+          {arrivalTab === "input" && counts.total > 0 && (
             <div className="ml-auto flex items-center gap-2">
               <span className="text-[11px] sm:text-xs font-bold text-slate-400">
                 {counts.total}건 / {counts.totalQty}개
@@ -314,7 +380,36 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
         </div>
       </div>
 
-      {/* ── Main layout ── */}
+      {/* ── 내부 서브탭 (2026-08-03 · 상품입고 / 입고내역) ── */}
+      <div className="max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 pt-3">
+        <div className="inline-flex bg-white border border-slate-200 rounded-xl p-1 shadow-sm">
+          {([
+            { k: "input"   as const, label: "상품입고", icon: PackagePlus, color: "sky"    },
+            { k: "history" as const, label: "입고내역", icon: Package,     color: "indigo" },
+          ]).map(({ k, label, icon: Icon, color }) => {
+            const active = arrivalTab === k;
+            const activeColor = color === "sky"
+              ? "bg-sky-500 text-white shadow-sm"
+              : "bg-indigo-500 text-white shadow-sm";
+            return (
+              <button
+                key={k}
+                type="button"
+                onClick={() => setArrivalTab(k)}
+                className={`inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-black transition cursor-pointer ${
+                  active ? activeColor : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <Icon size={13} />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Main layout (arrivalTab === "input") ── */}
+      {arrivalTab === "input" && (
       <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5
         flex flex-col lg:flex-row gap-4 lg:gap-5">
 
@@ -970,6 +1065,225 @@ export const ProductArrivalPage: React.FC<ProductArrivalPageProps> = ({
           </div>
         </section>
       </main>
+      )}
+
+      {/* ── 입고내역 (arrivalTab === "history") · 2026-08-03 · OrderManagePage 에서 이동 ── */}
+      {arrivalTab === "history" && (
+        <main className="flex-1 max-w-6xl mx-auto w-full px-3 sm:px-4 lg:px-6 py-4 sm:py-5 flex flex-col gap-3 min-h-0">
+          {/* 헤더 카드 */}
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 h-12 flex items-center gap-2">
+            <Package size={14} className="text-indigo-500 shrink-0" />
+            <span className="text-[13px] font-semibold text-slate-700">입고내역</span>
+            <span className="text-[11px] font-black text-slate-500 bg-slate-100 rounded-full px-2 py-0.5 tabular-nums">{arrivals.length}건</span>
+            <span className="text-[11px] font-medium text-slate-400 ml-2 hidden sm:inline">최근 {arrivalDays}일</span>
+            <div className="flex items-center gap-0.5 bg-slate-50 border border-slate-200 rounded-md p-0.5 ml-auto">
+              {[7, 30, 90].map(d => (
+                <button key={d} onClick={() => setArrivalDays(d as any)}
+                  className={`text-[11px] font-semibold px-2 py-1 rounded transition whitespace-nowrap cursor-pointer ${arrivalDays === d ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>
+                  {d}일
+                </button>
+              ))}
+            </div>
+            <button onClick={loadArrivals} disabled={arrivalsLoading}
+              className="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-50 cursor-pointer disabled:opacity-50"
+              title="새로고침">
+              <RefreshCw size={13} className={arrivalsLoading ? "animate-spin" : ""} />
+            </button>
+          </div>
+
+          {/* 리스트 카드 */}
+          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            {arrivalsLoading && arrivals.length === 0 ? (
+              <div className="py-12 flex items-center justify-center gap-2 text-slate-400 text-[13px] font-semibold">
+                <Loader2 size={16} className="animate-spin" /> 불러오는 중...
+              </div>
+            ) : arrivals.length === 0 ? (
+              <div className="py-12 text-center text-slate-400 text-[13px] font-semibold">최근 {arrivalDays}일 입고내역 없음</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-[12px] border-collapse">
+                  <thead className="bg-indigo-50/50 border-b border-indigo-100 sticky top-0 z-10">
+                    <tr>
+                      <th className="px-2 py-2 text-left font-bold text-indigo-800 w-10">#</th>
+                      <th className="px-2 py-2 text-left font-bold text-indigo-800 w-32">등록일시</th>
+                      <th className="px-2 py-2 text-left font-bold text-indigo-800 w-24">담당</th>
+                      <th className="px-2 py-2 text-left font-bold text-indigo-800 min-w-[200px]">공급사 요약</th>
+                      <th className="px-2 py-2 text-right font-bold text-indigo-800 w-14">품목</th>
+                      <th className="px-2 py-2 text-right font-bold text-indigo-800 w-14">수량</th>
+                      <th className="px-2 py-2 text-center font-bold text-emerald-700 w-14">일치</th>
+                      <th className="px-2 py-2 text-center font-bold text-rose-700 w-14">불일치</th>
+                      <th className="px-2 py-2 text-center font-bold text-amber-700 w-14">기한임박</th>
+                      <th className="px-2 py-2 text-center font-bold text-indigo-800 w-24">최종판정</th>
+                      <th className="px-2 py-2 text-center font-bold text-slate-500 w-24">액션</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {arrivals.map((a, i) => {
+                      const d = new Date(a.arrival_date);
+                      const dateStr = isNaN(d.getTime()) ? "-" : `${String(d.getMonth() + 1).padStart(2, "0")}/${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+                      const isSelected = selectedArrivalId === a.id;
+                      return (
+                        <tr key={a.id} className={`transition ${isSelected ? "bg-indigo-50/60" : "hover:bg-slate-50/60"}`}>
+                          <td className="px-2 py-1.5 text-slate-400 tabular-nums">{i + 1}</td>
+                          <td className="px-2 py-1.5 text-slate-700 tabular-nums font-semibold">{dateStr}</td>
+                          <td className="px-2 py-1.5 text-slate-600">{a.checked_by ?? "-"}</td>
+                          <td className="px-2 py-1.5 text-slate-600 truncate max-w-[240px]" title={a.supplier_summary ?? ""}>{a.supplier_summary ?? "-"}</td>
+                          <td className="px-2 py-1.5 text-right text-slate-800 font-bold tabular-nums">{a.total_items}</td>
+                          <td className="px-2 py-1.5 text-right text-slate-800 font-bold tabular-nums">{a.total_qty.toLocaleString()}</td>
+                          <td className="px-2 py-1.5 text-center text-emerald-700 font-bold tabular-nums">{a.match_count}</td>
+                          <td className="px-2 py-1.5 text-center text-rose-700 font-bold tabular-nums">{a.mismatch_count}</td>
+                          <td className="px-2 py-1.5 text-center text-amber-700 font-bold tabular-nums">{a.expiring_count}</td>
+                          <td className="px-2 py-1.5 text-center">
+                            <span className={`inline-flex items-center justify-center px-2 py-0.5 rounded-full text-[10px] font-black border ${
+                              a.final_decision === "all_match" ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                                : a.final_decision === "has_mismatch" ? "bg-rose-50 text-rose-700 border-rose-300"
+                                : "bg-slate-50 text-slate-500 border-slate-300"
+                            }`}>
+                              {a.final_decision === "all_match" ? "완전일치" : a.final_decision === "has_mismatch" ? "불일치 있음" : "-"}
+                            </span>
+                          </td>
+                          <td className="px-2 py-1.5 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <button type="button" onClick={() => setSelectedArrivalId(a.id)}
+                                className="h-7 px-2 rounded-md text-[11px] font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 cursor-pointer transition">
+                                상세
+                              </button>
+                              <button type="button" onClick={() => deleteArrival(a.id)}
+                                className="w-7 h-7 flex items-center justify-center rounded-md text-slate-400 hover:text-rose-500 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 cursor-pointer transition"
+                                title="삭제">
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </main>
+      )}
+
+      {/* 입고내역 상세 모달 · 2026-08-03 · OrderManagePage 에서 이동 */}
+      {selectedArrivalId != null && (
+        <div className="fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4" onClick={() => setSelectedArrivalId(null)}>
+          <div className="relative w-full max-w-4xl max-h-[90vh] flex flex-col bg-white rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            {/* 헤더 */}
+            <div className="flex items-center gap-2 px-5 py-3 border-b border-slate-200 bg-gradient-to-r from-indigo-50 to-white shrink-0">
+              <Package size={18} className="text-indigo-600" />
+              <h3 className="text-[16px] font-black text-slate-800">입고내역 상세</h3>
+              <span className="text-[12px] font-semibold text-slate-500 tabular-nums">ID {selectedArrivalId}</span>
+              <button type="button" onClick={() => setSelectedArrivalId(null)}
+                className="ml-auto w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer" title="닫기">
+                ✕
+              </button>
+            </div>
+            {/* 본문 */}
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+              {arrivalDetailLoading || !arrivalDetail ? (
+                <div className="py-12 flex items-center justify-center gap-2 text-slate-400 text-[13px] font-semibold">
+                  <Loader2 size={16} className="animate-spin" /> 상세 로딩 중...
+                </div>
+              ) : (
+                <>
+                  {/* 헤더 요약 카드 */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">등록일시</div>
+                      <div className="text-[13px] font-black text-slate-800 tabular-nums mt-0.5">
+                        {(() => { const d = new Date(arrivalDetail.arrival_date); return isNaN(d.getTime()) ? "-" : d.toLocaleString("ko-KR"); })()}
+                      </div>
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">담당자</div>
+                      <div className="text-[13px] font-black text-slate-800 mt-0.5">{arrivalDetail.checked_by ?? "-"}</div>
+                    </div>
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                      <div className="text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">품목·수량</div>
+                      <div className="text-[13px] font-black text-emerald-700 tabular-nums mt-0.5">{arrivalDetail.total_items}개 · {arrivalDetail.total_qty.toLocaleString()}수량</div>
+                    </div>
+                    <div className={`border rounded-lg p-3 ${arrivalDetail.final_decision === "all_match" ? "bg-emerald-50 border-emerald-200" : arrivalDetail.final_decision === "has_mismatch" ? "bg-rose-50 border-rose-200" : "bg-slate-50 border-slate-200"}`}>
+                      <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">최종 판정</div>
+                      <div className={`text-[13px] font-black mt-0.5 ${arrivalDetail.final_decision === "all_match" ? "text-emerald-700" : arrivalDetail.final_decision === "has_mismatch" ? "text-rose-700" : "text-slate-500"}`}>
+                        {arrivalDetail.final_decision === "all_match" ? "완전일치" : arrivalDetail.final_decision === "has_mismatch" ? "불일치 있음" : "-"}
+                      </div>
+                    </div>
+                  </div>
+                  {/* 상태 카운트 */}
+                  <div className="flex items-center gap-3 flex-wrap text-[12px] font-semibold">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-300">
+                      수량일치 <span className="font-black tabular-nums">{arrivalDetail.match_count}</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 border border-rose-300">
+                      수량불일치 <span className="font-black tabular-nums">{arrivalDetail.mismatch_count}</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 border border-amber-300">
+                      유통기한 임박 <span className="font-black tabular-nums">{arrivalDetail.expiring_count}</span>
+                    </span>
+                  </div>
+                  {/* 공급사 요약 · 메모 */}
+                  {arrivalDetail.supplier_summary && (
+                    <div className="bg-sky-50 border border-sky-200 rounded-lg p-3">
+                      <div className="text-[11px] font-semibold text-sky-600 uppercase tracking-wider mb-1">공급사 요약</div>
+                      <div className="text-[13px] font-medium text-slate-700 break-words">{arrivalDetail.supplier_summary}</div>
+                    </div>
+                  )}
+                  {arrivalDetail.note && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                      <div className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider mb-1">메모</div>
+                      <div className="text-[13px] font-medium text-slate-700 whitespace-pre-wrap">{arrivalDetail.note}</div>
+                    </div>
+                  )}
+                  {/* 아이템 리스트 */}
+                  <div className="border border-slate-200 rounded-lg overflow-hidden">
+                    <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+                      <span className="text-[12px] font-black text-slate-700">입고 아이템</span>
+                      <span className="text-[11px] font-semibold text-slate-500 tabular-nums">{arrivalDetail.items?.length ?? 0}개</span>
+                    </div>
+                    <div className="overflow-x-auto max-h-[40vh]">
+                      <table className="w-full text-[12px]">
+                        <thead className="sticky top-0 bg-white z-10">
+                          <tr className="border-b border-slate-200 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                            <th className="px-2 py-1.5 text-left w-10">#</th>
+                            <th className="px-2 py-1.5 text-left w-24">코드</th>
+                            <th className="px-2 py-1.5 text-left min-w-[180px]">상품명</th>
+                            <th className="px-2 py-1.5 text-left w-28">공급사</th>
+                            <th className="px-2 py-1.5 text-right w-14">수량</th>
+                            <th className="px-2 py-1.5 text-center w-20">상태</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {(arrivalDetail.items ?? []).map((it, i) => (
+                            <tr key={it.id} className="hover:bg-slate-50/60">
+                              <td className="px-2 py-1.5 text-slate-400 tabular-nums">{i + 1}</td>
+                              <td className="px-2 py-1.5 text-slate-500 tabular-nums text-[11px]">{it.product_code ?? "-"}</td>
+                              <td className="px-2 py-1.5 text-slate-800 font-semibold break-words">{it.product_name ?? "-"}</td>
+                              <td className="px-2 py-1.5 text-slate-600">{it.supplier ?? "-"}</td>
+                              <td className="px-2 py-1.5 text-right font-black tabular-nums text-slate-800">{it.qty.toLocaleString()}</td>
+                              <td className="px-2 py-1.5 text-center">
+                                <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-black border ${
+                                  it.status === "match" ? "bg-emerald-50 text-emerald-700 border-emerald-300"
+                                    : it.status === "mismatch" ? "bg-rose-50 text-rose-700 border-rose-300"
+                                    : it.status === "expiring" ? "bg-amber-50 text-amber-700 border-amber-300"
+                                    : "bg-slate-50 text-slate-500 border-slate-300"
+                                }`}>
+                                  {it.status === "match" ? "일치" : it.status === "mismatch" ? "불일치" : it.status === "expiring" ? "기한임박" : "미확인"}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
