@@ -499,7 +499,7 @@ const TrendTab: React.FC<{ rows: PurchaseDetailRow[]; loading: boolean }> = ({ r
 // ─── PurchaseSubTabs · Container ──────────────────────────────────────────
 
 const TABS: { key: TabKey; label: string; icon: React.ElementType; hint: string; color: string }[] = [
-  { key: "ledger",  label: "매입원장",   icon: ListOrdered, hint: "선택 기간 · 원장 뷰",          color: "emerald" },
+  { key: "ledger",  label: "매입이력(ERP)", icon: ListOrdered, hint: "선택 기간 · ERP 매입 원장", color: "emerald" },
   { key: "product", label: "상품별 집계", icon: Package2,    hint: "최근 1년 · groupBy 상품명",    color: "sky"     },
   { key: "trend",   label: "매입 추이",   icon: BarChart3,   hint: "12개월 bar · TOP 상품 도넛",   color: "violet"  },
 ];

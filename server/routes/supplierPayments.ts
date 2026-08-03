@@ -709,12 +709,37 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
         .gte("saved_at", cutoffYmd);
       if (!r2.error) data = (r2.data ?? []).map((x: any) => ({ ...x, vat_amount: 0, supply_amount: 0 }));
       else {
-        if (/relation .* does not exist/i.test(r2.error.message)) return res.json({ rows: [] });
-        throw new Error(r2.error.message);
+        if (/relation .* does not exist/i.test(r2.error.message)) data = [];
+        else throw new Error(r2.error.message);
       }
     } else {
-      if (/relation .* does not exist/i.test(r1.error.message)) return res.json({ rows: [] });
-      throw new Error(r1.error.message);
+      if (/relation .* does not exist/i.test(r1.error.message)) data = [];
+      else throw new Error(r1.error.message);
+    }
+
+    // ocr_confirmed_items 데이터 없으면 · purchase_details (ERP 임포트) 폴백
+    if (!data || data.length === 0) {
+      const pdRes = await supabase
+        .from("purchase_details")
+        .select("id, purchase_date, product_code, product_name, quantity, unit_price, amount, total, supplier_name, vat_amount, supply_amount")
+        .eq("supplier_name", supplier)
+        .gte("purchase_date", cutoffYmd);
+      if (!pdRes.error) {
+        data = (pdRes.data ?? []).map((r: any) => ({
+          id: r.id,
+          invoice_date: r.purchase_date,
+          saved_at: r.purchase_date,
+          product_code: r.product_code,
+          product_name: r.product_name,
+          quantity: r.quantity,
+          unit_price: r.unit_price,
+          amount: r.total ?? r.amount ?? 0,
+          vat_amount: r.vat_amount ?? 0,
+          supply_amount: r.supply_amount ?? 0,
+        }));
+      } else if (!/relation .* does not exist|column .* does not exist/i.test(pdRes.error.message)) {
+        // 무시 · 빈 배열 반환
+      }
     }
 
     const vatIncluded = await vatIncludedPromise;
