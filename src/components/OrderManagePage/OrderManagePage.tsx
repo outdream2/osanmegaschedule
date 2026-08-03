@@ -1890,11 +1890,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               return (
                                 <>
                                   {mainName ? (
-                                    <div className="flex items-center gap-1 flex-wrap">
+                                    <div className="flex flex-col leading-tight">
                                       <VendorCategoryBadge category={vendorCategoryMap[mainName] ?? null} />
                                       <button type="button"
                                         onClick={(e) => { e.stopPropagation(); openSupplierInfo(mainName); }}
-                                        className="text-[12px] text-sky-600 hover:text-sky-800 hover:underline font-semibold break-words whitespace-normal leading-tight text-left cursor-pointer"
+                                        className="text-[12px] text-sky-700 hover:text-sky-900 hover:underline font-semibold whitespace-nowrap leading-tight text-left cursor-pointer"
                                         title="공급사 정보 조회·수정">{mainName}</button>
                                     </div>
                                   ) : (

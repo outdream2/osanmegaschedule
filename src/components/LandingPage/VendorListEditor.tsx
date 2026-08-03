@@ -308,20 +308,20 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                         : `${catBorder} ${catBg} hover:bg-slate-50/80 active:bg-slate-100`,
                     ].join(" ")}
                   >
-                    {/* Line 1: 회사명 + 분류 */}
+                    {/* Line 1: 회사명 + 분류 · VAT미포함 텍스트 제거 표시 */}
                     <div className="flex items-center gap-1.5 mb-0.5 min-w-0">
-                      <span className={`text-[13px] font-bold leading-tight text-slate-800 min-w-0 break-keep ${isActive ? "text-indigo-900" : ""}`}>
-                        {v.company_name}
+                      <span className={`text-[14px] font-bold leading-tight text-slate-800 min-w-0 break-keep ${isActive ? "text-indigo-900" : ""}`}>
+                        {String(v.company_name ?? "").replace(/\s*\(?\s*(VAT|부가세|부가가치세)\s*미포함\s*\)?\s*/gi, "").trim() || v.company_name}
                       </span>
-                      <VendorCategoryBadge category={v.category} className="text-[10px] shrink-0" />
+                      <VendorCategoryBadge category={v.category} className="text-[11px] shrink-0" />
                       {!v.business_number && (
-                        <span className="ml-auto shrink-0 text-[9px] font-black text-rose-500 bg-rose-50 border border-rose-200 rounded px-1 py-px leading-none">
+                        <span className="ml-auto shrink-0 text-[10px] font-black text-rose-500 bg-rose-50 border border-rose-200 rounded px-1 py-px leading-none">
                           사번없음
                         </span>
                       )}
                     </div>
                     {/* Line 2: 담당자 · 전화 · 잔고 */}
-                    <div className="flex items-center gap-2 text-[11px] text-slate-500 leading-tight flex-wrap">
+                    <div className="flex items-center gap-2 text-[12px] text-slate-500 leading-tight flex-wrap">
                       {v.contact_name && (
                         <span className="flex items-center gap-0.5">
                           <span className="text-slate-400">담당</span>
