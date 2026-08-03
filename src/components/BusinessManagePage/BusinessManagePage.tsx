@@ -15,8 +15,8 @@ import type { AuthSession } from "../../types";
 const StaffManagePage = React.lazy(() => import("../StaffManagePage/StaffManagePage"));
 // 2026-08-03 · 각종 양식 페이지 · lazy 로드 (초기 진입 시에만 필요)
 const HrFormsPage = React.lazy(() => import("../HrFormsPage/HrFormsPage"));
-// 2026-08-03 · 근로계약서 작성 페이지 (#165) · lazy 로드 (html2canvas/jspdf/signature 3개 라이브러리 포함 · 진입 시만 로드)
-const ContractWriterPage = React.lazy(() => import("../ContractWriterPage/ContractWriterPage"));
+// 2026-08-03 · 서류작성 · 근로계약서·사직서 2탭 wrapper · lazy 로드
+const DocumentWriterPage = React.lazy(() => import("../DocumentWriterPage/DocumentWriterPage"));
 
 interface BusinessManagePageProps {
   onBack: () => void;
@@ -25,7 +25,7 @@ interface BusinessManagePageProps {
   onLogout?: () => void;
 }
 
-type BmSubTab = "staff-manage" | "leave" | "lunch" | "hr-forms" | "contract-writer";
+type BmSubTab = "staff-manage" | "leave" | "lunch" | "hr-forms" | "document-writer";
 
 // 서브탭 색상 팔레트 · DisplayPage 서브탭 SUBTAB_COLORS 와 동일 구조
 const SUBTAB_COLORS: Record<string, { bar: string; text: string; iconActive: string; hoverText: string }> = {
@@ -45,11 +45,11 @@ interface TabDef {
 }
 
 const TABS: TabDef[] = [
-  { key: "staff-manage",    label: "직원관리",       icon: UserGear,       color: "emerald" },
-  { key: "leave",           label: "연차승인",       icon: CalendarDots,   color: "teal"    },
-  { key: "lunch",           label: "점심불참",       icon: ForkKnife,      color: "orange"  },
-  { key: "hr-forms",        label: "각종양식",       icon: FileText,       color: "amber"   },
-  { key: "contract-writer", label: "근로계약서작성", icon: NotePencil,     color: "emerald" },
+  { key: "staff-manage",    label: "직원관리",  icon: UserGear,       color: "emerald" },
+  { key: "leave",           label: "연차승인",  icon: CalendarDots,   color: "teal"    },
+  { key: "lunch",           label: "점심불참",  icon: ForkKnife,      color: "orange"  },
+  { key: "hr-forms",        label: "각종양식",  icon: FileText,       color: "amber"   },
+  { key: "document-writer", label: "서류작성",  icon: NotePencil,     color: "indigo"  },
 ];
 
 const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
@@ -174,9 +174,9 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
             <HrFormsPage {...commonSubPageProps} />
           </Suspense>
         )}
-        {subTab === "contract-writer" && (
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">근로계약서 작성 로딩 중...</div>}>
-            <ContractWriterPage {...commonSubPageProps} />
+        {subTab === "document-writer" && (
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">서류작성 로딩 중...</div>}>
+            <DocumentWriterPage {...commonSubPageProps} />
           </Suspense>
         )}
       </main>
