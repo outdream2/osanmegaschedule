@@ -1534,11 +1534,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           />
         </main>
       ) : (dpSubTab === "purchase-order" || dpSubTab === "purchase" || dpSubTab === "payment" || dpSubTab === "statistics") && dpCanSeeStockManage ? (
-        // 2026-08-03 · 4개 서브탭 각각 OrderManagePage 를 initialTopTab+hideTopTabs 로 진입
-        // key prop · dpSubTab 변경 시 · 재mount · initialTopTab useState 초기값 재적용
+        // 2026-08-03 · 4개 서브탭 각각 OrderManagePage · initialTopTab prop 만 · re-mount 없이 useEffect 로 감지
+        // key prop 제거 · 재mount 시 매번 재fetch · 로딩 느림 유발 (이전 방식으로 원복)
         <main className="flex-1 flex flex-col min-h-0">
           <OrderManagePage
-            key={dpSubTab}
             ocrTabAuthSession={authSession}
             ocrTabOnBack={onBack}
             ocrTabOnNavigate={onNavigate as any}

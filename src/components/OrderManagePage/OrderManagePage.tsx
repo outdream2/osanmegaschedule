@@ -97,8 +97,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   hideTopTabs = false,
 }) => {
   // Level-1 탭 (발주 / 매입 / 결제 / 통계) — 2026-08-03 재구성
-  // initialTopTab 이 있으면 해당 탭으로 고정 (DisplayPage 서브탭 모드)
+  // initialTopTab 이 있으면 해당 탭으로 초기화 · props 변경 시 useEffect 로 감지 (재mount 없이)
   const [topTab, setTopTab] = useState<"purchase-order" | "purchase" | "payment" | "statistics">(initialTopTab ?? "purchase-order");
+  // 2026-08-03 · props 변경 시 topTab state 동기화 · DisplayPage 서브탭 전환 · 재mount 대신 state 업데이트 · 각 컴포넌트 mount 유지 · 재fetch 없음
+  useEffect(() => {
+    if (initialTopTab && initialTopTab !== topTab) setTopTab(initialTopTab);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTopTab]);
   // Level-2 서브탭 상태
   const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "low">("need");
   const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "arrival_history" | "return">("receipt");
@@ -847,13 +852,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         const c = colorMap[t.color] ?? colorMap["sky"];
         return (
           <button key={t.k} onClick={() => setTab(t.k)}
-            className={`relative basis-1/2 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1 sm:gap-1.5 px-3 sm:px-4 py-2 text-[11px] sm:text-[12px] font-semibold leading-tight transition-colors duration-150 rounded-t-md ${
+            className={`relative basis-1/2 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-[13px] sm:text-[14px] font-bold leading-tight transition-colors duration-150 rounded-t-md ${
               active ? `${c.text} bg-white shadow-sm` : "text-slate-400 hover:text-slate-600 hover:bg-white/60"
             }`}>
-            <Icon size={12} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
+            <Icon size={15} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
             <span>{t.label}</span>
             {t.badge != null && t.badge > 0 && (
-              <span className={`inline-flex items-center justify-center min-w-[14px] px-1 h-4 rounded-full text-[9px] font-black ${active ? c.badge : "bg-slate-100 text-slate-500"}`}>
+              <span className={`inline-flex items-center justify-center min-w-[16px] px-1 h-[18px] rounded-full text-[10px] font-black ${active ? c.badge : "bg-slate-100 text-slate-500"}`}>
                 {t.badge}
               </span>
             )}
