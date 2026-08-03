@@ -13,6 +13,7 @@ import { ScheduleFilterBar } from "../ScheduleFilterBar";
 import { BreakModal } from "../BreakModal";
 import { useSettings } from "../../hooks/useSettings";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import EmployeeNameCell from "./EmployeeNameCell";
 import {
   Calendar,
   Home,
@@ -1917,7 +1918,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       <tr className="bg-gray-100 text-gray-700 select-none">
                         <th
                           ref={nameThRef}
-                          className="text-center text-[10px] sm:text-[11px] font-bold border-r border-gray-200 border-b border-b-gray-200 sticky left-0 bg-gray-100 z-40 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1 sm:px-3 min-w-[80px] sm:min-w-[120px] w-[80px] sm:w-[120px]"
+                          className="text-center text-[10px] sm:text-[11px] font-bold border-r border-gray-200 border-b border-b-gray-200 sticky left-0 bg-gray-100 z-40 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1 sm:px-3 min-w-[90px] sm:min-w-[120px] lg:min-w-[140px] w-[90px] sm:w-[120px] lg:w-[140px]"
                         >
                           <span className="hidden sm:inline">직원 성명</span>
                           <span className="sm:hidden">성명</span>
@@ -2007,88 +2008,18 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                         >
 
                           {/* Column 1: Sticky Employee Name */}
-                          <td className="border-r border-slate-100 bg-white sticky left-0 z-[29] group-hover:bg-slate-50 shadow-[1px_0_0_0_#e2e8f0] min-w-[80px] sm:min-w-[120px] w-[80px] sm:w-[120px] h-auto min-h-[54px] sm:min-h-[58px] p-0" style={{ willChange: "transform" }}>
-                            <div className="flex items-stretch h-full">
-                              {/* Row number — updates when drag-drop reorders */}
-                              <div className="flex items-center justify-center w-4 sm:w-5 shrink-0 text-[8px] sm:text-[9px] font-bold text-slate-300 select-none">
-                                {empIdx + 1}
-                              </div>
-                              {/* Drag handle — desktop only */}
-                              {isAdmin && (
-                                <div
-                                  className="text-gray-300 hover:text-indigo-500 cursor-grab active:cursor-grabbing px-0.5 flex items-center transition shrink-0 hidden sm:flex"
-                                  title="드래그하여 이 직원 행의 순서 변경"
-                                >
-                                  <GripVertical size={11} />
-                                </div>
-                              )}
-                              {/* Name / position / actions — 2 lines */}
-                              <div className="flex-1 flex flex-col justify-center py-1 pl-1 pr-1 min-w-0 gap-0">
-                                {/* 1줄: 성별 + 이름 */}
-                                <div className="flex items-center gap-0.5 min-w-0">
-                                  {emp.gender === "남" && (
-                                    <span className="text-[9px] font-bold text-sky-500 shrink-0">♂</span>
-                                  )}
-                                  {emp.gender === "여" && (
-                                    <span className="text-[9px] font-bold text-rose-400 shrink-0">♀</span>
-                                  )}
-                                  <span
-                                    onMouseDown={(e) => e.stopPropagation()}
-                                    onClick={(e) => { e.stopPropagation(); setCalendarEmployee(emp); }}
-                                    className={`font-bold text-[11px] leading-tight cursor-pointer select-none transition break-keep hover:underline ${emp.position === "약사" ? "text-emerald-700 hover:text-emerald-900 ring-2 ring-emerald-500 ring-offset-1 rounded px-0.5" : "text-indigo-600 hover:text-indigo-800"}`}
-                                    title={`${emp.name} — 클릭하여 개인 스케줄 달력 보기`}
-                                  >
-                                    {emp.name}
-                                  </span>
-                                </div>
-                                {/* 2줄: 직종 + 월차 + 고용형태 */}
-                                <div className="flex items-center gap-1 min-w-0">
-                                  <span className="text-[8px] text-slate-400 font-medium shrink-0">{emp.position}</span>
-                                  {(() => {
-                                    const leaveTotal = parseInt(String(emp.annual_leave_days ?? ""), 10);
-                                    if (!leaveTotal || !Number.isFinite(leaveTotal)) return null;
-                                    const leaveUsed = emp.schedules.filter(s => s.type === "월차" && s.date.startsWith(`${currentYear}-`)).length;
-                                    const leaveRemaining = Math.max(0, leaveTotal - leaveUsed);
-                                    return <span className={`text-[8px] font-bold shrink-0 ${leaveRemaining === 0 ? "text-rose-500" : "text-amber-500"}`}>{leaveRemaining}</span>;
-                                  })()}
-                                  {userLevel >= 8 && emp.employmentType && emp.employmentType !== "정직원" && (
-                                    <span className={`text-[8px] font-semibold shrink-0 ${emp.employmentType === "계약직" ? "text-blue-500" : "text-amber-500"}`}>
-                                      {emp.employmentType}
-                                    </span>
-                                  )}
-                                </div>
-                                {/* 비고 */}
-                                {emp.description && (
-                                  <div className="text-[8px] text-amber-700 font-medium truncate leading-none" title={emp.description}>
-                                    {emp.description}
-                                  </div>
-                                )}
-                                {/* Bottom: edit / delete (admin) */}
-                                {isAdmin && (
-                                  <div className="flex items-center gap-0.5 opacity-20 group-hover:opacity-100 transition duration-150">
-                                    <button
-                                      draggable={false}
-                                      onMouseDown={(e) => e.stopPropagation()}
-                                      onClick={(e) => { e.stopPropagation(); openEditEmployeeModal(emp); }}
-                                      className="text-slate-400 hover:text-indigo-500 cursor-pointer p-0.5 rounded transition hover:bg-indigo-50"
-                                      title="직원 상세 정보 수정"
-                                    >
-                                      <Edit size={9} />
-                                    </button>
-                                    <button
-                                      draggable={false}
-                                      onMouseDown={(e) => e.stopPropagation()}
-                                      onClick={(e) => { e.stopPropagation(); handleDeleteEmployee(emp.id, emp.name); }}
-                                      className="text-slate-400 hover:text-rose-500 cursor-pointer p-0.5 rounded transition hover:bg-rose-50"
-                                      title="직원 삭제"
-                                    >
-                                      <Trash2 size={9} />
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </td>
+                          <EmployeeNameCell
+                            emp={emp}
+                            empIdx={empIdx}
+                            isAdmin={isAdmin}
+                            userLevel={userLevel}
+                            currentYear={currentYear}
+                            draggedRowId={draggedRowId}
+                            dragOverRowId={dragOverRowId}
+                            onNameClick={(e) => setCalendarEmployee(e)}
+                            onEditClick={(e) => openEditEmployeeModal(e)}
+                            onDeleteClick={(id, name) => handleDeleteEmployee(id, name)}
+                          />
 
                           {/* Schedule Cells — with per-month total column after each month's last day */}
                           {displayDates.map((dateStr, dateIdx) => {
