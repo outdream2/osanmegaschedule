@@ -541,7 +541,12 @@ const EmptyDetail: React.FC = () => (
 );
 
 // ─── 메인 컴포넌트 ───────────────────────────────────────────────────────────
-const StaffManagePage: React.FC = () => {
+interface StaffManagePageProps {
+  /** 계약서 작성 요청 · Employee 정보를 담고 · 부모(BusinessManagePage)가 · 서류작성 서브탭으로 이동시킴 */
+  onWriteContract?: (emp: Employee) => void;
+}
+
+const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) => {
   // ── 상태 ──
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading]   = useState(false);
@@ -925,19 +930,48 @@ const StaffManagePage: React.FC = () => {
             <span className="text-[11px] text-slate-300">-</span>
           )}
         </td>
-        {/* 근로계약서 · 보기 or 없음 */}
+        {/* 근로계약서 · 보기 or 작성 */}
         <td className="px-1 py-2 text-center">
           {hasContractFile ? (
             <button
               type="button"
               onClick={openContract}
-              className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
+              className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer whitespace-nowrap"
               title="근로계약서 새 창으로 보기"
             >
               <Paperclip size={10} />보기
             </button>
           ) : (
-            <span className="text-[11px] text-slate-300">없음</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                // 계약서 작성 페이지로 이동 · Employee 정보를 prefill
+                try {
+                  const prefill = {
+                    employeeId: emp.id,
+                    employeeName: emp.name ?? "",
+                    employeePhone: emp.phone ?? "",
+                    employeeAddress: (emp as any).address ?? "",
+                    hireDate: emp.hire_date ?? "",
+                    position: emp.position ?? "",
+                    employmentType: (emp as any).employmentType ?? (emp as any).employment_type ?? "",
+                    annualLeaveDays: (emp as any).annual_leave_days ?? null,
+                  };
+                  localStorage.setItem("contract-writer-prefill", JSON.stringify(prefill));
+                } catch { /* localStorage 실패 무시 */ }
+                if (onWriteContract) {
+                  onWriteContract(emp);
+                } else {
+                  // fallback · 이벤트로 통지 (BusinessManagePage 리스너)
+                  window.dispatchEvent(new CustomEvent("staff-write-contract", { detail: { employeeId: emp.id } }));
+                }
+              }}
+              className="inline-flex items-center gap-0.5 text-[11px] font-bold text-emerald-600 hover:text-emerald-800 hover:bg-emerald-50 border border-emerald-200 rounded px-1.5 py-0.5 cursor-pointer whitespace-nowrap transition-colors"
+              title="근로계약서 작성 · 기본정보 자동 채움"
+            >
+              <NotePencilIcon size={10} />작성
+            </button>
           )}
         </td>
         {/* 상태 배지 · 퇴사·퇴사예정 */}
@@ -1056,19 +1090,19 @@ const StaffManagePage: React.FC = () => {
         </div>
       </div>
 
-      {/* ── 마스터-디테일 · 좌우 split ── */}
+      {/* ── 마스터-디테일 · 좌우 split · 2026-08-03 (#183) · 공통 CSS 클래스 (split-*) 로 통일 ── */}
       <div
-        className="flex flex-col lg:flex-row flex-1 gap-3 min-h-0"
+        className="split-container"
         style={{ minHeight: "calc(100vh - 200px)" }}
       >
         {/* ════ 좌측: 직원 리스트 카드 · 데스크탑에서 폭 조정 가능 ════ */}
         <aside
-          className="w-full shrink-0 flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden max-h-[42vh] lg:max-h-none"
+          className="split-left"
           style={isDesktop ? { width: `${listWidth}px` } : undefined}
         >
 
-          {/* 카드 헤더 */}
-          <div className="flex items-center gap-2 px-4 h-10 border-b border-slate-100 shrink-0">
+          {/* 카드 헤더 · 공통 card-header */}
+          <div className="card-header">
             <User size={13} className="text-indigo-400 shrink-0" />
             <span className="text-[13px] font-semibold text-slate-800">직원 목록</span>
             {filtered.length !== employees.length && (
@@ -1122,17 +1156,17 @@ const StaffManagePage: React.FC = () => {
           </div>
         </aside>
 
-        {/* Resize handle · 데스크탑만 · 드래그로 좌측 리스트 폭 조정 */}
+        {/* Resize handle · 공통 split-divider · 데스크탑만 · group 은 @apply 로 상속 불가 → 클래스로 명시 */}
         <div
           onMouseDown={startResizeList}
-          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-indigo-400 rounded-full cursor-col-resize transition-all shrink-0 relative group"
+          className="split-divider group"
           title="드래그하여 좌측 리스트 폭 조절"
         >
           <span className="text-[10px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
         </div>
 
-        {/* ════ 우측: 인사카드 패널 · min-h-0 (flex-1 세로 스크롤 정상화) ════ */}
-        <section className="flex-1 flex flex-col min-w-0 min-h-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        {/* ════ 우측: 인사카드 패널 · 공통 split-right · min-h-0 (flex-1 세로 스크롤 정상화) ════ */}
+        <section className="split-right">
           {!displayEmp ? (
             <EmptyDetail />
           ) : (

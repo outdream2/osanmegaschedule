@@ -51,6 +51,8 @@ import { DisplayRequestPanel } from "./DisplayRequestPanel";
 import { StockArrivalPage } from "../StockArrivalPage";
 import { OcrPage } from "../OcrPage";
 import OrderManagePage from "../OrderManagePage/OrderManagePage";
+// 2026-08-03 (#183) · 공통 탭바 컴포넌트 · duplicate 스타일 흡수
+import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 // 2026-08-03 · StaffManagePage · 매장관리 서브탭에서 제거 · 경영관리 통합 페이지(BusinessManagePage)로 이동
 import type { AuthSession } from "../../types";
 
@@ -1458,20 +1460,10 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       />
 
       {/* 서브탭 · 2026-07-28 재설계 · Vercel Ink underline 계열 + 색상 아이덴티티 강조 */}
-      {/* AppNavHeader gradient pill · StockManagePage underline 두 패턴을 분석 후           */}
-      {/* 이 레이어(2단계 nav)에는 underline 방식이 계층적으로 적합 · gradient는 최상위 nav 전용 */}
+      {/* 2026-08-03 (#183) · 공통 TabBar (level 2) 로 리팩터 · duplicate 스타일 흡수 */}
       {(dpCanSeeStockManage || dpCanSeeStockArrivals) && (() => {
-        type TabDef = { key: string; label: string; icon: any; visible: boolean; color: string };
-        const SUBTAB_COLORS: Record<string, { bar: string; text: string; iconActive: string; iconInactive: string; hoverText: string; dotBg: string }> = {
-          emerald: { bar: "bg-emerald-500", text: "text-emerald-700", iconActive: "text-emerald-600", iconInactive: "text-slate-400", hoverText: "hover:text-emerald-700", dotBg: "bg-emerald-500" },
-          amber:   { bar: "bg-amber-500",   text: "text-amber-700",   iconActive: "text-amber-600",   iconInactive: "text-slate-400", hoverText: "hover:text-amber-700",   dotBg: "bg-amber-500"   },
-          sky:     { bar: "bg-sky-500",     text: "text-sky-700",     iconActive: "text-sky-600",     iconInactive: "text-slate-400", hoverText: "hover:text-sky-700",     dotBg: "bg-sky-500"     },
-          orange:  { bar: "bg-orange-500",  text: "text-orange-700",  iconActive: "text-orange-600",  iconInactive: "text-slate-400", hoverText: "hover:text-orange-700",  dotBg: "bg-orange-500"  },
-          rose:    { bar: "bg-rose-500",    text: "text-rose-700",    iconActive: "text-rose-600",    iconInactive: "text-slate-400", hoverText: "hover:text-rose-700",    dotBg: "bg-rose-500"    },
-          indigo:  { bar: "bg-indigo-500",  text: "text-indigo-700",  iconActive: "text-indigo-600",  iconInactive: "text-slate-400", hoverText: "hover:text-indigo-700",  dotBg: "bg-indigo-500"  },
-          teal:    { bar: "bg-teal-500",    text: "text-teal-700",    iconActive: "text-teal-600",    iconInactive: "text-slate-400", hoverText: "hover:text-teal-700",    dotBg: "bg-teal-500"    },
-        };
-        const tabs: Array<TabDef> = [
+        type DpSubTabKey = "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals" | "store";
+        const tabs: CommonTabDef<DpSubTabKey>[] = [
           // 2026-08-03 · 발주/사입관리 단일 탭 → 4개 서브탭으로 분해 (사용자 요청) · stock-manage 폐지
           { key: "purchase-order", label: "발주",         icon: ClipboardList, visible: dpCanSeeStockManage,   color: "sky"     },
           { key: "purchase",       label: "매입",         icon: Package,       visible: dpCanSeeStockManage,   color: "amber"   },
@@ -1479,48 +1471,14 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           { key: "statistics",     label: "통계",         icon: BarChart2,     visible: dpCanSeeStockManage,   color: "indigo"  },
           { key: "stock-arrivals", label: "입고알림",     icon: Bell,          visible: dpCanSeeStockArrivals, color: "orange"  },
           { key: "store",          label: "구역진열요청",  icon: Store,         visible: true,                  color: "rose"    },
-          // 2026-08-03 · 직원관리 탭 제거 · 경영관리 통합 페이지(BusinessManagePage)로 이동
         ];
-        const visibleTabs = tabs.filter(t => t.visible);
         return (
-          <div className="bg-white border-b border-slate-200 w-full shrink-0">
-            <div className="max-w-[1360px] mx-auto px-2 sm:px-5 w-full overflow-x-auto scrollbar-none">
-              <div className="flex flex-nowrap items-stretch gap-0">
-                {visibleTabs.map(t => {
-                  const active = dpSubTab === t.key;
-                  const Icon = t.icon;
-                  const c = SUBTAB_COLORS[t.color];
-                  return (
-                    <button
-                      key={t.key}
-                      onClick={() => setDpSubTab(t.key as any)}
-                      className={[
-                        "relative flex items-center gap-2 sm:gap-2.5",
-                        "px-4 sm:px-6 py-3.5 sm:py-4",
-                        "text-[16px] sm:text-[18px] font-black leading-none whitespace-nowrap",
-                        "transition-colors duration-150 cursor-pointer outline-none",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300",
-                        "active:opacity-70",
-                        active ? c.text : `text-slate-500 ${c.hoverText}`,
-                      ].join(" ")}
-                      title={t.label}
-                    >
-                      <Icon
-                        size={19}
-                        strokeWidth={active ? 2.4 : 2}
-                        className={`shrink-0 sm:size-[20px] transition-colors duration-150 ${active ? c.iconActive : "text-slate-400"}`}
-                      />
-                      <span>{t.label}</span>
-                      {/* 활성 underline · 색상 아이덴티티 */}
-                      {active && (
-                        <span className={`absolute left-0 right-0 -bottom-px h-[2.5px] ${c.bar} rounded-t-sm`} />
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <TabBar<DpSubTabKey>
+            level={2}
+            tabs={tabs}
+            activeKey={dpSubTab as DpSubTabKey}
+            onSelect={(k) => setDpSubTab(k as any)}
+          />
         );
       })()}
 

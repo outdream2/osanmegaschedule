@@ -5,12 +5,13 @@
 // - approval-count-updated CustomEvent 로 실시간 갱신
 //   · 60초 폴링 fallback (동일 세션 · 다른 탭 처리 반영)
 //
-// DocumentWriterPage 의 내부 2탭 스타일 벤치마크 · 색상만 다름 (teal/rose)
+// 2026-08-03 (#183) · 공통 TabBar 로 리팩터 · duplicate 스타일 흡수
 import React, { Suspense, useCallback, useEffect, useState } from "react";
 import { CalendarDots, SignOut } from "@phosphor-icons/react";
 import { LeavePage } from "../LeavePage/LeavePage";
 import type { AuthSession } from "../../types";
 import type { AppNavPage } from "../AppNavHeader";
+import { TabBar, type TabDef } from "../common/TabBar";
 
 const ResignationApprovalPage = React.lazy(() => import("../ResignationApprovalPage/ResignationApprovalPage"));
 
@@ -61,53 +62,22 @@ const ApprovalCenterPage: React.FC<ApprovalCenterPageProps> = (props) => {
     };
   }, [loadCounts]);
 
-  const TABS: { key: ACTab; label: string; count: number; icon: typeof CalendarDots }[] = [
-    { key: "leave",       label: "연차승인",   count: leaveCount,  icon: CalendarDots },
-    { key: "resignation", label: "사직서승인", count: resignCount, icon: SignOut      },
+  const TABS: TabDef<ACTab>[] = [
+    { key: "leave",       label: "연차승인",   icon: CalendarDots, color: "teal", badge: leaveCount  },
+    { key: "resignation", label: "사직서승인", icon: SignOut,      color: "rose", badge: resignCount },
   ];
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      {/* ── 내부 2탭 바 ── */}
-      <div className="bg-white border-b border-slate-200 shrink-0">
-        <div className="max-w-[1400px] mx-auto px-3 sm:px-5 flex items-stretch gap-0">
-          {TABS.map(t => {
-            const active = tab === t.key;
-            const Icon = t.icon;
-            const activeText = t.key === "leave" ? "text-teal-700" : "text-rose-700";
-            const activeIcon = t.key === "leave" ? "text-teal-600" : "text-rose-600";
-            const activeBar  = t.key === "leave" ? "bg-teal-500"   : "bg-rose-500";
-            const hoverText  = t.key === "leave" ? "hover:text-teal-700" : "hover:text-rose-700";
-            return (
-              <button
-                key={t.key}
-                type="button"
-                onClick={() => setTab(t.key)}
-                className={`
-                  relative flex items-center gap-2 px-5 sm:px-6 py-3.5 sm:py-4
-                  text-[16px] sm:text-[18px] font-black leading-none whitespace-nowrap
-                  transition-colors cursor-pointer
-                  ${active ? activeText : `text-slate-500 ${hoverText}`}
-                `}
-              >
-                <Icon size={19} weight="fill" className={active ? activeIcon : "text-slate-400"} />
-                <span>{t.label}</span>
-                {t.count > 0 && (
-                  <span
-                    className="ml-0.5 min-w-[20px] h-[20px] inline-flex items-center justify-center px-1.5 rounded-full bg-rose-500 text-white text-[11px] font-black tabular-nums leading-none"
-                    title={`대기 ${t.count}건`}
-                  >
-                    {t.count}
-                  </span>
-                )}
-                {active && (
-                  <span className={`absolute left-0 right-0 -bottom-px h-[2.5px] ${activeBar} rounded-t-sm`} />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
+      {/* ── 내부 2탭 바 · 공통 TabBar (level 2) · rose 배지 ── */}
+      <TabBar<ACTab>
+        level={2}
+        tabs={TABS}
+        activeKey={tab}
+        onSelect={setTab}
+        badgeColor="rose"
+        maxWidth={1400}
+      />
 
       {/* ── 내부 탭 컨텐츠 ── */}
       <div className="flex-1 min-h-0 flex flex-col">

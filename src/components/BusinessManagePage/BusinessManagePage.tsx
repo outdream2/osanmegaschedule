@@ -9,6 +9,7 @@ import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { LunchPage } from "../LunchPage/LunchPage";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import type { AuthSession } from "../../types";
+import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 
 // StaffManagePage · props 없음 · lazy 로드 (초기 진입 시에만 필요)
 const StaffManagePage = React.lazy(() => import("../StaffManagePage/StaffManagePage"));
@@ -29,21 +30,15 @@ interface BusinessManagePageProps {
 // 2026-08-03 · "leave" 는 하위 호환 · 실제 렌더는 "approval-center" 로 리다이렉트
 type BmSubTab = "staff-manage" | "approval-center" | "lunch" | "hr-forms" | "document-writer";
 
-// 서브탭 색상 팔레트 · DisplayPage 서브탭 SUBTAB_COLORS 와 동일 구조
-const SUBTAB_COLORS: Record<string, { bar: string; text: string; iconActive: string; hoverText: string }> = {
-  emerald: { bar: "bg-emerald-500", text: "text-emerald-700", iconActive: "text-emerald-600", hoverText: "hover:text-emerald-700" },
-  teal:    { bar: "bg-teal-500",    text: "text-teal-700",    iconActive: "text-teal-600",    hoverText: "hover:text-teal-700"    },
-  orange:  { bar: "bg-orange-500",  text: "text-orange-700",  iconActive: "text-orange-600",  hoverText: "hover:text-orange-700"  },
-  indigo:  { bar: "bg-indigo-500",  text: "text-indigo-700",  iconActive: "text-indigo-600",  hoverText: "hover:text-indigo-700"  },
-  amber:   { bar: "bg-amber-500",   text: "text-amber-700",   iconActive: "text-amber-600",   hoverText: "hover:text-amber-700"   },
-};
+// 색상 · 공통 TabBar 프리셋 (COLOR_MAP · TabBar.tsx 내부)
+type TabColor = "sky" | "amber" | "violet" | "teal" | "indigo" | "rose" | "emerald" | "orange" | "slate";
 
 interface TabDef {
   key: BmSubTab;
   label: string;
   // Phosphor Icon 컴포넌트 (weight 는 "regular"|"bold"|"fill"|... 유니온 · 문자열 유니온 대신 원본 Icon 타입 사용)
   icon: PhIcon;
-  color: keyof typeof SUBTAB_COLORS;
+  color: TabColor;
 }
 
 const TABS: TabDef[] = [
@@ -132,76 +127,26 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
         onLogout={onLogout}
       />
 
-      {/* ── 서브탭 바 · DisplayPage 서브탭 스타일 벤치마크 ── */}
+      {/* ── 서브탭 바 · 공통 TabBar (level 2) · long-press 드래그 지원 ── */}
       {/* 2026-08-03 · 관리자(level>=8) · 500ms long-press 후 드래그로 순서 변경 가능 */}
-      <div className="bg-white border-b border-slate-200 w-full shrink-0">
-        <div className="max-w-[1360px] mx-auto px-2 sm:px-5 w-full overflow-x-auto scrollbar-none">
-          <div className={`flex flex-nowrap items-stretch gap-0 ${sortable.isDragging ? "select-none" : ""}`}>
-            {sortable.tabs.map(t => {
-              const active = subTab === t.key;
-              const Icon = t.icon;
-              const c = SUBTAB_COLORS[t.color];
-              const dnd = sortable.getTabProps(t);
-              const dragCls = [
-                dnd.isBeingDragged ? "opacity-50" : "",
-                dnd.isDropTarget ? "ring-2 ring-indigo-400 ring-inset" : "",
-                dnd.isArmed && !dnd.isBeingDragged ? "tab-shake cursor-grab" : "",
-                dnd.isBeingDragged ? "cursor-grabbing" : "",
-              ].filter(Boolean).join(" ");
-              return (
-                <button
-                  key={t.key}
-                  type="button"
-                  onClick={() => setSubTab(t.key)}
-                  draggable={dnd.draggable}
-                  onDragStart={dnd.onDragStart}
-                  onDragOver={dnd.onDragOver}
-                  onDragEnter={dnd.onDragEnter}
-                  onDragLeave={dnd.onDragLeave}
-                  onDrop={dnd.onDrop}
-                  onDragEnd={dnd.onDragEnd}
-                  onMouseDown={dnd.onMouseDown}
-                  onMouseUp={dnd.onMouseUp}
-                  onMouseLeave={dnd.onMouseLeave}
-                  onTouchStart={dnd.onTouchStart}
-                  onTouchEnd={dnd.onTouchEnd}
-                  onTouchCancel={dnd.onTouchCancel}
-                  className={[
-                    "relative flex items-center gap-2 sm:gap-2.5",
-                    "px-4 sm:px-6 py-3.5 sm:py-4",
-                    "text-[16px] sm:text-[18px] font-black leading-none whitespace-nowrap",
-                    "transition-colors duration-150 cursor-pointer outline-none",
-                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300",
-                    "active:opacity-70",
-                    active ? c.text : `text-slate-500 ${c.hoverText}`,
-                    dragCls,
-                  ].join(" ")}
-                  title={t.label}
-                >
-                  <Icon
-                    size={19}
-                    weight="fill"
-                    className={`shrink-0 sm:size-[20px] transition-colors duration-150 ${active ? c.iconActive : "text-slate-400"}`}
-                  />
-                  <span>{t.label}</span>
-                  {/* 2026-08-03 · 승인대기 서브탭 옆 · pending 갯수 배지 (rose · 관리자 & count>0) */}
-                  {t.key === "approval-center" && showApprovalBadge && approvalPending > 0 && (
-                    <span
-                      className="ml-0.5 min-w-[20px] h-[20px] inline-flex items-center justify-center px-1.5 rounded-full bg-rose-500 text-white text-[11px] font-black tabular-nums leading-none"
-                      title={`승인 대기 ${approvalPending}건`}
-                    >
-                      {approvalPending}
-                    </span>
-                  )}
-                  {active && (
-                    <span className={`absolute left-0 right-0 -bottom-px h-[2.5px] ${c.bar} rounded-t-sm`} />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
+      {/* 2026-08-03 (#183) · 공통 TabBar 사용 · duplicate 스타일 흡수 · approval-center 배지 동적 매핑 */}
+      <TabBar<BmSubTab>
+        level={2}
+        tabs={sortable.tabs.map((t): CommonTabDef<BmSubTab> => ({
+          key: t.key,
+          label: t.label,
+          icon: t.icon,
+          color: t.color,
+          badge: (t.key === "approval-center" && showApprovalBadge) ? approvalPending : undefined,
+        }))}
+        activeKey={subTab}
+        onSelect={setSubTab}
+        badgeColor="rose"
+        sortable={{
+          getTabProps: (keyOrTab) => sortable.getTabProps(typeof keyOrTab === "string" ? keyOrTab : keyOrTab.key),
+          isDragging: sortable.isDragging,
+        }}
+      />
 
       {/* ── 서브탭 컨텐츠 ── */}
       <main className="flex-1 flex flex-col min-h-0">

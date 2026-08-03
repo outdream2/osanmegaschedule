@@ -30,6 +30,8 @@ import { PaymentInfoTab } from "./PaymentInfoTab";
 import { CategoryTab } from "./CategoryTab";
 import { VendorDetailTabs } from "./VendorDetailTabs";
 import { BarChart2, PieChart, ArrowLeftRight, Boxes, Wallet } from "lucide-react";
+// 2026-08-03 (#183) · 공통 TabBar (level 1 · Level-1 발주/매입/결제/통계 탭) · duplicate 스타일 흡수
+import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 
 interface OrderRequest {
   id: string;
@@ -932,111 +934,53 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   }, []);
 
   // ── 서브탭 렌더 헬퍼 ──
-  //   2026-08-03 · sortable prop 추가 · getTabProps 로 long-press 드래그 이벤트/시각 flag 전달
-  //   · 기본값은 no-op (getTabProps 미제공 시 기존 동작 그대로)
+  //   2026-08-03 (#183) · 공통 TabBar (level 2 · nested variant) 로 리팩터
+  //   · 기존 API 시그니처 유지 (tabs · activeTab · setTab · sortable) · duplicate 스타일 흡수
+  //   · sortable 미제공 시에도 기존 no-op 동작 그대로
   const renderSubTabs = <K extends string>(
     tabs: { k: K; label: string; icon: React.ElementType; color: string; badge?: number }[],
     activeTab: K,
     setTab: (k: K) => void,
     sortable?: { getTabProps: (key: K) => TabHandlerProps; isDragging: boolean },
   ) => (
-    <div className={`flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-0.5 border-b border-slate-200 sm:overflow-x-auto sm:scrollbar-none bg-slate-50/50 px-2 pt-1 ${sortable?.isDragging ? "select-none" : ""}`}>
-      {tabs.map(t => {
-        const Icon = t.icon;
-        const active = activeTab === t.k;
-        const colorMap: Record<string, { text: string; bar: string; badge: string }> = {
-          sky:    { text: "text-sky-700",    bar: "bg-sky-500",    badge: "bg-sky-100 text-sky-700" },
-          amber:  { text: "text-amber-700",  bar: "bg-amber-500",  badge: "bg-amber-100 text-amber-700" },
-          violet: { text: "text-violet-700", bar: "bg-violet-500", badge: "bg-violet-100 text-violet-700" },
-          teal:   { text: "text-teal-700",   bar: "bg-teal-500",   badge: "bg-teal-100 text-teal-700" },
-          indigo: { text: "text-indigo-700", bar: "bg-indigo-500", badge: "bg-indigo-100 text-indigo-700" },
-          rose:   { text: "text-rose-700",   bar: "bg-rose-500",   badge: "bg-rose-100 text-rose-700" },
-          emerald:{ text: "text-emerald-700",bar: "bg-emerald-500",badge: "bg-emerald-100 text-emerald-700" },
-        };
-        const c = colorMap[t.color] ?? colorMap["sky"];
-        const dnd = sortable?.getTabProps(t.k);
-        const dragCls = dnd
-          ? [
-              dnd.isBeingDragged ? "opacity-50" : "",
-              dnd.isDropTarget ? "ring-2 ring-indigo-400 ring-inset" : "",
-              dnd.isArmed && !dnd.isBeingDragged ? "tab-shake cursor-grab" : "",
-              dnd.isBeingDragged ? "cursor-grabbing" : "",
-            ].filter(Boolean).join(" ")
-          : "";
-        return (
-          <button
-            key={t.k}
-            onClick={() => setTab(t.k)}
-            draggable={dnd?.draggable}
-            onDragStart={dnd?.onDragStart}
-            onDragOver={dnd?.onDragOver}
-            onDragEnter={dnd?.onDragEnter}
-            onDragLeave={dnd?.onDragLeave}
-            onDrop={dnd?.onDrop}
-            onDragEnd={dnd?.onDragEnd}
-            onMouseDown={dnd?.onMouseDown}
-            onMouseUp={dnd?.onMouseUp}
-            onMouseLeave={dnd?.onMouseLeave}
-            onTouchStart={dnd?.onTouchStart}
-            onTouchEnd={dnd?.onTouchEnd}
-            onTouchCancel={dnd?.onTouchCancel}
-            className={[
-              "relative flex items-center gap-2 sm:gap-2.5",
-              "px-4 sm:px-6 py-3.5 sm:py-4",
-              "text-[16px] sm:text-[18px] font-black leading-none whitespace-nowrap",
-              "transition-colors duration-150 cursor-pointer outline-none",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300",
-              "active:opacity-70",
-              active ? c.text : `text-slate-500 hover:text-slate-700`,
-              dragCls,
-            ].join(" ")}>
-            <Icon size={19} className={`shrink-0 sm:size-[20px] transition-colors duration-150 ${active ? c.text : "text-slate-400"}`} />
-            <span>{t.label}</span>
-            {t.badge != null && t.badge > 0 && (
-              <span className={`inline-flex items-center justify-center min-w-[16px] px-1 h-[18px] rounded-full text-[10px] font-black ${active ? c.badge : "bg-slate-100 text-slate-500"}`}>
-                {t.badge}
-              </span>
-            )}
-            {active && <span className={`absolute left-0 right-0 -bottom-px h-[2.5px] ${c.bar} rounded-t-sm`} />}
-          </button>
-        );
-      })}
-    </div>
+    <TabBar<K>
+      level={2}
+      variant="nested"
+      tabs={tabs.map((t): CommonTabDef<K> => ({
+        key: t.k,
+        label: t.label,
+        icon: t.icon as CommonTabDef<K>["icon"],
+        color: t.color as CommonTabDef<K>["color"],
+        badge: t.badge,
+      }))}
+      activeKey={activeTab}
+      onSelect={setTab}
+      badgeColor="rose"
+      sortable={sortable ? {
+        getTabProps: (keyOrTab) => sortable.getTabProps(typeof keyOrTab === "string" ? keyOrTab : keyOrTab.key),
+        isDragging: sortable.isDragging,
+      } : undefined}
+    />
   );
 
   return (
     <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-4">
       {/* ── Level-1 탭 (발주 / 매입 / 결제 / 통계) — 2026-08-03 재구성 ── */}
       {/* hideTopTabs=true 이면 DisplayPage 서브탭 모드 · Level-1 탭 UI 숨김 */}
-      {!hideTopTabs && <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-1 border-b border-slate-200 sm:overflow-x-auto sm:scrollbar-none">
-        {([
-          { k: "purchase-order" as const, label: "발주", icon: ShoppingCart, color: "sky" },
-          { k: "purchase"       as const, label: "매입", icon: PackageCheck,  color: "violet" },
-          { k: "payment"        as const, label: "결제", icon: BarChart2,     color: "teal" },
-          { k: "statistics"     as const, label: "통계", icon: PieChart,      color: "indigo" },
-        ] as { k: typeof topTab; label: string; icon: React.ElementType; color: string }[]).map(t => {
-          const Icon = t.icon;
-          const active = topTab === t.k;
-          const textMap: Record<string, string> = { sky: "text-sky-700", violet: "text-violet-700", teal: "text-teal-700", indigo: "text-indigo-700" };
-          const barMap:  Record<string, string> = { sky: "bg-sky-500",   violet: "bg-violet-500",   teal: "bg-teal-500",   indigo: "bg-indigo-500" };
-          return (
-            <button key={t.k} onClick={() => setTopTab(t.k)}
-              className={[
-                "relative flex items-center gap-2 sm:gap-2.5",
-                "px-4 sm:px-6 py-3.5 sm:py-4",
-                "text-[16px] sm:text-[18px] font-black leading-none whitespace-nowrap",
-                "transition-colors duration-150 cursor-pointer outline-none",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300",
-                "active:opacity-70",
-                active ? textMap[t.color] : "text-slate-500 hover:text-slate-700",
-              ].join(" ")}>
-              <Icon size={19} strokeWidth={active ? 2.4 : 2} className={`shrink-0 sm:size-[20px] transition-colors duration-150 ${active ? textMap[t.color] : "text-slate-400"}`} />
-              <span>{t.label}</span>
-              {active && <span className={`absolute left-0 right-0 -bottom-px h-[2.5px] ${barMap[t.color]} rounded-t-sm`} />}
-            </button>
-          );
-        })}
-      </div>}
+      {/* 2026-08-03 (#183) · 공통 TabBar (level 2) 로 리팩터 · duplicate 스타일 흡수 */}
+      {!hideTopTabs && (
+        <TabBar<typeof topTab>
+          level={2}
+          tabs={[
+            { key: "purchase-order", label: "발주", icon: ShoppingCart, color: "sky"    },
+            { key: "purchase",       label: "매입", icon: PackageCheck, color: "violet" },
+            { key: "payment",        label: "결제", icon: BarChart2,    color: "teal"   },
+            { key: "statistics",     label: "통계", icon: PieChart,     color: "indigo" },
+          ] as CommonTabDef<typeof topTab>[]}
+          activeKey={topTab}
+          onSelect={setTopTab}
+        />
+      )}
 
       {/* ══ 발주 탭 (purchase-order) ══ */}
       {topTab === "purchase-order" && (
