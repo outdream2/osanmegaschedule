@@ -259,7 +259,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     const c = TAB_COLOR_MAP[tab.color ?? "slate"];
     // 2026-07-24 · sm 컴팩트 · md 중간 · lg 정상 (사용자 "모바일/PC 버전 바뀜" 대응)
     //   sm (640-767): 매우 컴팩트 · md (768-1023): 중간 · lg (1024+): 원래대로
-    const base = "flex items-center gap-1 md:gap-1.5 px-1.5 md:px-2.5 lg:px-3.5 py-1.5 md:py-2 rounded-lg text-[11px] md:text-[12px] lg:text-[13.5px] font-medium border transition-all whitespace-nowrap";
+    const base = "flex items-center gap-1 md:gap-1.5 px-2 md:px-3 lg:px-4 py-1.5 md:py-2 rounded-lg text-[13px] md:text-[14px] lg:text-[16px] font-bold border transition-all whitespace-nowrap";
 
     // 경영관리 탭 · business-manage 통합 페이지로 단순 라우팅 (2026-08-03)
     if (tab.key === "business") {
@@ -268,7 +268,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       if (isActive) {
         return (
           <span key="business" className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} border-transparent shadow-sm font-bold`}>
-            <Icon size={15} weight="fill" /> {tab.label}
+            <Icon size={17} weight="fill" /> {tab.label}
           </span>
         );
       }
