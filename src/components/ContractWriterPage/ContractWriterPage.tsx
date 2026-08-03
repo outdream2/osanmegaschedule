@@ -81,6 +81,13 @@ interface ContractForm {
   // 추가 내용
   additionalContent: string;
 
+  // 연차 유급휴가 (일)
+  annualLeaveDays: string;
+
+  // 직원 카테고리 (약사·사원·기타) · 기타는 자유 입력 지원
+  employeeCategory: "약사" | "사원" | "기타";
+  employeeCategoryCustom: string;   // 기타 선택 시 커스텀 텍스트 (예 · 인턴약사)
+
   // 사업주 (기본값 · 편집 가능)
   employerName: string;          // 대표자명
   companyName: string;           // 회사명
@@ -151,6 +158,9 @@ const emptyForm = (): ContractForm => ({
   jobDuty: "약국 카운터 · OTC 판매 · 재고 관리",
   socialInsurance: true,
   additionalContent: "",
+  annualLeaveDays: "15",
+  employeeCategory: "사원",
+  employeeCategoryCustom: "",
   employerName: (DEFAULT_EMPLOYER.employerName as string) ?? "",
   companyName:  (DEFAULT_EMPLOYER.companyName as string) ?? "",
   companyAddress: (DEFAULT_EMPLOYER.companyAddress as string) ?? "",
@@ -428,7 +438,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
       </PreviewRow>
 
       <PreviewRow no="7" title="연차유급휴가">
-        <div>연차유급휴가는 근로기준법에서 정하는 바에 따라 부여함</div>
+        <div>연차유급휴가는 근로기준법에서 정하는 바에 따라 <b>연 {form.annualLeaveDays || "15"}일</b> 부여함</div>
       </PreviewRow>
 
       <PreviewRow no="8" title="사회보험 적용">
@@ -567,11 +577,14 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       setEmpLoading(true);
       setEmpError(null);
       try {
-        const res = await fetch("/api/employees");
+        const now = new Date();
+        const y = now.getFullYear(), m = now.getMonth() + 1;
+        const res = await fetch(`/api/schedules?year=${y}&month=${m}`);
         if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
-        const list = await res.json();
+        const data = await res.json();
         if (cancelled) return;
-        setEmployees(Array.isArray(list) ? list : []);
+        const list = Array.isArray(data?.employees) ? data.employees : [];
+        setEmployees(list);
       } catch (err: any) {
         if (!cancelled) setEmpError(err?.message ?? "직원 목록 불러오기 실패");
       } finally {
@@ -622,6 +635,20 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
       employeeName: emp.name || prev.employeeName,
       employeePhone: emp.phone || prev.employeePhone,
       employeeAddress: emp.address || prev.employeeAddress,
+      annualLeaveDays: emp.annual_leave_days != null ? String(emp.annual_leave_days) : prev.annualLeaveDays,
+      // 직원 카테고리 자동 매핑 (약사 · 사원 · 기타)
+      employeeCategory: (() => {
+        const pos = String(emp.position || "").trim();
+        if (pos === "약사") return "약사" as const;
+        // 정직원 + 약사 아닌 경우 = 사원
+        const et = String(emp.employmentType || "").trim();
+        if (pos && !["기타", "알바"].includes(pos) && (et === "정직원" || et === "")) return "사원" as const;
+        return "기타" as const;
+      })(),
+      employeeCategoryCustom: (() => {
+        const pos = String(emp.position || "").trim();
+        return pos && pos !== "약사" ? pos : prev.employeeCategoryCustom;
+      })(),
       // 정규직/계약직/알바 · 매핑
       contractType: (() => {
         const et = (emp.employmentType || "").trim();
@@ -780,17 +807,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               <ArrowsClockwise size={14} />
               <span className="hidden sm:inline">초기화</span>
             </button>
-
-            <button
-              type="button"
-              onClick={handleComplete}
-              disabled={generating}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer"
-              title="계약 완료 · PDF 다운"
-            >
-              <DownloadSimple size={14} weight="bold" />
-              <span>{generating ? "생성 중..." : "계약 완료 · PDF 다운"}</span>
-            </button>
           </div>
         </div>
 
@@ -868,6 +884,50 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   placeholder="주소"
                   className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
                 />
+                {/* 직원 카테고리 · 약사 · 사원 · 기타 (기타는 자유 입력) */}
+                <div className="grid grid-cols-3 gap-1.5">
+                  {(["약사", "사원", "기타"] as const).map(cat => {
+                    const active = form.employeeCategory === cat;
+                    const activeColor =
+                      cat === "약사" ? "bg-violet-500 text-white border-violet-500" :
+                      cat === "사원" ? "bg-sky-500 text-white border-sky-500" :
+                                       "bg-slate-600 text-white border-slate-600";
+                    return (
+                      <button
+                        key={cat}
+                        type="button"
+                        onClick={() => upd("employeeCategory", cat)}
+                        className={`px-2 py-1.5 rounded-lg border text-[12px] font-bold transition-colors cursor-pointer ${
+                          active ? activeColor : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                        }`}
+                      >
+                        {cat}
+                      </button>
+                    );
+                  })}
+                </div>
+                {form.employeeCategory === "기타" && (
+                  <input
+                    type="text"
+                    value={form.employeeCategoryCustom}
+                    onChange={(e) => upd("employeeCategoryCustom", e.target.value)}
+                    placeholder="기타 직군 · 자유 입력 (예: 인턴약사 · 청소 · 배송 등)"
+                    className="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition"
+                  />
+                )}
+                {/* 연차 유급휴가 (일) */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-slate-500 font-semibold shrink-0">연차 유급휴가</span>
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.annualLeaveDays}
+                    onChange={(e) => upd("annualLeaveDays", e.target.value)}
+                    placeholder="15"
+                    className="w-24 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-sm text-slate-800 font-semibold text-right focus:outline-none focus:border-emerald-500 transition"
+                  />
+                  <span className="text-[11px] text-slate-500 font-semibold">일</span>
+                </div>
               </div>
             </div>
 
@@ -1122,6 +1182,20 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <SignArea label="사업주 서명" padRef={employerPadRef} color="emerald" />
                 <SignArea label="근로자 서명" padRef={employeePadRef} color="indigo" />
+              </div>
+
+              {/* 계약 완료 · PDF 다운 · 서명 아래에 배치 */}
+              <div className="mt-4 flex justify-end">
+                <button
+                  type="button"
+                  onClick={handleComplete}
+                  disabled={generating}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-sm font-black shadow-sm transition-colors cursor-pointer"
+                  title="계약 완료 · PDF 다운"
+                >
+                  <DownloadSimple size={16} weight="bold" />
+                  <span>{generating ? "생성 중..." : "계약 완료 · PDF 다운"}</span>
+                </button>
               </div>
             </div>
           </section>
