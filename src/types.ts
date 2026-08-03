@@ -68,6 +68,7 @@ export interface PagePermissions {
   reservation: PagePermission;
   lunch: PagePermission;
   stockcheck: PagePermission;
+  pharmacist: PagePermission;
 }
 
 export const DEFAULT_PERMISSIONS: PagePermissions = {
@@ -81,6 +82,8 @@ export const DEFAULT_PERMISSIONS: PagePermissions = {
   reservation: { read: 1, write: 1 },
   lunch:     { read: 1, write: 1 },
   stockcheck: { read: 1, write: 1 },
+  // 약사 전용 · 열람 level ≥ 3 (약사) · 업로드 level ≥ 8 (관리자)
+  pharmacist: { read: 3, write: 8 },
 };
 
 export interface MonthlySummary {

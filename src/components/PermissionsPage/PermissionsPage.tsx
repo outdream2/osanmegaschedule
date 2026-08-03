@@ -28,6 +28,8 @@ const PAGE_LABELS: { key: keyof PagePermissions; label: string; desc: string }[]
   { key: "reservation", label: "방문예약",        desc: "상담 및 방문 일정 예약" },
   { key: "lunch",       label: "점심 불참",       desc: "오늘의 점심 불참 신청" },
   { key: "stockcheck",  label: "재고 점검",       desc: "매장 내 의약품 재고 점검" },
+  // 약사 전용 · 열람은 약사(≥3) · 쓰기(자료 업로드)는 관리자(≥8)
+  { key: "pharmacist",  label: "약사 전용",       desc: "교육자료 · 복약지도 · 문서 · 관리자 업로드" },
 ];
 
 const LEVELS = [0,1,2,3,4,5,6,7,8,9];
