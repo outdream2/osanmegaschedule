@@ -31,10 +31,42 @@ router.get("/api/products-map", async (_req, res) => {
 
 // GET /api/inventory-latest — 상품코드별 최신 실재고 (warehouse_stock/store_stock/checked_at)
 // DisplayPage 구역별 상품 리스트에서 재고관리 페이지처럼 창고/매장/실재고 컬럼을 채우기 위해 사용
+// 2026-08-03 · Priority 3 · get_inventory_latest RPC 호출 · 단일 DISTINCT ON 쿼리로 교체
+//   fallback: RPC 미생성(does not exist) 시 → 기존 1000건 페이지루프 방식으로 graceful 처리
 router.get("/api/inventory-latest", async (_req, res) => {
+  type InvRow = { warehouse_stock: number | null; store_stock: number | null; checked_at: string | null };
+  const buildMap = (rows: any[]): Record<string, InvRow> => {
+    const map: Record<string, InvRow> = {};
+    for (const r of rows) {
+      const code = String((r as any).product_code ?? "").trim();
+      if (!code || map[code]) continue;
+      map[code] = {
+        warehouse_stock: (r as any).warehouse_stock != null ? Number((r as any).warehouse_stock) : null,
+        store_stock:     (r as any).store_stock     != null ? Number((r as any).store_stock)     : null,
+        checked_at:      (r as any).checked_at ?? null,
+      };
+    }
+    return map;
+  };
+
   try {
+    // 1차 시도: RPC (단일 DISTINCT ON 쿼리 · 빠름)
+    const { data: rpcData, error: rpcErr } = await supabase.rpc("get_inventory_latest");
+    if (!rpcErr) {
+      res.setHeader("Cache-Control", "public, max-age=60");
+      return res.json(buildMap(rpcData ?? []));
+    }
+
+    // RPC 미생성이 아닌 실제 오류는 즉시 실패
+    if (!/function.*does not exist|could not find/i.test(rpcErr.message)) {
+      console.error("[inventory-latest] RPC error:", rpcErr.message);
+      return res.status(500).json({ error: rpcErr.message });
+    }
+
+    // 2차 fallback: 1000건 페이지루프 (RPC 생성 전 구 동작)
+    console.warn("[inventory-latest] RPC get_inventory_latest 미생성 · 페이지루프 fallback 사용");
     const PAGE = 1000;
-    const map: Record<string, { warehouse_stock: number | null; store_stock: number | null; checked_at: string | null }> = {};
+    const allRows: any[] = [];
     let from = 0;
     while (true) {
       const { data, error } = await supabase
@@ -47,20 +79,12 @@ router.get("/api/inventory-latest", async (_req, res) => {
         throw new Error(error.message);
       }
       if (!data || data.length === 0) break;
-      for (const r of data) {
-        const code = String((r as any).product_code ?? "").trim();
-        if (!code || map[code]) continue; // 최근값만 유지 (첫 항목)
-        map[code] = {
-          warehouse_stock: (r as any).warehouse_stock != null ? Number((r as any).warehouse_stock) : null,
-          store_stock:     (r as any).store_stock     != null ? Number((r as any).store_stock)     : null,
-          checked_at:      (r as any).checked_at ?? null,
-        };
-      }
+      allRows.push(...data);
       if (data.length < PAGE) break;
       from += PAGE;
     }
     res.setHeader("Cache-Control", "public, max-age=60");
-    res.json(map);
+    return res.json(buildMap(allRows));
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
