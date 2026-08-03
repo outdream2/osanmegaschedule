@@ -1631,7 +1631,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       )}
 
       {/* 2. Grid Container Block · 데스크탑에서만 max-w 적용 (모바일은 전체 폭 사용) */}
-      <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-gray-100 gap-0 w-full lg:max-w-[1600px] lg:mx-auto min-w-0">
+      <div className="flex-1 flex flex-col p-2 sm:p-3 md:p-4 bg-slate-100 gap-0 w-full lg:max-w-[1600px] lg:mx-auto min-w-0">
         {/* Month Navigation Toolbar — responsive two-row layout */}
         <div className="bg-white border border-slate-200 border-b-0 rounded-t-xl py-1.5 sm:py-2 flex flex-col gap-1.5 px-2.5 sm:px-5 shrink-0 shadow-sm">
           {/* 1행: 월 네비게이션 + 오늘 + 범례 */}
@@ -1710,17 +1710,17 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                 const todaySummary = isThisMonth ? currentSummaryList.find(s => s.day === today.getDate()) : null;
                 if (!todaySummary) return null;
                 return (
-                  <div className="flex items-center gap-1 bg-indigo-50 border border-indigo-200 rounded-full px-2 py-0.5">
-                    <Clock size={9} className="text-indigo-500" />
-                    <span className="text-[10px] font-bold text-indigo-600">오늘</span>
-                    <span className="text-indigo-300 text-[9px]">|</span>
-                    <span className="text-[10px] font-black text-violet-700">약사 {todaySummary.pharmacistCount}</span>
+                  <div className="flex items-center gap-1 bg-slate-50 border border-slate-200 rounded-lg px-2 py-0.5">
+                    <Clock size={9} className="text-slate-400" />
+                    <span className="text-[10px] font-bold text-slate-500">오늘</span>
+                    <span className="text-slate-300 text-[9px]">|</span>
+                    <span className="text-[10px] font-semibold text-emerald-700">약 {todaySummary.pharmacistCount}</span>
                     <span className="text-slate-300 text-[9px]">·</span>
-                    <span className="text-[10px] font-black text-sky-700">사원 {todaySummary.staffCount}</span>
+                    <span className="text-[10px] font-semibold text-slate-600">사 {todaySummary.staffCount}</span>
                     <span className="text-slate-300 text-[9px]">·</span>
-                    <span className="text-[10px] font-black text-slate-700">기타 {todaySummary.otherCount}</span>
-                    <span className="text-slate-300 text-[9px]">·</span>
-                    <span className="text-[10px] font-black text-indigo-700">총 {todaySummary.totalCount}명</span>
+                    <span className="text-[10px] font-semibold text-slate-500">기 {todaySummary.otherCount}</span>
+                    <span className="text-slate-200 text-[9px]">|</span>
+                    <span className="text-[10px] font-bold text-indigo-600">총 {todaySummary.totalCount}명</span>
                   </div>
                 );
               })()}
@@ -1848,21 +1848,18 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
             {/* Admin quick-edit hint bar */}
             {isAdmin && !isMonthLocked && (
-              <div className={`flex items-center gap-2 px-3 py-1.5 border-b shrink-0 min-w-0 overflow-hidden sticky top-0 z-30 ${editMode ? "bg-emerald-50 border-emerald-200 shadow-md" : "bg-slate-50 border-slate-100"}`}>
+              <div className={`flex items-center gap-2 px-3 py-1.5 border-b shrink-0 min-w-0 overflow-hidden sticky top-0 z-30 ${editMode ? "bg-emerald-50 border-emerald-200" : "bg-white border-slate-100"}`}>
                 {editMode ? (
                   <>
-                    <span className="text-emerald-500 text-[10px]">✏️</span>
-                    <span className="text-[10px] text-emerald-700 font-semibold truncate min-w-0">
-                      편집 모드 ON — 셀 <strong>클릭</strong>: 오픈 → 미들 → 마감 → 휴무 순환 | <strong>⚙️</strong> 버튼: 상세 편집
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                    <span className="text-[10px] text-emerald-700 font-medium truncate min-w-0">
+                      편집 모드 — 셀 클릭: 오픈 → 미들 → 마감 → 휴무 순환 · 설정 버튼: 상세 편집
                     </span>
                   </>
                 ) : (
-                  <>
-                    <span className="text-slate-400 text-[10px]">💡</span>
-                    <span className="text-[10px] text-slate-500 truncate min-w-0">
-                      셀을 직접 수정하려면 상단 <strong className="text-slate-700">편집</strong> 버튼을 눌러 편집 모드를 켜세요
-                    </span>
-                  </>
+                  <span className="text-[10px] text-slate-400 truncate min-w-0">
+                    셀을 수정하려면 상단 <strong className="text-slate-500 font-semibold">편집</strong> 버튼을 눌러 편집 모드를 켜세요
+                  </span>
                 )}
               </div>
             )}
@@ -1915,10 +1912,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                     {/* Table Headers */}
                     <thead className="sticky top-0 z-30 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
                       {/* Header Row 1: Day of Month Numbers */}
-                      <tr className="bg-gray-100 text-gray-700 select-none">
+                      <tr className="bg-slate-100 text-slate-600 select-none">
                         <th
                           ref={nameThRef}
-                          className="text-center text-[10px] sm:text-[11px] font-bold border-r border-gray-200 border-b border-b-gray-200 sticky left-0 bg-gray-100 z-40 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1 sm:px-3 min-w-[90px] sm:min-w-[120px] lg:min-w-[140px] w-[90px] sm:w-[120px] lg:w-[140px]"
+                          className="text-center text-[10px] sm:text-[11px] font-semibold border-r border-slate-200 border-b border-b-slate-200 sticky left-0 bg-slate-100 z-40 py-2 sm:py-2.5 tracking-wide whitespace-nowrap px-1 sm:px-3 min-w-[90px] sm:min-w-[120px] lg:min-w-[140px] w-[90px] sm:w-[120px] lg:w-[140px]"
                         >
                           <span className="hidden sm:inline">직원 성명</span>
                           <span className="sm:hidden">성명</span>
@@ -1929,10 +1926,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                           const dayNum = parseInt(dateStr.split('-')[2]);
                           const dayIndex = new Date(dateStr + 'T00:00:00').getDay();
                           const headerClass = dayIndex === 6
-                            ? "text-sky-600 bg-sky-50"
+                            ? "text-indigo-600 bg-indigo-50/60"
                             : dayIndex === 0
                               ? "text-rose-600 bg-rose-50"
-                              : "text-gray-700 bg-gray-100";
+                              : "text-slate-600 bg-slate-100";
                           const nextDate = displayDates[dateIdx + 1];
                           const isMonthEnd = !nextDate || nextDate.substring(0, 7) !== dateStr.substring(0, 7);
                           const monthLabel = parseInt(dateStr.substring(5, 7));
@@ -1941,13 +1938,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                               <th
                                 ref={isToday ? todayColRef : undefined}
                                 onClick={() => setTimelineDate(fullDate)}
-                                className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-gray-200 w-[44px] cursor-pointer hover:bg-indigo-100 hover:text-indigo-700 transition-colors ${headerClass} ${isToday ? "ring-2 ring-inset ring-red-500 z-40 relative" : ""}`}
+                                className={`p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-r border-b border-slate-200 w-[44px] cursor-pointer hover:bg-indigo-50 hover:text-indigo-600 transition-colors ${headerClass} ${isToday ? "ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
                                 title={`${fullDate} 타임라인 보기`}
                               >
                                 {dayNum}
                               </th>
                               {isMonthEnd && showSummary !== "hidden" && (
-                                <th className="p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-bold border-b border-gray-200 bg-indigo-50 text-indigo-600 whitespace-nowrap border-l-2 border-l-gray-200 w-[44px] sm:w-[52px]">
+                                <th className="p-0.5 sm:p-1 text-center text-[9px] sm:text-[10px] font-semibold border-b border-slate-200 bg-slate-50 text-slate-500 whitespace-nowrap border-l-2 border-l-slate-200 w-[44px] sm:w-[52px]">
                                   {monthLabel}월합
                                 </th>
                               )}
@@ -1957,29 +1954,29 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                       </tr>
 
                       {/* Header Row 2: Day of Week Characters */}
-                      <tr className="bg-gray-50 text-gray-500 select-none">
+                      <tr className="bg-slate-50 text-slate-400 select-none">
                         {/* Left spacing header matching Name column */}
-                        <th className="border-r border-b border-gray-200 sticky left-0 bg-gray-50 z-40 h-5 sm:h-6 min-w-[80px] sm:min-w-[120px]"></th>
+                        <th className="border-r border-b border-slate-200 sticky left-0 bg-slate-50 z-40 h-5 sm:h-6 min-w-[80px] sm:min-w-[120px]"></th>
 
                         {displayDates.map((dateStr, dateIdx) => {
                           const { dayWord, isToday } = getDayDetails(dateStr);
                           const dayIndex = new Date(dateStr + 'T00:00:00').getDay();
                           const wordClass = dayIndex === 6
-                            ? "text-sky-500 font-bold"
+                            ? "text-indigo-500 font-bold"
                             : dayIndex === 0
                               ? "text-rose-500 font-bold"
-                              : "text-gray-400";
+                              : "text-slate-400";
                           const nextDate = displayDates[dateIdx + 1];
                           const isMonthEnd = !nextDate || nextDate.substring(0, 7) !== dateStr.substring(0, 7);
                           return (
                             <React.Fragment key={`day-name-${dateStr}`}>
                               <th
-                                className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-gray-200 w-[44px] bg-gray-50 ${wordClass} ${isToday ? "ring-2 ring-inset ring-red-500 z-40 relative" : ""}`}
+                                className={`p-0.5 text-center text-[8px] sm:text-[9px] border-r border-b border-slate-200 w-[44px] bg-slate-50 ${wordClass} ${isToday ? "ring-2 ring-inset ring-rose-500 z-40 relative" : ""}`}
                               >
                                 {dayWord}
                               </th>
                               {isMonthEnd && showSummary !== "hidden" && (
-                                <th className="p-0.5 text-center text-[8px] sm:text-[9px] border-b border-gray-200 bg-indigo-50 text-indigo-500 border-l-2 border-l-gray-200 w-[44px] sm:w-[52px]">
+                                <th className="p-0.5 text-center text-[8px] sm:text-[9px] border-b border-slate-200 bg-slate-50 text-slate-400 border-l-2 border-l-slate-200 w-[44px] sm:w-[52px]">
                                   일·시간
                                 </th>
                               )}
@@ -1990,7 +1987,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                     </thead>
 
                     {/* Table Body */}
-                    <tbody className="divide-y divide-slate-100">
+                    <tbody className="divide-y divide-slate-100/80">
                       {filteredEmployees.map((emp, empIdx) => (
                         <tr
                           key={emp.id}
@@ -2002,8 +1999,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             setDraggedRowId(null);
                             setDragOverRowId(null);
                           }}
-                          className={`bg-white group transition-colors ${draggedRowId === emp.id ? "opacity-40 bg-slate-50" : ""
-                            } ${dragOverRowId === emp.id ? "bg-indigo-50/60 outline outline-2 outline-indigo-400" : "hover:bg-slate-50/70"
+                          className={`bg-white group transition-colors duration-100 ${draggedRowId === emp.id ? "opacity-30" : ""
+                            } ${dragOverRowId === emp.id ? "bg-indigo-50/40 border-t-2 border-t-indigo-400" : "hover:bg-slate-50/60"
                             }`}
                         >
 
@@ -2089,10 +2086,10 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                             return (
                               <React.Fragment key={`${emp.id}-${dateStr}`}>
                                 {cell}
-                                <td className="border-l-2 border-slate-200 bg-indigo-50/50 text-center align-middle p-1">
-                                  <div className="text-[11px] sm:text-xs font-black text-indigo-700 leading-tight">{workDays}일</div>
-                                  {hoursLabel && <div className="text-[9px] sm:text-[10px] text-slate-500 font-medium leading-tight">{hoursLabel}</div>}
-                                  {isAdmin && showSummary === "labor" && costLabel && <div className="text-[9px] sm:text-[10px] text-emerald-600 font-bold leading-tight">{costLabel}원</div>}
+                                <td className="border-l-2 border-slate-200 bg-slate-50 text-center align-middle p-1">
+                                  <div className="text-[11px] sm:text-xs font-bold text-slate-700 leading-tight">{workDays}일</div>
+                                  {hoursLabel && <div className="text-[9px] sm:text-[10px] text-slate-400 font-medium leading-tight">{hoursLabel}</div>}
+                                  {isAdmin && showSummary === "labor" && costLabel && <div className="text-[9px] sm:text-[10px] text-emerald-600 font-semibold leading-tight">{costLabel}원</div>}
                                 </td>
                               </React.Fragment>
                             );

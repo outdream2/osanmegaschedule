@@ -15,37 +15,32 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
   const isOther = label === "기타";
   const isTotal = label === "근무인원";
 
+  // 색상 팔레트 4개로 압축: emerald(약사) · slate(사원/기타) · indigo(총계)
   const labelCls = isPharmacist
-    ? "bg-violet-600 text-white border-r border-violet-500"
+    ? "bg-emerald-600 text-white border-r border-emerald-500"
     : isStaff
-    ? "bg-sky-600 text-white border-r border-sky-500"
+    ? "bg-slate-600 text-white border-r border-slate-500"
     : isOther
-    ? "bg-slate-500 text-white border-r border-slate-400"
+    ? "bg-slate-400 text-white border-r border-slate-300"
     : "bg-indigo-600 text-white border-r border-indigo-500";
 
   const valActiveCls = isPharmacist
-    ? "bg-violet-50 text-violet-700 font-extrabold"
+    ? "bg-emerald-50 text-emerald-700 font-bold"
     : isStaff
-    ? "bg-sky-50 text-sky-700 font-extrabold"
+    ? "bg-slate-50 text-slate-700 font-bold"
     : isOther
-    ? "bg-slate-50 text-slate-700 font-extrabold"
-    : "bg-indigo-50 text-indigo-700 font-extrabold";
+    ? "bg-slate-50/70 text-slate-600 font-bold"
+    : "bg-indigo-50 text-indigo-700 font-bold";
 
-  const valEmptyCls = isPharmacist
-    ? "bg-violet-50/30 text-slate-300"
-    : isStaff
-    ? "bg-sky-50/30 text-slate-300"
-    : isOther
-    ? "bg-slate-50/30 text-slate-300"
-    : "bg-indigo-50/30 text-slate-300";
+  const valEmptyCls = "bg-transparent text-slate-200";
 
   const monthTotalCls = isPharmacist
-    ? "bg-violet-100 text-violet-800 border-l-2 border-violet-200"
+    ? "bg-emerald-50 text-emerald-700 border-l-2 border-slate-200"
     : isStaff
-    ? "bg-sky-100 text-sky-800 border-l-2 border-sky-200"
+    ? "bg-slate-100 text-slate-600 border-l-2 border-slate-200"
     : isOther
-    ? "bg-slate-100 text-slate-800 border-l-2 border-slate-200"
-    : "bg-indigo-100 text-indigo-800 border-l-2 border-indigo-200";
+    ? "bg-slate-50 text-slate-500 border-l-2 border-slate-200"
+    : "bg-indigo-50 text-indigo-700 border-l-2 border-slate-200";
 
   const todayStr = (() => {
     const d = new Date();
@@ -56,8 +51,8 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
     isPharmacist ? sum.pharmacistCount : isStaff ? sum.staffCount : isOther ? sum.otherCount : sum.totalCount;
 
   return (
-    <tr className={isTotal ? "border-t-2 border-indigo-200" : "border-t border-slate-100"}>
-      <td className={`px-2 py-2 sticky left-0 z-20 text-center text-[11px] font-bold tracking-wide shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] ${labelCls}`}>
+    <tr className={isTotal ? "border-t-2 border-slate-200" : "border-t border-slate-100/70"}>
+      <td className={`px-2 py-1.5 sticky left-0 z-20 text-center text-[11px] font-semibold tracking-wide shadow-[2px_0_4px_-1px_rgba(0,0,0,0.06)] ${labelCls}`}>
         {label}
       </td>
 
@@ -69,11 +64,11 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
 
         const cell = (
           <td
-            className={`p-1.5 text-center text-xs border-r border-slate-100 w-[30px] sm:w-[44px] transition-colors ${
+            className={`p-1 text-center text-[11px] border-r border-slate-100 w-[30px] sm:w-[44px] transition-colors ${
               val > 0 ? valActiveCls : valEmptyCls
             } ${isToday ? "shadow-[inset_0_0_0_2px_#ef4444] z-20 relative" : ""}`}
           >
-            {val > 0 ? val : <span className="opacity-30">·</span>}
+            {val > 0 ? val : <span className="opacity-20 text-[9px]">·</span>}
           </td>
         );
 
@@ -87,8 +82,8 @@ export const SummaryRow: React.FC<SummaryRowProps> = ({ summaries, label, showMo
         return (
           <React.Fragment key={sum.date}>
             {cell}
-            <td className={`p-1.5 text-center text-[10px] font-black ${monthTotalCls}`}>
-              {monthTotal > 0 ? `${monthTotal}인일` : <span className="opacity-30">-</span>}
+            <td className={`p-1 text-center text-[10px] font-semibold ${monthTotalCls}`}>
+              {monthTotal > 0 ? `${monthTotal}인` : <span className="opacity-30">-</span>}
             </td>
           </React.Fragment>
         );

@@ -1,9 +1,11 @@
 /**
  * EmployeeNameCell.tsx
  * 스케줄표 좌측 고정 컬럼 — 직원 성명 셀
- * - sticky left-0 z-[29] 유지
- * - 반응형: 90px (320px~) → 140px (1024px+)
- * - shadcn 스타일 배지 + 명확한 시각 위계
+ *
+ * 디자인 원칙
+ * - 배지 제거 · 텍스트 위계로만 정보 전달
+ * - 색상 팔레트 4개: slate(기본) · indigo(인터랙션) · emerald(약사) · rose(경고)
+ * - 행 높이 고정 (min-h 유지) · hover 시 레이아웃 흔들림 없음
  * - 기존 이벤트 핸들러 시그니처 변경 없음
  */
 
@@ -22,31 +24,6 @@ interface EmployeeNameCellProps {
   onNameClick: (emp: Employee) => void;
   onEditClick: (emp: Employee) => void;
   onDeleteClick: (id: number, name: string) => void;
-}
-
-/** 직종(position) → 배지 색상 매핑 */
-function positionBadgeClass(position: string): string {
-  switch (position) {
-    case "약사":
-      return "bg-emerald-50 text-emerald-700 border-emerald-200";
-    case "캐셔":
-      return "bg-violet-50 text-violet-700 border-violet-200";
-    case "진열":
-      return "bg-sky-50 text-sky-700 border-sky-200";
-    case "물류":
-      return "bg-orange-50 text-orange-700 border-orange-200";
-    case "알바":
-      return "bg-amber-50 text-amber-700 border-amber-200";
-    default:
-      return "bg-slate-50 text-slate-600 border-slate-200";
-  }
-}
-
-/** 고용형태 pill 색상 */
-function employmentBadgeClass(type: string): string {
-  if (type === "계약직") return "bg-blue-50 text-blue-600 border-blue-200";
-  if (type === "알바") return "bg-amber-50 text-amber-600 border-amber-200";
-  return "bg-slate-50 text-slate-500 border-slate-200";
 }
 
 const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
@@ -76,7 +53,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
       ? Math.max(0, leaveTotal - leaveUsed)
       : null;
 
-  const showEmploymentBadge =
+  const showEmploymentType =
     userLevel >= 8 &&
     emp.employmentType &&
     emp.employmentType !== "정직원";
@@ -89,7 +66,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
       className={`
         relative
         border-r border-slate-100 bg-white sticky left-0 z-[29]
-        group-hover:bg-slate-50/80
+        group-hover:bg-slate-50/70
         shadow-[1px_0_0_0_#e2e8f0]
         min-w-[90px] w-[90px]
         sm:min-w-[120px] sm:w-[120px]
@@ -99,10 +76,10 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
       `}
       style={{ willChange: "transform" }}
     >
-      <div className="flex items-stretch h-full min-h-[54px] sm:min-h-[60px] lg:min-h-[64px]">
+      <div className="flex items-stretch h-full min-h-[54px] sm:min-h-[58px]">
 
         {/* 행 번호 — 좌측 수직 스트립 */}
-        <div className="flex items-center justify-center w-4 sm:w-5 shrink-0 text-[8px] sm:text-[9px] font-medium text-slate-300 select-none bg-slate-50/60 border-r border-slate-100">
+        <div className="flex items-center justify-center w-4 sm:w-5 shrink-0 text-[8px] font-medium text-slate-300 select-none bg-slate-50/50 border-r border-slate-100">
           {empIdx + 1}
         </div>
 
@@ -117,30 +94,30 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
         )}
 
         {/* 메인 콘텐츠 영역 */}
-        <div className="flex-1 flex flex-col justify-center py-1.5 px-1.5 sm:px-2 lg:px-2.5 min-w-0 gap-0.5">
+        <div className="flex-1 flex flex-col justify-center py-1.5 px-1.5 sm:px-2 min-w-0 gap-0.5">
 
-          {/* 줄 1: 성별 아이콘 + 이름 */}
+          {/* 줄 1: 이름 */}
           <div className="flex items-center gap-1 min-w-0">
-            {/* 성별 아이콘 */}
+            {/* 성별 — 아주 작은 텍스트 · 공간 미소비 */}
             {emp.gender === "남" && (
-              <span className="text-[8px] font-bold text-sky-400 shrink-0 leading-none">♂</span>
+              <span className="text-[8px] font-semibold text-slate-400 shrink-0 leading-none select-none">M</span>
             )}
             {emp.gender === "여" && (
-              <span className="text-[8px] font-bold text-rose-400 shrink-0 leading-none">♀</span>
+              <span className="text-[8px] font-semibold text-rose-300 shrink-0 leading-none select-none">F</span>
             )}
 
-            {/* 이름 — 약사: emerald ring · 나머지: indigo */}
+            {/* 이름 — 약사: emerald · 나머지: slate */}
             <span
               onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onNameClick(emp); }}
               title={`${emp.name} — 클릭: 개인 스케줄 달력`}
               className={`
-                font-bold text-[11px] sm:text-[12px] leading-tight
+                font-bold leading-tight
                 cursor-pointer select-none transition-colors duration-150
-                truncate max-w-full
-                hover:underline underline-offset-2
+                truncate
+                text-[12px] sm:text-[13px]
                 ${isPharmacist
-                  ? "text-emerald-700 hover:text-emerald-900 ring-1 ring-emerald-400 ring-offset-1 rounded-[3px] px-0.5"
+                  ? "text-emerald-700 hover:text-emerald-900"
                   : "text-slate-700 hover:text-indigo-600"
                 }
               `}
@@ -149,53 +126,35 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
             </span>
           </div>
 
-          {/* 줄 2: 직종 배지 + 월차 dot + 고용형태 pill (sm 이상) */}
-          <div className="flex items-center gap-1 min-w-0 flex-wrap">
-            {/* 직종 배지 */}
+          {/* 줄 2: 직종 텍스트 + 부가 정보 */}
+          <div className="flex items-center gap-1.5 min-w-0">
+            {/* 직종 — 배지 제거 · 약사만 emerald · 나머지 slate */}
             <span
               className={`
-                inline-flex items-center
-                text-[9px] sm:text-[9px] font-medium
-                px-1 py-0 rounded-[3px] border leading-4
-                shrink-0
-                ${positionBadgeClass(emp.position)}
+                text-[10px] font-medium leading-none shrink-0
+                ${isPharmacist ? "text-emerald-600" : "text-slate-400"}
               `}
             >
               {emp.position}
             </span>
 
-            {/* 월차 잔여 — sm 이상 표시 */}
-            {leaveRemaining !== null && (
-              <span
-                className={`
-                  hidden sm:inline-flex items-center gap-0.5
-                  text-[9px] font-semibold shrink-0 leading-none
-                  ${leaveRemaining === 0 ? "text-rose-400" : "text-amber-500"}
-                `}
-                title={`월차 잔여: ${leaveRemaining}일`}
-              >
-                <span
-                  className={`
-                    w-1.5 h-1.5 rounded-full shrink-0
-                    ${leaveRemaining === 0 ? "bg-rose-400" : "bg-amber-400"}
-                  `}
-                />
-                {leaveRemaining}
+            {/* 고용형태 — 정직원 이외 · 관리자만 · sm 이상 */}
+            {showEmploymentType && (
+              <span className="hidden sm:inline text-[9px] font-normal text-slate-400 shrink-0 leading-none">
+                {emp.employmentType}
               </span>
             )}
 
-            {/* 고용형태 pill — sm 이상 · 관리자 · 정직원 아닌 경우 */}
-            {showEmploymentBadge && (
+            {/* 월차 잔여 — sm 이상 · 잔여일 강조 */}
+            {leaveRemaining !== null && (
               <span
                 className={`
-                  hidden sm:inline-flex items-center
-                  text-[8px] font-medium
-                  px-1 py-0 rounded-full border leading-4
-                  shrink-0
-                  ${employmentBadgeClass(emp.employmentType)}
+                  hidden sm:inline text-[9px] font-semibold shrink-0 leading-none
+                  ${leaveRemaining === 0 ? "text-rose-400" : "text-slate-400"}
                 `}
+                title={`연차 잔여: ${leaveRemaining}일`}
               >
-                {emp.employmentType}
+                {leaveRemaining === 0 ? "잔여 0" : `잔여 ${leaveRemaining}`}
               </span>
             )}
           </div>
@@ -203,7 +162,7 @@ const EmployeeNameCell: React.FC<EmployeeNameCellProps> = ({
           {/* 줄 3: 비고 — lg 이상 표시 */}
           {emp.description && (
             <div
-              className="hidden lg:block text-[9px] text-slate-400 font-normal truncate leading-tight"
+              className="hidden lg:block text-[9px] text-slate-350 font-normal truncate leading-tight text-slate-400"
               title={emp.description}
             >
               {emp.description}
