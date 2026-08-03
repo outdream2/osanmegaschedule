@@ -88,7 +88,15 @@ const ResignationApprovalPage: React.FC<ResignationApprovalPageProps> = ({ authS
     setError(null);
     try {
       const res = await fetch("/api/resignations");
-      if (!res.ok) throw new Error(`서버 오류 (${res.status})`);
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        const msg = j?.error ?? `서버 오류 (${res.status})`;
+        // 테이블 미생성 힌트
+        if (/relation .* does not exist|resignation_requests/i.test(String(msg))) {
+          throw new Error("DB 테이블이 없습니다. Supabase SQL Editor 에서 migrations/create_resignation_requests.sql 을 실행해주세요.");
+        }
+        throw new Error(msg);
+      }
       const data = await res.json();
       setList(Array.isArray(data) ? data : []);
     } catch (err: any) {

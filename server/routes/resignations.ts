@@ -56,7 +56,14 @@ router.get("/api/resignations", async (req, res) => {
     }
 
     const { data, error } = await q;
-    if (error) throw new Error(error.message);
+    if (error) {
+      // 테이블 미생성 시 · 빈 배열 + 안내 (500 대신 200)
+      if (/relation .* does not exist|table .* not found/i.test(error.message)) {
+        console.warn("[resignations] resignation_requests 테이블 미생성 · migrations/create_resignation_requests.sql 실행 필요");
+        return res.json([]);
+      }
+      throw new Error(error.message);
+    }
     return res.json(data ?? []);
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
@@ -70,7 +77,12 @@ router.get("/api/resignations/pending-count", async (_req, res) => {
       .from("resignation_requests")
       .select("*", { count: "exact", head: true })
       .eq("status", "pending");
-    if (error) throw new Error(error.message);
+    if (error) {
+      if (/relation .* does not exist|table .* not found/i.test(error.message)) {
+        return res.json({ count: 0 });
+      }
+      throw new Error(error.message);
+    }
     return res.json({ count: count ?? 0 });
   } catch (err: any) {
     return res.status(500).json({ error: err.message });
