@@ -10,9 +10,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FileText, Download, Upload, Trash2, Plus, X, RefreshCw, Loader2,
-  ChevronDown, ChevronUp, ChevronsUpDown, Filter, FileEdit, FileSignature, FilePlus, FileArchive,
+  ChevronDown, Filter, FileEdit, FileSignature, FilePlus, FileArchive,
 } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { SortableHeader, type SortableColumn } from "../common/SortableHeader";
+import { FilterBar } from "../common/FilterBar";
 import type { AuthSession } from "../../types";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -198,14 +200,25 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
     return filtered;
   }, [forms, searchQ, sortKey, sortDir]);
 
-  const toggleSort = (key: SortKey) => {
-    if (sortKey === key) {
-      setSortDir(d => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir(key === "created_at" || key === "file_size" ? "desc" : "asc");
-    }
+  // 공통 SortableHeader 는 onSort(key, dir) 로 다음 방향을 직접 전달함
+  const handleSort = (key: SortKey, dir: SortDir) => {
+    setSortKey(key);
+    setSortDir(dir);
   };
+
+  // 컬럼 정의 · 공통 SortableHeader 용
+  //   - 앞의 icon 컬럼 · 뒤의 액션 컬럼 · sortable=false 로 함께 포함
+  //   - "_icon" / "_action" 은 SortKey 밖 값이지만 sortable=false 라 handleSort 호출 없음
+  const sortableColumns: SortableColumn<SortKey>[] = useMemo(() => [
+    { key: "_icon" as SortKey,   label: "",         align: "left",  sortable: false },
+    { key: "title",              label: "양식명",   align: "left" },
+    { key: "category",           label: "분류",     align: "left" },
+    { key: "file_name",          label: "파일명",   align: "left" },
+    { key: "file_size",          label: "크기",     align: "right" },
+    { key: "uploaded_by",        label: "업로더",   align: "left" },
+    { key: "created_at",         label: "업로드일", align: "left" },
+    { key: "_action" as SortKey, label: "액션",     align: "center", sortable: false },
+  ], []);
 
   // ── 업로드 핸들러 ─────────────────────────────────────────────────────────
   const onFileChosen = (file: File | null) => {
@@ -291,33 +304,6 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
       setDeletingId(null);
     }
   };
-
-  // ── 렌더 헬퍼 ────────────────────────────────────────────────────────────
-  const SortIcon: React.FC<{ k: SortKey }> = ({ k }) => {
-    if (sortKey !== k) return <ChevronsUpDown size={12} className="text-slate-300" />;
-    return sortDir === "asc"
-      ? <ChevronUp size={12} className="text-slate-600" />
-      : <ChevronDown size={12} className="text-slate-600" />;
-  };
-
-  const HeaderCell: React.FC<{
-    k: SortKey;
-    label: string;
-    className?: string;
-    align?: "left" | "right" | "center";
-  }> = ({ k, label, className = "", align = "left" }) => (
-    <th
-      className={`px-3 py-2 text-[12px] font-black uppercase tracking-wide text-slate-500 select-none cursor-pointer hover:bg-slate-100 transition-colors border-b border-slate-200 ${
-        align === "right" ? "text-right" : align === "center" ? "text-center" : "text-left"
-      } ${className}`}
-      onClick={() => toggleSort(k)}
-    >
-      <span className={`inline-flex items-center gap-1 ${align === "right" ? "flex-row-reverse" : ""}`}>
-        {label}
-        <SortIcon k={k} />
-      </span>
-    </th>
-  );
 
   // ── 리턴 ─────────────────────────────────────────────────────────────────
   return (
@@ -453,8 +439,8 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
           </div>
         )}
 
-        {/* 필터 · 검색 */}
-        <div className="bg-white border border-slate-200 rounded-xl p-3 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+        {/* 필터 · 검색 · 공통 FilterBar */}
+        <FilterBar gap="tight">
           <div className="flex items-center gap-1.5 shrink-0">
             <Filter size={13} className="text-slate-400" />
             <span className="text-xs font-black text-slate-500 uppercase tracking-wide">카테고리</span>
@@ -476,15 +462,14 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               );
             })}
           </div>
-          <div className="flex-1" />
           <input
             type="text"
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
             placeholder="양식명 · 파일명 · 업로더 검색"
-            className="w-full sm:w-64 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-amber-400 transition"
+            className="ml-auto w-full sm:w-64 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-amber-400 transition"
           />
-        </div>
+        </FilterBar>
 
         {/* 리스트 */}
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
@@ -508,18 +493,12 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                 <col style={{ minWidth: 140, width: isManager ? 170 : 100 }} />
               </colgroup>
               <thead className="bg-slate-50">
-                <tr>
-                  <th className="px-3 py-2 border-b border-slate-200"></th>
-                  <HeaderCell k="title"       label="양식명" />
-                  <HeaderCell k="category"    label="분류" />
-                  <HeaderCell k="file_name"   label="파일명" />
-                  <HeaderCell k="file_size"   label="크기" align="right" />
-                  <HeaderCell k="uploaded_by" label="업로더" />
-                  <HeaderCell k="created_at"  label="업로드일" />
-                  <th className="px-3 py-2 text-center text-[12px] font-black uppercase tracking-wide text-slate-500 border-b border-slate-200">
-                    액션
-                  </th>
-                </tr>
+                <SortableHeader<SortKey>
+                  columns={sortableColumns}
+                  activeKey={sortKey}
+                  activeDir={sortDir}
+                  onSort={handleSort}
+                />
               </thead>
               <tbody>
                 {loading && (
