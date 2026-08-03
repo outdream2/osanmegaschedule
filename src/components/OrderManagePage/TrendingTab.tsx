@@ -6,7 +6,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { TrendingUp, AlertTriangle, Loader2 as LoaderIcon } from "lucide-react";
 import { getProductsMap } from "../../lib/productsCache";
-import { ProductClassFilter } from "../common/ProductClassFilter";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 
 // ─── 타입 ───────────────────────────────────────────────────────────────────
@@ -271,8 +270,22 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
       .finally(() => setLoading(false));
   }, [windowDays]);
 
+  // classFilter 를 제외한 기타 조건이 적용된 base list (탭 카운트 계산용)
+  const baseFiltered = useMemo(() => {
+    return onlyShortage ? rows.filter(r => r.below_optimal) : rows;
+  }, [rows, onlyShortage]);
+
+  // 3-way tab 카운트 (상비약/일반약/전체)
+  const essentialCount = useMemo(() =>
+    baseFiltered.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, "stationery")).length,
+    [baseFiltered, productRealMapById]);
+  const generalCount = useMemo(() =>
+    baseFiltered.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, "general")).length,
+    [baseFiltered, productRealMapById]);
+  const allCount = baseFiltered.length;
+
   const displayed = useMemo(() => {
-    let arr = onlyShortage ? rows.filter(r => r.below_optimal) : rows;
+    let arr = baseFiltered;
     if (classFilter !== "all") {
       arr = arr.filter(r => matchClassFilter(productRealMapById[String(r.product_code)] ?? null, classFilter));
     }
@@ -287,7 +300,7 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
       return 0;
     });
     return arr;
-  }, [rows, sortKey, onlyShortage, classFilter, productRealMapById]);
+  }, [baseFiltered, sortKey, classFilter, productRealMapById]);
 
   const fmt = (n: number) => n.toLocaleString();
 
@@ -354,7 +367,6 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
               </button>
             ))}
           </div>
-          <ProductClassFilter value={classFilter} onChange={setClassFilter} compactOnMobile />
           <label className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-slate-600 cursor-pointer ml-auto">
             <input type="checkbox" checked={onlyShortage} onChange={e => setOnlyShortage(e.target.checked)} className="w-3.5 h-3.5 accent-indigo-500" />
             재고 부족만
@@ -364,6 +376,24 @@ export const TrendingTab: React.FC<{ onProductClick?: (p: any) => void }> = ({ o
 
       {/* ── 테이블 카드 ── */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        {/* 상비약/일반약/전체 3-way 필터 (좌측 리스트 상단) */}
+        <div className="flex items-center gap-1 border-b-2 border-slate-200 bg-white px-2 pt-1">
+          <button type="button" onClick={() => setClassFilter("stationery")}
+            className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-slate-400 hover:text-slate-600"}`}>
+            상비약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({essentialCount})</span>
+            {classFilter === "stationery" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-violet-500" />}
+          </button>
+          <button type="button" onClick={() => setClassFilter("general")}
+            className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-slate-400 hover:text-slate-600"}`}>
+            일반약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({generalCount})</span>
+            {classFilter === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
+          </button>
+          <button type="button" onClick={() => setClassFilter("all")}
+            className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
+            전체 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({allCount})</span>
+            {classFilter === "all" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-slate-500" />}
+          </button>
+        </div>
         {loading ? (
           <div className="flex flex-col items-center justify-center py-14 gap-3 text-slate-400">
             <div className="w-9 h-9 border-4 border-indigo-100 border-t-indigo-400 rounded-full animate-spin" />

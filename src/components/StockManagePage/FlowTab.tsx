@@ -16,7 +16,6 @@ import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
-import { ProductClassFilter } from "../common/ProductClassFilter";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -364,8 +363,8 @@ export const FlowTab: React.FC = () => {
     } finally { setFlowBulkHiding(false); }
   };
 
-  // 클라이언트 필터 + 정렬
-  const filteredFlow = useMemo(() => {
+  // 클라이언트 필터 + 정렬 (classFilter 제외 base — 탭 카운트 계산용)
+  const baseFlow = useMemo(() => {
     const minN = salesQtyMin.trim() === "" ? null : parseInt(salesQtyMin, 10);
     const maxN = salesQtyMax.trim() === "" ? null : parseInt(salesQtyMax, 10);
     const q = flowSearch.trim().toLowerCase();
@@ -382,10 +381,6 @@ export const FlowTab: React.FC = () => {
       if (flowCategoryFilter !== "전체") {
         const sup = String(p.supplier ?? "").trim();
         if (vendorCategoryMap[sup] !== flowCategoryFilter) return false;
-      }
-      if (classFilter !== "all") {
-        const rm = (p as any).real_map ?? productRealMapById[String(p.product_code)] ?? null;
-        if (!matchClassFilter(rm, classFilter)) return false;
       }
       return true;
     });
@@ -432,7 +427,19 @@ export const FlowTab: React.FC = () => {
       });
     }
     return filtered;
-  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowSearch, flowMonths, flowCategoryFilter, vendorCategoryMap, classFilter, productRealMapById]);
+  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowSearch, flowMonths, flowCategoryFilter, vendorCategoryMap]);
+
+  // 3-way tab 카운트
+  const getRealMap = useCallback((p: any) => (p as any).real_map ?? productRealMapById[String(p.product_code)] ?? null, [productRealMapById]);
+  const essentialCount = useMemo(() => baseFlow.filter(p => matchClassFilter(getRealMap(p), "stationery")).length, [baseFlow, getRealMap]);
+  const generalCount = useMemo(() => baseFlow.filter(p => matchClassFilter(getRealMap(p), "general")).length, [baseFlow, getRealMap]);
+  const allCount = baseFlow.length;
+
+  // 최종 리스트 (classFilter 적용)
+  const filteredFlow = useMemo(() => {
+    if (classFilter === "all") return baseFlow;
+    return baseFlow.filter(p => matchClassFilter(getRealMap(p), classFilter));
+  }, [baseFlow, classFilter, getRealMap]);
 
   // 합계 (필터/정렬된 visible rows 기준)
   const flowTotals = useMemo(() => {
@@ -561,9 +568,6 @@ export const FlowTab: React.FC = () => {
           <EyeOff size={12} /> 숨김관리
         </button>
 
-        {/* 상비약/일반약/전체 3-way 필터 */}
-        <ProductClassFilter value={classFilter} onChange={setClassFilter} compactOnMobile />
-
         {/* 분류 세그먼트 필터 */}
         <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
           {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
@@ -607,6 +611,25 @@ export const FlowTab: React.FC = () => {
                 {selectedFlowCodes.size > 0 && (
                   <span className="text-[11px] text-rose-600 font-semibold tabular-nums ml-1">· {selectedFlowCodes.size}개 선택됨</span>
                 )}
+              </div>
+
+              {/* 상비약/일반약/전체 3-way 필터 */}
+              <div className="flex items-center gap-1 border-b-2 border-slate-200 bg-white px-1 pt-1 shrink-0">
+                <button type="button" onClick={() => setClassFilter("stationery")}
+                  className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-slate-400 hover:text-slate-600"}`}>
+                  상비약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({essentialCount})</span>
+                  {classFilter === "stationery" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-violet-500" />}
+                </button>
+                <button type="button" onClick={() => setClassFilter("general")}
+                  className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-slate-400 hover:text-slate-600"}`}>
+                  일반약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({generalCount})</span>
+                  {classFilter === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
+                </button>
+                <button type="button" onClick={() => setClassFilter("all")}
+                  className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
+                  전체 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({allCount})</span>
+                  {classFilter === "all" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-slate-500" />}
+                </button>
               </div>
 
               <div className="relative flex-1 overflow-auto max-h-[50vh]">

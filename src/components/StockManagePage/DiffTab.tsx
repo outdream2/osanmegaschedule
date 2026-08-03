@@ -7,7 +7,6 @@ import { Layers, Loader2 as LoaderIcon, ChevronRight, ChevronDown } from "lucide
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { VendorDetailModal } from "../LandingPage/VendorListEditor";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
-import { ProductClassFilter } from "../common/ProductClassFilter";
 import { matchClassFilter, type ClassFilter } from "../../utils/productClassify";
 
 function fmt(n: number): string {
@@ -120,8 +119,8 @@ export const DiffTab: React.FC = () => {
     return () => window.removeEventListener("inventory-checks-updated", handler);
   }, []);
 
-  // 차이 리스트 계산
-  const diffList = useMemo(() => lowStock
+  // classFilter 를 제외한 base 리스트 (탭 카운트 계산용)
+  const diffBase = useMemo(() => lowStock
     .map(p => {
       const wh = p.warehouse_stock;
       const st = p.store_stock;
@@ -130,10 +129,19 @@ export const DiffTab: React.FC = () => {
       const cur = Number(p.current_stock ?? 0);
       const diff = actual - cur;
       if (diff === 0) return null;
-      if (!matchClassFilter(p.real_map, classFilter)) return null;
       return { ...p, actual, cur, diff };
     })
-    .filter(Boolean) as Array<any>, [lowStock, classFilter]);
+    .filter(Boolean) as Array<any>, [lowStock]);
+
+  // 3-way tab 카운트
+  const essentialCount = useMemo(() => diffBase.filter(p => matchClassFilter(p.real_map, "stationery")).length, [diffBase]);
+  const generalCount = useMemo(() => diffBase.filter(p => matchClassFilter(p.real_map, "general")).length, [diffBase]);
+  const allCount = diffBase.length;
+
+  // 차이 리스트 (classFilter 적용)
+  const diffList = useMemo(() =>
+    classFilter === "all" ? diffBase : diffBase.filter(p => matchClassFilter(p.real_map, classFilter)),
+    [diffBase, classFilter]);
 
   return (
     <div className="flex flex-col gap-2">
@@ -145,7 +153,6 @@ export const DiffTab: React.FC = () => {
           <span className="text-[11px] font-semibold text-violet-600 bg-violet-50 rounded-full px-2 py-0.5 border border-violet-200 tabular-nums">{diffList.length}건</span>
           <span className="text-[11px] text-slate-400 hidden sm:inline">실재고(창고+매장) ↔ ERP 차이 · 도난·파손·미기록 판매·재고 오류 · 상품명 클릭 → 상세</span>
         </div>
-        <ProductClassFilter value={classFilter} onChange={setClassFilter} compactOnMobile />
         <button
           type="button"
           onClick={fetchData}
@@ -165,6 +172,24 @@ export const DiffTab: React.FC = () => {
           style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? diffPanelWidth : undefined }}
         >
           <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 flex flex-col overflow-hidden">
+            {/* 상비약/일반약/전체 3-way 필터 */}
+            <div className="flex items-center gap-1 border-b-2 border-slate-200 bg-white px-2 pt-1 shrink-0">
+              <button type="button" onClick={() => setClassFilter("stationery")}
+                className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "stationery" ? "text-violet-700" : "text-slate-400 hover:text-slate-600"}`}>
+                상비약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({essentialCount})</span>
+                {classFilter === "stationery" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-violet-500" />}
+              </button>
+              <button type="button" onClick={() => setClassFilter("general")}
+                className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "general" ? "text-sky-700" : "text-slate-400 hover:text-slate-600"}`}>
+                일반약 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({generalCount})</span>
+                {classFilter === "general" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-sky-500" />}
+              </button>
+              <button type="button" onClick={() => setClassFilter("all")}
+                className={`relative px-4 py-2 text-[13px] font-black leading-tight transition-colors duration-150 cursor-pointer ${classFilter === "all" ? "text-slate-800" : "text-slate-400 hover:text-slate-600"}`}>
+                전체 <span className="text-[11px] font-semibold text-slate-400 ml-1 tabular-nums">({allCount})</span>
+                {classFilter === "all" && <span className="absolute left-2 right-2 -bottom-[2px] h-[3px] rounded-t-full bg-slate-500" />}
+              </button>
+            </div>
             <div className="flex-1 overflow-y-auto relative">
               {loading && diffList.length > 0 && (
                 <div className="flex items-center justify-center gap-1.5 text-[10px] text-violet-600 font-bold py-1.5 mb-1 bg-violet-50 border border-violet-200 rounded-md sticky top-0 z-10">
