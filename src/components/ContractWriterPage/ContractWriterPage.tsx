@@ -110,8 +110,8 @@ const CUSTOM_OPTION = "__custom__";
 
 // 회사 기본값 (오산 메가타운 약국)
 const DEFAULT_EMPLOYER: Partial<ContractForm> = {
-  employerName: "",
-  companyName: "메가타운 약국",
+  employerName: "강남성",
+  companyName: "오산 메가타운 약국",
   companyAddress: "경기도 오산시",
   companyRegNo: "",
 };
@@ -594,12 +594,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
     return () => { cancelled = true; };
   }, []);
 
-  // 로그인 관리자 이름 · 사업주명 자동 채움 (편집 가능)
-  useEffect(() => {
-    if (!form.employerName && authSession?.employeeName) {
-      setForm(prev => ({ ...prev, employerName: authSession.employeeName ?? "" }));
-    }
-  }, [authSession?.employeeName, form.employerName]);
+  // 사업주 · 대표자 · 기본값(강남성 · 오산 메가타운 약국) · 편집 가능
 
   // 계약 유형 · "정규직" 이면 무기한 자동 (편집 가능)
   useEffect(() => {
