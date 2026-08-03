@@ -1198,8 +1198,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     return Math.max(0, (end - start) / 60);
   };
 
-  // 휴게시간 · 근무일마다 1시간 고정 차감 (사용자 정책 · 2026-08-03)
-  const BREAK_HOURS_PER_SHIFT = 1;
+  // 휴게시간 정책 (2026-08-03) · 직원별 설정 사용
+  // - emp.break_apply_paid (기본 true) · 인건비 차감 적용 여부
+  // - emp.break_time_minutes (기본 60분) · 30분 or 60분
+  const getBreakHoursForEmp = (emp: Employee): number => {
+    if (emp.break_apply_paid === false) return 0;
+    const min = emp.break_time_minutes ?? 60;
+    return Math.max(0, min) / 60;
+  };
 
   const OFF_TYPES_SET = new Set(["휴무", "월차", "결근"]);
 
@@ -1215,13 +1221,14 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     const empOverrides = settingsEmployeeWageOverrides ?? {};
     const empRate = empOverrides[emp.id] ?? wageRates[emp.position] ?? null;
     const shiftHourFallback = getTypeHoursMap(emp.position, emp.employmentType);
+    const breakHours = getBreakHoursForEmp(emp);
 
     for (const s of visibleSchedules) {
       if (!s.type || OFF_TYPES_SET.has(s.type)) continue;
       const wh = s.workingHours || shiftHourFallback[s.type] || "";
       const rawHours = parseWorkingHours(wh);
-      // 전체 근무시간에서 1시간을 휴게시간으로 처리 (인건비 계산 제외)
-      const paidHours = Math.max(0, rawHours - BREAK_HOURS_PER_SHIFT);
+      // 전체 근무시간에서 직원별 휴게시간 차감 (인건비 계산 제외)
+      const paidHours = Math.max(0, rawHours - breakHours);
       totalHours += paidHours;
       if (empRate && paidHours > 0) {
         const d = new Date(s.date);

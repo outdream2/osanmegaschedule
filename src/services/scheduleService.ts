@@ -170,7 +170,7 @@ export class ScheduleService {
     return result;
   }
 
-  async updateEmployee(id: number, data: { name: string; position: string; employmentType?: string; hireDate: string; retireDate?: string | null; description: string; workplace?: string; rank?: string | null; gender?: string | null; phone?: string | null; annual_leave_days?: number; level?: number; contract_file_url?: string | null; address?: string | null }) {
+  async updateEmployee(id: number, data: { name: string; position: string; employmentType?: string; hireDate: string; retireDate?: string | null; description: string; workplace?: string; rank?: string | null; gender?: string | null; phone?: string | null; annual_leave_days?: number; level?: number; contract_file_url?: string | null; address?: string | null; break_time_minutes?: number; break_apply_paid?: boolean }) {
     // 핵심 필드 + 존재하는 선택 필드로 페이로드 구성
     const payload: Record<string, any> = {
       name: data.name,
@@ -181,7 +181,7 @@ export class ScheduleService {
       workplace: data.workplace ?? "매장",
     };
     if (data.retireDate !== undefined) payload.retireDate = data.retireDate;
-    for (const k of ["rank", "gender", "phone", "annual_leave_days", "level", "contract_file_url", "address"] as const) {
+    for (const k of ["rank", "gender", "phone", "annual_leave_days", "level", "contract_file_url", "address", "break_time_minutes", "break_apply_paid"] as const) {
       if ((data as any)[k] !== undefined) payload[k] = (data as any)[k];
     }
 

@@ -64,6 +64,7 @@ interface Employee {
   // 근로조건
   working_hours_per_week?: number | null;
   break_time_minutes?: number | null;
+  break_apply_paid?: boolean | null; // 휴게시간 인건비 차감 적용 여부 (기본 true)
   weekly_holiday?: string | null;  // 일요일 등
   annual_leave_days?: number | null;
   // 임금
@@ -111,7 +112,8 @@ interface Employee {
  *   ADD COLUMN IF NOT EXISTS work_location text,
  *   ADD COLUMN IF NOT EXISTS job_duties text,
  *   ADD COLUMN IF NOT EXISTS working_hours_per_week numeric(4,1),
- *   ADD COLUMN IF NOT EXISTS break_time_minutes integer,
+ *   ADD COLUMN IF NOT EXISTS break_time_minutes integer DEFAULT 60,
+ *   ADD COLUMN IF NOT EXISTS break_apply_paid boolean DEFAULT true,
  *   ADD COLUMN IF NOT EXISTS weekly_holiday text DEFAULT '일요일',
  *   ADD COLUMN IF NOT EXISTS annual_leave_days integer DEFAULT 15,
  *   ADD COLUMN IF NOT EXISTS wage_calc_type text,
@@ -163,7 +165,7 @@ type EditDraft = Pick<
   // 신규 · 인사기록카드 확장
   | "emergency_contact_name" | "emergency_contact_phone" | "emergency_contact_rel"
   | "contract_type" | "probation_end_date" | "work_location" | "job_duties"
-  | "working_hours_per_week" | "break_time_minutes" | "weekly_holiday" | "annual_leave_days"
+  | "working_hours_per_week" | "break_time_minutes" | "break_apply_paid" | "weekly_holiday" | "annual_leave_days"
   | "wage_calc_type" | "wage_amount" | "wage_pay_day" | "wage_pay_method" | "bank_name" | "bank_account_no"
   | "insurance_nps_date" | "insurance_nhis_date" | "insurance_ei_date" | "insurance_wcia_date" | "insurance_excluded"
   | "pharmacist_license_no" | "health_check_expiry"
@@ -618,6 +620,8 @@ const StaffManagePage: React.FC = () => {
       contract_end: emp.contract_end ?? "",
       contract_type: emp.contract_type ?? "",
       performance_rating: emp.performance_rating ?? "",
+      break_time_minutes: emp.break_time_minutes ?? 60,
+      break_apply_paid: emp.break_apply_paid ?? true,
     });
     setEditing(true);
   };
@@ -1400,12 +1404,38 @@ const StaffManagePage: React.FC = () => {
                       editing={editing} type="number" placeholder="40"
                       onChange={(v) => setField("working_hours_per_week", v === "" ? null : Number(v))}
                     />
-                    <InlineField
-                      label="휴게시간 (분/일)"
-                      value={editing ? String(draft?.break_time_minutes ?? "") : String(displayEmp.break_time_minutes ?? "")}
-                      editing={editing} type="number" placeholder="60"
-                      onChange={(v) => setField("break_time_minutes", v === "" ? null : Number(v))}
-                    />
+                    {/* 휴게시간 · 인건비 차감 적용 여부 + 30/60분 선택 */}
+                    <div className="flex flex-col gap-1">
+                      <div className="text-[11px] font-semibold text-slate-500">휴게시간 (인건비 차감)</div>
+                      {editing ? (
+                        <div className="flex items-center gap-2">
+                          <label className="inline-flex items-center gap-1.5 text-[12px] text-slate-700 cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={draft?.break_apply_paid ?? true}
+                              onChange={(e) => setField("break_apply_paid", e.target.checked)}
+                              className="h-3.5 w-3.5 accent-emerald-600"
+                            />
+                            적용
+                          </label>
+                          <select
+                            value={String(draft?.break_time_minutes ?? 60)}
+                            onChange={(e) => setField("break_time_minutes", Number(e.target.value))}
+                            disabled={(draft?.break_apply_paid ?? true) === false}
+                            className="h-7 text-[12px] px-2 border border-slate-300 rounded-md bg-white disabled:bg-slate-100 disabled:text-slate-400"
+                          >
+                            <option value="30">30분</option>
+                            <option value="60">1시간</option>
+                          </select>
+                        </div>
+                      ) : (
+                        <div className="text-[13px] text-slate-800">
+                          {(displayEmp.break_apply_paid ?? true) === false
+                            ? <span className="text-slate-400 italic">미적용</span>
+                            : `${displayEmp.break_time_minutes ?? 60}분 차감`}
+                        </div>
+                      )}
+                    </div>
                     <InlineField
                       label="유급 주휴일"
                       value={editing ? (draft?.weekly_holiday ?? "") : (displayEmp.weekly_holiday ?? "")}

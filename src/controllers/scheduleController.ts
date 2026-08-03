@@ -137,7 +137,7 @@ export class ScheduleController {
   async updateEmployee(req: Request, res: Response): Promise<void> {
     try {
       const id = parseInt(req.params.id);
-      const { name, position, employmentType, hireDate, retireDate, description, workplace, rank, gender, phone, annual_leave_days, level, address } = req.body;
+      const { name, position, employmentType, hireDate, retireDate, description, workplace, rank, gender, phone, annual_leave_days, level, address, break_time_minutes, break_apply_paid } = req.body;
 
       if (isNaN(id)) {
         res.status(400).json({ error: "Invalid employee ID" });
@@ -158,6 +158,8 @@ export class ScheduleController {
         annual_leave_days: annual_leave_days != null ? Number(annual_leave_days) : undefined,
         level: level != null ? Number(level) : undefined,
         address: address !== undefined ? (address || null) : undefined,
+        break_time_minutes: break_time_minutes != null ? Number(break_time_minutes) : undefined,
+        break_apply_paid: break_apply_paid !== undefined ? Boolean(break_apply_paid) : undefined,
       });
       res.json(result);
     } catch (error: any) {
