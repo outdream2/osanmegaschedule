@@ -37,6 +37,7 @@ export type AppNavPage =
   | "mypage"
   | "zone-labels"          // 2026-08-03 · 구역 라벨 관리 (설정 링크에서 접근 · 헤더 탭 노출 없음 · 라우팅 union 유지)
   | "business-manage"      // 2026-08-03 · 경영관리 통합 페이지
+  | "hr-forms"             // 2026-08-03 · 각종 양식 (경영관리 서브탭 · 별도 라우팅 union 유지)
   | "others"               // 2026-08-03 · 기타 도구 페이지 (관리자용 · 숨은 도구 모음)
   | "inventory-sales";     // 2026-08-03 · 재고·판매 통합 (기타 도구 내부 링크 · 헤더 탭 노출 없음)
 
@@ -89,7 +90,7 @@ const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inac
 
 // 경영관리 탭이 활성인 페이지들 (통합 페이지 + 서브 페이지들 · 헤더 활성 표시용)
 // business-manage 는 통합 페이지 · leave/lunch/permissions 는 랜딩페이지에서 직접 이동 시 활성 표시
-const BUSINESS_PAGES = new Set<AppNavPage>(["business-manage", "leave", "lunch", "permissions"]);
+const BUSINESS_PAGES = new Set<AppNavPage>(["business-manage", "leave", "lunch", "permissions", "hr-forms"]);
 
 export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
   activePage,

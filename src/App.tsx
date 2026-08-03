@@ -36,8 +36,10 @@ const BusinessManagePage = React.lazy(() => import("./components/BusinessManageP
 const OthersPage = React.lazy(() => import("./components/OthersPage/OthersPage"));
 // 2026-08-03 · 재고·판매 통합 (기타 도구 서브 페이지) · lazy 로드
 const InventorySalesPage = React.lazy(() => import("./components/InventorySalesPage/InventorySalesPage").then(m => ({ default: m.InventorySalesPage })));
+// 2026-08-03 · 각종 양식 (인사 문서 관리) · 경영관리 서브탭 및 별도 라우팅 진입 지원 · lazy 로드
+const HrFormsPage = React.lazy(() => import("./components/HrFormsPage/HrFormsPage"));
 
-type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "others" | "inventory-sales";
+type Page = "landing" | "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "others" | "inventory-sales" | "hr-forms";
 
 export default function App() {
   // 전역 모달 스크롤 잠금은 CSS :has() 셀렉터로 처리 (index.css) · JS 훅 불필요
@@ -93,7 +95,7 @@ export default function App() {
     }
   };
 
-  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "others" | "inventory-sales", auth?: AuthSession) => {
+  const handleNavigate = (next: "schedule" | "reservation" | "display" | "scan" | "productarrival" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "board" | "mypage" | "zone-labels" | "business-manage" | "others" | "inventory-sales" | "hr-forms", auth?: AuthSession) => {
     if (auth) setAuthSession(auth);
     navigate(next);
   };
@@ -119,7 +121,7 @@ export default function App() {
 
   // Simple navigation wrapper used by the shared AppNavHeader on inner pages.
   // The user is already authenticated here, so no AuthSession is required.
-  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "productarrival" | "ocr" | "lunch" | "board" | "mypage" | "business-manage" | "others" | "inventory-sales" | "stockcheck" | "synonyms" | "zone-labels") => navigate(next as Page);
+  const navigateInner = (next: "landing" | "schedule" | "display" | "requests" | "leave" | "scan" | "productarrival" | "ocr" | "lunch" | "board" | "mypage" | "business-manage" | "others" | "inventory-sales" | "stockcheck" | "synonyms" | "zone-labels" | "hr-forms") => navigate(next as Page);
 
   let pageContent: React.ReactElement;
 
@@ -266,6 +268,13 @@ export default function App() {
     pageContent = (
       <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
         <InventorySalesPage />
+      </React.Suspense>
+    );
+  } else if (page === "hr-forms") {
+    // 2026-08-03 · 각종 양식 (인사 문서 관리) · 별도 라우팅 진입 시 · BusinessManagePage 안 서브탭에서도 접근 가능
+    pageContent = (
+      <React.Suspense fallback={<div className="min-h-screen bg-slate-50 flex items-center justify-center text-slate-400 text-sm">불러오는 중...</div>}>
+        <HrFormsPage authSession={authSession} onBack={goBack} onNavigate={navigateInner} onLogout={handleLogout} />
       </React.Suspense>
     );
   } else {

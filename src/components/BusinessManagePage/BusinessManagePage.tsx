@@ -4,7 +4,7 @@
 //   서브탭: 직원관리 · 연차승인 · 점심불참 · 직원권한 (DisplayPage 서브탭 스타일 벤치마크)
 //   각 서브탭 · 기존 페이지 임베드 (embedded prop 전달 → 자체 AppNavHeader skip)
 import React, { Suspense, useState } from "react";
-import { UserGear, CalendarDots, ForkKnife, ShieldCheck } from "@phosphor-icons/react";
+import { UserGear, CalendarDots, ForkKnife, ShieldCheck, FileText } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { LeavePage } from "../LeavePage/LeavePage";
 import { LunchPage } from "../LunchPage/LunchPage";
@@ -13,6 +13,8 @@ import type { AuthSession } from "../../types";
 
 // StaffManagePage · props 없음 · lazy 로드 (초기 진입 시에만 필요)
 const StaffManagePage = React.lazy(() => import("../StaffManagePage/StaffManagePage"));
+// 2026-08-03 · 각종 양식 페이지 · lazy 로드 (초기 진입 시에만 필요)
+const HrFormsPage = React.lazy(() => import("../HrFormsPage/HrFormsPage"));
 
 interface BusinessManagePageProps {
   onBack: () => void;
@@ -21,7 +23,7 @@ interface BusinessManagePageProps {
   onLogout?: () => void;
 }
 
-type BmSubTab = "staff-manage" | "leave" | "lunch" | "permissions";
+type BmSubTab = "staff-manage" | "leave" | "lunch" | "permissions" | "hr-forms";
 
 // 서브탭 색상 팔레트 · DisplayPage 서브탭 SUBTAB_COLORS 와 동일 구조
 const SUBTAB_COLORS: Record<string, { bar: string; text: string; iconActive: string; hoverText: string }> = {
@@ -29,6 +31,7 @@ const SUBTAB_COLORS: Record<string, { bar: string; text: string; iconActive: str
   teal:    { bar: "bg-teal-500",    text: "text-teal-700",    iconActive: "text-teal-600",    hoverText: "hover:text-teal-700"    },
   orange:  { bar: "bg-orange-500",  text: "text-orange-700",  iconActive: "text-orange-600",  hoverText: "hover:text-orange-700"  },
   indigo:  { bar: "bg-indigo-500",  text: "text-indigo-700",  iconActive: "text-indigo-600",  hoverText: "hover:text-indigo-700"  },
+  amber:   { bar: "bg-amber-500",   text: "text-amber-700",   iconActive: "text-amber-600",   hoverText: "hover:text-amber-700"   },
 };
 
 interface TabDef {
@@ -43,6 +46,7 @@ const TABS: TabDef[] = [
   { key: "leave",        label: "연차승인",  icon: CalendarDots, color: "teal"    },
   { key: "lunch",        label: "점심불참",  icon: ForkKnife,    color: "orange"  },
   { key: "permissions",  label: "직원권한",  icon: ShieldCheck,  color: "indigo"  },
+  { key: "hr-forms",     label: "각종양식",  icon: FileText,     color: "amber"   },
 ];
 
 const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
@@ -128,6 +132,11 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
         )}
         {subTab === "permissions" && (
           <PermissionsPage {...commonSubPageProps} />
+        )}
+        {subTab === "hr-forms" && (
+          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">각종 양식 로딩 중...</div>}>
+            <HrFormsPage {...commonSubPageProps} />
+          </Suspense>
         )}
       </main>
     </div>
