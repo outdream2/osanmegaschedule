@@ -140,9 +140,10 @@ const DEFAULT_ORDER_NEED_CONFIG: OrderNeedFilterConfig = {
   defaultCategory: "all",
   includeMissingRealStock: true,
   minShortage: 1,
-  // 2026-08-03 (#189) · 사용자 요청 기본값 · 매입주기 90일 이상 · 최근 한달 판매 100개 이상
-  minPurchaseCycle: 90,
-  minMonthlySales: 100,
+  // 2026-08-03 · db-connector 검증 · 기본값 0 (필터 미적용) 으로 완화
+  // 90/100 은 신규 사용자에게 4건만 노출되는 강한 필터 · #245 root cause
+  minPurchaseCycle: 0,
+  minMonthlySales: 0,
   // 2026-08-03 (#189) · 기본 정렬 · 최근 한달 판매량 desc (많이 팔린 상품 우선)
   defaultSortKey: "sale_month",
   defaultSortDir: "desc",
