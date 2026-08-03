@@ -1198,12 +1198,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     return Math.max(0, (end - start) / 60);
   };
 
-  // Compute total break hours for a schedule row by parsing its memo JSON.
-  // Sums 점심(lunch) + 휴게(break) ranges — used to subtract paid-hour credit.
-  const getBreakHoursFromMemo = (memoStr: string): number => {
-    const parsed = parseBreakMemo(memoStr || "");
-    return parseWorkingHours(parsed.lunch || "") + parseWorkingHours(parsed.break || "");
-  };
+  // 휴게시간 · 근무일마다 1시간 고정 차감 (사용자 정책 · 2026-08-03)
+  const BREAK_HOURS_PER_SHIFT = 1;
 
   const OFF_TYPES_SET = new Set(["휴무", "월차", "결근"]);
 
@@ -1224,9 +1220,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
       if (!s.type || OFF_TYPES_SET.has(s.type)) continue;
       const wh = s.workingHours || shiftHourFallback[s.type] || "";
       const rawHours = parseWorkingHours(wh);
-      // 휴식·점심 시간은 인건비 계산에서 제외 (memo JSON 파싱)
-      const breakHours = getBreakHoursFromMemo(s.memo || "");
-      const paidHours = Math.max(0, rawHours - breakHours);
+      // 전체 근무시간에서 1시간을 휴게시간으로 처리 (인건비 계산 제외)
+      const paidHours = Math.max(0, rawHours - BREAK_HOURS_PER_SHIFT);
       totalHours += paidHours;
       if (empRate && paidHours > 0) {
         const d = new Date(s.date);
