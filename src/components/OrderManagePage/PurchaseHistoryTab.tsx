@@ -4,6 +4,9 @@
 //   · Phase A · 좌측 vendor 카드형 2줄 (VendorRowCard · sparkline · 최근성 · SKU)
 //   · Phase B · 우측 상단 VendorHeaderPanel (KPI 4카드)
 //   · Phase C · 우측 하단 PurchaseSubTabs (매입원장 · 상품별 · 매입추이)
+// 2026-08-03 · #191 · 뷰 모드 토글 추가 (공급사별 · 상품별)
+//   · 공급사별 (default) · 기존 방식 100% 유지
+//   · 상품별 (신규) · 좌 상품 리스트 · 우 상품별 매입이력
 // Ref · Zoho·QuickBooks·Odoo·Cin7 Procurement Dashboard 벤치마크
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
@@ -17,6 +20,10 @@ import PurchaseSubTabs, {
   type PurchaseDetailRow,
   type TabKey as PurchaseSubTabKey,
 } from "./PurchaseHistoryTab/PurchaseSubTabs";
+import ProductRowCard, { type ProductSummary } from "./PurchaseHistoryTab/ProductRowCard";
+import ProductPurchaseDetailPanel, {
+  type ProductPurchaseRow,
+} from "./PurchaseHistoryTab/ProductPurchaseDetailPanel";
 import { useLedgerHighlight } from "../../hooks/useLedgerHighlight";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -28,9 +35,24 @@ interface SummaryResponse {
   suppliers: Array<VendorSummary & { supplier: string }>;
 }
 
+// 뷰 모드 (#191)
+type ViewMode = "by-vendor" | "by-product";
+
+// 상품 리스트 정렬 (#191)
+type ProductSort = "amount" | "recent" | "name" | "count";
+
 // ─── PurchaseHistoryTab ───────────────────────────────────────────────────────
 
 export const PurchaseHistoryTab: React.FC = () => {
+  // ═══════════════════════════════════════════════════════════════════════
+  //  뷰 모드 (#191 · 공급사별 / 상품별)
+  // ═══════════════════════════════════════════════════════════════════════
+  const [viewMode, setViewMode] = useState<ViewMode>("by-vendor");
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  공급사별 뷰 (기존)
+  // ═══════════════════════════════════════════════════════════════════════
+
   // 공급사 목록
   const [vendors, setVendors] = useState<VendorItem[]>([]);
   const [vendorsLoading, setVendorsLoading] = useState(false);
@@ -67,6 +89,26 @@ export const PurchaseHistoryTab: React.FC = () => {
   // 기간 필터 (원장 탭 전용)
   const [periodMonths, setPeriodMonths] = useState<0 | 1 | 2 | 3 | 4 | 5 | 6>(1);
   const [periodSeason, setPeriodSeason] = useState<SeasonKey | null>(null);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  상품별 뷰 (#191 · 신규)
+  // ═══════════════════════════════════════════════════════════════════════
+
+  // 전체 매입상세 (최근 1년 · 상품별 groupBy 소스)
+  const [allDetails, setAllDetails] = useState<PurchaseDetailRow[]>([]);
+  const [allDetailsLoading, setAllDetailsLoading] = useState(false);
+  const [allDetailsError, setAllDetailsError] = useState<string | null>(null);
+  const [allDetailsLoaded, setAllDetailsLoaded] = useState(false);
+
+  // 매입상세 원본에는 supplier_name 이 함께 있어야 상품별 원장에 필요
+  //   PurchaseDetailRow 타입은 supplier_name 을 갖지 않으므로 별도로 map 을 관리
+  const [detailSupplierMap, setDetailSupplierMap] = useState<Map<string | number, string | null>>(new Map());
+
+  const [productSearch, setProductSearch] = useState("");
+  const [productSort, setProductSort] = useState<ProductSort>("amount");
+
+  // 선택 상품 (product_code · 없으면 product_name key)
+  const [selectedProductKey, setSelectedProductKey] = useState<string | null>(null);
 
   // ─── 공급사 목록 로드 ────────────────────────────────────────────────────
   const loadVendors = useCallback(async () => {
@@ -182,8 +224,6 @@ export const PurchaseHistoryTab: React.FC = () => {
   }, [selectedVendor, loadLedger, loadDetail]);
 
   // 원장 로드 완료 후 · 서브탭이 ledger 이고 최신 row 가 있으면 잠깐 강조
-  //   - 공급사 카드 클릭 시 setSubTab("ledger") 이 먼저 세팅되고, 원장이 도착하면 여기서 강조
-  //   - 기간 필터 변경 등 다른 원인의 재로드에서도 자동 강조 (친절한 UX)
   useEffect(() => {
     if (!selectedVendor) return;
     if (ledgerLoading) return;
@@ -201,11 +241,62 @@ export const PurchaseHistoryTab: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ledgerRows, ledgerLoading, subTab, selectedVendor?.id]);
 
-  // 기간 필터 바뀌면 원장만 재로드 (selectedVendor 있을 때)
-  // loadLedger 는 periodMonths/periodSeason deps → callback 새로 만들어짐 → 위 effect 재실행
-  //   (이미 useEffect 가 loadLedger 를 deps 로 잡음)
+  // ═══════════════════════════════════════════════════════════════════════
+  //  상품별 뷰 · 데이터 로드 (#191)
+  //   - /api/purchase-details?limit=5000 (unfiltered · 최근 매입일 desc)
+  //   - 응답: rows = [{ id, purchase_date, supplier_name, product_code, product_name,
+  //                    quantity, unit_price, amount, ... }]
+  //   - 클라이언트에서 상품별 groupBy
+  // ═══════════════════════════════════════════════════════════════════════
+  const loadAllDetails = useCallback(async (force = false) => {
+    if (allDetailsLoaded && !force) return;
+    setAllDetailsLoading(true);
+    setAllDetailsError(null);
+    try {
+      // 최근 1년치 fetch · limit=5000 (서버 max)
+      const now = new Date();
+      const from = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+      const fromStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, "0")}-${String(from.getDate()).padStart(2, "0")}`;
+      const params = new URLSearchParams({ from: fromStr, limit: "5000" });
+      const res = await fetch(`/api/purchase-details?${params}`);
+      if (!res.ok) throw new Error(String(res.status));
+      const j = await res.json();
+      const rows: any[] = Array.isArray(j.rows) ? j.rows : [];
 
-  // ─── 필터링 · 정렬된 좌측 리스트 ────────────────────────────────────────
+      // PurchaseDetailRow 로 정규화 + supplier_name map 별도 저장
+      const details: PurchaseDetailRow[] = [];
+      const supMap = new Map<string | number, string | null>();
+      for (const r of rows) {
+        const id = r.id;
+        const date = String(r.purchase_date ?? "").slice(0, 10);
+        if (!id || !date) continue;
+        details.push({
+          id,
+          date,
+          product_code: r.product_code ?? null,
+          product_name: r.product_name ?? null,
+          quantity: Number(r.quantity) || 0,
+          unit_price: Number(r.unit_price) || 0,
+          amount: Number(r.amount ?? r.total) || 0,
+        });
+        supMap.set(id, r.supplier_name ?? null);
+      }
+      setAllDetails(details);
+      setDetailSupplierMap(supMap);
+      setAllDetailsLoaded(true);
+    } catch (e: any) {
+      setAllDetailsError(e?.message ?? "네트워크 오류");
+      setAllDetails([]);
+      setDetailSupplierMap(new Map());
+    } finally { setAllDetailsLoading(false); }
+  }, [allDetailsLoaded]);
+
+  // 뷰 모드가 by-product 로 전환될 때 lazy load
+  useEffect(() => {
+    if (viewMode === "by-product") loadAllDetails();
+  }, [viewMode, loadAllDetails]);
+
+  // ─── 필터링 · 정렬된 좌측 리스트 (공급사) ────────────────────────────────
   const filteredVendors = useMemo(() => {
     const q = vendorSearch.trim().toLowerCase();
     const list = vendors.filter(v => {
@@ -235,34 +326,185 @@ export const PurchaseHistoryTab: React.FC = () => {
     });
   }, [vendors, vendorSearch, vendorCategoryFilter, summaryMap, leftSort]);
 
+  // ─── 상품별 집계 (allDetails groupBy product_code || product_name) ──────
+  const productList = useMemo<ProductSummary[]>(() => {
+    if (allDetails.length === 0) return [];
+    const map = new Map<string, ProductSummary & { supplierSet: Map<string, number> }>();
+    for (const r of allDetails) {
+      const key = String(r.product_code ?? "").trim() || String(r.product_name ?? "").trim() || "(무명)";
+      const supName = detailSupplierMap.get(r.id) ?? null;
+      let a = map.get(key);
+      if (!a) {
+        a = {
+          product_code: r.product_code ?? null,
+          product_name: String(r.product_name ?? "").trim() || "(이름없음)",
+          total_amount: 0,
+          total_qty: 0,
+          purchase_count: 0,
+          last_purchase_date: null,
+          primary_supplier: null,
+          supplier_count: 0,
+          supplierSet: new Map<string, number>(),
+        };
+        map.set(key, a);
+      }
+      a.total_amount += r.amount;
+      a.total_qty += r.quantity;
+      a.purchase_count += 1;
+      if (!a.last_purchase_date || r.date > a.last_purchase_date) a.last_purchase_date = r.date;
+      if (supName) a.supplierSet.set(supName, (a.supplierSet.get(supName) ?? 0) + r.amount);
+    }
+    // supplierSet → primary_supplier (매입액 최대) + supplier_count
+    const list: ProductSummary[] = [];
+    for (const a of map.values()) {
+      let top: [string, number] | null = null;
+      for (const entry of a.supplierSet) {
+        if (!top || entry[1] > top[1]) top = entry;
+      }
+      list.push({
+        product_code: a.product_code,
+        product_name: a.product_name,
+        total_amount: a.total_amount,
+        total_qty: a.total_qty,
+        purchase_count: a.purchase_count,
+        last_purchase_date: a.last_purchase_date,
+        primary_supplier: top ? top[0] : null,
+        supplier_count: a.supplierSet.size,
+      });
+    }
+    return list;
+  }, [allDetails, detailSupplierMap]);
+
+  // 상품 필터링 + 정렬
+  const filteredProducts = useMemo<ProductSummary[]>(() => {
+    const q = productSearch.trim().toLowerCase();
+    const list = productList.filter(p => {
+      if (!q) return true;
+      if (p.product_name.toLowerCase().includes(q)) return true;
+      if (p.product_code && p.product_code.toLowerCase().includes(q)) return true;
+      return false;
+    });
+    return list.sort((a, b) => {
+      switch (productSort) {
+        case "amount": {
+          if (b.total_amount !== a.total_amount) return b.total_amount - a.total_amount;
+          return a.product_name.localeCompare(b.product_name, "ko");
+        }
+        case "recent": {
+          const da = a.last_purchase_date ?? "";
+          const db = b.last_purchase_date ?? "";
+          if (db !== da) return db.localeCompare(da);
+          return a.product_name.localeCompare(b.product_name, "ko");
+        }
+        case "count": {
+          if (b.purchase_count !== a.purchase_count) return b.purchase_count - a.purchase_count;
+          return a.product_name.localeCompare(b.product_name, "ko");
+        }
+        case "name":
+        default:
+          return a.product_name.localeCompare(b.product_name, "ko");
+      }
+    });
+  }, [productList, productSearch, productSort]);
+
+  // 선택 상품의 header + row 목록
+  const selectedProduct = useMemo<ProductSummary | null>(() => {
+    if (!selectedProductKey) return null;
+    return productList.find(p => {
+      const k = String(p.product_code ?? "").trim() || p.product_name;
+      return k === selectedProductKey;
+    }) ?? null;
+  }, [productList, selectedProductKey]);
+
+  const selectedProductRows = useMemo<ProductPurchaseRow[]>(() => {
+    if (!selectedProductKey) return [];
+    const rows: ProductPurchaseRow[] = [];
+    for (const r of allDetails) {
+      const k = String(r.product_code ?? "").trim() || String(r.product_name ?? "").trim() || "(무명)";
+      if (k !== selectedProductKey) continue;
+      rows.push({
+        id: r.id,
+        date: r.date,
+        supplier_name: detailSupplierMap.get(r.id) ?? null,
+        quantity: r.quantity,
+        unit_price: r.unit_price,
+        amount: r.amount,
+      });
+    }
+    // 최근 순 정렬 (default)
+    rows.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    return rows;
+  }, [allDetails, detailSupplierMap, selectedProductKey]);
+
   return (
     <div className="flex flex-col gap-2 h-full min-h-0">
       {/* 상단 필터바 */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex items-center gap-2">
-          <Building2 size={14} className="text-emerald-500 shrink-0" />
+          {viewMode === "by-vendor"
+            ? <Building2 size={14} className="text-emerald-500 shrink-0" />
+            : <Package size={14} className="text-sky-500 shrink-0" />}
           <span className="text-[13px] font-semibold text-slate-800">매입이력</span>
-          {selectedVendor && (
+          {viewMode === "by-vendor" && selectedVendor && (
             <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 rounded-full px-2 py-0.5 border border-emerald-200 tabular-nums">
               {ledgerRows.length}건
             </span>
           )}
+          {viewMode === "by-product" && (
+            <span className="text-[11px] font-semibold text-sky-600 bg-sky-50 rounded-full px-2 py-0.5 border border-sky-200 tabular-nums">
+              {productList.length}종
+            </span>
+          )}
         </div>
-        {/* 기간 필터 · 원장 탭 전용 */}
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">원장 기간</span>
-          <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
-            <button onClick={() => { setPeriodSeason(null); setPeriodMonths(0); }}
-              className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
-            {([1, 2, 3, 4, 5, 6] as const).map(m => (
-              <button key={m} onClick={() => { setPeriodSeason(null); setPeriodMonths(m); }}
-                className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!periodSeason && periodMonths === m ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
-            ))}
+
+        {/* 뷰 모드 토글 (#191) · segmented control */}
+        <div className="inline-flex bg-slate-100 border border-slate-200 rounded-md p-0.5">
+          <button
+            type="button"
+            onClick={() => setViewMode("by-vendor")}
+            className={`px-2.5 h-7 text-[11px] font-black rounded transition cursor-pointer inline-flex items-center gap-1.5 ${
+              viewMode === "by-vendor"
+                ? "bg-white text-emerald-700 shadow-sm border border-emerald-200"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+            title="공급사 단위로 매입이력 조회"
+          >
+            <Building2 size={12} />
+            공급사별
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("by-product")}
+            className={`px-2.5 h-7 text-[11px] font-black rounded transition cursor-pointer inline-flex items-center gap-1.5 ${
+              viewMode === "by-product"
+                ? "bg-white text-sky-700 shadow-sm border border-sky-200"
+                : "text-slate-500 hover:text-slate-700"
+            }`}
+            title="상품 단위로 매입이력 조회 (최근 1년)"
+          >
+            <Package size={12} />
+            상품별
+          </button>
+        </div>
+
+        {/* 기간 필터 · 원장 탭 전용 (공급사별 뷰에서만 표시) */}
+        {viewMode === "by-vendor" && (
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider shrink-0">원장 기간</span>
+            <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
+              <button onClick={() => { setPeriodSeason(null); setPeriodMonths(0); }}
+                className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!periodSeason && periodMonths === 0 ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>10일</button>
+              {([1, 2, 3, 4, 5, 6] as const).map(m => (
+                <button key={m} onClick={() => { setPeriodSeason(null); setPeriodMonths(m); }}
+                  className={`px-2 h-6 text-[11px] font-semibold rounded transition cursor-pointer ${!periodSeason && periodMonths === m ? "bg-emerald-500 text-white shadow-sm" : "text-slate-500 hover:text-slate-700"}`}>{m}개월</button>
+              ))}
+            </div>
+            <SeasonButtons value={periodSeason} onChange={(v) => { setPeriodSeason(v); if (v) setPeriodMonths(0); }} size="sm" hideLabel />
           </div>
-          <SeasonButtons value={periodSeason} onChange={(v) => { setPeriodSeason(v); if (v) setPeriodMonths(0); }} size="sm" hideLabel />
-        </div>
+        )}
+
         {/* 새로고침 */}
-        {selectedVendor && (
+        {viewMode === "by-vendor" && selectedVendor && (
           <button
             type="button"
             onClick={() => {
@@ -277,145 +519,264 @@ export const PurchaseHistoryTab: React.FC = () => {
             <RefreshCw size={13} className={ledgerLoading ? "animate-spin" : ""} />
           </button>
         )}
+        {viewMode === "by-product" && (
+          <button
+            type="button"
+            onClick={() => loadAllDetails(true)}
+            disabled={allDetailsLoading}
+            className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-sky-50 hover:border-sky-300 text-slate-400 hover:text-sky-500 transition disabled:opacity-40 cursor-pointer"
+            title="상품별 매입이력 새로고침"
+          >
+            <RefreshCw size={13} className={allDetailsLoading ? "animate-spin" : ""} />
+          </button>
+        )}
       </div>
 
       {/* 좌우 분할 */}
       <div className="flex flex-col lg:flex-row gap-2 flex-1 min-h-0">
-        {/* 좌측: 공급사 리스트 (카드형 2줄) */}
-        <div className="w-full lg:w-80 shrink-0 flex flex-col gap-2">
-          {/* 검색 + 분류 필터 + 정렬 */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2 flex flex-col gap-2">
-            <input
-              type="text"
-              value={vendorSearch}
-              onChange={e => setVendorSearch(e.target.value)}
-              placeholder="공급사명 검색"
-              className="w-full h-7 px-2.5 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-emerald-400 focus:border-emerald-400 transition"
-            />
-            <div className="flex flex-wrap gap-0.5">
-              {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
-                <button key={cat} onClick={() => setVendorCategoryFilter(cat)}
-                  className={`h-6 px-2 text-[10px] font-semibold rounded transition cursor-pointer ${
-                    vendorCategoryFilter === cat
-                      ? cat === "전체" ? "bg-slate-700 text-white"
-                      : cat === "위탁" ? "bg-violet-500 text-white"
-                      : cat === "선결제" ? "bg-rose-500 text-white"
-                      : cat === "60일회전" ? "bg-emerald-500 text-white"
-                      : cat === "90일회전" ? "bg-teal-500 text-white"
-                      : "bg-slate-500 text-white"
-                      : "bg-slate-50 text-slate-500 border border-slate-200 hover:text-slate-700"
-                  }`}>{cat}</button>
-              ))}
-            </div>
-            {/* 정렬 · 최근/금액/가나다 */}
-            <div className="flex items-center gap-1 pt-1 border-t border-slate-100">
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">정렬</span>
-              {([
-                { k: "recent" as const, label: "최근매입" },
-                { k: "amount" as const, label: "매입액" },
-                { k: "name"   as const, label: "가나다" },
-              ]).map(o => (
-                <button
-                  key={o.k}
-                  type="button"
-                  onClick={() => setLeftSort(o.k)}
-                  className={`h-5 px-1.5 text-[10px] font-semibold rounded transition cursor-pointer ${
-                    leftSort === o.k
-                      ? "bg-emerald-500 text-white"
-                      : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                  }`}
-                >{o.label}</button>
-              ))}
-            </div>
-          </div>
-          {/* 공급사 리스트 · 카드 2줄 · 상단 컬럼 헤더 */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[65vh] flex flex-col overflow-hidden">
-            <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_auto_auto] gap-2 items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-              <span>공급사</span>
-              <span className="text-right whitespace-nowrap">매입정보</span>
-              <span className="text-right whitespace-nowrap">최근</span>
-            </div>
-            <div className="flex-1 min-h-0 overflow-y-auto">
-            {vendorsLoading ? (
-              <div className="flex items-center justify-center py-8 text-slate-400 gap-2 text-[12px]">
-                <Loader2 size={13} className="animate-spin" />불러오는 중...
+        {viewMode === "by-vendor" ? (
+          <>
+            {/* ══════════════════════════════════════════════════════════════
+                공급사별 뷰 (기존)
+            ══════════════════════════════════════════════════════════════ */}
+            {/* 좌측: 공급사 리스트 (카드형 2줄) */}
+            <div className="w-full lg:w-80 shrink-0 flex flex-col gap-2">
+              {/* 검색 + 분류 필터 + 정렬 */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2 flex flex-col gap-2">
+                <input
+                  type="text"
+                  value={vendorSearch}
+                  onChange={e => setVendorSearch(e.target.value)}
+                  placeholder="공급사명 검색"
+                  className="w-full h-7 px-2.5 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-emerald-400 focus:border-emerald-400 transition"
+                />
+                <div className="flex flex-wrap gap-0.5">
+                  {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
+                    <button key={cat} onClick={() => setVendorCategoryFilter(cat)}
+                      className={`h-6 px-2 text-[10px] font-semibold rounded transition cursor-pointer ${
+                        vendorCategoryFilter === cat
+                          ? cat === "전체" ? "bg-slate-700 text-white"
+                          : cat === "위탁" ? "bg-violet-500 text-white"
+                          : cat === "선결제" ? "bg-rose-500 text-white"
+                          : cat === "60일회전" ? "bg-emerald-500 text-white"
+                          : cat === "90일회전" ? "bg-teal-500 text-white"
+                          : "bg-slate-500 text-white"
+                          : "bg-slate-50 text-slate-500 border border-slate-200 hover:text-slate-700"
+                      }`}>{cat}</button>
+                  ))}
+                </div>
+                {/* 정렬 · 최근/금액/가나다 */}
+                <div className="flex items-center gap-1 pt-1 border-t border-slate-100">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">정렬</span>
+                  {([
+                    { k: "recent" as const, label: "최근매입" },
+                    { k: "amount" as const, label: "매입액" },
+                    { k: "name"   as const, label: "가나다" },
+                  ]).map(o => (
+                    <button
+                      key={o.k}
+                      type="button"
+                      onClick={() => setLeftSort(o.k)}
+                      className={`h-5 px-1.5 text-[10px] font-semibold rounded transition cursor-pointer ${
+                        leftSort === o.k
+                          ? "bg-emerald-500 text-white"
+                          : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >{o.label}</button>
+                  ))}
+                </div>
               </div>
-            ) : filteredVendors.length === 0 ? (
-              <div className="py-8 text-center text-[11px] text-slate-300">공급사 없음</div>
-            ) : (
-              <div className="divide-y divide-slate-50">
-                {filteredVendors.map(v => (
-                  <VendorRowCard
-                    key={v.id}
-                    vendorId={v.id}
-                    companyName={v.company_name}
-                    category={v.category}
-                    summary={summaryMap.get(v.company_name) ?? null}
-                    active={selectedVendor?.id === v.id}
-                    onSelect={() => {
-                      setSelectedVendor(v);
-                      // 공급사 클릭 시 원장(매입원장) 탭으로 자동 전환 · 강조는 로드 완료 후 effect 에서
-                      setSubTab("ledger");
-                    }}
-                  />
-                ))}
+              {/* 공급사 리스트 · 카드 2줄 · 상단 컬럼 헤더 */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[65vh] flex flex-col overflow-hidden">
+                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_auto_auto] gap-2 items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span>공급사</span>
+                  <span className="text-right whitespace-nowrap">매입정보</span>
+                  <span className="text-right whitespace-nowrap">최근</span>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                {vendorsLoading ? (
+                  <div className="flex items-center justify-center py-8 text-slate-400 gap-2 text-[12px]">
+                    <Loader2 size={13} className="animate-spin" />불러오는 중...
+                  </div>
+                ) : filteredVendors.length === 0 ? (
+                  <div className="py-8 text-center text-[11px] text-slate-300">공급사 없음</div>
+                ) : (
+                  <div className="divide-y divide-slate-50">
+                    {filteredVendors.map(v => (
+                      <VendorRowCard
+                        key={v.id}
+                        vendorId={v.id}
+                        companyName={v.company_name}
+                        category={v.category}
+                        summary={summaryMap.get(v.company_name) ?? null}
+                        active={selectedVendor?.id === v.id}
+                        onSelect={() => {
+                          setSelectedVendor(v);
+                          // 공급사 클릭 시 원장(매입원장) 탭으로 자동 전환 · 강조는 로드 완료 후 effect 에서
+                          setSubTab("ledger");
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+                </div>
               </div>
-            )}
             </div>
-          </div>
-        </div>
 
-        {/* 우측: 헤더 + 서브탭 */}
-        <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2">
-          {!selectedVendor ? (
-            <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-              <Package size={40} className="mb-3 opacity-30" />
-              <div className="text-[11px] font-semibold">좌측에서 공급사를 선택하세요</div>
-              <div className="text-[11px] mt-1">매입이력 · 상품별 집계 · 매입 추이가 표시됩니다</div>
+            {/* 우측: 헤더 + 서브탭 */}
+            <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2">
+              {!selectedVendor ? (
+                <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+                  <Package size={40} className="mb-3 opacity-30" />
+                  <div className="text-[11px] font-semibold">좌측에서 공급사를 선택하세요</div>
+                  <div className="text-[11px] mt-1">매입이력 · 상품별 집계 · 매입 추이가 표시됩니다</div>
+                </div>
+              ) : ledgerError ? (
+                <div className="bg-white rounded-xl border border-rose-200 p-4 text-sm text-rose-700 space-y-2">
+                  <div className="font-bold flex items-center gap-1.5">원장 조회 실패</div>
+                  <div className="text-[12px] font-mono bg-rose-50 border border-rose-100 rounded px-2 py-1">{ledgerError}</div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLedgerError(null);
+                      if (selectedVendor) {
+                        loadLedger(selectedVendor.company_name);
+                        loadDetail(selectedVendor.company_name);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-rose-600 text-white text-[12px] font-bold hover:bg-rose-700 transition cursor-pointer"
+                  >
+                    <RefreshCw size={12} /> 다시 시도
+                  </button>
+                  <div className="text-[11px] text-slate-500 pt-1 border-t border-rose-100">
+                    원인 · 서버 API 미구성 · 네트워크 문제 · Supabase 테이블 미생성 (ocr_confirmed_items · supplier_payments) 등. 콘솔 로그 확인 필요.
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Phase B · 공급사 헤더 + KPI 4카드 */}
+                  <VendorHeaderPanel
+                    vendor={selectedVendor}
+                    detailRows={detailRows}
+                    loading={detailLoading}
+                  />
+                  {/* Phase C · 서브탭 3개 (매입원장 · 상품별 · 매입추이)
+                      · controlled · 공급사 클릭 시 ledger 로 자동 전환 + 최신 row highlight */}
+                  <PurchaseSubTabs
+                    ledgerRows={ledgerRows}
+                    ledgerLoading={ledgerLoading}
+                    detailRows={detailRows}
+                    detailLoading={detailLoading}
+                    activeTab={subTab}
+                    onTabChange={setSubTab}
+                    highlightId={highlightId}
+                  />
+                </>
+              )}
             </div>
-          ) : ledgerError ? (
-            <div className="bg-white rounded-xl border border-rose-200 p-4 text-sm text-rose-700 space-y-2">
-              <div className="font-bold flex items-center gap-1.5">원장 조회 실패</div>
-              <div className="text-[12px] font-mono bg-rose-50 border border-rose-100 rounded px-2 py-1">{ledgerError}</div>
-              <button
-                type="button"
-                onClick={() => {
-                  setLedgerError(null);
-                  if (selectedVendor) {
-                    loadLedger(selectedVendor.company_name);
-                    loadDetail(selectedVendor.company_name);
-                  }
-                }}
-                className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-rose-600 text-white text-[12px] font-bold hover:bg-rose-700 transition cursor-pointer"
-              >
-                <RefreshCw size={12} /> 다시 시도
-              </button>
-              <div className="text-[11px] text-slate-500 pt-1 border-t border-rose-100">
-                원인 · 서버 API 미구성 · 네트워크 문제 · Supabase 테이블 미생성 (ocr_confirmed_items · supplier_payments) 등. 콘솔 로그 확인 필요.
+          </>
+        ) : (
+          <>
+            {/* ══════════════════════════════════════════════════════════════
+                상품별 뷰 (#191 · 신규)
+            ══════════════════════════════════════════════════════════════ */}
+            {/* 좌측: 상품 리스트 */}
+            <div className="w-full lg:w-80 shrink-0 flex flex-col gap-2">
+              {/* 검색 + 정렬 */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2 flex flex-col gap-2">
+                <input
+                  type="text"
+                  value={productSearch}
+                  onChange={e => setProductSearch(e.target.value)}
+                  placeholder="상품명 · 코드 검색"
+                  className="w-full h-7 px-2.5 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 transition"
+                />
+                <div className="flex items-center gap-1 pt-1 border-t border-slate-100 flex-wrap">
+                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">정렬</span>
+                  {([
+                    { k: "amount" as const, label: "매입액" },
+                    { k: "recent" as const, label: "최근매입" },
+                    { k: "count"  as const, label: "매입건수" },
+                    { k: "name"   as const, label: "가나다" },
+                  ]).map(o => (
+                    <button
+                      key={o.k}
+                      type="button"
+                      onClick={() => setProductSort(o.k)}
+                      className={`h-5 px-1.5 text-[10px] font-semibold rounded transition cursor-pointer ${
+                        productSort === o.k
+                          ? "bg-sky-500 text-white"
+                          : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >{o.label}</button>
+                  ))}
+                </div>
+              </div>
+              {/* 상품 리스트 · 카드 2줄 · 상단 컬럼 헤더 */}
+              <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[65vh] flex flex-col overflow-hidden">
+                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_auto_auto] gap-2 items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  <span>상품</span>
+                  <span className="text-right whitespace-nowrap">매입정보</span>
+                  <span className="text-right whitespace-nowrap">최근</span>
+                </div>
+                <div className="flex-1 min-h-0 overflow-y-auto">
+                {allDetailsLoading ? (
+                  <div className="flex items-center justify-center py-8 text-slate-400 gap-2 text-[12px]">
+                    <Loader2 size={13} className="animate-spin" />불러오는 중...
+                  </div>
+                ) : allDetailsError ? (
+                  <div className="p-4 text-[11px] text-rose-600 space-y-1">
+                    <div className="font-black">로드 실패</div>
+                    <div className="font-mono bg-rose-50 border border-rose-100 rounded px-2 py-1">{allDetailsError}</div>
+                    <button
+                      type="button"
+                      onClick={() => loadAllDetails(true)}
+                      className="mt-1 inline-flex items-center gap-1 h-6 px-2 rounded bg-rose-600 text-white text-[10px] font-bold hover:bg-rose-700 transition cursor-pointer"
+                    >
+                      <RefreshCw size={10} /> 다시 시도
+                    </button>
+                  </div>
+                ) : filteredProducts.length === 0 ? (
+                  <div className="py-8 text-center text-[11px] text-slate-300">
+                    {productSearch ? "검색 결과 없음" : "최근 1년 매입 상품 없음"}
+                  </div>
+                ) : (
+                  <div className="divide-y divide-slate-50">
+                    {filteredProducts.map(p => {
+                      const key = String(p.product_code ?? "").trim() || p.product_name;
+                      return (
+                        <ProductRowCard
+                          key={`prc-${key}`}
+                          product={p}
+                          active={selectedProductKey === key}
+                          onSelect={() => setSelectedProductKey(key)}
+                        />
+                      );
+                    })}
+                  </div>
+                )}
+                </div>
               </div>
             </div>
-          ) : (
-            <>
-              {/* Phase B · 공급사 헤더 + KPI 4카드 */}
-              <VendorHeaderPanel
-                vendor={selectedVendor}
-                detailRows={detailRows}
-                loading={detailLoading}
-              />
-              {/* Phase C · 서브탭 3개 (매입원장 · 상품별 · 매입추이)
-                  · controlled · 공급사 클릭 시 ledger 로 자동 전환 + 최신 row highlight */}
-              <PurchaseSubTabs
-                ledgerRows={ledgerRows}
-                ledgerLoading={ledgerLoading}
-                detailRows={detailRows}
-                detailLoading={detailLoading}
-                activeTab={subTab}
-                onTabChange={setSubTab}
-                highlightId={highlightId}
-              />
-            </>
-          )}
-        </div>
+
+            {/* 우측: 상품 상세 (헤더 + 매입 원장) */}
+            <div className="flex-1 min-w-0 min-h-0 flex flex-col gap-2">
+              {!selectedProduct ? (
+                <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+                  <Package size={40} className="mb-3 opacity-30" />
+                  <div className="text-[11px] font-semibold">좌측에서 상품을 선택하세요</div>
+                  <div className="text-[11px] mt-1">최근 1년 · 공급사별 매입 원장이 표시됩니다</div>
+                </div>
+              ) : (
+                <ProductPurchaseDetailPanel
+                  product={selectedProduct}
+                  rows={selectedProductRows}
+                  loading={allDetailsLoading}
+                />
+              )}
+            </div>
+          </>
+        )}
       </div>
     </div>
   );
