@@ -1473,21 +1473,21 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           </td>
                         </>
                       )}
-                      <td className="text-center px-1 py-1.5 align-top">
+                      <td className="text-center px-1 py-1.5 align-top whitespace-nowrap">
                         {alreadyRequested ? (
                           <button
                             onClick={() => handleRequestOrder(p)}
-                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer whitespace-nowrap"
                           >
-                            <CheckCircle2 size={11} strokeWidth={2} /> 요청됨
+                            <CheckCircle2 size={11} strokeWidth={2} className="shrink-0" /> 요청됨
                           </button>
                         ) : (
                           <button
                             onClick={() => handleRequestOrder(p)}
                             disabled={busy}
-                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-semibold text-white bg-amber-500 hover:bg-amber-600 border border-amber-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
+                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-semibold text-white bg-amber-500 hover:bg-amber-600 border border-amber-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 whitespace-nowrap"
                           >
-                            <ShoppingCart size={11} strokeWidth={2} />{busy ? "..." : "추가"}
+                            <ShoppingCart size={11} strokeWidth={2} className="shrink-0" /><span>{busy ? "..." : "추가"}</span>
                           </button>
                         )}
                       </td>
