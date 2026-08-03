@@ -5,7 +5,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
-import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus } from "lucide-react";
+import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, Settings, RotateCcw, X } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
@@ -94,6 +94,45 @@ interface OrderManagePageProps {
 }
 
 // ArrivalMatchTab 제거됨 (2026-07-31 · 사용자 요청)
+
+// ── 발주필요 탭 · 조건 설정 (localStorage 저장) ─────────────────────
+//   · 사용자 요청 (2026-08-03) · 발주필요 상품 필터 조건 커스텀 + 저장
+//   · 페이지 로딩 시 저장된 조건으로 초기화
+type NeedCategoryFilterKey = "all" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
+type OrderNeedShortageBasis = "optimal" | "min" | "realStock";
+interface OrderNeedFilterConfig {
+  /** 부족 판정 기준 · optimal(추천적정재고) · min(최소재고) · realStock(실재고) */
+  shortageBasis: OrderNeedShortageBasis;
+  /** 카테고리 필터 초기값 */
+  defaultCategory: NeedCategoryFilterKey;
+  /** 실재고 미입력 상품 포함 여부 · false 이면 invStockMap 에 없는 상품 제외 */
+  includeMissingRealStock: boolean;
+  /** 최소 부족 개수 · 부족량이 이 값 이상만 표시 (>=1) */
+  minShortage: number;
+}
+const ORDER_NEED_CONFIG_KEY = "megatown_orderNeedFilterConfig";
+const DEFAULT_ORDER_NEED_CONFIG: OrderNeedFilterConfig = {
+  shortageBasis: "optimal",
+  defaultCategory: "all",
+  includeMissingRealStock: true,
+  minShortage: 1,
+};
+const loadOrderNeedConfig = (): OrderNeedFilterConfig => {
+  try {
+    const raw = localStorage.getItem(ORDER_NEED_CONFIG_KEY);
+    if (!raw) return DEFAULT_ORDER_NEED_CONFIG;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return DEFAULT_ORDER_NEED_CONFIG;
+    const validBasis: OrderNeedShortageBasis[] = ["optimal", "min", "realStock"];
+    const validCat: NeedCategoryFilterKey[] = ["all", "위탁", "선결제", "60일회전", "90일회전", "기타"];
+    return {
+      shortageBasis: validBasis.includes(parsed.shortageBasis) ? parsed.shortageBasis : DEFAULT_ORDER_NEED_CONFIG.shortageBasis,
+      defaultCategory: validCat.includes(parsed.defaultCategory) ? parsed.defaultCategory : DEFAULT_ORDER_NEED_CONFIG.defaultCategory,
+      includeMissingRealStock: typeof parsed.includeMissingRealStock === "boolean" ? parsed.includeMissingRealStock : DEFAULT_ORDER_NEED_CONFIG.includeMissingRealStock,
+      minShortage: (typeof parsed.minShortage === "number" && parsed.minShortage >= 1) ? Math.floor(parsed.minShortage) : DEFAULT_ORDER_NEED_CONFIG.minShortage,
+    };
+  } catch { return DEFAULT_ORDER_NEED_CONFIG; }
+};
 
 const OrderManagePage: React.FC<OrderManagePageProps> = ({
   ocrTabAuthSession,
@@ -338,11 +377,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     const up = () => { needResizeRef.current = null; window.removeEventListener("mousemove", move); window.removeEventListener("mouseup", up); };
     window.addEventListener("mousemove", move); window.addEventListener("mouseup", up);
   };
-  // ── 발주필요(need) 탭 · 공급사 카테고리 필터 ──
-  //   · 전체·위탁·선결제·60일회전·90일회전·기타 (6개 segmented control)
-  //   · vendorCategoryMap 기반 필터링
-  type NeedCategoryFilter = "all" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
-  const [needCategoryFilter, setNeedCategoryFilter] = useState<NeedCategoryFilter>("all");
+  // ── 발주필요(need) 탭 · 조건 설정 (localStorage · 저장·로딩) ──
+  //   · 사용자 요청 (2026-08-03) · 필터 조건 커스텀 · 페이지 진입 시 저장된 조건 로딩
+  //   · 저장 키: megatown_orderNeedFilterConfig
+  type NeedCategoryFilter = NeedCategoryFilterKey;
+  const [orderNeedConfig, setOrderNeedConfig] = useState<OrderNeedFilterConfig>(() => loadOrderNeedConfig());
+  const [needFilterModalOpen, setNeedFilterModalOpen] = useState(false);
+  // 편집 중 임시 상태 (모달 · 저장·취소·초기화)
+  const [needFilterDraft, setNeedFilterDraft] = useState<OrderNeedFilterConfig>(orderNeedConfig);
+  useEffect(() => { if (needFilterModalOpen) setNeedFilterDraft(orderNeedConfig); }, [needFilterModalOpen, orderNeedConfig]);
+  const [needCategoryFilter, setNeedCategoryFilter] = useState<NeedCategoryFilter>(orderNeedConfig.defaultCategory);
+  // 설정된 defaultCategory 변경 시 · 현재 카테고리 필터도 즉시 반영 (사용자가 저장한 순간 UI 동기화)
+  useEffect(() => { setNeedCategoryFilter(orderNeedConfig.defaultCategory); }, [orderNeedConfig.defaultCategory]);
   // 우측 패널용 선택 상품 (발주필요 탭)
   const [needPanelProduct, setNeedPanelProduct] = useState<{ code: string; name: string } | null>(null);
   const [needPanelFull, setNeedPanelFull] = useState<Record<string, any> | null>(null);
@@ -525,10 +571,37 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   }
 
   const requestedCodes = new Set(orderReqs.map(r => r.product_code));
+  // ── 발주필요 · 부족 판정 (orderNeedConfig 반영) ──
+  //   · shortageBasis · optimal(추천적정) · min(최소재고) · realStock(실재고 vs 추천적정)
+  //   · includeMissingRealStock · false 이면 실재고(invStockMap) 미입력 상품 제외
+  //   · minShortage · (기준-비교값) >= minShortage 인 상품만 포함
   const lowStock = products.filter(p => {
     const cur = p.current_stock != null ? Number(p.current_stock) : NaN;
     const opt = p.optimal_stock != null ? Number(p.optimal_stock) : NaN;
-    return !isNaN(cur) && !isNaN(opt) && opt > 0 && cur < opt;
+    const minS = (p as any).min_stock != null ? Number((p as any).min_stock) : NaN;
+    const code = getCode(p);
+    const invEntry = code ? invStockMap.get(code) : undefined;
+    const realTotal = invEntry ? Number(invEntry.total) : NaN;
+
+    // 실재고 미입력 상품 · includeMissingRealStock=false 이면 제외
+    if (!orderNeedConfig.includeMissingRealStock && !invEntry) return false;
+
+    let shortage = 0;
+    if (orderNeedConfig.shortageBasis === "min") {
+      // 최소재고 기준 · min_stock 없거나 0 이하면 skip (판단 불가)
+      if (isNaN(cur) || isNaN(minS) || minS <= 0) return false;
+      shortage = minS - cur;
+    } else if (orderNeedConfig.shortageBasis === "realStock") {
+      // 실재고 vs 추천적정재고
+      if (isNaN(opt) || opt <= 0) return false;
+      if (isNaN(realTotal)) return false;   // 실재고 없으면 판단 불가 (미입력 포함 옵션과 별개)
+      shortage = opt - realTotal;
+    } else {
+      // 기본 · optimal · 현재고 vs 추천적정재고
+      if (isNaN(cur) || isNaN(opt) || opt <= 0) return false;
+      shortage = opt - cur;
+    }
+    return shortage >= Math.max(1, orderNeedConfig.minShortage);
   }).sort((a, b) => (Number(b.optimal_stock) - Number(b.current_stock)) - (Number(a.optimal_stock) - Number(a.current_stock)));
 
   const handleRequestOrder = async (p: ProductInfo) => {
@@ -982,7 +1055,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             { getTabProps: purchaseOrderSortable.getTabProps, isDragging: purchaseOrderSortable.isDragging },
           )}
           {/* ── 발주필요 서브탭 ── */}
-          {purchaseOrderSubTab === "need" && (
+          {purchaseOrderSubTab === "need" && (<>
         <div className="flex flex-col gap-2">
           {/* ── 상단 KPI 카드 · 재고 이하 N개 + 공급사 카테고리 필터 ── */}
           <div className="bg-gradient-to-r from-rose-50 via-white to-white rounded-xl border border-rose-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
@@ -995,7 +1068,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   <span className="text-[15px] font-black text-rose-700 tabular-nums">{lowStock.length}<span className="text-[11px] font-bold ml-0.5">개</span></span>
                 </div>
               </div>
-              <span className="text-[11px] text-slate-500 hidden sm:inline">현재고 &lt; 추천적정재고 · 상품명 클릭 → 상세</span>
+              <span className="text-[11px] text-slate-500 hidden sm:inline">
+                {orderNeedConfig.shortageBasis === "min" && "현재고 < 최소재고"}
+                {orderNeedConfig.shortageBasis === "realStock" && "실재고 < 추천적정재고"}
+                {orderNeedConfig.shortageBasis === "optimal" && "현재고 < 추천적정재고"}
+                {orderNeedConfig.minShortage > 1 && ` · 부족 ${orderNeedConfig.minShortage}개 이상`}
+                {!orderNeedConfig.includeMissingRealStock && " · 실재고 있는 것만"}
+                <span className="mx-1 text-slate-300">·</span>상품명 클릭 → 상세
+              </span>
             </div>
 
             {/* 우측 · 카테고리 필터 (segmented control · 6버튼) */}
@@ -1039,6 +1119,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 title="새로고침"
               >
                 <RefreshCw size={13} className={productsLoading ? "animate-spin" : ""} />
+              </button>
+              <button
+                onClick={() => setNeedFilterModalOpen(true)}
+                className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-indigo-50 hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition cursor-pointer"
+                title="발주조건 설정 (저장 시 다음 로딩부터 적용)"
+              >
+                <Settings size={13} />
               </button>
             </div>
           </div>
@@ -1304,7 +1391,167 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         )}
           </div>
         </div>
-          )}
+        {/* ── 발주조건 설정 모달 (localStorage · 저장·로딩) · flex flex-col gap-2 내부 ── */}
+        {needFilterModalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] p-4"
+            onClick={() => setNeedFilterModalOpen(false)}
+          >
+            <div
+              className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md max-h-[90vh] overflow-y-auto"
+              onClick={e => e.stopPropagation()}
+            >
+              {/* 헤더 */}
+              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <Settings size={16} className="text-indigo-600" />
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-[15px] font-black text-slate-800">발주필요 · 조건 설정</span>
+                    <span className="text-[11px] text-slate-500">저장 시 · 다음 페이지 로딩부터 자동 적용</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setNeedFilterModalOpen(false)}
+                  className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 cursor-pointer"
+                  title="닫기"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* 본문 · 조건 4가지 */}
+              <div className="px-5 py-4 flex flex-col gap-5">
+                {/* 1. 부족 판정 기준 */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">1. 재고 부족 기준</span>
+                  <div className="flex flex-col gap-1.5">
+                    {([
+                      { k: "optimal"   as OrderNeedShortageBasis, label: "현재고 < 추천적정재고",   sub: "기본 · 대부분의 경우 권장" },
+                      { k: "min"       as OrderNeedShortageBasis, label: "현재고 < 최소재고",       sub: "min_stock 컬럼 기준 · 값 없으면 제외" },
+                      { k: "realStock" as OrderNeedShortageBasis, label: "실재고 < 추천적정재고",   sub: "invStockMap 실재고 기준 · 실재고 없는 상품 제외" },
+                    ]).map(opt => (
+                      <label
+                        key={opt.k}
+                        className={[
+                          "flex items-start gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition",
+                          needFilterDraft.shortageBasis === opt.k
+                            ? "bg-indigo-50 border-indigo-300"
+                            : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                        ].join(" ")}
+                      >
+                        <input
+                          type="radio"
+                          name="shortageBasis"
+                          className="mt-1 accent-indigo-600 cursor-pointer"
+                          checked={needFilterDraft.shortageBasis === opt.k}
+                          onChange={() => setNeedFilterDraft(prev => ({ ...prev, shortageBasis: opt.k }))}
+                        />
+                        <div className="flex flex-col leading-tight">
+                          <span className="text-[14px] font-bold text-slate-800">{opt.label}</span>
+                          <span className="text-[12px] text-slate-500 mt-0.5">{opt.sub}</span>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 2. 카테고리 필터 초기값 */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">2. 카테고리 필터 초기값</span>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {([
+                      { k: "all"       as NeedCategoryFilterKey, label: "전체" },
+                      { k: "위탁"       as NeedCategoryFilterKey, label: "위탁" },
+                      { k: "선결제"     as NeedCategoryFilterKey, label: "선결제" },
+                      { k: "60일회전"   as NeedCategoryFilterKey, label: "60일회전" },
+                      { k: "90일회전"   as NeedCategoryFilterKey, label: "90일회전" },
+                      { k: "기타"       as NeedCategoryFilterKey, label: "기타" },
+                    ]).map(opt => (
+                      <button
+                        key={opt.k}
+                        type="button"
+                        onClick={() => setNeedFilterDraft(prev => ({ ...prev, defaultCategory: opt.k }))}
+                        className={[
+                          "px-2 h-8 rounded-md text-[13px] font-bold border transition cursor-pointer",
+                          needFilterDraft.defaultCategory === opt.k
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
+                        ].join(" ")}
+                      >{opt.label}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 3. 실재고 미입력 포함 여부 */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">3. 실재고 미입력 상품</span>
+                  <label className="flex items-start gap-2.5 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-1 accent-indigo-600 cursor-pointer"
+                      checked={needFilterDraft.includeMissingRealStock}
+                      onChange={e => setNeedFilterDraft(prev => ({ ...prev, includeMissingRealStock: e.target.checked }))}
+                    />
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-[14px] font-bold text-slate-800">실재고 미입력 상품도 포함</span>
+                      <span className="text-[12px] text-slate-500 mt-0.5">체크 해제 시 · 실재고 입력된 상품만 표시</span>
+                    </div>
+                  </label>
+                </div>
+
+                {/* 4. 최소 부족 개수 */}
+                <div className="flex flex-col gap-2">
+                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">4. 최소 부족 개수</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={needFilterDraft.minShortage}
+                      onChange={e => {
+                        const v = Number(e.target.value);
+                        setNeedFilterDraft(prev => ({ ...prev, minShortage: Number.isFinite(v) && v >= 1 ? Math.floor(v) : 1 }));
+                      }}
+                      className="w-24 h-10 px-3 border border-slate-300 rounded-lg text-[14px] font-bold text-slate-800 tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
+                    />
+                    <span className="text-[13px] text-slate-600">개 이상 부족한 상품만 표시</span>
+                  </div>
+                  <span className="text-[12px] text-slate-400">기본값: 1 (조금이라도 부족하면 모두 표시)</span>
+                </div>
+              </div>
+
+              {/* 푸터 · 저장 · 취소 · 초기화 */}
+              <div className="flex items-center gap-2 px-5 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
+                <button
+                  type="button"
+                  onClick={() => setNeedFilterDraft(DEFAULT_ORDER_NEED_CONFIG)}
+                  className="flex items-center gap-1.5 px-3 h-10 rounded-lg text-[13px] font-bold text-slate-600 hover:text-slate-800 hover:bg-white border border-slate-300 transition cursor-pointer"
+                  title="기본값으로 되돌리기"
+                >
+                  <RotateCcw size={13} />
+                  초기화
+                </button>
+                <div className="flex-1" />
+                <button
+                  type="button"
+                  onClick={() => setNeedFilterModalOpen(false)}
+                  className="px-4 h-10 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-white border border-slate-300 transition cursor-pointer"
+                >취소</button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(needFilterDraft)); } catch { /* localStorage 사용불가 · 무시 */ }
+                    setOrderNeedConfig(needFilterDraft);
+                    setNeedFilterModalOpen(false);
+                  }}
+                  className="px-4 h-10 rounded-lg text-[13px] font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer"
+                >저장</button>
+              </div>
+            </div>
+          </div>
+        )}
+          </>)}
         </div>
       )}
 
