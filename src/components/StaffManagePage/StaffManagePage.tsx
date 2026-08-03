@@ -2050,20 +2050,16 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
         </section>
       </div>
 
-      {/* ── 모바일 상세 시트 ── */}
+      {/* ── 모바일 상세 모달 · 가운데 위치 (2026-08-03 사용자 요청) ── */}
       {mobileDetail && selectedEmp && (
         <div
-          className="lg:hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-end justify-center"
+          className="lg:hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4"
           onClick={() => setMobileDetail(false)}
         >
           <div
-            className="bg-white w-full max-w-lg rounded-t-2xl shadow-2xl max-h-[90vh] overflow-hidden flex flex-col"
+            className="bg-white w-full max-w-lg rounded-2xl shadow-2xl max-h-[86vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* 드래그 핸들 */}
-            <div className="flex justify-center pt-2.5 pb-1 shrink-0">
-              <div className="w-10 h-1 rounded-full bg-slate-200" />
-            </div>
             <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-gradient-to-r from-indigo-50/80 to-violet-50/60 shrink-0">
               <div className="flex items-center gap-2.5">
                 <Avatar name={selectedEmp.name} photoUrl={selectedEmp.photo_url} size="xs" />
