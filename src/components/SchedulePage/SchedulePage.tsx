@@ -1198,6 +1198,13 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     return Math.max(0, (end - start) / 60);
   };
 
+  // Compute total break hours for a schedule row by parsing its memo JSON.
+  // Sums 점심(lunch) + 휴게(break) ranges — used to subtract paid-hour credit.
+  const getBreakHoursFromMemo = (memoStr: string): number => {
+    const parsed = parseBreakMemo(memoStr || "");
+    return parseWorkingHours(parsed.lunch || "") + parseWorkingHours(parsed.break || "");
+  };
+
   const OFF_TYPES_SET = new Set(["휴무", "월차", "결근"]);
 
   // monthKey: "YYYY-MM". Defaults to currentYear/currentMonth when not provided.
@@ -1216,12 +1223,15 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
     for (const s of visibleSchedules) {
       if (!s.type || OFF_TYPES_SET.has(s.type)) continue;
       const wh = s.workingHours || shiftHourFallback[s.type] || "";
-      const hours = parseWorkingHours(wh);
-      totalHours += hours;
-      if (empRate && hours > 0) {
+      const rawHours = parseWorkingHours(wh);
+      // 휴식·점심 시간은 인건비 계산에서 제외 (memo JSON 파싱)
+      const breakHours = getBreakHoursFromMemo(s.memo || "");
+      const paidHours = Math.max(0, rawHours - breakHours);
+      totalHours += paidHours;
+      if (empRate && paidHours > 0) {
         const d = new Date(s.date);
         const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-        laborCost += hours * (isWeekend ? empRate.weekend : empRate.weekday);
+        laborCost += paidHours * (isWeekend ? empRate.weekend : empRate.weekday);
       }
     }
 
