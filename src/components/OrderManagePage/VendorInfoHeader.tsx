@@ -196,63 +196,52 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({ vendor, kpi,
       {/* 구분선 */}
       <div className="border-t border-slate-100" />
 
-      {/* KPI 4개 */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-        <KpiCard
-          icon={ReceiptText}
-          label="총 매입액"
-          value={
-            <span>
-              {fmtWon(kpi.totalPurchase)}
-              {kpi.totalPurchase >= 10_000 && (
-                <span className="text-[10px] font-semibold text-slate-400 ml-0.5">원</span>
-              )}
+      {/* KPI · 심플 텍스트 (2026-08-03 사용자 요청 · 카드 대시보드 제거) */}
+      <dl className="flex flex-wrap items-center gap-x-5 gap-y-1.5 pl-1 text-[13px]">
+        <div className="inline-flex items-baseline gap-1.5">
+          <dt className="text-slate-500 font-semibold">총 매입</dt>
+          <dd className="font-black text-emerald-700 tabular-nums">
+            {fmtWon(kpi.totalPurchase)}
+            {kpi.totalPurchase >= 10_000 && <span className="text-[11px] font-bold text-slate-400 ml-0.5">원</span>}
+          </dd>
+          {kpi.rowCount != null && <span className="text-[11px] text-slate-400">({kpi.rowCount}건)</span>}
+        </div>
+
+        <div className="inline-flex items-baseline gap-1.5">
+          <dt className="text-slate-500 font-semibold">총 결제</dt>
+          <dd className="font-black text-sky-700 tabular-nums">
+            {fmtWon(kpi.totalPayment)}
+            {kpi.totalPayment >= 10_000 && <span className="text-[11px] font-bold text-slate-400 ml-0.5">원</span>}
+          </dd>
+          {kpi.momPct != null && (
+            <span className="text-[11px] text-slate-400 inline-flex items-center gap-0.5">
+              {momIcon}{momText}
             </span>
-          }
-          subtitle={loading ? "로딩 중" : kpi.rowCount != null ? `${kpi.rowCount}건` : undefined}
-          color="emerald"
-        />
-        <KpiCard
-          label="총 결제액"
-          value={
-            <span>
-              {fmtWon(kpi.totalPayment)}
-              {kpi.totalPayment >= 10_000 && (
-                <span className="text-[10px] font-semibold text-slate-400 ml-0.5">원</span>
-              )}
-            </span>
-          }
-          subtitle={<span className="inline-flex items-center gap-0.5">{momIcon}{momText}</span>}
-          color="sky"
-        />
-        <KpiCard
-          icon={Scale}
-          label="현재 잔고"
-          value={
-            <span>
-              {fmtWon(Math.abs(kpi.balance))}
-              {Math.abs(kpi.balance) >= 10_000 && (
-                <span className="text-[10px] font-semibold text-slate-400 ml-0.5">원</span>
-              )}
-            </span>
-          }
-          subtitle={kpi.balance > 0 ? "미결제 잔액" : kpi.balance < 0 ? "초과 결제" : "완납"}
-          color={balanceColor}
-        />
-        <KpiCard
-          label="평균 매입주기"
-          value={
-            <span>
-              {kpi.avgCycleDays != null ? String(kpi.avgCycleDays) : "-"}
-              {kpi.avgCycleDays != null && (
-                <span className="text-[10px] font-semibold text-slate-400 ml-0.5">일</span>
-              )}
-            </span>
-          }
-          subtitle="매입일 간 평균 간격"
-          color="slate"
-        />
-      </div>
+          )}
+        </div>
+
+        <div className="inline-flex items-baseline gap-1.5">
+          <dt className="text-slate-500 font-semibold">잔고</dt>
+          <dd className={`font-black tabular-nums ${
+            balanceColor === "amber" ? "text-amber-700" :
+            balanceColor === "rose" ? "text-rose-700" : "text-emerald-700"
+          }`}>
+            {fmtWon(Math.abs(kpi.balance))}
+            {Math.abs(kpi.balance) >= 10_000 && <span className="text-[11px] font-bold text-slate-400 ml-0.5">원</span>}
+          </dd>
+          <span className="text-[11px] text-slate-400">
+            {kpi.balance > 0 ? "· 미결제" : kpi.balance < 0 ? "· 초과 결제" : "· 완납"}
+          </span>
+        </div>
+
+        <div className="inline-flex items-baseline gap-1.5">
+          <dt className="text-slate-500 font-semibold">평균 매입주기</dt>
+          <dd className="font-black text-slate-700 tabular-nums">
+            {kpi.avgCycleDays != null ? String(kpi.avgCycleDays) : "-"}
+            {kpi.avgCycleDays != null && <span className="text-[11px] font-bold text-slate-400 ml-0.5">일</span>}
+          </dd>
+        </div>
+      </dl>
     </div>
   );
 };
