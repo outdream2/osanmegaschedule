@@ -1095,10 +1095,21 @@ const StaffManagePage: React.FC = () => {
                           {POSITIONS.map((p) => <option key={p} value={p}>{p}</option>)}
                         </select>
                       ) : (
-                        <span className={`text-[10px] font-semibold px-1.5 py-px rounded border ${positionColor(displayEmp.position)}`}>
-                          {displayEmp.position || "직책 없음"}
+                        <span className={`text-[11px] font-semibold px-1.5 py-px rounded border ${positionColor(displayEmp.position)}`}>
+                          {(displayEmp.position === "창고" || displayEmp.position === "매장")
+                            ? `물류 · ${displayEmp.position}`
+                            : (displayEmp.position || "직책 없음")}
                         </span>
                       )}
+                      {/* 계약유형 · 정규직/계약직/알바 등 */}
+                      {(() => {
+                        const ct = contractTypeMeta(displayEmp.contract_type);
+                        return ct ? (
+                          <span className={`text-[11px] font-semibold px-1.5 py-px rounded border ${ct.color}`} title="계약유형">
+                            {ct.label}
+                          </span>
+                        ) : null;
+                      })()}
                       {/* 근무타입 */}
                       {editing ? (
                         <select
