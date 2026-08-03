@@ -38,7 +38,9 @@ export type AppNavPage =
   | "stockcheck"
   | "board"
   | "mypage"
-  | "business-manage";  // 2026-08-03 · 경영관리 통합 페이지
+  | "business-manage"      // 2026-08-03 · 경영관리 통합 페이지
+  | "others"               // 2026-08-03 · 기타 도구 페이지 (관리자용 · 숨은 도구 모음)
+  | "inventory-sales";     // 2026-08-03 · 재고·판매 통합 (기타 도구 내부 링크 · 헤더 탭 노출 없음)
 
 // 헤더 내부 탭 렌더용 확장 키 (경영관리 · business-manage 로 라우팅)
 type TabKey = AppNavPage | "business";

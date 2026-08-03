@@ -17,6 +17,7 @@ import {
   Plus,
   Search,
   Loader2,
+  LayoutGrid,
 } from "lucide-react";
 import {
   SquaresFour,
@@ -42,7 +43,7 @@ import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 
 interface LandingPageProps {
   authSession: AuthSession | null;
-  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "zone-labels" | "business-manage", auth?: AuthSession) => void;
+  onNavigate: (page: "schedule" | "reservation" | "display" | "scan" | "ocr" | "requests" | "leave" | "permissions" | "lunch" | "stockcheck" | "synonyms" | "stockarrivals" | "zone-labels" | "business-manage" | "others", auth?: AuthSession) => void;
   onLogout: () => void;
   onAuthOnly?: (auth: AuthSession) => void;
 }
@@ -1080,6 +1081,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authSession, onNavigat
                       <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">매장 구역 번호·부제 편집 · 모든 페이지 반영</div>
                       <div className="flex items-center gap-1 mt-2 text-sky-600 text-xs font-bold">
                         <span className="text-[11px] sm:text-xs">편집하기</span>
+                        <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </div>
+                  </button>
+                )}
+
+                {/* 기타 도구 — slate · 2026-08-03 · 재고·판매 통합 · 재고실사 · OCR 동의어 (숨은 페이지 모음) */}
+                {isManagerOrAdmin && (
+                  <button onClick={() => onNavigate("others", authSession!)}
+                    className="group relative bg-white border border-slate-200/80 hover:border-slate-400 rounded-2xl p-3 sm:p-4 text-left transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:shadow-md active:scale-[0.99] cursor-pointer overflow-hidden shadow-sm">
+                    <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200" style={{ background: "linear-gradient(135deg, rgba(241,245,249,0.8) 0%, transparent 60%)" }} />
+                    <div className="relative">
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 transition-all duration-200 group-hover:scale-105" style={{ background: "linear-gradient(135deg, #f1f5f9, #e2e8f0)", border: "1px solid #94a3b8" }}>
+                        <LayoutGrid size={16} className="text-slate-600 sm:hidden" strokeWidth={2.2} /><LayoutGrid size={20} className="text-slate-600 hidden sm:block" strokeWidth={2.2} />
+                      </div>
+                      <div className="text-slate-800 font-bold text-xs sm:text-sm mb-0.5 tracking-tight">기타 도구</div>
+                      <div className="text-slate-400 text-[10px] sm:text-xs leading-tight sm:leading-relaxed block mt-0.5">재고·판매 통합 · 재고실사 · OCR 동의어</div>
+                      <div className="flex items-center gap-1 mt-2 text-slate-600 text-xs font-bold">
+                        <span className="text-[11px] sm:text-xs">열기</span>
                         <ChevronRight size={11} className="group-hover:translate-x-0.5 transition-transform" />
                       </div>
                     </div>
