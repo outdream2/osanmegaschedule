@@ -19,7 +19,7 @@ import { VendorListEditor, VendorDetailModal } from "../LandingPage/VendorListEd
 import type { Vendor } from "../LandingPage/VendorListEditor";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { StockReconciliationTab } from "../StockManagePage/StockReconciliationTab";
-import { TrendingTab } from "../StockManagePage/StockManagePage";
+import { TrendingTab } from "./TrendingTab";
 import { FlowTab } from "../StockManagePage/FlowTab";
 import { DiffTab } from "../StockManagePage/DiffTab";
 import { SupplierTab } from "../StockManagePage/SupplierTab";
@@ -27,7 +27,7 @@ import { LowStockPanel } from "../StockManagePage/LowStockPanel";
 import { ReturnListPanel } from "./ReturnListPanel";
 import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
 import { PaymentInfoTab } from "./PaymentInfoTab";
-import { CategoryTab } from "../SalesTrendPage/SalesTrendPage";
+import { CategoryTab } from "./CategoryTab";
 import { BarChart2, PieChart, ArrowLeftRight, Boxes } from "lucide-react";
 
 interface OrderRequest {
