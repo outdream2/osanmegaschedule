@@ -5,6 +5,7 @@
 
 import React, { useMemo, useState } from "react";
 import { Package, Building2 } from "lucide-react";
+import { KpiCard } from "../../common/KpiCard";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -110,10 +111,10 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
           </div>
         )}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-          <KpiBox label="총 매입액" value={fmtWon(product.total_amount)} tone="sky" />
-          <KpiBox label="총 수량"   value={fmt(product.total_qty)}     tone="slate" />
-          <KpiBox label="매입 건수" value={`${fmt(product.purchase_count)}건`} tone="slate" />
-          <KpiBox label="평균단가"  value={avgUnitPrice > 0 ? fmt(Math.round(avgUnitPrice)) : "-"} tone="emerald" />
+          <KpiCard label="총 매입액" value={fmtWon(product.total_amount)} color="sky" />
+          <KpiCard label="총 수량"   value={fmt(product.total_qty)}     color="slate" />
+          <KpiCard label="매입 건수" value={`${fmt(product.purchase_count)}건`} color="slate" />
+          <KpiCard label="평균단가"  value={avgUnitPrice > 0 ? fmt(Math.round(avgUnitPrice)) : "-"} color="emerald" />
         </div>
         <div className="text-[10px] text-slate-400 pt-1">
           최근 매입일 · <span className="tabular-nums">{dateLabel(product.last_purchase_date)}</span>
@@ -194,23 +195,6 @@ export const ProductPurchaseDetailPanel: React.FC<Props> = ({ product, rows, loa
         )}
       </div>
     </>
-  );
-};
-
-// ─── KpiBox · 내부 sub-component ─────────────────────────────────────────
-
-const KpiBox: React.FC<{ label: string; value: string; tone: "sky" | "emerald" | "slate" }> = ({ label, value, tone }) => {
-  const tones: Record<string, { border: string; text: string; label: string }> = {
-    sky:     { border: "border-sky-100 bg-sky-50/40",         text: "text-sky-700",     label: "text-sky-500"     },
-    emerald: { border: "border-emerald-100 bg-emerald-50/40", text: "text-emerald-700", label: "text-emerald-500" },
-    slate:   { border: "border-slate-100 bg-slate-50/40",     text: "text-slate-700",   label: "text-slate-500"   },
-  };
-  const t = tones[tone];
-  return (
-    <div className={`border ${t.border} rounded-lg px-2.5 py-1.5 flex flex-col gap-0.5`}>
-      <span className={`text-[9px] font-black uppercase tracking-wider ${t.label}`}>{label}</span>
-      <span className={`text-[13px] font-black tabular-nums ${t.text}`}>{value}</span>
-    </div>
   );
 };
 

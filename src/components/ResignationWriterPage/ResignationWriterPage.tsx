@@ -24,6 +24,7 @@ import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
+import { FieldLabel } from "../common/FieldLabel";
 import type { AuthSession, Employee } from "../../types";
 
 type SignatureCanvasType = SignaturePad;
@@ -139,20 +140,7 @@ const emptyForm = (): ResignationForm => ({
   companyName: DEFAULT_COMPANY.companyName,
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 재사용 · 필드 레이블
-// ─────────────────────────────────────────────────────────────────────────────
-
-const FieldLabel: React.FC<{
-  icon?: React.ReactNode;
-  children: React.ReactNode;
-  required?: boolean;
-}> = ({ icon, children, required }) => (
-  <label className="text-[12px] font-bold text-slate-600 flex items-center gap-1.5 mb-1.5">
-    {icon}
-    <span>{children}{required && <span className="text-rose-500 ml-0.5">*</span>}</span>
-  </label>
-);
+// FieldLabel · 공통 컴포넌트 사용 (../common/FieldLabel) · 2026-08-03 (#199)
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 서명 캔버스 (react-signature-canvas)

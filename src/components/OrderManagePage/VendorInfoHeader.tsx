@@ -10,6 +10,7 @@ import {
   TrendingUp, TrendingDown, Minus, Wallet, ReceiptText, Scale,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
+import { KpiCard } from "../common/KpiCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -72,52 +73,10 @@ function fmtDate(iso: string | null | undefined): string {
   return String(iso).slice(0, 10);
 }
 
-// ─── KpiCard ─────────────────────────────────────────────────────────────
-
-interface KpiCardProps {
-  label: string;
-  value: string;
-  suffix?: string;
-  hint?: React.ReactNode;
-  tone?: "emerald" | "sky" | "amber" | "rose" | "slate";
-  icon?: React.ReactNode;
-}
-
-const TONE_MAP: Record<string, { value: string; badge: string; ring: string }> = {
-  emerald: { value: "text-emerald-700", badge: "bg-emerald-50 text-emerald-600 border-emerald-100", ring: "ring-emerald-100" },
-  sky:     { value: "text-sky-700",     badge: "bg-sky-50 text-sky-600 border-sky-100",             ring: "ring-sky-100" },
-  amber:   { value: "text-amber-700",   badge: "bg-amber-50 text-amber-600 border-amber-100",       ring: "ring-amber-100" },
-  rose:    { value: "text-rose-700",    badge: "bg-rose-50 text-rose-600 border-rose-100",           ring: "ring-rose-100" },
-  slate:   { value: "text-slate-700",   badge: "bg-slate-50 text-slate-500 border-slate-100",       ring: "ring-slate-100" },
-};
-
-const KpiCard: React.FC<KpiCardProps> = ({ label, value, suffix, hint, tone = "slate", icon }) => {
-  const t = TONE_MAP[tone];
-  return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2.5 flex flex-col gap-1 min-w-0">
-      <div className="flex items-center gap-1.5 min-w-0">
-        {icon && (
-          <span className={`w-5 h-5 flex items-center justify-center rounded border ${t.badge} shrink-0`}>
-            {icon}
-          </span>
-        )}
-        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider leading-none">
-          {label}
-        </span>
-      </div>
-      <div className="flex items-baseline gap-1 min-w-0">
-        <span className={`text-[17px] font-black tabular-nums leading-none ${t.value}`}>{value}</span>
-        {suffix && <span className="text-[10px] font-semibold text-slate-400 shrink-0">{suffix}</span>}
-      </div>
-      {hint && <div className="text-[10px] text-slate-500 leading-snug">{hint}</div>}
-    </div>
-  );
-};
-
 // ─── VendorInfoHeader ─────────────────────────────────────────────────────
 
 export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({ vendor, kpi, loading = false }) => {
-  const balanceTone: "amber" | "emerald" | "rose" =
+  const balanceColor: "amber" | "emerald" | "rose" =
     kpi.balance > 0 ? "amber" : kpi.balance < 0 ? "rose" : "emerald";
 
   const momIcon =
@@ -222,34 +181,58 @@ export const VendorInfoHeader: React.FC<VendorInfoHeaderProps> = ({ vendor, kpi,
       {/* KPI 4개 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         <KpiCard
+          icon={ReceiptText}
           label="총 매입액"
-          value={fmtWon(kpi.totalPurchase)}
-          suffix={kpi.totalPurchase >= 10_000 ? "원" : ""}
-          hint={loading ? "로딩 중" : kpi.rowCount != null ? `${kpi.rowCount}건` : undefined}
-          tone="emerald"
-          icon={<ReceiptText size={11} />}
+          value={
+            <span>
+              {fmtWon(kpi.totalPurchase)}
+              {kpi.totalPurchase >= 10_000 && (
+                <span className="text-[10px] font-semibold text-slate-400 ml-0.5">원</span>
+              )}
+            </span>
+          }
+          subtitle={loading ? "로딩 중" : kpi.rowCount != null ? `${kpi.rowCount}건` : undefined}
+          color="emerald"
         />
         <KpiCard
           label="총 결제액"
-          value={fmtWon(kpi.totalPayment)}
-          suffix={kpi.totalPayment >= 10_000 ? "원" : ""}
-          hint={<span className="inline-flex items-center gap-0.5">{momIcon}{momText}</span>}
-          tone="sky"
+          value={
+            <span>
+              {fmtWon(kpi.totalPayment)}
+              {kpi.totalPayment >= 10_000 && (
+                <span className="text-[10px] font-semibold text-slate-400 ml-0.5">원</span>
+              )}
+            </span>
+          }
+          subtitle={<span className="inline-flex items-center gap-0.5">{momIcon}{momText}</span>}
+          color="sky"
         />
         <KpiCard
+          icon={Scale}
           label="현재 잔고"
-          value={fmtWon(Math.abs(kpi.balance))}
-          suffix={Math.abs(kpi.balance) >= 10_000 ? "원" : ""}
-          hint={kpi.balance > 0 ? "미결제 잔액" : kpi.balance < 0 ? "초과 결제" : "완납"}
-          tone={balanceTone}
-          icon={<Scale size={11} />}
+          value={
+            <span>
+              {fmtWon(Math.abs(kpi.balance))}
+              {Math.abs(kpi.balance) >= 10_000 && (
+                <span className="text-[10px] font-semibold text-slate-400 ml-0.5">원</span>
+              )}
+            </span>
+          }
+          subtitle={kpi.balance > 0 ? "미결제 잔액" : kpi.balance < 0 ? "초과 결제" : "완납"}
+          color={balanceColor}
         />
         <KpiCard
           label="평균 매입주기"
-          value={kpi.avgCycleDays != null ? String(kpi.avgCycleDays) : "-"}
-          suffix={kpi.avgCycleDays != null ? "일" : ""}
-          hint="매입일 간 평균 간격"
-          tone="slate"
+          value={
+            <span>
+              {kpi.avgCycleDays != null ? String(kpi.avgCycleDays) : "-"}
+              {kpi.avgCycleDays != null && (
+                <span className="text-[10px] font-semibold text-slate-400 ml-0.5">일</span>
+              )}
+            </span>
+          }
+          subtitle="매입일 간 평균 간격"
+          color="slate"
         />
       </div>
     </div>
