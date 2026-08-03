@@ -1663,17 +1663,24 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         {alreadyRequested ? (
                           <button
                             onClick={() => handleRequestOrder(p)}
-                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer whitespace-nowrap"
+                            className="inline-flex items-center gap-1 h-8 px-3 rounded-lg text-[12px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300 shadow-sm transition-all cursor-pointer whitespace-nowrap"
+                            title="발주요청 리스트에 추가됨"
                           >
-                            <CheckCircle2 size={11} strokeWidth={2} className="shrink-0" /> 요청됨
+                            <CheckCircle2 size={13} strokeWidth={2.5} className="shrink-0" /><span>요청됨</span>
                           </button>
                         ) : (
                           <button
                             onClick={() => handleRequestOrder(p)}
                             disabled={busy}
-                            className="inline-flex items-center gap-1 h-7 px-2.5 rounded-md text-[11px] font-semibold text-white bg-amber-500 hover:bg-amber-600 border border-amber-600 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 whitespace-nowrap"
+                            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-[12px] font-black text-white bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-sm hover:shadow-md hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed active:translate-y-0 active:scale-95 transition-all duration-150 cursor-pointer whitespace-nowrap"
+                            title="발주요청 리스트에 추가"
                           >
-                            <ShoppingCart size={11} strokeWidth={2} className="shrink-0" /><span>{busy ? "..." : "추가"}</span>
+                            {busy ? (
+                              <Loader2 size={13} strokeWidth={2.5} className="shrink-0 animate-spin" />
+                            ) : (
+                              <ShoppingCart size={13} strokeWidth={2.5} className="shrink-0" />
+                            )}
+                            <span>{busy ? "추가중" : "발주"}</span>
                           </button>
                         )}
                       </td>
