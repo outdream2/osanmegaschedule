@@ -9,7 +9,7 @@ import { SearchBar } from "../common/SearchBar";
 import { SearchFilterChips, type ChipOption } from "../common/SearchFilterChips";
 import { matchHangul } from "../common/hangulSearch";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
-import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, Settings, RotateCcw, X, Search } from "lucide-react";
+import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, Settings, RotateCcw, X, Search, Info } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
@@ -232,6 +232,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [needCollapsed, setNeedCollapsed] = useState<Set<string>>(new Set());
   const toggleNeedGroup = (g: string) => setNeedCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
   const isNeedCollapsed = (g: string) => needCollapsed.has(g);
+  // ── 발주필요 · 각 row 별 상세 재고 표시 (창고1/2·매장1/2/3) · 실재고 셀의 상세 버튼 클릭 시 확장 ──
+  const [needStockDetailOpen, setNeedStockDetailOpen] = useState<Set<string>>(new Set());
+  const toggleNeedStockDetail = (code: string) => setNeedStockDetailOpen(prev => {
+    const n = new Set(prev); n.has(code) ? n.delete(code) : n.add(code); return n;
+  });
   // ── 그룹 헤더 클릭 접기 · 발주요청 탭 (orderCollapsed) ──
   const [orderGroupCollapsed, setOrderGroupCollapsed] = useState<Set<string>>(new Set());
   const toggleOrderGroup = (g: string) => setOrderGroupCollapsed(prev => { const n = new Set(prev); n.has(g) ? n.delete(g) : n.add(g); return n; });
@@ -1587,7 +1592,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                       {isNeedCollapsed("info") ? <ChevronRight size={12} /> : <ChevronDown size={12} />}상품 정보
                     </span>
                   </th>
-                  <th colSpan={isNeedCollapsed("stock") ? 1 : 9}
+                  <th colSpan={isNeedCollapsed("stock") ? 1 : 4}
                     className="text-center py-1.5 bg-amber-50 text-amber-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-amber-100 transition"
                     onClick={() => toggleNeedGroup("stock")}
                     title={isNeedCollapsed("stock") ? "재고 현황 펼치기" : "재고 현황 접기"}>
@@ -1611,14 +1616,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   ) : (
                     <>
                       <th onClick={() => handleNeedSort("current")} title="ERP재고 정렬" className="text-right px-0.5 py-1.5 w-14 bg-amber-50/40 text-slate-500 cursor-pointer hover:bg-amber-100 select-none"><div className="leading-tight">ERP<br/>재고{needArrow("current")}<br/><span className="text-[10px] text-slate-400 font-normal">(현재고)</span></div></th>
-                      {/* 창고1·창고2 (orange 톤) */}
-                      <th className="text-right px-0.5 py-1.5 w-12 bg-orange-50/40 text-orange-600 select-none"><div className="leading-tight">창고1</div></th>
-                      <th className="text-right px-0.5 py-1.5 w-12 bg-orange-50/60 text-orange-600 select-none"><div className="leading-tight">창고2</div></th>
-                      {/* 매장1·매장2·매장3 (emerald 톤 · 구역 표시) */}
-                      <th className="text-right px-0.5 py-1.5 w-14 bg-emerald-50/40 text-emerald-600 select-none"><div className="leading-tight">매장1<br/><span className="text-[9px] text-slate-400 font-normal">(구역)</span></div></th>
-                      <th className="text-right px-0.5 py-1.5 w-14 bg-emerald-50/60 text-emerald-600 select-none"><div className="leading-tight">매장2<br/><span className="text-[9px] text-slate-400 font-normal">(구역)</span></div></th>
-                      <th className="text-right px-0.5 py-1.5 w-14 bg-emerald-50/80 text-emerald-700 select-none"><div className="leading-tight">매장3<br/><span className="text-[9px] text-slate-400 font-normal">(구역)</span></div></th>
-                      <th onClick={() => handleNeedSort("inv")} title="실재고 합계 정렬" className="text-right px-0.5 py-1.5 w-16 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">실재고{needArrow("inv")}</th>
+                      {/* 실재고 (합계) · 각 row 별 [상세] 버튼으로 창고1/2·매장1/2/3 확장 · #217 */}
+                      <th onClick={() => handleNeedSort("inv")} title="실재고 합계 정렬 · 각 행의 [상세]로 창고1/2·매장1/2/3 확인" className="text-right px-0.5 py-1.5 w-20 bg-violet-50/40 text-violet-500 cursor-pointer hover:bg-violet-100 select-none">
+                        <div className="leading-tight">실재고{needArrow("inv")}<br/><span className="text-[9px] text-slate-400 font-normal">(합계)</span></div>
+                      </th>
                       <th onClick={() => handleNeedSort("optimal")} title="추천적정재고 정렬" className="text-right px-0.5 py-1.5 w-12 bg-indigo-50/40 text-indigo-600 cursor-pointer hover:bg-indigo-100 select-none">추천적정{needArrow("optimal")}</th>
                       <th onClick={() => handleNeedSort("short")} title="부족량 정렬" className="text-right px-0.5 py-1.5 w-12 bg-rose-50/40 text-rose-500 cursor-pointer hover:bg-rose-100 select-none">부족{needArrow("short")}</th>
                     </>
@@ -1660,7 +1661,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   const alreadyRequested = requestedCodes.has(code);
                   const busy = requestingOrder.has(code);
                   return (
-                    <tr key={code} className="hover:bg-orange-50/30 transition">
+                    <React.Fragment key={code}>
+                    <tr className="hover:bg-orange-50/30 transition">
                       {/* 상품정보 그룹 */}
                       {isNeedCollapsed("info") ? (
                         <td className="bg-sky-50/10 w-4"></td>
@@ -1689,50 +1691,33 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           </td>
                         </>
                       )}
-                      {/* 재고현황 그룹 · 9컬럼 (ERP재고 · 창고1 · 창고2 · 매장1 · 매장2 · 매장3 · 실재고 · 추천적정 · 부족) */}
+                      {/* 재고현황 그룹 · 4컬럼 (ERP재고 · 실재고합계 · 추천적정 · 부족) · #217 · 창고1/2·매장1/2/3 은 [상세] 버튼 확장 */}
                       {isNeedCollapsed("stock") ? (
                         <td className="bg-amber-50/10 w-4"></td>
                       ) : (
                         <>
                           {/* ERP재고 (현재고) */}
                           <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-slate-700 bg-slate-50/40 align-top">{cur}</td>
-                          {/* 창고1 · 창고2 (숫자만 · 구역 없음) */}
-                          <td className={`text-right px-0.5 py-1.5 tabular-nums font-semibold text-[12px] bg-orange-50/40 align-top ${inv?.w1 != null ? "text-orange-700" : "text-slate-300"}`} title={inv?.w1 != null ? `창고1: ${inv.w1}` : "창고1 재고 없음"}>
-                            {inv?.w1 != null ? inv.w1 : "—"}
-                          </td>
-                          <td className={`text-right px-0.5 py-1.5 tabular-nums font-semibold text-[12px] bg-orange-50/60 align-top ${inv?.w2 != null ? "text-orange-700" : "text-slate-300"}`} title={inv?.w2 != null ? `창고2: ${inv.w2}` : "창고2 재고 없음"}>
-                            {inv?.w2 != null ? inv.w2 : "—"}
-                          </td>
-                          {/* 매장1·2·3 (숫자 + 하단 구역 sub-line) */}
-                          <td className={`text-right px-0.5 py-1.5 tabular-nums font-semibold text-[12px] bg-emerald-50/40 align-top ${inv?.s1 != null ? "text-emerald-700" : "text-slate-300"}`} title={inv?.s1 != null ? `매장1: ${inv.s1}${inv.s1z ? ` · ${inv.s1z}` : ""}` : "매장1 재고 없음"}>
-                            {inv?.s1 != null ? inv.s1 : "—"}
-                            {inv?.s1z && (
-                              <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">{inv.s1z}</span>
-                            )}
-                          </td>
-                          <td className={`text-right px-0.5 py-1.5 tabular-nums font-semibold text-[12px] bg-emerald-50/60 align-top ${inv?.s2 != null ? "text-emerald-700" : "text-slate-300"}`} title={inv?.s2 != null ? `매장2: ${inv.s2}${inv.s2z ? ` · ${inv.s2z}` : ""}` : "매장2 재고 없음"}>
-                            {inv?.s2 != null ? inv.s2 : "—"}
-                            {inv?.s2z && (
-                              <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">{inv.s2z}</span>
-                            )}
-                          </td>
-                          <td className={`text-right px-0.5 py-1.5 tabular-nums font-semibold text-[12px] bg-emerald-50/80 align-top ${inv?.s3 != null ? "text-emerald-700" : "text-slate-300"}`} title={inv?.s3 != null ? `매장3: ${inv.s3}${inv.s3z ? ` · ${inv.s3z}` : ""}` : "매장3 재고 없음"}>
-                            {inv?.s3 != null ? inv.s3 : "—"}
-                            {inv?.s3z && (
-                              <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">{inv.s3z}</span>
-                            )}
-                          </td>
-                          {/* 실재고 합계 (violet · 유지) */}
+                          {/* 실재고 합계 · [상세] 버튼 · 클릭 시 아래 별도 tr 로 창고1/2·매장1/2/3 확장 */}
                           <td
                             className={`text-right px-0.5 py-1.5 tabular-nums font-black text-[12px] bg-violet-50/40 align-top ${inv ? "text-violet-700" : "text-slate-300"}`}
-                            title={inv ? `창고 ${inv.warehouse ?? "-"} + 매장 ${inv.store ?? "-"} = ${inv.total}` : "실재고 미입력"}
+                            title={inv ? `창고1 ${inv.w1 ?? "-"} · 창고2 ${inv.w2 ?? "-"} · 매장1 ${inv.s1 ?? "-"} · 매장2 ${inv.s2 ?? "-"} · 매장3 ${inv.s3 ?? "-"} = ${inv.total}` : "실재고 미입력"}
                           >
-                            {inv ? inv.total : "—"}
-                            {inv && (
-                              <span className="block text-[10px] font-normal text-slate-400 leading-none mt-0.5">
-                                창{inv.warehouse ?? "-"}·매{inv.store ?? "-"}
-                              </span>
-                            )}
+                            <div className="flex items-center justify-end gap-1">
+                              <span>{inv ? inv.total : "—"}</span>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); toggleNeedStockDetail(code); }}
+                                className={`w-4 h-4 inline-flex items-center justify-center rounded border transition cursor-pointer ${
+                                  needStockDetailOpen.has(code)
+                                    ? "bg-violet-500 border-violet-500 text-white"
+                                    : "bg-white border-violet-300 text-violet-500 hover:bg-violet-100"
+                                }`}
+                                title={needStockDetailOpen.has(code) ? "상세 접기" : "상세 재고현황 (창고1/2·매장1/2/3)"}
+                              >
+                                <Info size={9} strokeWidth={3} />
+                              </button>
+                            </div>
                           </td>
                           {/* 추천적정 (indigo 톤) */}
                           <td className="text-right px-0.5 py-1.5 tabular-nums font-bold text-[12px] text-indigo-700 bg-indigo-50/40 align-top">{opt}</td>
@@ -1771,6 +1756,38 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         )}
                       </td>
                     </tr>
+                    {/* #217 · 상세 재고현황 확장 tr · [상세] 버튼 클릭 시 표시 · 창고1/2·매장1/2/3 */}
+                    {needStockDetailOpen.has(code) && (
+                      <tr className="bg-violet-50/40">
+                        <td colSpan={12} className="px-3 py-2 border-t border-violet-100">
+                          <div className="flex items-center gap-2 flex-wrap text-[11px] font-semibold">
+                            <span className="text-violet-600 font-black">상세 재고현황</span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 border border-orange-200 text-orange-700">
+                              창고1 <span className="tabular-nums font-black">{inv?.w1 ?? "—"}</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 border border-orange-200 text-orange-700">
+                              창고2 <span className="tabular-nums font-black">{inv?.w2 ?? "—"}</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700">
+                              매장1 <span className="tabular-nums font-black">{inv?.s1 ?? "—"}</span>
+                              {inv?.s1z && <span className="text-[10px] font-normal text-slate-400">· {inv.s1z}</span>}
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700">
+                              매장2 <span className="tabular-nums font-black">{inv?.s2 ?? "—"}</span>
+                              {inv?.s2z && <span className="text-[10px] font-normal text-slate-400">· {inv.s2z}</span>}
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700">
+                              매장3 <span className="tabular-nums font-black">{inv?.s3 ?? "—"}</span>
+                              {inv?.s3z && <span className="text-[10px] font-normal text-slate-400">· {inv.s3z}</span>}
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-violet-100 border border-violet-300 text-violet-800 ml-auto">
+                              합계 <span className="tabular-nums font-black">{inv?.total ?? "—"}</span>
+                            </span>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    </React.Fragment>
                   );
                 })}
                 {lowStockFiltered.length === 0 && (
