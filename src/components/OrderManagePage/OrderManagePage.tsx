@@ -75,6 +75,10 @@ interface OrderManagePageProps {
   ocrTabOnBack?: () => void;
   ocrTabOnNavigate?: (page: AppNavPage) => void;
   ocrTabOnLogout?: () => void;
+  /** DisplayPage 서브탭 진입 시 고정할 Level-1 탭. 미지정 시 기존 기본값("purchase-order") */
+  initialTopTab?: "purchase-order" | "purchase" | "payment" | "statistics";
+  /** true 이면 Level-1 탭 UI 렌더 skip (DisplayPage 서브탭 모드) */
+  hideTopTabs?: boolean;
 }
 
 // ArrivalMatchTab 제거됨 (2026-07-31 · 사용자 요청)
@@ -84,9 +88,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   ocrTabOnBack,
   ocrTabOnNavigate,
   ocrTabOnLogout,
+  initialTopTab,
+  hideTopTabs = false,
 }) => {
   // Level-1 탭 (발주 / 매입 / 결제 / 통계) — 2026-08-03 재구성
-  const [topTab, setTopTab] = useState<"purchase-order" | "purchase" | "payment" | "statistics">("purchase-order");
+  // initialTopTab 이 있으면 해당 탭으로 고정 (DisplayPage 서브탭 모드)
+  const [topTab, setTopTab] = useState<"purchase-order" | "purchase" | "payment" | "statistics">(initialTopTab ?? "purchase-order");
   // Level-2 서브탭 상태
   const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need">("need");
   const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "arrival_history" | "vendor">("receipt");
@@ -854,7 +861,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   return (
     <main className="flex-1 max-w-[1360px] mx-auto w-full px-4 py-4 flex flex-col gap-4">
       {/* ── Level-1 탭 (발주 / 매입 / 결제 / 통계) — 2026-08-03 재구성 ── */}
-      <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-1 border-b border-slate-200 sm:overflow-x-auto sm:scrollbar-none">
+      {/* hideTopTabs=true 이면 DisplayPage 서브탭 모드 · Level-1 탭 UI 숨김 */}
+      {!hideTopTabs && <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-1 border-b border-slate-200 sm:overflow-x-auto sm:scrollbar-none">
         {([
           { k: "purchase-order" as const, label: "발주", icon: ShoppingCart, color: "sky" },
           { k: "purchase"       as const, label: "매입", icon: PackageCheck,  color: "violet" },
@@ -876,7 +884,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             </button>
           );
         })}
-      </div>
+      </div>}
 
       {/* ══ 발주 탭 (purchase-order) ══ */}
       {topTab === "purchase-order" && (

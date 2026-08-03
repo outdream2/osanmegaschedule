@@ -36,6 +36,8 @@ import {
   Pill,
   Layers,
   Info,
+  BarChart2,
+  Wallet,
 } from "lucide-react";
 import { BarcodeScanner } from "../BarcodeScanner";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
@@ -326,7 +328,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
-  const [dpSubTab, setDpSubTab] = useState<"store" | "stock-manage" | "stock-arrivals" | "order-manage">(
+  const [dpSubTab, setDpSubTab] = useState<"store" | "stock-manage" | "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals">(
     dpCanSeeStockManage ? "stock-manage" : "store"
   );
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
@@ -1469,11 +1471,15 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           orange:  { bar: "bg-orange-500",  text: "text-orange-700",  iconActive: "text-orange-600",  iconInactive: "text-slate-400", hoverText: "hover:text-orange-700",  dotBg: "bg-orange-500"  },
           rose:    { bar: "bg-rose-500",    text: "text-rose-700",    iconActive: "text-rose-600",    iconInactive: "text-slate-400", hoverText: "hover:text-rose-700",    dotBg: "bg-rose-500"    },
           indigo:  { bar: "bg-indigo-500",  text: "text-indigo-700",  iconActive: "text-indigo-600",  iconInactive: "text-slate-400", hoverText: "hover:text-indigo-700",  dotBg: "bg-indigo-500"  },
+          teal:    { bar: "bg-teal-500",    text: "text-teal-700",    iconActive: "text-teal-600",    iconInactive: "text-slate-400", hoverText: "hover:text-teal-700",    dotBg: "bg-teal-500"    },
         };
         const tabs: Array<TabDef> = [
           { key: "stock-manage",   label: "재고/판매관리", icon: Boxes,         visible: dpCanSeeStockManage,   color: "emerald" },
-          // 2026-07-29 · 판매추이 탭 제거 (사용자 요청) · 관련 카테고리별현황·손실추적은 재고관리 안에 이미 있음
-          { key: "order-manage",   label: "발주/사입관리", icon: ClipboardList, visible: dpCanSeeStockManage,   color: "sky"     },
+          // 2026-08-03 · 발주/사입관리 단일 탭 → 4개 서브탭으로 분해 (사용자 요청)
+          { key: "purchase-order", label: "발주",         icon: ClipboardList, visible: dpCanSeeStockManage,   color: "sky"     },
+          { key: "purchase",       label: "매입",         icon: Package,       visible: dpCanSeeStockManage,   color: "amber"   },
+          { key: "payment",        label: "결제",         icon: Wallet,        visible: dpCanSeeStockManage,   color: "teal"    },
+          { key: "statistics",     label: "통계",         icon: BarChart2,     visible: dpCanSeeStockManage,   color: "indigo"  },
           { key: "stock-arrivals", label: "입고알림",     icon: Bell,          visible: dpCanSeeStockArrivals, color: "orange"  },
           { key: "store",          label: "구역도",       icon: Store,         visible: true,                  color: "rose"    },
           // 2026-08-03 · 직원관리 탭 제거 · 경영관리 통합 페이지(BusinessManagePage)로 이동
@@ -1537,13 +1543,16 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
             embedded
           />
         </main>
-      ) : dpSubTab === "order-manage" && dpCanSeeStockManage ? (
+      ) : (dpSubTab === "purchase-order" || dpSubTab === "purchase" || dpSubTab === "payment" || dpSubTab === "statistics") && dpCanSeeStockManage ? (
+        // 2026-08-03 · 4개 서브탭 각각 OrderManagePage 를 initialTopTab+hideTopTabs 로 진입
         <main className="flex-1 flex flex-col min-h-0">
           <OrderManagePage
             ocrTabAuthSession={authSession}
             ocrTabOnBack={onBack}
             ocrTabOnNavigate={onNavigate as any}
             ocrTabOnLogout={onLogout}
+            initialTopTab={dpSubTab as "purchase-order" | "purchase" | "payment" | "statistics"}
+            hideTopTabs
           />
         </main>
       ) : (
