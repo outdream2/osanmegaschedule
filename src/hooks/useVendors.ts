@@ -3,6 +3,7 @@
 // 사용처: OrderManagePage · ReturnListPanel · LowStockPanel · FlowTab · SupplierTab
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { displayVendorName, stripVendorAnnotation } from "../utils/vendorNameNormalize";
 
 export interface Vendor {
   id: number;
@@ -74,14 +75,54 @@ export function useVendors() {
     return m;
   }, [vendors]);
 
-  // company_name(trim) → category 맵 (배지 표시 전용)
+  // company_name → category 맵 (배지 표시 전용) · 2026-08-03 (#242)
+  //   다중 key 정규화 · findVendor 와 동일 정책 확장
+  //   · trim · trim+공백제거 · trim+lowercase
+  //   · displayVendorName (법인접두어+vat 부가정보 제거)
+  //   · displayVendorName + 공백제거 · displayVendorName + lowercase
+  //   → 이름 표기 차이 (예 "(주)대웅제약" vs "대웅제약") 로 인한 miss 방지
   const vendorCategoryMap = useMemo(() => {
     const m: Record<string, string | null> = {};
+    const put = (key: string, val: string | null) => {
+      const k = String(key ?? "").trim();
+      if (k && !(k in m)) m[k] = val;
+    };
     for (const v of vendors) {
-      if (v.company_name) m[v.company_name.trim()] = v.category ?? null;
+      if (!v.company_name) continue;
+      const cat = v.category ?? null;
+      const raw = v.company_name.trim();
+      put(raw, cat);
+      put(raw.replace(/\s+/g, ""), cat);
+      put(raw.toLowerCase(), cat);
+      const stripped = stripVendorAnnotation(raw);
+      if (stripped && stripped !== raw) {
+        put(stripped, cat);
+        put(stripped.replace(/\s+/g, ""), cat);
+      }
+      const clean = displayVendorName(raw);
+      if (clean && clean !== raw) {
+        put(clean, cat);
+        put(clean.replace(/\s+/g, ""), cat);
+        put(clean.toLowerCase(), cat);
+      }
     }
     return m;
   }, [vendors]);
 
-  return { vendors, vendorMap, vendorCategoryMap, loading, reload };
+  // vendor 조회 헬퍼 · 여러 정규화 시도 후 category 반환 (#242)
+  const getVendorCategory = useCallback((name: string | null | undefined): string | null => {
+    if (!name) return null;
+    const raw = String(name).trim();
+    if (!raw) return null;
+    return vendorCategoryMap[raw]
+      ?? vendorCategoryMap[stripVendorAnnotation(raw)]
+      ?? vendorCategoryMap[displayVendorName(raw)]
+      ?? vendorCategoryMap[raw.replace(/\s+/g, "")]
+      ?? vendorCategoryMap[raw.toLowerCase()]
+      ?? vendorCategoryMap[displayVendorName(raw).replace(/\s+/g, "")]
+      ?? vendorCategoryMap[displayVendorName(raw).toLowerCase()]
+      ?? null;
+  }, [vendorCategoryMap]);
+
+  return { vendors, vendorMap, vendorCategoryMap, getVendorCategory, loading, reload };
 }

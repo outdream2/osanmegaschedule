@@ -331,7 +331,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [orderReqCollapsed, setOrderReqCollapsed] = useState(false);
   const [lowStockCollapsed, setLowStockCollapsed] = useState(false);
   // 공급사 마스터 · 공용 훅 (모듈 레벨 캐시 · 5분 TTL · vendors-changed 이벤트 구독)
-  const { vendors, vendorCategoryMap } = useVendors();
+  const { vendors, vendorCategoryMap, getVendorCategory } = useVendors();
 
   // 공급사 임포트 로직은 LandingPage 데이터 업로드 > 공급사관리 로 이동됨 (여기서 제거 · 2026-07-15)
   // vendorMap: 원본·공백정규화·소문자 세 가지 형태로 저장 (매칭률 극대화)
@@ -1154,7 +1154,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     // 2) 카테고리 필터 (전체 · 위탁 · 선결제 · 60일회전 · 90일회전 · 기타)
     if (needCategoryFilter !== "all") {
       const supplierName = String(p.supplier ?? "").trim();
-      const cat = supplierName ? vendorCategoryMap[supplierName] : null;
+      const cat = supplierName ? getVendorCategory(supplierName) : null;
       if (needCategoryFilter === "기타") {
         const validCats = ["위탁", "선결제", "60일회전", "90일회전", "기타"];
         if (cat && validCats.includes(cat) && cat !== "기타") return false;
@@ -1192,7 +1192,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       }
       if (needCategoryFilter !== "all") {
         const supplierName = String(p.supplier ?? "").trim();
-        const cat = supplierName ? vendorCategoryMap[supplierName] : null;
+        const cat = supplierName ? getVendorCategory(supplierName) : null;
         if (needCategoryFilter === "기타") {
           const validCats = ["위탁", "선결제", "60일회전", "90일회전", "기타"];
           if (cat && validCats.includes(cat) && cat !== "기타") continue;
@@ -1970,7 +1970,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               const cleanName = stripVendorAnnotation(p.supplier);
                               return (
                                 <div className="flex flex-col leading-tight">
-                                  <VendorCategoryBadge category={vendorCategoryMap[cleanName] ?? vendorCategoryMap[String(p.supplier).trim()] ?? null} />
+                                  <VendorCategoryBadge category={getVendorCategory(cleanName || p.supplier)} />
                                   <button type="button"
                                     onClick={(e) => { e.stopPropagation(); openSupplierInfo(cleanName || p.supplier); }}
                                     className="text-sky-700 hover:text-sky-900 hover:underline cursor-pointer text-left whitespace-nowrap"
@@ -2552,7 +2552,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                 <>
                                   {mainName ? (
                                     <div className="flex flex-col leading-tight">
-                                      <VendorCategoryBadge category={vendorCategoryMap[mainName] ?? vendorCategoryMap[stripVendorAnnotation(raw)] ?? null} />
+                                      <VendorCategoryBadge category={getVendorCategory(mainName || raw)} />
                                       <button type="button"
                                         onClick={(e) => { e.stopPropagation(); openSupplierInfo(mainName); }}
                                         className="text-[12px] text-sky-700 hover:text-sky-900 hover:underline font-semibold whitespace-nowrap leading-tight text-left cursor-pointer"
