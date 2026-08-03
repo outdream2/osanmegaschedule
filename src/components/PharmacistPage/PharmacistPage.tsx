@@ -1,20 +1,24 @@
 // src/components/PharmacistPage/PharmacistPage.tsx
-// 2026-08-03 · 약사 전용 페이지 (탭+split 레이아웃 재구성)
-//   - 상단 정보 헤더 (약사 전용 · FirstAid)
+// 2026-08-03 · 약사 전용 페이지 · 하위메뉴 CRUD + PDF 뷰어 + 스크린샷 방지 확장
+//   - 상단 정보 헤더 (약사 전용 · FirstAid) · 관리자 시 [설정] 버튼 노출
 //   - 공통 TabBar (L2) · 교육자료 · 복약지도 · 동영상 · 문서
 //     · 관리자(level>=8) long-press 드래그 재정렬 (useSortableTabs)
-//   - 각 탭 아래 · 좌 리스트 + 리사이저 + 우 상세 split (기존 페이지 통일)
-//   - 실제 자료 업로드/조회 로직은 후속 · 현재는 카테고리 구조 + placeholder
-// 관리자만 업로드 · 약사(및 관리자) 다운로드 · 미로그인 접근 제한
+//   - 각 탭 아래 · 좌 카테고리 리스트 + 리사이저 + 우 하위메뉴 리스트 split
+//   - 하위메뉴 · /api/pharmacist-menu-items · 관리자 CRUD · 약사 조회 + PDF 뷰
+//   - 하위메뉴 클릭 → PDF 뷰어 모달 (스크린샷 방지 · 워터마크)
+// 관리자만 CRUD · 약사(및 관리자) 조회·PDF 열람 · 미로그인 접근 제한
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FirstAid, BookOpen, Video, FileText, GraduationCap, Folder } from "@phosphor-icons/react";
+import { Settings2, Plus, Eye, FileText as FileTextIcon, Loader2 } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { TabBar, type TabDef as CommonTabDef } from "../common/TabBar";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { ZONE_DEFS } from "../../constants/displayZones";
 import { getZoneLabel } from "../../constants/zoneLabels";
 import type { AuthSession } from "../../types";
+import PharmacistMenuSettingsModal, { type PharmMenuItem, type PharmTabKey } from "../PharmacistMenuSettingsPage/PharmacistMenuSettingsPage";
+import PdfViewerModal from "./PdfViewerModal";
 
 interface PharmacistPageProps {
   authSession: AuthSession | null;
@@ -22,8 +26,6 @@ interface PharmacistPageProps {
   onNavigate: (page: AppNavPage) => void;
   onLogout: () => void;
 }
-
-type PharmTabKey = "education" | "reference" | "video" | "docs";
 
 const PHARM_TABS: CommonTabDef<PharmTabKey>[] = [
   { key: "education", label: "교육자료",  icon: GraduationCap, color: "sky"     },
@@ -134,6 +136,50 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
   const activeTabDef = useMemo(() => PHARM_TABS.find(t => t.key === tab)!, [tab]);
   const selectedCatObj = useMemo(() => categories.find(c => c.key === selectedCat) ?? null, [categories, selectedCat]);
 
+  // ── 하위메뉴 (선택된 category) ───────────────────
+  const [menuItems, setMenuItems] = useState<PharmMenuItem[]>([]);
+  const [menuLoading, setMenuLoading] = useState(false);
+  const [menuError, setMenuError] = useState<string | null>(null);
+
+  const loadMenuItems = useCallback(async () => {
+    if (!selectedCat) { setMenuItems([]); return; }
+    setMenuLoading(true);
+    setMenuError(null);
+    try {
+      const qs = `?tab=${encodeURIComponent(tab)}&category=${encodeURIComponent(selectedCat)}`;
+      const res = await fetch(`/api/pharmacist-menu-items${qs}`);
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `서버 오류 (${res.status})`);
+      const data = await res.json();
+      setMenuItems(Array.isArray(data) ? data : []);
+    } catch (err: any) {
+      setMenuError(err?.message ?? "불러오기 실패");
+      setMenuItems([]);
+    } finally {
+      setMenuLoading(false);
+    }
+  }, [tab, selectedCat]);
+
+  useEffect(() => { loadMenuItems(); }, [loadMenuItems]);
+
+  // ── 설정 모달 (관리자) ───────────────────────────
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // ── PDF 뷰어 모달 ────────────────────────────────
+  const [viewerItem, setViewerItem] = useState<PharmMenuItem | null>(null);
+  const openViewer = (item: PharmMenuItem) => {
+    if (!item.file_url) {
+      alert("첨부 파일이 없는 항목입니다.\n관리자에게 파일 등록을 요청하세요.");
+      return;
+    }
+    setViewerItem(item);
+  };
+
+  const watermarkText = useMemo(() => {
+    const name = authSession?.employeeName ?? "약사";
+    const rank = authSession?.employeeRank ?? "";
+    return `${name}${rank}`;
+  }, [authSession]);
+
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-sky-50/40 via-white to-emerald-50/30">
       <div className="sticky top-0 z-30">
@@ -159,8 +205,21 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
           <div className="flex-1" />
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] text-slate-500 font-bold">
             <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200">level ≥ 3</span>
-            {isAdmin && <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">관리자 업로드</span>}
+            {isAdmin && <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200">관리자 CRUD</span>}
           </div>
+          {/* 관리자 · 설정 버튼 (카테고리 선택 시에만 활성) */}
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => selectedCatObj && setSettingsOpen(true)}
+              disabled={!selectedCatObj}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-bold bg-sky-600 hover:bg-sky-700 disabled:bg-slate-200 disabled:text-slate-400 text-white transition cursor-pointer shrink-0 shadow-sm"
+              title={selectedCatObj ? "선택된 카테고리의 하위메뉴 관리" : "좌측에서 카테고리를 먼저 선택하세요"}
+            >
+              <Settings2 size={14} />
+              하위메뉴 설정
+            </button>
+          )}
         </div>
 
         {/* Level-2 TabBar · admin 만 드래그 재정렬 */}
@@ -223,16 +282,51 @@ export const PharmacistPage: React.FC<PharmacistPageProps> = ({ authSession, onB
             <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
           </div>
 
-          {/* 우측 · 선택 상세 */}
+          {/* 우측 · 선택된 카테고리의 하위메뉴 리스트 */}
           <div className="flex flex-col gap-3 min-h-0 flex-1 min-w-0">
             {!selectedCatObj ? (
               <EmptyRightPanel tabLabel={activeTabDef.label} />
             ) : (
-              <RightPanelPlaceholder tabLabel={activeTabDef.label} category={selectedCatObj} isAdmin={isAdmin} />
+              <SubMenuListPanel
+                tabLabel={activeTabDef.label}
+                category={selectedCatObj}
+                items={menuItems}
+                loading={menuLoading}
+                error={menuError}
+                isAdmin={isAdmin}
+                onOpenViewer={openViewer}
+                onOpenSettings={() => setSettingsOpen(true)}
+              />
             )}
           </div>
         </div>
       </main>
+
+      {/* ── 설정 모달 (관리자) ─────────────────────────── */}
+      {isAdmin && selectedCatObj && (
+        <PharmacistMenuSettingsModal
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          tabKey={tab}
+          tabLabel={activeTabDef.label}
+          categoryKey={selectedCatObj.key}
+          categoryTitle={selectedCatObj.title}
+          authSession={authSession}
+          onChanged={loadMenuItems}
+        />
+      )}
+
+      {/* ── PDF 뷰어 모달 (스크린샷 방지) ───────────── */}
+      {viewerItem && (
+        <PdfViewerModal
+          open={!!viewerItem}
+          onClose={() => setViewerItem(null)}
+          fileUrl={viewerItem.file_url ?? ""}
+          fileName={viewerItem.file_name || viewerItem.title || "material"}
+          mimeType={viewerItem.mime_type}
+          watermarkText={watermarkText}
+        />
+      )}
     </div>
   );
 };
@@ -241,30 +335,131 @@ const EmptyRightPanel: React.FC<{ tabLabel: string }> = ({ tabLabel }) => (
   <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
     <FirstAid size={40} className="mb-3 opacity-30" />
     <div className="text-sm font-bold">좌측에서 {tabLabel} 카테고리를 선택하세요</div>
-    <div className="text-[11px] mt-1">자료 리스트가 이 영역에 표시됩니다</div>
+    <div className="text-[11px] mt-1">하위메뉴가 이 영역에 표시됩니다</div>
   </div>
 );
 
-const RightPanelPlaceholder: React.FC<{ tabLabel: string; category: CategoryItem; isAdmin: boolean }> = ({ tabLabel, category, isAdmin }) => (
-  <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
-    <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-sky-50/60 to-transparent flex items-center gap-2">
-      <div>
-        <div className="text-[10px] font-black text-sky-600 uppercase tracking-wider">{tabLabel}</div>
-        <div className="text-[15px] font-black text-slate-800 leading-tight">{category.title}</div>
-        <div className="text-[11px] text-slate-500 mt-0.5">{category.subtitle}</div>
+// ─────────────────────────────────────────────────────
+// 우측 하위메뉴 리스트 패널
+// ─────────────────────────────────────────────────────
+interface SubMenuListPanelProps {
+  tabLabel: string;
+  category: CategoryItem;
+  items: PharmMenuItem[];
+  loading: boolean;
+  error: string | null;
+  isAdmin: boolean;
+  onOpenViewer: (item: PharmMenuItem) => void;
+  onOpenSettings: () => void;
+}
+
+const SubMenuListPanel: React.FC<SubMenuListPanelProps> = ({
+  tabLabel, category, items, loading, error, isAdmin, onOpenViewer, onOpenSettings,
+}) => {
+  return (
+    <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col overflow-hidden">
+      <div className="px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-sky-50/60 to-transparent flex items-center gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="text-[10px] font-black text-sky-600 uppercase tracking-wider">{tabLabel}</div>
+          <div className="text-[15px] font-black text-slate-800 leading-tight truncate">{category.title}</div>
+          <div className="text-[11px] text-slate-500 mt-0.5 truncate">{category.subtitle}</div>
+        </div>
+        <div className="shrink-0 flex items-center gap-1.5">
+          <span className="px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200 text-[10px] font-black tabular-nums">
+            {items.length}건
+          </span>
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={onOpenSettings}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-bold cursor-pointer transition shadow-sm"
+              title="하위메뉴 추가·수정·삭제"
+            >
+              <Plus size={11} />
+              추가·관리
+            </button>
+          )}
+        </div>
       </div>
+
+      {error && (
+        <div className="px-4 py-2 text-xs text-rose-700 font-semibold bg-rose-50 border-b border-rose-200">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="p-10 flex flex-col items-center gap-2">
+          <Loader2 size={18} className="animate-spin text-sky-500" />
+          <span className="text-xs text-slate-400 font-bold">불러오는 중...</span>
+        </div>
+      ) : items.length === 0 ? (
+        <div className="p-10 flex flex-col items-center justify-center text-center gap-3 min-h-[280px]">
+          <div className="w-14 h-14 rounded-2xl bg-sky-50 text-sky-500 flex items-center justify-center">
+            <FirstAid size={26} weight="fill" />
+          </div>
+          <div className="text-[14px] font-black text-slate-800">등록된 하위메뉴 없음</div>
+          <div className="text-[12px] text-slate-500 leading-snug max-w-md">
+            {isAdmin ? (
+              <>
+                우측 상단 <b>추가·관리</b> 버튼으로 하위메뉴를 등록하세요.<br />
+                이름만 등록하거나 PDF 등을 첨부할 수 있습니다.
+              </>
+            ) : (
+              <>이 카테고리에는 아직 자료가 없습니다.<br />관리자에게 자료 등록을 요청하세요.</>
+            )}
+          </div>
+        </div>
+      ) : (
+        <ul className="divide-y divide-slate-100 max-h-[70vh] overflow-y-auto">
+          {items.map(row => {
+            const hasFile = !!row.file_url;
+            return (
+              <li key={row.id}>
+                <button
+                  type="button"
+                  onClick={() => onOpenViewer(row)}
+                  disabled={!hasFile}
+                  className={`w-full text-left px-4 py-3 flex items-center gap-3 transition ${
+                    hasFile ? "hover:bg-sky-50/50 cursor-pointer" : "opacity-60 cursor-not-allowed"
+                  }`}
+                  title={hasFile ? "클릭 · PDF 뷰어 열기" : "첨부 파일 없음"}
+                >
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                    hasFile ? "bg-sky-100 text-sky-600" : "bg-slate-100 text-slate-400"
+                  }`}>
+                    <FileTextIcon size={16} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[13px] font-black text-slate-800 truncate">{row.title}</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5 truncate font-semibold">
+                      {row.file_name
+                        ? <>{row.file_name}{row.file_size ? ` · ${fmtBytes(row.file_size)}` : ""}</>
+                        : <span className="italic">파일 없음 (이름만)</span>}
+                    </div>
+                  </div>
+                  {hasFile && (
+                    <div className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-sky-50 text-sky-700 text-[11px] font-black">
+                      <Eye size={11} />
+                      열기
+                    </div>
+                  )}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
-    <div className="p-10 flex flex-col items-center justify-center text-center gap-3 min-h-[300px]">
-      <div className="w-14 h-14 rounded-2xl bg-sky-50 text-sky-500 flex items-center justify-center">
-        <FirstAid size={26} weight="fill" />
-      </div>
-      <div className="text-[14px] font-black text-slate-800">자료 준비 중</div>
-      <div className="text-[12px] text-slate-500 leading-snug max-w-md">
-        Supabase Storage 기반 자료 업로드/조회 기능이 곧 제공됩니다.<br />
-        {isAdmin ? "관리자 계정으로 파일 업로드를 진행할 수 있게 됩니다." : "약사 계정으로 자료를 열람할 수 있게 됩니다."}
-      </div>
-    </div>
-  </div>
-);
+  );
+};
+
+function fmtBytes(bytes: number | null | undefined): string {
+  if (bytes == null || !Number.isFinite(bytes)) return "";
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(1)} KB`;
+  return `${(kb / 1024).toFixed(2)} MB`;
+}
 
 export default PharmacistPage;

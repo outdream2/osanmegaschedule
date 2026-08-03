@@ -38,6 +38,7 @@ import boardRouter from "./server/routes/board";
 import invoiceImagesRouter from "./server/routes/invoiceImages";
 import purchaseHistoryRouter from "./server/routes/purchaseHistory";
 import hrFormsRouter from "./server/routes/hrForms";
+import pharmacistMenuItemsRouter from "./server/routes/pharmacistMenuItems";
 import resignationsRouter from "./server/routes/resignations";
 import employeeContractsRouter from "./server/routes/employeeContracts";
 import vatRouter from "./server/routes/vat";
@@ -102,6 +103,7 @@ async function startServer() {
   app.use(invoiceImagesRouter);
   app.use(purchaseHistoryRouter);
   app.use(hrFormsRouter);
+  app.use(pharmacistMenuItemsRouter);
   app.use(resignationsRouter);
   app.use(employeeContractsRouter);
   app.use(vatRouter);
