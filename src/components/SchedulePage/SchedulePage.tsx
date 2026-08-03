@@ -2097,18 +2097,18 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                         </tr>
                       ))}
 
-                      {/* Real-time calculated Bottom Summary Rows — always uses ALL employees regardless of filter */}
+                      {/* Real-time calculated Bottom Summary Rows — 필터·검색 반영 (필터링된 직원만 합산) */}
                       {(() => {
                         const fmtCost = (cost: number) => cost <= 0 ? "" :
                           cost >= 10000 ? `${Math.round(cost / 10000)}만원` : `${Math.round(cost).toLocaleString()}원`;
                         const isOtherE = (e: typeof employees[number]) => e.position === "기타" || e.position === "알바" || e.employmentType === "알바";
-                        const pharmacistCost = employees
+                        const pharmacistCost = filteredEmployees
                           .filter(e => e.position === "약사")
                           .reduce((sum, e) => sum + getEmpMonthStats(e).laborCost, 0);
-                        const staffCost = employees
+                        const staffCost = filteredEmployees
                           .filter(e => e.position !== "약사" && !isOtherE(e))
                           .reduce((sum, e) => sum + getEmpMonthStats(e).laborCost, 0);
-                        const otherCost = employees
+                        const otherCost = filteredEmployees
                           .filter(e => e.position !== "약사" && isOtherE(e))
                           .reduce((sum, e) => sum + getEmpMonthStats(e).laborCost, 0);
                         const totalCost = pharmacistCost + staffCost + otherCost;
@@ -2117,24 +2117,24 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
                         return (
                           <>
                             <SummaryRow
-                              summaries={totalSummaryList} label="약사"
+                              summaries={currentSummaryList} label="약사"
                               showMonthTotal={showMonthTotal}
-                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.pharmacistCount, 0)}인일</div>{isAdmin && showLabor && pharmacistCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(pharmacistCost)}</div>}</div>}
+                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.pharmacistCount, 0)}인일</div>{isAdmin && showLabor && pharmacistCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(pharmacistCost)}</div>}</div>}
                             />
                             <SummaryRow
-                              summaries={totalSummaryList} label="사원"
+                              summaries={currentSummaryList} label="사원"
                               showMonthTotal={showMonthTotal}
-                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.staffCount, 0)}인일</div>{isAdmin && showLabor && staffCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(staffCost)}</div>}</div>}
+                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.staffCount, 0)}인일</div>{isAdmin && showLabor && staffCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(staffCost)}</div>}</div>}
                             />
                             <SummaryRow
-                              summaries={totalSummaryList} label="기타"
+                              summaries={currentSummaryList} label="기타"
                               showMonthTotal={showMonthTotal}
-                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.otherCount, 0)}인일</div>{isAdmin && showLabor && otherCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(otherCost)}</div>}</div>}
+                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.otherCount, 0)}인일</div>{isAdmin && showLabor && otherCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(otherCost)}</div>}</div>}
                             />
                             <SummaryRow
-                              summaries={totalSummaryList} label="근무인원"
+                              summaries={currentSummaryList} label="근무인원"
                               showMonthTotal={showMonthTotal}
-                              totalCell={<div className="leading-tight"><div>{totalSummaryList.reduce((a, s) => a + s.totalCount, 0)}인일</div>{isAdmin && showLabor && totalCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(totalCost)}</div>}</div>}
+                              totalCell={<div className="leading-tight"><div>{currentSummaryList.reduce((a, s) => a + s.totalCount, 0)}인일</div>{isAdmin && showLabor && totalCost > 0 && <div className="text-emerald-600 font-bold text-[9px]">{fmtCost(totalCost)}</div>}</div>}
                             />
                           </>
                         );
