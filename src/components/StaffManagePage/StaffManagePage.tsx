@@ -760,124 +760,92 @@ const StaffManagePage: React.FC = () => {
 
   const displayEmp = editing && draft ? { ...selectedEmp!, ...draft } : selectedEmp;
 
-  // ── 좌측 리스트 아이템 ──────────────────────────────────────────────────────
+  // ── 좌측 리스트 아이템 · 표 형식 · 한 줄 (2026-08-03) ────────────────────────
   const ListRow: React.FC<{ emp: Employee }> = ({ emp }) => {
     const isSelected = emp.id === selectedId;
-    const schedType = emp.schedule_type;
     const ctMeta   = contractTypeMeta(emp.contract_type);
     const tenure   = calcTenure(emp.hire_date);
     const hasContractFile = !!emp.contract_file_url;
     const rating   = emp.performance_rating ? emp.performance_rating.toUpperCase() : null;
-    const severance = isSeveranceEligible(emp);
     const isRetired = !!(emp as any).retire_date;
+    const openContract = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (emp.contract_file_url) {
+        window.open(emp.contract_file_url, "_blank", "noopener,noreferrer");
+      } else {
+        alert(`${emp.name}님의 근로계약서가 등록되어 있지 않습니다.\n편집 모드에서 계약서 URL을 입력해 주세요.`);
+      }
+    };
     return (
-      <button
+      <tr
         onClick={() => handleSelect(emp)}
-        className={`w-full text-left flex items-center min-h-[64px] px-3 py-1.5 gap-2.5 relative transition-colors duration-100 cursor-pointer group ${
-          isSelected
-            ? "bg-indigo-50/80"
-            : "hover:bg-slate-50/70"
+        className={`cursor-pointer transition-colors ${
+          isSelected ? "bg-indigo-50/80" : "hover:bg-slate-50/70"
         }`}
       >
-        {/* 선택 강조선 */}
-        <span
-          className={`absolute left-0 top-3 bottom-3 w-[3px] rounded-r-full transition-all duration-150 ${
-            isSelected ? "bg-indigo-500 opacity-100" : "opacity-0"
-          }`}
-        />
-        {/* 2026-07-31 · 사용자 요청 · 앞에 성씨 크게 나오는 아바타 제거 · photo_url 있을 때만 표시 */}
-        {emp.photo_url && (
-          <div className="shrink-0 ml-1">
-            <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />
+        {/* 이름 */}
+        <td className="px-2 py-2 text-[13px] font-bold text-slate-800 truncate max-w-[120px]">
+          <div className="flex items-center gap-1">
+            {emp.photo_url && <Avatar name={emp.name} photoUrl={emp.photo_url} size="xs" />}
+            <span className={isSelected ? "text-indigo-800" : ""}>{emp.name}</span>
           </div>
-        )}
-        {/* 이름 + 메타 · 2026-07-31 · 성별·근무일·연락처 등 간단 정보 추가 */}
-        <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5 pl-2">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <span className={`text-[13px] font-black leading-tight ${isSelected ? "text-indigo-800" : "text-slate-800"}`}>
-              {emp.name}
+        </td>
+        {/* 직책 */}
+        <td className="px-1 py-2 text-center">
+          {emp.position && (
+            <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md border leading-tight ${positionColor(emp.position)}`}>
+              {emp.position}
             </span>
-            {emp.gender && (
-              <span className="text-[9px] font-semibold text-slate-400">· {emp.gender}</span>
-            )}
-            {emp.level != null && (
-              <span className="text-[9px] text-slate-400 ml-auto">Lv.{emp.level}</span>
-            )}
-          </div>
-          <div className="flex items-center gap-1 flex-wrap">
-            {emp.position && (
-              <span className={`text-[9px] font-semibold px-1.5 py-px rounded-md border leading-tight ${positionColor(emp.position)}`}>
-                {emp.position}
-              </span>
-            )}
-            {schedType && (
-              <span className={`text-[9px] font-semibold px-1.5 py-px rounded-md border leading-tight ${scheduleTypeColor(schedType)}`}>
-                {schedType}
-              </span>
-            )}
-            {ctMeta && (
-              <span className={`text-[9px] font-semibold px-1.5 py-px rounded-md border leading-tight ${ctMeta.color}`}>
-                {ctMeta.short}
-              </span>
-            )}
-            {emp.weekly_holiday && (
-              <span className="text-[9px] font-medium text-slate-400 leading-tight">휴{emp.weekly_holiday.slice(0, 1)}</span>
-            )}
-          </div>
-          {/* 2026-08 · 계약/근속/평가 요약 행 */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* 근속기간 */}
-            <span className="text-[10px] text-slate-500 leading-tight inline-flex items-center gap-0.5">
-              <Clock size={9} className="text-slate-400" />
-              {tenure}
+          )}
+        </td>
+        {/* 계약유형 */}
+        <td className="px-1 py-2 text-center">
+          {ctMeta ? (
+            <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-md border leading-tight ${ctMeta.color}`}>
+              {ctMeta.short}
             </span>
-            {/* 계약서 아이콘 · 있으면 인디고, 없으면 회색 */}
-            <span
-              title={hasContractFile ? "근로계약서 있음" : "근로계약서 없음"}
-              className={`inline-flex items-center gap-0.5 text-[10px] leading-tight ${
-                hasContractFile ? "text-indigo-500" : "text-slate-300"
-              }`}
+          ) : (
+            <span className="text-[11px] text-slate-300">-</span>
+          )}
+        </td>
+        {/* 근속 */}
+        <td className="px-1 py-2 text-center text-[12px] text-slate-600 tabular-nums whitespace-nowrap">
+          {tenure}
+        </td>
+        {/* 평가 */}
+        <td className="px-1 py-2 text-center">
+          {rating ? (
+            <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded-md border leading-tight tabular-nums ${performanceRatingColor(rating)}`}>
+              {rating}
+            </span>
+          ) : (
+            <span className="text-[11px] text-slate-300">-</span>
+          )}
+        </td>
+        {/* 근로계약서 · 보기 or 없음 */}
+        <td className="px-1 py-2 text-center">
+          {hasContractFile ? (
+            <button
+              type="button"
+              onClick={openContract}
+              className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 hover:underline cursor-pointer"
+              title="근로계약서 새 창으로 보기"
             >
-              <Paperclip size={9} />
-              계약서
+              <Paperclip size={10} />보기
+            </button>
+          ) : (
+            <span className="text-[11px] text-slate-300">없음</span>
+          )}
+        </td>
+        {/* 상태 배지 · 퇴사·퇴사예정 */}
+        <td className="px-1 py-2 text-center">
+          {isRetired && (
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md border leading-tight bg-rose-50 text-rose-700 border-rose-200">
+              퇴사
             </span>
-            {/* 인사평가 배지 */}
-            {rating && (
-              <span className={`text-[9px] font-bold px-1.5 py-px rounded-md border leading-tight tabular-nums ${performanceRatingColor(rating)}`}>
-                {rating}
-              </span>
-            )}
-            {/* 퇴직금 지급대상 · 1년+ · 주 15h+ */}
-            {severance && (
-              <span
-                className="text-[9px] font-bold px-1.5 py-px rounded-md border leading-tight bg-amber-50 text-amber-700 border-amber-200"
-                title="퇴직금 지급대상 (계속근로 1년 이상 · 주 15시간 이상)"
-              >
-                퇴직금
-              </span>
-            )}
-            {/* 퇴사 · rose 배지 */}
-            {isRetired && (
-              <span
-                className="text-[9px] font-bold px-1.5 py-px rounded-md border leading-tight bg-rose-50 text-rose-700 border-rose-200"
-                title="퇴사자"
-              >
-                퇴사
-              </span>
-            )}
-            {/* 연락처 · 우측으로 밀기 */}
-            {emp.phone && (
-              <span className="text-[10px] text-slate-400 tabular-nums leading-tight truncate ml-auto">{emp.phone}</span>
-            )}
-          </div>
-        </div>
-        {/* 선택 화살표 힌트 */}
-        {isSelected && (
-          <svg width="12" height="12" viewBox="0 0 12 12" className="text-indigo-400 shrink-0">
-            <path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        )}
-      </button>
+          )}
+        </td>
+      </tr>
     );
   };
 
@@ -1007,16 +975,8 @@ const StaffManagePage: React.FC = () => {
             )}
           </div>
 
-          {/* 리스트 테이블 헤더 */}
-          <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0">
-            <div className="grid grid-cols-[1fr_auto] gap-2 items-center">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">이름</span>
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-right">직책 / 근무</span>
-            </div>
-          </div>
-
-          {/* 직원 목록 */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
+          {/* 직원 목록 · 표 형식 · 한 줄 · 컬럼: 이름·직책·계약유형·근속·평가·계약서·상태 */}
+          <div className="flex-1 overflow-auto min-h-0">
             {loading && filtered.length === 0 ? (
               <div className="flex items-center justify-center py-8 text-slate-400 text-[11px] font-semibold gap-1.5">
                 <Loader2 size={13} className="animate-spin" />로딩 중...
@@ -1029,9 +989,22 @@ const StaffManagePage: React.FC = () => {
             ) : !loading && filtered.length === 0 ? (
               <div className="text-center text-[11px] text-slate-300 py-8">해당 조건의 직원이 없습니다</div>
             ) : (
-              <div className={loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}>
-                {filtered.map((emp) => <ListRow key={emp.id} emp={emp} />)}
-              </div>
+              <table className={`w-full border-collapse ${loading ? "opacity-40 pointer-events-none transition-opacity" : "transition-opacity"}`}>
+                <thead className="sticky top-0 z-10 bg-slate-50/95 backdrop-blur">
+                  <tr className="border-b border-slate-200 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+                    <th className="px-2 py-1.5 text-left">이름</th>
+                    <th className="px-1 py-1.5 text-center">직책</th>
+                    <th className="px-1 py-1.5 text-center">계약유형</th>
+                    <th className="px-1 py-1.5 text-center">근속</th>
+                    <th className="px-1 py-1.5 text-center">평가</th>
+                    <th className="px-1 py-1.5 text-center">계약서</th>
+                    <th className="px-1 py-1.5 text-center">상태</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filtered.map((emp) => <ListRow key={emp.id} emp={emp} />)}
+                </tbody>
+              </table>
             )}
           </div>
 
