@@ -1786,67 +1786,6 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               />
             </div>
 
-            {/* 서명 영역 */}
-            <div className="border-t border-slate-100 pt-2.5">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <Signature size={13} weight="fill" className="text-slate-400" />
-                  <span className="text-[12px] font-bold text-slate-600">서명 (사업주 · 근로자)</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={refreshSignaturePreview}
-                  className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-[11px] font-bold transition-colors cursor-pointer"
-                  title="우측 계약서에 서명 반영"
-                >
-                  <ArrowsClockwise size={11} />
-                  미리보기 반영
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <SignArea label="사업주 서명" padRef={employerPadRef} color="emerald" />
-                <SignArea label="근로자 서명" padRef={employeePadRef} color="indigo" />
-              </div>
-
-              {/* 계약 완료 · 승인/PDF 다운 · #202 */}
-              {/* - 좌측 · [계약완료 승인] · rose→emerald 그라디언트 · DB 저장 (Storage + row + employees.contract_file_url) + 로컬 다운
-                  - 우측 · [PDF 다운로드] · 기존 로컬 다운로드 유지 (승인 없이 확인용 프린트 가능) */}
-              <div className="mt-3 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:justify-between">
-                <div className="flex-1 flex flex-col gap-1">
-                  <button
-                    type="button"
-                    onClick={handleApproveAndSave}
-                    disabled={generating || !canApprove}
-                    className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white text-[15px] font-black shadow-md transition-all cursor-pointer disabled:cursor-not-allowed
-                      ${canApprove && !generating
-                        ? "bg-gradient-to-r from-rose-500 via-fuchsia-500 to-emerald-500 hover:brightness-110 hover:shadow-lg"
-                        : "bg-slate-300 text-slate-500"}`}
-                    title={canApprove
-                      ? "계약 승인 · DB 저장 + PDF 다운"
-                      : "모든 조항 이해 확인을 완료해야 활성화됩니다"}
-                  >
-                    <Check size={16} weight="bold" />
-                    <span>{generating ? "저장 중..." : "계약완료 승인 (DB 저장)"}</span>
-                  </button>
-                  {!canApprove && (
-                    <span className="text-[11px] text-slate-500 font-semibold text-center sm:text-left">
-                      모든 조항 이해 확인 · 미니 서명 완료 시 활성화
-                    </span>
-                  )}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleComplete}
-                  disabled={generating}
-                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer"
-                  title="PDF 로컬 다운로드 (승인 없이)"
-                >
-                  <DownloadSimple size={14} weight="bold" />
-                  <span>{generating ? "생성 중..." : "PDF 다운로드"}</span>
-                </button>
-              </div>
-            </div>
           </section>
 
           {/* ── 우측: 실시간 프리뷰 ──────────────────────────────────────── */}
@@ -1907,6 +1846,66 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                 setClauseAckEmpty={setClauseAckEmpty}
                 clausePadRefs={clausePadRefs}
               />
+            </div>
+
+            {/* 서명 영역 · 우측 (2026-08-03 · 사용자 요청 · 좌측에서 이동) */}
+            <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Signature size={14} weight="fill" className="text-slate-500" />
+                  <span className="text-[13px] font-bold text-slate-700">서명 (사업주 · 근로자)</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={refreshSignaturePreview}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-600 text-[12px] font-bold transition-colors cursor-pointer"
+                  title="위 계약서 프리뷰에 서명 반영"
+                >
+                  <ArrowsClockwise size={12} />
+                  미리보기 반영
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <SignArea label="사업주 서명" padRef={employerPadRef} color="emerald" />
+                <SignArea label="근로자 서명" padRef={employeePadRef} color="indigo" />
+              </div>
+
+              {/* 계약 완료 · 승인/PDF 다운 · #202 */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2 border-t border-slate-100">
+                <div className="flex-1 flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={handleApproveAndSave}
+                    disabled={generating || !canApprove}
+                    className={`inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl text-white text-[15px] font-black shadow-md transition-all cursor-pointer disabled:cursor-not-allowed
+                      ${canApprove && !generating
+                        ? "bg-gradient-to-r from-rose-500 via-fuchsia-500 to-emerald-500 hover:brightness-110 hover:shadow-lg"
+                        : "bg-slate-300 text-slate-500"}`}
+                    title={canApprove
+                      ? "계약 승인 · DB 저장 + PDF 다운"
+                      : "모든 조항 이해 확인을 완료해야 활성화됩니다"}
+                  >
+                    <Check size={16} weight="bold" />
+                    <span>{generating ? "저장 중..." : "계약완료 승인 (DB 저장)"}</span>
+                  </button>
+                  {!canApprove && (
+                    <span className="text-[11px] text-slate-500 font-semibold text-center sm:text-left">
+                      모든 조항 이해 확인 · 미니 서명 완료 시 활성화
+                    </span>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleComplete}
+                  disabled={generating}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-300 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer whitespace-nowrap"
+                  title="PDF 로컬 다운로드 (승인 없이)"
+                >
+                  <DownloadSimple size={14} weight="bold" />
+                  <span>{generating ? "생성 중..." : "PDF 다운로드"}</span>
+                </button>
+              </div>
             </div>
           </section>
         </div>
