@@ -332,16 +332,21 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
   const startD = fmtKoreanDate(form.startDate);
   const endD = form.indefinite ? "무기한 (기간의 정함 없음)" : fmtKoreanDate(form.endDate) || "(미입력)";
 
-  // 일 근무 시간 (참고용 · 프리뷰 표시)
-  const dailyHoursText = (() => {
+  // 근무 시간 계산 (전체 · 휴게 · 실근무) · 인건비 정책과 동일 규칙
+  const hoursCalc = (() => {
     const [sh, sm] = form.startTime.split(":").map(Number);
     const [eh, em] = form.endTime.split(":").map(Number);
     if (!Number.isFinite(sh) || !Number.isFinite(eh)) return null;
-    const totalMin = (eh * 60 + (em || 0)) - (sh * 60 + (sm || 0)) - (Number(form.breakMinutes) || 0);
-    if (totalMin <= 0) return null;
-    const h = Math.floor(totalMin / 60);
-    const m = totalMin % 60;
-    return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
+    const rawMin = (eh * 60 + (em || 0)) - (sh * 60 + (sm || 0));
+    if (rawMin <= 0) return null;
+    const breakMin = Number(form.breakMinutes) || 0;
+    const paidMin = Math.max(0, rawMin - breakMin);
+    const fmt = (min: number) => {
+      const h = Math.floor(min / 60);
+      const m = min % 60;
+      return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
+    };
+    return { rawText: fmt(rawMin), paidText: fmt(paidMin), breakText: fmt(breakMin) };
   })();
 
   return (
@@ -387,9 +392,23 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
       <PreviewRow no="4" title="소정근로시간">
         <div>
           {form.startTime || "--:--"} 부터 {form.endTime || "--:--"} 까지
-          {dailyHoursText && <span className="text-slate-500 text-[12px] ml-1">(실근무 {dailyHoursText})</span>}
+          {hoursCalc && <span className="text-slate-500 text-[12px] ml-1">(총 {hoursCalc.rawText})</span>}
         </div>
-        <div>휴게시간: {form.breakMinutes || "0"} 분</div>
+        <div>
+          휴게시간: {form.breakMinutes || "0"} 분
+          {hoursCalc && Number(form.breakMinutes) > 0 && (
+            <span className="text-slate-500 text-[12px] ml-1">({hoursCalc.breakText} · 무급)</span>
+          )}
+        </div>
+        {hoursCalc && (
+          <div className="text-[12px] text-slate-700 mt-1">
+            <span className="font-semibold">실근무시간 · {hoursCalc.paidText}</span>
+            <span className="text-slate-500"> (전체 {hoursCalc.rawText} − 휴게 {hoursCalc.breakText})</span>
+          </div>
+        )}
+        <div className="text-[11px] text-slate-500 mt-0.5">
+          ※ 휴게시간은 무급이며 임금 계산에서 제외됨 (근로기준법 제54조)
+        </div>
       </PreviewRow>
 
       <PreviewRow no="5" title="근무일 / 주 근무횟수">
