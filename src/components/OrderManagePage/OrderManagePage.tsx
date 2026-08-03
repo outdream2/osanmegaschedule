@@ -2,8 +2,12 @@
 // 발주관리 페이지 — 매장관리 · 재고관리 · 입고알림관리 옆의 서브탭으로 노출
 // 기존 요청목록의 '발주요청' 탭 컨텐츠를 독립 페이지로 분리
 // 사입(OCR거래명세서 등록) 탭에서는 거래명세서 OCR(OcrPage) 노출
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
+// 2026-08-03 (#201) · 발주필요 검색 · 공통 SearchBar · SearchFilterChips · 한글 초성
+import { SearchBar } from "../common/SearchBar";
+import { SearchFilterChips, type ChipOption } from "../common/SearchFilterChips";
+import { matchHangul } from "../common/hangulSearch";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, Settings, RotateCcw, X } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
@@ -392,6 +396,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [needCategoryFilter, setNeedCategoryFilter] = useState<NeedCategoryFilter>(orderNeedConfig.defaultCategory);
   // 설정된 defaultCategory 변경 시 · 현재 카테고리 필터도 즉시 반영 (사용자가 저장한 순간 UI 동기화)
   useEffect(() => { setNeedCategoryFilter(orderNeedConfig.defaultCategory); }, [orderNeedConfig.defaultCategory]);
+  // 2026-08-03 (#201) · 발주필요 · 추가 검색 필터 (기존 조건 설정 위에 UX 개선)
+  //   · stockStatus · 다중 선택 · zero(0)·low(<=3)·warning(부족<10)·healthy(부족>=10)
+  //   · needSearchDeferred · React 18 useDeferredValue · 입력 즉시 반응 · 필터링만 유예
+  type NeedStockStatus = "zero" | "low" | "warning";
+  const [needStockStatus, setNeedStockStatus] = useState<Set<NeedStockStatus>>(new Set());
+  const toggleNeedStockStatus = useCallback((k: NeedStockStatus) => {
+    setNeedStockStatus(prev => {
+      const n = new Set(prev);
+      n.has(k) ? n.delete(k) : n.add(k);
+      return n;
+    });
+  }, []);
   // 우측 패널용 선택 상품 (발주필요 탭)
   const [needPanelProduct, setNeedPanelProduct] = useState<{ code: string; name: string } | null>(null);
   const [needPanelFull, setNeedPanelFull] = useState<Record<string, any> | null>(null);
@@ -857,20 +873,24 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             r.product_code?.toLowerCase().includes(q) ||
             r.supplier?.toLowerCase().includes(q));
   });
-  const lowStockFiltered = lowStock.filter(p => {
-    // 검색 필터
-    if (lowStockSearch.trim()) {
-      const q = lowStockSearch.trim().toLowerCase();
-      const ok = getName(p).toLowerCase().includes(q) ||
-                 getCode(p).toLowerCase().includes(q) ||
-                 (p.supplier ?? "").toLowerCase().includes(q);
+  // 2026-08-03 (#201) · React 18 useDeferredValue · 입력 즉시 · 필터링만 유예 (60fps 유지)
+  //   · matchHangul · 원문 부분일치 + 한글 초성 매칭 (자체 구현 · zero-dep)
+  //   · needStockStatus · 다중 선택 · zero(0)·low(1~3)·warning(부족>=10)
+  const deferredNeedSearch = useDeferredValue(lowStockSearch);
+  const lowStockFiltered = useMemo(() => lowStock.filter(p => {
+    // 1) 검색 필터 (통합 · 상품명·코드·공급사 + 한글 초성)
+    const q = deferredNeedSearch.trim();
+    if (q) {
+      const name = getName(p);
+      const code = getCode(p);
+      const sup  = p.supplier ?? "";
+      const ok = matchHangul(name, q) || matchHangul(code, q) || matchHangul(sup, q);
       if (!ok) return false;
     }
-    // 카테고리 필터 (전체 · 위탁 · 선결제 · 60일회전 · 90일회전 · 기타)
+    // 2) 카테고리 필터 (전체 · 위탁 · 선결제 · 60일회전 · 90일회전 · 기타)
     if (needCategoryFilter !== "all") {
       const supplierName = String(p.supplier ?? "").trim();
       const cat = supplierName ? vendorCategoryMap[supplierName] : null;
-      // "기타" 필터 · null·undefined 또는 유효 카테고리 외 값 모두 포함
       if (needCategoryFilter === "기타") {
         const validCats = ["위탁", "선결제", "60일회전", "90일회전", "기타"];
         if (cat && validCats.includes(cat) && cat !== "기타") return false;
@@ -878,8 +898,60 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         if (cat !== needCategoryFilter) return false;
       }
     }
+    // 3) 재고 상태 chip 필터 (다중 선택 · OR · 하나라도 만족)
+    if (needStockStatus.size > 0) {
+      const cur = p.current_stock != null ? Number(p.current_stock) : NaN;
+      const opt = p.optimal_stock != null ? Number(p.optimal_stock) : NaN;
+      const shortage = (!isNaN(cur) && !isNaN(opt)) ? (opt - cur) : NaN;
+      let matched = false;
+      if (needStockStatus.has("zero")    && !isNaN(cur) && cur <= 0) matched = true;
+      if (needStockStatus.has("low")     && !isNaN(cur) && cur > 0 && cur <= 3) matched = true;
+      if (needStockStatus.has("warning") && !isNaN(shortage) && shortage >= 10) matched = true;
+      if (!matched) return false;
+    }
     return true;
-  });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }), [lowStock, deferredNeedSearch, needCategoryFilter, vendorCategoryMap, needStockStatus]);
+
+  // 2026-08-03 (#201) · 재고 상태 chip · 실시간 카운트 (검색·카테고리 만족 후 · 상태별 개수)
+  //   · UX 원칙 · dead-end 방지 · 각 chip 옆에 만족 상품 수 노출
+  const stockStatusCounts = useMemo(() => {
+    let zero = 0, low = 0, warning = 0;
+    for (const p of lowStock) {
+      // 검색·카테고리 통과 여부만 체크 (chip 자체는 배제)
+      const q = deferredNeedSearch.trim();
+      if (q) {
+        const name = getName(p);
+        const code = getCode(p);
+        const sup  = p.supplier ?? "";
+        if (!(matchHangul(name, q) || matchHangul(code, q) || matchHangul(sup, q))) continue;
+      }
+      if (needCategoryFilter !== "all") {
+        const supplierName = String(p.supplier ?? "").trim();
+        const cat = supplierName ? vendorCategoryMap[supplierName] : null;
+        if (needCategoryFilter === "기타") {
+          const validCats = ["위탁", "선결제", "60일회전", "90일회전", "기타"];
+          if (cat && validCats.includes(cat) && cat !== "기타") continue;
+        } else {
+          if (cat !== needCategoryFilter) continue;
+        }
+      }
+      const cur = p.current_stock != null ? Number(p.current_stock) : NaN;
+      const opt = p.optimal_stock != null ? Number(p.optimal_stock) : NaN;
+      const shortage = (!isNaN(cur) && !isNaN(opt)) ? (opt - cur) : NaN;
+      if (!isNaN(cur) && cur <= 0) zero++;
+      else if (!isNaN(cur) && cur > 0 && cur <= 3) low++;
+      if (!isNaN(shortage) && shortage >= 10) warning++;
+    }
+    return { zero, low, warning };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lowStock, deferredNeedSearch, needCategoryFilter, vendorCategoryMap]);
+
+  const stockStatusChipOptions: ChipOption<NeedStockStatus>[] = useMemo(() => ([
+    { key: "zero",    label: "재고 0",    color: "rose",   count: stockStatusCounts.zero,    hint: "ERP 현재고 0 이하" },
+    { key: "low",     label: "저재고",    color: "amber",  count: stockStatusCounts.low,     hint: "ERP 현재고 1~3" },
+    { key: "warning", label: "부족 심각",  color: "violet", count: stockStatusCounts.warning, hint: "부족량(추천적정-현재고) 10 이상" },
+  ]), [stockStatusCounts]);
 
   // ── 2026-08-03 · 서브탭 정의 (useSortableTabs 재정렬 대상) ──
   //   · 각 페이지별 storageKey 는 memory feedback_tab_reorder 규칙 준수 (tabOrder.<page>)
@@ -1776,7 +1848,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 {/* 그룹 카테고리 헤더 · 클릭으로 접기/펼치기 */}
                 <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
                   <th className="bg-slate-50 w-6"></th>
-                  <th colSpan={isOrderGroupCollapsed("info") ? 1 : 3}
+                  <th colSpan={isOrderGroupCollapsed("info") ? 1 : 2}
                     className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-sky-100 transition"
                     onClick={() => toggleOrderGroup("info")}
                     title={isOrderGroupCollapsed("info") ? "상품 정보 펼치기" : "상품 정보 접기"}>
@@ -1801,7 +1873,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   ) : (
                     <>
                       <th onClick={() => handleOrderSort("supplier")} title="공급사 정렬" className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">공급사{orderArrow("supplier")}</th>
-                      <th onClick={() => handleOrderSort("contact")} title="담당자 정렬" className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">담당자{orderArrow("contact")}</th>
                       <th onClick={() => handleOrderSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 min-w-[120px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">상품명{orderArrow("name")}</th>
                     </>
                   )}
@@ -1915,22 +1986,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                 </>
                               );
                             })()}
-                          </td>
-                          <td className="px-0.5 py-1.5 text-[12px] text-slate-600 break-words whitespace-normal align-top">
-                            {vendor ? (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const rect = (e.target as HTMLElement).getBoundingClientRect();
-                                  setContactPopover({ anchor: rect, name: contactName, phone: vendor.phone, email: vendor.email });
-                                }}
-                                className="hover:text-indigo-700 hover:underline cursor-pointer text-left w-full"
-                                title="클릭 시 전화·이메일 표시"
-                              >{contactName}</button>
-                            ) : (
-                              <span>{contactName}</span>
-                            )}
                           </td>
                           <td className="px-0.5 py-1.5 align-top">
                             <button
