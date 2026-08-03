@@ -9,7 +9,7 @@ import { SearchBar } from "../common/SearchBar";
 import { SearchFilterChips, type ChipOption } from "../common/SearchFilterChips";
 import { matchHangul } from "../common/hangulSearch";
 import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
-import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, Settings, RotateCcw, X, Search, Info } from "lucide-react";
+import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus, RotateCcw, X, Search, Info } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import type { ProductInfo as ProductInfoType } from "../../lib/productsCache";
@@ -427,10 +427,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   //   · 저장 키: megatown_orderNeedFilterConfig
   type NeedCategoryFilter = NeedCategoryFilterKey;
   const [orderNeedConfig, setOrderNeedConfig] = useState<OrderNeedFilterConfig>(() => loadOrderNeedConfig());
-  const [needFilterModalOpen, setNeedFilterModalOpen] = useState(false);
-  // 편집 중 임시 상태 (모달 · 저장·취소·초기화)
-  const [needFilterDraft, setNeedFilterDraft] = useState<OrderNeedFilterConfig>(orderNeedConfig);
-  useEffect(() => { if (needFilterModalOpen) setNeedFilterDraft(orderNeedConfig); }, [needFilterModalOpen, orderNeedConfig]);
+  // needFilterModalOpen · needFilterDraft 제거됨 (모달 → 인라인 통합 · 2026-08-03)
+  // 발주판정 고급설정 펼침/접힘 state (details 대신 React 제어)
+  const [needAdvancedOpen, setNeedAdvancedOpen] = useState(false);
   const [needCategoryFilter, setNeedCategoryFilter] = useState<NeedCategoryFilter>(orderNeedConfig.defaultCategory);
   // 설정된 defaultCategory 변경 시 · 현재 카테고리 필터도 즉시 반영 (사용자가 저장한 순간 UI 동기화)
   useEffect(() => { setNeedCategoryFilter(orderNeedConfig.defaultCategory); }, [orderNeedConfig.defaultCategory]);
@@ -1416,193 +1415,402 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <button
                 onClick={loadProducts}
                 disabled={productsLoading}
-                className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-300 text-slate-400 hover:text-rose-500 transition disabled:opacity-40 cursor-pointer"
+                className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-300 text-slate-400 hover:text-rose-500 transition disabled:opacity-40 cursor-pointer"
                 title="새로고침"
               >
                 <RefreshCw size={13} className={productsLoading ? "animate-spin" : ""} />
               </button>
-              <button
-                onClick={() => setNeedFilterModalOpen(true)}
-                className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-indigo-50 hover:border-indigo-300 text-slate-400 hover:text-indigo-600 transition cursor-pointer"
-                title="발주조건 설정 (저장 시 다음 로딩부터 적용)"
-              >
-                <Settings size={13} />
-              </button>
             </div>
-          </div>
 
-          {/* ── 2026-08-03 (#201) · 검색 바 + 재고상태 chip · split 위 · UX 최신 ── */}
-          {/*   · SearchBar · 통합 검색 (상품·코드·공급사 · 한글 초성 지원) · 최근 5개 저장         */}
-          {/*   · SearchFilterChips · 다중 선택 · 재고 상태 (재고0·저재고·부족심각) · 실시간 카운트 */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
-            <SearchBar
-              value={lowStockSearch}
-              onChange={setLowStockSearch}
-              placeholder="상품·코드·공급사 검색 (한글 초성 · 예: ㅇㅅㅌ)"
-              resultCount={lowStockFiltered.length}
-              resultUnit="건"
-              historyKey="megatown_orderNeed_search_history"
-              accent="rose"
-              widthClass="w-72 sm:w-80"
-            />
-            <SearchFilterChips<NeedStockStatus>
-              label="재고 상태"
-              options={stockStatusChipOptions}
-              selected={needStockStatus}
-              onToggle={toggleNeedStockStatus}
-              showAll={true}
-              allLabel="전체"
-              size="sm"
-            />
-            {(lowStockSearch.trim() || needStockStatus.size > 0) && (
+            {/* ── Row 3: 발주 4조건 체크박스 + 조회/초기화 버튼 ── */}
+            <div className="px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-slate-100">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 shrink-0 whitespace-nowrap">발주 조건</span>
+
+              {/* 조건 1 · 매입일 N일 이상 */}
+              <label className="inline-flex items-center gap-1.5 shrink-0">
+                <input type="checkbox" checked={needCycleEnabled} onChange={e => setNeedCycleEnabled(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
+                <span className={`text-[12px] font-bold whitespace-nowrap ${needCycleEnabled ? "text-slate-700" : "text-slate-400"}`}>매입일</span>
+                <input
+                  type="number" min={0} step={1}
+                  disabled={!needCycleEnabled}
+                  value={needInlineMinCycle === 0 ? "" : needInlineMinCycle}
+                  onChange={e => updateInline("cycle", e.target.value)}
+                  placeholder="90"
+                  className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
+                             focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
+                             hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
+                />
+                <span className={`text-[12px] whitespace-nowrap ${needCycleEnabled ? "text-slate-500" : "text-slate-300"}`}>일 이상</span>
+              </label>
+
+              <span className="text-slate-200 text-xs hidden sm:inline">|</span>
+
+              {/* 조건 2 · 재고 N개 이하 */}
+              <label className="inline-flex items-center gap-1.5 shrink-0">
+                <input type="checkbox" checked={needCurrentEnabled} onChange={e => setNeedCurrentEnabled(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
+                <span className={`text-[12px] font-bold whitespace-nowrap ${needCurrentEnabled ? "text-slate-700" : "text-slate-400"}`}>재고</span>
+                <input
+                  type="number" min={0} step={1}
+                  disabled={!needCurrentEnabled}
+                  value={needInlineMaxCurrent === 0 ? "" : needInlineMaxCurrent}
+                  onChange={e => updateInline("current", e.target.value)}
+                  placeholder="50"
+                  className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
+                             focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
+                             hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
+                />
+                <span className={`text-[12px] whitespace-nowrap ${needCurrentEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
+              </label>
+
+              <span className="text-slate-200 text-xs hidden sm:inline">|</span>
+
+              {/* 조건 3 · 최근 한달 판매량 N개 이하 */}
+              <label className="inline-flex items-center gap-1.5 shrink-0">
+                <input type="checkbox" checked={needSalesMonthEnabled} onChange={e => setNeedSalesMonthEnabled(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
+                <span className={`text-[12px] font-bold whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-700" : "text-slate-400"}`}>한달 판매</span>
+                <input
+                  type="number" min={0} step={1}
+                  disabled={!needSalesMonthEnabled}
+                  value={needInlineMaxSalesMonth === 0 ? "" : needInlineMaxSalesMonth}
+                  onChange={e => updateInline("salesMonth", e.target.value)}
+                  placeholder="50"
+                  className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
+                             focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
+                             hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
+                />
+                <span className={`text-[12px] whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
+              </label>
+
+              <span className="text-slate-200 text-xs hidden sm:inline">|</span>
+
+              {/* 조건 4 · 최근 3달 판매량 N개 이하 */}
+              <label className="inline-flex items-center gap-1.5 shrink-0">
+                <input type="checkbox" checked={needSalesQuarterEnabled} onChange={e => setNeedSalesQuarterEnabled(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
+                <span className={`text-[12px] font-bold whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-700" : "text-slate-400"}`}>3달 판매</span>
+                <input
+                  type="number" min={0} step={1}
+                  disabled={!needSalesQuarterEnabled}
+                  value={needInlineMaxSalesQuarter === 0 ? "" : needInlineMaxSalesQuarter}
+                  onChange={e => updateInline("salesQuarter", e.target.value)}
+                  placeholder="100"
+                  className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
+                             focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
+                             hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
+                />
+                <span className={`text-[12px] whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
+              </label>
+
+              {/* 조회 버튼 */}
               <button
                 type="button"
-                onClick={() => { setLowStockSearch(""); setNeedStockStatus(new Set()); }}
-                className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-black text-slate-500 hover:text-rose-600 transition cursor-pointer"
-                title="검색·필터 모두 초기화"
+                onClick={applyInlineFilter}
+                className="ml-auto inline-flex items-center gap-1.5 h-8 px-4 rounded-md bg-emerald-600 hover:bg-emerald-700
+                           text-white text-[13px] font-black shadow-sm transition cursor-pointer whitespace-nowrap shrink-0"
+                title="입력값으로 리스트 조회"
               >
-                <RotateCcw size={11} />초기화
+                <Search size={13} strokeWidth={2.5} className="shrink-0" />조회
               </button>
-            )}
-          </div>
 
-          {/* ── 2026-08-03 (#206/#207) · 인라인 4조건 입력 · split 위 · 검색바 아래 ── */}
-          {/*   순서: 검색바 > 카테고리 chip > 인라인 조건 > split                          */}
-          {/*   매입일 N일 이상 · 재고 N개 이하 · 최근 한달 판매량 N개 이하 · 최근 3달 판매량 N개 이하 */}
-          {/*   #207 · 판매 잘 되는 상품 → 판매 저조 상품 필터 (방향 반전)                    */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
-            {/* 라벨 */}
-            <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 shrink-0 whitespace-nowrap">발주 조건</span>
+              {/* 초기화 버튼 (조건 활성 시) */}
+              {inlineActive && (
+                <button
+                  type="button"
+                  onClick={resetInlineFilter}
+                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-slate-200 bg-white
+                             hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600
+                             text-[11px] font-black text-slate-500 transition cursor-pointer shrink-0"
+                  title="발주 조건 모두 초기화"
+                >
+                  <X size={11} />초기화
+                </button>
+              )}
 
-            {/* #232 · 각 조건에 체크박스 · 미체크는 필터 미적용 (기본: 적정재고 이하 모두 표시) */}
-            {/* 조건 1 · 매입일 N일 이상 */}
-            <label className="inline-flex items-center gap-1.5 shrink-0">
-              <input type="checkbox" checked={needCycleEnabled} onChange={e => setNeedCycleEnabled(e.target.checked)}
-                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
-              <span className={`text-[12px] font-bold whitespace-nowrap ${needCycleEnabled ? "text-slate-700" : "text-slate-400"}`}>매입일</span>
-              <input
-                type="number" min={0} step={1}
-                disabled={!needCycleEnabled}
-                value={needInlineMinCycle === 0 ? "" : needInlineMinCycle}
-                onChange={e => updateInline("cycle", e.target.value)}
-                placeholder="90"
-                className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
-                           focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                           hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
-              />
-              <span className={`text-[12px] whitespace-nowrap ${needCycleEnabled ? "text-slate-500" : "text-slate-300"}`}>일 이상</span>
-            </label>
+              {/* 적용 중 조건 요약 badge */}
+              {inlineActive && (
+                <div className="hidden sm:flex items-center gap-1.5 ml-1 flex-wrap">
+                  {deferredCycleEnabled && deferredInlineCycle > 0 && (
+                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-700 whitespace-nowrap">
+                      매입주기 ≥{deferredInlineCycle}일
+                    </span>
+                  )}
+                  {deferredCurrentEnabled && deferredInlineCurrent > 0 && (
+                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-700 whitespace-nowrap">
+                      재고 ≤{deferredInlineCurrent}개
+                    </span>
+                  )}
+                  {deferredSalesMonthEnabled && deferredInlineSalesMonth > 0 && (
+                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-[11px] font-bold text-sky-700 whitespace-nowrap">
+                      한달 판매 ≤{deferredInlineSalesMonth}개
+                    </span>
+                  )}
+                  {deferredSalesQuarterEnabled && deferredInlineSalesQuarter > 0 && (
+                    <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-[11px] font-bold text-indigo-700 whitespace-nowrap">
+                      3달 판매 ≤{deferredInlineSalesQuarter}개
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
 
-            <span className="text-slate-200 text-xs hidden sm:inline">|</span>
-
-            {/* 조건 2 · 재고 N개 이하 */}
-            <label className="inline-flex items-center gap-1.5 shrink-0">
-              <input type="checkbox" checked={needCurrentEnabled} onChange={e => setNeedCurrentEnabled(e.target.checked)}
-                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
-              <span className={`text-[12px] font-bold whitespace-nowrap ${needCurrentEnabled ? "text-slate-700" : "text-slate-400"}`}>재고</span>
-              <input
-                type="number" min={0} step={1}
-                disabled={!needCurrentEnabled}
-                value={needInlineMaxCurrent === 0 ? "" : needInlineMaxCurrent}
-                onChange={e => updateInline("current", e.target.value)}
-                placeholder="50"
-                className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
-                           focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                           hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
-              />
-              <span className={`text-[12px] whitespace-nowrap ${needCurrentEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
-            </label>
-
-            <span className="text-slate-200 text-xs hidden sm:inline">|</span>
-
-            {/* 조건 3 · 최근 한달 판매량 N개 이하 */}
-            <label className="inline-flex items-center gap-1.5 shrink-0">
-              <input type="checkbox" checked={needSalesMonthEnabled} onChange={e => setNeedSalesMonthEnabled(e.target.checked)}
-                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
-              <span className={`text-[12px] font-bold whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-700" : "text-slate-400"}`}>최근 한달 판매량</span>
-              <input
-                type="number" min={0} step={1}
-                disabled={!needSalesMonthEnabled}
-                value={needInlineMaxSalesMonth === 0 ? "" : needInlineMaxSalesMonth}
-                onChange={e => updateInline("salesMonth", e.target.value)}
-                placeholder="50"
-                className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
-                           focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                           hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
-              />
-              <span className={`text-[12px] whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
-            </label>
-
-            <span className="text-slate-200 text-xs hidden sm:inline">|</span>
-
-            {/* 조건 4 · 최근 3달 판매량 N개 이하 */}
-            <label className="inline-flex items-center gap-1.5 shrink-0">
-              <input type="checkbox" checked={needSalesQuarterEnabled} onChange={e => setNeedSalesQuarterEnabled(e.target.checked)}
-                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
-              <span className={`text-[12px] font-bold whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-700" : "text-slate-400"}`}>최근 3달 판매량</span>
-              <input
-                type="number" min={0} step={1}
-                disabled={!needSalesQuarterEnabled}
-                value={needInlineMaxSalesQuarter === 0 ? "" : needInlineMaxSalesQuarter}
-                onChange={e => updateInline("salesQuarter", e.target.value)}
-                placeholder="100"
-                className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
-                           focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                           hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
-              />
-              <span className={`text-[12px] whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
-            </label>
-
-            {/* 조회 버튼 · 명시적 필터 적용 (실시간 X · 사용자 요청) */}
-            <button
-              type="button"
-              onClick={applyInlineFilter}
-              className="ml-auto inline-flex items-center gap-1.5 h-8 px-4 rounded-md bg-emerald-600 hover:bg-emerald-700
-                         text-white text-[13px] font-black shadow-sm transition cursor-pointer whitespace-nowrap shrink-0"
-              title="입력값으로 리스트 조회"
-            >
-              <Search size={13} strokeWidth={2.5} className="shrink-0" />조회
-            </button>
-
-            {/* 초기화 버튼 (조건 하나라도 활성 시 노출) */}
-            {inlineActive && (
+            {/* ── Row 4: 발주판정 고급설정 (구 톱니바퀴 모달 내용 · React 제어 펼침/접힘) ── */}
+            <div>
               <button
                 type="button"
-                onClick={resetInlineFilter}
-                className="inline-flex items-center gap-1 h-8 px-2.5 rounded-md border border-slate-200 bg-white
-                           hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600
-                           text-[11px] font-black text-slate-500 transition cursor-pointer shrink-0"
-                title="인라인 조건 모두 초기화 (0으로)"
+                onClick={() => setNeedAdvancedOpen(o => !o)}
+                className="w-full px-4 py-2 flex items-center gap-2 cursor-pointer select-none bg-slate-50/60 hover:bg-slate-50 transition text-left"
               >
-                <X size={11} />초기화
+                <ChevronRight size={13} className={`text-slate-400 shrink-0 transition-transform ${needAdvancedOpen ? "rotate-90" : ""}`} />
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">발주판정 고급설정</span>
+                <span className="ml-1 text-[10px] text-slate-400 hidden sm:inline">
+                  {orderNeedConfig.shortageBasis === "min" && "최소재고 기준"}
+                  {orderNeedConfig.shortageBasis === "realStock" && "실재고 기준"}
+                  {orderNeedConfig.shortageBasis === "optimal" && "추천적정재고 기준"}
+                  {orderNeedConfig.minShortage > 1 && ` · 부족 ${orderNeedConfig.minShortage}개+`}
+                  {!orderNeedConfig.includeMissingRealStock && " · 실재고 있는 것만"}
+                  {orderNeedConfig.minPurchaseCycle > 0 && ` · 매입주기 ≥${orderNeedConfig.minPurchaseCycle}일`}
+                  {orderNeedConfig.minMonthlySales > 0 && ` · 한달판매 ≥${orderNeedConfig.minMonthlySales}개`}
+                </span>
               </button>
-            )}
 
-            {/* 적용 중 조건 요약 badge (#207 · 4개 조건) */}
-            {inlineActive && (
-              <div className="hidden sm:flex items-center gap-1.5 ml-1 flex-wrap">
-                {deferredInlineCycle > 0 && (
-                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-[11px] font-bold text-emerald-700 whitespace-nowrap">
-                    매입주기 ≥{deferredInlineCycle}일
-                  </span>
-                )}
-                {deferredInlineCurrent > 0 && (
-                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-[11px] font-bold text-amber-700 whitespace-nowrap">
-                    재고 ≤{deferredInlineCurrent}개
-                  </span>
-                )}
-                {deferredInlineSalesMonth > 0 && (
-                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-sky-50 border border-sky-200 text-[11px] font-bold text-sky-700 whitespace-nowrap">
-                    한달 판매 ≤{deferredInlineSalesMonth}개
-                  </span>
-                )}
-                {deferredInlineSalesQuarter > 0 && (
-                  <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-[11px] font-bold text-indigo-700 whitespace-nowrap">
-                    3달 판매 ≤{deferredInlineSalesQuarter}개
-                  </span>
-                )}
+              {needAdvancedOpen && (
+              <div className="px-4 pb-4 pt-3 flex flex-col gap-4 border-t border-slate-100 bg-slate-50/30">
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                  {/* 1. 재고 부족 기준 */}
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">재고 부족 기준</span>
+                    <div className="flex flex-col gap-1">
+                      {([
+                        { k: "optimal"   as OrderNeedShortageBasis, label: "현재고 < 추천적정재고", sub: "기본 · 권장" },
+                        { k: "min"       as OrderNeedShortageBasis, label: "현재고 < 최소재고",     sub: "min_stock 컬럼 기준" },
+                        { k: "realStock" as OrderNeedShortageBasis, label: "실재고 < 추천적정재고", sub: "실재고 없는 상품 제외" },
+                      ]).map(opt => (
+                        <label
+                          key={opt.k}
+                          className={[
+                            "flex items-start gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition",
+                            orderNeedConfig.shortageBasis === opt.k
+                              ? "bg-indigo-50 border-indigo-300"
+                              : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50",
+                          ].join(" ")}
+                        >
+                          <input
+                            type="radio"
+                            name="shortageBasisInline"
+                            className="mt-0.5 accent-indigo-600 cursor-pointer shrink-0"
+                            checked={orderNeedConfig.shortageBasis === opt.k}
+                            onChange={() => {
+                              const next = { ...orderNeedConfig, shortageBasis: opt.k };
+                              setOrderNeedConfig(next);
+                              try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
+                            }}
+                          />
+                          <div className="flex flex-col leading-tight">
+                            <span className="text-[12px] font-bold text-slate-800">{opt.label}</span>
+                            <span className="text-[11px] text-slate-500">{opt.sub}</span>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* 2. 우측: 나머지 설정 */}
+                  <div className="flex flex-col gap-3">
+
+                    {/* 실재고 미입력 포함 */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">실재고 미입력 상품</span>
+                      <label className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer bg-white">
+                        <input
+                          type="checkbox"
+                          className="accent-indigo-600 cursor-pointer"
+                          checked={orderNeedConfig.includeMissingRealStock}
+                          onChange={e => {
+                            const next = { ...orderNeedConfig, includeMissingRealStock: e.target.checked };
+                            setOrderNeedConfig(next);
+                            try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
+                          }}
+                        />
+                        <span className="text-[12px] font-bold text-slate-800">실재고 미입력도 포함</span>
+                      </label>
+                    </div>
+
+                    {/* 최소 부족 개수 */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">최소 부족 개수</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number" min={1} step={1}
+                          value={orderNeedConfig.minShortage}
+                          onChange={e => {
+                            const v = Number(e.target.value);
+                            const next = { ...orderNeedConfig, minShortage: Number.isFinite(v) && v >= 1 ? Math.floor(v) : 1 };
+                            setOrderNeedConfig(next);
+                            try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
+                          }}
+                          className="w-20 h-8 px-2 border border-slate-200 rounded-lg text-[13px] font-bold text-slate-800 tabular-nums text-right
+                                     focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white"
+                        />
+                        <span className="text-[12px] text-slate-600">개 이상 부족</span>
+                      </div>
+                    </div>
+
+                    {/* 매입주기 최소 */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">매입주기 최소</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number" min={0} step={1}
+                          value={orderNeedConfig.minPurchaseCycle}
+                          onChange={e => {
+                            const v = Number(e.target.value);
+                            const next = { ...orderNeedConfig, minPurchaseCycle: Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0 };
+                            setOrderNeedConfig(next);
+                            try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
+                          }}
+                          className="w-20 h-8 px-2 border border-slate-200 rounded-lg text-[13px] font-bold text-slate-800 tabular-nums text-right
+                                     focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white"
+                        />
+                        <span className="text-[12px] text-slate-600">일 이상 · 0=미적용</span>
+                      </div>
+                    </div>
+
+                    {/* 최근 한달 판매량 최소 */}
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">한달 판매량 최소</span>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number" min={0} step={1}
+                          value={orderNeedConfig.minMonthlySales}
+                          onChange={e => {
+                            const v = Number(e.target.value);
+                            const next = { ...orderNeedConfig, minMonthlySales: Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0 };
+                            setOrderNeedConfig(next);
+                            try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
+                          }}
+                          className="w-20 h-8 px-2 border border-slate-200 rounded-lg text-[13px] font-bold text-slate-800 tabular-nums text-right
+                                     focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 bg-white"
+                        />
+                        <span className="text-[12px] text-slate-600">개 이상 · 0=미적용</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 기본 정렬 */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">기본 정렬</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {([
+                      { k: "sale_month" as OrderNeedDefaultSortKey, label: "한달 판매량" },
+                      { k: "cycle"      as OrderNeedDefaultSortKey, label: "매입주기" },
+                      { k: "short"      as OrderNeedDefaultSortKey, label: "부족량" },
+                      { k: "current"    as OrderNeedDefaultSortKey, label: "ERP재고" },
+                      { k: "optimal"    as OrderNeedDefaultSortKey, label: "추천적정" },
+                      { k: "inv"        as OrderNeedDefaultSortKey, label: "실재고" },
+                      { k: "name"       as OrderNeedDefaultSortKey, label: "상품명" },
+                      { k: "supplier"   as OrderNeedDefaultSortKey, label: "공급사" },
+                    ]).map(opt => (
+                      <button
+                        key={opt.k}
+                        type="button"
+                        onClick={() => {
+                          const next = { ...orderNeedConfig, defaultSortKey: opt.k };
+                          setOrderNeedConfig(next);
+                          setNeedSortKey(opt.k as NeedSortKey);
+                          try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
+                        }}
+                        className={[
+                          "px-2.5 h-7 rounded-md text-[12px] font-bold border transition cursor-pointer",
+                          orderNeedConfig.defaultSortKey === opt.k
+                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                            : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
+                        ].join(" ")}
+                      >{opt.label}</button>
+                    ))}
+                    {([
+                      { k: "desc" as const, label: "내림차순" },
+                      { k: "asc"  as const, label: "오름차순" },
+                    ]).map(opt => (
+                      <button
+                        key={opt.k}
+                        type="button"
+                        onClick={() => {
+                          const next = { ...orderNeedConfig, defaultSortDir: opt.k };
+                          setOrderNeedConfig(next);
+                          setNeedSortDir(opt.k);
+                          try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
+                        }}
+                        className={[
+                          "px-2.5 h-7 rounded-md text-[12px] font-bold border transition cursor-pointer",
+                          orderNeedConfig.defaultSortDir === opt.k
+                            ? "bg-slate-700 text-white border-slate-700 shadow-sm"
+                            : "bg-white text-slate-500 border-slate-200 hover:border-slate-400 hover:text-slate-700",
+                        ].join(" ")}
+                      >{opt.label}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 카테고리 초기값 + 전체 초기화 */}
+                <div className="flex flex-wrap items-end gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[11px] font-black text-slate-600 uppercase tracking-wider">카테고리 초기값</span>
+                    <div className="flex flex-wrap gap-1">
+                      {([
+                        { k: "all"     as NeedCategoryFilterKey, label: "전체" },
+                        { k: "위탁"     as NeedCategoryFilterKey, label: "위탁" },
+                        { k: "선결제"   as NeedCategoryFilterKey, label: "선결제" },
+                        { k: "60일회전" as NeedCategoryFilterKey, label: "60일회전" },
+                        { k: "90일회전" as NeedCategoryFilterKey, label: "90일회전" },
+                        { k: "기타"     as NeedCategoryFilterKey, label: "기타" },
+                      ]).map(opt => (
+                        <button
+                          key={opt.k}
+                          type="button"
+                          onClick={() => {
+                            const next = { ...orderNeedConfig, defaultCategory: opt.k };
+                            setOrderNeedConfig(next);
+                            setNeedCategoryFilter(opt.k);
+                            try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(next)); } catch { /**/ }
+                          }}
+                          className={[
+                            "px-2.5 h-7 rounded-md text-[12px] font-bold border transition cursor-pointer",
+                            orderNeedConfig.defaultCategory === opt.k
+                              ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                              : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
+                          ].join(" ")}
+                        >{opt.label}</button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOrderNeedConfig(DEFAULT_ORDER_NEED_CONFIG);
+                      setNeedCategoryFilter(DEFAULT_ORDER_NEED_CONFIG.defaultCategory);
+                      setNeedSortKey(DEFAULT_ORDER_NEED_CONFIG.defaultSortKey as NeedSortKey);
+                      setNeedSortDir(DEFAULT_ORDER_NEED_CONFIG.defaultSortDir);
+                      try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(DEFAULT_ORDER_NEED_CONFIG)); } catch { /**/ }
+                    }}
+                    className="inline-flex items-center gap-1.5 h-7 px-3 rounded-md border border-slate-300 bg-white
+                               text-[11px] font-bold text-slate-600 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50
+                               transition cursor-pointer shrink-0"
+                    title="발주판정 설정 기본값으로 초기화"
+                  >
+                    <RotateCcw size={11} />기본값
+                  </button>
+                </div>
+
               </div>
-            )}
+              )}
+            </div>
           </div>
 
           {/* ── 하단 split ── */}
@@ -1934,255 +2142,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         )}
           </div>
         </div>
-        {/* ── 발주조건 설정 모달 (localStorage · 저장·로딩) · flex flex-col gap-2 내부 ── */}
-        {needFilterModalOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-[2px] p-4"
-            onClick={() => setNeedFilterModalOpen(false)}
-          >
-            <div
-              className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md max-h-[90vh] overflow-y-auto"
-              onClick={e => e.stopPropagation()}
-            >
-              {/* 헤더 */}
-              <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-                <div className="flex items-center gap-2">
-                  <Settings size={16} className="text-indigo-600" />
-                  <div className="flex flex-col leading-tight">
-                    <span className="text-[15px] font-black text-slate-800">발주필요 · 조건 설정</span>
-                    <span className="text-[11px] text-slate-500">저장 시 · 다음 페이지 로딩부터 자동 적용</span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setNeedFilterModalOpen(false)}
-                  className="w-8 h-8 rounded-lg hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-800 cursor-pointer"
-                  title="닫기"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {/* 본문 · 조건 4가지 */}
-              <div className="px-5 py-4 flex flex-col gap-5">
-                {/* 1. 부족 판정 기준 */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">1. 재고 부족 기준</span>
-                  <div className="flex flex-col gap-1.5">
-                    {([
-                      { k: "optimal"   as OrderNeedShortageBasis, label: "현재고 < 추천적정재고",   sub: "기본 · 대부분의 경우 권장" },
-                      { k: "min"       as OrderNeedShortageBasis, label: "현재고 < 최소재고",       sub: "min_stock 컬럼 기준 · 값 없으면 제외" },
-                      { k: "realStock" as OrderNeedShortageBasis, label: "실재고 < 추천적정재고",   sub: "invStockMap 실재고 기준 · 실재고 없는 상품 제외" },
-                    ]).map(opt => (
-                      <label
-                        key={opt.k}
-                        className={[
-                          "flex items-start gap-2.5 px-3 py-2 rounded-lg border cursor-pointer transition",
-                          needFilterDraft.shortageBasis === opt.k
-                            ? "bg-indigo-50 border-indigo-300"
-                            : "bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50",
-                        ].join(" ")}
-                      >
-                        <input
-                          type="radio"
-                          name="shortageBasis"
-                          className="mt-1 accent-indigo-600 cursor-pointer"
-                          checked={needFilterDraft.shortageBasis === opt.k}
-                          onChange={() => setNeedFilterDraft(prev => ({ ...prev, shortageBasis: opt.k }))}
-                        />
-                        <div className="flex flex-col leading-tight">
-                          <span className="text-[14px] font-bold text-slate-800">{opt.label}</span>
-                          <span className="text-[12px] text-slate-500 mt-0.5">{opt.sub}</span>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 2. 카테고리 필터 초기값 */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">2. 카테고리 필터 초기값</span>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {([
-                      { k: "all"       as NeedCategoryFilterKey, label: "전체" },
-                      { k: "위탁"       as NeedCategoryFilterKey, label: "위탁" },
-                      { k: "선결제"     as NeedCategoryFilterKey, label: "선결제" },
-                      { k: "60일회전"   as NeedCategoryFilterKey, label: "60일회전" },
-                      { k: "90일회전"   as NeedCategoryFilterKey, label: "90일회전" },
-                      { k: "기타"       as NeedCategoryFilterKey, label: "기타" },
-                    ]).map(opt => (
-                      <button
-                        key={opt.k}
-                        type="button"
-                        onClick={() => setNeedFilterDraft(prev => ({ ...prev, defaultCategory: opt.k }))}
-                        className={[
-                          "px-2 h-8 rounded-md text-[13px] font-bold border transition cursor-pointer",
-                          needFilterDraft.defaultCategory === opt.k
-                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                            : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
-                        ].join(" ")}
-                      >{opt.label}</button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 3. 실재고 미입력 포함 여부 */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">3. 실재고 미입력 상품</span>
-                  <label className="flex items-start gap-2.5 px-3 py-2 rounded-lg border border-slate-200 hover:bg-slate-50 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="mt-1 accent-indigo-600 cursor-pointer"
-                      checked={needFilterDraft.includeMissingRealStock}
-                      onChange={e => setNeedFilterDraft(prev => ({ ...prev, includeMissingRealStock: e.target.checked }))}
-                    />
-                    <div className="flex flex-col leading-tight">
-                      <span className="text-[14px] font-bold text-slate-800">실재고 미입력 상품도 포함</span>
-                      <span className="text-[12px] text-slate-500 mt-0.5">체크 해제 시 · 실재고 입력된 상품만 표시</span>
-                    </div>
-                  </label>
-                </div>
-
-                {/* 4. 최소 부족 개수 */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">4. 최소 부족 개수</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      step={1}
-                      value={needFilterDraft.minShortage}
-                      onChange={e => {
-                        const v = Number(e.target.value);
-                        setNeedFilterDraft(prev => ({ ...prev, minShortage: Number.isFinite(v) && v >= 1 ? Math.floor(v) : 1 }));
-                      }}
-                      className="w-24 h-10 px-3 border border-slate-300 rounded-lg text-[14px] font-bold text-slate-800 tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
-                    />
-                    <span className="text-[13px] text-slate-600">개 이상 부족한 상품만 표시</span>
-                  </div>
-                  <span className="text-[12px] text-slate-400">기본값: 1 (조금이라도 부족하면 모두 표시)</span>
-                </div>
-
-                {/* 5. 매입주기 최소 · 2026-08-03 (#189) */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">5. 매입주기 최소</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      step={1}
-                      value={needFilterDraft.minPurchaseCycle}
-                      onChange={e => {
-                        const v = Number(e.target.value);
-                        setNeedFilterDraft(prev => ({ ...prev, minPurchaseCycle: Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0 }));
-                      }}
-                      className="w-24 h-10 px-3 border border-slate-300 rounded-lg text-[14px] font-bold text-slate-800 tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
-                    />
-                    <span className="text-[13px] text-slate-600">일 이상 매입주기 상품만 표시</span>
-                  </div>
-                  <span className="text-[12px] text-slate-400">기본값: 90 · 0 입력 시 필터 미적용 · 매입주기 = 최근·처음 매입일 사이 평균 간격</span>
-                </div>
-
-                {/* 6. 최근 한달 판매량 최소 · 2026-08-03 (#189) */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">6. 최근 한달(30일) 판매량 최소</span>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={0}
-                      step={1}
-                      value={needFilterDraft.minMonthlySales}
-                      onChange={e => {
-                        const v = Number(e.target.value);
-                        setNeedFilterDraft(prev => ({ ...prev, minMonthlySales: Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0 }));
-                      }}
-                      className="w-24 h-10 px-3 border border-slate-300 rounded-lg text-[14px] font-bold text-slate-800 tabular-nums focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400"
-                    />
-                    <span className="text-[13px] text-slate-600">개 이상 판매된 상품만 표시</span>
-                  </div>
-                  <span className="text-[12px] text-slate-400">기본값: 100 · 0 입력 시 필터 미적용 · 최근 30일 stock_history 합계</span>
-                </div>
-
-                {/* 7. 기본 정렬 · 2026-08-03 (#189) */}
-                <div className="flex flex-col gap-2">
-                  <span className="text-[12px] font-black text-slate-700 uppercase tracking-wider">7. 기본 정렬</span>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {([
-                      { k: "sale_month" as OrderNeedDefaultSortKey, label: "최근 한달 판매량" },
-                      { k: "cycle"      as OrderNeedDefaultSortKey, label: "매입주기(일)" },
-                      { k: "short"      as OrderNeedDefaultSortKey, label: "부족량" },
-                      { k: "current"    as OrderNeedDefaultSortKey, label: "ERP재고(현재고)" },
-                      { k: "optimal"    as OrderNeedDefaultSortKey, label: "추천적정재고" },
-                      { k: "inv"        as OrderNeedDefaultSortKey, label: "실재고 합계" },
-                      { k: "name"       as OrderNeedDefaultSortKey, label: "상품명" },
-                      { k: "supplier"   as OrderNeedDefaultSortKey, label: "공급사" },
-                    ]).map(opt => (
-                      <button
-                        key={opt.k}
-                        type="button"
-                        onClick={() => setNeedFilterDraft(prev => ({ ...prev, defaultSortKey: opt.k }))}
-                        className={[
-                          "px-2 h-8 rounded-md text-[13px] font-bold border transition cursor-pointer text-left",
-                          needFilterDraft.defaultSortKey === opt.k
-                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                            : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
-                        ].join(" ")}
-                      >{opt.label}</button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-[12px] font-bold text-slate-600">정렬 방향:</span>
-                    {([
-                      { k: "desc" as const, label: "내림차순 (큰 것부터)" },
-                      { k: "asc"  as const, label: "오름차순 (작은 것부터)" },
-                    ]).map(opt => (
-                      <button
-                        key={opt.k}
-                        type="button"
-                        onClick={() => setNeedFilterDraft(prev => ({ ...prev, defaultSortDir: opt.k }))}
-                        className={[
-                          "px-2 h-8 rounded-md text-[13px] font-bold border transition cursor-pointer",
-                          needFilterDraft.defaultSortDir === opt.k
-                            ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                            : "bg-white text-slate-600 border-slate-200 hover:border-indigo-300 hover:text-indigo-600",
-                        ].join(" ")}
-                      >{opt.label}</button>
-                    ))}
-                  </div>
-                  <span className="text-[12px] text-slate-400">기본값: 최근 한달 판매량 · 내림차순 (판매 많은 상품 우선)</span>
-                </div>
-              </div>
-
-              {/* 푸터 · 저장 · 취소 · 초기화 */}
-              <div className="flex items-center gap-2 px-5 py-4 border-t border-slate-100 bg-slate-50 rounded-b-2xl">
-                <button
-                  type="button"
-                  onClick={() => setNeedFilterDraft(DEFAULT_ORDER_NEED_CONFIG)}
-                  className="flex items-center gap-1.5 px-3 h-10 rounded-lg text-[13px] font-bold text-slate-600 hover:text-slate-800 hover:bg-white border border-slate-300 transition cursor-pointer"
-                  title="기본값으로 되돌리기"
-                >
-                  <RotateCcw size={13} />
-                  초기화
-                </button>
-                <div className="flex-1" />
-                <button
-                  type="button"
-                  onClick={() => setNeedFilterModalOpen(false)}
-                  className="px-4 h-10 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-white border border-slate-300 transition cursor-pointer"
-                >취소</button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    try { localStorage.setItem(ORDER_NEED_CONFIG_KEY, JSON.stringify(needFilterDraft)); } catch { /* localStorage 사용불가 · 무시 */ }
-                    setOrderNeedConfig(needFilterDraft);
-                    setNeedFilterModalOpen(false);
-                  }}
-                  className="px-4 h-10 rounded-lg text-[13px] font-black text-white bg-indigo-600 hover:bg-indigo-700 shadow-sm transition cursor-pointer"
-                >저장</button>
-              </div>
-            </div>
-          </div>
-        )}
           </>)}
         </div>
       )}
