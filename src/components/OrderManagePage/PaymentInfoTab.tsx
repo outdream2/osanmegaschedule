@@ -81,19 +81,15 @@ const BANKS = [
   "SH수협은행", "우체국",
 ];
 
+// 2026-08-03 · #225 · 결제방법 단순화 · 카드 · 현금 · 기타 3가지
+// 기존 저장 데이터(transfer/check/offset) 는 methodLabel 로 표시만 됨 · 새 저장은 3개만
 const METHOD_OPTIONS: Array<{
   key: PayMethod;
   label: string;
-  icon: React.ReactNode;
-  activeCls: string;
-  hoverCls: string;
 }> = [
-  { key: "card",     label: "카드",   icon: <CreditCard size={13} />, activeCls: "bg-indigo-600 text-white border-indigo-600",   hoverCls: "hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700" },
-  { key: "transfer", label: "이체",   icon: <Landmark size={13} />,   activeCls: "bg-emerald-600 text-white border-emerald-600", hoverCls: "hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700" },
-  { key: "cash",     label: "현금",   icon: <Banknote size={13} />,   activeCls: "bg-amber-500 text-white border-amber-500",     hoverCls: "hover:bg-amber-50 hover:border-amber-300 hover:text-amber-700" },
-  { key: "check",    label: "어음",   icon: <ScrollText size={13} />, activeCls: "bg-violet-600 text-white border-violet-600",   hoverCls: "hover:bg-violet-50 hover:border-violet-300 hover:text-violet-700" },
-  { key: "offset",   label: "상계",   icon: <Layers size={13} />,     activeCls: "bg-teal-600 text-white border-teal-600",       hoverCls: "hover:bg-teal-50 hover:border-teal-300 hover:text-teal-700" },
-  { key: "etc",      label: "기타",   icon: <Coins size={13} />,      activeCls: "bg-slate-700 text-white border-slate-700",     hoverCls: "hover:bg-slate-100 hover:border-slate-400 hover:text-slate-800" },
+  { key: "card", label: "카드" },
+  { key: "cash", label: "현금" },
+  { key: "etc",  label: "기타" },
 ];
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -221,7 +217,7 @@ export const PaymentInfoTab: React.FC = () => {
   // 폼 상태
   const [paymentDate, setPaymentDate] = useState<string>(todayYmd());
   const [amount, setAmount] = useState<string>("");
-  const [method, setMethod] = useState<PayMethod>("transfer");
+  const [method, setMethod] = useState<PayMethod>("card");
   const [cardIssuer, setCardIssuer] = useState<string>("");
   const [cardIssuerCustom, setCardIssuerCustom] = useState<string>("");
   const [bankName, setBankName] = useState<string>("");
@@ -647,53 +643,45 @@ export const PaymentInfoTab: React.FC = () => {
                   </FieldLabel>
                 </div>
 
-                {/* Row 2 · 결제 방법 (segmented) */}
+                {/* Row 2 · 결제 방법 · #225 · 드롭다운 (카드/현금/기타) · 카드사도 옆에 */}
                 <FieldLabel label="결제 방법" required>
-                  <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                    {METHOD_OPTIONS.map(opt => (
-                      <button
-                        key={opt.key}
-                        type="button"
-                        onClick={() => setMethod(opt.key)}
-                        className={`inline-flex items-center justify-center gap-1 h-9 rounded-lg text-[12px] font-bold border transition cursor-pointer ${
-                          method === opt.key
-                            ? `${opt.activeCls} shadow-sm`
-                            : `bg-white border-slate-200 text-slate-600 ${opt.hoverCls}`
-                        }`}
-                      >
-                        {opt.icon}
-                        {opt.label}
-                      </button>
-                    ))}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <select
+                      value={method}
+                      onChange={e => setMethod(e.target.value as PayMethod)}
+                      className={`${inputCls} w-24 shrink-0`}
+                    >
+                      {METHOD_OPTIONS.map(opt => (
+                        <option key={opt.key} value={opt.key}>{opt.label}</option>
+                      ))}
+                    </select>
+                    {method === "card" && (
+                      <>
+                        <select
+                          value={cardIssuer}
+                          onChange={e => setCardIssuer(e.target.value)}
+                          className={`${inputCls} w-36 shrink-0`}
+                        >
+                          <option value="">카드사 선택...</option>
+                          {CARD_ISSUERS.map(c => <option key={c} value={c}>{c}</option>)}
+                          <option value="직접입력">직접 입력...</option>
+                        </select>
+                        {cardIssuer === "직접입력" && (
+                          <input
+                            type="text"
+                            value={cardIssuerCustom}
+                            onChange={e => setCardIssuerCustom(e.target.value)}
+                            placeholder="카드사 이름"
+                            className={`${inputCls} flex-1 min-w-[140px]`}
+                          />
+                        )}
+                      </>
+                    )}
                   </div>
                 </FieldLabel>
 
-                {/* Row 3 · 카드사 / 은행 (조건부) */}
-                {method === "card" && (
-                  <FieldLabel label="카드사" icon={<CreditCard size={11} />} required>
-                    <div className="flex gap-2">
-                      <select
-                        value={cardIssuer}
-                        onChange={e => setCardIssuer(e.target.value)}
-                        className={`${inputCls} flex-1`}
-                      >
-                        <option value="">카드사 선택...</option>
-                        {CARD_ISSUERS.map(c => <option key={c} value={c}>{c}</option>)}
-                        <option value="직접입력">직접 입력...</option>
-                      </select>
-                      {cardIssuer === "직접입력" && (
-                        <input
-                          type="text"
-                          value={cardIssuerCustom}
-                          onChange={e => setCardIssuerCustom(e.target.value)}
-                          placeholder="카드사 이름"
-                          className={`${inputCls} flex-1`}
-                        />
-                      )}
-                    </div>
-                  </FieldLabel>
-                )}
-                {method === "transfer" && (
+                {/* Row 3 · 은행 · 제거됨 (#225 · transfer 옵션 폐지) · 남겨두는 dead branch (렌더링 안 됨) */}
+                {method === ("transfer" as PayMethod) && (
                   <FieldLabel label="은행" icon={<Landmark size={11} />} required>
                     <div className="flex gap-2">
                       <select
