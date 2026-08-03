@@ -11,6 +11,16 @@
   100% { transform: translateX(300%); }
 }
 
+/* 2026-08-03 · 서브탭 long-press arm 시 소프트 shake · useSortableTabs 훅에서 사용 */
+@keyframes tab-shake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  20%      { transform: translateX(-1px) rotate(-0.6deg); }
+  40%      { transform: translateX(1px)  rotate(0.6deg); }
+  60%      { transform: translateX(-1px) rotate(-0.4deg); }
+  80%      { transform: translateX(1px)  rotate(0.4deg); }
+}
+.tab-shake { animation: tab-shake 0.55s ease-in-out infinite; transform-origin: center; }
+
 @theme {
   --font-sans: "Inter", "Noto Sans KR", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;

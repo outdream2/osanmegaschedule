@@ -4,6 +4,7 @@
 // 사입(OCR거래명세서 등록) 탭에서는 거래명세서 OCR(OcrPage) 노출
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useVendors } from "../../hooks/useVendors";
+import { useSortableTabs, type TabHandlerProps } from "../../hooks/useSortableTabs";
 import { Loader2, Package, ShoppingCart, RefreshCw, Trash2, CheckSquare, Square, Send, Mail, MessageSquare, PackageCheck, AlertTriangle, Building2, ClipboardList, CheckCircle2, ChevronRight, ChevronDown, TrendingUp, ScanLine, PackagePlus } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
@@ -115,6 +116,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history">("receipt");
   const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment" | "payment-info">("vendor");
   const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff">("trending");
+
+  // 2026-08-03 · 관리자(level>=8) 전용 · 서브탭 long-press 드래그 재정렬 (useSortableTabs 훅)
+  //   · storageKey 는 memory feedback_tab_reorder 규칙 준수 (tabOrder.<page-key>)
+  //   · isAdmin 아니면 훅은 원본 순서 그대로 · 모든 이벤트 no-op
+  const isAdmin = (ocrTabAuthSession?.level ?? 0) >= 8;
 
   // 2026-08-03 · 입고내역 상태·로직 · ProductArrivalPage 내부 탭으로 이동 (arrivalTab: "history")
   //   기존 arrivals · loadArrivals · selectedArrivalId · arrivalDetail · deleteArrival 모두 ProductArrivalPage 로 옮김
@@ -753,13 +759,55 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             (p.supplier ?? "").toLowerCase().includes(q));
   });
 
+  // ── 2026-08-03 · 서브탭 정의 (useSortableTabs 재정렬 대상) ──
+  //   · 각 페이지별 storageKey 는 memory feedback_tab_reorder 규칙 준수 (tabOrder.<page>)
+  //   · badge 는 렌더 시 별도 계산 (여기서는 순서·label·icon·color 만 유지)
+  type PurchaseOrderKey = "order" | "need" | "low";
+  type PurchaseKey = "receipt" | "reconciliation" | "scan" | "productarrival" | "return" | "purchase-history";
+  type PaymentKey = "vendor" | "payment" | "payment-info";
+  type StatKey = "trending" | "category" | "flow" | "diff";
+  interface SubTabDef<K extends string> { key: K; label: string; icon: React.ElementType; color: string; }
+
+  const purchaseOrderDefaultTabs: SubTabDef<PurchaseOrderKey>[] = useMemo(() => [
+    { key: "order", label: "발주요청",     icon: ShoppingCart,  color: "sky"   },
+    { key: "need",  label: "발주필요",     icon: ClipboardList, color: "amber" },
+    { key: "low",   label: "적정재고이하", icon: AlertTriangle, color: "rose"  },
+  ], []);
+  const purchaseDefaultTabs: SubTabDef<PurchaseKey>[] = useMemo(() => [
+    { key: "purchase-history", label: "매입이력",   icon: Building2,      color: "sky"     },
+    { key: "return",           label: "반품필요",   icon: ArrowLeftRight, color: "rose"    },
+    { key: "receipt",          label: "거래명세서", icon: PackageCheck,   color: "violet"  },
+    { key: "scan",             label: "실재고입력", icon: ScanLine,       color: "amber"   },
+    { key: "productarrival",   label: "상품입고",   icon: PackagePlus,    color: "teal"    },
+    { key: "reconciliation",   label: "실재고",     icon: CheckCircle2,   color: "emerald" },
+  ], []);
+  const paymentDefaultTabs: SubTabDef<PaymentKey>[] = useMemo(() => [
+    { key: "vendor",       label: "공급사관리", icon: Building2,     color: "teal"  },
+    { key: "payment",      label: "결제원장",   icon: BarChart2,     color: "amber" },
+    { key: "payment-info", label: "결제정보",   icon: ClipboardList, color: "sky"   },
+  ], []);
+  const statDefaultTabs: SubTabDef<StatKey>[] = useMemo(() => [
+    { key: "trending", label: "급상승",         icon: TrendingUp,    color: "indigo" },
+    { key: "category", label: "카테고리별현황", icon: PieChart,      color: "amber"  },
+    { key: "flow",     label: "상품현황",       icon: Boxes,         color: "sky"    },
+    { key: "diff",     label: "손실추적",       icon: AlertTriangle, color: "rose"   },
+  ], []);
+
+  const purchaseOrderSortable = useSortableTabs("tabOrder.purchase-order", purchaseOrderDefaultTabs, isAdmin);
+  const purchaseSortable      = useSortableTabs("tabOrder.purchase",       purchaseDefaultTabs,      isAdmin);
+  const paymentSortable       = useSortableTabs("tabOrder.payment",        paymentDefaultTabs,       isAdmin);
+  const statSortable          = useSortableTabs("tabOrder.statistics",     statDefaultTabs,          isAdmin);
+
   // ── 서브탭 렌더 헬퍼 ──
+  //   2026-08-03 · sortable prop 추가 · getTabProps 로 long-press 드래그 이벤트/시각 flag 전달
+  //   · 기본값은 no-op (getTabProps 미제공 시 기존 동작 그대로)
   const renderSubTabs = <K extends string>(
     tabs: { k: K; label: string; icon: React.ElementType; color: string; badge?: number }[],
     activeTab: K,
     setTab: (k: K) => void,
+    sortable?: { getTabProps: (key: K) => TabHandlerProps; isDragging: boolean },
   ) => (
-    <div className="flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-0.5 border-b border-slate-200 sm:overflow-x-auto sm:scrollbar-none bg-slate-50/50 px-2 pt-1">
+    <div className={`flex flex-wrap sm:flex-nowrap items-stretch sm:items-center gap-x-0 sm:gap-0.5 border-b border-slate-200 sm:overflow-x-auto sm:scrollbar-none bg-slate-50/50 px-2 pt-1 ${sortable?.isDragging ? "select-none" : ""}`}>
       {tabs.map(t => {
         const Icon = t.icon;
         const active = activeTab === t.k;
@@ -773,11 +821,35 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           emerald:{ text: "text-emerald-700",bar: "bg-emerald-500",badge: "bg-emerald-100 text-emerald-700" },
         };
         const c = colorMap[t.color] ?? colorMap["sky"];
+        const dnd = sortable?.getTabProps(t.k);
+        const dragCls = dnd
+          ? [
+              dnd.isBeingDragged ? "opacity-50" : "",
+              dnd.isDropTarget ? "ring-2 ring-indigo-400 ring-inset" : "",
+              dnd.isArmed && !dnd.isBeingDragged ? "tab-shake cursor-grab" : "",
+              dnd.isBeingDragged ? "cursor-grabbing" : "",
+            ].filter(Boolean).join(" ")
+          : "";
         return (
-          <button key={t.k} onClick={() => setTab(t.k)}
+          <button
+            key={t.k}
+            onClick={() => setTab(t.k)}
+            draggable={dnd?.draggable}
+            onDragStart={dnd?.onDragStart}
+            onDragOver={dnd?.onDragOver}
+            onDragEnter={dnd?.onDragEnter}
+            onDragLeave={dnd?.onDragLeave}
+            onDrop={dnd?.onDrop}
+            onDragEnd={dnd?.onDragEnd}
+            onMouseDown={dnd?.onMouseDown}
+            onMouseUp={dnd?.onMouseUp}
+            onMouseLeave={dnd?.onMouseLeave}
+            onTouchStart={dnd?.onTouchStart}
+            onTouchEnd={dnd?.onTouchEnd}
+            onTouchCancel={dnd?.onTouchCancel}
             className={`relative basis-1/2 sm:basis-auto flex-grow-0 flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 px-3 sm:px-4 py-2.5 text-[14px] sm:text-[16px] font-bold leading-tight transition-colors duration-150 rounded-t-md ${
               active ? `${c.text} bg-white shadow-sm` : "text-slate-400 hover:text-slate-600 hover:bg-white/60"
-            }`}>
+            } ${dragCls}`}>
             <Icon size={15} strokeWidth={active ? 2.4 : 1.8} className="hidden sm:inline-block shrink-0" />
             <span>{t.label}</span>
             {t.badge != null && t.badge > 0 && (
@@ -823,11 +895,18 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {/* ══ 발주 탭 (purchase-order) ══ */}
       {topTab === "purchase-order" && (
         <div className="flex flex-col gap-3">
-          {renderSubTabs([
-            { k: "need"  as const, label: "발주필요",     icon: ClipboardList, color: "amber", badge: lowStock.length },
-            { k: "order" as const, label: "발주요청",     icon: ShoppingCart,  color: "sky" },
-            { k: "low"   as const, label: "적정재고이하", icon: AlertTriangle, color: "rose" },
-          ], purchaseOrderSubTab, setPurchaseOrderSubTab)}
+          {renderSubTabs<PurchaseOrderKey>(
+            purchaseOrderSortable.tabs.map(t => ({
+              k: t.key,
+              label: t.label,
+              icon: t.icon,
+              color: t.color,
+              badge: t.key === "need" ? lowStock.length : undefined,
+            })),
+            purchaseOrderSubTab,
+            setPurchaseOrderSubTab,
+            { getTabProps: purchaseOrderSortable.getTabProps, isDragging: purchaseOrderSortable.isDragging },
+          )}
           {/* ── 발주필요 서브탭 ── */}
           {purchaseOrderSubTab === "need" && (
         <div className="flex flex-col gap-2">
@@ -886,7 +965,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <thead className="sticky top-0 bg-white z-10">
                 {/* 그룹 카테고리 헤더 · 클릭으로 접기/펼치기 */}
                 <tr className="border-b border-slate-200 text-[10px] font-black uppercase tracking-wider">
-                  <th colSpan={isNeedCollapsed("info") ? 1 : 3}
+                  <th colSpan={isNeedCollapsed("info") ? 1 : 2}
                     className="text-center py-1.5 bg-sky-50 text-sky-700 border-l border-r border-slate-100 cursor-pointer select-none hover:bg-sky-100 transition"
                     onClick={() => toggleNeedGroup("info")}
                     title={isNeedCollapsed("info") ? "상품 정보 펼치기" : "상품 정보 접기"}>
@@ -910,7 +989,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   ) : (
                     <>
                       <th onClick={() => handleNeedSort("supplier")} title="공급사 정렬" className="text-left px-0.5 py-1.5 w-24 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">공급사{needArrow("supplier")}</th>
-                      <th onClick={() => handleNeedSort("contact")} title="담당자 정렬" className="text-left px-0.5 py-1.5 w-20 cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">담당자{needArrow("contact")}</th>
                       <th onClick={() => handleNeedSort("name")} title="상품명 정렬" className="text-left px-0.5 py-1.5 min-w-[120px] cursor-pointer hover:bg-sky-50 select-none bg-sky-50/30">상품명{needArrow("name")}</th>
                     </>
                   )}
@@ -973,22 +1051,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                               </div>
                             ) : "-"}
                           </td>
-                          <td className="px-0.5 py-1.5 text-[12px] text-slate-600 break-words whitespace-normal align-top">
-                            {vendor ? (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  const rect = (e.target as HTMLElement).getBoundingClientRect();
-                                  setContactPopover({ anchor: rect, name: contactName, phone: vendor.phone, email: vendor.email });
-                                }}
-                                className="hover:text-indigo-700 hover:underline cursor-pointer text-left w-full"
-                                title="클릭 시 전화·이메일 표시"
-                              >{contactName}</button>
-                            ) : (
-                              <span>{contactName}</span>
-                            )}
-                          </td>
                           <td className="px-0.5 py-1.5 align-top">
                             <button
                               onClick={() => setNeedPanelProduct({ code, name })}
@@ -1043,7 +1105,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   );
                 })}
                 {lowStockFiltered.length === 0 && (
-                  <tr><td colSpan={8} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
+                  <tr><td colSpan={7} className="text-center text-[11px] text-slate-300 py-6">검색 결과 없음</td></tr>
                 )}
               </tbody>
             </table>
@@ -1104,14 +1166,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {/* ══ 매입 탭 (purchase) ══ */}
       {topTab === "purchase" && (
         <div className="flex flex-col gap-3">
-          {renderSubTabs([
-            { k: "purchase-history" as const, label: "매입이력",    icon: Building2,       color: "sky" },
-            { k: "return"           as const, label: "반품필요",    icon: ArrowLeftRight,  color: "rose" },
-            { k: "receipt"          as const, label: "거래명세서",  icon: PackageCheck,    color: "violet" },
-            { k: "scan"             as const, label: "실재고입력",  icon: ScanLine,        color: "amber" },
-            { k: "productarrival"   as const, label: "상품입고",    icon: PackagePlus,     color: "teal" },
-            { k: "reconciliation"   as const, label: "실재고",      icon: CheckCircle2,    color: "emerald" },
-          ], purchaseSubTab, setPurchaseSubTab)}
+          {renderSubTabs<PurchaseKey>(
+            purchaseSortable.tabs.map(t => ({ k: t.key, label: t.label, icon: t.icon, color: t.color })),
+            purchaseSubTab,
+            setPurchaseSubTab,
+            { getTabProps: purchaseSortable.getTabProps, isDragging: purchaseSortable.isDragging },
+          )}
           {/* ── 거래명세서(OCR) 서브탭 ── */}
           {purchaseSubTab === "receipt" && (
         <div className="flex-1 flex flex-col min-h-0 -mt-1">
@@ -1174,11 +1234,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {/* ══ 결제 탭 (payment) — 공급사관리 · 결제원장 서브탭 ══ */}
       {topTab === "payment" && (
         <div className="flex flex-col gap-3">
-          {renderSubTabs([
-            { k: "vendor"       as const, label: "공급사관리", icon: Building2,  color: "teal" },
-            { k: "payment"      as const, label: "결제원장",   icon: BarChart2,  color: "amber" },
-            { k: "payment-info" as const, label: "결제정보",   icon: ClipboardList, color: "sky" },
-          ], paymentSubTab, setPaymentSubTab)}
+          {renderSubTabs<PaymentKey>(
+            paymentSortable.tabs.map(t => ({ k: t.key, label: t.label, icon: t.icon, color: t.color })),
+            paymentSubTab,
+            setPaymentSubTab,
+            { getTabProps: paymentSortable.getTabProps, isDragging: paymentSortable.isDragging },
+          )}
 
           {/* ── 공급사관리 서브탭 ── */}
           {paymentSubTab === "vendor" && (
@@ -1307,12 +1368,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {/* ══ 통계 탭 (statistics) ══ */}
       {topTab === "statistics" && (
         <div className="flex flex-col gap-3">
-          {renderSubTabs([
-            { k: "trending"  as const, label: "급상승",       icon: TrendingUp,    color: "indigo" },
-            { k: "category"  as const, label: "카테고리별현황", icon: PieChart,      color: "amber" },
-            { k: "flow"      as const, label: "상품현황",      icon: Boxes,         color: "sky" },
-            { k: "diff"      as const, label: "손실추적",      icon: AlertTriangle, color: "rose" },
-          ], statSubTab, setStatSubTab)}
+          {renderSubTabs<StatKey>(
+            statSortable.tabs.map(t => ({ k: t.key, label: t.label, icon: t.icon, color: t.color })),
+            statSubTab,
+            setStatSubTab,
+            { getTabProps: statSortable.getTabProps, isDragging: statSortable.isDragging },
+          )}
           {statSubTab === "trending" && (
             <div className="flex-1 min-h-0 overflow-y-auto">
               <TrendingTab />

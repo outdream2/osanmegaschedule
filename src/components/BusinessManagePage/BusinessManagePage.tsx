@@ -9,6 +9,7 @@ import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { LeavePage } from "../LeavePage/LeavePage";
 import { LunchPage } from "../LunchPage/LunchPage";
 import { PermissionsPage } from "../PermissionsPage/PermissionsPage";
+import { useSortableTabs } from "../../hooks/useSortableTabs";
 import type { AuthSession } from "../../types";
 
 // StaffManagePage · props 없음 · lazy 로드 (초기 진입 시에만 필요)
@@ -61,6 +62,11 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
 }) => {
   const [subTab, setSubTab] = useState<BmSubTab>("staff-manage");
 
+  // 2026-08-03 · 관리자(level>=8) 전용 · long-press 드래그 재정렬
+  //   · storageKey "tabOrder.business" · memory feedback_tab_reorder 규칙 준수
+  const isAdmin = (authSession?.level ?? 0) >= 8;
+  const sortable = useSortableTabs<TabDef>("tabOrder.business", TABS, isAdmin);
+
   // 노프롭 서브페이지에 넘길 공통 props (embedded=true 로 자체 헤더 skip 요청)
   const commonSubPageProps = {
     onBack,
@@ -82,18 +88,39 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
       />
 
       {/* ── 서브탭 바 · DisplayPage 서브탭 스타일 벤치마크 ── */}
+      {/* 2026-08-03 · 관리자(level>=8) · 500ms long-press 후 드래그로 순서 변경 가능 */}
       <div className="bg-white border-b border-slate-200 w-full shrink-0">
         <div className="max-w-[1360px] mx-auto px-2 sm:px-5 w-full overflow-x-auto scrollbar-none">
-          <div className="flex flex-nowrap items-stretch gap-0">
-            {TABS.map(t => {
+          <div className={`flex flex-nowrap items-stretch gap-0 ${sortable.isDragging ? "select-none" : ""}`}>
+            {sortable.tabs.map(t => {
               const active = subTab === t.key;
               const Icon = t.icon;
               const c = SUBTAB_COLORS[t.color];
+              const dnd = sortable.getTabProps(t);
+              const dragCls = [
+                dnd.isBeingDragged ? "opacity-50" : "",
+                dnd.isDropTarget ? "ring-2 ring-indigo-400 ring-inset" : "",
+                dnd.isArmed && !dnd.isBeingDragged ? "tab-shake cursor-grab" : "",
+                dnd.isBeingDragged ? "cursor-grabbing" : "",
+              ].filter(Boolean).join(" ");
               return (
                 <button
                   key={t.key}
                   type="button"
                   onClick={() => setSubTab(t.key)}
+                  draggable={dnd.draggable}
+                  onDragStart={dnd.onDragStart}
+                  onDragOver={dnd.onDragOver}
+                  onDragEnter={dnd.onDragEnter}
+                  onDragLeave={dnd.onDragLeave}
+                  onDrop={dnd.onDrop}
+                  onDragEnd={dnd.onDragEnd}
+                  onMouseDown={dnd.onMouseDown}
+                  onMouseUp={dnd.onMouseUp}
+                  onMouseLeave={dnd.onMouseLeave}
+                  onTouchStart={dnd.onTouchStart}
+                  onTouchEnd={dnd.onTouchEnd}
+                  onTouchCancel={dnd.onTouchCancel}
                   className={[
                     "relative flex items-center gap-2 sm:gap-2.5",
                     "px-4 sm:px-6 py-3.5 sm:py-4",
@@ -102,6 +129,7 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-300",
                     "active:opacity-70",
                     active ? c.text : `text-slate-500 ${c.hoverText}`,
+                    dragCls,
                   ].join(" ")}
                   title={t.label}
                 >
