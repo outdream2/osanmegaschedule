@@ -25,3 +25,25 @@ export function isVatAnnotation(text: string | null | undefined): boolean {
   if (!text) return false;
   return /vat/i.test(String(text));
 }
+
+/**
+ * 회사명 접두어(법인 형식) 제거 · 공급사 리스트 표시 시 사용
+ *  · "(주)대웅제약"         → "대웅제약"
+ *  · "㈜대웅제약"           → "대웅제약"
+ *  · "주식회사 대웅제약"    → "대웅제약"
+ *  · "대웅제약(주)"         → "대웅제약"
+ *  · "대웅제약 주식회사"    → "대웅제약"
+ * 데이터 자체는 변경하지 않고 · 표시 전용
+ */
+const CORP_PREFIX_RE = /^(?:\(?주\)?|㈜|㈔|㈕|주식회사)\s*/;
+const CORP_SUFFIX_RE = /\s*(?:\(?주\)?|㈜|㈔|㈕|주식회사)\s*$/;
+
+export function stripCorporatePrefix(name: string | null | undefined): string {
+  if (!name) return "";
+  return String(name).replace(CORP_PREFIX_RE, "").replace(CORP_SUFFIX_RE, "").trim();
+}
+
+/** vat 부가정보 + 법인 접두어/접미어 모두 제거 · 리스트 표시 종합 정제 */
+export function displayVendorName(name: string | null | undefined): string {
+  return stripCorporatePrefix(stripVendorAnnotation(name));
+}

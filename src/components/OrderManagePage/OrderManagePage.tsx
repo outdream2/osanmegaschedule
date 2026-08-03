@@ -1743,7 +1743,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           <button
                             onClick={() => handleRequestOrder(p)}
                             disabled={busy}
-                            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-[12px] font-black text-white bg-orange-600 hover:bg-orange-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer whitespace-nowrap"
+                            className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-md text-[13px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer whitespace-nowrap"
                             title="발주요청 리스트에 추가"
                           >
                             {busy ? (
@@ -2317,7 +2317,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             {/* 액션 버튼 */}
             <div className="flex items-center gap-1.5 ml-auto">
               <button onClick={handleBulkOrder} disabled={sendingBulk || selectedOrder.size === 0}
-                className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-[12px] font-black text-white bg-orange-600 hover:bg-orange-700 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer shrink-0 whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[13px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer shrink-0 whitespace-nowrap"
                 title="선택한 발주요청을 공급사별로 그룹핑 후 이메일/문자 발송">
                 {sendingBulk ? <Loader2 size={12} strokeWidth={2.5} className="animate-spin" /> : <Send size={12} strokeWidth={2.5} />}
                 <span>{sendingBulk ? "발송 중" : `일괄 발주${selectedOrder.size > 0 ? ` (${selectedOrder.size})` : ""}`}</span>
@@ -2856,7 +2856,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <button
                   onClick={submitOrderModal}
                   disabled={sendingBulk}
-                  className="inline-flex items-center gap-2 px-5 py-2 rounded-lg text-[13px] font-black text-white bg-orange-600 hover:bg-orange-700 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer"
+                  className="inline-flex items-center gap-1.5 h-9 px-5 rounded-md text-[13px] font-semibold text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer"
                 >
                   {sendingBulk ? <Loader2 size={13} strokeWidth={2.5} className="animate-spin" /> : <Send size={13} strokeWidth={2.5} />}
                   {sendingBulk ? "발송 중..." : "발주 발송"}

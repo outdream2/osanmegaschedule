@@ -10,6 +10,8 @@ import {
   Wallet, Plus, Trash2, CircleDollarSign,
 } from "lucide-react";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
+// 2026-08-03 · 공급사명 표시 정제 · 법인접두어("(주)"·"주식회사"·"㈜") 및 vat 부가정보 제거
+import { displayVendorName } from "../../utils/vendorNameNormalize";
 
 interface VendorListEditorProps {
   // 기존 API 호환용 · 무시됨 (모달 방식으로 통일)
@@ -521,8 +523,9 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                     <td className="pl-2 pr-1 py-1.5 min-w-[120px] max-w-[160px]">
                       <div className="leading-tight">
                         <VendorCategoryBadge category={v.category} className="text-[10px] mb-0.5" />
-                        <div className={`text-[13px] font-bold break-keep leading-snug ${isActive ? "text-indigo-900" : "text-slate-800"}`}>
-                          {String(v.company_name ?? "").replace(/\s*\(?\s*(VAT|부가세|부가가치세)\s*미포함\s*\)?\s*/gi, "").trim() || v.company_name}
+                        <div className={`text-[13px] font-bold break-keep leading-snug ${isActive ? "text-indigo-900" : "text-slate-800"}`}
+                          title={v.company_name}>
+                          {displayVendorName(v.company_name) || v.company_name}
                         </div>
                       </div>
                     </td>
