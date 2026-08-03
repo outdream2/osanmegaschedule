@@ -1758,16 +1758,14 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           <button
                             onClick={() => handleRequestOrder(p)}
                             disabled={busy}
-                            className="group relative inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[12px] font-black text-white bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:via-orange-600 hover:to-rose-600 shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-orange-500/40 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer whitespace-nowrap ring-1 ring-inset ring-white/20"
+                            className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-[12px] font-black text-white bg-orange-600 hover:bg-orange-700 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer whitespace-nowrap"
                             title="발주요청 리스트에 추가"
                           >
-                            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/25 backdrop-blur shrink-0">
-                              {busy ? (
-                                <Loader2 size={11} strokeWidth={2.5} className="animate-spin" />
-                              ) : (
-                                <ShoppingCart size={11} strokeWidth={2.5} />
-                              )}
-                            </span>
+                            {busy ? (
+                              <Loader2 size={12} strokeWidth={2.5} className="animate-spin" />
+                            ) : (
+                              <ShoppingCart size={12} strokeWidth={2.5} />
+                            )}
                             <span>{busy ? "추가 중" : "발주"}</span>
                           </button>
                         )}
@@ -2302,11 +2300,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             {/* 액션 버튼 */}
             <div className="flex items-center gap-1.5 ml-auto">
               <button onClick={handleBulkOrder} disabled={sendingBulk || selectedOrder.size === 0}
-                className="relative inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-[12px] font-black text-white bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:via-orange-600 hover:to-rose-600 shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md transition-all duration-200 cursor-pointer shrink-0 whitespace-nowrap ring-1 ring-inset ring-white/20"
+                className="inline-flex items-center gap-1.5 h-8 px-3.5 rounded-lg text-[12px] font-black text-white bg-orange-600 hover:bg-orange-700 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer shrink-0 whitespace-nowrap"
                 title="선택한 발주요청을 공급사별로 그룹핑 후 이메일/문자 발송">
-                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/25 backdrop-blur shrink-0">
-                  {sendingBulk ? <Loader2 size={11} strokeWidth={3} className="animate-spin" /> : <Send size={11} strokeWidth={2.5} />}
-                </span>
+                {sendingBulk ? <Loader2 size={12} strokeWidth={2.5} className="animate-spin" /> : <Send size={12} strokeWidth={2.5} />}
                 <span>{sendingBulk ? "발송 중" : `일괄 발주${selectedOrder.size > 0 ? ` (${selectedOrder.size})` : ""}`}</span>
               </button>
               <button onClick={toggleAll}
@@ -2843,11 +2839,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <button
                   onClick={submitOrderModal}
                   disabled={sendingBulk}
-                  className="relative inline-flex items-center gap-2 px-5 py-2 rounded-full text-[12px] font-black text-white bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 hover:from-amber-600 hover:via-orange-600 hover:to-rose-600 shadow-md shadow-amber-500/30 hover:shadow-lg hover:shadow-orange-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md transition-all duration-200 cursor-pointer ring-1 ring-inset ring-white/20"
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-lg text-[13px] font-black text-white bg-orange-600 hover:bg-orange-700 shadow-sm disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-150 cursor-pointer"
                 >
-                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/25 backdrop-blur shrink-0">
-                    {sendingBulk ? <Loader2 size={11} strokeWidth={3} className="animate-spin" /> : <Send size={11} strokeWidth={2.5} />}
-                  </span>
+                  {sendingBulk ? <Loader2 size={13} strokeWidth={2.5} className="animate-spin" /> : <Send size={13} strokeWidth={2.5} />}
                   {sendingBulk ? "발송 중..." : "발주 발송"}
                 </button>
               </div>
