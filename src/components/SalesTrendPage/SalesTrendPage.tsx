@@ -1922,7 +1922,7 @@ const ZoneCategoryContent: React.FC = () => {
                   {sortableTh("sale", "판매량", "text-right px-0.5 py-1.5 w-14 text-orange-500 bg-orange-50/40")}
                   {sortableTh("amount", "판매금액", "text-right px-0.5 py-1.5 w-16 text-emerald-500 bg-emerald-50/40")}
                   <th className="text-right px-0.5 py-1.5 w-16 text-amber-600 bg-amber-50/40">최근매입</th>
-                  <th className="text-right px-0.5 py-1.5 w-14 text-slate-600 bg-slate-50/40">적정재고</th>
+                  <th className="text-right px-0.5 py-1.5 w-14 text-slate-600 bg-slate-50/40">추천적정</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-50">

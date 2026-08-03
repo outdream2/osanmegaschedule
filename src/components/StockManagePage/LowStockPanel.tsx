@@ -189,10 +189,10 @@ export const LowStockPanel: React.FC = () => {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-3 flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex items-center gap-2">
           <AlertTriangle size={14} className="text-rose-500 shrink-0" />
-          <span className="text-[13px] font-semibold text-slate-800">적정재고 이하</span>
+          <span className="text-[13px] font-semibold text-slate-800">추천적정재고 이하</span>
           <span className="text-[11px] font-semibold text-rose-600 bg-rose-100 rounded-full px-2 py-0.5 tabular-nums">{lowStock.length}개</span>
         </div>
-        <span className="text-[11px] text-slate-400">현재고 &lt; 적정재고 · 상품명 클릭 → 상세</span>
+        <span className="text-[11px] text-slate-400">현재고 &lt; 추천적정재고 · 상품명 클릭 → 상세</span>
         <button
           type="button"
           onClick={fetchLowStock}
@@ -227,7 +227,7 @@ export const LowStockPanel: React.FC = () => {
                 ) : lowStock.length === 0 ? (
                   <div className="flex flex-col items-center justify-center gap-2 py-12 text-slate-400">
                     <AlertTriangle size={28} className="opacity-20" />
-                    <div className="text-[12px] font-semibold">적정재고 이하 상품 없음</div>
+                    <div className="text-[12px] font-semibold">추천적정재고 이하 상품 없음</div>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">

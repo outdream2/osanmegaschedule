@@ -85,6 +85,8 @@ interface StockFlowRow {
   // 2026-07-28 · 사용자 요청 · 판매가·사입가·이익률 컬럼 추가
   sale_price?: number;
   purchase_price?: number;
+  // 2026-08-03 · 최근 30일 판매량
+  sale_qty_month?: number;
 }
 // 2026-07-28 · 사용자 요청 · 모든 컬럼 정렬 가능하게 확장
 type SortKey = "name" | "opening" | "sale" | "purchase" | "amount" | "closing" | "current" | "loss"
@@ -2451,7 +2453,7 @@ export const StockManagePage: React.FC = () => {
               const tabs: TabDef[] = [
                 { k: "flow", label: "상품현황", icon: Activity, color: "teal" },
                 { k: "supplier", label: "공급사", icon: Building2, color: "sky" },
-                { k: "low", label: "적정재고↓", icon: AlertTriangle, color: "emerald" },
+                { k: "low", label: "추천적정↓", icon: AlertTriangle, color: "emerald" },
                 { k: "diff", label: "손실추적", icon: Layers, color: "violet" },
                 { k: "return", label: "반품필요", icon: PackageCheck, color: "rose" },
               ];
@@ -3415,7 +3417,7 @@ export const StockManagePage: React.FC = () => {
                                       };
                                       return (
                                         <>
-                                          {groupHeader("stock", "재고현황", 3)}
+                                          {groupHeader("stock", "재고현황", 4)}
                                           {groupHeader("purchase", "매입현황", 3)}
                                           {groupHeader("sales", "판매현황", 5)}
                                         </>
@@ -3480,13 +3482,21 @@ export const StockManagePage: React.FC = () => {
                                               </span>
                                             </th>
                                             <th onClick={() => toggleFlowSort("optimal" as any)}
-                                              className={`text-right px-0.5 py-1.5 w-12 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === ("optimal" as any) ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
-                                              title="적정재고 = 최근 30일 판매 총합 (관리자가 상단 '적정재고 = 30일 판매량' 버튼 실행 시점 · products.optimal_stock)"
+                                              className={`text-right px-0.5 py-1.5 w-14 cursor-pointer select-none bg-sky-50/60 hover:bg-sky-100 transition ${flowSort === ("optimal" as any) ? "text-sky-800 font-black" : "text-sky-600 font-black"}`}
+                                              title="추천적정재고 = 최근 30일 판매 총합 (관리자가 상단 버튼 실행 시점 · products.optimal_stock)"
                                             >
                                               <span className="flex flex-col leading-tight items-end">
-                                                <span>적정재고</span>
-                                                <span className="text-[11px] font-semibold text-sky-500">최근 30일</span>
+                                                <span>추천적정재고</span>
                                                 <span className="text-[10px] opacity-70">{arrowFor("optimal" as any)}</span>
+                                              </span>
+                                            </th>
+                                            <th
+                                              className="text-right px-0.5 py-1.5 w-16 bg-sky-50/40 text-sky-600 font-black"
+                                              title="최근 30일 판매량 (sale_qty_month)"
+                                            >
+                                              <span className="flex flex-col leading-tight items-end">
+                                                <span>최근30일</span>
+                                                <span className="text-[10px] opacity-70">판매</span>
                                               </span>
                                             </th>
                                           </>}
@@ -3663,7 +3673,7 @@ export const StockManagePage: React.FC = () => {
                                             return (
                                               <td
                                                 className={`text-right px-1.5 py-2.5 font-black text-[12px] align-top tabular-nums ${cur <= 0 || mismatch || belowOptimal ? "text-rose-500" : "text-slate-700"}`}
-                                                title={belowOptimal ? `현재고 부족 · ${cur} < 적정재고 ${opt}` : mismatch ? `현재고(${fmt(cur)}) ≠ 스냅샷 종료재고(${fmt(close)}) · 스냅샷 이후 변동 있음` : "ERP 현재고 (= 스냅샷 종료재고)"}
+                                                title={belowOptimal ? `현재고 부족 · ${cur} < 추천적정재고 ${opt}` : mismatch ? `현재고(${fmt(cur)}) ≠ 스냅샷 종료재고(${fmt(close)}) · 스냅샷 이후 변동 있음` : "ERP 현재고 (= 스냅샷 종료재고)"}
                                               >{fmt(cur)}</td>
                                             );
                                           })()}
@@ -3672,11 +3682,15 @@ export const StockManagePage: React.FC = () => {
                                             const below = opt > 0 && cur < opt;
                                             return (
                                               <td className={`text-right px-1.5 py-2.5 font-black text-[12px] align-top tabular-nums ${opt <= 0 ? "text-slate-300" : below ? "text-rose-400" : "text-slate-500"}`}
-                                                title={opt > 0 ? `적정재고 ${fmt(opt)}${below ? ` · 현재고 부족 (${cur}/${opt})` : ""}` : "적정재고 미설정"}>
+                                                title={opt > 0 ? `추천적정재고 ${fmt(opt)}${below ? ` · 현재고 부족 (${cur}/${opt})` : ""}` : "추천적정재고 미설정"}>
                                                 {opt > 0 ? fmt(opt) : "-"}
                                               </td>
                                             );
                                           })()}
+                                          <td className="text-right px-1.5 py-2.5 font-black text-[12px] align-top tabular-nums text-sky-600 bg-sky-50/20"
+                                            title="최근 30일 판매량">
+                                            {fmt(Number((p as any).sale_qty_month ?? 0))}
+                                          </td>
                                         </>}
                                         {/* 그룹 접힘 시 빈 셀 placeholder (colSpan 맞춤용) */}
                                         {isFlowGroupCollapsed("stock") && <td className="bg-slate-50/20"></td>}
@@ -4140,7 +4154,7 @@ export const StockManagePage: React.FC = () => {
                 const stockStatus =
                   currentStock < 0 ? { label: "재고 마이너스", color: "text-red-700 bg-red-100 border-red-300" } :
                     currentStock === 0 ? { label: "품절", color: "text-red-700 bg-red-50 border-red-200" } :
-                      (optimalStock > 0 && currentStock < optimalStock) ? { label: "적정재고 이하", color: "text-amber-700 bg-amber-50 border-amber-200" } :
+                      (optimalStock > 0 && currentStock < optimalStock) ? { label: "추천적정재고 이하", color: "text-amber-700 bg-amber-50 border-amber-200" } :
                         daysSinceLastSale !== null && daysSinceLastSale >= 90 ? { label: "데드스톡 의심", color: "text-slate-600 bg-slate-100 border-slate-300" } :
                           { label: "정상", color: "text-emerald-700 bg-emerald-50 border-emerald-200" };
                 // 실재고 vs 시스템
@@ -4161,7 +4175,7 @@ export const StockManagePage: React.FC = () => {
                           <div className="text-xs font-black text-indigo-500 uppercase tracking-wider">현재고</div>
                           <div className={`text-3xl font-black mt-1 tabular-nums ${currentStock < 0 ? "text-red-600" : "text-indigo-700"}`}>{fmt(currentStock)}</div>
                           <div className="text-xs text-slate-500 mt-1 font-semibold">
-                            {optimalStock > 0 ? `적정 ${fmt(optimalStock)}` : "적정재고 없음"}
+                            {optimalStock > 0 ? `추천적정 ${fmt(optimalStock)}` : "추천적정재고 없음"}
                           </div>
                         </div>
                         <div className="bg-white border border-orange-200 rounded-xl p-4 shadow-sm">
@@ -4233,7 +4247,7 @@ export const StockManagePage: React.FC = () => {
                           <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">실제배치구역</span><span className="text-sm font-bold text-slate-800 break-words whitespace-normal leading-tight">{prod.real_map ?? prod.display_location ?? "-"}</span></div>
                           <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">판매상태</span><span className="text-sm font-bold text-slate-800">{prod.sale_status ?? "-"}</span></div>
                           <div>
-                            <span className="text-xs text-slate-500 font-semibold block mb-0.5">적정재고</span>
+                            <span className="text-xs text-slate-500 font-semibold block mb-0.5">추천적정재고</span>
                             {optimalEditCode === String(prod.product_code) ? (
                               <div className="flex items-center gap-1">
                                 <input
@@ -4282,6 +4296,7 @@ export const StockManagePage: React.FC = () => {
                               </button>
                             )}
                           </div>
+                          <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">최근한달 판매</span><span className="text-base tabular-nums font-black text-sky-600">{fmt(Number(prod.sale_qty_month ?? 0))}</span></div>
                           <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">최소발주</span><span className="text-base tabular-nums font-black text-sky-700">{prod.min_order ?? "-"}</span></div>
                           <div><span className="text-xs text-slate-500 font-semibold block mb-0.5">필요재고</span><span className="text-base tabular-nums font-black text-rose-600">{optimalStock > 0 && currentStock < optimalStock ? `+${fmt(optimalStock - currentStock)}` : "-"}</span></div>
                           <div>

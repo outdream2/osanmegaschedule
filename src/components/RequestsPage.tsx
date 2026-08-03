@@ -663,7 +663,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
             {/* 발주 필요 상품 */}
             <div className="flex flex-col gap-2">
               <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">
-                발주 필요 상품 <span className="normal-case font-normal">(현재고 &lt; 적정재고)</span>
+                발주 필요 상품 <span className="normal-case font-normal">(현재고 &lt; 추천적정재고)</span>
               </p>
               {orderRequestError && (
                 <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[11px] text-red-600 font-bold">
@@ -1019,7 +1019,7 @@ export const RequestsPage: React.FC<RequestsPageProps> = ({ onBack, authSession,
               <p className="text-[11px] text-gray-500 font-mono">{dupOrderModal.existing.product_code}</p>
               <div className="flex gap-3 mt-0.5">
                 <span className="text-[11px] text-gray-500">기록 현재고: <strong className="text-gray-800">{dupOrderModal.existing.current_stock ?? "—"}</strong></span>
-                <span className="text-[11px] text-gray-500">적정재고: <strong className="text-gray-800">{dupOrderModal.existing.optimal_stock ?? "—"}</strong></span>
+                <span className="text-[11px] text-gray-500">추천적정재고: <strong className="text-gray-800">{dupOrderModal.existing.optimal_stock ?? "—"}</strong></span>
               </div>
               <p className="text-[10px] text-gray-400">{fmtDate(dupOrderModal.existing.requested_at)} 요청됨</p>
             </div>

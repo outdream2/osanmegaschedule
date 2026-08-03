@@ -2892,9 +2892,9 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
                               손실<span className="text-slate-400 text-[8px]">{sortIcon("loss")}</span>
                             </button>
                           </th>
-                          <th className="text-right px-1 py-2 text-slate-500" title="적정재고 (products.optimal_stock)">
+                          <th className="text-right px-1 py-2 text-slate-500" title="추천적정재고 (products.optimal_stock)">
                             <button type="button" onClick={() => toggleSort("optimal_stock")} className="hover:text-slate-800 cursor-pointer inline-flex items-center justify-end gap-0.5 w-full">
-                              적정<span className="text-slate-400 text-[8px]">{sortIcon("optimal_stock")}</span>
+                              추천적정<span className="text-slate-400 text-[8px]">{sortIcon("optimal_stock")}</span>
                             </button>
                           </th>
                           <th className="text-center px-1 py-2">

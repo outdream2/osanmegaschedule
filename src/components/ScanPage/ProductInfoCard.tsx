@@ -513,7 +513,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                 </div>
                 {/* 적정재고 (인라인 편집) */}
                 <div className="text-center bg-white rounded-lg border border-amber-200 py-1.5 px-1">
-                  <p className="text-[12px] font-semibold text-amber-600 mb-0.5">적정재고</p>
+                  <p className="text-[12px] font-semibold text-amber-600 mb-0.5">추천적정재고</p>
                   {editingKey === "optimal_stock" ? (
                     <div className="flex items-center gap-0.5 justify-center">
                       <input
