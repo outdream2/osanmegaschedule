@@ -328,8 +328,14 @@ export const PurchaseHistoryTab: React.FC = () => {
               ))}
             </div>
           </div>
-          {/* 공급사 리스트 · 카드 2줄 */}
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-y-auto flex-1 min-h-0 max-h-[65vh]">
+          {/* 공급사 리스트 · 카드 2줄 · 상단 컬럼 헤더 */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[65vh] flex flex-col overflow-hidden">
+            <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_auto_auto] gap-2 items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+              <span>공급사</span>
+              <span className="text-right whitespace-nowrap">매입정보</span>
+              <span className="text-right whitespace-nowrap">최근</span>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
             {vendorsLoading ? (
               <div className="flex items-center justify-center py-8 text-slate-400 gap-2 text-[12px]">
                 <Loader2 size={13} className="animate-spin" />불러오는 중...
@@ -355,6 +361,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                 ))}
               </div>
             )}
+            </div>
           </div>
         </div>
 
@@ -367,9 +374,25 @@ export const PurchaseHistoryTab: React.FC = () => {
               <div className="text-[11px] mt-1">매입이력 · 상품별 집계 · 매입 추이가 표시됩니다</div>
             </div>
           ) : ledgerError ? (
-            <div className="bg-white rounded-xl border border-slate-200 p-4 text-sm text-red-700">
-              <div className="font-bold mb-1">원장 조회 실패</div>
-              <div className="text-[11px] font-mono">{ledgerError}</div>
+            <div className="bg-white rounded-xl border border-rose-200 p-4 text-sm text-rose-700 space-y-2">
+              <div className="font-bold flex items-center gap-1.5">원장 조회 실패</div>
+              <div className="text-[12px] font-mono bg-rose-50 border border-rose-100 rounded px-2 py-1">{ledgerError}</div>
+              <button
+                type="button"
+                onClick={() => {
+                  setLedgerError(null);
+                  if (selectedVendor) {
+                    loadLedger(selectedVendor.company_name);
+                    loadDetail(selectedVendor.company_name);
+                  }
+                }}
+                className="inline-flex items-center gap-1 h-8 px-3 rounded-md bg-rose-600 text-white text-[12px] font-bold hover:bg-rose-700 transition cursor-pointer"
+              >
+                <RefreshCw size={12} /> 다시 시도
+              </button>
+              <div className="text-[11px] text-slate-500 pt-1 border-t border-rose-100">
+                원인 · 서버 API 미구성 · 네트워크 문제 · Supabase 테이블 미생성 (ocr_confirmed_items · supplier_payments) 등. 콘솔 로그 확인 필요.
+              </div>
             </div>
           ) : (
             <>
