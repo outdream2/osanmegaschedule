@@ -545,6 +545,45 @@ const StaffManagePage: React.FC = () => {
   const [filterPosition, setFilterPosition] = useState<string>("");
   const [filterStatus, setFilterStatus] = useState<"active" | "retired" | "all">("active");
 
+  // 좌측 리스트 폭 (px) · localStorage 저장 · 데스크탑만 반영 (lg:)
+  const LIST_WIDTH_KEY = "megatown_staffManage.listWidth";
+  const [listWidth, setListWidth] = useState<number>(() => {
+    try {
+      const s = localStorage.getItem(LIST_WIDTH_KEY);
+      const n = s ? parseInt(s, 10) : NaN;
+      return Number.isFinite(n) && n >= 200 && n <= 640 ? n : 288;
+    } catch { return 288; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(LIST_WIDTH_KEY, String(listWidth)); } catch { /* ignore */ }
+  }, [listWidth]);
+  const [isDesktop, setIsDesktop] = useState<boolean>(() => typeof window !== "undefined" && window.innerWidth >= 1024);
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  const startResizeList = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startW = listWidth;
+    const onMove = (ev: MouseEvent) => {
+      const delta = ev.clientX - startX;
+      const next = Math.max(200, Math.min(640, startW + delta));
+      setListWidth(next);
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
+
   const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const [editing, setEditing] = useState(false);
@@ -951,8 +990,11 @@ const StaffManagePage: React.FC = () => {
         className="flex flex-col lg:flex-row flex-1 gap-3 min-h-0"
         style={{ minHeight: "calc(100vh - 200px)" }}
       >
-        {/* ════ 좌측: 직원 리스트 카드 ════ */}
-        <aside className="w-full lg:w-72 shrink-0 flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden max-h-[42vh] lg:max-h-none">
+        {/* ════ 좌측: 직원 리스트 카드 · 데스크탑에서 폭 조정 가능 ════ */}
+        <aside
+          className="w-full shrink-0 flex flex-col bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden max-h-[42vh] lg:max-h-none"
+          style={isDesktop ? { width: `${listWidth}px` } : undefined}
+        >
 
           {/* 카드 헤더 */}
           <div className="flex items-center gap-2 px-4 h-10 border-b border-slate-100 shrink-0">
@@ -1003,6 +1045,15 @@ const StaffManagePage: React.FC = () => {
             </button>
           </div>
         </aside>
+
+        {/* Resize handle · 데스크탑만 · 드래그로 좌측 리스트 폭 조정 */}
+        <div
+          onMouseDown={startResizeList}
+          className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-indigo-400 rounded-full cursor-col-resize transition-all shrink-0 relative group"
+          title="드래그하여 좌측 리스트 폭 조절"
+        >
+          <span className="text-[10px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+        </div>
 
         {/* ════ 우측: 인사카드 패널 ════ */}
         <section className="flex-1 flex flex-col min-w-0 bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
