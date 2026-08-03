@@ -1122,13 +1122,6 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   );
                 })}
               </div>
-              <input
-                type="text"
-                value={lowStockSearch}
-                onChange={e => setLowStockSearch(e.target.value)}
-                placeholder="상품·코드·공급사"
-                className="text-[11px] border border-slate-200 rounded-md pl-3 pr-3 h-7 w-40 focus:outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
-              />
               <button
                 onClick={loadProducts}
                 disabled={productsLoading}
@@ -1145,6 +1138,41 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                 <Settings size={13} />
               </button>
             </div>
+          </div>
+
+          {/* ── 2026-08-03 (#201) · 검색 바 + 재고상태 chip · split 위 · UX 최신 ── */}
+          {/*   · SearchBar · 통합 검색 (상품·코드·공급사 · 한글 초성 지원) · 최근 5개 저장         */}
+          {/*   · SearchFilterChips · 다중 선택 · 재고 상태 (재고0·저재고·부족심각) · 실시간 카운트 */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-4 py-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
+            <SearchBar
+              value={lowStockSearch}
+              onChange={setLowStockSearch}
+              placeholder="상품·코드·공급사 검색 (한글 초성 · 예: ㅇㅅㅌ)"
+              resultCount={lowStockFiltered.length}
+              resultUnit="건"
+              historyKey="megatown_orderNeed_search_history"
+              accent="rose"
+              widthClass="w-72 sm:w-80"
+            />
+            <SearchFilterChips<NeedStockStatus>
+              label="재고 상태"
+              options={stockStatusChipOptions}
+              selected={needStockStatus}
+              onToggle={toggleNeedStockStatus}
+              showAll={true}
+              allLabel="전체"
+              size="sm"
+            />
+            {(lowStockSearch.trim() || needStockStatus.size > 0) && (
+              <button
+                type="button"
+                onClick={() => { setLowStockSearch(""); setNeedStockStatus(new Set()); }}
+                className="ml-auto inline-flex items-center gap-1 h-7 px-2.5 rounded-md border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-black text-slate-500 hover:text-rose-600 transition cursor-pointer"
+                title="검색·필터 모두 초기화"
+              >
+                <RotateCcw size={11} />초기화
+              </button>
+            )}
           </div>
 
           {/* ── 하단 split ── */}
