@@ -451,25 +451,36 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   interface OrderNeedInline {
     minCycle: number;
     maxCurrent: number;
-    maxSalesMonth: number;    // 신규 · 최근 30일 판매량 ≤ N (0=미적용)
-    maxSalesQuarter: number;  // 신규 · 최근 90일 판매량 ≤ N (0=미적용)
+    maxSalesMonth: number;    // 최근 30일 판매량 ≤ N
+    maxSalesQuarter: number;  // 최근 90일 판매량 ≤ N
+    // #232 · 각 조건 · 체크박스 활성/비활성 · 기본 모두 false (적정재고 이하만 노출)
+    cycleEnabled: boolean;
+    currentEnabled: boolean;
+    salesMonthEnabled: boolean;
+    salesQuarterEnabled: boolean;
   }
-  const DEFAULT_INLINE: OrderNeedInline = { minCycle: 90, maxCurrent: 50, maxSalesMonth: 50, maxSalesQuarter: 100 };
+  const DEFAULT_INLINE: OrderNeedInline = {
+    minCycle: 90, maxCurrent: 50, maxSalesMonth: 50, maxSalesQuarter: 100,
+    // #232 · 기본 모두 미체크 → 적정재고 이하 상품 모두 표시
+    cycleEnabled: false, currentEnabled: false, salesMonthEnabled: false, salesQuarterEnabled: false,
+  };
   const loadInlineFilter = (): OrderNeedInline => {
     try {
       const raw = localStorage.getItem(ORDER_NEED_INLINE_KEY);
       if (!raw) return DEFAULT_INLINE;
       const p = JSON.parse(raw);
       if (!p || typeof p !== "object") return DEFAULT_INLINE;
-      // #207 · legacy minSales (판매 잘 되는 · ≥N) 는 방향 반대라 그대로 옮길 수 없음 · 0 으로 초기화
       const hasLegacyMinSales = "minSales" in p && !("maxSalesMonth" in p);
       return {
         minCycle:        typeof p.minCycle        === "number" && p.minCycle        >= 0 ? Math.floor(p.minCycle)        : DEFAULT_INLINE.minCycle,
         maxCurrent:      typeof p.maxCurrent      === "number" && p.maxCurrent      >= 0 ? Math.floor(p.maxCurrent)      : DEFAULT_INLINE.maxCurrent,
-        maxSalesMonth:   hasLegacyMinSales
-          ? 0  // legacy 마이그레이션 · 방향 반전이므로 미적용 처리
-          : (typeof p.maxSalesMonth   === "number" && p.maxSalesMonth   >= 0 ? Math.floor(p.maxSalesMonth)   : DEFAULT_INLINE.maxSalesMonth),
+        maxSalesMonth:   hasLegacyMinSales ? 0 : (typeof p.maxSalesMonth === "number" && p.maxSalesMonth >= 0 ? Math.floor(p.maxSalesMonth) : DEFAULT_INLINE.maxSalesMonth),
         maxSalesQuarter: typeof p.maxSalesQuarter === "number" && p.maxSalesQuarter >= 0 ? Math.floor(p.maxSalesQuarter) : DEFAULT_INLINE.maxSalesQuarter,
+        // #232 · enabled 플래그 · 하위호환 (없으면 false)
+        cycleEnabled:        typeof p.cycleEnabled        === "boolean" ? p.cycleEnabled        : DEFAULT_INLINE.cycleEnabled,
+        currentEnabled:      typeof p.currentEnabled      === "boolean" ? p.currentEnabled      : DEFAULT_INLINE.currentEnabled,
+        salesMonthEnabled:   typeof p.salesMonthEnabled   === "boolean" ? p.salesMonthEnabled   : DEFAULT_INLINE.salesMonthEnabled,
+        salesQuarterEnabled: typeof p.salesQuarterEnabled === "boolean" ? p.salesQuarterEnabled : DEFAULT_INLINE.salesQuarterEnabled,
       };
     } catch { return DEFAULT_INLINE; }
   };
@@ -477,11 +488,21 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   const [needInlineMaxCurrent,        setNeedInlineMaxCurrent]        = useState<number>(() => loadInlineFilter().maxCurrent);
   const [needInlineMaxSalesMonth,     setNeedInlineMaxSalesMonth]     = useState<number>(() => loadInlineFilter().maxSalesMonth);
   const [needInlineMaxSalesQuarter,   setNeedInlineMaxSalesQuarter]   = useState<number>(() => loadInlineFilter().maxSalesQuarter);
+  // #232 · 각 조건 체크박스 · 기본 미체크 (적정재고 이하만 표시)
+  const [needCycleEnabled,        setNeedCycleEnabled]        = useState<boolean>(() => loadInlineFilter().cycleEnabled);
+  const [needCurrentEnabled,      setNeedCurrentEnabled]      = useState<boolean>(() => loadInlineFilter().currentEnabled);
+  const [needSalesMonthEnabled,   setNeedSalesMonthEnabled]   = useState<boolean>(() => loadInlineFilter().salesMonthEnabled);
+  const [needSalesQuarterEnabled, setNeedSalesQuarterEnabled] = useState<boolean>(() => loadInlineFilter().salesQuarterEnabled);
   // deferred values — 입력 즉시 state · 필터는 [조회] 클릭 시 적용
   const [deferredInlineCycle,         setDeferredInlineCycle]         = useState(needInlineMinCycle);
   const [deferredInlineCurrent,       setDeferredInlineCurrent]       = useState(needInlineMaxCurrent);
   const [deferredInlineSalesMonth,    setDeferredInlineSalesMonth]    = useState(needInlineMaxSalesMonth);
   const [deferredInlineSalesQuarter,  setDeferredInlineSalesQuarter]  = useState(needInlineMaxSalesQuarter);
+  // #232 · deferred enabled (조회 클릭 시 반영)
+  const [deferredCycleEnabled,        setDeferredCycleEnabled]        = useState(needCycleEnabled);
+  const [deferredCurrentEnabled,      setDeferredCurrentEnabled]      = useState(needCurrentEnabled);
+  const [deferredSalesMonthEnabled,   setDeferredSalesMonthEnabled]   = useState(needSalesMonthEnabled);
+  const [deferredSalesQuarterEnabled, setDeferredSalesQuarterEnabled] = useState(needSalesQuarterEnabled);
   const inlineDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const updateInline = useCallback((field: "cycle" | "current" | "salesMonth" | "salesQuarter", raw: string) => {
     const n = raw === "" ? 0 : Math.max(0, Math.floor(Number(raw)));
@@ -500,26 +521,38 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     setDeferredInlineCurrent(needInlineMaxCurrent);
     setDeferredInlineSalesMonth(needInlineMaxSalesMonth);
     setDeferredInlineSalesQuarter(needInlineMaxSalesQuarter);
+    setDeferredCycleEnabled(needCycleEnabled);
+    setDeferredCurrentEnabled(needCurrentEnabled);
+    setDeferredSalesMonthEnabled(needSalesMonthEnabled);
+    setDeferredSalesQuarterEnabled(needSalesQuarterEnabled);
     try {
       localStorage.setItem(ORDER_NEED_INLINE_KEY, JSON.stringify({
         minCycle: needInlineMinCycle,
         maxCurrent: needInlineMaxCurrent,
         maxSalesMonth: needInlineMaxSalesMonth,
         maxSalesQuarter: needInlineMaxSalesQuarter,
+        cycleEnabled: needCycleEnabled,
+        currentEnabled: needCurrentEnabled,
+        salesMonthEnabled: needSalesMonthEnabled,
+        salesQuarterEnabled: needSalesQuarterEnabled,
       }));
     } catch { /**/ }
   };
   const resetInlineFilter = () => {
     if (inlineDebounceRef.current) clearTimeout(inlineDebounceRef.current);
-    setNeedInlineMinCycle(0); setNeedInlineMaxCurrent(0); setNeedInlineMaxSalesMonth(0); setNeedInlineMaxSalesQuarter(0);
-    setDeferredInlineCycle(0); setDeferredInlineCurrent(0); setDeferredInlineSalesMonth(0); setDeferredInlineSalesQuarter(0);
+    setNeedCycleEnabled(false); setNeedCurrentEnabled(false); setNeedSalesMonthEnabled(false); setNeedSalesQuarterEnabled(false);
+    setDeferredCycleEnabled(false); setDeferredCurrentEnabled(false); setDeferredSalesMonthEnabled(false); setDeferredSalesQuarterEnabled(false);
     try {
       localStorage.setItem(ORDER_NEED_INLINE_KEY, JSON.stringify({
-        minCycle: 0, maxCurrent: 0, maxSalesMonth: 0, maxSalesQuarter: 0,
+        minCycle: needInlineMinCycle,
+        maxCurrent: needInlineMaxCurrent,
+        maxSalesMonth: needInlineMaxSalesMonth,
+        maxSalesQuarter: needInlineMaxSalesQuarter,
+        cycleEnabled: false, currentEnabled: false, salesMonthEnabled: false, salesQuarterEnabled: false,
       }));
     } catch { /**/ }
   };
-  const inlineActive = deferredInlineCycle > 0 || deferredInlineCurrent > 0 || deferredInlineSalesMonth > 0 || deferredInlineSalesQuarter > 0;
+  const inlineActive = deferredCycleEnabled || deferredCurrentEnabled || deferredSalesMonthEnabled || deferredSalesQuarterEnabled;
 
   // 2026-08-03 (#189) · 발주필요 · 매입주기·최근 한달 판매량 enrich map
   //   · 필터 조건 (minPurchaseCycle · minMonthlySales) + 정렬 (sale_month · cycle) 에 사용
@@ -830,28 +863,26 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     //   · minCycle        > 0 이면 매입주기         >= minCycle        (매입일 N일 이상 · enrich · 미로딩 상품 통과)
     //   · maxSalesMonth   > 0 이면 최근 30일 판매량 <= maxSalesMonth   (#207 · 저조 상품 · enrich · 미로딩 시 미달 판정)
     //   · maxSalesQuarter > 0 이면 최근 90일 판매량 <= maxSalesQuarter (#207 · 저조 상품 · enrich · 미로딩 시 미달 판정)
-    if (deferredInlineCurrent > 0) {
+    // #232 · 체크박스 미체크 조건은 skip
+    if (deferredCurrentEnabled && deferredInlineCurrent > 0) {
       if (isNaN(cur) || cur > deferredInlineCurrent) return false;
     }
-    if (deferredInlineCycle > 0 || deferredInlineSalesMonth > 0 || deferredInlineSalesQuarter > 0) {
+    if ((deferredCycleEnabled && deferredInlineCycle > 0) ||
+        (deferredSalesMonthEnabled && deferredInlineSalesMonth > 0) ||
+        (deferredSalesQuarterEnabled && deferredInlineSalesQuarter > 0)) {
       const extra = code ? needExtraMap.get(code) : undefined;
       if (extra) {
-        if (deferredInlineCycle > 0 && (extra.cycle == null || extra.cycle < deferredInlineCycle)) return false;
-        if (deferredInlineSalesMonth > 0) {
-          // 저조 상품 · saleMonth 가 없으면 판매기록 자체가 없는 상품 · null → 0 취급 (조건 통과)
+        if (deferredCycleEnabled && deferredInlineCycle > 0 && (extra.cycle == null || extra.cycle < deferredInlineCycle)) return false;
+        if (deferredSalesMonthEnabled && deferredInlineSalesMonth > 0) {
           const s = extra.saleMonth ?? 0;
           if (s > deferredInlineSalesMonth) return false;
         }
-        if (deferredInlineSalesQuarter > 0) {
+        if (deferredSalesQuarterEnabled && deferredInlineSalesQuarter > 0) {
           const s = extra.saleQuarter ?? 0;
           if (s > deferredInlineSalesQuarter) return false;
         }
       } else if (needExtraLoaded) {
-        // enrich 데이터 없는 상품 · 로딩 완료 시:
-        //   · minCycle · 매입주기 판단 불가 → 미달
-        //   · maxSales* · 판매량 0 으로 간주 · 저조 조건이면 오히려 통과 (0 <= N)
-        if (deferredInlineCycle > 0) return false;
-        // maxSalesMonth · maxSalesQuarter · 판매기록 없음 = 0 개 → 저조 필터 통과
+        if (deferredCycleEnabled && deferredInlineCycle > 0) return false;
       }
     }
     return true;
@@ -1424,82 +1455,83 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
             {/* 라벨 */}
             <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 shrink-0 whitespace-nowrap">발주 조건</span>
 
-            {/* 조건 1 · 매입일 N일 이상 (매입주기) */}
+            {/* #232 · 각 조건에 체크박스 · 미체크는 필터 미적용 (기본: 적정재고 이하 모두 표시) */}
+            {/* 조건 1 · 매입일 N일 이상 */}
             <label className="inline-flex items-center gap-1.5 shrink-0">
-              <span className="text-[12px] font-bold text-slate-600 whitespace-nowrap">매입일</span>
+              <input type="checkbox" checked={needCycleEnabled} onChange={e => setNeedCycleEnabled(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
+              <span className={`text-[12px] font-bold whitespace-nowrap ${needCycleEnabled ? "text-slate-700" : "text-slate-400"}`}>매입일</span>
               <input
-                type="number"
-                min={0}
-                step={1}
+                type="number" min={0} step={1}
+                disabled={!needCycleEnabled}
                 value={needInlineMinCycle === 0 ? "" : needInlineMinCycle}
                 onChange={e => updateInline("cycle", e.target.value)}
                 placeholder="90"
                 className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
                            focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                           hover:border-slate-300 transition placeholder:text-slate-300"
-                style={{ fontSize: 13 }}
+                           hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
               />
-              <span className="text-[12px] text-slate-500 whitespace-nowrap">일 이상</span>
+              <span className={`text-[12px] whitespace-nowrap ${needCycleEnabled ? "text-slate-500" : "text-slate-300"}`}>일 이상</span>
             </label>
 
             <span className="text-slate-200 text-xs hidden sm:inline">|</span>
 
-            {/* 조건 2 · 재고 N개 이하 (current_stock) */}
+            {/* 조건 2 · 재고 N개 이하 */}
             <label className="inline-flex items-center gap-1.5 shrink-0">
-              <span className="text-[12px] font-bold text-slate-600 whitespace-nowrap">재고</span>
+              <input type="checkbox" checked={needCurrentEnabled} onChange={e => setNeedCurrentEnabled(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
+              <span className={`text-[12px] font-bold whitespace-nowrap ${needCurrentEnabled ? "text-slate-700" : "text-slate-400"}`}>재고</span>
               <input
-                type="number"
-                min={0}
-                step={1}
+                type="number" min={0} step={1}
+                disabled={!needCurrentEnabled}
                 value={needInlineMaxCurrent === 0 ? "" : needInlineMaxCurrent}
                 onChange={e => updateInline("current", e.target.value)}
                 placeholder="50"
                 className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
                            focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                           hover:border-slate-300 transition placeholder:text-slate-300"
-                style={{ fontSize: 13 }}
+                           hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
               />
-              <span className="text-[12px] text-slate-500 whitespace-nowrap">개 이하</span>
+              <span className={`text-[12px] whitespace-nowrap ${needCurrentEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
             </label>
 
             <span className="text-slate-200 text-xs hidden sm:inline">|</span>
 
-            {/* 조건 3 · 최근 한달 판매량 N개 이하 (#207 · 저조 상품 필터) */}
+            {/* 조건 3 · 최근 한달 판매량 N개 이하 */}
             <label className="inline-flex items-center gap-1.5 shrink-0">
-              <span className="text-[12px] font-bold text-slate-600 whitespace-nowrap">최근 한달 판매량</span>
+              <input type="checkbox" checked={needSalesMonthEnabled} onChange={e => setNeedSalesMonthEnabled(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
+              <span className={`text-[12px] font-bold whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-700" : "text-slate-400"}`}>최근 한달 판매량</span>
               <input
-                type="number"
-                min={0}
-                step={1}
+                type="number" min={0} step={1}
+                disabled={!needSalesMonthEnabled}
                 value={needInlineMaxSalesMonth === 0 ? "" : needInlineMaxSalesMonth}
                 onChange={e => updateInline("salesMonth", e.target.value)}
                 placeholder="50"
                 className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
                            focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                           hover:border-slate-300 transition placeholder:text-slate-300"
-                style={{ fontSize: 13 }}
+                           hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
               />
-              <span className="text-[12px] text-slate-500 whitespace-nowrap">개 이하</span>
+              <span className={`text-[12px] whitespace-nowrap ${needSalesMonthEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
             </label>
 
             <span className="text-slate-200 text-xs hidden sm:inline">|</span>
 
-            {/* 조건 4 · 최근 3달 판매량 N개 이하 (#207 · 신규) */}
+            {/* 조건 4 · 최근 3달 판매량 N개 이하 */}
             <label className="inline-flex items-center gap-1.5 shrink-0">
-              <span className="text-[12px] font-bold text-slate-600 whitespace-nowrap">최근 3달 판매량</span>
+              <input type="checkbox" checked={needSalesQuarterEnabled} onChange={e => setNeedSalesQuarterEnabled(e.target.checked)}
+                className="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-400 cursor-pointer" />
+              <span className={`text-[12px] font-bold whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-700" : "text-slate-400"}`}>최근 3달 판매량</span>
               <input
-                type="number"
-                min={0}
-                step={1}
+                type="number" min={0} step={1}
+                disabled={!needSalesQuarterEnabled}
                 value={needInlineMaxSalesQuarter === 0 ? "" : needInlineMaxSalesQuarter}
                 onChange={e => updateInline("salesQuarter", e.target.value)}
                 placeholder="100"
                 className="w-16 h-8 px-2 rounded-md border border-slate-200 text-[13px] font-bold text-slate-800 text-right tabular-nums bg-white
                            focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400
-                           hover:border-slate-300 transition placeholder:text-slate-300"
-                style={{ fontSize: 13 }}
+                           hover:border-slate-300 transition placeholder:text-slate-300 disabled:bg-slate-50 disabled:opacity-50"
               />
-              <span className="text-[12px] text-slate-500 whitespace-nowrap">개 이하</span>
+              <span className={`text-[12px] whitespace-nowrap ${needSalesQuarterEnabled ? "text-slate-500" : "text-slate-300"}`}>개 이하</span>
             </label>
 
             {/* 조회 버튼 · 명시적 필터 적용 (실시간 X · 사용자 요청) */}
