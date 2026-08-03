@@ -4,13 +4,16 @@
 // - 모든 인증 사용자 · 다운로드 가능
 // - 리스트 UI 원칙:
 //     1) 헤더 클릭 정렬 (모든 컬럼)
-//     2) 컬럼 폭 · min-width + colgroup (드래그 리사이즈는 폰트/뷰포트 안정성 우선 · 후속 개선 여지)
+//     2) 컬럼 폭 · min-width + colgroup
 //     3) 카테고리 색상 배지
 // - embedded 모드 · BusinessManagePage 안 서브탭 · 자체 AppNavHeader skip
+// #209 UI 세련화: 드래그&드롭 업로드 · 파일타입 아이콘 · 개선된 empty state · 카테고리 segmented control
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   FileText, Download, Upload, Trash2, Plus, X, RefreshCw, Loader2,
-  ChevronDown, Filter, FileEdit, FileSignature, FilePlus, FileArchive,
+  Filter, FileEdit, FileSignature, FilePlus, FileArchive,
+  FileSpreadsheet, FileImage, File, AlertCircle, CloudUpload,
+  CheckCircle2,
 } from "lucide-react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { SortableHeader, type SortableColumn } from "../common/SortableHeader";
@@ -53,18 +56,48 @@ interface HrFormsPageProps {
 
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB
 
-const CATEGORIES: Array<{ key: CategoryKey; label: string; badge: string; icon: React.ComponentType<{ size?: number; className?: string }> }> = [
-  { key: "contract",    label: "근로계약서", badge: "bg-emerald-50 text-emerald-700 border-emerald-200", icon: FileSignature },
-  { key: "resignation", label: "사직서",     badge: "bg-rose-50 text-rose-700 border-rose-200",         icon: FileEdit      },
-  { key: "pledge",      label: "서약서",     badge: "bg-indigo-50 text-indigo-700 border-indigo-200",   icon: FileText      },
-  { key: "etc",         label: "기타",       badge: "bg-slate-100 text-slate-700 border-slate-200",     icon: FileArchive   },
+const CATEGORIES: Array<{
+  key: CategoryKey;
+  label: string;
+  badge: string;
+  activeBg: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+}> = [
+  {
+    key: "contract",
+    label: "근로계약서",
+    badge: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    activeBg: "bg-emerald-600 text-white border-emerald-600",
+    icon: FileSignature,
+  },
+  {
+    key: "resignation",
+    label: "사직서",
+    badge: "bg-rose-50 text-rose-700 border-rose-200",
+    activeBg: "bg-rose-600 text-white border-rose-600",
+    icon: FileEdit,
+  },
+  {
+    key: "pledge",
+    label: "서약서",
+    badge: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    activeBg: "bg-indigo-600 text-white border-indigo-600",
+    icon: FileText,
+  },
+  {
+    key: "etc",
+    label: "기타",
+    badge: "bg-slate-100 text-slate-600 border-slate-200",
+    activeBg: "bg-slate-700 text-white border-slate-700",
+    icon: FileArchive,
+  },
 ];
 
-const CATEGORY_MAP: Record<CategoryKey, { label: string; badge: string; icon: React.ComponentType<{ size?: number; className?: string }> }> =
+const CATEGORY_MAP: Record<CategoryKey, (typeof CATEGORIES)[number]> =
   CATEGORIES.reduce((acc, c) => {
-    acc[c.key] = { label: c.label, badge: c.badge, icon: c.icon };
+    acc[c.key] = c;
     return acc;
-  }, {} as any);
+  }, {} as Record<CategoryKey, (typeof CATEGORIES)[number]>);
 
 type SortKey = "title" | "category" | "file_name" | "file_size" | "uploaded_by" | "created_at";
 type SortDir = "asc" | "desc";
@@ -124,6 +157,203 @@ async function downloadFile(url: string, filename: string) {
   }
 }
 
+/** MIME/확장자 기반 파일 아이콘 + 색상 */
+function fileIconInfo(fileName: string | null, mimeType?: string | null): {
+  Icon: React.ComponentType<{ size?: number; className?: string }>;
+  colorClass: string;
+  label: string;
+} {
+  const ext = (fileName ?? "").split(".").pop()?.toLowerCase() ?? "";
+  const mime = (mimeType ?? "").toLowerCase();
+
+  if (mime.startsWith("image/") || ["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp"].includes(ext)) {
+    return { Icon: FileImage, colorClass: "text-pink-500 bg-pink-50", label: "이미지" };
+  }
+  if (["xlsx", "xls", "csv"].includes(ext) || mime.includes("spreadsheet") || mime.includes("excel")) {
+    return { Icon: FileSpreadsheet, colorClass: "text-green-600 bg-green-50", label: "스프레드시트" };
+  }
+  if (["pdf"].includes(ext) || mime === "application/pdf") {
+    return { Icon: File, colorClass: "text-red-500 bg-red-50", label: "PDF" };
+  }
+  if (["hwp", "hwpx"].includes(ext)) {
+    return { Icon: FileText, colorClass: "text-blue-500 bg-blue-50", label: "한글" };
+  }
+  if (["doc", "docx"].includes(ext) || mime.includes("word")) {
+    return { Icon: FileText, colorClass: "text-blue-600 bg-blue-50", label: "Word" };
+  }
+  if (["ppt", "pptx"].includes(ext) || mime.includes("presentation")) {
+    return { Icon: FileText, colorClass: "text-orange-500 bg-orange-50", label: "PPT" };
+  }
+  return { Icon: FileArchive, colorClass: "text-slate-500 bg-slate-100", label: "파일" };
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 서브: 파일 타입 배지
+// ─────────────────────────────────────────────────────────────────────────────
+const FileTypeBadge: React.FC<{ fileName: string | null; mimeType?: string | null; size?: number }> = ({
+  fileName,
+  mimeType,
+  size = 16,
+}) => {
+  const { Icon, colorClass } = fileIconInfo(fileName, mimeType);
+  const ext = (fileName ?? "").split(".").pop()?.toUpperCase() ?? "";
+  return (
+    <span className={`inline-flex items-center justify-center w-9 h-9 rounded-lg ${colorClass} shrink-0`}>
+      <Icon size={size} />
+    </span>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 서브: 카테고리 필터 chip
+// ─────────────────────────────────────────────────────────────────────────────
+const CatChip: React.FC<{
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  count: number;
+  badgeClass: string;
+  activeClass: string;
+}> = ({ active, onClick, label, count, badgeClass, activeClass }) => (
+  <button
+    type="button"
+    onClick={onClick}
+    className={[
+      "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border transition-all duration-150 cursor-pointer",
+      active ? activeClass : `${badgeClass} hover:brightness-95`,
+    ].join(" ")}
+  >
+    <span>{label}</span>
+    <span
+      className={[
+        "inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black leading-none",
+        active ? "bg-white/20 text-white" : "bg-white/60 text-slate-600",
+      ].join(" ")}
+    >
+      {count}
+    </span>
+  </button>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 서브: 드래그&드롭 업로드 존
+// ─────────────────────────────────────────────────────────────────────────────
+const DropZone: React.FC<{
+  file: File | null;
+  onFile: (f: File | null) => void;
+  inputRef: React.RefObject<HTMLInputElement | null>;
+  error?: string | null;
+}> = ({ file, onFile, inputRef, error }) => {
+  const [dragging, setDragging] = useState(false);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const f = e.dataTransfer.files[0] ?? null;
+    onFile(f);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(true);
+  };
+
+  const handleDragLeave = () => setDragging(false);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    onFile(e.target.files?.[0] ?? null);
+  };
+
+  return (
+    <div
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onClick={() => inputRef.current?.click()}
+      className={[
+        "relative flex flex-col items-center justify-center gap-2 border-2 border-dashed rounded-xl py-8 px-4 cursor-pointer transition-all duration-150 select-none",
+        dragging
+          ? "border-amber-400 bg-amber-50/60 scale-[1.01]"
+          : file
+          ? "border-emerald-300 bg-emerald-50/40"
+          : error
+          ? "border-rose-300 bg-rose-50/30"
+          : "border-slate-200 bg-slate-50/50 hover:border-amber-300 hover:bg-amber-50/30",
+      ].join(" ")}
+    >
+      <input
+        ref={inputRef}
+        type="file"
+        className="sr-only"
+        onChange={handleInputChange}
+        tabIndex={-1}
+      />
+
+      {file ? (
+        <>
+          <CheckCircle2 size={28} className="text-emerald-500" />
+          <div className="text-center">
+            <p className="text-sm font-bold text-slate-800 break-all">{file.name}</p>
+            <p className="text-xs text-slate-500 font-semibold mt-0.5">{fmtBytes(file.size)}</p>
+          </div>
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onFile(null); if (inputRef.current) inputRef.current.value = ""; }}
+            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-500 hover:text-rose-600 hover:border-rose-200 text-xs font-semibold transition-colors cursor-pointer"
+          >
+            <X size={11} /> 파일 제거
+          </button>
+        </>
+      ) : (
+        <>
+          <CloudUpload size={28} className={dragging ? "text-amber-500" : "text-slate-400"} />
+          <div className="text-center">
+            <p className="text-sm font-bold text-slate-600">클릭 또는 파일을 드래그하세요</p>
+            <p className="text-xs text-slate-400 font-semibold mt-0.5">PDF · Word · Excel · HWP · 이미지 · 최대 10MB</p>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 서브: empty state
+// ─────────────────────────────────────────────────────────────────────────────
+const EmptyState: React.FC<{
+  isFiltered: boolean;
+  isManager: boolean;
+  onUpload: () => void;
+}> = ({ isFiltered, isManager, onUpload }) => (
+  <div className="py-16 flex flex-col items-center gap-4 text-center px-6">
+    <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center">
+      <FileText size={28} className="text-slate-400" />
+    </div>
+    <div>
+      <p className="text-base font-black text-slate-700">
+        {isFiltered ? "검색 결과가 없습니다" : "등록된 양식이 없습니다"}
+      </p>
+      <p className="text-sm text-slate-400 font-semibold mt-1">
+        {isFiltered
+          ? "다른 키워드나 카테고리로 검색해 보세요"
+          : isManager
+          ? "첫 번째 양식을 업로드해 직원들이 쉽게 다운받을 수 있도록 하세요"
+          : "아직 등록된 양식이 없습니다. 관리자에게 문의하세요"}
+      </p>
+    </div>
+    {!isFiltered && isManager && (
+      <button
+        type="button"
+        onClick={onUpload}
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer"
+      >
+        <Plus size={15} />
+        첫 양식 업로드하기
+      </button>
+    )}
+  </div>
+);
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 메인 컴포넌트
 // ─────────────────────────────────────────────────────────────────────────────
@@ -151,6 +381,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
   const [uploadFile, setUploadFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0); // 0~100
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // 삭제 상태
@@ -200,17 +431,15 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
     return filtered;
   }, [forms, searchQ, sortKey, sortDir]);
 
-  // 공통 SortableHeader 는 onSort(key, dir) 로 다음 방향을 직접 전달함
+  const isFiltered = searchQ.trim() !== "" || categoryFilter !== "all";
+
   const handleSort = (key: SortKey, dir: SortDir) => {
     setSortKey(key);
     setSortDir(dir);
   };
 
-  // 컬럼 정의 · 공통 SortableHeader 용
-  //   - 앞의 icon 컬럼 · 뒤의 액션 컬럼 · sortable=false 로 함께 포함
-  //   - "_icon" / "_action" 은 SortKey 밖 값이지만 sortable=false 라 handleSort 호출 없음
   const sortableColumns: SortableColumn<SortKey>[] = useMemo(() => [
-    { key: "_icon" as SortKey,   label: "",         align: "left",  sortable: false },
+    { key: "_icon" as SortKey,   label: "",         align: "left",   sortable: false },
     { key: "title",              label: "양식명",   align: "left" },
     { key: "category",           label: "분류",     align: "left" },
     { key: "file_name",          label: "파일명",   align: "left" },
@@ -220,8 +449,8 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
     { key: "_action" as SortKey, label: "액션",     align: "center", sortable: false },
   ], []);
 
-  // ── 업로드 핸들러 ─────────────────────────────────────────────────────────
-  const onFileChosen = (file: File | null) => {
+  // ── 파일 선택 ─────────────────────────────────────────────────────────────
+  const onFileChosen = useCallback((file: File | null) => {
     setUploadError(null);
     if (!file) { setUploadFile(null); return; }
     if (file.size > MAX_UPLOAD_BYTES) {
@@ -231,20 +460,20 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
     }
     setUploadFile(file);
     if (!uploadTitle.trim()) {
-      // 파일명(확장자 제외) 기본값
       const base = file.name.replace(/\.[^.]+$/, "");
       setUploadTitle(base.slice(0, 80));
     }
-  };
+  }, [uploadTitle]);
 
-  const resetUploadForm = () => {
+  const resetUploadForm = useCallback(() => {
     setShowUploadForm(false);
     setUploadTitle("");
     setUploadCategory("contract");
     setUploadFile(null);
     setUploadError(null);
+    setUploadProgress(0);
     if (fileInputRef.current) fileInputRef.current.value = "";
-  };
+  }, []);
 
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -258,8 +487,10 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
     }
 
     setUploading(true);
+    setUploadProgress(10);
     try {
       const dataUrl = await readFileAsDataUrl(uploadFile);
+      setUploadProgress(50);
       const res = await fetch("/api/hr-forms", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -272,14 +503,20 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
           uploaded_by_id: authSession?.employeeId ?? null,
         }),
       });
+      setUploadProgress(90);
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `업로드 실패 (${res.status})`);
       }
-      resetUploadForm();
-      await load();
+      setUploadProgress(100);
+      // 짧은 딜레이 후 닫기 (완료 피드백)
+      setTimeout(() => {
+        resetUploadForm();
+        load();
+      }, 400);
     } catch (err: any) {
       setUploadError(err?.message ?? "업로드 실패");
+      setUploadProgress(0);
     } finally {
       setUploading(false);
     }
@@ -305,10 +542,9 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
     }
   };
 
-  // ── 리턴 ─────────────────────────────────────────────────────────────────
+  // ── 렌더 ─────────────────────────────────────────────────────────────────
   return (
     <div className={embedded ? "flex-1 flex flex-col" : "min-h-screen bg-slate-50 flex flex-col"}>
-      {/* embedded 모드가 아니면 공용 헤더 */}
       {!embedded && (
         <AppNavHeader
           activePage={"hr-forms" as AppNavPage}
@@ -320,15 +556,18 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
       )}
 
       <main className="flex-1 max-w-[1200px] mx-auto w-full px-3 sm:px-5 py-5 flex flex-col gap-4">
-        {/* 페이지 제목 + 업로드 버튼 */}
+
+        {/* ── 헤더 영역 ──────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center shadow-sm">
               <FileText size={20} />
             </div>
             <div>
-              <h1 className="text-lg sm:text-xl font-black text-slate-800 leading-none">각종 양식</h1>
-              <p className="text-xs text-slate-500 mt-1">근로계약서 · 사직서 · 서약서 · 기타 양식 다운로드 및 업로드</p>
+              <h1 className="text-lg sm:text-xl font-black text-slate-800 leading-tight">각종 양식</h1>
+              <p className="text-xs text-slate-500 font-semibold mt-0.5">
+                근로계약서 · 사직서 · 서약서 · 기타 양식 다운로드 및 관리
+              </p>
             </div>
           </div>
 
@@ -337,7 +576,7 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               type="button"
               onClick={load}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 text-sm font-semibold transition-colors cursor-pointer"
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-50 text-sm font-semibold transition-colors cursor-pointer shadow-sm"
               title="새로고침"
             >
               <RefreshCw size={14} className={loading ? "animate-spin" : ""} />
@@ -348,7 +587,12 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               <button
                 type="button"
                 onClick={() => setShowUploadForm(v => !v)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer"
+                className={[
+                  "inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-bold shadow-sm transition-all duration-150 cursor-pointer",
+                  showUploadForm
+                    ? "bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200"
+                    : "bg-amber-600 hover:bg-amber-700 text-white border border-amber-600",
+                ].join(" ")}
                 title="양식 업로드"
               >
                 {showUploadForm ? <X size={14} /> : <Plus size={14} />}
@@ -358,95 +602,147 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
           </div>
         </div>
 
-        {/* 업로드 폼 */}
+        {/* ── 업로드 폼 ──────────────────────────────────────────────────── */}
         {showUploadForm && isManager && (
-          <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <Upload size={16} className="text-amber-600" />
-              <p className="text-sm font-black text-slate-800">신규 양식 업로드</p>
+          <div className="bg-white border border-amber-200 rounded-2xl shadow-sm overflow-hidden">
+            {/* 폼 헤더 */}
+            <div className="flex items-center gap-2.5 px-5 py-3.5 bg-amber-50 border-b border-amber-100">
+              <Upload size={16} className="text-amber-600 shrink-0" />
+              <p className="text-sm font-black text-amber-800">신규 양식 업로드</p>
+              <span className="ml-auto text-xs text-amber-600 font-semibold">* 최대 10MB</span>
             </div>
-            <form onSubmit={handleUpload} className="flex flex-col gap-3">
+
+            <form onSubmit={handleUpload} className="p-4 sm:p-5 flex flex-col gap-4">
+              {/* 양식명 + 카테고리 */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-semibold text-slate-600 block mb-1.5">양식명 <span className="text-rose-500">*</span></label>
+                  <label className="text-xs font-black text-slate-600 block mb-1.5">
+                    양식명 <span className="text-rose-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={uploadTitle}
                     onChange={e => setUploadTitle(e.target.value)}
                     placeholder="예: 2026년 표준 근로계약서"
-                    className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm font-semibold focus:outline-none focus:border-amber-500 transition"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 text-slate-800 text-sm font-semibold focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100 transition placeholder:text-slate-400 placeholder:font-normal"
                     maxLength={120}
                     required
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-semibold text-slate-600 block mb-1.5">카테고리 <span className="text-rose-500">*</span></label>
-                  <div className="relative">
-                    <select
-                      value={uploadCategory}
-                      onChange={e => setUploadCategory(e.target.value as CategoryKey)}
-                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-800 text-sm font-semibold focus:outline-none focus:border-amber-500 transition appearance-none cursor-pointer pr-9"
-                    >
-                      {CATEGORIES.map(c => (
-                        <option key={c.key} value={c.key}>{c.label}</option>
-                      ))}
-                    </select>
-                    <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                  <label className="text-xs font-black text-slate-600 block mb-1.5">
+                    카테고리 <span className="text-rose-500">*</span>
+                  </label>
+                  {/* Segmented control */}
+                  <div className="flex gap-1 p-1 bg-slate-100 rounded-xl">
+                    {CATEGORIES.map(c => (
+                      <button
+                        key={c.key}
+                        type="button"
+                        onClick={() => setUploadCategory(c.key)}
+                        className={[
+                          "flex-1 py-1.5 rounded-lg text-xs font-bold transition-all duration-150 cursor-pointer",
+                          uploadCategory === c.key
+                            ? "bg-white shadow-sm text-slate-800"
+                            : "text-slate-500 hover:text-slate-700",
+                        ].join(" ")}
+                      >
+                        {c.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
 
+              {/* 드래그&드롭 업로드 존 */}
               <div>
-                <label className="text-xs font-semibold text-slate-600 block mb-1.5">파일 <span className="text-rose-500">*</span></label>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    onChange={e => onFileChosen(e.target.files?.[0] ?? null)}
-                    className="block text-sm text-slate-700 file:mr-3 file:py-2 file:px-3.5 file:rounded-lg file:border-0 file:bg-slate-100 file:text-slate-700 file:font-semibold file:cursor-pointer hover:file:bg-slate-200 transition"
-                  />
-                  {uploadFile && (
-                    <span className="text-xs text-slate-500 font-semibold">
-                      {uploadFile.name} · {fmtBytes(uploadFile.size)}
-                    </span>
-                  )}
-                </div>
-                <p className="text-[11px] text-slate-400 mt-1">최대 10MB · PDF · Word · Excel · 한글(HWP) · 이미지 등 모든 형식</p>
+                <label className="text-xs font-black text-slate-600 block mb-1.5">
+                  파일 <span className="text-rose-500">*</span>
+                </label>
+                <DropZone
+                  file={uploadFile}
+                  onFile={onFileChosen}
+                  inputRef={fileInputRef}
+                  error={uploadError}
+                />
               </div>
 
-              {uploadError && (
-                <div className="text-xs text-rose-600 font-semibold bg-rose-50 border border-rose-200 rounded-lg px-3 py-2">{uploadError}</div>
+              {/* 업로드 진행률 */}
+              {uploading && uploadProgress > 0 && (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between text-xs font-bold text-slate-500">
+                    <span>업로드 중...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-amber-500 rounded-full transition-all duration-300"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
               )}
 
-              <div className="flex items-center gap-2 justify-end">
+              {/* 완료 피드백 */}
+              {!uploading && uploadProgress === 100 && (
+                <div className="flex items-center gap-2 text-sm text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 rounded-xl px-3.5 py-2.5">
+                  <CheckCircle2 size={15} className="shrink-0" />
+                  업로드 완료! 목록을 갱신하는 중...
+                </div>
+              )}
+
+              {/* 에러 */}
+              {uploadError && (
+                <div className="flex items-start gap-2 text-sm text-rose-700 font-semibold bg-rose-50 border border-rose-200 rounded-xl px-3.5 py-2.5">
+                  <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                  {uploadError}
+                </div>
+              )}
+
+              {/* 액션 버튼 */}
+              <div className="flex items-center gap-2 justify-end pt-1">
                 <button
                   type="button"
                   onClick={resetUploadForm}
                   disabled={uploading}
-                  className="px-3.5 py-2 rounded-lg bg-white border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 cursor-pointer transition-colors"
+                  className="px-4 py-2 rounded-xl bg-white border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 disabled:opacity-50 cursor-pointer transition-colors"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
                   disabled={uploading || !uploadFile || !uploadTitle.trim()}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 disabled:bg-amber-300 text-white text-sm font-bold shadow-sm transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 disabled:bg-amber-200 disabled:text-amber-400 text-white text-sm font-bold shadow-sm transition-all duration-150 cursor-pointer"
                 >
-                  {uploading ? <><Loader2 size={14} className="animate-spin" /><span>업로드 중...</span></> : <><Upload size={14} /><span>업로드</span></>}
+                  {uploading ? (
+                    <><Loader2 size={14} className="animate-spin" /><span>업로드 중...</span></>
+                  ) : (
+                    <><Upload size={14} /><span>업로드</span></>
+                  )}
                 </button>
               </div>
             </form>
           </div>
         )}
 
-        {/* 필터 · 검색 · 공통 FilterBar */}
+        {/* ── 필터 바 ────────────────────────────────────────────────────── */}
         <FilterBar gap="tight">
+          {/* 카테고리 label */}
           <div className="flex items-center gap-1.5 shrink-0">
-            <Filter size={13} className="text-slate-400" />
-            <span className="text-xs font-black text-slate-500 uppercase tracking-wide">카테고리</span>
+            <Filter size={12} className="text-slate-400" />
+            <span className="text-xs font-black text-slate-400 uppercase tracking-wide">분류</span>
           </div>
+
+          {/* 카테고리 칩 그룹 */}
           <div className="flex items-center gap-1 flex-wrap">
-            <CatChip active={categoryFilter === "all"} onClick={() => setCategoryFilter("all")} label="전체" count={forms.length} chipClass="bg-slate-100 text-slate-700 border-slate-200" activeClass="bg-slate-800 text-white border-slate-800" />
+            <CatChip
+              active={categoryFilter === "all"}
+              onClick={() => setCategoryFilter("all")}
+              label="전체"
+              count={forms.length}
+              badgeClass="bg-slate-100 text-slate-600 border-slate-200"
+              activeClass="bg-slate-800 text-white border-slate-800"
+            />
             {CATEGORIES.map(c => {
               const cnt = forms.filter(f => f.category === c.key).length;
               return (
@@ -456,40 +752,44 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                   onClick={() => setCategoryFilter(c.key)}
                   label={c.label}
                   count={cnt}
-                  chipClass={c.badge}
-                  activeClass={activeClassFor(c.key)}
+                  badgeClass={c.badge}
+                  activeClass={c.activeBg}
                 />
               );
             })}
           </div>
+
+          {/* 검색 */}
           <input
             type="text"
             value={searchQ}
             onChange={e => setSearchQ(e.target.value)}
             placeholder="양식명 · 파일명 · 업로더 검색"
-            className="ml-auto w-full sm:w-64 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-amber-400 transition"
+            className="ml-auto w-full sm:w-60 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm text-slate-800 font-semibold focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-100/60 transition placeholder:text-slate-400 placeholder:font-normal"
           />
         </FilterBar>
 
-        {/* 리스트 */}
+        {/* ── 리스트 ─────────────────────────────────────────────────────── */}
         <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          {/* 에러 배너 */}
           {loadError && (
-            <div className="p-4 text-sm text-rose-600 font-semibold bg-rose-50 border-b border-rose-200">
+            <div className="flex items-center gap-2 p-3.5 text-sm text-rose-700 font-semibold bg-rose-50 border-b border-rose-200">
+              <AlertCircle size={15} className="shrink-0" />
               {loadError}
             </div>
           )}
 
-          {/* 데스크톱: 테이블 */}
+          {/* 데스크톱 테이블 */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <colgroup>
-                <col style={{ minWidth: 40, width: 44 }} />
+                <col style={{ minWidth: 48, width: 52 }} />
                 <col style={{ minWidth: 200 }} />
                 <col style={{ minWidth: 110, width: 130 }} />
-                <col style={{ minWidth: 200 }} />
+                <col style={{ minWidth: 180 }} />
                 <col style={{ minWidth: 90, width: 100 }} />
-                <col style={{ minWidth: 100, width: 130 }} />
-                <col style={{ minWidth: 140, width: 170 }} />
+                <col style={{ minWidth: 100, width: 120 }} />
+                <col style={{ minWidth: 140, width: 160 }} />
                 <col style={{ minWidth: 140, width: isManager ? 170 : 100 }} />
               </colgroup>
               <thead className="bg-slate-50">
@@ -503,70 +803,92 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
               <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan={8} className="py-10 text-center text-slate-400 text-sm font-bold">
-                      <Loader2 size={16} className="animate-spin inline mr-2" />
-                      불러오는 중...
+                    <td colSpan={8} className="py-14 text-center">
+                      <div className="inline-flex flex-col items-center gap-2">
+                        <Loader2 size={20} className="animate-spin text-amber-500" />
+                        <span className="text-sm text-slate-400 font-bold">불러오는 중...</span>
+                      </div>
                     </td>
                   </tr>
                 )}
                 {!loading && displayForms.length === 0 && (
                   <tr>
-                    <td colSpan={8} className="py-10 text-center text-slate-400 text-sm font-bold">
-                      등록된 양식이 없습니다.
+                    <td colSpan={8}>
+                      <EmptyState
+                        isFiltered={isFiltered}
+                        isManager={isManager}
+                        onUpload={() => setShowUploadForm(true)}
+                      />
                     </td>
                   </tr>
                 )}
                 {!loading && displayForms.map(f => {
                   const cat = CATEGORY_MAP[f.category] ?? CATEGORY_MAP.etc;
-                  const CatIcon = cat.icon;
+                  const fileInfo = fileIconInfo(f.file_name, f.mime_type);
+                  const FileIcon = fileInfo.Icon;
                   return (
-                    <tr key={f.id} className="hover:bg-amber-50/40 transition-colors border-b border-slate-100">
-                      <td className="px-3 py-2 align-middle">
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-500">
-                          <CatIcon size={16} />
+                    <tr key={f.id} className="hover:bg-amber-50/30 transition-colors border-b border-slate-100 last:border-b-0 group">
+                      {/* 파일 타입 아이콘 */}
+                      <td className="px-3 py-2.5 align-middle">
+                        <span className={`inline-flex items-center justify-center w-9 h-9 rounded-lg ${fileInfo.colorClass} shrink-0`}>
+                          <FileIcon size={16} />
                         </span>
                       </td>
-                      <td className="px-3 py-2 align-middle">
-                        <div className="text-sm font-bold text-slate-800 break-all">{f.title}</div>
+
+                      {/* 양식명 */}
+                      <td className="px-3 py-2.5 align-middle">
+                        <div className="text-sm font-bold text-slate-800 break-all leading-snug">{f.title}</div>
                       </td>
-                      <td className="px-3 py-2 align-middle">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold border ${cat.badge}`}>
+
+                      {/* 분류 배지 */}
+                      <td className="px-3 py-2.5 align-middle">
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-black border ${cat.badge}`}>
                           {cat.label}
                         </span>
                       </td>
-                      <td className="px-3 py-2 align-middle">
+
+                      {/* 파일명 */}
+                      <td className="px-3 py-2.5 align-middle">
                         <div className="text-xs text-slate-500 font-semibold break-all">{f.file_name ?? "-"}</div>
+                        <div className="text-[10px] text-slate-400 font-semibold mt-0.5">{fileInfo.label}</div>
                       </td>
-                      <td className="px-3 py-2 align-middle text-right">
-                        <span className="text-xs text-slate-500 font-mono">{fmtBytes(f.file_size)}</span>
+
+                      {/* 크기 */}
+                      <td className="px-3 py-2.5 align-middle text-right">
+                        <span className="text-xs text-slate-500 font-semibold tabular-nums">{fmtBytes(f.file_size)}</span>
                       </td>
-                      <td className="px-3 py-2 align-middle">
+
+                      {/* 업로더 */}
+                      <td className="px-3 py-2.5 align-middle">
                         <span className="text-xs text-slate-600 font-semibold">{f.uploaded_by ?? "-"}</span>
                       </td>
-                      <td className="px-3 py-2 align-middle">
-                        <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">{fmtDateTime(f.created_at)}</span>
+
+                      {/* 업로드일 */}
+                      <td className="px-3 py-2.5 align-middle">
+                        <span className="text-xs text-slate-400 font-semibold whitespace-nowrap">{fmtDateTime(f.created_at)}</span>
                       </td>
-                      <td className="px-3 py-2 align-middle">
-                        <div className="flex items-center justify-center gap-1.5">
+
+                      {/* 액션 */}
+                      <td className="px-3 py-2.5 align-middle">
+                        <div className="flex items-center justify-center gap-2">
                           <button
                             type="button"
                             onClick={() => downloadFile(f.file_url, f.file_name || f.title || "form")}
-                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 border border-emerald-200 text-xs font-bold transition-all duration-100 cursor-pointer shadow-sm"
                             title="다운로드"
                           >
                             <Download size={12} />
-                            <span>다운</span>
+                            <span>다운로드</span>
                           </button>
                           {isManager && (
                             <button
                               type="button"
                               onClick={() => handleDelete(f)}
                               disabled={deletingId === f.id}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold disabled:opacity-50 transition-colors cursor-pointer"
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-600 border border-rose-200 text-xs font-bold disabled:opacity-50 transition-all duration-100 cursor-pointer shadow-sm"
                               title="삭제"
                             >
                               {deletingId === f.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
-                              <span>삭제</span>
                             </button>
                           )}
                         </div>
@@ -578,46 +900,62 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
             </table>
           </div>
 
-          {/* 모바일: 카드 */}
-          <div className="md:hidden">
+          {/* 모바일 카드 */}
+          <div className="md:hidden divide-y divide-slate-100">
             {loading && (
-              <div className="py-10 text-center text-slate-400 text-sm font-bold">
-                <Loader2 size={16} className="animate-spin inline mr-2" />
-                불러오는 중...
+              <div className="py-14 flex flex-col items-center gap-2">
+                <Loader2 size={20} className="animate-spin text-amber-500" />
+                <span className="text-sm text-slate-400 font-bold">불러오는 중...</span>
               </div>
             )}
             {!loading && displayForms.length === 0 && (
-              <div className="py-10 text-center text-slate-400 text-sm font-bold">등록된 양식이 없습니다.</div>
+              <EmptyState
+                isFiltered={isFiltered}
+                isManager={isManager}
+                onUpload={() => setShowUploadForm(true)}
+              />
             )}
             {!loading && displayForms.map(f => {
               const cat = CATEGORY_MAP[f.category] ?? CATEGORY_MAP.etc;
-              const CatIcon = cat.icon;
+              const fileInfo = fileIconInfo(f.file_name, f.mime_type);
+              const FileIcon = fileInfo.Icon;
               return (
-                <div key={f.id} className="p-3 border-b border-slate-100 last:border-b-0 flex flex-col gap-2">
-                  <div className="flex items-start gap-2">
-                    <span className="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-slate-100 text-slate-500 shrink-0">
-                      <CatIcon size={17} />
+                <div key={f.id} className="p-3.5 hover:bg-amber-50/20 transition-colors">
+                  {/* 상단: 아이콘 + 양식명 + 분류 */}
+                  <div className="flex items-start gap-3">
+                    <span className={`inline-flex items-center justify-center w-10 h-10 rounded-xl ${fileInfo.colorClass} shrink-0`}>
+                      <FileIcon size={18} />
                     </span>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-black text-slate-800 break-all">{f.title}</div>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold border ${cat.badge}`}>
+                      <div className="text-sm font-black text-slate-800 leading-snug break-all">{f.title}</div>
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-black border ${cat.badge}`}>
                           {cat.label}
                         </span>
                         <span className="text-[11px] text-slate-400 font-semibold">{fmtDateTime(f.created_at)}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="text-[11px] text-slate-500 font-semibold break-all pl-11">
-                    {f.file_name ?? "-"} · {fmtBytes(f.file_size)} · {f.uploaded_by ?? "-"}
+
+                  {/* 파일 정보 */}
+                  <div className="mt-2.5 pl-13 flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] text-slate-500 font-semibold break-all">
+                      {f.file_name ?? "-"}
+                    </span>
+                    <span className="text-[11px] text-slate-400">·</span>
+                    <span className="text-[11px] text-slate-400 font-semibold tabular-nums">{fmtBytes(f.file_size)}</span>
+                    <span className="text-[11px] text-slate-400">·</span>
+                    <span className="text-[11px] text-slate-400 font-semibold">{f.uploaded_by ?? "-"}</span>
                   </div>
-                  <div className="flex items-center gap-1.5 pl-11">
+
+                  {/* 액션 버튼 */}
+                  <div className="mt-3 pl-13 flex items-center gap-2">
                     <button
                       type="button"
                       onClick={() => downloadFile(f.file_url, f.file_name || f.title || "form")}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-700 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer"
                     >
-                      <Download size={12} />
+                      <Download size={13} />
                       다운로드
                     </button>
                     {isManager && (
@@ -625,9 +963,9 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
                         type="button"
                         onClick={() => handleDelete(f)}
                         disabled={deletingId === f.id}
-                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold disabled:opacity-50 transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 active:bg-rose-200 text-rose-600 border border-rose-200 text-xs font-bold disabled:opacity-50 transition-colors cursor-pointer"
                       >
-                        {deletingId === f.id ? <Loader2 size={12} className="animate-spin" /> : <Trash2 size={12} />}
+                        {deletingId === f.id ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
                         삭제
                       </button>
                     )}
@@ -638,16 +976,18 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
           </div>
         </div>
 
-        {/* 하단 안내 (관리자용) */}
+        {/* ── 관리자 안내 ────────────────────────────────────────────────── */}
         {isManager && (
-          <div className="text-[11px] text-slate-400 leading-relaxed">
-            <div className="flex items-start gap-1.5">
-              <FilePlus size={12} className="mt-0.5 shrink-0" />
-              <div>
-                Supabase Storage · <code className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[10px]">hr-forms</code> 버킷 사용
-                (없으면 로컬 <code className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[10px]">uploads/hr-forms/</code> 로 자동 fallback).
-                최초 1회 · Supabase 대시보드에서 <b>hr-forms</b> 버킷(Public 권장) 및 <code className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 font-mono text-[10px]">hr_forms</code> 테이블 생성 필요.
-              </div>
+          <div className="flex items-start gap-2.5 px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-400 leading-relaxed">
+            <FilePlus size={13} className="mt-0.5 shrink-0 text-slate-400" />
+            <div>
+              Supabase Storage{" "}
+              <code className="px-1 py-0.5 rounded bg-white border border-slate-200 text-slate-500 font-mono text-[10px]">hr-forms</code>{" "}
+              버킷 사용 (없으면 로컬{" "}
+              <code className="px-1 py-0.5 rounded bg-white border border-slate-200 text-slate-500 font-mono text-[10px]">uploads/hr-forms/</code>{" "}
+              자동 fallback). 최초 1회 Supabase 대시보드에서{" "}
+              <b className="text-slate-500">hr-forms</b> 버킷(Public 권장) 및{" "}
+              <code className="px-1 py-0.5 rounded bg-white border border-slate-200 text-slate-500 font-mono text-[10px]">hr_forms</code> 테이블 생성 필요.
             </div>
           </div>
         )}
@@ -655,39 +995,5 @@ const HrFormsPage: React.FC<HrFormsPageProps> = ({ authSession, onBack, onNaviga
     </div>
   );
 };
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 서브: 카테고리 필터 chip
-// ─────────────────────────────────────────────────────────────────────────────
-
-const CatChip: React.FC<{
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  count: number;
-  chipClass: string;
-  activeClass: string;
-}> = ({ active, onClick, label, count, chipClass, activeClass }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={[
-      "inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer",
-      active ? activeClass : `${chipClass} hover:brightness-95`,
-    ].join(" ")}
-  >
-    <span>{label}</span>
-    <span className={active ? "opacity-80" : "text-slate-500"}>{count}</span>
-  </button>
-);
-
-function activeClassFor(k: CategoryKey): string {
-  switch (k) {
-    case "contract":    return "bg-emerald-600 text-white border-emerald-600";
-    case "resignation": return "bg-rose-600 text-white border-rose-600";
-    case "pledge":      return "bg-indigo-600 text-white border-indigo-600";
-    case "etc":         return "bg-slate-700 text-white border-slate-700";
-  }
-}
 
 export default HrFormsPage;
