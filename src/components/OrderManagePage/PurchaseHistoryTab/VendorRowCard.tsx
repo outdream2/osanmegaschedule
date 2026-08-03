@@ -1,7 +1,8 @@
 // src/components/OrderManagePage/PurchaseHistoryTab/VendorRowCard.tsx
-// 좌측 공급사 리스트 · 카드형 2줄 (2026-08-03)
+// 좌측 공급사 리스트 · 카드형 3줄 (2026-08-03 · 컬럼 확장)
 // Line 1 · 공급사명 + 분류 배지 + 최근 매입일 배지 (D+N)
 // Line 2 · 이번달 매입액 + 12주 스파크라인 + SKU 종수
+// Line 3 (신규) · 최근 한달 판매량·판매금액 + 매입주기
 // Zoho·QuickBooks Purchases by Vendor 벤치마크
 
 import React, { useMemo } from "react";
@@ -9,11 +10,18 @@ import { VendorCategoryBadge } from "../../common/VendorCategoryBadge";
 
 export interface VendorSummary {
   last_purchase_date: string | null;
+  first_purchase_date?: string | null;
   this_month_amount: number;
   total_amount: number;
   purchase_count: number;
   sku_count: number;
   weekly_sparkline: number[];
+  /** purchase_details 기반 · 서로다른매입일 2회↑일 때만 · 아니면 null */
+  avg_cycle_days?: number | null;
+  /** top-sales?months=1 조인 · 최근 한달 판매량 · 없으면 null */
+  sale_qty_month?: number | null;
+  /** top-sales?months=1 조인 · 최근 한달 판매금액 · 없으면 null */
+  sale_amount_month?: number | null;
 }
 
 interface VendorRowCardProps {
@@ -93,12 +101,15 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
   const thisMonth = summary?.this_month_amount ?? 0;
   const skuCount = summary?.sku_count ?? 0;
   const sparkline = summary?.weekly_sparkline ?? new Array(12).fill(0);
+  const cycle = summary?.avg_cycle_days ?? null;
+  const saleQty = summary?.sale_qty_month ?? null;
+  const saleAmt = summary?.sale_amount_month ?? null;
 
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={`group w-full text-left px-3 py-2 flex flex-col gap-1.5 transition cursor-pointer border-l-2 ${
+      className={`group w-full text-left px-3 py-2 flex flex-col gap-1 transition cursor-pointer border-l-2 ${
         active
           ? "bg-emerald-50 border-emerald-500"
           : "hover:bg-slate-50 border-transparent"
@@ -120,7 +131,7 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
         </span>
       </div>
 
-      {/* Line 2 · 이번달 + 스파크라인 + SKU */}
+      {/* Line 2 · 이번달 매입액 + 스파크라인 + SKU */}
       <div className="flex items-center gap-2 w-full min-w-0">
         <span
           className={`text-[10px] font-black tabular-nums shrink-0 ${
@@ -138,6 +149,47 @@ export const VendorRowCard: React.FC<VendorRowCardProps> = React.memo(({
           title="최근 3개월 활성 SKU 종수"
         >
           {skuCount > 0 ? `${skuCount}종` : "-"}
+        </span>
+      </div>
+
+      {/* Line 3 · 최근 한달 판매량·판매금액 + 매입주기 */}
+      <div className="flex items-center gap-1.5 w-full min-w-0 pt-0.5">
+        {/* 판매량 (지난달) */}
+        <span
+          className={`text-[9px] font-bold tabular-nums shrink-0 rounded px-1 py-0.5 border ${
+            saleQty != null && saleQty > 0
+              ? "bg-orange-50 text-orange-700 border-orange-200"
+              : "bg-slate-50 text-slate-300 border-slate-100"
+          }`}
+          title="최근 한달 판매수량 (top-sales 조인)"
+        >
+          판매 {saleQty != null && saleQty > 0 ? saleQty.toLocaleString() : "-"}
+        </span>
+        {/* 판매금액 (지난달) */}
+        <span
+          className={`text-[9px] font-bold tabular-nums shrink-0 rounded px-1 py-0.5 border ${
+            saleAmt != null && saleAmt > 0
+              ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+              : "bg-slate-50 text-slate-300 border-slate-100"
+          }`}
+          title={`최근 한달 판매금액 · ${saleAmt != null ? saleAmt.toLocaleString() : "-"}원`}
+        >
+          매출 {saleAmt != null && saleAmt > 0 ? fmtWon(saleAmt) : "-"}
+        </span>
+        {/* 매입주기 */}
+        <span
+          className={`ml-auto text-[9px] font-bold tabular-nums shrink-0 rounded px-1 py-0.5 border ${
+            cycle != null
+              ? cycle <= 14
+                ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                : cycle <= 30
+                ? "bg-teal-50 text-teal-700 border-teal-200"
+                : "bg-slate-50 text-slate-600 border-slate-200"
+              : "bg-slate-50 text-slate-300 border-slate-100"
+          }`}
+          title={cycle != null ? `평균 매입주기 · ${cycle}일` : "매입 2회 미만 · 계산 불가"}
+        >
+          주기 {cycle != null ? `${cycle}일` : "-"}
         </span>
       </div>
     </button>

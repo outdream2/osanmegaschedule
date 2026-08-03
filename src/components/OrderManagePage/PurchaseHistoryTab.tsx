@@ -64,9 +64,20 @@ export const PurchaseHistoryTab: React.FC = () => {
   const [summaryMap, setSummaryMap] = useState<Map<string, VendorSummary>>(new Map());
   const [, setSummaryLoading] = useState(false);
 
-  // 좌측 정렬
-  type LeftSort = "recent" | "amount" | "name";
+  // 좌측 정렬 · 2026-08-03 확장 (판매량·판매금액·매입주기·SKU 추가)
+  type LeftSort = "recent" | "amount" | "sale_qty" | "sale_amt" | "cycle" | "sku" | "name";
+  type LeftDir = "asc" | "desc";
   const [leftSort, setLeftSort] = useState<LeftSort>("recent");
+  const [leftDir, setLeftDir] = useState<LeftDir>("desc");
+  const toggleLeftSort = (k: LeftSort) => {
+    if (leftSort === k) {
+      setLeftDir(d => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setLeftSort(k);
+      // 이름 정렬은 asc default · 나머지는 desc default (큰 값 위로)
+      setLeftDir(k === "name" ? "asc" : "desc");
+    }
+  };
 
   // 선택 공급사
   const [selectedVendor, setSelectedVendor] = useState<VendorItem | null>(null);
@@ -133,20 +144,56 @@ export const PurchaseHistoryTab: React.FC = () => {
   }, []);
 
   // ─── 좌측 요약 (최근 90일) 로드 ─────────────────────────────────────────
+  //   2026-08-03 · purchase_details primary (서버 스왑) + top-sales?months=1 병렬 조인
+  //     - 최근 한달 판매량·판매금액 (공급사별 집계)
+  //     - avg_cycle_days 는 서버 응답에서 그대로 사용
   const loadSummary = useCallback(async () => {
     setSummaryLoading(true);
     try {
-      const res = await fetch("/api/supplier-purchase-summary?days=90");
-      if (!res.ok) throw new Error(String(res.status));
-      const j: SummaryResponse = await res.json();
+      const [summaryRes, salesRes] = await Promise.all([
+        fetch("/api/supplier-purchase-summary?days=90"),
+        // top-sales?months=1 · sale_qty_month · sale_amount_month · supplier_name 포함
+        //   ReturnListPanel · OrderManagePage 가 warm 시켜둔 서버 캐시(TTL) 재활용
+        fetch("/api/stock-manage/top-sales?months=1&limit=5000&sort=sale&dir=desc").catch(() => null),
+      ]);
+      if (!summaryRes.ok) throw new Error(String(summaryRes.status));
+      const j: SummaryResponse & { suppliers: any[] } = await summaryRes.json();
+
+      // 공급사별 판매량·판매금액 집계 (top-sales row 는 상품 단위 · supplier_name 으로 groupBy)
+      const salesBySupplier = new Map<string, { qty: number; amt: number }>();
+      if (salesRes && salesRes.ok) {
+        try {
+          const sb = await salesRes.json();
+          const rows: any[] = Array.isArray(sb?.rows) ? sb.rows : [];
+          for (const r of rows) {
+            const sup = String(r.supplier_name ?? r.supplier ?? "").trim();
+            if (!sup) continue;
+            const qty = Number(r.sale_qty_month ?? 0) || 0;
+            const amt = Number(r.sale_amount_month ?? 0) || 0;
+            if (qty === 0 && amt === 0) continue;
+            const cur = salesBySupplier.get(sup) ?? { qty: 0, amt: 0 };
+            cur.qty += qty;
+            cur.amt += amt;
+            salesBySupplier.set(sup, cur);
+          }
+        } catch {
+          // top-sales 실패는 무시 · summary 는 계속 진행
+        }
+      }
+
       const map = new Map<string, VendorSummary>();
       for (const s of j.suppliers ?? []) {
+        const sales = salesBySupplier.get(s.supplier);
         map.set(s.supplier, {
           last_purchase_date: s.last_purchase_date,
+          first_purchase_date: s.first_purchase_date ?? null,
           this_month_amount: s.this_month_amount,
           total_amount: s.total_amount,
           purchase_count: s.purchase_count,
           sku_count: s.sku_count,
+          avg_cycle_days: s.avg_cycle_days ?? null,
+          sale_qty_month: sales?.qty ?? null,
+          sale_amount_month: sales?.amt ?? null,
           weekly_sparkline: Array.isArray(s.weekly_sparkline) && s.weekly_sparkline.length === 12
             ? s.weekly_sparkline
             : new Array(12).fill(0),
@@ -297,6 +344,8 @@ export const PurchaseHistoryTab: React.FC = () => {
   }, [viewMode, loadAllDetails]);
 
   // ─── 필터링 · 정렬된 좌측 리스트 (공급사) ────────────────────────────────
+  //   2026-08-03 · leftSort · leftDir 조합 · asc/desc 토글 지원
+  //   null 값은 desc 정렬 시 항상 뒤로 · asc 정렬 시 항상 뒤로 (일관성)
   const filteredVendors = useMemo(() => {
     const q = vendorSearch.trim().toLowerCase();
     const list = vendors.filter(v => {
@@ -304,27 +353,49 @@ export const PurchaseHistoryTab: React.FC = () => {
       if (vendorCategoryFilter !== "전체" && v.category !== vendorCategoryFilter) return false;
       return true;
     });
-    // 정렬
+    const dirSign = leftDir === "asc" ? 1 : -1;
+
+    // 컬럼별 정렬 값 추출 (숫자 or 문자열)
+    const pickNum = (v: VendorItem): number | null => {
+      const s = summaryMap.get(v.company_name);
+      switch (leftSort) {
+        case "amount":    return s?.total_amount ?? null;
+        case "sale_qty":  return s?.sale_qty_month ?? null;
+        case "sale_amt":  return s?.sale_amount_month ?? null;
+        case "cycle":     return s?.avg_cycle_days ?? null;
+        case "sku":       return s?.sku_count ?? null;
+        default:          return null;
+      }
+    };
+
     return list.sort((a, b) => {
       const sa = summaryMap.get(a.company_name);
       const sb = summaryMap.get(b.company_name);
+      // name 정렬 (예외 · 항상 문자열 비교)
+      if (leftSort === "name") {
+        return dirSign * a.company_name.localeCompare(b.company_name, "ko");
+      }
+      // recent · 문자열 (YYYY-MM-DD)
       if (leftSort === "recent") {
-        // 최근 매입일 desc · null 은 뒤
         const da = sa?.last_purchase_date ?? "";
         const db = sb?.last_purchase_date ?? "";
-        if (da !== db) return db.localeCompare(da);
+        // null 값은 항상 뒤 (dir 무관)
+        if (!da && !db) return a.company_name.localeCompare(b.company_name, "ko");
+        if (!da) return 1;
+        if (!db) return -1;
+        if (da !== db) return dirSign * da.localeCompare(db);
         return a.company_name.localeCompare(b.company_name, "ko");
       }
-      if (leftSort === "amount") {
-        const va = sa?.total_amount ?? 0;
-        const vb = sb?.total_amount ?? 0;
-        if (va !== vb) return vb - va;
-        return a.company_name.localeCompare(b.company_name, "ko");
-      }
-      // name
+      // 숫자 컬럼 (null → 항상 뒤)
+      const va = pickNum(a);
+      const vb = pickNum(b);
+      if (va == null && vb == null) return a.company_name.localeCompare(b.company_name, "ko");
+      if (va == null) return 1;
+      if (vb == null) return -1;
+      if (va !== vb) return dirSign * (va - vb);
       return a.company_name.localeCompare(b.company_name, "ko");
     });
-  }, [vendors, vendorSearch, vendorCategoryFilter, summaryMap, leftSort]);
+  }, [vendors, vendorSearch, vendorCategoryFilter, summaryMap, leftSort, leftDir]);
 
   // ─── 상품별 집계 (allDetails groupBy product_code || product_name) ──────
   const productList = useMemo<ProductSummary[]>(() => {
@@ -565,33 +636,97 @@ export const PurchaseHistoryTab: React.FC = () => {
                       }`}>{cat}</button>
                   ))}
                 </div>
-                {/* 정렬 · 최근/금액/가나다 */}
-                <div className="flex items-center gap-1 pt-1 border-t border-slate-100">
+                {/* 정렬 · 확장 (2026-08-03) · 최근매입·매입액·판매량·판매금액·매입주기·SKU·가나다 */}
+                <div className="flex items-center gap-1 pt-1 border-t border-slate-100 flex-wrap">
                   <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">정렬</span>
                   {([
-                    { k: "recent" as const, label: "최근매입" },
-                    { k: "amount" as const, label: "매입액" },
-                    { k: "name"   as const, label: "가나다" },
-                  ]).map(o => (
-                    <button
-                      key={o.k}
-                      type="button"
-                      onClick={() => setLeftSort(o.k)}
-                      className={`h-5 px-1.5 text-[10px] font-semibold rounded transition cursor-pointer ${
-                        leftSort === o.k
-                          ? "bg-emerald-500 text-white"
-                          : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
-                      }`}
-                    >{o.label}</button>
-                  ))}
+                    { k: "recent"   as const, label: "최근매입" },
+                    { k: "amount"   as const, label: "매입액" },
+                    { k: "sale_qty" as const, label: "판매량" },
+                    { k: "sale_amt" as const, label: "판매금액" },
+                    { k: "cycle"    as const, label: "매입주기" },
+                    { k: "sku"      as const, label: "SKU" },
+                    { k: "name"     as const, label: "가나다" },
+                  ]).map(o => {
+                    const active = leftSort === o.k;
+                    return (
+                      <button
+                        key={o.k}
+                        type="button"
+                        onClick={() => toggleLeftSort(o.k)}
+                        className={`h-5 px-1.5 text-[10px] font-semibold rounded transition cursor-pointer inline-flex items-center gap-0.5 ${
+                          active
+                            ? "bg-emerald-500 text-white"
+                            : "text-slate-500 hover:text-slate-700 hover:bg-slate-50"
+                        }`}
+                        title={active ? `${o.label} · 클릭 시 ${leftDir === "asc" ? "내림" : "오름"}차순 전환` : `${o.label} 기준 정렬`}
+                      >
+                        {o.label}
+                        {active && (
+                          <span className="text-[9px] leading-none">
+                            {leftDir === "asc" ? "▲" : "▼"}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
-              {/* 공급사 리스트 · 카드 2줄 · 상단 컬럼 헤더 */}
+              {/* 공급사 리스트 · 카드 3줄 · 상단 컬럼 헤더 (헤더도 클릭 정렬) */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[65vh] flex flex-col overflow-hidden">
-                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_auto_auto] gap-2 items-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                  <span>공급사</span>
-                  <span className="text-right whitespace-nowrap">매입정보</span>
-                  <span className="text-right whitespace-nowrap">최근</span>
+                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_auto_auto_auto] gap-2 items-center text-[10px] font-bold uppercase tracking-wider">
+                  <button
+                    type="button"
+                    onClick={() => toggleLeftSort("name")}
+                    className={`text-left cursor-pointer inline-flex items-center gap-0.5 transition ${
+                      leftSort === "name" ? "text-emerald-700" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                    title="공급사명 정렬"
+                  >
+                    공급사
+                    {leftSort === "name" && (
+                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleLeftSort("amount")}
+                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
+                      leftSort === "amount" ? "text-emerald-700" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                    title="총 매입액 기준 정렬"
+                  >
+                    매입액
+                    {leftSort === "amount" && (
+                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleLeftSort("sale_amt")}
+                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
+                      leftSort === "sale_amt" || leftSort === "sale_qty" ? "text-indigo-700" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                    title="최근 한달 판매금액 기준 정렬"
+                  >
+                    판매(1m)
+                    {(leftSort === "sale_amt" || leftSort === "sale_qty") && (
+                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleLeftSort("recent")}
+                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
+                      leftSort === "recent" ? "text-emerald-700" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                    title="최근 매입일 기준 정렬"
+                  >
+                    최근
+                    {leftSort === "recent" && (
+                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
+                    )}
+                  </button>
                 </div>
                 <div className="flex-1 min-h-0 overflow-y-auto">
                 {vendorsLoading ? (

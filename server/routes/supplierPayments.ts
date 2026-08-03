@@ -572,8 +572,10 @@ router.get("/api/supplier-open-invoices", async (req, res) => {
 // GET /api/supplier-purchase-summary?days=90
 //   · 모든 공급사 매입 요약 (좌측 vendor 카드용)
 //   · 반환: [{ supplier, last_purchase_date, this_month_amount, sku_count,
-//              weekly_sparkline: number[12], total_amount, purchase_count }]
-//   · ocr_confirmed_items 1회 조회 후 클라이언트-side 집계 (N+1 회피)
+//              weekly_sparkline: number[12], total_amount, purchase_count,
+//              first_purchase_date, avg_cycle_days }]
+//   · 2026-08-03 · primary 소스 스왑 · purchase_details (ERP 임포트) 우선 · 실패/빈결과 시 ocr_confirmed_items 폴백
+//     기존 응답 shape 유지 · 사용자 요청: "매입이력(ERP)는 매입상세테이블에서 읽어와야지"
 // ─────────────────────────────────────────────────────────────────────
 router.get("/api/supplier-purchase-summary", async (req, res) => {
   try {
@@ -586,25 +588,83 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
     const now = new Date();
     const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
 
-    // 최근 90일 매입 전체 조회
-    const { data, error } = await supabase
-      .from("ocr_confirmed_items")
-      .select("supplier, invoice_date, saved_at, amount, product_code, product_name")
-      .gte("saved_at", cutoffYmd);
-    if (error) {
-      if (/relation .* does not exist/i.test(error.message)) return res.json({ suppliers: [] });
-      throw new Error(error.message);
+    // ─── primary · purchase_details (ERP · 사용자 명시 정답 소스) ─────────
+    //   supplier_name · purchase_date · amount|total · product_code
+    //   페이지네이션 (row 1000 초과 대비)
+    interface NormRow {
+      supplier: string;
+      date: string;
+      amount: number;
+      code: string;
     }
-    const rows = data ?? [];
+    const normRows: NormRow[] = [];
+    let pdOk = false;
+    try {
+      const PAGE = 1000;
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("purchase_details")
+          .select("supplier_name, purchase_date, amount, total, product_code")
+          .gte("purchase_date", cutoffYmd)
+          .range(from, from + PAGE - 1);
+        if (error) {
+          if (/relation .* does not exist|column .* does not exist/i.test(error.message)) break;
+          throw new Error(error.message);
+        }
+        if (!data || data.length === 0) break;
+        for (const r of data as any[]) {
+          const supplier = String(r.supplier_name ?? "").trim();
+          if (!supplier) continue;
+          const date: string = (r.purchase_date && /^\d{4}-\d{2}-\d{2}/.test(String(r.purchase_date)))
+            ? String(r.purchase_date).slice(0, 10)
+            : "";
+          if (!date) continue;
+          const amount = Number(r.total ?? r.amount ?? 0) || 0;
+          const code = String(r.product_code ?? "").trim();
+          normRows.push({ supplier, date, amount, code });
+        }
+        pdOk = true;
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+    } catch (e: any) {
+      console.warn("[supplier-purchase-summary] purchase_details 실패 · fallback:", e?.message);
+    }
+
+    // ─── fallback · ocr_confirmed_items (기존 소스 · purchase_details 없거나 비었을 때만) ───
+    if (!pdOk || normRows.length === 0) {
+      const { data, error } = await supabase
+        .from("ocr_confirmed_items")
+        .select("supplier, invoice_date, saved_at, amount, product_code, product_name")
+        .gte("saved_at", cutoffYmd);
+      if (error) {
+        if (/relation .* does not exist/i.test(error.message)) return res.json({ suppliers: [] });
+        throw new Error(error.message);
+      }
+      for (const r of (data ?? []) as any[]) {
+        const supplier = String(r.supplier ?? "").trim();
+        if (!supplier) continue;
+        const date: string = (r.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(r.invoice_date))
+          ? r.invoice_date
+          : String(r.saved_at ?? "").slice(0, 10);
+        if (!date) continue;
+        const amount = Number(r.amount) || 0;
+        const code = String(r.product_code ?? "").trim();
+        normRows.push({ supplier, date, amount, code });
+      }
+    }
 
     // 공급사별 집계
     interface Agg {
       supplier: string;
       last_purchase_date: string | null;
+      first_purchase_date: string | null;
       this_month_amount: number;
       total_amount: number;
       purchase_count: number;
       sku_set: Set<string>;
+      date_set: Set<string>; // 매입주기 계산용 · 서로 다른 매입일 수
       // 12주 weekly buckets · 최근주=index 11
       weekly: number[];
     }
@@ -614,61 +674,73 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
     const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
     const nowMs = now.getTime();
 
-    for (const r of rows as any[]) {
-      const supplier = String(r.supplier ?? "").trim();
-      if (!supplier) continue;
-      const date: string = (r.invoice_date && /^\d{4}-\d{2}-\d{2}$/.test(r.invoice_date))
-        ? r.invoice_date
-        : String(r.saved_at ?? "").slice(0, 10);
-      if (!date) continue;
-      const amount = Number(r.amount) || 0;
-      const code = String(r.product_code ?? "").trim();
-
-      let agg = bucket.get(supplier);
+    for (const r of normRows) {
+      let agg = bucket.get(r.supplier);
       if (!agg) {
         agg = {
-          supplier,
+          supplier: r.supplier,
           last_purchase_date: null,
+          first_purchase_date: null,
           this_month_amount: 0,
           total_amount: 0,
           purchase_count: 0,
           sku_set: new Set<string>(),
+          date_set: new Set<string>(),
           weekly: new Array(12).fill(0),
         };
-        bucket.set(supplier, agg);
+        bucket.set(r.supplier, agg);
       }
 
-      // 최근 매입일
-      if (!agg.last_purchase_date || date > agg.last_purchase_date) {
-        agg.last_purchase_date = date;
-      }
-      agg.total_amount += amount;
+      // 최근 · 최초 매입일
+      if (!agg.last_purchase_date || r.date > agg.last_purchase_date) agg.last_purchase_date = r.date;
+      if (!agg.first_purchase_date || r.date < agg.first_purchase_date) agg.first_purchase_date = r.date;
+      agg.total_amount += r.amount;
       agg.purchase_count += 1;
-      if (code) agg.sku_set.add(code);
-      if (date >= monthStart) agg.this_month_amount += amount;
+      if (r.code) agg.sku_set.add(r.code);
+      agg.date_set.add(r.date);
+      if (r.date >= monthStart) agg.this_month_amount += r.amount;
 
       // weekly bucket · 최근 12주
-      const dMs = new Date(date + "T00:00:00Z").getTime();
+      const dMs = new Date(r.date + "T00:00:00Z").getTime();
       if (!Number.isNaN(dMs)) {
         const weeksAgo = Math.floor((nowMs - dMs) / WEEK_MS);
         if (weeksAgo >= 0 && weeksAgo < 12) {
           // weeksAgo=0 → 이번주 → index 11 (오른쪽 끝)
-          agg.weekly[11 - weeksAgo] += amount;
+          agg.weekly[11 - weeksAgo] += r.amount;
         }
       }
     }
 
-    const suppliers = Array.from(bucket.values()).map(a => ({
-      supplier: a.supplier,
-      last_purchase_date: a.last_purchase_date,
-      this_month_amount: a.this_month_amount,
-      total_amount: a.total_amount,
-      purchase_count: a.purchase_count,
-      sku_count: a.sku_set.size,
-      weekly_sparkline: a.weekly,
-    }));
+    const suppliers = Array.from(bucket.values()).map(a => {
+      // 매입주기 · 서로 다른 매입일 2회 이상일 때만 계산 · (last - first) / (distinct - 1)
+      let avg_cycle_days: number | null = null;
+      const distinctDates = a.date_set.size;
+      if (distinctDates >= 2 && a.first_purchase_date && a.last_purchase_date) {
+        const first = new Date(a.first_purchase_date + "T00:00:00Z").getTime();
+        const last = new Date(a.last_purchase_date + "T00:00:00Z").getTime();
+        if (!Number.isNaN(first) && !Number.isNaN(last) && last > first) {
+          avg_cycle_days = Math.round((last - first) / (86400 * 1000) / (distinctDates - 1));
+        }
+      }
+      return {
+        supplier: a.supplier,
+        last_purchase_date: a.last_purchase_date,
+        first_purchase_date: a.first_purchase_date,
+        this_month_amount: a.this_month_amount,
+        total_amount: a.total_amount,
+        purchase_count: a.purchase_count,
+        sku_count: a.sku_set.size,
+        avg_cycle_days,
+        weekly_sparkline: a.weekly,
+      };
+    });
 
-    return res.json({ suppliers, cutoff: cutoffYmd, days });
+    return res.json({
+      suppliers,
+      cutoff: cutoffYmd,
+      days,
+      source: pdOk && normRows.length > 0 ? "purchase_details" : "ocr_confirmed_items",
+    });
   } catch (err: any) {
     console.error("[GET supplier-purchase-summary] error:", err.message);
     return res.status(500).json({ error: err.message });
@@ -679,6 +751,8 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
 // GET /api/supplier-purchase-detail?supplier=X&days=365
 //   · 특정 공급사 매입 raw rows (product_code, quantity, unit_price, amount)
 //   · Tab 2 상품별 집계 · Tab 3 매입 추이용 · running_balance 없음
+//   · 2026-08-03 · primary 소스 스왑 · purchase_details (ERP) 우선 · 실패/빈결과 시 ocr_confirmed_items 폴백
+//     기존 응답 shape 유지 · 사용자 요청: "매입이력(ERP)는 매입상세테이블에서 읽어와야지"
 // ─────────────────────────────────────────────────────────────────────
 router.get("/api/supplier-purchase-detail", async (req, res) => {
   try {
@@ -693,39 +767,18 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
     // vendor VAT 설정 (병렬)
     const vatIncludedPromise = fetchVatIncluded(supplier);
 
-    // vat_amount·supply_amount 컬럼 없을 수 있음 · 실패 시 폴백
+    // ─── primary · purchase_details (ERP · 사용자 명시 정답 소스) ─────────
+    //   vat_amount·supply_amount 컬럼 없을 수 있음 · 실패 시 재시도
     let data: any[] | null = null;
-    const r1 = await supabase
-      .from("ocr_confirmed_items")
-      .select("id, invoice_date, saved_at, product_code, product_name, quantity, unit_price, amount, vat_amount, supply_amount")
-      .eq("supplier", supplier)
-      .gte("saved_at", cutoffYmd);
-    if (!r1.error) data = r1.data ?? [];
-    else if (/vat_amount|supply_amount/i.test(r1.error.message)) {
-      const r2 = await supabase
-        .from("ocr_confirmed_items")
-        .select("id, invoice_date, saved_at, product_code, product_name, quantity, unit_price, amount")
-        .eq("supplier", supplier)
-        .gte("saved_at", cutoffYmd);
-      if (!r2.error) data = (r2.data ?? []).map((x: any) => ({ ...x, vat_amount: 0, supply_amount: 0 }));
-      else {
-        if (/relation .* does not exist/i.test(r2.error.message)) data = [];
-        else throw new Error(r2.error.message);
-      }
-    } else {
-      if (/relation .* does not exist/i.test(r1.error.message)) data = [];
-      else throw new Error(r1.error.message);
-    }
-
-    // ocr_confirmed_items 데이터 없으면 · purchase_details (ERP 임포트) 폴백
-    if (!data || data.length === 0) {
-      const pdRes = await supabase
+    let sourceUsed: "purchase_details" | "ocr_confirmed_items" = "purchase_details";
+    try {
+      const pdFull = await supabase
         .from("purchase_details")
-        .select("id, purchase_date, product_code, product_name, quantity, unit_price, amount, total, supplier_name, vat_amount, supply_amount")
+        .select("id, purchase_date, product_code, product_name, quantity, unit_price, amount, total, vat_amount, supply_amount")
         .eq("supplier_name", supplier)
         .gte("purchase_date", cutoffYmd);
-      if (!pdRes.error) {
-        data = (pdRes.data ?? []).map((r: any) => ({
+      if (!pdFull.error) {
+        data = (pdFull.data ?? []).map((r: any) => ({
           id: r.id,
           invoice_date: r.purchase_date,
           saved_at: r.purchase_date,
@@ -737,8 +790,67 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
           vat_amount: r.vat_amount ?? 0,
           supply_amount: r.supply_amount ?? 0,
         }));
-      } else if (!/relation .* does not exist|column .* does not exist/i.test(pdRes.error.message)) {
-        // 무시 · 빈 배열 반환
+      } else if (/vat_amount|supply_amount/i.test(pdFull.error.message)) {
+        // VAT 컬럼 없는 DB · 다시 조회
+        const pdSlim = await supabase
+          .from("purchase_details")
+          .select("id, purchase_date, product_code, product_name, quantity, unit_price, amount, total")
+          .eq("supplier_name", supplier)
+          .gte("purchase_date", cutoffYmd);
+        if (!pdSlim.error) {
+          data = (pdSlim.data ?? []).map((r: any) => ({
+            id: r.id,
+            invoice_date: r.purchase_date,
+            saved_at: r.purchase_date,
+            product_code: r.product_code,
+            product_name: r.product_name,
+            quantity: r.quantity,
+            unit_price: r.unit_price,
+            amount: r.total ?? r.amount ?? 0,
+            vat_amount: 0,
+            supply_amount: 0,
+          }));
+        } else if (/relation .* does not exist/i.test(pdSlim.error.message)) {
+          data = null; // relation 없음 → fallback 시도
+        }
+      } else if (/relation .* does not exist/i.test(pdFull.error.message)) {
+        data = null; // relation 없음 → fallback 시도
+      }
+    } catch (e: any) {
+      console.warn("[supplier-purchase-detail] purchase_details 실패 · fallback:", e?.message);
+      data = null;
+    }
+
+    // ─── fallback · ocr_confirmed_items (기존 소스) ───
+    if (!data || data.length === 0) {
+      sourceUsed = "ocr_confirmed_items";
+      let ocrData: any[] | null = null;
+      const r1 = await supabase
+        .from("ocr_confirmed_items")
+        .select("id, invoice_date, saved_at, product_code, product_name, quantity, unit_price, amount, vat_amount, supply_amount")
+        .eq("supplier", supplier)
+        .gte("saved_at", cutoffYmd);
+      if (!r1.error) ocrData = r1.data ?? [];
+      else if (/vat_amount|supply_amount/i.test(r1.error.message)) {
+        const r2 = await supabase
+          .from("ocr_confirmed_items")
+          .select("id, invoice_date, saved_at, product_code, product_name, quantity, unit_price, amount")
+          .eq("supplier", supplier)
+          .gte("saved_at", cutoffYmd);
+        if (!r2.error) ocrData = (r2.data ?? []).map((x: any) => ({ ...x, vat_amount: 0, supply_amount: 0 }));
+        else if (/relation .* does not exist/i.test(r2.error.message)) ocrData = [];
+        else throw new Error(r2.error.message);
+      } else if (/relation .* does not exist/i.test(r1.error.message)) {
+        ocrData = [];
+      } else {
+        throw new Error(r1.error.message);
+      }
+
+      // purchase_details 에서 결과 없었으면 ocr 결과 사용 (병합 아님 · 회귀 방지)
+      if ((data ?? []).length === 0 && ocrData && ocrData.length > 0) {
+        data = ocrData;
+      } else if (!data) {
+        data = ocrData ?? [];
       }
     }
 
@@ -769,7 +881,7 @@ router.get("/api/supplier-purchase-detail", async (req, res) => {
         supply_amount: supply,
       };
     });
-    return res.json({ supplier, vat_included: vatIncluded, rows });
+    return res.json({ supplier, vat_included: vatIncluded, rows, source: sourceUsed });
   } catch (err: any) {
     console.error("[GET supplier-purchase-detail] error:", err.message);
     return res.status(500).json({ error: err.message });
