@@ -648,7 +648,8 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                       </button>
                     )}
                   </div>
-                  {/* 매장1 · violet 기본 · #224 real_map 슬래시[0] 표시 */}
+                  {/* 매장1 · violet 기본 · #224 real_map 슬래시[0] 표시 · #237 · 매장 수 = storeZones.length (0이면 매장1 default 표시) */}
+                  {(storeZones.length === 0 || storeZones.length >= 1) && (
                   <div className="bg-white rounded-lg border border-violet-200 py-1 px-1 text-center">
                     <p className="text-[12px] font-semibold text-violet-600 mb-0.5 flex items-center justify-center gap-0.5 flex-wrap"><Store size={10} />매장1{zoneS1 && <span className="text-[10px] font-black text-violet-800 bg-violet-100 border border-violet-200 rounded px-1 leading-tight">{zoneS1}</span>}</p>
                     <input
@@ -671,7 +672,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                       </button>
                     )}
                   </div>
-                  {/* 매장2 · violet 중간 · #224 real_map 슬래시[1] 표시 */}
+                  )}
+                  {/* 매장2 · violet 중간 · #224 real_map 슬래시[1] 표시 · #237 · storeZones ≥ 2 만 노출 */}
+                  {storeZones.length >= 2 && (
                   <div className="bg-white rounded-lg border border-violet-300 py-1 px-1 text-center">
                     <p className="text-[12px] font-semibold text-violet-700 mb-0.5 flex items-center justify-center gap-0.5 flex-wrap"><Store size={10} />매장2{zoneS2 && <span className="text-[10px] font-black text-violet-800 bg-violet-100 border border-violet-300 rounded px-1 leading-tight">{zoneS2}</span>}</p>
                     <input
@@ -694,7 +697,9 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                       </button>
                     )}
                   </div>
-                  {/* 매장3 · violet 진한 (purple 톤) · #224 real_map 슬래시[2] 표시 */}
+                  )}
+                  {/* 매장3 · violet 진한 (purple 톤) · #224 real_map 슬래시[2] 표시 · #237 · storeZones ≥ 3 만 노출 */}
+                  {storeZones.length >= 3 && (
                   <div className="bg-white rounded-lg border border-purple-300 py-1 px-1 text-center">
                     <p className="text-[12px] font-semibold text-purple-700 mb-0.5 flex items-center justify-center gap-0.5 flex-wrap"><Store size={10} />매장3{zoneS3 && <span className="text-[10px] font-black text-purple-800 bg-purple-100 border border-purple-300 rounded px-1 leading-tight">{zoneS3}</span>}</p>
                     <input
@@ -717,6 +722,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
                       </button>
                     )}
                   </div>
+                  )}
                 </div>
               )}
 
