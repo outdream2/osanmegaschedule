@@ -1187,15 +1187,15 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {topTab === "purchase" && (
         <div className="flex flex-col gap-3">
           {renderSubTabs([
-            { k: "receipt"          as const, label: "사입·OCR",   icon: PackageCheck,    color: "violet" },
-            { k: "reconciliation"   as const, label: "실재고반영",  icon: CheckCircle2,    color: "emerald" },
-            { k: "arrival_history"  as const, label: "입고내역",    icon: Package,         color: "indigo" },
+            { k: "purchase-history" as const, label: "매입이력",    icon: Building2,       color: "sky" },
+            { k: "return"           as const, label: "반품필요",    icon: ArrowLeftRight,  color: "rose" },
+            { k: "receipt"          as const, label: "거래명세서",  icon: PackageCheck,    color: "violet" },
             { k: "scan"             as const, label: "실재고입력",  icon: ScanLine,        color: "amber" },
             { k: "productarrival"   as const, label: "상품입고",    icon: PackagePlus,     color: "teal" },
-            { k: "return"           as const, label: "반품필요",    icon: ArrowLeftRight,  color: "rose" },
-            { k: "purchase-history" as const, label: "매입이력",    icon: Building2,       color: "sky" },
+            { k: "arrival_history"  as const, label: "입고내역",    icon: Package,         color: "indigo" },
+            { k: "reconciliation"   as const, label: "실재고",      icon: CheckCircle2,    color: "emerald" },
           ], purchaseSubTab, setPurchaseSubTab)}
-          {/* ── 사입(OCR거래명세서 등록) 서브탭 ── */}
+          {/* ── 거래명세서(OCR) 서브탭 ── */}
           {purchaseSubTab === "receipt" && (
         <div className="flex-1 flex flex-col min-h-0 -mt-1">
           <OcrPage
@@ -1207,7 +1207,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           />
         </div>
           )}
-          {/* ── 실재고반영(reconciliation) 서브탭 ── */}
+          {/* ── 실재고(reconciliation · ERP vs 실재고 차이만 표시) 서브탭 ── */}
           {purchaseSubTab === "reconciliation" && (
             <div className="flex-1 flex flex-col min-h-0">
               <StockReconciliationTab />
