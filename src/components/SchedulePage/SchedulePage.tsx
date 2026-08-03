@@ -1627,6 +1627,8 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
           editMode={editMode}
           onEnableEditMode={() => setEditMode(true)}
           sessionEmployeeId={sessionEmployeeId}
+          onNavigateZoneLabels={onNavigate ? () => onNavigate("zone-labels" as AppNavPage) : undefined}
+          onNavigatePermissions={onNavigate ? () => onNavigate("permissions" as AppNavPage) : undefined}
         />
       )}
 

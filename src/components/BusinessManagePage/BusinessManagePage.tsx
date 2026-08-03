@@ -4,11 +4,10 @@
 //   서브탭: 직원관리 · 연차승인 · 점심불참 · 직원권한 (DisplayPage 서브탭 스타일 벤치마크)
 //   각 서브탭 · 기존 페이지 임베드 (embedded prop 전달 → 자체 AppNavHeader skip)
 import React, { Suspense, useEffect, useState } from "react";
-import { UserGear, CalendarDots, ForkKnife, ShieldCheck, FileText, NotePencil, type Icon as PhIcon } from "@phosphor-icons/react";
+import { UserGear, CalendarDots, ForkKnife, FileText, NotePencil, type Icon as PhIcon } from "@phosphor-icons/react";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
 import { LeavePage } from "../LeavePage/LeavePage";
 import { LunchPage } from "../LunchPage/LunchPage";
-import { PermissionsPage } from "../PermissionsPage/PermissionsPage";
 import { useSortableTabs } from "../../hooks/useSortableTabs";
 import type { AuthSession } from "../../types";
 
@@ -26,7 +25,7 @@ interface BusinessManagePageProps {
   onLogout?: () => void;
 }
 
-type BmSubTab = "staff-manage" | "leave" | "lunch" | "permissions" | "hr-forms" | "contract-writer";
+type BmSubTab = "staff-manage" | "leave" | "lunch" | "hr-forms" | "contract-writer";
 
 // 서브탭 색상 팔레트 · DisplayPage 서브탭 SUBTAB_COLORS 와 동일 구조
 const SUBTAB_COLORS: Record<string, { bar: string; text: string; iconActive: string; hoverText: string }> = {
@@ -49,7 +48,6 @@ const TABS: TabDef[] = [
   { key: "staff-manage",    label: "직원관리",       icon: UserGear,       color: "emerald" },
   { key: "leave",           label: "연차승인",       icon: CalendarDots,   color: "teal"    },
   { key: "lunch",           label: "점심불참",       icon: ForkKnife,      color: "orange"  },
-  { key: "permissions",     label: "직원권한",       icon: ShieldCheck,    color: "indigo"  },
   { key: "hr-forms",        label: "각종양식",       icon: FileText,       color: "amber"   },
   { key: "contract-writer", label: "근로계약서작성", icon: NotePencil,     color: "emerald" },
 ];
@@ -170,9 +168,6 @@ const BusinessManagePage: React.FC<BusinessManagePageProps> = ({
         )}
         {subTab === "lunch" && (
           <LunchPage {...commonSubPageProps} />
-        )}
-        {subTab === "permissions" && (
-          <PermissionsPage {...commonSubPageProps} />
         )}
         {subTab === "hr-forms" && (
           <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">각종 양식 로딩 중...</div>}>
