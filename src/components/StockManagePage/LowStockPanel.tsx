@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, Check, X as XIcon, Loader2 as LoaderIcon, Pencil, ChevronRight, ChevronDown } from "lucide-react";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
+import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 
 // ── ProductLite (low-stock API 응답 shape) ───────────────────────────────
 interface ProductLite {
@@ -130,6 +131,26 @@ export const LowStockPanel: React.FC = () => {
     } finally { setOptimalEditSaving(false); }
   }, [optimalEditCode, optimalEditValue]);
 
+  // ── 분류 필터 + 공급사 카테고리 맵 ──────────────────────────────────────
+  type CategoryFilter = "전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("전체");
+  const [vendorCategoryMap, setVendorCategoryMap] = useState<Record<string, string | null>>({});
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await fetch("/api/vendors?withBalances=1");
+        if (!res.ok) return;
+        const list: Array<{ company_name: string; category: string | null }> = await res.json();
+        const m: Record<string, string | null> = {};
+        for (const v of list) { const nm = String(v.company_name ?? "").trim(); if (nm) m[nm] = v.category ?? null; }
+        setVendorCategoryMap(m);
+      } catch { /* silent */ }
+    };
+    load();
+    window.addEventListener("vendors-changed", load);
+    return () => window.removeEventListener("vendors-changed", load);
+  }, []);
+
   // ── 그룹 접기 ──────────────────────────────────────────────────────────
   type LowGroup = "basic" | "stock" | "inv" | "erp";
   const [lowGroupCollapsed, setLowGroupCollapsed] = useState<Set<LowGroup>>(new Set());
@@ -193,6 +214,22 @@ export const LowStockPanel: React.FC = () => {
           <span className="text-[11px] font-semibold text-rose-600 bg-rose-100 rounded-full px-2 py-0.5 tabular-nums">{lowStock.length}개</span>
         </div>
         <span className="text-[11px] text-slate-400">현재고 &lt; 추천적정재고 · 상품명 클릭 → 상세</span>
+        {/* 분류 세그먼트 필터 */}
+        <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
+          {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
+            <button key={cat} onClick={() => setCategoryFilter(cat)}
+              className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${
+                categoryFilter === cat
+                  ? cat === "전체" ? "bg-slate-700 text-white shadow-sm"
+                  : cat === "위탁" ? "bg-violet-500 text-white shadow-sm"
+                  : cat === "선결제" ? "bg-rose-500 text-white shadow-sm"
+                  : cat === "60일회전" ? "bg-emerald-500 text-white shadow-sm"
+                  : cat === "90일회전" ? "bg-teal-500 text-white shadow-sm"
+                  : "bg-slate-500 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}>{cat}</button>
+          ))}
+        </div>
         <button
           type="button"
           onClick={fetchLowStock}
@@ -279,7 +316,11 @@ export const LowStockPanel: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-50">
-                        {lowStock.slice(0, 200).map((p, i) => {
+                        {lowStock.filter(p => {
+                          if (categoryFilter === "전체") return true;
+                          const sup = String(p.supplier ?? "").trim();
+                          return vendorCategoryMap[sup] === categoryFilter;
+                        }).slice(0, 200).map((p, i) => {
                           const cur = Number(p.current_stock ?? 0);
                           const opt = Number(p.optimal_stock ?? 0);
                           const need = Math.max(0, opt - cur);
@@ -297,7 +338,12 @@ export const LowStockPanel: React.FC = () => {
                                 >
                                   {p.product_name}
                                 </button>
-                                {p.supplier && <div className="text-[10px] text-slate-400 break-words whitespace-normal mt-0.5">{p.supplier}</div>}
+                                {p.supplier && (
+                                  <div className="flex items-center gap-1 flex-wrap mt-0.5">
+                                    <VendorCategoryBadge category={vendorCategoryMap[String(p.supplier).trim()] ?? null} />
+                                    <span className="text-[10px] text-slate-400 break-words whitespace-normal">{p.supplier}</span>
+                                  </div>
+                                )}
                               </td>
                               {isLowGroupCollapsed("stock") ? (
                                 <td className="bg-rose-50/10 w-4"></td>

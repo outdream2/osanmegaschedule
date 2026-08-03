@@ -462,14 +462,14 @@ export const SupplierTab: React.FC = () => {
                           <td className="text-center align-middle py-2.5 text-[11px] font-semibold text-slate-400 tabular-nums">{i + 1}</td>
                           <td className="text-left px-3 py-2.5 align-middle">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className={`text-[13px] font-semibold break-words whitespace-normal leading-tight ${isSelected ? "text-sky-800" : "text-slate-700"}`}>
-                                {sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
-                              </span>
                               {(() => {
                                 const nm = sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
                                 const cat = vendorCategoryMap[nm] ?? vendorCategoryMap[sup.supplier ?? ""] ?? null;
                                 return <VendorCategoryBadge category={cat} />;
                               })()}
+                              <span className={`text-[13px] font-semibold break-words whitespace-normal leading-tight ${isSelected ? "text-sky-800" : "text-slate-700"}`}>
+                                {sup.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}
+                              </span>
                               {sup.supplier_code && <span className="text-[10px] tabular-nums text-slate-400 shrink-0 font-mono bg-slate-100 rounded px-1" title="공급사코드">#{sup.supplier_code}</span>}
                               {sup.code_conflict && <span className="text-[11px] font-semibold text-amber-500 shrink-0" title="같은 이름에 여러 공급사코드가 존재">⚠</span>}
                             </div>
@@ -534,11 +534,11 @@ export const SupplierTab: React.FC = () => {
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden p-4 flex flex-col gap-3">
               <div className="flex items-center gap-2 flex-wrap">
                 <Building2 size={16} className="text-sky-600 shrink-0" />
-                <span className="text-base font-black text-slate-800 break-keep">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</span>
                 {(() => {
                   const nm = supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "";
                   return <VendorCategoryBadge category={vendorCategoryMap[nm] ?? vendorCategoryMap[supplierSelectedObj.supplier ?? ""] ?? null} />;
                 })()}
+                <span className="text-base font-black text-slate-800 break-keep">{supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim()}</span>
                 {supplierSelectedObj.supplier_code && <span className="text-[10px] tabular-nums text-slate-500 bg-slate-100 rounded px-1.5 py-0.5">#{supplierSelectedObj.supplier_code}</span>}
                 <button type="button"
                   onClick={() => openSupplierDetailModal(supplierSelectedObj.supplier?.replace(/\s*\(\s*vat\s*미포함\s*\)\s*/gi, "").trim() ?? "")}

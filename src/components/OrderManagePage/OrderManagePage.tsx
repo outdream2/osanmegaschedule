@@ -21,6 +21,8 @@ import { DiffTab } from "../StockManagePage/DiffTab";
 import { SupplierTab } from "../StockManagePage/SupplierTab";
 import { LowStockPanel } from "../StockManagePage/LowStockPanel";
 import { ReturnListPanel } from "./ReturnListPanel";
+import { PurchaseHistoryTab } from "./PurchaseHistoryTab";
+import { PaymentInfoTab } from "./PaymentInfoTab";
 import { CategoryTab } from "../SalesTrendPage/SalesTrendPage";
 import { BarChart2, PieChart, ArrowLeftRight, Boxes } from "lucide-react";
 
@@ -106,8 +108,8 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   }, [initialTopTab]);
   // Level-2 서브탭 상태
   const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "low">("need");
-  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "arrival_history" | "return">("receipt");
-  const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment">("vendor");
+  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "arrival_history" | "return" | "purchase-history">("receipt");
+  const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment" | "payment-info">("vendor");
   const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff">("trending");
 
   // 2026-07-30 · 사용자 요청 · 입고내역 탭 · product_arrivals 이력 조회
@@ -1042,11 +1044,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                           <td className="px-0.5 py-1.5 text-[12px] font-semibold break-words whitespace-normal align-top">
                             {p.supplier ? (
                               <div className="flex items-center gap-1 flex-wrap">
+                                <VendorCategoryBadge category={vendorCategoryMap[String(p.supplier).trim()] ?? null} />
                                 <button type="button"
                                   onClick={(e) => { e.stopPropagation(); openSupplierInfo(p.supplier); }}
                                   className="text-sky-600 hover:text-sky-800 hover:underline cursor-pointer text-left"
                                   title="공급사 정보 조회·수정">{p.supplier}</button>
-                                <VendorCategoryBadge category={vendorCategoryMap[String(p.supplier).trim()] ?? null} />
                               </div>
                             ) : "-"}
                           </td>
@@ -1182,10 +1184,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {topTab === "purchase" && (
         <div className="flex flex-col gap-3">
           {renderSubTabs([
-            { k: "receipt"         as const, label: "사입·OCR",   icon: PackageCheck,    color: "violet" },
-            { k: "reconciliation"  as const, label: "실재고반영",  icon: CheckCircle2,    color: "emerald" },
-            { k: "arrival_history" as const, label: "입고내역",    icon: Package,         color: "indigo" },
-            { k: "return"          as const, label: "반품필요",    icon: ArrowLeftRight,  color: "rose" },
+            { k: "receipt"          as const, label: "사입·OCR",   icon: PackageCheck,    color: "violet" },
+            { k: "reconciliation"   as const, label: "실재고반영",  icon: CheckCircle2,    color: "emerald" },
+            { k: "arrival_history"  as const, label: "입고내역",    icon: Package,         color: "indigo" },
+            { k: "return"           as const, label: "반품필요",    icon: ArrowLeftRight,  color: "rose" },
+            { k: "purchase-history" as const, label: "매입이력",    icon: Building2,       color: "sky" },
           ], purchaseSubTab, setPurchaseSubTab)}
           {/* ── 사입(OCR거래명세서 등록) 서브탭 ── */}
           {purchaseSubTab === "receipt" && (
@@ -1310,6 +1313,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <ReturnListPanel />
             </div>
           )}
+          {/* ── 매입이력 서브탭 ── */}
+          {purchaseSubTab === "purchase-history" && (
+            <div className="flex-1 min-h-0">
+              <PurchaseHistoryTab />
+            </div>
+          )}
         </div>
       )}
 
@@ -1317,8 +1326,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {topTab === "payment" && (
         <div className="flex flex-col gap-3">
           {renderSubTabs([
-            { k: "vendor"  as const, label: "공급사관리", icon: Building2,  color: "teal" },
-            { k: "payment" as const, label: "결제원장",   icon: BarChart2,  color: "amber" },
+            { k: "vendor"       as const, label: "공급사관리", icon: Building2,  color: "teal" },
+            { k: "payment"      as const, label: "결제원장",   icon: BarChart2,  color: "amber" },
+            { k: "payment-info" as const, label: "결제정보",   icon: ClipboardList, color: "sky" },
           ], paymentSubTab, setPaymentSubTab)}
 
           {/* ── 공급사관리 서브탭 ── */}
@@ -1434,6 +1444,12 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                   />
                 )}
               </div>
+            </div>
+          )}
+          {/* ── 결제정보 서브탭 ── */}
+          {paymentSubTab === "payment-info" && (
+            <div className="flex-1 min-h-0">
+              <PaymentInfoTab />
             </div>
           )}
         </div>
@@ -1691,11 +1707,11 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                                 <>
                                   {mainName ? (
                                     <div className="flex items-center gap-1 flex-wrap">
+                                      <VendorCategoryBadge category={vendorCategoryMap[mainName] ?? null} />
                                       <button type="button"
                                         onClick={(e) => { e.stopPropagation(); openSupplierInfo(mainName); }}
                                         className="text-[12px] text-sky-600 hover:text-sky-800 hover:underline font-semibold break-words whitespace-normal leading-tight text-left cursor-pointer"
                                         title="공급사 정보 조회·수정">{mainName}</button>
-                                      <VendorCategoryBadge category={vendorCategoryMap[mainName] ?? null} />
                                     </div>
                                   ) : (
                                     <div className="text-[12px] text-slate-400 font-semibold">-</div>

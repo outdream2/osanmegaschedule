@@ -145,6 +145,8 @@ export const ReturnListPanel: React.FC = () => {
   const [returnSalesMax, setReturnSalesMax] = useState<number>(5);
   // 2026-07-31 · 사용자 요청 · 공급사 검색 필터 (부분일치 · 대소문자 무시)
   const [returnSupplierSearch, setReturnSupplierSearch] = useState<string>("");
+  type ReturnCategoryFilter = "전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
+  const [returnCategoryFilter, setReturnCategoryFilter] = useState<ReturnCategoryFilter>("전체");
 
   type ReturnSortKey = "product_name" | "supplier" | "current_stock" | "purchase_cycle" | "sale_qty_month" | "sale_amount_month" | "last_purchase_date" | "last_purchase_qty" | "stock_value";
   const [returnSortKey, setReturnSortKey] = useState<ReturnSortKey>("purchase_cycle");
@@ -276,10 +278,18 @@ export const ReturnListPanel: React.FC = () => {
           <span className="text-[13px] font-semibold text-slate-800">반품필요</span>
           {(() => {
             const q = returnSupplierSearch.trim().toLowerCase();
-            const filteredCount = q ? returnList.filter(x => String(x.supplier ?? "").toLowerCase().includes(q)).length : returnList.length;
+            const filteredCount = returnList.filter(x => {
+              if (q && !String(x.supplier ?? "").toLowerCase().includes(q)) return false;
+              if (returnCategoryFilter !== "전체") {
+                const cat = vendorCategoryMap[String(x.supplier ?? "").trim()] ?? null;
+                if (cat !== returnCategoryFilter) return false;
+              }
+              return true;
+            }).length;
+            const isFiltered = !!q || returnCategoryFilter !== "전체";
             return (
               <span className="text-[11px] font-semibold text-rose-600 bg-rose-50 rounded-full px-2 py-0.5 border border-rose-200 tabular-nums">
-                {q ? `${filteredCount}/${returnList.length}` : returnList.length}건
+                {isFiltered ? `${filteredCount}/${returnList.length}` : returnList.length}건
               </span>
             );
           })()}
@@ -307,6 +317,22 @@ export const ReturnListPanel: React.FC = () => {
           />
           <span className="text-slate-500">개</span>
         </label>
+        {/* 분류 세그먼트 필터 */}
+        <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
+          {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
+            <button key={cat} onClick={() => setReturnCategoryFilter(cat)}
+              className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${
+                returnCategoryFilter === cat
+                  ? cat === "전체" ? "bg-slate-700 text-white shadow-sm"
+                  : cat === "위탁" ? "bg-violet-500 text-white shadow-sm"
+                  : cat === "선결제" ? "bg-rose-500 text-white shadow-sm"
+                  : cat === "60일회전" ? "bg-emerald-500 text-white shadow-sm"
+                  : cat === "90일회전" ? "bg-teal-500 text-white shadow-sm"
+                  : "bg-slate-500 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}>{cat}</button>
+          ))}
+        </div>
         {/* 2026-07-31 · 사용자 요청 · 공급사 검색 · 검색한 공급사 제품만 표시 */}
         <div className="relative">
           <Search size={12} className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
@@ -446,8 +472,12 @@ export const ReturnListPanel: React.FC = () => {
                   <tbody className="divide-y divide-slate-50">
                     {[...returnList].filter(x => {
                       const q = returnSupplierSearch.trim().toLowerCase();
-                      if (!q) return true;
-                      return String(x.supplier ?? "").toLowerCase().includes(q);
+                      if (q && !String(x.supplier ?? "").toLowerCase().includes(q)) return false;
+                      if (returnCategoryFilter !== "전체") {
+                        const cat = vendorCategoryMap[String(x.supplier ?? "").trim()] ?? null;
+                        if (cat !== returnCategoryFilter) return false;
+                      }
+                      return true;
                     }).sort((a, b) => {
                       const dir = returnSortDir === "asc" ? 1 : -1;
                       switch (returnSortKey) {
@@ -488,8 +518,8 @@ export const ReturnListPanel: React.FC = () => {
                               </td>
                               <td className="px-0.5 py-1.5 align-top bg-sky-50/10">
                                 <div className="flex items-center gap-1 flex-wrap">
-                                  <span className="text-[11px] font-semibold text-sky-600 break-words whitespace-normal">{x.supplier ?? "-"}</span>
                                   {x.supplier && <VendorCategoryBadge category={vendorCategoryMap[x.supplier.trim()] ?? null} />}
+                                  <span className="text-[11px] font-semibold text-sky-600 break-words whitespace-normal">{x.supplier ?? "-"}</span>
                                 </div>
                               </td>
                             </>

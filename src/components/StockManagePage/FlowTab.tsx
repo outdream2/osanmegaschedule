@@ -84,6 +84,9 @@ export const FlowTab: React.FC = () => {
   const [flowSearch, setFlowSearch] = useState<string>("");
   const [salesQtyMin, setSalesQtyMin] = useState<string>("");
   const [salesQtyMax, setSalesQtyMax] = useState<string>("");
+  // 분류 필터
+  type FlowCategoryFilter = "전체" | "위탁" | "선결제" | "60일회전" | "90일회전" | "기타";
+  const [flowCategoryFilter, setFlowCategoryFilter] = useState<FlowCategoryFilter>("전체");
 
   // 그룹 접기
   const [flowGroupCollapsed, setFlowGroupCollapsed] = useState<Set<FlowGroup>>(new Set(["purchase", "sales"]));
@@ -368,6 +371,10 @@ export const FlowTab: React.FC = () => {
           || String(p.supplier ?? "").toLowerCase().includes(q);
         if (!hit) return false;
       }
+      if (flowCategoryFilter !== "전체") {
+        const sup = String(p.supplier ?? "").trim();
+        if (vendorCategoryMap[sup] !== flowCategoryFilter) return false;
+      }
       return true;
     });
     const sign = flowDir === "asc" ? 1 : -1;
@@ -413,7 +420,7 @@ export const FlowTab: React.FC = () => {
       });
     }
     return filtered;
-  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowSearch, flowMonths]);
+  }, [stockFlow, salesQtyMin, salesQtyMax, flowSort, flowDir, flowSearch, flowMonths, flowCategoryFilter, vendorCategoryMap]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
 
@@ -527,6 +534,23 @@ export const FlowTab: React.FC = () => {
           title="숨김 처리된 상품을 확인/해제">
           <EyeOff size={12} /> 숨김관리
         </button>
+
+        {/* 분류 세그먼트 필터 */}
+        <div className="inline-flex bg-slate-50 border border-slate-200 rounded-md p-0.5">
+          {(["전체", "위탁", "선결제", "60일회전", "90일회전", "기타"] as const).map(cat => (
+            <button key={cat} onClick={() => setFlowCategoryFilter(cat)}
+              className={`h-7 px-2.5 text-[11px] font-semibold rounded transition cursor-pointer ${
+                flowCategoryFilter === cat
+                  ? cat === "전체" ? "bg-slate-700 text-white shadow-sm"
+                  : cat === "위탁" ? "bg-violet-500 text-white shadow-sm"
+                  : cat === "선결제" ? "bg-rose-500 text-white shadow-sm"
+                  : cat === "60일회전" ? "bg-emerald-500 text-white shadow-sm"
+                  : cat === "90일회전" ? "bg-teal-500 text-white shadow-sm"
+                  : "bg-slate-500 text-white shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}>{cat}</button>
+          ))}
+        </div>
 
         {/* 새로고침 */}
         <button onClick={() => fetchStockFlow()} disabled={loading}
@@ -785,8 +809,8 @@ export const FlowTab: React.FC = () => {
                                 </button>
                                 {p.supplier && (
                                   <div className="flex items-center gap-1 flex-wrap mt-0.5">
-                                    <span className="text-[11px] font-medium text-slate-400 break-words whitespace-normal">{p.supplier}</span>
                                     <VendorCategoryBadge category={vendorCategoryMap[p.supplier] ?? null} />
+                                    <span className="text-[11px] font-medium text-slate-400 break-words whitespace-normal">{p.supplier}</span>
                                   </div>
                                 )}
                               </td>
