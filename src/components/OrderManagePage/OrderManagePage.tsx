@@ -16,8 +16,13 @@ import type { Vendor } from "../LandingPage/VendorListEditor";
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { StockReconciliationTab } from "../StockManagePage/StockReconciliationTab";
 import { TrendingTab } from "../StockManagePage/StockManagePage";
+import { FlowTab } from "../StockManagePage/FlowTab";
+import { DiffTab } from "../StockManagePage/DiffTab";
+import { SupplierTab } from "../StockManagePage/SupplierTab";
+import { LowStockPanel } from "../StockManagePage/LowStockPanel";
+import { ReturnListPanel } from "./ReturnListPanel";
 import { CategoryTab } from "../SalesTrendPage/SalesTrendPage";
-import { BarChart2, PieChart } from "lucide-react";
+import { BarChart2, PieChart, ArrowLeftRight, Boxes } from "lucide-react";
 
 interface OrderRequest {
   id: string;
@@ -95,9 +100,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
   // initialTopTab 이 있으면 해당 탭으로 고정 (DisplayPage 서브탭 모드)
   const [topTab, setTopTab] = useState<"purchase-order" | "purchase" | "payment" | "statistics">(initialTopTab ?? "purchase-order");
   // Level-2 서브탭 상태
-  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need">("need");
-  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "arrival_history" | "vendor">("receipt");
-  const [statSubTab, setStatSubTab] = useState<"trending" | "category">("trending");
+  const [purchaseOrderSubTab, setPurchaseOrderSubTab] = useState<"order" | "need" | "low">("need");
+  const [purchaseSubTab, setPurchaseSubTab] = useState<"receipt" | "reconciliation" | "arrival_history" | "return">("receipt");
+  const [paymentSubTab, setPaymentSubTab] = useState<"vendor" | "payment">("vendor");
+  const [statSubTab, setStatSubTab] = useState<"trending" | "category" | "flow" | "diff">("trending");
 
   // 2026-07-30 · 사용자 요청 · 입고내역 탭 · product_arrivals 이력 조회
   interface ArrivalHistoryRow {
@@ -890,8 +896,9 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {topTab === "purchase-order" && (
         <div className="flex flex-col gap-3">
           {renderSubTabs([
-            { k: "need"  as const, label: "발주필요", icon: ClipboardList, color: "amber", badge: lowStock.length },
-            { k: "order" as const, label: "발주요청", icon: ShoppingCart,  color: "sky" },
+            { k: "need"  as const, label: "발주필요",     icon: ClipboardList, color: "amber", badge: lowStock.length },
+            { k: "order" as const, label: "발주요청",     icon: ShoppingCart,  color: "sky" },
+            { k: "low"   as const, label: "적정재고이하", icon: AlertTriangle, color: "rose" },
           ], purchaseOrderSubTab, setPurchaseOrderSubTab)}
           {/* ── 발주필요 서브탭 ── */}
           {purchaseOrderSubTab === "need" && (
@@ -1170,10 +1177,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {topTab === "purchase" && (
         <div className="flex flex-col gap-3">
           {renderSubTabs([
-            { k: "receipt"         as const, label: "사입·OCR",   icon: PackageCheck, color: "violet" },
-            { k: "reconciliation"  as const, label: "실재고반영",  icon: CheckCircle2, color: "emerald" },
-            { k: "arrival_history" as const, label: "입고내역",    icon: Package,      color: "indigo" },
-            { k: "vendor"          as const, label: "공급사관리",  icon: Building2,    color: "teal" },
+            { k: "receipt"         as const, label: "사입·OCR",   icon: PackageCheck,    color: "violet" },
+            { k: "reconciliation"  as const, label: "실재고반영",  icon: CheckCircle2,    color: "emerald" },
+            { k: "arrival_history" as const, label: "입고내역",    icon: Package,         color: "indigo" },
+            { k: "return"          as const, label: "반품필요",    icon: ArrowLeftRight,  color: "rose" },
           ], purchaseSubTab, setPurchaseSubTab)}
           {/* ── 사입(OCR거래명세서 등록) 서브탭 ── */}
           {purchaseSubTab === "receipt" && (
@@ -1292,126 +1299,138 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
         </div>
       )}
 
-          {/* ── 공급사관리 서브탭 ── */}
-          {purchaseSubTab === "vendor" && (
-        <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
-          {/* 좌측: 공급사 리스트 */}
-          <div
-            className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
-            style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? vendorPanelWidth : undefined }}
-          >
-              <VendorListEditor
-                key={vendorReloadKey}
-                initialSelectedId={vendorPreselectId}
-                onEditRequest={handleVendorEditRequest}
-                compact
-              />
-          </div>
-
-          {/* 리사이즈 핸들 (데스크탑만) */}
-          <div onMouseDown={onVendorResizeStart}
-            className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
-            title="드래그하여 폭 조절">
-            <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
-          </div>
-
-          {/* 우측: 선택 공급사 상세 · 모바일 fullscreen 모달 */}
-          <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-slate-50 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible" : ""}`}>
-            {/* 모바일 헤더 (lg 미만만) */}
-            {vendorSelected && (
-              <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md">
-                <div className="flex items-center gap-2 px-3 py-2">
-                  <button type="button" onClick={() => setVendorSelected(null)}
-                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
-                    <span className="text-lg font-black">×</span>
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-black text-slate-800 truncate leading-tight">{vendorSelected.company_name}</div>
-                    <div className="text-[10px] font-mono text-slate-500 truncate">공급사 상세 · 편집</div>
-                  </div>
-                </div>
-              </div>
-            )}
-            {!vendorSelected ? (
-              <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-                <Building2 size={40} className="mb-3 opacity-30" />
-                <div className="text-sm font-bold">리스트에서 공급사를 클릭하세요</div>
-                <div className="text-[11px] mt-1">상세 정보 · 편집 · 매입이력이 표시됩니다</div>
-              </div>
-            ) : (
-              <VendorDetailModal
-                vendor={vendorSelected}
-                panel
-                onClose={() => setVendorSelected(null)}
-                onSaved={() => {
-                  setVendorReloadKey(k => k + 1);
-                  // 저장 후에도 우측 패널 유지 (선택 해제 안 함)
-                  // 최신 데이터 재조회
-                  handleVendorEditRequest(vendorSelected.id);
-                }}
-              />
-            )}
-          </div>
-        </div>
+          {/* ── 반품필요 서브탭 ── */}
+          {purchaseSubTab === "return" && (
+            <div className="flex-1 min-h-0">
+              <ReturnListPanel />
+            </div>
           )}
         </div>
       )}
 
-      {/* ══ 결제 탭 (payment) — 공급사 결제·잔고 원장 ══ */}
+      {/* ══ 결제 탭 (payment) — 공급사관리 · 결제원장 서브탭 ══ */}
       {topTab === "payment" && (
-        <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
-          {/* 좌측: 공급사 리스트 */}
-          <div
-            className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
-            style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? vendorPanelWidth : undefined }}
-          >
-            <VendorListEditor
-              key={`payment-${vendorReloadKey}`}
-              initialSelectedId={vendorPreselectId}
-              onEditRequest={handleVendorEditRequest}
-              compact
-            />
-          </div>
-          {/* 리사이즈 핸들 */}
-          <div onMouseDown={onVendorResizeStart}
-            className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
-            title="드래그하여 폭 조절">
-            <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
-          </div>
-          {/* 우측: 선택 공급사 결제·잔고 모달 (panel 모드) */}
-          <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-slate-50 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible" : ""}`}>
-            {vendorSelected && (
-              <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md">
-                <div className="flex items-center gap-2 px-3 py-2">
-                  <button type="button" onClick={() => setVendorSelected(null)}
-                    className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
-                    <span className="text-lg font-black">×</span>
-                  </button>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-black text-slate-800 truncate leading-tight">{vendorSelected.company_name}</div>
-                    <div className="text-[10px] font-mono text-slate-500 truncate">결제 · 잔고 원장</div>
+        <div className="flex flex-col gap-3">
+          {renderSubTabs([
+            { k: "vendor"  as const, label: "공급사관리", icon: Building2,  color: "teal" },
+            { k: "payment" as const, label: "결제원장",   icon: BarChart2,  color: "amber" },
+          ], paymentSubTab, setPaymentSubTab)}
+
+          {/* ── 공급사관리 서브탭 ── */}
+          {paymentSubTab === "vendor" && (
+            <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+              {/* 좌측: 공급사 리스트 */}
+              <div
+                className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
+                style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? vendorPanelWidth : undefined }}
+              >
+                <VendorListEditor
+                  key={vendorReloadKey}
+                  initialSelectedId={vendorPreselectId}
+                  onEditRequest={handleVendorEditRequest}
+                  compact
+                />
+              </div>
+              {/* 리사이즈 핸들 */}
+              <div onMouseDown={onVendorResizeStart}
+                className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+                title="드래그하여 폭 조절">
+                <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+              </div>
+              {/* 우측: 선택 공급사 상세 · 모바일 fullscreen 모달 */}
+              <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-slate-50 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible" : ""}`}>
+                {vendorSelected && (
+                  <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md">
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <button type="button" onClick={() => setVendorSelected(null)}
+                        className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
+                        <span className="text-lg font-black">×</span>
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-black text-slate-800 truncate leading-tight">{vendorSelected.company_name}</div>
+                        <div className="text-[10px] font-mono text-slate-500 truncate">공급사 상세 · 편집</div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
+                {!vendorSelected ? (
+                  <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+                    <Building2 size={40} className="mb-3 opacity-30" />
+                    <div className="text-sm font-bold">리스트에서 공급사를 클릭하세요</div>
+                    <div className="text-[11px] mt-1">상세 정보 · 편집 · 매입이력이 표시됩니다</div>
+                  </div>
+                ) : (
+                  <VendorDetailModal
+                    vendor={vendorSelected}
+                    panel
+                    onClose={() => setVendorSelected(null)}
+                    onSaved={() => {
+                      setVendorReloadKey(k => k + 1);
+                      handleVendorEditRequest(vendorSelected.id);
+                    }}
+                  />
+                )}
               </div>
-            )}
-            {!vendorSelected ? (
-              <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
-                <Building2 size={40} className="mb-3 opacity-30" />
-                <div className="text-sm font-bold">리스트에서 공급사를 클릭하세요</div>
-                <div className="text-[11px] mt-1">결제 원장 · 잔고가 표시됩니다</div>
+            </div>
+          )}
+
+          {/* ── 결제원장 서브탭 (공급사 결제·잔고 원장) ── */}
+          {paymentSubTab === "payment" && (
+            <div className="flex flex-col lg:flex-row gap-2 min-h-[520px]">
+              {/* 좌측: 공급사 리스트 */}
+              <div
+                className="min-h-0 w-full lg:w-auto lg:shrink-0 flex flex-col gap-3"
+                style={{ width: typeof window !== "undefined" && window.innerWidth >= 1024 ? vendorPanelWidth : undefined }}
+              >
+                <VendorListEditor
+                  key={`payment-${vendorReloadKey}`}
+                  initialSelectedId={vendorPreselectId}
+                  onEditRequest={handleVendorEditRequest}
+                  compact
+                />
               </div>
-            ) : (
-              <VendorDetailModal
-                vendor={vendorSelected}
-                panel
-                onClose={() => setVendorSelected(null)}
-                onSaved={() => {
-                  setVendorReloadKey(k => k + 1);
-                  handleVendorEditRequest(vendorSelected.id);
-                }}
-              />
-            )}
-          </div>
+              {/* 리사이즈 핸들 */}
+              <div onMouseDown={onVendorResizeStart}
+                className="hidden lg:flex items-center justify-center w-1.5 hover:w-2 bg-slate-200 hover:bg-teal-400 rounded-full cursor-col-resize transition-all shrink-0 mx-1 group"
+                title="드래그하여 폭 조절">
+                <span className="text-[9px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
+              </div>
+              {/* 우측: 선택 공급사 결제·잔고 모달 (panel 모드) */}
+              <div className={`flex flex-col gap-3 min-h-0 flex-1 min-w-0 lg:relative ${vendorSelected ? "fixed inset-0 z-50 bg-slate-50 overflow-y-auto lg:static lg:z-auto lg:bg-transparent lg:overflow-visible" : ""}`}>
+                {vendorSelected && (
+                  <div className="lg:hidden sticky top-0 z-[60] bg-white border-b border-slate-200 shadow-md">
+                    <div className="flex items-center gap-2 px-3 py-2">
+                      <button type="button" onClick={() => setVendorSelected(null)}
+                        className="w-8 h-8 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer shrink-0" title="닫기">
+                        <span className="text-lg font-black">×</span>
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13px] font-black text-slate-800 truncate leading-tight">{vendorSelected.company_name}</div>
+                        <div className="text-[10px] font-mono text-slate-500 truncate">결제 · 잔고 원장</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {!vendorSelected ? (
+                  <div className="bg-white rounded-xl border border-slate-200 flex-1 flex flex-col items-center justify-center p-10 text-slate-400 min-h-[400px]">
+                    <Building2 size={40} className="mb-3 opacity-30" />
+                    <div className="text-sm font-bold">리스트에서 공급사를 클릭하세요</div>
+                    <div className="text-[11px] mt-1">결제 원장 · 잔고가 표시됩니다</div>
+                  </div>
+                ) : (
+                  <VendorDetailModal
+                    vendor={vendorSelected}
+                    panel
+                    onClose={() => setVendorSelected(null)}
+                    onSaved={() => {
+                      setVendorReloadKey(k => k + 1);
+                      handleVendorEditRequest(vendorSelected.id);
+                    }}
+                  />
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -1419,8 +1438,10 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
       {topTab === "statistics" && (
         <div className="flex flex-col gap-3">
           {renderSubTabs([
-            { k: "trending"  as const, label: "급상승",       icon: TrendingUp, color: "indigo" },
-            { k: "category"  as const, label: "카테고리별현황", icon: PieChart,   color: "amber" },
+            { k: "trending"  as const, label: "급상승",       icon: TrendingUp,    color: "indigo" },
+            { k: "category"  as const, label: "카테고리별현황", icon: PieChart,      color: "amber" },
+            { k: "flow"      as const, label: "상품현황",      icon: Boxes,         color: "sky" },
+            { k: "diff"      as const, label: "손실추적",      icon: AlertTriangle, color: "rose" },
           ], statSubTab, setStatSubTab)}
           {statSubTab === "trending" && (
             <div className="flex-1 min-h-0 overflow-y-auto">
@@ -1430,6 +1451,16 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           {statSubTab === "category" && (
             <div className="flex-1 min-h-0 overflow-y-auto">
               <CategoryTab />
+            </div>
+          )}
+          {statSubTab === "flow" && (
+            <div className="flex-1 min-h-0">
+              <FlowTab />
+            </div>
+          )}
+          {statSubTab === "diff" && (
+            <div className="flex-1 min-h-0">
+              <DiffTab />
             </div>
           )}
         </div>
@@ -1792,6 +1823,13 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
           />
         )}
           </div>
+        </div>
+      )}
+
+      {/* ── 적정재고이하(low) 서브탭 (purchase-order > low) ── */}
+      {topTab === "purchase-order" && purchaseOrderSubTab === "low" && (
+        <div className="flex-1 min-h-0">
+          <LowStockPanel />
         </div>
       )}
 

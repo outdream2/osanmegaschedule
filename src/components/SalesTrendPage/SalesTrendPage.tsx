@@ -6,7 +6,7 @@ import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/produ
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 import { useHiddenManager } from "../../hooks/useHiddenManager";
 import { useProductInfoSearch } from "../../hooks/useProductInfoSearch";
-import { ProductPurchaseHistoryModal } from "../StockManagePage/StockManagePage";
+import { ProductPurchaseHistoryModal } from "../StockManagePage/ProductPurchaseHistoryModal";
 import { ZONE_DEFS } from "../../constants/displayZones";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";

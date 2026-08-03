@@ -1,5 +1,5 @@
 // src/components/DisplayPage/DisplayPage.tsx
-import React, { useCallback, useEffect, useMemo, useRef, useState, Suspense, lazy } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ZONE_DEFS, ZONES_STORAGE_KEY, type ZoneSection } from "../../constants/displayZones";
 // 2026-07-29 · shared constants · CategoryTab MiniStoreZoneMap 과 동일 소스 (사용자 요청 통합)
 import {
@@ -12,7 +12,6 @@ import { StoreZoneMap } from "../common/StoreZoneMap";
 import { getProductsMap, type ProductInfo } from "../../lib/productsCache";
 import {
   Bell,
-  Boxes,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
@@ -45,9 +44,7 @@ import { ZoneCell } from "./ZoneCell";
 import { ZoneAssignPopover } from "./ZoneAssignPopover";
 import { ZoneGroupPanel, type ZoneGroup } from "./ZoneGroupPanel";
 import { AppNavHeader, type AppNavPage } from "../AppNavHeader";
-// A. code splitting (2026-07-15) · StockManage/SalesTrend 큰 컴포넌트 lazy 로드
-//    초기 앱 번들에서 제외 · 사용자가 해당 탭 클릭 시에만 로드
-const StockManagePage = lazy(() => import("../StockManagePage").then(m => ({ default: m.StockManagePage })));
+// 2026-08-03 · StockManagePage 폐지 · 모든 탭이 OrderManagePage 서브탭으로 통합됨
 // 2026-07-29 · 판매추이 탭 제거 (사용자 요청) · CategoryTab · LossTrackerTab 은 재고관리 안에서만 lazy import (SalesTrendPage 파일에 남아있음)
 // 2026-07-28 · 재고·판매 통합 메뉴 제거 (사용자 요청) · 파일은 보관 · 사이드바/라우팅만 해제
 import { StockArrivalPage } from "../StockArrivalPage";
@@ -328,8 +325,8 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
       authSession?.role === "manager" ? 2 : authSession?.role === "employee" ? 1 : 0);
   const dpCanSeeStockManage = dpUserLevel >= 9;
   const dpCanSeeStockArrivals = dpUserLevel >= 3;
-  const [dpSubTab, setDpSubTab] = useState<"store" | "stock-manage" | "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals">(
-    dpCanSeeStockManage ? "stock-manage" : "store"
+  const [dpSubTab, setDpSubTab] = useState<"store" | "purchase-order" | "purchase" | "payment" | "statistics" | "stock-arrivals">(
+    dpCanSeeStockManage ? "purchase-order" : "store"
   );
   const [zones, setZones] = useState<DisplayZone[]>(() => loadZones());
   const [zonesLoaded, setZonesLoaded] = useState(false);
@@ -1474,8 +1471,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
           teal:    { bar: "bg-teal-500",    text: "text-teal-700",    iconActive: "text-teal-600",    iconInactive: "text-slate-400", hoverText: "hover:text-teal-700",    dotBg: "bg-teal-500"    },
         };
         const tabs: Array<TabDef> = [
-          { key: "stock-manage",   label: "재고/판매관리", icon: Boxes,         visible: dpCanSeeStockManage,   color: "emerald" },
-          // 2026-08-03 · 발주/사입관리 단일 탭 → 4개 서브탭으로 분해 (사용자 요청)
+          // 2026-08-03 · 발주/사입관리 단일 탭 → 4개 서브탭으로 분해 (사용자 요청) · stock-manage 폐지
           { key: "purchase-order", label: "발주",         icon: ClipboardList, visible: dpCanSeeStockManage,   color: "sky"     },
           { key: "purchase",       label: "매입",         icon: Package,       visible: dpCanSeeStockManage,   color: "amber"   },
           { key: "payment",        label: "결제",         icon: Wallet,        visible: dpCanSeeStockManage,   color: "teal"    },
@@ -1527,13 +1523,7 @@ export const DisplayPage: React.FC<DisplayPageProps> = ({ onBack, onOpenEmployee
         );
       })()}
 
-      {dpSubTab === "stock-manage" && dpCanSeeStockManage ? (
-        <main className="flex-1 flex flex-col min-h-0">
-          <Suspense fallback={<div className="flex-1 flex items-center justify-center text-slate-400 text-sm font-bold py-16">재고관리 로딩 중...</div>}>
-            <StockManagePage />
-          </Suspense>
-        </main>
-      ) : dpSubTab === "stock-arrivals" && dpCanSeeStockArrivals ? (
+      {dpSubTab === "stock-arrivals" && dpCanSeeStockArrivals ? (
         <main className="flex-1 flex flex-col min-h-0">
           <StockArrivalPage
             authSession={authSession}
