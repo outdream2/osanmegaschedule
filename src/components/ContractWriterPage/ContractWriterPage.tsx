@@ -538,7 +538,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
       const m = min % 60;
       return m > 0 ? `${h}시간 ${m}분` : `${h}시간`;
     };
-    return { rawText: fmt(rawMin), paidText: fmt(paidMin), breakText: fmt(breakMin) };
+    return { rawText: fmt(rawMin), paidText: fmt(paidMin), breakText: fmt(breakMin), paidHours: paidMin / 60 };
   })();
 
   return (
@@ -640,6 +640,11 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
           {form.startTime || "--:--"} 부터 {form.endTime || "--:--"} 까지
           {hoursCalc && <span className="text-slate-500 text-[12px] ml-1">(총 {hoursCalc.rawText})</span>}
         </div>
+        {/* 주 N일 근무 · 2026-08-04 · 제4조에 추가 (사용자 요청 · 리서치 1순위) */}
+        <div className="mt-0.5">
+          주 <b>{form.weeklyDays || "-"}일</b> 근무
+          {workDayText && <span className="text-slate-500 text-[12px] ml-1">({workDayText})</span>}
+        </div>
         <div>
           휴게시간: {form.breakMinutes || "0"} 분
           {hoursCalc && Number(form.breakMinutes) > 0 && (
@@ -654,6 +659,33 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
         )}
         <div className="text-[11px] text-slate-500 mt-0.5">
           ※ 휴게시간은 무급이며 임금 계산에서 제외됨 (근로기준법 제54조)
+        </div>
+      </PreviewRow>
+
+      {/* 제4조의2 · 휴게시간 별도 조항 · 2026-08-04 · 리서치 1순위 · 근로기준법 §54 명시 필수
+          · 4시간→30분 · 8시간→1시간 이상 부여 의무 · 위반 시 2년/2천만원 벌금 */}
+      <PreviewRow
+        no="4-2"
+        title="휴게시간"
+        ack={{
+          clauseKey: "4-2",
+          checked: !!clauseAcks["4-2"]?.checked,
+          onChangeChecked: (v) => setClauseAckChecked("4-2", v),
+          padRef: ensurePadRef(clausePadRefs, "4-2"),
+          onSignedChange: (e) => setClauseAckEmpty("4-2", e),
+          requiresSignature: false,
+          register: registerClauseAck,
+        }}
+      >
+        <div className="text-[13px]">
+          ① 근로시간 중 휴게시간은 <b>{form.breakMinutes || "0"}분</b>으로 하며,
+          근로자는 해당 시간 동안 근로에서 완전히 해방된다.
+        </div>
+        <div className="text-[13px] mt-1">
+          ② 휴게시간은 무급이며 소정근로시간 및 임금 계산에서 제외된다.
+        </div>
+        <div className="text-[11px] text-slate-500 mt-1">
+          ※ 근로기준법 제54조 · 4시간 근무 시 30분 이상, 8시간 근무 시 1시간 이상 부여 의무
         </div>
       </PreviewRow>
 
@@ -689,6 +721,31 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
       >
         <div>· 시간급 (주중): {fmtWon(form.weekdayHourly)} 원</div>
         <div>· 시간급 (주말): {fmtWon(form.weekendHourly)} 원</div>
+        {/* 예상 급여 · 2026-08-04 · 사용자 요청 · 시급 × 실근무시간 × 주 근무일 × 4.34주 */}
+        {(() => {
+          const paidHours = hoursCalc?.paidHours ?? 0;
+          const weeklyDaysNum = Number(form.weeklyDays) || 0;
+          const weekdayRate = Number(String(form.weekdayHourly).replace(/[^0-9]/g, "")) || 0;
+          const weekendRate = Number(String(form.weekendHourly).replace(/[^0-9]/g, "")) || 0;
+          // 주말 근무 여부 (workDays 에 토·일 있으면 주말 포함)
+          const hasWeekend = !!(form.workDays["토"] || form.workDays["일"]);
+          const weekdayCount = ["월","화","수","목","금"].filter(d => form.workDays[d as "월"]).length;
+          const weekendCount = ["토","일"].filter(d => form.workDays[d as "토"]).length;
+          if (paidHours <= 0 || weeklyDaysNum <= 0 || weekdayRate <= 0) return null;
+          const weeklyPay = (weekdayCount * paidHours * weekdayRate) + (weekendCount * paidHours * (hasWeekend ? weekendRate : weekdayRate));
+          const monthlyPay = Math.round(weeklyPay * 4.345);
+          return (
+            <div className="text-[12px] text-emerald-700 mt-1 pt-1 border-t border-emerald-100 bg-emerald-50/40 -mx-1 px-2 py-1 rounded">
+              <span className="font-black">· 예상 급여 (참고)</span>
+              <div className="text-[11px] text-slate-600 mt-0.5">
+                주급 <b className="text-emerald-800 tabular-nums">{fmtWon(String(Math.round(weeklyPay)))}원</b>
+                <span className="mx-1 text-slate-300">·</span>
+                월급 <b className="text-emerald-800 tabular-nums">{fmtWon(String(monthlyPay))}원</b>
+                <span className="text-slate-400 ml-1">(주 {weeklyDaysNum}일 × {paidHours.toFixed(1)}h × 4.345주)</span>
+              </div>
+            </div>
+          );
+        })()}
         <div className="text-[12px] text-slate-600 mt-0.5">
           · 임금지급일: 매월 말일 (해당일이 휴일인 경우 전일 지급)
         </div>
