@@ -486,12 +486,23 @@ router.post("/api/inventory-checks/bulk", async (req, res) => {
         payload.store2_zone      = str(it.store2_zone);
         payload.store3_zone      = str(it.store3_zone);
       }
-      const { data: existingList } = await supabase.from("inventory_checks").select("id").eq("product_code", code).order("checked_at", { ascending: false }).limit(1);
+      // 2026-08-04 · 사용자 요청 · 날짜별 이력 관리 · 같은 날짜면 update (덮어쓰기) · 다른 날짜면 insert (이력 추가)
+      const todayYmd = now.slice(0, 10);
+      const { data: existingList } = await supabase
+        .from("inventory_checks")
+        .select("id, checked_at")
+        .eq("product_code", code)
+        .order("checked_at", { ascending: false })
+        .limit(1);
       const existing = existingList?.[0] ?? null;
+      const existingYmd = existing?.checked_at ? String(existing.checked_at).slice(0, 10) : null;
+      const sameDay = existingYmd === todayYmd;
       const doWrite = async (p: Record<string, any>) => {
-        if (existing) {
+        if (existing && sameDay) {
+          // 같은 날 재저장 · UPDATE (덮어쓰기)
           return supabase.from("inventory_checks").update(p).eq("id", existing.id);
         }
+        // 다른 날 or 신규 · INSERT (이력 추가 · 상품별 시계열 보존)
         return supabase.from("inventory_checks").insert([{ ...p, product_code: code }]);
       };
       let { error } = await doWrite(payload);
