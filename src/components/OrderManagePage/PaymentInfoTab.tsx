@@ -737,7 +737,7 @@ export const PaymentInfoTab: React.FC = () => {
                         <tbody className="divide-y divide-slate-100">
                           {/* Row 1 · 총 매입 */}
                           <tr className="bg-white">
-                            <td className="px-3 py-1.5 font-black text-emerald-700">
+                            <td className="px-3 py-1.5 font-black text-emerald-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><ReceiptText size={11} />매입</span>
                             </td>
                             {months.map(k => (
@@ -750,7 +750,7 @@ export const PaymentInfoTab: React.FC = () => {
                           </tr>
                           {/* Row 2 · 총 결제 */}
                           <tr className="bg-slate-50/40">
-                            <td className="px-3 py-1.5 font-black text-sky-700">
+                            <td className="px-3 py-1.5 font-black text-sky-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><Wallet size={11} />결제</span>
                             </td>
                             {months.map(k => (
@@ -763,7 +763,7 @@ export const PaymentInfoTab: React.FC = () => {
                           </tr>
                           {/* Row 3 · 잔고 */}
                           <tr className="bg-white">
-                            <td className="px-3 py-1.5 font-black text-amber-700">
+                            <td className="px-3 py-1.5 font-black text-amber-700 whitespace-nowrap">
                               <span className="inline-flex items-center gap-1"><Coins size={11} />잔고</span>
                             </td>
                             {months.map(k => (
