@@ -364,15 +364,15 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
           <table className="w-full min-w-[360px] text-xs border-collapse">
             <thead>
               <tr>
-                {/* 공급사 헤더 (분류+이름 stacked) */}
+                {/* 공급사 헤더 (분류+이름 stacked) · 2026-08-04 #68 · 활성 컬럼 subtle 배경 */}
                 <th
                   onClick={() => toggleCompactSort("company_name")}
                   className={[
-                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "sticky top-0 z-10 border-b border-slate-200",
                     "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
                     "py-1.5 text-left pl-2 pr-1 w-[140px]",
-                    compactSortKey === "company_name" ? "text-indigo-600" : "text-slate-500",
+                    compactSortKey === "company_name" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
                   ].join(" ")}
                 >
                   <span className="inline-flex items-center gap-0.5">
@@ -388,11 +388,11 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 <th
                   onClick={() => toggleCompactSort("business_number")}
                   className={[
-                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "sticky top-0 z-10 border-b border-slate-200",
                     "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
                     "py-1.5 text-left px-2 w-24",
-                    compactSortKey === "business_number" ? "text-indigo-600" : "text-slate-500",
+                    compactSortKey === "business_number" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
                   ].join(" ")}
                 >
                   <span className="inline-flex items-center gap-0.5">
@@ -406,11 +406,11 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 <th
                   onClick={() => toggleCompactSort("contact_name")}
                   className={[
-                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "sticky top-0 z-10 border-b border-slate-200",
                     "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
                     "py-1.5 text-left px-2 w-16",
-                    compactSortKey === "contact_name" ? "text-indigo-600" : "text-slate-500",
+                    compactSortKey === "contact_name" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
                   ].join(" ")}
                 >
                   <span className="inline-flex items-center gap-0.5">
@@ -424,11 +424,11 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 <th
                   onClick={() => toggleCompactSort("phone")}
                   className={[
-                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "sticky top-0 z-10 border-b border-slate-200",
                     "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
                     "py-1.5 text-left px-2 w-24",
-                    compactSortKey === "phone" ? "text-indigo-600" : "text-slate-500",
+                    compactSortKey === "phone" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
                   ].join(" ")}
                 >
                   <span className="inline-flex items-center gap-0.5">
@@ -442,11 +442,11 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 <th
                   onClick={() => toggleCompactSort("vat")}
                   className={[
-                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "sticky top-0 z-10 border-b border-slate-200",
                     "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
                     "py-1.5 text-left px-2 w-16",
-                    compactSortKey === "vat" ? "text-indigo-600" : "text-slate-500",
+                    compactSortKey === "vat" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
                   ].join(" ")}
                 >
                   <span className="inline-flex items-center gap-0.5">
@@ -460,11 +460,11 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 <th
                   onClick={() => toggleCompactSort("balance")}
                   className={[
-                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "sticky top-0 z-10 border-b border-slate-200",
                     "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
                     "py-1.5 text-right pr-2 pl-1 w-16",
-                    compactSortKey === "balance" ? "text-indigo-600" : "text-slate-500",
+                    compactSortKey === "balance" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
                   ].join(" ")}
                 >
                   <span className="inline-flex items-center flex-row-reverse gap-0.5">
@@ -478,11 +478,11 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                 <th
                   onClick={() => toggleCompactSort("invoice_date")}
                   className={[
-                    "sticky top-0 z-10 bg-slate-50 border-b border-slate-200",
+                    "sticky top-0 z-10 border-b border-slate-200",
                     "text-[11px] font-black uppercase tracking-wide whitespace-nowrap",
                     "select-none cursor-pointer hover:bg-slate-100 transition-colors duration-100",
                     "py-1.5 text-left px-2 w-16",
-                    compactSortKey === "invoice_date" ? "text-indigo-600" : "text-slate-500",
+                    compactSortKey === "invoice_date" ? "text-indigo-600 bg-indigo-50/70" : "text-slate-500 bg-slate-50",
                   ].join(" ")}
                 >
                   <span className="inline-flex items-center gap-0.5">
@@ -595,13 +595,13 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         /* ── 일반 모드: 기존 반응형 테이블 ── */
         <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
 
-          {/* 모바일(< md): 카드 */}
+          {/* 모바일(< md): 카드 · compactSorted 사용 (헤더 정렬이 mobile 에도 적용되도록 · 2026-08-04 #68) */}
           <div className="md:hidden divide-y divide-slate-100">
-            {filtered.length === 0 ? (
+            {compactSorted.length === 0 ? (
               <div className="text-center py-10 text-slate-400 text-sm font-semibold">
                 {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 데이터 없음"}
               </div>
-            ) : filtered.map((v, i) => (
+            ) : compactSorted.map((v, i) => (
               <button
                 key={v.id}
                 onClick={() => handleVendorClick(v.id)}
