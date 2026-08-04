@@ -513,7 +513,7 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
 
   // Tabs & Search states
   const [workplaceTab, setWorkplaceTab] = useState<"전체" | "매장" | "창고">("전체");
-  const [positionTab, setPositionTab] = useState<"전체" | "약사" | "물류" | "캐셔" | "진열" | "알바" | "기타">("전체");
+  const [positionTab, setPositionTab] = useState<"전체" | "약사" | "창고" | "진열" | "매장">("전체");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"none" | "position" | "name">("position");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -1249,19 +1249,16 @@ export const SchedulePage: React.FC<SchedulePageProps> = ({ onBack, onLogout, on
         if ((emp.workplace || "매장") !== workplaceTab) return false;
       }
       if (positionTab !== "전체") {
-        // Partition (mutually exclusive): 약사 > 알바 > 물류(캐셔·진열 포함) > 기타
-        const isPharm  = emp.position === "약사";
-        const isAlba   = !isPharm && (emp.rank === "알바" || emp.position === "알바");
-        const isLogist = !isPharm && !isAlba &&
-          (emp.position.includes("물류") || emp.position === "캐셔" || emp.position === "진열");
-        const isEtc    = !isPharm && !isAlba && !isLogist;
+        // 2026-08-04 · 사용자 요청 · 필터 통합: 전체 · 약사 · 창고 · 진열 · 매장(창고+진열)
+        const isPharm     = emp.position === "약사";
+        const isWarehouse = !isPharm && (emp.position.includes("물류") || emp.position === "창고");
+        const isDisplay   = !isPharm && emp.position === "진열";
+        const isStore     = !isPharm && (isWarehouse || isDisplay || emp.position === "캐셔");
 
-        if (positionTab === "약사")      { if (!isPharm)  return false; }
-        else if (positionTab === "알바") { if (!isAlba)   return false; }
-        else if (positionTab === "물류") { if (!isLogist) return false; }
-        else if (positionTab === "기타") { if (!isEtc)    return false; }
-        else if (positionTab === "캐셔") { if (!isLogist || !emp.position.includes("캐셔")) return false; }
-        else if (positionTab === "진열") { if (!isLogist || emp.position !== "진열") return false; }
+        if (positionTab === "약사")      { if (!isPharm)     return false; }
+        else if (positionTab === "창고") { if (!isWarehouse) return false; }
+        else if (positionTab === "진열") { if (!isDisplay)   return false; }
+        else if (positionTab === "매장") { if (!isStore)     return false; }
       }
       if (searchQuery.trim() !== "") {
         return emp.name.toLowerCase().includes(searchQuery.toLowerCase().trim());
