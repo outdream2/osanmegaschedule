@@ -797,193 +797,251 @@ export const PaymentInfoTab: React.FC = () => {
               {/* 결제 입력 + 최근 결제 내역 · 좌우 분할 · 반응형 stack (2026-08-04 · 사용자 요청) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
 
-              {/* ── 결제 입력 폼 ─────────────────────────────── */}
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 flex flex-col gap-3">
-                <div className="flex items-center gap-2 pb-1 border-b border-slate-100">
-                  <div className="w-6 h-6 rounded-lg bg-emerald-100 flex items-center justify-center">
-                    <Plus size={13} className="text-emerald-700" strokeWidth={2.5} />
+              {/* ── 결제 입력 폼 (리디자인 · 깔끔·세련 · 2026-08-04) ── */}
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+
+                {/* 폼 헤더 */}
+                <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50/60 to-white shrink-0">
+                  <div className="w-7 h-7 rounded-xl bg-emerald-100 flex items-center justify-center ring-1 ring-emerald-200 shrink-0">
+                    <Plus size={14} className="text-emerald-700" strokeWidth={2.5} />
                   </div>
-                  <div className="text-[13px] font-black text-slate-800">결제 정보 입력</div>
+                  <div className="flex flex-col leading-tight">
+                    <span className="text-[13px] font-black text-slate-800">결제 등록</span>
+                    <span className="text-[10px] text-slate-400">{selectedVendor?.company_name}</span>
+                  </div>
                   {vatIncluded && (
-                    <span className="ml-auto text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-0.5">
-                      부가세 별도 자동계산
+                    <span className="ml-auto text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-md px-2 py-0.5 shrink-0">
+                      VAT 포함가
                     </span>
                   )}
                 </div>
 
-                {/* Row 1 · 결제일 · [결제방법+카드사 nowrap 그룹] (2026-08-04 · 사용자 요청) */}
-                <div className="flex flex-wrap items-end gap-2">
-                  <FieldLabel label="결제일" icon={<CalendarDays size={11} />}>
-                    <div className="flex items-center gap-1">
-                      <input
-                        ref={paymentDateRef}
-                        type="date"
-                        value={paymentDate}
-                        onChange={e => setPaymentDate(e.target.value)}
-                        className={`${inputCls} w-[112px] px-2 [&::-webkit-calendar-picker-indicator]:hidden`}
-                      />
-                      <button
-                        type="button"
-                        onClick={openDatePicker}
-                        title="달력 열기"
-                        aria-label="달력 열기"
-                        className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-300 bg-white hover:bg-emerald-50 hover:border-emerald-400 text-slate-500 hover:text-emerald-600 transition cursor-pointer shrink-0"
-                      >
-                        <Calendar size={14} strokeWidth={2.25} />
-                      </button>
+                <div className="flex flex-col gap-0 divide-y divide-slate-50">
+
+                  {/* ── 그룹 A · 날짜 + 결제방법 ──────────────────── */}
+                  <div className="px-4 py-3 flex flex-col gap-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* 결제일 */}
+                      <FieldLabel label="결제일" icon={<CalendarDays size={11} />} required>
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            ref={paymentDateRef}
+                            type="date"
+                            value={paymentDate}
+                            onChange={e => setPaymentDate(e.target.value)}
+                            className={`${inputCls} flex-1 min-w-0 px-2 [&::-webkit-calendar-picker-indicator]:hidden`}
+                          />
+                          <button
+                            type="button"
+                            onClick={openDatePicker}
+                            title="달력 열기"
+                            aria-label="달력 열기"
+                            className="inline-flex items-center justify-center w-9 h-9 rounded-lg border border-slate-200 bg-white hover:bg-emerald-50 hover:border-emerald-400 text-slate-400 hover:text-emerald-600 transition cursor-pointer shrink-0"
+                          >
+                            <Calendar size={13} strokeWidth={2.25} />
+                          </button>
+                        </div>
+                      </FieldLabel>
+
+                      {/* 결제방법 */}
+                      <FieldLabel label="결제 방법" required>
+                        <div className="flex items-center gap-1.5">
+                          {METHOD_OPTIONS.map(opt => (
+                            <button
+                              key={opt.key}
+                              type="button"
+                              onClick={() => setMethod(opt.key)}
+                              className={`flex-1 h-9 rounded-lg text-[11px] font-black border transition cursor-pointer ${
+                                method === opt.key
+                                  ? opt.key === "card"
+                                    ? "bg-indigo-600 border-indigo-600 text-white shadow-sm"
+                                    : opt.key === "cash"
+                                    ? "bg-amber-500 border-amber-500 text-white shadow-sm"
+                                    : "bg-slate-600 border-slate-600 text-white shadow-sm"
+                                  : "bg-white border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700"
+                              }`}
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </FieldLabel>
                     </div>
-                  </FieldLabel>
-                  {/* 결제방법 + sub-option · 하나의 flex-nowrap 그룹 · 항상 같은 줄 */}
-                  <div className="flex items-end gap-2 flex-1 min-w-0">
-                  <FieldLabel label="결제 방법" required>
-                    <select
-                      value={method}
-                      onChange={e => setMethod(e.target.value as PayMethod)}
-                      className={`${inputCls} w-[100px]`}
-                    >
-                      {METHOD_OPTIONS.map(opt => (
-                        <option key={opt.key} value={opt.key}>{opt.label}</option>
-                      ))}
-                    </select>
-                  </FieldLabel>
-                  {/* 결제방법 sub-option · 나란히 · 카드사/은행/입력 */}
-                  {method === "card" && (
-                    <FieldLabel label="카드사">
-                      <div className="flex items-center gap-1.5">
-                        <select
-                          value={cardIssuer}
-                          onChange={e => setCardIssuer(e.target.value)}
-                          className={`${inputCls} w-[140px]`}
-                        >
-                          <option value="">선택...</option>
-                          {CARD_ISSUERS.map(c => <option key={c} value={c}>{c}</option>)}
-                          <option value="직접입력">직접 입력...</option>
-                        </select>
+
+                    {/* sub-option · 결제방법에 따라 표시 */}
+                    {method === "card" && (
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1 min-w-0">
+                          <FieldLabel label="카드사">
+                            <select
+                              value={cardIssuer}
+                              onChange={e => setCardIssuer(e.target.value)}
+                              className={inputCls}
+                            >
+                              <option value="">카드사 선택...</option>
+                              {CARD_ISSUERS.map(c => <option key={c} value={c}>{c}</option>)}
+                              <option value="직접입력">직접 입력...</option>
+                            </select>
+                          </FieldLabel>
+                        </div>
                         {cardIssuer === "직접입력" && (
-                          <input
-                            type="text"
-                            value={cardIssuerCustom}
-                            onChange={e => setCardIssuerCustom(e.target.value)}
-                            placeholder="카드사 이름"
-                            className={`${inputCls} w-[140px]`}
-                          />
+                          <div className="flex-1 min-w-0">
+                            <FieldLabel label="카드사명 직접입력">
+                              <input
+                                type="text"
+                                value={cardIssuerCustom}
+                                onChange={e => setCardIssuerCustom(e.target.value)}
+                                placeholder="카드사 이름"
+                                className={inputCls}
+                              />
+                            </FieldLabel>
+                          </div>
                         )}
                       </div>
-                    </FieldLabel>
-                  )}
-                  {method === "cash" && (
-                    <FieldLabel label="은행">
-                      <div className="flex items-center gap-1.5">
-                        <select
-                          value={bankName}
-                          onChange={e => setBankName(e.target.value)}
-                          className={`${inputCls} w-[140px]`}
-                        >
-                          <option value="">선택...</option>
-                          {BANKS.map(b => <option key={b} value={b}>{b}</option>)}
-                          <option value="직접입력">직접 입력...</option>
-                        </select>
+                    )}
+                    {method === "cash" && (
+                      <div className="flex items-end gap-2">
+                        <div className="flex-1 min-w-0">
+                          <FieldLabel label="은행">
+                            <select
+                              value={bankName}
+                              onChange={e => setBankName(e.target.value)}
+                              className={inputCls}
+                            >
+                              <option value="">은행 선택...</option>
+                              {BANKS.map(b => <option key={b} value={b}>{b}</option>)}
+                              <option value="직접입력">직접 입력...</option>
+                            </select>
+                          </FieldLabel>
+                        </div>
                         {bankName === "직접입력" && (
-                          <input
-                            type="text"
-                            value={bankNameCustom}
-                            onChange={e => setBankNameCustom(e.target.value)}
-                            placeholder="은행 이름"
-                            className={`${inputCls} w-[140px]`}
-                          />
+                          <div className="flex-1 min-w-0">
+                            <FieldLabel label="은행명 직접입력">
+                              <input
+                                type="text"
+                                value={bankNameCustom}
+                                onChange={e => setBankNameCustom(e.target.value)}
+                                placeholder="은행 이름"
+                                className={inputCls}
+                              />
+                            </FieldLabel>
+                          </div>
                         )}
                       </div>
-                    </FieldLabel>
-                  )}
-                  {method === "etc" && (
-                    <FieldLabel label="기타 결제방법">
-                      <input
-                        type="text"
-                        value={etcNote}
-                        onChange={e => setEtcNote(e.target.value)}
-                        placeholder="예: 페이코 · 카카오페이 · 상계 · 어음 등"
-                        className={`${inputCls} w-[220px]`}
-                      />
-                    </FieldLabel>
-                  )}
-                  </div>{/* 결제방법+sub-option nowrap 그룹 close */}
-                </div>
-                {/* Row 2 · 결제금액 + 부가세포함 체크박스 · 같은 줄 (2026-08-04 · 사용자 요청 통합) */}
-                <div className="flex items-end gap-2">
-                  {/* 결제금액 · flex-1 */}
-                  <div className="flex-1 min-w-0">
-                    <FieldLabel label="결제 금액 (원)" icon={<Wallet size={11} />} required>
+                    )}
+                    {method === "etc" && (
+                      <FieldLabel label="결제 방법 설명">
+                        <input
+                          type="text"
+                          value={etcNote}
+                          onChange={e => setEtcNote(e.target.value)}
+                          placeholder="예: 페이코 · 카카오페이 · 상계 · 어음 등"
+                          className={inputCls}
+                        />
+                      </FieldLabel>
+                    )}
+                  </div>
+
+                  {/* ── 그룹 B · 금액 ──────────────────────────────── */}
+                  <div className="px-4 py-3 flex flex-col gap-2">
+                    <FieldLabel label="결제 금액" icon={<Wallet size={11} />} required>
                       <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-black text-slate-400 select-none">₩</span>
                         <input
                           type="text"
                           inputMode="numeric"
                           value={amount ? Number(amount).toLocaleString() : ""}
                           onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
                           placeholder="0"
-                          className={`${inputCls} text-right tabular-nums font-black ${overBalance ? "border-amber-400 focus:ring-amber-400 focus:border-amber-400" : ""}`}
+                          className={`${inputCls} pl-7 pr-[76px] text-right tabular-nums font-black text-[14px] ${overBalance ? "border-amber-400 focus:ring-amber-400 focus:border-amber-400" : ""}`}
                         />
                         {currentBalance > 0 && !amount && (
                           <button
                             type="button"
                             onClick={() => setAmount(String(Math.round(currentBalance)))}
-                            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-6 px-2 text-[10px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition"
+                            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-6 px-2 text-[10px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition cursor-pointer"
                             title="현재 잔고 전액"
                           >
-                            전액 {fmtWonShort(currentBalance)}
+                            전액
                           </button>
                         )}
                       </div>
-                      <div className="flex items-center justify-between text-[10px] mt-1 min-h-[14px]">
-                        {amountNum > 0 && (
-                          <>
-                            <span className="text-slate-400 tabular-nums">₩{amountNum.toLocaleString()}</span>
-                            {taxInvoiceIssued && (
-                              <span className="text-slate-500 tabular-nums">
-                                공급 {supplyAmt.toLocaleString()} · VAT {vatAmt.toLocaleString()}
-                              </span>
-                            )}
-                          </>
+                    </FieldLabel>
+
+                    {/* VAT 분리 표시 + 초과 경고 */}
+                    {(amountNum > 0 || overBalance) && (
+                      <div className={`rounded-lg px-3 py-2 flex flex-col gap-1 ${overBalance ? "bg-amber-50 border border-amber-200" : "bg-slate-50 border border-slate-100"}`}>
+                        {amountNum > 0 && taxInvoiceIssued && (
+                          <div className="flex items-center justify-between text-[11px] tabular-nums">
+                            <span className="text-slate-500">공급가액</span>
+                            <span className="font-black text-slate-700">{supplyAmt.toLocaleString()}원</span>
+                          </div>
+                        )}
+                        {amountNum > 0 && taxInvoiceIssued && (
+                          <div className="flex items-center justify-between text-[11px] tabular-nums">
+                            <span className="text-slate-500">부가세 (10%)</span>
+                            <span className="font-black text-teal-700">{vatAmt.toLocaleString()}원</span>
+                          </div>
+                        )}
+                        {amountNum > 0 && !taxInvoiceIssued && (
+                          <div className="text-[10px] text-slate-400">세금계산서 체크 시 VAT 자동 분리</div>
                         )}
                         {overBalance && (
-                          <span className="text-amber-600 font-bold ml-auto">
-                            잔고({fmtWonShort(currentBalance)}) 초과
-                          </span>
+                          <div className="flex items-center gap-1 text-[11px] font-bold text-amber-700">
+                            <span>잔고 초과</span>
+                            <span className="tabular-nums text-amber-600">({fmtWonShort(currentBalance)} 잔고)</span>
+                          </div>
                         )}
                       </div>
-                    </FieldLabel>
+                    )}
                   </div>
-                  {/* 부가세포함 체크박스 · shrink-0 · 결제금액 오른쪽 · 인풋 높이 기준 정렬 */}
-                  <div className="shrink-0 pb-[18px]">
-                    <label className={`inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border cursor-pointer text-[12px] font-semibold transition ${
-                      taxInvoiceIssued
-                        ? "bg-teal-50 border-teal-300 text-teal-700"
-                        : "bg-white border-slate-200 text-slate-500 hover:border-slate-300"
-                    }`}>
-                      <input
-                        type="checkbox"
-                        checked={taxInvoiceIssued}
-                        onChange={e => setTaxInvoiceIssued(e.target.checked)}
-                        className="w-3.5 h-3.5 accent-teal-600"
-                      />
-                      부가세 포함
+
+                  {/* ── 그룹 C · 세금계산서 (접이식 토글) ────────────── */}
+                  <div className="px-4 py-3">
+                    <label className={`flex items-center gap-2.5 cursor-pointer group`}>
+                      <div className={`relative w-8 h-4.5 rounded-full transition-colors shrink-0 ${taxInvoiceIssued ? "bg-teal-500" : "bg-slate-200"}`}
+                        style={{ height: "18px" }}>
+                        <input
+                          type="checkbox"
+                          checked={taxInvoiceIssued}
+                          onChange={e => setTaxInvoiceIssued(e.target.checked)}
+                          className="sr-only"
+                        />
+                        <div className={`absolute top-0.5 w-3.5 h-3.5 rounded-full bg-white shadow-sm transition-transform ${taxInvoiceIssued ? "translate-x-4" : "translate-x-0.5"}`} />
+                      </div>
+                      <div className="flex flex-col leading-tight">
+                        <span className={`text-[12px] font-black transition ${taxInvoiceIssued ? "text-teal-700" : "text-slate-600 group-hover:text-slate-800"}`}>
+                          세금계산서 발행
+                        </span>
+                        {!taxInvoiceIssued && (
+                          <span className="text-[10px] text-slate-400">활성화 시 공급가액·VAT 자동 계산</span>
+                        )}
+                      </div>
+                      {taxInvoiceIssued && amountNum > 0 && (
+                        <span className="ml-auto text-[10px] font-black text-teal-700 bg-teal-50 border border-teal-200 rounded-md px-2 py-0.5 tabular-nums shrink-0">
+                          VAT {vatAmt.toLocaleString()}원
+                        </span>
+                      )}
                     </label>
                   </div>
-                </div>
-                {/* 참조번호 · 세금계산서번호 필드 · 2026-08-04 · 사용자 요청으로 제거 */}
 
-                {/* Row 5 · 메모 */}
-                <FieldLabel label="메모 (선택)">
-                  <textarea
-                    value={note}
-                    onChange={e => setNote(e.target.value)}
-                    placeholder="예: 6월분 결제 · 부분 결제 · 특이사항 등"
-                    rows={2}
-                    className={`${inputCls} py-2 resize-none leading-snug`}
-                  />
-                </FieldLabel>
+                  {/* ── 그룹 D · 메모 ──────────────────────────────── */}
+                  <div className="px-4 py-3">
+                    <FieldLabel label="메모 (선택)">
+                      <textarea
+                        value={note}
+                        onChange={e => setNote(e.target.value)}
+                        placeholder="6월분 결제 · 부분 결제 · 특이사항 등"
+                        rows={2}
+                        className={`${inputCls} py-2 resize-none leading-snug`}
+                      />
+                    </FieldLabel>
+                  </div>
 
-                {/* 상태 메시지 + 저장 버튼 */}
-                <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                </div>{/* divide-y wrapper close */}
+
+                {/* ── 상태 메시지 + 저장 버튼 ────────────────────── */}
+                <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/50 flex items-center gap-2 shrink-0">
                   {msg && (
                     <span className={`inline-flex items-center gap-1 text-[12px] font-bold ${
                       msg.type === "ok" ? "text-emerald-600" : "text-rose-600"
@@ -997,10 +1055,10 @@ export const PaymentInfoTab: React.FC = () => {
                     type="button"
                     onClick={handleSubmit}
                     disabled={saving || amountNum <= 0}
-                    className="inline-flex items-center gap-1.5 h-9 px-5 rounded-lg bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[12px] font-black shadow-sm transition cursor-pointer"
+                    className="inline-flex items-center gap-1.5 h-9 px-6 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-40 disabled:cursor-not-allowed text-white text-[12px] font-black shadow-sm hover:shadow-md transition-all cursor-pointer"
                   >
                     {saving ? <Loader2 size={13} className="animate-spin" /> : <Check size={13} strokeWidth={3} />}
-                    결제 등록
+                    {saving ? "등록 중..." : "결제 등록"}
                   </button>
                 </div>
               </div>
