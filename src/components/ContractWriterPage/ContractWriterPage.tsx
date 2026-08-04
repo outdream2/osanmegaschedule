@@ -53,6 +53,31 @@ interface ContractWriterPageProps {
 
 type DayKey = "월" | "화" | "수" | "목" | "금" | "토" | "일";
 
+// 2026-08-04 · 코스트팜 이미지 기반 임금 세분화 구조
+//   · 기본급(주휴수당 포함) · 고정연장 · 고정휴일 · 고정휴일야간 · 고정야간 · 식대 · 차량유지비
+//   · 각 항목: 월평균 시간·금액(원) · 시간 0 · 금액 0 이면 미사용 (프리뷰 렌더 시 dash 로 표시)
+export interface WageComponentEntry {
+  hours: number;    // 월평균 시간
+  amount: number;   // 금액 (원)
+}
+export interface WageComponents {
+  basicSalary: WageComponentEntry;       // 기본급 (주휴수당 포함) · 209.00h 기본
+  fixedOvertime: WageComponentEntry;     // 고정연장근로수당 (1.5배 가산)
+  fixedHoliday: WageComponentEntry;      // 고정휴일수당 (1.5배 가산)
+  fixedHolidayNight: WageComponentEntry; // 고정휴일야간수당 (0.5배 가산)
+  fixedNight: WageComponentEntry;        // 고정야간수당 (0.5배 가산)
+  mealAllowance: number;                 // 식대 (비과세 · 해당자에 한함)
+  vehicleAllowance: number;              // 차량유지비 (비과세 · 해당자에 한함)
+}
+
+// CCTV/개인정보 동의 · 이미지 2 최하단 별도 서명 섹션
+export interface PrivacyConsent {
+  recipientName: string;    // 수령자 성명 (근로자 성명과 동일 default)
+  recipientAddress: string; // 수령자 주소
+  agreedCollection: boolean; // 개인정보 수집·이용 동의
+  agreedCCTV: boolean;       // CCTV 촬영 시간·범위 동의
+}
+
 interface ContractForm {
   // 직원
   employeeId: number | null;
@@ -114,6 +139,18 @@ interface ContractForm {
   companyName: string;           // 회사명
   companyAddress: string;
   companyRegNo: string;          // 사업자등록번호
+
+  // 2026-08-04 · 코스트팜 이미지 기반 · 임금 세분화 (optional · 미입력 시 기존 시급 기반 표시)
+  //   · useWageComponents=true 인 경우에만 프리뷰에 표 형태 렌더
+  //   · false 인 경우 기존 시급 (weekdayHourly/weekendHourly) 텍스트 렌더 (하위 호환)
+  useWageComponents: boolean;
+  wageComponents: WageComponents;
+
+  // 2026-08-04 · CCTV/개인정보 동의 (별도 서명)
+  privacyConsent: PrivacyConsent;
+
+  // 2026-08-04 · 이미지 기반 · 임금 지급일 자유 입력 (기본: 매월 익월 5일)
+  paymentDayText: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -137,6 +174,21 @@ const DEFAULT_EMPLOYER: Partial<ContractForm> = {
   companyRegNo: "",
 };
 
+// 2026-08-04 · 이미지 2 기반 · 인·정계·해고 사유 11개 (코스트팜 원본 문구 준용 · 오타 보정)
+const DISCIPLINE_REASONS: string[] = [
+  "부정 또는 부실한 방법으로 채용된 자",
+  "업무상 명령 또는 시설물 훼손·손상이 있는 자",
+  "회사의 명예 또는 이익을 훼손시킨 자",
+  "회사의 규칙·관리규정에 대한 정당한 지시나 질서를 문란하게 한 자",
+  "정당한 이유 없이 회사의 물품·금품을 반출한 자",
+  "직무를 이용하여 부당한 이익을 취한 자",
+  "회사가 정한 복무규정을 위반한 자",
+  "직장 내 성희롱 행위를 한 자",
+  "이유 없이 결근한 자",
+  "근무태만 및 근무 불성실로 개선의 여지가 없다고 판단되는 자",
+  "기타 이에 준하는 행위로 징계·해고할 필요가 있다고 판단되는 자",
+];
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 유틸
 // ─────────────────────────────────────────────────────────────────────────────
@@ -158,6 +210,19 @@ const fmtKoreanDate = (iso: string): string => {
   if (!m) return iso;
   return `${m[1]}년 ${Number(m[2])}월 ${Number(m[3])}일`;
 };
+
+// 2026-08-04 · 임금 세분화 · 총액 산출 (기본급 + 고정연장 + 고정휴일 + 고정휴일야간 + 고정야간 + 식대 + 차량유지비)
+function computeWageTotal(w: WageComponents): number {
+  return (
+    (w.basicSalary?.amount ?? 0) +
+    (w.fixedOvertime?.amount ?? 0) +
+    (w.fixedHoliday?.amount ?? 0) +
+    (w.fixedHolidayNight?.amount ?? 0) +
+    (w.fixedNight?.amount ?? 0) +
+    (w.mealAllowance ?? 0) +
+    (w.vehicleAllowance ?? 0)
+  );
+}
 
 // #220 · 기간 개월수 산출 · 연장 기본값 프리셋용 (start~end)
 function contractPeriodMonthsClient(startIso?: string | null, endIso?: string | null): number | null {
@@ -201,6 +266,25 @@ const emptyForm = (): ContractForm => ({
   companyName:  (DEFAULT_EMPLOYER.companyName as string) ?? "",
   companyAddress: (DEFAULT_EMPLOYER.companyAddress as string) ?? "",
   companyRegNo: (DEFAULT_EMPLOYER.companyRegNo as string) ?? "",
+  // 2026-08-04 · 임금 세분화 · 기본 OFF (기존 시급 기반 프리뷰 유지) · 코스트팜 이미지 값 프리셋
+  //   사용자가 좌측 폼 [상세 임금 구성] 토글 ON 시 표 형태 렌더로 전환
+  useWageComponents: false,
+  wageComponents: {
+    basicSalary:       { hours: 209.00, amount: 4671298 },
+    fixedOvertime:     { hours: 55.94,  amount: 1250408 },
+    fixedHoliday:      { hours: 22.00,  amount: 491716  },
+    fixedHolidayNight: { hours: 0,      amount: 0       },
+    fixedNight:        { hours: 10.00,  amount: 223508  },
+    mealAllowance:     0,
+    vehicleAllowance:  0,
+  },
+  privacyConsent: {
+    recipientName: "",
+    recipientAddress: "",
+    agreedCollection: false,
+    agreedCCTV: false,
+  },
+  paymentDayText: "매월 1일부터 당월 말일까지 임금은 익월 5일에 근로자 명의 예금통장에 지급",
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -719,35 +803,42 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
           register: registerClauseAck,
         }}
       >
-        <div>· 시간급 (주중): {fmtWon(form.weekdayHourly)} 원</div>
-        <div>· 시간급 (주말): {fmtWon(form.weekendHourly)} 원</div>
-        {/* 예상 급여 · 2026-08-04 · 사용자 요청 · 시급 × 실근무시간 × 주 근무일 × 4.34주 */}
-        {(() => {
-          const paidHours = hoursCalc?.paidHours ?? 0;
-          const weeklyDaysNum = Number(form.weeklyDays) || 0;
-          const weekdayRate = Number(String(form.weekdayHourly).replace(/[^0-9]/g, "")) || 0;
-          const weekendRate = Number(String(form.weekendHourly).replace(/[^0-9]/g, "")) || 0;
-          // 주말 근무 여부 (workDays 에 토·일 있으면 주말 포함)
-          const hasWeekend = !!(form.workDays["토"] || form.workDays["일"]);
-          const weekdayCount = ["월","화","수","목","금"].filter(d => form.workDays[d as "월"]).length;
-          const weekendCount = ["토","일"].filter(d => form.workDays[d as "토"]).length;
-          if (paidHours <= 0 || weeklyDaysNum <= 0 || weekdayRate <= 0) return null;
-          const weeklyPay = (weekdayCount * paidHours * weekdayRate) + (weekendCount * paidHours * (hasWeekend ? weekendRate : weekdayRate));
-          const monthlyPay = Math.round(weeklyPay * 4.345);
-          return (
-            <div className="text-[12px] text-emerald-700 mt-1 pt-1 border-t border-emerald-100 bg-emerald-50/40 -mx-1 px-2 py-1 rounded">
-              <span className="font-black">· 예상 급여 (참고)</span>
-              <div className="text-[11px] text-slate-600 mt-0.5">
-                주급 <b className="text-emerald-800 tabular-nums">{fmtWon(String(Math.round(weeklyPay)))}원</b>
-                <span className="mx-1 text-slate-300">·</span>
-                월급 <b className="text-emerald-800 tabular-nums">{fmtWon(String(monthlyPay))}원</b>
-                <span className="text-slate-400 ml-1">(주 {weeklyDaysNum}일 × {paidHours.toFixed(1)}h × 4.345주)</span>
-              </div>
-            </div>
-          );
-        })()}
-        <div className="text-[12px] text-slate-600 mt-0.5">
-          · 임금지급일: 매월 말일 (해당일이 휴일인 경우 전일 지급)
+        {/* 2026-08-04 · 코스트팜 이미지 기반 · 임금 구성항목 표 (useWageComponents 활성 시) */}
+        {form.useWageComponents ? (
+          <WageComponentsTable wage={form.wageComponents} />
+        ) : (
+          <>
+            <div>· 시간급 (주중): {fmtWon(form.weekdayHourly)} 원</div>
+            <div>· 시간급 (주말): {fmtWon(form.weekendHourly)} 원</div>
+            {/* 예상 급여 · 2026-08-04 · 사용자 요청 · 시급 × 실근무시간 × 주 근무일 × 4.34주 */}
+            {(() => {
+              const paidHours = hoursCalc?.paidHours ?? 0;
+              const weeklyDaysNum = Number(form.weeklyDays) || 0;
+              const weekdayRate = Number(String(form.weekdayHourly).replace(/[^0-9]/g, "")) || 0;
+              const weekendRate = Number(String(form.weekendHourly).replace(/[^0-9]/g, "")) || 0;
+              // 주말 근무 여부 (workDays 에 토·일 있으면 주말 포함)
+              const hasWeekend = !!(form.workDays["토"] || form.workDays["일"]);
+              const weekdayCount = ["월","화","수","목","금"].filter(d => form.workDays[d as "월"]).length;
+              const weekendCount = ["토","일"].filter(d => form.workDays[d as "토"]).length;
+              if (paidHours <= 0 || weeklyDaysNum <= 0 || weekdayRate <= 0) return null;
+              const weeklyPay = (weekdayCount * paidHours * weekdayRate) + (weekendCount * paidHours * (hasWeekend ? weekendRate : weekdayRate));
+              const monthlyPay = Math.round(weeklyPay * 4.345);
+              return (
+                <div className="text-[12px] text-emerald-700 mt-1 pt-1 border-t border-emerald-100 bg-emerald-50/40 -mx-1 px-2 py-1 rounded">
+                  <span className="font-black">· 예상 급여 (참고)</span>
+                  <div className="text-[11px] text-slate-600 mt-0.5">
+                    주급 <b className="text-emerald-800 tabular-nums">{fmtWon(String(Math.round(weeklyPay)))}원</b>
+                    <span className="mx-1 text-slate-300">·</span>
+                    월급 <b className="text-emerald-800 tabular-nums">{fmtWon(String(monthlyPay))}원</b>
+                    <span className="text-slate-400 ml-1">(주 {weeklyDaysNum}일 × {paidHours.toFixed(1)}h × 4.345주)</span>
+                  </div>
+                </div>
+              );
+            })()}
+          </>
+        )}
+        <div className="text-[12px] text-slate-600 mt-1">
+          · 임금지급일: {form.paymentDayText || "매월 말일 (해당일이 휴일인 경우 전일 지급)"}
         </div>
         <div className="text-[12px] text-slate-600">
           · 지급방법: 근로자 명의 예금통장에 입금
@@ -993,6 +1084,75 @@ const SpanBox: React.FC<{ checked: boolean }> = ({ checked }) => (
     {checked ? "V" : ""}
   </span>
 );
+
+// 2026-08-04 · 코스트팜 이미지 재현 · 임금 구성 표 (구성항목 / 내역 / 금액)
+const WageComponentsTable: React.FC<{ wage: WageComponents }> = ({ wage }) => {
+  const rows: Array<{
+    label: string;
+    note?: string;
+    hours: number;
+    amount: number;
+    optional?: boolean;    // 해당자에 한함 (식대/차량유지비)
+  }> = [
+    { label: "기본급", note: "주휴수당 포함", hours: wage.basicSalary.hours, amount: wage.basicSalary.amount },
+    { label: "(고정)연장근로수당", note: "1.5배 가산 포함", hours: wage.fixedOvertime.hours, amount: wage.fixedOvertime.amount },
+    { label: "(고정)휴일수당", note: "1.5배 가산 포함", hours: wage.fixedHoliday.hours, amount: wage.fixedHoliday.amount },
+    { label: "(고정)휴일야간수당", note: "0.5배 가산 포함", hours: wage.fixedHolidayNight.hours, amount: wage.fixedHolidayNight.amount },
+    { label: "(고정)야간수당", note: "0.5배 가산 포함", hours: wage.fixedNight.hours, amount: wage.fixedNight.amount },
+    { label: "식대", note: "비과세", hours: 0, amount: wage.mealAllowance, optional: true },
+    { label: "차량유지비", note: "비과세", hours: 0, amount: wage.vehicleAllowance, optional: true },
+  ];
+  const total = computeWageTotal(wage);
+  return (
+    <div className="w-full border border-slate-300 rounded-md overflow-hidden text-[12px]">
+      <table className="w-full border-collapse">
+        <thead>
+          <tr className="bg-slate-100 text-slate-700 text-[11px] font-black">
+            <th className="border-b border-slate-300 px-2 py-1 text-left w-[38%]">구성항목</th>
+            <th className="border-b border-l border-slate-300 px-2 py-1 text-left w-[32%]">내역 (월평균 시간)</th>
+            <th className="border-b border-l border-slate-300 px-2 py-1 text-right w-[30%]">금액 (원)</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, idx) => {
+            const isEmpty = (r.hours === 0 && r.amount === 0);
+            return (
+              <tr key={idx} className="odd:bg-white even:bg-slate-50/40">
+                <td className="border-b border-slate-200 px-2 py-1 align-top">
+                  <div className="font-bold text-slate-800">{r.label}</div>
+                  {r.note && <div className="text-[10px] text-slate-500 leading-tight">({r.note})</div>}
+                </td>
+                <td className="border-b border-l border-slate-200 px-2 py-1 align-top">
+                  {r.optional ? (
+                    <span className={isEmpty ? "text-slate-400" : "text-slate-700"}>해당자에 한함</span>
+                  ) : (
+                    <span className={isEmpty ? "text-slate-400" : "text-slate-800"}>
+                      월평균 <b className="tabular-nums">{r.hours.toFixed(2)}</b> 시간
+                    </span>
+                  )}
+                </td>
+                <td className="border-b border-l border-slate-200 px-2 py-1 align-top text-right tabular-nums font-semibold">
+                  {isEmpty ? <span className="text-slate-300">-</span> : (
+                    <span className="text-slate-900">{fmtWon(r.amount)} 원</span>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+          <tr className="bg-emerald-50">
+            <td className="px-2 py-1.5 font-black text-emerald-800">월급여총액</td>
+            <td className="border-l border-slate-200 px-2 py-1.5 text-[10px] text-emerald-700">
+              세전 · 세금·4대보험 공제 전
+            </td>
+            <td className="border-l border-slate-200 px-2 py-1.5 text-right tabular-nums font-black text-emerald-800">
+              {fmtWon(total)} 원
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // #220 · 연장 모달 · N개월 입력 → 신규 startDate/endDate 프리뷰 → 확정
@@ -1943,7 +2103,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
         {/* 좌우 split */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* ── 좌측: 조건 입력 폼 ────────────────────────────────────────── */}
-          <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-3 order-2 lg:order-1">
+          <section className="bg-white border border-slate-200 rounded-xl shadow-sm p-3 sm:p-4 flex flex-col gap-3 order-1">
             <div className="flex items-center gap-1.5 pb-1.5 border-b border-slate-100">
               <ClipboardText size={15} weight="fill" className="text-emerald-600" />
               <h2 className="text-[13px] font-black text-slate-800">계약 조건 입력</h2>
@@ -2124,106 +2284,66 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               )}
             </div>
 
-            {/* 사업주 정보 */}
-            <div className="flex flex-col gap-1.5">
-              <FieldLabel icon={<Buildings size={12} weight="fill" className="text-slate-400" />}>사업주 정보</FieldLabel>
-              {/* 사업체명 + 대표자명 한 줄 */}
-              <div className="grid grid-cols-2 gap-1.5">
-                <input
-                  type="text"
-                  value={form.companyName}
-                  onChange={(e) => upd("companyName", e.target.value)}
-                  placeholder="사업체명"
-                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
+            {/* 계약 유형 · 근무 요일 · 주 근무 횟수 — flex-wrap 한 줄 */}
+            <div className="flex flex-wrap gap-3 items-start">
+              {/* 계약 유형 */}
+              <div className="flex flex-col gap-1.5 min-w-[140px] flex-1">
+                <FieldLabel required>계약 유형</FieldLabel>
+                <SelectOrCustom
+                  value={form.contractType}
+                  options={CONTRACT_TYPES}
+                  onChange={(v) => upd("contractType", v)}
+                  placeholder="예: 프리랜서"
                 />
-                <input
-                  type="text"
-                  value={form.employerName}
-                  onChange={(e) => upd("employerName", e.target.value)}
-                  placeholder="대표자명"
-                  className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
-                />
-              </div>
-              {/* 사업장 주소 */}
-              <input
-                type="text"
-                value={form.companyAddress}
-                onChange={(e) => upd("companyAddress", e.target.value)}
-                placeholder="사업장 주소"
-                className="bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
-              />
-              {/* 사업자등록번호 인라인 */}
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] text-slate-400 font-semibold shrink-0">사업자등록번호</span>
-                <input
-                  type="text"
-                  value={form.companyRegNo}
-                  onChange={(e) => upd("companyRegNo", e.target.value)}
-                  placeholder="123-45-67890"
-                  className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition placeholder:text-slate-400 placeholder:text-[12px]"
-                />
-              </div>
-            </div>
-
-            {/* 계약 유형 */}
-            <div className="flex flex-col gap-1.5">
-              <FieldLabel required>계약 유형</FieldLabel>
-              <SelectOrCustom
-                value={form.contractType}
-                options={CONTRACT_TYPES}
-                onChange={(v) => upd("contractType", v)}
-                placeholder="예: 프리랜서"
-              />
-              {/* 계약직 · 개월수 선택 */}
-              {form.contractType === "계약직" && (
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-slate-400 font-semibold shrink-0">계약 개월수</span>
-                  <div className="flex-1">
-                    <SelectOrCustom
-                      value={form.contractMonths}
-                      options={["2", "3", "6", "12"]}
-                      onChange={(v) => upd("contractMonths", v)}
-                      placeholder="예: 9"
-                      suffix="개월"
-                    />
+                {/* 계약직 · 개월수 선택 */}
+                {form.contractType === "계약직" && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-slate-400 font-semibold shrink-0">개월수</span>
+                    <div className="flex-1">
+                      <SelectOrCustom
+                        value={form.contractMonths}
+                        options={["2", "3", "6", "12"]}
+                        onChange={(v) => upd("contractMonths", v)}
+                        placeholder="예: 9"
+                        suffix="개월"
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-
-            {/* 근무 요일 */}
-            <div className="flex flex-col gap-1">
-              <FieldLabel icon={<CalendarBlank size={12} weight="fill" className="text-slate-400" />} required>근무 요일</FieldLabel>
-              <div className="flex flex-wrap gap-1">
-                {DAYS.map(d => {
-                  const on = form.workDays[d];
-                  const isWeekend = d === "토" || d === "일";
-                  return (
-                    <button
-                      key={d}
-                      type="button"
-                      onClick={() => toggleDay(d)}
-                      className={[
-                        "min-w-[34px] px-2 py-1 rounded-lg text-[12px] font-black transition-colors cursor-pointer border",
-                        on
-                          ? isWeekend
-                            ? "bg-rose-500 text-white border-rose-600"
-                            : "bg-emerald-500 text-white border-emerald-600"
-                          : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50",
-                      ].join(" ")}
-                    >
-                      {d}
-                    </button>
-                  );
-                })}
-                <span className="text-[11px] text-slate-400 font-semibold self-center ml-1">선택 {chosenDaysCount}일</span>
+                )}
               </div>
-            </div>
 
-            {/* 주 근무 횟수 */}
-            <div className="flex items-center gap-2">
-              <span className="text-[11px] text-slate-500 font-semibold shrink-0">주 근무 횟수</span>
-              <div className="flex-1">
+              {/* 근무 요일 */}
+              <div className="flex flex-col gap-1 min-w-[200px] flex-[2]">
+                <FieldLabel icon={<CalendarBlank size={12} weight="fill" className="text-slate-400" />} required>근무 요일</FieldLabel>
+                <div className="flex flex-wrap gap-1">
+                  {DAYS.map(d => {
+                    const on = form.workDays[d];
+                    const isWeekend = d === "토" || d === "일";
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => toggleDay(d)}
+                        className={[
+                          "min-w-[34px] px-2 py-1 rounded-lg text-[12px] font-black transition-colors cursor-pointer border",
+                          on
+                            ? isWeekend
+                              ? "bg-rose-500 text-white border-rose-600"
+                              : "bg-emerald-500 text-white border-emerald-600"
+                            : "bg-white text-slate-500 border-slate-200 hover:bg-slate-50",
+                        ].join(" ")}
+                      >
+                        {d}
+                      </button>
+                    );
+                  })}
+                  <span className="text-[11px] text-slate-400 font-semibold self-center ml-1">선택 {chosenDaysCount}일</span>
+                </div>
+              </div>
+
+              {/* 주 근무 횟수 */}
+              <div className="flex flex-col gap-1.5 min-w-[110px] flex-1">
+                <span className="text-[12px] text-slate-500 font-semibold leading-none">주 근무 횟수</span>
                 <SelectOrCustom
                   value={form.weeklyDays}
                   options={WEEKLY_DAYS}
@@ -2307,26 +2427,24 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
             {/* 계약 기간 */}
             <div className="flex flex-col gap-1.5">
               <FieldLabel required>계약 기간</FieldLabel>
-              <div className="grid grid-cols-2 gap-1.5">
-                <div>
-                  <div className="text-[11px] text-slate-400 font-semibold mb-0.5">시작일</div>
-                  <input
-                    type="date"
-                    value={form.startDate}
-                    onChange={(e) => upd("startDate", e.target.value)}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition"
-                  />
-                </div>
-                <div>
-                  <div className="text-[11px] text-slate-400 font-semibold mb-0.5">종료일</div>
-                  <input
-                    type="date"
-                    value={form.endDate}
-                    onChange={(e) => upd("endDate", e.target.value)}
-                    disabled={form.indefinite}
-                    className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
-                  />
-                </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] text-slate-500 font-semibold shrink-0 w-[40px]">시작일</span>
+                <input
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) => upd("startDate", e.target.value)}
+                  className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-[12px] text-slate-500 font-semibold shrink-0 w-[40px]">종료일</span>
+                <input
+                  type="date"
+                  value={form.endDate}
+                  onChange={(e) => upd("endDate", e.target.value)}
+                  disabled={form.indefinite}
+                  className="flex-1 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-[14px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 focus:shadow-sm transition disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
+                />
               </div>
               <label className="inline-flex items-center gap-1.5 cursor-pointer">
                 <input
@@ -2379,7 +2497,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
           </section>
 
           {/* ── 우측: 실시간 프리뷰 ──────────────────────────────────────── */}
-          <section className="order-1 lg:order-2 flex flex-col gap-3">
+          <section className="order-2 flex flex-col gap-3">
             <div className="flex items-center gap-1.5 pb-1">
               <NotePencil size={16} weight="fill" className="text-emerald-600" />
               <h2 className="text-sm font-black text-slate-800">계약서 미리보기</h2>
