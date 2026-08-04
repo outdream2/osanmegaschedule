@@ -178,7 +178,7 @@ const emptyForm = (): ContractForm => ({
   employeeAddress: "",
   employeeBirth: "",
   contractType: "정규직",
-  contractMonths: "12",
+  contractMonths: "2",           // 계약직 default 2개월 (사용자 요청 2026-08-04)
   workDays: { "월": true, "화": true, "수": true, "목": true, "금": true, "토": false, "일": false },
   weeklyDays: "5",
   startTime: "09:00",
@@ -192,7 +192,7 @@ const emptyForm = (): ContractForm => ({
   jobDuty: "약국 카운터 · OTC 판매 · 재고 관리",
   socialInsurance: true,
   additionalContent: "",
-  annualLeaveDays: "15",
+  annualLeaveDays: "12",         // 연차 default 12일 (사용자 요청 2026-08-04)
   employeeCategory: "매장",
   employeeCategoryCustom: "",
   primaryFocus: "매장",           // #186 · 매장이 기본 카테고리 · 기본 우선업무는 매장
@@ -710,7 +710,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, {
           register: registerClauseAck,
         }}
       >
-        <div>연차유급휴가는 근로기준법에서 정하는 바에 따라 <b>연 {form.annualLeaveDays || "15"}일</b> 부여함</div>
+        <div>연차유급휴가는 근로기준법에서 정하는 바에 따라 <b>연 {form.annualLeaveDays || "12"}일</b> 부여함</div>
       </PreviewRow>
 
       {/* #186 · 8. 담당 업무의 우선순위 (매장/창고 우선업무 · 70%) · 조건부 */}
@@ -2071,7 +2071,7 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
                   <div className="flex-1">
                     <SelectOrCustom
                       value={form.contractMonths}
-                      options={["3", "6", "12", "18", "24", "36"]}
+                      options={["2", "3", "6", "12"]}
                       onChange={(v) => upd("contractMonths", v)}
                       placeholder="예: 9"
                       suffix="개월"
