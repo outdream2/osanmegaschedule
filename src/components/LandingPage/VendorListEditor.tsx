@@ -12,6 +12,8 @@ import {
 import { VendorCategoryBadge } from "../common/VendorCategoryBadge";
 // 2026-08-03 · 공급사명 표시 정제 · 법인접두어("(주)"·"주식회사"·"㈜") 및 vat 부가정보 제거
 import { displayVendorName } from "../../utils/vendorNameNormalize";
+// 2026-08-04 · 매입이력 공통 리스트 컴포넌트
+import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 
 interface VendorListEditorProps {
   // 기존 API 호환용 · 무시됨 (모달 방식으로 통일)
@@ -106,7 +108,8 @@ const CATEGORY_LEFT_BG: Record<string, string> = {
 };
 
 // compact 테이블 정렬 키 타입 (모듈 레벨 · IIFE SortIcon 에서 참조)
-type CompactSortKey = "company_name" | "category" | "business_number" | "contact_name" | "phone" | "vat" | "balance" | "invoice_date";
+// 2026-08-04 · 일반 모드(non-compact) 에서도 재사용 · email/created_at 추가 (A-2 모든 헤더 정렬)
+type CompactSortKey = "company_name" | "category" | "business_number" | "contact_name" | "phone" | "email" | "vat" | "balance" | "invoice_date" | "created_at";
 
 export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   initialSelectedId,
@@ -185,7 +188,8 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
   const missingCount = vendors.filter(v => !v.business_number).length;
   const modalVendor = useMemo(() => vendors.find(v => v.id === modalVendorId) ?? null, [vendors, modalVendorId]);
 
-  // compact 테이블 정렬 결과
+  // compact / 일반 테이블 정렬 결과 (compactSortKey/compactSortDir 공용)
+  // 2026-08-04 · email / created_at 추가 (일반 모드용 · A-2 모든 헤더 정렬)
   const compactSorted = useMemo(() => {
     return filtered.slice().sort((a, b) => {
       let cmp = 0;
@@ -200,6 +204,8 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
           cmp = (a.contact_name ?? "").localeCompare(b.contact_name ?? "", "ko"); break;
         case "phone":
           cmp = (a.phone ?? "").localeCompare(b.phone ?? ""); break;
+        case "email":
+          cmp = (a.email ?? "").localeCompare(b.email ?? ""); break;
         case "vat": {
           const va = detectVatIncluded(a); const vb = detectVatIncluded(b);
           const toNum = (x: boolean | null) => x === true ? 1 : x === false ? 0 : -1;
@@ -210,6 +216,11 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
         case "invoice_date": {
           const da = a.latestBalance?.invoice_date ?? "";
           const db = b.latestBalance?.invoice_date ?? "";
+          cmp = da < db ? -1 : da > db ? 1 : 0; break;
+        }
+        case "created_at": {
+          const da = a.created_at ?? "";
+          const db = b.created_at ?? "";
           cmp = da < db ? -1 : da > db ? 1 : 0; break;
         }
         default: cmp = 0;
@@ -657,46 +668,81 @@ export const VendorListEditor: React.FC<VendorListEditorProps> = ({
                   </span>
                 </th>
               </tr>
-              {/* 서브 헤더 */}
+              {/* 서브 헤더 · 2026-08-04 · A-2 · 모든 컬럼 헤더 클릭 정렬 · 화살표 표시 */}
               <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
                 <th className="text-left px-2 py-1.5 w-8 bg-sky-50/30">#</th>
-                <th className="text-left px-3 py-1.5 min-w-[160px] bg-sky-50/30">회사명</th>
-                <th className="text-left px-3 py-1.5 w-28 bg-sky-50/30">사업자번호</th>
-                <th className="text-left px-3 py-1.5 w-20 bg-sky-50/30">담당자</th>
-                {/* 연락처 그룹 */}
-                {isVendorGroupCollapsed("contact") ? (
-                  <th className="bg-amber-50/20 w-4"></th>
-                ) : (
-                  <>
-                    <th className="text-left px-3 py-1.5 w-28 bg-amber-50/30">전화</th>
-                    <th className="text-left px-3 py-1.5 w-36 hidden lg:table-cell bg-amber-50/30">이메일</th>
-                  </>
-                )}
-                {/* 잔고 그룹 */}
-                {isVendorGroupCollapsed("balance") ? (
-                  <th className="bg-emerald-50/20 w-4"></th>
-                ) : (
-                  <th className="text-right px-3 py-1.5 w-24 bg-emerald-50/30">잔고</th>
-                )}
-                {/* 기타 그룹 */}
-                {isVendorGroupCollapsed("etc") ? (
-                  <th className="bg-slate-50/20 w-4"></th>
-                ) : (
-                  <>
-                    <th className="text-left px-3 py-1.5 w-20 hidden xl:table-cell bg-slate-50/40">분류</th>
-                    <th className="text-left px-3 py-1.5 w-24 hidden lg:table-cell bg-slate-50/40">등록일</th>
-                  </>
-                )}
+                {(() => {
+                  const arrow = (k: CompactSortKey) => compactSortKey !== k
+                    ? <ChevronUp size={9} className="text-slate-300 ml-0.5 inline shrink-0" />
+                    : compactSortDir === "asc"
+                      ? <ChevronUp size={9} className="text-teal-600 ml-0.5 inline shrink-0" />
+                      : <ChevronDown size={9} className="text-teal-600 ml-0.5 inline shrink-0" />;
+                  const sortableCls = (k: CompactSortKey, base: string) =>
+                    `${base} cursor-pointer select-none hover:bg-slate-100 transition ${compactSortKey === k ? "text-teal-700" : ""}`;
+                  return <>
+                    <th onClick={() => toggleCompactSort("company_name")}
+                      className={sortableCls("company_name", "text-left px-3 py-1.5 min-w-[160px] bg-sky-50/30")}>
+                      회사명{arrow("company_name")}
+                    </th>
+                    <th onClick={() => toggleCompactSort("business_number")}
+                      className={sortableCls("business_number", "text-left px-3 py-1.5 w-28 bg-sky-50/30")}>
+                      사업자번호{arrow("business_number")}
+                    </th>
+                    <th onClick={() => toggleCompactSort("contact_name")}
+                      className={sortableCls("contact_name", "text-left px-3 py-1.5 w-20 bg-sky-50/30")}>
+                      담당자{arrow("contact_name")}
+                    </th>
+                    {/* 연락처 그룹 */}
+                    {isVendorGroupCollapsed("contact") ? (
+                      <th className="bg-amber-50/20 w-4"></th>
+                    ) : (
+                      <>
+                        <th onClick={() => toggleCompactSort("phone")}
+                          className={sortableCls("phone", "text-left px-3 py-1.5 w-28 bg-amber-50/30")}>
+                          전화{arrow("phone")}
+                        </th>
+                        <th onClick={() => toggleCompactSort("email")}
+                          className={sortableCls("email", "text-left px-3 py-1.5 w-36 hidden lg:table-cell bg-amber-50/30")}>
+                          이메일{arrow("email")}
+                        </th>
+                      </>
+                    )}
+                    {/* 잔고 그룹 */}
+                    {isVendorGroupCollapsed("balance") ? (
+                      <th className="bg-emerald-50/20 w-4"></th>
+                    ) : (
+                      <th onClick={() => toggleCompactSort("balance")}
+                        className={sortableCls("balance", "text-right px-3 py-1.5 w-24 bg-emerald-50/30")}>
+                        잔고{arrow("balance")}
+                      </th>
+                    )}
+                    {/* 기타 그룹 */}
+                    {isVendorGroupCollapsed("etc") ? (
+                      <th className="bg-slate-50/20 w-4"></th>
+                    ) : (
+                      <>
+                        <th onClick={() => toggleCompactSort("category")}
+                          className={sortableCls("category", "text-left px-3 py-1.5 w-20 hidden xl:table-cell bg-slate-50/40")}>
+                          분류{arrow("category")}
+                        </th>
+                        <th onClick={() => toggleCompactSort("created_at")}
+                          className={sortableCls("created_at", "text-left px-3 py-1.5 w-24 hidden lg:table-cell bg-slate-50/40")}>
+                          등록일{arrow("created_at")}
+                        </th>
+                      </>
+                    )}
+                  </>;
+                })()}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50">
-              {filtered.length === 0 ? (
+              {compactSorted.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="text-center py-12 text-slate-400 font-semibold">
                     {loading ? "로딩 중..." : search ? "검색 결과 없음" : "공급사 데이터 없음"}
                   </td>
                 </tr>
-              ) : filtered.map((v, i) => (
+              ) : compactSorted.map((v, i) => (
                 <tr
                   key={v.id}
                   onClick={() => handleVendorClick(v.id)}
@@ -1346,7 +1392,7 @@ export const VendorDetailModal: React.FC<{
           </div>
           )}
 
-          {/* ─── 매입이력 탭 ─── */}
+          {/* ─── 매입이력 탭 · 2026-08-04 공통 PurchaseHistoryList 사용 ─── */}
           {activeTab === "purchase" && (
           <div className="space-y-3">
             <SectionTitle
@@ -1355,41 +1401,16 @@ export const VendorDetailModal: React.FC<{
               color="amber"
               hint={purchLoading ? "로딩..." : `${purchases.length}건`}
             />
-            <div className="rounded-lg border border-slate-200 overflow-auto max-h-[520px] bg-white">
-              {purchLoading ? (
-                <div className="flex items-center justify-center gap-1.5 py-8 text-slate-400 text-[12px]">
-                  <Loader2 size={14} className="animate-spin" />로딩중...
-                </div>
-              ) : purchases.length === 0 ? (
-                <div className="py-8 text-center text-slate-400 text-[12px]">매입 이력 없음</div>
-              ) : (
-                <table className="w-full text-[12px]">
-                  <thead className="sticky top-0 z-10 bg-slate-50 border-b border-slate-200">
-                    <tr className="text-[11px] font-black uppercase tracking-wider text-slate-500">
-                      <th className="text-left px-3 py-2 w-20">일자</th>
-                      <th className="text-left px-3 py-2">상품</th>
-                      <th className="text-right px-3 py-2 w-14">수량</th>
-                      <th className="text-right px-3 py-2 w-24">금액</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-50">
-                    {purchases.map((p, i) => (
-                      <tr key={p.id ?? i} className="hover:bg-slate-50/60 transition align-top">
-                        <td className="px-3 py-1.5 font-mono text-[11px] text-slate-500 whitespace-nowrap tabular-nums">
-                          {String(p.purchase_date).slice(5)}
-                        </td>
-                        <td className="px-3 py-1.5 text-slate-700 break-words leading-snug">{p.product_name}</td>
-                        <td className="text-right px-3 py-1.5 font-mono tabular-nums text-slate-700">
-                          {Number(p.quantity ?? 0).toLocaleString()}
-                        </td>
-                        <td className="text-right px-3 py-1.5 font-mono font-bold text-emerald-700 whitespace-nowrap tabular-nums">
-                          {Number(p.total ?? p.amount ?? 0).toLocaleString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
+            <div className="rounded-lg border border-slate-200 overflow-hidden bg-white flex flex-col" style={{ maxHeight: 520 }}>
+              <PurchaseHistoryList
+                rows={purchases as unknown as PurchaseHistoryRow[]}
+                loading={purchLoading}
+                showSupplier={false}
+                showProduct
+                showRowNumber
+                showFooterSum
+                emptyText="매입 이력 없음"
+              />
             </div>
           </div>
           )}
