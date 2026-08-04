@@ -1,9 +1,11 @@
 // src/components/VatPreparePage/VatPreparePage.tsx
 // 2026-08-03 · #197 · 부가세 준비 페이지
 // 2026-08-04 · Phase 1 · 매출 탭 신설 + 5 KPI 확장 + 3 탭 컨테이너 (매출·매입·신고서)
-//   · 다음 신고일 카운트다운 · 신고기간별 매출/매입세액 KPI
-//   · [매출 탭] localStorage 기반 매출 수동 입력 (useSalesLocal) · Phase 2 DB 이전 예정
-//   · [매입 탭] 공급사별 매입세액 리스트 + 매입 명세 (기존)
+// 2026-08-04 · #253 · 매출탭 완전 재편성 · DB 자동 조회
+//   · [월별 부가세 탭] stock_history 매출 + purchase_details 매입 자동 · 경비 localStorage
+//     · 매출세액 · 매입세액 공제 · 경비세액 · 예상 부가세 실시간 재계산
+//     · 이전 · localStorage 매출 수동 입력 (useSalesLocal) · 완전 제거
+//   · [매입 탭] 공급사별 매입세액 리스트 + 매입 명세 · vendors.vat_included flag 표시
 //   · [신고서 미리보기 탭] Phase 3 예정 placeholder
 //   · 공통 · 준비 체크리스트 (localStorage)
 //
@@ -25,7 +27,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Calculator, Calendar, Loader2, AlertTriangle, CheckSquare, Square,
   FileText, TrendingUp, ChevronRight, RefreshCw,
-  Receipt, PackageCheck, FileCheck2, Landmark,
+  Receipt, PackageCheck, FileCheck2,
 } from "lucide-react";
 import SalesTab from "./tabs/SalesTab";
 import SupplierVatTab from "./tabs/SupplierVatTab";
@@ -365,31 +367,23 @@ const VatPreparePage: React.FC = () => {
         </div>
       )}
 
-      {/* ── KPI 카드 5개 (Phase 1) ── */}
+      {/* ── KPI 카드 4개 (월별 탭에서 상세 계산) ── */}
       <div
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3"
+        className="grid grid-cols-2 md:grid-cols-4 gap-3"
         title="본 계산은 참고용이며, 실제 신고는 세무사 검토 후 진행하세요."
       >
         <KpiCard
-          label="과세 매출"
+          label="매출 공급가액"
           value={`${fmt(salesAgg.taxableSales)}원`}
-          sub={salesAgg.salesRowCount > 0 ? `${salesAgg.salesRowCount}건 입력 · 공급가액` : "매출 탭에서 입력"}
+          sub={salesAgg.salesRowCount > 0 ? `stock_history · ${salesAgg.salesRowCount}건` : "월별 탭 참조"}
           icon={<Receipt size={16} />}
           color="rose"
           loading={false}
         />
         <KpiCard
-          label="면세 매출"
-          value={`${fmt(salesAgg.exemptSales)}원`}
-          sub="처방·전문약 조제분"
-          icon={<Landmark size={16} />}
-          color="slate"
-          loading={false}
-        />
-        <KpiCard
           label="매출세액"
           value={`${fmt(outputVat)}원`}
-          sub="과세 매출의 10% (10/110)"
+          sub="매출 총액 × 10/110"
           icon={<TrendingUp size={16} />}
           color="rose"
           loading={false}
@@ -403,9 +397,9 @@ const VatPreparePage: React.FC = () => {
           loading={loading}
         />
         <KpiCard
-          label={netPayable >= 0 ? "납부 예상" : "환급 예상"}
+          label={netPayable >= 0 ? "납부 예상 (경비 전)" : "환급 예상 (경비 전)"}
           value={`${fmt(Math.abs(netPayable))}원`}
-          sub={netPayable >= 0 ? "매출세액 - 매입공제 (양수)" : "매입공제 > 매출세액 (환급)"}
+          sub={netPayable >= 0 ? "매출세액 − 매입공제" : "매입공제 > 매출세액"}
           icon={<Calculator size={16} />}
           color={netPayable >= 0 ? "rose" : "emerald"}
           loading={loading}
@@ -432,7 +426,7 @@ const VatPreparePage: React.FC = () => {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm">
         <div className="flex border-b border-slate-200">
           {([
-            { key: "sales" as const,    label: "매출",             icon: Receipt,    color: "text-rose-600",    activeBar: "bg-rose-500" },
+            { key: "sales" as const,    label: "월별 부가세",       icon: Receipt,    color: "text-rose-600",    activeBar: "bg-rose-500" },
             { key: "purchase" as const, label: "매입",             icon: PackageCheck, color: "text-emerald-600", activeBar: "bg-emerald-500" },
             { key: "preview" as const,  label: "신고서 미리보기",   icon: FileCheck2, color: "text-sky-600",     activeBar: "bg-sky-500" },
           ]).map(t => {
