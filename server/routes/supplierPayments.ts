@@ -622,19 +622,36 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
       if (/relation .* does not exist/i.test(String(e?.message ?? ""))) pdRelationMissing = true;
     }
     // supplier_code → supplier_name 매핑 (vendors 테이블 · code null 인 raw 매입행 보완용)
-    //   vendors 테이블에 supplier_code 컬럼 없으면 무해하게 skip (컬럼 에러 catch)
+    //   2026-08-04 근본원인 fix · vendors 에 supplier_code 컬럼 없음 · note 컬럼에 code 저장됨
+    //   (예: "0038", "172") · 이걸 못 잡아서 6307행 스킵 · OCR 폴백 오작동
+    //   supplier_code + note 둘 다 조회 (supplier_code 우선 · 미래 컬럼 추가 대비)
     const codeToName = new Map<string, string>();
     try {
+      // note (실제 code 저장 위치) 우선 조회 · supplier_code 도 있으면 병행
       const { data: vdata, error: verr } = await supabase
         .from("vendors")
-        .select("company_name, supplier_code");
+        .select("company_name, note");
       if (!verr) {
         for (const v of (vdata ?? []) as any[]) {
-          const code = String(v.supplier_code ?? "").trim();
+          const code = String(v.note ?? "").trim();
           const name = String(v.company_name ?? "").trim();
-          if (code && name) codeToName.set(code, name);
+          // note 는 자유형식 텍스트 · 숫자 3~5자리 code 만 매핑 (오탐 방지)
+          if (code && name && /^\d{1,5}$/.test(code)) codeToName.set(code, name);
         }
-      } // else · 컬럼 없음 · codeToName 비어 있음 · pdSkippedNullSupplier 만 증가
+      }
+      // supplier_code 컬럼도 있으면 병행 (없으면 무해하게 skip)
+      try {
+        const { data: sdata, error: serr } = await supabase
+          .from("vendors")
+          .select("company_name, supplier_code");
+        if (!serr) {
+          for (const v of (sdata ?? []) as any[]) {
+            const code = String((v as any).supplier_code ?? "").trim();
+            const name = String((v as any).company_name ?? "").trim();
+            if (code && name) codeToName.set(code, name); // supplier_code 우선 덮어씀
+          }
+        }
+      } catch { /* silent · 컬럼 없음 */ }
     } catch { /* silent · vendors 없어도 무관 */ }
     try {
       const PAGE = 1000;
