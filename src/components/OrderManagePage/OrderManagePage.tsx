@@ -2062,33 +2062,32 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
                         )}
                       </td>
                     </tr>
-                    {/* #217 · 상세 재고현황 확장 tr · [상세] 버튼 클릭 시 표시 · 창고1/2·매장1/2/3 */}
+                    {/* #217 · 상세 재고현황 확장 tr · [상세] 버튼 클릭 시 표시 · 창고1/2·매장1/2/3
+                        · 2026-08-04 · 배지 → 텍스트 스타일 (사용자 요청) */}
                     {needStockDetailOpen.has(code) && (
                       <tr className="bg-violet-50/40">
                         <td colSpan={12} className="px-3 py-2 border-t border-violet-100">
-                          <div className="flex items-center gap-2 flex-wrap text-[11px] font-semibold">
-                            <span className="text-violet-600 font-black">상세 재고현황</span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 border border-orange-200 text-orange-700">
-                              창고1 <span className="tabular-nums font-black">{inv?.w1 ?? "—"}</span>
+                          <div className="flex items-center gap-3 flex-wrap text-[12px]">
+                            <span className="text-violet-700 font-black">상세 재고현황</span>
+                            <span className="text-orange-700"><span className="font-semibold">창고1</span> <span className="tabular-nums font-black">{inv?.w1 ?? "—"}</span></span>
+                            <span className="text-slate-300">·</span>
+                            <span className="text-orange-700"><span className="font-semibold">창고2</span> <span className="tabular-nums font-black">{inv?.w2 ?? "—"}</span></span>
+                            <span className="text-slate-300">·</span>
+                            <span className="text-emerald-700">
+                              <span className="font-semibold">매장1</span> <span className="tabular-nums font-black">{inv?.s1 ?? "—"}</span>
+                              {inv?.s1z && <span className="text-slate-400 font-normal ml-0.5">({inv.s1z})</span>}
                             </span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-orange-50 border border-orange-200 text-orange-700">
-                              창고2 <span className="tabular-nums font-black">{inv?.w2 ?? "—"}</span>
+                            <span className="text-slate-300">·</span>
+                            <span className="text-emerald-700">
+                              <span className="font-semibold">매장2</span> <span className="tabular-nums font-black">{inv?.s2 ?? "—"}</span>
+                              {inv?.s2z && <span className="text-slate-400 font-normal ml-0.5">({inv.s2z})</span>}
                             </span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700">
-                              매장1 <span className="tabular-nums font-black">{inv?.s1 ?? "—"}</span>
-                              {inv?.s1z && <span className="text-[10px] font-normal text-slate-400">· {inv.s1z}</span>}
+                            <span className="text-slate-300">·</span>
+                            <span className="text-emerald-700">
+                              <span className="font-semibold">매장3</span> <span className="tabular-nums font-black">{inv?.s3 ?? "—"}</span>
+                              {inv?.s3z && <span className="text-slate-400 font-normal ml-0.5">({inv.s3z})</span>}
                             </span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700">
-                              매장2 <span className="tabular-nums font-black">{inv?.s2 ?? "—"}</span>
-                              {inv?.s2z && <span className="text-[10px] font-normal text-slate-400">· {inv.s2z}</span>}
-                            </span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-emerald-700">
-                              매장3 <span className="tabular-nums font-black">{inv?.s3 ?? "—"}</span>
-                              {inv?.s3z && <span className="text-[10px] font-normal text-slate-400">· {inv.s3z}</span>}
-                            </span>
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-violet-100 border border-violet-300 text-violet-800 ml-auto">
-                              합계 <span className="tabular-nums font-black">{inv?.total ?? "—"}</span>
-                            </span>
+                            <span className="text-violet-800 font-black ml-auto"><span className="font-semibold">합계</span> <span className="tabular-nums">{inv?.total ?? "—"}</span></span>
                           </div>
                         </td>
                       </tr>
