@@ -794,8 +794,8 @@ export const PaymentInfoTab: React.FC = () => {
                 })()}
               </div>
 
-              {/* 결제 입력 + 최근 결제 내역 · 좌우 분할 · 반응형 stack (2026-08-04 · 사용자 요청) */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 items-start">
+              {/* 결제 입력 + 최근 결제 내역 · 좌우 분할 · 반응형 stack (2026-08-04 · xl 이상만 2열) */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 items-start">
 
               {/* ── 결제 입력 폼 (리디자인 · 깔끔·세련 · 2026-08-04) ── */}
               <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
@@ -868,24 +868,14 @@ export const PaymentInfoTab: React.FC = () => {
                       </FieldLabel>
                     </div>
 
-                    {/* sub-option · 결제방법에 따라 표시 */}
+                    {/* sub-option + 결제금액 · 같은 줄 flex row (2026-08-04 · #102)
+                        · card/cash/etc 각각 좌측(flex-1) · 결제금액 우측(flex-1)
+                        · sub-option 없을 때(etc 텍스트 포함) 결제금액 full width */}
+                    {/* card: 카드사 선택 (좌) + 결제금액 (우) */}
                     {method === "card" && (
-                      <div className="flex items-end gap-2">
+                      <div className="flex items-end gap-3">
                         <div className="flex-1 min-w-0">
-                          <FieldLabel label="카드사">
-                            <select
-                              value={cardIssuer}
-                              onChange={e => setCardIssuer(e.target.value)}
-                              className={inputCls}
-                            >
-                              <option value="">카드사 선택...</option>
-                              {CARD_ISSUERS.map(c => <option key={c} value={c}>{c}</option>)}
-                              <option value="직접입력">직접 입력...</option>
-                            </select>
-                          </FieldLabel>
-                        </div>
-                        {cardIssuer === "직접입력" && (
-                          <div className="flex-1 min-w-0">
+                          {cardIssuer === "직접입력" ? (
                             <FieldLabel label="카드사명 직접입력">
                               <input
                                 type="text"
@@ -895,27 +885,36 @@ export const PaymentInfoTab: React.FC = () => {
                                 className={inputCls}
                               />
                             </FieldLabel>
-                          </div>
-                        )}
+                          ) : (
+                            <FieldLabel label="카드사">
+                              <select
+                                value={cardIssuer}
+                                onChange={e => setCardIssuer(e.target.value)}
+                                className={inputCls}
+                              >
+                                <option value="">카드사 선택...</option>
+                                {CARD_ISSUERS.map(c => <option key={c} value={c}>{c}</option>)}
+                                <option value="직접입력">직접 입력...</option>
+                              </select>
+                            </FieldLabel>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <AmountField
+                            amount={amount}
+                            setAmount={setAmount}
+                            inputCls={inputCls}
+                            overBalance={overBalance}
+                            currentBalance={currentBalance}
+                          />
+                        </div>
                       </div>
                     )}
+                    {/* cash: 은행 선택 (좌) + 결제금액 (우) */}
                     {method === "cash" && (
-                      <div className="flex items-end gap-2">
+                      <div className="flex items-end gap-3">
                         <div className="flex-1 min-w-0">
-                          <FieldLabel label="은행">
-                            <select
-                              value={bankName}
-                              onChange={e => setBankName(e.target.value)}
-                              className={inputCls}
-                            >
-                              <option value="">은행 선택...</option>
-                              {BANKS.map(b => <option key={b} value={b}>{b}</option>)}
-                              <option value="직접입력">직접 입력...</option>
-                            </select>
-                          </FieldLabel>
-                        </div>
-                        {bankName === "직접입력" && (
-                          <div className="flex-1 min-w-0">
+                          {bankName === "직접입력" ? (
                             <FieldLabel label="은행명 직접입력">
                               <input
                                 type="text"
@@ -925,76 +924,86 @@ export const PaymentInfoTab: React.FC = () => {
                                 className={inputCls}
                               />
                             </FieldLabel>
-                          </div>
-                        )}
+                          ) : (
+                            <FieldLabel label="은행">
+                              <select
+                                value={bankName}
+                                onChange={e => setBankName(e.target.value)}
+                                className={inputCls}
+                              >
+                                <option value="">은행 선택...</option>
+                                {BANKS.map(b => <option key={b} value={b}>{b}</option>)}
+                                <option value="직접입력">직접 입력...</option>
+                              </select>
+                            </FieldLabel>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <AmountField
+                            amount={amount}
+                            setAmount={setAmount}
+                            inputCls={inputCls}
+                            overBalance={overBalance}
+                            currentBalance={currentBalance}
+                          />
+                        </div>
                       </div>
                     )}
+                    {/* etc: 결제방법 설명 (좌) + 결제금액 (우) */}
                     {method === "etc" && (
-                      <FieldLabel label="결제 방법 설명">
-                        <input
-                          type="text"
-                          value={etcNote}
-                          onChange={e => setEtcNote(e.target.value)}
-                          placeholder="예: 페이코 · 카카오페이 · 상계 · 어음 등"
-                          className={inputCls}
-                        />
-                      </FieldLabel>
-                    )}
-                  </div>
-
-                  {/* ── 그룹 B · 금액 ──────────────────────────────── */}
-                  <div className="px-4 py-3 flex flex-col gap-2">
-                    <FieldLabel label="결제 금액" icon={<Wallet size={11} />} required>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-black text-slate-400 select-none">₩</span>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          value={amount ? Number(amount).toLocaleString() : ""}
-                          onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
-                          placeholder="0"
-                          className={`${inputCls} pl-7 pr-[76px] text-right tabular-nums font-black text-[14px] ${overBalance ? "border-amber-400 focus:ring-amber-400 focus:border-amber-400" : ""}`}
-                        />
-                        {currentBalance > 0 && !amount && (
-                          <button
-                            type="button"
-                            onClick={() => setAmount(String(Math.round(currentBalance)))}
-                            className="absolute right-1.5 top-1/2 -translate-y-1/2 h-6 px-2 text-[10px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition cursor-pointer"
-                            title="현재 잔고 전액"
-                          >
-                            전액
-                          </button>
-                        )}
-                      </div>
-                    </FieldLabel>
-
-                    {/* VAT 분리 표시 + 초과 경고 */}
-                    {(amountNum > 0 || overBalance) && (
-                      <div className={`rounded-lg px-3 py-2 flex flex-col gap-1 ${overBalance ? "bg-amber-50 border border-amber-200" : "bg-slate-50 border border-slate-100"}`}>
-                        {amountNum > 0 && taxInvoiceIssued && (
-                          <div className="flex items-center justify-between text-[11px] tabular-nums">
-                            <span className="text-slate-500">공급가액</span>
-                            <span className="font-black text-slate-700">{supplyAmt.toLocaleString()}원</span>
-                          </div>
-                        )}
-                        {amountNum > 0 && taxInvoiceIssued && (
-                          <div className="flex items-center justify-between text-[11px] tabular-nums">
-                            <span className="text-slate-500">부가세 (10%)</span>
-                            <span className="font-black text-teal-700">{vatAmt.toLocaleString()}원</span>
-                          </div>
-                        )}
-                        {amountNum > 0 && !taxInvoiceIssued && (
-                          <div className="text-[10px] text-slate-400">세금계산서 체크 시 VAT 자동 분리</div>
-                        )}
-                        {overBalance && (
-                          <div className="flex items-center gap-1 text-[11px] font-bold text-amber-700">
-                            <span>잔고 초과</span>
-                            <span className="tabular-nums text-amber-600">({fmtWonShort(currentBalance)} 잔고)</span>
-                          </div>
-                        )}
+                      <div className="flex items-end gap-3">
+                        <div className="flex-1 min-w-0">
+                          <FieldLabel label="결제 방법 설명">
+                            <input
+                              type="text"
+                              value={etcNote}
+                              onChange={e => setEtcNote(e.target.value)}
+                              placeholder="예: 페이코 · 카카오페이 · 상계 · 어음 등"
+                              className={inputCls}
+                            />
+                          </FieldLabel>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <AmountField
+                            amount={amount}
+                            setAmount={setAmount}
+                            inputCls={inputCls}
+                            overBalance={overBalance}
+                            currentBalance={currentBalance}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
+
+                  {/* ── 그룹 B · VAT 분리 표시 + 초과 경고 ────────────── */}
+                  {(amountNum > 0 || overBalance) && (
+                  <div className="px-4 pb-3 -mt-1">
+                    <div className={`rounded-lg px-3 py-2 flex flex-col gap-1 ${overBalance ? "bg-amber-50 border border-amber-200" : "bg-slate-50 border border-slate-100"}`}>
+                      {amountNum > 0 && taxInvoiceIssued && (
+                        <div className="flex items-center justify-between text-[11px] tabular-nums">
+                          <span className="text-slate-500">공급가액</span>
+                          <span className="font-black text-slate-700">{supplyAmt.toLocaleString()}원</span>
+                        </div>
+                      )}
+                      {amountNum > 0 && taxInvoiceIssued && (
+                        <div className="flex items-center justify-between text-[11px] tabular-nums">
+                          <span className="text-slate-500">부가세 (10%)</span>
+                          <span className="font-black text-teal-700">{vatAmt.toLocaleString()}원</span>
+                        </div>
+                      )}
+                      {amountNum > 0 && !taxInvoiceIssued && (
+                        <div className="text-[10px] text-slate-400">세금계산서 체크 시 VAT 자동 분리</div>
+                      )}
+                      {overBalance && (
+                        <div className="flex items-center gap-1 text-[11px] font-bold text-amber-700">
+                          <span>잔고 초과</span>
+                          <span className="tabular-nums text-amber-600">({fmtWonShort(currentBalance)} 잔고)</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  )}
 
                   {/* ── 그룹 C · 세금계산서 (접이식 토글) ────────────── */}
                   <div className="px-4 py-3">
@@ -1150,6 +1159,43 @@ export const PaymentInfoTab: React.FC = () => {
 };
 
 // ─── UI Helpers ─────────────────────────────────────────────────────────────
+
+// 결제 금액 입력 필드 · 재사용 헬퍼 (2026-08-04 · #102)
+// · value: 숫자 string → toLocaleString 쉼표 표시 (e.g. "1500000" → "1,500,000")
+// · onChange: 비숫자 제거 후 숫자 string 저장
+// · 쉼표 자동입력 검증: onChange에서 replace(/[^0-9]/g,"") 처리 후 amount는 항상 순수 숫자
+//   → Number(amount)는 절대 NaN이 될 수 없음 · amount === "" 시 조건문으로 빈 문자열 유지
+const AmountField: React.FC<{
+  amount: string;
+  setAmount: (v: string) => void;
+  inputCls: string;
+  overBalance: boolean;
+  currentBalance: number;
+}> = ({ amount, setAmount, inputCls, overBalance, currentBalance }) => (
+  <FieldLabel label="결제 금액" icon={<Wallet size={11} />} required>
+    <div className="relative">
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-black text-slate-400 select-none">₩</span>
+      <input
+        type="text"
+        inputMode="numeric"
+        value={amount ? Number(amount).toLocaleString() : ""}
+        onChange={e => setAmount(e.target.value.replace(/[^0-9]/g, ""))}
+        placeholder="0"
+        className={`${inputCls} pl-7 pr-[52px] text-right tabular-nums font-black text-[14px] ${overBalance ? "border-amber-400 focus:ring-amber-400 focus:border-amber-400" : ""}`}
+      />
+      {currentBalance > 0 && !amount && (
+        <button
+          type="button"
+          onClick={() => setAmount(String(Math.round(currentBalance)))}
+          className="absolute right-1.5 top-1/2 -translate-y-1/2 h-6 px-2 text-[10px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-md transition cursor-pointer"
+          title="현재 잔고 전액"
+        >
+          전액
+        </button>
+      )}
+    </div>
+  </FieldLabel>
+);
 
 const inputCls =
   "w-full h-9 px-3 text-[12px] border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-emerald-400 bg-white transition placeholder:text-slate-300";
