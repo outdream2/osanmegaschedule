@@ -3,6 +3,7 @@ import { Pencil, Loader2, ArrowRight, AlertTriangle, ShoppingCart, CheckCircle2,
 import { type ProductInfo } from "../../lib/productsCache";
 import { RealMapSelector } from "./RealMapSelector";
 import { StockCounterModal } from "../StockCounterModal";
+import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 
 // 인라인 편집 가능 필드 종류
 type InlineEditableKey = "optimal_stock" | "sale_price" | "purchase_price" | "cost_price" | "brand" | "manufacturer" | "barcode" | "expiry_date" | "memo";
@@ -937,7 +938,7 @@ export const ProductInfoCard: React.FC<ProductInfoCardProps> = ({
 // 매입 이력 섹션 (2026-07-15) · purchase_details 조회 · 최근 20건 매입 · 총합
 // ═══════════════════════════════════════════════════════════════════════
 export const PurchaseHistorySection: React.FC<{ productCode: string; productName?: string; noBorderTop?: boolean }> = ({ productCode, productName, noBorderTop }) => {
-  const [rows, setRows] = useState<Array<{ purchase_date: string; supplier_name: string | null; quantity: number; amount: number; total: number; unit_price: number }>>([]);
+  const [rows, setRows] = useState<Array<PurchaseHistoryRow & { purchase_date: string; supplier_name: string | null; quantity: number; amount: number; total: number; unit_price: number }>>([]);
   const [loading, setLoading] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   useEffect(() => {
@@ -1043,46 +1044,15 @@ export const PurchaseHistorySection: React.FC<{ productCode: string; productName
         </div>
       )}
       {!collapsed && rows.length > 0 && (
-        // overflow-x-auto · min-w 로 5개 컬럼 겹침 방지
-        <div className="overflow-auto max-h-48 border border-slate-200 rounded-lg">
-          <table className="w-full text-[11px] min-w-[300px]">
-            <thead className="sticky top-0 bg-slate-50 border-b border-slate-200">
-              <tr className="text-slate-500 text-[10px] uppercase">
-                <th className="text-left px-2 py-1 whitespace-nowrap">매입일</th>
-                <th className="text-right px-1 py-1 w-10 whitespace-nowrap" title="이전 매입일과의 일수 차이">간격</th>
-                <th className="text-right px-2 py-1 w-12 whitespace-nowrap">수량</th>
-                <th className="text-right px-2 py-1 w-14 whitespace-nowrap">단가</th>
-                <th className="text-right px-2 py-1 w-16 whitespace-nowrap">금액</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {rows.slice(0, 20).map((r, i, arr) => {
-                // 2026-07-29 · 매입일 간격 (desc 정렬 · 다음 행 = 이전 매입) · 마지막 행은 "-"
-                const nextR = arr[i + 1];
-                const curT = r.purchase_date ? new Date(r.purchase_date).getTime() : NaN;
-                const nextT = nextR?.purchase_date ? new Date(nextR.purchase_date).getTime() : NaN;
-                const gapDays = Number.isFinite(curT) && Number.isFinite(nextT) && curT > nextT
-                  ? Math.round((curT - nextT) / (86400 * 1000))
-                  : null;
-                return (
-                <tr key={i} className="hover:bg-emerald-50/30">
-                  <td className="px-2 py-0.5 tabular-nums text-slate-600 whitespace-nowrap">{r.purchase_date}</td>
-                  <td className="text-right px-1 py-0.5 tabular-nums text-sky-600" title={gapDays != null ? `${gapDays}일 만에 재매입` : "이전 매입 없음"}>
-                    {gapDays != null ? `${gapDays}일` : "-"}
-                  </td>
-                  <td className="text-right px-2 py-0.5 tabular-nums font-bold">{fmt(Number(r.quantity) || 0)}</td>
-                  <td className="text-right px-2 py-0.5 tabular-nums text-slate-500">{r.unit_price ? fmt(r.unit_price) : "-"}</td>
-                  <td className="text-right px-2 py-0.5 tabular-nums font-black text-emerald-700">{fmtWon(Number(r.total ?? r.amount) || 0)}</td>
-                </tr>
-                );
-              })}
-            </tbody>
-          </table>
-          {rows.length > 20 && (
-            <div className="text-[10px] text-slate-400 text-center py-1 bg-slate-50 border-t border-slate-100">
-              최근 20건만 표시 · 전체 {rows.length}건
-            </div>
-          )}
+        // 2026-08-04 · 공통 PurchaseHistoryList 사용 · 헤더 자동 정렬 + 매입 간격 표시
+        <div className="border border-slate-200 rounded-lg overflow-hidden flex flex-col" style={{ maxHeight: "12rem" }}>
+          <PurchaseHistoryList
+            rows={rows.slice(0, 20)}
+            showSupplier={false}
+            showGap
+            emptyText="이력 없음"
+            footerHint={rows.length > 20 ? `최근 20건만 표시 · 전체 ${rows.length}건` : undefined}
+          />
         </div>
       )}
     </div>

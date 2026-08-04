@@ -1248,7 +1248,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
     { key: "trending", label: "급상승",         icon: TrendingUp,    color: "indigo" },
     { key: "category", label: "카테고리별현황", icon: PieChart,      color: "amber"  },
     { key: "flow",     label: "상품현황",       icon: Boxes,         color: "sky"    },
-    { key: "supplier", label: "공급사별현황",   icon: Building2,     color: "emerald"}, // 2026-08-04 복원 (사용자 요청 · 1주일 전 코드 참고)
+    { key: "supplier", label: "공급사별현황",   icon: Building2,     color: "emerald"}, // 2026-08-04 통계로 다시 이동 (사용자 재요청)
     { key: "diff",     label: "손실추적",       icon: AlertTriangle, color: "rose"   },
   ], []);
 
@@ -2214,6 +2214,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <PurchaseHistoryTab />
             </div>
           )}
+          {/* 공급사별현황 · 2026-08-04 매입에서 통계로 재이동 (사용자 재요청) */}
         </div>
       )}
 
@@ -2321,7 +2322,7 @@ const OrderManagePage: React.FC<OrderManagePageProps> = ({
               <FlowTab />
             </div>
           )}
-          {/* 공급사별현황 · 2026-08-04 복원 (사용자 요청 · 1주일 전 코드) */}
+          {/* 공급사별현황 · 2026-08-04 통계로 다시 이동 (사용자 재요청) */}
           {statSubTab === "supplier" && (
             <div className="flex-1 min-h-0">
               <SupplierTab />

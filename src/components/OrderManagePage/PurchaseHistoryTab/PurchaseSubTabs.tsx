@@ -5,8 +5,9 @@
 // Tab 3 · 매입 추이 (월별 bar + 카테고리 pie · 커스텀 SVG)
 // Progressive Disclosure · 결제·명세서 탭 · VendorDetailModal 과 중복이라 만들지 않음
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { ArrowUpDown, BarChart3, ListOrdered, Package2 } from "lucide-react";
+import { PurchaseHistoryList, type PurchaseHistoryRow } from "../../common/PurchaseHistoryList";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -67,8 +68,9 @@ function dateLabel(iso: string | null): string {
 }
 
 // ─── Tab 1 · 매입 원장 ─────────────────────────────────────────────────────
+// 2026-08-04 · 사용자 요청 · 공통 PurchaseHistoryList 컴포넌트로 대체
+//   · 이전 자체 표 → common/PurchaseHistoryList (통일된 UI · 자동 정렬 · highlight)
 
-type LedgerSortKey = "date" | "product_name" | "quantity" | "unit_price" | "amount";
 type SortDir = "asc" | "desc";
 
 const LedgerTab: React.FC<{
@@ -76,129 +78,28 @@ const LedgerTab: React.FC<{
   loading: boolean;
   highlightId?: string | number | null;
 }> = ({ rows, loading, highlightId = null }) => {
-  const [sortKey, setSortKey] = useState<LedgerSortKey>("date");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const toggleSort = (k: LedgerSortKey) => {
-    if (sortKey === k) setSortDir(d => (d === "asc" ? "desc" : "asc"));
-    else { setSortKey(k); setSortDir("desc"); }
-  };
-  const arrow = (k: LedgerSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
+  // PurchaseLedgerRow → PurchaseHistoryRow 변환 (invoice_date → date · 상품명/코드 유지)
+  const listRows = useMemo<PurchaseHistoryRow[]>(() => rows.map(r => ({
+    id: r.id,
+    date: r.invoice_date,
+    product_name: r.product_name,
+    product_code: r.product_code,
+    quantity: r.quantity,
+    unit_price: r.unit_price,
+    amount: r.amount,
+  })), [rows]);
 
-  const sorted = useMemo(() => {
-    const sign = sortDir === "asc" ? 1 : -1;
-    return [...rows].sort((a, b) => {
-      switch (sortKey) {
-        case "date":         return sign * String(a.invoice_date ?? "").localeCompare(String(b.invoice_date ?? ""));
-        case "product_name": return sign * String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko");
-        case "quantity":     return sign * ((a.quantity ?? 0) - (b.quantity ?? 0));
-        case "unit_price":   return sign * ((a.unit_price ?? 0) - (b.unit_price ?? 0));
-        case "amount":       return sign * ((a.amount ?? 0) - (b.amount ?? 0));
-        default:             return 0;
-      }
-    });
-  }, [rows, sortKey, sortDir]);
-
-  const totalAmount = useMemo(() => rows.reduce((s, r) => s + (r.amount ?? 0), 0), [rows]);
-
-  // highlightId 가 바뀌면 해당 row 로 스무스 스크롤 (블록: nearest · 상단으로 튀지 않게)
-  const highlightRowRef = useRef<HTMLTableRowElement | null>(null);
-  useEffect(() => {
-    if (highlightId == null) return;
-    // 다음 프레임 · 렌더 후 DOM 배치 완료 대기
-    const t = window.setTimeout(() => {
-      if (highlightRowRef.current) {
-        try {
-          highlightRowRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-        } catch {
-          highlightRowRef.current.scrollIntoView();
-        }
-      }
-    }, 30);
-    return () => window.clearTimeout(t);
-  }, [highlightId, sorted]);
-
-  if (loading) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">불러오는 중...</div>;
-  }
-  if (rows.length === 0) {
-    return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">해당 기간 매입 이력 없음</div>;
-  }
   return (
-    // 2026-08-04 · 사용자 요청 · 통계 > 상품현황 > 상품 매입이력 모달(PurchaseHistoryModal)과 통일된 스타일
-    //   · thead sticky bg-slate-50 · 12px 본문 · font-mono 날짜 · font-black 금액 · 강조 amber-50
-    //   · 상품코드는 상품명 아래 sub-line 으로 이동 (컬럼 절약 · 모달과 일치)
-    <div className="overflow-auto flex-1 min-h-0">
-      <table className="w-full text-xs min-w-[500px]">
-        <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
-          <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
-            <th className="text-left px-3 py-2 w-8 text-slate-300">#</th>
-            <th onClick={() => toggleSort("date")}
-              className="text-left px-3 py-2 w-24 cursor-pointer select-none hover:bg-slate-100 transition">
-              매입일{arrow("date")}
-            </th>
-            <th onClick={() => toggleSort("product_name")}
-              className="text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition">
-              상품{arrow("product_name")}
-            </th>
-            <th onClick={() => toggleSort("quantity")}
-              className="text-right px-3 py-2 w-16 cursor-pointer select-none hover:bg-slate-100 transition">
-              수량{arrow("quantity")}
-            </th>
-            <th onClick={() => toggleSort("unit_price")}
-              className="text-right px-3 py-2 w-20 cursor-pointer select-none hover:bg-slate-100 transition">
-              단가{arrow("unit_price")}
-            </th>
-            <th onClick={() => toggleSort("amount")}
-              className="text-right px-3 py-2 w-24 text-emerald-600 cursor-pointer select-none hover:bg-emerald-50 transition">
-              금액{arrow("amount")}
-            </th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-100">
-          {sorted.map((r, i) => {
-            const isHighlight = highlightId != null && String(r.id) === String(highlightId);
-            return (
-              <tr
-                key={`ph-${r.id}-${i}`}
-                ref={isHighlight ? highlightRowRef : undefined}
-                className={`transition-all duration-100 ${
-                  isHighlight ? "animate-highlight-flash bg-amber-50" : "hover:bg-emerald-50/40"
-                }`}
-              >
-                <td className="px-3 py-1.5 text-slate-300 text-[11px] tabular-nums align-top">{i + 1}</td>
-                <td className="px-3 py-1.5 font-mono text-[12px] font-semibold text-slate-700 align-top whitespace-nowrap">
-                  {dateLabel(r.invoice_date)}
-                  {isHighlight && <span className="ml-1 text-[10px] text-amber-600 font-black">◀</span>}
-                </td>
-                <td className="px-3 py-1.5 align-top">
-                  <div className="text-[12px] font-semibold text-slate-700 break-words whitespace-normal leading-snug">
-                    {r.product_name ?? "-"}
-                  </div>
-                  {r.product_code && (
-                    <div className="text-[10px] font-mono text-slate-400 tabular-nums">{r.product_code}</div>
-                  )}
-                </td>
-                <td className="px-3 py-1.5 text-right tabular-nums font-mono text-[12px] font-bold text-slate-800 align-top">
-                  {r.quantity != null ? fmt(r.quantity) : "-"}
-                </td>
-                <td className="px-3 py-1.5 text-right tabular-nums font-mono text-[12px] text-slate-500 align-top">
-                  {r.unit_price != null ? fmt(r.unit_price) : "-"}
-                </td>
-                <td className="px-3 py-1.5 text-right tabular-nums font-mono text-[12px] font-black text-emerald-700 align-top">
-                  {r.amount != null && r.amount > 0 ? fmt(r.amount) : "-"}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-        <tfoot className="sticky bottom-0 bg-white border-t-2 border-slate-200">
-          <tr>
-            <td colSpan={5} className="px-3 py-2 text-right text-[11px] font-black text-slate-500">합계</td>
-            <td className="px-3 py-2 text-right tabular-nums font-mono text-[13px] font-black text-emerald-700">{fmtWon(totalAmount)}</td>
-          </tr>
-        </tfoot>
-      </table>
-    </div>
+    <PurchaseHistoryList
+      rows={listRows}
+      loading={loading}
+      highlightId={highlightId}
+      showSupplier={false}
+      showProduct
+      showRowNumber
+      showFooterSum
+      emptyText="해당 기간 매입 이력 없음"
+    />
   );
 };
 

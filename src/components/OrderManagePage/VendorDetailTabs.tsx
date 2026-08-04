@@ -10,6 +10,7 @@ import {
 import { VendorInfoHeader, type VendorBasic, type VendorKpi, type LedgerRowMinimal } from "./VendorInfoHeader";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
+import { PurchaseHistoryList, type PurchaseHistoryRow } from "../common/PurchaseHistoryList";
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -265,13 +266,7 @@ const HistoryContent: React.FC<{
   const [productSearch, setProductSearch] = useState("");
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"sku" | "all">("sku");
-  const [sortKey, setSortKey] = useState<PurchaseSortKey>("date");
-  const [sortDir, setSortDir] = useState<SortDir>("desc");
-  const toggleSort = (k: PurchaseSortKey) => {
-    if (sortKey === k) setSortDir(d => d === "asc" ? "desc" : "asc");
-    else { setSortKey(k); setSortDir("desc"); }
-  };
-  const arrow = (k: PurchaseSortKey) => sortKey !== k ? " ⇅" : sortDir === "asc" ? " ▲" : " ▼";
+  // 2026-08-04 · 전체원장 뷰는 공통 PurchaseHistoryList 가 정렬 관리 (헤더 클릭)
 
   // 상품별 집계
   const productStats = useMemo<ProductStat[]>(() => {
@@ -309,7 +304,7 @@ const HistoryContent: React.FC<{
     return list;
   }, [detailRows, productSearch]);
 
-  // 전체 raw 행 (정렬)
+  // 전체 raw 행 (필터링만 · 정렬은 PurchaseHistoryList 가 담당)
   const allRows = useMemo(() => {
     const q = productSearch.trim().toLowerCase();
     let base = detailRows;
@@ -320,17 +315,8 @@ const HistoryContent: React.FC<{
         (r.product_code ?? "").toLowerCase().includes(q)
       );
     }
-    const sign = sortDir === "asc" ? 1 : -1;
-    return [...base].sort((a, b) => {
-      switch (sortKey) {
-        case "date":         return sign * String(a.date ?? "").localeCompare(String(b.date ?? ""));
-        case "product_name": return sign * String(a.product_name ?? "").localeCompare(String(b.product_name ?? ""), "ko");
-        case "quantity":     return sign * (a.quantity - b.quantity);
-        case "amount":       return sign * (a.amount - b.amount);
-        default:             return 0;
-      }
-    });
-  }, [detailRows, productSearch, selectedCode, sortKey, sortDir]);
+    return base;
+  }, [detailRows, productSearch, selectedCode]);
 
   if (loading) return (
     <div className="flex-1 flex items-center justify-center py-16 text-slate-400 gap-2">
@@ -439,69 +425,28 @@ const HistoryContent: React.FC<{
         </div>
       )}
 
-      {/* 전체 원장 테이블 */}
+      {/* 전체 원장 테이블 · 2026-08-04 공통 PurchaseHistoryList 사용 */}
       {viewMode === "all" && (
-        <div className="flex-1 min-h-0 overflow-auto bg-white rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex-1 min-h-0 overflow-hidden bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col">
           {selectedCode && (
-            <div className="px-3 py-1.5 border-b border-emerald-100 bg-emerald-50/50 flex items-center gap-2">
+            <div className="px-3 py-1.5 border-b border-emerald-100 bg-emerald-50/50 flex items-center gap-2 shrink-0">
               <Filter size={11} className="text-emerald-600" />
-              <span className="text-[11px] font-semibold text-emerald-700">
+              <span className="text-[12px] font-semibold text-emerald-700">
                 {productStats.find(s => s.product_code === selectedCode)?.product_name ?? selectedCode}
               </span>
-              <span className="text-[10px] text-emerald-500 tabular-nums">{allRows.length}건</span>
+              <span className="text-[11px] text-emerald-500 tabular-nums">{allRows.length}건</span>
             </div>
           )}
-          <table className="w-full text-xs min-w-[480px]">
-            <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
-              <tr className="text-[10px] text-slate-400 uppercase tracking-wider">
-                <th className="text-left px-3 py-2 w-6 text-slate-300">#</th>
-                <th onClick={() => toggleSort("date")}
-                  className="text-left px-3 py-2 w-24 cursor-pointer select-none hover:bg-slate-50 transition">
-                  날짜{arrow("date")}
-                </th>
-                <th onClick={() => toggleSort("product_name")}
-                  className="text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-50 transition">
-                  상품명{arrow("product_name")}
-                </th>
-                <th onClick={() => toggleSort("quantity")}
-                  className="text-right px-3 py-2 w-16 cursor-pointer select-none hover:bg-slate-50 transition">
-                  수량{arrow("quantity")}
-                </th>
-                <th className="text-right px-3 py-2 w-20">단가</th>
-                <th onClick={() => toggleSort("amount")}
-                  className="text-right px-3 py-2 w-24 cursor-pointer select-none hover:bg-slate-50 transition">
-                  금액{arrow("amount")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-50">
-              {allRows.map((r, i) => (
-                <tr key={`ph-${r.id}-${i}`} className="hover:bg-slate-50 transition-all duration-100">
-                  <td className="px-3 py-1.5 text-slate-300 text-[10px] tabular-nums align-top">{i + 1}</td>
-                  <td className="px-3 py-1.5 tabular-nums text-[11px] text-slate-500 align-top whitespace-nowrap">
-                    {dateLabel(r.date)}
-                  </td>
-                  <td className="px-3 py-1.5 align-top">
-                    <div className="text-[11px] font-semibold text-slate-700 leading-tight break-words whitespace-normal">
-                      {r.product_name ?? "-"}
-                    </div>
-                    {r.product_code && (
-                      <div className="text-[9px] text-slate-400">{r.product_code}</div>
-                    )}
-                  </td>
-                  <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-slate-600 align-top">
-                    {fmt(r.quantity)}
-                  </td>
-                  <td className="px-3 py-1.5 text-right text-[11px] tabular-nums text-slate-500 align-top">
-                    {fmt(r.unit_price)}
-                  </td>
-                  <td className="px-3 py-1.5 text-right text-[12px] tabular-nums font-semibold text-emerald-700 align-top">
-                    {fmt(r.amount)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <PurchaseHistoryList
+            rows={allRows as unknown as PurchaseHistoryRow[]}
+            showSupplier={false}
+            showProduct
+            showRowNumber
+            showFooterSum
+            emptyText="해당 기간 매입 이력 없음"
+            initialSortKey="date"
+            initialSortDir="desc"
+          />
         </div>
       )}
     </div>

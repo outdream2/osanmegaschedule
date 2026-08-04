@@ -1,5 +1,6 @@
 // src/components/common/PurchaseHistoryModal.tsx
 // 2026-07-22 · 상품 매입 이력 모달 · 리스트에서 매입일 클릭 시 표시
+// 2026-08-04 · 내부 표 UI → 공통 PurchaseHistoryList 컴포넌트로 교체 (사용자 요청 · 통일)
 //
 // 데이터 소스: /api/purchase-details?product_code=X (기존 API 재사용)
 // 사용:
@@ -8,16 +9,8 @@
 //   {open && <PurchaseHistoryModal productCode={open.code} productName={open.name} onClose={() => setOpen(null)} />}
 
 import React, { useEffect, useState } from "react";
-import { X, Loader2, TrendingUp, Package } from "lucide-react";
-
-interface PurchaseRow {
-  purchase_date: string;
-  supplier_name: string | null;
-  quantity: number;
-  amount: number;
-  total: number;
-  unit_price: number;
-}
+import { X, TrendingUp, Package } from "lucide-react";
+import { PurchaseHistoryList, type PurchaseHistoryRow } from "./PurchaseHistoryList";
 
 interface PurchaseHistoryModalProps {
   productCode: string;
@@ -41,7 +34,7 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
   highlightDate,
   onClose,
 }) => {
-  const [rows, setRows] = useState<PurchaseRow[]>([]);
+  const [rows, setRows] = useState<PurchaseHistoryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,11 +64,6 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
     for (let i = 1; i < dates.length; i++) sum += (dates[i] - dates[i - 1]);
     return Math.round(sum / (dates.length - 1) / (1000 * 60 * 60 * 24));
   })();
-
-  // 최근순 정렬 (내림차순)
-  const sorted = [...rows].sort((a, b) =>
-    String(b.purchase_date ?? "").localeCompare(String(a.purchase_date ?? ""))
-  );
 
   return (
     <div
@@ -126,56 +114,20 @@ export const PurchaseHistoryModal: React.FC<PurchaseHistoryModalProps> = ({
           </button>
         </div>
 
-        {/* 본문 */}
-        <div className="flex-1 overflow-auto">
-          {loading && (
-            <div className="flex items-center justify-center py-12 text-slate-500">
-              <Loader2 size={18} className="animate-spin mr-2" />로딩 중...
-            </div>
-          )}
-          {error && !loading && (
-            <div className="p-4 text-center text-rose-600 text-xs font-semibold">에러: {error}</div>
-          )}
-          {!loading && !error && rows.length === 0 && (
-            <div className="p-8 text-center text-slate-400 text-xs">매입 이력 없음</div>
-          )}
-          {!loading && !error && rows.length > 0 && (
-            <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
-                <tr className="text-slate-500 text-[11px] uppercase tracking-wider">
-                  <th className="text-left px-3 py-2">매입일</th>
-                  <th className="text-left px-3 py-2">공급사</th>
-                  <th className="text-right px-3 py-2 w-16">수량</th>
-                  <th className="text-right px-3 py-2 w-20">단가</th>
-                  <th className="text-right px-3 py-2 w-24">금액</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {sorted.map((r, i) => {
-                  const isHighlight = highlightDate && String(r.purchase_date).startsWith(highlightDate);
-                  return (
-                    <tr key={i} className={isHighlight ? "bg-amber-50" : "hover:bg-emerald-50/40"}>
-                      <td className="px-3 py-1.5 font-mono text-slate-700 whitespace-nowrap font-semibold">
-                        {r.purchase_date}
-                        {isHighlight && <span className="ml-1 text-[10px] text-amber-600 font-black">◀</span>}
-                      </td>
-                      <td className="px-3 py-1.5 text-slate-700 truncate max-w-[160px]" title={r.supplier_name ?? undefined}>
-                        {r.supplier_name ?? "-"}
-                      </td>
-                      <td className="text-right px-3 py-1.5 font-mono font-bold text-slate-800">{fmt(Number(r.quantity) || 0)}</td>
-                      <td className="text-right px-3 py-1.5 font-mono text-slate-500">{r.unit_price ? fmt(r.unit_price) : "-"}</td>
-                      <td className="text-right px-3 py-1.5 font-mono font-black text-emerald-700">{fmtWon(Number(r.total ?? r.amount) || 0)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
-
-        {/* 푸터 */}
-        <div className="px-4 py-2 border-t border-slate-100 bg-slate-50/60 text-[11px] text-slate-400 text-center">
-          최근순 · 최대 500건 · 클릭한 매입일은 <span className="text-amber-600 font-black">노랑 하이라이트</span>
+        {/* 본문 · 공통 PurchaseHistoryList 사용 */}
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <PurchaseHistoryList
+            rows={rows}
+            loading={loading}
+            error={error}
+            highlightDate={highlightDate}
+            showSupplier
+            showProduct={false}
+            emptyText="매입 이력 없음"
+            footerHint={rows.length > 0 ? (
+              <>최근순 · 최대 500건 · 클릭한 매입일은 <span className="text-amber-600 font-black">노랑 하이라이트</span></>
+            ) : undefined}
+          />
         </div>
       </div>
     </div>
