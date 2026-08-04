@@ -113,20 +113,41 @@ interface NumberInputProps {
 }
 const NumberInput: React.FC<NumberInputProps> = ({
   value, onChange, placeholder = "0", disabled = false, accent = "focus:border-teal-400",
-}) => (
-  <input
-    type="number"
-    inputMode="numeric"
-    value={value}
-    disabled={disabled}
-    onChange={e => onChange(e.target.value === "" ? "" : Number(e.target.value))}
-    placeholder={placeholder}
-    className={`w-full h-9 text-right px-2 bg-white border border-slate-200 rounded-lg
-      text-[13px] font-black tabular-nums focus:outline-none transition
-      disabled:bg-slate-100 disabled:text-slate-300 disabled:cursor-not-allowed
-      ${accent}`}
-  />
-);
+}) => {
+  // 2026-08-04 · 사용자 요청 · +/- 스텝퍼 · 좌측 - · 우측 + · 가운데 입력
+  const cur = value === "" ? 0 : Number(value) || 0;
+  const dec = () => { if (disabled) return; const n = Math.max(0, cur - 1); onChange(n === 0 && value === "" ? "" : n); };
+  const inc = () => { if (disabled) return; onChange(cur + 1); };
+  return (
+    <div className={`inline-flex items-stretch w-full h-9 bg-white border border-slate-200 rounded-lg overflow-hidden transition ${disabled ? "opacity-50 cursor-not-allowed" : ""}`}>
+      <button
+        type="button"
+        onClick={dec}
+        disabled={disabled || cur <= 0}
+        className="w-6 shrink-0 text-slate-500 hover:bg-slate-100 hover:text-rose-600 active:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 text-[16px] font-black leading-none flex items-center justify-center cursor-pointer border-r border-slate-200"
+        title="감소"
+        tabIndex={-1}
+      >−</button>
+      <input
+        type="number"
+        inputMode="numeric"
+        value={value}
+        disabled={disabled}
+        onChange={e => onChange(e.target.value === "" ? "" : Number(e.target.value))}
+        placeholder={placeholder}
+        className={`flex-1 min-w-0 h-full text-center px-1 bg-transparent border-0 text-[13px] font-black tabular-nums focus:outline-none disabled:text-slate-300 ${accent}`}
+      />
+      <button
+        type="button"
+        onClick={inc}
+        disabled={disabled}
+        className="w-6 shrink-0 text-slate-500 hover:bg-slate-100 hover:text-emerald-600 active:bg-slate-200 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-500 text-[16px] font-black leading-none flex items-center justify-center cursor-pointer border-l border-slate-200"
+        title="증가"
+        tabIndex={-1}
+      >+</button>
+    </div>
+  );
+};
 
 // ─────────────────────────────────────────────────────────────
 // ZoneInput · 매장 구역 편집 · placeholder 로 auto 값 힌트
