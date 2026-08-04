@@ -69,13 +69,13 @@ interface TabDef {
 // 2026-08-03: 경영관리 → business-manage 통합 페이지로 단순 라우팅 (팝오버 제거)
 // 2026-08-03: scan · productarrival · ocr 탭 제거 (매장관리 매입 서브탭 및 랜딩 카드에서 접근 · union 유지)
 const TABS: TabDef[] = [
-  { key: "landing",       label: "홈",         mobileLabel: "홈",     icon: House,       managerOnly: false, color: "slate"   },
-  { key: "display",       label: "매장관리",   mobileLabel: "매장",   icon: SquaresFour, managerOnly: true,  color: "red"     },
-  { key: "business",      label: "경영관리",   mobileLabel: "경영",   icon: Briefcase,   managerOnly: true,  color: "violet"  },
-  { key: "pharmacist",    label: "약사전용",   mobileLabel: "약사",   icon: FirstAid,    managerOnly: false, pharmacistOnly: true, color: "sky" },
-  { key: "schedule",      label: "스케줄관리", mobileLabel: "스케줄", icon: Calendar,    managerOnly: false, color: "amber"   },
-  { key: "board",         label: "이슈공유",   mobileLabel: "이슈",   icon: ChatCircle,  managerOnly: false, color: "emerald" },
-  { key: "requests",      label: "요청목록",   mobileLabel: "요청",   icon: Chat,        managerOnly: false, color: "cyan"    },
+  { key: "landing",       label: "홈",       mobileLabel: "홈",     icon: House,       managerOnly: false, color: "slate"   },
+  { key: "display",       label: "매장",     mobileLabel: "매장",   icon: SquaresFour, managerOnly: true,  color: "red"     },
+  { key: "business",      label: "경영",     mobileLabel: "경영",   icon: Briefcase,   managerOnly: true,  color: "violet"  },
+  { key: "pharmacist",    label: "약사",     mobileLabel: "약사",   icon: FirstAid,    managerOnly: false, pharmacistOnly: true, color: "sky" },
+  { key: "schedule",      label: "스케줄",   mobileLabel: "스케줄", icon: Calendar,    managerOnly: false, color: "amber"   },
+  { key: "board",         label: "이슈",     mobileLabel: "이슈",   icon: ChatCircle,  managerOnly: false, color: "emerald" },
+  { key: "requests",      label: "요청",     mobileLabel: "요청",   icon: Chat,        managerOnly: false, color: "cyan"    },
 ];
 
 const TAB_COLOR_MAP: Record<string, { activeBg: string; activeText: string; inactiveText: string; inactiveHoverText: string; }> = {
@@ -278,7 +278,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
       if (isActive) {
         return (
           <span key="business" className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} border-transparent shadow-sm font-bold`}>
-            <Icon size={17} weight="fill" /> {tab.label}
+            <Icon size={20} weight="fill" /> {tab.label}
           </span>
         );
       }
@@ -290,7 +290,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           disabled={!onNavigate}
           className={`${base} bg-white ${c.inactiveText} ${c.inactiveHoverText} border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-40`}
         >
-          <Icon size={15} weight="fill" /> {tab.label}
+          <Icon size={20} weight="fill" /> {tab.label}
         </button>
       );
     }
@@ -300,7 +300,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
     if (isActive) {
       return (
         <span key={tab.key} className={`${base} bg-gradient-to-br ${c.activeBg} ${c.activeText} border-transparent shadow-sm font-bold`}>
-          <Icon size={15} weight="fill" /> {tab.label}
+          <Icon size={20} weight="fill" /> {tab.label}
         </span>
       );
     }
@@ -311,7 +311,7 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
         disabled={!onNavigate && !onBack}
         className={`${base} bg-white ${c.inactiveText} ${c.inactiveHoverText} border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm active:scale-95 cursor-pointer disabled:opacity-40`}
       >
-        <Icon size={15} weight="fill" /> {tab.label}
+        <Icon size={20} weight="fill" /> {tab.label}
       </button>
     );
   };
@@ -394,10 +394,10 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
 
   return (
     <header className="bg-white border-b border-[#e2e8f0] shrink-0 shadow-sm">
-      {/* ── Top row: logo + desktop tabs + right actions ── */}
-      <div className="px-4 sm:px-6 min-h-14 flex flex-wrap items-center justify-between gap-3 py-2 sm:py-0">
-        {/* Left: logo (클릭 시 랜딩 이동) + desktop nav tabs */}
-        <div className="flex items-center gap-2 min-w-0">
+      {/* ── Row 1 (상단): 로고 + 서비스명 · 로그인정보 · 알림 · 로그아웃 (PC/모바일 동일 · 2026-08-04 사용자 요청) ── */}
+      <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+        {/* Left: logo (클릭 시 랜딩 이동) */}
+        <div className="flex items-center min-w-0">
           <button
             type="button"
             onClick={onBack ?? (() => onNavigate?.("landing"))}
@@ -408,86 +408,19 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
             <img
               src={logoImg}
               alt="OSAN MEGATOWN 로고"
-              className="w-14 h-14 sm:w-16 sm:h-16 object-contain shrink-0"
+              className="w-12 h-12 sm:w-14 sm:h-14 object-contain shrink-0"
               draggable={false}
               onError={(e) => {
                 const el = e.currentTarget;
                 if (!el.dataset.retried) { el.dataset.retried = "1"; el.src = "/src/images/logo.png"; }
               }}
             />
-            {/* 2026-07-30 · 사용자 재요청 · 반응형(md 미만) OSAN MEGATOWN 텍스트 숨김 · 로고만 노출 */}
+            {/* 2026-07-30 · 사용자 재요청 · 반응형(md 미만) OSAN MEGATOWN 텍>스트 숨김 · 로고만 노출 */}
             <div className="hidden md:flex flex-col gap-0.5 font-black tracking-tight leading-none select-none">
-              <span className="text-red-500 text-xl leading-none">OSAN</span>
-              <span className="text-gray-900 text-base leading-none">MEGATOWN</span>
+              <span className="text-red-500 text-lg leading-none">OSAN</span>
+              <span className="text-gray-900 text-sm leading-none">MEGATOWN</span>
             </div>
           </button>
-
-          {/* 2026-07-30 · Desktop/태블릿 nav tabs · sm+ · 화면 넘어가면 두줄 wrap (2026-08-04 · 사용자 요청)
-              · flex-wrap 으로 자연 wrap · 삼선 드롭다운 로직은 유지 (매우 좁은 화면 대비 fallback) */}
-          <div ref={desktopContainerRef} className="hidden sm:flex flex-wrap items-center gap-1 gap-y-1.5 ml-3 min-w-0 relative flex-1 py-1">
-            {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
-            <div
-              ref={desktopMeasureRef}
-              aria-hidden="true"
-              className="absolute flex items-center gap-1 opacity-0 pointer-events-none"
-              style={{ left: "-9999px", top: 0 }}
-            >
-              {visibleTabs.map(t => (
-                <div key={`dmeasure-${t.key}`} data-desktop-tab>{renderDesktopTab(t)}</div>
-              ))}
-            </div>
-            {/* 실제 노출 탭 */}
-            {desktopShownTabs.map(renderDesktopTab)}
-            {/* 오버플로 · 삼선 ☰ 드롭다운 */}
-            {desktopOverflowTabs.length > 0 && (
-              <div ref={desktopOverflowBtnRef} className="relative shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setDesktopOverflowOpen(v => !v)}
-                  className={`flex items-center gap-1 px-2.5 py-2 rounded-lg text-[13px] font-bold border transition-all active:scale-95 cursor-pointer ${
-                    desktopOverflowOpen
-                      ? "bg-slate-800 text-white border-transparent shadow-md"
-                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm"
-                  }`}
-                  title={`더보기 (${desktopOverflowTabs.length}개)`}
-                  aria-label="더보기 메뉴"
-                  aria-expanded={desktopOverflowOpen}
-                >
-                  <Menu size={16} strokeWidth={2.2} />
-                </button>
-                {desktopOverflowOpen && (
-                  <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-xl border border-slate-200 py-1 min-w-[180px] z-50 max-h-[70vh] overflow-y-auto">
-                    {desktopOverflowTabs.map(tab => {
-                      const Icon = tab.icon;
-                      const c = TAB_COLOR_MAP[tab.color ?? "slate"];
-                      const isActive = tab.key === "business" ? isBizPage : tab.key === activePage;
-                      const onClickTab = () => {
-                        setDesktopOverflowOpen(false);
-                        if (tab.key === "business") { onNavigate?.("business-manage"); return; }
-                        if (tab.key === "landing" && onBack) onBack();
-                        else onNavigate?.(tab.key as AppNavPage);
-                      };
-                      return (
-                        <button
-                          key={tab.key}
-                          type="button"
-                          onClick={onClickTab}
-                          className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-bold transition ${
-                            isActive
-                              ? `bg-gradient-to-r ${c.activeBg} ${c.activeText}`
-                              : `${c.inactiveText} hover:bg-slate-50 cursor-pointer`
-                          }`}
-                        >
-                          <Icon size={15} weight="fill" />
-                          {tab.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Right: 로그인 이름 + rightSlot + logout */}
@@ -520,6 +453,74 @@ export const AppNavHeader: React.FC<AppNavHeaderProps> = ({
           ) : (
             <div className="flex items-center gap-1 justify-center w-8 h-8 sm:w-auto sm:h-auto sm:px-2 sm:py-1.5 text-[10px] font-semibold bg-slate-50 text-slate-400 border border-slate-200 rounded-lg shrink-0" title="비로그인">
               <Lock size={13} strokeWidth={2.2} />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Row 2 (하단): Desktop/태블릿 nav tabs · 2단 구조 · sm+ (2026-08-04 사용자 요청 · PC 도 반응형처럼 메뉴 아래로) ── */}
+      <div className="hidden sm:block px-4 sm:px-6 pt-1 pb-2 border-t border-slate-100/70 bg-slate-50/30">
+        <div ref={desktopContainerRef} className="flex flex-wrap items-center gap-1 gap-y-1.5 min-w-0 relative">
+          {/* 측정용 hidden 영역 · 실제 탭 폭 계산 */}
+          <div
+            ref={desktopMeasureRef}
+            aria-hidden="true"
+            className="absolute flex items-center gap-1 opacity-0 pointer-events-none"
+            style={{ left: "-9999px", top: 0 }}
+          >
+            {visibleTabs.map(t => (
+              <div key={`dmeasure-${t.key}`} data-desktop-tab>{renderDesktopTab(t)}</div>
+            ))}
+          </div>
+          {/* 실제 노출 탭 (flex-wrap 두줄 자동) */}
+          {desktopShownTabs.map(renderDesktopTab)}
+          {/* 오버플로 · 삼선 ☰ 드롭다운 · fallback (매우 좁은 화면) */}
+          {desktopOverflowTabs.length > 0 && (
+            <div ref={desktopOverflowBtnRef} className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setDesktopOverflowOpen(v => !v)}
+                className={`flex items-center gap-1 px-2.5 py-2 rounded-lg text-[13px] font-bold border transition-all active:scale-95 cursor-pointer ${
+                  desktopOverflowOpen
+                    ? "bg-slate-800 text-white border-transparent shadow-md"
+                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm"
+                }`}
+                title={`더보기 (${desktopOverflowTabs.length}개)`}
+                aria-label="더보기 메뉴"
+                aria-expanded={desktopOverflowOpen}
+              >
+                <Menu size={16} strokeWidth={2.2} />
+              </button>
+              {desktopOverflowOpen && (
+                <div className="absolute top-full right-0 mt-1 bg-white rounded-xl shadow-xl border border-slate-200 py-1 min-w-[180px] z-50 max-h-[70vh] overflow-y-auto">
+                  {desktopOverflowTabs.map(tab => {
+                    const Icon = tab.icon;
+                    const c = TAB_COLOR_MAP[tab.color ?? "slate"];
+                    const isActive = tab.key === "business" ? isBizPage : tab.key === activePage;
+                    const onClickTab = () => {
+                      setDesktopOverflowOpen(false);
+                      if (tab.key === "business") { onNavigate?.("business-manage"); return; }
+                      if (tab.key === "landing" && onBack) onBack();
+                      else onNavigate?.(tab.key as AppNavPage);
+                    };
+                    return (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        onClick={onClickTab}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-bold transition ${
+                          isActive
+                            ? `bg-gradient-to-r ${c.activeBg} ${c.activeText}`
+                            : `${c.inactiveText} hover:bg-slate-50 cursor-pointer`
+                        }`}
+                      >
+                        <Icon size={17} weight="fill" />
+                        {tab.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
         </div>
