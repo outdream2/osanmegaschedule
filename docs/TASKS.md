@@ -33,17 +33,20 @@
 - ClauseAck 시스템 재설계
 - 예상 3~4h · 큰 리팩터
 
-### T16. 근로계약서 · 제4조의2 휴게시간 별도 조항 (법규 필수 · 1순위)
-- 법정 필수 (근로기준법 §54) · breakStart · breakEnd 필드 추가
-- 예상 1~1.5h · 벌금 2년/2천만원 위험
+### (T16-T18 근로계약서 3건 · 완료 · 이미지 원본대로 유지)
+- T18 서명란 · 이미 갑/을 인적사항 완전 (주민번호·성명·주소·전화·계좌·이메일)
+- T16 휴게시간 · breakStart/breakEnd 필드 추가 (선택 입력) · UI 편집기 · 표 그대로 유지
+- T17 근로일별 표 · **사용자 지시 "이미지대로" · single-row 유지** · 알바용 별도 표 미추가
 
-### T17. 근로계약서 · 단시간/알바 근로일별 근로시간 표 (법규 필수 · 2순위)
-- contractType === "알바"/"단시간" 시 자동 노출 · perDaySchedule
-- 기간제법 §17 · 예상 2h · 벌금 500만원 위험
+### T35. StaffManagePage 헤더 정렬 추가 (T34 audit)
+- 직원 리스트 (7컬럼 · 이름·직책·계약·근속·평가·계약서·상태) · 정렬 없음
+- 파일: `src/components/StaffManagePage/StaffManagePage.tsx:1251`
+- 예상 1h
 
-### T18. 근로계약서 · 서명란 인적사항 재확인 (법규 필수 · 3순위)
-- 서명 옆 성명·주민번호·주소·서명 텍스트 인쇄 확인
-- 예상 0.5h
+### T36. RawOcrTable 헤더 정렬 추가 (T34 audit)
+- OcrPage/RawOcrTable · 3개 하위테이블 (발주·재고·손실액) · 정렬 없음
+- 파일: `src/components/OcrPage/RawOcrTable.tsx:3169+`
+- 예상 1~1.5h
 
 ### T19. 근로계약서 · 구글드라이브 저장 (#33)
 - DB 저장 + 구글드라이브 이중 저장 · OAuth Service Account · Google Drive API

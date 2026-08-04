@@ -132,6 +132,9 @@ interface ContractForm {
   startTime: string;
   endTime: string;
   breakMinutes: string;
+  // 휴게시간 시작·종료 (선택 · 미입력 시 breakMinutes 기반 중간점 파생) · 법정 필수 표기 (근기법 §54)
+  breakStart: string;
+  breakEnd: string;
 
   // 시급 (실 근무 기반 · 역산 시 사용)
   weekdayHourly: string;
@@ -495,6 +498,8 @@ const emptyForm = (): ContractForm => ({
   startTime: "10:00",
   endTime: "19:00",
   breakMinutes: "60",
+  breakStart: "",
+  breakEnd: "",
   weekdayHourly: "12000",
   weekendHourly: "13500",
   startDate: todayIso(),
@@ -1335,8 +1340,10 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
   const stDate = form.startDate ? form.startDate.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
   const enDate = form.endDate   ? form.endDate.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
 
-  // 휴게 시작~종료 (관례상 정오 12:00~13:00 · 8시간+휴게 케이스)
+  // 휴게 시작~종료 · 명시적 입력 우선 · 없으면 파생 (중간점)
   const breakDisplay = (() => {
+    // 명시적 입력 (T16 · 근기법 §54 별도 조항 필요)
+    if (form.breakStart && form.breakEnd) return `${form.breakStart} ~ ${form.breakEnd}`;
     const s = parseHM(form.startTime);
     const bMin = Number(form.breakMinutes) || 0;
     if (!s || bMin <= 0) return null;
@@ -1350,6 +1357,7 @@ const ContractPreview = React.forwardRef<HTMLDivElement, ContractPreviewProps>((
     const hm = (min: number) => `${String(Math.floor(min / 60)).padStart(2, "0")}:${String(min % 60).padStart(2, "0")}`;
     return `${hm(bs)} ~ ${hm(be)}`;
   })();
+
 
   return (
     <div
@@ -2803,6 +2811,20 @@ const ContractWriterPage: React.FC<ContractWriterPageProps> = ({ authSession, on
               className="w-16 bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-[13px] text-slate-800 font-semibold focus:outline-none focus:border-emerald-500 transition text-right"
             />
             <span className="text-[11.5px] text-slate-500 font-semibold">분)</span>
+          </div>
+          {/* 휴게 시작·종료 (선택 · 미입력 시 자동 파생) · T16 · 근기법 §54 별도 조항용 */}
+          <div className="flex flex-wrap items-center gap-1.5 pl-4">
+            <span className="text-[11px] text-slate-400 font-semibold">휴게 시간대(선택)</span>
+            <input type="time" value={form.breakStart} onChange={(e) => upd("breakStart", e.target.value)}
+              className="w-24 bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-[12px] text-slate-700 font-semibold focus:outline-none focus:border-emerald-500 transition"
+              placeholder="시작"
+            />
+            <span className="text-[11px] text-slate-400">~</span>
+            <input type="time" value={form.breakEnd} onChange={(e) => upd("breakEnd", e.target.value)}
+              className="w-24 bg-white border border-slate-200 rounded-lg px-1.5 py-1 text-[12px] text-slate-700 font-semibold focus:outline-none focus:border-emerald-500 transition"
+              placeholder="종료"
+            />
+            <span className="text-[10px] text-slate-400 italic">미입력 시 근무시간 중간 자동 계산</span>
           </div>
           {monthlyCalc && (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50/60 px-2 py-1 flex items-center gap-2 text-[11px]">

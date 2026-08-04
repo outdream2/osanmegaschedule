@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Search, TrendingUp, Building2, LineChart, Package, X, Info, Eye, EyeOff, CheckSquare, Square, Loader2, Award, Activity, Layers, PieChart, AlertOctagon } from "lucide-react";
+import { Search, TrendingUp, Building2, LineChart, Package, X, Info, Eye, EyeOff, CheckSquare, Square, Loader2, Award, Activity, Layers, PieChart } from "lucide-react";
 import { ProductInfoCard } from "../ScanPage/ProductInfoCard";
 import { ProductDetailRightPanel } from "../common/ProductDetailPanel";
 import { getProductsMap, lookupProduct, type ProductInfo } from "../../lib/productsCache";
@@ -2156,15 +2156,6 @@ function classifySupplier(name: string): { category: string; color: string } {
 //   기존 MiniStoreZoneMap 로컬 컴포넌트 삭제 · common/StoreZoneMap 사용
 //   양쪽에서 하나의 컴포넌트만 · 카테고리 페이지 전용 BEST 배지 옵션 사용
 //   import 은 파일 상단에 배치 (getZoneLabel · StoreZoneMap)
-
-// 2026-07-28 · 사용자 요청 · 카테고리별판매 재고관리로 이동 · export 추가
-export const CategoryTab: React.FC = () => {
-  // 2026-07-15: 공급사분류 서브탭 제거 · 구역별만 유지 · 각 구역 설명 표시
-  // 2026-07-16: 매장 구역도 미니맵 + 좌우 split 레이아웃
-  return (
-    <ZoneCategoryContent />
-  );
-};
 
 // ─── 손실추적 탭 (2026-07-15 · closing_stock > current_stock 상품) ─────────
 type LossSortKey = "name" | "supplier" | "opening" | "sale" | "current" | "expected" | "purchase" | "loss";
