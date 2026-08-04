@@ -9,7 +9,7 @@
 //   · 상품별 (신규) · 좌 상품 리스트 · 우 상품별 매입이력
 // Ref · Zoho·QuickBooks·Odoo·Cin7 Procurement Dashboard 벤치마크
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Building2, Loader2, Package, RefreshCw } from "lucide-react";
 import { SeasonButtons } from "../common/SeasonButtons";
 import { type SeasonKey } from "../../hooks/useSeasonRanges";
@@ -120,6 +120,70 @@ export const PurchaseHistoryTab: React.FC = () => {
 
   // 선택 상품 (product_code · 없으면 product_name key)
   const [selectedProductKey, setSelectedProductKey] = useState<string | null>(null);
+
+  // ═══════════════════════════════════════════════════════════════════════
+  //  Split 리사이저 (2026-08-03 · 좌측 폭 드래그·localStorage)
+  //   - 데스크탑 (lg 1024+) · 좌측 px 고정 · 드래그로 320~640px
+  //   - 모바일 · 세로 스택 · 좌측 폭 무시
+  //   - by-vendor 와 by-product 는 각각 다른 storage key
+  // ═══════════════════════════════════════════════════════════════════════
+  const STORAGE_KEY = viewMode === "by-vendor"
+    ? "megatown_purchaseHistory.byVendor.leftWidth"
+    : "megatown_purchaseHistory.byProduct.leftWidth";
+  const MIN_LEFT = 320;
+  const MAX_LEFT = 640;
+  const DEFAULT_LEFT = 380;
+  const [leftWidth, setLeftWidth] = useState<number>(() => {
+    try {
+      const s = localStorage.getItem(STORAGE_KEY);
+      const n = s ? parseInt(s, 10) : NaN;
+      return Number.isFinite(n) && n >= MIN_LEFT && n <= MAX_LEFT ? n : DEFAULT_LEFT;
+    } catch { return DEFAULT_LEFT; }
+  });
+  // viewMode 전환 시 · 저장된 폭 재로드
+  useEffect(() => {
+    try {
+      const s = localStorage.getItem(STORAGE_KEY);
+      const n = s ? parseInt(s, 10) : NaN;
+      setLeftWidth(Number.isFinite(n) && n >= MIN_LEFT && n <= MAX_LEFT ? n : DEFAULT_LEFT);
+    } catch { setLeftWidth(DEFAULT_LEFT); }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [STORAGE_KEY]);
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, String(leftWidth)); } catch {}
+  }, [STORAGE_KEY, leftWidth]);
+
+  const [isDesktop, setIsDesktop] = useState<boolean>(
+    () => typeof window !== "undefined" && window.innerWidth >= 1024,
+  );
+  useEffect(() => {
+    const onResize = () => setIsDesktop(window.innerWidth >= 1024);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const startXRef = useRef<number>(0);
+  const startWRef = useRef<number>(0);
+  const startResize = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    startXRef.current = e.clientX;
+    startWRef.current = leftWidth;
+    const onMove = (ev: MouseEvent) => {
+      const delta = ev.clientX - startXRef.current;
+      const next = Math.max(MIN_LEFT, Math.min(MAX_LEFT, startWRef.current + delta));
+      setLeftWidth(next);
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  }, [leftWidth]);
 
   // ─── 공급사 목록 로드 ────────────────────────────────────────────────────
   const loadVendors = useCallback(async () => {
@@ -650,15 +714,18 @@ export const PurchaseHistoryTab: React.FC = () => {
         )}
       </div>
 
-      {/* 좌우 분할 */}
-      <div className="flex flex-col lg:flex-row gap-2 flex-1 min-h-0">
+      {/* 좌우 분할 · 리사이저 (2026-08-03) · 좌측 폭 드래그 조정 · localStorage 저장 */}
+      <div className="flex flex-col lg:flex-row gap-2 lg:gap-0 flex-1 min-h-0">
         {viewMode === "by-vendor" ? (
           <>
             {/* ══════════════════════════════════════════════════════════════
                 공급사별 뷰 (기존)
             ══════════════════════════════════════════════════════════════ */}
-            {/* 좌측: 공급사 리스트 (카드형 2줄) */}
-            <div className="w-full lg:w-80 shrink-0 flex flex-col gap-2">
+            {/* 좌측: 공급사 리스트 (한 줄 컴팩트) · 폭 드래그 조정 */}
+            <div
+              className="w-full shrink-0 flex flex-col gap-2 min-h-0"
+              style={isDesktop ? { width: `${leftWidth}px` } : undefined}
+            >
               {/* 검색 + 분류 필터 + 정렬 */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2 flex flex-col gap-2">
                 <input
@@ -719,11 +786,11 @@ export const PurchaseHistoryTab: React.FC = () => {
                   })}
                 </div>
               </div>
-              {/* 공급사 리스트 · 컬럼 헤더 (2026-08-03 재구성 · 재고관리 29728bb 스타일 참조)
-                    · 4컬럼 · 공급사 · 매입주기 · 최근매입일 · 이번달매입액
-                    · 각 헤더 클릭 시 정렬 asc/desc 토글 · arrowFor 화살표 */}
+              {/* 공급사 리스트 · 컬럼 헤더 (2026-08-03 · 한 줄 7컬럼)
+                    · 공급사·매입주기·최근매입·매입액·SKU·판매(1m)·판매금액(1m)
+                    · 각 헤더 클릭 시 정렬 asc/desc 토글 · arrow */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[65vh] flex flex-col overflow-hidden">
-                <div className="px-3 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_44px_56px_60px] gap-2 items-center text-[10px] font-bold uppercase tracking-wider">
+                <div className="px-2 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_36px_36px_52px_36px_44px_52px] gap-1.5 items-center text-[10px] font-bold uppercase tracking-wider">
                   <button
                     type="button"
                     onClick={() => toggleLeftSort("name")}
@@ -745,7 +812,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                     }`}
                     title="매입주기 (평균 며칠마다 매입) 기준 정렬"
                   >
-                    매입주기
+                    주기
                     {leftSort === "cycle" && (
                       <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
                     )}
@@ -758,7 +825,7 @@ export const PurchaseHistoryTab: React.FC = () => {
                     }`}
                     title="최근 매입일 기준 정렬"
                   >
-                    최근매입
+                    최근
                     {leftSort === "recent" && (
                       <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
                     )}
@@ -769,10 +836,49 @@ export const PurchaseHistoryTab: React.FC = () => {
                     className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
                       leftSort === "amount" ? "text-indigo-800" : "text-indigo-600 hover:text-indigo-800"
                     }`}
-                    title="총 매입액 (90일) 기준 정렬"
+                    title="이번달 매입액 기준 정렬"
                   >
                     매입액
                     {leftSort === "amount" && (
+                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleLeftSort("sku")}
+                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
+                      leftSort === "sku" ? "text-slate-800" : "text-slate-500 hover:text-slate-700"
+                    }`}
+                    title="활성 SKU 종수 기준 정렬"
+                  >
+                    SKU
+                    {leftSort === "sku" && (
+                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleLeftSort("sale_qty")}
+                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
+                      leftSort === "sale_qty" ? "text-orange-800" : "text-orange-600 hover:text-orange-800"
+                    }`}
+                    title="최근 1개월 판매수량 기준 정렬"
+                  >
+                    판매
+                    {leftSort === "sale_qty" && (
+                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleLeftSort("sale_amt")}
+                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
+                      leftSort === "sale_amt" ? "text-rose-800" : "text-rose-600 hover:text-rose-800"
+                    }`}
+                    title="최근 1개월 판매금액 기준 정렬"
+                  >
+                    판매액
+                    {leftSort === "sale_amt" && (
                       <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
                     )}
                   </button>
@@ -805,6 +911,15 @@ export const PurchaseHistoryTab: React.FC = () => {
                 )}
                 </div>
               </div>
+            </div>
+
+            {/* 리사이저 divider · 데스크탑만 · 드래그 시 좌측 폭 조정 */}
+            <div
+              onMouseDown={startResize}
+              className="split-divider group hover:bg-emerald-400 lg:mx-1.5"
+              title="드래그하여 좌측 폭 조절"
+            >
+              <span className="text-[10px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
             </div>
 
             {/* 우측: 헤더 + 서브탭 */}
@@ -864,8 +979,11 @@ export const PurchaseHistoryTab: React.FC = () => {
             {/* ══════════════════════════════════════════════════════════════
                 상품별 뷰 (#191 · 신규)
             ══════════════════════════════════════════════════════════════ */}
-            {/* 좌측: 상품 리스트 */}
-            <div className="w-full lg:w-80 shrink-0 flex flex-col gap-2">
+            {/* 좌측: 상품 리스트 · 폭 드래그 조정 */}
+            <div
+              className="w-full shrink-0 flex flex-col gap-2 min-h-0"
+              style={isDesktop ? { width: `${leftWidth}px` } : undefined}
+            >
               {/* 검색 + 정렬 */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm px-3 py-2 flex flex-col gap-2">
                 <input
@@ -941,6 +1059,15 @@ export const PurchaseHistoryTab: React.FC = () => {
                 )}
                 </div>
               </div>
+            </div>
+
+            {/* 리사이저 divider · 데스크탑만 · 드래그 시 좌측 폭 조정 */}
+            <div
+              onMouseDown={startResize}
+              className="split-divider group hover:bg-sky-400 lg:mx-1.5"
+              title="드래그하여 좌측 폭 조절"
+            >
+              <span className="text-[10px] text-slate-400 group-hover:text-white font-black rotate-90 opacity-0 group-hover:opacity-100 transition">||</span>
             </div>
 
             {/* 우측: 상품 상세 (헤더 + 매입 원장) */}

@@ -27,6 +27,7 @@ interface ReturnLineItem {
 }
 interface ReturnRequestModalProps {
   item: any;                            // 트리거된 단일 상품 (기본)
+  items?: any[];                        // 일괄 반품 · 선택 상품 배열 (있으면 우선)
   supplierInfo: {                       // 공급사 담당자 정보 (useVendors)
     contact_name: string | null;
     phone: string | null;
@@ -49,7 +50,7 @@ function todayStr(offsetDays = 0): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, supplierInfo, onClose }) => {
+const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, items, supplierInfo, onClose }) => {
   // 반품 번호 · 모달 열림 시 1회 고정
   const returnNumber = useMemo(() => buildReturnNumber(), []);
   const [requestDate, setRequestDate] = useState<string>(() => todayStr(0));
@@ -63,20 +64,35 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, supplierI
   const [sent, setSent] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
 
-  // 반품 상품 리스트 · 초기값 · 트리거된 상품 1개
-  const [lines, setLines] = useState<ReturnLineItem[]>(() => [{
-    product_code: String(item.product_code ?? ""),
-    product_name: String(item.product_name ?? ""),
-    current_stock: Number(item.current_stock ?? 0),
-    actual_stock: item.actual_stock != null ? Number(item.actual_stock) : null,
-    return_qty: Math.max(1, Number(item.current_stock ?? 0)),
-    purchase_price: Number(item.purchase_price ?? 0),
-    memo: "",
-    purchase_cycle: item.purchase_cycle != null ? Number(item.purchase_cycle) : null,
-    sale_qty_month: item.sale_qty_month != null ? Number(item.sale_qty_month) : null,
-    sale_qty_60d:   item.sale_qty_60d   != null ? Number(item.sale_qty_60d)   : null,
-    sale_qty_90d:   item.sale_qty_90d   != null ? Number(item.sale_qty_90d)   : null,
-  }]);
+  // 반품 상품 리스트 · 초기값 · items 있으면 배열 매핑 · 없으면 단일 item
+  const [lines, setLines] = useState<ReturnLineItem[]>(() => {
+    const source: any[] = Array.isArray(items) && items.length > 0 ? items : [item];
+    return source.map(it => ({
+      product_code: String(it.product_code ?? ""),
+      product_name: String(it.product_name ?? ""),
+      current_stock: Number(it.current_stock ?? 0),
+      actual_stock: it.actual_stock != null ? Number(it.actual_stock) : null,
+      return_qty: Math.max(1, Number(it.current_stock ?? 0)),
+      purchase_price: Number(it.purchase_price ?? 0),
+      memo: "",
+      purchase_cycle: it.purchase_cycle != null ? Number(it.purchase_cycle) : null,
+      sale_qty_month: it.sale_qty_month != null ? Number(it.sale_qty_month) : null,
+      sale_qty_60d:   it.sale_qty_60d   != null ? Number(it.sale_qty_60d)   : null,
+      sale_qty_90d:   it.sale_qty_90d   != null ? Number(it.sale_qty_90d)   : null,
+    }));
+  });
+
+  // 여러 공급사 감지 · items 기반 unique supplier count
+  const uniqueSuppliers = useMemo(() => {
+    const source: any[] = Array.isArray(items) && items.length > 0 ? items : [item];
+    const set = new Set<string>();
+    for (const it of source) {
+      const s = String(it?.supplier ?? "").trim();
+      if (s) set.add(s);
+    }
+    return Array.from(set);
+  }, [items, item]);
+  const multipleSuppliers = uniqueSuppliers.length > 1;
 
   const updateLine = (idx: number, patch: Partial<ReturnLineItem>) =>
     setLines(prev => prev.map((r, i) => i === idx ? { ...r, ...patch } : r));
@@ -227,6 +243,19 @@ const ReturnRequestModal: React.FC<ReturnRequestModalProps> = ({ item, supplierI
 
         {/* ── 공급사 정보 + 상품 테이블 ── */}
         <div className="flex-1 overflow-y-auto max-h-[45vh] px-6 py-4 space-y-3 bg-slate-50/30">
+          {multipleSuppliers && (
+            <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[11px] text-amber-800 flex items-start gap-2">
+              <span className="text-[13px] leading-none">⚠️</span>
+              <div className="min-w-0">
+                <div className="font-black text-amber-900">
+                  여러 공급사 · 대표 공급사({supplierName || uniqueSuppliers[0] || "-"})로 발송
+                </div>
+                <div className="mt-0.5 text-amber-700">
+                  선택된 상품이 <span className="font-black tabular-nums">{uniqueSuppliers.length}개</span> 공급사에 걸쳐 있습니다 · {uniqueSuppliers.join(" · ")}
+                </div>
+              </div>
+            </div>
+          )}
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
             {/* 공급사 정보 헤더 (sky·rose gradient) */}
             <div className="px-4 py-3 bg-gradient-to-r from-sky-50 to-rose-50 border-b border-slate-200 flex items-center justify-between flex-wrap gap-2">
@@ -565,6 +594,89 @@ export const ReturnListPanel: React.FC = () => {
 
   // ── 반품요청 모달 ────────────────────────────────────────────────────────
   const [returnRequestItem, setReturnRequestItem] = useState<any | null>(null);
+  // 일괄 반품 · 선택 상품 배열 (있으면 모달 items props 로 전달)
+  const [returnRequestItems, setReturnRequestItems] = useState<any[] | null>(null);
+
+  // ── 일괄 반품 · 체크박스 선택 (세션 state · localStorage 없음) ───────────
+  const [returnSelected, setReturnSelected] = useState<Set<string>>(new Set());
+  const toggleReturnRow = (code: string) => setReturnSelected(prev => {
+    const n = new Set(prev);
+    if (n.has(code)) n.delete(code); else n.add(code);
+    return n;
+  });
+
+  // ── 필터+정렬 완료 rows · 헤더 전체선택과 body map 이 공유 ──────────────
+  const filteredSortedRows = useMemo(() => {
+    const q = returnSupplierSearch.trim().toLowerCase();
+    return [...returnList].filter(x => {
+      if (q && !String(x.supplier ?? "").toLowerCase().includes(q)) return false;
+      if (returnCategoryFilter !== "전체") {
+        const cat = vendorCategoryMap[String(x.supplier ?? "").trim()] ?? null;
+        if (cat !== returnCategoryFilter) return false;
+      }
+      return true;
+    }).sort((a, b) => {
+      const dir = returnSortDir === "asc" ? 1 : -1;
+      switch (returnSortKey) {
+        case "product_name":       return dir * String(a.product_name).localeCompare(String(b.product_name), "ko");
+        case "supplier":           return dir * String(a.supplier ?? "").localeCompare(String(b.supplier ?? ""), "ko");
+        case "current_stock":      return dir * (a.current_stock - b.current_stock);
+        case "actual_stock":       return dir * ((a.actual_stock ?? -1) - (b.actual_stock ?? -1));
+        case "purchase_cycle":     return dir * ((a.purchase_cycle ?? 0) - (b.purchase_cycle ?? 0));
+        case "sale_qty_month":     return dir * ((a.sale_qty_month ?? 0) - (b.sale_qty_month ?? 0));
+        case "sale_qty_60d":       return dir * ((a.sale_qty_60d ?? 0) - (b.sale_qty_60d ?? 0));
+        case "sale_qty_90d":       return dir * ((a.sale_qty_90d ?? 0) - (b.sale_qty_90d ?? 0));
+        case "last_purchase_date": return dir * String(a.last_purchase_date ?? "").localeCompare(String(b.last_purchase_date ?? ""));
+        case "last_purchase_qty":  return dir * ((a.last_purchase_qty ?? 0) - (b.last_purchase_qty ?? 0));
+        case "stock_value":        return dir * ((a.current_stock * a.purchase_price) - (b.current_stock * b.purchase_price));
+        default:                   return 0;
+      }
+    });
+  }, [returnList, returnSupplierSearch, returnCategoryFilter, vendorCategoryMap, returnSortKey, returnSortDir]);
+
+  // 전체 선택 · 필터 후 rows 기준
+  const visibleCodes = useMemo(() => filteredSortedRows.map(x => x.product_code), [filteredSortedRows]);
+  const allChecked = visibleCodes.length > 0 && visibleCodes.every(c => returnSelected.has(c));
+  const someChecked = visibleCodes.some(c => returnSelected.has(c)) && !allChecked;
+  const toggleAllReturn = () => setReturnSelected(prev => {
+    if (allChecked) {
+      // 전부 선택된 상태 → 화면에 보이는 것만 해제
+      const n = new Set(prev);
+      visibleCodes.forEach(c => n.delete(c));
+      return n;
+    }
+    // 하나라도 미선택 → 화면에 보이는 것 전부 추가
+    const n = new Set(prev);
+    visibleCodes.forEach(c => n.add(c));
+    return n;
+  });
+
+  // 필터/데이터 바뀔 때 · 사라진 code 는 선택에서 제거 (stale 방지)
+  useEffect(() => {
+    setReturnSelected(prev => {
+      if (prev.size === 0) return prev;
+      const codes = new Set(returnList.map(x => x.product_code));
+      let changed = false;
+      const n = new Set<string>();
+      prev.forEach(c => { if (codes.has(c)) n.add(c); else changed = true; });
+      return changed ? n : prev;
+    });
+  }, [returnList]);
+
+  // 일괄 반품 버튼 · 선택된 상품들을 모달로 전달
+  const openBulkReturnModal = () => {
+    if (returnSelected.size === 0) return;
+    const selectedItems = returnList
+      .filter(x => returnSelected.has(x.product_code))
+      .map(x => ({
+        ...x,
+        vendorCategory: x.supplier ? (vendorCategoryMap[x.supplier.trim()] ?? null) : null,
+      }));
+    if (selectedItems.length === 0) return;
+    setReturnRequestItems(selectedItems);
+    // 대표 아이템 (모달의 item props 는 여전히 필수 · 첫번째 사용)
+    setReturnRequestItem(selectedItems[0]);
+  };
 
   // ── 렌더 ────────────────────────────────────────────────────────────────
   return (
@@ -642,11 +754,26 @@ export const ReturnListPanel: React.FC = () => {
             className="w-40 h-7 pl-7 pr-2 text-[11px] border border-slate-200 rounded-md outline-none focus:ring-1 focus:ring-rose-400 focus:border-rose-400 transition"
           />
         </div>
+        {/* 일괄 반품 신청 · 2026-08-03 · 선택 상품 있을 때만 활성 */}
+        <button
+          type="button"
+          onClick={openBulkReturnModal}
+          disabled={returnSelected.size === 0}
+          className={`ml-auto inline-flex items-center gap-1.5 h-7 px-3 rounded-md text-[11px] font-black transition cursor-pointer border ${
+            returnSelected.size > 0
+              ? "text-white bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 border-rose-700 shadow-sm active:scale-95"
+              : "text-slate-400 bg-slate-50 border-slate-200 cursor-not-allowed"
+          }`}
+          title={returnSelected.size > 0 ? `선택된 ${returnSelected.size}개 상품 일괄 반품 신청` : "체크박스로 상품을 선택하세요"}
+        >
+          <Truck size={12} strokeWidth={2.5} />
+          일괄 반품 ({returnSelected.size})
+        </button>
         <button
           type="button"
           onClick={loadReturnList}
           disabled={returnLoading}
-          className="ml-auto w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-300 text-slate-400 hover:text-rose-500 transition disabled:opacity-40 cursor-pointer"
+          className="w-7 h-7 flex items-center justify-center rounded-md border border-slate-200 bg-white hover:bg-rose-50 hover:border-rose-300 text-slate-400 hover:text-rose-500 transition disabled:opacity-40 cursor-pointer"
           title="다시 조회"
         >
           <RefreshCw size={13} className={returnLoading ? "animate-spin" : ""} />
