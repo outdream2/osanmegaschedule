@@ -653,6 +653,29 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
         }
       } catch { /* silent · 컬럼 없음 */ }
     } catch { /* silent · vendors 없어도 무관 */ }
+    // 2026-08-04 · products.product_code → supplier 매핑 (원칙 준수 · 있는 테이블 조회)
+    //   6307행이 supplier_name·supplier_code 모두 NULL 인 케이스 대응
+    //   products.supplier 로 fallback · 파생컬럼 생성 X · 런타임 조회 (원칙 위배 X)
+    const productCodeToSupplier = new Map<string, string>();
+    try {
+      const PPAGE = 1000;
+      let pfrom = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("products")
+          .select("product_code, supplier")
+          .range(pfrom, pfrom + PPAGE - 1);
+        if (error) break;
+        if (!data || data.length === 0) break;
+        for (const p of data as any[]) {
+          const pc = String((p as any).product_code ?? "").trim();
+          const sup = String((p as any).supplier ?? "").trim();
+          if (pc && sup) productCodeToSupplier.set(pc, sup);
+        }
+        if (data.length < PPAGE) break;
+        pfrom += PPAGE;
+      }
+    } catch { /* silent · products 없어도 무관 */ }
     try {
       const PAGE = 1000;
       let from = 0;
@@ -669,11 +692,18 @@ router.get("/api/supplier-purchase-summary", async (req, res) => {
         }
         if (!data || data.length === 0) break;
         for (const r of data as any[]) {
-          // 2026-08-03 fix (이슈 B) · supplier_name NULL 이면 supplier_code 로 vendors 조회 · 여전히 없으면 skip
+          // supplier_name 결정 순서 (2026-08-04):
+          //   1. raw supplier_name
+          //   2. supplier_code → vendors.note or vendors.supplier_code
+          //   3. product_code → products.supplier (마지막 fallback · 임포트 정책 정합)
           let supplier = String(r.supplier_name ?? "").trim();
           if (!supplier) {
             const code = String(r.supplier_code ?? "").trim();
             if (code && codeToName.has(code)) supplier = codeToName.get(code)!;
+          }
+          if (!supplier) {
+            const pcode = String(r.product_code ?? "").trim();
+            if (pcode && productCodeToSupplier.has(pcode)) supplier = productCodeToSupplier.get(pcode)!;
           }
           if (!supplier) { pdSkippedNullSupplier++; continue; }
           const date: string = (r.purchase_date && /^\d{4}-\d{2}-\d{2}/.test(String(r.purchase_date)))
