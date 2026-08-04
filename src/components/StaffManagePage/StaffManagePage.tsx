@@ -1500,7 +1500,8 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                   </div>
                 </SectionCard>
 
-                {/* §2 근무 정보 — amber 그룹 */}
+                {/* §2 근무 정보 · 2026-08-04 · 사용자 요청으로 제거 · 필드는 §6 계약·서류에서 접근 */}
+                {false && (
                 <SectionCard title="근무 정보" icon={<Building size={11} />} group="work" defaultOpen={false}>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
                     <InlineField
@@ -1567,67 +1568,10 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                     />
                   </div>
                 </SectionCard>
+                )}
 
-                {/* §3 경력 — emerald 그룹 */}
-                <SectionCard title="경력" icon={<Briefcase size={11} />} group="career" defaultOpen={false}>
-                  {Array.isArray(displayEmp.careers) && displayEmp.careers.length > 0 ? (
-                    <ul className="space-y-1.5">
-                      {displayEmp.careers.map((c: CareerItem) => (
-                        <li key={c.id} className="flex items-start gap-2 py-1.5 border-b border-slate-100 last:border-0">
-                          <Briefcase size={12} className="text-emerald-300 mt-0.5 shrink-0" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[12px] font-semibold text-slate-700">{c.company}</p>
-                            <p className="text-[10px] text-slate-400">{c.period}{c.desc ? ` · ${c.desc}` : ""}</p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <EmptyRow label="(등록 없음) — 편집 모드에서 DB에 careers 배열을 추가하세요" />
-                  )}
-                </SectionCard>
-
-                {/* §4 학력 — emerald 그룹 */}
-                <SectionCard title="학력" icon={<GraduationCap size={11} />} group="career" defaultOpen={false}>
-                  {Array.isArray(displayEmp.educations) && displayEmp.educations.length > 0 ? (
-                    <ul className="space-y-1.5">
-                      {displayEmp.educations.map((edu: EducationItem) => (
-                        <li key={edu.id} className="flex items-start gap-2 py-1.5 border-b border-slate-100 last:border-0">
-                          <GraduationCap size={12} className="text-emerald-300 mt-0.5 shrink-0" />
-                          <div>
-                            <p className="text-[12px] font-semibold text-slate-700">{edu.school}</p>
-                            <p className="text-[10px] text-slate-400">
-                              {[edu.major, edu.grad].filter(Boolean).join(" · ")}
-                            </p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <EmptyRow label="(등록 없음) — DB에 educations 배열이 없습니다" />
-                  )}
-                </SectionCard>
-
-                {/* §5 자격증 — emerald 그룹 */}
-                <SectionCard title="자격증 · 면허" icon={<Award size={11} />} group="career" defaultOpen={false}>
-                  {Array.isArray(displayEmp.certifications) && displayEmp.certifications.length > 0 ? (
-                    <ul className="space-y-1.5">
-                      {displayEmp.certifications.map((cert: CertItem) => (
-                        <li key={cert.id} className="flex items-center gap-2 py-1 border-b border-slate-100 last:border-0">
-                          <Award size={12} className="text-amber-300 shrink-0" />
-                          <div>
-                            <p className="text-[12px] font-semibold text-slate-700">{cert.name}</p>
-                            <p className="text-[10px] text-slate-400">
-                              {[cert.issuer, cert.date].filter(Boolean).join(" · ")}
-                            </p>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <EmptyRow label="(등록 없음) — DB에 certifications 배열이 없습니다" />
-                  )}
-                </SectionCard>
+                {/* §3~§5 경력·학력·자격증·면허 섹션 · 2026-08-04 · 사용자 요청으로 UI 제거
+                    · DB 필드 (careers · educations · certifications) 는 유지 (다른 참조 대비) */}
 
                 {/* §6 계약 · 서류 — amber 그룹 */}
                 <SectionCard title="계약 · 서류" icon={<FileText size={11} />} group="work" defaultOpen>
