@@ -1419,7 +1419,7 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                         <span className="text-[10px] text-slate-400">{displayEmp.hire_date}</span>
                       )}
                     </div>
-                    {/* 연차 잔여 */}
+                    {/* 연차 잔여 · 총일수 인라인 편집 (2026-08-04 · 사용자 요청 상단 통합) */}
                     <div className="flex flex-col items-center justify-center py-2 px-2 gap-0.5">
                       <span className="text-[10px] font-semibold text-emerald-500 uppercase tracking-wide flex items-center gap-0.5">
                         <CalendarDays size={9} /> 연차 잔여
@@ -1427,7 +1427,21 @@ const StaffManagePage: React.FC<StaffManagePageProps> = ({ onWriteContract }) =>
                       <span className="text-[15px] font-black text-emerald-700 leading-tight tabular-nums">
                         {fmtD(remainDays)}<span className="text-[11px] font-semibold ml-0.5">일</span>
                       </span>
-                      <span className="text-[10px] text-slate-400">총 {fmtD(totalDays)}일 · 사용 {fmtD(usedDays)}일</span>
+                      {editing ? (
+                        <div className="flex items-center gap-1 text-[10px]">
+                          <span className="text-slate-400">총</span>
+                          <input
+                            type="number" min={0} max={30} step={1}
+                            value={draft?.annual_leave_days ?? ""}
+                            onChange={(e) => setField("annual_leave_days", e.target.value === "" ? null : Number(e.target.value))}
+                            placeholder="12"
+                            className="w-10 h-5 px-1 rounded border border-indigo-300 bg-indigo-50/40 text-[11px] font-bold text-slate-700 text-right tabular-nums focus:outline-none focus:border-indigo-500"
+                          />
+                          <span className="text-slate-400">일 · 사용 {fmtD(usedDays)}일</span>
+                        </div>
+                      ) : (
+                        <span className="text-[10px] text-slate-400">총 {fmtD(totalDays)}일 · 사용 {fmtD(usedDays)}일</span>
+                      )}
                     </div>
                     {/* 인사평가 */}
                     <div className="flex flex-col items-center justify-center py-2 px-2 gap-0.5">
