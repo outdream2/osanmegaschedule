@@ -90,8 +90,8 @@ export const PurchaseHistoryTab: React.FC = () => {
   const [summaryDiagnostics, setSummaryDiagnostics] = useState<SourceDiagnostics | null>(null);
   const [detailSource, setDetailSource] = useState<DataSource>(null);
 
-  // 좌측 정렬 · 2026-08-03 확장 (판매량·판매금액·매입주기·SKU 추가)
-  type LeftSort = "recent" | "amount" | "sale_qty" | "sale_amt" | "cycle" | "sku" | "name";
+  // 좌측 정렬 · 2026-08-04 슬림 (사용자 요청 · SKU/판매/판매액 정렬 제거 · 카드 4컬럼 통일)
+  type LeftSort = "recent" | "amount" | "cycle" | "name";
   type LeftDir = "asc" | "desc";
   const [leftSort, setLeftSort] = useState<LeftSort>("recent");
   const [leftDir, setLeftDir] = useState<LeftDir>("desc");
@@ -453,14 +453,12 @@ export const PurchaseHistoryTab: React.FC = () => {
     const dirSign = leftDir === "asc" ? 1 : -1;
 
     // 컬럼별 정렬 값 추출 (숫자 or 문자열)
+    //   2026-08-04 · amount 는 이번달(this_month_amount) 기준 · 카드 표시와 일치
     const pickNum = (v: VendorItem): number | null => {
       const s = summaryLookup(v.company_name);
       switch (leftSort) {
-        case "amount":    return s?.total_amount ?? null;
-        case "sale_qty":  return s?.sale_qty_month ?? null;
-        case "sale_amt":  return s?.sale_amount_month ?? null;
+        case "amount":    return s?.this_month_amount ?? null;
         case "cycle":     return s?.avg_cycle_days ?? null;
-        case "sku":       return s?.sku_count ?? null;
         default:          return null;
       }
     };
@@ -792,16 +790,13 @@ export const PurchaseHistoryTab: React.FC = () => {
                       }`}>{cat}</button>
                   ))}
                 </div>
-                {/* 정렬 · 확장 (2026-08-03) · 최근매입·매입액·판매량·판매금액·매입주기·SKU·가나다 */}
+                {/* 정렬 · 슬림 (2026-08-04 · 사용자 요청 · 4옵션) · 최근매입·매입액·매입주기·가나다 */}
                 <div className="flex items-center gap-1 pt-1 border-t border-slate-100 flex-wrap">
                   <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider shrink-0">정렬</span>
                   {([
                     { k: "recent"   as const, label: "최근매입" },
                     { k: "amount"   as const, label: "매입액" },
-                    { k: "sale_qty" as const, label: "판매량" },
-                    { k: "sale_amt" as const, label: "판매금액" },
                     { k: "cycle"    as const, label: "매입주기" },
-                    { k: "sku"      as const, label: "SKU" },
                     { k: "name"     as const, label: "가나다" },
                   ]).map(o => {
                     const active = leftSort === o.k;
@@ -828,11 +823,12 @@ export const PurchaseHistoryTab: React.FC = () => {
                   })}
                 </div>
               </div>
-              {/* 공급사 리스트 · 컬럼 헤더 (2026-08-03 · 한 줄 7컬럼)
-                    · 공급사·매입주기·최근매입·매입액·SKU·판매(1m)·판매금액(1m)
+              {/* 공급사 리스트 · 컬럼 헤더 (2026-08-04 · 한 줄 4컬럼 · 사용자 요청)
+                    · 공급사 · 매입액(이번달) · 최근매입일 · 매입주기
+                    · SKU/판매/판매액 컬럼 제거 (부가정보라 우측 상세로 이관)
                     · 각 헤더 클릭 시 정렬 asc/desc 토글 · arrow */}
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex-1 min-h-0 max-h-[65vh] flex flex-col overflow-hidden">
-                <div className="px-2 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_36px_36px_52px_36px_44px_52px] gap-1.5 items-center text-[10px] font-bold uppercase tracking-wider">
+                <div className="px-2 py-1.5 border-b border-slate-100 bg-slate-50/60 shrink-0 grid grid-cols-[1fr_64px_60px_52px] gap-1.5 items-center text-[10px] font-bold uppercase tracking-wider">
                   <button
                     type="button"
                     onClick={() => toggleLeftSort("name")}
@@ -843,32 +839,6 @@ export const PurchaseHistoryTab: React.FC = () => {
                   >
                     공급사
                     {leftSort === "name" && (
-                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleLeftSort("cycle")}
-                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
-                      leftSort === "cycle" ? "text-sky-800" : "text-sky-600 hover:text-sky-800"
-                    }`}
-                    title="매입주기 (평균 며칠마다 매입) 기준 정렬"
-                  >
-                    주기
-                    {leftSort === "cycle" && (
-                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleLeftSort("recent")}
-                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
-                      leftSort === "recent" ? "text-emerald-800" : "text-emerald-600 hover:text-emerald-800"
-                    }`}
-                    title="최근 매입일 기준 정렬"
-                  >
-                    최근
-                    {leftSort === "recent" && (
                       <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
                     )}
                   </button>
@@ -887,40 +857,27 @@ export const PurchaseHistoryTab: React.FC = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => toggleLeftSort("sku")}
+                    onClick={() => toggleLeftSort("recent")}
                     className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
-                      leftSort === "sku" ? "text-slate-800" : "text-slate-500 hover:text-slate-700"
+                      leftSort === "recent" ? "text-emerald-800" : "text-emerald-600 hover:text-emerald-800"
                     }`}
-                    title="활성 SKU 종수 기준 정렬"
+                    title="최근 매입일 기준 정렬 (MM-DD 표시 · tooltip 에 full ISO)"
                   >
-                    SKU
-                    {leftSort === "sku" && (
+                    최근매입
+                    {leftSort === "recent" && (
                       <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
                     )}
                   </button>
                   <button
                     type="button"
-                    onClick={() => toggleLeftSort("sale_qty")}
+                    onClick={() => toggleLeftSort("cycle")}
                     className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
-                      leftSort === "sale_qty" ? "text-orange-800" : "text-orange-600 hover:text-orange-800"
+                      leftSort === "cycle" ? "text-sky-800" : "text-sky-600 hover:text-sky-800"
                     }`}
-                    title="최근 1개월 판매수량 기준 정렬"
+                    title="매입주기 (평균 며칠마다 매입) 기준 정렬"
                   >
-                    판매
-                    {leftSort === "sale_qty" && (
-                      <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => toggleLeftSort("sale_amt")}
-                    className={`text-right whitespace-nowrap cursor-pointer inline-flex items-center gap-0.5 justify-end transition ${
-                      leftSort === "sale_amt" ? "text-rose-800" : "text-rose-600 hover:text-rose-800"
-                    }`}
-                    title="최근 1개월 판매금액 기준 정렬"
-                  >
-                    판매액
-                    {leftSort === "sale_amt" && (
+                    주기
+                    {leftSort === "cycle" && (
                       <span className="text-[9px] leading-none">{leftDir === "asc" ? "▲" : "▼"}</span>
                     )}
                   </button>

@@ -124,35 +124,37 @@ const LedgerTab: React.FC<{
     return <div className="flex-1 flex items-center justify-center py-12 text-slate-400 text-[11px]">해당 기간 매입 이력 없음</div>;
   }
   return (
+    // 2026-08-04 · 사용자 요청 · 통계 > 상품현황 > 상품 매입이력 모달(PurchaseHistoryModal)과 통일된 스타일
+    //   · thead sticky bg-slate-50 · 12px 본문 · font-mono 날짜 · font-black 금액 · 강조 amber-50
+    //   · 상품코드는 상품명 아래 sub-line 으로 이동 (컬럼 절약 · 모달과 일치)
     <div className="overflow-auto flex-1 min-h-0">
       <table className="w-full text-xs min-w-[500px]">
-        <thead className="sticky top-0 bg-white z-10 border-b border-slate-100">
-          <tr className="text-[11px] text-slate-400 uppercase tracking-wider">
-            <th className="text-left px-2 py-2 w-7 text-slate-300">#</th>
+        <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10">
+          <tr className="text-[11px] text-slate-500 uppercase tracking-wider">
+            <th className="text-left px-3 py-2 w-8 text-slate-300">#</th>
             <th onClick={() => toggleSort("date")}
-              className="text-left px-2 py-2 w-24 cursor-pointer select-none hover:bg-slate-50 transition">
-              날짜{arrow("date")}
+              className="text-left px-3 py-2 w-24 cursor-pointer select-none hover:bg-slate-100 transition">
+              매입일{arrow("date")}
             </th>
             <th onClick={() => toggleSort("product_name")}
-              className="text-left px-2 py-2 cursor-pointer select-none hover:bg-slate-50 transition">
-              상품명{arrow("product_name")}
+              className="text-left px-3 py-2 cursor-pointer select-none hover:bg-slate-100 transition">
+              상품{arrow("product_name")}
             </th>
-            <th className="text-left px-2 py-2 w-24 text-slate-400 whitespace-nowrap">상품코드</th>
             <th onClick={() => toggleSort("quantity")}
-              className="text-right px-2 py-2 w-16 cursor-pointer select-none hover:bg-slate-50 transition">
+              className="text-right px-3 py-2 w-16 cursor-pointer select-none hover:bg-slate-100 transition">
               수량{arrow("quantity")}
             </th>
             <th onClick={() => toggleSort("unit_price")}
-              className="text-right px-2 py-2 w-20 cursor-pointer select-none hover:bg-slate-50 transition">
+              className="text-right px-3 py-2 w-20 cursor-pointer select-none hover:bg-slate-100 transition">
               단가{arrow("unit_price")}
             </th>
             <th onClick={() => toggleSort("amount")}
-              className="text-right px-2 py-2 w-24 text-emerald-600 cursor-pointer select-none hover:bg-emerald-50 transition">
+              className="text-right px-3 py-2 w-24 text-emerald-600 cursor-pointer select-none hover:bg-emerald-50 transition">
               금액{arrow("amount")}
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-50">
+        <tbody className="divide-y divide-slate-100">
           {sorted.map((r, i) => {
             const isHighlight = highlightId != null && String(r.id) === String(highlightId);
             return (
@@ -160,26 +162,29 @@ const LedgerTab: React.FC<{
                 key={`ph-${r.id}-${i}`}
                 ref={isHighlight ? highlightRowRef : undefined}
                 className={`transition-all duration-100 ${
-                  isHighlight ? "animate-highlight-flash" : "hover:bg-slate-50/60"
+                  isHighlight ? "animate-highlight-flash bg-amber-50" : "hover:bg-emerald-50/40"
                 }`}
               >
-                <td className="px-2 py-1.5 text-slate-300 text-[11px] tabular-nums align-top">{i + 1}</td>
-                <td className="px-2 py-1.5 tabular-nums text-[11px] text-slate-500 align-top whitespace-nowrap">
+                <td className="px-3 py-1.5 text-slate-300 text-[11px] tabular-nums align-top">{i + 1}</td>
+                <td className="px-3 py-1.5 font-mono text-[12px] font-semibold text-slate-700 align-top whitespace-nowrap">
                   {dateLabel(r.invoice_date)}
+                  {isHighlight && <span className="ml-1 text-[10px] text-amber-600 font-black">◀</span>}
                 </td>
-                <td className="px-2 py-1.5 text-[12px] font-semibold text-slate-700 align-top break-words whitespace-normal leading-snug">
-                  {r.product_name ?? "-"}
+                <td className="px-3 py-1.5 align-top">
+                  <div className="text-[12px] font-semibold text-slate-700 break-words whitespace-normal leading-snug">
+                    {r.product_name ?? "-"}
+                  </div>
+                  {r.product_code && (
+                    <div className="text-[10px] font-mono text-slate-400 tabular-nums">{r.product_code}</div>
+                  )}
                 </td>
-                <td className="px-2 py-1.5 text-[11px] font-mono text-slate-400 align-top whitespace-nowrap">
-                  {r.product_code ?? "-"}
-                </td>
-                <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-slate-600 align-top">
+                <td className="px-3 py-1.5 text-right tabular-nums font-mono text-[12px] font-bold text-slate-800 align-top">
                   {r.quantity != null ? fmt(r.quantity) : "-"}
                 </td>
-                <td className="px-2 py-1.5 text-right tabular-nums text-[12px] text-slate-600 align-top">
+                <td className="px-3 py-1.5 text-right tabular-nums font-mono text-[12px] text-slate-500 align-top">
                   {r.unit_price != null ? fmt(r.unit_price) : "-"}
                 </td>
-                <td className="px-2 py-1.5 text-right tabular-nums text-[12px] font-semibold text-emerald-700 align-top">
+                <td className="px-3 py-1.5 text-right tabular-nums font-mono text-[12px] font-black text-emerald-700 align-top">
                   {r.amount != null && r.amount > 0 ? fmt(r.amount) : "-"}
                 </td>
               </tr>
@@ -188,8 +193,8 @@ const LedgerTab: React.FC<{
         </tbody>
         <tfoot className="sticky bottom-0 bg-white border-t-2 border-slate-200">
           <tr>
-            <td colSpan={6} className="px-2 py-2 text-right text-[11px] font-black text-slate-500">합계</td>
-            <td className="px-2 py-2 text-right tabular-nums text-[13px] font-black text-emerald-700">{fmtWon(totalAmount)}</td>
+            <td colSpan={5} className="px-3 py-2 text-right text-[11px] font-black text-slate-500">합계</td>
+            <td className="px-3 py-2 text-right tabular-nums font-mono text-[13px] font-black text-emerald-700">{fmtWon(totalAmount)}</td>
           </tr>
         </tfoot>
       </table>
